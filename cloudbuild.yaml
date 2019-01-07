@@ -1,3 +1,3 @@
 steps:
   - name: 'ubuntu'
-    args: ['bash', './gradlew build']
+    args: ['bash', './gradlew', 'build']
