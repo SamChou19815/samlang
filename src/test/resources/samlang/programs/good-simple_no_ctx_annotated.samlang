@@ -1,0 +1,10 @@
+/**
+ * From Cornell CS4110's Type Checking Lecture.
+ * This version is fully annotated.
+ */
+util Main {
+
+    function main(): unit =
+        val _: ((int) -> bool, int, int) -> int = (a, b, c) -> if a(b + 1) then b else c;
+
+}

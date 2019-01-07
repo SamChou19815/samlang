@@ -1,0 +1,4 @@
+steps:
+- name: 'gcr.io/cloud-builders/gradle'
+  args: ['build']
+  timeout: 600s
