@@ -13,7 +13,7 @@ lexer grammar PLLexerPart;
 IMPORT : 'import';
 
 // Declarations
-CLASS : 'CLASS';
+CLASS : 'class';
 UTIL : 'util';
 REC : 'rec';
 CONST : 'const';
@@ -39,6 +39,8 @@ INT : 'int';
 STRING : 'string';
 BOOL : 'bool';
 UNIT : 'unit';
+TRUE : 'true';
+FALSE : 'false';
 
 // Forbidden Names
 EXPORT : 'export';
@@ -125,7 +127,6 @@ fragment UpperLetter : 'A'..'Z';
  */
 
 IntLiteral : HexLiteral | OctalLiteral | DecimalLiteral;
-BoolLiteral : 'true' | 'false';
 StrLiteral : '"' ( EscapeSequence | ~('\\'|'"') )* '"';
 
 // Base Literals

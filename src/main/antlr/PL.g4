@@ -18,8 +18,8 @@ moduleMemberDefinition
 typeParametersDeclaration : LT UpperId (COMMA UpperId)* GT;
 
 typeDeclaration
-    : objectTypeFieldDeclaration (SEMICOLON objectTypeFieldDeclaration)* SEMICOLON # ObjType
-    | BAR? variantTypeConstructorDeclaration (BAR variantTypeConstructorDeclaration)+ # VariantType
+    : objectTypeFieldDeclaration (COMMA objectTypeFieldDeclaration)* COMMA? # ObjType
+    | variantTypeConstructorDeclaration (COMMA variantTypeConstructorDeclaration)+ COMMA? # VariantType
     ;
 objectTypeFieldDeclaration : LowerId typeAnnotation;
 variantTypeConstructorDeclaration : UpperId LPAREN typeExpr RPAREN;
@@ -49,7 +49,7 @@ expression
     | THIS # ThisExpr
     | LowerId # VariableExpr
     | UpperId COLONCOLON LowerId # ModuleMemberExpr
-    | LBRACKET typeExpr (COMMA typeExpr)+ COMMA? RBRACKET # TupleConstructor
+    | LBRACKET expression (COMMA expression)+ COMMA? RBRACKET # TupleConstructor
     | LBRACE (SPREAD expression COMMA)? objectFieldDeclarations RBRACE # ObjConstructor
     | UpperId LPAREN expression RPAREN # VariantConstructor
     | expression DOT LowerId # MethodAccessExpr
@@ -70,13 +70,13 @@ expression
 
 objectFieldDeclarations : objectFieldDeclaration (COMMA objectFieldDeclaration)* COMMA?;
 objectFieldDeclaration
-    : LowerId ASSIGN expression # NormalObjFieldDeclaration
+    : LowerId COLON expression # NormalObjFieldDeclaration
     | LowerId # ShorthandObjFieldDeclaration
     ;
 functionArguments : LPAREN RPAREN | LPAREN expression (COMMA expression)* COMMA? RPAREN;
 
 pattern
-    : LBRACKET varOrWildCard (COMMA varOrWildCard)* COMMA? RBRACKET # TuplePattern
+    : LBRACKET varOrWildCard (COMMA varOrWildCard)+ COMMA? RBRACKET # TuplePattern
     | LBRACE varOrRenamedVar (COMMA varOrRenamedVar)* COMMA? RBRACE # ObjectPattern
     | LowerId # VariablePattern
     | WILDCARD # WildcardPattern
@@ -93,4 +93,4 @@ termOperator : PLUS | MINUS;
 comparisonOperator : LT | LE | GT | GE | STRUCT_EQ | STRUCT_NE;
 
 // Literals
-literal : UNIT | IntLiteral | StrLiteral | BoolLiteral;
+literal : UNIT | TRUE | FALSE | IntLiteral | StrLiteral;

@@ -31,12 +31,12 @@ internal object ModuleTypeDefResolver {
         }
         return if (typeArgs == null) {
             if (typeParams != null) {
-                error(message = "Impossible Case")
+                error(message = "BAD! TypeArgs: null, typeParams: $typeParams, identifierType: $identifierType")
             }
             varMap
         } else {
             if (typeParams == null) {
-                error(message = "Impossible Case")
+                error(message = "BAD! TypeArgs: $typeArgs, typeParams: null, identifierType: $identifierType")
             }
             TypeParamSizeMismatchError.check(
                 expectedSize = typeParams.size,
@@ -55,7 +55,7 @@ internal object ModuleTypeDefResolver {
         override fun visit(typeExpr: BoolType, context: Map<String, CheckedTypeExpr>): CheckedTypeExpr = typeExpr
 
         override fun visit(typeExpr: IdentifierType, context: Map<String, CheckedTypeExpr>): CheckedTypeExpr {
-            if (typeExpr.typeArgs != null) {
+            if (typeExpr.typeArgs == null) {
                 val replacement = context[typeExpr.identifier]
                 if (replacement != null) {
                     return replacement

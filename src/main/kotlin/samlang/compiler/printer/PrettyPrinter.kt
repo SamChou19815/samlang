@@ -41,12 +41,12 @@ object PrettyPrinter {
                     when (typeDef) {
                         is CheckedModule.CheckedTypeDef.ObjectType -> {
                             typeDef.mappings.forEach { (field, type) ->
-                                println("$field: $type;")
+                                printWithBreak(x = "$field: $type,")
                             }
                         }
                         is CheckedModule.CheckedTypeDef.VariantType -> {
                             typeDef.mappings.forEach { (tag, dataType) ->
-                                println("| $tag of $dataType")
+                                printWithBreak(x = "$tag($dataType),")
                             }
                         }
                     }
@@ -65,11 +65,13 @@ object PrettyPrinter {
             val memberVisibility = if (isPublic) "public " else ""
             val memberType = if (isMethod) "method" else "function"
             val (typeParams, _) = type
-            val typeParamsString = typeParams?.joinToString(separator = ", ", prefix = "<", postfix = ">") ?: ""
+            val typeParamsString = typeParams?.joinToString(separator = ", ", prefix = " <", postfix = ">") ?: ""
             val argsString = value.arguments.joinToString(
                 separator = ", ", prefix = "(", postfix = ")"
             ) { (n, t) -> "$n: $t" }
-            printer.printWithBreak(x = "$memberVisibility$memberType $name$typeParamsString$argsString =")
+            val returnTypeString = member.type.second.returnType.prettyPrint()
+            val header = "$memberVisibility$memberType$typeParamsString $name$argsString: $returnTypeString ="
+            printer.printWithBreak(x = header)
             printer.indented { value.body.accept(visitor = exprPrinter, context = true) }
             printer.println()
         }
@@ -219,10 +221,13 @@ object PrettyPrinter {
             }
             printer.indented {
                 expr.matchingList.forEach { variantPatternToExpr ->
-                    printWithBreak(x = "| ${variantPatternToExpr.tag}")
-                    variantPatternToExpr.dataVariable?.let { printWithBreak(x = it) }
-                    printWithBreak(x = "->")
-                    variantPatternToExpr.expr.printSelf(requireBreak = true)
+                    printlnWithoutFurtherIndentation {
+                        printWithBreak(x = "| ${variantPatternToExpr.tag}")
+                        printWithBreak(x = variantPatternToExpr.dataVariable ?: "_")
+                        printWithBreak(x = "-> (")
+                    }
+                    indented { variantPatternToExpr.expr.printSelf(requireBreak = true) }
+                    printWithBreak(x = ")")
                 }
             }
             printer.print(x = "}", requireBreak = context)

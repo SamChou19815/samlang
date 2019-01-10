@@ -126,7 +126,7 @@ internal object ProgramTypeChecker {
                 }
                 val updatedNewCtx = newCtx.getCurrentModuleTypeDef()
                     ?.typeParams
-                    ?.let { ctx.addLocalGenericTypes(genericTypes = it) }
+                    ?.let { newCtx.addLocalGenericTypes(genericTypes = it) }
                 if (updatedNewCtx != null) {
                     newCtx = updatedNewCtx
                 }
@@ -174,10 +174,10 @@ internal object ProgramTypeChecker {
     ): CheckedMemberDefinition {
         val (isPublic, isMethod, typeParameters, name, typeAnnotation, value) = member
         val type = member.typeParameters to member.typeAnnotation
-        val ctxForTypeCheckingValue = if (member.isMethod) {
-            val newCtx = ctx.addThisType(genericTypes = null)
-            typeParameters?.let { newCtx.addLocalGenericTypes(genericTypes = it) } ?: newCtx
-        } else ctx
+        var ctxForTypeCheckingValue = if (member.isMethod) ctx.addThisType() else ctx
+        if (typeParameters != null) {
+            ctxForTypeCheckingValue = ctxForTypeCheckingValue.addLocalGenericTypes(genericTypes = typeParameters)
+        }
         val checkedValue = typeCheckExpr(
             expr = value,
             ctx = ctxForTypeCheckingValue,

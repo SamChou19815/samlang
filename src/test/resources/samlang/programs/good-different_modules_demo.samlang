@@ -1,0 +1,68 @@
+util Math {
+
+    function plus(a: int, b: int): int = a + b
+
+    function cosine(angleInDegree: int): int = panic("Not supported!")
+
+}
+
+class Student(name: string, age: int) {
+
+    public method getName(): string =
+        val { name } = this;
+        name
+
+    method getAge(): int =
+        val { age } = this;
+        age
+
+    function dummyStudent(): Student = { name: "RANDOM_BABY", age: 0 }
+
+}
+
+class PrimitiveType(
+    U(unit),
+    I(int),
+    S(string),
+    B(bool),
+) {
+    // some random functions
+    public function getUnit(): PrimitiveType = U(unit)
+    public function getInteger(): PrimitiveType = I(42)
+    public function getString(): PrimitiveType = S("Answer to life, universe, and everything.")
+    public function getBool(): PrimitiveType = B(false)
+
+    // pattern matching!
+    public method isTruthy(): bool =
+        match (this) {
+            | U _ -> false
+            | I i -> i != 0
+            | S s -> s != ""
+            | B b -> b
+        }
+}
+
+util FunctionExample {
+    public function <T> getIdentityFunction(): (T) -> T = (x) -> x
+}
+
+class Box<T>(content: T) {
+
+    public function <T> init(content: T): Box<T> = { content } // object short hand syntax
+
+    public method getContent(): T = val { content } = this; content
+
+}
+
+class Option<T>(None(unit), Some(T)) {
+
+    public function <T> getNone(): Option<T> = None(unit)
+    public function <T> getSome(d: T): Option<T> = Some(d)
+
+    public method <R> map(f: (T) -> R): Option<R> =
+        match (this) {
+            | None _ -> None(unit)
+            | Some d -> Some(f(d))
+        }
+
+}

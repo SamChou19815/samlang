@@ -8,6 +8,6 @@ class UnexpectedTypeError(
     actual: CheckedTypeExpr,
     position: Position
 ) : CompileTimeError.WithPosition(
-    reason = "Expect: ${expected.prettyPrint()}.\nActual: ${actual.prettyPrint()}",
+    reason = "Expect: ${expected.prettyPrint()}.\nActual: ${actual.prettyPrint()}.",
     position = position
 )

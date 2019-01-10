@@ -1,0 +1,8 @@
+class NewYear2019<T>(message: T) {
+    public function init(): NewYear2019<string> = { message: "Hello World!" }
+    public method getMessage(): T = val { message as msg } = this; msg
+}
+
+util Main {
+    function main(): string = NewYear2019::init().getMessage()
+}

@@ -2,8 +2,8 @@ package samlang.parser
 
 import org.apache.commons.text.StringEscapeUtils
 import samlang.ast.common.BinaryOperator
-import samlang.ast.common.UnaryOperator
 import samlang.ast.common.Literal
+import samlang.ast.common.UnaryOperator
 import samlang.ast.raw.RawExpr
 import samlang.parser.Position.Companion.position
 import samlang.parser.Position.Companion.positionWithName
@@ -11,6 +11,8 @@ import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 
 internal object ExprBuilder : PLBaseVisitor<RawExpr>() {
+
+    override fun visitNestedExpr(ctx: PLParser.NestedExprContext): RawExpr = ctx.expression().accept(ExprBuilder)
 
     /**
      * Converts string literal in [literal] to actual string.
@@ -27,19 +29,15 @@ internal object ExprBuilder : PLBaseVisitor<RawExpr>() {
     private fun buildValue(ctx: PLParser.LiteralContext): Literal {
         // Case UNIT
         ctx.UNIT()?.let { return Literal.UnitLiteral }
+        // Case TRUE
+        ctx.TRUE()?.let { return Literal.BoolLiteral(v = true) }
+        // Case FALSE
+        ctx.FALSE()?.let { return Literal.BoolLiteral(v = false) }
         // Case INT
         ctx.IntLiteral()?.let { node ->
             val text = node.text
             val intValue = text.toLongOrNull() ?: error(message = "Bad Literal: $text.")
             return Literal.IntLiteral(v = intValue)
-        }
-        // Case BOOL
-        ctx.BoolLiteral()?.let { node ->
-            return when (val text = node.text) {
-                "true" -> Literal.BoolLiteral(v = true)
-                "false" -> Literal.BoolLiteral(v = false)
-                else -> error(message = "Bad Literal: $text.")
-            }
         }
         // Case STRING
         ctx.StrLiteral()?.let { return Literal.StringLiteral(v = stringLiteralToString(literal = it.text)) }
@@ -49,6 +47,10 @@ internal object ExprBuilder : PLBaseVisitor<RawExpr>() {
     override fun visitLiteralExpr(ctx: PLParser.LiteralExprContext): RawExpr = RawExpr.Literal(
         position = ctx.literal().position,
         literal = buildValue(ctx.literal())
+    )
+
+    override fun visitThisExpr(ctx: PLParser.ThisExprContext): RawExpr = RawExpr.This(
+        position = ctx.THIS().symbol.position
     )
 
     override fun visitVariableExpr(ctx: PLParser.VariableExprContext): RawExpr = RawExpr.Variable(
@@ -65,7 +67,7 @@ internal object ExprBuilder : PLBaseVisitor<RawExpr>() {
     override fun visitTupleConstructor(ctx: PLParser.TupleConstructorContext): RawExpr =
         RawExpr.TupleConstructor(
             position = ctx.position,
-            exprList = ctx.typeExpr().map { it.accept(ExprBuilder) }
+            exprList = ctx.expression().map { it.accept(ExprBuilder) }
         )
 
     private object ObjectFieldDeclarationBuilder : PLBaseVisitor<RawExpr.ObjectConstructor.FieldConstructor>() {

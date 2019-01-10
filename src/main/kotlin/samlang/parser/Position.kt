@@ -30,7 +30,10 @@ data class Position(val lineStart: Int, val lineEnd: Int, val colStart: Int, val
     internal companion object {
 
         val Token.position: Position
-            get() = Position(lineStart = line, lineEnd = line, colStart = startIndex, colEnd = stopIndex)
+            get() = Position(
+                lineStart = line, lineEnd = line,
+                colStart = charPositionInLine, colEnd = charPositionInLine + text.length
+            )
 
         val Token.positionWithName: Position.WithName get() = Position.WithName(position = position, name = text)
 

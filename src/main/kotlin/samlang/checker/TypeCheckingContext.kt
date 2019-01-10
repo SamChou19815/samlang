@@ -9,7 +9,7 @@ import samlang.parser.Position
 internal data class TypeCheckingContext(
     private val modules: ImmutableMap<String, ModuleType>,
     val currentModule: String,
-    private val localGenericTypes: ImmutableSet<String>,
+    val localGenericTypes: ImmutableSet<String>,
     private val localValues: ImmutableMap<String, CheckedTypeExpr>
 ) {
 
@@ -127,7 +127,7 @@ internal data class TypeCheckingContext(
             )
             t
         }
-        val typeParams = getCurrentModuleTypeDef()?.typeParams
+        val typeParams = modules[module]!!.typeDef?.typeParams
         TypeParamSizeMismatchError.check(
             expectedSize = typeParams?.size ?: 0,
             actualSize = typeArgs?.size ?: 0,
@@ -156,9 +156,6 @@ internal data class TypeCheckingContext(
         }
     }
 
-    fun addLocalGenericType(genericType: String): TypeCheckingContext =
-        copy(localGenericTypes = localGenericTypes.plus(element = genericType))
-
     fun addLocalGenericTypes(genericTypes: Collection<String>): TypeCheckingContext =
         copy(localGenericTypes = localGenericTypes.plus(elements = genericTypes))
 
@@ -176,15 +173,20 @@ internal data class TypeCheckingContext(
             position = errorPosition
         )
 
-    fun addThisType(genericTypes: Collection<String>?): TypeCheckingContext {
+
+    fun addThisType(): TypeCheckingContext {
         if (localValues.containsKey(key = "this")) {
             error(message = "Corrupted context!")
         }
+        val typeParams = modules[currentModule]!!.typeDef!!.typeParams
         val type = CheckedTypeExpr.IdentifierType(
             identifier = currentModule,
-            typeArgs = genericTypes?.map { id -> CheckedTypeExpr.IdentifierType(identifier = id, typeArgs = null) }
+            typeArgs = typeParams?.map { id -> CheckedTypeExpr.IdentifierType(identifier = id, typeArgs = null) }
         )
-        return copy(localValues = localValues.plus(pair = "this" to type))
+        return copy(
+            localValues = localValues.plus(pair = "this" to type),
+            localGenericTypes = typeParams?.let { localGenericTypes.plus(elements = it) } ?: localGenericTypes
+        )
     }
 
     fun addLocalValueType(name: String, type: CheckedTypeExpr, errorPosition: Position): TypeCheckingContext {

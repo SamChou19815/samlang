@@ -1,5 +1,3 @@
 util Main {
-
     function main(): string = "Hello World!"
-
 }

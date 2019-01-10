@@ -16,6 +16,7 @@ object ProgramBuilder {
     private fun buildProgram(inputStream: InputStream): RawProgram {
         val parser = PLParser(CommonTokenStream(PLLexer(ANTLRInputStream(inputStream))))
         val errorListener = SyntaxErrorListener()
+        parser.removeErrorListeners()
         parser.addErrorListener(errorListener)
         val programContext = parser.program()
         val errors = errorListener.syntaxErrors

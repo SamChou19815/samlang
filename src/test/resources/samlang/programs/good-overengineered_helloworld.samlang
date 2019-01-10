@@ -1,0 +1,17 @@
+class HelloWorld(
+    message: string,
+) {
+
+    method getMessage(): string =
+        val { message } = this;
+        message
+
+    public function getGlobalMessage(): string =
+        val hw = { message: "Hello World!" };
+        hw.getMessage()
+
+}
+
+util Main {
+    function main(): string = HelloWorld::getGlobalMessage()
+}
