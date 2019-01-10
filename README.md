@@ -5,7 +5,7 @@
 
 Sam's Programming Language
 
-![SAMLANG](https://raw.githubusercontent.com/SamChou19815/design/master/samlang.png)
+<img alt="SAMLANG" src="https://raw.githubusercontent.com/SamChou19815/design/master/samlang.png" width=300 height=300/>
 
 ## Current Status
 
