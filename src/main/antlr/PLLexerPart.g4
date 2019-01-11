@@ -15,7 +15,6 @@ IMPORT : 'import';
 // Declarations
 CLASS : 'class';
 UTIL : 'util';
-REC : 'rec';
 CONST : 'const';
 VAL : 'val';
 FUNCTION : 'function';
