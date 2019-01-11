@@ -10,12 +10,10 @@ lexer grammar PLLexerPart;
  * ----------------------------------------------------------------------------
  */
 
-IMPORT : 'import';
 
 // Declarations
 CLASS : 'class';
 UTIL : 'util';
-CONST : 'const';
 VAL : 'val';
 FUNCTION : 'function';
 METHOD : 'method';
@@ -38,16 +36,18 @@ INT : 'int';
 STRING : 'string';
 BOOL : 'bool';
 UNIT : 'unit';
+
+// Some Important Literals
 TRUE : 'true';
 FALSE : 'false';
-
-// Forbidden Names
-EXPORT : 'export';
-
-// Misc
-SELF : 'self';
 THIS : 'this';
 WILDCARD : '_';
+
+// Forbidden Names
+SELF : 'self';
+IMPORT : 'import';
+EXPORT : 'export';
+CONST : 'const';
 
 /*
  * ----------------------------------------------------------------------------
