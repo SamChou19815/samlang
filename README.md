@@ -7,6 +7,8 @@ Sam's Programming Language
 
 <img alt="SAMLANG" src="https://raw.githubusercontent.com/SamChou19815/design/master/samlang.png" width=300 height=300/>
 
+Read the docs at [the official documentation site](https://samlang-docs.developersam.com).
+
 ## Current Status
 
 - Type-checker finished (no correctness guarantee)
