@@ -154,10 +154,17 @@ object PrettyPrinter {
             }
         }
 
+        override fun visit(expr: CheckedExpr.FieldAccess, context: Boolean) {
+            printer.printlnWithoutFurtherIndentation {
+                expr.expr.printSelf(requireBreak = false, withParenthesis = expr.expr.precedence >= expr.precedence)
+                print(x = ".${expr.fieldName}", requireBreak = context)
+            }
+        }
+
         override fun visit(expr: CheckedExpr.MethodAccess, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
                 expr.expr.printSelf(requireBreak = false, withParenthesis = expr.expr.precedence >= expr.precedence)
-                print(x = ".${expr.methodName}", requireBreak = context)
+                print(x = "::${expr.methodName}", requireBreak = context)
             }
         }
 

@@ -113,6 +113,17 @@ sealed class CheckedExpr(val precedence: Int) {
 
     }
 
+    data class FieldAccess(
+        override val type: CheckedTypeExpr,
+        val expr: CheckedExpr,
+        val fieldName: String
+    ) : CheckedExpr(precedence = 1) {
+
+        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+            visitor.visit(expr = this, context = context)
+
+    }
+
     data class MethodAccess(
         override val type: CheckedTypeExpr.FunctionType,
         val expr: CheckedExpr,

@@ -4,5 +4,5 @@ class NewYear2019<T>(message: T) {
 }
 
 util Main {
-    function main(): string = NewYear2019::init().getMessage()
+    function main(): string = NewYear2019::init()::getMessage()
 }

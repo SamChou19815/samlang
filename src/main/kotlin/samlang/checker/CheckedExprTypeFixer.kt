@@ -165,14 +165,17 @@ internal object CheckedExprTypeFixer {
             )
         }
 
-        override fun visit(expr: MethodAccess, context: CheckedTypeExpr): CheckedExpr {
-            val newChildExprType = expr.expr.type.fixSelf(expectedType = null)
-            return MethodAccess(
-                type = expr.type.fixSelf(expectedType = context) as FunctionType,
-                expr = expr.expr.tryFixType(expectedType = newChildExprType),
-                methodName = expr.methodName
-            )
-        }
+        override fun visit(expr: FieldAccess, context: CheckedTypeExpr): CheckedExpr = FieldAccess(
+            type = expr.type.fixSelf(expectedType = context),
+            expr = expr.expr.tryFixType(expectedType = expr.expr.type.fixSelf(expectedType = null)),
+            fieldName = expr.fieldName
+        )
+
+        override fun visit(expr: MethodAccess, context: CheckedTypeExpr): CheckedExpr = MethodAccess(
+            type = expr.type.fixSelf(expectedType = context) as FunctionType,
+            expr = expr.expr.tryFixType(expectedType = expr.expr.type.fixSelf(expectedType = null)),
+            methodName = expr.methodName
+        )
 
         override fun visit(expr: Unary, context: CheckedTypeExpr): CheckedExpr = Unary(
             type = expr.type.fixSelf(expectedType = context),

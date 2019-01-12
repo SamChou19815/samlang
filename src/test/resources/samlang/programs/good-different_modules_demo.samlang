@@ -8,13 +8,8 @@ util Math {
 
 class Student(name: string, age: int) {
 
-    public method getName(): string =
-        val { name } = this;
-        name
-
-    method getAge(): int =
-        val { age } = this;
-        age
+    public method getName(): string = this.name
+    method getAge(): int = this.age
 
     function dummyStudent(): Student = { name: "RANDOM_BABY", age: 0 }
 

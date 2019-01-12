@@ -15,6 +15,7 @@ interface RawExprVisitor<in C, out T> {
     fun visit(expr: RawExpr.TupleConstructor, context: C): T
     fun visit(expr: RawExpr.ObjectConstructor, context: C): T
     fun visit(expr: RawExpr.VariantConstructor, context: C): T
+    fun visit(expr: RawExpr.FieldAccess, context: C): T
     fun visit(expr: RawExpr.MethodAccess, context: C): T
     fun visit(expr: RawExpr.Unary, context: C): T
     fun visit(expr: RawExpr.Panic, context: C): T

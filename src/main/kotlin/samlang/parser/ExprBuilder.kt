@@ -101,6 +101,13 @@ internal object ExprBuilder : PLBaseVisitor<RawExpr>() {
             data = ctx.expression().accept(ExprBuilder)
         )
 
+    override fun visitFieldAccessExpr(ctx: PLParser.FieldAccessExprContext): RawExpr =
+        RawExpr.FieldAccess(
+            position = ctx.position,
+            expr = ctx.expression().accept(ExprBuilder),
+            fieldName = ctx.LowerId().symbol.positionWithName
+        )
+
     override fun visitMethodAccessExpr(ctx: PLParser.MethodAccessExprContext): RawExpr =
         RawExpr.MethodAccess(
             position = ctx.position,

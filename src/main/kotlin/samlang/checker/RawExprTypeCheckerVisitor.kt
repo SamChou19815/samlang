@@ -36,6 +36,10 @@ internal interface RawExprTypeCheckerVisitor : RawExprVisitor<Pair<TypeCheckingC
         visit(expr = expr, ctx = context.first, expectedType = context.second)
 
     @JvmDefault
+    override fun visit(expr: FieldAccess, context: Pair<TypeCheckingContext, CheckedTypeExpr>): CheckedExpr =
+        visit(expr = expr, ctx = context.first, expectedType = context.second)
+
+    @JvmDefault
     override fun visit(expr: MethodAccess, context: Pair<TypeCheckingContext, CheckedTypeExpr>): CheckedExpr =
         visit(expr = expr, ctx = context.first, expectedType = context.second)
 
@@ -78,6 +82,7 @@ internal interface RawExprTypeCheckerVisitor : RawExprVisitor<Pair<TypeCheckingC
     fun visit(expr: TupleConstructor, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr
     fun visit(expr: ObjectConstructor, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr
     fun visit(expr: VariantConstructor, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr
+    fun visit(expr: FieldAccess, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr
     fun visit(expr: MethodAccess, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr
     fun visit(expr: Unary, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr
     fun visit(expr: Panic, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr

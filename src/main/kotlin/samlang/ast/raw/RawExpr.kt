@@ -83,6 +83,17 @@ sealed class RawExpr : RawNode {
 
     }
 
+    data class FieldAccess(
+        override val position: Position,
+        val expr: RawExpr,
+        val fieldName: Position.WithName
+    ) : RawExpr() {
+
+        override fun <C, T> accept(visitor: RawExprVisitor<C, T>, context: C): T =
+            visitor.visit(expr = this, context = context)
+
+    }
+
     data class MethodAccess(
         override val position: Position,
         val expr: RawExpr,

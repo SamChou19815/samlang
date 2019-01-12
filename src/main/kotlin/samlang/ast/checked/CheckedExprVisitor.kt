@@ -15,6 +15,7 @@ internal interface CheckedExprVisitor<in C, out T> {
     fun visit(expr: CheckedExpr.TupleConstructor, context: C): T
     fun visit(expr: CheckedExpr.ObjectConstructor, context: C): T
     fun visit(expr: CheckedExpr.VariantConstructor, context: C): T
+    fun visit(expr: CheckedExpr.FieldAccess, context: C): T
     fun visit(expr: CheckedExpr.MethodAccess, context: C): T
     fun visit(expr: CheckedExpr.Unary, context: C): T
     fun visit(expr: CheckedExpr.Panic, context: C): T

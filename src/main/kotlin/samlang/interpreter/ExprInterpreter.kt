@@ -61,6 +61,11 @@ internal object ExprInterpreter : CheckedExprVisitor<InterpretationContext, Valu
     override fun visit(expr: VariantConstructor, context: InterpretationContext): Value.VariantValue =
         Value.VariantValue(tag = expr.tag, data = eval(expr = expr.data, context = context))
 
+    override fun visit(expr: FieldAccess, context: InterpretationContext): Value {
+        val thisValue = eval(expr = expr.expr, context = context) as Value.ObjectValue
+        return thisValue.objectContent[expr.fieldName] ?: blameTypeChecker()
+    }
+
     override fun visit(expr: MethodAccess, context: InterpretationContext): Value.FunctionValue {
         val (id, _) = expr.expr.type as CheckedTypeExpr.IdentifierType
         val thisValue = eval(expr = expr.expr, context = context)

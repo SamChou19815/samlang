@@ -214,6 +214,34 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
         )
     }
 
+    override fun visit(expr: FieldAccess, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr {
+        val (typeParams, _) = ctx.getCurrentModuleObjectTypeDef(errorPosition = expr.position)
+        val expectedFieldType = CheckedTypeExpr.IdentifierType(
+            identifier = ctx.currentModule,
+            typeArgs = typeParams?.map { CheckedTypeExpr.FreeType }
+        )
+        val checkedAssignedExpr = expr.expr.toChecked(ctx = ctx, expectedType = expectedFieldType)
+        val fieldMappings = ModuleTypeDefResolver.getTypeDef(
+            identifierType = checkedAssignedExpr.type as CheckedTypeExpr.IdentifierType,
+            ctx = ctx,
+            errorPosition = expr.expr.position,
+            isFromObject = true
+        )
+        val (fieldPos, fieldName) = expr.fieldName
+        val locallyInferredFieldType = fieldMappings[fieldName] ?: throw UnresolvedNameError(
+            unresolvedName = fieldName,
+            position = fieldPos
+        )
+        val constraintInferredFieldType = constraintAwareTypeChecker.checkAndInfer(
+            expectedType = expectedType, actualType = locallyInferredFieldType, errorPosition = expr.position
+        )
+        return CheckedExpr.FieldAccess(
+            type = constraintInferredFieldType,
+            expr = checkedAssignedExpr,
+            fieldName = fieldName
+        )
+    }
+
     override fun visit(expr: MethodAccess, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr {
         val (exprPos, exprToCallMethod, methodName) = expr
         val checkedExpr = exprToCallMethod.toChecked(ctx = ctx)
@@ -454,14 +482,20 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
                 }
             }
             is RawPattern.ObjectPattern -> {
-                checkedAssignedExprType as? CheckedTypeExpr.IdentifierType
+                val identifierType = checkedAssignedExprType as? CheckedTypeExpr.IdentifierType
                     ?: throw UnexpectedTypeKindError(
                         expectedTypeKind = "identifier",
                         actualType = checkedAssignedExprType,
                         position = assignedExpr.position
                     )
+                if (identifierType.identifier != ctx.currentModule) {
+                    throw IllegalOtherClassFieldAccess(
+                        className = identifierType.identifier,
+                        position = pattern.position
+                    )
+                }
                 val fieldMappings = ModuleTypeDefResolver.getTypeDef(
-                    identifierType = checkedAssignedExprType,
+                    identifierType = identifierType,
                     ctx = ctx,
                     errorPosition = assignedExpr.position,
                     isFromObject = true
