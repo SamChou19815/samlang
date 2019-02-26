@@ -1,7 +1,7 @@
 # SAMLANG
 
 [![Build Status](https://travis-ci.com/SamChou19815/samlang.svg?branch=master)](https://travis-ci.com/SamChou19815/samlang)
-[![Release](https://jitpack.io/v/SamChou19815/samlang.svg)](https://jitpack.io/#SamChou19815/samlang)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.developersam/samlang/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.developersam/samlang)
 ![GitHub](https://img.shields.io/github/license/SamChou19815/samlang.svg)
 
 Sam's Programming Language
