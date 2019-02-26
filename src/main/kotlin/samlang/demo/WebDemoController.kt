@@ -13,6 +13,7 @@ import samlang.parser.ProgramBuilder
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.charset.Charset
+import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 
@@ -48,9 +49,10 @@ object WebDemoController {
      * Interpret a [programString] and try to return an interpreted value and the type-annotated pretty-printed
      * program.
      * Otherwise, return appropriate error responses.
+     * It uses [threadFactory] to create a new thread.
      */
     @JvmStatic
-    fun interpret(programString: String): Response {
+    fun interpret(programString: String, threadFactory: ThreadFactory): Response {
         val rawProgram: RawProgram
         try {
             rawProgram = ProgramBuilder.buildProgramFromText(text = programString)
@@ -65,7 +67,7 @@ object WebDemoController {
         }
         // passed all the compile time checks, start to interpret
         val atomicStringValue = AtomicReference<String>()
-        val evalThread = thread(start = true) {
+        val evalThread = threadFactory.newThread {
             val callback = try {
                 "Value: ${ProgramInterpreter.eval(program = checkedProgram)}"
             } catch (e: PanicException) {
@@ -73,6 +75,7 @@ object WebDemoController {
             }
             atomicStringValue.set(callback)
         }
+        evalThread.start()
         evalThread.join(1000) // impose time limit
         val result: String = atomicStringValue.get() ?: kotlin.run {
             @Suppress(names = ["DEPRECATION"])
