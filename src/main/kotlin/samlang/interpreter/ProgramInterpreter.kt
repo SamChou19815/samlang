@@ -4,9 +4,42 @@ import kotlinx.collections.immutable.plus
 import samlang.ast.checked.CheckedModule
 import samlang.ast.checked.CheckedProgram
 
+/**
+ * The interpreter used to evaluate an already type checked program.
+ */
 internal object ProgramInterpreter {
 
-    fun eval(program: CheckedProgram, context: InterpretationContext): Value {
+    /**
+     * Evaluate the [program] under some interpretation [context] (default to empty)
+     * to either a value or a [PanicException].
+     */
+    fun eval(program: CheckedProgram, context: InterpretationContext = InterpretationContext.EMPTY): Value {
+        try {
+            return unsafeEval(program = program, context = context)
+        } catch (e: StackOverflowError) {
+            throw PanicException(reason = e.message?.let { "StackOverflowException: $it" } ?: "StackOverflowException")
+        } catch (e: IllegalArgumentException) {
+            throw PanicException(
+                reason = e.message?.let { "IllegalArgumentException: $it" } ?: "IllegalArgumentException"
+            )
+        } catch (e: ArithmeticException) {
+            throw PanicException(reason = e.message?.let { "ArithmeticException: $it" } ?: "ArithmeticException")
+        } catch (e: UnsupportedOperationException) {
+            throw PanicException(
+                reason = e.message?.let { "UnsupportedOperationException: $it" } ?: "UnsupportedOperationException"
+            )
+        } catch (e: IllegalAccessException) {
+            throw PanicException(reason = e.message?.let { "IllegalAccessException: $it" } ?: "IllegalAccessException")
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            throw PanicException(reason = "Internal Interpreter Error. We will investigate.")
+        }
+    }
+
+    /**
+     * Evaluate the program directly, without considering stack overflow and other errors beyond our control.
+     */
+    private fun unsafeEval(program: CheckedProgram, context: InterpretationContext): Value {
         val fullCtx = program.modules.fold(initial = context) { ctx, module -> eval(module = module, context = ctx) }
         val mainModule = fullCtx.modules["Main"] ?: return Value.UnitValue
         val mainFunction = mainModule.functions["main"] ?: return Value.UnitValue

@@ -1,10 +1,9 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jetbrains.kotlin.resolve.calls.model.ResolvedCallArgument.DefaultArgument.arguments
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
     java
     antlr
-    kotlin(module = "jvm") version "1.3.11"
+    kotlin(module = "jvm") version "1.3.21"
     id("org.jetbrains.dokka") version "0.9.17"
 }
 
@@ -47,7 +46,15 @@ tasks {
 configure<JavaPluginConvention> {
     sourceCompatibility = JavaVersion.VERSION_1_8
 }
-tasks.withType<KotlinCompile> {
+tasks.withType<KotlinJvmCompile> {
     kotlinOptions.jvmTarget = "1.8"
     kotlinOptions.freeCompilerArgs = listOf("-Xjvm-default=enable")
+}
+val compileKotlin: KotlinJvmCompile by tasks
+compileKotlin.kotlinOptions {
+    jvmTarget = "1.8"
+}
+val compileTestKotlin: KotlinJvmCompile by tasks
+compileTestKotlin.kotlinOptions {
+    jvmTarget = "1.8"
 }
