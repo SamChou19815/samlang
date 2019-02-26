@@ -7,4 +7,4 @@ package samlang.interpreter
  *
  * @param reason the reason of this exception.
  */
-class PanicException(reason: String) : RuntimeException("PANIC: $reason")
+class PanicException(val reason: String) : RuntimeException("PANIC: $reason")

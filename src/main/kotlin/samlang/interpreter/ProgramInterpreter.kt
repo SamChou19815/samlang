@@ -30,6 +30,8 @@ internal object ProgramInterpreter {
             )
         } catch (e: IllegalAccessException) {
             throw PanicException(reason = e.message?.let { "IllegalAccessException: $it" } ?: "IllegalAccessException")
+        } catch (e: ThreadDeath) {
+            throw PanicException(reason = "My thread is dead.")
         } catch (e: Throwable) {
             e.printStackTrace()
             throw PanicException(reason = "Internal Interpreter Error. We will investigate.")

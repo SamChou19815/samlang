@@ -1,5 +1,6 @@
 package samlang.interpreter
 
+import org.apache.commons.text.StringEscapeUtils
 import samlang.ast.checked.CheckedExpr
 
 sealed class Value {
@@ -10,10 +11,21 @@ sealed class Value {
      * --------------------------------------------------------------------------------
      */
 
-    object UnitValue : Value()
-    data class IntValue(val v: Long) : Value()
-    data class StringValue(val v: String) : Value()
-    data class BoolValue(val v: Boolean) : Value()
+    object UnitValue : Value() {
+        override fun toString(): String = "unit"
+    }
+
+    data class IntValue(val v: Long) : Value() {
+        override fun toString(): String = v.toString()
+    }
+
+    data class StringValue(val v: String) : Value() {
+        override fun toString(): String = "\"${StringEscapeUtils.escapeJava(v)}\""
+    }
+
+    data class BoolValue(val v: Boolean) : Value() {
+        override fun toString(): String = v.toString()
+    }
 
     /*
      * --------------------------------------------------------------------------------
@@ -21,9 +33,19 @@ sealed class Value {
      * --------------------------------------------------------------------------------
      */
 
-    data class TupleValue(val tupleContent: List<Value>) : Value()
-    data class ObjectValue(val objectContent: Map<String, Value>) : Value()
-    data class VariantValue(val tag: String, val data: Value) : Value()
+    data class TupleValue(val tupleContent: List<Value>) : Value() {
+        override fun toString(): String = tupleContent.joinToString(separator = ", ", prefix = "[", postfix = "]")
+    }
+
+    data class ObjectValue(val objectContent: Map<String, Value>) : Value() {
+        override fun toString(): String = objectContent.entries.joinToString(
+            separator = ", ", prefix = "{ ", postfix = " }"
+        ) { (k, v) -> "$k: $v" }
+    }
+
+    data class VariantValue(val tag: String, val data: Value) : Value() {
+        override fun toString(): String = "$tag($data)"
+    }
 
     /*
      * --------------------------------------------------------------------------------
@@ -35,6 +57,8 @@ sealed class Value {
         internal val arguments: List<String>,
         internal val body: CheckedExpr,
         internal var context: InterpretationContext
-    ) : Value()
+    ) : Value() {
+        override fun toString(): String = "function"
+    }
 
 }

@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "samlang"
-version = "0.0.2"
+version = "0.0.3"
 
 repositories {
     jcenter()
@@ -31,6 +31,10 @@ dependencies {
 
 tasks.named<Test>(name = "test") {
     useJUnitPlatform()
+    testLogging {
+        events("passed", "skipped", "failed", "standardOut", "standardError")
+        setExceptionFormat("full")
+    }
 }
 
 tasks.withType<AntlrTask> {
