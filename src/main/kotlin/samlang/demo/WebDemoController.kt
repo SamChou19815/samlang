@@ -81,8 +81,8 @@ object WebDemoController {
         }
         // now pretty-print
         val stringOut = ByteArrayOutputStream()
+        PrintStream(stringOut, true, "UTF-8").use { PrettyPrinter.prettyPrint(checkedProgram, it) }
         val charset = Charset.forName("UTF-8")
-        PrintStream(stringOut, true, charset).use { PrettyPrinter.prettyPrint(checkedProgram, it) }
         val prettyPrintedProgram = String(bytes = stringOut.toByteArray(), charset = charset)
         return Response(
             type = WebDemoController.Type.GOOD_PROGRAM,
