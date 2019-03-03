@@ -5,13 +5,13 @@
     "version": "0.0.1",
     "publisher": "dev-sam",
     "repository": {
-        "url": "TODO"
+        "url": "https://github.com/SamChou19815/samlang"
     },
     "engines": {
         "vscode": "^1.21.0"
     },
     "categories": ["Programming Languages"],
-    "icon": "TODO",
+    "icon": "https://raw.githubusercontent.com/SamChou19815/design/master/samlang.png",
     "main": "./out/src/extension",
     "activationEvents": [
         "onLanguage:samlang"
