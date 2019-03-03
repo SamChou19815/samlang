@@ -1,0 +1,44 @@
+{
+    "name": "vscode-samlang",
+    "displayName": "vscode-samlang",
+    "description": "SAMLANG for VSCode",
+    "version": "0.0.1",
+    "publisher": "dev-sam",
+    "repository": {
+        "url": "TODO"
+    },
+    "engines": {
+        "vscode": "^1.21.0"
+    },
+    "categories": ["Programming Languages"],
+    "icon": "TODO",
+    "main": "./out/src/extension",
+    "activationEvents": [
+        "onLanguage:samlang"
+    ],
+    "contributes": {
+        "languages": [
+            {
+                "id": "samlang",
+                "aliases": ["SAMLANG", "samlang"],
+                "extensions": [".samlang"],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "samlang",
+                "scopeName": "text.samlang",
+                "path": "./syntaxes/samlang.json"
+            }
+        ]
+    },
+    "scripts": {
+        "postinstall": "node ./node_modules/vscode/bin/install && tsc"
+    },
+    "devDependencies": {
+        "@types/node": "*",
+        "vscode": "1.1.30",
+        "typescript": "3.3.3333"
+    }
+}
