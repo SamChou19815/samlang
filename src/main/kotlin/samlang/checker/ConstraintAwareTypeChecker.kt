@@ -104,7 +104,7 @@ internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {
             FreeType -> typeExpr
             is FunctionType -> FunctionType(
                 argumentTypes = SizeMismatchError.checkNotNull(
-                    sizeDescription = "tuple",
+                    sizeDescription = "function arguments",
                     expectedList = context.argumentTypes,
                     actualList = typeExpr.argumentTypes,
                     position = errorPosition

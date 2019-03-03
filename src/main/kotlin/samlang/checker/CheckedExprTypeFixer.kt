@@ -72,13 +72,7 @@ internal object CheckedExprTypeFixer {
 
         private fun CheckedTypeExpr.fixSelf(expectedType: CheckedTypeExpr?): CheckedTypeExpr {
             val fullyResolvedType = manager.resolveType(unresolvedType = this)
-            try {
-                fullyResolvedType.accept(visitor = detectorVisitor, context = Unit)
-            } catch (e: InsufficientTypeInferenceContextError) {
-                // TODO remove this debugging part
-                println(manager)
-                throw e
-            }
+            fullyResolvedType.accept(visitor = detectorVisitor, context = Unit)
             if (expectedType == null) {
                 return fullyResolvedType
             }
