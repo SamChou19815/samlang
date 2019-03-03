@@ -1,0 +1,8 @@
+class Option<T>(Some(T), None(unit)) {
+  public function <T> none(): Option<T> = None(unit)
+  public method toSome(t: T): Option<T> = Some(t)
+}
+util Main {
+  function main(): unit =
+    val a = Option::none();
+}

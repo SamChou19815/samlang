@@ -51,11 +51,10 @@ class PrinterTest : StringSpec() {
                     val prettyCode2 = stream1.printedString
                     prettyCode1 shouldBe prettyCode2
                     println(prettyCode2)
-                } catch (e: Exception) {
+                } catch (e: RuntimeException) {
                     println(prettyCode1)
                     throw e
                 }
-
             }
         }
     }

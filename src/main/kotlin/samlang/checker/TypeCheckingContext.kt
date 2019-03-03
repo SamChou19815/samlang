@@ -134,10 +134,8 @@ internal data class TypeCheckingContext(
             position = errorPosition
         )
         val fullyFixedType = if (typeParams != null && typeArgs != null) {
-            ModuleTypeDefResolver.applyGenericTypeParams(
-                type = partiallyFixedType,
-                context = typeParams.zip(typeArgs).toMap()
-            )
+            val typeFixingContext = typeParams.zip(typeArgs).toMap()
+            ModuleTypeDefResolver.applyGenericTypeParams(type = partiallyFixedType, context = typeFixingContext)
         } else partiallyFixedType
         return fullyFixedType as CheckedTypeExpr.FunctionType
     }

@@ -55,11 +55,13 @@ internal object ModuleTypeDefResolver {
         override fun visit(typeExpr: BoolType, context: Map<String, CheckedTypeExpr>): CheckedTypeExpr = typeExpr
 
         override fun visit(typeExpr: IdentifierType, context: Map<String, CheckedTypeExpr>): CheckedTypeExpr {
-            if (typeExpr.typeArgs == null) {
-                val replacement = context[typeExpr.identifier]
-                if (replacement != null) {
-                    return replacement
-                }
+            if (typeExpr.typeArgs != null) {
+                val newTypeArgs = typeExpr.typeArgs.map { applyGenericTypeParams(type = it, context = context) }
+                return typeExpr.copy(typeArgs = newTypeArgs)
+            }
+            val replacement = context[typeExpr.identifier]
+            if (replacement != null) {
+                return replacement
             }
             return typeExpr
         }

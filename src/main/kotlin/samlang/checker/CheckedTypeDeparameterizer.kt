@@ -44,7 +44,8 @@ internal object CheckedTypeDeparameterizer {
 
         override fun visit(typeExpr: IdentifierType, context: Map<String, UndecidedType>): CheckedTypeExpr =
             if (typeExpr.typeArgs != null) {
-                typeExpr
+                val newTypeArgs = typeExpr.typeArgs.map { it.convert(context = context) }
+                typeExpr.copy(typeArgs = newTypeArgs)
             } else {
                 context[typeExpr.identifier] ?: typeExpr
             }
