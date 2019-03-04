@@ -3,6 +3,7 @@
 [![Build Status](https://travis-ci.com/SamChou19815/samlang.svg?branch=master)](https://travis-ci.com/SamChou19815/samlang)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.developersam/samlang/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.developersam/samlang)
 ![GitHub](https://img.shields.io/github/license/SamChou19815/samlang.svg)
+![VSCode Extension](https://img.shields.io/visual-studio-marketplace/i/dev-sam.vscode-samlang.svg?label=vscode%20extension%20installs)
 
 Sam's Programming Language
 
