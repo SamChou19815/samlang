@@ -11,6 +11,8 @@ Sam's Programming Language
 
 Read the docs at [the official documentation site](https://samlang-docs.developersam.com).
 
+Install the VSCode Extension at [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=dev-sam.vscode-samlang).
+
 ## Current Status
 
 - Type-checker finished (no correctness guarantee)
