@@ -11,7 +11,7 @@
         "vscode": "^1.21.0"
     },
     "categories": ["Programming Languages"],
-    "icon": "https://raw.githubusercontent.com/SamChou19815/design/master/samlang.png",
+    "icon": "images/samlang.png",
     "main": "./out/src/extension",
     "activationEvents": [
         "onLanguage:samlang"
