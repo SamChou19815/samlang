@@ -4,14 +4,14 @@ plugins {
     java
     antlr
     kotlin(module = "jvm") version "1.3.21"
-    id("org.jetbrains.dokka") version "0.9.17"
+    id("org.jetbrains.dokka") version "0.9.18"
     maven
     `maven-publish`
     signing
 }
 
 group = "com.developersam"
-version = "0.0.6"
+version = "0.0.7"
 
 repositories {
     jcenter()
@@ -94,8 +94,8 @@ publishing {
                 }
                 licenses {
                     license {
-                        name.set("MIT")
-                        url.set("http://www.opensource.org/licenses/mit-license.php")
+                        name.set("AGPL-3.0")
+                        url.set("https://opensource.org/licenses/AGPL-3.0")
                     }
                 }
                 developers {
