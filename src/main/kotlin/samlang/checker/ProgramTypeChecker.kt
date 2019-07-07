@@ -148,13 +148,13 @@ internal object ProgramTypeChecker {
         ctx: TypeCheckingContext,
         expectedType: Type
     ): Expression {
-        val manager = UndecidedTypeManager()
-        val visitor = ExpressionTypeCheckerVisitor(manager = manager)
+        val manager = TypeResolution()
+        val visitor = ExpressionTypeCheckerVisitor(resolution = manager)
         val checkedExpr = expression.accept(visitor = visitor, context = ctx to expectedType)
         return CheckedExprTypeFixer.fixType(
             expression = checkedExpr,
             expectedType = expectedType,
-            manager = manager,
+            resolution = manager,
             ctx = ctx,
             errorRange = expression.range
         )

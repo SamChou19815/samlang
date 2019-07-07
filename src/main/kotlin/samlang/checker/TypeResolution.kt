@@ -4,7 +4,7 @@ import samlang.ast.Type
 import samlang.ast.Type.UndecidedType
 import samlang.util.UnionFind
 
-class UndecidedTypeManager {
+class TypeResolution {
     /**
      * The union find used to manage the potential complex aliasing relation between different undecided types.
      */
@@ -60,12 +60,12 @@ class UndecidedTypeManager {
     internal fun establishAliasing(
         undecidedType1: UndecidedType,
         undecidedType2: UndecidedType,
-        resolve: Type.(expected: Type) -> Type
+        meet: (t1: Type, t2: Type) -> Type
     ): Type {
         val t1 = getPartiallyResolvedType(undecidedType = undecidedType1)
         val t2 = getPartiallyResolvedType(undecidedType = undecidedType2)
         if (t1 !is UndecidedType && t2 !is UndecidedType) {
-            t1.resolve(t2)
+            return meet(t1, t2)
         }
         val commonRoot = indexAliasingUnionFind.link(i = undecidedType1.index, j = undecidedType2.index)
         refreshKnownMappings()
@@ -73,16 +73,12 @@ class UndecidedTypeManager {
     }
 
     /**
-     * Try to report the decision for a (potentially) currently undecided type.
+     * Try to add the resolution decision for a (potentially) currently undecided type.
      *
      * It will either return an error indicating there is an inconsistency of knowledge or the best knowledge of the
      * known type.
      */
-    internal fun tryReportDecisionForUndecidedType(
-        undecidedTypeIndex: Int,
-        decidedType: Type,
-        resolve: Type.(expected: Type) -> Type
-    ): Type {
+    internal fun addTypeResolution(undecidedTypeIndex: Int, decidedType: Type): Type {
         if (decidedType is UndecidedType) {
             error(message = "Use establishAliasing() instead!")
         }
@@ -97,9 +93,7 @@ class UndecidedTypeManager {
             // Return the best knowledge we have.
             return knownResolutions[rootOfUndecidedTypeIndex]!!
         }
-        // Check whether the existing type is consistent with the newly resolved one.
-        // They should be consistent because they are supposed to be merged together after this step.
-        return resolvedDecidedType.resolve(existingMapping)
+        return existingMapping
     }
 
 }
