@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 plugins {
     java
     antlr
-    kotlin(module = "jvm") version "1.3.21"
+    kotlin(module = "jvm") version "1.3.41"
     id("org.jetbrains.dokka") version "0.9.18"
     maven
     `maven-publish`
@@ -50,11 +50,11 @@ tasks {
     }
     register<Jar>("sourcesJar") {
         from(sourceSets["main"].allSource)
-        classifier = "sources"
+        archiveClassifier.set("sources")
     }
     register<Jar>("javadocJar") {
         from(javadoc)
-        classifier = "javadoc"
+        archiveClassifier.set("javadoc")
     }
     withType<KotlinJvmCompile> {
         kotlinOptions.jvmTarget = "1.8"
