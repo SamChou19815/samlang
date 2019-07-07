@@ -23,13 +23,13 @@ internal object CheckedExprTypeFixer {
         visitor = TypeFixerVisitor(
             manager = manager,
             ctx = ctx,
-            detectorVisitor = UnresolvedTypeDetectorVisitor(pos = errorRange),
+            detectorVisitor = UnresolvedTypeDetectorVisitor(range = errorRange),
             errorRange = errorRange
         ),
         context = expectedType
     )
 
-    private class UnresolvedTypeDetectorVisitor(private val pos: Range) :
+    private class UnresolvedTypeDetectorVisitor(private val range: Range) :
         TypeExpressionVisitor<Unit, Unit> {
 
         override fun visit(typeExpression: UnitType, context: Unit) {}
@@ -52,7 +52,7 @@ internal object CheckedExprTypeFixer {
         }
 
         override fun visit(typeExpression: UndecidedType, context: Unit): Unit =
-            throw InsufficientTypeInferenceContextError(range = pos)
+            throw InsufficientTypeInferenceContextError(range = range)
 
     }
 

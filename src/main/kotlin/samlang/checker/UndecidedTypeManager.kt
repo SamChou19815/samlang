@@ -6,48 +6,45 @@ import samlang.ast.TypeExpressionVisitor
 import samlang.util.UnionFind
 
 class UndecidedTypeManager {
-
-    /**
-     * Invariant: it's guaranteed that all the undecided types produced here's indices can be used here without error.
-     */
-
     /**
      * The union find used to manage the potential complex aliasing relation between different undecided types.
      */
     private val indexAliasingUnionFind: UnionFind = UnionFind()
     /**
-     * A collection of known mappings between the undecided type index and the decided types.
+     * A collection of known mappings between the undecided type index and the resolved types.
      * In particular:
      * - the key of the map is almost the root index in the above union find.
      * - the value of the map always represents the best knowledge of the type. i.e. we try to resolve as many undecided
      *   type as possible.
      */
-    private val knownMappings: MutableMap<Int, TypeExpression> = mutableMapOf()
+    private val knownResolutions: MutableMap<Int, TypeExpression> = mutableMapOf()
 
-    override fun toString(): String = "[indexAliasingUnionFind: $indexAliasingUnionFind, knownMappings: $knownMappings"
+    override fun toString(): String =
+        "[indexAliasingUnionFind: $indexAliasingUnionFind, knownResolutions: $knownResolutions"
 
     /**
      * Find the root of an index.
      */
-    private val Int.root get() = indexAliasingUnionFind.find(i = this)
+    private val Int.root get() = indexAliasingUnionFind.find(index = this)
 
     /**
      * Refresh all the known mappings to ensure it represents the best knowledge we have.
-     * Need to be called after each update in the knownMappings or aliasing relation.
+     * Need to be called after each update in the knownResolutions or aliasing relation.
      */
     private fun refreshKnownMappings() {
-        val keyCorrectMappings = knownMappings.mapKeys { (k, _) -> indexAliasingUnionFind.find(i = k) }
-        knownMappings.clear()
-        knownMappings.putAll(from = keyCorrectMappings)
-        knownMappings.replaceAll { _, currentValue -> resolveType(unresolvedType = currentValue) }
+        val keyCorrectMappings = knownResolutions.mapKeys { (key, _) -> indexAliasingUnionFind.find(index = key) }
+        knownResolutions.clear()
+        knownResolutions.putAll(from = keyCorrectMappings)
+        knownResolutions.replaceAll { _, currentValue -> resolveType(unresolvedType = currentValue) }
     }
 
     /**
-     * Report the current reference to the undecided type.
+     * Given an undecided type, try to find the partially resolved type (which may still contain nested undecided
+     * types) and return it. If it's not found in the resolution, return the original undecided type.
      */
-    fun reportCurrentUndecidedTypeReference(undecidedType: UndecidedType): TypeExpression {
+    fun getPartiallyResolvedType(undecidedType: UndecidedType): TypeExpression {
         val rootIndex = undecidedType.index.root
-        return knownMappings[rootIndex] ?: undecidedType
+        return knownResolutions[rootIndex] ?: undecidedType
     }
 
     /**
@@ -66,14 +63,14 @@ class UndecidedTypeManager {
         undecidedType2: UndecidedType,
         resolve: TypeExpression.(expected: TypeExpression) -> TypeExpression
     ): TypeExpression {
-        val t1 = reportCurrentUndecidedTypeReference(undecidedType = undecidedType1)
-        val t2 = reportCurrentUndecidedTypeReference(undecidedType = undecidedType2)
+        val t1 = getPartiallyResolvedType(undecidedType = undecidedType1)
+        val t2 = getPartiallyResolvedType(undecidedType = undecidedType2)
         if (t1 !is UndecidedType && t2 !is UndecidedType) {
             t1.resolve(t2)
         }
         val commonRoot = indexAliasingUnionFind.link(i = undecidedType1.index, j = undecidedType2.index)
         refreshKnownMappings()
-        return knownMappings[commonRoot] ?: undecidedType1
+        return knownResolutions[commonRoot] ?: undecidedType1
     }
 
     /**
@@ -92,14 +89,14 @@ class UndecidedTypeManager {
         }
         val rootOfUndecidedTypeIndex = undecidedTypeIndex.root
         val resolvedDecidedType = resolveType(unresolvedType = decidedType)
-        val existingMapping = knownMappings[rootOfUndecidedTypeIndex]
+        val existingMapping = knownResolutions[rootOfUndecidedTypeIndex]
         if (existingMapping == null) {
             // If the mapping is entirely new, we can confidently use it.
-            knownMappings[rootOfUndecidedTypeIndex] = resolvedDecidedType
+            knownResolutions[rootOfUndecidedTypeIndex] = resolvedDecidedType
             // We need to refresh because we have more information.
             refreshKnownMappings()
             // Return the best knowledge we have.
-            return knownMappings[rootOfUndecidedTypeIndex]!!
+            return knownResolutions[rootOfUndecidedTypeIndex]!!
         }
         // Check whether the existing type is consistent with the newly resolved one.
         // They should be consistent because they are supposed to be merged together after this step.
@@ -130,7 +127,7 @@ class UndecidedTypeManager {
             )
 
         override fun visit(typeExpression: UndecidedType, context: UndecidedTypeManager): TypeExpression =
-            context.reportCurrentUndecidedTypeReference(undecidedType = typeExpression)
+            context.getPartiallyResolvedType(undecidedType = typeExpression)
 
     }
 

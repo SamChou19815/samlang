@@ -10,36 +10,36 @@ class UnionFind {
 
     override fun toString(): String = "[parent: $parent, treeSize: $treeSize]"
 
-    private fun getParent(i: Int): Int {
-        val currentParent = parent[i]
+    private fun getParent(index: Int): Int {
+        val currentParent = parent[index]
         if (currentParent == null) {
-            parent[i] = i
-            treeSize[i] = 1
-            return i
+            parent[index] = index
+            treeSize[index] = 1
+            return index
         }
         return currentParent
     }
 
-    private fun getTreeSize(i: Int): Int {
-        val currentTreeSize = treeSize[i]
+    private fun getTreeSize(index: Int): Int {
+        val currentTreeSize = treeSize[index]
         if (currentTreeSize == null) {
-            parent[i] = i
-            treeSize[i] = 1
+            parent[index] = index
+            treeSize[index] = 1
             return 1
         }
         return currentTreeSize
     }
 
     /**
-     * Find the root of [i].
+     * Find the root of [index].
      */
-    fun find(i: Int): Int {
-        val currentParent = getParent(i)
-        return if (currentParent == i) {
+    fun find(index: Int): Int {
+        val currentParent = getParent(index)
+        return if (currentParent == index) {
             currentParent
         } else {
-            val parentOfParent = find(i = currentParent)
-            parent[i] = parentOfParent
+            val parentOfParent = find(index = currentParent)
+            parent[index] = parentOfParent
             parentOfParent
         }
     }
@@ -48,8 +48,8 @@ class UnionFind {
      * Link [i] and [j] and returns their new common root.
      */
     fun link(i: Int, j: Int): Int {
-        var iRoot = find(i = i)
-        var jRoot = find(i = j)
+        var iRoot = find(index = i)
+        var jRoot = find(index = j)
         if (iRoot == jRoot) {
             return iRoot
         }

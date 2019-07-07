@@ -104,10 +104,10 @@ internal data class TypeCheckingContext(
         return if (typeInfo.typeParams == null) {
             typeInfo.type
         } else {
-            val (t, _) = CheckedTypeDeparameterizer.convert(
+            val (typeWithParametersUndecided, _) = undecideTypeParameters(
                 typeExpression = typeInfo.type, typeParameters = typeInfo.typeParams
             )
-            t
+            typeWithParametersUndecided
         }
     }
 
@@ -122,10 +122,10 @@ internal data class TypeCheckingContext(
         val partiallyFixedType = if (typeInfo.typeParams == null) {
             typeInfo.type
         } else {
-            val (t, _) = CheckedTypeDeparameterizer.convert(
+            val (typeWithParametersUndecided, _) = undecideTypeParameters(
                 typeExpression = typeInfo.type, typeParameters = typeInfo.typeParams
             )
-            t
+            typeWithParametersUndecided
         }
         val typeParams = modules[module]!!.typeDefinition?.typeParameters
         TypeParamSizeMismatchError.check(
