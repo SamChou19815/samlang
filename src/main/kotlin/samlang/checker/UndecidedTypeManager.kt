@@ -20,7 +20,7 @@ class UndecidedTypeManager {
      * In particular:
      * - the key of the map is almost the root index in the above union find.
      * - the value of the map always represents the best knowledge of the type. i.e. we try to resolve as many undecided
-     *   type as possible. It implies that it should never contain a child that IS an undecided type.
+     *   type as possible.
      */
     private val knownMappings: MutableMap<Int, TypeExpression> = mutableMapOf()
 
