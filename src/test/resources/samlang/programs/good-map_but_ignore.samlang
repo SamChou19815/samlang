@@ -1,0 +1,14 @@
+class Option<T>(None(unit), Some(T)) {
+
+    public method <R> mapButIgnore(f: (T) -> R): unit =
+        val _ = match (this) {
+            // Resolved to Option<UNDECIDED>
+            | None _ -> None(unit)
+            // Resolved to Option<R>
+            // If the merge process does not go deeper,
+            // we will complain that Option<UNDECIDED> != Option<R>,
+            // which is bad!
+            | Some d -> Some(f(d))
+        };
+
+}

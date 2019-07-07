@@ -31,19 +31,11 @@ internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {
         private fun TypeExpression.failOnExpected(expectedType: TypeExpression): Nothing =
             throw UnexpectedTypeError(expected = expectedType, actual = this, range = errorRange)
 
-        private fun Either<TypeExpression, UndecidedTypeManager.InconsistentTypeReport>.getType(): TypeExpression =
-            when (this) {
-                is Either.Left -> v
-                is Either.Right -> {
-                    val (existingType, newType) = v
-                    newType.failOnExpected(expectedType = existingType)
-                }
-            }
-
         private fun TypeExpression.inferUndecidedType(undecidedType: UndecidedType): TypeExpression =
             manager.tryReportDecisionForUndecidedType(
-                undecidedTypeIndex = undecidedType.index, decidedType = this
-            ).getType()
+                undecidedTypeIndex = undecidedType.index, decidedType = this,
+                resolve = { expectedType -> checkAndInfer(expectedType) }
+            )
 
         override fun visit(typeExpression: UnitType, context: TypeExpression): TypeExpression = when (context) {
             is UnitType -> typeExpression
@@ -115,8 +107,9 @@ internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {
         override fun visit(typeExpression: UndecidedType, context: TypeExpression): TypeExpression = when (context) {
             is UndecidedType -> manager.establishAliasing(
                 undecidedType1 = typeExpression,
-                undecidedType2 = context
-            ).getType()
+                undecidedType2 = context,
+                resolve = { expectedType -> checkAndInfer(expectedType) }
+            )
             else -> context.inferUndecidedType(undecidedType = typeExpression)
         }
 

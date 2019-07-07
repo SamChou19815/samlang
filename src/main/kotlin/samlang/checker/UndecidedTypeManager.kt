@@ -3,7 +3,6 @@ package samlang.checker
 import samlang.ast.TypeExpression
 import samlang.ast.TypeExpression.*
 import samlang.ast.TypeExpressionVisitor
-import samlang.util.Either
 import samlang.util.UnionFind
 
 class UndecidedTypeManager {
@@ -62,19 +61,19 @@ class UndecidedTypeManager {
      *
      * It will either return the known type that both share or an error indicating there is an inconsistency.
      */
-    fun establishAliasing(
+    internal fun establishAliasing(
         undecidedType1: UndecidedType,
-        undecidedType2: UndecidedType
-    ): Either<TypeExpression, InconsistentTypeReport> {
+        undecidedType2: UndecidedType,
+        resolve: TypeExpression.(expected: TypeExpression) -> TypeExpression
+    ): TypeExpression {
         val t1 = reportCurrentUndecidedTypeReference(undecidedType = undecidedType1)
         val t2 = reportCurrentUndecidedTypeReference(undecidedType = undecidedType2)
-        if (t1 !is UndecidedType && t2 !is UndecidedType && t1 != t2) {
-            // Inconsistency!
-            return Either.Right(v = InconsistentTypeReport(existingType = t1, newType = t2))
+        if (t1 !is UndecidedType && t2 !is UndecidedType) {
+            t1.resolve(t2)
         }
         val commonRoot = indexAliasingUnionFind.link(i = undecidedType1.index, j = undecidedType2.index)
         refreshKnownMappings()
-        return Either.Left(v = knownMappings[commonRoot] ?: undecidedType1)
+        return knownMappings[commonRoot] ?: undecidedType1
     }
 
     /**
@@ -85,8 +84,9 @@ class UndecidedTypeManager {
      */
     internal fun tryReportDecisionForUndecidedType(
         undecidedTypeIndex: Int,
-        decidedType: TypeExpression
-    ): Either<TypeExpression, InconsistentTypeReport> {
+        decidedType: TypeExpression,
+        resolve: TypeExpression.(expected: TypeExpression) -> TypeExpression
+    ): TypeExpression {
         if (decidedType is UndecidedType) {
             error(message = "Use establishAliasing() instead!")
         }
@@ -99,20 +99,12 @@ class UndecidedTypeManager {
             // We need to refresh because we have more information.
             refreshKnownMappings()
             // Return the best knowledge we have.
-            return Either.Left(v = knownMappings[rootOfUndecidedTypeIndex]!!)
+            return knownMappings[rootOfUndecidedTypeIndex]!!
         }
-        // TODO: try to resolve the difference between existingMapping and resolvedDecidedType.
-        return if (existingMapping isNotConsistentWith resolvedDecidedType) {
-            // Inconsistency!
-            Either.Right(v = InconsistentTypeReport(existingType = existingMapping, newType = resolvedDecidedType))
-        } else {
-            // It doesn't tell us anything new, but that's OK.
-            Either.Left(v = existingMapping)
-            // No need to update because we haven't changed anything.
-        }
+        // Check whether the existing type is consistent with the newly resolved one.
+        // They should be consistent because they are supposed to be merged together after this step.
+        return resolvedDecidedType.resolve(existingMapping)
     }
-
-    data class InconsistentTypeReport(val existingType: TypeExpression, val newType: TypeExpression)
 
     private object TypeResolverVisitor :
         TypeExpressionVisitor<UndecidedTypeManager, TypeExpression> {
