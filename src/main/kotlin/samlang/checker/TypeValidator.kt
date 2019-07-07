@@ -1,44 +1,38 @@
 package samlang.checker
 
-import samlang.ast.TypeExpression
-import samlang.ast.TypeExpression.*
-import samlang.ast.TypeExpressionVisitor
+import samlang.ast.Type
+import samlang.ast.Type.*
+import samlang.ast.TypeVisitor
 
-internal fun TypeExpression.validate(context: TypeCheckingContext): TypeExpression =
+internal fun Type.validate(context: TypeCheckingContext): Type =
     accept(visitor = TypeValidator, context = context)
 
 /**
  * A validator for type to check whether every identifier type is well defined.
  */
-private object TypeValidator : TypeExpressionVisitor<TypeCheckingContext, TypeExpression> {
+private object TypeValidator : TypeVisitor<TypeCheckingContext, Type> {
 
-    override fun visit(typeExpression: UnitType, context: TypeCheckingContext): TypeExpression = typeExpression
+    override fun visit(type: PrimitiveType, context: TypeCheckingContext): Type = type
 
-    override fun visit(typeExpression: IntType, context: TypeCheckingContext): TypeExpression = typeExpression
-
-    override fun visit(typeExpression: StringType, context: TypeCheckingContext): TypeExpression = typeExpression
-
-    override fun visit(typeExpression: BoolType, context: TypeCheckingContext): TypeExpression = typeExpression
-
-    override fun visit(typeExpression: IdentifierType, context: TypeCheckingContext): TypeExpression {
-        val (range, name, typeArguments) = typeExpression
+    override fun visit(type: IdentifierType, context: TypeCheckingContext): Type {
+        val (range, name, typeArguments) = type
         context.checkIfIdentifierTypeIsWellDefined(
             name = name,
             typeArgLength = typeArguments?.size ?: 0,
             errorRange = range
         )
-        return typeExpression.copy(typeArguments = typeArguments?.map { it.validate(context = context) })
+        return type.copy(typeArguments = typeArguments?.map { it.validate(context = context) })
     }
 
-    override fun visit(typeExpression: TupleType, context: TypeCheckingContext): TypeExpression =
-        typeExpression.copy(mappings = typeExpression.mappings.map { it.validate(context = context) })
+    override fun visit(type: TupleType, context: TypeCheckingContext): Type =
+        type.copy(mappings = type.mappings.map { it.validate(context = context) })
 
-    override fun visit(typeExpression: FunctionType, context: TypeCheckingContext): TypeExpression =
-        typeExpression.copy(
-            argumentTypes = typeExpression.argumentTypes.map { it.validate(context = context) },
-            returnType = typeExpression.returnType.validate(context = context)
+    override fun visit(type: FunctionType, context: TypeCheckingContext): Type =
+        type.copy(
+            argumentTypes = type.argumentTypes.map { it.validate(context = context) },
+            returnType = type.returnType.validate(context = context)
         )
 
-    override fun visit(typeExpression: UndecidedType, context: TypeCheckingContext): TypeExpression = typeExpression
+    override fun visit(type: UndecidedType, context: TypeCheckingContext): Type = type
 
 }

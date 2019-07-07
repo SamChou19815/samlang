@@ -3,17 +3,17 @@ package samlang.checker
 import kotlinx.collections.immutable.*
 import samlang.ast.Module
 import samlang.ast.Range
-import samlang.ast.TypeExpression
+import samlang.ast.Type
 import samlang.errors.*
 
 internal data class TypeCheckingContext(
     private val modules: ImmutableMap<String, ModuleType>,
     val currentModule: String,
     val localGenericTypes: ImmutableSet<String>,
-    private val localValues: ImmutableMap<String, TypeExpression>
+    private val localValues: ImmutableMap<String, Type>
 ) {
 
-    data class TypeInfo(val isPublic: Boolean, val typeParams: List<String>?, val type: TypeExpression.FunctionType)
+    data class TypeInfo(val isPublic: Boolean, val typeParams: List<String>?, val type: Type.FunctionType)
 
     data class ModuleType(
         val typeDefinition: Module.TypeDefinition?,
@@ -92,20 +92,20 @@ internal data class TypeCheckingContext(
         return copy(modules = modules.plus(pair = currentModule to newCurrentModule))
     }
 
-    fun getLocalValueType(name: String): TypeExpression? = localValues[name]
+    fun getLocalValueType(name: String): Type? = localValues[name]
 
     fun getModuleFunctionType(
         module: String,
         member: String,
         errorRange: Range
-    ): TypeExpression {
+    ): Type {
         val typeInfo = modules[module]?.functions?.get(member)?.takeIf { module == currentModule || it.isPublic }
             ?: throw UnresolvedNameError(unresolvedName = "$module::$member", range = errorRange)
         return if (typeInfo.typeParams == null) {
             typeInfo.type
         } else {
             val (typeWithParametersUndecided, _) = undecideTypeParameters(
-                typeExpression = typeInfo.type, typeParameters = typeInfo.typeParams
+                type = typeInfo.type, typeParameters = typeInfo.typeParams
             )
             typeWithParametersUndecided
         }
@@ -113,17 +113,17 @@ internal data class TypeCheckingContext(
 
     fun getModuleMethodType(
         module: String,
-        typeArgs: List<TypeExpression>?,
+        typeArgs: List<Type>?,
         methodName: String,
         errorRange: Range
-    ): TypeExpression.FunctionType {
+    ): Type.FunctionType {
         val typeInfo = modules[module]?.methods?.get(methodName)?.takeIf { module == currentModule || it.isPublic }
             ?: throw UnresolvedNameError(unresolvedName = methodName, range = errorRange)
         val partiallyFixedType = if (typeInfo.typeParams == null) {
             typeInfo.type
         } else {
             val (typeWithParametersUndecided, _) = undecideTypeParameters(
-                typeExpression = typeInfo.type, typeParameters = typeInfo.typeParams
+                type = typeInfo.type, typeParameters = typeInfo.typeParams
             )
             typeWithParametersUndecided
         }
@@ -137,7 +137,7 @@ internal data class TypeCheckingContext(
             val typeFixingContext = typeParams.zip(typeArgs).toMap()
             ModuleTypeDefinitionResolver.applyGenericTypeParams(type = partiallyFixedType, context = typeFixingContext)
         } else partiallyFixedType
-        return fullyFixedType as TypeExpression.FunctionType
+        return fullyFixedType as Type.FunctionType
     }
 
     fun checkIfIdentifierTypeIsWellDefined(name: String, typeArgLength: Int, errorRange: Range) {
@@ -176,11 +176,11 @@ internal data class TypeCheckingContext(
             error(message = "Corrupted context!")
         }
         val typeParameters = modules[currentModule]!!.typeDefinition!!.typeParameters
-        val type = TypeExpression.IdentifierType(
+        val type = Type.IdentifierType(
             range = range,
             identifier = currentModule,
             typeArguments = typeParameters?.map { parameter ->
-                TypeExpression.IdentifierType(
+                Type.IdentifierType(
                     range = range,
                     identifier = parameter,
                     typeArguments = null
@@ -193,7 +193,7 @@ internal data class TypeCheckingContext(
         )
     }
 
-    fun addLocalValueType(name: String, type: TypeExpression, errorRange: Range): TypeCheckingContext {
+    fun addLocalValueType(name: String, type: Type, errorRange: Range): TypeCheckingContext {
         if (localValues.containsKey(name)) {
             throw CollisionError(collidedName = Range.WithName(range = errorRange, name = name))
         }

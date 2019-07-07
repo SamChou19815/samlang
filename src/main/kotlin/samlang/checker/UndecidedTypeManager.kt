@@ -1,7 +1,7 @@
 package samlang.checker
 
-import samlang.ast.TypeExpression
-import samlang.ast.TypeExpression.UndecidedType
+import samlang.ast.Type
+import samlang.ast.Type.UndecidedType
 import samlang.util.UnionFind
 
 class UndecidedTypeManager {
@@ -16,7 +16,7 @@ class UndecidedTypeManager {
      * - the value of the map always represents the best knowledge of the type. i.e. we try to resolve as many undecided
      *   type as possible.
      */
-    private val knownResolutions: MutableMap<Int, TypeExpression> = mutableMapOf()
+    private val knownResolutions: MutableMap<Int, Type> = mutableMapOf()
 
     override fun toString(): String =
         "[indexAliasingUnionFind: $indexAliasingUnionFind, knownResolutions: $knownResolutions"
@@ -41,7 +41,7 @@ class UndecidedTypeManager {
      * Given an undecided type, try to find the partially resolved type (which may still contain nested undecided
      * types) and return it. If it's not found in the resolution, return the original undecided type.
      */
-    fun getPartiallyResolvedType(undecidedType: UndecidedType): TypeExpression {
+    fun getPartiallyResolvedType(undecidedType: UndecidedType): Type {
         val rootIndex = undecidedType.index.findRoot()
         return knownResolutions[rootIndex] ?: undecidedType
     }
@@ -49,7 +49,7 @@ class UndecidedTypeManager {
     /**
      * Fully resolve an potentially [unresolvedType].
      */
-    fun resolveType(unresolvedType: TypeExpression): TypeExpression =
+    fun resolveType(unresolvedType: Type): Type =
         unresolvedType.resolveType(function = this::getPartiallyResolvedType)
 
     /**
@@ -60,8 +60,8 @@ class UndecidedTypeManager {
     internal fun establishAliasing(
         undecidedType1: UndecidedType,
         undecidedType2: UndecidedType,
-        resolve: TypeExpression.(expected: TypeExpression) -> TypeExpression
-    ): TypeExpression {
+        resolve: Type.(expected: Type) -> Type
+    ): Type {
         val t1 = getPartiallyResolvedType(undecidedType = undecidedType1)
         val t2 = getPartiallyResolvedType(undecidedType = undecidedType2)
         if (t1 !is UndecidedType && t2 !is UndecidedType) {
@@ -80,9 +80,9 @@ class UndecidedTypeManager {
      */
     internal fun tryReportDecisionForUndecidedType(
         undecidedTypeIndex: Int,
-        decidedType: TypeExpression,
-        resolve: TypeExpression.(expected: TypeExpression) -> TypeExpression
-    ): TypeExpression {
+        decidedType: Type,
+        resolve: Type.(expected: Type) -> Type
+    ): Type {
         if (decidedType is UndecidedType) {
             error(message = "Use establishAliasing() instead!")
         }

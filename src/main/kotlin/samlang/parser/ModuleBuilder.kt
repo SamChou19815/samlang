@@ -3,7 +3,7 @@ package samlang.parser
 import samlang.ast.Expression
 import samlang.ast.Module
 import samlang.ast.Range
-import samlang.ast.TypeExpression
+import samlang.ast.Type
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser.*
 
@@ -71,7 +71,7 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
         val typeExpression = ctx.typeExpr()
         val bodyExpression = ctx.expression()
         val firstArgRange = annotatedVariables.firstOrNull()?.first?.range
-        val type = TypeExpression.FunctionType(
+        val type = Type.FunctionType(
             range = Range(
                 start = firstArgRange?.start ?: typeExpression.range.start,
                 end = typeExpression.range.end

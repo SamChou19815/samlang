@@ -1,35 +1,31 @@
 package samlang.checker
 
-import samlang.ast.TypeExpression
-import samlang.ast.TypeExpression.*
-import samlang.ast.TypeExpressionVisitor
+import samlang.ast.Type
+import samlang.ast.Type.*
+import samlang.ast.TypeVisitor
 
-private typealias ResolveTypeFunction = (undecidedType: UndecidedType) -> TypeExpression
+private typealias ResolveTypeFunction = (undecidedType: UndecidedType) -> Type
 
-internal fun TypeExpression.resolveType(function: ResolveTypeFunction): TypeExpression =
+internal fun Type.resolveType(function: ResolveTypeFunction): Type =
     accept(visitor = TypeResolverVisitor, context = function)
 
 private object TypeResolverVisitor :
-    TypeExpressionVisitor<ResolveTypeFunction, TypeExpression> {
+    TypeVisitor<ResolveTypeFunction, Type> {
 
-    override fun visit(typeExpression: UnitType, context: ResolveTypeFunction): TypeExpression = typeExpression
-    override fun visit(typeExpression: IntType, context: ResolveTypeFunction): TypeExpression = typeExpression
-    override fun visit(typeExpression: StringType, context: ResolveTypeFunction): TypeExpression = typeExpression
-    override fun visit(typeExpression: BoolType, context: ResolveTypeFunction): TypeExpression = typeExpression
+    override fun visit(type: PrimitiveType, context: ResolveTypeFunction): Type = type
 
-    override fun visit(typeExpression: IdentifierType, context: ResolveTypeFunction): TypeExpression =
-        typeExpression.copy(typeArguments = typeExpression.typeArguments?.map { it.resolveType(function = context) })
+    override fun visit(type: IdentifierType, context: ResolveTypeFunction): Type =
+        type.copy(typeArguments = type.typeArguments?.map { it.resolveType(function = context) })
 
-    override fun visit(typeExpression: TupleType, context: ResolveTypeFunction): TypeExpression =
-        typeExpression.copy(mappings = typeExpression.mappings.map { it.resolveType(function = context) })
+    override fun visit(type: TupleType, context: ResolveTypeFunction): Type =
+        type.copy(mappings = type.mappings.map { it.resolveType(function = context) })
 
-    override fun visit(typeExpression: FunctionType, context: ResolveTypeFunction): TypeExpression =
-        typeExpression.copy(
-            argumentTypes = typeExpression.argumentTypes.map { it.resolveType(function = context) },
-            returnType = typeExpression.returnType.resolveType(function = context)
+    override fun visit(type: FunctionType, context: ResolveTypeFunction): Type =
+        type.copy(
+            argumentTypes = type.argumentTypes.map { it.resolveType(function = context) },
+            returnType = type.returnType.resolveType(function = context)
         )
 
-    override fun visit(typeExpression: UndecidedType, context: ResolveTypeFunction): TypeExpression =
-        context(typeExpression)
+    override fun visit(type: UndecidedType, context: ResolveTypeFunction): Type = context(type)
 
 }

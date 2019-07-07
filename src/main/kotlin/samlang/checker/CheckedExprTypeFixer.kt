@@ -5,7 +5,7 @@ import samlang.ast.BinaryOperator.*
 import samlang.ast.CheckedExprVisitor
 import samlang.ast.Expression.*
 import samlang.ast.Expression.Literal
-import samlang.ast.TypeExpression.*
+import samlang.ast.Type.*
 import samlang.errors.InsufficientTypeInferenceContextError
 import samlang.errors.UnexpectedTypeError
 
@@ -15,7 +15,7 @@ internal object CheckedExprTypeFixer {
 
     fun fixType(
         expression: Expression,
-        expectedType: TypeExpression,
+        expectedType: Type,
         manager: UndecidedTypeManager,
         ctx: TypeCheckingContext,
         errorRange: Range
@@ -30,28 +30,25 @@ internal object CheckedExprTypeFixer {
     )
 
     private class UnresolvedTypeDetectorVisitor(private val range: Range) :
-        TypeExpressionVisitor<Unit, Unit> {
+        TypeVisitor<Unit, Unit> {
 
-        override fun visit(typeExpression: UnitType, context: Unit) {}
-        override fun visit(typeExpression: IntType, context: Unit) {}
-        override fun visit(typeExpression: StringType, context: Unit) {}
-        override fun visit(typeExpression: BoolType, context: Unit) {}
+        override fun visit(type: PrimitiveType, context: Unit) {}
 
-        private fun TypeExpression.check(): Unit = accept(visitor = this@UnresolvedTypeDetectorVisitor, context = Unit)
+        private fun Type.check(): Unit = accept(visitor = this@UnresolvedTypeDetectorVisitor, context = Unit)
 
-        override fun visit(typeExpression: IdentifierType, context: Unit) {
-            typeExpression.typeArguments?.forEach { it.check() }
+        override fun visit(type: IdentifierType, context: Unit) {
+            type.typeArguments?.forEach { it.check() }
         }
 
-        override fun visit(typeExpression: TupleType, context: Unit): Unit =
-            typeExpression.mappings.forEach { it.check() }
+        override fun visit(type: TupleType, context: Unit): Unit =
+            type.mappings.forEach { it.check() }
 
-        override fun visit(typeExpression: FunctionType, context: Unit) {
-            typeExpression.argumentTypes.forEach { it.check() }
-            typeExpression.returnType.check()
+        override fun visit(type: FunctionType, context: Unit) {
+            type.argumentTypes.forEach { it.check() }
+            type.returnType.check()
         }
 
-        override fun visit(typeExpression: UndecidedType, context: Unit): Unit =
+        override fun visit(type: UndecidedType, context: Unit): Unit =
             throw InsufficientTypeInferenceContextError(range = range)
 
     }
@@ -61,15 +58,15 @@ internal object CheckedExprTypeFixer {
         private val ctx: TypeCheckingContext,
         private val detectorVisitor: UnresolvedTypeDetectorVisitor,
         private val errorRange: Range
-    ) : CheckedExprVisitor<TypeExpression, Expression> {
+    ) : CheckedExprVisitor<Type, Expression> {
 
-        private fun Expression.tryFixType(expectedType: TypeExpression): Expression =
+        private fun Expression.tryFixType(expectedType: Type): Expression =
             accept(visitor = this@TypeFixerVisitor, context = expectedType)
 
         private fun Expression.tryFixType(): Expression =
             accept(visitor = this@TypeFixerVisitor, context = type)
 
-        private fun TypeExpression.fixSelf(expectedType: TypeExpression?): TypeExpression {
+        private fun Type.fixSelf(expectedType: Type?): Type {
             val fullyResolvedType = manager.resolveType(unresolvedType = this)
             fullyResolvedType.accept(visitor = detectorVisitor, context = Unit)
             if (expectedType == null) {
@@ -94,19 +91,19 @@ internal object CheckedExprTypeFixer {
 
         private fun blameTypeChecker(): Nothing = error(message = "Slack type checker!")
 
-        override fun visit(expression: Literal, context: TypeExpression): Expression =
+        override fun visit(expression: Literal, context: Type): Expression =
             expression.copy(type = expression.type.fixSelf(expectedType = context))
 
-        override fun visit(expression: This, context: TypeExpression): Expression =
+        override fun visit(expression: This, context: Type): Expression =
             expression.copy(type = expression.type.fixSelf(expectedType = context))
 
-        override fun visit(expression: Variable, context: TypeExpression): Expression =
+        override fun visit(expression: Variable, context: Type): Expression =
             expression.copy(type = expression.type.fixSelf(expectedType = context))
 
-        override fun visit(expression: ModuleMember, context: TypeExpression): Expression =
+        override fun visit(expression: ModuleMember, context: Type): Expression =
             expression.copy(type = expression.type.fixSelf(expectedType = context))
 
-        override fun visit(expression: TupleConstructor, context: TypeExpression): Expression {
+        override fun visit(expression: TupleConstructor, context: Type): Expression {
             val newType = expression.type.fixSelf(expectedType = context) as TupleType
             return expression.copy(
                 type = newType,
@@ -116,7 +113,7 @@ internal object CheckedExprTypeFixer {
             )
         }
 
-        override fun visit(expression: ObjectConstructor, context: TypeExpression): Expression {
+        override fun visit(expression: ObjectConstructor, context: Type): Expression {
             val newType = expression.type.fixSelf(expectedType = context) as IdentifierType
             val (_, params, mapping) = ctx.getCurrentModuleObjectTypeDef(errorRange = errorRange)
             val betterMapping = if (params != null && newType.typeArguments != null) {
@@ -144,7 +141,7 @@ internal object CheckedExprTypeFixer {
             )
         }
 
-        override fun visit(expression: VariantConstructor, context: TypeExpression): Expression {
+        override fun visit(expression: VariantConstructor, context: Type): Expression {
             val newType = expression.type.fixSelf(expectedType = context) as IdentifierType
             val (_, params, mapping) = ctx.getCurrentModuleVariantTypeDef(errorRange = errorRange)
             var dataType = mapping[expression.tag] ?: blameTypeChecker()
@@ -159,14 +156,14 @@ internal object CheckedExprTypeFixer {
             )
         }
 
-        override fun visit(expression: FieldAccess, context: TypeExpression): Expression = expression.copy(
+        override fun visit(expression: FieldAccess, context: Type): Expression = expression.copy(
             type = expression.type.fixSelf(expectedType = context),
             expression = expression.expression.tryFixType(
                 expectedType = expression.expression.type.fixSelf(expectedType = null)
             )
         )
 
-        override fun visit(expression: MethodAccess, context: TypeExpression): Expression = expression.copy(
+        override fun visit(expression: MethodAccess, context: Type): Expression = expression.copy(
             type = expression.type.fixSelf(expectedType = context) as FunctionType,
             expression = expression.expression.tryFixType(
                 expectedType = expression.expression.type.fixSelf(expectedType = null)
@@ -174,7 +171,7 @@ internal object CheckedExprTypeFixer {
             methodName = expression.methodName
         )
 
-        override fun visit(expression: Unary, context: TypeExpression): Expression = expression.copy(
+        override fun visit(expression: Unary, context: Type): Expression = expression.copy(
             type = expression.type.fixSelf(expectedType = context),
             operator = expression.operator,
             expression = when (expression.operator) {
@@ -183,12 +180,12 @@ internal object CheckedExprTypeFixer {
             }
         )
 
-        override fun visit(expression: Panic, context: TypeExpression): Expression = expression.copy(
+        override fun visit(expression: Panic, context: Type): Expression = expression.copy(
             type = expression.type.fixSelf(expectedType = context),
             expression = expression.expression.tryFixType()
         )
 
-        override fun visit(expression: FunctionApplication, context: TypeExpression): Expression {
+        override fun visit(expression: FunctionApplication, context: Type): Expression {
             val funExprType = expression.functionExpression.type.fixSelf(expectedType = null) as FunctionType
             if (context isNotConsistentWith funExprType.returnType) {
                 throw UnexpectedTypeError(
@@ -206,7 +203,7 @@ internal object CheckedExprTypeFixer {
             )
         }
 
-        override fun visit(expression: Binary, context: TypeExpression): Expression {
+        override fun visit(expression: Binary, context: Type): Expression {
             val (newE1, newE2) = when (expression.operator) {
                 MUL, DIV, MOD, PLUS, MINUS, LT, LE, GT, GE, AND, OR -> {
                     expression.e1.tryFixType() to expression.e2.tryFixType()
@@ -229,14 +226,14 @@ internal object CheckedExprTypeFixer {
             return expression.copy(type = expression.type.fixSelf(expectedType = context), e1 = newE1, e2 = newE2)
         }
 
-        override fun visit(expression: IfElse, context: TypeExpression): Expression = expression.copy(
+        override fun visit(expression: IfElse, context: Type): Expression = expression.copy(
             type = expression.type.fixSelf(expectedType = context),
             boolExpression = expression.boolExpression.tryFixType(),
             e1 = expression.e1.tryFixType(expectedType = context),
             e2 = expression.e2.tryFixType(expectedType = context)
         )
 
-        override fun visit(expression: Match, context: TypeExpression): Expression {
+        override fun visit(expression: Match, context: Type): Expression {
             val matchedExprType = expression.matchedExpression.type.fixSelf(expectedType = null) as IdentifierType
             return expression.copy(
                 type = expression.type.fixSelf(expectedType = context),
@@ -252,7 +249,7 @@ internal object CheckedExprTypeFixer {
             )
         }
 
-        override fun visit(expression: Lambda, context: TypeExpression): Expression {
+        override fun visit(expression: Lambda, context: Type): Expression {
             val newType = expression.type.fixSelf(expectedType = context) as FunctionType
             return expression.copy(
                 type = newType,
@@ -264,11 +261,11 @@ internal object CheckedExprTypeFixer {
             )
         }
 
-        override fun visit(expression: Val, context: TypeExpression): Expression {
-            if (expression.nextExpression == null && context !is UnitType) {
+        override fun visit(expression: Val, context: Type): Expression {
+            if (expression.nextExpression == null && !Type.isUnit(type = context)) {
                 throw UnexpectedTypeError(
                     expected = context,
-                    actual = UnitType(range = expression.range),
+                    actual = Type.unit(range = expression.range),
                     range = errorRange
                 )
             }

@@ -2,7 +2,8 @@ package samlang.parser
 
 import org.apache.commons.text.StringEscapeUtils
 import samlang.ast.*
-import samlang.ast.TypeExpression.*
+import samlang.ast.Type.FunctionType
+import samlang.ast.Type.TupleType
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 
@@ -29,22 +30,22 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
     /**
      * Build a literal with its type.
      */
-    private fun buildValue(ctx: PLParser.LiteralContext): Pair<Literal, TypeExpression> {
+    private fun buildValue(ctx: PLParser.LiteralContext): Pair<Literal, Type> {
         // Case UNIT
-        ctx.UNIT()?.let { return Literal.UnitLiteral to UnitType(range = it.symbol.range) }
+        ctx.UNIT()?.let { return Literal.UnitLiteral to Type.unit(range = it.symbol.range) }
         // Case TRUE
-        ctx.TRUE()?.let { return Literal.BoolLiteral(value = true) to BoolType(range = it.symbol.range) }
+        ctx.TRUE()?.let { return Literal.BoolLiteral(value = true) to Type.bool(range = it.symbol.range) }
         // Case FALSE
-        ctx.FALSE()?.let { return Literal.BoolLiteral(value = false) to BoolType(range = it.symbol.range) }
+        ctx.FALSE()?.let { return Literal.BoolLiteral(value = false) to Type.bool(range = it.symbol.range) }
         // Case INT
         ctx.IntLiteral()?.let { node ->
             val text = node.text
             val intValue = text.toLongOrNull() ?: error(message = "Bad Literal: $text.")
-            return Literal.IntLiteral(value = intValue) to IntType(range = node.symbol.range)
+            return Literal.IntLiteral(value = intValue) to Type.int(range = node.symbol.range)
         }
         // Case STRING
         ctx.StrLiteral()?.let {
-            return Literal.StringLiteral(value = stringLiteralToString(literal = it.text)) to StringType(
+            return Literal.StringLiteral(value = stringLiteralToString(literal = it.text)) to Type.string(
                 range = it.symbol.range
             )
         }
@@ -62,17 +63,14 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
 
     override fun visitThisExpr(ctx: PLParser.ThisExprContext): Expression {
         val range = ctx.THIS().symbol.range
-        return Expression.This(
-            range = range,
-            type = UndecidedType.create(range = range)
-        )
+        return Expression.This(range = range, type = Type.undecided(range = range))
     }
 
     override fun visitVariableExpr(ctx: PLParser.VariableExprContext): Expression {
         val range = ctx.range
         return Expression.Variable(
             range = range,
-            type = UndecidedType.create(range = range),
+            type = Type.undecided(range = range),
             name = ctx.LowerId().symbol.text
         )
     }
@@ -81,7 +79,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.ModuleMember(
             range = range,
-            type = UndecidedType.create(range = range),
+            type = Type.undecided(range = range),
             moduleName = ctx.UpperId().symbol.text,
             memberName = ctx.LowerId().symbol.text
         )
@@ -103,7 +101,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
             val range = nameNode.range
             return Expression.ObjectConstructor.FieldConstructor.Field(
                 range = range,
-                type = UndecidedType.create(range = range),
+                type = Type.undecided(range = range),
                 name = nameNode.text,
                 expression = ctx.expression().accept(ExpressionBuilder)
             )
@@ -116,7 +114,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
             val range = nameNode.range
             return Expression.ObjectConstructor.FieldConstructor.FieldShorthand(
                 range = range,
-                type = UndecidedType.create(range = range),
+                type = Type.undecided(range = range),
                 name = nameNode.text
             )
         }
@@ -127,7 +125,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.ObjectConstructor(
             range = range,
-            type = UndecidedType.create(range = range),
+            type = Type.undecided(range = range),
             spreadExpression = ctx.expression()?.accept(ExpressionBuilder),
             fieldDeclarations = ctx.objectFieldDeclarations().objectFieldDeclaration()
                 .map { it.accept(ObjectFieldDeclarationBuilder) }
@@ -138,7 +136,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.VariantConstructor(
             range = range,
-            type = UndecidedType.create(range = range),
+            type = Type.undecided(range = range),
             tag = ctx.UpperId().symbol.text,
             data = ctx.expression().accept(ExpressionBuilder)
         )
@@ -148,7 +146,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.FieldAccess(
             range = range,
-            type = UndecidedType.create(range = range),
+            type = Type.undecided(range = range),
             expression = ctx.expression().accept(ExpressionBuilder),
             fieldName = ctx.LowerId().symbol.text
         )
@@ -158,7 +156,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.MethodAccess(
             range = range,
-            type = UndecidedType.create(range = range),
+            type = Type.undecided(range = range),
             expression = ctx.expression().accept(ExpressionBuilder),
             methodName = ctx.LowerId().symbol.text
         )
@@ -168,7 +166,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.Unary(
             range = range,
-            type = BoolType(range = range),
+            type = Type.bool(range = range),
             operator = UnaryOperator.NOT,
             expression = ctx.expression().accept(ExpressionBuilder)
         )
@@ -178,7 +176,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.Unary(
             range = range,
-            type = IntType(range = range),
+            type = Type.int(range = range),
             operator = UnaryOperator.NEG,
             expression = ctx.expression().accept(ExpressionBuilder)
         )
@@ -188,7 +186,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.Panic(
             range = range,
-            type = UndecidedType.create(range = range),
+            type = Type.undecided(range = range),
             expression = ctx.expression().accept(ExpressionBuilder)
         )
     }
@@ -197,7 +195,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.FunctionApplication(
             range = ctx.range,
-            type = UndecidedType.create(range = range),
+            type = Type.undecided(range = range),
             functionExpression = ctx.expression().accept(ExpressionBuilder),
             arguments = ctx.functionArguments().expression().map { it.accept(ExpressionBuilder) }
         )
@@ -207,7 +205,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.Binary(
             range = range,
-            type = IntType(range = range),
+            type = Type.int(range = range),
             operator = BinaryOperator.fromRaw(text = ctx.factorOperator().text),
             e1 = ctx.expression(0).accept(ExpressionBuilder),
             e2 = ctx.expression(1).accept(ExpressionBuilder)
@@ -218,7 +216,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.Binary(
             range = range,
-            type = IntType(range = range),
+            type = Type.int(range = range),
             operator = BinaryOperator.fromRaw(text = ctx.termOperator().text),
             e1 = ctx.expression(0).accept(ExpressionBuilder),
             e2 = ctx.expression(1).accept(ExpressionBuilder)
@@ -229,7 +227,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.Binary(
             range = range,
-            type = BoolType(range = range),
+            type = Type.bool(range = range),
             operator = BinaryOperator.fromRaw(text = ctx.comparisonOperator().text),
             e1 = ctx.expression(0).accept(ExpressionBuilder),
             e2 = ctx.expression(1).accept(ExpressionBuilder)
@@ -240,7 +238,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.Binary(
             range = range,
-            type = BoolType(range = range),
+            type = Type.bool(range = range),
             operator = BinaryOperator.AND,
             e1 = ctx.expression(0).accept(ExpressionBuilder),
             e2 = ctx.expression(1).accept(ExpressionBuilder)
@@ -251,7 +249,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.Binary(
             range = range,
-            type = BoolType(range = range),
+            type = Type.bool(range = range),
             operator = BinaryOperator.OR,
             e1 = ctx.expression(0).accept(ExpressionBuilder),
             e2 = ctx.expression(1).accept(ExpressionBuilder)
@@ -262,7 +260,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.IfElse(
             range = range,
-            type = UndecidedType.create(range = range),
+            type = Type.undecided(range = range),
             boolExpression = ctx.expression(0).accept(ExpressionBuilder),
             e1 = ctx.expression(1).accept(ExpressionBuilder),
             e2 = ctx.expression(2).accept(ExpressionBuilder)
@@ -273,7 +271,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val range = ctx.range
         return Expression.Match(
             range = range,
-            type = UndecidedType.create(range = range),
+            type = Type.undecided(range = range),
             matchedExpression = ctx.expression().accept(ExpressionBuilder),
             matchingList = ctx.patternToExpr().map { pattern2Expr ->
                 Expression.Match.VariantPatternToExpr(
@@ -291,7 +289,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val arguments = ctx.optionallyAnnotatedParameter().map { oneArg ->
             val nameNode = oneArg.LowerId().symbol
             val name = nameNode.text
-            val type = oneArg.typeAnnotation()?.typeExpr()?.accept(TypeExpressionBuilder) ?: UndecidedType.create(
+            val type = oneArg.typeAnnotation()?.typeExpr()?.accept(TypeExpressionBuilder) ?: Type.undecided(
                 range = nameNode.range
             )
             name to type
@@ -300,7 +298,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         val type = FunctionType(
             range = range,
             argumentTypes = arguments.map { it.second },
-            returnType = UndecidedType.create(range = body.range)
+            returnType = Type.undecided(range = body.range)
         )
         return Expression.Lambda(range = range, type = type, arguments = arguments, body = body)
     }
@@ -308,10 +306,10 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
     override fun visitValExpr(ctx: PLParser.ValExprContext): Expression {
         val range = ctx.range
         val typeAnnotation =
-            ctx.typeAnnotation()?.typeExpr()?.accept(TypeExpressionBuilder) ?: UndecidedType.create(range = range)
+            ctx.typeAnnotation()?.typeExpr()?.accept(TypeExpressionBuilder) ?: Type.undecided(range = range)
         return Expression.Val(
             range = range,
-            type = UndecidedType.create(range = range),
+            type = Type.undecided(range = range),
             pattern = ctx.pattern().accept(PatternBuilder),
             typeAnnotation = typeAnnotation,
             assignedExpression = ctx.expression(0).accept(ExpressionBuilder),

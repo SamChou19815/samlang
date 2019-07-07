@@ -124,7 +124,7 @@ internal object ProgramTypeChecker {
                     newContext = updatedNewCtx
                 }
             }
-            val type = member.type.second.validate(context = newContext) as TypeExpression.FunctionType
+            val type = member.type.second.validate(context = newContext) as Type.FunctionType
             member.copy(type = typeParameters to type)
         }
         val memberTypeInfo = partiallyCheckedMembers.map { member ->
@@ -145,7 +145,7 @@ internal object ProgramTypeChecker {
     private fun typeCheckExpression(
         expression: Expression,
         ctx: TypeCheckingContext,
-        expectedType: TypeExpression
+        expectedType: Type
     ): Expression {
         val manager = UndecidedTypeManager()
         val visitor = ExpressionTypeCheckerVisitor(manager = manager)

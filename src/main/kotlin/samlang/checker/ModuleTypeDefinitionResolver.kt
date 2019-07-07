@@ -1,15 +1,15 @@
 package samlang.checker
 
 import samlang.ast.Range
-import samlang.ast.TypeExpression
-import samlang.ast.TypeExpression.*
-import samlang.ast.TypeExpressionVisitor
+import samlang.ast.Type
+import samlang.ast.Type.*
+import samlang.ast.TypeVisitor
 import samlang.errors.IllegalOtherClassMatch
 import samlang.errors.TypeParamSizeMismatchError
 
 internal object ModuleTypeDefinitionResolver {
 
-    fun applyGenericTypeParams(type: TypeExpression, context: Map<String, TypeExpression>): TypeExpression =
+    fun applyGenericTypeParams(type: Type, context: Map<String, Type>): Type =
         type.accept(visitor = Visitor, context = context)
 
     fun getTypeDef(
@@ -17,7 +17,7 @@ internal object ModuleTypeDefinitionResolver {
         ctx: TypeCheckingContext,
         errorRange: Range,
         isFromObject: Boolean
-    ): Map<String, TypeExpression> {
+    ): Map<String, Type> {
         val (_, id, typeArguments) = identifierType
         if (id != ctx.currentModule) {
             throw IllegalOtherClassMatch(range = errorRange)
@@ -58,53 +58,37 @@ internal object ModuleTypeDefinitionResolver {
     }
 
     private object Visitor :
-        TypeExpressionVisitor<Map<String, TypeExpression>, TypeExpression> {
+        TypeVisitor<Map<String, Type>, Type> {
 
-        override fun visit(typeExpression: UnitType, context: Map<String, TypeExpression>): TypeExpression =
-            typeExpression
+        override fun visit(type: PrimitiveType, context: Map<String, Type>): Type = type
 
-        override fun visit(typeExpression: IntType, context: Map<String, TypeExpression>): TypeExpression =
-            typeExpression
-
-        override fun visit(typeExpression: StringType, context: Map<String, TypeExpression>): TypeExpression =
-            typeExpression
-
-        override fun visit(typeExpression: BoolType, context: Map<String, TypeExpression>): TypeExpression =
-            typeExpression
-
-        override fun visit(typeExpression: IdentifierType, context: Map<String, TypeExpression>): TypeExpression {
-            if (typeExpression.typeArguments != null) {
+        override fun visit(type: IdentifierType, context: Map<String, Type>): Type {
+            if (type.typeArguments != null) {
                 val newTypeArguments =
-                    typeExpression.typeArguments.map { applyGenericTypeParams(type = it, context = context) }
-                return typeExpression.copy(typeArguments = newTypeArguments)
+                    type.typeArguments.map { applyGenericTypeParams(type = it, context = context) }
+                return type.copy(typeArguments = newTypeArguments)
             }
-            val replacement = context[typeExpression.identifier]
+            val replacement = context[type.identifier]
             if (replacement != null) {
                 return replacement
             }
-            return typeExpression
+            return type
         }
 
-        override fun visit(typeExpression: TupleType, context: Map<String, TypeExpression>): TypeExpression =
+        override fun visit(type: TupleType, context: Map<String, Type>): Type =
             TupleType(
-                range = typeExpression.range,
-                mappings = typeExpression.mappings.map { applyGenericTypeParams(type = it, context = context) }
+                range = type.range,
+                mappings = type.mappings.map { applyGenericTypeParams(type = it, context = context) }
             )
 
-        override fun visit(typeExpression: FunctionType, context: Map<String, TypeExpression>): TypeExpression =
+        override fun visit(type: FunctionType, context: Map<String, Type>): Type =
             FunctionType(
-                range = typeExpression.range,
-                argumentTypes = typeExpression.argumentTypes.map {
-                    applyGenericTypeParams(
-                        type = it,
-                        context = context
-                    )
-                },
-                returnType = applyGenericTypeParams(type = typeExpression.returnType, context = context)
+                range = type.range,
+                argumentTypes = type.argumentTypes.map { applyGenericTypeParams(type = it, context = context) },
+                returnType = applyGenericTypeParams(type = type.returnType, context = context)
             )
 
-        override fun visit(typeExpression: UndecidedType, context: Map<String, TypeExpression>): TypeExpression =
-            typeExpression
+        override fun visit(type: UndecidedType, context: Map<String, Type>): Type = type
 
     }
 }

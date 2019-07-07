@@ -5,7 +5,7 @@ package samlang.ast
  */
 sealed class Expression(val precedence: Int) : Node {
 
-    abstract val type: TypeExpression
+    abstract val type: Type
 
     /**
      * Accept the visitor of the given [visitor].
@@ -14,7 +14,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class Literal(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val literal: samlang.ast.Literal
     ) : Expression(precedence = 0) {
 
@@ -23,7 +23,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     }
 
-    data class This(override val range: Range, override val type: TypeExpression) : Expression(precedence = 0) {
+    data class This(override val range: Range, override val type: Type) : Expression(precedence = 0) {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
@@ -32,7 +32,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class Variable(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val name: String
     ) : Expression(precedence = 0) {
 
@@ -43,7 +43,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class ModuleMember(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val moduleName: String,
         val memberName: String
     ) : Expression(precedence = 0) {
@@ -55,7 +55,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class TupleConstructor(
         override val range: Range,
-        override val type: TypeExpression.TupleType,
+        override val type: Type.TupleType,
         val expressionList: List<Expression>
     ) : Expression(precedence = 1) {
 
@@ -66,7 +66,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class ObjectConstructor(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val spreadExpression: Expression?,
         val fieldDeclarations: List<FieldConstructor>
     ) : Expression(precedence = 1) {
@@ -74,29 +74,29 @@ sealed class Expression(val precedence: Int) : Node {
         sealed class FieldConstructor {
 
             abstract val range: Range
-            abstract val type: TypeExpression
+            abstract val type: Type
             abstract val name: String
 
-            abstract fun copyWithNewType(type: TypeExpression): FieldConstructor
+            abstract fun copyWithNewType(type: Type): FieldConstructor
 
             data class Field(
                 override val range: Range,
-                override val type: TypeExpression,
+                override val type: Type,
                 override val name: String,
                 val expression: Expression
             ) : FieldConstructor() {
 
-                override fun copyWithNewType(type: TypeExpression): FieldConstructor = copy(type = type)
+                override fun copyWithNewType(type: Type): FieldConstructor = copy(type = type)
 
             }
 
             data class FieldShorthand(
                 override val range: Range,
-                override val type: TypeExpression,
+                override val type: Type,
                 override val name: String
             ) : FieldConstructor() {
 
-                override fun copyWithNewType(type: TypeExpression): FieldConstructor = copy(type = type)
+                override fun copyWithNewType(type: Type): FieldConstructor = copy(type = type)
 
             }
 
@@ -109,7 +109,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class VariantConstructor(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val tag: String,
         val data: Expression
     ) : Expression(precedence = 1) {
@@ -121,7 +121,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class FieldAccess(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val expression: Expression,
         val fieldName: String
     ) : Expression(precedence = 1) {
@@ -133,7 +133,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class MethodAccess(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val expression: Expression,
         val methodName: String
     ) : Expression(precedence = 2) {
@@ -145,7 +145,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class Unary(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val operator: UnaryOperator,
         val expression: Expression
     ) : Expression(precedence = 3) {
@@ -157,7 +157,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class Panic(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val expression: Expression
     ) : Expression(precedence = 3) {
 
@@ -168,7 +168,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class FunctionApplication(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val functionExpression: Expression,
         val arguments: List<Expression>
     ) : Expression(precedence = 4) {
@@ -180,7 +180,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class Binary(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val e1: Expression,
         val operator: BinaryOperator,
         val e2: Expression
@@ -193,7 +193,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class IfElse(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val boolExpression: Expression,
         val e1: Expression,
         val e2: Expression
@@ -206,7 +206,7 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class Match(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val matchedExpression: Expression,
         val matchingList: List<VariantPatternToExpr>
     ) : Expression(precedence = 11) {
@@ -225,8 +225,8 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class Lambda(
         override val range: Range,
-        override val type: TypeExpression.FunctionType,
-        val arguments: List<Pair<String, TypeExpression>>,
+        override val type: Type.FunctionType,
+        val arguments: List<Pair<String, Type>>,
         val body: Expression
     ) : Expression(precedence = 12) {
 
@@ -237,9 +237,9 @@ sealed class Expression(val precedence: Int) : Node {
 
     data class Val(
         override val range: Range,
-        override val type: TypeExpression,
+        override val type: Type,
         val pattern: Pattern,
-        val typeAnnotation: TypeExpression,
+        val typeAnnotation: Type,
         val assignedExpression: Expression,
         val nextExpression: Expression?
     ) : Expression(precedence = 13) {

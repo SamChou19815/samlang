@@ -69,7 +69,7 @@ internal object ExpressionInterpreter : CheckedExprVisitor<InterpretationContext
     }
 
     override fun visit(expression: MethodAccess, context: InterpretationContext): Value.FunctionValue {
-        val (_, id, _) = expression.expression.type as TypeExpression.IdentifierType
+        val (_, id, _) = expression.expression.type as Type.IdentifierType
         val thisValue = eval(expression = expression.expression, context = context)
         val methodValue = context.modules[id]?.methods?.get(key = expression.methodName) ?: blameTypeChecker()
         val newCtx = context.copy(localValues = context.localValues.plus(pair = "this" to thisValue))

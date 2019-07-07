@@ -6,21 +6,21 @@ import samlang.ast.Expression.*
 import samlang.ast.Expression.ObjectConstructor.FieldConstructor
 import samlang.ast.Pattern
 import samlang.ast.Range
-import samlang.ast.TypeExpression
-import samlang.ast.TypeExpression.*
+import samlang.ast.Type
+import samlang.ast.Type.*
 import samlang.errors.*
 
 internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeManager) : TypeCheckerVisitor {
 
     private val constraintAwareTypeChecker: ConstraintAwareTypeChecker = ConstraintAwareTypeChecker(manager = manager)
 
-    private fun Expression.toChecked(ctx: TypeCheckingContext, expectedType: TypeExpression = this.type): Expression =
+    private fun Expression.toChecked(ctx: TypeCheckingContext, expectedType: Type = this.type): Expression =
         accept(visitor = this@ExpressionTypeCheckerVisitor, context = ctx to expectedType)
 
-    override fun visit(expression: Literal, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression =
+    override fun visit(expression: Literal, ctx: TypeCheckingContext, expectedType: Type): Expression =
         expression // Literals are already well typed.
 
-    override fun visit(expression: This, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression {
+    override fun visit(expression: This, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val type = ctx.getLocalValueType(name = "this") ?: throw IllegalThisError(range = expression.range)
         // don't need the return value because the type must be exact
         constraintAwareTypeChecker.checkAndInfer(
@@ -29,7 +29,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         return expression.copy(type = type)
     }
 
-    override fun visit(expression: Variable, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression {
+    override fun visit(expression: Variable, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, _, name) = expression
         val locallyInferredType =
             ctx.getLocalValueType(name = name) ?: throw UnresolvedNameError(unresolvedName = name, range = range)
@@ -39,7 +39,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         return expression.copy(type = inferredType)
     }
 
-    override fun visit(expression: ModuleMember, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression {
+    override fun visit(expression: ModuleMember, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, _, moduleName, memberName) = expression
         val locallyInferredType = ctx.getModuleFunctionType(
             module = moduleName, member = memberName, errorRange = range
@@ -53,7 +53,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
     override fun visit(
         expression: TupleConstructor,
         ctx: TypeCheckingContext,
-        expectedType: TypeExpression
+        expectedType: Type
     ): Expression {
         val (range, impreciseTupleType, expressionList) = expression
         val checkedExpressionList = expressionList.map { it.toChecked(ctx = ctx) }
@@ -69,8 +69,8 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
 
     private fun typeCheckFieldDeclarations(
         fieldDeclarations: List<FieldConstructor>, ctx: TypeCheckingContext
-    ): Pair<Map<String, TypeExpression>, List<FieldConstructor>> {
-        val declaredFieldTypes = mutableMapOf<String, TypeExpression>()
+    ): Pair<Map<String, Type>, List<FieldConstructor>> {
+        val declaredFieldTypes = mutableMapOf<String, Type>()
         val checkedDeclarations = arrayListOf<FieldConstructor>()
         for (fieldDeclaration in fieldDeclarations) {
             when (fieldDeclaration) {
@@ -89,7 +89,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
                 is FieldConstructor.FieldShorthand -> {
                     val name = fieldDeclaration.name
                     val range = fieldDeclaration.range
-                    val checkedExpr = Variable(range = range, type = UndecidedType.create(range = range), name = name)
+                    val checkedExpr = Variable(range = range, type = Type.undecided(range = range), name = name)
                         .toChecked(ctx = ctx)
                     val type = checkedExpr.type
                     if (declaredFieldTypes.put(key = name, value = type) != null) {
@@ -108,7 +108,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
     override fun visit(
         expression: ObjectConstructor,
         ctx: TypeCheckingContext,
-        expectedType: TypeExpression
+        expectedType: Type
     ): Expression {
         val (range, _, spreadExpression, fieldDeclarations) = expression
         val (_, typeParams, typeMappings) = ctx.getCurrentModuleObjectTypeDef(errorRange = expression.range)
@@ -116,7 +116,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         val (declaredFieldTypes, checkedDeclarations) = typeCheckFieldDeclarations(
             fieldDeclarations = fieldDeclarations, ctx = ctx
         )
-        val checkedMappings = hashMapOf<String, TypeExpression>()
+        val checkedMappings = hashMapOf<String, Type>()
         // used to quickly get the range where one declaration goes wrong
         val nameRangeMap = fieldDeclarations.asSequence().map { it.name to it.range }.toMap()
         val locallyInferredType = if (checkedSpreadExpression != null) {
@@ -182,14 +182,14 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
     override fun visit(
         expression: VariantConstructor,
         ctx: TypeCheckingContext,
-        expectedType: TypeExpression
+        expectedType: Type
     ): Expression {
         val (range, _, tag, data) = expression
         val (_, typeParameters, typeMappings) = ctx.getCurrentModuleVariantTypeDef(errorRange = range)
         val checkedData = data.toChecked(ctx = ctx)
         val associatedDataType = typeMappings[tag] ?: throw UnresolvedNameError(unresolvedName = tag, range = range)
         val (genericsResolvedAssociatedDataType, autoGeneratedUndecidedTypes) = typeParameters?.let { parameters ->
-            undecideTypeParameters(typeExpression = associatedDataType, typeParameters = parameters)
+            undecideTypeParameters(type = associatedDataType, typeParameters = parameters)
         } ?: associatedDataType to null
         constraintAwareTypeChecker.checkAndInfer(
             expectedType = genericsResolvedAssociatedDataType,
@@ -208,13 +208,15 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         return expression.copy(type = constraintInferredType, data = checkedData)
     }
 
-    override fun visit(expression: FieldAccess, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression {
+    override fun visit(expression: FieldAccess, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, _, assignedExpression, fieldName) = expression
         val (_, typeParameters, _) = ctx.getCurrentModuleObjectTypeDef(errorRange = expression.range)
         val expectedFieldType = IdentifierType(
             range = assignedExpression.range,
             identifier = ctx.currentModule,
-            typeArguments = typeParameters?.map { UndecidedType.create(range = assignedExpression.range) }
+            typeArguments = typeParameters?.let {
+                Type.undecidedList(number = it.size, range = assignedExpression.range)
+            }
         )
         val checkedAssignedExpression = assignedExpression.toChecked(ctx = ctx, expectedType = expectedFieldType)
         val fieldMappings = ModuleTypeDefinitionResolver.getTypeDef(
@@ -233,7 +235,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         return expression.copy(type = constraintInferredFieldType, expression = checkedAssignedExpression)
     }
 
-    override fun visit(expression: MethodAccess, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression {
+    override fun visit(expression: MethodAccess, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, _, expressionToCallMethod, methodName) = expression
         val checkedExpression = expressionToCallMethod.toChecked(ctx = ctx)
         val (_, checkedExprTypeIdentifier, checkedExprTypeArguments) = checkedExpression.type as? IdentifierType
@@ -254,7 +256,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         return expression.copy(type = constraintInferredType, expression = checkedExpression)
     }
 
-    override fun visit(expression: Unary, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression {
+    override fun visit(expression: Unary, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, type, _, subExpression) = expression
         constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = type, errorRange = range
@@ -263,10 +265,10 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         return expression.copy(expression = checkedSubExpression)
     }
 
-    override fun visit(expression: Panic, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression {
+    override fun visit(expression: Panic, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, type, subExpression) = expression
         val checkedSubExpression =
-            subExpression.toChecked(ctx = ctx, expectedType = StringType(range = subExpression.range))
+            subExpression.toChecked(ctx = ctx, expectedType = Type.string(range = subExpression.range))
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = type, errorRange = range
         )
@@ -276,7 +278,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
     override fun visit(
         expression: FunctionApplication,
         ctx: TypeCheckingContext,
-        expectedType: TypeExpression
+        expectedType: Type
     ): Expression {
         val (range, _, functionExpression, arguments) = expression
         val checkedArguments = arguments.map { it.toChecked(ctx = ctx) }
@@ -307,7 +309,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         )
     }
 
-    override fun visit(expression: Binary, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression {
+    override fun visit(expression: Binary, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, type, e1, op, e2) = expression
         val checkedExpr = when (op) {
             MUL, DIV, MOD, PLUS, MINUS -> expression.copy(
@@ -315,7 +317,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
                 e2 = e2.toChecked(ctx = ctx, expectedType = type)
             )
             LT, LE, GT, GE -> {
-                val expectedSubExpressionType = IntType(range = range)
+                val expectedSubExpressionType = Type.int(range = range)
                 expression.copy(
                     e1 = e1.toChecked(ctx = ctx, expectedType = expectedSubExpressionType),
                     e2 = e2.toChecked(ctx = ctx, expectedType = expectedSubExpressionType)
@@ -337,11 +339,11 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         return checkedExpr
     }
 
-    override fun visit(expression: IfElse, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression {
+    override fun visit(expression: IfElse, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (_, _, boolExpression, e1, e2) = expression
         val checkedBoolExpression = boolExpression.toChecked(
             ctx = ctx,
-            expectedType = BoolType(range = boolExpression.range)
+            expectedType = Type.bool(range = boolExpression.range)
         )
         val checkedE1 = e1.toChecked(ctx = ctx, expectedType = expectedType)
         val checkedE2 = e2.toChecked(ctx = ctx, expectedType = expectedType)
@@ -363,7 +365,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         )
     }
 
-    override fun visit(expression: Match, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression {
+    override fun visit(expression: Match, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, _, matchedExpression, matchingList) = expression
         val checkedMatchedExpression = matchedExpression.toChecked(ctx = ctx)
         val variantMappings = when (val checkedMatchedExpressionType = checkedMatchedExpression.type) {
@@ -409,7 +411,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         )
     }
 
-    override fun visit(expression: Lambda, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression {
+    override fun visit(expression: Lambda, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, functionType, arguments, body) = expression
         // check duplicated name among themselves first
         val names = hashSetOf<String>()
@@ -443,7 +445,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         )
     }
 
-    override fun visit(expression: Val, ctx: TypeCheckingContext, expectedType: TypeExpression): Expression {
+    override fun visit(expression: Val, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, _, pattern, typeAnnotation, assignedExpr, nextExpr) = expression
         val checkedAssignedExpr = assignedExpr.toChecked(ctx = ctx, expectedType = typeAnnotation)
         val checkedAssignedExprType = checkedAssignedExpr.type
@@ -501,7 +503,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         val checkedNextExpression = if (nextExpr == null) {
             constraintAwareTypeChecker.checkAndInfer(
                 expectedType = expectedType,
-                actualType = UnitType(range = range),
+                actualType = Type.unit(range = range),
                 errorRange = range
             )
             null
@@ -510,7 +512,7 @@ internal class ExpressionTypeCheckerVisitor(private val manager: UndecidedTypeMa
         }
         return Val(
             range = range,
-            type = checkedNextExpression?.type ?: UnitType(range = range),
+            type = checkedNextExpression?.type ?: Type.unit(range = range),
             pattern = pattern,
             typeAnnotation = checkedAssignedExprType,
             assignedExpression = checkedAssignedExpr,
