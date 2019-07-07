@@ -80,7 +80,8 @@ internal object ProgramTypeChecker {
                 typeDefinitionRange = range,
                 params = typeParameters
             ) { tempContext ->
-                val checkedMappings = mappings.mapValues { (_, type) -> type.validate(context = tempContext) }
+                val checkedMappings =
+                    mappings.mapValues { (_, type) -> type.validate(context = tempContext, errorRange = range) }
                 if (isObject) {
                     TypeDefinition.ObjectType(
                         range = range,
@@ -124,7 +125,7 @@ internal object ProgramTypeChecker {
                     newContext = updatedNewCtx
                 }
             }
-            val type = member.type.second.validate(context = newContext) as Type.FunctionType
+            val type = member.type.second.validate(context = newContext, errorRange = member.range) as Type.FunctionType
             member.copy(type = typeParameters to type)
         }
         val memberTypeInfo = partiallyCheckedMembers.map { member ->
@@ -162,8 +163,8 @@ internal object ProgramTypeChecker {
     private fun typeCheckMember(
         member: MemberDefinition, ctx: TypeCheckingContext
     ): MemberDefinition {
-        val (range, _, _, _, type, value) = member
-        var ctxForTypeCheckingValue = if (member.isMethod) ctx.addThisType(range = range) else ctx
+        val (_, _, _, _, type, value) = member
+        var ctxForTypeCheckingValue = if (member.isMethod) ctx.addThisType() else ctx
         val typeParameters = type.first
         if (typeParameters != null) {
             ctxForTypeCheckingValue = ctxForTypeCheckingValue.addLocalGenericTypes(genericTypes = typeParameters)

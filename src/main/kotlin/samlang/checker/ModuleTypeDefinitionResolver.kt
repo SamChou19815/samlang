@@ -18,7 +18,7 @@ internal object ModuleTypeDefinitionResolver {
         errorRange: Range,
         isFromObject: Boolean
     ): Map<String, Type> {
-        val (_, id, typeArguments) = identifierType
+        val (id, typeArguments) = identifierType
         if (id != ctx.currentModule) {
             throw IllegalOtherClassMatch(range = errorRange)
         }
@@ -76,14 +76,10 @@ internal object ModuleTypeDefinitionResolver {
         }
 
         override fun visit(type: TupleType, context: Map<String, Type>): Type =
-            TupleType(
-                range = type.range,
-                mappings = type.mappings.map { applyGenericTypeParams(type = it, context = context) }
-            )
+            TupleType(mappings = type.mappings.map { applyGenericTypeParams(type = it, context = context) })
 
         override fun visit(type: FunctionType, context: Map<String, Type>): Type =
             FunctionType(
-                range = type.range,
                 argumentTypes = type.argumentTypes.map { applyGenericTypeParams(type = it, context = context) },
                 returnType = applyGenericTypeParams(type = type.returnType, context = context)
             )

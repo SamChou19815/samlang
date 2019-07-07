@@ -44,7 +44,7 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
                     typeParameters = typeParameters,
                     mappings = ctx.objectTypeFieldDeclaration().asSequence().map { c ->
                         val name = c.LowerId().symbol.text
-                        val type = c.typeAnnotation().typeExpr().accept(TypeExpressionBuilder)
+                        val type = c.typeAnnotation().typeExpr().accept(TypeBuilder)
                         name to type
                     }.toMap()
                 )
@@ -55,7 +55,7 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
                     typeParameters = typeParameters,
                     mappings = ctx.variantTypeConstructorDeclaration().asSequence().map { c ->
                         val name = c.UpperId().symbol.text
-                        val type = c.typeExpr().accept(TypeExpressionBuilder)
+                        val type = c.typeExpr().accept(TypeBuilder)
                         name to type
                     }.toMap()
                 )
@@ -65,19 +65,15 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
     private fun buildModuleMemberDefinition(ctx: ModuleMemberDefinitionContext): Module.MemberDefinition {
         val annotatedVariables = ctx.annotatedVariable().map { annotatedVar ->
             val varName = annotatedVar.LowerId().symbol.rangeWithName
-            val typeAnnotation = annotatedVar.typeAnnotation().typeExpr().accept(TypeExpressionBuilder)
+            val typeAnnotation = annotatedVar.typeAnnotation().typeExpr().accept(TypeBuilder)
             varName to typeAnnotation
         }
         val typeExpression = ctx.typeExpr()
         val bodyExpression = ctx.expression()
         val firstArgRange = annotatedVariables.firstOrNull()?.first?.range
         val type = Type.FunctionType(
-            range = Range(
-                start = firstArgRange?.start ?: typeExpression.range.start,
-                end = typeExpression.range.end
-            ),
             argumentTypes = annotatedVariables.map { it.second },
-            returnType = typeExpression.accept(TypeExpressionBuilder)
+            returnType = typeExpression.accept(TypeBuilder)
         )
         return Module.MemberDefinition(
             range = ctx.range,

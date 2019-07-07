@@ -1,6 +1,6 @@
 package samlang.ast
 
-sealed class Type : Node {
+sealed class Type {
 
     abstract fun prettyPrint(): String
 
@@ -23,7 +23,7 @@ sealed class Type : Node {
         STRING(prettyPrintedName = "string")
     }
 
-    data class PrimitiveType(override val range: Range, val name: PrimitiveTypeName) : Type() {
+    data class PrimitiveType(val name: PrimitiveTypeName) : Type() {
 
         override fun prettyPrint(): String = name.prettyPrintedName
 
@@ -34,7 +34,6 @@ sealed class Type : Node {
     }
 
     data class IdentifierType(
-        override val range: Range,
         val identifier: String,
         val typeArguments: List<Type>?
     ) : Type() {
@@ -69,7 +68,7 @@ sealed class Type : Node {
     }
 
 
-    data class TupleType(override val range: Range, val mappings: List<Type>) : Type() {
+    data class TupleType(val mappings: List<Type>) : Type() {
 
         override fun prettyPrint(): String =
             mappings.joinToString(separator = " * ", prefix = "[", postfix = "]") { it.prettyPrint() }
@@ -95,7 +94,6 @@ sealed class Type : Node {
     }
 
     data class FunctionType(
-        override val range: Range,
         val argumentTypes: List<Type>,
         val returnType: Type
     ) : Type() {
@@ -134,7 +132,7 @@ sealed class Type : Node {
      * --------------------------------------------------------------------------------
      */
 
-    data class UndecidedType(override val range: Range, val index: Int) : Type() {
+    data class UndecidedType(val index: Int) : Type() {
 
         override fun prettyPrint(): String = "UNDECIDED_TYPE_$index"
 
@@ -150,29 +148,29 @@ sealed class Type : Node {
 
         private var nextUndecidedTypeIndex: Int = 0
 
-        fun unit(range: Range): PrimitiveType = PrimitiveType(range = range, name = PrimitiveTypeName.UNIT)
-        fun bool(range: Range): PrimitiveType = PrimitiveType(range = range, name = PrimitiveTypeName.BOOL)
-        fun int(range: Range): PrimitiveType = PrimitiveType(range = range, name = PrimitiveTypeName.INT)
-        fun string(range: Range): PrimitiveType = PrimitiveType(range = range, name = PrimitiveTypeName.STRING)
+        @JvmField
+        val unit: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.UNIT)
+        @JvmField
+        val bool: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.BOOL)
+        @JvmField
+        val int: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.INT)
+        @JvmField
+        val string: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.STRING)
 
-        fun isUnit(type: Type): Boolean = type is PrimitiveType && type.name == PrimitiveTypeName.UNIT
-        fun isBool(type: Type): Boolean = type is PrimitiveType && type.name == PrimitiveTypeName.BOOL
-        fun isInt(type: Type): Boolean = type is PrimitiveType && type.name == PrimitiveTypeName.INT
-        fun isString(type: Type): Boolean = type is PrimitiveType && type.name == PrimitiveTypeName.STRING
-
-        fun undecided(range: Range): UndecidedType {
+        @JvmStatic
+        fun undecided(): UndecidedType {
             val type = UndecidedType(
-                range = range,
                 index = nextUndecidedTypeIndex
             )
             nextUndecidedTypeIndex++
             return type
         }
 
-        fun undecidedList(number: Int, range: Range): List<UndecidedType> {
+        @JvmStatic
+        fun undecidedList(number: Int): List<UndecidedType> {
             val list = arrayListOf<UndecidedType>()
             for (i in 0 until number) {
-                list.add(element = undecided(range = range))
+                list.add(element = undecided())
             }
             return list
         }

@@ -262,12 +262,8 @@ internal object CheckedExprTypeFixer {
         }
 
         override fun visit(expression: Val, context: Type): Expression {
-            if (expression.nextExpression == null && !Type.isUnit(type = context)) {
-                throw UnexpectedTypeError(
-                    expected = context,
-                    actual = Type.unit(range = expression.range),
-                    range = errorRange
-                )
+            if (expression.nextExpression == null && context != Type.unit) {
+                throw UnexpectedTypeError(expected = context, actual = Type.unit, range = errorRange)
             }
             return expression.copy(
                 type = expression.type.fixSelf(expectedType = context),

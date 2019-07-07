@@ -171,17 +171,15 @@ internal data class TypeCheckingContext(
             range = errorRange
         )
 
-    fun addThisType(range: Range): TypeCheckingContext {
+    fun addThisType(): TypeCheckingContext {
         if (localValues.containsKey(key = "this")) {
             error(message = "Corrupted context!")
         }
         val typeParameters = modules[currentModule]!!.typeDefinition!!.typeParameters
         val type = Type.IdentifierType(
-            range = range,
             identifier = currentModule,
             typeArguments = typeParameters?.map { parameter ->
                 Type.IdentifierType(
-                    range = range,
                     identifier = parameter,
                     typeArguments = null
                 )
