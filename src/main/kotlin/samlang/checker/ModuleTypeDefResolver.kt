@@ -5,7 +5,7 @@ import samlang.ast.checked.CheckedTypeExpr.*
 import samlang.ast.checked.CheckedTypeExprVisitor
 import samlang.errors.IllegalOtherClassMatch
 import samlang.errors.TypeParamSizeMismatchError
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
 internal object ModuleTypeDefResolver {
 
@@ -15,18 +15,18 @@ internal object ModuleTypeDefResolver {
     fun getTypeDef(
         identifierType: IdentifierType,
         ctx: TypeCheckingContext,
-        errorPosition: Position,
+        errorRange: Range,
         isFromObject: Boolean
     ): Map<String, CheckedTypeExpr> {
         val (id, typeArgs) = identifierType
         if (id != ctx.currentModule) {
-            throw IllegalOtherClassMatch(position = errorPosition)
+            throw IllegalOtherClassMatch(range = errorRange)
         }
         val (typeParams, varMap) = if (isFromObject) {
-            val (p, m) = ctx.getCurrentModuleObjectTypeDef(errorPosition = errorPosition)
+            val (p, m) = ctx.getCurrentModuleObjectTypeDef(errorRange = errorRange)
             p to m
         } else {
-            val (p, m) = ctx.getCurrentModuleVariantTypeDef(errorPosition = errorPosition)
+            val (p, m) = ctx.getCurrentModuleVariantTypeDef(errorRange = errorRange)
             p to m
         }
         return if (typeArgs == null) {
@@ -41,7 +41,7 @@ internal object ModuleTypeDefResolver {
             TypeParamSizeMismatchError.check(
                 expectedSize = typeParams.size,
                 actualSize = typeArgs.size,
-                position = errorPosition
+                range = errorRange
             )
             varMap.mapValues { (_, v) -> applyGenericTypeParams(type = v, context = typeParams.zip(typeArgs).toMap()) }
         }

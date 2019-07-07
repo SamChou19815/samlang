@@ -1,8 +1,8 @@
 package samlang.errors
 
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
-class DuplicateFieldDeclarationError(fieldName: String, position: Position) : CompileTimeError.WithPosition(
+class DuplicateFieldDeclarationError(fieldName: String, range: Range) : CompileTimeError.WithPosition(
     reason = "Field name $fieldName is declared twice.",
-    position = position
+    range = range
 )

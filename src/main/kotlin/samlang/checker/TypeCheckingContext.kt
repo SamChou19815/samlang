@@ -4,7 +4,7 @@ import kotlinx.collections.immutable.*
 import samlang.ast.checked.CheckedModule
 import samlang.ast.checked.CheckedTypeExpr
 import samlang.errors.*
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
 internal data class TypeCheckingContext(
     private val modules: ImmutableMap<String, ModuleType>,
@@ -23,12 +23,12 @@ internal data class TypeCheckingContext(
 
     fun addNewModuleTypeDef(
         name: String,
-        namePosition: Position,
+        nameRange: Range,
         params: List<String>?,
         typeDefCreator: (TypeCheckingContext) -> CheckedModule.CheckedTypeDef
     ): Pair<CheckedModule.CheckedTypeDef, TypeCheckingContext> {
         if (modules.containsKey(key = name)) {
-            throw CollisionError(collidedName = Position.WithName(position = namePosition, name = name))
+            throw CollisionError(collidedName = Range.WithName(range = nameRange, name = name))
         }
         val tempModuleType = ModuleType(
             typeDef = CheckedModule.CheckedTypeDef.ObjectType(
@@ -56,9 +56,9 @@ internal data class TypeCheckingContext(
         )
     }
 
-    fun addNewEmptyUtilModule(name: String, namePosition: Position): TypeCheckingContext {
+    fun addNewEmptyUtilModule(name: String, nameRange: Range): TypeCheckingContext {
         if (modules.containsKey(key = name)) {
-            throw CollisionError(collidedName = Position.WithName(position = namePosition, name = name))
+            throw CollisionError(collidedName = Range.WithName(range = nameRange, name = name))
         }
         val newModuleType = ModuleType(
             typeDef = null,
@@ -96,10 +96,10 @@ internal data class TypeCheckingContext(
         module: String,
         member: String,
         manager: UndecidedTypeManager,
-        errorPosition: Position
+        errorRange: Range
     ): CheckedTypeExpr {
         val typeInfo = modules[module]?.functions?.get(member)?.takeIf { module == currentModule || it.isPublic }
-            ?: throw UnresolvedNameError(unresolvedName = "$module::$member", position = errorPosition)
+            ?: throw UnresolvedNameError(unresolvedName = "$module::$member", range = errorRange)
         return if (typeInfo.typeParams == null) {
             typeInfo.type
         } else {
@@ -115,10 +115,10 @@ internal data class TypeCheckingContext(
         typeArgs: List<CheckedTypeExpr>?,
         methodName: String,
         manager: UndecidedTypeManager,
-        errorPosition: Position
+        errorRange: Range
     ): CheckedTypeExpr.FunctionType {
         val typeInfo = modules[module]?.methods?.get(methodName)?.takeIf { module == currentModule || it.isPublic }
-            ?: throw UnresolvedNameError(unresolvedName = methodName, position = errorPosition)
+            ?: throw UnresolvedNameError(unresolvedName = methodName, range = errorRange)
         val partiallyFixedType = if (typeInfo.typeParams == null) {
             typeInfo.type
         } else {
@@ -131,7 +131,7 @@ internal data class TypeCheckingContext(
         TypeParamSizeMismatchError.check(
             expectedSize = typeParams?.size ?: 0,
             actualSize = typeArgs?.size ?: 0,
-            position = errorPosition
+            range = errorRange
         )
         val fullyFixedType = if (typeParams != null && typeArgs != null) {
             val typeFixingContext = typeParams.zip(typeArgs).toMap()
@@ -140,17 +140,17 @@ internal data class TypeCheckingContext(
         return fullyFixedType as CheckedTypeExpr.FunctionType
     }
 
-    fun checkIfIdentifierTypeIsWellDefined(name: String, typeArgLength: Int, errorPosition: Position) {
+    fun checkIfIdentifierTypeIsWellDefined(name: String, typeArgLength: Int, errorRange: Range) {
         val isGood = if (name in localGenericTypes) {
             typeArgLength == 0
         } else {
             val typeDef = modules[name]?.typeDef
-                ?: throw NotWellDefinedIdentifierError(badIdentifier = name, position = errorPosition)
+                ?: throw NotWellDefinedIdentifierError(badIdentifier = name, range = errorRange)
             val typeParams = typeDef.typeParams
             if (typeParams == null) typeArgLength == 0 else typeParams.size == typeArgLength
         }
         if (!isGood) {
-            throw NotWellDefinedIdentifierError(badIdentifier = name, position = errorPosition)
+            throw NotWellDefinedIdentifierError(badIdentifier = name, range = errorRange)
         }
     }
 
@@ -159,16 +159,16 @@ internal data class TypeCheckingContext(
 
     fun getCurrentModuleTypeDef(): CheckedModule.CheckedTypeDef? = modules[currentModule]?.typeDef
 
-    fun getCurrentModuleObjectTypeDef(errorPosition: Position): CheckedModule.CheckedTypeDef.ObjectType =
+    fun getCurrentModuleObjectTypeDef(errorRange: Range): CheckedModule.CheckedTypeDef.ObjectType =
         getCurrentModuleTypeDef() as? CheckedModule.CheckedTypeDef.ObjectType ?: throw UnsupportedModuleTypeDefError(
             expectedModuleTypeDef = UnsupportedModuleTypeDefError.ModuleTypeDef.OBJECT,
-            position = errorPosition
+            range = errorRange
         )
 
-    fun getCurrentModuleVariantTypeDef(errorPosition: Position): CheckedModule.CheckedTypeDef.VariantType =
+    fun getCurrentModuleVariantTypeDef(errorRange: Range): CheckedModule.CheckedTypeDef.VariantType =
         getCurrentModuleTypeDef() as? CheckedModule.CheckedTypeDef.VariantType ?: throw UnsupportedModuleTypeDefError(
             expectedModuleTypeDef = UnsupportedModuleTypeDefError.ModuleTypeDef.VARIANT,
-            position = errorPosition
+            range = errorRange
         )
 
 
@@ -187,9 +187,9 @@ internal data class TypeCheckingContext(
         )
     }
 
-    fun addLocalValueType(name: String, type: CheckedTypeExpr, errorPosition: Position): TypeCheckingContext {
+    fun addLocalValueType(name: String, type: CheckedTypeExpr, errorRange: Range): TypeCheckingContext {
         if (localValues.containsKey(name)) {
-            throw CollisionError(collidedName = Position.WithName(position = errorPosition, name = name))
+            throw CollisionError(collidedName = Range.WithName(range = errorRange, name = name))
         }
         return copy(localValues = localValues.plus(pair = name to type))
     }

@@ -1,13 +1,13 @@
 package samlang.errors
 
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
 open class CompileTimeError(errorMessage: String) : RuntimeException(errorMessage) {
 
     val errorMessage: String = "${javaClass.simpleName}:\n$errorMessage"
 
-    open class WithPosition(reason: String, val position: Position) : CompileTimeError(
-        errorMessage = "At position $position:\n$reason"
+    open class WithPosition(reason: String, val range: Range) : CompileTimeError(
+        errorMessage = "At position $range:\n$reason"
     )
 
 }

@@ -5,8 +5,6 @@ import samlang.ast.common.BinaryOperator
 import samlang.ast.common.Literal
 import samlang.ast.common.UnaryOperator
 import samlang.ast.raw.RawExpr
-import samlang.ast.common.Position.Companion.position
-import samlang.ast.common.Position.Companion.positionWithName
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 
@@ -45,28 +43,28 @@ internal object ExprBuilder : PLBaseVisitor<RawExpr>() {
     }
 
     override fun visitLiteralExpr(ctx: PLParser.LiteralExprContext): RawExpr = RawExpr.Literal(
-        position = ctx.literal().position,
+        range = ctx.literal().range,
         literal = buildValue(ctx.literal())
     )
 
     override fun visitThisExpr(ctx: PLParser.ThisExprContext): RawExpr = RawExpr.This(
-        position = ctx.THIS().symbol.position
+        range = ctx.THIS().symbol.range
     )
 
     override fun visitVariableExpr(ctx: PLParser.VariableExprContext): RawExpr = RawExpr.Variable(
-        position = ctx.position,
+        range = ctx.range,
         name = ctx.LowerId().symbol.text
     )
 
     override fun visitModuleMemberExpr(ctx: PLParser.ModuleMemberExprContext): RawExpr = RawExpr.ModuleMember(
-        position = ctx.position,
+        range = ctx.range,
         moduleName = ctx.UpperId().symbol.text,
         memberName = ctx.LowerId().symbol.text
     )
 
     override fun visitTupleConstructor(ctx: PLParser.TupleConstructorContext): RawExpr =
         RawExpr.TupleConstructor(
-            position = ctx.position,
+            range = ctx.range,
             exprList = ctx.expression().map { it.accept(ExprBuilder) }
         )
 
@@ -75,20 +73,20 @@ internal object ExprBuilder : PLBaseVisitor<RawExpr>() {
         override fun visitNormalObjFieldDeclaration(
             ctx: PLParser.NormalObjFieldDeclarationContext
         ): RawExpr.ObjectConstructor.FieldConstructor = RawExpr.ObjectConstructor.FieldConstructor.Field(
-            name = ctx.LowerId().symbol.positionWithName,
+            name = ctx.LowerId().symbol.rangeWithName,
             expr = ctx.expression().accept(ExprBuilder)
         )
 
         override fun visitShorthandObjFieldDeclaration(
             ctx: PLParser.ShorthandObjFieldDeclarationContext
         ): RawExpr.ObjectConstructor.FieldConstructor = RawExpr.ObjectConstructor.FieldConstructor.FieldShorthand(
-            name = ctx.LowerId().symbol.positionWithName
+            name = ctx.LowerId().symbol.rangeWithName
         )
 
     }
 
     override fun visitObjConstructor(ctx: PLParser.ObjConstructorContext): RawExpr = RawExpr.ObjectConstructor(
-        position = ctx.position,
+        range = ctx.range,
         spreadExpr = ctx.expression()?.accept(ExprBuilder),
         fieldDeclarations = ctx.objectFieldDeclarations().objectFieldDeclaration()
             .map { it.accept(ObjectFieldDeclarationBuilder) }
@@ -96,107 +94,107 @@ internal object ExprBuilder : PLBaseVisitor<RawExpr>() {
 
     override fun visitVariantConstructor(ctx: PLParser.VariantConstructorContext): RawExpr =
         RawExpr.VariantConstructor(
-            position = ctx.position,
-            tag = ctx.UpperId().symbol.positionWithName,
+            range = ctx.range,
+            tag = ctx.UpperId().symbol.rangeWithName,
             data = ctx.expression().accept(ExprBuilder)
         )
 
     override fun visitFieldAccessExpr(ctx: PLParser.FieldAccessExprContext): RawExpr =
         RawExpr.FieldAccess(
-            position = ctx.position,
+            range = ctx.range,
             expr = ctx.expression().accept(ExprBuilder),
-            fieldName = ctx.LowerId().symbol.positionWithName
+            fieldName = ctx.LowerId().symbol.rangeWithName
         )
 
     override fun visitMethodAccessExpr(ctx: PLParser.MethodAccessExprContext): RawExpr =
         RawExpr.MethodAccess(
-            position = ctx.position,
+            range = ctx.range,
             expr = ctx.expression().accept(ExprBuilder),
-            methodName = ctx.LowerId().symbol.positionWithName
+            methodName = ctx.LowerId().symbol.rangeWithName
         )
 
     override fun visitNotExpr(ctx: PLParser.NotExprContext): RawExpr = RawExpr.Unary(
-        position = ctx.position,
+        range = ctx.range,
         operator = UnaryOperator.NOT,
         expr = ctx.expression().accept(ExprBuilder)
     )
 
     override fun visitNegExpr(ctx: PLParser.NegExprContext): RawExpr = RawExpr.Unary(
-        position = ctx.position,
+        range = ctx.range,
         operator = UnaryOperator.NEG,
         expr = ctx.expression().accept(ExprBuilder)
     )
 
     override fun visitPanicExpr(ctx: PLParser.PanicExprContext): RawExpr = RawExpr.Panic(
-        position = ctx.position,
+        range = ctx.range,
         expr = ctx.expression().accept(ExprBuilder)
     )
 
     override fun visitFunctionApplicationExpr(ctx: PLParser.FunctionApplicationExprContext): RawExpr = RawExpr.FunApp(
-        position = ctx.position,
+        range = ctx.range,
         funExpr = ctx.expression().accept(ExprBuilder),
         arguments = ctx.functionArguments().expression().map { it.accept(ExprBuilder) }
     )
 
     override fun visitFactorExpr(ctx: PLParser.FactorExprContext): RawExpr = RawExpr.Binary(
-        position = ctx.position,
+        range = ctx.range,
         operator = BinaryOperator.fromRaw(text = ctx.factorOperator().text),
         e1 = ctx.expression(0).accept(ExprBuilder),
         e2 = ctx.expression(1).accept(ExprBuilder)
     )
 
     override fun visitTermExpr(ctx: PLParser.TermExprContext): RawExpr = RawExpr.Binary(
-        position = ctx.position,
+        range = ctx.range,
         operator = BinaryOperator.fromRaw(text = ctx.termOperator().text),
         e1 = ctx.expression(0).accept(ExprBuilder),
         e2 = ctx.expression(1).accept(ExprBuilder)
     )
 
     override fun visitComparisonExpr(ctx: PLParser.ComparisonExprContext): RawExpr = RawExpr.Binary(
-        position = ctx.position,
+        range = ctx.range,
         operator = BinaryOperator.fromRaw(text = ctx.comparisonOperator().text),
         e1 = ctx.expression(0).accept(ExprBuilder),
         e2 = ctx.expression(1).accept(ExprBuilder)
     )
 
     override fun visitConjunctionExpr(ctx: PLParser.ConjunctionExprContext): RawExpr = RawExpr.Binary(
-        position = ctx.position,
+        range = ctx.range,
         operator = BinaryOperator.AND,
         e1 = ctx.expression(0).accept(ExprBuilder),
         e2 = ctx.expression(1).accept(ExprBuilder)
     )
 
     override fun visitDisjunctionExpr(ctx: PLParser.DisjunctionExprContext): RawExpr = RawExpr.Binary(
-        position = ctx.position,
+        range = ctx.range,
         operator = BinaryOperator.OR,
         e1 = ctx.expression(0).accept(ExprBuilder),
         e2 = ctx.expression(1).accept(ExprBuilder)
     )
 
     override fun visitIfElseExpr(ctx: PLParser.IfElseExprContext): RawExpr = RawExpr.IfElse(
-        position = ctx.position,
+        range = ctx.range,
         boolExpr = ctx.expression(0).accept(ExprBuilder),
         e1 = ctx.expression(1).accept(ExprBuilder),
         e2 = ctx.expression(2).accept(ExprBuilder)
     )
 
     override fun visitMatchExpr(ctx: PLParser.MatchExprContext): RawExpr = RawExpr.Match(
-        position = ctx.position,
+        range = ctx.range,
         matchedExpr = ctx.expression().accept(ExprBuilder),
         matchingList = ctx.patternToExpr().map { pattern2Expr ->
             RawExpr.Match.VariantPatternToExpr(
-                position = pattern2Expr.position,
-                tag = pattern2Expr.UpperId().symbol.positionWithName,
-                dataVariable = pattern2Expr.varOrWildCard().LowerId()?.symbol?.positionWithName,
+                range = pattern2Expr.range,
+                tag = pattern2Expr.UpperId().symbol.rangeWithName,
+                dataVariable = pattern2Expr.varOrWildCard().LowerId()?.symbol?.rangeWithName,
                 expr = pattern2Expr.expression().accept(ExprBuilder)
             )
         }
     )
 
     override fun visitFunExpr(ctx: PLParser.FunExprContext): RawExpr = RawExpr.Lambda(
-        position = ctx.position,
+        range = ctx.range,
         arguments = ctx.optionallyAnnotatedParameter().map { oneArg ->
-            val posName = oneArg.LowerId().symbol.positionWithName
+            val posName = oneArg.LowerId().symbol.rangeWithName
             val typeOpt = oneArg.typeAnnotation()?.typeExpr()?.accept(TypeExprBuilder)
             posName to typeOpt
         },
@@ -204,7 +202,7 @@ internal object ExprBuilder : PLBaseVisitor<RawExpr>() {
     )
 
     override fun visitValExpr(ctx: PLParser.ValExprContext): RawExpr = RawExpr.Val(
-        position = ctx.position,
+        range = ctx.range,
         pattern = ctx.pattern().accept(PatternBuilder),
         typeAnnotation = ctx.typeAnnotation()?.typeExpr()?.accept(TypeExprBuilder),
         assignedExpr = ctx.expression(0).accept(ExprBuilder),

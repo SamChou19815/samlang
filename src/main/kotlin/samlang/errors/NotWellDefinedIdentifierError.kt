@@ -1,6 +1,6 @@
 package samlang.errors
 
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
-class NotWellDefinedIdentifierError(badIdentifier: String, position: Position) :
-    CompileTimeError.WithPosition(reason = "$badIdentifier is not well defined.", position = position)
+class NotWellDefinedIdentifierError(badIdentifier: String, range: Range) :
+    CompileTimeError.WithPosition(reason = "$badIdentifier is not well defined.", range = range)

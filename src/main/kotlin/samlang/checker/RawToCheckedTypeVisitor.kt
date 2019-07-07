@@ -28,7 +28,7 @@ internal object RawToCheckedTypeVisitor : RawTypeExprVisitor<TypeCheckingContext
         context.checkIfIdentifierTypeIsWellDefined(
             name = name,
             typeArgLength = typeArgs?.size ?: 0,
-            errorPosition = identifierPosition
+            errorRange = identifierPosition
         )
         return CheckedTypeExpr.IdentifierType(
             identifier = name,

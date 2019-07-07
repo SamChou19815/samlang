@@ -1,35 +1,35 @@
 package samlang.errors
 
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
 class SizeMismatchError private constructor(
     sizeDescription: String,
     expectedSize: Int,
     actualSize: Int,
-    position: Position
+    range: Range
 ) : CompileTimeError.WithPosition(
     reason = "Incorrect $sizeDescription size. Expected: $expectedSize, actual: $actualSize.",
-    position = position
+    range = range
 ) {
 
     companion object {
 
         @JvmStatic
-        fun check(sizeDescription: String, expectedSize: Int, actualSize: Int, position: Position) {
+        fun check(sizeDescription: String, expectedSize: Int, actualSize: Int, range: Range) {
             if (expectedSize != actualSize) {
-                throw SizeMismatchError(sizeDescription, expectedSize, actualSize, position)
+                throw SizeMismatchError(sizeDescription, expectedSize, actualSize, range)
             }
         }
 
         @JvmStatic
         fun <T> checkNotNull(
-            sizeDescription: String, expectedList: List<T>, actualList: List<T>, position: Position
+            sizeDescription: String, expectedList: List<T>, actualList: List<T>, range: Range
         ): List<Pair<T, T>> {
             SizeMismatchError.check(
                 sizeDescription = sizeDescription,
                 expectedSize = expectedList.size,
                 actualSize = actualList.size,
-                position = position
+                range = range
             )
             return expectedList.zip(actualList)
         }

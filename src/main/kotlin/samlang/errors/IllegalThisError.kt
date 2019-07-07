@@ -1,8 +1,8 @@
 package samlang.errors
 
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
-class IllegalThisError(position: Position) : CompileTimeError.WithPosition(
+class IllegalThisError(range: Range) : CompileTimeError.WithPosition(
     reason = "Keyword 'this' cannot be used in this context.",
-    position = position
+    range = range
 )

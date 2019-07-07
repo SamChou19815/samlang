@@ -1,13 +1,13 @@
 package samlang.errors
 
 import samlang.ast.checked.CheckedTypeExpr
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
 class UnexpectedTypeError(
     expected: CheckedTypeExpr,
     actual: CheckedTypeExpr,
-    position: Position
+    range: Range
 ) : CompileTimeError.WithPosition(
     reason = "Expect: ${expected.prettyPrint()}.\nActual: ${actual.prettyPrint()}.",
-    position = position
+    range = range
 )

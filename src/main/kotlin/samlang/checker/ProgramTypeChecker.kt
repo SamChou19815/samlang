@@ -11,7 +11,7 @@ import samlang.ast.raw.RawModule
 import samlang.ast.raw.RawProgram
 import samlang.errors.CollisionError
 import samlang.errors.IllegalMethodDefinitionError
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
 internal object ProgramTypeChecker {
 
@@ -24,7 +24,7 @@ internal object ProgramTypeChecker {
         val value: RawExpr.Lambda
     )
 
-    private fun List<Position.WithName>.checkNameCollision() {
+    private fun List<Range.WithName>.checkNameCollision() {
         val nameSet = hashSetOf<String>()
         forEach { nameWithPos ->
             if (!nameSet.add(element = nameWithPos.name)) {
@@ -50,7 +50,7 @@ internal object ProgramTypeChecker {
             moduleNameWithPos = moduleNameWithPos, moduleTypeDef = moduleTypeDef, ctx = ctx
         )
         val (fullCtx, partiallyCheckedMembers) = processCurrentContextWithMembersAndMethods(
-            modulePosition = modulePosition,
+            moduleRange = modulePosition,
             moduleName = moduleNameWithPos.name,
             moduleMembers = moduleMembers,
             isUtilModule = moduleTypeDef == null,
@@ -65,14 +65,14 @@ internal object ProgramTypeChecker {
     }
 
     private fun createContextWithCurrentModuleDefOnly(
-        moduleNameWithPos: Position.WithName,
+        moduleNameWithPos: Range.WithName,
         moduleTypeDef: RawModule.RawTypeDef?,
         ctx: TypeCheckingContext
     ): Pair<CheckedTypeDef?, TypeCheckingContext> {
         // new context with type def but empty members and extensions
         val (moduleNamePos, moduleName) = moduleNameWithPos
         return if (moduleTypeDef == null) {
-            null to ctx.addNewEmptyUtilModule(name = moduleName, namePosition = moduleNamePos)
+            null to ctx.addNewEmptyUtilModule(name = moduleName, nameRange = moduleNamePos)
         } else {
             val typeParams = moduleTypeDef.typeParams
             val (isObject, mappings) = when (moduleTypeDef) {
@@ -87,11 +87,11 @@ internal object ProgramTypeChecker {
             typeParams?.checkNameCollision()
             mappings.map { (name, o) ->
                 val (namePos, _) = o
-                Position.WithName(position = namePos, name = name)
+                Range.WithName(range = namePos, name = name)
             }.checkNameCollision()
             val params = typeParams?.map { it.name }
             // create checked type def based on a temp
-            ctx.addNewModuleTypeDef(name = moduleName, namePosition = moduleNamePos, params = params) { tempCtx ->
+            ctx.addNewModuleTypeDef(name = moduleName, nameRange = moduleNamePos, params = params) { tempCtx ->
                 val checkedMappings = mappings.map { (name, o) ->
                     val (_, rawType) = o
                     name to rawType.accept(visitor = RawToCheckedTypeVisitor, context = tempCtx)
@@ -106,7 +106,7 @@ internal object ProgramTypeChecker {
     }
 
     private fun processCurrentContextWithMembersAndMethods(
-        modulePosition: Position,
+        moduleRange: Range,
         moduleName: String,
         moduleMembers: List<RawModule.RawMemberDefinition>,
         isUtilModule: Boolean,
@@ -121,7 +121,7 @@ internal object ProgramTypeChecker {
                 if (isUtilModule) {
                     throw IllegalMethodDefinitionError(
                         name = moduleName,
-                        position = modulePosition
+                        range = moduleRange
                     )
                 }
                 val updatedNewCtx = newCtx.getCurrentModuleTypeDef()
@@ -165,7 +165,7 @@ internal object ProgramTypeChecker {
             expectedType = expectedType,
             manager = manager,
             ctx = ctx,
-            errorPosition = expr.position
+            errorRange = expr.range
         )
     }
 

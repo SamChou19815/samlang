@@ -10,7 +10,7 @@ import samlang.ast.common.BinaryOperator.*
 import samlang.ast.common.UnaryOperator
 import samlang.errors.InsufficientTypeInferenceContextError
 import samlang.errors.UnexpectedTypeError
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
 internal object CheckedExprTypeFixer {
 
@@ -21,18 +21,18 @@ internal object CheckedExprTypeFixer {
         expectedType: CheckedTypeExpr,
         manager: UndecidedTypeManager,
         ctx: TypeCheckingContext,
-        errorPosition: Position
+        errorRange: Range
     ): CheckedExpr = expr.accept(
         visitor = TypeFixerVisitor(
             manager = manager,
             ctx = ctx,
-            detectorVisitor = UnresolvedTypeDetectorVisitor(pos = errorPosition),
-            errorPosition = errorPosition
+            detectorVisitor = UnresolvedTypeDetectorVisitor(pos = errorRange),
+            errorRange = errorRange
         ),
         context = expectedType
     )
 
-    private class UnresolvedTypeDetectorVisitor(private val pos: Position) : CheckedTypeExprVisitor<Unit, Unit> {
+    private class UnresolvedTypeDetectorVisitor(private val pos: Range) : CheckedTypeExprVisitor<Unit, Unit> {
 
         override fun visit(typeExpr: UnitType, context: Unit) {}
         override fun visit(typeExpr: IntType, context: Unit) {}
@@ -53,7 +53,7 @@ internal object CheckedExprTypeFixer {
         }
 
         override fun visit(typeExpr: UndecidedType, context: Unit): Unit =
-            throw InsufficientTypeInferenceContextError(position = pos)
+            throw InsufficientTypeInferenceContextError(range = pos)
 
         override fun visit(typeExpr: FreeType, context: Unit): Unit =
             error(message = "The expression should not contain free type.")
@@ -64,7 +64,7 @@ internal object CheckedExprTypeFixer {
         private val manager: UndecidedTypeManager,
         private val ctx: TypeCheckingContext,
         private val detectorVisitor: UnresolvedTypeDetectorVisitor,
-        private val errorPosition: Position
+        private val errorRange: Range
     ) : CheckedExprVisitor<CheckedTypeExpr, CheckedExpr> {
 
         private fun CheckedExpr.tryFixType(expectedType: CheckedTypeExpr): CheckedExpr =
@@ -80,7 +80,7 @@ internal object CheckedExprTypeFixer {
                 throw UnexpectedTypeError(
                     expected = expectedType,
                     actual = fullyResolvedType,
-                    position = errorPosition
+                    range = errorRange
                 )
             }
             return expectedType
@@ -117,7 +117,7 @@ internal object CheckedExprTypeFixer {
 
         override fun visit(expr: ObjectConstructor, context: CheckedTypeExpr): CheckedExpr {
             val newType = expr.type.fixSelf(expectedType = context) as IdentifierType
-            val (params, mapping) = ctx.getCurrentModuleObjectTypeDef(errorPosition = errorPosition)
+            val (params, mapping) = ctx.getCurrentModuleObjectTypeDef(errorRange = errorRange)
             val betterMapping = if (params != null && newType.typeArgs != null) {
                 val replacementMap = params.checkedZip(other = newType.typeArgs).toMap()
                 mapping.mapValues { (_, v) ->
@@ -145,7 +145,7 @@ internal object CheckedExprTypeFixer {
 
         override fun visit(expr: VariantConstructor, context: CheckedTypeExpr): CheckedExpr {
             val newType = expr.type.fixSelf(expectedType = context) as IdentifierType
-            val (params, mapping) = ctx.getCurrentModuleVariantTypeDef(errorPosition = errorPosition)
+            val (params, mapping) = ctx.getCurrentModuleVariantTypeDef(errorRange = errorRange)
             var dataType = mapping[expr.tag] ?: blameTypeChecker()
             if (params != null && newType.typeArgs != null) {
                 dataType = ModuleTypeDefResolver.applyGenericTypeParams(
@@ -191,7 +191,7 @@ internal object CheckedExprTypeFixer {
                 throw UnexpectedTypeError(
                     expected = context,
                     actual = funExprType.returnType,
-                    position = errorPosition
+                    range = errorRange
                 )
             }
             return FunApp(
@@ -218,7 +218,7 @@ internal object CheckedExprTypeFixer {
                         throw UnexpectedTypeError(
                             expected = t1,
                             actual = t2,
-                            position = errorPosition
+                            range = errorRange
                         )
                     }
                     val newE1 = expr.e1.tryFixType(expectedType = t1)
@@ -270,7 +270,7 @@ internal object CheckedExprTypeFixer {
 
         override fun visit(expr: Val, context: CheckedTypeExpr): CheckedExpr {
             if (expr.nextExpr == null && context != UnitType) {
-                throw UnexpectedTypeError(expected = context, actual = UnitType, position = errorPosition)
+                throw UnexpectedTypeError(expected = context, actual = UnitType, range = errorRange)
             }
             return Val(
                 type = expr.type.fixSelf(expectedType = context),

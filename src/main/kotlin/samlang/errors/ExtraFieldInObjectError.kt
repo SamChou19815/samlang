@@ -1,7 +1,7 @@
 package samlang.errors
 
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
-class ExtraFieldInObjectError(extraField: String, position: Position) : CompileTimeError.WithPosition(
-    reason = "Extra field $extraField in the object", position = position
+class ExtraFieldInObjectError(extraField: String, range: Range) : CompileTimeError.WithPosition(
+    reason = "Extra field $extraField in the object", range = range
 )

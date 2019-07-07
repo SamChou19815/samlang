@@ -29,16 +29,16 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
         }
         // don't need the return value because the type must be exact
         constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = type, errorPosition = expr.position
+            expectedType = expectedType, actualType = type, errorRange = expr.range
         )
         return CheckedExpr.Literal(type = type, literal = literalValue)
     }
 
     override fun visit(expr: This, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr {
-        val type = ctx.getLocalValueType(name = "this") ?: throw IllegalThisError(position = expr.position)
+        val type = ctx.getLocalValueType(name = "this") ?: throw IllegalThisError(range = expr.range)
         // don't need the return value because the type must be exact
         constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = type, errorPosition = expr.position
+            expectedType = expectedType, actualType = type, errorRange = expr.range
         )
         return CheckedExpr.This(type = type)
     }
@@ -48,20 +48,20 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
         return ctx.getLocalValueType(name = name)
             ?.let { locallyInferredType ->
                 val inferredType = constraintAwareTypeChecker.checkAndInfer(
-                    expectedType = expectedType, actualType = locallyInferredType, errorPosition = position
+                    expectedType = expectedType, actualType = locallyInferredType, errorRange = position
                 )
                 CheckedExpr.Variable(type = inferredType, name = name)
             }
-            ?: throw UnresolvedNameError(unresolvedName = name, position = position)
+            ?: throw UnresolvedNameError(unresolvedName = name, range = position)
     }
 
     override fun visit(expr: ModuleMember, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr {
         val (position, moduleName, memberName) = expr
         val locallyInferredType = ctx.getModuleFunctionType(
-            module = moduleName, member = memberName, manager = manager, errorPosition = position
+            module = moduleName, member = memberName, manager = manager, errorRange = position
         )
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = locallyInferredType, errorPosition = position
+            expectedType = expectedType, actualType = locallyInferredType, errorRange = position
         )
         return CheckedExpr.ModuleMember(type = constraintInferredType, moduleName = moduleName, memberName = memberName)
     }
@@ -71,7 +71,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
         val checkedExprList = exprList.map { it.toChecked(ctx = ctx) }
         val locallyInferredType = CheckedTypeExpr.TupleType(mappings = checkedExprList.map { it.type })
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = locallyInferredType, errorPosition = exprPos
+            expectedType = expectedType, actualType = locallyInferredType, errorRange = exprPos
         )
         return CheckedExpr.TupleConstructor(
             type = constraintInferredType as CheckedTypeExpr.TupleType,
@@ -93,19 +93,19 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
                     if (declaredFieldTypes.put(key = name, value = type) != null) {
                         throw DuplicateFieldDeclarationError(
                             fieldName = name,
-                            position = namePos
+                            range = namePos
                         )
                     }
                     checkedDeclarations.add(FieldConstructor.Field(type = type, name = name, expr = checkedExpr))
                 }
                 is RawExpr.ObjectConstructor.FieldConstructor.FieldShorthand -> {
                     val (namePos, name) = fieldDeclaration.name
-                    val checkedExpr = Variable(position = namePos, name = name).toChecked(ctx = ctx)
+                    val checkedExpr = Variable(range = namePos, name = name).toChecked(ctx = ctx)
                     val type = checkedExpr.type
                     if (declaredFieldTypes.put(key = name, value = type) != null) {
                         throw DuplicateFieldDeclarationError(
                             fieldName = name,
-                            position = namePos
+                            range = namePos
                         )
                     }
                     checkedDeclarations.add(FieldConstructor.FieldShorthand(type = type, name = name))
@@ -116,13 +116,13 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
     }
 
     override fun visit(expr: ObjectConstructor, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr {
-        val (typeParams, typeMappings) = ctx.getCurrentModuleObjectTypeDef(errorPosition = expr.position)
+        val (typeParams, typeMappings) = ctx.getCurrentModuleObjectTypeDef(errorRange = expr.range)
         val checkedSpreadExpr = expr.spreadExpr?.toChecked(ctx = ctx)
         val (declaredFieldTypes, checkedDeclarations) = typeCheckFieldDeclarations(
             fieldDeclarations = expr.fieldDeclarations, ctx = ctx
         )
         val checkedMappings = hashMapOf<String, CheckedTypeExpr>()
-        // used to quickly get the position where one declaration goes wrong
+        // used to quickly get the range where one declaration goes wrong
         val namePosMap = expr.fieldDeclarations.asSequence().map { val (p, n) = it.name; n to p }.toMap()
         val locallyInferredType = if (checkedSpreadExpr != null) {
             // In this case, keys does not need to perfectly match because we have fall back.
@@ -130,10 +130,10 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
                 val namePos = namePosMap[k]!!
                 val expectedFieldType = typeMappings[k] ?: throw ExtraFieldInObjectError(
                     extraField = k,
-                    position = namePos
+                    range = namePos
                 )
                 checkedMappings[k] = constraintAwareTypeChecker.checkAndInfer(
-                    expectedType = expectedFieldType, actualType = actualType, errorPosition = namePos
+                    expectedType = expectedFieldType, actualType = actualType, errorRange = namePos
                 )
             }
             checkedSpreadExpr.type
@@ -143,7 +143,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
                 throw InconsistentFieldsInObjectError(
                     expectedFields = typeMappings.keys,
                     actualFields = declaredFieldTypes.keys,
-                    position = expr.position
+                    range = expr.range
                 )
             }
             val (genericsResolvedTypeMappings, autoGeneratedUndecidedTypes) = typeParams?.let { params ->
@@ -157,7 +157,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
                 val reqType = genericsResolvedTypeMappings[k]!!
                 val namePos = namePosMap[k]!!
                 checkedMappings[k] = constraintAwareTypeChecker.checkAndInfer(
-                    expectedType = reqType, actualType = actualType, errorPosition = namePos
+                    expectedType = reqType, actualType = actualType, errorRange = namePos
                 )
             }
             val constraintInferredTypeArgs = autoGeneratedUndecidedTypes?.map { undecidedType ->
@@ -170,7 +170,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
             dec.copyWithNewType(type = betterType)
         }
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = locallyInferredType, errorPosition = expr.position
+            expectedType = expectedType, actualType = locallyInferredType, errorRange = expr.range
         ) as CheckedTypeExpr.IdentifierType
         return CheckedExpr.ObjectConstructor(
             type = constraintInferredType,
@@ -180,11 +180,11 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
     }
 
     override fun visit(expr: VariantConstructor, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr {
-        val (typeParams, typeMappings) = ctx.getCurrentModuleVariantTypeDef(errorPosition = expr.position)
+        val (typeParams, typeMappings) = ctx.getCurrentModuleVariantTypeDef(errorRange = expr.range)
         val (tagPos, tag) = expr.tag
         val checkedData = expr.data.toChecked(ctx = ctx)
         val associatedDataType = typeMappings[tag] ?: throw UnresolvedNameError(
-            unresolvedName = tag, position = tagPos
+            unresolvedName = tag, range = tagPos
         )
         val (genericsResolvedAssociatedDataType, autoGeneratedUndecidedTypes) = typeParams?.let { params ->
             CheckedTypeDeparameterizer.convert(
@@ -196,7 +196,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
         constraintAwareTypeChecker.checkAndInfer(
             expectedType = genericsResolvedAssociatedDataType,
             actualType = checkedData.type,
-            errorPosition = expr.data.position
+            errorRange = expr.data.range
         )
         val constraintInferredTypeArgs = autoGeneratedUndecidedTypes?.map { undecidedType ->
             manager.reportCurrentUndecidedTypeReference(index = undecidedType.index)
@@ -205,7 +205,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
             identifier = ctx.currentModule, typeArgs = constraintInferredTypeArgs
         )
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = locallyInferredType, errorPosition = expr.position
+            expectedType = expectedType, actualType = locallyInferredType, errorRange = expr.range
         )
         return CheckedExpr.VariantConstructor(
             type = constraintInferredType as CheckedTypeExpr.IdentifierType,
@@ -215,7 +215,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
     }
 
     override fun visit(expr: FieldAccess, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr {
-        val (typeParams, _) = ctx.getCurrentModuleObjectTypeDef(errorPosition = expr.position)
+        val (typeParams, _) = ctx.getCurrentModuleObjectTypeDef(errorRange = expr.range)
         val expectedFieldType = CheckedTypeExpr.IdentifierType(
             identifier = ctx.currentModule,
             typeArgs = typeParams?.map { CheckedTypeExpr.FreeType }
@@ -224,16 +224,16 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
         val fieldMappings = ModuleTypeDefResolver.getTypeDef(
             identifierType = checkedAssignedExpr.type as CheckedTypeExpr.IdentifierType,
             ctx = ctx,
-            errorPosition = expr.expr.position,
+            errorRange = expr.expr.range,
             isFromObject = true
         )
         val (fieldPos, fieldName) = expr.fieldName
         val locallyInferredFieldType = fieldMappings[fieldName] ?: throw UnresolvedNameError(
             unresolvedName = fieldName,
-            position = fieldPos
+            range = fieldPos
         )
         val constraintInferredFieldType = constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = locallyInferredFieldType, errorPosition = expr.position
+            expectedType = expectedType, actualType = locallyInferredFieldType, errorRange = expr.range
         )
         return CheckedExpr.FieldAccess(
             type = constraintInferredFieldType,
@@ -249,17 +249,17 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
             ?: throw UnexpectedTypeKindError(
                 expectedTypeKind = "identifier",
                 actualType = checkedExpr.type,
-                position = exprToCallMethod.position
+                range = exprToCallMethod.range
             )
         val locallyInferredType = ctx.getModuleMethodType(
             module = checkedExprTypeIdentifier,
             typeArgs = checkedExprTypeArgs,
             methodName = methodName.name,
             manager = manager,
-            errorPosition = methodName.position
+            errorRange = methodName.range
         )
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = locallyInferredType, errorPosition = exprPos
+            expectedType = expectedType, actualType = locallyInferredType, errorRange = exprPos
         )
         return CheckedExpr.MethodAccess(
             type = constraintInferredType as CheckedTypeExpr.FunctionType,
@@ -274,7 +274,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
             UnaryOperator.NOT -> CheckedTypeExpr.BoolType
         }
         constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = actuallyExpectedType, errorPosition = expr.position
+            expectedType = expectedType, actualType = actuallyExpectedType, errorRange = expr.range
         )
         val checkedExpr = expr.expr.toChecked(ctx = ctx, expectedType = actuallyExpectedType)
         return CheckedExpr.Unary(type = actuallyExpectedType, operator = expr.operator, expr = checkedExpr)
@@ -297,13 +297,13 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
             ?: throw UnexpectedTypeKindError(
                 expectedTypeKind = "function",
                 actualType = checkedFunExpr.type,
-                position = expr.funExpr.position
+                range = expr.funExpr.range
             )
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = locallyInferredReturnType, errorPosition = expr.position
+            expectedType = expectedType, actualType = locallyInferredReturnType, errorRange = expr.range
         )
         checkedArgs.map { it.type }.zip(locallyInferredArgTypes).forEach { (e, a) ->
-            constraintAwareTypeChecker.checkAndInfer(expectedType = e, actualType = a, errorPosition = expr.position)
+            constraintAwareTypeChecker.checkAndInfer(expectedType = e, actualType = a, errorRange = expr.range)
         }
         return CheckedExpr.FunApp(type = constraintInferredType, funExpr = checkedFunExpr, arguments = checkedArgs)
     }
@@ -347,7 +347,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
             }
         }
         constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = checkedExpr.type, errorPosition = position
+            expectedType = expectedType, actualType = checkedExpr.type, errorRange = position
         )
         return checkedExpr
     }
@@ -359,12 +359,12 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType,
             actualType = checkedE1.type,
-            errorPosition = expr.e1.position
+            errorRange = expr.e1.range
         )
         constraintAwareTypeChecker.checkAndInfer(
             expectedType = constraintInferredType,
             actualType = checkedE2.type,
-            errorPosition = expr.e2.position
+            errorRange = expr.e2.range
         )
         return CheckedExpr.IfElse(
             type = constraintInferredType,
@@ -382,25 +382,25 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
                 ModuleTypeDefResolver.getTypeDef(
                     identifierType = checkedMatchedExprType,
                     ctx = ctx,
-                    errorPosition = matchedExpr.position,
+                    errorRange = matchedExpr.range,
                     isFromObject = false
                 )
             }
-            is CheckedTypeExpr.UndecidedType -> throw InsufficientTypeInferenceContextError(matchedExpr.position)
+            is CheckedTypeExpr.UndecidedType -> throw InsufficientTypeInferenceContextError(matchedExpr.range)
             else -> throw UnexpectedTypeKindError(
                 expectedTypeKind = "identifier",
                 actualType = checkedMatchedExprType,
-                position = matchedExpr.position
+                range = matchedExpr.range
             )
         }
         val unusedMappings = variantMappings.toMutableMap()
         val checkedMatchingList = matchingList.map { (_, tagWithPos, dataVarWithPos, correspondingExpr) ->
             val (tagPos, tag) = tagWithPos
             val mappingDataType = unusedMappings[tag]
-                ?: throw UnresolvedNameError(unresolvedName = tag, position = tagPos)
+                ?: throw UnresolvedNameError(unresolvedName = tag, range = tagPos)
             val newContext = dataVarWithPos?.let { d ->
                 val (p, n) = d
-                ctx.addLocalValueType(name = n, type = mappingDataType, errorPosition = p)
+                ctx.addLocalValueType(name = n, type = mappingDataType, errorRange = p)
             } ?: ctx
             unusedMappings.remove(key = tag)
             CheckedExpr.Match.VariantPatternToExpr(
@@ -410,7 +410,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
             )
         }
         val finalType = checkedMatchingList.asSequence().map { it.expr.type }.fold(initial = expectedType) { exp, act ->
-            constraintAwareTypeChecker.checkAndInfer(expectedType = exp, actualType = act, errorPosition = position)
+            constraintAwareTypeChecker.checkAndInfer(expectedType = exp, actualType = act, errorRange = position)
         }
         return CheckedExpr.Match(
             type = finalType,
@@ -435,7 +435,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
             val checkedType = typeOpt
                 ?.accept(visitor = RawToCheckedTypeVisitor, context = ctx)
                 ?: manager.allocateAnUndecidedType()
-            currentContext = currentContext.addLocalValueType(name = name, type = checkedType, errorPosition = pos)
+            currentContext = currentContext.addLocalValueType(name = name, type = checkedType, errorRange = pos)
             name to checkedType
         }
         val checkedBody = body.toChecked(ctx = currentContext)
@@ -445,7 +445,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
             returnType = checkedBody.type
         )
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = locallyInferredType, errorPosition = position
+            expectedType = expectedType, actualType = locallyInferredType, errorRange = position
         ) as CheckedTypeExpr.FunctionType
         return CheckedExpr.Lambda(
             type = constraintInferredType,
@@ -466,19 +466,19 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
                 val tupleType = checkedAssignedExprType as? CheckedTypeExpr.TupleType ?: throw UnexpectedTypeKindError(
                     expectedTypeKind = "tuple",
                     actualType = checkedAssignedExprType,
-                    position = assignedExpr.position
+                    range = assignedExpr.range
                 )
                 SizeMismatchError.check(
                     sizeDescription = "tuple",
                     expectedSize = tupleType.mappings.size,
                     actualSize = pattern.destructedNames.size,
-                    position = assignedExpr.position
+                    range = assignedExpr.range
                 )
                 pattern.destructedNames.zip(tupleType.mappings).asSequence().mapNotNull { (nameWithPosOpt, t) ->
                     if (nameWithPosOpt == null) null else nameWithPosOpt to t
                 }.fold(initial = ctx) { context, (nameWithPosOpt, t) ->
                     val (p, n) = nameWithPosOpt
-                    context.addLocalValueType(name = n, type = t, errorPosition = p)
+                    context.addLocalValueType(name = n, type = t, errorRange = p)
                 }
             }
             is RawPattern.ObjectPattern -> {
@@ -486,32 +486,32 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
                     ?: throw UnexpectedTypeKindError(
                         expectedTypeKind = "identifier",
                         actualType = checkedAssignedExprType,
-                        position = assignedExpr.position
+                        range = assignedExpr.range
                     )
                 if (identifierType.identifier != ctx.currentModule) {
                     throw IllegalOtherClassFieldAccess(
                         className = identifierType.identifier,
-                        position = pattern.position
+                        range = pattern.range
                     )
                 }
                 val fieldMappings = ModuleTypeDefResolver.getTypeDef(
                     identifierType = identifierType,
                     ctx = ctx,
-                    errorPosition = assignedExpr.position,
+                    errorRange = assignedExpr.range,
                     isFromObject = true
                 )
                 pattern.destructedNames.fold(initial = ctx) { context, (originalNameWithPos, renamedNameWithPos) ->
                     val (originalNamePos, originalName) = originalNameWithPos
                     val t = fieldMappings[originalName]
-                        ?: throw UnresolvedNameError(unresolvedName = originalName, position = originalNamePos)
+                        ?: throw UnresolvedNameError(unresolvedName = originalName, range = originalNamePos)
                     val nameWithPosToUse = renamedNameWithPos ?: originalNameWithPos
                     val (usedNamePos, usedName) = nameWithPosToUse
-                    context.addLocalValueType(name = usedName, type = t, errorPosition = usedNamePos)
+                    context.addLocalValueType(name = usedName, type = t, errorRange = usedNamePos)
                 }
             }
             is RawPattern.VariablePattern -> {
                 val (p, n) = pattern
-                ctx.addLocalValueType(name = n, type = checkedAssignedExprType, errorPosition = p)
+                ctx.addLocalValueType(name = n, type = checkedAssignedExprType, errorRange = p)
             }
             is RawPattern.WildCardPattern -> ctx
         }
@@ -519,7 +519,7 @@ internal class ExprTypeCheckerVisitor(private val manager: UndecidedTypeManager)
             constraintAwareTypeChecker.checkAndInfer(
                 expectedType = expectedType,
                 actualType = CheckedTypeExpr.UnitType,
-                errorPosition = exprPos
+                errorRange = exprPos
             )
             null
         } else {

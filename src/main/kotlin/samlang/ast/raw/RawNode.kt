@@ -1,12 +1,12 @@
 package samlang.ast.raw
 
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
 interface RawNode {
 
     /**
-     * The position of the entire node.
+     * The range of the entire node.
      */
-    val position: Position
+    val range: Range
 
 }

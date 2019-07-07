@@ -1,26 +1,26 @@
 package samlang.ast.raw
 
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
 sealed class RawPattern {
 
-    abstract val position: Position
+    abstract val range: Range
 
     data class TuplePattern(
-        override val position: Position,
-        val destructedNames: List<Position.WithName?>
+        override val range: Range,
+        val destructedNames: List<Range.WithName?>
     ) : RawPattern()
 
     data class ObjectPattern(
-        override val position: Position,
-        val destructedNames: List<Pair<Position.WithName, Position.WithName?>>
+        override val range: Range,
+        val destructedNames: List<Pair<Range.WithName, Range.WithName?>>
     ) : RawPattern()
 
     data class VariablePattern(
-        override val position: Position,
+        override val range: Range,
         val name: String
     ) : RawPattern()
 
-    data class WildCardPattern(override val position: Position) : RawPattern()
+    data class WildCardPattern(override val range: Range) : RawPattern()
 
 }

@@ -6,7 +6,7 @@ import samlang.ast.checked.CheckedTypeExprVisitor
 import samlang.errors.SizeMismatchError
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnexpectedTypeError
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 import samlang.util.Either
 
 internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {
@@ -14,22 +14,22 @@ internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {
     fun checkAndInfer(
         expectedType: CheckedTypeExpr,
         actualType: CheckedTypeExpr,
-        errorPosition: Position
-    ): CheckedTypeExpr = actualType.accept(visitor = Visitor(errorPosition = errorPosition), context = expectedType)
+        errorRange: Range
+    ): CheckedTypeExpr = actualType.accept(visitor = Visitor(errorRange = errorRange), context = expectedType)
 
     /**
      * typeExpr -> actual type, not allowed to have free type
      * context -> expected type, if it's undecided type, we need to resolve it.
      */
     private inner class Visitor(
-        private val errorPosition: Position
+        private val errorRange: Range
     ) : CheckedTypeExprVisitor<CheckedTypeExpr, CheckedTypeExpr> {
 
         private fun CheckedTypeExpr.checkAndInfer(expectedType: CheckedTypeExpr): CheckedTypeExpr =
             accept(visitor = this@Visitor, context = expectedType)
 
         private fun CheckedTypeExpr.failOnExpected(expectedType: CheckedTypeExpr): Nothing =
-            throw UnexpectedTypeError(expected = expectedType, actual = this, position = errorPosition)
+            throw UnexpectedTypeError(expected = expectedType, actual = this, range = errorRange)
 
         private fun Either<CheckedTypeExpr, UndecidedTypeManager.InconsistentTypeReport>.getType(): CheckedTypeExpr =
             when (this) {
@@ -78,7 +78,7 @@ internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {
                 val inferredTypeArgs = TypeParamSizeMismatchError.check(
                     expectedList = context.typeArgs,
                     actualList = typeExpr.typeArgs,
-                    position = errorPosition
+                    range = errorRange
                 )?.map { (expect, actual) -> actual.checkAndInfer(expectedType = expect) }
                 typeExpr.copy(typeArgs = inferredTypeArgs)
             }
@@ -93,7 +93,7 @@ internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {
                     sizeDescription = "tuple",
                     expectedList = context.mappings,
                     actualList = typeExpr.mappings,
-                    position = errorPosition
+                    range = errorRange
                 ).map { (expect, actual) -> actual.checkAndInfer(expectedType = expect) }
             )
             is UndecidedType -> typeExpr.inferUndecidedType(undecidedType = context)
@@ -107,7 +107,7 @@ internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {
                     sizeDescription = "function arguments",
                     expectedList = context.argumentTypes,
                     actualList = typeExpr.argumentTypes,
-                    position = errorPosition
+                    range = errorRange
                 ).map { (expect, actual) -> actual.checkAndInfer(expectedType = expect) },
                 returnType = typeExpr.returnType.checkAndInfer(expectedType = context.returnType)
             )

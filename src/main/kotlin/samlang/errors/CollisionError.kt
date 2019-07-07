@@ -1,8 +1,8 @@
 package samlang.errors
 
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
-class CollisionError(collidedName: Position.WithName) : CompileTimeError.WithPosition(
+class CollisionError(collidedName: Range.WithName) : CompileTimeError.WithPosition(
     reason = "Name ${collidedName.name} collides with a previous defined name.",
-    position = collidedName.position
+    range = collidedName.range
 )

@@ -1,12 +1,12 @@
 package samlang.errors
 
-import samlang.ast.common.Position
+import samlang.ast.common.Range
 
 class InconsistentFieldsInObjectError(
     expectedFields: Set<String>,
     actualFields: Set<String>,
-    position: Position
+    range: Range
 ) : CompileTimeError.WithPosition(
     reason = "Inconsistent fields. Expected: $expectedFields, actual: $actualFields",
-    position = position
+    range = range
 )
