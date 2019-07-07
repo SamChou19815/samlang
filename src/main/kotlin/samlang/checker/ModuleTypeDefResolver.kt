@@ -5,7 +5,7 @@ import samlang.ast.checked.CheckedTypeExpr.*
 import samlang.ast.checked.CheckedTypeExprVisitor
 import samlang.errors.IllegalOtherClassMatch
 import samlang.errors.TypeParamSizeMismatchError
-import samlang.parser.Position
+import samlang.ast.common.Position
 
 internal object ModuleTypeDefResolver {
 

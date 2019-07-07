@@ -11,7 +11,7 @@ import samlang.ast.raw.RawModule
 import samlang.ast.raw.RawProgram
 import samlang.errors.CollisionError
 import samlang.errors.IllegalMethodDefinitionError
-import samlang.parser.Position
+import samlang.ast.common.Position
 
 internal object ProgramTypeChecker {
 

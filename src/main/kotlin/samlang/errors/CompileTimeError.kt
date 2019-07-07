@@ -1,6 +1,6 @@
 package samlang.errors
 
-import samlang.parser.Position
+import samlang.ast.common.Position
 
 open class CompileTimeError(errorMessage: String) : RuntimeException(errorMessage) {
 

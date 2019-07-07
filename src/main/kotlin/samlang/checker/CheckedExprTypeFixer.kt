@@ -10,7 +10,7 @@ import samlang.ast.common.BinaryOperator.*
 import samlang.ast.common.UnaryOperator
 import samlang.errors.InsufficientTypeInferenceContextError
 import samlang.errors.UnexpectedTypeError
-import samlang.parser.Position
+import samlang.ast.common.Position
 
 internal object CheckedExprTypeFixer {
 

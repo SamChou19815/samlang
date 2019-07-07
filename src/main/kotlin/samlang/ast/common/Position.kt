@@ -1,4 +1,4 @@
-package samlang.parser
+package samlang.ast.common
 
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.Token
@@ -15,8 +15,14 @@ data class Position(val lineStart: Int, val lineEnd: Int, val colStart: Int, val
     }
 
     infix fun union(other: Position): Position {
-        val start = minOf(Loc(line = lineStart, col = colStart), Loc(line = other.lineStart, col = other.colStart))
-        val end = maxOf(Loc(line = lineEnd, col = colEnd), Loc(line = other.lineEnd, col = other.colEnd))
+        val start = minOf(
+            Loc(line = lineStart, col = colStart),
+            Loc(line = other.lineStart, col = other.colStart)
+        )
+        val end = maxOf(
+            Loc(line = lineEnd, col = colEnd),
+            Loc(line = other.lineEnd, col = other.colEnd)
+        )
         return Position(
             lineStart = start.line, lineEnd = end.line,
             colStart = start.col, colEnd = end.col
@@ -35,7 +41,11 @@ data class Position(val lineStart: Int, val lineEnd: Int, val colStart: Int, val
                 colStart = charPositionInLine, colEnd = charPositionInLine + text.length
             )
 
-        val Token.positionWithName: Position.WithName get() = Position.WithName(position = position, name = text)
+        val Token.positionWithName: WithName
+            get() = WithName(
+                position = position,
+                name = text
+            )
 
         val ParserRuleContext.position: Position
             get() {

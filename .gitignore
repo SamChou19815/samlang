@@ -34,3 +34,6 @@ hs_err_pid*
 
 # Temp Test File
 /src/test/resources/Program*.kt
+
+# System Files
+.DS_Store

@@ -4,7 +4,7 @@ import kotlinx.collections.immutable.*
 import samlang.ast.checked.CheckedModule
 import samlang.ast.checked.CheckedTypeExpr
 import samlang.errors.*
-import samlang.parser.Position
+import samlang.ast.common.Position
 
 internal data class TypeCheckingContext(
     private val modules: ImmutableMap<String, ModuleType>,

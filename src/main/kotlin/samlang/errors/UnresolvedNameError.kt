@@ -1,6 +1,6 @@
 package samlang.errors
 
-import samlang.parser.Position
+import samlang.ast.common.Position
 
 class UnresolvedNameError(unresolvedName: String, position: Position) : CompileTimeError.WithPosition(
     reason = "Name $unresolvedName is not resolved.",

@@ -1,6 +1,6 @@
 package samlang.errors
 
-import samlang.parser.Position
+import samlang.ast.common.Position
 
 class CollisionError(collidedName: Position.WithName) : CompileTimeError.WithPosition(
     reason = "Name ${collidedName.name} collides with a previous defined name.",

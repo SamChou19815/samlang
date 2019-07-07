@@ -6,7 +6,7 @@ import samlang.ast.checked.CheckedTypeExprVisitor
 import samlang.errors.SizeMismatchError
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnexpectedTypeError
-import samlang.parser.Position
+import samlang.ast.common.Position
 import samlang.util.Either
 
 internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {

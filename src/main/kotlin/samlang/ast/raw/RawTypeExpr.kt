@@ -1,6 +1,6 @@
 package samlang.ast.raw
 
-import samlang.parser.Position
+import samlang.ast.common.Position
 
 sealed class RawTypeExpr() : RawNode {
 

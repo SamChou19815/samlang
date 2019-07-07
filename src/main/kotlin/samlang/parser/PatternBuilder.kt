@@ -1,8 +1,9 @@
 package samlang.parser
 
+import samlang.ast.common.Position
 import samlang.ast.raw.RawPattern
-import samlang.parser.Position.Companion.position
-import samlang.parser.Position.Companion.positionWithName
+import samlang.ast.common.Position.Companion.position
+import samlang.ast.common.Position.Companion.positionWithName
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 

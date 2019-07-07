@@ -2,7 +2,7 @@ package samlang.ast.raw
 
 import samlang.ast.common.BinaryOperator
 import samlang.ast.common.UnaryOperator
-import samlang.parser.Position
+import samlang.ast.common.Position
 
 sealed class RawExpr : RawNode {
 

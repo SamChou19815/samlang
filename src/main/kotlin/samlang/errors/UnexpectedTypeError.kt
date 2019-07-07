@@ -1,7 +1,7 @@
 package samlang.errors
 
 import samlang.ast.checked.CheckedTypeExpr
-import samlang.parser.Position
+import samlang.ast.common.Position
 
 class UnexpectedTypeError(
     expected: CheckedTypeExpr,
