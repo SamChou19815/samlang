@@ -1,8 +1,7 @@
 package samlang.checker
 
 import samlang.ast.TypeExpression
-import samlang.ast.TypeExpression.*
-import samlang.ast.TypeExpressionVisitor
+import samlang.ast.TypeExpression.UndecidedType
 import samlang.util.UnionFind
 
 class UndecidedTypeManager {
@@ -25,7 +24,7 @@ class UndecidedTypeManager {
     /**
      * Find the root of an index.
      */
-    private val Int.root get() = indexAliasingUnionFind.find(index = this)
+    private fun Int.findRoot(): Int = indexAliasingUnionFind.find(index = this)
 
     /**
      * Refresh all the known mappings to ensure it represents the best knowledge we have.
@@ -43,7 +42,7 @@ class UndecidedTypeManager {
      * types) and return it. If it's not found in the resolution, return the original undecided type.
      */
     fun getPartiallyResolvedType(undecidedType: UndecidedType): TypeExpression {
-        val rootIndex = undecidedType.index.root
+        val rootIndex = undecidedType.index.findRoot()
         return knownResolutions[rootIndex] ?: undecidedType
     }
 
@@ -51,7 +50,7 @@ class UndecidedTypeManager {
      * Fully resolve an potentially [unresolvedType].
      */
     fun resolveType(unresolvedType: TypeExpression): TypeExpression =
-        unresolvedType.accept(visitor = TypeResolverVisitor, context = this@UndecidedTypeManager)
+        unresolvedType.resolveType(function = this::getPartiallyResolvedType)
 
     /**
      * Establish an aliasing relation between [undecidedType1] and [undecidedType2].
@@ -87,7 +86,7 @@ class UndecidedTypeManager {
         if (decidedType is UndecidedType) {
             error(message = "Use establishAliasing() instead!")
         }
-        val rootOfUndecidedTypeIndex = undecidedTypeIndex.root
+        val rootOfUndecidedTypeIndex = undecidedTypeIndex.findRoot()
         val resolvedDecidedType = resolveType(unresolvedType = decidedType)
         val existingMapping = knownResolutions[rootOfUndecidedTypeIndex]
         if (existingMapping == null) {
@@ -101,34 +100,6 @@ class UndecidedTypeManager {
         // Check whether the existing type is consistent with the newly resolved one.
         // They should be consistent because they are supposed to be merged together after this step.
         return resolvedDecidedType.resolve(existingMapping)
-    }
-
-    private object TypeResolverVisitor :
-        TypeExpressionVisitor<UndecidedTypeManager, TypeExpression> {
-
-        override fun visit(typeExpression: UnitType, context: UndecidedTypeManager): TypeExpression = typeExpression
-        override fun visit(typeExpression: IntType, context: UndecidedTypeManager): TypeExpression = typeExpression
-        override fun visit(typeExpression: StringType, context: UndecidedTypeManager): TypeExpression = typeExpression
-        override fun visit(typeExpression: BoolType, context: UndecidedTypeManager): TypeExpression = typeExpression
-
-        private fun TypeExpression.resolveType(context: UndecidedTypeManager): TypeExpression =
-            accept(visitor = TypeResolverVisitor, context = context)
-
-        override fun visit(typeExpression: IdentifierType, context: UndecidedTypeManager): TypeExpression =
-            typeExpression.copy(typeArguments = typeExpression.typeArguments?.map { it.resolveType(context = context) })
-
-        override fun visit(typeExpression: TupleType, context: UndecidedTypeManager): TypeExpression =
-            typeExpression.copy(mappings = typeExpression.mappings.map { it.resolveType(context = context) })
-
-        override fun visit(typeExpression: FunctionType, context: UndecidedTypeManager): TypeExpression =
-            typeExpression.copy(
-                argumentTypes = typeExpression.argumentTypes.map { it.resolveType(context = context) },
-                returnType = typeExpression.returnType.resolveType(context = context)
-            )
-
-        override fun visit(typeExpression: UndecidedType, context: UndecidedTypeManager): TypeExpression =
-            context.getPartiallyResolvedType(undecidedType = typeExpression)
-
     }
 
 }
