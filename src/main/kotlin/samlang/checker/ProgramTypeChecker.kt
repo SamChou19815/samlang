@@ -1,105 +1,98 @@
 package samlang.checker
 
-import samlang.ast.checked.CheckedExpr
-import samlang.ast.checked.CheckedModule
-import samlang.ast.checked.CheckedModule.CheckedMemberDefinition
-import samlang.ast.checked.CheckedModule.CheckedTypeDef
-import samlang.ast.checked.CheckedProgram
-import samlang.ast.checked.CheckedTypeExpr
-import samlang.ast.raw.RawExpr
-import samlang.ast.raw.RawModule
-import samlang.ast.raw.RawProgram
+import samlang.ast.*
+import samlang.ast.Module.MemberDefinition
+import samlang.ast.Module.TypeDefinition
 import samlang.errors.CollisionError
 import samlang.errors.IllegalMethodDefinitionError
-import samlang.ast.common.Range
 
 internal object ProgramTypeChecker {
 
-    private data class PartiallyCheckedMemberDefinition(
-        val isPublic: Boolean,
-        val isMethod: Boolean,
-        val typeParameters: List<String>?,
-        val name: String,
-        val typeAnnotation: CheckedTypeExpr.FunctionType,
-        val value: RawExpr.Lambda
-    )
-
-    private fun List<Range.WithName>.checkNameCollision() {
+    private fun Collection<String>.checkNameCollision(range: Range) {
         val nameSet = hashSetOf<String>()
-        forEach { nameWithPos ->
-            if (!nameSet.add(element = nameWithPos.name)) {
-                throw CollisionError(collidedName = nameWithPos)
+        forEach { name ->
+            if (!nameSet.add(element = name)) {
+                throw CollisionError(collidedName = Range.WithName(range = range, name = name))
             }
         }
     }
 
-    fun typeCheck(program: RawProgram, ctx: TypeCheckingContext): CheckedProgram {
-        val checkedModules = arrayListOf<CheckedModule>()
+    fun typeCheck(program: Program, ctx: TypeCheckingContext): Program {
+        val checkedModules = arrayListOf<Module>()
         var currentCtx = ctx
         for (module in program.modules) {
             val (checkedModule, newCtx) = typeCheck(module = module, ctx = currentCtx)
             checkedModules.add(element = checkedModule)
             currentCtx = newCtx
         }
-        return CheckedProgram(modules = checkedModules)
+        return Program(modules = checkedModules)
     }
 
-    private fun typeCheck(module: RawModule, ctx: TypeCheckingContext): Pair<CheckedModule, TypeCheckingContext> {
-        val (modulePosition, moduleNameWithPos, moduleTypeDef, moduleMembers) = module
+    private fun typeCheck(module: Module, ctx: TypeCheckingContext): Pair<Module, TypeCheckingContext> {
+        val (_, moduleNameRange, moduleName, moduleTypeDefinition, moduleMembers) = module
         val (checkedTypeDef, partialCtx) = createContextWithCurrentModuleDefOnly(
-            moduleNameWithPos = moduleNameWithPos, moduleTypeDef = moduleTypeDef, ctx = ctx
+            moduleNameRange = moduleNameRange,
+            moduleName = moduleName,
+            moduleTypeDefinition = moduleTypeDefinition,
+            ctx = ctx
         )
         val (fullCtx, partiallyCheckedMembers) = processCurrentContextWithMembersAndMethods(
-            moduleRange = modulePosition,
-            moduleName = moduleNameWithPos.name,
+            moduleRange = moduleNameRange,
+            moduleName = moduleName,
             moduleMembers = moduleMembers,
-            isUtilModule = moduleTypeDef == null,
+            isUtilModule = moduleTypeDefinition == null,
             ctx = partialCtx
         )
-        val checkedModule = CheckedModule(
-            name = moduleNameWithPos.name,
-            typeDef = checkedTypeDef,
+        val checkedModule = module.copy(
+            typeDefinition = checkedTypeDef,
             members = partiallyCheckedMembers.map { typeCheckMember(member = it, ctx = fullCtx) }
         )
         return checkedModule to fullCtx
     }
 
     private fun createContextWithCurrentModuleDefOnly(
-        moduleNameWithPos: Range.WithName,
-        moduleTypeDef: RawModule.RawTypeDef?,
+        moduleNameRange: Range,
+        moduleName: String,
+        moduleTypeDefinition: TypeDefinition?,
         ctx: TypeCheckingContext
-    ): Pair<CheckedTypeDef?, TypeCheckingContext> {
+    ): Pair<TypeDefinition?, TypeCheckingContext> {
         // new context with type def but empty members and extensions
-        val (moduleNamePos, moduleName) = moduleNameWithPos
-        return if (moduleTypeDef == null) {
-            null to ctx.addNewEmptyUtilModule(name = moduleName, nameRange = moduleNamePos)
+        return if (moduleTypeDefinition == null) {
+            null to ctx.addNewEmptyUtilModule(name = moduleName, nameRange = moduleNameRange)
         } else {
-            val typeParams = moduleTypeDef.typeParams
-            val (isObject, mappings) = when (moduleTypeDef) {
-                is RawModule.RawTypeDef.ObjectType -> {
-                    true to moduleTypeDef.mappings
+            val range = moduleTypeDefinition.range
+            val typeParameters = moduleTypeDefinition.typeParameters
+            val (isObject, mappings) = when (moduleTypeDefinition) {
+                is TypeDefinition.ObjectType -> {
+                    true to moduleTypeDefinition.mappings
                 }
-                is RawModule.RawTypeDef.VariantType -> {
-                    false to moduleTypeDef.mappings
+                is TypeDefinition.VariantType -> {
+                    false to moduleTypeDefinition.mappings
                 }
             }
             // check name collisions
-            typeParams?.checkNameCollision()
-            mappings.map { (name, o) ->
-                val (namePos, _) = o
-                Range.WithName(range = namePos, name = name)
-            }.checkNameCollision()
-            val params = typeParams?.map { it.name }
+            typeParameters?.checkNameCollision(range = range)
+            mappings.keys.checkNameCollision(range = range)
             // create checked type def based on a temp
-            ctx.addNewModuleTypeDef(name = moduleName, nameRange = moduleNamePos, params = params) { tempCtx ->
-                val checkedMappings = mappings.map { (name, o) ->
-                    val (_, rawType) = o
-                    name to rawType.accept(visitor = RawToCheckedTypeVisitor, context = tempCtx)
-                }.toMap()
+            ctx.addNewModuleTypeDefinition(
+                name = moduleName,
+                nameRange = moduleNameRange,
+                typeDefinitionRange = range,
+                params = typeParameters
+            ) { tempContext ->
+                val checkedMappings = mappings.mapValues { (_, type) -> type.validate(context = tempContext) }
                 if (isObject) {
-                    CheckedTypeDef.ObjectType(typeParams = params, mappings = checkedMappings)
+                    TypeDefinition.ObjectType(
+                        range = range,
+                        typeParameters = typeParameters,
+                        mappings = checkedMappings
+                    )
                 } else {
-                    CheckedTypeDef.VariantType(typeParams = params, mappings = checkedMappings)
+                    TypeDefinition.VariantType(
+                        range = range,
+                        typeParameters = typeParameters,
+                        mappings = checkedMappings
+                    )
                 }
             }
         }
@@ -108,15 +101,15 @@ internal object ProgramTypeChecker {
     private fun processCurrentContextWithMembersAndMethods(
         moduleRange: Range,
         moduleName: String,
-        moduleMembers: List<RawModule.RawMemberDefinition>,
+        moduleMembers: List<MemberDefinition>,
         isUtilModule: Boolean,
         ctx: TypeCheckingContext
-    ): Pair<TypeCheckingContext, List<PartiallyCheckedMemberDefinition>> {
-        moduleMembers.map { it.name }.checkNameCollision()
+    ): Pair<TypeCheckingContext, List<MemberDefinition>> {
+        moduleMembers.map { it.name }.checkNameCollision(range = moduleRange)
         val partiallyCheckedMembers = moduleMembers.map { member ->
-            member.typeParameters?.checkNameCollision()
-            val typeParams = member.typeParameters?.map { it.name }
-            var newCtx = typeParams?.let { ctx.addLocalGenericTypes(genericTypes = it) } ?: ctx
+            val typeParameters = member.type.first
+            typeParameters?.checkNameCollision(range = member.range)
+            var newContext = typeParameters?.let { ctx.addLocalGenericTypes(genericTypes = it) } ?: ctx
             if (member.isMethod) {
                 if (isUtilModule) {
                     throw IllegalMethodDefinitionError(
@@ -124,22 +117,15 @@ internal object ProgramTypeChecker {
                         range = moduleRange
                     )
                 }
-                val updatedNewCtx = newCtx.getCurrentModuleTypeDef()
-                    ?.typeParams
-                    ?.let { newCtx.addLocalGenericTypes(genericTypes = it) }
+                val updatedNewCtx = newContext.getCurrentModuleTypeDef()
+                    ?.typeParameters
+                    ?.let { newContext.addLocalGenericTypes(genericTypes = it) }
                 if (updatedNewCtx != null) {
-                    newCtx = updatedNewCtx
+                    newContext = updatedNewCtx
                 }
             }
-            val type = member.typeAnnotation.accept(visitor = RawToCheckedTypeVisitor, context = newCtx)
-            PartiallyCheckedMemberDefinition(
-                isPublic = member.isPublic,
-                isMethod = member.isMethod,
-                typeParameters = typeParams,
-                name = member.name.name,
-                typeAnnotation = type as CheckedTypeExpr.FunctionType,
-                value = member.value
-            )
+            val type = member.type.second.validate(context = newContext) as TypeExpression.FunctionType
+            member.copy(type = typeParameters to type)
         }
         val memberTypeInfo = partiallyCheckedMembers.map { member ->
             Triple(
@@ -147,8 +133,8 @@ internal object ProgramTypeChecker {
                 second = member.isMethod,
                 third = TypeCheckingContext.TypeInfo(
                     isPublic = member.isPublic,
-                    typeParams = member.typeParameters,
-                    type = member.typeAnnotation
+                    typeParams = member.type.first,
+                    type = member.type.second
                 )
             )
         }
@@ -156,40 +142,38 @@ internal object ProgramTypeChecker {
         return newCtx to partiallyCheckedMembers
     }
 
-    private fun typeCheckExpr(expr: RawExpr, ctx: TypeCheckingContext, expectedType: CheckedTypeExpr): CheckedExpr {
+    private fun typeCheckExpression(
+        expression: Expression,
+        ctx: TypeCheckingContext,
+        expectedType: TypeExpression
+    ): Expression {
         val manager = UndecidedTypeManager()
-        val visitor = ExprTypeCheckerVisitor(manager = manager)
-        val checkedExpr = expr.accept(visitor = visitor, context = ctx to expectedType)
+        val visitor = ExpressionTypeCheckerVisitor(manager = manager)
+        val checkedExpr = expression.accept(visitor = visitor, context = ctx to expectedType)
         return CheckedExprTypeFixer.fixType(
-            expr = checkedExpr,
+            expression = checkedExpr,
             expectedType = expectedType,
             manager = manager,
             ctx = ctx,
-            errorRange = expr.range
+            errorRange = expression.range
         )
     }
 
     private fun typeCheckMember(
-        member: PartiallyCheckedMemberDefinition, ctx: TypeCheckingContext
-    ): CheckedMemberDefinition {
-        val (isPublic, isMethod, typeParameters, name, typeAnnotation, value) = member
-        val type = member.typeParameters to member.typeAnnotation
-        var ctxForTypeCheckingValue = if (member.isMethod) ctx.addThisType() else ctx
+        member: MemberDefinition, ctx: TypeCheckingContext
+    ): MemberDefinition {
+        val (range, _, _, _, type, value) = member
+        var ctxForTypeCheckingValue = if (member.isMethod) ctx.addThisType(range = range) else ctx
+        val typeParameters = type.first
         if (typeParameters != null) {
             ctxForTypeCheckingValue = ctxForTypeCheckingValue.addLocalGenericTypes(genericTypes = typeParameters)
         }
-        val checkedValue = typeCheckExpr(
-            expr = value,
+        val checkedValue = typeCheckExpression(
+            expression = value,
             ctx = ctxForTypeCheckingValue,
-            expectedType = typeAnnotation
-        ) as CheckedExpr.Lambda
-        return CheckedMemberDefinition(
-            isPublic = isPublic,
-            isMethod = isMethod,
-            name = name,
-            type = type,
-            value = checkedValue
-        )
+            expectedType = type.second
+        ) as Expression.Lambda
+        return member.copy(value = checkedValue)
     }
 
 }

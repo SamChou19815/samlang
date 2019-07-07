@@ -1,38 +1,40 @@
 package samlang.checker
 
 import kotlinx.collections.immutable.*
-import samlang.ast.checked.CheckedModule
-import samlang.ast.checked.CheckedTypeExpr
+import samlang.ast.Module
+import samlang.ast.Range
+import samlang.ast.TypeExpression
 import samlang.errors.*
-import samlang.ast.common.Range
 
 internal data class TypeCheckingContext(
     private val modules: ImmutableMap<String, ModuleType>,
     val currentModule: String,
     val localGenericTypes: ImmutableSet<String>,
-    private val localValues: ImmutableMap<String, CheckedTypeExpr>
+    private val localValues: ImmutableMap<String, TypeExpression>
 ) {
 
-    data class TypeInfo(val isPublic: Boolean, val typeParams: List<String>?, val type: CheckedTypeExpr.FunctionType)
+    data class TypeInfo(val isPublic: Boolean, val typeParams: List<String>?, val type: TypeExpression.FunctionType)
 
     data class ModuleType(
-        val typeDef: CheckedModule.CheckedTypeDef?,
+        val typeDefinition: Module.TypeDefinition?,
         val functions: ImmutableMap<String, TypeInfo>,
         val methods: ImmutableMap<String, TypeInfo>
     )
 
-    fun addNewModuleTypeDef(
+    fun addNewModuleTypeDefinition(
         name: String,
         nameRange: Range,
+        typeDefinitionRange: Range,
         params: List<String>?,
-        typeDefCreator: (TypeCheckingContext) -> CheckedModule.CheckedTypeDef
-    ): Pair<CheckedModule.CheckedTypeDef, TypeCheckingContext> {
+        typeDefinitionCreator: (TypeCheckingContext) -> Module.TypeDefinition
+    ): Pair<Module.TypeDefinition, TypeCheckingContext> {
         if (modules.containsKey(key = name)) {
             throw CollisionError(collidedName = Range.WithName(range = nameRange, name = name))
         }
         val tempModuleType = ModuleType(
-            typeDef = CheckedModule.CheckedTypeDef.ObjectType(
-                typeParams = params,
+            typeDefinition = Module.TypeDefinition.ObjectType(
+                range = typeDefinitionRange,
+                typeParameters = params,
                 mappings = emptyMap()
             ),
             functions = immutableMapOf(),
@@ -44,9 +46,9 @@ internal data class TypeCheckingContext(
             localGenericTypes = params?.let { localGenericTypes.plus(elements = it) } ?: localGenericTypes,
             localValues = localValues
         )
-        val newTypeDef = typeDefCreator(tempCxt)
+        val newTypeDef = typeDefinitionCreator(tempCxt)
         val newModuleType = ModuleType(
-            typeDef = newTypeDef,
+            typeDefinition = newTypeDef,
             functions = immutableMapOf(),
             methods = immutableMapOf()
         )
@@ -61,7 +63,7 @@ internal data class TypeCheckingContext(
             throw CollisionError(collidedName = Range.WithName(range = nameRange, name = name))
         }
         val newModuleType = ModuleType(
-            typeDef = null,
+            typeDefinition = null,
             functions = immutableMapOf(),
             methods = immutableMapOf()
         )
@@ -90,21 +92,20 @@ internal data class TypeCheckingContext(
         return copy(modules = modules.plus(pair = currentModule to newCurrentModule))
     }
 
-    fun getLocalValueType(name: String): CheckedTypeExpr? = localValues[name]
+    fun getLocalValueType(name: String): TypeExpression? = localValues[name]
 
     fun getModuleFunctionType(
         module: String,
         member: String,
-        manager: UndecidedTypeManager,
         errorRange: Range
-    ): CheckedTypeExpr {
+    ): TypeExpression {
         val typeInfo = modules[module]?.functions?.get(member)?.takeIf { module == currentModule || it.isPublic }
             ?: throw UnresolvedNameError(unresolvedName = "$module::$member", range = errorRange)
         return if (typeInfo.typeParams == null) {
             typeInfo.type
         } else {
             val (t, _) = CheckedTypeDeparameterizer.convert(
-                typeExpr = typeInfo.type, typeParams = typeInfo.typeParams, manager = manager
+                typeExpression = typeInfo.type, typeParameters = typeInfo.typeParams
             )
             t
         }
@@ -112,22 +113,21 @@ internal data class TypeCheckingContext(
 
     fun getModuleMethodType(
         module: String,
-        typeArgs: List<CheckedTypeExpr>?,
+        typeArgs: List<TypeExpression>?,
         methodName: String,
-        manager: UndecidedTypeManager,
         errorRange: Range
-    ): CheckedTypeExpr.FunctionType {
+    ): TypeExpression.FunctionType {
         val typeInfo = modules[module]?.methods?.get(methodName)?.takeIf { module == currentModule || it.isPublic }
             ?: throw UnresolvedNameError(unresolvedName = methodName, range = errorRange)
         val partiallyFixedType = if (typeInfo.typeParams == null) {
             typeInfo.type
         } else {
             val (t, _) = CheckedTypeDeparameterizer.convert(
-                typeExpr = typeInfo.type, typeParams = typeInfo.typeParams, manager = manager
+                typeExpression = typeInfo.type, typeParameters = typeInfo.typeParams
             )
             t
         }
-        val typeParams = modules[module]!!.typeDef?.typeParams
+        val typeParams = modules[module]!!.typeDefinition?.typeParameters
         TypeParamSizeMismatchError.check(
             expectedSize = typeParams?.size ?: 0,
             actualSize = typeArgs?.size ?: 0,
@@ -135,18 +135,18 @@ internal data class TypeCheckingContext(
         )
         val fullyFixedType = if (typeParams != null && typeArgs != null) {
             val typeFixingContext = typeParams.zip(typeArgs).toMap()
-            ModuleTypeDefResolver.applyGenericTypeParams(type = partiallyFixedType, context = typeFixingContext)
+            ModuleTypeDefinitionResolver.applyGenericTypeParams(type = partiallyFixedType, context = typeFixingContext)
         } else partiallyFixedType
-        return fullyFixedType as CheckedTypeExpr.FunctionType
+        return fullyFixedType as TypeExpression.FunctionType
     }
 
     fun checkIfIdentifierTypeIsWellDefined(name: String, typeArgLength: Int, errorRange: Range) {
         val isGood = if (name in localGenericTypes) {
             typeArgLength == 0
         } else {
-            val typeDef = modules[name]?.typeDef
+            val typeDef = modules[name]?.typeDefinition
                 ?: throw NotWellDefinedIdentifierError(badIdentifier = name, range = errorRange)
-            val typeParams = typeDef.typeParams
+            val typeParams = typeDef.typeParameters
             if (typeParams == null) typeArgLength == 0 else typeParams.size == typeArgLength
         }
         if (!isGood) {
@@ -157,37 +157,43 @@ internal data class TypeCheckingContext(
     fun addLocalGenericTypes(genericTypes: Collection<String>): TypeCheckingContext =
         copy(localGenericTypes = localGenericTypes.plus(elements = genericTypes))
 
-    fun getCurrentModuleTypeDef(): CheckedModule.CheckedTypeDef? = modules[currentModule]?.typeDef
+    fun getCurrentModuleTypeDef(): Module.TypeDefinition? = modules[currentModule]?.typeDefinition
 
-    fun getCurrentModuleObjectTypeDef(errorRange: Range): CheckedModule.CheckedTypeDef.ObjectType =
-        getCurrentModuleTypeDef() as? CheckedModule.CheckedTypeDef.ObjectType ?: throw UnsupportedModuleTypeDefError(
+    fun getCurrentModuleObjectTypeDef(errorRange: Range): Module.TypeDefinition.ObjectType =
+        getCurrentModuleTypeDef() as? Module.TypeDefinition.ObjectType ?: throw UnsupportedModuleTypeDefError(
             expectedModuleTypeDef = UnsupportedModuleTypeDefError.ModuleTypeDef.OBJECT,
             range = errorRange
         )
 
-    fun getCurrentModuleVariantTypeDef(errorRange: Range): CheckedModule.CheckedTypeDef.VariantType =
-        getCurrentModuleTypeDef() as? CheckedModule.CheckedTypeDef.VariantType ?: throw UnsupportedModuleTypeDefError(
+    fun getCurrentModuleVariantTypeDef(errorRange: Range): Module.TypeDefinition.VariantType =
+        getCurrentModuleTypeDef() as? Module.TypeDefinition.VariantType ?: throw UnsupportedModuleTypeDefError(
             expectedModuleTypeDef = UnsupportedModuleTypeDefError.ModuleTypeDef.VARIANT,
             range = errorRange
         )
 
-
-    fun addThisType(): TypeCheckingContext {
+    fun addThisType(range: Range): TypeCheckingContext {
         if (localValues.containsKey(key = "this")) {
             error(message = "Corrupted context!")
         }
-        val typeParams = modules[currentModule]!!.typeDef!!.typeParams
-        val type = CheckedTypeExpr.IdentifierType(
+        val typeParameters = modules[currentModule]!!.typeDefinition!!.typeParameters
+        val type = TypeExpression.IdentifierType(
+            range = range,
             identifier = currentModule,
-            typeArgs = typeParams?.map { id -> CheckedTypeExpr.IdentifierType(identifier = id, typeArgs = null) }
+            typeArguments = typeParameters?.map { parameter ->
+                TypeExpression.IdentifierType(
+                    range = range,
+                    identifier = parameter,
+                    typeArguments = null
+                )
+            }
         )
         return copy(
             localValues = localValues.plus(pair = "this" to type),
-            localGenericTypes = typeParams?.let { localGenericTypes.plus(elements = it) } ?: localGenericTypes
+            localGenericTypes = typeParameters?.let { localGenericTypes.plus(elements = it) } ?: localGenericTypes
         )
     }
 
-    fun addLocalValueType(name: String, type: CheckedTypeExpr, errorRange: Range): TypeCheckingContext {
+    fun addLocalValueType(name: String, type: TypeExpression, errorRange: Range): TypeCheckingContext {
         if (localValues.containsKey(name)) {
             throw CollisionError(collidedName = Range.WithName(range = errorRange, name = name))
         }

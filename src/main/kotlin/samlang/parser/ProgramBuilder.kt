@@ -2,7 +2,7 @@ package samlang.parser
 
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
-import samlang.ast.raw.RawProgram
+import samlang.ast.Program
 import samlang.errors.FileError
 import samlang.errors.SyntaxErrors
 import samlang.parser.generated.PLBaseVisitor
@@ -13,7 +13,7 @@ import java.io.InputStream
 
 object ProgramBuilder {
 
-    private fun buildProgram(inputStream: InputStream): RawProgram {
+    private fun buildProgram(inputStream: InputStream): Program {
         val parser = PLParser(CommonTokenStream(PLLexer(ANTLRInputStream(inputStream))))
         val errorListener = SyntaxErrorListener()
         parser.removeErrorListeners()
@@ -27,18 +27,18 @@ object ProgramBuilder {
         }
     }
 
-    fun buildProgramFromSingleFile(fileDir: String): RawProgram =
+    fun buildProgramFromSingleFile(fileDir: String): Program =
         File(fileDir)
             .takeIf { it.isFile }
             ?.let { buildProgram(inputStream = it.inputStream()) }
             ?: throw FileError(dirName = fileDir)
 
-    fun buildProgramFromText(text: String): RawProgram = buildProgram(inputStream = text.byteInputStream())
+    fun buildProgramFromText(text: String): Program = buildProgram(inputStream = text.byteInputStream())
 
-    private object Visitor : PLBaseVisitor<RawProgram>() {
+    private object Visitor : PLBaseVisitor<Program>() {
 
-        override fun visitProgram(ctx: PLParser.ProgramContext): RawProgram =
-            RawProgram(modules = ctx.module().map { it.accept(ModuleBuilder) })
+        override fun visitProgram(ctx: PLParser.ProgramContext): Program =
+            Program(modules = ctx.module().map { it.accept(ModuleBuilder) })
 
     }
 

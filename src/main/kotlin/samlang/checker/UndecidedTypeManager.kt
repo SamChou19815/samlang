@@ -1,8 +1,8 @@
 package samlang.checker
 
-import samlang.ast.checked.CheckedTypeExpr
-import samlang.ast.checked.CheckedTypeExpr.*
-import samlang.ast.checked.CheckedTypeExprVisitor
+import samlang.ast.TypeExpression
+import samlang.ast.TypeExpression.*
+import samlang.ast.TypeExpressionVisitor
 import samlang.util.Either
 import samlang.util.UnionFind
 
@@ -23,31 +23,9 @@ class UndecidedTypeManager {
      * - the value of the map always represents the best knowledge of the type. i.e. we try to resolve as many undecided
      *   type as possible. It implies that it should never contain a child that IS an undecided type.
      */
-    private val knownMappings: MutableMap<Int, CheckedTypeExpr> = mutableMapOf()
+    private val knownMappings: MutableMap<Int, TypeExpression> = mutableMapOf()
 
     override fun toString(): String = "[indexAliasingUnionFind: $indexAliasingUnionFind, knownMappings: $knownMappings"
-
-    /**
-     * Legally allocate a new undecided type.
-     */
-    fun allocateAnUndecidedType(): UndecidedType {
-        val t = UndecidedType(index = indexAliasingUnionFind.capacity)
-        indexAliasingUnionFind.extend()
-        return t
-    }
-
-    /**
-     * Legally allocate a list of undecided types.
-     */
-    fun allocateUndecidedTypes(amount: Int): List<UndecidedType> {
-        val list = arrayListOf<UndecidedType>()
-        val startIndex = indexAliasingUnionFind.capacity
-        for (i in 0 until amount) {
-            list.add(element = UndecidedType(index = i + startIndex))
-        }
-        indexAliasingUnionFind.extend(additionalSize = amount)
-        return list
-    }
 
     /**
      * Find the root of an index.
@@ -62,40 +40,41 @@ class UndecidedTypeManager {
         val keyCorrectMappings = knownMappings.mapKeys { (k, _) -> indexAliasingUnionFind.find(i = k) }
         knownMappings.clear()
         knownMappings.putAll(from = keyCorrectMappings)
-        knownMappings.replaceAll { _, currentValue ->
-            resolveType(unresolvedType = currentValue)
-        }
+        knownMappings.replaceAll { _, currentValue -> resolveType(unresolvedType = currentValue) }
     }
 
     /**
      * Report the current reference to the undecided type.
      */
-    fun reportCurrentUndecidedTypeReference(index: Int): CheckedTypeExpr {
-        val rootIndex = index.root
-        return knownMappings[rootIndex] ?: UndecidedType(index = rootIndex)
+    fun reportCurrentUndecidedTypeReference(undecidedType: UndecidedType): TypeExpression {
+        val rootIndex = undecidedType.index.root
+        return knownMappings[rootIndex] ?: undecidedType
     }
 
     /**
      * Fully resolve an potentially [unresolvedType].
      */
-    fun resolveType(unresolvedType: CheckedTypeExpr) : CheckedTypeExpr =
+    fun resolveType(unresolvedType: TypeExpression): TypeExpression =
         unresolvedType.accept(visitor = TypeResolverVisitor, context = this@UndecidedTypeManager)
 
     /**
-     * Establish an aliasing relation between [index1] and [index2].
+     * Establish an aliasing relation between [undecidedType1] and [undecidedType2].
      *
      * It will either return the known type that both share or an error indicating there is an inconsistency.
      */
-    fun establishAliasing(index1: Int, index2: Int): Either<CheckedTypeExpr, InconsistentTypeReport> {
-        val t1 = reportCurrentUndecidedTypeReference(index = index1)
-        val t2 = reportCurrentUndecidedTypeReference(index = index2)
+    fun establishAliasing(
+        undecidedType1: UndecidedType,
+        undecidedType2: UndecidedType
+    ): Either<TypeExpression, InconsistentTypeReport> {
+        val t1 = reportCurrentUndecidedTypeReference(undecidedType = undecidedType1)
+        val t2 = reportCurrentUndecidedTypeReference(undecidedType = undecidedType2)
         if (t1 !is UndecidedType && t2 !is UndecidedType && t1 != t2) {
             // Inconsistency!
             return Either.Right(v = InconsistentTypeReport(existingType = t1, newType = t2))
         }
-        val commonRoot = indexAliasingUnionFind.link(i = index1, j = index2)
+        val commonRoot = indexAliasingUnionFind.link(i = undecidedType1.index, j = undecidedType2.index)
         refreshKnownMappings()
-        return Either.Left(v = knownMappings[commonRoot] ?: UndecidedType(index = commonRoot))
+        return Either.Left(v = knownMappings[commonRoot] ?: undecidedType1)
     }
 
     /**
@@ -104,13 +83,11 @@ class UndecidedTypeManager {
      * It will either return an error indicating there is an inconsistency of knowledge or the best knowledge of the
      * known type.
      */
-    fun tryReportDecisionForUndecidedType(
+    internal fun tryReportDecisionForUndecidedType(
         undecidedTypeIndex: Int,
-        decidedType: CheckedTypeExpr
-    ): Either<CheckedTypeExpr, InconsistentTypeReport> {
-        if (decidedType == FreeType) {
-            error(message = "Free type can never be a decided type.")
-        } else if (decidedType is UndecidedType) {
+        decidedType: TypeExpression
+    ): Either<TypeExpression, InconsistentTypeReport> {
+        if (decidedType is UndecidedType) {
             error(message = "Use establishAliasing() instead!")
         }
         val rootOfUndecidedTypeIndex = undecidedTypeIndex.root
@@ -124,45 +101,45 @@ class UndecidedTypeManager {
             // Return the best knowledge we have.
             return Either.Left(v = knownMappings[rootOfUndecidedTypeIndex]!!)
         }
-        return if (existingMapping == resolvedDecidedType) {
+        // TODO: try to resolve the difference between existingMapping and resolvedDecidedType.
+        return if (existingMapping isNotConsistentWith resolvedDecidedType) {
+            // Inconsistency!
+            Either.Right(v = InconsistentTypeReport(existingType = existingMapping, newType = resolvedDecidedType))
+        } else {
             // It doesn't tell us anything new, but that's OK.
             Either.Left(v = existingMapping)
             // No need to update because we haven't changed anything.
-        } else {
-            // Inconsistency!
-            Either.Right(v = InconsistentTypeReport(existingType = existingMapping, newType = resolvedDecidedType))
         }
     }
 
-    data class InconsistentTypeReport(val existingType: CheckedTypeExpr, val newType: CheckedTypeExpr)
+    data class InconsistentTypeReport(val existingType: TypeExpression, val newType: TypeExpression)
 
-    private object TypeResolverVisitor : CheckedTypeExprVisitor<UndecidedTypeManager, CheckedTypeExpr> {
+    private object TypeResolverVisitor :
+        TypeExpressionVisitor<UndecidedTypeManager, TypeExpression> {
 
-        override fun visit(typeExpr: UnitType, context: UndecidedTypeManager): CheckedTypeExpr = typeExpr
-        override fun visit(typeExpr: IntType, context: UndecidedTypeManager): CheckedTypeExpr = typeExpr
-        override fun visit(typeExpr: StringType, context: UndecidedTypeManager): CheckedTypeExpr = typeExpr
-        override fun visit(typeExpr: BoolType, context: UndecidedTypeManager): CheckedTypeExpr = typeExpr
+        override fun visit(typeExpression: UnitType, context: UndecidedTypeManager): TypeExpression = typeExpression
+        override fun visit(typeExpression: IntType, context: UndecidedTypeManager): TypeExpression = typeExpression
+        override fun visit(typeExpression: StringType, context: UndecidedTypeManager): TypeExpression = typeExpression
+        override fun visit(typeExpression: BoolType, context: UndecidedTypeManager): TypeExpression = typeExpression
 
-        private fun CheckedTypeExpr.resolveType(context: UndecidedTypeManager): CheckedTypeExpr =
+        private fun TypeExpression.resolveType(context: UndecidedTypeManager): TypeExpression =
             accept(visitor = TypeResolverVisitor, context = context)
 
-        override fun visit(typeExpr: IdentifierType, context: UndecidedTypeManager): CheckedTypeExpr =
-            typeExpr.copy(typeArgs = typeExpr.typeArgs?.map { it.resolveType(context = context) })
+        override fun visit(typeExpression: IdentifierType, context: UndecidedTypeManager): TypeExpression =
+            typeExpression.copy(typeArguments = typeExpression.typeArguments?.map { it.resolveType(context = context) })
 
-        override fun visit(typeExpr: TupleType, context: UndecidedTypeManager): CheckedTypeExpr =
-            TupleType(mappings = typeExpr.mappings.map { it.resolveType(context = context) })
+        override fun visit(typeExpression: TupleType, context: UndecidedTypeManager): TypeExpression =
+            typeExpression.copy(mappings = typeExpression.mappings.map { it.resolveType(context = context) })
 
-        override fun visit(typeExpr: FunctionType, context: UndecidedTypeManager): CheckedTypeExpr =
-            FunctionType(
-                argumentTypes = typeExpr.argumentTypes.map { it.resolveType(context = context) },
-                returnType = typeExpr.returnType.resolveType(context = context)
+        override fun visit(typeExpression: FunctionType, context: UndecidedTypeManager): TypeExpression =
+            typeExpression.copy(
+                argumentTypes = typeExpression.argumentTypes.map { it.resolveType(context = context) },
+                returnType = typeExpression.returnType.resolveType(context = context)
             )
 
-        override fun visit(typeExpr: UndecidedType, context: UndecidedTypeManager): CheckedTypeExpr =
-            context.reportCurrentUndecidedTypeReference(index = typeExpr.index)
+        override fun visit(typeExpression: UndecidedType, context: UndecidedTypeManager): TypeExpression =
+            context.reportCurrentUndecidedTypeReference(undecidedType = typeExpression)
 
-        override fun visit(typeExpr: FreeType, context: UndecidedTypeManager): CheckedTypeExpr =
-            error(message = "You should not decide on this type.")
     }
 
 }

@@ -1,7 +1,7 @@
 package samlang.interpreter
 
 import org.apache.commons.text.StringEscapeUtils
-import samlang.ast.checked.CheckedExpr
+import samlang.ast.Expression
 
 sealed class Value {
 
@@ -15,16 +15,16 @@ sealed class Value {
         override fun toString(): String = "unit"
     }
 
-    data class IntValue(val v: Long) : Value() {
-        override fun toString(): String = v.toString()
+    data class IntValue(val value: Long) : Value() {
+        override fun toString(): String = value.toString()
     }
 
-    data class StringValue(val v: String) : Value() {
-        override fun toString(): String = "\"${StringEscapeUtils.escapeJava(v)}\""
+    data class StringValue(val value: String) : Value() {
+        override fun toString(): String = "\"${StringEscapeUtils.escapeJava(value)}\""
     }
 
-    data class BoolValue(val v: Boolean) : Value() {
-        override fun toString(): String = v.toString()
+    data class BoolValue(val value: Boolean) : Value() {
+        override fun toString(): String = value.toString()
     }
 
     /*
@@ -55,7 +55,7 @@ sealed class Value {
 
     data class FunctionValue(
         internal val arguments: List<String>,
-        internal val body: CheckedExpr,
+        internal val body: Expression,
         internal var context: InterpretationContext
     ) : Value() {
         override fun toString(): String = "function"

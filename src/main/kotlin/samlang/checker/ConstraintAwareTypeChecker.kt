@@ -1,21 +1,21 @@
 package samlang.checker
 
-import samlang.ast.checked.CheckedTypeExpr
-import samlang.ast.checked.CheckedTypeExpr.*
-import samlang.ast.checked.CheckedTypeExprVisitor
+import samlang.ast.Range
+import samlang.ast.TypeExpression
+import samlang.ast.TypeExpression.*
+import samlang.ast.TypeExpressionVisitor
 import samlang.errors.SizeMismatchError
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnexpectedTypeError
-import samlang.ast.common.Range
 import samlang.util.Either
 
 internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {
 
     fun checkAndInfer(
-        expectedType: CheckedTypeExpr,
-        actualType: CheckedTypeExpr,
+        expectedType: TypeExpression,
+        actualType: TypeExpression,
         errorRange: Range
-    ): CheckedTypeExpr = actualType.accept(visitor = Visitor(errorRange = errorRange), context = expectedType)
+    ): TypeExpression = actualType.accept(visitor = Visitor(errorRange = errorRange), context = expectedType)
 
     /**
      * typeExpr -> actual type, not allowed to have free type
@@ -23,15 +23,15 @@ internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {
      */
     private inner class Visitor(
         private val errorRange: Range
-    ) : CheckedTypeExprVisitor<CheckedTypeExpr, CheckedTypeExpr> {
+    ) : TypeExpressionVisitor<TypeExpression, TypeExpression> {
 
-        private fun CheckedTypeExpr.checkAndInfer(expectedType: CheckedTypeExpr): CheckedTypeExpr =
+        private fun TypeExpression.checkAndInfer(expectedType: TypeExpression): TypeExpression =
             accept(visitor = this@Visitor, context = expectedType)
 
-        private fun CheckedTypeExpr.failOnExpected(expectedType: CheckedTypeExpr): Nothing =
+        private fun TypeExpression.failOnExpected(expectedType: TypeExpression): Nothing =
             throw UnexpectedTypeError(expected = expectedType, actual = this, range = errorRange)
 
-        private fun Either<CheckedTypeExpr, UndecidedTypeManager.InconsistentTypeReport>.getType(): CheckedTypeExpr =
+        private fun Either<TypeExpression, UndecidedTypeManager.InconsistentTypeReport>.getType(): TypeExpression =
             when (this) {
                 is Either.Left -> v
                 is Either.Right -> {
@@ -40,89 +40,85 @@ internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {
                 }
             }
 
-        private fun CheckedTypeExpr.inferUndecidedType(undecidedType: UndecidedType): CheckedTypeExpr =
+        private fun TypeExpression.inferUndecidedType(undecidedType: UndecidedType): TypeExpression =
             manager.tryReportDecisionForUndecidedType(
                 undecidedTypeIndex = undecidedType.index, decidedType = this
             ).getType()
 
-        override fun visit(typeExpr: UnitType, context: CheckedTypeExpr): CheckedTypeExpr = when (context) {
-            UnitType, FreeType -> typeExpr
-            is UndecidedType -> typeExpr.inferUndecidedType(undecidedType = context)
-            else -> typeExpr.failOnExpected(expectedType = context)
+        override fun visit(typeExpression: UnitType, context: TypeExpression): TypeExpression = when (context) {
+            is UnitType -> typeExpression
+            is UndecidedType -> typeExpression.inferUndecidedType(undecidedType = context)
+            else -> typeExpression.failOnExpected(expectedType = context)
         }
 
-        override fun visit(typeExpr: IntType, context: CheckedTypeExpr): CheckedTypeExpr = when (context) {
-            IntType, FreeType -> typeExpr
-            is UndecidedType -> typeExpr.inferUndecidedType(undecidedType = context)
-            else -> typeExpr.failOnExpected(expectedType = context)
+        override fun visit(typeExpression: IntType, context: TypeExpression): TypeExpression = when (context) {
+            is IntType -> typeExpression
+            is UndecidedType -> typeExpression.inferUndecidedType(undecidedType = context)
+            else -> typeExpression.failOnExpected(expectedType = context)
         }
 
-        override fun visit(typeExpr: StringType, context: CheckedTypeExpr): CheckedTypeExpr = when (context) {
-            StringType, FreeType -> typeExpr
-            is UndecidedType -> typeExpr.inferUndecidedType(undecidedType = context)
-            else -> typeExpr.failOnExpected(expectedType = context)
+        override fun visit(typeExpression: StringType, context: TypeExpression): TypeExpression = when (context) {
+            is StringType -> typeExpression
+            is UndecidedType -> typeExpression.inferUndecidedType(undecidedType = context)
+            else -> typeExpression.failOnExpected(expectedType = context)
         }
 
-        override fun visit(typeExpr: BoolType, context: CheckedTypeExpr): CheckedTypeExpr = when (context) {
-            BoolType, FreeType -> typeExpr
-            is UndecidedType -> typeExpr.inferUndecidedType(undecidedType = context)
-            else -> typeExpr.failOnExpected(expectedType = context)
+        override fun visit(typeExpression: BoolType, context: TypeExpression): TypeExpression = when (context) {
+            is BoolType -> typeExpression
+            is UndecidedType -> typeExpression.inferUndecidedType(undecidedType = context)
+            else -> typeExpression.failOnExpected(expectedType = context)
         }
 
-        override fun visit(typeExpr: IdentifierType, context: CheckedTypeExpr): CheckedTypeExpr = when (context) {
-            FreeType -> typeExpr
+        override fun visit(typeExpression: IdentifierType, context: TypeExpression): TypeExpression = when (context) {
             is IdentifierType -> {
-                if (typeExpr.identifier != context.identifier) {
-                    typeExpr.failOnExpected(expectedType = context)
+                if (typeExpression.identifier != context.identifier) {
+                    typeExpression.failOnExpected(expectedType = context)
                 }
-                val inferredTypeArgs = TypeParamSizeMismatchError.check(
-                    expectedList = context.typeArgs,
-                    actualList = typeExpr.typeArgs,
+                val inferredTypeArguments = TypeParamSizeMismatchError.check(
+                    expectedList = context.typeArguments,
+                    actualList = typeExpression.typeArguments,
                     range = errorRange
                 )?.map { (expect, actual) -> actual.checkAndInfer(expectedType = expect) }
-                typeExpr.copy(typeArgs = inferredTypeArgs)
+                typeExpression.copy(typeArguments = inferredTypeArguments)
             }
-            is UndecidedType -> typeExpr.inferUndecidedType(undecidedType = context)
-            else -> typeExpr.failOnExpected(expectedType = context)
+            is UndecidedType -> typeExpression.inferUndecidedType(undecidedType = context)
+            else -> typeExpression.failOnExpected(expectedType = context)
         }
 
-        override fun visit(typeExpr: TupleType, context: CheckedTypeExpr): CheckedTypeExpr = when (context) {
-            FreeType -> typeExpr
-            is TupleType -> TupleType(
+        override fun visit(typeExpression: TupleType, context: TypeExpression): TypeExpression = when (context) {
+            is TupleType -> typeExpression.copy(
                 mappings = SizeMismatchError.checkNotNull(
                     sizeDescription = "tuple",
                     expectedList = context.mappings,
-                    actualList = typeExpr.mappings,
+                    actualList = typeExpression.mappings,
                     range = errorRange
                 ).map { (expect, actual) -> actual.checkAndInfer(expectedType = expect) }
             )
-            is UndecidedType -> typeExpr.inferUndecidedType(undecidedType = context)
-            else -> typeExpr.failOnExpected(expectedType = context)
+            is UndecidedType -> typeExpression.inferUndecidedType(undecidedType = context)
+            else -> typeExpression.failOnExpected(expectedType = context)
         }
 
-        override fun visit(typeExpr: FunctionType, context: CheckedTypeExpr): CheckedTypeExpr = when (context) {
-            FreeType -> typeExpr
-            is FunctionType -> FunctionType(
+        override fun visit(typeExpression: FunctionType, context: TypeExpression): TypeExpression = when (context) {
+            is FunctionType -> typeExpression.copy(
                 argumentTypes = SizeMismatchError.checkNotNull(
                     sizeDescription = "function arguments",
                     expectedList = context.argumentTypes,
-                    actualList = typeExpr.argumentTypes,
+                    actualList = typeExpression.argumentTypes,
                     range = errorRange
                 ).map { (expect, actual) -> actual.checkAndInfer(expectedType = expect) },
-                returnType = typeExpr.returnType.checkAndInfer(expectedType = context.returnType)
+                returnType = typeExpression.returnType.checkAndInfer(expectedType = context.returnType)
             )
-            is UndecidedType -> typeExpr.inferUndecidedType(undecidedType = context)
-            else -> typeExpr.failOnExpected(expectedType = context)
+            is UndecidedType -> typeExpression.inferUndecidedType(undecidedType = context)
+            else -> typeExpression.failOnExpected(expectedType = context)
         }
 
-        override fun visit(typeExpr: UndecidedType, context: CheckedTypeExpr): CheckedTypeExpr = when (context) {
-            FreeType -> typeExpr
-            is UndecidedType -> manager.establishAliasing(index1 = typeExpr.index, index2 = context.index).getType()
-            else -> context.inferUndecidedType(undecidedType = typeExpr)
+        override fun visit(typeExpression: UndecidedType, context: TypeExpression): TypeExpression = when (context) {
+            is UndecidedType -> manager.establishAliasing(
+                undecidedType1 = typeExpression,
+                undecidedType2 = context
+            ).getType()
+            else -> context.inferUndecidedType(undecidedType = typeExpression)
         }
-
-        override fun visit(typeExpr: FreeType, context: CheckedTypeExpr): CheckedTypeExpr =
-            error(message = "Not allowed to be free type because it's not the constraint.")
 
     }
 

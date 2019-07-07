@@ -1,6 +1,4 @@
-package samlang.ast.common
-
-import org.antlr.v4.runtime.Token
+package samlang.ast
 
 data class Position(val line: Int, val column: Int) : Comparable<Position> {
 

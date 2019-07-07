@@ -1,16 +1,15 @@
 package samlang.parser
 
-import samlang.ast.common.Range
-import samlang.ast.raw.RawExpr
-import samlang.ast.raw.RawModule
-import samlang.ast.raw.RawTypeExpr
+import samlang.ast.Expression
+import samlang.ast.Module
+import samlang.ast.Range
+import samlang.ast.TypeExpression
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser.*
 
-internal object ModuleBuilder : PLBaseVisitor<RawModule>() {
+internal object ModuleBuilder : PLBaseVisitor<Module>() {
 
-    private val TypeParametersDeclarationContext.typeParameters: List<Range.WithName>
-        get() = UpperId().map { it.symbol.rangeWithName }
+    private val TypeParametersDeclarationContext.typeParameters: List<String> get() = UpperId().map { it.symbol.text }
 
     private object ModuleNameBuilder : PLBaseVisitor<Range.WithName>() {
 
@@ -22,89 +21,92 @@ internal object ModuleBuilder : PLBaseVisitor<RawModule>() {
 
     }
 
-    private object ModuleTypeDefBuilder : PLBaseVisitor<RawModule.RawTypeDef?>() {
+    private object ModuleTypeDefinitionBuilder : PLBaseVisitor<Module.TypeDefinition?>() {
 
-        override fun visitClassHeader(ctx: ClassHeaderContext): RawModule.RawTypeDef {
+        override fun visitClassHeader(ctx: ClassHeaderContext): Module.TypeDefinition {
             val rawTypeParams: TypeParametersDeclarationContext? = ctx.typeParametersDeclaration()
             val rawTypeDeclaration = ctx.typeDeclaration()
             val typeParams = rawTypeParams?.typeParameters
             val position = rawTypeParams?.range?.union(rawTypeDeclaration.range) ?: rawTypeDeclaration.range
-            return rawTypeDeclaration.accept(TypeDefBuilder(position, typeParams))
+            return rawTypeDeclaration.accept(TypeDefinitionBuilder(position, typeParams))
         }
 
-        override fun visitUtilHeader(ctx: UtilHeaderContext): RawModule.RawTypeDef? = null
+        override fun visitUtilHeader(ctx: UtilHeaderContext): Module.TypeDefinition? = null
 
-        private class TypeDefBuilder(
+        private class TypeDefinitionBuilder(
             private val range: Range,
-            private val typeParams: List<Range.WithName>?
-        ) : PLBaseVisitor<RawModule.RawTypeDef>() {
+            private val typeParameters: List<String>?
+        ) : PLBaseVisitor<Module.TypeDefinition>() {
 
-            override fun visitObjType(ctx: ObjTypeContext): RawModule.RawTypeDef =
-                RawModule.RawTypeDef.ObjectType(
+            override fun visitObjType(ctx: ObjTypeContext): Module.TypeDefinition =
+                Module.TypeDefinition.ObjectType(
                     range = range,
-                    typeParams = typeParams,
-                    mappings = ctx.objectTypeFieldDeclaration().map { c ->
-                        val (pos, name) = c.LowerId().symbol.rangeWithName
-                        val t = c.typeAnnotation().typeExpr().accept(TypeExprBuilder)
-                        name to (pos to t)
-                    }
+                    typeParameters = typeParameters,
+                    mappings = ctx.objectTypeFieldDeclaration().asSequence().map { c ->
+                        val name = c.LowerId().symbol.text
+                        val type = c.typeAnnotation().typeExpr().accept(TypeExpressionBuilder)
+                        name to type
+                    }.toMap()
                 )
 
-            override fun visitVariantType(ctx: VariantTypeContext): RawModule.RawTypeDef =
-                RawModule.RawTypeDef.VariantType(
+            override fun visitVariantType(ctx: VariantTypeContext): Module.TypeDefinition =
+                Module.TypeDefinition.VariantType(
                     range = range,
-                    typeParams = typeParams,
-                    mappings = ctx.variantTypeConstructorDeclaration().map { c ->
-                        val (pos, name) = c.UpperId().symbol.rangeWithName
-                        val t = c.typeExpr().accept(TypeExprBuilder)
-                        name to (pos to t)
-                    }
+                    typeParameters = typeParameters,
+                    mappings = ctx.variantTypeConstructorDeclaration().asSequence().map { c ->
+                        val name = c.UpperId().symbol.text
+                        val type = c.typeExpr().accept(TypeExpressionBuilder)
+                        name to type
+                    }.toMap()
                 )
-
         }
-
     }
 
-    private fun buildModuleMemberDefinition(ctx: ModuleMemberDefinitionContext): RawModule.RawMemberDefinition {
+    private fun buildModuleMemberDefinition(ctx: ModuleMemberDefinitionContext): Module.MemberDefinition {
         val annotatedVariables = ctx.annotatedVariable().map { annotatedVar ->
             val varName = annotatedVar.LowerId().symbol.rangeWithName
-            val typeAnnotation = annotatedVar.typeAnnotation().typeExpr().accept(TypeExprBuilder)
+            val typeAnnotation = annotatedVar.typeAnnotation().typeExpr().accept(TypeExpressionBuilder)
             varName to typeAnnotation
         }
         val typeExpression = ctx.typeExpr()
         val bodyExpression = ctx.expression()
         val firstArgRange = annotatedVariables.firstOrNull()?.first?.range
-        return RawModule.RawMemberDefinition(
+        val type = TypeExpression.FunctionType(
+            range = Range(
+                start = firstArgRange?.start ?: typeExpression.range.start,
+                end = typeExpression.range.end
+            ),
+            argumentTypes = annotatedVariables.map { it.second },
+            returnType = typeExpression.accept(TypeExpressionBuilder)
+        )
+        return Module.MemberDefinition(
             range = ctx.range,
             isPublic = ctx.PUBLIC() != null,
             isMethod = ctx.METHOD() != null,
-            typeParameters = ctx.typeParametersDeclaration()?.typeParameters,
-            name = ctx.LowerId().symbol.rangeWithName,
-            typeAnnotation = RawTypeExpr.FunctionType(
-                range = Range(
-                    start = firstArgRange?.start ?: typeExpression.range.start,
-                    end = typeExpression.range.end
-                ),
-                argumentTypes = annotatedVariables.map { it.second },
-                returnType = typeExpression.accept(TypeExprBuilder)
-            ),
-            value = RawExpr.Lambda(
+            name = ctx.LowerId().symbol.text,
+            type = ctx.typeParametersDeclaration()?.typeParameters to type,
+            value = Expression.Lambda(
                 range = Range(
                     start = firstArgRange?.start ?: bodyExpression.range.start,
                     end = bodyExpression.range.end
                 ),
-                arguments = annotatedVariables,
-                body = bodyExpression.accept(ExprBuilder)
+                type = type,
+                arguments = annotatedVariables.map { (nameWithRange, type) -> nameWithRange.name to type },
+                body = bodyExpression.accept(ExpressionBuilder)
             )
         )
     }
 
-    override fun visitModule(ctx: ModuleContext): RawModule = RawModule(
-        range = ctx.range,
-        name = ctx.moduleHeaderDeclaration().accept(ModuleNameBuilder),
-        typeDef = ctx.moduleHeaderDeclaration().accept(ModuleTypeDefBuilder),
-        members = ctx.moduleMemberDefinition().map { buildModuleMemberDefinition(ctx = it) }
-    )
+    override fun visitModule(ctx: ModuleContext): Module {
+        val (nameRange, name) = ctx.moduleHeaderDeclaration().accept(ModuleNameBuilder)
+        return Module(
+            range = ctx.range,
+            nameRange = nameRange,
+            name = name,
+            typeDefinition = ctx.moduleHeaderDeclaration().accept(ModuleTypeDefinitionBuilder),
+            members = ctx.moduleMemberDefinition().map { buildModuleMemberDefinition(ctx = it) }
+        )
+    }
 
 }
 

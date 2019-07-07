@@ -1,8 +1,8 @@
 package samlang.interpreter
 
 import kotlinx.collections.immutable.plus
-import samlang.ast.checked.CheckedModule
-import samlang.ast.checked.CheckedProgram
+import samlang.ast.Module
+import samlang.ast.Program
 
 /**
  * The interpreter used to evaluate an already type checked program.
@@ -13,7 +13,7 @@ internal object ProgramInterpreter {
      * Evaluate the [program] under some interpretation [context] (default to empty)
      * to either a value or a [PanicException].
      */
-    fun eval(program: CheckedProgram, context: InterpretationContext = InterpretationContext.EMPTY): Value {
+    fun eval(program: Program, context: InterpretationContext = InterpretationContext.EMPTY): Value {
         try {
             return unsafeEval(program = program, context = context)
         } catch (e: StackOverflowError) {
@@ -41,25 +41,25 @@ internal object ProgramInterpreter {
     /**
      * Evaluate the program directly, without considering stack overflow and other errors beyond our control.
      */
-    private fun unsafeEval(program: CheckedProgram, context: InterpretationContext): Value {
+    private fun unsafeEval(program: Program, context: InterpretationContext): Value {
         val fullCtx = program.modules.fold(initial = context) { ctx, module -> eval(module = module, context = ctx) }
         val mainModule = fullCtx.modules["Main"] ?: return Value.UnitValue
         val mainFunction = mainModule.functions["main"] ?: return Value.UnitValue
         if (mainFunction.arguments.isNotEmpty()) {
             return Value.UnitValue
         }
-        return ExprInterpreter.eval(expr = mainFunction.body, context = mainFunction.context)
+        return ExpressionInterpreter.eval(expression = mainFunction.body, context = mainFunction.context)
     }
 
-    private fun eval(module: CheckedModule, context: InterpretationContext): InterpretationContext {
+    private fun eval(module: Module, context: InterpretationContext): InterpretationContext {
         val functions = hashMapOf<String, Value.FunctionValue>()
         val methods = hashMapOf<String, Value.FunctionValue>()
         module.members.forEach { member ->
-            val v = ExprInterpreter.visit(expr = member.value, context = context)
+            val value = ExpressionInterpreter.visit(expression = member.value, context = context)
             if (member.isMethod) {
-                methods[member.name] = v
+                methods[member.name] = value
             } else {
-                functions[member.name] = v
+                functions[member.name] = value
             }
         }
         val newModule = InterpretationContext.ModuleValue(
@@ -68,8 +68,8 @@ internal object ProgramInterpreter {
         )
         val newContext = context.copy(modules = context.modules.plus(pair = module.name to newModule))
         // patch the functions and methods with correct context.
-        functions.forEach { _, v -> v.context = newContext }
-        methods.forEach { _, v -> v.context = newContext }
+        functions.forEach { (_, v) -> v.context = newContext }
+        methods.forEach { (_, v) -> v.context = newContext }
         return newContext
     }
 

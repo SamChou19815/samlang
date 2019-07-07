@@ -1,4 +1,4 @@
-package samlang.ast.common
+package samlang.ast
 
 /**
  * @property symbol symbol of the operator in this language.

@@ -1,28 +1,25 @@
 package samlang.checker
 
-import samlang.ast.checked.CheckedExpr
-import samlang.ast.checked.CheckedExpr.*
-import samlang.ast.checked.CheckedExprVisitor
-import samlang.ast.checked.CheckedTypeExpr
-import samlang.ast.checked.CheckedTypeExpr.*
-import samlang.ast.checked.CheckedTypeExprVisitor
-import samlang.ast.common.BinaryOperator.*
-import samlang.ast.common.UnaryOperator
+import samlang.ast.*
+import samlang.ast.BinaryOperator.*
+import samlang.ast.CheckedExprVisitor
+import samlang.ast.Expression.*
+import samlang.ast.Expression.Literal
+import samlang.ast.TypeExpression.*
 import samlang.errors.InsufficientTypeInferenceContextError
 import samlang.errors.UnexpectedTypeError
-import samlang.ast.common.Range
 
 internal object CheckedExprTypeFixer {
 
     // TODO produce better error messages
 
     fun fixType(
-        expr: CheckedExpr,
-        expectedType: CheckedTypeExpr,
+        expression: Expression,
+        expectedType: TypeExpression,
         manager: UndecidedTypeManager,
         ctx: TypeCheckingContext,
         errorRange: Range
-    ): CheckedExpr = expr.accept(
+    ): Expression = expression.accept(
         visitor = TypeFixerVisitor(
             manager = manager,
             ctx = ctx,
@@ -32,31 +29,30 @@ internal object CheckedExprTypeFixer {
         context = expectedType
     )
 
-    private class UnresolvedTypeDetectorVisitor(private val pos: Range) : CheckedTypeExprVisitor<Unit, Unit> {
+    private class UnresolvedTypeDetectorVisitor(private val pos: Range) :
+        TypeExpressionVisitor<Unit, Unit> {
 
-        override fun visit(typeExpr: UnitType, context: Unit) {}
-        override fun visit(typeExpr: IntType, context: Unit) {}
-        override fun visit(typeExpr: StringType, context: Unit) {}
-        override fun visit(typeExpr: BoolType, context: Unit) {}
+        override fun visit(typeExpression: UnitType, context: Unit) {}
+        override fun visit(typeExpression: IntType, context: Unit) {}
+        override fun visit(typeExpression: StringType, context: Unit) {}
+        override fun visit(typeExpression: BoolType, context: Unit) {}
 
-        private fun CheckedTypeExpr.check(): Unit = accept(visitor = this@UnresolvedTypeDetectorVisitor, context = Unit)
+        private fun TypeExpression.check(): Unit = accept(visitor = this@UnresolvedTypeDetectorVisitor, context = Unit)
 
-        override fun visit(typeExpr: IdentifierType, context: Unit) {
-            typeExpr.typeArgs?.forEach { it.check() }
+        override fun visit(typeExpression: IdentifierType, context: Unit) {
+            typeExpression.typeArguments?.forEach { it.check() }
         }
 
-        override fun visit(typeExpr: TupleType, context: Unit): Unit = typeExpr.mappings.forEach { it.check() }
+        override fun visit(typeExpression: TupleType, context: Unit): Unit =
+            typeExpression.mappings.forEach { it.check() }
 
-        override fun visit(typeExpr: FunctionType, context: Unit) {
-            typeExpr.argumentTypes.forEach { it.check() }
-            typeExpr.returnType.check()
+        override fun visit(typeExpression: FunctionType, context: Unit) {
+            typeExpression.argumentTypes.forEach { it.check() }
+            typeExpression.returnType.check()
         }
 
-        override fun visit(typeExpr: UndecidedType, context: Unit): Unit =
+        override fun visit(typeExpression: UndecidedType, context: Unit): Unit =
             throw InsufficientTypeInferenceContextError(range = pos)
-
-        override fun visit(typeExpr: FreeType, context: Unit): Unit =
-            error(message = "The expression should not contain free type.")
 
     }
 
@@ -65,18 +61,21 @@ internal object CheckedExprTypeFixer {
         private val ctx: TypeCheckingContext,
         private val detectorVisitor: UnresolvedTypeDetectorVisitor,
         private val errorRange: Range
-    ) : CheckedExprVisitor<CheckedTypeExpr, CheckedExpr> {
+    ) : CheckedExprVisitor<TypeExpression, Expression> {
 
-        private fun CheckedExpr.tryFixType(expectedType: CheckedTypeExpr): CheckedExpr =
+        private fun Expression.tryFixType(expectedType: TypeExpression): Expression =
             accept(visitor = this@TypeFixerVisitor, context = expectedType)
 
-        private fun CheckedTypeExpr.fixSelf(expectedType: CheckedTypeExpr?): CheckedTypeExpr {
+        private fun Expression.tryFixType(): Expression =
+            accept(visitor = this@TypeFixerVisitor, context = type)
+
+        private fun TypeExpression.fixSelf(expectedType: TypeExpression?): TypeExpression {
             val fullyResolvedType = manager.resolveType(unresolvedType = this)
             fullyResolvedType.accept(visitor = detectorVisitor, context = Unit)
             if (expectedType == null) {
                 return fullyResolvedType
             }
-            if (fullyResolvedType != expectedType) {
+            if (fullyResolvedType isNotConsistentWith expectedType) {
                 throw UnexpectedTypeError(
                     expected = expectedType,
                     actual = fullyResolvedType,
@@ -95,125 +94,126 @@ internal object CheckedExprTypeFixer {
 
         private fun blameTypeChecker(): Nothing = error(message = "Slack type checker!")
 
-        override fun visit(expr: Literal, context: CheckedTypeExpr): CheckedExpr =
-            expr.copy(type = expr.type.fixSelf(expectedType = context))
+        override fun visit(expression: Literal, context: TypeExpression): Expression =
+            expression.copy(type = expression.type.fixSelf(expectedType = context))
 
-        override fun visit(expr: This, context: CheckedTypeExpr): CheckedExpr =
-            expr.copy(type = expr.type.fixSelf(expectedType = context))
+        override fun visit(expression: This, context: TypeExpression): Expression =
+            expression.copy(type = expression.type.fixSelf(expectedType = context))
 
-        override fun visit(expr: Variable, context: CheckedTypeExpr): CheckedExpr =
-            expr.copy(type = expr.type.fixSelf(expectedType = context))
+        override fun visit(expression: Variable, context: TypeExpression): Expression =
+            expression.copy(type = expression.type.fixSelf(expectedType = context))
 
-        override fun visit(expr: ModuleMember, context: CheckedTypeExpr): CheckedExpr =
-            expr.copy(type = expr.type.fixSelf(expectedType = context))
+        override fun visit(expression: ModuleMember, context: TypeExpression): Expression =
+            expression.copy(type = expression.type.fixSelf(expectedType = context))
 
-        override fun visit(expr: TupleConstructor, context: CheckedTypeExpr): CheckedExpr {
-            val newType = expr.type.fixSelf(expectedType = context) as TupleType
-            return TupleConstructor(
+        override fun visit(expression: TupleConstructor, context: TypeExpression): Expression {
+            val newType = expression.type.fixSelf(expectedType = context) as TupleType
+            return expression.copy(
                 type = newType,
-                exprList = expr.exprList.zip(newType.mappings).map { (e, t) -> e.tryFixType(expectedType = t) }
+                expressionList = expression.expressionList.zip(newType.mappings).map { (expression, type) ->
+                    expression.tryFixType(expectedType = type)
+                }
             )
         }
 
-        override fun visit(expr: ObjectConstructor, context: CheckedTypeExpr): CheckedExpr {
-            val newType = expr.type.fixSelf(expectedType = context) as IdentifierType
-            val (params, mapping) = ctx.getCurrentModuleObjectTypeDef(errorRange = errorRange)
-            val betterMapping = if (params != null && newType.typeArgs != null) {
-                val replacementMap = params.checkedZip(other = newType.typeArgs).toMap()
+        override fun visit(expression: ObjectConstructor, context: TypeExpression): Expression {
+            val newType = expression.type.fixSelf(expectedType = context) as IdentifierType
+            val (_, params, mapping) = ctx.getCurrentModuleObjectTypeDef(errorRange = errorRange)
+            val betterMapping = if (params != null && newType.typeArguments != null) {
+                val replacementMap = params.checkedZip(other = newType.typeArguments).toMap()
                 mapping.mapValues { (_, v) ->
-                    ModuleTypeDefResolver.applyGenericTypeParams(type = v, context = replacementMap)
+                    ModuleTypeDefinitionResolver.applyGenericTypeParams(type = v, context = replacementMap)
                 }
             } else mapping
-            val newSpreadExpr = expr.spreadExpr?.tryFixType(expectedType = context)
-            val newDeclarations = expr.fieldDeclarations.map { dec ->
+            val newSpreadExpr = expression.spreadExpression?.tryFixType(expectedType = context)
+            val newDeclarations = expression.fieldDeclarations.map { dec ->
                 val expTypeForDec = betterMapping[dec.name] ?: blameTypeChecker()
                 val betterType = dec.type.fixSelf(expectedType = expTypeForDec)
                 when (dec) {
                     is ObjectConstructor.FieldConstructor.Field -> dec.copy(
                         type = betterType,
-                        expr = dec.expr.tryFixType(expectedType = betterType)
+                        expression = dec.expression.tryFixType(expectedType = betterType)
                     )
                     is ObjectConstructor.FieldConstructor.FieldShorthand -> dec.copy(type = betterType)
                 }
             }
-            return ObjectConstructor(
+            return expression.copy(
                 type = newType,
-                spreadExpr = newSpreadExpr,
+                spreadExpression = newSpreadExpr,
                 fieldDeclarations = newDeclarations
             )
         }
 
-        override fun visit(expr: VariantConstructor, context: CheckedTypeExpr): CheckedExpr {
-            val newType = expr.type.fixSelf(expectedType = context) as IdentifierType
-            val (params, mapping) = ctx.getCurrentModuleVariantTypeDef(errorRange = errorRange)
-            var dataType = mapping[expr.tag] ?: blameTypeChecker()
-            if (params != null && newType.typeArgs != null) {
-                dataType = ModuleTypeDefResolver.applyGenericTypeParams(
-                    type = dataType, context = params.checkedZip(other = newType.typeArgs).toMap()
+        override fun visit(expression: VariantConstructor, context: TypeExpression): Expression {
+            val newType = expression.type.fixSelf(expectedType = context) as IdentifierType
+            val (_, params, mapping) = ctx.getCurrentModuleVariantTypeDef(errorRange = errorRange)
+            var dataType = mapping[expression.tag] ?: blameTypeChecker()
+            if (params != null && newType.typeArguments != null) {
+                dataType = ModuleTypeDefinitionResolver.applyGenericTypeParams(
+                    type = dataType, context = params.checkedZip(other = newType.typeArguments).toMap()
                 )
             }
-            return VariantConstructor(
+            return expression.copy(
                 type = newType,
-                tag = expr.tag,
-                data = expr.data.tryFixType(expectedType = dataType)
+                data = expression.data.tryFixType(expectedType = dataType)
             )
         }
 
-        override fun visit(expr: FieldAccess, context: CheckedTypeExpr): CheckedExpr = FieldAccess(
-            type = expr.type.fixSelf(expectedType = context),
-            expr = expr.expr.tryFixType(expectedType = expr.expr.type.fixSelf(expectedType = null)),
-            fieldName = expr.fieldName
+        override fun visit(expression: FieldAccess, context: TypeExpression): Expression = expression.copy(
+            type = expression.type.fixSelf(expectedType = context),
+            expression = expression.expression.tryFixType(
+                expectedType = expression.expression.type.fixSelf(expectedType = null)
+            )
         )
 
-        override fun visit(expr: MethodAccess, context: CheckedTypeExpr): CheckedExpr = MethodAccess(
-            type = expr.type.fixSelf(expectedType = context) as FunctionType,
-            expr = expr.expr.tryFixType(expectedType = expr.expr.type.fixSelf(expectedType = null)),
-            methodName = expr.methodName
+        override fun visit(expression: MethodAccess, context: TypeExpression): Expression = expression.copy(
+            type = expression.type.fixSelf(expectedType = context) as FunctionType,
+            expression = expression.expression.tryFixType(
+                expectedType = expression.expression.type.fixSelf(expectedType = null)
+            ),
+            methodName = expression.methodName
         )
 
-        override fun visit(expr: Unary, context: CheckedTypeExpr): CheckedExpr = Unary(
-            type = expr.type.fixSelf(expectedType = context),
-            operator = expr.operator,
-            expr = when (expr.operator) {
-                UnaryOperator.NEG -> expr.expr.tryFixType(expectedType = IntType)
-                UnaryOperator.NOT -> expr.expr.tryFixType(expectedType = BoolType)
+        override fun visit(expression: Unary, context: TypeExpression): Expression = expression.copy(
+            type = expression.type.fixSelf(expectedType = context),
+            operator = expression.operator,
+            expression = when (expression.operator) {
+                UnaryOperator.NEG -> expression.expression.tryFixType()
+                UnaryOperator.NOT -> expression.expression.tryFixType()
             }
         )
 
-        override fun visit(expr: Panic, context: CheckedTypeExpr): CheckedExpr = Panic(
-            type = expr.type.fixSelf(expectedType = context),
-            expr = expr.expr.tryFixType(expectedType = StringType)
+        override fun visit(expression: Panic, context: TypeExpression): Expression = expression.copy(
+            type = expression.type.fixSelf(expectedType = context),
+            expression = expression.expression.tryFixType()
         )
 
-        override fun visit(expr: FunApp, context: CheckedTypeExpr): CheckedExpr {
-            val funExprType = expr.funExpr.type.fixSelf(expectedType = null) as FunctionType
-            if (context != funExprType.returnType) {
+        override fun visit(expression: FunctionApplication, context: TypeExpression): Expression {
+            val funExprType = expression.functionExpression.type.fixSelf(expectedType = null) as FunctionType
+            if (context isNotConsistentWith funExprType.returnType) {
                 throw UnexpectedTypeError(
                     expected = context,
                     actual = funExprType.returnType,
                     range = errorRange
                 )
             }
-            return FunApp(
-                type = expr.type.fixSelf(expectedType = context),
-                funExpr = expr.funExpr.tryFixType(expectedType = funExprType),
-                arguments = expr.arguments.checkedZip(other = funExprType.argumentTypes).map { (e, t) ->
+            return expression.copy(
+                type = expression.type.fixSelf(expectedType = context),
+                functionExpression = expression.functionExpression.tryFixType(expectedType = funExprType),
+                arguments = expression.arguments.checkedZip(other = funExprType.argumentTypes).map { (e, t) ->
                     e.tryFixType(expectedType = t)
                 }
             )
         }
 
-        override fun visit(expr: Binary, context: CheckedTypeExpr): CheckedExpr {
-            val (newE1, newE2) = when (expr.operator) {
-                MUL, DIV, MOD, PLUS, MINUS, LT, LE, GT, GE -> {
-                    expr.e1.tryFixType(expectedType = IntType) to expr.e2.tryFixType(expectedType = IntType)
-                }
-                AND, OR -> {
-                    expr.e1.tryFixType(expectedType = BoolType) to expr.e2.tryFixType(expectedType = BoolType)
+        override fun visit(expression: Binary, context: TypeExpression): Expression {
+            val (newE1, newE2) = when (expression.operator) {
+                MUL, DIV, MOD, PLUS, MINUS, LT, LE, GT, GE, AND, OR -> {
+                    expression.e1.tryFixType() to expression.e2.tryFixType()
                 }
                 NE, EQ -> {
-                    val t1 = expr.e1.type.fixSelf(expectedType = null)
-                    val t2 = expr.e1.type.fixSelf(expectedType = null)
+                    val t1 = expression.e1.type.fixSelf(expectedType = null)
+                    val t2 = expression.e1.type.fixSelf(expectedType = null)
                     if (t1 != t2) {
                         throw UnexpectedTypeError(
                             expected = t1,
@@ -221,62 +221,63 @@ internal object CheckedExprTypeFixer {
                             range = errorRange
                         )
                     }
-                    val newE1 = expr.e1.tryFixType(expectedType = t1)
-                    val newE2 = expr.e2.tryFixType(expectedType = t1)
+                    val newE1 = expression.e1.tryFixType(expectedType = t1)
+                    val newE2 = expression.e2.tryFixType(expectedType = t1)
                     newE1 to newE2
                 }
             }
-            return Binary(
-                type = expr.type.fixSelf(expectedType = context),
-                e1 = newE1,
-                operator = expr.operator,
-                e2 = newE2
-            )
+            return expression.copy(type = expression.type.fixSelf(expectedType = context), e1 = newE1, e2 = newE2)
         }
 
-        override fun visit(expr: IfElse, context: CheckedTypeExpr): CheckedExpr = IfElse(
-            type = expr.type.fixSelf(expectedType = context),
-            boolExpr = expr.boolExpr.tryFixType(expectedType = BoolType),
-            e1 = expr.e1.tryFixType(expectedType = context),
-            e2 = expr.e2.tryFixType(expectedType = context)
+        override fun visit(expression: IfElse, context: TypeExpression): Expression = expression.copy(
+            type = expression.type.fixSelf(expectedType = context),
+            boolExpression = expression.boolExpression.tryFixType(),
+            e1 = expression.e1.tryFixType(expectedType = context),
+            e2 = expression.e2.tryFixType(expectedType = context)
         )
 
-        override fun visit(expr: Match, context: CheckedTypeExpr): CheckedExpr {
-            val matchedExprType = expr.matchedExpr.type.fixSelf(expectedType = null) as IdentifierType
-            return Match(
-                type = expr.type.fixSelf(expectedType = context),
-                matchedExpr = expr.matchedExpr.tryFixType(expectedType = matchedExprType),
-                matchingList = expr.matchingList.map { (tag, dataVar, e) ->
+        override fun visit(expression: Match, context: TypeExpression): Expression {
+            val matchedExprType = expression.matchedExpression.type.fixSelf(expectedType = null) as IdentifierType
+            return expression.copy(
+                type = expression.type.fixSelf(expectedType = context),
+                matchedExpression = expression.matchedExpression.tryFixType(expectedType = matchedExprType),
+                matchingList = expression.matchingList.map { (range, tag, dataVar, expression) ->
                     Match.VariantPatternToExpr(
+                        range = range,
                         tag = tag,
                         dataVariable = dataVar,
-                        expr = e.tryFixType(expectedType = context)
+                        expression = expression.tryFixType(expectedType = context)
                     )
                 }
             )
         }
 
-        override fun visit(expr: Lambda, context: CheckedTypeExpr): CheckedExpr {
-            val newType = expr.type.fixSelf(expectedType = context) as FunctionType
-            return Lambda(
+        override fun visit(expression: Lambda, context: TypeExpression): Expression {
+            val newType = expression.type.fixSelf(expectedType = context) as FunctionType
+            return expression.copy(
                 type = newType,
-                arguments = expr.arguments.checkedZip(other = newType.argumentTypes).map { (vAndOriginalT, t) ->
+                arguments = expression.arguments.checkedZip(other = newType.argumentTypes).map { (vAndOriginalT, t) ->
                     val (v, originalT) = vAndOriginalT
                     v to originalT.fixSelf(expectedType = t)
                 },
-                body = expr.body.tryFixType(expectedType = newType.returnType)
+                body = expression.body.tryFixType(expectedType = newType.returnType)
             )
         }
 
-        override fun visit(expr: Val, context: CheckedTypeExpr): CheckedExpr {
-            if (expr.nextExpr == null && context != UnitType) {
-                throw UnexpectedTypeError(expected = context, actual = UnitType, range = errorRange)
+        override fun visit(expression: Val, context: TypeExpression): Expression {
+            if (expression.nextExpression == null && context !is UnitType) {
+                throw UnexpectedTypeError(
+                    expected = context,
+                    actual = UnitType(range = expression.range),
+                    range = errorRange
+                )
             }
-            return Val(
-                type = expr.type.fixSelf(expectedType = context),
-                pattern = expr.pattern,
-                assignedExpr = expr.assignedExpr.run { tryFixType(expectedType = type.fixSelf(expectedType = null)) },
-                nextExpr = expr.nextExpr?.tryFixType(expectedType = context)
+            return expression.copy(
+                type = expression.type.fixSelf(expectedType = context),
+                assignedExpression = expression.assignedExpression.run {
+                    tryFixType(expectedType = type.fixSelf(expectedType = null))
+                },
+                nextExpression = expression.nextExpression?.tryFixType(expectedType = context)
             )
         }
 

@@ -1,6 +1,6 @@
 package samlang.errors
 
-import samlang.ast.common.Range
+import samlang.ast.Range
 
 class IllegalOtherClassMatch(range: Range) : CompileTimeError.WithPosition(
     reason = "It is illegal to match on a value of other class's type.",

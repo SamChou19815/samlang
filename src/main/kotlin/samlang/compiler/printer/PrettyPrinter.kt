@@ -1,12 +1,15 @@
 package samlang.compiler.printer
 
-import samlang.ast.checked.*
+import samlang.ast.*
+import samlang.ast.CheckedExprVisitor
+import samlang.ast.Expression.*
+import samlang.ast.Expression.Literal
 import samlang.util.IndentedPrinter
 import java.io.PrintStream
 
 object PrettyPrinter {
 
-    fun prettyPrint(program: CheckedProgram, printStream: PrintStream) {
+    fun prettyPrint(program: Program, printStream: PrintStream) {
         // use 4-space
         val indentedPrinter = IndentedPrinter(printStream = printStream, indentationSymbol = "    ")
         TopLevelPrinter(printer = indentedPrinter).print(program = program)
@@ -16,16 +19,16 @@ object PrettyPrinter {
 
         private val exprPrinter: ExprPrinter = ExprPrinter(printer = printer)
 
-        fun print(program: CheckedProgram) {
+        fun print(program: Program) {
             program.modules.forEach { module ->
                 print(module = module)
                 printer.println()
             }
         }
 
-        private fun print(module: CheckedModule) {
-            val (name, typeDef, members) = module
-            if (typeDef == null) {
+        private fun print(module: Module) {
+            val (_, _, name, typeDefinition, members) = module
+            if (typeDefinition == null) {
                 printer.printWithBreak(x = "util $name {")
                 printer.indented {
                     println()
@@ -33,19 +36,19 @@ object PrettyPrinter {
                 }
                 printer.printWithBreak(x = "}")
             } else {
-                val typeParamString = typeDef.typeParams
+                val typeParamString = typeDefinition.typeParameters
                     ?.joinToString(separator = ", ", prefix = "<", postfix = ">")
                     ?: ""
                 printer.printWithBreak(x = "class $name$typeParamString(")
                 printer.indented {
-                    when (typeDef) {
-                        is CheckedModule.CheckedTypeDef.ObjectType -> {
-                            typeDef.mappings.forEach { (field, type) ->
+                    when (typeDefinition) {
+                        is Module.TypeDefinition.ObjectType -> {
+                            typeDefinition.mappings.forEach { (field, type) ->
                                 printWithBreak(x = "$field: $type,")
                             }
                         }
-                        is CheckedModule.CheckedTypeDef.VariantType -> {
-                            typeDef.mappings.forEach { (tag, dataType) ->
+                        is Module.TypeDefinition.VariantType -> {
+                            typeDefinition.mappings.forEach { (tag, dataType) ->
                                 printWithBreak(x = "$tag($dataType),")
                             }
                         }
@@ -60,8 +63,8 @@ object PrettyPrinter {
             }
         }
 
-        private fun printMember(member: CheckedModule.CheckedMemberDefinition) {
-            val (isPublic, isMethod, name, type, value) = member
+        private fun printMember(member: Module.MemberDefinition) {
+            val (_, isPublic, isMethod, name, type, value) = member
             val memberVisibility = if (isPublic) "public " else ""
             val memberType = if (isMethod) "method" else "function"
             val (typeParams, _) = type
@@ -78,9 +81,10 @@ object PrettyPrinter {
 
     }
 
-    private class ExprPrinter(private val printer: IndentedPrinter) : CheckedExprVisitor<Boolean, Unit> {
+    private class ExprPrinter(private val printer: IndentedPrinter) :
+        CheckedExprVisitor<Boolean, Unit> {
 
-        private fun CheckedExpr.printSelf(requireBreak: Boolean, withParenthesis: Boolean = false): Unit =
+        private fun Expression.printSelf(requireBreak: Boolean, withParenthesis: Boolean = false): Unit =
             if (withParenthesis) {
                 printer.printlnWithoutFurtherIndentation {
                     printWithoutBreak(x = "(")
@@ -89,28 +93,28 @@ object PrettyPrinter {
                 }
             } else accept(visitor = this@ExprPrinter, context = requireBreak)
 
-        override fun visit(expr: CheckedExpr.Literal, context: Boolean) {
-            printer.print(x = expr.literal.prettyPrintedValue, requireBreak = context)
+        override fun visit(expression: Literal, context: Boolean) {
+            printer.print(x = expression.literal.prettyPrintedValue, requireBreak = context)
         }
 
-        override fun visit(expr: CheckedExpr.This, context: Boolean) {
+        override fun visit(expression: This, context: Boolean) {
             printer.print(x = "this", requireBreak = context)
         }
 
-        override fun visit(expr: CheckedExpr.Variable, context: Boolean) {
-            printer.print(x = expr.name, requireBreak = context)
+        override fun visit(expression: Variable, context: Boolean) {
+            printer.print(x = expression.name, requireBreak = context)
         }
 
-        override fun visit(expr: CheckedExpr.ModuleMember, context: Boolean) {
-            printer.print(x = "${expr.moduleName}::${expr.memberName}", requireBreak = context)
+        override fun visit(expression: ModuleMember, context: Boolean) {
+            printer.print(x = "${expression.moduleName}::${expression.memberName}", requireBreak = context)
         }
 
-        override fun visit(expr: CheckedExpr.TupleConstructor, context: Boolean) {
+        override fun visit(expression: TupleConstructor, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = "[")
-                expr.exprList.forEachIndexed { index, e ->
+                expression.expressionList.forEachIndexed { index, e ->
                     e.printSelf(requireBreak = false)
-                    if (index != expr.exprList.size - 1) {
+                    if (index != expression.expressionList.size - 1) {
                         printWithBreak(x = ",")
                     }
                 }
@@ -118,24 +122,24 @@ object PrettyPrinter {
             }
         }
 
-        override fun visit(expr: CheckedExpr.ObjectConstructor, context: Boolean) {
+        override fun visit(expression: ObjectConstructor, context: Boolean) {
             printer.printWithBreak(x = "{")
             printer.indented {
-                if (expr.spreadExpr != null) {
+                if (expression.spreadExpression != null) {
                     printlnWithoutFurtherIndentation {
                         printWithoutBreak(x = "...")
-                        expr.spreadExpr.printSelf(requireBreak = false)
+                        expression.spreadExpression.printSelf(requireBreak = false)
                         printWithBreak(x = ",")
                     }
                 }
-                expr.fieldDeclarations.forEach { constructor ->
+                expression.fieldDeclarations.forEach { constructor ->
                     printlnWithoutFurtherIndentation {
                         when (constructor) {
-                            is CheckedExpr.ObjectConstructor.FieldConstructor.Field -> {
+                            is ObjectConstructor.FieldConstructor.Field -> {
                                 printWithBreak(x = "${constructor.name}:")
-                                constructor.expr.printSelf(requireBreak = false)
+                                constructor.expression.printSelf(requireBreak = false)
                             }
-                            is CheckedExpr.ObjectConstructor.FieldConstructor.FieldShorthand -> {
+                            is ObjectConstructor.FieldConstructor.FieldShorthand -> {
                                 printWithoutBreak(x = constructor.name)
                             }
                         }
@@ -146,53 +150,62 @@ object PrettyPrinter {
             printer.print(x = "}", requireBreak = context)
         }
 
-        override fun visit(expr: CheckedExpr.VariantConstructor, context: Boolean) {
+        override fun visit(expression: VariantConstructor, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
-                printWithoutBreak(x = "${expr.tag}(")
-                expr.data.printSelf(requireBreak = false)
+                printWithoutBreak(x = "${expression.tag}(")
+                expression.data.printSelf(requireBreak = false)
                 print(x = ")", requireBreak = context)
             }
         }
 
-        override fun visit(expr: CheckedExpr.FieldAccess, context: Boolean) {
+        override fun visit(expression: FieldAccess, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
-                expr.expr.printSelf(requireBreak = false, withParenthesis = expr.expr.precedence >= expr.precedence)
-                print(x = ".${expr.fieldName}", requireBreak = context)
+                expression.expression.printSelf(
+                    requireBreak = false,
+                    withParenthesis = expression.expression.precedence >= expression.precedence
+                )
+                print(x = ".${expression.fieldName}", requireBreak = context)
             }
         }
 
-        override fun visit(expr: CheckedExpr.MethodAccess, context: Boolean) {
+        override fun visit(expression: MethodAccess, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
-                expr.expr.printSelf(requireBreak = false, withParenthesis = expr.expr.precedence >= expr.precedence)
-                print(x = "::${expr.methodName}", requireBreak = context)
+                expression.expression.printSelf(
+                    requireBreak = false,
+                    withParenthesis = expression.expression.precedence >= expression.precedence
+                )
+                print(x = "::${expression.methodName}", requireBreak = context)
             }
         }
 
-        override fun visit(expr: CheckedExpr.Unary, context: Boolean) {
+        override fun visit(expression: Unary, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
-                printWithoutBreak(x = expr.operator.symbol)
-                expr.expr.printSelf(requireBreak = context, withParenthesis = expr.expr.precedence >= expr.precedence)
+                printWithoutBreak(x = expression.operator.symbol)
+                expression.expression.printSelf(
+                    requireBreak = context,
+                    withParenthesis = expression.expression.precedence >= expression.precedence
+                )
             }
         }
 
-        override fun visit(expr: CheckedExpr.Panic, context: Boolean) {
+        override fun visit(expression: Panic, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = "panic(")
-                expr.expr.printSelf(requireBreak = false)
+                expression.expression.printSelf(requireBreak = false)
                 print(x = ")", requireBreak = context)
             }
         }
 
-        override fun visit(expr: CheckedExpr.FunApp, context: Boolean) {
+        override fun visit(expression: FunctionApplication, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
-                expr.funExpr.printSelf(
+                expression.functionExpression.printSelf(
                     requireBreak = false,
-                    withParenthesis = expr.funExpr.precedence >= expr.precedence
+                    withParenthesis = expression.functionExpression.precedence >= expression.precedence
                 )
                 printWithoutBreak(x = "(")
-                expr.arguments.forEachIndexed { index, e ->
+                expression.arguments.forEachIndexed { index, e ->
                     e.printSelf(requireBreak = false)
-                    if (index != expr.arguments.size - 1) {
+                    if (index != expression.arguments.size - 1) {
                         printWithBreak(x = ",")
                     }
                 }
@@ -200,64 +213,70 @@ object PrettyPrinter {
             }
         }
 
-        override fun visit(expr: CheckedExpr.Binary, context: Boolean) {
+        override fun visit(expression: Binary, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
-                expr.e1.printSelf(requireBreak = true, withParenthesis = expr.e1.precedence >= expr.precedence)
-                printWithBreak(x = expr.operator.symbol)
-                expr.e2.printSelf(requireBreak = context, withParenthesis = expr.e2.precedence >= expr.precedence)
+                expression.e1.printSelf(
+                    requireBreak = true,
+                    withParenthesis = expression.e1.precedence >= expression.precedence
+                )
+                printWithBreak(x = expression.operator.symbol)
+                expression.e2.printSelf(
+                    requireBreak = context,
+                    withParenthesis = expression.e2.precedence >= expression.precedence
+                )
             }
         }
 
-        override fun visit(expr: CheckedExpr.IfElse, context: Boolean) {
+        override fun visit(expression: IfElse, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = "if (")
-                expr.boolExpr.printSelf(requireBreak = false)
+                expression.boolExpression.printSelf(requireBreak = false)
                 printWithoutBreak(x = ") then (")
             }
-            printer.indented { expr.e1.printSelf(requireBreak = true) }
+            printer.indented { expression.e1.printSelf(requireBreak = true) }
             printer.printWithBreak(x = ") else (")
-            printer.indented { expr.e2.printSelf(requireBreak = true) }
+            printer.indented { expression.e2.printSelf(requireBreak = true) }
             printer.print(x = ")", requireBreak = context)
         }
 
-        override fun visit(expr: CheckedExpr.Match, context: Boolean) {
+        override fun visit(expression: Match, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = "match (")
-                expr.matchedExpr.printSelf(requireBreak = false)
+                expression.matchedExpression.printSelf(requireBreak = false)
                 printWithBreak(x = ") {")
             }
             printer.indented {
-                expr.matchingList.forEach { variantPatternToExpr ->
+                expression.matchingList.forEach { variantPatternToExpr ->
                     printlnWithoutFurtherIndentation {
                         printWithBreak(x = "| ${variantPatternToExpr.tag}")
                         printWithBreak(x = variantPatternToExpr.dataVariable ?: "_")
                         printWithBreak(x = "-> (")
                     }
-                    indented { variantPatternToExpr.expr.printSelf(requireBreak = true) }
+                    indented { variantPatternToExpr.expression.printSelf(requireBreak = true) }
                     printWithBreak(x = ")")
                 }
             }
             printer.print(x = "}", requireBreak = context)
         }
 
-        override fun visit(expr: CheckedExpr.Lambda, context: Boolean) {
+        override fun visit(expression: Lambda, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
-                val argsString = expr.arguments.joinToString(
+                val argsString = expression.arguments.joinToString(
                     separator = ", ", prefix = "(", postfix = ")"
                 ) { (n, t) -> "$n: $t" }
                 printWithBreak(x = "$argsString -> (")
             }
-            printer.indented { expr.body.printSelf(requireBreak = true) }
+            printer.indented { expression.body.printSelf(requireBreak = true) }
             printer.print(x = ")", requireBreak = context)
         }
 
-        override fun visit(expr: CheckedExpr.Val, context: Boolean) {
+        override fun visit(expression: Val, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
-                val patternString = when (val p = expr.pattern) {
-                    is CheckedPattern.TuplePattern -> {
+                val patternString = when (val p = expression.pattern) {
+                    is Pattern.TuplePattern -> {
                         p.destructedNames.joinToString(separator = ", ", prefix = "[", postfix = "]") { it ?: "_" }
                     }
-                    is CheckedPattern.ObjectPattern -> {
+                    is Pattern.ObjectPattern -> {
                         p.destructedNames.joinToString(separator = ", ", prefix = "{ ", postfix = " }") { (o, n) ->
                             if (n == null) {
                                 o
@@ -266,17 +285,17 @@ object PrettyPrinter {
                             }
                         }
                     }
-                    is CheckedPattern.VariablePattern -> p.name
-                    CheckedPattern.WildcardPattern -> "_"
+                    is Pattern.VariablePattern -> p.name
+                    is Pattern.WildCardPattern -> "_"
                 }
-                printWithBreak(x = "val $patternString: ${expr.assignedExpr.type} = (")
+                printWithBreak(x = "val $patternString: ${expression.assignedExpression.type} = (")
             }
-            printer.indented { expr.assignedExpr.printSelf(requireBreak = true) }
-            if (expr.nextExpr == null) {
+            printer.indented { expression.assignedExpression.printSelf(requireBreak = true) }
+            if (expression.nextExpression == null) {
                 printer.print(x = ");", requireBreak = context)
             } else {
                 printer.printWithBreak(x = ");")
-                expr.nextExpr.printSelf(requireBreak = context)
+                expression.nextExpression.printSelf(requireBreak = context)
             }
         }
 

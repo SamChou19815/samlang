@@ -1,11 +1,11 @@
 package samlang.errors
 
-import samlang.ast.checked.CheckedTypeExpr
-import samlang.ast.common.Range
+import samlang.ast.TypeExpression
+import samlang.ast.Range
 
 class UnexpectedTypeError(
-    expected: CheckedTypeExpr,
-    actual: CheckedTypeExpr,
+    expected: TypeExpression,
+    actual: TypeExpression,
     range: Range
 ) : CompileTimeError.WithPosition(
     reason = "Expect: ${expected.prettyPrint()}.\nActual: ${actual.prettyPrint()}.",

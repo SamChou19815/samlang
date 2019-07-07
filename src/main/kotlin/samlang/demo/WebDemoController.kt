@@ -1,7 +1,6 @@
 package samlang.demo
 
-import samlang.ast.checked.CheckedProgram
-import samlang.ast.raw.RawProgram
+import samlang.ast.Program
 import samlang.checker.ProgramTypeChecker
 import samlang.checker.TypeCheckingContext
 import samlang.compiler.printer.PrettyPrinter
@@ -15,14 +14,12 @@ import java.io.PrintStream
 import java.nio.charset.Charset
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicReference
-import kotlin.concurrent.thread
 
 /**
  * A controller for web demo of SAMLANG.
  * Objects and functions defined here are designed to be easily used by a web server.
  */
 object WebDemoController {
-
 
     /**
      * All possible types of response.
@@ -53,13 +50,13 @@ object WebDemoController {
      */
     @JvmStatic
     fun interpret(programString: String, threadFactory: ThreadFactory): Response {
-        val rawProgram: RawProgram
+        val rawProgram: Program
         try {
             rawProgram = ProgramBuilder.buildProgramFromText(text = programString)
         } catch (e: SyntaxErrors) {
             return Response(type = WebDemoController.Type.BAD_SYNTAX, detail = e.errorMessage)
         }
-        val checkedProgram: CheckedProgram
+        val checkedProgram: Program
         try {
             checkedProgram = ProgramTypeChecker.typeCheck(program = rawProgram, ctx = TypeCheckingContext.EMPTY)
         } catch (e: CompileTimeError) {
@@ -89,7 +86,7 @@ object WebDemoController {
         val prettyPrintedProgram = String(bytes = stringOut.toByteArray(), charset = charset)
         return Response(
             type = WebDemoController.Type.GOOD_PROGRAM,
-            detail = WebDemoController.SuccessResponseDetail(
+            detail = SuccessResponseDetail(
                 result = result,
                 prettyPrintedProgram = prettyPrintedProgram
             )

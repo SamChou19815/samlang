@@ -1,4 +1,4 @@
-package samlang.ast.common
+package samlang.ast
 
 data class Range(val start: Position, val end: Position) {
 
