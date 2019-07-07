@@ -4,8 +4,6 @@ sealed class Type {
 
     abstract fun prettyPrint(): String
 
-    abstract infix fun isNotConsistentWith(other: Type): Boolean
-
     final override fun toString(): String = prettyPrint()
 
     internal abstract fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T
@@ -27,8 +25,6 @@ sealed class Type {
 
         override fun prettyPrint(): String = name.prettyPrintedName
 
-        override fun isNotConsistentWith(other: Type): Boolean = other !is PrimitiveType || name != other.name
-
         override fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T =
             visitor.visit(type = this, context = context)
     }
@@ -42,26 +38,6 @@ sealed class Type {
             ?.joinToString(separator = ", ", prefix = "$identifier<", postfix = ">") { it.prettyPrint() }
             ?: identifier
 
-        override fun isNotConsistentWith(other: Type): Boolean {
-            if (other !is IdentifierType) {
-                return true
-            }
-            if (identifier != other.identifier) {
-                return true
-            }
-            val thisTypeArguments = typeArguments ?: listOf()
-            val otherTypeArgument = other.typeArguments ?: listOf()
-            if (thisTypeArguments.size != otherTypeArgument.size) {
-                return true
-            }
-            for (i in 0 until thisTypeArguments.size) {
-                if (thisTypeArguments[i] isNotConsistentWith otherTypeArgument[i]) {
-                    return true
-                }
-            }
-            return false
-        }
-
         override fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T =
             visitor.visit(type = this, context = context)
 
@@ -72,21 +48,6 @@ sealed class Type {
 
         override fun prettyPrint(): String =
             mappings.joinToString(separator = " * ", prefix = "[", postfix = "]") { it.prettyPrint() }
-
-        override fun isNotConsistentWith(other: Type): Boolean {
-            if (other !is TupleType) {
-                return true
-            }
-            if (mappings.size != other.mappings.size) {
-                return true
-            }
-            for (i in 0 until mappings.size) {
-                if (mappings[i] isNotConsistentWith other.mappings[i]) {
-                    return true
-                }
-            }
-            return false
-        }
 
         override fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T =
             visitor.visit(type = this, context = context)
@@ -103,24 +64,6 @@ sealed class Type {
             return "$args -> ${returnType.prettyPrint()}"
         }
 
-        override fun isNotConsistentWith(other: Type): Boolean {
-            if (other !is FunctionType) {
-                return true
-            }
-            if (returnType isNotConsistentWith other.returnType) {
-                return true
-            }
-            if (argumentTypes.size != other.argumentTypes.size) {
-                return true
-            }
-            for (i in 0 until argumentTypes.size) {
-                if (argumentTypes[i] isNotConsistentWith other.argumentTypes[i]) {
-                    return true
-                }
-            }
-            return false
-        }
-
         override fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T =
             visitor.visit(type = this, context = context)
 
@@ -135,9 +78,6 @@ sealed class Type {
     data class UndecidedType(val index: Int) : Type() {
 
         override fun prettyPrint(): String = "UNDECIDED_TYPE_$index"
-
-        override fun isNotConsistentWith(other: Type): Boolean =
-            other !is UndecidedType || index != other.index
 
         override fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T =
             visitor.visit(type = this, context = context)

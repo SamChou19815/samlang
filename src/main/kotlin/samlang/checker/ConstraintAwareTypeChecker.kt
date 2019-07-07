@@ -36,9 +36,9 @@ internal class ConstraintAwareTypeChecker(val manager: UndecidedTypeManager) {
                 resolve = { expectedType -> checkAndInfer(expectedType) }
             )
 
-        override fun visit(type: PrimitiveType, context: Type): Type = when (context) {
-            is PrimitiveType -> if (type isNotConsistentWith context) type.failOnExpected(expectedType = context) else type
-            is UndecidedType -> type.inferUndecidedType(undecidedType = context)
+        override fun visit(type: PrimitiveType, context: Type): Type = when {
+            type == context -> type
+            context is UndecidedType -> type.inferUndecidedType(undecidedType = context)
             else -> type.failOnExpected(expectedType = context)
         }
 

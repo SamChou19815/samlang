@@ -72,7 +72,7 @@ internal object CheckedExprTypeFixer {
             if (expectedType == null) {
                 return fullyResolvedType
             }
-            if (fullyResolvedType isNotConsistentWith expectedType) {
+            if (fullyResolvedType != expectedType) {
                 throw UnexpectedTypeError(
                     expected = expectedType,
                     actual = fullyResolvedType,
@@ -187,7 +187,7 @@ internal object CheckedExprTypeFixer {
 
         override fun visit(expression: FunctionApplication, context: Type): Expression {
             val funExprType = expression.functionExpression.type.fixSelf(expectedType = null) as FunctionType
-            if (context isNotConsistentWith funExprType.returnType) {
+            if (context != funExprType.returnType) {
                 throw UnexpectedTypeError(
                     expected = context,
                     actual = funExprType.returnType,
