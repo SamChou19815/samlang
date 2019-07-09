@@ -1,5 +1,0 @@
-steps:
-  - name: 'java:8'
-    env: ['GRADLE_USER_HOME=cache']
-    entrypoint: 'bash'
-    args: ['-c', './gradlew build']
