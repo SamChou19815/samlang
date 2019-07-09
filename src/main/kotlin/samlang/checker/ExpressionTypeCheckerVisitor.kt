@@ -17,8 +17,13 @@ internal class ExpressionTypeCheckerVisitor(private val resolution: TypeResoluti
     private fun Expression.toChecked(ctx: TypeCheckingContext, expectedType: Type = this.type): Expression =
         accept(visitor = this@ExpressionTypeCheckerVisitor, context = ctx to expectedType)
 
-    override fun visit(expression: Literal, ctx: TypeCheckingContext, expectedType: Type): Expression =
-        expression // Literals are already well typed.
+    override fun visit(expression: Literal, ctx: TypeCheckingContext, expectedType: Type): Expression {
+        constraintAwareTypeChecker.checkAndInfer(
+            expectedType = expectedType, actualType = expression.type, errorRange = expression.range
+        )
+        // Literals are already well typed if it passed the previous check.
+        return expression
+    }
 
     override fun visit(expression: This, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val type = ctx.getLocalValueType(name = "this") ?: throw IllegalThisError(range = expression.range)
