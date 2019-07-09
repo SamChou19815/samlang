@@ -13,9 +13,9 @@ class InterpreterTest : StringSpec() {
     private data class TestCase(val id: String, val code: String, val expectedResult: Value)
 
     private val expectations: Map<String, Value> = mapOf(
-        "simple_no_ctx" to Value.UnitValue,
-        "simple_no_ctx_annotated" to Value.UnitValue,
-        "hello_world" to Value.StringValue(value = "Hello World!")
+        "simple-no-ctx" to Value.UnitValue,
+        "simple-no-ctx-annotated" to Value.UnitValue,
+        "hello-world" to Value.StringValue(value = "Hello World!")
     )
 
     private val testCases: List<TestCase> = ProgramCollections.testPrograms
