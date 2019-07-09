@@ -4,10 +4,8 @@ import samlang.ast.Range
 
 open class CompileTimeError(errorMessage: String) : RuntimeException(errorMessage) {
 
-    val errorMessage: String = "${javaClass.simpleName}:\n$errorMessage"
+    val errorMessage: String = "${javaClass.simpleName}: $errorMessage"
 
-    open class WithPosition(reason: String, val range: Range) : CompileTimeError(
-        errorMessage = "At position $range:\n$reason"
-    )
+    open class WithPosition(reason: String, val range: Range) : CompileTimeError(errorMessage = "$range: $reason")
 
 }
