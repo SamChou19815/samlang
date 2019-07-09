@@ -7,7 +7,7 @@ class UnexpectedTypeError(
     expected: Type,
     actual: Type,
     range: Range
-) : CompileTimeError.WithPosition(
+) : CompileTimeError.WithRange(
     reason = "Expect: ${expected.prettyPrint()}.\nActual: ${actual.prettyPrint()}.",
     range = range
 )

@@ -6,7 +6,7 @@ class InconsistentFieldsInObjectError(
     expectedFields: Set<String>,
     actualFields: Set<String>,
     range: Range
-) : CompileTimeError.WithPosition(
+) : CompileTimeError.WithRange(
     reason = "Inconsistent fields. Expected: $expectedFields, actual: $actualFields",
     range = range
 )

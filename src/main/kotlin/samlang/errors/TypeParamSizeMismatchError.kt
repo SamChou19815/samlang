@@ -6,7 +6,7 @@ class TypeParamSizeMismatchError private constructor(
     expectedSize: Int,
     actualSize: Int,
     range: Range
-) : CompileTimeError.WithPosition(
+) : CompileTimeError.WithRange(
     reason = "Incorrect number of type arguments. Expected: $expectedSize, actual: $actualSize.",
     range = range
 ) {

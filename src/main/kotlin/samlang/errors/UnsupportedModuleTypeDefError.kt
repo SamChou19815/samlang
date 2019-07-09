@@ -5,7 +5,7 @@ import samlang.ast.Range
 class UnsupportedModuleTypeDefError(
     expectedModuleTypeDef: ModuleTypeDef,
     range: Range
-) : CompileTimeError.WithPosition(
+) : CompileTimeError.WithRange(
     reason = "Expect the current module to have type def of ${expectedModuleTypeDef.nameForPrint}, but it doesn't.",
     range = range
 ) {

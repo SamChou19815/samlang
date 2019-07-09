@@ -7,7 +7,7 @@ class SizeMismatchError private constructor(
     expectedSize: Int,
     actualSize: Int,
     range: Range
-) : CompileTimeError.WithPosition(
+) : CompileTimeError.WithRange(
     reason = "Incorrect $sizeDescription size. Expected: $expectedSize, actual: $actualSize.",
     range = range
 ) {

@@ -6,6 +6,6 @@ open class CompileTimeError(errorMessage: String) : RuntimeException(errorMessag
 
     val errorMessage: String = "${javaClass.simpleName}: $errorMessage"
 
-    open class WithPosition(reason: String, val range: Range) : CompileTimeError(errorMessage = "$range: $reason")
+    abstract class WithRange(reason: String, val range: Range) : CompileTimeError(errorMessage = "$range: $reason")
 
 }
