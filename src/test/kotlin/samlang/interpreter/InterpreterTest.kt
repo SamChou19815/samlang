@@ -5,8 +5,8 @@ import io.kotlintest.specs.StringSpec
 import samlang.checker.ProgramTypeChecker
 import samlang.checker.TypeCheckingContext
 import samlang.parser.ProgramBuilder
-import samlang.programs.ProgramCollections
 import samlang.programs.TestProgramType
+import samlang.programs.testPrograms
 
 class InterpreterTest : StringSpec() {
 
@@ -18,7 +18,7 @@ class InterpreterTest : StringSpec() {
         "hello-world" to Value.StringValue(value = "Hello World!")
     )
 
-    private val testCases: List<TestCase> = ProgramCollections.testPrograms
+    private val testCases: List<TestCase> = testPrograms
         .filter { it.type == TestProgramType.GOOD }
         .mapNotNull { (_, id, code) ->
             val exp = expectations[id] ?: return@mapNotNull null

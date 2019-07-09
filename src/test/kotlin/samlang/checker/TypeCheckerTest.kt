@@ -4,8 +4,8 @@ import io.kotlintest.shouldThrow
 import io.kotlintest.specs.StringSpec
 import samlang.errors.CompileTimeError
 import samlang.parser.ProgramBuilder
-import samlang.programs.ProgramCollections
 import samlang.programs.TestProgramType
+import samlang.programs.testPrograms
 
 class TypeCheckerTest : StringSpec() {
 
@@ -13,7 +13,7 @@ class TypeCheckerTest : StringSpec() {
     private val badPrograms = arrayListOf<Pair<String, String>>()
 
     init {
-        ProgramCollections.testPrograms.asSequence()
+        testPrograms.asSequence()
             .filter { it.type != TestProgramType.BAD_SYNTAX }
             .forEach { (type, id, code) ->
                 val r = id to code

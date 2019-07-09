@@ -5,14 +5,14 @@ import io.kotlintest.specs.StringSpec
 import samlang.checker.ProgramTypeChecker
 import samlang.checker.TypeCheckingContext
 import samlang.parser.ProgramBuilder
-import samlang.programs.ProgramCollections
 import samlang.programs.TestProgramType
+import samlang.programs.testPrograms
 import java.io.OutputStream
 import java.io.PrintStream
 
 class PrinterTest : StringSpec() {
 
-    private val programs = ProgramCollections.testPrograms
+    private val programs = testPrograms
         .filter { it.type == TestProgramType.GOOD }
         .map { (_, id, code) ->
             id to code
