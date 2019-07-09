@@ -5,19 +5,19 @@ import org.antlr.v4.runtime.Token
 import samlang.ast.Position
 import samlang.ast.Range
 
-val Token.startPosition: Position get() = Position(line = line, column = charPositionInLine)
+private val Token.startPosition: Position get() = Position(line = line, column = charPositionInLine)
 
-val Token.endPosition: Position
+private val Token.endPosition: Position
     get() = Position(
         line = line,
         column = charPositionInLine + text.length
     )
 
-val Token.range: Range get() = Range(start = startPosition, end = endPosition)
+internal val Token.range: Range get() = Range(start = startPosition, end = endPosition)
 
 val Token.rangeWithName: Range.WithName get() = Range.WithName(range = range, name = text)
 
-val ParserRuleContext.range: Range
+internal val ParserRuleContext.range: Range
     get() = Range(
         start = start.startPosition,
         end = stop.endPosition
