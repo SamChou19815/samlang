@@ -7,6 +7,6 @@ data class Position(val line: Int, val column: Int) : Comparable<Position> {
         return if (c != 0) c else column.compareTo(other = other.column)
     }
 
-    override fun toString(): String = "$line:$column"
+    override fun toString(): String = "${line + 1}:${column + 1}"
 
 }
