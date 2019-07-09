@@ -15,8 +15,6 @@ private val Token.endPosition: Position
 
 internal val Token.range: Range get() = Range(start = startPosition, end = endPosition)
 
-val Token.rangeWithName: Range.WithName get() = Range.WithName(range = range, name = text)
-
 internal val ParserRuleContext.range: Range
     get() = Range(
         start = start.startPosition,

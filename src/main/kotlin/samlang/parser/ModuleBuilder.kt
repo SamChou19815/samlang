@@ -11,13 +11,17 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
 
     private val TypeParametersDeclarationContext.typeParameters: List<String> get() = UpperId().map { it.symbol.text }
 
-    private object ModuleNameBuilder : PLBaseVisitor<Range.WithName>() {
+    private object ModuleNameBuilder : PLBaseVisitor<Pair<String, Range>>() {
 
-        override fun visitClassHeader(ctx: ClassHeaderContext): Range.WithName =
-            ctx.UpperId().symbol.rangeWithName
+        override fun visitClassHeader(ctx: ClassHeaderContext): Pair<String, Range> {
+            val symbol = ctx.UpperId().symbol
+            return symbol.text to symbol.range
+        }
 
-        override fun visitUtilHeader(ctx: UtilHeaderContext): Range.WithName =
-            ctx.UpperId().symbol.rangeWithName
+        override fun visitUtilHeader(ctx: UtilHeaderContext): Pair<String, Range> {
+            val symbol = ctx.UpperId().symbol
+            return symbol.text to symbol.range
+        }
 
     }
 
@@ -63,38 +67,35 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
     }
 
     private fun buildModuleMemberDefinition(ctx: ModuleMemberDefinitionContext): Module.MemberDefinition {
-        val annotatedVariables = ctx.annotatedVariable().map { annotatedVar ->
-            val varName = annotatedVar.LowerId().symbol.rangeWithName
-            val typeAnnotation = annotatedVar.typeAnnotation().typeExpr().accept(TypeBuilder)
-            varName to typeAnnotation
+        val range = ctx.range
+        val annotatedVariables = ctx.annotatedVariable().map { annotatedVariable ->
+            val name = annotatedVariable.LowerId().symbol.text
+            val annotation = annotatedVariable.typeAnnotation().typeExpr().accept(TypeBuilder)
+            name to annotation
         }
         val typeExpression = ctx.typeExpr()
         val bodyExpression = ctx.expression()
-        val firstArgRange = annotatedVariables.firstOrNull()?.first?.range
         val type = Type.FunctionType(
             argumentTypes = annotatedVariables.map { it.second },
             returnType = typeExpression.accept(TypeBuilder)
         )
         return Module.MemberDefinition(
-            range = ctx.range,
+            range = range,
             isPublic = ctx.PUBLIC() != null,
             isMethod = ctx.METHOD() != null,
             name = ctx.LowerId().symbol.text,
             type = ctx.typeParametersDeclaration()?.typeParameters to type,
             value = Expression.Lambda(
-                range = Range(
-                    start = firstArgRange?.start ?: bodyExpression.range.start,
-                    end = bodyExpression.range.end
-                ),
+                range = range,
                 type = type,
-                arguments = annotatedVariables.map { (nameWithRange, type) -> nameWithRange.name to type },
+                arguments = annotatedVariables,
                 body = bodyExpression.accept(ExpressionBuilder)
             )
         )
     }
 
     override fun visitModule(ctx: ModuleContext): Module {
-        val (nameRange, name) = ctx.moduleHeaderDeclaration().accept(ModuleNameBuilder)
+        val (name, nameRange) = ctx.moduleHeaderDeclaration().accept(ModuleNameBuilder)
         return Module(
             range = ctx.range,
             nameRange = nameRange,

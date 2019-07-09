@@ -29,7 +29,7 @@ internal data class TypeCheckingContext(
         typeDefinitionCreator: (TypeCheckingContext) -> Module.TypeDefinition
     ): Pair<Module.TypeDefinition, TypeCheckingContext> {
         if (modules.containsKey(key = name)) {
-            throw CollisionError(collidedName = Range.WithName(range = nameRange, name = name))
+            throw CollisionError(collidedName = name, range = nameRange)
         }
         val tempModuleType = ModuleType(
             typeDefinition = Module.TypeDefinition.ObjectType(
@@ -60,7 +60,7 @@ internal data class TypeCheckingContext(
 
     fun addNewEmptyUtilModule(name: String, nameRange: Range): TypeCheckingContext {
         if (modules.containsKey(key = name)) {
-            throw CollisionError(collidedName = Range.WithName(range = nameRange, name = name))
+            throw CollisionError(collidedName = name, range = nameRange)
         }
         val newModuleType = ModuleType(
             typeDefinition = null,
@@ -193,7 +193,7 @@ internal data class TypeCheckingContext(
 
     fun addLocalValueType(name: String, type: Type, errorRange: Range): TypeCheckingContext {
         if (localValues.containsKey(name)) {
-            throw CollisionError(collidedName = Range.WithName(range = errorRange, name = name))
+            throw CollisionError(collidedName = name, range = errorRange)
         }
         return copy(localValues = localValues.plus(pair = name to type))
     }

@@ -12,7 +12,7 @@ internal object ProgramTypeChecker {
         val nameSet = hashSetOf<String>()
         forEach { name ->
             if (!nameSet.add(element = name)) {
-                throw CollisionError(collidedName = Range.WithName(range = range, name = name))
+                throw CollisionError(collidedName = name, range = range)
             }
         }
     }

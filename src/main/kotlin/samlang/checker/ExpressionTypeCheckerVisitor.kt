@@ -404,7 +404,7 @@ internal class ExpressionTypeCheckerVisitor(private val resolution: TypeResoluti
         val names = hashSetOf<String>()
         for ((name, _) in arguments) {
             if (!names.add(name)) {
-                throw CollisionError(collidedName = Range.WithName(name = name, range = range))
+                throw CollisionError(collidedName = name, range = range)
             }
         }
         // setting up types and update context

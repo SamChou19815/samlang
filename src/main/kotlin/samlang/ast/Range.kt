@@ -7,6 +7,4 @@ data class Range(val start: Position, val end: Position) {
 
     override fun toString(): String = "$start-$end"
 
-    data class WithName(val range: Range, val name: String)
-
 }
