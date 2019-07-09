@@ -1,3 +1,5 @@
+// ERROR_COUNT: 0
+
 class Clazz(t: int) {
    public function of(): Clazz = { t: 42 }
 

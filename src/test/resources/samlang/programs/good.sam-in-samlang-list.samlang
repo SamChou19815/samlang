@@ -1,3 +1,5 @@
+// ERROR_COUNT: 0
+
 class List<T>(Nil(unit), Cons([T * List<T>])) {
   public function <T> of(t: T): List<T> =
     Cons([t, Nil(unit)])

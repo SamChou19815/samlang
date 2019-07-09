@@ -1,3 +1,5 @@
+// ERROR_COUNT: 0
+
 util Main {
     function main(): string = "Hello World!"
 }

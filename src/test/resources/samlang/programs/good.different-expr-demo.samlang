@@ -1,3 +1,5 @@
+// ERROR_COUNT: 0
+
 class Foo(a: int) {
     public function bar(): int = 3
 }

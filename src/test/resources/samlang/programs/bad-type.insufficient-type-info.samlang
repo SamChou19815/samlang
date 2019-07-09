@@ -1,4 +1,0 @@
-util NotEnoughTypeInfo {
-    function <T> randomFunction(): T = panic("I can be any type!")
-    function main(): unit = val _ = randomFunction();
-}

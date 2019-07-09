@@ -5,7 +5,7 @@ import samlang.checker.ProgramTypeChecker
 import samlang.checker.TypeCheckingContext
 import samlang.compiler.printer.PrettyPrinter
 import samlang.errors.CompileTimeError
-import samlang.errors.SyntaxErrors
+import samlang.errors.SyntaxError
 import samlang.interpreter.PanicException
 import samlang.interpreter.ProgramInterpreter
 import samlang.parser.ProgramBuilder
@@ -53,7 +53,7 @@ object WebDemoController {
         val rawProgram: Program
         try {
             rawProgram = ProgramBuilder.buildProgramFromText(text = programString)
-        } catch (e: SyntaxErrors) {
+        } catch (e: SyntaxError) {
             return Response(type = WebDemoController.Type.BAD_SYNTAX, detail = e.errorMessage)
         }
         val checkedProgram: Program

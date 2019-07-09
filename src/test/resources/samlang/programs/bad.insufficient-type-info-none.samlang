@@ -1,3 +1,7 @@
+// ERROR_COUNT: 1
+// InsufficientTypeInferenceContextError:11:12-11:26: There is not enough context information to decide the type of this expression.
+
+
 class Option<T>(Some(T), None(unit)) {
   public function <T> none(): Option<T> = None(unit)
   public method toSome(t: T): Option<T> = Some(t)

@@ -1,3 +1,5 @@
+// ERROR_COUNT: 0
+
 class Option<T>(Some(T), None(unit)) {
   public function <T> none(): Option<T> = None(unit)
   public method toSome(t: T): Option<T> = Some(t)

@@ -1,0 +1,4 @@
+// ERROR_COUNT: 1
+// SyntaxError:4:0: mismatched input 'This' expecting {<EOF>, 'class', 'util'}
+
+This is a bad program.

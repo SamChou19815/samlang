@@ -4,7 +4,7 @@ import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.Program
 import samlang.errors.FileError
-import samlang.errors.SyntaxErrors
+import samlang.errors.SyntaxError
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer
 import samlang.parser.generated.PLParser
@@ -23,7 +23,7 @@ object ProgramBuilder {
         return if (errors.isEmpty()) {
             programContext.accept(Visitor)
         } else {
-            throw SyntaxErrors(errors = errors)
+            throw SyntaxError(errors = errors)
         }
     }
 

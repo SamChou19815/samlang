@@ -1,3 +1,3 @@
 package samlang.programs
 
-data class TestProgram(val type: TestProgramType, val id: String, val code: String)
+data class TestProgram(val id: String, val errorSet: Set<String>, val code: String)

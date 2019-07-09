@@ -1,3 +1,5 @@
+// ERROR_COUNT: 0
+
 /**
  * From Cornell CS4110's Type Checking Lecture.
  * This version is NOT annotated.

@@ -1,42 +1,30 @@
 package samlang.checker
 
-import io.kotlintest.shouldThrow
+import io.kotlintest.fail
+import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import samlang.errors.CompileTimeError
 import samlang.parser.ProgramBuilder
-import samlang.programs.TestProgramType
 import samlang.programs.testPrograms
 
 class TypeCheckerTest : StringSpec() {
 
-    private val goodPrograms = arrayListOf<Pair<String, String>>()
-    private val badPrograms = arrayListOf<Pair<String, String>>()
-
     init {
-        testPrograms.asSequence()
-            .filter { it.type != TestProgramType.BAD_SYNTAX }
-            .forEach { (type, id, code) ->
-                val r = id to code
-                if (type == TestProgramType.GOOD) {
-                    goodPrograms.add(element = r)
-                } else {
-                    badPrograms.add(element = r)
-                }
-            }
-    }
-
-    init {
-        for ((id, code) in goodPrograms) {
-            "should pass: $id" {
-                val program = ProgramBuilder.buildProgramFromText(text = code)
-                ProgramTypeChecker.typeCheck(program = program, ctx = TypeCheckingContext.EMPTY)
-            }
-        }
-        for ((id, code) in badPrograms) {
-            "should fail: $id" {
-                shouldThrow<CompileTimeError> {
+        for ((id, errorSet, code) in testPrograms) {
+            if (errorSet.isEmpty()) {
+                "should have no errors: $id" {
                     val program = ProgramBuilder.buildProgramFromText(text = code)
                     ProgramTypeChecker.typeCheck(program = program, ctx = TypeCheckingContext.EMPTY)
+                }
+            } else {
+                "should have expected errors: $id" {
+                    try {
+                        val program = ProgramBuilder.buildProgramFromText(text = code)
+                        ProgramTypeChecker.typeCheck(program = program, ctx = TypeCheckingContext.EMPTY)
+                        fail(msg = "Found no type errors, but expect: $errorSet.")
+                    } catch (compileTimeError: CompileTimeError) {
+                        compileTimeError.errorMessage.split("\n").toSet() shouldBe errorSet
+                    }
                 }
             }
         }

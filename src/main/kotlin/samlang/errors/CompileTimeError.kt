@@ -2,10 +2,12 @@ package samlang.errors
 
 import samlang.ast.Range
 
-open class CompileTimeError(errorMessage: String) : RuntimeException(errorMessage) {
+abstract class CompileTimeError : RuntimeException("COMPILE_TIME_ERROR") {
 
-    val errorMessage: String = "${javaClass.simpleName}: $errorMessage"
+    abstract val errorMessage: String
 
-    abstract class WithRange(reason: String, val range: Range) : CompileTimeError(errorMessage = "$range: $reason")
+    abstract class WithRange(val reason: String, val range: Range) : CompileTimeError() {
+        override val errorMessage: String get() = "${javaClass.simpleName}:$range: $reason"
+    }
 
 }

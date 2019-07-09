@@ -12,9 +12,9 @@ import java.io.PrintStream
 
 class PrinterTest : StringSpec() {
 
-    private val programs = testPrograms
-        .filter { it.type == TestProgramType.GOOD }
-        .map { (_, id, code) ->
+    private val programs: List<Pair<String, String>> = testPrograms
+        .filter { it.errorSet.isEmpty() }
+        .map { (id, _, code) ->
             id to code
         }
 

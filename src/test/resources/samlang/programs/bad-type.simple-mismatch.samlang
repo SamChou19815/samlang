@@ -1,6 +1,0 @@
-util Main {
-
-    // should be type bool!
-    function main(): Int = true
-
-}

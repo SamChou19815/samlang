@@ -19,8 +19,8 @@ class InterpreterTest : StringSpec() {
     )
 
     private val testCases: List<TestCase> = testPrograms
-        .filter { it.type == TestProgramType.GOOD }
-        .mapNotNull { (_, id, code) ->
+        .filter { it.errorSet.isEmpty() }
+        .mapNotNull { (id, _, code) ->
             val exp = expectations[id] ?: return@mapNotNull null
             TestCase(id, code, exp)
         }

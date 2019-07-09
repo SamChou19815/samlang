@@ -1,3 +1,5 @@
+// ERROR_COUNT: 0
+
 util Math {
 
     function plus(a: int, b: int): int = a + b

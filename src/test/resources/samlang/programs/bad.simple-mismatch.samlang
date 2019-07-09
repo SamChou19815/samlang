@@ -1,0 +1,7 @@
+// ERROR_COUNT: 1
+// UnexpectedTypeError:6:4-6:31: Expected: `int`, actual: `bool`.
+
+util Main {
+    // should be type bool!
+    function main(): int = true
+}
