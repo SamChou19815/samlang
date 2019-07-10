@@ -5,7 +5,6 @@ import io.kotlintest.specs.StringSpec
 import samlang.checker.ProgramTypeChecker
 import samlang.checker.TypeCheckingContext
 import samlang.parser.ProgramBuilder
-import samlang.programs.TestProgramType
 import samlang.programs.testPrograms
 
 class InterpreterTest : StringSpec() {
