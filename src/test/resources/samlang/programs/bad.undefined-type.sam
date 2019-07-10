@@ -1,0 +1,6 @@
+// ERROR_COUNT: 1
+// NotWellDefinedIdentifierError:5:5-5:36: `HelloWorld` is not well defined.
+
+util Main {
+    function main(): HelloWorld = 1
+}

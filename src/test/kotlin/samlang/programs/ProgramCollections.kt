@@ -10,11 +10,6 @@ private fun File.toTestProgram(): TestProgram {
     if (nameParts.size != 2) {
         error(message = "Bad file name: $name.")
     }
-    val isGood = when (val type = nameParts[0]) {
-        "good" -> true
-        "bad" -> false
-        else -> error(message = "Bad type: $type.")
-    }
     val lines = this.useLines { it.toList() }
     // Find number of errors
     assert(value = lines.isNotEmpty())
@@ -22,7 +17,6 @@ private fun File.toTestProgram(): TestProgram {
         assert(value = summaryLine.startsWith(prefix = SUMMARY_LINE_PREFIX))
         summaryLine.substring(startIndex = SUMMARY_LINE_PREFIX.length).trim().toInt()
     }
-    assert(value = isGood.xor(other = expectedErrorCount > 0))
     // Collect errors
     val errorSet = hashSetOf<String>()
     for (errorLineIndex in 1..expectedErrorCount) {

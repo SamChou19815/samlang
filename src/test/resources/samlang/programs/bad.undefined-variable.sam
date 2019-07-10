@@ -1,0 +1,6 @@
+// ERROR_COUNT: 1
+// UnresolvedNameError:5:31-5:41: Name `helloWorld` is not resolved.
+
+util Main {
+    function main(): string = helloWorld
+}
