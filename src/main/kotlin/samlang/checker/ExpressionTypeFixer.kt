@@ -11,25 +11,31 @@ import samlang.errors.UnexpectedTypeError
 internal fun Expression.fixType(
     expectedType: Type,
     resolution: TypeResolution,
-    typeCheckingContext: TypeCheckingContext,
-    errorRange: Range
-) = this.accept(
-    visitor = TypeFixerVisitor(
+    errorCollector: ErrorCollector,
+    typeCheckingContext: TypeCheckingContext
+): Expression {
+    val visitor = TypeFixerVisitor(
         resolution = resolution,
+        errorCollector = errorCollector,
         ctx = typeCheckingContext,
-        errorRange = errorRange
-    ),
-    context = expectedType
-)
+        errorRange = this.range
+    )
+    return this.collectPotentialError(errorCollector = errorCollector) {
+        this.accept(visitor = visitor, context = expectedType)
+    }
+}
 
 private class TypeFixerVisitor(
     private val resolution: TypeResolution,
+    private val errorCollector: ErrorCollector,
     private val ctx: TypeCheckingContext,
     private val errorRange: Range
 ) : CheckedExprVisitor<Type, Expression> {
 
     private fun Expression.tryFixType(expectedType: Type = this.type): Expression =
-        accept(visitor = this@TypeFixerVisitor, context = expectedType)
+        this.collectPotentialError(errorCollector = errorCollector) {
+            this.accept(visitor = this@TypeFixerVisitor, context = expectedType)
+        }
 
     private fun Type.fixSelf(expectedType: Type?, errorRange: Range): Type {
         val fullyResolvedType = resolution.resolveType(unresolvedType = this)

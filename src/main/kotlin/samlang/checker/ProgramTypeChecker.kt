@@ -4,7 +4,9 @@ import samlang.ast.*
 import samlang.ast.Module.MemberDefinition
 import samlang.ast.Module.TypeDefinition
 import samlang.errors.CollisionError
+import samlang.errors.CompileTimeError
 import samlang.errors.IllegalMethodDefinitionError
+import samlang.util.Either
 
 internal object ProgramTypeChecker {
 
@@ -17,48 +19,78 @@ internal object ProgramTypeChecker {
         }
     }
 
-    fun typeCheck(program: Program, ctx: TypeCheckingContext): Program {
+    fun typeCheck(program: Program, typeCheckingContext: TypeCheckingContext): Either<Program, List<CompileTimeError>> {
         val checkedModules = arrayListOf<Module>()
-        var currentCtx = ctx
+        var currentCtx = typeCheckingContext
+        val errorCollector = ErrorCollector()
         for (module in program.modules) {
-            val (checkedModule, newCtx) = typeCheck(module = module, ctx = currentCtx)
-            checkedModules.add(element = checkedModule)
+            val (checkedModule, newCtx) = typeCheck(
+                module = module,
+                errorCollector = errorCollector,
+                typeCheckingContext = currentCtx
+            )
+            checkedModule?.let { checkedModules.add(element = it) }
             currentCtx = newCtx
         }
-        return Program(modules = checkedModules)
+        val errors = errorCollector.collectedErrors
+        return if (errors.isEmpty()) {
+            Either.Left(v = Program(modules = checkedModules))
+        } else {
+            Either.Right(v = errors)
+        }
     }
 
-    private fun typeCheck(module: Module, ctx: TypeCheckingContext): Pair<Module, TypeCheckingContext> {
+    fun getCheckedProgramOrThrow(program: Program, typeCheckingContext: TypeCheckingContext): Program =
+        when (val result = typeCheck(program = program, typeCheckingContext = typeCheckingContext)) {
+            is Either.Left -> result.v
+            is Either.Right -> throw result.v[0]
+        }
+
+    private fun typeCheck(
+        module: Module,
+        errorCollector: ErrorCollector,
+        typeCheckingContext: TypeCheckingContext
+    ): Pair<Module?, TypeCheckingContext> {
         val (_, moduleNameRange, moduleName, moduleTypeDefinition, moduleMembers) = module
-        val (checkedTypeDef, partialCtx) = createContextWithCurrentModuleDefOnly(
-            moduleNameRange = moduleNameRange,
-            moduleName = moduleName,
-            moduleTypeDefinition = moduleTypeDefinition,
-            ctx = ctx
-        )
-        val (fullCtx, partiallyCheckedMembers) = processCurrentContextWithMembersAndMethods(
-            moduleRange = moduleNameRange,
-            moduleName = moduleName,
-            moduleMembers = moduleMembers,
-            isUtilModule = moduleTypeDefinition == null,
-            ctx = partialCtx
-        )
+        val (checkedTypeDef, partialContext) = errorCollector.returnNullOnCollectedError {
+            createContextWithCurrentModuleDefOnly(
+                moduleNameRange = moduleNameRange,
+                moduleName = moduleName,
+                moduleTypeDefinition = moduleTypeDefinition,
+                typeCheckingContext = typeCheckingContext
+            )
+        } ?: return null to typeCheckingContext
+        val (fullContext, partiallyCheckedMembers) = errorCollector.returnNullOnCollectedError {
+            processCurrentContextWithMembersAndMethods(
+                moduleRange = moduleNameRange,
+                moduleName = moduleName,
+                moduleMembers = moduleMembers,
+                isUtilModule = moduleTypeDefinition == null,
+                typeCheckingContext = partialContext
+            )
+        } ?: return null to typeCheckingContext
         val checkedModule = module.copy(
             typeDefinition = checkedTypeDef,
-            members = partiallyCheckedMembers.map { typeCheckMember(member = it, ctx = fullCtx) }
+            members = partiallyCheckedMembers.map { memberDefinition ->
+                typeCheckMember(
+                    member = memberDefinition,
+                    errorCollector = errorCollector,
+                    typeCheckingContext = fullContext
+                )
+            }
         )
-        return checkedModule to fullCtx
+        return checkedModule to fullContext
     }
 
     private fun createContextWithCurrentModuleDefOnly(
         moduleNameRange: Range,
         moduleName: String,
         moduleTypeDefinition: TypeDefinition?,
-        ctx: TypeCheckingContext
+        typeCheckingContext: TypeCheckingContext
     ): Pair<TypeDefinition?, TypeCheckingContext> {
         // new context with type def but empty members and extensions
         return if (moduleTypeDefinition == null) {
-            null to ctx.addNewEmptyUtilModule(name = moduleName, nameRange = moduleNameRange)
+            null to typeCheckingContext.addNewEmptyUtilModule(name = moduleName, nameRange = moduleNameRange)
         } else {
             val range = moduleTypeDefinition.range
             val typeParameters = moduleTypeDefinition.typeParameters
@@ -74,7 +106,7 @@ internal object ProgramTypeChecker {
             typeParameters?.checkNameCollision(range = range)
             mappings.keys.checkNameCollision(range = range)
             // create checked type def based on a temp
-            ctx.addNewModuleTypeDefinition(
+            typeCheckingContext.addNewModuleTypeDefinition(
                 name = moduleName,
                 nameRange = moduleNameRange,
                 typeDefinitionRange = range,
@@ -104,13 +136,15 @@ internal object ProgramTypeChecker {
         moduleName: String,
         moduleMembers: List<MemberDefinition>,
         isUtilModule: Boolean,
-        ctx: TypeCheckingContext
+        typeCheckingContext: TypeCheckingContext
     ): Pair<TypeCheckingContext, List<MemberDefinition>> {
         moduleMembers.map { it.name }.checkNameCollision(range = moduleRange)
         val partiallyCheckedMembers = moduleMembers.map { member ->
             val typeParameters = member.type.first
             typeParameters?.checkNameCollision(range = member.range)
-            var newContext = typeParameters?.let { ctx.addLocalGenericTypes(genericTypes = it) } ?: ctx
+            var newContext = typeParameters
+                ?.let { typeCheckingContext.addLocalGenericTypes(genericTypes = it) }
+                ?: typeCheckingContext
             if (member.isMethod) {
                 if (isUtilModule) {
                     throw IllegalMethodDefinitionError(
@@ -139,40 +173,27 @@ internal object ProgramTypeChecker {
                 )
             )
         }
-        val newCtx = ctx.addMembersAndMethodsToCurrentModule(members = memberTypeInfo)
+        val newCtx = typeCheckingContext.addMembersAndMethodsToCurrentModule(members = memberTypeInfo)
         return newCtx to partiallyCheckedMembers
     }
 
-    private fun typeCheckExpression(
-        expression: Expression,
-        ctx: TypeCheckingContext,
-        expectedType: Type
-    ): Expression {
-        val manager = TypeResolution()
-        val visitor = ExpressionTypeCheckerVisitor(resolution = manager)
-        return expression.accept(visitor = visitor, context = ctx to expectedType).fixType(
-            expectedType = expectedType,
-            resolution = manager,
-            typeCheckingContext = ctx,
-            errorRange = expression.range
-        )
-    }
-
     private fun typeCheckMember(
-        member: MemberDefinition, ctx: TypeCheckingContext
+        member: MemberDefinition, errorCollector: ErrorCollector, typeCheckingContext: TypeCheckingContext
     ): MemberDefinition {
         val (_, _, _, _, type, value) = member
-        var ctxForTypeCheckingValue = if (member.isMethod) ctx.addThisType() else ctx
+        var contextForTypeCheckingValue =
+            if (member.isMethod) typeCheckingContext.addThisType() else typeCheckingContext
         val typeParameters = type.first
         if (typeParameters != null) {
-            ctxForTypeCheckingValue = ctxForTypeCheckingValue.addLocalGenericTypes(genericTypes = typeParameters)
+            contextForTypeCheckingValue =
+                contextForTypeCheckingValue.addLocalGenericTypes(genericTypes = typeParameters)
         }
-        val checkedValue = typeCheckExpression(
-            expression = value,
-            ctx = ctxForTypeCheckingValue,
+        val checkedValue = value.typeCheck(
+            errorCollector = errorCollector,
+            typeCheckingContext = contextForTypeCheckingValue,
             expectedType = type.second
-        ) as Expression.Lambda
-        return member.copy(value = checkedValue)
+        )
+        return member.copy(value = checkedValue as Expression.Lambda)
     }
 
 }

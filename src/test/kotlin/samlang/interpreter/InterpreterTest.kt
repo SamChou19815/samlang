@@ -28,7 +28,10 @@ class InterpreterTest : StringSpec() {
         for ((id, code, expectedValue) in testCases) {
             "interpreter expected value: $id" {
                 val rawProgram = ProgramBuilder.buildProgramFromText(text = code)
-                val checkedProgram = ProgramTypeChecker.typeCheck(program = rawProgram, ctx = TypeCheckingContext.EMPTY)
+                val checkedProgram = ProgramTypeChecker.getCheckedProgramOrThrow(
+                    program = rawProgram,
+                    typeCheckingContext = TypeCheckingContext.EMPTY
+                )
                 val v = ProgramInterpreter.eval(program = checkedProgram)
                 v shouldBe expectedValue
             }

@@ -4,11 +4,11 @@ import samlang.ast.Program
 import samlang.checker.ProgramTypeChecker
 import samlang.checker.TypeCheckingContext
 import samlang.compiler.printer.PrettyPrinter
-import samlang.errors.CompileTimeError
 import samlang.errors.SyntaxError
 import samlang.interpreter.PanicException
 import samlang.interpreter.ProgramInterpreter
 import samlang.parser.ProgramBuilder
+import samlang.util.Either
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.charset.Charset
@@ -56,11 +56,13 @@ object WebDemoController {
         } catch (e: SyntaxError) {
             return Response(type = WebDemoController.Type.BAD_SYNTAX, detail = e.errorMessage)
         }
-        val checkedProgram: Program
-        try {
-            checkedProgram = ProgramTypeChecker.typeCheck(program = rawProgram, ctx = TypeCheckingContext.EMPTY)
-        } catch (e: CompileTimeError) {
-            return Response(type = WebDemoController.Type.BAD_TYPE, detail = e.errorMessage)
+        val checkedProgram = when (val typeCheckingResult =
+            ProgramTypeChecker.typeCheck(program = rawProgram, typeCheckingContext = TypeCheckingContext.EMPTY)) {
+            is Either.Left -> typeCheckingResult.v
+            is Either.Right -> return Response(
+                type = WebDemoController.Type.BAD_TYPE,
+                detail = typeCheckingResult.v[0].errorMessage
+            )
         }
         // passed all the compile time checks, start to interpret
         val atomicStringValue = AtomicReference<String>()

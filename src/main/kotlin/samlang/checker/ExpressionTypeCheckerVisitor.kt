@@ -5,17 +5,43 @@ import samlang.ast.Expression
 import samlang.ast.Expression.*
 import samlang.ast.Expression.ObjectConstructor.FieldConstructor
 import samlang.ast.Pattern
-import samlang.ast.Range
 import samlang.ast.Type
 import samlang.ast.Type.*
 import samlang.errors.*
 
-internal class ExpressionTypeCheckerVisitor(private val resolution: TypeResolution) : TypeCheckerVisitor {
+internal fun Expression.typeCheck(
+    errorCollector: ErrorCollector,
+    typeCheckingContext: TypeCheckingContext,
+    expectedType: Type
+): Expression {
+    val resolution = TypeResolution()
+    val visitor = ExpressionTypeCheckerVisitor(resolution = resolution, errorCollector = errorCollector)
+    val checkedExpression = this.collectPotentialError(errorCollector = errorCollector) {
+        this.accept(visitor = visitor, context = typeCheckingContext to expectedType)
+    }
+    if (errorCollector.collectedErrors.isNotEmpty()) {
+        return checkedExpression
+    }
+    return checkedExpression.fixType(
+        expectedType = expectedType,
+        resolution = resolution,
+        errorCollector = errorCollector,
+        typeCheckingContext = typeCheckingContext
+    )
+}
 
-    private val constraintAwareTypeChecker: ConstraintAwareTypeChecker = ConstraintAwareTypeChecker(resolution = resolution)
+private class ExpressionTypeCheckerVisitor(
+    private val resolution: TypeResolution,
+    private val errorCollector: ErrorCollector
+) : TypeCheckerVisitor {
+
+    private val constraintAwareTypeChecker: ConstraintAwareTypeChecker =
+        ConstraintAwareTypeChecker(resolution = resolution)
 
     private fun Expression.toChecked(ctx: TypeCheckingContext, expectedType: Type = this.type): Expression =
-        accept(visitor = this@ExpressionTypeCheckerVisitor, context = ctx to expectedType)
+        this.collectPotentialError(errorCollector = errorCollector) {
+            this.accept(visitor = this@ExpressionTypeCheckerVisitor, context = ctx to expectedType)
+        }
 
     override fun visit(expression: Literal, ctx: TypeCheckingContext, expectedType: Type): Expression {
         constraintAwareTypeChecker.checkAndInfer(

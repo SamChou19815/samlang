@@ -38,13 +38,15 @@ class PrinterTest : StringSpec() {
         for ((id, code) in programs) {
             "should consistently print values: $id" {
                 val rawProgram1 = ProgramBuilder.buildProgramFromText(text = code)
-                val checkedProgram1 = ProgramTypeChecker.typeCheck(program = rawProgram1, ctx = ctx)
+                val checkedProgram1 =
+                    ProgramTypeChecker.getCheckedProgramOrThrow(program = rawProgram1, typeCheckingContext = ctx)
                 val stream1 = StringPrintStream()
                 PrettyPrinter.prettyPrint(program = checkedProgram1, printStream = stream1)
                 val prettyCode1 = stream1.printedString
                 try {
                     val rawProgram2 = ProgramBuilder.buildProgramFromText(text = prettyCode1)
-                    val checkedProgram2 = ProgramTypeChecker.typeCheck(program = rawProgram2, ctx = ctx)
+                    val checkedProgram2 =
+                        ProgramTypeChecker.getCheckedProgramOrThrow(program = rawProgram2, typeCheckingContext = ctx)
                     val stream2 = StringPrintStream()
                     PrettyPrinter.prettyPrint(program = checkedProgram2, printStream = stream2)
                     val prettyCode2 = stream1.printedString
