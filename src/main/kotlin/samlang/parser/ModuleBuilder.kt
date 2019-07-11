@@ -83,7 +83,8 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
             isPublic = ctx.PUBLIC() != null,
             isMethod = ctx.METHOD() != null,
             name = ctx.LowerId().symbol.text,
-            type = ctx.typeParametersDeclaration()?.typeParameters to type,
+            typeParameters = ctx.typeParametersDeclaration()?.typeParameters,
+            type = type,
             value = Expression.Lambda(
                 range = range,
                 type = type,

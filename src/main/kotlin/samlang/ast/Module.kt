@@ -30,7 +30,8 @@ data class Module(
         val isPublic: Boolean,
         val isMethod: Boolean,
         val name: String,
-        val type: Pair<List<String>?, Type.FunctionType>,
+        val typeParameters: List<String>?,
+        val type: Type.FunctionType,
         val value: Expression.Lambda
     ) : Node
 }

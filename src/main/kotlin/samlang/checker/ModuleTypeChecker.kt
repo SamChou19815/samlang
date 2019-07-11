@@ -117,7 +117,7 @@ private fun processCurrentContextWithMembersAndMethods(
 ): Pair<TypeCheckingContext, List<Module.MemberDefinition>> {
     moduleMembers.map { it.name }.checkNameCollision(range = moduleRange)
     val partiallyCheckedMembers = moduleMembers.map { member ->
-        val typeParameters = member.type.first
+        val typeParameters = member.typeParameters
         typeParameters?.checkNameCollision(range = member.range)
         var newContext = typeParameters
             ?.let { typeCheckingContext.addLocalGenericTypes(genericTypes = it) }
@@ -136,8 +136,8 @@ private fun processCurrentContextWithMembersAndMethods(
                 newContext = updatedNewCtx
             }
         }
-        val type = member.type.second.validate(context = newContext, errorRange = member.range) as Type.FunctionType
-        member.copy(type = typeParameters to type)
+        val type = member.type.validate(context = newContext, errorRange = member.range) as Type.FunctionType
+        member.copy(typeParameters = typeParameters, type = type)
     }
     val memberTypeInfo = partiallyCheckedMembers.map { member ->
         Triple(
@@ -145,8 +145,8 @@ private fun processCurrentContextWithMembersAndMethods(
             second = member.isMethod,
             third = TypeCheckingContext.TypeInfo(
                 isPublic = member.isPublic,
-                typeParams = member.type.first,
-                type = member.type.second
+                typeParams = member.typeParameters,
+                type = member.type
             )
         )
     }
@@ -159,10 +159,9 @@ private fun typeCheckMember(
     errorCollector: ErrorCollector,
     typeCheckingContext: TypeCheckingContext
 ): Module.MemberDefinition {
-    val (_, _, _, _, type, value) = member
+    val (_, _, _, _, typeParameters, type, value) = member
     var contextForTypeCheckingValue =
         if (member.isMethod) typeCheckingContext.addThisType() else typeCheckingContext
-    val typeParameters = type.first
     if (typeParameters != null) {
         contextForTypeCheckingValue =
             contextForTypeCheckingValue.addLocalGenericTypes(genericTypes = typeParameters)
@@ -170,7 +169,7 @@ private fun typeCheckMember(
     val checkedValue = value.typeCheck(
         errorCollector = errorCollector,
         typeCheckingContext = contextForTypeCheckingValue,
-        expectedType = type.second
+        expectedType = type
     )
     return member.copy(value = checkedValue as Expression.Lambda)
 }

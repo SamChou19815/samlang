@@ -64,15 +64,14 @@ object PrettyPrinter {
         }
 
         private fun printMember(member: Module.MemberDefinition) {
-            val (_, isPublic, isMethod, name, type, value) = member
+            val (_, isPublic, isMethod, name, typeParameters, type, value) = member
             val memberVisibility = if (isPublic) "public " else ""
             val memberType = if (isMethod) "method" else "function"
-            val (typeParams, _) = type
-            val typeParamsString = typeParams?.joinToString(separator = ", ", prefix = " <", postfix = ">") ?: ""
+            val typeParamsString = typeParameters?.joinToString(separator = ", ", prefix = " <", postfix = ">") ?: ""
             val argsString = value.arguments.joinToString(
                 separator = ", ", prefix = "(", postfix = ")"
             ) { (n, t) -> "$n: $t" }
-            val returnTypeString = member.type.second.returnType.prettyPrint()
+            val returnTypeString = type.returnType.prettyPrint()
             val header = "$memberVisibility$memberType$typeParamsString $name$argsString: $returnTypeString ="
             printer.printWithBreak(x = header)
             printer.indented { value.body.accept(visitor = exprPrinter, context = true) }
