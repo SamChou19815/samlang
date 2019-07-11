@@ -23,7 +23,6 @@ data class Module(
             override val typeParameters: List<String>?,
             val mappings: Map<String, Type>
         ) : TypeDefinition()
-
     }
 
     data class MemberDefinition(
@@ -34,5 +33,4 @@ data class Module(
         val type: Pair<List<String>?, Type.FunctionType>,
         val value: Expression.Lambda
     ) : Node
-
 }

@@ -35,5 +35,4 @@ private class TypeValidator(private val errorRange: Range) : TypeVisitor<TypeChe
         )
 
     override fun visit(type: UndecidedType, context: TypeCheckingContext): Type = type
-
 }

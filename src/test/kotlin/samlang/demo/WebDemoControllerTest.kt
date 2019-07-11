@@ -71,5 +71,4 @@ class WebDemoControllerTest : StringSpec() {
             resp.type shouldBe WebDemoController.Type.BAD_TYPE
         }
     }
-
 }

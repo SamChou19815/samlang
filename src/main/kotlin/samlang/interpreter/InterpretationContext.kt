@@ -33,7 +33,5 @@ data class InterpretationContext(
         val EMPTY: InterpretationContext = InterpretationContext(
             modules = immutableMapOf(), localValues = immutableMapOf()
         )
-
     }
-
 }

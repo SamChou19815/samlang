@@ -241,5 +241,4 @@ internal object ExpressionInterpreter : CheckedExprVisitor<InterpretationContext
         }
         return eval(expression = expression.nextExpression, context = ctx)
     }
-
 }

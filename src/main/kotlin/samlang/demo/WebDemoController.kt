@@ -1,7 +1,6 @@
 package samlang.demo
 
 import samlang.ast.Program
-import samlang.checker.TypeCheckingContext
 import samlang.checker.typeCheck
 import samlang.compiler.printer.PrettyPrinter
 import samlang.errors.CompilationFailedException
@@ -90,5 +89,4 @@ object WebDemoController {
             )
         )
     }
-
 }

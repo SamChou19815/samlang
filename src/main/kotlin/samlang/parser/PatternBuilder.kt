@@ -32,5 +32,4 @@ internal object PatternBuilder : PLBaseVisitor<Pattern>() {
 
     override fun visitWildcardPattern(ctx: PLParser.WildcardPatternContext): Pattern =
         Pattern.WildCardPattern(range = ctx.range)
-
 }

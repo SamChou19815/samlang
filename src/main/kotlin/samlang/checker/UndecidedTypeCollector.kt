@@ -34,5 +34,4 @@ private class UndecidedTypeCollectorVisitor : TypeVisitor<Unit, Unit> {
     override fun visit(type: UndecidedType, context: Unit) {
         indices.add(element = type.index)
     }
-
 }

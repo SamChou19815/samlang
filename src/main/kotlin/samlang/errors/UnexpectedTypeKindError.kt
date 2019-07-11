@@ -10,6 +10,4 @@ class UnexpectedTypeKindError : CompileTimeError.WithRange {
 
     constructor(expectedTypeKind: String, actualTypeKind: String, range: Range) :
             super(reason = "Expect kind: $expectedTypeKind, actual kind: $actualTypeKind", range = range)
-
 }
-

@@ -85,6 +85,5 @@ internal object ModuleTypeDefinitionResolver {
             )
 
         override fun visit(type: UndecidedType, context: Map<String, Type>): Type = type
-
     }
 }

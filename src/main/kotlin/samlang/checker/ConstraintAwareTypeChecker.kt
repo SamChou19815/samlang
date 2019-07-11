@@ -93,6 +93,4 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution) {
             else -> context.meetWithUndecidedType(undecidedType = type)
         }
     }
-
 }
-

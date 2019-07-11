@@ -72,5 +72,4 @@ internal object ProgramInterpreter {
         methods.forEach { (_, v) -> v.context = newContext }
         return newContext
     }
-
 }

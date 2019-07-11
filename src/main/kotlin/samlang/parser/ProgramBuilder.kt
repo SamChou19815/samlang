@@ -35,7 +35,5 @@ object ProgramBuilder {
 
         override fun visitProgram(ctx: PLParser.ProgramContext): Program =
             Program(modules = ctx.module().map { it.accept(ModuleBuilder) })
-
     }
-
 }

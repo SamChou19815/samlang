@@ -62,5 +62,4 @@ private object UndecideTypeParametersVisitor :
 
     override fun visit(type: UndecidedType, context: Map<String, UndecidedType>): Type =
         error(message = "Type expression should not contain undecided type since it's the type of a module member.")
-
 }

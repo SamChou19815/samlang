@@ -96,5 +96,4 @@ internal interface TypeCheckerVisitor :
     fun visit(expression: Match, ctx: TypeCheckingContext, expectedType: Type): Expression
     fun visit(expression: Lambda, ctx: TypeCheckingContext, expectedType: Type): Expression
     fun visit(expression: Val, ctx: TypeCheckingContext, expectedType: Type): Expression
-
 }

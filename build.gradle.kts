@@ -5,6 +5,8 @@ plugins {
     antlr
     kotlin(module = "jvm") version "1.3.41"
     id("org.jetbrains.dokka") version "0.9.18"
+    id("org.jlleitschuh.gradle.ktlint") version "8.1.0"
+    id("org.jlleitschuh.gradle.ktlint-idea") version "8.1.0"
     maven
     `maven-publish`
     signing

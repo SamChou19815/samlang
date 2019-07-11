@@ -6,5 +6,4 @@ data class Range(val start: Position, val end: Position) {
         Range(start = minOf(a = start, b = other.start), end = maxOf(a = end, b = other.end))
 
     override fun toString(): String = "$start-$end"
-
 }

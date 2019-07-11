@@ -33,5 +33,4 @@ internal object TypeBuilder : PLBaseVisitor<Type>() {
             returnType = types.last().accept(TypeBuilder)
         )
     }
-
 }

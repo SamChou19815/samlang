@@ -23,7 +23,10 @@ class SizeMismatchError private constructor(
 
         @JvmStatic
         fun <T> checkNotNull(
-            sizeDescription: String, expectedList: List<T>, actualList: List<T>, range: Range
+            sizeDescription: String,
+            expectedList: List<T>,
+            actualList: List<T>,
+            range: Range
         ): List<Pair<T, T>> {
             SizeMismatchError.check(
                 sizeDescription = sizeDescription,
@@ -33,7 +36,5 @@ class SizeMismatchError private constructor(
             )
             return expectedList.zip(actualList)
         }
-
     }
-
 }

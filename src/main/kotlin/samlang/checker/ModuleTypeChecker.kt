@@ -155,7 +155,9 @@ private fun processCurrentContextWithMembersAndMethods(
 }
 
 private fun typeCheckMember(
-    member: Module.MemberDefinition, errorCollector: ErrorCollector, typeCheckingContext: TypeCheckingContext
+    member: Module.MemberDefinition,
+    errorCollector: ErrorCollector,
+    typeCheckingContext: TypeCheckingContext
 ): Module.MemberDefinition {
     val (_, _, _, _, type, value) = member
     var contextForTypeCheckingValue =

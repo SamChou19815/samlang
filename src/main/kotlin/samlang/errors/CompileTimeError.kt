@@ -10,5 +10,4 @@ abstract class CompileTimeError(protected val errorInformation: String) : Runtim
         CompileTimeError(errorInformation = "$range: $reason") {
         override val errorMessage: String = "${javaClass.simpleName}:$errorInformation"
     }
-
 }

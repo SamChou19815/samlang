@@ -105,7 +105,6 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
                 name = nameNode.text
             )
         }
-
     }
 
     override fun visitObjConstructor(ctx: PLParser.ObjConstructorContext): Expression = Expression.ObjectConstructor(
@@ -257,6 +256,4 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
             nextExpression = ctx.expression(1)?.accept(ExpressionBuilder)
         )
     }
-
 }
-

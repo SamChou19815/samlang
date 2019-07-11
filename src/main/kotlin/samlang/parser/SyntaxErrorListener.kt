@@ -24,5 +24,4 @@ internal class SyntaxErrorListener : BaseErrorListener() {
         val position = Position(line = line - 1, column = charPositionInLine) // LSP position
         _syntaxErrors.add(element = SyntaxError(position = position, reason = reason))
     }
-
 }

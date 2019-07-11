@@ -13,5 +13,4 @@ class UnsupportedModuleTypeDefError(
     enum class ModuleTypeDef(val nameForPrint: String) {
         OBJECT(nameForPrint = "object"), VARIANT(nameForPrint = "variant")
     }
-
 }

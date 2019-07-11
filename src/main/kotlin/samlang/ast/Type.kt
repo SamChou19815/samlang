@@ -40,9 +40,7 @@ sealed class Type {
 
         override fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T =
             visitor.visit(type = this, context = context)
-
     }
-
 
     data class TupleType(val mappings: List<Type>) : Type() {
 
@@ -51,7 +49,6 @@ sealed class Type {
 
         override fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T =
             visitor.visit(type = this, context = context)
-
     }
 
     data class FunctionType(
@@ -66,7 +63,6 @@ sealed class Type {
 
         override fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T =
             visitor.visit(type = this, context = context)
-
     }
 
     /*
@@ -81,7 +77,6 @@ sealed class Type {
 
         override fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T =
             visitor.visit(type = this, context = context)
-
     }
 
     companion object {
@@ -114,7 +109,5 @@ sealed class Type {
             }
             return list
         }
-
     }
-
 }

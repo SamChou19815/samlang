@@ -26,5 +26,4 @@ internal class ErrorCollector {
             _collectedErrors.add(element = compileTimeError)
             null
         }
-
 }

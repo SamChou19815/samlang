@@ -31,5 +31,4 @@ enum class BinaryOperator(val symbol: String, val precedence: Int) {
         fun fromRaw(text: String): BinaryOperator = symbolTable[text]
             ?: throw IllegalArgumentException("Not a supported binary operator.")
     }
-
 }

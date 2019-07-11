@@ -27,5 +27,4 @@ private object TypeResolverVisitor :
         )
 
     override fun visit(type: UndecidedType, context: ResolveTypeFunction): Type = context(type)
-
 }

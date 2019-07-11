@@ -37,7 +37,5 @@ class TypeParamSizeMismatchError private constructor(
             } else if (expectedList != null && actualList != null) {
                 checkNotNull(expectedList, actualList, range)
             } else error(message = "Impossible Case")
-
     }
-
 }

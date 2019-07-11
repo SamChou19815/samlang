@@ -62,5 +62,4 @@ class UnionFind {
         treeSize[iRoot] = getTreeSize(iRoot) + getTreeSize(jRoot)
         return iRoot
     }
-
 }

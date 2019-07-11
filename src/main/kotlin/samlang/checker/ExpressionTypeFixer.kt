@@ -247,5 +247,4 @@ private class TypeFixerVisitor(
             nextExpression = expression.nextExpression?.tryFixType(expectedType = context)
         )
     }
-
 }

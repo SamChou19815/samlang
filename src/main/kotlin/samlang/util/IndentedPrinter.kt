@@ -2,7 +2,6 @@ package samlang.util
 
 import java.io.PrintStream
 
-
 class IndentedPrinter(private val printStream: PrintStream, private val indentationSymbol: String) {
 
     private var disableIndentation: Boolean = false
@@ -64,5 +63,4 @@ class IndentedPrinter(private val printStream: PrintStream, private val indentat
             printStream.println()
         }
     }
-
 }

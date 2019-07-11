@@ -25,11 +25,9 @@ class PrinterTest : StringSpec() {
             override fun write(b: Int) {
                 sb.append(b.toChar())
             }
-
         }
 
         val printedString: String get() = (out as StringBuilderOutputStream).sb.toString()
-
     }
 
     init {
@@ -53,5 +51,4 @@ class PrinterTest : StringSpec() {
             }
         }
     }
-
 }

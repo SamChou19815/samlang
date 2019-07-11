@@ -78,7 +78,6 @@ object PrettyPrinter {
             printer.indented { value.body.accept(visitor = exprPrinter, context = true) }
             printer.println()
         }
-
     }
 
     private class ExprPrinter(private val printer: IndentedPrinter) :
@@ -298,8 +297,5 @@ object PrettyPrinter {
                 expression.nextExpression.printSelf(requireBreak = context)
             }
         }
-
     }
-
 }
-

@@ -5,5 +5,4 @@ class CompilationFailedException(val errors: List<CompileTimeError>) :
 
     val errorMessage: String
         get() = message ?: error(message = "Impossible: error message is not properly initialized.")
-
 }

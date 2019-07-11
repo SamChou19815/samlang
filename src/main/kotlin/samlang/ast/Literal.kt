@@ -37,5 +37,4 @@ sealed class Literal {
     data class BoolLiteral(val value: Boolean) : Literal() {
         override val prettyPrintedValue: String = value.toString()
     }
-
 }

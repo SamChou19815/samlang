@@ -206,7 +206,5 @@ data class TypeCheckingContext(
             localGenericTypes = immutableSetOf(),
             localValues = immutableMapOf()
         )
-
     }
-
 }

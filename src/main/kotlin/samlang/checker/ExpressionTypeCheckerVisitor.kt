@@ -99,7 +99,8 @@ private class ExpressionTypeCheckerVisitor(
     }
 
     private fun typeCheckFieldDeclarations(
-        fieldDeclarations: List<FieldConstructor>, ctx: TypeCheckingContext
+        fieldDeclarations: List<FieldConstructor>,
+        ctx: TypeCheckingContext
     ): Pair<Map<String, Type>, List<FieldConstructor>> {
         val declaredFieldTypes = mutableMapOf<String, Type>()
         val checkedDeclarations = arrayListOf<FieldConstructor>()
@@ -537,5 +538,4 @@ private class ExpressionTypeCheckerVisitor(
             nextExpression = checkedNextExpression
         )
     }
-
 }

@@ -20,14 +20,12 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class This(override val range: Range, override val type: Type) : Expression(precedence = 0) {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class Variable(
@@ -38,7 +36,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class ModuleMember(
@@ -50,7 +47,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class TupleConstructor(
@@ -61,7 +57,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class ObjectConstructor(
@@ -87,7 +82,6 @@ sealed class Expression(val precedence: Int) : Node {
             ) : FieldConstructor() {
 
                 override fun copyWithNewType(type: Type): FieldConstructor = copy(type = type)
-
             }
 
             data class FieldShorthand(
@@ -97,14 +91,11 @@ sealed class Expression(val precedence: Int) : Node {
             ) : FieldConstructor() {
 
                 override fun copyWithNewType(type: Type): FieldConstructor = copy(type = type)
-
             }
-
         }
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class VariantConstructor(
@@ -116,7 +107,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class FieldAccess(
@@ -128,7 +118,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class MethodAccess(
@@ -140,7 +129,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class Unary(
@@ -152,7 +140,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class Panic(
@@ -163,7 +150,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class FunctionApplication(
@@ -175,7 +161,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class Binary(
@@ -188,7 +173,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class IfElse(
@@ -201,7 +185,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class Match(
@@ -220,7 +203,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class Lambda(
@@ -232,7 +214,6 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
 
     data class Val(
@@ -246,7 +227,5 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
-
     }
-
 }

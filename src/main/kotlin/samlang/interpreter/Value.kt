@@ -60,5 +60,4 @@ sealed class Value {
     ) : Value() {
         override fun toString(): String = "function"
     }
-
 }

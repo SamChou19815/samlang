@@ -22,7 +22,6 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
             val symbol = ctx.UpperId().symbol
             return symbol.text to symbol.range
         }
-
     }
 
     private object ModuleTypeDefinitionBuilder : PLBaseVisitor<Module.TypeDefinition?>() {
@@ -104,7 +103,4 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
             members = ctx.moduleMemberDefinition().map { buildModuleMemberDefinition(ctx = it) }
         )
     }
-
 }
-
-

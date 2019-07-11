@@ -20,5 +20,4 @@ class ExampleTest1 : StringSpec() {
             }
         }
     }
-
 }
