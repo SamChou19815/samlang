@@ -74,7 +74,7 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution) {
             is UndecidedType -> type.meetWithUndecidedType(undecidedType = context)
             is FunctionType -> type.copy(
                 argumentTypes = SizeMismatchError.checkNotNull(
-                    sizeDescription = "function arguments",
+                    sizeDescription = "function parameters",
                     expectedList = context.argumentTypes,
                     actualList = type.argumentTypes,
                     range = errorRange

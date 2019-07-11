@@ -1,6 +1,5 @@
 package samlang.checker
 
-import samlang.ast.Expression
 import samlang.ast.Module
 import samlang.ast.Range
 import samlang.ast.Type
@@ -159,17 +158,21 @@ private fun typeCheckMember(
     errorCollector: ErrorCollector,
     typeCheckingContext: TypeCheckingContext
 ): Module.MemberDefinition {
-    val (_, _, _, _, typeParameters, type, value) = member
-    var contextForTypeCheckingValue =
+    val (_, _, _, _, typeParameters, type, parameters, body) = member
+    var contextForTypeCheckingBody =
         if (member.isMethod) typeCheckingContext.addThisType() else typeCheckingContext
     if (typeParameters != null) {
-        contextForTypeCheckingValue =
-            contextForTypeCheckingValue.addLocalGenericTypes(genericTypes = typeParameters)
+        contextForTypeCheckingBody =
+            contextForTypeCheckingBody.addLocalGenericTypes(genericTypes = typeParameters)
     }
-    val checkedValue = value.typeCheck(
+    contextForTypeCheckingBody = parameters.fold(initial = contextForTypeCheckingBody) { tempContext, parameter ->
+        val parameterType = parameter.type.validate(context = tempContext, errorRange = parameter.typeRange)
+        tempContext.addLocalValueType(name = parameter.name, type = parameterType, errorRange = parameter.nameRange)
+    }
+    val checkedBody = body.typeCheck(
         errorCollector = errorCollector,
-        typeCheckingContext = contextForTypeCheckingValue,
-        expectedType = type
+        typeCheckingContext = contextForTypeCheckingBody,
+        expectedType = type.returnType
     )
-    return member.copy(value = checkedValue as Expression.Lambda)
+    return member.copy(body = checkedBody)
 }

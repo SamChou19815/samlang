@@ -240,7 +240,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
                 argumentTypes = arguments.map { it.second },
                 returnType = Type.undecided()
             ),
-            arguments = arguments,
+            parameters = arguments,
             body = ctx.expression().accept(ExpressionBuilder)
         )
     }

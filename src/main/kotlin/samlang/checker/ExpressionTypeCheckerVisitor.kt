@@ -459,7 +459,7 @@ private class ExpressionTypeCheckerVisitor(
         return Lambda(
             range = range,
             type = constraintInferredType,
-            arguments = checkedArguments,
+            parameters = checkedArguments,
             body = checkedBody
         )
     }

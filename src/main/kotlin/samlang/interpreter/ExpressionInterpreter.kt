@@ -208,7 +208,7 @@ internal object ExpressionInterpreter : CheckedExprVisitor<InterpretationContext
     }
 
     override fun visit(expression: Lambda, context: InterpretationContext): Value.FunctionValue = Value.FunctionValue(
-        arguments = expression.arguments.map { it.first },
+        arguments = expression.parameters.map { it.first },
         body = expression.body,
         context = context
     )

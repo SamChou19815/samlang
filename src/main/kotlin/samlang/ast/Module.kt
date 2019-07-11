@@ -32,6 +32,10 @@ data class Module(
         val name: String,
         val typeParameters: List<String>?,
         val type: Type.FunctionType,
-        val value: Expression.Lambda
-    ) : Node
+        val parameters: List<Parameter>,
+        val body: Expression
+    ) : Node {
+
+        data class Parameter(val name: String, val nameRange: Range, val type: Type, val typeRange: Range)
+    }
 }

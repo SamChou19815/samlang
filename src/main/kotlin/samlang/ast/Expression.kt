@@ -208,7 +208,7 @@ sealed class Expression(val precedence: Int) : Node {
     data class Lambda(
         override val range: Range,
         override val type: Type.FunctionType,
-        val arguments: List<Pair<String, Type>>,
+        val parameters: List<Pair<String, Type>>,
         val body: Expression
     ) : Expression(precedence = 12) {
 

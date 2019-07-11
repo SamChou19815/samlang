@@ -1,6 +1,7 @@
 package samlang.interpreter
 
 import kotlinx.collections.immutable.plus
+import samlang.ast.Expression
 import samlang.ast.Module
 import samlang.ast.Program
 
@@ -55,7 +56,13 @@ internal object ProgramInterpreter {
         val functions = hashMapOf<String, Value.FunctionValue>()
         val methods = hashMapOf<String, Value.FunctionValue>()
         module.members.forEach { member ->
-            val value = ExpressionInterpreter.visit(expression = member.value, context = context)
+            val lambda = Expression.Lambda(
+                range = member.range,
+                type = member.type,
+                parameters = member.parameters.map { it.name to it.type },
+                body = member.body
+            )
+            val value = ExpressionInterpreter.visit(expression = lambda, context = context)
             if (member.isMethod) {
                 methods[member.name] = value
             } else {

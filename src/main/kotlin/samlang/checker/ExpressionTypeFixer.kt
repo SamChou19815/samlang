@@ -227,7 +227,7 @@ private class TypeFixerVisitor(
         val newType = expression.getFixedSelfType(expectedType = context) as FunctionType
         return expression.copy(
             type = newType,
-            arguments = expression.arguments.checkedZip(other = newType.argumentTypes).map { (vAndOriginalT, t) ->
+            parameters = expression.parameters.checkedZip(other = newType.argumentTypes).map { (vAndOriginalT, t) ->
                 val (v, originalT) = vAndOriginalT
                 v to originalT.fixSelf(expectedType = t, errorRange = expression.range)
             },

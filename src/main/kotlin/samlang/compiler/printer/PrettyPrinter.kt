@@ -1,9 +1,27 @@
 package samlang.compiler.printer
 
-import samlang.ast.*
 import samlang.ast.CheckedExprVisitor
-import samlang.ast.Expression.*
+import samlang.ast.Expression
+import samlang.ast.Expression.Binary
+import samlang.ast.Expression.FieldAccess
+import samlang.ast.Expression.FunctionApplication
+import samlang.ast.Expression.IfElse
+import samlang.ast.Expression.Lambda
 import samlang.ast.Expression.Literal
+import samlang.ast.Expression.Match
+import samlang.ast.Expression.MethodAccess
+import samlang.ast.Expression.ModuleMember
+import samlang.ast.Expression.ObjectConstructor
+import samlang.ast.Expression.Panic
+import samlang.ast.Expression.This
+import samlang.ast.Expression.TupleConstructor
+import samlang.ast.Expression.Unary
+import samlang.ast.Expression.Val
+import samlang.ast.Expression.Variable
+import samlang.ast.Expression.VariantConstructor
+import samlang.ast.Module
+import samlang.ast.Pattern
+import samlang.ast.Program
 import samlang.util.IndentedPrinter
 import java.io.PrintStream
 
@@ -64,17 +82,17 @@ object PrettyPrinter {
         }
 
         private fun printMember(member: Module.MemberDefinition) {
-            val (_, isPublic, isMethod, name, typeParameters, type, value) = member
+            val (_, isPublic, isMethod, name, typeParameters, type, parameters, body) = member
             val memberVisibility = if (isPublic) "public " else ""
             val memberType = if (isMethod) "method" else "function"
             val typeParamsString = typeParameters?.joinToString(separator = ", ", prefix = " <", postfix = ">") ?: ""
-            val argsString = value.arguments.joinToString(
+            val argsString = parameters.joinToString(
                 separator = ", ", prefix = "(", postfix = ")"
-            ) { (n, t) -> "$n: $t" }
+            ) { (name, _, type, _) -> "$name: $type" }
             val returnTypeString = type.returnType.prettyPrint()
             val header = "$memberVisibility$memberType$typeParamsString $name$argsString: $returnTypeString ="
             printer.printWithBreak(x = header)
-            printer.indented { value.body.accept(visitor = exprPrinter, context = true) }
+            printer.indented { body.accept(visitor = exprPrinter, context = true) }
             printer.println()
         }
     }
@@ -259,7 +277,7 @@ object PrettyPrinter {
 
         override fun visit(expression: Lambda, context: Boolean) {
             printer.printlnWithoutFurtherIndentation {
-                val argsString = expression.arguments.joinToString(
+                val argsString = expression.parameters.joinToString(
                     separator = ", ", prefix = "(", postfix = ")"
                 ) { (n, t) -> "$n: $t" }
                 printWithBreak(x = "$argsString -> (")

@@ -1,11 +1,16 @@
 package samlang.parser
 
-import samlang.ast.Expression
 import samlang.ast.Module
 import samlang.ast.Range
 import samlang.ast.Type
 import samlang.parser.generated.PLBaseVisitor
-import samlang.parser.generated.PLParser.*
+import samlang.parser.generated.PLParser.ClassHeaderContext
+import samlang.parser.generated.PLParser.ModuleContext
+import samlang.parser.generated.PLParser.ModuleMemberDefinitionContext
+import samlang.parser.generated.PLParser.ObjTypeContext
+import samlang.parser.generated.PLParser.TypeParametersDeclarationContext
+import samlang.parser.generated.PLParser.UtilHeaderContext
+import samlang.parser.generated.PLParser.VariantTypeContext
 
 internal object ModuleBuilder : PLBaseVisitor<Module>() {
 
@@ -66,31 +71,29 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
     }
 
     private fun buildModuleMemberDefinition(ctx: ModuleMemberDefinitionContext): Module.MemberDefinition {
-        val range = ctx.range
-        val annotatedVariables = ctx.annotatedVariable().map { annotatedVariable ->
-            val name = annotatedVariable.LowerId().symbol.text
-            val annotation = annotatedVariable.typeAnnotation().typeExpr().accept(TypeBuilder)
-            name to annotation
+        val parameters = ctx.annotatedVariable().map { annotatedVariable ->
+            val nameSymbol = annotatedVariable.LowerId().symbol
+            val typeExpression = annotatedVariable.typeAnnotation().typeExpr()
+            Module.MemberDefinition.Parameter(
+                name = nameSymbol.text,
+                nameRange = nameSymbol.range,
+                type = typeExpression.accept(TypeBuilder),
+                typeRange = typeExpression.range
+            )
         }
-        val typeExpression = ctx.typeExpr()
-        val bodyExpression = ctx.expression()
         val type = Type.FunctionType(
-            argumentTypes = annotatedVariables.map { it.second },
-            returnType = typeExpression.accept(TypeBuilder)
+            argumentTypes = parameters.map { it.type },
+            returnType = ctx.typeExpr().accept(TypeBuilder)
         )
         return Module.MemberDefinition(
-            range = range,
+            range = ctx.range,
             isPublic = ctx.PUBLIC() != null,
             isMethod = ctx.METHOD() != null,
             name = ctx.LowerId().symbol.text,
             typeParameters = ctx.typeParametersDeclaration()?.typeParameters,
             type = type,
-            value = Expression.Lambda(
-                range = range,
-                type = type,
-                arguments = annotatedVariables,
-                body = bodyExpression.accept(ExpressionBuilder)
-            )
+            parameters = parameters,
+            body = ctx.expression().accept(ExpressionBuilder)
         )
     }
 
