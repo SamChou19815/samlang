@@ -6,6 +6,6 @@ class IllegalOtherClassFieldAccess(
     className: String,
     range: Range
 ) : CompileTimeError.WithRange(
-    reason = "It's illegal to access field(s) in class $className outside of that class.",
+    reason = "It's illegal to access field(s) in class `$className` outside of that class.",
     range = range
 )
