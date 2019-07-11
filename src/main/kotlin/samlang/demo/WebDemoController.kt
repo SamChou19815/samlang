@@ -1,14 +1,13 @@
 package samlang.demo
 
 import samlang.ast.Program
-import samlang.checker.ProgramTypeChecker
 import samlang.checker.TypeCheckingContext
+import samlang.checker.typeCheck
 import samlang.compiler.printer.PrettyPrinter
-import samlang.errors.SyntaxError
+import samlang.errors.CompilationFailedException
 import samlang.interpreter.PanicException
 import samlang.interpreter.ProgramInterpreter
 import samlang.parser.ProgramBuilder
-import samlang.util.Either
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.charset.Charset
@@ -53,16 +52,13 @@ object WebDemoController {
         val rawProgram: Program
         try {
             rawProgram = ProgramBuilder.buildProgramFromText(text = programString)
-        } catch (e: SyntaxError) {
-            return Response(type = WebDemoController.Type.BAD_SYNTAX, detail = e.errorMessage)
+        } catch (compilationFailedException: CompilationFailedException) {
+            return Response(type = WebDemoController.Type.BAD_SYNTAX, detail = compilationFailedException.errorMessage)
         }
-        val checkedProgram = when (val typeCheckingResult =
-            ProgramTypeChecker.typeCheck(program = rawProgram, typeCheckingContext = TypeCheckingContext.EMPTY)) {
-            is Either.Left -> typeCheckingResult.v
-            is Either.Right -> return Response(
-                type = WebDemoController.Type.BAD_TYPE,
-                detail = typeCheckingResult.v[0].errorMessage
-            )
+        val checkedProgram = try {
+            rawProgram.typeCheck()
+        } catch (compilationFailedException: CompilationFailedException) {
+            return Response(type = WebDemoController.Type.BAD_TYPE, detail = compilationFailedException.errorMessage)
         }
         // passed all the compile time checks, start to interpret
         val atomicStringValue = AtomicReference<String>()

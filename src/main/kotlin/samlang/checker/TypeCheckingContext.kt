@@ -6,7 +6,7 @@ import samlang.ast.Range
 import samlang.ast.Type
 import samlang.errors.*
 
-internal data class TypeCheckingContext(
+data class TypeCheckingContext(
     private val modules: ImmutableMap<String, ModuleType>,
     val currentModule: String,
     val localGenericTypes: ImmutableSet<String>,

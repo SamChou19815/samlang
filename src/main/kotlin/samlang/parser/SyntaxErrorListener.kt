@@ -3,23 +3,26 @@ package samlang.parser
 import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.RecognitionException
 import org.antlr.v4.runtime.Recognizer
-import org.antlr.v4.runtime.Token
+import samlang.ast.Position
+import samlang.errors.CompileTimeError
+import samlang.errors.SyntaxError
 
 internal class SyntaxErrorListener : BaseErrorListener() {
 
-    private val syntaxErrorCollection: MutableList<Triple<Int, Int, String>> = arrayListOf()
+    private val _syntaxErrors: MutableList<SyntaxError> = arrayListOf()
 
-    val syntaxErrors: List<Triple<Int, Int, String>> get() = syntaxErrorCollection
+    val syntaxErrors: List<CompileTimeError> get() = _syntaxErrors
 
     override fun syntaxError(
         recognizer: Recognizer<*, *>,
         offendingSymbol: Any?,
         line: Int,
         charPositionInLine: Int,
-        msg: String,
+        reason: String,
         e: RecognitionException?
     ) {
-        syntaxErrorCollection.add(element = Triple(line, charPositionInLine, msg))
+        val position = Position(line = line - 1, column = charPositionInLine) // LSP position
+        _syntaxErrors.add(element = SyntaxError(position = position, reason = reason))
     }
 
 }

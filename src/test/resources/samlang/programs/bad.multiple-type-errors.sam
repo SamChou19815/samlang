@@ -1,0 +1,7 @@
+// ERROR_COUNT: 2
+// UnexpectedTypeError:6:37-6:42: Expected: `int`, actual: `string`.
+// UnexpectedTypeError:6:45-6:50: Expected: `int`, actual: `string`.
+
+util Main {
+    function main(): int = 233333 + "foo" + "bar" + 42
+}

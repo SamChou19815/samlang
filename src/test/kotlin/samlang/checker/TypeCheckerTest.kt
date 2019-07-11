@@ -3,7 +3,7 @@ package samlang.checker
 import io.kotlintest.fail
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
-import samlang.errors.CompileTimeError
+import samlang.errors.CompilationFailedException
 import samlang.parser.ProgramBuilder
 import samlang.programs.testPrograms
 
@@ -12,24 +12,14 @@ class TypeCheckerTest : StringSpec() {
     init {
         for ((id, errorSet, code) in testPrograms) {
             if (errorSet.isEmpty()) {
-                "should have no errors: $id" {
-                    val program = ProgramBuilder.buildProgramFromText(text = code)
-                    ProgramTypeChecker.getCheckedProgramOrThrow(
-                        program = program,
-                        typeCheckingContext = TypeCheckingContext.EMPTY
-                    )
-                }
+                "should have no errors: $id" { ProgramBuilder.buildProgramFromText(text = code).typeCheck() }
             } else {
                 "should have expected errors: $id" {
                     try {
-                        val program = ProgramBuilder.buildProgramFromText(text = code)
-                        ProgramTypeChecker.getCheckedProgramOrThrow(
-                            program = program,
-                            typeCheckingContext = TypeCheckingContext.EMPTY
-                        )
+                        ProgramBuilder.buildProgramFromText(text = code).typeCheck()
                         fail(msg = "Found no type errors, but expect: $errorSet.")
-                    } catch (compileTimeError: CompileTimeError) {
-                        compileTimeError.errorMessage.split("\n").toSet() shouldBe errorSet
+                    } catch (exception: CompilationFailedException) {
+                        exception.errors.asSequence().map { it.errorMessage }.toSet() shouldBe errorSet
                     }
                 }
             }

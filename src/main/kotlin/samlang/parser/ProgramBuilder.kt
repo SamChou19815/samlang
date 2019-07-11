@@ -4,10 +4,10 @@ import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.Program
 import samlang.errors.FileError
-import samlang.errors.SyntaxError
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer
 import samlang.parser.generated.PLParser
+import samlang.util.createProgramOrFail
 import java.io.File
 import java.io.InputStream
 
@@ -20,11 +20,7 @@ object ProgramBuilder {
         parser.addErrorListener(errorListener)
         val programContext = parser.program()
         val errors = errorListener.syntaxErrors
-        return if (errors.isEmpty()) {
-            programContext.accept(Visitor)
-        } else {
-            throw SyntaxError(errors = errors)
-        }
+        return createProgramOrFail(program = programContext.accept(Visitor), errors = errors)
     }
 
     fun buildProgramFromSingleFile(fileDir: String): Program =

@@ -2,8 +2,7 @@ package samlang.interpreter
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
-import samlang.checker.ProgramTypeChecker
-import samlang.checker.TypeCheckingContext
+import samlang.checker.typeCheck
 import samlang.parser.ProgramBuilder
 import samlang.programs.testPrograms
 
@@ -27,11 +26,7 @@ class InterpreterTest : StringSpec() {
     init {
         for ((id, code, expectedValue) in testCases) {
             "interpreter expected value: $id" {
-                val rawProgram = ProgramBuilder.buildProgramFromText(text = code)
-                val checkedProgram = ProgramTypeChecker.getCheckedProgramOrThrow(
-                    program = rawProgram,
-                    typeCheckingContext = TypeCheckingContext.EMPTY
-                )
+                val checkedProgram = ProgramBuilder.buildProgramFromText(text = code).typeCheck()
                 val v = ProgramInterpreter.eval(program = checkedProgram)
                 v shouldBe expectedValue
             }
