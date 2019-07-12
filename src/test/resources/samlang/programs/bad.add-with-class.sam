@@ -1,0 +1,12 @@
+// ERROR_COUNT: 2
+// UnexpectedType:11:32-11:39: Expected: `int`, actual: `A`.
+// UnexpectedTypeKind:11:32-11:39: Expect kind: `function`, actual: `UNDECIDED_TYPE_3`.
+// TODO: suppress the error above by replace expression with expected type
+
+class A(a: int) {
+    public function init(): A = { a: 42 }
+}
+
+util Main {
+    function main(): int = 3 + A::init()
+}
