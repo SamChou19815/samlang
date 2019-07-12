@@ -1,5 +1,5 @@
 // ERROR_COUNT: 1
-// InsufficientTypeInferenceContextError:6:37-6:72: There is not enough context information to decide the type of this expression.
+// InsufficientTypeInferenceContext:6:37-6:72: There is not enough context information to decide the type of this expression.
 
 util NotEnoughTypeInfo {
     function <T> randomFunction(): T = panic("I can be any type!")

@@ -3,7 +3,7 @@ package samlang.parser
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.Program
-import samlang.errors.FileError
+import samlang.errors.MissingFileError
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer
 import samlang.parser.generated.PLParser
@@ -27,7 +27,7 @@ object ProgramBuilder {
         File(fileDir)
             .takeIf { it.isFile }
             ?.let { buildProgram(inputStream = it.inputStream()) }
-            ?: throw FileError(dirName = fileDir)
+            ?: throw MissingFileError(dirName = fileDir)
 
     fun buildProgramFromText(text: String): Program = buildProgram(inputStream = text.byteInputStream())
 
