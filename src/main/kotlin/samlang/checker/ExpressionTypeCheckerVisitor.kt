@@ -1,13 +1,53 @@
 package samlang.checker
 
-import samlang.ast.BinaryOperator.*
+import samlang.ast.BinaryOperator.AND
+import samlang.ast.BinaryOperator.DIV
+import samlang.ast.BinaryOperator.EQ
+import samlang.ast.BinaryOperator.GE
+import samlang.ast.BinaryOperator.GT
+import samlang.ast.BinaryOperator.LE
+import samlang.ast.BinaryOperator.LT
+import samlang.ast.BinaryOperator.MINUS
+import samlang.ast.BinaryOperator.MOD
+import samlang.ast.BinaryOperator.MUL
+import samlang.ast.BinaryOperator.NE
+import samlang.ast.BinaryOperator.OR
+import samlang.ast.BinaryOperator.PLUS
 import samlang.ast.Expression
-import samlang.ast.Expression.*
+import samlang.ast.Expression.Binary
+import samlang.ast.Expression.FieldAccess
+import samlang.ast.Expression.FunctionApplication
+import samlang.ast.Expression.IfElse
+import samlang.ast.Expression.Lambda
+import samlang.ast.Expression.Literal
+import samlang.ast.Expression.Match
+import samlang.ast.Expression.MethodAccess
+import samlang.ast.Expression.ModuleMember
+import samlang.ast.Expression.ObjectConstructor
 import samlang.ast.Expression.ObjectConstructor.FieldConstructor
+import samlang.ast.Expression.Panic
+import samlang.ast.Expression.This
+import samlang.ast.Expression.TupleConstructor
+import samlang.ast.Expression.Unary
+import samlang.ast.Expression.Val
+import samlang.ast.Expression.Variable
+import samlang.ast.Expression.VariantConstructor
 import samlang.ast.Pattern
 import samlang.ast.Type
-import samlang.ast.Type.*
-import samlang.errors.*
+import samlang.ast.Type.FunctionType
+import samlang.ast.Type.IdentifierType
+import samlang.ast.Type.TupleType
+import samlang.ast.Type.UndecidedType
+import samlang.errors.CollisionError
+import samlang.errors.DuplicateFieldDeclarationError
+import samlang.errors.ExtraFieldInObjectError
+import samlang.errors.IllegalOtherClassFieldAccess
+import samlang.errors.IllegalThisError
+import samlang.errors.InconsistentFieldsInObjectError
+import samlang.errors.InsufficientTypeInferenceContextError
+import samlang.errors.SizeMismatchError
+import samlang.errors.UnexpectedTypeKindError
+import samlang.errors.UnresolvedNameError
 
 internal fun Expression.typeCheck(
     errorCollector: ErrorCollector,
@@ -16,9 +56,8 @@ internal fun Expression.typeCheck(
 ): Expression {
     val resolution = TypeResolution()
     val visitor = ExpressionTypeCheckerVisitor(resolution = resolution, errorCollector = errorCollector)
-    val checkedExpression = this.collectPotentialError(errorCollector = errorCollector) {
-        this.accept(visitor = visitor, context = typeCheckingContext to expectedType)
-    }
+    val checkedExpression =
+        this.toChecked(visitor = visitor, context = typeCheckingContext, expectedType = expectedType)
     if (errorCollector.collectedErrors.isNotEmpty()) {
         return checkedExpression
     }
@@ -30,18 +69,25 @@ internal fun Expression.typeCheck(
     )
 }
 
+private fun Expression.toChecked(
+    visitor: ExpressionTypeCheckerVisitor,
+    context: TypeCheckingContext,
+    expectedType: Type
+): Expression =
+    visitor.errorCollector.returnNullOnCollectedError {
+        this.accept(visitor = visitor, context = context to expectedType)
+    } ?: this.replaceTypeWithExpectedType(expectedType = expectedType)
+
 private class ExpressionTypeCheckerVisitor(
     private val resolution: TypeResolution,
-    private val errorCollector: ErrorCollector
+    val errorCollector: ErrorCollector
 ) : TypeCheckerVisitor {
 
     private val constraintAwareTypeChecker: ConstraintAwareTypeChecker =
         ConstraintAwareTypeChecker(resolution = resolution)
 
     private fun Expression.toChecked(ctx: TypeCheckingContext, expectedType: Type = this.type): Expression =
-        this.collectPotentialError(errorCollector = errorCollector) {
-            this.accept(visitor = this@ExpressionTypeCheckerVisitor, context = ctx to expectedType)
-        }
+        this.toChecked(visitor = this@ExpressionTypeCheckerVisitor, context = ctx, expectedType = expectedType)
 
     override fun visit(expression: Literal, ctx: TypeCheckingContext, expectedType: Type): Expression {
         constraintAwareTypeChecker.checkAndInfer(
