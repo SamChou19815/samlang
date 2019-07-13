@@ -2,7 +2,11 @@ package samlang.checker
 
 import samlang.ast.Range
 import samlang.ast.Type
-import samlang.ast.Type.*
+import samlang.ast.Type.FunctionType
+import samlang.ast.Type.IdentifierType
+import samlang.ast.Type.PrimitiveType
+import samlang.ast.Type.TupleType
+import samlang.ast.Type.UndecidedType
 import samlang.ast.TypeVisitor
 import samlang.errors.SizeMismatchError
 import samlang.errors.TypeParamSizeMismatchError
@@ -10,8 +14,24 @@ import samlang.errors.UnexpectedTypeError
 
 internal class ConstraintAwareTypeChecker(val resolution: TypeResolution) {
 
-    fun checkAndInfer(expectedType: Type, actualType: Type, errorRange: Range): Type =
-        actualType.accept(visitor = Visitor(errorRange = errorRange), context = expectedType)
+    fun checkAndInfer(expectedType: Type, actualType: Type, errorRange: Range): Type {
+        val partiallyResolvedActualType = resolution.resolveType(unresolvedType = actualType)
+        val partiallyResolvedExpectedType = resolution.resolveType(unresolvedType = expectedType)
+        return try {
+            partiallyResolvedActualType.accept(
+                visitor = Visitor(errorRange = errorRange),
+                context = partiallyResolvedExpectedType
+            )
+        } catch (_: ConflictError) {
+            throw UnexpectedTypeError(
+                expected = partiallyResolvedExpectedType,
+                actual = partiallyResolvedActualType,
+                range = errorRange
+            )
+        }
+    }
+
+    private class ConflictError : RuntimeException()
 
     /**
      * typeExpr -> actual type, not allowed to have free type
@@ -21,9 +41,6 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution) {
 
         private fun meet(actualType: Type, expectedType: Type): Type =
             actualType.accept(visitor = this@Visitor, context = expectedType)
-
-        private fun Type.failOnExpected(expectedType: Type): Nothing =
-            throw UnexpectedTypeError(expected = expectedType, actual = this, range = errorRange)
 
         private fun Type.meetWithUndecidedType(undecidedType: UndecidedType): Type {
             val resolvedType =
@@ -38,14 +55,14 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution) {
         override fun visit(type: PrimitiveType, context: Type): Type = when {
             context is UndecidedType -> type.meetWithUndecidedType(undecidedType = context)
             type == context -> type
-            else -> type.failOnExpected(expectedType = context)
+            else -> throw ConflictError()
         }
 
         override fun visit(type: IdentifierType, context: Type): Type = when (context) {
             is UndecidedType -> type.meetWithUndecidedType(undecidedType = context)
             is IdentifierType -> {
                 if (type.identifier != context.identifier) {
-                    type.failOnExpected(expectedType = context)
+                    throw ConflictError()
                 }
                 val inferredTypeArguments = TypeParamSizeMismatchError.check(
                     expectedList = context.typeArguments,
@@ -54,7 +71,7 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution) {
                 )?.map { (expect, actual) -> meet(actualType = actual, expectedType = expect) }
                 type.copy(typeArguments = inferredTypeArguments)
             }
-            else -> type.failOnExpected(expectedType = context)
+            else -> throw ConflictError()
         }
 
         override fun visit(type: TupleType, context: Type): Type = when (context) {
@@ -67,7 +84,7 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution) {
                     range = errorRange
                 ).map { (expect, actual) -> meet(actualType = actual, expectedType = expect) }
             )
-            else -> type.failOnExpected(expectedType = context)
+            else -> throw ConflictError()
         }
 
         override fun visit(type: FunctionType, context: Type): Type = when (context) {
@@ -81,7 +98,7 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution) {
                 ).map { (expect, actual) -> meet(actualType = actual, expectedType = expect) },
                 returnType = meet(actualType = type.returnType, expectedType = context.returnType)
             )
-            else -> type.failOnExpected(expectedType = context)
+            else -> throw ConflictError()
         }
 
         override fun visit(type: UndecidedType, context: Type): Type = when (context) {

@@ -43,7 +43,7 @@ class TypeResolution {
      */
     fun getPartiallyResolvedType(undecidedType: UndecidedType): Type {
         val rootIndex = undecidedType.index.findRoot()
-        return knownResolutions[rootIndex] ?: undecidedType
+        return knownResolutions[rootIndex] ?: UndecidedType(index = rootIndex)
     }
 
     /**
