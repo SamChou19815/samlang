@@ -1,0 +1,13 @@
+// ERROR_COUNT: 2
+// UnexpectedType:10:43-10:50: Expected: `int`, actual: `A`.
+// UnexpectedType:11:29-11:36: Expected: `int`, actual: `A`.
+
+class A(a: int) {
+    public function init(): A = { a: 42 }
+}
+
+util Main {
+    function main1(): int = panic("Ah") + A::init()
+    function main2(): int = A::init() + panic("Ah")
+    function main(): int = Main::main1() + Main::main2()
+}

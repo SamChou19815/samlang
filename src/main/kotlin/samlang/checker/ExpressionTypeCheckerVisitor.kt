@@ -381,11 +381,11 @@ private class ExpressionTypeCheckerVisitor(
     }
 
     override fun visit(expression: Binary, ctx: TypeCheckingContext, expectedType: Type): Expression {
-        val (range, type, e1, op, e2) = expression
-        val checkedExpr = when (op) {
+        val (range, _, e1, op, e2) = expression
+        val checkedExpression = when (op) {
             MUL, DIV, MOD, PLUS, MINUS -> expression.copy(
-                e1 = e1.toChecked(ctx = ctx, expectedType = type),
-                e2 = e2.toChecked(ctx = ctx, expectedType = type)
+                e1 = e1.toChecked(ctx = ctx, expectedType = Type.int),
+                e2 = e2.toChecked(ctx = ctx, expectedType = Type.int)
             )
             LT, LE, GT, GE -> expression.copy(
                 e1 = e1.toChecked(ctx = ctx, expectedType = Type.int),
@@ -397,14 +397,14 @@ private class ExpressionTypeCheckerVisitor(
                 expression.copy(e1 = checkedE1, e2 = checkedE2)
             }
             AND, OR -> expression.copy(
-                e1 = e1.toChecked(ctx = ctx, expectedType = type),
-                e2 = e2.toChecked(ctx = ctx, expectedType = type)
+                e1 = e1.toChecked(ctx = ctx, expectedType = Type.bool),
+                e2 = e2.toChecked(ctx = ctx, expectedType = Type.bool)
             )
         }
         constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = checkedExpr.type, errorRange = range
+            expectedType = expectedType, actualType = checkedExpression.type, errorRange = range
         )
-        return checkedExpr
+        return checkedExpression
     }
 
     override fun visit(expression: IfElse, ctx: TypeCheckingContext, expectedType: Type): Expression {
