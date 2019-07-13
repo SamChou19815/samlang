@@ -6,10 +6,14 @@ import io.kotlintest.specs.StringSpec
 import samlang.errors.CompilationFailedException
 import samlang.parser.ProgramBuilder
 import samlang.programs.testPrograms
+import samlang.stdlib.StandardLibrary
 
 class TypeCheckerTest : StringSpec() {
 
     init {
+        "stdlib type checks" {
+            ProgramBuilder.buildProgramFromText(text = StandardLibrary.sourceCode).typeCheck()
+        }
         for ((id, errorSet, code) in testPrograms) {
             if (errorSet.isEmpty()) {
                 "should have no errors: $id" { ProgramBuilder.buildProgramFromText(text = code).typeCheck() }
