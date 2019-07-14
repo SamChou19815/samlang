@@ -1,0 +1,30 @@
+// ERROR_COUNT: 5
+// Collision:9:6-9:7: Name `A` collides with a previously defined name.
+// Collision:13:14-13:18: Name `test` collides with a previously defined name.
+// Collision:18:12-18:16: Name `test` collides with a previously defined name.
+// Collision:23:14-23:18: Name `test` collides with a previously defined name.
+// Collision:29:13-29:14: Name `a` collides with a previously defined name.
+
+util A {}
+util A {}
+
+util ConflictingFunctions {
+    function test(): unit = test()
+    function test(): unit = test()
+}
+
+class ConflictingMethods(a: int) {
+    method test(): int = 42
+    method test(): int = 42
+}
+
+class ConflictingMethodsAndFunctions(a: int) {
+    method test(): int = 42
+    function test(): unit = test()
+}
+
+util Main {
+    function main(): unit =
+        val a = 42;
+        val a = 42;
+}
