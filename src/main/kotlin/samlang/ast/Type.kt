@@ -73,7 +73,7 @@ sealed class Type {
 
     data class UndecidedType(val index: Int) : Type() {
 
-        override fun prettyPrint(): String = "UNDECIDED_TYPE_$index"
+        override fun prettyPrint(): String = "__UNDECIDED__"
 
         override fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T =
             visitor.visit(type = this, context = context)

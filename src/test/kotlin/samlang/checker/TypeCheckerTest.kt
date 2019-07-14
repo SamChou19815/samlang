@@ -23,7 +23,7 @@ class TypeCheckerTest : StringSpec() {
                         ProgramBuilder.buildProgramFromText(text = code).typeCheck()
                         fail(msg = "Found no type errors, but expect: $errorSet.")
                     } catch (exception: CompilationFailedException) {
-                        exception.errors.asSequence().map { it.errorMessage }.toSet() shouldBe errorSet
+                        exception.errors.asSequence().map { it.errorMessage }.toSortedSet() shouldBe errorSet
                     }
                 }
             }

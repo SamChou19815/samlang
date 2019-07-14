@@ -18,7 +18,7 @@ private fun File.toTestProgram(): TestProgram {
         summaryLine.substring(startIndex = SUMMARY_LINE_PREFIX.length).trim().toInt()
     }
     // Collect errors
-    val errorSet = hashSetOf<String>()
+    val errorSet = sortedSetOf<String>()
     for (errorLineIndex in 1..expectedErrorCount) {
         val errorLine = lines[errorLineIndex]
         assert(value = errorLine.startsWith(prefix = "//"))

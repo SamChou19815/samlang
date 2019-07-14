@@ -1,0 +1,37 @@
+// ERROR_COUNT: 11
+// UnexpectedType:24:35-24:45: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
+// UnexpectedType:25:30-25:40: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
+// UnexpectedType:26:37-26:47: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
+// UnexpectedType:27:47-27:49: Expected: `Box<__UNDECIDED__>`, actual: `int`.
+// UnexpectedType:28:31-28:41: Expected: `() -> bool`, actual: `() -> Box<__UNDECIDED__>`.
+// UnexpectedType:29:40-29:50: Expected: `() -> bool`, actual: `() -> Box<__UNDECIDED__>`.
+// UnexpectedType:30:35-30:40: Expected: `int`, actual: `bool`.
+// UnexpectedType:31:30-31:35: Expected: `int`, actual: `bool`.
+// UnexpectedType:31:38-31:43: Expected: `int`, actual: `bool`.
+// UnexpectedType:33:48-33:55: Expected: `(int) -> Box<bool>`, actual: `(__UNDECIDED__) -> Box<__UNDECIDED__>`.
+// UnexpectedType:36:47-36:64: Expected: `() -> Box<__UNDECIDED__>`, actual: `() -> AnotherBox<__UNDECIDED__>`.
+
+class Box<T>(value: T) {
+    public function <T> empty(): Box<T> = { value: panic("PANIC") }
+    public function <T> of(value: T): Box<T> = { value }
+}
+
+class AnotherBox<T>(value: T) {
+    public function <T> empty(): AnotherBox<T> = { value: panic("PANIC") }
+}
+
+util Main {
+    function test01(): int = 42 + Box::empty()
+    function test02(): int = Box::empty() + 42
+    function test03(): bool = 42 == Box::empty()
+    function test04(): bool = Box::empty() == 42
+    function test05(): bool = Box::empty() || false
+    function test06(): bool = false || Box::empty()
+    function test07(): int = 42 * false
+    function test08(): int = false + false
+    function test09(): bool = Box::of(true) == Box::of(false)
+    function test10(): bool = Box::of(true) == Box::of(42)
+    function test11(): bool = Box::of(true) == Box::empty()
+    function test12(): bool = Box::empty() == Box::of(42)
+    function test13(): bool = Box::empty() == AnotherBox::empty()
+}
