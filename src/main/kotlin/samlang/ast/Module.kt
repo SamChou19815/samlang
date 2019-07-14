@@ -29,6 +29,7 @@ data class Module(
         override val range: Range,
         val isPublic: Boolean,
         val isMethod: Boolean,
+        val nameRange: Range,
         val name: String,
         val typeParameters: List<String>?,
         val type: Type.FunctionType,

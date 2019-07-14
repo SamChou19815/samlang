@@ -51,6 +51,15 @@ private fun Collection<String>.checkNameCollision(range: Range) {
     }
 }
 
+private fun checkNameCollision(namesWithRange: Collection<Pair<String, Range>>) {
+    val nameSet = hashSetOf<String>()
+    namesWithRange.forEach { (name, range) ->
+        if (!nameSet.add(element = name)) {
+            throw CollisionError(collidedName = name, range = range)
+        }
+    }
+}
+
 private fun createContextWithCurrentModuleDefOnly(
     moduleNameRange: Range,
     moduleName: String,
@@ -75,6 +84,9 @@ private fun createContextWithCurrentModuleDefOnly(
         // check name collisions
         errorCollector.returnNullOnCollectedError {
             typeParameters?.checkNameCollision(range = range)
+            Unit
+        } ?: return null to typeCheckingContext
+        errorCollector.returnNullOnCollectedError {
             mappings.keys.checkNameCollision(range = range)
             Unit
         } ?: return null to typeCheckingContext
@@ -114,7 +126,7 @@ private fun processCurrentContextWithMembersAndMethods(
     isUtilModule: Boolean,
     typeCheckingContext: TypeCheckingContext
 ): Pair<TypeCheckingContext, List<Module.MemberDefinition>> {
-    moduleMembers.map { it.name }.checkNameCollision(range = moduleRange)
+    checkNameCollision(namesWithRange = moduleMembers.map { it.name to it.nameRange })
     val partiallyCheckedMembers = moduleMembers.map { member ->
         val typeParameters = member.typeParameters
         typeParameters?.checkNameCollision(range = member.range)
@@ -158,7 +170,7 @@ private fun typeCheckMember(
     errorCollector: ErrorCollector,
     typeCheckingContext: TypeCheckingContext
 ): Module.MemberDefinition {
-    val (_, _, _, _, typeParameters, type, parameters, body) = member
+    val (_, _, _, _, _, typeParameters, type, parameters, body) = member
     var contextForTypeCheckingBody =
         if (member.isMethod) typeCheckingContext.addThisType() else typeCheckingContext
     if (typeParameters != null) {

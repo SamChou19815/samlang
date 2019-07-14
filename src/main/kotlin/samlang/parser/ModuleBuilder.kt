@@ -71,12 +71,13 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
     }
 
     private fun buildModuleMemberDefinition(ctx: ModuleMemberDefinitionContext): Module.MemberDefinition {
+        val nameSymbol = ctx.LowerId().symbol
         val parameters = ctx.annotatedVariable().map { annotatedVariable ->
-            val nameSymbol = annotatedVariable.LowerId().symbol
+            val parameterNameSymbol = annotatedVariable.LowerId().symbol
             val typeExpression = annotatedVariable.typeAnnotation().typeExpr()
             Module.MemberDefinition.Parameter(
-                name = nameSymbol.text,
-                nameRange = nameSymbol.range,
+                name = parameterNameSymbol.text,
+                nameRange = parameterNameSymbol.range,
                 type = typeExpression.accept(TypeBuilder),
                 typeRange = typeExpression.range
             )
@@ -89,7 +90,8 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
             range = ctx.range,
             isPublic = ctx.PUBLIC() != null,
             isMethod = ctx.METHOD() != null,
-            name = ctx.LowerId().symbol.text,
+            nameRange = nameSymbol.range,
+            name = nameSymbol.text,
             typeParameters = ctx.typeParametersDeclaration()?.typeParameters,
             type = type,
             parameters = parameters,

@@ -82,7 +82,7 @@ object PrettyPrinter {
         }
 
         private fun printMember(member: Module.MemberDefinition) {
-            val (_, isPublic, isMethod, name, typeParameters, type, parameters, body) = member
+            val (_, isPublic, isMethod, _, name, typeParameters, type, parameters, body) = member
             val memberVisibility = if (isPublic) "public " else ""
             val memberType = if (isMethod) "method" else "function"
             val typeParamsString = typeParameters?.joinToString(separator = ", ", prefix = " <", postfix = ">") ?: ""
