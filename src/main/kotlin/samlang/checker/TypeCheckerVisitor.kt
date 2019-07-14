@@ -2,7 +2,23 @@ package samlang.checker
 
 import samlang.ast.CheckedExprVisitor
 import samlang.ast.Expression
-import samlang.ast.Expression.*
+import samlang.ast.Expression.Binary
+import samlang.ast.Expression.FieldAccess
+import samlang.ast.Expression.FunctionApplication
+import samlang.ast.Expression.IfElse
+import samlang.ast.Expression.Lambda
+import samlang.ast.Expression.Literal
+import samlang.ast.Expression.Match
+import samlang.ast.Expression.MethodAccess
+import samlang.ast.Expression.ModuleMember
+import samlang.ast.Expression.ObjectConstructor
+import samlang.ast.Expression.Panic
+import samlang.ast.Expression.This
+import samlang.ast.Expression.TupleConstructor
+import samlang.ast.Expression.Unary
+import samlang.ast.Expression.Val
+import samlang.ast.Expression.Variable
+import samlang.ast.Expression.VariantConstructor
 import samlang.ast.Type
 
 internal interface TypeCheckerVisitor :

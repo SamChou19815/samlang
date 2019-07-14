@@ -1,9 +1,13 @@
 package samlang.parser
 
 import org.apache.commons.text.StringEscapeUtils
-import samlang.ast.*
+import samlang.ast.BinaryOperator
+import samlang.ast.Expression
+import samlang.ast.Literal
+import samlang.ast.Type
 import samlang.ast.Type.FunctionType
 import samlang.ast.Type.TupleType
+import samlang.ast.UnaryOperator
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 

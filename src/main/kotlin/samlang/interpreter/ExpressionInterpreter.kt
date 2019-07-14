@@ -1,12 +1,45 @@
 package samlang.interpreter
 
 import kotlinx.collections.immutable.plus
-import samlang.ast.*
-import samlang.ast.BinaryOperator.*
+import samlang.ast.BinaryOperator.AND
+import samlang.ast.BinaryOperator.DIV
+import samlang.ast.BinaryOperator.EQ
+import samlang.ast.BinaryOperator.GE
+import samlang.ast.BinaryOperator.GT
+import samlang.ast.BinaryOperator.LE
+import samlang.ast.BinaryOperator.LT
+import samlang.ast.BinaryOperator.MINUS
+import samlang.ast.BinaryOperator.MOD
+import samlang.ast.BinaryOperator.MUL
+import samlang.ast.BinaryOperator.NE
+import samlang.ast.BinaryOperator.OR
+import samlang.ast.BinaryOperator.PLUS
 import samlang.ast.CheckedExprVisitor
-import samlang.ast.Expression.*
+import samlang.ast.Expression
+import samlang.ast.Expression.Binary
+import samlang.ast.Expression.FieldAccess
+import samlang.ast.Expression.FunctionApplication
+import samlang.ast.Expression.IfElse
+import samlang.ast.Expression.Lambda
 import samlang.ast.Expression.Literal
-import samlang.ast.Literal.*
+import samlang.ast.Expression.Match
+import samlang.ast.Expression.MethodAccess
+import samlang.ast.Expression.ModuleMember
+import samlang.ast.Expression.ObjectConstructor
+import samlang.ast.Expression.Panic
+import samlang.ast.Expression.This
+import samlang.ast.Expression.TupleConstructor
+import samlang.ast.Expression.Unary
+import samlang.ast.Expression.Val
+import samlang.ast.Expression.Variable
+import samlang.ast.Expression.VariantConstructor
+import samlang.ast.Literal.BoolLiteral
+import samlang.ast.Literal.IntLiteral
+import samlang.ast.Literal.StringLiteral
+import samlang.ast.Literal.UnitLiteral
+import samlang.ast.Pattern
+import samlang.ast.Type
+import samlang.ast.UnaryOperator
 
 internal object ExpressionInterpreter : CheckedExprVisitor<InterpretationContext, Value> {
 

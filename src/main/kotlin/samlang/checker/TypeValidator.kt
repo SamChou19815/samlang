@@ -2,7 +2,11 @@ package samlang.checker
 
 import samlang.ast.Range
 import samlang.ast.Type
-import samlang.ast.Type.*
+import samlang.ast.Type.FunctionType
+import samlang.ast.Type.IdentifierType
+import samlang.ast.Type.PrimitiveType
+import samlang.ast.Type.TupleType
+import samlang.ast.Type.UndecidedType
 import samlang.ast.TypeVisitor
 
 internal fun Type.validate(context: TypeCheckingContext, errorRange: Range): Type =

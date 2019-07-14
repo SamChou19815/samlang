@@ -1,10 +1,18 @@
 package samlang.checker
 
-import kotlinx.collections.immutable.*
+import kotlinx.collections.immutable.ImmutableMap
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.immutableMapOf
+import kotlinx.collections.immutable.immutableSetOf
+import kotlinx.collections.immutable.plus
 import samlang.ast.Module
 import samlang.ast.Range
 import samlang.ast.Type
-import samlang.errors.*
+import samlang.errors.CollisionError
+import samlang.errors.NotWellDefinedIdentifierError
+import samlang.errors.TypeParamSizeMismatchError
+import samlang.errors.UnresolvedNameError
+import samlang.errors.UnsupportedModuleTypeDefError
 
 data class TypeCheckingContext(
     private val modules: ImmutableMap<String, ModuleType>,

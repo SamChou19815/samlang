@@ -1,7 +1,7 @@
 package samlang.errors
 
-import samlang.ast.Type
 import samlang.ast.Range
+import samlang.ast.Type
 
 class UnexpectedTypeError(
     expected: Type,

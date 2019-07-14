@@ -19,7 +19,7 @@ enum class BinaryOperator(val symbol: String, val precedence: Int) {
          */
         @JvmStatic
         private val symbolTable: Map<String, BinaryOperator> =
-            BinaryOperator.values().asSequence().map { it.symbol to it }.toMap()
+            values().asSequence().map { it.symbol to it }.toMap()
 
         /**
          * [fromRaw] converts a raw string binary operator to the binary operator in the enum mode.
