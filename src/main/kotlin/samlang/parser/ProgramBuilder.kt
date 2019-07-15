@@ -18,9 +18,11 @@ object ProgramBuilder {
         val errorListener = SyntaxErrorListener()
         parser.removeErrorListeners()
         parser.addErrorListener(errorListener)
+        val programVisitor = Visitor(syntaxErrorListener = errorListener)
         val programContext = parser.program()
+        val program = programContext.accept(programVisitor)
         val errors = errorListener.syntaxErrors
-        return createProgramOrFail(program = programContext.accept(Visitor), errors = errors)
+        return createProgramOrFail(program = program, errors = errors)
     }
 
     fun buildProgramFromSingleFile(fileDir: String): Program =
@@ -31,9 +33,11 @@ object ProgramBuilder {
 
     fun buildProgramFromText(text: String): Program = buildProgram(inputStream = text.byteInputStream())
 
-    private object Visitor : PLBaseVisitor<Program>() {
+    private class Visitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Program>() {
+
+        private val moduleBuilder: ModuleBuilder = ModuleBuilder(syntaxErrorListener = syntaxErrorListener)
 
         override fun visitProgram(ctx: PLParser.ProgramContext): Program =
-            Program(modules = ctx.module().map { it.accept(ModuleBuilder) })
+            Program(modules = ctx.module().map { it.accept(moduleBuilder) })
     }
 }

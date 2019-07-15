@@ -8,16 +8,18 @@ import samlang.ast.Type
 import samlang.ast.Type.FunctionType
 import samlang.ast.Type.TupleType
 import samlang.ast.UnaryOperator
+import samlang.errors.SyntaxError
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 
 /**
  * Builder of expression nodes.
  */
-internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
+internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Expression>() {
 
-    override fun visitNestedExpr(ctx: PLParser.NestedExprContext): Expression =
-        ctx.expression().accept(ExpressionBuilder)
+    private fun PLParser.ExpressionContext.toExpression(): Expression = this.accept(this@ExpressionBuilder)
+
+    override fun visitNestedExpr(ctx: PLParser.NestedExprContext): Expression = ctx.expression().toExpression()
 
     /**
      * Converts string literal in [literal] to actual string.
@@ -43,8 +45,17 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         ctx.FALSE()?.let { return Literal.BoolLiteral(value = false) to Type.bool }
         // Case INT
         ctx.IntLiteral()?.let { node ->
-            val text = node.text
-            val intValue = text.toLongOrNull() ?: error(message = "Bad Literal: $text.")
+            val token = node.symbol
+            val text = token.text
+            val intValue = text.toLongOrNull() ?: kotlin.run {
+                syntaxErrorListener.addSyntaxError(
+                    syntaxError = SyntaxError(
+                        position = token.startPosition,
+                        reason = "Not a 64-bit integer."
+                    )
+                )
+                0L
+            }
             return Literal.IntLiteral(value = intValue) to Type.int
         }
         // Case STRING
@@ -80,12 +91,12 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
     )
 
     override fun visitTupleConstructor(ctx: PLParser.TupleConstructorContext): Expression {
-        val expressionList = ctx.expression().map { it.accept(ExpressionBuilder) }
+        val expressionList = ctx.expression().map { it.toExpression() }
         val type = TupleType(mappings = expressionList.map { it.type })
         return Expression.TupleConstructor(range = ctx.range, type = type, expressionList = expressionList)
     }
 
-    private object ObjectFieldDeclarationBuilder : PLBaseVisitor<Expression.ObjectConstructor.FieldConstructor>() {
+    private inner class ObjectFieldDeclarationBuilder : PLBaseVisitor<Expression.ObjectConstructor.FieldConstructor>() {
 
         override fun visitNormalObjFieldDeclaration(
             ctx: PLParser.NormalObjFieldDeclarationContext
@@ -95,7 +106,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
                 range = nameNode.range,
                 type = Type.undecided(),
                 name = nameNode.text,
-                expression = ctx.expression().accept(ExpressionBuilder)
+                expression = ctx.expression().toExpression()
             )
         }
 
@@ -111,33 +122,36 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         }
     }
 
-    override fun visitObjConstructor(ctx: PLParser.ObjConstructorContext): Expression = Expression.ObjectConstructor(
-        range = ctx.range,
-        type = Type.undecided(),
-        spreadExpression = ctx.expression()?.accept(ExpressionBuilder),
-        fieldDeclarations = ctx.objectFieldDeclarations().objectFieldDeclaration()
-            .map { it.accept(ObjectFieldDeclarationBuilder) }
-    )
+    override fun visitObjConstructor(ctx: PLParser.ObjConstructorContext): Expression {
+        val objectFieldDeclarationBuilder = ObjectFieldDeclarationBuilder()
+        return Expression.ObjectConstructor(
+            range = ctx.range,
+            type = Type.undecided(),
+            spreadExpression = ctx.expression()?.toExpression(),
+            fieldDeclarations = ctx.objectFieldDeclarations().objectFieldDeclaration()
+                .map { it.accept(objectFieldDeclarationBuilder) }
+        )
+    }
 
     override fun visitVariantConstructor(ctx: PLParser.VariantConstructorContext): Expression =
         Expression.VariantConstructor(
             range = ctx.range,
             type = Type.undecided(),
             tag = ctx.UpperId().symbol.text,
-            data = ctx.expression().accept(ExpressionBuilder)
+            data = ctx.expression().toExpression()
         )
 
     override fun visitFieldAccessExpr(ctx: PLParser.FieldAccessExprContext): Expression = Expression.FieldAccess(
         range = ctx.range,
         type = Type.undecided(),
-        expression = ctx.expression().accept(ExpressionBuilder),
+        expression = ctx.expression().toExpression(),
         fieldName = ctx.LowerId().symbol.text
     )
 
     override fun visitMethodAccessExpr(ctx: PLParser.MethodAccessExprContext): Expression = Expression.MethodAccess(
         range = ctx.range,
         type = Type.undecided(),
-        expression = ctx.expression().accept(ExpressionBuilder),
+        expression = ctx.expression().toExpression(),
         methodName = ctx.LowerId().symbol.text
     )
 
@@ -145,88 +159,88 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
         range = ctx.range,
         type = Type.bool,
         operator = UnaryOperator.NOT,
-        expression = ctx.expression().accept(ExpressionBuilder)
+        expression = ctx.expression().toExpression()
     )
 
     override fun visitNegExpr(ctx: PLParser.NegExprContext): Expression = Expression.Unary(
         range = ctx.range,
         type = Type.int,
         operator = UnaryOperator.NEG,
-        expression = ctx.expression().accept(ExpressionBuilder)
+        expression = ctx.expression().toExpression()
     )
 
     override fun visitPanicExpr(ctx: PLParser.PanicExprContext): Expression = Expression.Panic(
         range = ctx.range,
         type = Type.undecided(),
-        expression = ctx.expression().accept(ExpressionBuilder)
+        expression = ctx.expression().toExpression()
     )
 
     override fun visitFunctionApplicationExpr(ctx: PLParser.FunctionApplicationExprContext): Expression =
         Expression.FunctionApplication(
             range = ctx.range,
             type = Type.undecided(),
-            functionExpression = ctx.expression().accept(ExpressionBuilder),
-            arguments = ctx.functionArguments().expression().map { it.accept(ExpressionBuilder) }
+            functionExpression = ctx.expression().toExpression(),
+            arguments = ctx.functionArguments().expression().map { it.toExpression() }
         )
 
     override fun visitFactorExpr(ctx: PLParser.FactorExprContext): Expression = Expression.Binary(
         range = ctx.range,
         type = Type.int,
         operator = BinaryOperator.fromRaw(text = ctx.factorOperator().text),
-        e1 = ctx.expression(0).accept(ExpressionBuilder),
-        e2 = ctx.expression(1).accept(ExpressionBuilder)
+        e1 = ctx.expression(0).toExpression(),
+        e2 = ctx.expression(1).toExpression()
     )
 
     override fun visitTermExpr(ctx: PLParser.TermExprContext): Expression = Expression.Binary(
         range = ctx.range,
         type = Type.int,
         operator = BinaryOperator.fromRaw(text = ctx.termOperator().text),
-        e1 = ctx.expression(0).accept(ExpressionBuilder),
-        e2 = ctx.expression(1).accept(ExpressionBuilder)
+        e1 = ctx.expression(0).toExpression(),
+        e2 = ctx.expression(1).toExpression()
     )
 
     override fun visitComparisonExpr(ctx: PLParser.ComparisonExprContext): Expression = Expression.Binary(
         range = ctx.range,
         type = Type.bool,
         operator = BinaryOperator.fromRaw(text = ctx.comparisonOperator().text),
-        e1 = ctx.expression(0).accept(ExpressionBuilder),
-        e2 = ctx.expression(1).accept(ExpressionBuilder)
+        e1 = ctx.expression(0).toExpression(),
+        e2 = ctx.expression(1).toExpression()
     )
 
     override fun visitConjunctionExpr(ctx: PLParser.ConjunctionExprContext): Expression = Expression.Binary(
         range = ctx.range,
         type = Type.bool,
         operator = BinaryOperator.AND,
-        e1 = ctx.expression(0).accept(ExpressionBuilder),
-        e2 = ctx.expression(1).accept(ExpressionBuilder)
+        e1 = ctx.expression(0).toExpression(),
+        e2 = ctx.expression(1).toExpression()
     )
 
     override fun visitDisjunctionExpr(ctx: PLParser.DisjunctionExprContext): Expression = Expression.Binary(
         range = ctx.range,
         type = Type.bool,
         operator = BinaryOperator.OR,
-        e1 = ctx.expression(0).accept(ExpressionBuilder),
-        e2 = ctx.expression(1).accept(ExpressionBuilder)
+        e1 = ctx.expression(0).toExpression(),
+        e2 = ctx.expression(1).toExpression()
     )
 
     override fun visitIfElseExpr(ctx: PLParser.IfElseExprContext): Expression = Expression.IfElse(
         range = ctx.range,
         type = Type.undecided(),
-        boolExpression = ctx.expression(0).accept(ExpressionBuilder),
-        e1 = ctx.expression(1).accept(ExpressionBuilder),
-        e2 = ctx.expression(2).accept(ExpressionBuilder)
+        boolExpression = ctx.expression(0).toExpression(),
+        e1 = ctx.expression(1).toExpression(),
+        e2 = ctx.expression(2).toExpression()
     )
 
     override fun visitMatchExpr(ctx: PLParser.MatchExprContext): Expression = Expression.Match(
         range = ctx.range,
         type = Type.undecided(),
-        matchedExpression = ctx.expression().accept(ExpressionBuilder),
+        matchedExpression = ctx.expression().toExpression(),
         matchingList = ctx.patternToExpr().map { pattern2Expr ->
             Expression.Match.VariantPatternToExpr(
                 range = pattern2Expr.range,
                 tag = pattern2Expr.UpperId().symbol.text,
                 dataVariable = pattern2Expr.varOrWildCard().LowerId()?.symbol?.text,
-                expression = pattern2Expr.expression().accept(ExpressionBuilder)
+                expression = pattern2Expr.expression().toExpression()
             )
         }
     )
@@ -245,7 +259,7 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
                 returnType = Type.undecided()
             ),
             parameters = arguments,
-            body = ctx.expression().accept(ExpressionBuilder)
+            body = ctx.expression().toExpression()
         )
     }
 
@@ -256,8 +270,8 @@ internal object ExpressionBuilder : PLBaseVisitor<Expression>() {
             type = Type.undecided(),
             pattern = ctx.pattern().accept(PatternBuilder),
             typeAnnotation = typeAnnotation,
-            assignedExpression = ctx.expression(0).accept(ExpressionBuilder),
-            nextExpression = ctx.expression(1)?.accept(ExpressionBuilder)
+            assignedExpression = ctx.expression(0).toExpression(),
+            nextExpression = ctx.expression(1)?.toExpression()
         )
     }
 }

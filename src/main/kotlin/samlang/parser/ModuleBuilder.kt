@@ -12,7 +12,9 @@ import samlang.parser.generated.PLParser.TypeParametersDeclarationContext
 import samlang.parser.generated.PLParser.UtilHeaderContext
 import samlang.parser.generated.PLParser.VariantTypeContext
 
-internal object ModuleBuilder : PLBaseVisitor<Module>() {
+internal class ModuleBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module>() {
+
+    private val expressionBuilder: ExpressionBuilder = ExpressionBuilder(syntaxErrorListener = syntaxErrorListener)
 
     private val TypeParametersDeclarationContext.typeParameters: List<String> get() = UpperId().map { it.symbol.text }
 
@@ -29,7 +31,7 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
         }
     }
 
-    private object ModuleTypeDefinitionBuilder : PLBaseVisitor<Module.TypeDefinition?>() {
+    private inner class ModuleTypeDefinitionBuilder : PLBaseVisitor<Module.TypeDefinition?>() {
 
         override fun visitClassHeader(ctx: ClassHeaderContext): Module.TypeDefinition {
             val rawTypeParams: TypeParametersDeclarationContext? = ctx.typeParametersDeclaration()
@@ -41,7 +43,7 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
 
         override fun visitUtilHeader(ctx: UtilHeaderContext): Module.TypeDefinition? = null
 
-        private class TypeDefinitionBuilder(
+        private inner class TypeDefinitionBuilder(
             private val range: Range,
             private val typeParameters: List<String>?
         ) : PLBaseVisitor<Module.TypeDefinition>() {
@@ -95,7 +97,7 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
             typeParameters = ctx.typeParametersDeclaration()?.typeParameters,
             type = type,
             parameters = parameters,
-            body = ctx.expression().accept(ExpressionBuilder)
+            body = ctx.expression().accept(expressionBuilder)
         )
     }
 
@@ -105,7 +107,7 @@ internal object ModuleBuilder : PLBaseVisitor<Module>() {
             range = ctx.range,
             nameRange = nameRange,
             name = name,
-            typeDefinition = ctx.moduleHeaderDeclaration().accept(ModuleTypeDefinitionBuilder),
+            typeDefinition = ctx.moduleHeaderDeclaration().accept(ModuleTypeDefinitionBuilder()),
             members = ctx.moduleMemberDefinition().map { buildModuleMemberDefinition(ctx = it) }
         )
     }

@@ -13,8 +13,12 @@ internal class SyntaxErrorListener : BaseErrorListener() {
 
     val syntaxErrors: List<CompileTimeError> get() = _syntaxErrors
 
+    fun addSyntaxError(syntaxError: SyntaxError) {
+        _syntaxErrors.add(element = syntaxError)
+    }
+
     override fun syntaxError(
-        recognizer: Recognizer<*, *>,
+        recognizer: Recognizer<*, *>?,
         offendingSymbol: Any?,
         line: Int,
         charPositionInLine: Int,

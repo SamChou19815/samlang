@@ -5,7 +5,7 @@ import org.antlr.v4.runtime.Token
 import samlang.ast.Position
 import samlang.ast.Range
 
-private val Token.startPosition: Position get() = Position(line = line - 1, column = charPositionInLine)
+internal val Token.startPosition: Position get() = Position(line = line - 1, column = charPositionInLine)
 
 private val Token.endPosition: Position
     get() = Position(
