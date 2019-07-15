@@ -86,11 +86,11 @@ data class TypeCheckingContext(
     ): TypeCheckingContext {
         val functions = arrayListOf<Pair<String, TypeInfo>>()
         val methods = arrayListOf<Pair<String, TypeInfo>>()
-        for ((n, isMethod, typeInfo) in members) {
+        for ((name, isMethod, typeInfo) in members) {
             if (isMethod) {
-                methods.add(n to typeInfo)
+                methods.add(name to typeInfo)
             } else {
-                functions.add(n to typeInfo)
+                functions.add(name to typeInfo)
             }
         }
         val newCurrentModule = modules[currentModule]!!.copy(

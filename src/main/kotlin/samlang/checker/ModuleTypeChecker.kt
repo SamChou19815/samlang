@@ -1,6 +1,10 @@
 package samlang.checker
 
 import samlang.ast.Module
+import samlang.ast.Module.MemberDefinition
+import samlang.ast.Module.TypeDefinition
+import samlang.ast.Module.TypeDefinition.ObjectType
+import samlang.ast.Module.TypeDefinition.VariantType
 import samlang.ast.Range
 import samlang.ast.Type
 import samlang.errors.CollisionError
@@ -12,7 +16,7 @@ internal fun Module.typeCheck(
 ): Pair<Module?, TypeCheckingContext> {
     val (_, moduleNameRange, moduleName, moduleTypeDefinition, moduleMembers) = this
     val (checkedTypeDef, partialContext) = errorCollector.returnNullOnCollectedError {
-        createContextWithCurrentModuleDefOnly(
+        createContextWithCurrentModuleDefinitionOnly(
             moduleNameRange = moduleNameRange,
             moduleName = moduleName,
             moduleTypeDefinition = moduleTypeDefinition,
@@ -32,10 +36,7 @@ internal fun Module.typeCheck(
     val checkedModule = this.copy(
         typeDefinition = checkedTypeDef,
         members = partiallyCheckedMembers.map { memberDefinition ->
-            memberDefinition.typeCheck(
-                errorCollector = errorCollector,
-                typeCheckingContext = fullContext
-            )
+            memberDefinition.typeCheck(errorCollector = errorCollector, typeCheckingContext = fullContext)
         }
     )
     return checkedModule to fullContext
@@ -59,13 +60,13 @@ private fun checkNameCollision(namesWithRange: Collection<Pair<String, Range>>) 
     }
 }
 
-private fun createContextWithCurrentModuleDefOnly(
+private fun createContextWithCurrentModuleDefinitionOnly(
     moduleNameRange: Range,
     moduleName: String,
-    moduleTypeDefinition: Module.TypeDefinition?,
+    moduleTypeDefinition: TypeDefinition?,
     errorCollector: ErrorCollector,
     typeCheckingContext: TypeCheckingContext
-): Pair<Module.TypeDefinition?, TypeCheckingContext> {
+): Pair<TypeDefinition?, TypeCheckingContext> {
     // new context with type def but empty members and extensions
     return if (moduleTypeDefinition == null) {
         null to typeCheckingContext.addNewEmptyUtilModule(name = moduleName, nameRange = moduleNameRange)
@@ -73,12 +74,8 @@ private fun createContextWithCurrentModuleDefOnly(
         val range = moduleTypeDefinition.range
         val typeParameters = moduleTypeDefinition.typeParameters
         val (isObject, mappings) = when (moduleTypeDefinition) {
-            is Module.TypeDefinition.ObjectType -> {
-                true to moduleTypeDefinition.mappings
-            }
-            is Module.TypeDefinition.VariantType -> {
-                false to moduleTypeDefinition.mappings
-            }
+            is ObjectType -> true to moduleTypeDefinition.mappings
+            is VariantType -> false to moduleTypeDefinition.mappings
         }
         // check name collisions
         errorCollector.returnNullOnCollectedError {
@@ -102,17 +99,9 @@ private fun createContextWithCurrentModuleDefOnly(
                 }
             }
             if (isObject) {
-                Module.TypeDefinition.ObjectType(
-                    range = range,
-                    typeParameters = typeParameters,
-                    mappings = checkedMappings
-                )
+                ObjectType(range = range, typeParameters = typeParameters, mappings = checkedMappings)
             } else {
-                Module.TypeDefinition.VariantType(
-                    range = range,
-                    typeParameters = typeParameters,
-                    mappings = checkedMappings
-                )
+                VariantType(range = range, typeParameters = typeParameters, mappings = checkedMappings)
             }
         }
     }
@@ -121,10 +110,10 @@ private fun createContextWithCurrentModuleDefOnly(
 private fun processCurrentContextWithMembersAndMethods(
     moduleRange: Range,
     moduleName: String,
-    moduleMembers: List<Module.MemberDefinition>,
+    moduleMembers: List<MemberDefinition>,
     isUtilModule: Boolean,
     typeCheckingContext: TypeCheckingContext
-): Pair<TypeCheckingContext, List<Module.MemberDefinition>> {
+): Pair<TypeCheckingContext, List<MemberDefinition>> {
     checkNameCollision(namesWithRange = moduleMembers.map { it.name to it.nameRange })
     val partiallyCheckedMembers = moduleMembers.map { member ->
         val typeParameters = member.typeParameters
@@ -134,10 +123,7 @@ private fun processCurrentContextWithMembersAndMethods(
             ?: typeCheckingContext
         if (member.isMethod) {
             if (isUtilModule) {
-                throw IllegalMethodDefinitionError(
-                    name = moduleName,
-                    range = moduleRange
-                )
+                throw IllegalMethodDefinitionError(name = moduleName, range = moduleRange)
             }
             val updatedNewCtx = newContext.getCurrentModuleTypeDef()
                 ?.typeParameters
