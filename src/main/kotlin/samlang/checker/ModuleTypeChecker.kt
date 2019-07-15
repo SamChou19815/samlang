@@ -32,8 +32,7 @@ internal fun Module.typeCheck(
     val checkedModule = this.copy(
         typeDefinition = checkedTypeDef,
         members = partiallyCheckedMembers.map { memberDefinition ->
-            typeCheckMember(
-                member = memberDefinition,
+            memberDefinition.typeCheck(
                 errorCollector = errorCollector,
                 typeCheckingContext = fullContext
             )
@@ -163,28 +162,4 @@ private fun processCurrentContextWithMembersAndMethods(
     }
     val newCtx = typeCheckingContext.addMembersAndMethodsToCurrentModule(members = memberTypeInfo)
     return newCtx to partiallyCheckedMembers
-}
-
-private fun typeCheckMember(
-    member: Module.MemberDefinition,
-    errorCollector: ErrorCollector,
-    typeCheckingContext: TypeCheckingContext
-): Module.MemberDefinition {
-    val (_, _, _, _, _, typeParameters, type, parameters, body) = member
-    var contextForTypeCheckingBody =
-        if (member.isMethod) typeCheckingContext.addThisType() else typeCheckingContext
-    if (typeParameters != null) {
-        contextForTypeCheckingBody =
-            contextForTypeCheckingBody.addLocalGenericTypes(genericTypes = typeParameters)
-    }
-    contextForTypeCheckingBody = parameters.fold(initial = contextForTypeCheckingBody) { tempContext, parameter ->
-        val parameterType = parameter.type.validate(context = tempContext, errorRange = parameter.typeRange)
-        tempContext.addLocalValueType(name = parameter.name, type = parameterType, errorRange = parameter.nameRange)
-    }
-    val checkedBody = body.typeCheck(
-        errorCollector = errorCollector,
-        typeCheckingContext = contextForTypeCheckingBody,
-        expectedType = type.returnType
-    )
-    return member.copy(body = checkedBody)
 }
