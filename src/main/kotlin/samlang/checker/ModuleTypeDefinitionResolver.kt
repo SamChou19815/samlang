@@ -1,5 +1,6 @@
 package samlang.checker
 
+import samlang.ast.Module.TypeDefinitionType
 import samlang.ast.Range
 import samlang.ast.Type
 import samlang.ast.Type.FunctionType
@@ -10,6 +11,7 @@ import samlang.ast.Type.UndecidedType
 import samlang.ast.TypeVisitor
 import samlang.errors.IllegalOtherClassMatch
 import samlang.errors.TypeParamSizeMismatchError
+import samlang.errors.UnsupportedModuleTypeDefinitionError
 
 internal object ModuleTypeDefinitionResolver {
 
@@ -18,21 +20,17 @@ internal object ModuleTypeDefinitionResolver {
 
     fun getTypeDef(
         identifierType: IdentifierType,
-        ctx: TypeCheckingContext,
-        errorRange: Range,
-        isFromObject: Boolean
+        typeDefinitionType: TypeDefinitionType,
+        context: TypeCheckingContext,
+        errorRange: Range
     ): Map<String, Type> {
         val (id, typeArguments) = identifierType
-        if (id != ctx.currentModule) {
+        if (id != context.currentModule) {
             throw IllegalOtherClassMatch(range = errorRange)
         }
-        val (typeParameters, varMap) = if (isFromObject) {
-            val (_, p, m) = ctx.getCurrentModuleObjectTypeDef(errorRange = errorRange)
-            p to m
-        } else {
-            val (_, p, m) = ctx.getCurrentModuleVariantTypeDef(errorRange = errorRange)
-            p to m
-        }
+        val (_, _, typeParameters, varMap) = context.getCurrentModuleTypeDefinition()
+            ?.takeIf { it.type == typeDefinitionType }
+            ?: throw UnsupportedModuleTypeDefinitionError(typeDefinitionType = typeDefinitionType, range = errorRange)
         return if (typeArguments == null) {
             if (typeParameters != null) {
                 error(
@@ -45,7 +43,12 @@ internal object ModuleTypeDefinitionResolver {
             varMap
         } else {
             if (typeParameters == null) {
-                error(message = "BAD! typeArguments: $typeArguments, typeParameters: null, identifierType: $identifierType")
+                error(
+                    message =
+                    """
+                    BAD! typeArguments: $typeArguments, typeParameters: null, identifierType: $identifierType"
+                    """.trimIndent()
+                )
             }
             TypeParamSizeMismatchError.check(
                 expectedSize = typeParameters.size,

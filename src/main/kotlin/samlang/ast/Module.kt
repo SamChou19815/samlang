@@ -8,22 +8,16 @@ data class Module(
     val members: List<MemberDefinition>
 ) : Node {
 
-    sealed class TypeDefinition : Node {
-
-        abstract val typeParameters: List<String>?
-
-        data class ObjectType(
-            override val range: Range,
-            override val typeParameters: List<String>?,
-            val mappings: Map<String, Type>
-        ) : TypeDefinition()
-
-        data class VariantType(
-            override val range: Range,
-            override val typeParameters: List<String>?,
-            val mappings: Map<String, Type>
-        ) : TypeDefinition()
+    enum class TypeDefinitionType(val displayName: String) {
+        OBJECT(displayName = "object"), VARIANT(displayName = "variant");
     }
+
+    data class TypeDefinition(
+        override val range: Range,
+        val type: TypeDefinitionType,
+        val typeParameters: List<String>?,
+        val mappings: Map<String, Type>
+    ) : Node
 
     data class MemberDefinition(
         override val range: Range,

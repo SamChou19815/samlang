@@ -32,6 +32,8 @@ import samlang.ast.Expression.Unary
 import samlang.ast.Expression.Val
 import samlang.ast.Expression.Variable
 import samlang.ast.Expression.VariantConstructor
+import samlang.ast.Module.TypeDefinitionType.OBJECT
+import samlang.ast.Module.TypeDefinitionType.VARIANT
 import samlang.ast.Range
 import samlang.ast.Type
 import samlang.ast.Type.FunctionType
@@ -40,6 +42,7 @@ import samlang.ast.Type.TupleType
 import samlang.ast.UnaryOperator
 import samlang.errors.InsufficientTypeInferenceContextError
 import samlang.errors.UnexpectedTypeError
+import samlang.errors.UnsupportedModuleTypeDefinitionError
 
 internal fun Expression.fixType(
     expectedType: Type,
@@ -121,9 +124,11 @@ private class TypeFixerVisitor(
     override fun visit(expression: ObjectConstructor, context: Type): Expression {
         val newType =
             expression.type.fixSelf(expectedType = context, errorRange = expression.range) as IdentifierType
-        val (_, params, mapping) = ctx.getCurrentModuleObjectTypeDef(errorRange = errorRange)
-        val betterMapping = if (params != null && newType.typeArguments != null) {
-            val replacementMap = params.checkedZip(other = newType.typeArguments).toMap()
+        val (_, _, typeParameters, mapping) = ctx.getCurrentModuleTypeDefinition()
+            ?.takeIf { it.type == OBJECT }
+            ?: throw UnsupportedModuleTypeDefinitionError(typeDefinitionType = OBJECT, range = errorRange)
+        val betterMapping = if (typeParameters != null && newType.typeArguments != null) {
+            val replacementMap = typeParameters.checkedZip(other = newType.typeArguments).toMap()
             mapping.mapValues { (_, v) ->
                 ModuleTypeDefinitionResolver.applyGenericTypeParams(type = v, context = replacementMap)
             }
@@ -149,11 +154,13 @@ private class TypeFixerVisitor(
 
     override fun visit(expression: VariantConstructor, context: Type): Expression {
         val newType = expression.getFixedSelfType(expectedType = context) as IdentifierType
-        val (_, params, mapping) = ctx.getCurrentModuleVariantTypeDef(errorRange = errorRange)
+        val (_, _, typeParameters, mapping) = ctx.getCurrentModuleTypeDefinition()
+            ?.takeIf { it.type == VARIANT }
+            ?: throw UnsupportedModuleTypeDefinitionError(typeDefinitionType = VARIANT, range = errorRange)
         var dataType = mapping[expression.tag] ?: blameTypeChecker()
-        if (params != null && newType.typeArguments != null) {
+        if (typeParameters != null && newType.typeArguments != null) {
             dataType = ModuleTypeDefinitionResolver.applyGenericTypeParams(
-                type = dataType, context = params.checkedZip(other = newType.typeArguments).toMap()
+                type = dataType, context = typeParameters.checkedZip(other = newType.typeArguments).toMap()
             )
         }
         return expression.copy(

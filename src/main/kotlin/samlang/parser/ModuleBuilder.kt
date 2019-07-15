@@ -49,8 +49,9 @@ internal class ModuleBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseV
         ) : PLBaseVisitor<Module.TypeDefinition>() {
 
             override fun visitObjType(ctx: ObjTypeContext): Module.TypeDefinition =
-                Module.TypeDefinition.ObjectType(
+                Module.TypeDefinition(
                     range = range,
+                    type = Module.TypeDefinitionType.OBJECT,
                     typeParameters = typeParameters,
                     mappings = ctx.objectTypeFieldDeclaration().asSequence().map { c ->
                         val name = c.LowerId().symbol.text
@@ -60,8 +61,9 @@ internal class ModuleBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseV
                 )
 
             override fun visitVariantType(ctx: VariantTypeContext): Module.TypeDefinition =
-                Module.TypeDefinition.VariantType(
+                Module.TypeDefinition(
                     range = range,
+                    type = Module.TypeDefinitionType.VARIANT,
                     typeParameters = typeParameters,
                     mappings = ctx.variantTypeConstructorDeclaration().asSequence().map { c ->
                         val name = c.UpperId().symbol.text

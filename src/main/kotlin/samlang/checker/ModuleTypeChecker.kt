@@ -3,8 +3,6 @@ package samlang.checker
 import samlang.ast.Module
 import samlang.ast.Module.MemberDefinition
 import samlang.ast.Module.TypeDefinition
-import samlang.ast.Module.TypeDefinition.ObjectType
-import samlang.ast.Module.TypeDefinition.VariantType
 import samlang.ast.Range
 import samlang.ast.Type
 import samlang.errors.CollisionError
@@ -71,12 +69,7 @@ private fun createContextWithCurrentModuleDefinitionOnly(
     return if (moduleTypeDefinition == null) {
         null to typeCheckingContext.addNewEmptyUtilModule(name = moduleName, nameRange = moduleNameRange)
     } else {
-        val range = moduleTypeDefinition.range
-        val typeParameters = moduleTypeDefinition.typeParameters
-        val (isObject, mappings) = when (moduleTypeDefinition) {
-            is ObjectType -> true to moduleTypeDefinition.mappings
-            is VariantType -> false to moduleTypeDefinition.mappings
-        }
+        val (range, _, typeParameters, mappings) = moduleTypeDefinition
         // check name collisions
         errorCollector.returnNullOnCollectedError {
             typeParameters?.checkNameCollision(range = range)
@@ -98,11 +91,7 @@ private fun createContextWithCurrentModuleDefinitionOnly(
                     this.validate(context = tempContext, errorRange = range)
                 }
             }
-            if (isObject) {
-                ObjectType(range = range, typeParameters = typeParameters, mappings = checkedMappings)
-            } else {
-                VariantType(range = range, typeParameters = typeParameters, mappings = checkedMappings)
-            }
+            moduleTypeDefinition.copy(mappings = checkedMappings)
         }
     }
 }
@@ -125,11 +114,11 @@ private fun processCurrentContextWithMembersAndMethods(
             if (isUtilModule) {
                 throw IllegalMethodDefinitionError(name = moduleName, range = moduleRange)
             }
-            val updatedNewCtx = newContext.getCurrentModuleTypeDef()
+            val updatedNewContext = newContext.getCurrentModuleTypeDefinition()
                 ?.typeParameters
                 ?.let { newContext.addLocalGenericTypes(genericTypes = it) }
-            if (updatedNewCtx != null) {
-                newContext = updatedNewCtx
+            if (updatedNewContext != null) {
+                newContext = updatedNewContext
             }
         }
         val type = member.type.validate(context = newContext, errorRange = member.range) as Type.FunctionType

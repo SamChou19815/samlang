@@ -12,7 +12,6 @@ import samlang.errors.CollisionError
 import samlang.errors.NotWellDefinedIdentifierError
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnresolvedNameError
-import samlang.errors.UnsupportedModuleTypeDefError
 
 data class TypeCheckingContext(
     private val modules: ImmutableMap<String, ModuleType>,
@@ -40,8 +39,9 @@ data class TypeCheckingContext(
             throw CollisionError(collidedName = name, range = nameRange)
         }
         val tempModuleType = ModuleType(
-            typeDefinition = Module.TypeDefinition.ObjectType(
+            typeDefinition = Module.TypeDefinition(
                 range = typeDefinitionRange,
+                type = Module.TypeDefinitionType.OBJECT,
                 typeParameters = params,
                 mappings = emptyMap()
             ),
@@ -165,19 +165,7 @@ data class TypeCheckingContext(
     fun addLocalGenericTypes(genericTypes: Collection<String>): TypeCheckingContext =
         copy(localGenericTypes = localGenericTypes.plus(elements = genericTypes))
 
-    fun getCurrentModuleTypeDef(): Module.TypeDefinition? = modules[currentModule]?.typeDefinition
-
-    fun getCurrentModuleObjectTypeDef(errorRange: Range): Module.TypeDefinition.ObjectType =
-        getCurrentModuleTypeDef() as? Module.TypeDefinition.ObjectType ?: throw UnsupportedModuleTypeDefError(
-            expectedModuleTypeDef = UnsupportedModuleTypeDefError.ModuleTypeDef.OBJECT,
-            range = errorRange
-        )
-
-    fun getCurrentModuleVariantTypeDef(errorRange: Range): Module.TypeDefinition.VariantType =
-        getCurrentModuleTypeDef() as? Module.TypeDefinition.VariantType ?: throw UnsupportedModuleTypeDefError(
-            expectedModuleTypeDef = UnsupportedModuleTypeDefError.ModuleTypeDef.VARIANT,
-            range = errorRange
-        )
+    fun getCurrentModuleTypeDefinition(): Module.TypeDefinition? = modules[currentModule]?.typeDefinition
 
     fun addThisType(): TypeCheckingContext {
         if (localValues.containsKey(key = "this")) {

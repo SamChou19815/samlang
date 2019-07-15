@@ -20,6 +20,8 @@ import samlang.ast.Expression.Val
 import samlang.ast.Expression.Variable
 import samlang.ast.Expression.VariantConstructor
 import samlang.ast.Module
+import samlang.ast.Module.TypeDefinitionType.OBJECT
+import samlang.ast.Module.TypeDefinitionType.VARIANT
 import samlang.ast.Pattern
 import samlang.ast.Program
 import samlang.util.IndentedPrinter
@@ -54,22 +56,14 @@ object PrettyPrinter {
                 }
                 printer.printWithBreak(x = "}")
             } else {
-                val typeParamString = typeDefinition.typeParameters
-                    ?.joinToString(separator = ", ", prefix = "<", postfix = ">")
-                    ?: ""
-                printer.printWithBreak(x = "class $name$typeParamString(")
+                val (_, typeDefinitionType, typeParameters, mappings) = typeDefinition
+                val typeParameterString =
+                    typeParameters?.joinToString(separator = ", ", prefix = "<", postfix = ">") ?: ""
+                printer.printWithBreak(x = "class $name$typeParameterString(")
                 printer.indented {
-                    when (typeDefinition) {
-                        is Module.TypeDefinition.ObjectType -> {
-                            typeDefinition.mappings.forEach { (field, type) ->
-                                printWithBreak(x = "$field: $type,")
-                            }
-                        }
-                        is Module.TypeDefinition.VariantType -> {
-                            typeDefinition.mappings.forEach { (tag, dataType) ->
-                                printWithBreak(x = "$tag($dataType),")
-                            }
-                        }
+                    when (typeDefinitionType) {
+                        OBJECT -> mappings.forEach { (field, type) -> printWithBreak(x = "$field: $type,") }
+                        VARIANT -> mappings.forEach { (tag, dataType) -> printWithBreak(x = "$tag($dataType),") }
                     }
                 }
                 printer.printWithBreak(x = ") {")
