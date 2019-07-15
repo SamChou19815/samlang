@@ -125,6 +125,7 @@ fragment UpperLetter : 'A'..'Z';
  * ----------------------------------------------------------------------------
  */
 
+MinInt : '-9223372036854775808';
 IntLiteral : HexLiteral | OctalLiteral | DecimalLiteral;
 StrLiteral : '"' ( EscapeSequence | ~('\\'|'"') )* '"';
 

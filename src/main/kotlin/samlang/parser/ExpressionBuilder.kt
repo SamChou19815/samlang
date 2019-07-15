@@ -33,18 +33,43 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
         return StringEscapeUtils.unescapeJava(literal.substring(startIndex = 1, endIndex = literal.length - 1))
     }
 
-    /**
-     * Build a literal with its type.
-     */
-    private fun buildValue(ctx: PLParser.LiteralContext): Pair<Literal, Type> {
+    override fun visitLiteralExpr(ctx: PLParser.LiteralExprContext): Expression {
+        val literalNode = ctx.literal()
+        val range = literalNode.range
         // Case UNIT
-        ctx.UNIT()?.let { return Literal.UnitLiteral to Type.unit }
+        literalNode.UNIT()?.let {
+            return Expression.Literal(
+                range = range,
+                type = Type.unit,
+                literal = Literal.UnitLiteral
+            )
+        }
         // Case TRUE
-        ctx.TRUE()?.let { return Literal.BoolLiteral(value = true) to Type.bool }
+        literalNode.TRUE()?.let {
+            return Expression.Literal(
+                range = range,
+                type = Type.bool,
+                literal = Literal.BoolLiteral(value = true)
+            )
+        }
         // Case FALSE
-        ctx.FALSE()?.let { return Literal.BoolLiteral(value = false) to Type.bool }
+        literalNode.FALSE()?.let {
+            return Expression.Literal(
+                range = range,
+                type = Type.bool,
+                literal = Literal.BoolLiteral(value = false)
+            )
+        }
+        // Case MinInt
+        literalNode.MinInt()?.let {
+            return Expression.Literal(
+                range = range,
+                type = Type.int,
+                literal = Literal.IntLiteral(value = Long.MIN_VALUE)
+            )
+        }
         // Case INT
-        ctx.IntLiteral()?.let { node ->
+        literalNode.IntLiteral()?.let { node ->
             val token = node.symbol
             val text = token.text
             val intValue = text.toLongOrNull() ?: kotlin.run {
@@ -56,22 +81,21 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
                 )
                 0L
             }
-            return Literal.IntLiteral(value = intValue) to Type.int
+            return Expression.Literal(
+                range = range,
+                type = Type.int,
+                literal = Literal.IntLiteral(value = intValue)
+            )
         }
         // Case STRING
-        ctx.StrLiteral()?.let {
-            return Literal.StringLiteral(value = stringLiteralToString(literal = it.text)) to Type.string
+        literalNode.StrLiteral()?.let {
+            return Expression.Literal(
+                range = range,
+                type = Type.string,
+                literal = Literal.StringLiteral(value = stringLiteralToString(literal = it.text))
+            )
         }
         error(message = "Bad Literal: $ctx")
-    }
-
-    override fun visitLiteralExpr(ctx: PLParser.LiteralExprContext): Expression {
-        val (literal, type) = buildValue(ctx.literal())
-        return Expression.Literal(
-            range = ctx.literal().range,
-            type = type,
-            literal = literal
-        )
     }
 
     override fun visitThisExpr(ctx: PLParser.ThisExprContext): Expression =
