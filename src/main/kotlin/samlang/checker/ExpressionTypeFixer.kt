@@ -130,7 +130,7 @@ private class TypeFixerVisitor(
         val betterMapping = if (typeParameters != null && newType.typeArguments != null) {
             val replacementMap = typeParameters.checkedZip(other = newType.typeArguments).toMap()
             mapping.mapValues { (_, v) ->
-                ModuleTypeDefinitionResolver.applyGenericTypeParams(type = v, context = replacementMap)
+                ModuleTypeDefinitionResolver.applyGenericTypeParameters(type = v, context = replacementMap)
             }
         } else mapping
         val newSpreadExpr = expression.spreadExpression?.tryFixType(expectedType = context)
@@ -159,7 +159,7 @@ private class TypeFixerVisitor(
             ?: throw UnsupportedModuleTypeDefinitionError(typeDefinitionType = VARIANT, range = errorRange)
         var dataType = mapping[expression.tag] ?: blameTypeChecker()
         if (typeParameters != null && newType.typeArguments != null) {
-            dataType = ModuleTypeDefinitionResolver.applyGenericTypeParams(
+            dataType = ModuleTypeDefinitionResolver.applyGenericTypeParameters(
                 type = dataType, context = typeParameters.checkedZip(other = newType.typeArguments).toMap()
             )
         }
