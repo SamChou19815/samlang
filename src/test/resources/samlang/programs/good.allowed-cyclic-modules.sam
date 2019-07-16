@@ -1,0 +1,9 @@
+// ERROR_COUNT: 0
+
+util A {
+    public function a(): int = B::b()
+}
+
+util B {
+    public function b(): int = A::a()
+}

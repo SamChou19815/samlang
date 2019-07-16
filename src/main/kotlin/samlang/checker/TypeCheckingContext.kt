@@ -28,45 +28,30 @@ data class TypeCheckingContext(
         val methods: ImmutableMap<String, TypeInfo>
     )
 
-    fun addNewModuleTypeDefinition(
+    private fun addNewModuleTypeDefinition(
         name: String,
         nameRange: Range,
-        typeDefinitionRange: Range,
-        params: List<String>?,
-        typeDefinitionCreator: (TypeCheckingContext) -> Module.TypeDefinition
-    ): Pair<Module.TypeDefinition, TypeCheckingContext> {
+        typeDefinition: Module.TypeDefinition
+    ): TypeCheckingContext {
         if (modules.containsKey(key = name)) {
             throw CollisionError(collidedName = name, range = nameRange)
         }
-        val tempModuleType = ModuleType(
-            typeDefinition = Module.TypeDefinition(
-                range = typeDefinitionRange,
-                type = Module.TypeDefinitionType.OBJECT,
-                typeParameters = params,
-                mappings = emptyMap()
-            ),
-            functions = immutableMapOf(),
-            methods = immutableMapOf()
-        )
-        val tempCxt = TypeCheckingContext(
-            modules = modules.plus(pair = name to tempModuleType),
-            currentModule = name,
-            localGenericTypes = params?.let { localGenericTypes.plus(elements = it) } ?: localGenericTypes,
-            localValues = localValues
-        )
-        val newTypeDef = typeDefinitionCreator(tempCxt)
         val newModuleType = ModuleType(
-            typeDefinition = newTypeDef,
+            typeDefinition = typeDefinition,
             functions = immutableMapOf(),
             methods = immutableMapOf()
         )
-        return newTypeDef to copy(
+        return TypeCheckingContext(
             modules = modules.plus(pair = name to newModuleType),
-            currentModule = name
+            currentModule = name,
+            localGenericTypes = typeDefinition.typeParameters
+                ?.let { localGenericTypes.plus(elements = it) }
+                ?: localGenericTypes,
+            localValues = localValues
         )
     }
 
-    fun addNewEmptyUtilModule(name: String, nameRange: Range): TypeCheckingContext {
+    private fun addNewEmptyUtilModule(name: String, nameRange: Range): TypeCheckingContext {
         if (modules.containsKey(key = name)) {
             throw CollisionError(collidedName = name, range = nameRange)
         }
@@ -79,6 +64,26 @@ data class TypeCheckingContext(
             modules = modules.plus(pair = name to newModuleType),
             currentModule = name
         )
+    }
+
+    /**
+     * @return a new context with [module]'s type definition without [module]'s members.
+     * It does not check validity of types of the given [module].
+     */
+    fun addModuleTypeDefinition(
+        module: Module
+    ): TypeCheckingContext {
+        val (_, nameRange, name, typeDefinition, _) = module
+        // new context with type def but empty members and extensions
+        return if (typeDefinition == null) {
+            addNewEmptyUtilModule(name = name, nameRange = nameRange)
+        } else {
+            addNewModuleTypeDefinition(
+                name = name,
+                nameRange = nameRange,
+                typeDefinition = typeDefinition
+            )
+        }
     }
 
     fun addMembersAndMethodsToCurrentModule(
@@ -174,7 +179,9 @@ data class TypeCheckingContext(
         if (localValues.containsKey(key = "this")) {
             error(message = "Corrupted context!")
         }
-        val typeParameters = modules[currentModule]!!.typeDefinition!!.typeParameters
+        val typeParameters = modules[currentModule]!!
+            .typeDefinition!!
+            .typeParameters
         val type = Type.IdentifierType(
             identifier = currentModule,
             typeArguments = typeParameters?.map { parameter ->
