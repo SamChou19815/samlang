@@ -11,10 +11,6 @@ internal class ErrorCollector {
 
     private val _collectedErrors: MutableList<CompileTimeError> = arrayListOf()
 
-    fun reportError(compileTimeError: CompileTimeError) {
-        _collectedErrors.add(element = compileTimeError)
-    }
-
     inline fun <T> collectPotentialError(unchecked: T, crossinline checker: (T) -> T): T =
         try {
             checker(unchecked)
