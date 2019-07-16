@@ -2,7 +2,10 @@ grammar PL;
 
 import PLLexerPart;
 
-program : module* EOF;
+program : importSource* module* EOF;
+
+importSource : IMPORT UpperId;
+
 module : moduleHeaderDeclaration LBRACE moduleMemberDefinition* RBRACE;
 
 // Module Level Declarations

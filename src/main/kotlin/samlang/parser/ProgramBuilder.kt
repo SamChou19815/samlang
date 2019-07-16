@@ -38,6 +38,12 @@ object ProgramBuilder {
         private val moduleBuilder: ModuleBuilder = ModuleBuilder(syntaxErrorListener = syntaxErrorListener)
 
         override fun visitProgram(ctx: PLParser.ProgramContext): Program =
-            Program(modules = ctx.module().map { it.accept(moduleBuilder) })
+            Program(
+                imports = ctx.importSource().map { importNode ->
+                    val importedSourceIdNode = importNode.UpperId().symbol
+                    importedSourceIdNode.text to importNode.range
+                },
+                modules = ctx.module().map { it.accept(moduleBuilder) }
+            )
     }
 }

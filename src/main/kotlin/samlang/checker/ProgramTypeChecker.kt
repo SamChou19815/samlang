@@ -16,5 +16,5 @@ fun Program.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingCon
         checkedModule?.let { checkedModules.add(element = it) }
         currentContext = newCtx
     }
-    return createProgramOrFail(program = Program(modules = checkedModules), errors = errorCollector.collectedErrors)
+    return createProgramOrFail(program = this.copy(modules = checkedModules), errors = errorCollector.collectedErrors)
 }
