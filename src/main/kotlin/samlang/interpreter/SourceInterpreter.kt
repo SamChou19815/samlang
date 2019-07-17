@@ -3,20 +3,20 @@ package samlang.interpreter
 import kotlinx.collections.immutable.plus
 import samlang.ast.Expression
 import samlang.ast.Module
-import samlang.ast.Program
+import samlang.ast.Source
 
 /**
  * The interpreter used to evaluate an already type checked program.
  */
-internal object ProgramInterpreter {
+internal object SourceInterpreter {
 
     /**
-     * Evaluate the [program] under some interpretation [context] (default to empty)
+     * Evaluate the [source] under some interpretation [context] (default to empty)
      * to either a value or a [PanicException].
      */
-    fun eval(program: Program, context: InterpretationContext = InterpretationContext.EMPTY): Value {
+    fun eval(source: Source, context: InterpretationContext = InterpretationContext.EMPTY): Value {
         try {
-            return unsafeEval(program = program, context = context)
+            return unsafeEval(source = source, context = context)
         } catch (e: StackOverflowError) {
             throw PanicException(reason = e.message?.let { "StackOverflowException: $it" } ?: "StackOverflowException")
         } catch (e: IllegalArgumentException) {
@@ -40,10 +40,10 @@ internal object ProgramInterpreter {
     }
 
     /**
-     * Evaluate the program directly, without considering stack overflow and other errors beyond our control.
+     * Evaluate the source directly, without considering stack overflow and other errors beyond our control.
      */
-    private fun unsafeEval(program: Program, context: InterpretationContext): Value {
-        val fullCtx = program.modules.fold(initial = context) { ctx, module -> eval(module = module, context = ctx) }
+    private fun unsafeEval(source: Source, context: InterpretationContext): Value {
+        val fullCtx = source.modules.fold(initial = context) { ctx, module -> eval(module = module, context = ctx) }
         val mainModule = fullCtx.modules["Main"] ?: return Value.UnitValue
         val mainFunction = mainModule.functions["main"] ?: return Value.UnitValue
         if (mainFunction.arguments.isNotEmpty()) {

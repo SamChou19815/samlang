@@ -1,12 +1,12 @@
 package samlang.demo
 
-import samlang.ast.Program
+import samlang.ast.Source
 import samlang.checker.typeCheck
 import samlang.compiler.printer.PrettyPrinter
 import samlang.errors.CompilationFailedException
 import samlang.interpreter.PanicException
-import samlang.interpreter.ProgramInterpreter
-import samlang.parser.ProgramBuilder
+import samlang.interpreter.SourceInterpreter
+import samlang.parser.SourceBuilder
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.charset.Charset
@@ -48,14 +48,14 @@ object WebDemoController {
      */
     @JvmStatic
     fun interpret(programString: String, threadFactory: ThreadFactory): Response {
-        val rawProgram: Program
+        val rawSource: Source
         try {
-            rawProgram = ProgramBuilder.buildProgramFromText(text = programString)
+            rawSource = SourceBuilder.buildSourceFromText(text = programString)
         } catch (compilationFailedException: CompilationFailedException) {
             return Response(type = WebDemoController.Type.BAD_SYNTAX, detail = compilationFailedException.errorMessage)
         }
         val checkedProgram = try {
-            rawProgram.typeCheck()
+            rawSource.typeCheck()
         } catch (compilationFailedException: CompilationFailedException) {
             return Response(type = WebDemoController.Type.BAD_TYPE, detail = compilationFailedException.errorMessage)
         }
@@ -63,7 +63,7 @@ object WebDemoController {
         val atomicStringValue = AtomicReference<String>()
         val evalThread = threadFactory.newThread {
             val callback = try {
-                "Value: ${ProgramInterpreter.eval(program = checkedProgram)}"
+                "Value: ${SourceInterpreter.eval(source = checkedProgram)}"
             } catch (e: PanicException) {
                 "Panic: ${e.reason}"
             }

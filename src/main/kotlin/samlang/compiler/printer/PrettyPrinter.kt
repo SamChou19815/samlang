@@ -23,24 +23,24 @@ import samlang.ast.Module
 import samlang.ast.Module.TypeDefinitionType.OBJECT
 import samlang.ast.Module.TypeDefinitionType.VARIANT
 import samlang.ast.Pattern
-import samlang.ast.Program
+import samlang.ast.Source
 import samlang.util.IndentedPrinter
 import java.io.PrintStream
 
 object PrettyPrinter {
 
-    fun prettyPrint(program: Program, printStream: PrintStream) {
+    fun prettyPrint(source: Source, printStream: PrintStream) {
         // use 4-space
         val indentedPrinter = IndentedPrinter(printStream = printStream, indentationSymbol = "    ")
-        TopLevelPrinter(printer = indentedPrinter).print(program = program)
+        TopLevelPrinter(printer = indentedPrinter).print(source = source)
     }
 
     private class TopLevelPrinter(private val printer: IndentedPrinter) {
 
         private val exprPrinter: ExprPrinter = ExprPrinter(printer = printer)
 
-        fun print(program: Program) {
-            program.modules.forEach { module ->
+        fun print(source: Source) {
+            source.modules.forEach { module ->
                 print(module = module)
                 printer.println()
             }

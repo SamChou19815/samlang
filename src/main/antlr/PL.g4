@@ -2,7 +2,7 @@ grammar PL;
 
 import PLLexerPart;
 
-program : importSource* module* EOF;
+source : importSource* module* EOF;
 
 importSource : IMPORT UpperId;
 

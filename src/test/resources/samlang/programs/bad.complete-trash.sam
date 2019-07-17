@@ -1,4 +1,4 @@
 // ERROR_COUNT: 1
 // SyntaxError:4:1: mismatched input 'This' expecting {<EOF>, 'class', 'util', 'import'}
 
-This is a bad program.
+This is a bad source.

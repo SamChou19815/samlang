@@ -2,13 +2,13 @@ package samlang.checker
 
 import samlang.ast.Module
 import samlang.ast.Module.MemberDefinition
-import samlang.ast.Program
+import samlang.ast.Source
 import samlang.ast.Range
 import samlang.errors.CollisionError
 import samlang.errors.IllegalMethodDefinitionError
-import samlang.util.createProgramOrFail
+import samlang.util.createSourceOrFail
 
-fun Program.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingContext.EMPTY): Program {
+fun Source.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingContext.EMPTY): Source {
     val errorCollector = ErrorCollector()
     // First pass: add type definitions to modules
     var currentContext = modules.fold(initial = typeCheckingContext) { context, module ->
@@ -47,7 +47,7 @@ fun Program.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingCon
             }
         )
     }
-    return createProgramOrFail(program = this.copy(modules = checkedModules), errors = errorCollector.collectedErrors)
+    return createSourceOrFail(source = this.copy(modules = checkedModules), errors = errorCollector.collectedErrors)
 }
 
 private fun Collection<String>.checkNameCollision(range: Range) {
