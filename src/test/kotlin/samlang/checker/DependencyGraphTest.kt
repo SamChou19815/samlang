@@ -2,8 +2,8 @@ package samlang.checker
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
-import samlang.ast.Range
 import samlang.ast.Module
+import samlang.ast.Range
 import samlang.errors.CyclicDependencyError
 
 class DependencyGraphTest : StringSpec() {
@@ -11,7 +11,10 @@ class DependencyGraphTest : StringSpec() {
     private fun checkErrors(sources: List<Pair<String, List<Pair<String, Range>>>>) {
         DependencyGraph().apply {
             for ((sourceName, imports) in sources) {
-                this.addImports(sourceName = sourceName, module = Module(imports = imports, classDefinitions = emptyList()))
+                this.addImports(
+                    sourceName = sourceName,
+                    module = Module(imports = imports, classDefinitions = emptyList())
+                )
             }
         }.getCyclicDependencyErrors()
     }

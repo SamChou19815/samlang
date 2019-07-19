@@ -1,6 +1,9 @@
 package samlang.compiler.printer
 
 import samlang.ast.CheckedExprVisitor
+import samlang.ast.ClassDefinition
+import samlang.ast.ClassDefinition.TypeDefinitionType.OBJECT
+import samlang.ast.ClassDefinition.TypeDefinitionType.VARIANT
 import samlang.ast.Expression
 import samlang.ast.Expression.Binary
 import samlang.ast.Expression.FieldAccess
@@ -19,11 +22,8 @@ import samlang.ast.Expression.Unary
 import samlang.ast.Expression.Val
 import samlang.ast.Expression.Variable
 import samlang.ast.Expression.VariantConstructor
-import samlang.ast.ClassDefinition
-import samlang.ast.ClassDefinition.TypeDefinitionType.OBJECT
-import samlang.ast.ClassDefinition.TypeDefinitionType.VARIANT
-import samlang.ast.Pattern
 import samlang.ast.Module
+import samlang.ast.Pattern
 import samlang.util.IndentedPrinter
 import java.io.PrintStream
 

@@ -4,8 +4,8 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.immutableListOf
 import kotlinx.collections.immutable.immutableSetOf
-import samlang.ast.Range
 import samlang.ast.Module
+import samlang.ast.Range
 import samlang.errors.CyclicDependencyError
 
 internal class DependencyGraph {

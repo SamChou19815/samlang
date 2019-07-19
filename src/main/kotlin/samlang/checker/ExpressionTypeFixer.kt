@@ -14,6 +14,8 @@ import samlang.ast.BinaryOperator.NE
 import samlang.ast.BinaryOperator.OR
 import samlang.ast.BinaryOperator.PLUS
 import samlang.ast.CheckedExprVisitor
+import samlang.ast.ClassDefinition.TypeDefinitionType.OBJECT
+import samlang.ast.ClassDefinition.TypeDefinitionType.VARIANT
 import samlang.ast.Expression
 import samlang.ast.Expression.Binary
 import samlang.ast.Expression.FieldAccess
@@ -32,8 +34,6 @@ import samlang.ast.Expression.Unary
 import samlang.ast.Expression.Val
 import samlang.ast.Expression.Variable
 import samlang.ast.Expression.VariantConstructor
-import samlang.ast.ClassDefinition.TypeDefinitionType.OBJECT
-import samlang.ast.ClassDefinition.TypeDefinitionType.VARIANT
 import samlang.ast.Range
 import samlang.ast.Type
 import samlang.ast.Type.FunctionType
