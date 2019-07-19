@@ -1,5 +1,5 @@
 // ERROR_COUNT: 1
-// SyntaxError:5:28: Not a 64-bit integer.
+// 5:28: [SyntaxError]: Not a 64-bit integer.
 
 util Main {
     function main(): int = 999999999999999999999999999999

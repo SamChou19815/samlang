@@ -4,5 +4,6 @@ import samlang.ast.Range
 
 class CyclicDependencyError(sourceName: String, range: Range, cyclicDependencyChain: List<String>) :
     CompileTimeError(
-        errorInformation = "$sourceName:$range: ${cyclicDependencyChain.joinToString(separator = "->")}."
+        errorLocation = "$sourceName:$range",
+        errorInformation = cyclicDependencyChain.joinToString(separator = "->", postfix = ".")
     )

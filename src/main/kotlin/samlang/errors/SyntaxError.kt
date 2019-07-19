@@ -3,6 +3,6 @@ package samlang.errors
 import samlang.ast.Position
 
 class SyntaxError(position: Position, reason: String) :
-    CompileTimeError(errorInformation = "$position: $reason") {
-    override val errorMessage: String = "SyntaxError:$errorInformation"
+    CompileTimeError(errorLocation = position.toString(), errorInformation = reason) {
+    override val errorClass: String = "SyntaxError"
 }

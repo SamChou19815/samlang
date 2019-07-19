@@ -29,7 +29,7 @@ object SourceBuilder {
         File(fileDir)
             .takeIf { it.isFile }
             ?.let { buildSource(inputStream = it.inputStream()) }
-            ?: throw MissingFileError(dirName = fileDir)
+            ?: throw MissingFileError(filename = fileDir)
 
     fun buildSourceFromText(text: String): Source = buildSource(inputStream = text.byteInputStream())
 

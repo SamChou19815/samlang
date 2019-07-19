@@ -1,5 +1,5 @@
 // ERROR_COUNT: 1
-// InsufficientTypeInferenceContext:11:13-11:27: There is not enough context information to decide the type of this expression.
+// 11:13-11:27: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.
 
 
 class Option<T>(Some(T), None(unit)) {

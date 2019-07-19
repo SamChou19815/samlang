@@ -32,7 +32,7 @@ class DependencyGraphTest : StringSpec() {
                     )
                 )
             } catch (error: CyclicDependencyError) {
-                error.errorMessage shouldBe "CyclicDependency:S1:0:0-0:0: S1->S2->S1."
+                error.errorMessage shouldBe "S1:0:0-0:0: [CyclicDependency]: S1->S2->S1."
             }
         }
         "Expect length-5 cyclic dependency error." {
@@ -48,7 +48,7 @@ class DependencyGraphTest : StringSpec() {
                     )
                 )
             } catch (error: CyclicDependencyError) {
-                error.errorMessage shouldBe "CyclicDependency:S3:0:0-0:0: S3->S4->S5->S6->S1->S2->S3."
+                error.errorMessage shouldBe "S3:0:0-0:0: [CyclicDependency]: S3->S4->S5->S6->S1->S2->S3."
             }
         }
         "Expect length-3 cyclic dependency error after DFS." {
@@ -64,7 +64,7 @@ class DependencyGraphTest : StringSpec() {
                     )
                 )
             } catch (error: CyclicDependencyError) {
-                error.errorMessage shouldBe "CyclicDependency:S4:0:0-0:0: S4->S5->S6->S4."
+                error.errorMessage shouldBe "S4:0:0-0:0: [CyclicDependency]: S4->S5->S6->S4."
             }
         }
     }

@@ -1,3 +1,4 @@
 package samlang.errors
 
-class MissingFileError(dirName: String) : CompileTimeError(errorInformation = "`$dirName` is not a file.")
+class MissingFileError(filename: String) :
+    CompileTimeError(errorLocation = filename, errorInformation = "`$filename` is not a file.")

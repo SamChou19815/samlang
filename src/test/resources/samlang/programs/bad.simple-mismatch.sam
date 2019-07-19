@@ -1,5 +1,5 @@
 // ERROR_COUNT: 1
-// UnexpectedType:6:28-6:32: Expected: `int`, actual: `bool`.
+// 6:28-6:32: [UnexpectedType]: Expected: `int`, actual: `bool`.
 
 util Main {
     // should be type bool!

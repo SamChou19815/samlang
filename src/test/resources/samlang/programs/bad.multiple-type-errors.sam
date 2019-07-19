@@ -1,6 +1,6 @@
 // ERROR_COUNT: 2
-// UnexpectedType:6:37-6:42: Expected: `int`, actual: `string`.
-// UnexpectedType:6:45-6:50: Expected: `int`, actual: `string`.
+// 6:37-6:42: [UnexpectedType]: Expected: `int`, actual: `string`.
+// 6:45-6:50: [UnexpectedType]: Expected: `int`, actual: `string`.
 
 util Main {
     function main(): int = 233333 + "foo" + "bar" + 42
