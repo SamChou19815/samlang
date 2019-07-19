@@ -1,5 +1,5 @@
 // ERROR_COUNT: 0
 
-util Main {
+class Main {
     function main(): int = -9223372036854775808
 }

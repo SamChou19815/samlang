@@ -13,7 +13,6 @@ lexer grammar PLLexerPart;
 
 // Declarations
 CLASS : 'class';
-UTIL : 'util';
 VAL : 'val';
 FUNCTION : 'function';
 METHOD : 'method';

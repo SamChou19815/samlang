@@ -4,7 +4,8 @@ class Option<T>(Some(T), None(unit)) {
   public function <T> none(): Option<T> = None(unit)
   public method toSome(t: T): Option<T> = Some(t)
 }
-util Main {
+
+class Main {
   function main(): Option<string> = Option::none()::toSome("hi")
   function main2(): Option<string> =
     val a = Option::none();

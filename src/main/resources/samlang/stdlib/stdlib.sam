@@ -1,7 +1,7 @@
 /**
  * Useful for function references and basic operations.
  */
-util Pervasives {
+class Pervasives {
     function plus(a: int, b: int): int = a + b
     function minus(a: int, b: int): int = a - b
     function multiply(a: int, b: int): int = a * b

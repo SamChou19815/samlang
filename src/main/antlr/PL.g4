@@ -11,7 +11,7 @@ module : moduleHeaderDeclaration LBRACE moduleMemberDefinition* RBRACE;
 // Module Level Declarations
 moduleHeaderDeclaration
     : CLASS UpperId typeParametersDeclaration? LPAREN typeDeclaration RPAREN # ClassHeader
-    | UTIL UpperId # UtilHeader
+    | CLASS UpperId # UtilClassHeader
     ;
 moduleMemberDefinition
     : PUBLIC? (FUNCTION | METHOD) typeParametersDeclaration? LowerId

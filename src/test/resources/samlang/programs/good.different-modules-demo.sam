@@ -1,6 +1,6 @@
 // ERROR_COUNT: 0
 
-util Math {
+class Math {
 
     function plus(a: int, b: int): int = a + b
 
@@ -39,7 +39,7 @@ class PrimitiveType(
         }
 }
 
-util FunctionExample {
+class FunctionExample {
     public function <T> getIdentityFunction(): (T) -> T = (x) -> x
 }
 

@@ -1,6 +1,6 @@
 // ERROR_COUNT: 1
 // 5:31-5:41: [UnresolvedName]: Name `helloWorld` is not resolved.
 
-util Main {
+class Main {
     function main(): string = helloWorld
 }

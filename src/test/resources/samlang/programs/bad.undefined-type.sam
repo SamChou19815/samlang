@@ -1,6 +1,6 @@
 // ERROR_COUNT: 1
 // 5:5-5:36: [NotWellDefinedIdentifier]: `HelloWorld` is not well defined.
 
-util Main {
+class Main {
     function main(): HelloWorld = 1
 }

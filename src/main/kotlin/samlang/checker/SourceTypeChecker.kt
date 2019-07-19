@@ -5,7 +5,6 @@ import samlang.ast.Module.MemberDefinition
 import samlang.ast.Source
 import samlang.ast.Range
 import samlang.errors.CollisionError
-import samlang.errors.IllegalMethodDefinitionError
 import samlang.util.createSourceOrFail
 
 fun Source.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingContext.EMPTY): Source {
@@ -17,7 +16,6 @@ fun Source.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingCont
     // Second pass: validating module's top level properties, excluding whether member's types are well-defined.
     val passedTypeValidationModules = modules.filter { module ->
         checkModuleTopLevelValidity(
-            moduleName = module.name,
             typeDefinition = module.typeDefinition,
             moduleMembers = module.members,
             errorCollector = errorCollector,
@@ -80,8 +78,7 @@ private fun checkNameCollision(namesWithRange: Collection<Pair<String, Range>>) 
  * If all checks are passed, return the updated type checking context with members information.
  */
 private fun checkModuleTopLevelValidity(
-    moduleName: String,
-    typeDefinition: Module.TypeDefinition?,
+    typeDefinition: Module.TypeDefinition,
     moduleMembers: List<MemberDefinition>,
     errorCollector: ErrorCollector,
     typeCheckingContext: TypeCheckingContext
@@ -89,15 +86,13 @@ private fun checkModuleTopLevelValidity(
     var passedCheck = true
     // We consistently put passedCheck on the right hand side to avoid short-circuiting.
     // In this way, we can report as many errors as possible.
-    if (typeDefinition != null) {
-        val (range, _, typeParameters, mappings) = typeDefinition
-        passedCheck = errorCollector.passCheck { typeParameters?.checkNameCollision(range = range) } && passedCheck
-        passedCheck = errorCollector.passCheck { mappings.keys.checkNameCollision(range = range) } && passedCheck
-        passedCheck = mappings.values.fold(initial = passedCheck) { previouslyPassedCheck, type ->
-            errorCollector.passCheck {
-                type.validate(context = typeCheckingContext, errorRange = range)
-            } && previouslyPassedCheck
-        }
+    val (range, _, typeParameters, mappings) = typeDefinition
+    passedCheck = errorCollector.passCheck { typeParameters?.checkNameCollision(range = range) } && passedCheck
+    passedCheck = errorCollector.passCheck { mappings.keys.checkNameCollision(range = range) } && passedCheck
+    passedCheck = mappings.values.fold(initial = passedCheck) { previouslyPassedCheck, type ->
+        errorCollector.passCheck {
+            type.validate(context = typeCheckingContext, errorRange = range)
+        } && previouslyPassedCheck
     }
     passedCheck = errorCollector.passCheck {
         checkNameCollision(namesWithRange = moduleMembers.map { it.name to it.nameRange })
@@ -106,15 +101,6 @@ private fun checkModuleTopLevelValidity(
         errorCollector.passCheck {
             moduleMember.typeParameters?.checkNameCollision(range = moduleMember.range)
         } && previouslyPassedCheck
-    }
-    if (typeDefinition == null) {
-        moduleMembers.fold(initial = passedCheck) { previouslyPassedCheck, moduleMember ->
-            errorCollector.passCheck {
-                if (moduleMember.isMethod) {
-                    throw IllegalMethodDefinitionError(moduleName = moduleName, range = moduleMember.range)
-                }
-            } && previouslyPassedCheck
-        }
     }
     return passedCheck
 }

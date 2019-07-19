@@ -1,7 +1,7 @@
 // ERROR_COUNT: 1
 // 14:17-14:21: [UnresolvedName]: Name `A::b` is not resolved.
 
-util A {
+class A {
     function b(): int = 3
 }
 
@@ -9,7 +9,7 @@ class C(v: bool) {
     public function init(): C = { v: true }
 }
 
-util Main {
+class Main {
     public function main(): unit =
         val _ = A::b();
         val _ = C::init();

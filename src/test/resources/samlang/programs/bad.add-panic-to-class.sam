@@ -6,7 +6,7 @@ class A(a: int) {
     public function init(): A = { a: 42 }
 }
 
-util Main {
+class Main {
     function main1(): int = panic("Ah") + A::init()
     function main2(): int = A::init() + panic("Ah")
     function main(): int = Main::main1() + Main::main2()

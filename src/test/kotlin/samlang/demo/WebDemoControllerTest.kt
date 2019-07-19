@@ -13,7 +13,7 @@ class WebDemoControllerTest : StringSpec() {
             val resp = WebDemoController.interpret(
                 programString =
                 """
-                    util Main {
+                    class Main {
                         function main(): int = 42
                     }
                 """.trimIndent(),
@@ -26,7 +26,7 @@ class WebDemoControllerTest : StringSpec() {
             val resp = WebDemoController.interpret(
                 programString =
                 """
-                    util Main {
+                    class Main {
                         function main(): int = Main::main()
                     }
                 """.trimIndent(),
@@ -40,7 +40,7 @@ class WebDemoControllerTest : StringSpec() {
             val resp = WebDemoController.interpret(
                 programString =
                 """
-                    util Main {
+                    class Main {
                         function fib(n: int): int =
                           if n == 0 then 0
                           else if n == 1 then 1
@@ -62,7 +62,7 @@ class WebDemoControllerTest : StringSpec() {
         "bad-type-program-gets-rejected" {
             val resp = WebDemoController.interpret(
                 """
-                util Main {
+                class Main {
                     function main(): int = "Ah!"
                 }
             """.trimIndent(),

@@ -1,9 +1,9 @@
 // ERROR_COUNT: 0
 
-util A {
+class A {
     public function a(): int = B::b()
 }
 
-util B {
+class B {
     public function b(): int = A::a()
 }

@@ -21,7 +21,7 @@ class AnotherBox<T>(value: T) {
     public function <T> empty(): AnotherBox<T> = { value: panic("PANIC") }
 }
 
-util Main {
+class Main {
     function test01(): int = 42 + Box::empty()
     function test02(): int = Box::empty() + 42
     function test03(): bool = 42 == Box::empty()

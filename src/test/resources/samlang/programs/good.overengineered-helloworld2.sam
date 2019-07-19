@@ -5,6 +5,6 @@ class NewYear2019<T>(message: T) {
     public method getMessage(): T = val { message as msg } = this; msg
 }
 
-util Main {
+class Main {
     function main(): string = NewYear2019::init()::getMessage()
 }

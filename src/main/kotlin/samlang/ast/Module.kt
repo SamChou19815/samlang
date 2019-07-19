@@ -4,7 +4,7 @@ data class Module(
     override val range: Range,
     val nameRange: Range,
     val name: String,
-    val typeDefinition: TypeDefinition?,
+    val typeDefinition: TypeDefinition,
     val members: List<MemberDefinition>
 ) : Node {
 

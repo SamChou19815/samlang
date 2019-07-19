@@ -2,6 +2,6 @@
 // 6:37-6:42: [UnexpectedType]: Expected: `int`, actual: `string`.
 // 6:45-6:50: [UnexpectedType]: Expected: `int`, actual: `string`.
 
-util Main {
+class Main {
     function main(): int = 233333 + "foo" + "bar" + 42
 }

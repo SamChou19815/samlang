@@ -9,7 +9,7 @@ import samlang.parser.generated.PLParser.ModuleContext
 import samlang.parser.generated.PLParser.ModuleMemberDefinitionContext
 import samlang.parser.generated.PLParser.ObjTypeContext
 import samlang.parser.generated.PLParser.TypeParametersDeclarationContext
-import samlang.parser.generated.PLParser.UtilHeaderContext
+import samlang.parser.generated.PLParser.UtilClassHeaderContext
 import samlang.parser.generated.PLParser.VariantTypeContext
 
 internal class ModuleBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module>() {
@@ -25,23 +25,29 @@ internal class ModuleBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseV
             return symbol.text to symbol.range
         }
 
-        override fun visitUtilHeader(ctx: UtilHeaderContext): Pair<String, Range> {
+        override fun visitUtilClassHeader(ctx: UtilClassHeaderContext): Pair<String, Range> {
             val symbol = ctx.UpperId().symbol
             return symbol.text to symbol.range
         }
     }
 
-    private inner class ModuleTypeDefinitionBuilder : PLBaseVisitor<Module.TypeDefinition?>() {
+    private inner class ModuleTypeDefinitionBuilder : PLBaseVisitor<Module.TypeDefinition>() {
 
         override fun visitClassHeader(ctx: ClassHeaderContext): Module.TypeDefinition {
             val rawTypeParams: TypeParametersDeclarationContext? = ctx.typeParametersDeclaration()
             val rawTypeDeclaration = ctx.typeDeclaration()
-            val typeParams = rawTypeParams?.typeParameters
-            val position = rawTypeParams?.range?.union(rawTypeDeclaration.range) ?: rawTypeDeclaration.range
-            return rawTypeDeclaration.accept(TypeDefinitionBuilder(position, typeParams))
+            val typeParameters = rawTypeParams?.typeParameters
+            val range = rawTypeParams?.range?.union(rawTypeDeclaration.range) ?: rawTypeDeclaration.range
+            return rawTypeDeclaration.accept(TypeDefinitionBuilder(range, typeParameters))
         }
 
-        override fun visitUtilHeader(ctx: UtilHeaderContext): Module.TypeDefinition? = null
+        override fun visitUtilClassHeader(ctx: UtilClassHeaderContext): Module.TypeDefinition =
+            Module.TypeDefinition(
+                range = ctx.range,
+                type = Module.TypeDefinitionType.OBJECT,
+                typeParameters = emptyList(),
+                mappings = emptyMap()
+            )
 
         private inner class TypeDefinitionBuilder(
             private val range: Range,

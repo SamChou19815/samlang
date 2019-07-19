@@ -70,21 +70,12 @@ data class TypeCheckingContext(
      * @return a new context with [module]'s type definition without [module]'s members.
      * It does not check validity of types of the given [module].
      */
-    fun addModuleTypeDefinition(
-        module: Module
-    ): TypeCheckingContext {
-        val (_, nameRange, name, typeDefinition, _) = module
-        // new context with type def but empty members and extensions
-        return if (typeDefinition == null) {
-            addNewEmptyUtilModule(name = name, nameRange = nameRange)
-        } else {
-            addNewModuleTypeDefinition(
-                name = name,
-                nameRange = nameRange,
-                typeDefinition = typeDefinition
-            )
-        }
-    }
+    fun addModuleTypeDefinition(module: Module): TypeCheckingContext =
+        addNewModuleTypeDefinition(
+            name = module.name,
+            nameRange = module.nameRange,
+            typeDefinition = module.typeDefinition
+        )
 
     fun addMembersAndMethodsToCurrentModule(
         members: List<Triple<String, Boolean, TypeInfo>>

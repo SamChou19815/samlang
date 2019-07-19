@@ -48,17 +48,12 @@ object PrettyPrinter {
 
         private fun print(module: Module) {
             val (_, _, name, typeDefinition, members) = module
-            if (typeDefinition == null) {
-                printer.printWithBreak(x = "util $name {")
-                printer.indented {
-                    println()
-                    members.forEach { printMember(member = it) }
-                }
-                printer.printWithBreak(x = "}")
+            val (_, typeDefinitionType, typeParameters, mappings) = typeDefinition
+            val typeParameterString =
+                typeParameters?.joinToString(separator = ", ", prefix = "<", postfix = ">") ?: ""
+            if (typeDefinition.mappings.isEmpty()) {
+                printer.printWithBreak(x = "class $name {")
             } else {
-                val (_, typeDefinitionType, typeParameters, mappings) = typeDefinition
-                val typeParameterString =
-                    typeParameters?.joinToString(separator = ", ", prefix = "<", postfix = ">") ?: ""
                 printer.printWithBreak(x = "class $name$typeParameterString(")
                 printer.indented {
                     when (typeDefinitionType) {
@@ -67,12 +62,12 @@ object PrettyPrinter {
                     }
                 }
                 printer.printWithBreak(x = ") {")
-                printer.indented {
-                    println()
-                    members.forEach { printMember(member = it) }
-                }
-                printer.printWithBreak(x = "}")
             }
+            printer.indented {
+                println()
+                members.forEach { printMember(member = it) }
+            }
+            printer.printWithBreak(x = "}")
         }
 
         private fun printMember(member: Module.MemberDefinition) {

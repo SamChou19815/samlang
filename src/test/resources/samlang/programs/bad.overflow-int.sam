@@ -1,6 +1,6 @@
 // ERROR_COUNT: 1
 // 5:28: [SyntaxError]: Not a 64-bit integer.
 
-util Main {
+class Main {
     function main(): int = 999999999999999999999999999999
 }
