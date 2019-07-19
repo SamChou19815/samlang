@@ -32,8 +32,8 @@ import samlang.ast.Expression.Unary
 import samlang.ast.Expression.Val
 import samlang.ast.Expression.Variable
 import samlang.ast.Expression.VariantConstructor
-import samlang.ast.Module.TypeDefinitionType.OBJECT
-import samlang.ast.Module.TypeDefinitionType.VARIANT
+import samlang.ast.ClassDefinition.TypeDefinitionType.OBJECT
+import samlang.ast.ClassDefinition.TypeDefinitionType.VARIANT
 import samlang.ast.Pattern
 import samlang.ast.Type
 import samlang.ast.Type.FunctionType
@@ -301,7 +301,7 @@ private class ExpressionTypeCheckerVisitor(
             typeArguments = typeParameters?.let { Type.undecidedList(number = it.size) }
         )
         val checkedAssignedExpression = assignedExpression.toChecked(ctx = ctx, expectedType = expectedFieldType)
-        val fieldMappings = ModuleTypeDefinitionResolver.getTypeDefinition(
+        val fieldMappings = ClassTypeDefinitionResolver.getTypeDefinition(
             identifierType = checkedAssignedExpression.type as IdentifierType,
             context = ctx,
             typeDefinitionType = OBJECT,
@@ -444,7 +444,7 @@ private class ExpressionTypeCheckerVisitor(
         val checkedMatchedExpression = matchedExpression.toChecked(ctx = ctx)
         val variantMappings = when (val checkedMatchedExpressionType = checkedMatchedExpression.type) {
             is IdentifierType -> {
-                ModuleTypeDefinitionResolver.getTypeDefinition(
+                ClassTypeDefinitionResolver.getTypeDefinition(
                     identifierType = checkedMatchedExpressionType,
                     context = ctx,
                     typeDefinitionType = VARIANT,
@@ -555,7 +555,7 @@ private class ExpressionTypeCheckerVisitor(
                         range = pattern.range
                     )
                 }
-                val fieldMappings = ModuleTypeDefinitionResolver.getTypeDefinition(
+                val fieldMappings = ClassTypeDefinitionResolver.getTypeDefinition(
                     identifierType = identifierType,
                     context = ctx,
                     typeDefinitionType = OBJECT,

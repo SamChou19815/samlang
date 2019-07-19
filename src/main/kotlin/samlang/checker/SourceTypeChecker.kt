@@ -1,21 +1,21 @@
 package samlang.checker
 
+import samlang.ast.ClassDefinition
+import samlang.ast.ClassDefinition.MemberDefinition
 import samlang.ast.Module
-import samlang.ast.Module.MemberDefinition
-import samlang.ast.Source
 import samlang.ast.Range
 import samlang.errors.CollisionError
 import samlang.util.createSourceOrFail
 
-fun Source.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingContext.EMPTY): Source {
+fun Module.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingContext.EMPTY): Module {
     val errorCollector = ErrorCollector()
-    // First pass: add type definitions to modules
-    var currentContext = modules.fold(initial = typeCheckingContext) { context, module ->
-        errorCollector.returnNullOnCollectedError { context.addModuleTypeDefinition(module = module) } ?: context
+    // First pass: add type definitions to classDefinitions
+    var currentContext = classDefinitions.fold(initial = typeCheckingContext) { context, module ->
+        errorCollector.returnNullOnCollectedError { context.addModuleTypeDefinition(classDefinition = module) } ?: context
     }
     // Second pass: validating module's top level properties, excluding whether member's types are well-defined.
-    val passedTypeValidationModules = modules.filter { module ->
-        checkModuleTopLevelValidity(
+    val passedTypeValidationModules = classDefinitions.filter { module ->
+        checkClassTopLevelValidity(
             typeDefinition = module.typeDefinition,
             moduleMembers = module.members,
             errorCollector = errorCollector,
@@ -23,7 +23,7 @@ fun Source.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingCont
         )
     }
     // Third pass: add module's members to typing context.
-    val partiallyCheckedModules = arrayListOf<Module>()
+    val partiallyCheckedModules = arrayListOf<ClassDefinition>()
     currentContext = passedTypeValidationModules.fold(initial = currentContext) { context, module ->
         val (partiallyCheckedMembers, contextWithModuleMembers) = getPartiallyCheckedMembersAndNewContext(
             moduleMembers = module.members,
@@ -45,7 +45,7 @@ fun Source.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingCont
             }
         )
     }
-    return createSourceOrFail(source = this.copy(modules = checkedModules), errors = errorCollector.collectedErrors)
+    return createSourceOrFail(module = this.copy(classDefinitions = checkedModules), errors = errorCollector.collectedErrors)
 }
 
 private fun Collection<String>.checkNameCollision(range: Range) {
@@ -77,8 +77,8 @@ private fun checkNameCollision(namesWithRange: Collection<Pair<String, Range>>) 
  *
  * If all checks are passed, return the updated type checking context with members information.
  */
-private fun checkModuleTopLevelValidity(
-    typeDefinition: Module.TypeDefinition,
+private fun checkClassTopLevelValidity(
+    typeDefinition: ClassDefinition.TypeDefinition,
     moduleMembers: List<MemberDefinition>,
     errorCollector: ErrorCollector,
     typeCheckingContext: TypeCheckingContext

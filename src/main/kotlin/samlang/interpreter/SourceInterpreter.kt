@@ -1,9 +1,9 @@
 package samlang.interpreter
 
 import kotlinx.collections.immutable.plus
+import samlang.ast.ClassDefinition
 import samlang.ast.Expression
 import samlang.ast.Module
-import samlang.ast.Source
 
 /**
  * The interpreter used to evaluate an already type checked program.
@@ -11,12 +11,12 @@ import samlang.ast.Source
 internal object SourceInterpreter {
 
     /**
-     * Evaluate the [source] under some interpretation [context] (default to empty)
+     * Evaluate the [module] under some interpretation [context] (default to empty)
      * to either a value or a [PanicException].
      */
-    fun eval(source: Source, context: InterpretationContext = InterpretationContext.EMPTY): Value {
+    fun eval(module: Module, context: InterpretationContext = InterpretationContext.EMPTY): Value {
         try {
-            return unsafeEval(source = source, context = context)
+            return unsafeEval(module = module, context = context)
         } catch (e: StackOverflowError) {
             throw PanicException(reason = e.message?.let { "StackOverflowException: $it" } ?: "StackOverflowException")
         } catch (e: IllegalArgumentException) {
@@ -40,11 +40,13 @@ internal object SourceInterpreter {
     }
 
     /**
-     * Evaluate the source directly, without considering stack overflow and other errors beyond our control.
+     * Evaluate the module directly, without considering stack overflow and other errors beyond our control.
      */
-    private fun unsafeEval(source: Source, context: InterpretationContext): Value {
-        val fullCtx = source.modules.fold(initial = context) { ctx, module -> eval(module = module, context = ctx) }
-        val mainModule = fullCtx.modules["Main"] ?: return Value.UnitValue
+    private fun unsafeEval(module: Module, context: InterpretationContext): Value {
+        val fullCtx = module.classDefinitions.fold(initial = context) { newContext, classDefinition ->
+            eval(classDefinition = classDefinition, context = newContext)
+        }
+        val mainModule = fullCtx.classes["Main"] ?: return Value.UnitValue
         val mainFunction = mainModule.functions["main"] ?: return Value.UnitValue
         if (mainFunction.arguments.isNotEmpty()) {
             return Value.UnitValue
@@ -52,10 +54,10 @@ internal object SourceInterpreter {
         return ExpressionInterpreter.eval(expression = mainFunction.body, context = mainFunction.context)
     }
 
-    private fun eval(module: Module, context: InterpretationContext): InterpretationContext {
+    private fun eval(classDefinition: ClassDefinition, context: InterpretationContext): InterpretationContext {
         val functions = hashMapOf<String, Value.FunctionValue>()
         val methods = hashMapOf<String, Value.FunctionValue>()
-        module.members.forEach { member ->
+        classDefinition.members.forEach { member ->
             val lambda = Expression.Lambda(
                 range = member.range,
                 type = member.type,
@@ -69,11 +71,11 @@ internal object SourceInterpreter {
                 functions[member.name] = value
             }
         }
-        val newModule = InterpretationContext.ModuleValue(
+        val newModule = InterpretationContext.ClassValue(
             functions = functions,
             methods = methods
         )
-        val newContext = context.copy(modules = context.modules.plus(pair = module.name to newModule))
+        val newContext = context.copy(classes = context.classes.plus(pair = classDefinition.name to newModule))
         // patch the functions and methods with correct context.
         functions.forEach { (_, v) -> v.context = newContext }
         methods.forEach { (_, v) -> v.context = newContext }

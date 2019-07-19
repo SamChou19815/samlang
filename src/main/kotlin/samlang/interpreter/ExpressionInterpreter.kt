@@ -62,7 +62,7 @@ internal object ExpressionInterpreter : CheckedExprVisitor<InterpretationContext
         context.localValues[expression.name] ?: blameTypeChecker()
 
     override fun visit(expression: ModuleMember, context: InterpretationContext): Value =
-        context.modules[expression.moduleName]?.functions?.get(key = expression.memberName) ?: blameTypeChecker()
+        context.classes[expression.moduleName]?.functions?.get(key = expression.memberName) ?: blameTypeChecker()
 
     override fun visit(expression: TupleConstructor, context: InterpretationContext): Value.TupleValue =
         Value.TupleValue(tupleContent = expression.expressionList.map { eval(expression = it, context = context) })
@@ -104,7 +104,7 @@ internal object ExpressionInterpreter : CheckedExprVisitor<InterpretationContext
     override fun visit(expression: MethodAccess, context: InterpretationContext): Value.FunctionValue {
         val (id, _) = expression.expression.type as Type.IdentifierType
         val thisValue = eval(expression = expression.expression, context = context)
-        val methodValue = context.modules[id]?.methods?.get(key = expression.methodName) ?: blameTypeChecker()
+        val methodValue = context.classes[id]?.methods?.get(key = expression.methodName) ?: blameTypeChecker()
         val newCtx = context.copy(localValues = context.localValues.plus(pair = "this" to thisValue))
         methodValue.context = newCtx
         return methodValue

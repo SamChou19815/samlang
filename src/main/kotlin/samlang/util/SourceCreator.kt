@@ -1,8 +1,8 @@
 package samlang.util
 
-import samlang.ast.Source
+import samlang.ast.Module
 import samlang.errors.CompilationFailedException
 import samlang.errors.CompileTimeError
 
-fun createSourceOrFail(source: Source, errors: List<CompileTimeError>): Source =
-    if (errors.isEmpty()) source else throw CompilationFailedException(errors = errors)
+fun createSourceOrFail(module: Module, errors: List<CompileTimeError>): Module =
+    if (errors.isEmpty()) module else throw CompilationFailedException(errors = errors)

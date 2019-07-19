@@ -1,6 +1,6 @@
 package samlang.checker
 
-import samlang.ast.Module.TypeDefinitionType
+import samlang.ast.ClassDefinition.TypeDefinitionType
 import samlang.ast.Range
 import samlang.ast.Type
 import samlang.ast.Type.FunctionType
@@ -13,7 +13,7 @@ import samlang.errors.IllegalOtherClassMatch
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnsupportedModuleTypeDefinitionError
 
-internal object ModuleTypeDefinitionResolver {
+internal object ClassTypeDefinitionResolver {
 
     fun applyGenericTypeParameters(type: Type, context: Map<String, Type>): Type =
         type.accept(visitor = Visitor, context = context)

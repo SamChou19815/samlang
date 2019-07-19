@@ -1,122 +1,49 @@
 package samlang.parser
 
+import org.antlr.v4.runtime.ANTLRInputStream
+import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.Module
-import samlang.ast.Range
-import samlang.ast.Type
+import samlang.errors.MissingFileError
 import samlang.parser.generated.PLBaseVisitor
-import samlang.parser.generated.PLParser.ClassHeaderContext
-import samlang.parser.generated.PLParser.ModuleContext
-import samlang.parser.generated.PLParser.ModuleMemberDefinitionContext
-import samlang.parser.generated.PLParser.ObjTypeContext
-import samlang.parser.generated.PLParser.TypeParametersDeclarationContext
-import samlang.parser.generated.PLParser.UtilClassHeaderContext
-import samlang.parser.generated.PLParser.VariantTypeContext
+import samlang.parser.generated.PLLexer
+import samlang.parser.generated.PLParser
+import samlang.util.createSourceOrFail
+import java.io.File
+import java.io.InputStream
 
-internal class ModuleBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module>() {
+object ModuleBuilder {
 
-    private val expressionBuilder: ExpressionBuilder = ExpressionBuilder(syntaxErrorListener = syntaxErrorListener)
-
-    private val TypeParametersDeclarationContext.typeParameters: List<String> get() = UpperId().map { it.symbol.text }
-
-    private object ModuleNameBuilder : PLBaseVisitor<Pair<String, Range>>() {
-
-        override fun visitClassHeader(ctx: ClassHeaderContext): Pair<String, Range> {
-            val symbol = ctx.UpperId().symbol
-            return symbol.text to symbol.range
-        }
-
-        override fun visitUtilClassHeader(ctx: UtilClassHeaderContext): Pair<String, Range> {
-            val symbol = ctx.UpperId().symbol
-            return symbol.text to symbol.range
-        }
+    private fun buildModule(inputStream: InputStream): Module {
+        val parser = PLParser(CommonTokenStream(PLLexer(ANTLRInputStream(inputStream))))
+        val errorListener = SyntaxErrorListener()
+        parser.removeErrorListeners()
+        parser.addErrorListener(errorListener)
+        val sourceVisitor = Visitor(syntaxErrorListener = errorListener)
+        val moduleContext = parser.module()
+        val module = moduleContext.accept(sourceVisitor)
+        val errors = errorListener.syntaxErrors
+        return createSourceOrFail(module = module, errors = errors)
     }
 
-    private inner class ModuleTypeDefinitionBuilder : PLBaseVisitor<Module.TypeDefinition>() {
+    fun buildModuleFromSingleFile(fileDir: String): Module =
+        File(fileDir)
+            .takeIf { it.isFile }
+            ?.let { buildModule(inputStream = it.inputStream()) }
+            ?: throw MissingFileError(filename = fileDir)
 
-        override fun visitClassHeader(ctx: ClassHeaderContext): Module.TypeDefinition {
-            val rawTypeParams: TypeParametersDeclarationContext? = ctx.typeParametersDeclaration()
-            val rawTypeDeclaration = ctx.typeDeclaration()
-            val typeParameters = rawTypeParams?.typeParameters
-            val range = rawTypeParams?.range?.union(rawTypeDeclaration.range) ?: rawTypeDeclaration.range
-            return rawTypeDeclaration.accept(TypeDefinitionBuilder(range, typeParameters))
-        }
+    fun buildModuleFromText(text: String): Module = buildModule(inputStream = text.byteInputStream())
 
-        override fun visitUtilClassHeader(ctx: UtilClassHeaderContext): Module.TypeDefinition =
-            Module.TypeDefinition(
-                range = ctx.range,
-                type = Module.TypeDefinitionType.OBJECT,
-                typeParameters = emptyList(),
-                mappings = emptyMap()
+    private class Visitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module>() {
+
+        private val classBuilder: ClassBuilder = ClassBuilder(syntaxErrorListener = syntaxErrorListener)
+
+        override fun visitModule(ctx: PLParser.ModuleContext): Module =
+            Module(
+                imports = ctx.importModule().map { importNode ->
+                    val importedSourceIdNode = importNode.UpperId().symbol
+                    importedSourceIdNode.text to importNode.range
+                },
+                classDefinitions = ctx.clazz().map { it.accept(classBuilder) }
             )
-
-        private inner class TypeDefinitionBuilder(
-            private val range: Range,
-            private val typeParameters: List<String>?
-        ) : PLBaseVisitor<Module.TypeDefinition>() {
-
-            override fun visitObjType(ctx: ObjTypeContext): Module.TypeDefinition =
-                Module.TypeDefinition(
-                    range = range,
-                    type = Module.TypeDefinitionType.OBJECT,
-                    typeParameters = typeParameters,
-                    mappings = ctx.objectTypeFieldDeclaration().asSequence().map { c ->
-                        val name = c.LowerId().symbol.text
-                        val type = c.typeAnnotation().typeExpr().accept(TypeBuilder)
-                        name to type
-                    }.toMap()
-                )
-
-            override fun visitVariantType(ctx: VariantTypeContext): Module.TypeDefinition =
-                Module.TypeDefinition(
-                    range = range,
-                    type = Module.TypeDefinitionType.VARIANT,
-                    typeParameters = typeParameters,
-                    mappings = ctx.variantTypeConstructorDeclaration().asSequence().map { c ->
-                        val name = c.UpperId().symbol.text
-                        val type = c.typeExpr().accept(TypeBuilder)
-                        name to type
-                    }.toMap()
-                )
-        }
-    }
-
-    private fun buildModuleMemberDefinition(ctx: ModuleMemberDefinitionContext): Module.MemberDefinition {
-        val nameSymbol = ctx.LowerId().symbol
-        val parameters = ctx.annotatedVariable().map { annotatedVariable ->
-            val parameterNameSymbol = annotatedVariable.LowerId().symbol
-            val typeExpression = annotatedVariable.typeAnnotation().typeExpr()
-            Module.MemberDefinition.Parameter(
-                name = parameterNameSymbol.text,
-                nameRange = parameterNameSymbol.range,
-                type = typeExpression.accept(TypeBuilder),
-                typeRange = typeExpression.range
-            )
-        }
-        val type = Type.FunctionType(
-            argumentTypes = parameters.map { it.type },
-            returnType = ctx.typeExpr().accept(TypeBuilder)
-        )
-        return Module.MemberDefinition(
-            range = ctx.range,
-            isPublic = ctx.PUBLIC() != null,
-            isMethod = ctx.METHOD() != null,
-            nameRange = nameSymbol.range,
-            name = nameSymbol.text,
-            typeParameters = ctx.typeParametersDeclaration()?.typeParameters,
-            type = type,
-            parameters = parameters,
-            body = ctx.expression().accept(expressionBuilder)
-        )
-    }
-
-    override fun visitModule(ctx: ModuleContext): Module {
-        val (name, nameRange) = ctx.moduleHeaderDeclaration().accept(ModuleNameBuilder)
-        return Module(
-            range = ctx.range,
-            nameRange = nameRange,
-            name = name,
-            typeDefinition = ctx.moduleHeaderDeclaration().accept(ModuleTypeDefinitionBuilder()),
-            members = ctx.moduleMemberDefinition().map { buildModuleMemberDefinition(ctx = it) }
-        )
     }
 }

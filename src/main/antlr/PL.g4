@@ -2,18 +2,18 @@ grammar PL;
 
 import PLLexerPart;
 
-source : importSource* module* EOF;
+module : importModule* clazz* EOF;
 
-importSource : IMPORT UpperId;
+importModule : IMPORT UpperId;
 
-module : moduleHeaderDeclaration LBRACE moduleMemberDefinition* RBRACE;
+clazz : classHeaderDeclaration LBRACE classMemberDefinition* RBRACE;
 
 // Module Level Declarations
-moduleHeaderDeclaration
+classHeaderDeclaration
     : CLASS UpperId typeParametersDeclaration? LPAREN typeDeclaration RPAREN # ClassHeader
     | CLASS UpperId # UtilClassHeader
     ;
-moduleMemberDefinition
+classMemberDefinition
     : PUBLIC? (FUNCTION | METHOD) typeParametersDeclaration? LowerId
         LPAREN (annotatedVariable (COMMA annotatedVariable)* COMMA?)? RPAREN (COLON typeExpr)?
       ASSIGN expression

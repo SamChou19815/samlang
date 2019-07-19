@@ -32,8 +32,8 @@ import samlang.ast.Expression.Unary
 import samlang.ast.Expression.Val
 import samlang.ast.Expression.Variable
 import samlang.ast.Expression.VariantConstructor
-import samlang.ast.Module.TypeDefinitionType.OBJECT
-import samlang.ast.Module.TypeDefinitionType.VARIANT
+import samlang.ast.ClassDefinition.TypeDefinitionType.OBJECT
+import samlang.ast.ClassDefinition.TypeDefinitionType.VARIANT
 import samlang.ast.Range
 import samlang.ast.Type
 import samlang.ast.Type.FunctionType
@@ -130,7 +130,7 @@ private class TypeFixerVisitor(
         val betterMapping = if (typeParameters != null && newType.typeArguments != null) {
             val replacementMap = typeParameters.checkedZip(other = newType.typeArguments).toMap()
             mapping.mapValues { (_, v) ->
-                ModuleTypeDefinitionResolver.applyGenericTypeParameters(type = v, context = replacementMap)
+                ClassTypeDefinitionResolver.applyGenericTypeParameters(type = v, context = replacementMap)
             }
         } else mapping
         val newSpreadExpr = expression.spreadExpression?.tryFixType(expectedType = context)
@@ -159,7 +159,7 @@ private class TypeFixerVisitor(
             ?: throw UnsupportedModuleTypeDefinitionError(typeDefinitionType = VARIANT, range = errorRange)
         var dataType = mapping[expression.tag] ?: blameTypeChecker()
         if (typeParameters != null && newType.typeArguments != null) {
-            dataType = ModuleTypeDefinitionResolver.applyGenericTypeParameters(
+            dataType = ClassTypeDefinitionResolver.applyGenericTypeParameters(
                 type = dataType, context = typeParameters.checkedZip(other = newType.typeArguments).toMap()
             )
         }

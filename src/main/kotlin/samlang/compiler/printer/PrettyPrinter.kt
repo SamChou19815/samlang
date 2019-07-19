@@ -19,35 +19,35 @@ import samlang.ast.Expression.Unary
 import samlang.ast.Expression.Val
 import samlang.ast.Expression.Variable
 import samlang.ast.Expression.VariantConstructor
-import samlang.ast.Module
-import samlang.ast.Module.TypeDefinitionType.OBJECT
-import samlang.ast.Module.TypeDefinitionType.VARIANT
+import samlang.ast.ClassDefinition
+import samlang.ast.ClassDefinition.TypeDefinitionType.OBJECT
+import samlang.ast.ClassDefinition.TypeDefinitionType.VARIANT
 import samlang.ast.Pattern
-import samlang.ast.Source
+import samlang.ast.Module
 import samlang.util.IndentedPrinter
 import java.io.PrintStream
 
 object PrettyPrinter {
 
-    fun prettyPrint(source: Source, printStream: PrintStream) {
+    fun prettyPrint(module: Module, printStream: PrintStream) {
         // use 4-space
         val indentedPrinter = IndentedPrinter(printStream = printStream, indentationSymbol = "    ")
-        TopLevelPrinter(printer = indentedPrinter).print(source = source)
+        TopLevelPrinter(printer = indentedPrinter).print(module = module)
     }
 
     private class TopLevelPrinter(private val printer: IndentedPrinter) {
 
         private val exprPrinter: ExprPrinter = ExprPrinter(printer = printer)
 
-        fun print(source: Source) {
-            source.modules.forEach { module ->
-                print(module = module)
+        fun print(module: Module) {
+            module.classDefinitions.forEach { classDefinition ->
+                print(classDefinition = classDefinition)
                 printer.println()
             }
         }
 
-        private fun print(module: Module) {
-            val (_, _, name, typeDefinition, members) = module
+        private fun print(classDefinition: ClassDefinition) {
+            val (_, _, name, typeDefinition, members) = classDefinition
             val (_, typeDefinitionType, typeParameters, mappings) = typeDefinition
             val typeParameterString =
                 typeParameters?.joinToString(separator = ", ", prefix = "<", postfix = ">") ?: ""
@@ -70,7 +70,7 @@ object PrettyPrinter {
             printer.printWithBreak(x = "}")
         }
 
-        private fun printMember(member: Module.MemberDefinition) {
+        private fun printMember(member: ClassDefinition.MemberDefinition) {
             val (_, isPublic, isMethod, _, name, typeParameters, type, parameters, body) = member
             val memberVisibility = if (isPublic) "public " else ""
             val memberType = if (isMethod) "method" else "function"

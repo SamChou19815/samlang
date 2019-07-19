@@ -5,7 +5,7 @@ import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.immutableListOf
 import kotlinx.collections.immutable.immutableSetOf
 import samlang.ast.Range
-import samlang.ast.Source
+import samlang.ast.Module
 import samlang.errors.CyclicDependencyError
 
 internal class DependencyGraph {
@@ -15,9 +15,9 @@ internal class DependencyGraph {
      */
     private val graph: MutableMap<String, MutableList<Pair<String, Range>>> = hashMapOf()
 
-    fun addImports(sourceName: String, source: Source) {
+    fun addImports(sourceName: String, module: Module) {
         val dependencyList = graph.computeIfAbsent(sourceName) { arrayListOf() }
-        for (oneImport in source.imports) {
+        for (oneImport in module.imports) {
             dependencyList.add(element = oneImport)
         }
     }

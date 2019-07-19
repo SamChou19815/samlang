@@ -5,7 +5,7 @@ import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.immutableMapOf
 import kotlinx.collections.immutable.immutableSetOf
 import kotlinx.collections.immutable.plus
-import samlang.ast.Module
+import samlang.ast.ClassDefinition
 import samlang.ast.Range
 import samlang.ast.Type
 import samlang.errors.CollisionError
@@ -23,7 +23,7 @@ data class TypeCheckingContext(
     data class TypeInfo(val isPublic: Boolean, val typeParams: List<String>?, val type: Type.FunctionType)
 
     data class ModuleType(
-        val typeDefinition: Module.TypeDefinition?,
+        val typeDefinition: ClassDefinition.TypeDefinition?,
         val functions: ImmutableMap<String, TypeInfo>,
         val methods: ImmutableMap<String, TypeInfo>
     )
@@ -31,7 +31,7 @@ data class TypeCheckingContext(
     private fun addNewModuleTypeDefinition(
         name: String,
         nameRange: Range,
-        typeDefinition: Module.TypeDefinition
+        typeDefinition: ClassDefinition.TypeDefinition
     ): TypeCheckingContext {
         if (modules.containsKey(key = name)) {
             throw CollisionError(collidedName = name, range = nameRange)
@@ -67,14 +67,14 @@ data class TypeCheckingContext(
     }
 
     /**
-     * @return a new context with [module]'s type definition without [module]'s members.
-     * It does not check validity of types of the given [module].
+     * @return a new context with [classDefinition]'s type definition without [classDefinition]'s members.
+     * It does not check validity of types of the given [classDefinition].
      */
-    fun addModuleTypeDefinition(module: Module): TypeCheckingContext =
+    fun addModuleTypeDefinition(classDefinition: ClassDefinition): TypeCheckingContext =
         addNewModuleTypeDefinition(
-            name = module.name,
-            nameRange = module.nameRange,
-            typeDefinition = module.typeDefinition
+            name = classDefinition.name,
+            nameRange = classDefinition.nameRange,
+            typeDefinition = classDefinition.typeDefinition
         )
 
     fun addMembersAndMethodsToCurrentModule(
@@ -139,7 +139,7 @@ data class TypeCheckingContext(
         )
         val fullyFixedType = if (typeParams != null && typeArgs != null) {
             val typeFixingContext = typeParams.zip(typeArgs).toMap()
-            ModuleTypeDefinitionResolver.applyGenericTypeParameters(
+            ClassTypeDefinitionResolver.applyGenericTypeParameters(
                 type = partiallyFixedType,
                 context = typeFixingContext
             )
@@ -164,7 +164,7 @@ data class TypeCheckingContext(
     fun addLocalGenericTypes(genericTypes: Collection<String>): TypeCheckingContext =
         copy(localGenericTypes = localGenericTypes.plus(elements = genericTypes))
 
-    fun getCurrentModuleTypeDefinition(): Module.TypeDefinition? = modules[currentModule]?.typeDefinition
+    fun getCurrentModuleTypeDefinition(): ClassDefinition.TypeDefinition? = modules[currentModule]?.typeDefinition
 
     fun addThisType(): TypeCheckingContext {
         if (localValues.containsKey(key = "this")) {
