@@ -3,10 +3,10 @@ package samlang.errors
 import samlang.ast.ClassDefinition
 import samlang.ast.Range
 
-class UnsupportedModuleTypeDefinitionError(
+class UnsupportedClassTypeDefinitionError(
     typeDefinitionType: ClassDefinition.TypeDefinitionType,
     range: Range
 ) : CompileTimeError.WithRange(
-    reason = "Expect the current module to have `${typeDefinitionType.displayName}` type definition, but it doesn't.",
+    reason = "Expect the current class to have `${typeDefinitionType.displayName}` type definition, but it doesn't.",
     range = range
 )

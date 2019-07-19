@@ -11,7 +11,7 @@ import samlang.ast.Type.UndecidedType
 import samlang.ast.TypeVisitor
 import samlang.errors.IllegalOtherClassMatch
 import samlang.errors.TypeParamSizeMismatchError
-import samlang.errors.UnsupportedModuleTypeDefinitionError
+import samlang.errors.UnsupportedClassTypeDefinitionError
 
 internal object ClassTypeDefinitionResolver {
 
@@ -25,12 +25,12 @@ internal object ClassTypeDefinitionResolver {
         errorRange: Range
     ): Map<String, Type> {
         val (id, typeArguments) = identifierType
-        if (id != context.currentModule) {
+        if (id != context.currentClass) {
             throw IllegalOtherClassMatch(range = errorRange)
         }
         val (_, _, typeParameters, varMap) = context.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == typeDefinitionType }
-            ?: throw UnsupportedModuleTypeDefinitionError(typeDefinitionType = typeDefinitionType, range = errorRange)
+            ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = typeDefinitionType, range = errorRange)
         return if (typeArguments == null) {
             if (typeParameters != null) {
                 error(

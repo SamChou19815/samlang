@@ -11,7 +11,7 @@ fun Module.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingCont
     val errorCollector = ErrorCollector()
     // First pass: add type definitions to classDefinitions
     var currentContext = classDefinitions.fold(initial = typeCheckingContext) { context, module ->
-        errorCollector.returnNullOnCollectedError { context.addModuleTypeDefinition(classDefinition = module) } ?: context
+        errorCollector.returnNullOnCollectedError { context.addClassTypeDefinition(classDefinition = module) } ?: context
     }
     // Second pass: validating module's top level properties, excluding whether member's types are well-defined.
     val passedTypeValidationModules = classDefinitions.filter { module ->
@@ -28,7 +28,7 @@ fun Module.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingCont
         val (partiallyCheckedMembers, contextWithModuleMembers) = getPartiallyCheckedMembersAndNewContext(
             moduleMembers = module.members,
             errorCollector = errorCollector,
-            typeCheckingContext = context.copy(currentModule = module.name)
+            typeCheckingContext = context.copy(currentClass = module.name)
         )
         partiallyCheckedModules.add(element = module.copy(members = partiallyCheckedMembers))
         contextWithModuleMembers
@@ -40,7 +40,7 @@ fun Module.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingCont
                 typeCheckMemberDefinition(
                     memberDefinition = member,
                     errorCollector = errorCollector,
-                    typeCheckingContext = currentContext.copy(currentModule = module.name)
+                    typeCheckingContext = currentContext.copy(currentClass = module.name)
                 )
             }
         )
@@ -137,7 +137,7 @@ private fun getPartiallyCheckedMembersAndNewContext(
         )
     }
     val newContext =
-        typeCheckingContext.addMembersAndMethodsToCurrentModule(members = memberTypeInfo)
+        typeCheckingContext.addMembersAndMethodsToCurrentClass(members = memberTypeInfo)
     return partiallyCheckedMembers to newContext
 }
 

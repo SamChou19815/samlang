@@ -42,7 +42,7 @@ import samlang.ast.Type.TupleType
 import samlang.ast.UnaryOperator
 import samlang.errors.InsufficientTypeInferenceContextError
 import samlang.errors.UnexpectedTypeError
-import samlang.errors.UnsupportedModuleTypeDefinitionError
+import samlang.errors.UnsupportedClassTypeDefinitionError
 
 internal fun Expression.fixType(
     expectedType: Type,
@@ -126,7 +126,7 @@ private class TypeFixerVisitor(
             expression.type.fixSelf(expectedType = context, errorRange = expression.range) as IdentifierType
         val (_, _, typeParameters, mapping) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
-            ?: throw UnsupportedModuleTypeDefinitionError(typeDefinitionType = OBJECT, range = errorRange)
+            ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = errorRange)
         val betterMapping = if (typeParameters != null && newType.typeArguments != null) {
             val replacementMap = typeParameters.checkedZip(other = newType.typeArguments).toMap()
             mapping.mapValues { (_, v) ->
@@ -156,7 +156,7 @@ private class TypeFixerVisitor(
         val newType = expression.getFixedSelfType(expectedType = context) as IdentifierType
         val (_, _, typeParameters, mapping) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == VARIANT }
-            ?: throw UnsupportedModuleTypeDefinitionError(typeDefinitionType = VARIANT, range = errorRange)
+            ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = VARIANT, range = errorRange)
         var dataType = mapping[expression.tag] ?: blameTypeChecker()
         if (typeParameters != null && newType.typeArguments != null) {
             dataType = ClassTypeDefinitionResolver.applyGenericTypeParameters(
