@@ -2,8 +2,8 @@ package samlang.errors
 
 import samlang.ast.Range
 
-class CyclicDependencyError(sourceName: String, range: Range, cyclicDependencyChain: List<String>) :
+class CyclicDependencyError(moduleName: String, range: Range, cyclicDependencyChain: List<String>) :
     CompileTimeError(
-        errorLocation = "$sourceName:$range",
+        errorLocation = "$moduleName.sam:$range",
         errorInformation = cyclicDependencyChain.joinToString(separator = "->", postfix = ".")
     )

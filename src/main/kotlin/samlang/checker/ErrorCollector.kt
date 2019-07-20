@@ -19,6 +19,14 @@ internal class ErrorCollector {
             unchecked
         }
 
+    inline fun <T> check(crossinline checker: () -> T) {
+        try {
+            checker()
+        } catch (compileTimeError: CompileTimeError) {
+            _collectedErrors.add(element = compileTimeError)
+        }
+    }
+
     inline fun <T> passCheck(crossinline checker: () -> T): Boolean =
         try {
             checker()
