@@ -21,7 +21,7 @@
             {
                 "id": "samlang",
                 "aliases": ["SAMLANG", "samlang"],
-                "extensions": [".samlang"],
+                "extensions": [".sam"],
                 "configuration": "./language-configuration.json"
             }
         ],
