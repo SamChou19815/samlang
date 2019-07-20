@@ -94,6 +94,5 @@ class CyclicDependencyCheckerTest : StringSpec() {
                 )
             )
         }
-
     }
 }
