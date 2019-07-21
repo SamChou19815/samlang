@@ -2,8 +2,8 @@ package samlang.errors
 
 import samlang.ast.Range
 
-open class CompileTimeError(private val errorLocation: String, protected val errorInformation: String) :
-    RuntimeException(errorInformation) {
+open class CompileTimeError(private val file: String? = null, val range: Range, val reason: String) :
+    RuntimeException(reason) {
 
     open val errorClass: String
         get() = javaClass.simpleName.let { name ->
@@ -13,8 +13,9 @@ open class CompileTimeError(private val errorLocation: String, protected val err
             ) else name
         }
 
-    open val errorMessage: String get() = "$errorLocation: [$errorClass]: $errorInformation"
+    open val errorMessage: String
+        get() =
+            if (file == null) "$range: [$errorClass]: $reason" else "$file:$range: [$errorClass]: $reason"
 
-    abstract class WithRange(val reason: String, val range: Range) :
-        CompileTimeError(errorLocation = range.toString(), errorInformation = reason)
+    abstract class WithRange(reason: String, range: Range) : CompileTimeError(range = range, reason = reason)
 }

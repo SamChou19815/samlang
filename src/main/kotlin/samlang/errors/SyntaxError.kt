@@ -1,8 +1,7 @@
 package samlang.errors
 
-import samlang.ast.Position
+import samlang.ast.Range
 
-class SyntaxError(position: Position, reason: String) :
-    CompileTimeError(errorLocation = position.toString(), errorInformation = reason) {
+class SyntaxError(range: Range, reason: String) : CompileTimeError(range = range, reason = reason) {
     override val errorClass: String = "SyntaxError"
 }

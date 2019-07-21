@@ -5,6 +5,7 @@ import samlang.ast.Range
 
 class CyclicDependencyError(moduleReference: ModuleReference, range: Range, cyclicDependencyChain: List<String>) :
     CompileTimeError(
-        errorLocation = "${moduleReference.toFilename()}:$range",
-        errorInformation = cyclicDependencyChain.joinToString(separator = "->", postfix = ".")
+        file = moduleReference.toFilename(),
+        range = range,
+        reason = cyclicDependencyChain.joinToString(separator = "->", postfix = ".")
     )
