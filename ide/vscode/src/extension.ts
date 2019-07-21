@@ -3,9 +3,6 @@
 import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) {
-
-
-    // 👍 formatter implemented using API
     vscode.languages.registerDocumentFormattingEditProvider('SAMLANG', {
         provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
             // const whitespace

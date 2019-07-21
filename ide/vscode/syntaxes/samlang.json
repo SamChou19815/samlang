@@ -33,12 +33,16 @@
 					"match": "\\b(panic)\\b"
 				},
 				{
-					"match": "(==|!=|<=|>=|<>|<|>)",
-					"name": "keyword.operator.comparison"
+					"name": "keyword.operator.comparison",
+					"match": "(==|!=|<=|>=|<>|<|>)"
 				},
 				{
 					"name": "keyword.operator.arithmetic",
 					"match": "(\\-|\\+|\\*|\\/|%)"
+				},
+				{
+					"name": "keyword.operator",
+					"match": "(->)"
 				},
 				{
 					"name": "keyword.operator.assignment",
