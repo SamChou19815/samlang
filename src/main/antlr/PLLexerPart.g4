@@ -10,6 +10,9 @@ lexer grammar PLLexerPart;
  * ----------------------------------------------------------------------------
  */
 
+// Imports
+IMPORT : 'import';
+FROM : 'from';
 
 // Declarations
 CLASS : 'class';
@@ -44,7 +47,12 @@ WILDCARD : '_';
 
 // Forbidden Names
 SELF : 'self';
-IMPORT : 'import';
+LET : 'let';
+VAR : 'var';
+TYPE : 'type';
+INTERFACE : 'interface';
+EXTENDS : 'extends';
+IMPLEMENTS : 'implements';
 EXPORT : 'export';
 CONST : 'const';
 

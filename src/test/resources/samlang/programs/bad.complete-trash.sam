@@ -1,4 +1,4 @@
 // ERROR_COUNT: 1
-// 4:1: [SyntaxError]: mismatched input 'This' expecting {<EOF>, 'class', 'import'}
+// 4:1: [SyntaxError]: mismatched input 'This' expecting {<EOF>, 'import', 'class'}
 
 This is a bad source.

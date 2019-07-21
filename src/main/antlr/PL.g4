@@ -2,9 +2,10 @@ grammar PL;
 
 import PLLexerPart;
 
-module : importModule* clazz* EOF;
+module : importModuleMembers* clazz* EOF;
 
-importModule : IMPORT UpperId;
+importModuleMembers : IMPORT LBRACE LowerId (COMMA LowerId)* RBRACE FROM moduleReference;
+moduleReference : UpperId (DOT UpperId)*;
 
 clazz : classHeaderDeclaration LBRACE classMemberDefinition* RBRACE;
 

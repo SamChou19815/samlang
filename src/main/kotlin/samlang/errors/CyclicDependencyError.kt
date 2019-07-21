@@ -1,9 +1,10 @@
 package samlang.errors
 
+import samlang.ast.ModuleReference
 import samlang.ast.Range
 
-class CyclicDependencyError(moduleName: String, range: Range, cyclicDependencyChain: List<String>) :
+class CyclicDependencyError(moduleReference: ModuleReference, range: Range, cyclicDependencyChain: List<String>) :
     CompileTimeError(
-        errorLocation = "$moduleName.sam:$range",
+        errorLocation = "${moduleReference.toFilename()}:$range",
         errorInformation = cyclicDependencyChain.joinToString(separator = "->", postfix = ".")
     )

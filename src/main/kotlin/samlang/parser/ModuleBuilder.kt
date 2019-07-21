@@ -3,6 +3,8 @@ package samlang.parser
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.Module
+import samlang.ast.ModuleMembersImport
+import samlang.ast.ModuleReference
 import samlang.errors.MissingFileError
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer
@@ -37,12 +39,22 @@ object ModuleBuilder {
 
         private val classBuilder: ClassBuilder = ClassBuilder(syntaxErrorListener = syntaxErrorListener)
 
+        private fun buildModuleReference(ctx: PLParser.ModuleReferenceContext): ModuleReference =
+            ModuleReference(range = ctx.range, parts = ctx.UpperId().map { it.text })
+
+        private fun buildModuleMembersImport(ctx: PLParser.ImportModuleMembersContext): ModuleMembersImport =
+            ModuleMembersImport(
+                range = ctx.range,
+                moduleReference = buildModuleReference(ctx = ctx.moduleReference()),
+                importedMembers = ctx.LowerId().map { node ->
+                    val symbol = node.symbol
+                    symbol.text to symbol.range
+                }
+            )
+
         override fun visitModule(ctx: PLParser.ModuleContext): Module =
             Module(
-                imports = ctx.importModule().map { importNode ->
-                    val importedSourceIdNode = importNode.UpperId().symbol
-                    importedSourceIdNode.text to importNode.range
-                },
+                imports = ctx.importModuleMembers().map(transform = ::buildModuleMembersImport),
                 classDefinitions = ctx.clazz().map { it.accept(classBuilder) }
             )
     }

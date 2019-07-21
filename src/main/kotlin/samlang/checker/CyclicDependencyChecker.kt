@@ -5,6 +5,8 @@ import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.immutableListOf
 import kotlinx.collections.immutable.immutableSetOf
 import samlang.ast.Module
+import samlang.ast.ModuleMembersImport
+import samlang.ast.ModuleReference
 import samlang.ast.Range
 import samlang.errors.CompileTimeError
 import samlang.errors.CyclicDependencyError
@@ -14,15 +16,16 @@ internal class CyclicDependencyChecker {
     /**
      * A (key, value) pair in this graph means (module A, modules that directly depend on module A).
      */
-    private val dependencyGraph: MutableMap<String, MutableList<Pair<String, Range>>> = hashMapOf()
-    private val hasDependentsSet: MutableSet<String> = hashSetOf()
+    private val dependencyGraph: MutableMap<ModuleReference, MutableList<ModuleMembersImport>> =
+        LinkedHashMap()
+    private val hasDependentsSet: MutableSet<ModuleReference> = hashSetOf()
     private val errorCollector: ErrorCollector = ErrorCollector()
 
-    fun addImports(moduleName: String, module: Module) {
-        val dependencyList = dependencyGraph.computeIfAbsent(moduleName) { arrayListOf() }
+    fun addImports(moduleReference: ModuleReference, module: Module) {
+        val dependencyList = dependencyGraph.computeIfAbsent(moduleReference) { arrayListOf() }
         for (oneImport in module.imports) {
             dependencyList.add(element = oneImport)
-            hasDependentsSet.add(oneImport.first)
+            hasDependentsSet.add(element = oneImport.moduleReference)
         }
     }
 
@@ -41,35 +44,36 @@ internal class CyclicDependencyChecker {
     }
 
     private fun tryToBuildDAG(
-        moduleName: String,
-        sourceNameRange: Range = Range.DUMMY,
-        parentChain: OrderedPersistentSet<String> = OrderedPersistentSet(),
-        allVisited: MutableSet<String>
+        importer: ModuleReference = ModuleReference.ROOT,
+        imported: ModuleMembersImport,
+        parentChain: OrderedPersistentSet<ModuleReference>,
+        allVisited: MutableSet<ModuleReference>
     ) {
-        if (moduleName in allVisited) {
-            if (moduleName !in parentChain) {
+        val importedModuleReference = imported.moduleReference
+        if (importedModuleReference in allVisited) {
+            if (importedModuleReference !in parentChain) {
                 // Reached end
                 return
             }
-            val fullChain = parentChain.immutableList.add(element = moduleName)
+            val fullChain = parentChain.immutableList.add(element = importedModuleReference)
             val cyclicDependencyChain = fullChain.subList(
-                fromIndex = fullChain.indexOfFirst { it == moduleName },
+                fromIndex = fullChain.indexOfFirst { it == importedModuleReference },
                 toIndex = fullChain.size
-            )
+            ).map { it.toString() }
             throw CyclicDependencyError(
-                moduleName = moduleName,
-                range = sourceNameRange,
+                moduleReference = importer,
+                range = imported.range,
                 cyclicDependencyChain = cyclicDependencyChain
             )
         }
-        allVisited.add(element = moduleName)
-        val newParentChain = parentChain + moduleName
-        val dependencies = dependencyGraph[moduleName] ?: return
-        for ((dependencyName, dependencyRange) in dependencies) {
+        allVisited.add(element = importedModuleReference)
+        val newParentChain = parentChain + importedModuleReference
+        val dependencies = dependencyGraph[importedModuleReference] ?: return
+        for (importedDependency in dependencies) {
             errorCollector.check {
                 tryToBuildDAG(
-                    moduleName = dependencyName,
-                    sourceNameRange = dependencyRange,
+                    importer = importedModuleReference,
+                    imported = importedDependency,
                     parentChain = newParentChain,
                     allVisited = allVisited
                 )
@@ -78,20 +82,33 @@ internal class CyclicDependencyChecker {
         return
     }
 
+    private fun tryToBuildDAG(startingModule: ModuleReference, allVisited: MutableSet<ModuleReference>) {
+        tryToBuildDAG(
+            importer = ModuleReference.ROOT,
+            imported = ModuleMembersImport(
+                range = Range.DUMMY,
+                moduleReference = startingModule,
+                importedMembers = emptyList()
+            ),
+            parentChain = OrderedPersistentSet(),
+            allVisited = allVisited
+        )
+    }
+
     fun getCyclicDependencyErrors(): List<CompileTimeError> {
         if (dependencyGraph.isEmpty()) {
             return emptyList()
         }
-        val allVisited = hashSetOf<String>()
+        val allVisited = hashSetOf<ModuleReference>()
         // Start with modules with zero dependents.
-        for (module in dependencyGraph.keys) {
-            if (module !in hasDependentsSet) {
-                tryToBuildDAG(moduleName = module, allVisited = allVisited)
+        for (moduleReference in dependencyGraph.keys) {
+            if (moduleReference !in hasDependentsSet) {
+                tryToBuildDAG(startingModule = moduleReference, allVisited = allVisited)
             }
         }
-        for (module in dependencyGraph.keys) {
-            if (module !in allVisited) {
-                tryToBuildDAG(moduleName = module, allVisited = allVisited)
+        for (moduleReference in dependencyGraph.keys) {
+            if (moduleReference !in allVisited) {
+                tryToBuildDAG(startingModule = moduleReference, allVisited = allVisited)
             }
         }
         return errorCollector.collectedErrors
