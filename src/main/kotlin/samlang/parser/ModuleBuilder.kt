@@ -38,7 +38,7 @@ object ModuleBuilder {
             ModuleMembersImport(
                 range = ctx.range,
                 moduleReference = buildModuleReference(ctx = ctx.moduleReference()),
-                importedMembers = ctx.LowerId().map { node ->
+                importedMembers = ctx.UpperId().map { node ->
                     val symbol = node.symbol
                     symbol.text to symbol.range
                 }
