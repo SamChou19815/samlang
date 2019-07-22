@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.Module
 import samlang.ast.ModuleMembersImport
 import samlang.ast.ModuleReference
+import samlang.errors.CompilationFailedException
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer
 import samlang.parser.generated.PLParser
@@ -20,8 +21,11 @@ object ModuleBuilder {
         parser.addErrorListener(errorListener)
         val sourceVisitor = Visitor(syntaxErrorListener = errorListener)
         val moduleContext = parser.module()
-        val module = moduleContext.accept(sourceVisitor)
         val errors = errorListener.syntaxErrors
+        if (errors.isNotEmpty()) {
+            throw CompilationFailedException(errors = errors)
+        }
+        val module = moduleContext.accept(sourceVisitor)
         return createOrFail(item = module, errors = errors)
     }
 
@@ -32,17 +36,15 @@ object ModuleBuilder {
 
         private val classBuilder: ClassBuilder = ClassBuilder(syntaxErrorListener = syntaxErrorListener)
 
-        private fun buildModuleReference(ctx: PLParser.ModuleReferenceContext): ModuleReference =
-            ModuleReference(range = ctx.range, parts = ctx.UpperId().map { it.text })
-
         private fun buildModuleMembersImport(ctx: PLParser.ImportModuleMembersContext): ModuleMembersImport =
             ModuleMembersImport(
                 range = ctx.range,
-                moduleReference = buildModuleReference(ctx = ctx.moduleReference()),
                 importedMembers = ctx.UpperId().map { node ->
                     val symbol = node.symbol
                     symbol.text to symbol.range
-                }
+                },
+                importedModule = ModuleReference(parts = ctx.moduleReference().UpperId().map { it.text }),
+                importedModuleRange = ctx.moduleReference().range
             )
 
         override fun visitModule(ctx: PLParser.ModuleContext): Module =

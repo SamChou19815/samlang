@@ -16,11 +16,11 @@ private class ModuleImportsChecker(private val sources: Sources, private val err
     }
 
     private fun checkModuleMembersImport(import: ModuleMembersImport): ModuleMembersImport? {
-        val availableMembers = sources.moduleMappings[import.moduleReference]
+        val availableMembers = sources.moduleMappings[import.importedModule]
         if (availableMembers == null) {
             errorCollector.add(
                 compileTimeError = UnresolvedNameError(
-                    unresolvedName = import.moduleReference.toString(),
+                    unresolvedName = import.importedModule.toString(),
                     range = import.range
                 )
             )

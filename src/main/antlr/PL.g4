@@ -4,7 +4,7 @@ import PLLexerPart;
 
 module : importModuleMembers* clazz* EOF;
 
-importModuleMembers : IMPORT LBRACE LowerId (COMMA UpperId)* RBRACE FROM moduleReference;
+importModuleMembers : IMPORT LBRACE UpperId (COMMA UpperId)* RBRACE FROM moduleReference;
 moduleReference : UpperId (DOT UpperId)*;
 
 clazz : classHeaderDeclaration LBRACE classMemberDefinition* RBRACE;

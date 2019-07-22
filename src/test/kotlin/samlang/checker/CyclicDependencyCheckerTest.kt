@@ -9,20 +9,17 @@ import samlang.ast.Range
 import samlang.ast.Sources
 
 class CyclicDependencyCheckerTest : StringSpec() {
-
-    private fun String.toMockModuleReference(): ModuleReference =
-        ModuleReference(range = Range.DUMMY, parts = listOf(this))
-
     private fun checkErrors(sources: List<Pair<String, List<String>>>, expectedErrors: List<String>) {
         // Use LinkedHashMap to have nice order
         val moduleMappings = LinkedHashMap<ModuleReference, Module>()
         for ((name, imports) in sources) {
-            moduleMappings[name.toMockModuleReference()] = Module(
+            moduleMappings[ModuleReference(moduleName = name)] = Module(
                 imports = imports.map {
                     ModuleMembersImport(
                         range = Range.DUMMY,
-                        moduleReference = it.toMockModuleReference(),
-                        importedMembers = emptyList()
+                        importedMembers = emptyList(),
+                        importedModule = ModuleReference(moduleName = it),
+                        importedModuleRange = Range.DUMMY
                     )
                 },
                 classDefinitions = emptyList()

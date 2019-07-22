@@ -34,8 +34,9 @@ class ModuleImportsCheckerTest : StringSpec() {
             imports = imports.map { (name, members) ->
                 ModuleMembersImport(
                     range = Range.DUMMY,
-                    moduleReference = ModuleReference(range = Range.DUMMY, parts = listOf(name)),
-                    importedMembers = members.map { it to Range.DUMMY }
+                    importedMembers = members.map { it to Range.DUMMY },
+                    importedModule = ModuleReference(moduleName = name),
+                    importedModuleRange = Range.DUMMY
                 )
             },
             classDefinitions = members.map(transform = ::createMockClass)
@@ -45,7 +46,7 @@ class ModuleImportsCheckerTest : StringSpec() {
         Sources(
             moduleMappings = LinkedHashMap<ModuleReference, Module>().apply {
                 modules.forEach { (name, module) ->
-                    this[ModuleReference(range = Range.DUMMY, parts = listOf(name))] = module
+                    this[ModuleReference(parts = listOf(name))] = module
                 }
             }
         )

@@ -14,7 +14,7 @@ import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnresolvedNameError
 
 data class TypeCheckingContext(
-    private val classes: ImmutableMap<String, ClassType>,
+    val classes: ImmutableMap<String, ClassType>,
     val currentClass: String,
     val localGenericTypes: ImmutableSet<String>,
     private val localValues: ImmutableMap<String, Type>
@@ -23,7 +23,7 @@ data class TypeCheckingContext(
     data class TypeInfo(val isPublic: Boolean, val typeParams: List<String>?, val type: Type.FunctionType)
 
     data class ClassType(
-        val typeDefinition: ClassDefinition.TypeDefinition?,
+        val typeDefinition: ClassDefinition.TypeDefinition,
         val functions: ImmutableMap<String, TypeInfo>,
         val methods: ImmutableMap<String, TypeInfo>
     )
@@ -116,14 +116,14 @@ data class TypeCheckingContext(
             )
             typeWithParametersUndecided
         }
-        val typeParams = classes[module]!!.typeDefinition?.typeParameters
+        val typeParameters = classes[module]!!.typeDefinition.typeParameters
         TypeParamSizeMismatchError.check(
-            expectedSize = typeParams?.size ?: 0,
+            expectedSize = typeParameters?.size ?: 0,
             actualSize = typeArgs?.size ?: 0,
             range = errorRange
         )
-        val fullyFixedType = if (typeParams != null && typeArgs != null) {
-            val typeFixingContext = typeParams.zip(typeArgs).toMap()
+        val fullyFixedType = if (typeParameters != null && typeArgs != null) {
+            val typeFixingContext = typeParameters.zip(typeArgs).toMap()
             ClassTypeDefinitionResolver.applyGenericTypeParameters(
                 type = partiallyFixedType,
                 context = typeFixingContext
@@ -155,9 +155,7 @@ data class TypeCheckingContext(
         if (localValues.containsKey(key = "this")) {
             error(message = "Corrupted context!")
         }
-        val typeParameters = classes[currentClass]!!
-            .typeDefinition!!
-            .typeParameters
+        val typeParameters = classes[currentClass]!!.typeDefinition.typeParameters
         val type = Type.IdentifierType(
             identifier = currentClass,
             typeArguments = typeParameters?.map { parameter ->

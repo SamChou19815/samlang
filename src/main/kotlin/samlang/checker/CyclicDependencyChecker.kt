@@ -21,14 +21,15 @@ private class CyclicDependencyChecker(sources: Sources, private val errorCollect
     private val dependencyGraph: MutableMap<ModuleReference, MutableList<ModuleMembersImport>> =
         LinkedHashMap()
     private val hasDependentsSet: MutableSet<ModuleReference> = hashSetOf()
-    private val orderedVisitedSet: MutableSet<ModuleReference> = LinkedHashSet()
+    private val visitedSet: MutableSet<ModuleReference> = hashSetOf()
+    private val visitingList: MutableList<ModuleReference> = arrayListOf()
 
     init {
         sources.moduleMappings.forEach { (moduleReference, module) ->
             val dependencyList = dependencyGraph.computeIfAbsent(moduleReference) { arrayListOf() }
             for (oneImport in module.imports) {
                 dependencyList.add(element = oneImport)
-                hasDependentsSet.add(element = oneImport.moduleReference)
+                hasDependentsSet.add(element = oneImport.importedModule)
             }
         }
     }
@@ -52,8 +53,8 @@ private class CyclicDependencyChecker(sources: Sources, private val errorCollect
         imported: ModuleMembersImport,
         parentChain: OrderedPersistentSet<ModuleReference>
     ) {
-        val importedModuleReference = imported.moduleReference
-        if (importedModuleReference in orderedVisitedSet) {
+        val importedModuleReference = imported.importedModule
+        if (importedModuleReference in visitedSet) {
             if (importedModuleReference !in parentChain) {
                 // Reached end
                 return
@@ -69,7 +70,7 @@ private class CyclicDependencyChecker(sources: Sources, private val errorCollect
                 cyclicDependencyChain = cyclicDependencyChain
             )
         }
-        orderedVisitedSet.add(element = importedModuleReference)
+        visitedSet.add(element = importedModuleReference)
         val newParentChain = parentChain + importedModuleReference
         val dependencies = dependencyGraph[importedModuleReference] ?: return
         for (importedDependency in dependencies) {
@@ -81,7 +82,7 @@ private class CyclicDependencyChecker(sources: Sources, private val errorCollect
                 )
             }
         }
-        return
+        visitingList.add(element = importedModuleReference)
     }
 
     private fun tryToBuildDAG(startingModule: ModuleReference) {
@@ -89,8 +90,9 @@ private class CyclicDependencyChecker(sources: Sources, private val errorCollect
             importer = ModuleReference.ROOT,
             imported = ModuleMembersImport(
                 range = Range.DUMMY,
-                moduleReference = startingModule,
-                importedMembers = emptyList()
+                importedMembers = emptyList(),
+                importedModule = startingModule,
+                importedModuleRange = Range.DUMMY
             ),
             parentChain = OrderedPersistentSet()
         )
@@ -112,6 +114,6 @@ private class CyclicDependencyChecker(sources: Sources, private val errorCollect
                 tryToBuildDAG(startingModule = moduleReference)
             }
         }
-        return orderedVisitedSet.reversed()
+        return visitingList
     }
 }
