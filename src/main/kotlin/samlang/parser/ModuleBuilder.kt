@@ -14,7 +14,7 @@ import java.io.InputStream
 
 object ModuleBuilder {
 
-    private fun buildModule(file: String, inputStream: InputStream): Module {
+    fun buildModule(file: String, inputStream: InputStream): Module {
         val parser = PLParser(CommonTokenStream(PLLexer(ANTLRInputStream(inputStream))))
         val errorListener = SyntaxErrorListener(file = file)
         parser.removeErrorListeners()
