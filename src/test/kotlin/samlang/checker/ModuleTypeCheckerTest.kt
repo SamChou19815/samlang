@@ -10,7 +10,7 @@ import samlang.parser.ModuleBuilder
 import samlang.programs.testPrograms
 import samlang.stdlib.StandardLibrary
 
-class TypeCheckerTest : StringSpec() {
+class ModuleTypeCheckerTest : StringSpec() {
 
     private fun getTypeErrors(
         id: String,
