@@ -12,10 +12,7 @@ import samlang.stdlib.StandardLibrary
 
 class ModuleTypeCheckerTest : StringSpec() {
 
-    private fun getTypeErrors(
-        id: String,
-        code: String
-    ): Set<String> {
+    private fun getTypeErrors(id: String, code: String): Set<String> {
         return try {
             val module = ModuleBuilder.buildModuleFromText(file = "$id.sam", text = code)
             val sources = Sources(mapOf(ModuleReference(range = Range.DUMMY, parts = listOf(id)) to module))
@@ -27,11 +24,7 @@ class ModuleTypeCheckerTest : StringSpec() {
     }
 
     init {
-        "stdlib" {
-            getTypeErrors(id = "standard-library", code = StandardLibrary.sourceCode) shouldBe emptySet()
-        }
-        for ((id, errorSet, code) in testPrograms) {
-            id { getTypeErrors(id = id, code = code) shouldBe errorSet }
-        }
+        "stdlib" { getTypeErrors(id = "standard-library", code = StandardLibrary.sourceCode) shouldBe emptySet() }
+        testPrograms.forEach { (id, errorSet, code) -> id { getTypeErrors(id = id, code = code) shouldBe errorSet } }
     }
 }
