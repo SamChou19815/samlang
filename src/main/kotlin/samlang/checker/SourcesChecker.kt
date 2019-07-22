@@ -5,13 +5,13 @@ import samlang.ast.ModuleReference
 import samlang.ast.Sources
 import samlang.util.createOrFail
 
-fun typeCheckSources(sources: Sources): Sources {
+internal fun typeCheckSources(sources: Sources): Sources {
     val errorCollector = ErrorCollector()
     val checkedSources = typeCheckSources(sources = sources, errorCollector = errorCollector)
     return createOrFail(item = checkedSources, errors = errorCollector.collectedErrors)
 }
 
-private fun typeCheckSources(sources: Sources, errorCollector: ErrorCollector): Sources {
+internal fun typeCheckSources(sources: Sources, errorCollector: ErrorCollector): Sources {
     val typeCheckingOrder = sources.getTypeCheckingOrder(errorCollector = errorCollector)
     // TODO: use stdlib as baseContext
     val baseContext = TypeCheckingContext.EMPTY
