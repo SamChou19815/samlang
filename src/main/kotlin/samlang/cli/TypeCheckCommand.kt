@@ -17,7 +17,6 @@ class TypeCheckCommand : CliktCommand(name = "check") {
         val sourceDirectory = File(sourceDirectory).absoluteFile
         println("Checking: $sourceDirectory")
         if (!sourceDirectory.isDirectory) {
-            println("DDD")
             System.err.println("$sourceDirectory is not a directory.")
             exitProcess(1)
         }
