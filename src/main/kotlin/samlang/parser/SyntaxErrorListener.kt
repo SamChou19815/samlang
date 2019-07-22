@@ -9,7 +9,7 @@ import samlang.ast.Range
 import samlang.errors.CompileTimeError
 import samlang.errors.SyntaxError
 
-internal class SyntaxErrorListener : BaseErrorListener() {
+internal class SyntaxErrorListener(val file: String) : BaseErrorListener() {
 
     private val _syntaxErrors: MutableList<SyntaxError> = arrayListOf()
 
@@ -32,6 +32,6 @@ internal class SyntaxErrorListener : BaseErrorListener() {
             start = position,
             end = Position(line = line - 1, column = charPositionInLine + 1)
         )
-        _syntaxErrors.add(element = SyntaxError(range = range, reason = reason))
+        _syntaxErrors.add(element = SyntaxError(file = file, range = range, reason = reason))
     }
 }

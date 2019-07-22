@@ -8,24 +8,25 @@ import samlang.ast.ModuleReference
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer
 import samlang.parser.generated.PLParser
-import samlang.util.createSourceOrFail
+import samlang.util.createOrFail
 import java.io.InputStream
 
 object ModuleBuilder {
 
-    private fun buildModule(inputStream: InputStream): Module {
+    private fun buildModule(file: String, inputStream: InputStream): Module {
         val parser = PLParser(CommonTokenStream(PLLexer(ANTLRInputStream(inputStream))))
-        val errorListener = SyntaxErrorListener()
+        val errorListener = SyntaxErrorListener(file = file)
         parser.removeErrorListeners()
         parser.addErrorListener(errorListener)
         val sourceVisitor = Visitor(syntaxErrorListener = errorListener)
         val moduleContext = parser.module()
         val module = moduleContext.accept(sourceVisitor)
         val errors = errorListener.syntaxErrors
-        return createSourceOrFail(module = module, errors = errors)
+        return createOrFail(item = module, errors = errors)
     }
 
-    fun buildModuleFromText(text: String): Module = buildModule(inputStream = text.byteInputStream())
+    fun buildModuleFromText(file: String, text: String): Module =
+        buildModule(file = file, inputStream = text.byteInputStream())
 
     private class Visitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module>() {
 

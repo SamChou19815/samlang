@@ -1,5 +1,5 @@
 // ERROR_COUNT: 1
-// 5:5-5:36: [NotWellDefinedIdentifier]: `HelloWorld` is not well defined.
+// undefined-type.sam:5:5-5:36: [NotWellDefinedIdentifier]: `HelloWorld` is not well defined.
 
 class Main {
     function main(): HelloWorld = 1

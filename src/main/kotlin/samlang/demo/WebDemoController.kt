@@ -1,11 +1,13 @@
 package samlang.demo
 
 import samlang.ast.Module
-import samlang.checker.typeCheck
+import samlang.checker.ErrorCollector
+import samlang.checker.TypeCheckingContext
+import samlang.checker.typeCheckModule
 import samlang.compiler.printer.PrettyPrinter
 import samlang.errors.CompilationFailedException
+import samlang.interpreter.ModuleInterpreter
 import samlang.interpreter.PanicException
-import samlang.interpreter.SourceInterpreter
 import samlang.parser.ModuleBuilder
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
@@ -50,20 +52,28 @@ object WebDemoController {
     fun interpret(programString: String, threadFactory: ThreadFactory): Response {
         val rawModule: Module
         try {
-            rawModule = ModuleBuilder.buildModuleFromText(text = programString)
+            rawModule = ModuleBuilder.buildModuleFromText(file = "demo.sam", text = programString)
         } catch (compilationFailedException: CompilationFailedException) {
             return Response(type = WebDemoController.Type.BAD_SYNTAX, detail = compilationFailedException.errorMessage)
         }
-        val checkedProgram = try {
-            rawModule.typeCheck()
-        } catch (compilationFailedException: CompilationFailedException) {
-            return Response(type = WebDemoController.Type.BAD_TYPE, detail = compilationFailedException.errorMessage)
+        val errorCollector = ErrorCollector()
+        val checkedModule = typeCheckModule(
+            module = rawModule,
+            typeCheckingContext = TypeCheckingContext.EMPTY,
+            errorCollector = errorCollector
+        )
+        if (errorCollector.collectedErrors.isNotEmpty()) {
+            val errors = errorCollector.collectedErrors.map { it.withErrorModule(file = "demo.sam") }
+            return Response(
+                type = WebDemoController.Type.BAD_TYPE,
+                detail = CompilationFailedException(errors = errors).errorMessage
+            )
         }
         // passed all the compile time checks, start to interpret
         val atomicStringValue = AtomicReference<String>()
         val evalThread = threadFactory.newThread {
             val callback = try {
-                "Value: ${SourceInterpreter.eval(module = checkedProgram)}"
+                "Value: ${ModuleInterpreter.eval(module = checkedModule)}"
             } catch (e: PanicException) {
                 "Panic: ${e.reason}"
             }
@@ -78,7 +88,7 @@ object WebDemoController {
         }
         // now pretty-print
         val stringOut = ByteArrayOutputStream()
-        PrintStream(stringOut, true, "UTF-8").use { PrettyPrinter.prettyPrint(checkedProgram, it) }
+        PrintStream(stringOut, true, "UTF-8").use { PrettyPrinter.prettyPrint(checkedModule, it) }
         val charset = Charset.forName("UTF-8")
         val prettyPrintedProgram = String(bytes = stringOut.toByteArray(), charset = charset)
         return Response(

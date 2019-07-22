@@ -75,6 +75,7 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
             val intValue = text.toLongOrNull() ?: kotlin.run {
                 syntaxErrorListener.addSyntaxError(
                     syntaxError = SyntaxError(
+                        file = syntaxErrorListener.file,
                         range = token.range,
                         reason = "Not a 64-bit integer."
                     )

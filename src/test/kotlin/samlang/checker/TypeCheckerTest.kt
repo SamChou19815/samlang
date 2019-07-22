@@ -1,8 +1,10 @@
 package samlang.checker
 
-import io.kotlintest.fail
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
+import samlang.ast.ModuleReference
+import samlang.ast.Range
+import samlang.ast.Sources
 import samlang.errors.CompilationFailedException
 import samlang.parser.ModuleBuilder
 import samlang.programs.testPrograms
@@ -10,23 +12,26 @@ import samlang.stdlib.StandardLibrary
 
 class TypeCheckerTest : StringSpec() {
 
+    private fun getTypeErrors(
+        id: String,
+        code: String
+    ): Set<String> {
+        return try {
+            val module = ModuleBuilder.buildModuleFromText(file = "$id.sam", text = code)
+            val sources = Sources(mapOf(ModuleReference(range = Range.DUMMY, parts = listOf(id)) to module))
+            typeCheckSources(sources = sources)
+            emptySet()
+        } catch (compilationFailedException: CompilationFailedException) {
+            compilationFailedException.errors.map { it.errorMessage }.toSortedSet()
+        }
+    }
+
     init {
-        "stdlib type checks" {
-            ModuleBuilder.buildModuleFromText(text = StandardLibrary.sourceCode).typeCheck()
+        "stdlib" {
+            getTypeErrors(id = "standard-library", code = StandardLibrary.sourceCode) shouldBe emptySet()
         }
         for ((id, errorSet, code) in testPrograms) {
-            if (errorSet.isEmpty()) {
-                "should have no errors: $id" { ModuleBuilder.buildModuleFromText(text = code).typeCheck() }
-            } else {
-                "should have expected errors: $id" {
-                    try {
-                        ModuleBuilder.buildModuleFromText(text = code).typeCheck()
-                        fail(msg = "Found no type errors, but expect: $errorSet.")
-                    } catch (exception: CompilationFailedException) {
-                        exception.errors.asSequence().map { it.errorMessage }.toSortedSet() shouldBe errorSet
-                    }
-                }
-            }
+            id { getTypeErrors(id = id, code = code) shouldBe errorSet }
         }
     }
 }

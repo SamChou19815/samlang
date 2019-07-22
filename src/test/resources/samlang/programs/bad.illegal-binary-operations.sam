@@ -1,16 +1,16 @@
 // ERROR_COUNT: 12
-// 25:35-25:45: [UnexpectedType]: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
-// 26:30-26:40: [UnexpectedType]: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
-// 27:37-27:47: [UnexpectedType]: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
-// 28:47-28:49: [UnexpectedType]: Expected: `Box<__UNDECIDED__>`, actual: `int`.
-// 29:31-29:41: [UnexpectedType]: Expected: `() -> bool`, actual: `() -> Box<__UNDECIDED__>`.
-// 30:40-30:50: [UnexpectedType]: Expected: `() -> bool`, actual: `() -> Box<__UNDECIDED__>`.
-// 31:35-31:40: [UnexpectedType]: Expected: `int`, actual: `bool`.
-// 32:30-32:35: [UnexpectedType]: Expected: `int`, actual: `bool`.
-// 32:38-32:43: [UnexpectedType]: Expected: `int`, actual: `bool`.
-// 34:48-34:55: [UnexpectedType]: Expected: `(int) -> Box<bool>`, actual: `(__UNDECIDED__) -> Box<__UNDECIDED__>`.
-// 37:47-37:64: [UnexpectedType]: Expected: `() -> Box<__UNDECIDED__>`, actual: `() -> AnotherBox<__UNDECIDED__>`.
-// 40:42-40:49: [UnexpectedType]: Expected: `(Box<Box<bool>>) -> Box<Box<Box<int>>>`, actual: `(__UNDECIDED__) -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:25:35-25:45: [UnexpectedType]: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:26:30-26:40: [UnexpectedType]: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:27:37-27:47: [UnexpectedType]: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:28:47-28:49: [UnexpectedType]: Expected: `Box<__UNDECIDED__>`, actual: `int`.
+// illegal-binary-operations.sam:29:31-29:41: [UnexpectedType]: Expected: `() -> bool`, actual: `() -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:30:40-30:50: [UnexpectedType]: Expected: `() -> bool`, actual: `() -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:31:35-31:40: [UnexpectedType]: Expected: `int`, actual: `bool`.
+// illegal-binary-operations.sam:32:30-32:35: [UnexpectedType]: Expected: `int`, actual: `bool`.
+// illegal-binary-operations.sam:32:38-32:43: [UnexpectedType]: Expected: `int`, actual: `bool`.
+// illegal-binary-operations.sam:34:48-34:55: [UnexpectedType]: Expected: `(int) -> Box<bool>`, actual: `(__UNDECIDED__) -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:37:47-37:64: [UnexpectedType]: Expected: `() -> Box<__UNDECIDED__>`, actual: `() -> AnotherBox<__UNDECIDED__>`.
+// illegal-binary-operations.sam:40:42-40:49: [UnexpectedType]: Expected: `(Box<Box<bool>>) -> Box<Box<Box<int>>>`, actual: `(__UNDECIDED__) -> Box<__UNDECIDED__>`.
 
 class Box<T>(value: T) {
     public function <T> empty(): Box<T> = { value: panic("PANIC") }

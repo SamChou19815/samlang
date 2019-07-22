@@ -1,5 +1,5 @@
 // ERROR_COUNT: 1
-// 14:17-14:21: [UnresolvedName]: Name `A::b` is not resolved.
+// access-private-member.sam:14:17-14:21: [UnresolvedName]: Name `A::b` is not resolved.
 
 class A {
     function b(): int = 3

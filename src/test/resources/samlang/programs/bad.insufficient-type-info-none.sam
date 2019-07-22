@@ -1,6 +1,5 @@
 // ERROR_COUNT: 1
-// 11:13-11:27: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.
-
+// insufficient-type-info-none.sam:10:13-10:27: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.
 
 class Option<T>(Some(T), None(unit)) {
   public function <T> none(): Option<T> = None(unit)

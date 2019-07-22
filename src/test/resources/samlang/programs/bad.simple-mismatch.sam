@@ -1,5 +1,5 @@
 // ERROR_COUNT: 1
-// 6:28-6:32: [UnexpectedType]: Expected: `int`, actual: `bool`.
+// simple-mismatch.sam:6:28-6:32: [UnexpectedType]: Expected: `int`, actual: `bool`.
 
 class Main {
     // should be type bool!

@@ -2,8 +2,7 @@ package samlang.compiler.printer
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
-import samlang.checker.typeCheck
-import samlang.parser.ModuleBuilder
+import samlang.common.getTypeCheckedModule
 import samlang.programs.testPrograms
 import java.io.OutputStream
 import java.io.PrintStream
@@ -33,12 +32,12 @@ class PrinterTest : StringSpec() {
     init {
         for ((id, code) in programs) {
             "should consistently print values: $id" {
-                val program1 = ModuleBuilder.buildModuleFromText(text = code).typeCheck()
+                val program1 = getTypeCheckedModule(code = code)
                 val stream1 = StringPrintStream()
                 PrettyPrinter.prettyPrint(module = program1, printStream = stream1)
                 val prettyCode1 = stream1.printedString
                 try {
-                    val program2 = ModuleBuilder.buildModuleFromText(text = prettyCode1).typeCheck()
+                    val program2 = getTypeCheckedModule(code = prettyCode1)
                     val stream2 = StringPrintStream()
                     PrettyPrinter.prettyPrint(module = program2, printStream = stream2)
                     val prettyCode2 = stream1.printedString

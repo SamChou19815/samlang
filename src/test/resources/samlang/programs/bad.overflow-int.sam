@@ -1,5 +1,5 @@
 // ERROR_COUNT: 1
-// 5:28-5:58: [SyntaxError]: Not a 64-bit integer.
+// overflow-int.sam:5:28-5:58: [SyntaxError]: Not a 64-bit integer.
 
 class Main {
     function main(): int = 999999999999999999999999999999

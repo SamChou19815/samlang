@@ -6,9 +6,9 @@ import samlang.ast.Expression
 import samlang.ast.Module
 
 /**
- * The interpreter used to evaluate an already type checked program.
+ * The interpreter used to evaluate an already type checked source with single module.
  */
-internal object SourceInterpreter {
+internal object ModuleInterpreter {
 
     /**
      * Evaluate the [module] under some interpretation [context] (default to empty)

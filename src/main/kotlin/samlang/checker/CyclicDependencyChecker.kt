@@ -4,14 +4,16 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.immutableListOf
 import kotlinx.collections.immutable.immutableSetOf
-import samlang.ast.Module
 import samlang.ast.ModuleMembersImport
 import samlang.ast.ModuleReference
 import samlang.ast.Range
-import samlang.errors.CompileTimeError
+import samlang.ast.Sources
 import samlang.errors.CyclicDependencyError
 
-internal class CyclicDependencyChecker {
+internal fun Sources.getTypeCheckingOrder(errorCollector: ErrorCollector): List<ModuleReference> =
+    CyclicDependencyChecker(sources = this, errorCollector = errorCollector).getTypeCheckingOrder()
+
+private class CyclicDependencyChecker(sources: Sources, private val errorCollector: ErrorCollector) {
 
     /**
      * A (key, value) pair in this graph means (module A, modules that directly depend on module A).
@@ -19,13 +21,15 @@ internal class CyclicDependencyChecker {
     private val dependencyGraph: MutableMap<ModuleReference, MutableList<ModuleMembersImport>> =
         LinkedHashMap()
     private val hasDependentsSet: MutableSet<ModuleReference> = hashSetOf()
-    private val errorCollector: ErrorCollector = ErrorCollector()
+    private val orderedVisitedSet: MutableSet<ModuleReference> = LinkedHashSet()
 
-    fun addImports(moduleReference: ModuleReference, module: Module) {
-        val dependencyList = dependencyGraph.computeIfAbsent(moduleReference) { arrayListOf() }
-        for (oneImport in module.imports) {
-            dependencyList.add(element = oneImport)
-            hasDependentsSet.add(element = oneImport.moduleReference)
+    init {
+        sources.moduleMappings.forEach { (moduleReference, module) ->
+            val dependencyList = dependencyGraph.computeIfAbsent(moduleReference) { arrayListOf() }
+            for (oneImport in module.imports) {
+                dependencyList.add(element = oneImport)
+                hasDependentsSet.add(element = oneImport.moduleReference)
+            }
         }
     }
 
@@ -46,11 +50,10 @@ internal class CyclicDependencyChecker {
     private fun tryToBuildDAG(
         importer: ModuleReference = ModuleReference.ROOT,
         imported: ModuleMembersImport,
-        parentChain: OrderedPersistentSet<ModuleReference>,
-        allVisited: MutableSet<ModuleReference>
+        parentChain: OrderedPersistentSet<ModuleReference>
     ) {
         val importedModuleReference = imported.moduleReference
-        if (importedModuleReference in allVisited) {
+        if (importedModuleReference in orderedVisitedSet) {
             if (importedModuleReference !in parentChain) {
                 // Reached end
                 return
@@ -66,7 +69,7 @@ internal class CyclicDependencyChecker {
                 cyclicDependencyChain = cyclicDependencyChain
             )
         }
-        allVisited.add(element = importedModuleReference)
+        orderedVisitedSet.add(element = importedModuleReference)
         val newParentChain = parentChain + importedModuleReference
         val dependencies = dependencyGraph[importedModuleReference] ?: return
         for (importedDependency in dependencies) {
@@ -74,15 +77,14 @@ internal class CyclicDependencyChecker {
                 tryToBuildDAG(
                     importer = importedModuleReference,
                     imported = importedDependency,
-                    parentChain = newParentChain,
-                    allVisited = allVisited
+                    parentChain = newParentChain
                 )
             }
         }
         return
     }
 
-    private fun tryToBuildDAG(startingModule: ModuleReference, allVisited: MutableSet<ModuleReference>) {
+    private fun tryToBuildDAG(startingModule: ModuleReference) {
         tryToBuildDAG(
             importer = ModuleReference.ROOT,
             imported = ModuleMembersImport(
@@ -90,12 +92,11 @@ internal class CyclicDependencyChecker {
                 moduleReference = startingModule,
                 importedMembers = emptyList()
             ),
-            parentChain = OrderedPersistentSet(),
-            allVisited = allVisited
+            parentChain = OrderedPersistentSet()
         )
     }
 
-    fun getCyclicDependencyErrors(): List<CompileTimeError> {
+    fun getTypeCheckingOrder(): List<ModuleReference> {
         if (dependencyGraph.isEmpty()) {
             return emptyList()
         }
@@ -103,14 +104,14 @@ internal class CyclicDependencyChecker {
         // Start with modules with zero dependents.
         for (moduleReference in dependencyGraph.keys) {
             if (moduleReference !in hasDependentsSet) {
-                tryToBuildDAG(startingModule = moduleReference, allVisited = allVisited)
+                tryToBuildDAG(startingModule = moduleReference)
             }
         }
         for (moduleReference in dependencyGraph.keys) {
             if (moduleReference !in allVisited) {
-                tryToBuildDAG(startingModule = moduleReference, allVisited = allVisited)
+                tryToBuildDAG(startingModule = moduleReference)
             }
         }
-        return errorCollector.collectedErrors
+        return orderedVisitedSet.reversed()
     }
 }
