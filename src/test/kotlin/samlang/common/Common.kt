@@ -3,8 +3,8 @@ package samlang.common
 import io.kotlintest.fail
 import samlang.ast.Module
 import samlang.checker.ErrorCollector
+import samlang.checker.ModuleTypeChecker
 import samlang.checker.TypeCheckingContext
-import samlang.checker.typeCheckModule
 import samlang.parser.ModuleBuilder
 
 internal fun getTypeCheckedModule(
@@ -12,10 +12,9 @@ internal fun getTypeCheckedModule(
     typeCheckingContext: TypeCheckingContext = TypeCheckingContext.EMPTY
 ): Module {
     val errorCollector = ErrorCollector()
-    val module = typeCheckModule(
+    val (module, _) = ModuleTypeChecker(errorCollector = errorCollector).typeCheck(
         module = ModuleBuilder.buildModuleFromText(file = "test.sam", text = code),
-        typeCheckingContext = typeCheckingContext,
-        errorCollector = errorCollector
+        typeCheckingContext = typeCheckingContext
     )
     if (errorCollector.collectedErrors.isNotEmpty()) {
         fail(msg = "Detected errors: ${errorCollector.collectedErrors}")

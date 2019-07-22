@@ -6,21 +6,12 @@ import samlang.ast.Module
 import samlang.ast.Range
 import samlang.errors.CollisionError
 
-internal fun typeCheckModule(
-    module: Module,
-    typeCheckingContext: TypeCheckingContext,
-    errorCollector: ErrorCollector
-): Module {
-    val checker = ModuleTypeChecker(module = module, errorCollector = errorCollector)
-    return checker.typeCheck(typeCheckingContext = typeCheckingContext)
-}
+internal class ModuleTypeChecker(val errorCollector: ErrorCollector) {
 
-private class ModuleTypeChecker(private val module: Module, private val errorCollector: ErrorCollector) {
-
-    fun typeCheck(typeCheckingContext: TypeCheckingContext): Module {
+    fun typeCheck(module: Module, typeCheckingContext: TypeCheckingContext): Pair<Module, TypeCheckingContext> {
         // First pass: add type definitions to classDefinitions
-        var currentContext = module.classDefinitions.fold(initial = typeCheckingContext) { context, module ->
-            errorCollector.returnNullOnCollectedError { context.addClassTypeDefinition(classDefinition = module) }
+        var currentContext = module.classDefinitions.fold(initial = typeCheckingContext) { context, definition ->
+            errorCollector.returnNullOnCollectedError { context.addClassTypeDefinition(classDefinition = definition) }
                 ?: context
         }
         // Second pass: validating module's top level properties, excluding whether member's types are well-defined.
@@ -42,17 +33,17 @@ private class ModuleTypeChecker(private val module: Module, private val errorCol
             contextWithModuleMembers
         }
         // Fourth pass: type check all members' function body
-        val checkedClasses = partiallyCheckedClasses.map { module ->
-            module.copy(
-                members = module.members.map { member ->
+        val checkedClasses = partiallyCheckedClasses.map { classDefinition ->
+            classDefinition.copy(
+                members = classDefinition.members.map { member ->
                     typeCheckMemberDefinition(
                         memberDefinition = member,
-                        typeCheckingContext = currentContext.copy(currentClass = module.name)
+                        typeCheckingContext = currentContext.copy(currentClass = classDefinition.name)
                     )
                 }
             )
         }
-        return module.copy(classDefinitions = checkedClasses)
+        return module.copy(classDefinitions = checkedClasses) to currentContext
     }
 
     /**

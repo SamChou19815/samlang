@@ -25,10 +25,9 @@ private fun typeCheckSources(sources: Sources, errorCollector: ErrorCollector): 
             module = module,
             errorCollector = errorCollector
         )
-        val checkedModule = typeCheckModule(
+        val (checkedModule, _) = ModuleTypeChecker(errorCollector = moduleErrorCollector).typeCheck(
             module = importCheckedModule,
-            typeCheckingContext = context,
-            errorCollector = moduleErrorCollector
+            typeCheckingContext = context
         )
         errorCollector.addErrorsWithModules(
             errorCollector = moduleErrorCollector,

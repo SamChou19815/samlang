@@ -2,8 +2,8 @@ package samlang.demo
 
 import samlang.ast.Module
 import samlang.checker.ErrorCollector
+import samlang.checker.ModuleTypeChecker
 import samlang.checker.TypeCheckingContext
-import samlang.checker.typeCheckModule
 import samlang.compiler.printer.PrettyPrinter
 import samlang.errors.CompilationFailedException
 import samlang.interpreter.ModuleInterpreter
@@ -57,10 +57,9 @@ object WebDemoController {
             return Response(type = WebDemoController.Type.BAD_SYNTAX, detail = compilationFailedException.errorMessage)
         }
         val errorCollector = ErrorCollector()
-        val checkedModule = typeCheckModule(
+        val (checkedModule, _) = ModuleTypeChecker(errorCollector = errorCollector).typeCheck(
             module = rawModule,
-            typeCheckingContext = TypeCheckingContext.EMPTY,
-            errorCollector = errorCollector
+            typeCheckingContext = TypeCheckingContext.EMPTY
         )
         if (errorCollector.collectedErrors.isNotEmpty()) {
             val errors = errorCollector.collectedErrors.map { it.withErrorModule(file = "demo.sam") }
