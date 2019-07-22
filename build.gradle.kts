@@ -1,6 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
+    application
     java
     antlr
     kotlin(module = "jvm") version "1.3.41"
@@ -26,6 +27,7 @@ dependencies {
     antlr(dependencyNotation = "org.antlr:antlr4:4.5")
     implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.1")
     implementation(dependencyNotation = "org.apache.commons:commons-text:1.6")
+    implementation(dependencyNotation = "com.github.ajalt:clikt:2.1.0")
     testImplementation(kotlin(module = "reflect"))
     testImplementation(kotlin(module = "test"))
     testImplementation(kotlin(module = "test-junit"))
@@ -123,4 +125,8 @@ publishing {
 
 signing {
     sign(publishing.publications["mavenJava"])
+}
+
+application {
+    mainClassName = "samlang.Main"
 }
