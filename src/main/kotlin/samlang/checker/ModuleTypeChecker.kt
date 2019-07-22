@@ -5,15 +5,6 @@ import samlang.ast.ClassDefinition.MemberDefinition
 import samlang.ast.Module
 import samlang.ast.Range
 import samlang.errors.CollisionError
-import samlang.util.createOrFail
-
-@Deprecated(message = "REMOVE!!!!")
-internal fun Module.typeCheck(typeCheckingContext: TypeCheckingContext = TypeCheckingContext.EMPTY): Module {
-    val errorCollector = ErrorCollector()
-    val checkedModule =
-        typeCheckModule(module = this, typeCheckingContext = typeCheckingContext, errorCollector = errorCollector)
-    return createOrFail(item = checkedModule, errors = errorCollector.collectedErrors)
-}
 
 internal fun typeCheckModule(
     module: Module,
