@@ -16,7 +16,7 @@ fun processSources(sourceHandles: List<Pair<ModuleReference, InputStream>>): Sou
     for ((moduleReference, inputStream) in sourceHandles) {
         val module = inputStream.use { stream ->
             try {
-                ModuleBuilder.buildModule(file = moduleReference.toFilename(), inputStream = inputStream)
+                ModuleBuilder.buildModule(file = moduleReference.toFilename(), inputStream = stream)
             } catch (compilationFailedException: CompilationFailedException) {
                 compilationFailedException.errors.forEach { errorCollector.add(compileTimeError = it) }
                 null

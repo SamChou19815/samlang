@@ -1,10 +1,10 @@
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
-    application
     java
     antlr
     kotlin(module = "jvm") version "1.3.41"
+    id("com.github.johnrengelman.shadow") version "5.1.0"
     id("org.jetbrains.dokka") version "0.9.18"
     id("org.jlleitschuh.gradle.ktlint") version "8.2.0"
     id("org.jlleitschuh.gradle.ktlint-idea") version "8.2.0"
@@ -13,8 +13,13 @@ plugins {
     signing
 }
 
-group = "com.developersam"
-version = "0.0.7"
+object Constants {
+    const val NAME: String = "samlang"
+    const val VERSION: String = "0.0.8"
+}
+
+group = Constants.NAME
+version = Constants.VERSION
 
 repositories {
     jcenter()
@@ -66,6 +71,16 @@ tasks {
     }
     "compileJava" { dependsOn("generateGrammarSource") }
     "compileKotlin" { dependsOn("generateGrammarSource") }
+    shadowJar {
+        archiveBaseName.set(Constants.NAME)
+        archiveVersion.set(Constants.VERSION)
+        manifest { attributes["Main-Class"] = "samlang.Main" }
+        isZip64 = true
+        artifacts {
+            shadow(archiveFile) { builtBy(shadowJar) }
+        }
+    }
+    "assemble" { dependsOn(shadowJar) }
 }
 
 configure<JavaPluginConvention> {
@@ -125,8 +140,4 @@ publishing {
 
 signing {
     sign(publishing.publications["mavenJava"])
-}
-
-application {
-    mainClassName = "samlang.Main"
 }
