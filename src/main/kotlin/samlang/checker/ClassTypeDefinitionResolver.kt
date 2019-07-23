@@ -70,9 +70,9 @@ internal object ClassTypeDefinitionResolver {
         override fun visit(type: PrimitiveType, context: Map<String, Type>): Type = type
 
         override fun visit(type: IdentifierType, context: Map<String, Type>): Type {
-            if (type.typeArguments != null) {
-                val newTypeArguments =
-                    type.typeArguments.map { applyGenericTypeParameters(type = it, context = context) }
+            val typeArguments = type.typeArguments
+            if (typeArguments != null) {
+                val newTypeArguments = typeArguments.map { applyGenericTypeParameters(type = it, context = context) }
                 return type.copy(typeArguments = newTypeArguments)
             }
             val replacement = context[type.identifier]

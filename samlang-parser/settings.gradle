@@ -1,5 +1,3 @@
-rootProject.name = 'samlang'
 include("samlang-ast")
 include("samlang-errors")
 include("samlang-utils")
-include("samlang-parser")

@@ -7,7 +7,7 @@ package samlang.ast
  * @param C type of the context during visit.
  * @param T type of the visitor return value.
  */
-internal interface CheckedExprVisitor<in C, out T> {
+interface CheckedExprVisitor<in C, out T> {
     fun visit(expression: Expression.Literal, context: C): T
     fun visit(expression: Expression.This, context: C): T
     fun visit(expression: Expression.Variable, context: C): T

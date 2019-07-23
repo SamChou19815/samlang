@@ -130,10 +130,11 @@ object PrettyPrinter {
         override fun visit(expression: ObjectConstructor, context: Boolean) {
             printer.printWithBreak(x = "{")
             printer.indented {
-                if (expression.spreadExpression != null) {
+                val spreadExpression = expression.spreadExpression
+                if (spreadExpression != null) {
                     printlnWithoutFurtherIndentation {
                         printWithoutBreak(x = "...")
-                        expression.spreadExpression.printSelf(requireBreak = false)
+                        spreadExpression.printSelf(requireBreak = false)
                         printWithBreak(x = ",")
                     }
                 }
@@ -296,11 +297,12 @@ object PrettyPrinter {
                 printWithBreak(x = "val $patternString: ${expression.assignedExpression.type} = (")
             }
             printer.indented { expression.assignedExpression.printSelf(requireBreak = true) }
-            if (expression.nextExpression == null) {
+            val nextExpression = expression.nextExpression
+            if (nextExpression == null) {
                 printer.print(x = ");", requireBreak = context)
             } else {
                 printer.printWithBreak(x = ");")
-                expression.nextExpression.printSelf(requireBreak = context)
+                nextExpression.printSelf(requireBreak = context)
             }
         }
     }

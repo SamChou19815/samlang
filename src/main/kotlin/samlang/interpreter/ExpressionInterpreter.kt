@@ -248,9 +248,7 @@ internal object ExpressionInterpreter : CheckedExprVisitor<InterpretationContext
 
     override fun visit(expression: Val, context: InterpretationContext): Value {
         val assignedValue = eval(expression = expression.assignedExpression, context = context)
-        if (expression.nextExpression == null) {
-            return Value.UnitValue
-        }
+        val nextExpression = expression.nextExpression
         val ctx = when (val p = expression.pattern) {
             is Pattern.TuplePattern -> {
                 val tupleValues = (assignedValue as Value.TupleValue).tupleContent
@@ -272,6 +270,9 @@ internal object ExpressionInterpreter : CheckedExprVisitor<InterpretationContext
             )
             is Pattern.WildCardPattern -> context
         }
-        return eval(expression = expression.nextExpression, context = ctx)
+        if (nextExpression == null) {
+            return Value.UnitValue
+        }
+        return eval(expression = nextExpression, context = ctx)
     }
 }

@@ -6,7 +6,7 @@ sealed class Type {
 
     final override fun toString(): String = prettyPrint()
 
-    internal abstract fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T
+    abstract fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T
 
     /*
      * --------------------------------------------------------------------------------

@@ -47,13 +47,15 @@ private object UndecideTypeParametersVisitor :
 
     override fun visit(type: PrimitiveType, context: Map<String, UndecidedType>): Type = type
 
-    override fun visit(type: IdentifierType, context: Map<String, UndecidedType>): Type =
-        if (type.typeArguments != null) {
-            val newTypeArguments = type.typeArguments.map { it.undecide(context = context) }
+    override fun visit(type: IdentifierType, context: Map<String, UndecidedType>): Type {
+        val typeArguments = type.typeArguments
+        return if (typeArguments != null) {
+            val newTypeArguments = typeArguments.map { it.undecide(context = context) }
             type.copy(typeArguments = newTypeArguments)
         } else {
             context[type.identifier] ?: type
         }
+    }
 
     override fun visit(type: TupleType, context: Map<String, UndecidedType>): Type =
         type.copy(mappings = type.mappings.map { it.undecide(context = context) })

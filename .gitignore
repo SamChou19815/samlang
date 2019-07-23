@@ -23,17 +23,14 @@ hs_err_pid*
 
 # IntelliJ IDEA
 /.idea/
-/build/
-/out/
+**/build/
+**/out/
 /.gradle/
 *.iml
 
 # Generated Parser
-/src/main/java/
+samlang-parser/src/main/java/
 *.tokens
-
-# Temp Test File
-/src/test/resources/Program*.kt
 
 # System Files
 .DS_Store

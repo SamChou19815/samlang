@@ -10,7 +10,7 @@ sealed class Expression(val precedence: Int) : Node {
     /**
      * Accept the visitor of the given [visitor].
      */
-    internal abstract fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T
+    abstract fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T
 
     data class Literal(
         override val range: Range,

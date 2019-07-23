@@ -2,12 +2,11 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
     java
-    antlr
     kotlin(module = "jvm") version "1.3.41"
     id("com.github.johnrengelman.shadow") version "5.1.0"
     id("org.jetbrains.dokka") version "0.9.18"
-    id("org.jlleitschuh.gradle.ktlint") version "8.2.0"
-    id("org.jlleitschuh.gradle.ktlint-idea") version "8.2.0"
+    id("org.jlleitschuh.gradle.ktlint") version "8.2.0" apply false
+    id("org.jlleitschuh.gradle.ktlint-idea") version "8.2.0" apply false
     maven
     `maven-publish`
     signing
@@ -21,17 +20,46 @@ object Constants {
 group = Constants.NAME
 version = Constants.VERSION
 
-repositories {
-    jcenter()
-    mavenCentral()
-    maven(url = "http://dl.bintray.com/kotlin/kotlinx")
+allprojects {
+    apply<JavaPlugin>()
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        val compileKotlin: KotlinJvmCompile by tasks
+        compileKotlin.kotlinOptions {
+            jvmTarget = "1.8"
+        }
+        val compileTestKotlin: KotlinJvmCompile by tasks
+        compileTestKotlin.kotlinOptions {
+            jvmTarget = "1.8"
+        }
+    }
+    // Apply linters to all projects
+    apply(plugin = "org.jlleitschuh.gradle.ktlint")
+    apply(plugin = "org.jlleitschuh.gradle.ktlint-idea")
+
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven(url = "http://dl.bintray.com/kotlin/kotlinx")
+    }
+    dependencies {
+        implementation(kotlin(module = "stdlib-jdk8"))
+        implementation(dependencyNotation = "org.apache.commons:commons-text:1.6")
+    }
+    configure<JavaPluginConvention> {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+    }
+}
+
+subprojects {
+    version = Constants.VERSION
 }
 
 dependencies {
-    compile(kotlin(module = "stdlib-jdk8"))
-    antlr(dependencyNotation = "org.antlr:antlr4:4.5")
+    implementation(project(":samlang-ast"))
+    implementation(project(":samlang-errors"))
+    implementation(project(":samlang-utils"))
+    implementation(project(":samlang-parser"))
     implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.1")
-    implementation(dependencyNotation = "org.apache.commons:commons-text:1.6")
     implementation(dependencyNotation = "com.github.ajalt:clikt:2.1.0")
     testImplementation(kotlin(module = "reflect"))
     testImplementation(kotlin(module = "test"))
@@ -42,10 +70,6 @@ dependencies {
 }
 
 tasks {
-    withType<AntlrTask> {
-        outputDirectory = file(path = "${project.rootDir}/src/main/java/samlang/parser/generated")
-        arguments.addAll(listOf("-package", "samlang.parser.generated", "-no-listener", "-visitor"))
-    }
     named<Test>(name = "test") {
         useJUnitPlatform()
         testLogging {
@@ -69,8 +93,6 @@ tasks {
         kotlinOptions.jvmTarget = "1.8"
         kotlinOptions.freeCompilerArgs = listOf("-Xjvm-default=enable")
     }
-    "compileJava" { dependsOn("generateGrammarSource") }
-    "compileKotlin" { dependsOn("generateGrammarSource") }
     shadowJar {
         archiveBaseName.set(Constants.NAME)
         archiveVersion.set(Constants.VERSION)
@@ -81,19 +103,6 @@ tasks {
         }
     }
     "assemble" { dependsOn(shadowJar) }
-}
-
-configure<JavaPluginConvention> {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-}
-
-val compileKotlin: KotlinJvmCompile by tasks
-compileKotlin.kotlinOptions {
-    jvmTarget = "1.8"
-}
-val compileTestKotlin: KotlinJvmCompile by tasks
-compileTestKotlin.kotlinOptions {
-    jvmTarget = "1.8"
 }
 
 publishing {

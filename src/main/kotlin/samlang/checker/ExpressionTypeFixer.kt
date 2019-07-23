@@ -127,8 +127,9 @@ private class TypeFixerVisitor(
         val (_, _, typeParameters, mapping) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
             ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = errorRange)
-        val betterMapping = if (typeParameters != null && newType.typeArguments != null) {
-            val replacementMap = typeParameters.checkedZip(other = newType.typeArguments).toMap()
+        val newTypeArguments = newType.typeArguments
+        val betterMapping = if (typeParameters != null && newTypeArguments != null) {
+            val replacementMap = typeParameters.checkedZip(other = newTypeArguments).toMap()
             mapping.mapValues { (_, v) ->
                 ClassTypeDefinitionResolver.applyGenericTypeParameters(type = v, context = replacementMap)
             }
@@ -158,9 +159,10 @@ private class TypeFixerVisitor(
             ?.takeIf { it.type == VARIANT }
             ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = VARIANT, range = errorRange)
         var dataType = mapping[expression.tag] ?: blameTypeChecker()
-        if (typeParameters != null && newType.typeArguments != null) {
+        val newTypeArguments = newType.typeArguments
+        if (typeParameters != null && newTypeArguments != null) {
             dataType = ClassTypeDefinitionResolver.applyGenericTypeParameters(
-                type = dataType, context = typeParameters.checkedZip(other = newType.typeArguments).toMap()
+                type = dataType, context = typeParameters.checkedZip(other = newTypeArguments).toMap()
             )
         }
         return expression.copy(
