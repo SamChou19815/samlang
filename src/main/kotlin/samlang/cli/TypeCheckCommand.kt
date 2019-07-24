@@ -19,16 +19,14 @@ class TypeCheckCommand : CliktCommand(name = "check") {
     override fun run() {
         val sourceDirectory = File(sourceDirectory).absoluteFile
         if (!sourceDirectory.isDirectory) {
-            System.err.println("$sourceDirectory is not a directory.")
+            echo(message = "$sourceDirectory is not a directory.", err = true)
             exitProcess(1)
         }
+        echo(message = "Type checking sources in $sourceDirectory...", err = true)
         val sourcePath = sourceDirectory.toPath()
         val sourceHandles = arrayListOf<Pair<ModuleReference, InputStream>>()
         sourceDirectory.walk().forEach { file ->
-            if (file.isDirectory) {
-                return@forEach
-            }
-            if (file.extension != "sam") {
+            if (file.isDirectory || file.extension != "sam") {
                 return@forEach
             }
             val relativeFile = sourcePath.relativize(file.toPath()).toFile()
@@ -37,8 +35,11 @@ class TypeCheckCommand : CliktCommand(name = "check") {
         }
         try {
             processSources(sourceHandles = sourceHandles)
+            echo(message = "No errors.", err = true)
         } catch (compilationFailedException: CompilationFailedException) {
-            println(compilationFailedException.errorMessage)
+            val errors = compilationFailedException.errors
+            echo(message = "Found ${errors.size} error(s).", err = true)
+            errors.forEach { echo(message = it.errorMessage) }
         }
     }
 }
