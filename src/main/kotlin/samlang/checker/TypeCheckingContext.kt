@@ -5,9 +5,9 @@ import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.immutableMapOf
 import kotlinx.collections.immutable.immutableSetOf
 import kotlinx.collections.immutable.plus
-import samlang.ast.ClassDefinition
-import samlang.ast.Range
-import samlang.ast.Type
+import samlang.ast.lang.ClassDefinition
+import samlang.ast.common.Range
+import samlang.ast.lang.Type
 import samlang.errors.CollisionError
 import samlang.errors.NotWellDefinedIdentifierError
 import samlang.errors.TypeParamSizeMismatchError

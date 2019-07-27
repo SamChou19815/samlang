@@ -1,6 +1,6 @@
 package samlang.parser
 
-import samlang.ast.Type
+import samlang.ast.lang.Type
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 

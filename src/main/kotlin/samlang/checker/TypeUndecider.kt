@@ -1,12 +1,12 @@
 package samlang.checker
 
-import samlang.ast.Type
-import samlang.ast.Type.FunctionType
-import samlang.ast.Type.IdentifierType
-import samlang.ast.Type.PrimitiveType
-import samlang.ast.Type.TupleType
-import samlang.ast.Type.UndecidedType
-import samlang.ast.TypeVisitor
+import samlang.ast.lang.Type
+import samlang.ast.lang.Type.FunctionType
+import samlang.ast.lang.Type.IdentifierType
+import samlang.ast.lang.Type.PrimitiveType
+import samlang.ast.lang.Type.TupleType
+import samlang.ast.lang.Type.UndecidedType
+import samlang.ast.lang.TypeVisitor
 
 /**
  * Given a [type] and its [typeParameters], replaces all references to type parameters to freshly created

@@ -1,6 +1,6 @@
 package samlang.errors
 
-import samlang.ast.Range
+import samlang.ast.common.Range
 
 class SizeMismatchError private constructor(
     sizeDescription: String,

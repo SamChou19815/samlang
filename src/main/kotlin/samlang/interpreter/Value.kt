@@ -1,7 +1,7 @@
 package samlang.interpreter
 
 import org.apache.commons.text.StringEscapeUtils
-import samlang.ast.Expression
+import samlang.ast.lang.Expression
 
 sealed class Value {
 

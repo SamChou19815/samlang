@@ -4,8 +4,8 @@ import org.antlr.v4.runtime.BaseErrorListener
 import org.antlr.v4.runtime.RecognitionException
 import org.antlr.v4.runtime.Recognizer
 import org.antlr.v4.runtime.Token
-import samlang.ast.Position
-import samlang.ast.Range
+import samlang.ast.common.Position
+import samlang.ast.common.Range
 import samlang.errors.CompileTimeError
 import samlang.errors.SyntaxError
 

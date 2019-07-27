@@ -2,11 +2,11 @@ package samlang.checker
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
-import samlang.ast.Module
-import samlang.ast.ModuleMembersImport
-import samlang.ast.ModuleReference
-import samlang.ast.Range
-import samlang.ast.Sources
+import samlang.ast.lang.Module
+import samlang.ast.lang.ModuleMembersImport
+import samlang.ast.lang.ModuleReference
+import samlang.ast.common.Range
+import samlang.ast.lang.Sources
 
 class CyclicDependencyCheckerTest : StringSpec() {
     private fun checkErrors(sources: List<Pair<String, List<String>>>, expectedErrors: List<String>) {

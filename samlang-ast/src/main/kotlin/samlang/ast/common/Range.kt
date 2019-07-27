@@ -1,4 +1,4 @@
-package samlang.ast
+package samlang.ast.common
 
 data class Range(val start: Position, val end: Position) {
 
@@ -9,6 +9,9 @@ data class Range(val start: Position, val end: Position) {
 
     companion object {
         @JvmField
-        val DUMMY: Range = Range(start = Position.DUMMY, end = Position.DUMMY)
+        val DUMMY: Range = Range(
+            start = Position.DUMMY,
+            end = Position.DUMMY
+        )
     }
 }

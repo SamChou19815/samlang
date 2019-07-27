@@ -1,4 +1,4 @@
-package samlang.ast
+package samlang.ast.common
 
 /**
  * A common interface for all AST nodes.

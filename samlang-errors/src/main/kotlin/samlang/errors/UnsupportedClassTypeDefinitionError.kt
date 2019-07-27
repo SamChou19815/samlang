@@ -1,7 +1,7 @@
 package samlang.errors
 
-import samlang.ast.ClassDefinition
-import samlang.ast.Range
+import samlang.ast.lang.ClassDefinition
+import samlang.ast.common.Range
 
 class UnsupportedClassTypeDefinitionError(
     typeDefinitionType: ClassDefinition.TypeDefinitionType,

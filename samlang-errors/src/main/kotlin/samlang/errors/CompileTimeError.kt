@@ -1,6 +1,6 @@
 package samlang.errors
 
-import samlang.ast.Range
+import samlang.ast.common.Range
 
 open class CompileTimeError(
     val file: String? = null,

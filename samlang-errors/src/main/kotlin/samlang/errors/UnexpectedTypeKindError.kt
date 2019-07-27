@@ -1,7 +1,7 @@
 package samlang.errors
 
-import samlang.ast.Range
-import samlang.ast.Type
+import samlang.ast.common.Range
+import samlang.ast.lang.Type
 
 class UnexpectedTypeKindError : CompileTimeError.WithRange {
 

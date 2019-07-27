@@ -2,8 +2,8 @@ package samlang.checker
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
-import samlang.ast.ModuleReference
-import samlang.ast.Sources
+import samlang.ast.lang.ModuleReference
+import samlang.ast.lang.Sources
 import samlang.errors.CompilationFailedException
 import samlang.parser.ModuleBuilder
 import samlang.programs.testPrograms

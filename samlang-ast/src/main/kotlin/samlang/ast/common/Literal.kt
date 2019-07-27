@@ -1,4 +1,4 @@
-package samlang.ast
+package samlang.ast.common
 
 /**
  * A collection of all supported literals.

@@ -1,4 +1,4 @@
-package samlang.ast
+package samlang.ast.common
 
 data class Position(val line: Int, val column: Int) : Comparable<Position> {
 

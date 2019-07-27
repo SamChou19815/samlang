@@ -1,8 +1,8 @@
 package samlang.checker
 
-import samlang.ast.Module
-import samlang.ast.ModuleReference
-import samlang.ast.Sources
+import samlang.ast.lang.Module
+import samlang.ast.lang.ModuleReference
+import samlang.ast.lang.Sources
 import samlang.util.createOrFail
 
 internal fun typeCheckSources(sources: Sources): Sources {

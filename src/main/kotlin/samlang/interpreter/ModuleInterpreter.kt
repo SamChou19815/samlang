@@ -1,9 +1,9 @@
 package samlang.interpreter
 
 import kotlinx.collections.immutable.plus
-import samlang.ast.ClassDefinition
-import samlang.ast.Expression
-import samlang.ast.Module
+import samlang.ast.lang.ClassDefinition
+import samlang.ast.lang.Expression
+import samlang.ast.lang.Module
 
 /**
  * The interpreter used to evaluate an already type checked source with single module.

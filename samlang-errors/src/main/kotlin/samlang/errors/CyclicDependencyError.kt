@@ -1,7 +1,7 @@
 package samlang.errors
 
-import samlang.ast.ModuleReference
-import samlang.ast.Range
+import samlang.ast.lang.ModuleReference
+import samlang.ast.common.Range
 
 class CyclicDependencyError(moduleReference: ModuleReference, range: Range, cyclicDependencyChain: List<String>) :
     CompileTimeError(

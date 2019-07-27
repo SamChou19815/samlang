@@ -1,4 +1,4 @@
-package samlang.ast
+package samlang.ast.lang
 
 sealed class Type {
 
@@ -84,13 +84,17 @@ sealed class Type {
         private var nextUndecidedTypeIndex: Int = 0
 
         @JvmField
-        val unit: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.UNIT)
+        val unit: PrimitiveType =
+            PrimitiveType(name = PrimitiveTypeName.UNIT)
         @JvmField
-        val bool: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.BOOL)
+        val bool: PrimitiveType =
+            PrimitiveType(name = PrimitiveTypeName.BOOL)
         @JvmField
-        val int: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.INT)
+        val int: PrimitiveType =
+            PrimitiveType(name = PrimitiveTypeName.INT)
         @JvmField
-        val string: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.STRING)
+        val string: PrimitiveType =
+            PrimitiveType(name = PrimitiveTypeName.STRING)
 
         @JvmStatic
         fun undecided(): UndecidedType {

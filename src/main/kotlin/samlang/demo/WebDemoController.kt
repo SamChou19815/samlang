@@ -1,6 +1,6 @@
 package samlang.demo
 
-import samlang.ast.Module
+import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
 import samlang.checker.ModuleTypeChecker
 import samlang.checker.TypeCheckingContext

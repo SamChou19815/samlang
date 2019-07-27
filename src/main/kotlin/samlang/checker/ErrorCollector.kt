@@ -1,6 +1,6 @@
 package samlang.checker
 
-import samlang.ast.ModuleReference
+import samlang.ast.lang.ModuleReference
 import samlang.errors.CompileTimeError
 
 internal inline fun <T> T.collectPotentialError(errorCollector: ErrorCollector, crossinline checker: T.() -> T): T =

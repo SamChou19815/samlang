@@ -1,30 +1,31 @@
 package samlang.checker
 
-import samlang.ast.CheckedExprVisitor
-import samlang.ast.Expression
-import samlang.ast.Expression.Binary
-import samlang.ast.Expression.FieldAccess
-import samlang.ast.Expression.FunctionApplication
-import samlang.ast.Expression.IfElse
-import samlang.ast.Expression.Lambda
-import samlang.ast.Expression.Literal
-import samlang.ast.Expression.Match
-import samlang.ast.Expression.MethodAccess
-import samlang.ast.Expression.ModuleMember
-import samlang.ast.Expression.ObjectConstructor
-import samlang.ast.Expression.Panic
-import samlang.ast.Expression.This
-import samlang.ast.Expression.TupleConstructor
-import samlang.ast.Expression.Unary
-import samlang.ast.Expression.Val
-import samlang.ast.Expression.Variable
-import samlang.ast.Expression.VariantConstructor
-import samlang.ast.Type
+import samlang.ast.lang.CheckedExprVisitor
+import samlang.ast.lang.Expression
+import samlang.ast.lang.Expression.Binary
+import samlang.ast.lang.Expression.FieldAccess
+import samlang.ast.lang.Expression.FunctionApplication
+import samlang.ast.lang.Expression.IfElse
+import samlang.ast.lang.Expression.Lambda
+import samlang.ast.lang.Expression.Literal
+import samlang.ast.lang.Expression.Match
+import samlang.ast.lang.Expression.MethodAccess
+import samlang.ast.lang.Expression.ModuleMember
+import samlang.ast.lang.Expression.ObjectConstructor
+import samlang.ast.lang.Expression.Panic
+import samlang.ast.lang.Expression.This
+import samlang.ast.lang.Expression.TupleConstructor
+import samlang.ast.lang.Expression.Unary
+import samlang.ast.lang.Expression.Val
+import samlang.ast.lang.Expression.Variable
+import samlang.ast.lang.Expression.VariantConstructor
+import samlang.ast.lang.Type
 
 internal fun Expression.replaceTypeWithExpectedType(expectedType: Type): Expression =
     this.accept(visitor = TypeReplacerVisitor, context = expectedType)
 
-private object TypeReplacerVisitor : CheckedExprVisitor<Type, Expression> {
+private object TypeReplacerVisitor :
+    CheckedExprVisitor<Type, Expression> {
     override fun visit(expression: Literal, context: Type): Expression = expression.copy(type = context)
     override fun visit(expression: This, context: Type): Expression = expression.copy(type = context)
     override fun visit(expression: Variable, context: Type): Expression = expression.copy(type = context)

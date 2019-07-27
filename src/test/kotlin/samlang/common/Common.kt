@@ -1,7 +1,7 @@
 package samlang.common
 
 import io.kotlintest.fail
-import samlang.ast.Module
+import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
 import samlang.checker.ModuleTypeChecker
 import samlang.checker.TypeCheckingContext

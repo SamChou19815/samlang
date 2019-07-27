@@ -1,13 +1,13 @@
 package samlang.checker
 
-import samlang.ast.Range
-import samlang.ast.Type
-import samlang.ast.Type.FunctionType
-import samlang.ast.Type.IdentifierType
-import samlang.ast.Type.PrimitiveType
-import samlang.ast.Type.TupleType
-import samlang.ast.Type.UndecidedType
-import samlang.ast.TypeVisitor
+import samlang.ast.common.Range
+import samlang.ast.lang.Type
+import samlang.ast.lang.Type.FunctionType
+import samlang.ast.lang.Type.IdentifierType
+import samlang.ast.lang.Type.PrimitiveType
+import samlang.ast.lang.Type.TupleType
+import samlang.ast.lang.Type.UndecidedType
+import samlang.ast.lang.TypeVisitor
 
 internal fun Type.validate(context: TypeCheckingContext, errorRange: Range): Type =
     accept(visitor = TypeValidator(errorRange = errorRange), context = context)
@@ -15,7 +15,8 @@ internal fun Type.validate(context: TypeCheckingContext, errorRange: Range): Typ
 /**
  * A validator for type to check whether every identifier type is well defined.
  */
-private class TypeValidator(private val errorRange: Range) : TypeVisitor<TypeCheckingContext, Type> {
+private class TypeValidator(private val errorRange: Range) :
+    TypeVisitor<TypeCheckingContext, Type> {
 
     override fun visit(type: PrimitiveType, context: TypeCheckingContext): Type = type
 

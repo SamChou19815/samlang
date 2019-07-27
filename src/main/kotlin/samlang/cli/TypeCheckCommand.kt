@@ -2,7 +2,7 @@ package samlang.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
-import samlang.ast.ModuleReference
+import samlang.ast.lang.ModuleReference
 import samlang.errors.CompilationFailedException
 import samlang.frontend.processSources
 import java.io.File
@@ -27,7 +27,8 @@ class TypeCheckCommand : CliktCommand(name = "check") {
                 return@forEach
             }
             val relativeFile = sourcePath.relativize(file.toPath()).toFile()
-            val moduleReference = ModuleReference(parts = relativeFile.nameWithoutExtension.split("/").toList())
+            val moduleReference =
+                ModuleReference(parts = relativeFile.nameWithoutExtension.split("/").toList())
             sourceHandles.add(element = moduleReference to file.inputStream())
         }
         try {

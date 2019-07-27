@@ -1,9 +1,9 @@
 package samlang.checker
 
-import samlang.ast.ClassDefinition
-import samlang.ast.ClassDefinition.MemberDefinition
-import samlang.ast.Module
-import samlang.ast.Range
+import samlang.ast.lang.ClassDefinition
+import samlang.ast.lang.ClassDefinition.MemberDefinition
+import samlang.ast.lang.Module
+import samlang.ast.common.Range
 import samlang.errors.CollisionError
 
 internal class ModuleTypeChecker(val errorCollector: ErrorCollector) {

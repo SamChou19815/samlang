@@ -1,8 +1,8 @@
 package samlang.parser
 
-import samlang.ast.ClassDefinition
-import samlang.ast.Range
-import samlang.ast.Type
+import samlang.ast.lang.ClassDefinition
+import samlang.ast.common.Range
+import samlang.ast.lang.Type
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser.ClassHeaderContext
 import samlang.parser.generated.PLParser.ClassMemberDefinitionContext

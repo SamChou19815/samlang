@@ -1,4 +1,6 @@
-package samlang.ast
+package samlang.ast.lang
+
+import samlang.ast.common.Range
 
 /**
  * All patterns that can be used in val destructing.

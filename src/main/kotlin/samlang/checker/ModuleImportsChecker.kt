@@ -1,8 +1,8 @@
 package samlang.checker
 
-import samlang.ast.Module
-import samlang.ast.ModuleMembersImport
-import samlang.ast.Sources
+import samlang.ast.lang.Module
+import samlang.ast.lang.ModuleMembersImport
+import samlang.ast.lang.Sources
 import samlang.errors.UnresolvedNameError
 
 internal fun checkUndefinedImportsError(sources: Sources, module: Module, errorCollector: ErrorCollector): Module =

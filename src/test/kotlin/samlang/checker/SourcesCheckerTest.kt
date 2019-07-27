@@ -1,8 +1,8 @@
 package samlang.checker
 
 import io.kotlintest.specs.StringSpec
-import samlang.ast.ModuleReference
-import samlang.ast.Sources
+import samlang.ast.lang.ModuleReference
+import samlang.ast.lang.Sources
 import samlang.parser.ModuleBuilder
 
 class SourcesCheckerTest : StringSpec({
@@ -49,10 +49,22 @@ class SourcesCheckerTest : StringSpec({
         """.trimIndent()
         val sources = Sources(
             moduleMappings = mapOf(
-                ModuleReference(moduleName = "A") to ModuleBuilder.buildModuleFromText(file = "A.sam", text = sourceA),
-                ModuleReference(moduleName = "B") to ModuleBuilder.buildModuleFromText(file = "B.sam", text = sourceB),
-                ModuleReference(moduleName = "C") to ModuleBuilder.buildModuleFromText(file = "C.sam", text = sourceC),
-                ModuleReference(moduleName = "D") to ModuleBuilder.buildModuleFromText(file = "D.sam", text = sourceD)
+                ModuleReference(moduleName = "A") to ModuleBuilder.buildModuleFromText(
+                    file = "A.sam",
+                    text = sourceA
+                ),
+                ModuleReference(moduleName = "B") to ModuleBuilder.buildModuleFromText(
+                    file = "B.sam",
+                    text = sourceB
+                ),
+                ModuleReference(moduleName = "C") to ModuleBuilder.buildModuleFromText(
+                    file = "C.sam",
+                    text = sourceC
+                ),
+                ModuleReference(moduleName = "D") to ModuleBuilder.buildModuleFromText(
+                    file = "D.sam",
+                    text = sourceD
+                )
             )
         )
         typeCheckSources(sources = sources)

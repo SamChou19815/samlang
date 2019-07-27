@@ -1,4 +1,8 @@
-package samlang.ast
+package samlang.ast.lang
+
+import samlang.ast.common.BinaryOperator
+import samlang.ast.common.Node
+import samlang.ast.common.Range
 
 /**
  * @property precedence precedence level. Lower the level, higher the precedence.
@@ -15,7 +19,7 @@ sealed class Expression(val precedence: Int) : Node {
     data class Literal(
         override val range: Range,
         override val type: Type,
-        val literal: samlang.ast.Literal
+        val literal: samlang.ast.common.Literal
     ) : Expression(precedence = 0) {
 
         override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
