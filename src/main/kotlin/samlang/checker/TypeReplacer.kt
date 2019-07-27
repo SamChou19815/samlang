@@ -1,6 +1,6 @@
 package samlang.checker
 
-import samlang.ast.lang.CheckedExprVisitor
+import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
 import samlang.ast.lang.Expression.FieldAccess
@@ -25,7 +25,7 @@ internal fun Expression.replaceTypeWithExpectedType(expectedType: Type): Express
     this.accept(visitor = TypeReplacerVisitor, context = expectedType)
 
 private object TypeReplacerVisitor :
-    CheckedExprVisitor<Type, Expression> {
+    ExpressionVisitor<Type, Expression> {
     override fun visit(expression: Literal, context: Type): Expression = expression.copy(type = context)
     override fun visit(expression: This, context: Type): Expression = expression.copy(type = context)
     override fun visit(expression: Variable, context: Type): Expression = expression.copy(type = context)

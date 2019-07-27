@@ -14,7 +14,7 @@ sealed class Expression(val precedence: Int) : Node {
     /**
      * Accept the visitor of the given [visitor].
      */
-    abstract fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T
+    abstract fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T
 
     data class Literal(
         override val range: Range,
@@ -22,13 +22,13 @@ sealed class Expression(val precedence: Int) : Node {
         val literal: samlang.ast.common.Literal
     ) : Expression(precedence = 0) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
     data class This(override val range: Range, override val type: Type) : Expression(precedence = 0) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -38,7 +38,7 @@ sealed class Expression(val precedence: Int) : Node {
         val name: String
     ) : Expression(precedence = 0) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -49,7 +49,7 @@ sealed class Expression(val precedence: Int) : Node {
         val memberName: String
     ) : Expression(precedence = 0) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -59,7 +59,7 @@ sealed class Expression(val precedence: Int) : Node {
         val expressionList: List<Expression>
     ) : Expression(precedence = 1) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -98,7 +98,7 @@ sealed class Expression(val precedence: Int) : Node {
             }
         }
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -109,7 +109,7 @@ sealed class Expression(val precedence: Int) : Node {
         val data: Expression
     ) : Expression(precedence = 1) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -120,7 +120,7 @@ sealed class Expression(val precedence: Int) : Node {
         val fieldName: String
     ) : Expression(precedence = 1) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -131,7 +131,7 @@ sealed class Expression(val precedence: Int) : Node {
         val methodName: String
     ) : Expression(precedence = 2) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -142,7 +142,7 @@ sealed class Expression(val precedence: Int) : Node {
         val expression: Expression
     ) : Expression(precedence = 3) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -152,7 +152,7 @@ sealed class Expression(val precedence: Int) : Node {
         val expression: Expression
     ) : Expression(precedence = 3) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -163,7 +163,7 @@ sealed class Expression(val precedence: Int) : Node {
         val arguments: List<Expression>
     ) : Expression(precedence = 4) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -175,7 +175,7 @@ sealed class Expression(val precedence: Int) : Node {
         val e2: Expression
     ) : Expression(precedence = 5 + operator.precedence) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -187,7 +187,7 @@ sealed class Expression(val precedence: Int) : Node {
         val e2: Expression
     ) : Expression(precedence = 10) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -205,7 +205,7 @@ sealed class Expression(val precedence: Int) : Node {
             val expression: Expression
         )
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -216,7 +216,7 @@ sealed class Expression(val precedence: Int) : Node {
         val body: Expression
     ) : Expression(precedence = 12) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 
@@ -229,7 +229,7 @@ sealed class Expression(val precedence: Int) : Node {
         val nextExpression: Expression?
     ) : Expression(precedence = 13) {
 
-        override fun <C, T> accept(visitor: CheckedExprVisitor<C, T>, context: C): T =
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
 }

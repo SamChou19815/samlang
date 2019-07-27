@@ -14,7 +14,7 @@ import samlang.ast.common.BinaryOperator.MUL
 import samlang.ast.common.BinaryOperator.NE
 import samlang.ast.common.BinaryOperator.OR
 import samlang.ast.common.BinaryOperator.PLUS
-import samlang.ast.lang.CheckedExprVisitor
+import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
 import samlang.ast.lang.Expression.FieldAccess
@@ -41,7 +41,7 @@ import samlang.ast.lang.Pattern
 import samlang.ast.lang.Type
 import samlang.ast.lang.UnaryOperator
 
-internal object ExpressionInterpreter : CheckedExprVisitor<InterpretationContext, Value> {
+internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext, Value> {
 
     private fun blameTypeChecker(): Nothing = error(message = "Bad type checker!")
 

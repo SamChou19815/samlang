@@ -1,6 +1,6 @@
 package samlang.compiler.printer
 
-import samlang.ast.lang.CheckedExprVisitor
+import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.ClassDefinition.TypeDefinitionType.OBJECT
 import samlang.ast.lang.ClassDefinition.TypeDefinitionType.VARIANT
@@ -87,7 +87,7 @@ object PrettyPrinter {
     }
 
     private class ExprPrinter(private val printer: IndentedPrinter) :
-        CheckedExprVisitor<Boolean, Unit> {
+        ExpressionVisitor<Boolean, Unit> {
 
         private fun Expression.printSelf(requireBreak: Boolean, withParenthesis: Boolean = false): Unit =
             if (withParenthesis) {

@@ -1,13 +1,13 @@
 package samlang.ast.lang
 
 /**
- * Generic visitor for type-checked expression node.
+ * Generic visitor for expression node.
  * Each method requires a specific node and a context of type C to produce a result of type T.
  *
  * @param C type of the context during visit.
  * @param T type of the visitor return value.
  */
-interface CheckedExprVisitor<in C, out T> {
+interface ExpressionVisitor<in C, out T> {
     fun visit(expression: Expression.Literal, context: C): T
     fun visit(expression: Expression.This, context: C): T
     fun visit(expression: Expression.Variable, context: C): T

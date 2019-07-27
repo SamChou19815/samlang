@@ -13,7 +13,7 @@ import samlang.ast.common.BinaryOperator.MUL
 import samlang.ast.common.BinaryOperator.NE
 import samlang.ast.common.BinaryOperator.OR
 import samlang.ast.common.BinaryOperator.PLUS
-import samlang.ast.lang.CheckedExprVisitor
+import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.ClassDefinition.TypeDefinitionType.OBJECT
 import samlang.ast.lang.ClassDefinition.TypeDefinitionType.VARIANT
 import samlang.ast.lang.Expression
@@ -66,7 +66,7 @@ private class TypeFixerVisitor(
     private val errorCollector: ErrorCollector,
     private val ctx: TypeCheckingContext,
     private val errorRange: Range
-) : CheckedExprVisitor<Type, Expression> {
+) : ExpressionVisitor<Type, Expression> {
 
     private fun Expression.tryFixType(expectedType: Type = this.type): Expression =
         this.collectPotentialError(errorCollector = errorCollector) {

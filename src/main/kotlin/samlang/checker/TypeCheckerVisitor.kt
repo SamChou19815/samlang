@@ -1,6 +1,6 @@
 package samlang.checker
 
-import samlang.ast.lang.CheckedExprVisitor
+import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
 import samlang.ast.lang.Expression.FieldAccess
@@ -22,7 +22,7 @@ import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.Type
 
 internal interface TypeCheckerVisitor :
-    CheckedExprVisitor<Pair<TypeCheckingContext, Type>, Expression> {
+    ExpressionVisitor<Pair<TypeCheckingContext, Type>, Expression> {
 
     @JvmDefault
     override fun visit(expression: Literal, context: Pair<TypeCheckingContext, Type>): Expression =
