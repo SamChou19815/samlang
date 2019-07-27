@@ -35,11 +35,11 @@ import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.Pattern
-import samlang.ast.lang.Type
-import samlang.ast.lang.Type.FunctionType
-import samlang.ast.lang.Type.IdentifierType
-import samlang.ast.lang.Type.TupleType
-import samlang.ast.lang.Type.UndecidedType
+import samlang.ast.common.Type
+import samlang.ast.common.Type.FunctionType
+import samlang.ast.common.Type.IdentifierType
+import samlang.ast.common.Type.TupleType
+import samlang.ast.common.Type.UndecidedType
 import samlang.errors.CollisionError
 import samlang.errors.DuplicateFieldDeclarationError
 import samlang.errors.ExtraFieldInObjectError

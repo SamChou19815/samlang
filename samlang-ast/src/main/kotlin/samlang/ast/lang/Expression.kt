@@ -3,6 +3,7 @@ package samlang.ast.lang
 import samlang.ast.common.BinaryOperator
 import samlang.ast.common.Node
 import samlang.ast.common.Range
+import samlang.ast.common.Type
 import samlang.ast.common.UnaryOperator
 
 /**

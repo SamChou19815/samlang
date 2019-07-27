@@ -1,7 +1,7 @@
 package samlang.checker
 
-import samlang.ast.lang.Type
-import samlang.ast.lang.Type.UndecidedType
+import samlang.ast.common.Type
+import samlang.ast.common.Type.UndecidedType
 import samlang.util.UnionFind
 
 class TypeResolution {

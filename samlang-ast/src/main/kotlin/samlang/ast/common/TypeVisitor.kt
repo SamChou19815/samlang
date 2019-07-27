@@ -1,4 +1,4 @@
-package samlang.ast.lang
+package samlang.ast.common
 
 /**
  * Generic visitor for type-checked type expression node.

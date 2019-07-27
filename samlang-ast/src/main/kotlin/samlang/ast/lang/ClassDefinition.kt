@@ -2,6 +2,7 @@ package samlang.ast.lang
 
 import samlang.ast.common.Node
 import samlang.ast.common.Range
+import samlang.ast.common.Type
 
 data class ClassDefinition(
     override val range: Range,

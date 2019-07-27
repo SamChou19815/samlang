@@ -2,13 +2,13 @@ package samlang.checker
 
 import samlang.ast.lang.ClassDefinition.TypeDefinitionType
 import samlang.ast.common.Range
-import samlang.ast.lang.Type
-import samlang.ast.lang.Type.FunctionType
-import samlang.ast.lang.Type.IdentifierType
-import samlang.ast.lang.Type.PrimitiveType
-import samlang.ast.lang.Type.TupleType
-import samlang.ast.lang.Type.UndecidedType
-import samlang.ast.lang.TypeVisitor
+import samlang.ast.common.Type
+import samlang.ast.common.Type.FunctionType
+import samlang.ast.common.Type.IdentifierType
+import samlang.ast.common.Type.PrimitiveType
+import samlang.ast.common.Type.TupleType
+import samlang.ast.common.Type.UndecidedType
+import samlang.ast.common.TypeVisitor
 import samlang.errors.IllegalOtherClassMatch
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnsupportedClassTypeDefinitionError

@@ -19,7 +19,7 @@ import samlang.ast.lang.Expression.Unary
 import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
-import samlang.ast.lang.Type
+import samlang.ast.common.Type
 
 internal interface TypeCheckerVisitor :
     ExpressionVisitor<Pair<TypeCheckingContext, Type>, Expression> {

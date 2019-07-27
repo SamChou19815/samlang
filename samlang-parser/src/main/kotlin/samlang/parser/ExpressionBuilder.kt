@@ -4,9 +4,9 @@ import org.apache.commons.text.StringEscapeUtils
 import samlang.ast.common.BinaryOperator
 import samlang.ast.lang.Expression
 import samlang.ast.common.Literal
-import samlang.ast.lang.Type
-import samlang.ast.lang.Type.FunctionType
-import samlang.ast.lang.Type.TupleType
+import samlang.ast.common.Type
+import samlang.ast.common.Type.FunctionType
+import samlang.ast.common.Type.TupleType
 import samlang.ast.common.UnaryOperator
 import samlang.errors.SyntaxError
 import samlang.parser.generated.PLBaseVisitor
