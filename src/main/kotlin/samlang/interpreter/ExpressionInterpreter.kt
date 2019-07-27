@@ -62,7 +62,7 @@ internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext,
         context.localValues[expression.name] ?: blameTypeChecker()
 
     override fun visit(expression: ClassMember, context: InterpretationContext): Value =
-        context.classes[expression.moduleName]?.functions?.get(key = expression.memberName) ?: blameTypeChecker()
+        context.classes[expression.className]?.functions?.get(key = expression.memberName) ?: blameTypeChecker()
 
     override fun visit(expression: TupleConstructor, context: InterpretationContext): Value.TupleValue =
         Value.TupleValue(tupleContent = expression.expressionList.map { eval(expression = it, context = context) })
