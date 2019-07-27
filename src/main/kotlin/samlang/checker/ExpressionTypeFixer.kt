@@ -39,7 +39,7 @@ import samlang.ast.lang.Type
 import samlang.ast.lang.Type.FunctionType
 import samlang.ast.lang.Type.IdentifierType
 import samlang.ast.lang.Type.TupleType
-import samlang.ast.lang.UnaryOperator
+import samlang.ast.common.UnaryOperator
 import samlang.errors.InsufficientTypeInferenceContextError
 import samlang.errors.UnexpectedTypeError
 import samlang.errors.UnsupportedClassTypeDefinitionError

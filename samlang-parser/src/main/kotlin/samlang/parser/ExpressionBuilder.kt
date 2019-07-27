@@ -7,7 +7,7 @@ import samlang.ast.common.Literal
 import samlang.ast.lang.Type
 import samlang.ast.lang.Type.FunctionType
 import samlang.ast.lang.Type.TupleType
-import samlang.ast.lang.UnaryOperator
+import samlang.ast.common.UnaryOperator
 import samlang.errors.SyntaxError
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser

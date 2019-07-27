@@ -3,6 +3,7 @@ package samlang.ast.lang
 import samlang.ast.common.BinaryOperator
 import samlang.ast.common.Node
 import samlang.ast.common.Range
+import samlang.ast.common.UnaryOperator
 
 /**
  * @property precedence precedence level. Lower the level, higher the precedence.

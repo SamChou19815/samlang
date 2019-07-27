@@ -39,7 +39,7 @@ import samlang.ast.common.Literal.StringLiteral
 import samlang.ast.common.Literal.UnitLiteral
 import samlang.ast.lang.Pattern
 import samlang.ast.lang.Type
-import samlang.ast.lang.UnaryOperator
+import samlang.ast.common.UnaryOperator
 
 internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext, Value> {
 
