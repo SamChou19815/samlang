@@ -13,7 +13,7 @@ import samlang.ast.lang.Expression.Lambda
 import samlang.ast.lang.Expression.Literal
 import samlang.ast.lang.Expression.Match
 import samlang.ast.lang.Expression.MethodAccess
-import samlang.ast.lang.Expression.ModuleMember
+import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.Panic
 import samlang.ast.lang.Expression.This
@@ -110,7 +110,7 @@ object PrettyPrinter {
             printer.print(x = expression.name, requireBreak = context)
         }
 
-        override fun visit(expression: ModuleMember, context: Boolean) {
+        override fun visit(expression: ClassMember, context: Boolean) {
             printer.print(x = "${expression.moduleName}::${expression.memberName}", requireBreak = context)
         }
 

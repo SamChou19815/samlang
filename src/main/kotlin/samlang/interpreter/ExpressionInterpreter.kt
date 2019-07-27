@@ -24,7 +24,7 @@ import samlang.ast.lang.Expression.Lambda
 import samlang.ast.lang.Expression.Literal
 import samlang.ast.lang.Expression.Match
 import samlang.ast.lang.Expression.MethodAccess
-import samlang.ast.lang.Expression.ModuleMember
+import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.Panic
 import samlang.ast.lang.Expression.This
@@ -61,7 +61,7 @@ internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext,
     override fun visit(expression: Variable, context: InterpretationContext): Value =
         context.localValues[expression.name] ?: blameTypeChecker()
 
-    override fun visit(expression: ModuleMember, context: InterpretationContext): Value =
+    override fun visit(expression: ClassMember, context: InterpretationContext): Value =
         context.classes[expression.moduleName]?.functions?.get(key = expression.memberName) ?: blameTypeChecker()
 
     override fun visit(expression: TupleConstructor, context: InterpretationContext): Value.TupleValue =

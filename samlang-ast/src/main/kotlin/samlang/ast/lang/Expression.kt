@@ -42,7 +42,7 @@ sealed class Expression(val precedence: Int) : Node {
             visitor.visit(expression = this, context = context)
     }
 
-    data class ModuleMember(
+    data class ClassMember(
         override val range: Range,
         override val type: Type,
         val moduleName: String,

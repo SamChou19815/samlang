@@ -10,7 +10,7 @@ import samlang.ast.lang.Expression.Lambda
 import samlang.ast.lang.Expression.Literal
 import samlang.ast.lang.Expression.Match
 import samlang.ast.lang.Expression.MethodAccess
-import samlang.ast.lang.Expression.ModuleMember
+import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.Panic
 import samlang.ast.lang.Expression.This
@@ -37,7 +37,7 @@ internal interface TypeCheckerVisitor :
         visit(expression = expression, ctx = context.first, expectedType = context.second)
 
     @JvmDefault
-    override fun visit(expression: ModuleMember, context: Pair<TypeCheckingContext, Type>): Expression =
+    override fun visit(expression: ClassMember, context: Pair<TypeCheckingContext, Type>): Expression =
         visit(expression = expression, ctx = context.first, expectedType = context.second)
 
     @JvmDefault
@@ -98,7 +98,7 @@ internal interface TypeCheckerVisitor :
     fun visit(expression: Literal, ctx: TypeCheckingContext, expectedType: Type): Expression
     fun visit(expression: This, ctx: TypeCheckingContext, expectedType: Type): Expression
     fun visit(expression: Variable, ctx: TypeCheckingContext, expectedType: Type): Expression
-    fun visit(expression: ModuleMember, ctx: TypeCheckingContext, expectedType: Type): Expression
+    fun visit(expression: ClassMember, ctx: TypeCheckingContext, expectedType: Type): Expression
     fun visit(expression: TupleConstructor, ctx: TypeCheckingContext, expectedType: Type): Expression
     fun visit(expression: ObjectConstructor, ctx: TypeCheckingContext, expectedType: Type): Expression
     fun visit(expression: VariantConstructor, ctx: TypeCheckingContext, expectedType: Type): Expression

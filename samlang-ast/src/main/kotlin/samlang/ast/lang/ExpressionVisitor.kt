@@ -11,7 +11,7 @@ interface ExpressionVisitor<in C, out T> {
     fun visit(expression: Expression.Literal, context: C): T
     fun visit(expression: Expression.This, context: C): T
     fun visit(expression: Expression.Variable, context: C): T
-    fun visit(expression: Expression.ModuleMember, context: C): T
+    fun visit(expression: Expression.ClassMember, context: C): T
     fun visit(expression: Expression.TupleConstructor, context: C): T
     fun visit(expression: Expression.ObjectConstructor, context: C): T
     fun visit(expression: Expression.VariantConstructor, context: C): T

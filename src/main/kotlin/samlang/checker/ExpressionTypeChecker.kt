@@ -24,7 +24,7 @@ import samlang.ast.lang.Expression.Lambda
 import samlang.ast.lang.Expression.Literal
 import samlang.ast.lang.Expression.Match
 import samlang.ast.lang.Expression.MethodAccess
-import samlang.ast.lang.Expression.ModuleMember
+import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.ObjectConstructor.FieldConstructor
 import samlang.ast.lang.Expression.Panic
@@ -119,7 +119,7 @@ private class ExpressionTypeCheckerVisitor(
         return expression.copy(type = inferredType)
     }
 
-    override fun visit(expression: ModuleMember, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: ClassMember, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, _, moduleName, memberName) = expression
         val locallyInferredType = ctx.getClassFunctionType(
             module = moduleName, member = memberName, errorRange = range

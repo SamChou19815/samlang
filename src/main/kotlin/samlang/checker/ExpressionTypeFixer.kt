@@ -25,7 +25,7 @@ import samlang.ast.lang.Expression.Lambda
 import samlang.ast.lang.Expression.Literal
 import samlang.ast.lang.Expression.Match
 import samlang.ast.lang.Expression.MethodAccess
-import samlang.ast.lang.Expression.ModuleMember
+import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.Panic
 import samlang.ast.lang.Expression.This
@@ -108,7 +108,7 @@ private class TypeFixerVisitor(
     override fun visit(expression: Variable, context: Type): Expression =
         expression.copy(type = expression.getFixedSelfType(expectedType = context))
 
-    override fun visit(expression: ModuleMember, context: Type): Expression =
+    override fun visit(expression: ClassMember, context: Type): Expression =
         expression.copy(type = expression.getFixedSelfType(expectedType = context))
 
     override fun visit(expression: TupleConstructor, context: Type): Expression {
