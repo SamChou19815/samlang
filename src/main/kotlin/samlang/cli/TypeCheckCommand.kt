@@ -1,8 +1,7 @@
 package samlang.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
-import com.github.ajalt.clikt.parameters.options.default
-import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.core.requireObject
 import samlang.ast.ModuleReference
 import samlang.errors.CompilationFailedException
 import samlang.frontend.processSources
@@ -11,13 +10,11 @@ import java.io.InputStream
 import kotlin.system.exitProcess
 
 class TypeCheckCommand : CliktCommand(name = "check") {
-    private val sourceDirectory: String by option(
-        "-s", "--source-directory",
-        help = "Source directory to type check, default to the current working directory."
-    ).default(value = ".")
+
+    private val configuration: Configuration by requireObject()
 
     override fun run() {
-        val sourceDirectory = File(sourceDirectory).absoluteFile
+        val sourceDirectory = File(configuration.sourceDirectory).absoluteFile
         if (!sourceDirectory.isDirectory) {
             echo(message = "$sourceDirectory is not a directory.", err = true)
             exitProcess(1)
