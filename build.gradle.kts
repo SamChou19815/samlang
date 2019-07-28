@@ -25,11 +25,11 @@ allprojects {
     plugins.withId("org.jetbrains.kotlin.jvm") {
         val compileKotlin: KotlinJvmCompile by tasks
         compileKotlin.kotlinOptions {
-            jvmTarget = "1.8"
+            jvmTarget = "11"
         }
         val compileTestKotlin: KotlinJvmCompile by tasks
         compileTestKotlin.kotlinOptions {
-            jvmTarget = "1.8"
+            jvmTarget = "11"
         }
     }
     // Apply linters to all projects
@@ -53,7 +53,7 @@ allprojects {
         testImplementation(dependencyNotation = "org.slf4j:slf4j-simple:1.7.25")
     }
     configure<JavaPluginConvention> {
-        sourceCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_11
     }
     tasks {
         withType<KotlinJvmCompile> {
