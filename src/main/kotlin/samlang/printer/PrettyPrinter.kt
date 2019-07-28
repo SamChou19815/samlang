@@ -38,8 +38,8 @@ fun prettyPrint(module: Module): String =
 
 private class TopLevelPrinter(private val printer: IndentedPrinter) {
 
-    private val exprPrinter: ExprPrinter =
-        ExprPrinter(printer = printer)
+    private val expressionPrinter: ExpressionPrinter =
+        ExpressionPrinter(printer = printer)
 
     fun print(module: Module) {
         module.classDefinitions.forEach { classDefinition ->
@@ -88,12 +88,12 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
         val returnTypeString = type.returnType.prettyPrint()
         val header = "$memberVisibility$memberType$typeParamsString $name$argsString: $returnTypeString ="
         printer.printWithBreak(x = header)
-        printer.indented { body.accept(visitor = exprPrinter, context = true) }
+        printer.indented { body.accept(visitor = expressionPrinter, context = true) }
         printer.println()
     }
 }
 
-private class ExprPrinter(private val printer: IndentedPrinter) :
+private class ExpressionPrinter(private val printer: IndentedPrinter) :
     ExpressionVisitor<Boolean, Unit> {
 
     private fun Expression.printSelf(requireBreak: Boolean, withParenthesis: Boolean = false): Unit =
@@ -103,7 +103,7 @@ private class ExprPrinter(private val printer: IndentedPrinter) :
                 printSelf(requireBreak = false)
                 print(x = ")", requireBreak = requireBreak)
             }
-        } else accept(visitor = this@ExprPrinter, context = requireBreak)
+        } else accept(visitor = this@ExpressionPrinter, context = requireBreak)
 
     override fun visit(expression: Literal, context: Boolean) {
         printer.print(x = expression.literal.prettyPrintedValue, requireBreak = context)
