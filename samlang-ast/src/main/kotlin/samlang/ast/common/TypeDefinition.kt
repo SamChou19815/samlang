@@ -5,4 +5,16 @@ data class TypeDefinition(
     val type: TypeDefinitionType,
     val typeParameters: List<String>?,
     val mappings: Map<String, Type>
-) : Node
+) : Node {
+    companion object {
+        /**
+         * @return a dummy type definition used for util class.
+         */
+        fun ofDummy(range: Range): TypeDefinition = TypeDefinition(
+            range = range,
+            type = TypeDefinitionType.OBJECT,
+            typeParameters = null,
+            mappings = emptyMap()
+        )
+    }
+}

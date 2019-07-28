@@ -44,12 +44,7 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
         }
 
         override fun visitUtilClassHeader(ctx: UtilClassHeaderContext): TypeDefinition =
-            TypeDefinition(
-                range = ctx.range,
-                type = TypeDefinitionType.OBJECT,
-                typeParameters = emptyList(),
-                mappings = emptyMap()
-            )
+            TypeDefinition.ofDummy(range = ctx.range)
 
         private inner class TypeDefinitionBuilder(
             private val range: Range,
