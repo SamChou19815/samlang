@@ -6,7 +6,7 @@ import samlang.ast.ir.IrStatement
 data class TsFunction(
     val shouldBeExported: Boolean,
     val name: String,
-    val typeParameters: List<String>?,
+    val typeParameters: List<String>,
     val parameters: List<Pair<String, Type>>,
     val returnType: Type,
     val body: List<IrStatement>

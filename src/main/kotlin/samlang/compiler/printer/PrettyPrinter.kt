@@ -49,8 +49,10 @@ object PrettyPrinter {
         private fun print(classDefinition: ClassDefinition) {
             val (_, _, name, typeDefinition, members) = classDefinition
             val (_, typeDefinitionType, typeParameters, mappings) = typeDefinition
-            val typeParameterString =
-                typeParameters?.joinToString(separator = ", ", prefix = "<", postfix = ">") ?: ""
+            val typeParameterString = typeParameters
+                .takeIf { it.isNotEmpty() }
+                ?.joinToString(separator = ", ", prefix = "<", postfix = ">")
+                ?: ""
             if (typeDefinition.mappings.isEmpty()) {
                 printer.printWithBreak(x = "class $name {")
             } else {
@@ -74,7 +76,10 @@ object PrettyPrinter {
             val (_, isPublic, isMethod, _, name, typeParameters, type, parameters, body) = member
             val memberVisibility = if (isPublic) "public " else ""
             val memberType = if (isMethod) "method" else "function"
-            val typeParamsString = typeParameters?.joinToString(separator = ", ", prefix = " <", postfix = ">") ?: ""
+            val typeParamsString = typeParameters
+                .takeIf { it.isNotEmpty() }
+                ?.joinToString(separator = ", ", prefix = " <", postfix = ">")
+                ?: ""
             val argsString = parameters.joinToString(
                 separator = ", ", prefix = "(", postfix = ")"
             ) { (name, _, type, _) -> "$name: $type" }

@@ -24,7 +24,7 @@ private class UndecidedTypeCollectorVisitor : TypeVisitor<Unit, Unit> {
     override fun visit(type: PrimitiveType, context: Unit) {}
 
     override fun visit(type: IdentifierType, context: Unit) {
-        type.typeArguments?.forEach { it.accept(visitor = this, context = Unit) }
+        type.typeArguments.forEach { it.accept(visitor = this, context = Unit) }
     }
 
     override fun visit(type: TupleType, context: Unit): Unit =

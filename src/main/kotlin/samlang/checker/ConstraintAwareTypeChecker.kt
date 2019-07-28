@@ -69,7 +69,7 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution) {
                     expectedList = context.typeArguments,
                     actualList = type.typeArguments,
                     range = errorRange
-                )?.map { (expect, actual) -> meet(actualType = actual, expectedType = expect) }
+                ).map { (expect, actual) -> meet(actualType = actual, expectedType = expect) }
                 type.copy(typeArguments = inferredTypeArguments)
             }
             else -> throw ConflictError()

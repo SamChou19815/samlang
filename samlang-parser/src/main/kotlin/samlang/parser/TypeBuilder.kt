@@ -1,22 +1,26 @@
 package samlang.parser
 
 import samlang.ast.common.Type
+import samlang.ast.common.Type.Companion.bool
+import samlang.ast.common.Type.Companion.id
+import samlang.ast.common.Type.Companion.int
+import samlang.ast.common.Type.Companion.string
+import samlang.ast.common.Type.Companion.unit
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 
 internal object TypeBuilder : PLBaseVisitor<Type>() {
 
-    override fun visitUnitType(ctx: PLParser.UnitTypeContext): Type = Type.unit
-    override fun visitBoolType(ctx: PLParser.BoolTypeContext): Type = Type.bool
-    override fun visitIntType(ctx: PLParser.IntTypeContext): Type = Type.int
-    override fun visitStrType(ctx: PLParser.StrTypeContext): Type = Type.string
+    override fun visitUnitType(ctx: PLParser.UnitTypeContext): Type = unit
+    override fun visitBoolType(ctx: PLParser.BoolTypeContext): Type = bool
+    override fun visitIntType(ctx: PLParser.IntTypeContext): Type = int
+    override fun visitStrType(ctx: PLParser.StrTypeContext): Type = string
 
     override fun visitSingleIdentifierType(ctx: PLParser.SingleIdentifierTypeContext): Type =
-        Type.IdentifierType(
+        id(
             identifier = ctx.UpperId().symbol.text,
-            typeArguments = ctx.typeParameters()?.let { params ->
-                params.typeExpr().map { it.accept(TypeBuilder) }
-            }
+            typeArguments = ctx.typeParameters()?.let { params -> params.typeExpr().map { it.accept(TypeBuilder) } }
+                ?: emptyList()
         )
 
     override fun visitTupleType(ctx: PLParser.TupleTypeContext): Type = Type.TupleType(

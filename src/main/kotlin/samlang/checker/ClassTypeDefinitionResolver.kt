@@ -31,25 +31,7 @@ internal object ClassTypeDefinitionResolver {
         val (_, _, typeParameters, varMap) = context.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == typeDefinitionType }
             ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = typeDefinitionType, range = errorRange)
-        return if (typeArguments == null) {
-            if (typeParameters != null) {
-                error(
-                    message =
-                    """
-                    BAD! typeArguments: null, typeParameters: $typeParameters, identifierType: $identifierType
-                    """.trimIndent()
-                )
-            }
-            varMap
-        } else {
-            if (typeParameters == null) {
-                error(
-                    message =
-                    """
-                    BAD! typeArguments: $typeArguments, typeParameters: null, identifierType: $identifierType"
-                    """.trimIndent()
-                )
-            }
+        return run {
             TypeParamSizeMismatchError.check(
                 expectedSize = typeParameters.size,
                 actualSize = typeArguments.size,
@@ -71,7 +53,7 @@ internal object ClassTypeDefinitionResolver {
 
         override fun visit(type: IdentifierType, context: Map<String, Type>): Type {
             val typeArguments = type.typeArguments
-            if (typeArguments != null) {
+            if (typeArguments.isNotEmpty()) {
                 val newTypeArguments = typeArguments.map { applyGenericTypeParameters(type = it, context = context) }
                 return type.copy(typeArguments = newTypeArguments)
             }

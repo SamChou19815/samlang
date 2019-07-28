@@ -19,7 +19,7 @@ private object TypeResolverVisitor :
     override fun visit(type: PrimitiveType, context: ResolveTypeFunction): Type = type
 
     override fun visit(type: IdentifierType, context: ResolveTypeFunction): Type =
-        type.copy(typeArguments = type.typeArguments?.map { it.resolveType(function = context) })
+        type.copy(typeArguments = type.typeArguments.map { it.resolveType(function = context) })
 
     override fun visit(type: TupleType, context: ResolveTypeFunction): Type =
         type.copy(mappings = type.mappings.map { it.resolveType(function = context) })

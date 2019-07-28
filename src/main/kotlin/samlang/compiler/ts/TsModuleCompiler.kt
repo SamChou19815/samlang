@@ -36,18 +36,11 @@ private fun compileTsFunction(
     val classTypeParameters = classDefinition.typeDefinition.typeParameters
     val thisType = Type.IdentifierType(
         identifier = classDefinition.name,
-        typeArguments = classTypeParameters?.map { Type.IdentifierType(identifier = it, typeArguments = null) }
+        typeArguments = classTypeParameters.map { Type.id(identifier = it) }
     )
     val functionTypeParameters = classMember.typeParameters
     val typeParameters = if (classMember.isMethod) {
-        when {
-            classTypeParameters == null && functionTypeParameters == null -> null
-            classTypeParameters == null && functionTypeParameters != null -> functionTypeParameters
-            classTypeParameters != null && functionTypeParameters == null -> classTypeParameters
-            classTypeParameters != null && functionTypeParameters != null ->
-                classTypeParameters.plus(elements = functionTypeParameters)
-            else -> error(message = "It should already be exhaustive!")
-        }
+        classTypeParameters.plus(elements = functionTypeParameters)
     } else {
         functionTypeParameters
     }

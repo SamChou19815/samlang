@@ -49,11 +49,11 @@ private object UndecideTypeParametersVisitor :
 
     override fun visit(type: IdentifierType, context: Map<String, UndecidedType>): Type {
         val typeArguments = type.typeArguments
-        return if (typeArguments != null) {
+        return if (typeArguments.isEmpty()) {
+            context[type.identifier] ?: type
+        } else {
             val newTypeArguments = typeArguments.map { it.undecide(context = context) }
             type.copy(typeArguments = newTypeArguments)
-        } else {
-            context[type.identifier] ?: type
         }
     }
 

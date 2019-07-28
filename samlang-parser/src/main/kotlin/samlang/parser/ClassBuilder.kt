@@ -38,7 +38,7 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
         override fun visitClassHeader(ctx: ClassHeaderContext): TypeDefinition {
             val rawTypeParams: TypeParametersDeclarationContext? = ctx.typeParametersDeclaration()
             val rawTypeDeclaration = ctx.typeDeclaration()
-            val typeParameters = rawTypeParams?.typeParameters
+            val typeParameters = rawTypeParams?.typeParameters ?: emptyList()
             val range = rawTypeParams?.range?.union(rawTypeDeclaration.range) ?: rawTypeDeclaration.range
             return rawTypeDeclaration.accept(TypeDefinitionBuilder(range, typeParameters))
         }
@@ -48,7 +48,7 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
 
         private inner class TypeDefinitionBuilder(
             private val range: Range,
-            private val typeParameters: List<String>?
+            private val typeParameters: List<String>
         ) : PLBaseVisitor<TypeDefinition>() {
 
             override fun visitObjType(ctx: ObjTypeContext): TypeDefinition =
@@ -99,7 +99,7 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
             isMethod = ctx.METHOD() != null,
             nameRange = nameSymbol.range,
             name = nameSymbol.text,
-            typeParameters = ctx.typeParametersDeclaration()?.typeParameters,
+            typeParameters = ctx.typeParametersDeclaration()?.typeParameters ?: emptyList(),
             type = type,
             parameters = parameters,
             body = ctx.expression().accept(expressionBuilder)

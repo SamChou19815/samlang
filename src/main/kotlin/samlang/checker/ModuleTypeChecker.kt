@@ -67,7 +67,7 @@ internal class ModuleTypeChecker(val errorCollector: ErrorCollector) {
         // We consistently put passedCheck on the right hand side to avoid short-circuiting.
         // In this way, we can report as many errors as possible.
         val (range, _, typeParameters, mappings) = typeDefinition
-        passedCheck = errorCollector.passCheck { typeParameters?.checkNameCollision(range = range) } && passedCheck
+        passedCheck = errorCollector.passCheck { typeParameters.checkNameCollision(range = range) } && passedCheck
         passedCheck = errorCollector.passCheck { mappings.keys.checkNameCollision(range = range) } && passedCheck
         passedCheck = mappings.values.fold(initial = passedCheck) { previouslyPassedCheck, type ->
             errorCollector.passCheck {
@@ -79,7 +79,7 @@ internal class ModuleTypeChecker(val errorCollector: ErrorCollector) {
         } && passedCheck
         passedCheck = classMembers.fold(initial = passedCheck) { previouslyPassedCheck, moduleMember ->
             errorCollector.passCheck {
-                moduleMember.typeParameters?.checkNameCollision(range = moduleMember.range)
+                moduleMember.typeParameters.checkNameCollision(range = moduleMember.range)
             } && previouslyPassedCheck
         }
         return passedCheck
@@ -91,9 +91,7 @@ internal class ModuleTypeChecker(val errorCollector: ErrorCollector) {
     ): Pair<List<MemberDefinition>, TypeCheckingContext> {
         val partiallyCheckedMembers = classMembers.filter { member ->
             val typeParameters = member.typeParameters
-            var newContext = typeParameters
-                ?.let { typeCheckingContext.addLocalGenericTypes(genericTypes = it) }
-                ?: typeCheckingContext
+            var newContext = typeCheckingContext.addLocalGenericTypes(genericTypes = typeParameters)
             if (member.isMethod) {
                 val updatedNewContext = newContext.getCurrentModuleTypeDefinition()
                     ?.typeParameters
@@ -126,10 +124,7 @@ internal class ModuleTypeChecker(val errorCollector: ErrorCollector) {
     ): MemberDefinition {
         val (_, _, isMethod, _, _, typeParameters, type, parameters, body) = memberDefinition
         var contextForTypeCheckingBody = if (isMethod) typeCheckingContext.addThisType() else typeCheckingContext
-        if (typeParameters != null) {
-            contextForTypeCheckingBody =
-                contextForTypeCheckingBody.addLocalGenericTypes(genericTypes = typeParameters)
-        }
+        contextForTypeCheckingBody = contextForTypeCheckingBody.addLocalGenericTypes(genericTypes = typeParameters)
         contextForTypeCheckingBody = parameters.fold(initial = contextForTypeCheckingBody) { tempContext, parameter ->
             val parameterType = parameter.type.validate(context = tempContext, errorRange = parameter.typeRange)
             tempContext.addLocalValueType(name = parameter.name, type = parameterType, errorRange = parameter.nameRange)

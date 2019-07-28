@@ -29,12 +29,10 @@ sealed class Type {
             visitor.visit(type = this, context = context)
     }
 
-    data class IdentifierType(
-        val identifier: String,
-        val typeArguments: List<Type>?
-    ) : Type() {
+    data class IdentifierType(val identifier: String, val typeArguments: List<Type>) : Type() {
 
         override fun prettyPrint(): String = typeArguments
+            .takeIf { it.isNotEmpty() }
             ?.joinToString(separator = ", ", prefix = "$identifier<", postfix = ">") { it.prettyPrint() }
             ?: identifier
 
@@ -91,6 +89,10 @@ sealed class Type {
         val int: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.INT)
         @JvmField
         val string: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.STRING)
+
+        @JvmStatic
+        fun id(identifier: String, typeArguments: List<Type> = emptyList()): IdentifierType =
+            IdentifierType(identifier = identifier, typeArguments = typeArguments)
 
         @JvmStatic
         fun undecided(): UndecidedType {

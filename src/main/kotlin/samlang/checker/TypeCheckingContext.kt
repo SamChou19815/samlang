@@ -45,9 +45,7 @@ data class TypeCheckingContext(
         return TypeCheckingContext(
             classes = classes.plus(pair = name to newModuleType),
             currentClass = name,
-            localGenericTypes = typeDefinition.typeParameters
-                ?.let { localGenericTypes.plus(elements = it) }
-                ?: localGenericTypes,
+            localGenericTypes = localGenericTypes.plus(elements = typeDefinition.typeParameters),
             localValues = localValues
         )
     }
@@ -103,7 +101,7 @@ data class TypeCheckingContext(
 
     fun getClassMethodType(
         module: String,
-        typeArgs: List<Type>?,
+        typeArguments: List<Type>,
         methodName: String,
         errorRange: Range
     ): Type.FunctionType {
@@ -119,28 +117,25 @@ data class TypeCheckingContext(
         }
         val typeParameters = classes[module]!!.typeDefinition.typeParameters
         TypeParamSizeMismatchError.check(
-            expectedSize = typeParameters?.size ?: 0,
-            actualSize = typeArgs?.size ?: 0,
+            expectedSize = typeParameters.size,
+            actualSize = typeArguments.size,
             range = errorRange
         )
-        val fullyFixedType = if (typeParameters != null && typeArgs != null) {
-            val typeFixingContext = typeParameters.zip(typeArgs).toMap()
-            ClassTypeDefinitionResolver.applyGenericTypeParameters(
-                type = partiallyFixedType,
-                context = typeFixingContext
-            )
-        } else partiallyFixedType
+        val fullyFixedType = ClassTypeDefinitionResolver.applyGenericTypeParameters(
+            type = partiallyFixedType,
+            context = typeParameters.zip(typeArguments).toMap()
+        )
         return fullyFixedType as Type.FunctionType
     }
 
-    fun checkIfIdentifierTypeIsWellDefined(name: String, typeArgLength: Int, errorRange: Range) {
+    fun checkIfIdentifierTypeIsWellDefined(name: String, typeArgumentLength: Int, errorRange: Range) {
         val isGood = if (name in localGenericTypes) {
-            typeArgLength == 0
+            typeArgumentLength == 0
         } else {
             val typeDef = classes[name]?.typeDefinition
                 ?: throw NotWellDefinedIdentifierError(badIdentifier = name, range = errorRange)
             val typeParams = typeDef.typeParameters
-            if (typeParams == null) typeArgLength == 0 else typeParams.size == typeArgLength
+            typeParams.size == typeArgumentLength
         }
         if (!isGood) {
             throw NotWellDefinedIdentifierError(badIdentifier = name, range = errorRange)
@@ -159,16 +154,11 @@ data class TypeCheckingContext(
         val typeParameters = classes[currentClass]!!.typeDefinition.typeParameters
         val type = Type.IdentifierType(
             identifier = currentClass,
-            typeArguments = typeParameters?.map { parameter ->
-                Type.IdentifierType(
-                    identifier = parameter,
-                    typeArguments = null
-                )
-            }
+            typeArguments = typeParameters.map { Type.id(identifier = it) }
         )
         return copy(
             localValues = localValues.plus(pair = "this" to type),
-            localGenericTypes = typeParameters?.let { localGenericTypes.plus(elements = it) } ?: localGenericTypes
+            localGenericTypes = localGenericTypes.plus(elements = typeParameters)
         )
     }
 

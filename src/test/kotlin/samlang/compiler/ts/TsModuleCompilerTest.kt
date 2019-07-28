@@ -2,9 +2,9 @@ package samlang.compiler.ts
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
+import samlang.ast.common.Type
 import samlang.ast.common.Type.Companion.unit
 import samlang.ast.common.Type.FunctionType
-import samlang.ast.common.Type.IdentifierType
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.ir.IrExpression
@@ -63,7 +63,7 @@ class TsModuleCompilerTest : StringSpec() {
                             isMethod = false,
                             nameRange = dummyRange,
                             name = "foo",
-                            typeParameters = null,
+                            typeParameters = emptyList(),
                             type = FunctionType(argumentTypes = emptyList(), returnType = unit),
                             parameters = emptyList(),
                             body = THIS
@@ -74,7 +74,7 @@ class TsModuleCompilerTest : StringSpec() {
                             isMethod = false,
                             nameRange = dummyRange,
                             name = "bar",
-                            typeParameters = null,
+                            typeParameters = emptyList(),
                             type = FunctionType(argumentTypes = emptyList(), returnType = unit),
                             parameters = emptyList(),
                             body = THIS
@@ -88,7 +88,7 @@ class TsModuleCompilerTest : StringSpec() {
                         TsFunction(
                             name = "Test\$foo",
                             shouldBeExported = true,
-                            typeParameters = null,
+                            typeParameters = emptyList(),
                             parameters = emptyList(),
                             returnType = unit,
                             body = listOf(IrStatement.Return(expression = IR_THIS))
@@ -96,7 +96,7 @@ class TsModuleCompilerTest : StringSpec() {
                         TsFunction(
                             name = "Test\$bar",
                             shouldBeExported = false,
-                            typeParameters = null,
+                            typeParameters = emptyList(),
                             parameters = emptyList(),
                             returnType = unit,
                             body = listOf(IrStatement.Return(expression = IR_THIS))
@@ -119,7 +119,7 @@ class TsModuleCompilerTest : StringSpec() {
                             isMethod = true,
                             nameRange = dummyRange,
                             name = "bar",
-                            typeParameters = null,
+                            typeParameters = emptyList(),
                             type = FunctionType(argumentTypes = emptyList(), returnType = unit),
                             parameters = emptyList(),
                             body = THIS
@@ -133,8 +133,8 @@ class TsModuleCompilerTest : StringSpec() {
                         TsFunction(
                             name = "Foo\$bar",
                             shouldBeExported = true,
-                            typeParameters = null,
-                            parameters = listOf("_this" to IdentifierType(identifier = "Foo", typeArguments = null)),
+                            typeParameters = emptyList(),
+                            parameters = listOf("_this" to Type.id(identifier = "Foo")),
                             returnType = unit,
                             body = listOf(IrStatement.Return(expression = IR_THIS))
                         )
@@ -178,12 +178,9 @@ class TsModuleCompilerTest : StringSpec() {
                             shouldBeExported = true,
                             typeParameters = listOf("A", "B", "C", "D"),
                             parameters = listOf(
-                                "_this" to IdentifierType(
+                                "_this" to Type.id(
                                     identifier = "Foo",
-                                    typeArguments = listOf(
-                                        IdentifierType(identifier = "A", typeArguments = null),
-                                        IdentifierType(identifier = "B", typeArguments = null)
-                                    )
+                                    typeArguments = listOf(Type.id(identifier = "A"), Type.id(identifier = "B"))
                                 )
                             ),
                             returnType = unit,

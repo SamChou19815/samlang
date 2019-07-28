@@ -21,21 +21,9 @@ class TypeParamSizeMismatchError private constructor(
         }
 
         @JvmStatic
-        fun <T> checkNotNull(expectedList: List<T>, actualList: List<T>, range: Range): List<Pair<T, T>> {
+        fun <T> check(expectedList: List<T>, actualList: List<T>, range: Range): List<Pair<T, T>> {
             check(expectedSize = expectedList.size, actualSize = actualList.size, range = range)
             return expectedList.zip(actualList)
         }
-
-        @JvmStatic
-        fun <T> check(expectedList: List<T>?, actualList: List<T>?, range: Range): List<Pair<T, T>>? =
-            if (expectedList == null && actualList == null) {
-                null
-            } else if (expectedList == null && actualList != null) {
-                throw TypeParamSizeMismatchError(expectedSize = 0, actualSize = actualList.size, range = range)
-            } else if (expectedList != null && actualList == null) {
-                throw TypeParamSizeMismatchError(expectedSize = expectedList.size, actualSize = 0, range = range)
-            } else if (expectedList != null && actualList != null) {
-                checkNotNull(expectedList, actualList, range)
-            } else error(message = "Impossible Case")
     }
 }

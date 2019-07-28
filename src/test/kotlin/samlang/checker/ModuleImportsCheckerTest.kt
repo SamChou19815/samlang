@@ -21,7 +21,7 @@ class ModuleImportsCheckerTest : StringSpec() {
             typeDefinition = TypeDefinition(
                 range = Range.DUMMY,
                 type = TypeDefinitionType.OBJECT,
-                typeParameters = null,
+                typeParameters = emptyList(),
                 mappings = emptyMap()
             ),
             members = emptyList()

@@ -128,12 +128,12 @@ private class TypeFixerVisitor(
             ?.takeIf { it.type == OBJECT }
             ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = errorRange)
         val newTypeArguments = newType.typeArguments
-        val betterMapping = if (typeParameters != null && newTypeArguments != null) {
+        val betterMapping = run {
             val replacementMap = typeParameters.checkedZip(other = newTypeArguments).toMap()
             mapping.mapValues { (_, v) ->
                 ClassTypeDefinitionResolver.applyGenericTypeParameters(type = v, context = replacementMap)
             }
-        } else mapping
+        }
         val newSpreadExpr = expression.spreadExpression?.tryFixType(expectedType = context)
         val newDeclarations = expression.fieldDeclarations.map { dec ->
             val expTypeForDec = betterMapping[dec.name] ?: blameTypeChecker()
@@ -159,12 +159,9 @@ private class TypeFixerVisitor(
             ?.takeIf { it.type == VARIANT }
             ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = VARIANT, range = errorRange)
         var dataType = mapping[expression.tag] ?: blameTypeChecker()
-        val newTypeArguments = newType.typeArguments
-        if (typeParameters != null && newTypeArguments != null) {
-            dataType = ClassTypeDefinitionResolver.applyGenericTypeParameters(
-                type = dataType, context = typeParameters.checkedZip(other = newTypeArguments).toMap()
-            )
-        }
+        dataType = ClassTypeDefinitionResolver.applyGenericTypeParameters(
+            type = dataType, context = typeParameters.checkedZip(other = newType.typeArguments).toMap()
+        )
         return expression.copy(
             type = newType,
             data = expression.data.tryFixType(expectedType = dataType)

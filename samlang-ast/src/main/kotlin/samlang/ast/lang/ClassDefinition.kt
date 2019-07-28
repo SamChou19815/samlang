@@ -19,7 +19,7 @@ data class ClassDefinition(
         val isMethod: Boolean,
         val nameRange: Range,
         val name: String,
-        val typeParameters: List<String>?,
+        val typeParameters: List<String>,
         val type: Type.FunctionType,
         val parameters: List<Parameter>,
         val body: Expression

@@ -24,10 +24,10 @@ private class TypeValidator(private val errorRange: Range) :
         val (name, typeArguments) = type
         context.checkIfIdentifierTypeIsWellDefined(
             name = name,
-            typeArgLength = typeArguments?.size ?: 0,
+            typeArgumentLength = typeArguments.size,
             errorRange = errorRange
         )
-        return type.copy(typeArguments = typeArguments?.map { it.accept(visitor = this, context = context) })
+        return type.copy(typeArguments = typeArguments.map { it.accept(visitor = this, context = context) })
     }
 
     override fun visit(type: TupleType, context: TypeCheckingContext): Type =
