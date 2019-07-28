@@ -1,4 +1,4 @@
-package samlang.compiler.printer
+package samlang.printer
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec

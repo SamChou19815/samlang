@@ -4,7 +4,7 @@ import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
 import samlang.checker.ModuleTypeChecker
 import samlang.checker.TypeCheckingContext
-import samlang.compiler.printer.PrettyPrinter
+import samlang.printer.PrettyPrinter
 import samlang.errors.CompilationFailedException
 import samlang.interpreter.ModuleInterpreter
 import samlang.interpreter.PanicException
