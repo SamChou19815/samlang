@@ -1,4 +1,4 @@
-package samlang.compiler.ts
+package samlang.compiler.ir
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
@@ -14,9 +14,6 @@ import samlang.ast.lang.Pattern
 import samlang.ast.ir.IrExpression
 import samlang.ast.ts.TsPattern
 import samlang.ast.ir.IrStatement
-import samlang.compiler.ir.LoweringResult
-import samlang.compiler.ir.TS_UNIT
-import samlang.compiler.ir.lowerExpression
 import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 
 class ExpressionLoweringTest : StringSpec() {
@@ -114,10 +111,16 @@ class ExpressionLoweringTest : StringSpec() {
                     range = dummyRange,
                     type = unit,
                     functionExpression = THIS,
-                    arguments = listOf(THIS, THIS)
+                    arguments = listOf(
+                        THIS,
+                        THIS
+                    )
                 ),
                 expectedExpression = IrExpression.FunctionApplication(
-                    functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
+                    functionExpression = IR_THIS, arguments = listOf(
+                        IR_THIS,
+                        IR_THIS
+                    )
                 )
             )
             assertCorrectlyLowered(
