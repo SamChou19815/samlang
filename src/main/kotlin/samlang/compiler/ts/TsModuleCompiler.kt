@@ -11,10 +11,10 @@ import samlang.compiler.ir.TS_UNIT
 import samlang.compiler.ir.lowerExpression
 
 internal fun compileTsModule(module: Module): TsModule {
-    val typeDefinitions = arrayListOf<TypeDefinition>()
+    val typeDefinitions = arrayListOf<Pair<String, TypeDefinition>>()
     val functions = arrayListOf<TsFunction>()
     for (classDefinition in module.classDefinitions) {
-        typeDefinitions.add(element = classDefinition.typeDefinition)
+        typeDefinitions.add(element = classDefinition.name to classDefinition.typeDefinition)
         for (member in classDefinition.members) {
             functions.add(element = compileTsFunction(classDefinition = classDefinition, classMember = member))
         }

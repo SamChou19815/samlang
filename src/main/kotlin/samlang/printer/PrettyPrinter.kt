@@ -1,5 +1,6 @@
 package samlang.printer
 
+import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.TypeDefinitionType.OBJECT
 import samlang.ast.common.TypeDefinitionType.VARIANT
 import samlang.ast.lang.ClassDefinition
@@ -42,23 +43,29 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
         ExpressionPrinter(printer = printer)
 
     fun print(module: Module) {
+        if (module.imports.isNotEmpty()) {
+            module.imports.forEach(action = ::printImport)
+            printer.println()
+        }
         module.classDefinitions.forEach { classDefinition ->
             print(classDefinition = classDefinition)
             printer.println()
         }
     }
 
+    private fun printImport(import: ModuleMembersImport) {
+        val importedMemberString = import.importedMembers.joinToString(separator = ", ") { it.first }
+        val importedModuleString = import.importedModule.parts.joinToString(separator = ".")
+        printer.printWithBreak(x = "import { $importedMemberString } from \"/$importedModuleString\"")
+    }
+
     private fun print(classDefinition: ClassDefinition) {
         val (_, _, name, typeDefinition, members) = classDefinition
         val (_, typeDefinitionType, typeParameters, mappings) = typeDefinition
-        val typeParameterString = typeParameters
-            .takeIf { it.isNotEmpty() }
-            ?.joinToString(separator = ", ", prefix = "<", postfix = ">")
-            ?: ""
         if (typeDefinition.mappings.isEmpty()) {
             printer.printWithBreak(x = "class $name {")
         } else {
-            printer.printWithBreak(x = "class $name$typeParameterString(")
+            printer.printWithBreak(x = "class $name${typeParametersToString(typeParameters = typeParameters)}(")
             printer.indented {
                 when (typeDefinitionType) {
                     OBJECT -> mappings.forEach { (field, type) -> printWithBreak(x = "$field: $type,") }
@@ -78,15 +85,12 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
         val (_, isPublic, isMethod, _, name, typeParameters, type, parameters, body) = member
         val memberVisibility = if (isPublic) "public " else ""
         val memberType = if (isMethod) "method" else "function"
-        val typeParamsString = typeParameters
-            .takeIf { it.isNotEmpty() }
-            ?.joinToString(separator = ", ", prefix = " <", postfix = ">")
-            ?: ""
+        val typeParameterString = typeParametersToString(typeParameters = typeParameters)
         val argsString = parameters.joinToString(
             separator = ", ", prefix = "(", postfix = ")"
         ) { (name, _, type, _) -> "$name: $type" }
         val returnTypeString = type.returnType.prettyPrint()
-        val header = "$memberVisibility$memberType$typeParamsString $name$argsString: $returnTypeString ="
+        val header = "$memberVisibility$memberType$typeParameterString $name$argsString: $returnTypeString ="
         printer.printWithBreak(x = header)
         printer.indented { body.accept(visitor = expressionPrinter, context = true) }
         printer.println()

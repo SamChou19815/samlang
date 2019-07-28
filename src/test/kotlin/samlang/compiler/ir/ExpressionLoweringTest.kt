@@ -245,9 +245,15 @@ class ExpressionLoweringTest : StringSpec() {
                     )
                 ),
                 expectedStatements = listOf(
+                    IrStatement.ConstantDefinition(
+                        pattern = TsPattern.VariablePattern(name = "_LOWERING_0"),
+                        typeAnnotation = unit,
+                        assignedExpression = IR_THIS
+                    ),
                     IrStatement.Match(
+                        type = unit,
                         assignedTemporaryVariable = null,
-                        matchedExpression = IR_THIS,
+                        variableForMatchedExpression = "_LOWERING_0",
                         matchingList = listOf(
                             IrStatement.Match.VariantPatternToStatement(
                                 tag = "Foo",
@@ -281,9 +287,15 @@ class ExpressionLoweringTest : StringSpec() {
                 ),
                 expected = LoweringResult(
                     statements = listOf(
+                        IrStatement.ConstantDefinition(
+                            pattern = TsPattern.VariablePattern(name = "_LOWERING_0"),
+                            typeAnnotation = unit,
+                            assignedExpression = IR_THIS
+                        ),
                         IrStatement.Match(
-                            assignedTemporaryVariable = "_LOWERING_0",
-                            matchedExpression = IR_THIS,
+                            type = int,
+                            assignedTemporaryVariable = "_LOWERING_1",
+                            variableForMatchedExpression = "_LOWERING_0",
                             matchingList = listOf(
                                 IrStatement.Match.VariantPatternToStatement(
                                     tag = "Foo",
@@ -300,7 +312,7 @@ class ExpressionLoweringTest : StringSpec() {
                             )
                         )
                     ),
-                    expression = IrExpression.Variable(name = "_LOWERING_0")
+                    expression = IrExpression.Variable(name = "_LOWERING_1")
                 )
             )
         }

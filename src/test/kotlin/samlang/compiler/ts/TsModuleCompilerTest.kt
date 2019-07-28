@@ -45,7 +45,9 @@ class TsModuleCompilerTest : StringSpec() {
                     members = listOf()
                 ),
                 tsModule = TsModule(
-                    imports = emptyList(), typeDefinitions = listOf(DUMMY_TYPE_DEFINITION), functions = emptyList()
+                    imports = emptyList(),
+                    typeDefinitions = listOf("Foo" to DUMMY_TYPE_DEFINITION),
+                    functions = emptyList()
                 )
             )
         }
@@ -83,7 +85,7 @@ class TsModuleCompilerTest : StringSpec() {
                 ),
                 tsModule = TsModule(
                     imports = emptyList(),
-                    typeDefinitions = listOf(DUMMY_TYPE_DEFINITION),
+                    typeDefinitions = listOf("Test" to DUMMY_TYPE_DEFINITION),
                     functions = listOf(
                         TsFunction(
                             name = "Test\$foo",
@@ -128,7 +130,7 @@ class TsModuleCompilerTest : StringSpec() {
                 ),
                 tsModule = TsModule(
                     imports = emptyList(),
-                    typeDefinitions = listOf(DUMMY_TYPE_DEFINITION),
+                    typeDefinitions = listOf("Foo" to DUMMY_TYPE_DEFINITION),
                     functions = listOf(
                         TsFunction(
                             name = "Foo\$bar",
@@ -171,7 +173,7 @@ class TsModuleCompilerTest : StringSpec() {
                 ),
                 tsModule = TsModule(
                     imports = emptyList(),
-                    typeDefinitions = listOf(typeDefinition),
+                    typeDefinitions = listOf("Foo" to typeDefinition),
                     functions = listOf(
                         TsFunction(
                             name = "Foo\$bar",

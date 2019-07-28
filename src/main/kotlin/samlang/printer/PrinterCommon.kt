@@ -22,3 +22,9 @@ private class StringPrintStream : PrintStream(StringBuilderOutputStream(), true)
 
     val printedString: String get() = (out as StringBuilderOutputStream).sb.toString()
 }
+
+internal fun <T> typeParametersToString(typeParameters: List<T>): String =
+    typeParameters
+        .takeIf { it.isNotEmpty() }
+        ?.joinToString(separator = ", ", prefix = "<", postfix = ">")
+        ?: ""

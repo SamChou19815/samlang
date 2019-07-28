@@ -1,9 +1,6 @@
 package samlang.compiler.ir
 
 import samlang.ast.common.Type
-import samlang.ast.lang.Expression
-import samlang.ast.lang.ExpressionVisitor
-import samlang.ast.lang.Pattern
 import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrExpression.Binary
 import samlang.ast.ir.IrExpression.ClassMember
@@ -18,7 +15,6 @@ import samlang.ast.ir.IrExpression.TupleConstructor
 import samlang.ast.ir.IrExpression.Unary
 import samlang.ast.ir.IrExpression.Variable
 import samlang.ast.ir.IrExpression.VariantConstructor
-import samlang.ast.ts.TsPattern
 import samlang.ast.ir.IrStatement
 import samlang.ast.ir.IrStatement.ConstantDefinition
 import samlang.ast.ir.IrStatement.IfElse
@@ -27,6 +23,10 @@ import samlang.ast.ir.IrStatement.Match
 import samlang.ast.ir.IrStatement.Return
 import samlang.ast.ir.IrStatement.Throw
 import samlang.ast.ir.IrStatement.VariableAssignment
+import samlang.ast.lang.Expression
+import samlang.ast.lang.ExpressionVisitor
+import samlang.ast.lang.Pattern
+import samlang.ast.ts.TsPattern
 
 internal fun lowerExpression(expression: Expression): LoweringResult =
     expression.accept(visitor = ExpressionLoweringVisitor(), context = Unit)
@@ -223,6 +223,14 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     override fun visit(expression: Expression.Match, context: Unit): LoweringResult {
         val loweredStatements = arrayListOf<IrStatement>()
         val matchedExpression = expression.matchedExpression.getLoweredAndAddStatements(statements = loweredStatements)
+        val variableForMatchedExpression = allocateTemporaryVariable()
+        loweredStatements.add(
+            element = ConstantDefinition(
+                pattern = TsPattern.VariablePattern(name = variableForMatchedExpression),
+                typeAnnotation = expression.matchedExpression.type,
+                assignedExpression = matchedExpression
+            )
+        )
         val loweredMatchingList = expression.matchingList.map { patternToExpression ->
             val result = patternToExpression.expression.lower()
             Match.VariantPatternToStatement(
@@ -235,8 +243,9 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         if (expression.type == Type.unit) {
             loweredStatements.add(
                 element = Match(
+                    type = expression.type,
                     assignedTemporaryVariable = null,
-                    matchedExpression = matchedExpression,
+                    variableForMatchedExpression = variableForMatchedExpression,
                     matchingList = loweredMatchingList
                 )
             )
@@ -245,8 +254,9 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             val temporaryVariable = allocateTemporaryVariable()
             loweredStatements.add(
                 element = Match(
+                    type = expression.type,
                     assignedTemporaryVariable = temporaryVariable,
-                    matchedExpression = matchedExpression,
+                    variableForMatchedExpression = variableForMatchedExpression,
                     matchingList = loweredMatchingList
                 )
             )

@@ -23,8 +23,9 @@ sealed class IrStatement {
     }
 
     data class Match(
+        val type: Type,
         val assignedTemporaryVariable: String?,
-        val matchedExpression: IrExpression,
+        val variableForMatchedExpression: String,
         val matchingList: List<VariantPatternToStatement>
     ) : IrStatement() {
 
