@@ -37,4 +37,18 @@ sealed class Literal {
     data class BoolLiteral(val value: Boolean) : Literal() {
         override val prettyPrintedValue: String = value.toString()
     }
+
+    companion object {
+        @JvmField
+        val UNIT: UnitLiteral = UnitLiteral
+
+        @JvmStatic
+        fun of(value: Long): IntLiteral = IntLiteral(value = value)
+
+        @JvmStatic
+        fun of(value: String): StringLiteral = StringLiteral(value = value)
+
+        @JvmStatic
+        fun of(value: Boolean): BoolLiteral = BoolLiteral(value = value)
+    }
 }

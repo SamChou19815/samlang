@@ -38,35 +38,19 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
         val range = literalNode.range
         // Case UNIT
         literalNode.UNIT()?.let {
-            return Expression.Literal(
-                range = range,
-                type = Type.unit,
-                literal = Literal.UnitLiteral
-            )
+            return Expression.Literal(range = range, type = Type.unit, literal = Literal.UNIT)
         }
         // Case TRUE
         literalNode.TRUE()?.let {
-            return Expression.Literal(
-                range = range,
-                type = Type.bool,
-                literal = Literal.BoolLiteral(value = true)
-            )
+            return Expression.Literal(range = range, type = Type.bool, literal = Literal.of(value = true))
         }
         // Case FALSE
         literalNode.FALSE()?.let {
-            return Expression.Literal(
-                range = range,
-                type = Type.bool,
-                literal = Literal.BoolLiteral(value = false)
-            )
+            return Expression.Literal(range = range, type = Type.bool, literal = Literal.of(value = false))
         }
         // Case MinInt
         literalNode.MinInt()?.let {
-            return Expression.Literal(
-                range = range,
-                type = Type.int,
-                literal = Literal.IntLiteral(value = Long.MIN_VALUE)
-            )
+            return Expression.Literal(range = range, type = Type.int, literal = Literal.of(value = Long.MIN_VALUE))
         }
         // Case INT
         literalNode.IntLiteral()?.let { node ->
@@ -82,18 +66,14 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
                 )
                 0L
             }
-            return Expression.Literal(
-                range = range,
-                type = Type.int,
-                literal = Literal.IntLiteral(value = intValue)
-            )
+            return Expression.Literal(range = range, type = Type.int, literal = Literal.IntLiteral(value = intValue))
         }
         // Case STRING
         literalNode.StrLiteral()?.let {
             return Expression.Literal(
                 range = range,
                 type = Type.string,
-                literal = Literal.StringLiteral(value = stringLiteralToString(literal = it.text))
+                literal = Literal.of(value = stringLiteralToString(literal = it.text))
             )
         }
         error(message = "Bad Literal: $ctx")

@@ -37,7 +37,7 @@ class ExpressionLoweringTest : StringSpec() {
     init {
         "Statement/Expression only lowering works." {
             assertCorrectlyLowered(
-                expression = Expression.Literal(range = dummyRange, type = unit, literal = Literal.UnitLiteral),
+                expression = Expression.Literal(range = dummyRange, type = unit, literal = Literal.UNIT),
                 expectedExpression = TS_UNIT
             )
             assertCorrectlyLowered(
