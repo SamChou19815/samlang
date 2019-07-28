@@ -4,11 +4,11 @@ import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
 import samlang.checker.ModuleTypeChecker
 import samlang.checker.TypeCheckingContext
-import samlang.printer.PrettyPrinter
 import samlang.errors.CompilationFailedException
 import samlang.interpreter.ModuleInterpreter
 import samlang.interpreter.PanicException
 import samlang.parser.ModuleBuilder
+import samlang.printer.prettyPrint
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.charset.Charset
@@ -87,7 +87,7 @@ object WebDemoController {
         }
         // now pretty-print
         val stringOut = ByteArrayOutputStream()
-        PrintStream(stringOut, true, "UTF-8").use { PrettyPrinter.prettyPrint(checkedModule, it) }
+        PrintStream(stringOut, true, "UTF-8").use { prettyPrint(checkedModule, it) }
         val charset = Charset.forName("UTF-8")
         val prettyPrintedProgram = String(bytes = stringOut.toByteArray(), charset = charset)
         return Response(
