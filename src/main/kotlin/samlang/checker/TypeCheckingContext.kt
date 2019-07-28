@@ -5,9 +5,10 @@ import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.immutableMapOf
 import kotlinx.collections.immutable.immutableSetOf
 import kotlinx.collections.immutable.plus
-import samlang.ast.lang.ClassDefinition
 import samlang.ast.common.Range
 import samlang.ast.common.Type
+import samlang.ast.common.TypeDefinition
+import samlang.ast.lang.ClassDefinition
 import samlang.errors.CollisionError
 import samlang.errors.NotWellDefinedIdentifierError
 import samlang.errors.TypeParamSizeMismatchError
@@ -23,7 +24,7 @@ data class TypeCheckingContext(
     data class TypeInfo(val isPublic: Boolean, val typeParams: List<String>?, val type: Type.FunctionType)
 
     data class ClassType(
-        val typeDefinition: ClassDefinition.TypeDefinition,
+        val typeDefinition: TypeDefinition,
         val functions: ImmutableMap<String, TypeInfo>,
         val methods: ImmutableMap<String, TypeInfo>
     )
@@ -31,7 +32,7 @@ data class TypeCheckingContext(
     private fun addNewClassTypeDefinition(
         name: String,
         nameRange: Range,
-        typeDefinition: ClassDefinition.TypeDefinition
+        typeDefinition: TypeDefinition
     ): TypeCheckingContext {
         if (classes.containsKey(key = name)) {
             throw CollisionError(collidedName = name, range = nameRange)
@@ -149,7 +150,7 @@ data class TypeCheckingContext(
     fun addLocalGenericTypes(genericTypes: Collection<String>): TypeCheckingContext =
         copy(localGenericTypes = localGenericTypes.plus(elements = genericTypes))
 
-    fun getCurrentModuleTypeDefinition(): ClassDefinition.TypeDefinition? = classes[currentClass]?.typeDefinition
+    fun getCurrentModuleTypeDefinition(): TypeDefinition? = classes[currentClass]?.typeDefinition
 
     fun addThisType(): TypeCheckingContext {
         if (localValues.containsKey(key = "this")) {

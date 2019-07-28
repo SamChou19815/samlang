@@ -1,7 +1,7 @@
 package samlang.checker
 
 import io.kotlintest.specs.StringSpec
-import samlang.ast.lang.ModuleReference
+import samlang.ast.common.ModuleReference
 import samlang.ast.lang.Sources
 import samlang.parser.ModuleBuilder
 

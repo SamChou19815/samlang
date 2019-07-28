@@ -4,8 +4,8 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.immutableListOf
 import kotlinx.collections.immutable.immutableSetOf
-import samlang.ast.lang.ModuleMembersImport
-import samlang.ast.lang.ModuleReference
+import samlang.ast.common.ModuleMembersImport
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range
 import samlang.ast.lang.Sources
 import samlang.errors.CyclicDependencyError

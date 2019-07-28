@@ -1,9 +1,10 @@
 package samlang.checker
 
+import samlang.ast.common.Range
+import samlang.ast.common.TypeDefinition
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Module
-import samlang.ast.common.Range
 import samlang.errors.CollisionError
 
 internal class ModuleTypeChecker(val errorCollector: ErrorCollector) {
@@ -58,7 +59,7 @@ internal class ModuleTypeChecker(val errorCollector: ErrorCollector) {
      * If all checks are passed, return the updated type checking context with members information.
      */
     private fun checkClassTopLevelValidity(
-        typeDefinition: ClassDefinition.TypeDefinition,
+        typeDefinition: TypeDefinition,
         classMembers: List<MemberDefinition>,
         typeCheckingContext: TypeCheckingContext
     ): Boolean {

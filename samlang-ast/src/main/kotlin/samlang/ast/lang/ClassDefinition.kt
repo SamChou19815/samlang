@@ -3,6 +3,7 @@ package samlang.ast.lang
 import samlang.ast.common.Node
 import samlang.ast.common.Range
 import samlang.ast.common.Type
+import samlang.ast.common.TypeDefinition
 
 data class ClassDefinition(
     override val range: Range,
@@ -11,17 +12,6 @@ data class ClassDefinition(
     val typeDefinition: TypeDefinition,
     val members: List<MemberDefinition>
 ) : Node {
-
-    enum class TypeDefinitionType(val displayName: String) {
-        OBJECT(displayName = "object"), VARIANT(displayName = "variant");
-    }
-
-    data class TypeDefinition(
-        override val range: Range,
-        val type: TypeDefinitionType,
-        val typeParameters: List<String>?,
-        val mappings: Map<String, Type>
-    ) : Node
 
     data class MemberDefinition(
         override val range: Range,

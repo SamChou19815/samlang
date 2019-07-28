@@ -1,7 +1,4 @@
-package samlang.ast.lang
-
-import samlang.ast.common.Node
-import samlang.ast.common.Range
+package samlang.ast.common
 
 data class ModuleMembersImport(
     override val range: Range,

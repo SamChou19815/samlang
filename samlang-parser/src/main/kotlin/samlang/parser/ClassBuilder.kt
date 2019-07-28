@@ -1,8 +1,10 @@
 package samlang.parser
 
-import samlang.ast.lang.ClassDefinition
 import samlang.ast.common.Range
 import samlang.ast.common.Type
+import samlang.ast.common.TypeDefinition
+import samlang.ast.common.TypeDefinitionType
+import samlang.ast.lang.ClassDefinition
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser.ClassHeaderContext
 import samlang.parser.generated.PLParser.ClassMemberDefinitionContext
@@ -31,9 +33,9 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
         }
     }
 
-    private inner class ModuleTypeDefinitionBuilder : PLBaseVisitor<ClassDefinition.TypeDefinition>() {
+    private inner class ModuleTypeDefinitionBuilder : PLBaseVisitor<TypeDefinition>() {
 
-        override fun visitClassHeader(ctx: ClassHeaderContext): ClassDefinition.TypeDefinition {
+        override fun visitClassHeader(ctx: ClassHeaderContext): TypeDefinition {
             val rawTypeParams: TypeParametersDeclarationContext? = ctx.typeParametersDeclaration()
             val rawTypeDeclaration = ctx.typeDeclaration()
             val typeParameters = rawTypeParams?.typeParameters
@@ -41,10 +43,10 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
             return rawTypeDeclaration.accept(TypeDefinitionBuilder(range, typeParameters))
         }
 
-        override fun visitUtilClassHeader(ctx: UtilClassHeaderContext): ClassDefinition.TypeDefinition =
-            ClassDefinition.TypeDefinition(
+        override fun visitUtilClassHeader(ctx: UtilClassHeaderContext): TypeDefinition =
+            TypeDefinition(
                 range = ctx.range,
-                type = ClassDefinition.TypeDefinitionType.OBJECT,
+                type = TypeDefinitionType.OBJECT,
                 typeParameters = emptyList(),
                 mappings = emptyMap()
             )
@@ -52,12 +54,12 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
         private inner class TypeDefinitionBuilder(
             private val range: Range,
             private val typeParameters: List<String>?
-        ) : PLBaseVisitor<ClassDefinition.TypeDefinition>() {
+        ) : PLBaseVisitor<TypeDefinition>() {
 
-            override fun visitObjType(ctx: ObjTypeContext): ClassDefinition.TypeDefinition =
-                ClassDefinition.TypeDefinition(
+            override fun visitObjType(ctx: ObjTypeContext): TypeDefinition =
+                TypeDefinition(
                     range = range,
-                    type = ClassDefinition.TypeDefinitionType.OBJECT,
+                    type = TypeDefinitionType.OBJECT,
                     typeParameters = typeParameters,
                     mappings = ctx.objectTypeFieldDeclaration().asSequence().map { c ->
                         val name = c.LowerId().symbol.text
@@ -66,10 +68,10 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
                     }.toMap()
                 )
 
-            override fun visitVariantType(ctx: VariantTypeContext): ClassDefinition.TypeDefinition =
-                ClassDefinition.TypeDefinition(
+            override fun visitVariantType(ctx: VariantTypeContext): TypeDefinition =
+                TypeDefinition(
                     range = range,
-                    type = ClassDefinition.TypeDefinitionType.VARIANT,
+                    type = TypeDefinitionType.VARIANT,
                     typeParameters = typeParameters,
                     mappings = ctx.variantTypeConstructorDeclaration().asSequence().map { c ->
                         val name = c.UpperId().symbol.text

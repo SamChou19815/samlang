@@ -1,4 +1,4 @@
-package samlang.ast.lang
+package samlang.ast.common
 
 data class ModuleReference(val parts: List<String>) {
 

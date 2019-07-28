@@ -1,7 +1,7 @@
 package samlang.checker
 
 import samlang.ast.lang.Module
-import samlang.ast.lang.ModuleMembersImport
+import samlang.ast.common.ModuleMembersImport
 import samlang.ast.lang.Sources
 import samlang.errors.UnresolvedNameError
 

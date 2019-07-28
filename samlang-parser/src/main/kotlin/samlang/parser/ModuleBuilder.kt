@@ -3,8 +3,8 @@ package samlang.parser
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.lang.Module
-import samlang.ast.lang.ModuleMembersImport
-import samlang.ast.lang.ModuleReference
+import samlang.ast.common.ModuleMembersImport
+import samlang.ast.common.ModuleReference
 import samlang.errors.CompilationFailedException
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer

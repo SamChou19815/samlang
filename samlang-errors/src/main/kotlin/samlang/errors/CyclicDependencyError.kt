@@ -1,6 +1,6 @@
 package samlang.errors
 
-import samlang.ast.lang.ModuleReference
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range
 
 class CyclicDependencyError(moduleReference: ModuleReference, range: Range, cyclicDependencyChain: List<String>) :

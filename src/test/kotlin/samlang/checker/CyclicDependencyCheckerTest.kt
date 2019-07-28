@@ -3,8 +3,8 @@ package samlang.checker
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import samlang.ast.lang.Module
-import samlang.ast.lang.ModuleMembersImport
-import samlang.ast.lang.ModuleReference
+import samlang.ast.common.ModuleMembersImport
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range
 import samlang.ast.lang.Sources
 

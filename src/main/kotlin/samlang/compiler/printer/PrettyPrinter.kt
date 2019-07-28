@@ -1,11 +1,11 @@
 package samlang.compiler.printer
 
-import samlang.ast.lang.ExpressionVisitor
+import samlang.ast.common.TypeDefinitionType.OBJECT
+import samlang.ast.common.TypeDefinitionType.VARIANT
 import samlang.ast.lang.ClassDefinition
-import samlang.ast.lang.ClassDefinition.TypeDefinitionType.OBJECT
-import samlang.ast.lang.ClassDefinition.TypeDefinitionType.VARIANT
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
+import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.FieldAccess
 import samlang.ast.lang.Expression.FunctionApplication
 import samlang.ast.lang.Expression.IfElse
@@ -13,7 +13,6 @@ import samlang.ast.lang.Expression.Lambda
 import samlang.ast.lang.Expression.Literal
 import samlang.ast.lang.Expression.Match
 import samlang.ast.lang.Expression.MethodAccess
-import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.Panic
 import samlang.ast.lang.Expression.This
@@ -22,6 +21,7 @@ import samlang.ast.lang.Expression.Unary
 import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
+import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Module
 import samlang.ast.lang.Pattern
 import samlang.util.IndentedPrinter

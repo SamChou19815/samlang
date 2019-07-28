@@ -1,10 +1,10 @@
 package samlang.errors
 
-import samlang.ast.lang.ClassDefinition
 import samlang.ast.common.Range
+import samlang.ast.common.TypeDefinitionType
 
 class UnsupportedClassTypeDefinitionError(
-    typeDefinitionType: ClassDefinition.TypeDefinitionType,
+    typeDefinitionType: TypeDefinitionType,
     range: Range
 ) : CompileTimeError.WithRange(
     reason = "Expect the current class to have `${typeDefinitionType.displayName}` type definition, but it doesn't.",

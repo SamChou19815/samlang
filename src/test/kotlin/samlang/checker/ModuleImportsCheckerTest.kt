@@ -2,11 +2,13 @@ package samlang.checker
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
+import samlang.ast.common.Range
+import samlang.ast.common.TypeDefinition
+import samlang.ast.common.TypeDefinitionType
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Module
-import samlang.ast.lang.ModuleMembersImport
-import samlang.ast.lang.ModuleReference
-import samlang.ast.common.Range
+import samlang.ast.common.ModuleMembersImport
+import samlang.ast.common.ModuleReference
 import samlang.ast.lang.Sources
 
 class ModuleImportsCheckerTest : StringSpec() {
@@ -16,9 +18,9 @@ class ModuleImportsCheckerTest : StringSpec() {
             range = Range.DUMMY,
             name = name,
             nameRange = Range.DUMMY,
-            typeDefinition = ClassDefinition.TypeDefinition(
+            typeDefinition = TypeDefinition(
                 range = Range.DUMMY,
-                type = ClassDefinition.TypeDefinitionType.OBJECT,
+                type = TypeDefinitionType.OBJECT,
                 typeParameters = null,
                 mappings = emptyMap()
             ),

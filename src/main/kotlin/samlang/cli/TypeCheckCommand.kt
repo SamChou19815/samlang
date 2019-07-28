@@ -2,7 +2,7 @@ package samlang.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
-import samlang.ast.lang.ModuleReference
+import samlang.ast.common.ModuleReference
 import samlang.errors.CompilationFailedException
 import samlang.frontend.processSources
 import java.io.File
