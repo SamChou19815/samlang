@@ -4,7 +4,7 @@ import samlang.ast.common.Type
 import samlang.ast.common.Type.UndecidedType
 import samlang.util.UnionFind
 
-class TypeResolution {
+internal class TypeResolution {
     /**
      * The union find used to manage the potential complex aliasing relation between different undecided types.
      */
