@@ -1,7 +1,7 @@
 package samlang.frontend
 
-import samlang.ast.lang.Module
 import samlang.ast.common.ModuleReference
+import samlang.ast.lang.Module
 import samlang.ast.lang.Sources
 import samlang.checker.ErrorCollector
 import samlang.checker.typeCheckSources

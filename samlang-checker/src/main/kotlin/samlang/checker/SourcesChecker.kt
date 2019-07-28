@@ -1,18 +1,18 @@
 package samlang.checker
 
-import samlang.ast.lang.Module
 import samlang.ast.common.ModuleReference
+import samlang.ast.lang.Module
 import samlang.ast.lang.Sources
 import samlang.util.createOrFail
 
-internal fun typeCheckSources(sources: Sources): Sources {
+fun typeCheckSources(sources: Sources): Sources {
     val errorCollector = ErrorCollector()
     val checkedSources = typeCheckSources(sources = sources, errorCollector = errorCollector)
     return createOrFail(item = checkedSources, errors = errorCollector.collectedErrors)
 }
 
-internal fun typeCheckSources(sources: Sources, errorCollector: ErrorCollector): Sources {
-    val typeCheckingOrder = sources.getTypeCheckingOrder(errorCollector = errorCollector)
+fun typeCheckSources(sources: Sources, errorCollector: ErrorCollector): Sources {
+    val typeCheckingOrder = getTypeCheckingOrder(sources = sources, errorCollector = errorCollector)
     // TODO: use stdlib as baseContext
     val baseContext = TypeCheckingContext.EMPTY
     val newMappings = mutableMapOf<ModuleReference, Module>()

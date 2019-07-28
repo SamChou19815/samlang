@@ -10,8 +10,8 @@ import samlang.ast.common.Range
 import samlang.ast.lang.Sources
 import samlang.errors.CyclicDependencyError
 
-internal fun Sources.getTypeCheckingOrder(errorCollector: ErrorCollector): List<ModuleReference> =
-    CyclicDependencyChecker(sources = this, errorCollector = errorCollector).getTypeCheckingOrder()
+internal fun getTypeCheckingOrder(sources: Sources, errorCollector: ErrorCollector): List<ModuleReference> =
+    CyclicDependencyChecker(sources = sources, errorCollector = errorCollector).getTypeCheckingOrder()
 
 private class CyclicDependencyChecker(sources: Sources, private val errorCollector: ErrorCollector) {
 

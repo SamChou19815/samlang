@@ -25,7 +25,7 @@ hs_err_pid*
 /.idea/
 **/build/
 **/out/
-/.gradle/
+**/.gradle/
 *.iml
 
 # Generated Parser

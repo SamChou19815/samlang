@@ -2,10 +2,10 @@ package samlang.checker
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
-import samlang.ast.lang.Module
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range
+import samlang.ast.lang.Module
 import samlang.ast.lang.Sources
 
 class CyclicDependencyCheckerTest : StringSpec() {
@@ -26,7 +26,7 @@ class CyclicDependencyCheckerTest : StringSpec() {
             )
         }
         val errorCollector = ErrorCollector()
-        Sources(moduleMappings = moduleMappings).getTypeCheckingOrder(errorCollector = errorCollector)
+        getTypeCheckingOrder(sources = Sources(moduleMappings = moduleMappings), errorCollector = errorCollector)
         errorCollector.collectedErrors.map { it.errorMessage } shouldBe expectedErrors
     }
 

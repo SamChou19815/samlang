@@ -44,9 +44,22 @@ allprojects {
     dependencies {
         implementation(kotlin(module = "stdlib-jdk8"))
         implementation(dependencyNotation = "org.apache.commons:commons-text:1.6")
+        implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.1")
+        testImplementation(kotlin(module = "reflect"))
+        testImplementation(kotlin(module = "test"))
+        testImplementation(kotlin(module = "test-junit"))
+        testImplementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.1.10")
+        testImplementation(dependencyNotation = "org.slf4j:slf4j-api:1.7.25")
+        testImplementation(dependencyNotation = "org.slf4j:slf4j-simple:1.7.25")
     }
     configure<JavaPluginConvention> {
         sourceCompatibility = JavaVersion.VERSION_1_8
+    }
+    tasks {
+        withType<KotlinJvmCompile> {
+            kotlinOptions.jvmTarget = "11"
+            kotlinOptions.freeCompilerArgs = listOf("-Xjvm-default=enable")
+        }
     }
 }
 
@@ -56,17 +69,11 @@ subprojects {
 
 dependencies {
     implementation(project(":samlang-ast"))
+    implementation(project(":samlang-checker"))
     implementation(project(":samlang-errors"))
     implementation(project(":samlang-utils"))
     implementation(project(":samlang-parser"))
-    implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.1")
     implementation(dependencyNotation = "com.github.ajalt:clikt:2.1.0")
-    testImplementation(kotlin(module = "reflect"))
-    testImplementation(kotlin(module = "test"))
-    testImplementation(kotlin(module = "test-junit"))
-    testImplementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.1.10")
-    testImplementation(dependencyNotation = "org.slf4j:slf4j-api:1.7.25")
-    testImplementation(dependencyNotation = "org.slf4j:slf4j-simple:1.7.25")
 }
 
 tasks {
@@ -88,10 +95,6 @@ tasks {
     register<Jar>("javadocJar") {
         from(javadoc)
         archiveClassifier.set("javadoc")
-    }
-    withType<KotlinJvmCompile> {
-        kotlinOptions.jvmTarget = "1.8"
-        kotlinOptions.freeCompilerArgs = listOf("-Xjvm-default=enable")
     }
     shadowJar {
         archiveBaseName.set(Constants.NAME)

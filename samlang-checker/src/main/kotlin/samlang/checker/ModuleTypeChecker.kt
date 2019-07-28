@@ -7,7 +7,7 @@ import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Module
 import samlang.errors.CollisionError
 
-internal class ModuleTypeChecker(val errorCollector: ErrorCollector) {
+class ModuleTypeChecker(val errorCollector: ErrorCollector) {
 
     fun typeCheck(module: Module, typeCheckingContext: TypeCheckingContext): Pair<Module, TypeCheckingContext> {
         // First pass: add type definitions to classDefinitions

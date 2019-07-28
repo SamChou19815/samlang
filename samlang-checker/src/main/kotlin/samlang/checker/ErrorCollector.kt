@@ -6,11 +6,11 @@ import samlang.errors.CompileTimeError
 internal inline fun <T> T.collectPotentialError(errorCollector: ErrorCollector, crossinline checker: T.() -> T): T =
     errorCollector.collectPotentialError(unchecked = this, checker = checker)
 
-internal class ErrorCollector {
+class ErrorCollector {
 
     val collectedErrors: List<CompileTimeError> get() = _collectedErrors
 
-    fun addErrorsWithModules(errorCollector: ErrorCollector, moduleReference: ModuleReference) {
+    internal fun addErrorsWithModules(errorCollector: ErrorCollector, moduleReference: ModuleReference) {
         val moduleFile = moduleReference.toFilename()
         errorCollector._collectedErrors.forEach { error ->
             _collectedErrors.add(element = error.withErrorModule(file = moduleFile))
@@ -23,7 +23,7 @@ internal class ErrorCollector {
         _collectedErrors.add(element = compileTimeError)
     }
 
-    inline fun <T> collectPotentialError(unchecked: T, crossinline checker: (T) -> T): T =
+    internal inline fun <T> collectPotentialError(unchecked: T, crossinline checker: (T) -> T): T =
         try {
             checker(unchecked)
         } catch (compileTimeError: CompileTimeError) {
@@ -31,7 +31,7 @@ internal class ErrorCollector {
             unchecked
         }
 
-    inline fun <T> check(crossinline checker: () -> T) {
+    internal inline fun <T> check(crossinline checker: () -> T) {
         try {
             checker()
         } catch (compileTimeError: CompileTimeError) {
@@ -39,7 +39,7 @@ internal class ErrorCollector {
         }
     }
 
-    inline fun <T> passCheck(crossinline checker: () -> T): Boolean =
+    internal inline fun <T> passCheck(crossinline checker: () -> T): Boolean =
         try {
             checker()
             true
@@ -48,7 +48,7 @@ internal class ErrorCollector {
             false
         }
 
-    inline fun <T> returnNullOnCollectedError(crossinline checker: () -> T): T? =
+    internal inline fun <T> returnNullOnCollectedError(crossinline checker: () -> T): T? =
         try {
             checker()
         } catch (compileTimeError: CompileTimeError) {
