@@ -8,33 +8,53 @@ import samlang.ast.ts.TsPattern
  */
 sealed class IrStatement {
 
-    data class Throw(val expression: IrExpression) : IrStatement()
+    abstract fun <T> accept(visitor: IrStatementVisitor<T>): T
 
-    data class IfElse(val booleanExpression: IrExpression, val s1: List<IrStatement>, val s2: List<IrStatement>) :
-        IrStatement()
+    data class Throw(val expression: IrExpression) : IrStatement() {
+        override fun <T> accept(visitor: IrStatementVisitor<T>): T = visitor.visit(statement = this)
+    }
+
+    data class IfElse(
+        val booleanExpression: IrExpression,
+        val s1: List<IrStatement>,
+        val s2: List<IrStatement>
+    ) : IrStatement() {
+        override fun <T> accept(visitor: IrStatementVisitor<T>): T = visitor.visit(statement = this)
+    }
 
     data class Match(
         val assignedTemporaryVariable: String?,
         val matchedExpression: IrExpression,
         val matchingList: List<VariantPatternToStatement>
     ) : IrStatement() {
+
         data class VariantPatternToStatement(
             val tag: String,
             val dataVariable: String?,
             val statements: List<IrStatement>,
             val finalExpression: IrExpression
         )
+
+        override fun <T> accept(visitor: IrStatementVisitor<T>): T = visitor.visit(statement = this)
     }
 
-    data class LetDeclaration(val name: String, val typeAnnotation: Type) : IrStatement()
+    data class LetDeclaration(val name: String, val typeAnnotation: Type) : IrStatement() {
+        override fun <T> accept(visitor: IrStatementVisitor<T>): T = visitor.visit(statement = this)
+    }
 
-    data class VariableAssignment(val name: String, val assignedExpression: IrExpression) : IrStatement()
+    data class VariableAssignment(val name: String, val assignedExpression: IrExpression) : IrStatement() {
+        override fun <T> accept(visitor: IrStatementVisitor<T>): T = visitor.visit(statement = this)
+    }
 
     data class ConstantDefinition(
         val pattern: TsPattern,
         val typeAnnotation: Type,
         val assignedExpression: IrExpression
-    ) : IrStatement()
+    ) : IrStatement() {
+        override fun <T> accept(visitor: IrStatementVisitor<T>): T = visitor.visit(statement = this)
+    }
 
-    data class Return(val expression: IrExpression?) : IrStatement()
+    data class Return(val expression: IrExpression?) : IrStatement() {
+        override fun <T> accept(visitor: IrStatementVisitor<T>): T = visitor.visit(statement = this)
+    }
 }
