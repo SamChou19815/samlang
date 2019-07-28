@@ -1,44 +1,44 @@
-package samlang.compiler.ts
+package samlang.compiler.ir
 
 import samlang.ast.common.Type
 import samlang.ast.lang.Expression
 import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Pattern
-import samlang.ast.ts.TsExpression
-import samlang.ast.ts.TsExpression.Binary
-import samlang.ast.ts.TsExpression.ClassMember
-import samlang.ast.ts.TsExpression.FieldAccess
-import samlang.ast.ts.TsExpression.FunctionApplication
-import samlang.ast.ts.TsExpression.Lambda
-import samlang.ast.ts.TsExpression.Literal
-import samlang.ast.ts.TsExpression.MethodAccess
-import samlang.ast.ts.TsExpression.ObjectConstructor
-import samlang.ast.ts.TsExpression.Ternary
-import samlang.ast.ts.TsExpression.TupleConstructor
-import samlang.ast.ts.TsExpression.Unary
-import samlang.ast.ts.TsExpression.Variable
-import samlang.ast.ts.TsExpression.VariantConstructor
+import samlang.ast.ir.IrExpression
+import samlang.ast.ir.IrExpression.Binary
+import samlang.ast.ir.IrExpression.ClassMember
+import samlang.ast.ir.IrExpression.FieldAccess
+import samlang.ast.ir.IrExpression.FunctionApplication
+import samlang.ast.ir.IrExpression.Lambda
+import samlang.ast.ir.IrExpression.Literal
+import samlang.ast.ir.IrExpression.MethodAccess
+import samlang.ast.ir.IrExpression.ObjectConstructor
+import samlang.ast.ir.IrExpression.Ternary
+import samlang.ast.ir.IrExpression.TupleConstructor
+import samlang.ast.ir.IrExpression.Unary
+import samlang.ast.ir.IrExpression.Variable
+import samlang.ast.ir.IrExpression.VariantConstructor
 import samlang.ast.ts.TsPattern
-import samlang.ast.ts.TsStatement
-import samlang.ast.ts.TsStatement.ConstantDefinition
-import samlang.ast.ts.TsStatement.IfElse
-import samlang.ast.ts.TsStatement.LetDeclaration
-import samlang.ast.ts.TsStatement.Match
-import samlang.ast.ts.TsStatement.Return
-import samlang.ast.ts.TsStatement.Throw
-import samlang.ast.ts.TsStatement.VariableAssignment
+import samlang.ast.ir.IrStatement
+import samlang.ast.ir.IrStatement.ConstantDefinition
+import samlang.ast.ir.IrStatement.IfElse
+import samlang.ast.ir.IrStatement.LetDeclaration
+import samlang.ast.ir.IrStatement.Match
+import samlang.ast.ir.IrStatement.Return
+import samlang.ast.ir.IrStatement.Throw
+import samlang.ast.ir.IrStatement.VariableAssignment
 
 internal fun lowerExpression(expression: Expression): LoweringResult =
     expression.accept(visitor = ExpressionLoweringVisitor(), context = Unit)
 
 internal val TS_UNIT: Literal = Literal(literal = samlang.ast.common.Literal.UnitLiteral)
 
-internal data class LoweringResult(val statements: List<TsStatement>, val expression: TsExpression)
+internal data class LoweringResult(val statements: List<IrStatement>, val expression: IrExpression)
 
-private fun TsExpression.asLoweringResult(statements: List<TsStatement> = emptyList()): LoweringResult =
+private fun IrExpression.asLoweringResult(statements: List<IrStatement> = emptyList()): LoweringResult =
     LoweringResult(statements = statements, expression = this)
 
-private fun List<TsStatement>.asLoweringResult(): LoweringResult =
+private fun List<IrStatement>.asLoweringResult(): LoweringResult =
     LoweringResult(statements = this, expression = TS_UNIT)
 
 private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult> {
@@ -53,7 +53,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     private fun Expression.lower(): LoweringResult = accept(visitor = this@ExpressionLoweringVisitor, context = Unit)
 
-    private fun Expression.getLoweredAndAddStatements(statements: MutableList<TsStatement>): TsExpression {
+    private fun Expression.getLoweredAndAddStatements(statements: MutableList<IrStatement>): IrExpression {
         val result = this.lower()
         statements.addAll(elements = statements)
         return result.expression
@@ -72,7 +72,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         ClassMember(className = expression.className, memberName = expression.memberName).asLoweringResult()
 
     override fun visit(expression: Expression.TupleConstructor, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<TsStatement>()
+        val loweredStatements = arrayListOf<IrStatement>()
         val loweredExpressionList = expression.expressionList.map {
             it.getLoweredAndAddStatements(statements = loweredStatements)
         }
@@ -80,7 +80,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.ObjectConstructor, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<TsStatement>()
+        val loweredStatements = arrayListOf<IrStatement>()
         val loweredSpreadExpression =
             expression.spreadExpression?.getLoweredAndAddStatements(statements = loweredStatements)
         val loweredFields = expression.fieldDeclarations.map { fieldConstructor ->
@@ -139,15 +139,18 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.Panic, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<TsStatement>()
+        val loweredStatements = arrayListOf<IrStatement>()
         val result = expression.expression.lower()
         loweredStatements.addAll(elements = result.statements)
         loweredStatements.add(element = Throw(expression = result.expression))
-        return LoweringResult(statements = loweredStatements, expression = TS_UNIT)
+        return LoweringResult(
+            statements = loweredStatements,
+            expression = TS_UNIT
+        )
     }
 
     override fun visit(expression: Expression.FunctionApplication, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<TsStatement>()
+        val loweredStatements = arrayListOf<IrStatement>()
         val loweredFunctionExpression =
             expression.functionExpression.getLoweredAndAddStatements(statements = loweredStatements)
         val loweredArguments =
@@ -159,14 +162,14 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.Binary, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<TsStatement>()
+        val loweredStatements = arrayListOf<IrStatement>()
         val e1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements)
         val e2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements)
         return Binary(operator = expression.operator, e1 = e1, e2 = e2).asLoweringResult(statements = loweredStatements)
     }
 
     override fun visit(expression: Expression.IfElse, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<TsStatement>()
+        val loweredStatements = arrayListOf<IrStatement>()
         val boolExpression = expression.boolExpression.getLoweredAndAddStatements(statements = loweredStatements)
         val e1LoweringResult = expression.e1.lower()
         val e2LoweringResult = expression.e2.lower()
@@ -211,11 +214,14 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 )
             )
         )
-        return LoweringResult(statements = loweredStatements, expression = Variable(name = variableForIfElseAssign))
+        return LoweringResult(
+            statements = loweredStatements,
+            expression = Variable(name = variableForIfElseAssign)
+        )
     }
 
     override fun visit(expression: Expression.Match, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<TsStatement>()
+        val loweredStatements = arrayListOf<IrStatement>()
         val matchedExpression = expression.matchedExpression.getLoweredAndAddStatements(statements = loweredStatements)
         val loweredMatchingList = expression.matchingList.map { patternToExpression ->
             val result = patternToExpression.expression.lower()
@@ -261,7 +267,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.Val, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<TsStatement>()
+        val loweredStatements = arrayListOf<IrStatement>()
         val loweredAssignedExpression =
             expression.assignedExpression.getLoweredAndAddStatements(statements = loweredStatements)
         val tsPattern = when (val pattern = expression.pattern) {

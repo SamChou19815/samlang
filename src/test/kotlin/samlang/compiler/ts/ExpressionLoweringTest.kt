@@ -11,9 +11,12 @@ import samlang.ast.common.UnaryOperator.NOT
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Unary
 import samlang.ast.lang.Pattern
-import samlang.ast.ts.TsExpression
+import samlang.ast.ir.IrExpression
 import samlang.ast.ts.TsPattern
-import samlang.ast.ts.TsStatement
+import samlang.ast.ir.IrStatement
+import samlang.compiler.ir.LoweringResult
+import samlang.compiler.ir.TS_UNIT
+import samlang.compiler.ir.lowerExpression
 import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 
 class ExpressionLoweringTest : StringSpec() {
@@ -22,13 +25,13 @@ class ExpressionLoweringTest : StringSpec() {
         lowerExpression(expression = expression) shouldBe expected
     }
 
-    private fun assertCorrectlyLowered(expression: Expression, expectedExpression: TsExpression) {
+    private fun assertCorrectlyLowered(expression: Expression, expectedExpression: IrExpression) {
         lowerExpression(expression = expression) shouldBe LoweringResult(
             statements = emptyList(), expression = expectedExpression
         )
     }
 
-    private fun assertCorrectlyLowered(expression: Expression, expectedStatements: List<TsStatement>) {
+    private fun assertCorrectlyLowered(expression: Expression, expectedStatements: List<IrStatement>) {
         lowerExpression(expression = expression) shouldBe LoweringResult(
             statements = expectedStatements, expression = TS_UNIT
         )
@@ -42,15 +45,15 @@ class ExpressionLoweringTest : StringSpec() {
             )
             assertCorrectlyLowered(
                 expression = Expression.Variable(range = dummyRange, type = unit, name = "foo"),
-                expectedExpression = TsExpression.Variable(name = "foo")
+                expectedExpression = IrExpression.Variable(name = "foo")
             )
             assertCorrectlyLowered(
                 expression = Expression.This(range = dummyRange, type = unit),
-                expectedExpression = TS_THIS
+                expectedExpression = IR_THIS
             )
             assertCorrectlyLowered(
                 expression = Expression.ClassMember(range = dummyRange, type = unit, className = "A", memberName = "b"),
-                expectedExpression = TsExpression.ClassMember(className = "A", memberName = "b")
+                expectedExpression = IrExpression.ClassMember(className = "A", memberName = "b")
             )
             assertCorrectlyLowered(
                 expression = Expression.TupleConstructor(
@@ -58,7 +61,7 @@ class ExpressionLoweringTest : StringSpec() {
                     type = Type.TupleType(mappings = listOf()),
                     expressionList = listOf(THIS)
                 ),
-                expectedExpression = TsExpression.TupleConstructor(expressionList = listOf(TS_THIS))
+                expectedExpression = IrExpression.TupleConstructor(expressionList = listOf(IR_THIS))
             )
             assertCorrectlyLowered(
                 expression = Expression.ObjectConstructor(
@@ -74,37 +77,37 @@ class ExpressionLoweringTest : StringSpec() {
                         )
                     )
                 ),
-                expectedExpression = TsExpression.ObjectConstructor(
-                    spreadExpression = TS_THIS,
+                expectedExpression = IrExpression.ObjectConstructor(
+                    spreadExpression = IR_THIS,
                     fieldDeclaration = listOf(
-                        "foo" to TS_THIS,
-                        "bar" to TsExpression.Variable(name = "bar")
+                        "foo" to IR_THIS,
+                        "bar" to IrExpression.Variable(name = "bar")
                     )
                 )
             )
             assertCorrectlyLowered(
                 expression = Expression.VariantConstructor(range = dummyRange, type = unit, tag = "Foo", data = THIS),
-                expectedExpression = TsExpression.VariantConstructor(tag = "Foo", data = TS_THIS)
+                expectedExpression = IrExpression.VariantConstructor(tag = "Foo", data = IR_THIS)
             )
             assertCorrectlyLowered(
                 expression = Expression.FieldAccess(
                     range = dummyRange, type = unit, expression = THIS, fieldName = "foo"
                 ),
-                expectedExpression = TsExpression.FieldAccess(expression = TS_THIS, fieldName = "foo")
+                expectedExpression = IrExpression.FieldAccess(expression = IR_THIS, fieldName = "foo")
             )
             assertCorrectlyLowered(
                 expression = Expression.MethodAccess(
                     range = dummyRange, type = unit, expression = THIS, methodName = "foo"
                 ),
-                expectedExpression = TsExpression.MethodAccess(expression = TS_THIS, methodName = "foo")
+                expectedExpression = IrExpression.MethodAccess(expression = IR_THIS, methodName = "foo")
             )
             assertCorrectlyLowered(
                 expression = Unary(range = dummyRange, type = unit, operator = NOT, expression = THIS),
-                expectedExpression = TsExpression.Unary(operator = NOT, expression = TS_THIS)
+                expectedExpression = IrExpression.Unary(operator = NOT, expression = IR_THIS)
             )
             assertCorrectlyLowered(
                 expression = Expression.Panic(range = dummyRange, type = unit, expression = THIS),
-                expectedStatements = listOf(TsStatement.Throw(expression = TS_THIS))
+                expectedStatements = listOf(IrStatement.Throw(expression = IR_THIS))
             )
             assertCorrectlyLowered(
                 expression = Expression.FunctionApplication(
@@ -113,19 +116,19 @@ class ExpressionLoweringTest : StringSpec() {
                     functionExpression = THIS,
                     arguments = listOf(THIS, THIS)
                 ),
-                expectedExpression = TsExpression.FunctionApplication(
-                    functionExpression = TS_THIS, arguments = listOf(TS_THIS, TS_THIS)
+                expectedExpression = IrExpression.FunctionApplication(
+                    functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
                 )
             )
             assertCorrectlyLowered(
                 expression = Expression.Binary(range = dummyRange, type = unit, operator = PLUS, e1 = THIS, e2 = THIS),
-                expectedExpression = TsExpression.Binary(operator = PLUS, e1 = TS_THIS, e2 = TS_THIS)
+                expectedExpression = IrExpression.Binary(operator = PLUS, e1 = IR_THIS, e2 = IR_THIS)
             )
             assertCorrectlyLowered(
                 expression = Expression.IfElse(
                     range = dummyRange, type = unit, boolExpression = THIS, e1 = THIS, e2 = THIS
                 ),
-                expectedExpression = TsExpression.Ternary(boolExpression = TS_THIS, e1 = TS_THIS, e2 = TS_THIS)
+                expectedExpression = IrExpression.Ternary(boolExpression = IR_THIS, e1 = IR_THIS, e2 = IR_THIS)
             )
             assertCorrectlyLowered(
                 expression = Expression.Lambda(
@@ -134,9 +137,9 @@ class ExpressionLoweringTest : StringSpec() {
                     parameters = emptyList(),
                     body = THIS
                 ),
-                expectedExpression = TsExpression.Lambda(
+                expectedExpression = IrExpression.Lambda(
                     parameters = emptyList(),
-                    body = listOf(TsStatement.Return(expression = TS_THIS))
+                    body = listOf(IrStatement.Return(expression = IR_THIS))
                 )
             )
         }
@@ -164,20 +167,20 @@ class ExpressionLoweringTest : StringSpec() {
                     )
                 ),
                 expectedStatements = listOf(
-                    TsStatement.IfElse(
-                        booleanExpression = TS_THIS,
+                    IrStatement.IfElse(
+                        booleanExpression = IR_THIS,
                         s1 = listOf(
-                            TsStatement.ConstantDefinition(
+                            IrStatement.ConstantDefinition(
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = unit,
-                                assignedExpression = TS_THIS
+                                assignedExpression = IR_THIS
                             )
                         ),
                         s2 = listOf(
-                            TsStatement.ConstantDefinition(
+                            IrStatement.ConstantDefinition(
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = unit,
-                                assignedExpression = TS_THIS
+                                assignedExpression = IR_THIS
                             )
                         )
                     )
@@ -200,23 +203,26 @@ class ExpressionLoweringTest : StringSpec() {
                 ),
                 expected = LoweringResult(
                     statements = listOf(
-                        TsStatement.LetDeclaration(name = "_LOWERING_0", typeAnnotation = unit),
-                        TsStatement.IfElse(
-                            booleanExpression = TS_THIS,
+                        IrStatement.LetDeclaration(name = "_LOWERING_0", typeAnnotation = unit),
+                        IrStatement.IfElse(
+                            booleanExpression = IR_THIS,
                             s1 = listOf(
-                                TsStatement.ConstantDefinition(
+                                IrStatement.ConstantDefinition(
                                     pattern = TsPattern.WildCardPattern,
                                     typeAnnotation = unit,
-                                    assignedExpression = TS_THIS
+                                    assignedExpression = IR_THIS
                                 ),
-                                TsStatement.VariableAssignment(name = "_LOWERING_0", assignedExpression = TS_UNIT)
+                                IrStatement.VariableAssignment(
+                                    name = "_LOWERING_0",
+                                    assignedExpression = TS_UNIT
+                                )
                             ),
                             s2 = listOf(
-                                TsStatement.VariableAssignment(name = "_LOWERING_0", assignedExpression = TS_THIS)
+                                IrStatement.VariableAssignment(name = "_LOWERING_0", assignedExpression = IR_THIS)
                             )
                         )
                     ),
-                    expression = TsExpression.Variable(name = "_LOWERING_0")
+                    expression = IrExpression.Variable(name = "_LOWERING_0")
                 )
             )
         }
@@ -236,21 +242,21 @@ class ExpressionLoweringTest : StringSpec() {
                     )
                 ),
                 expectedStatements = listOf(
-                    TsStatement.Match(
+                    IrStatement.Match(
                         assignedTemporaryVariable = null,
-                        matchedExpression = TS_THIS,
+                        matchedExpression = IR_THIS,
                         matchingList = listOf(
-                            TsStatement.Match.VariantPatternToStatement(
+                            IrStatement.Match.VariantPatternToStatement(
                                 tag = "Foo",
                                 dataVariable = "bar",
                                 statements = emptyList(),
-                                finalExpression = TS_THIS
+                                finalExpression = IR_THIS
                             ),
-                            TsStatement.Match.VariantPatternToStatement(
+                            IrStatement.Match.VariantPatternToStatement(
                                 tag = "Bar",
                                 dataVariable = null,
                                 statements = emptyList(),
-                                finalExpression = TS_THIS
+                                finalExpression = IR_THIS
                             )
                         )
                     )
@@ -272,26 +278,26 @@ class ExpressionLoweringTest : StringSpec() {
                 ),
                 expected = LoweringResult(
                     statements = listOf(
-                        TsStatement.Match(
+                        IrStatement.Match(
                             assignedTemporaryVariable = "_LOWERING_0",
-                            matchedExpression = TS_THIS,
+                            matchedExpression = IR_THIS,
                             matchingList = listOf(
-                                TsStatement.Match.VariantPatternToStatement(
+                                IrStatement.Match.VariantPatternToStatement(
                                     tag = "Foo",
                                     dataVariable = "bar",
                                     statements = emptyList(),
-                                    finalExpression = TS_THIS
+                                    finalExpression = IR_THIS
                                 ),
-                                TsStatement.Match.VariantPatternToStatement(
+                                IrStatement.Match.VariantPatternToStatement(
                                     tag = "Bar",
                                     dataVariable = null,
                                     statements = emptyList(),
-                                    finalExpression = TS_THIS
+                                    finalExpression = IR_THIS
                                 )
                             )
                         )
                     ),
-                    expression = TsExpression.Variable(name = "_LOWERING_0")
+                    expression = IrExpression.Variable(name = "_LOWERING_0")
                 )
             )
         }
@@ -299,6 +305,6 @@ class ExpressionLoweringTest : StringSpec() {
 
     companion object {
         private val THIS: Expression = Expression.This(range = dummyRange, type = unit)
-        private val TS_THIS: TsExpression = TsExpression.Variable(name = "_this")
+        private val IR_THIS: IrExpression = IrExpression.Variable(name = "_this")
     }
 }
