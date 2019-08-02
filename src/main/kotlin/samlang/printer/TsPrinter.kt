@@ -49,6 +49,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         if (withType) {
             printTypeDefinition(name = tsModule.typeName, typeDefinition = tsModule.typeDefinition)
         }
+        tsModule.functions.forEach(action = ::printFunction)
     }
 
     private fun printAliases() {
@@ -303,7 +304,13 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         }
 
         override fun visit(expression: MethodAccess) {
-            TODO("NOT_IMPLEMENTED")
+            printer.printlnWithoutFurtherIndentation {
+                printWithoutBreak(x = "((...arguments) => ")
+                printWithoutBreak(x = expression.methodName)
+                printWithoutBreak(x = "(")
+                expression.expression.printSelf(withParenthesis = false)
+                printWithoutBreak(x = ", ...arguments))")
+            }
         }
 
         override fun visit(expression: Unary) {
@@ -352,7 +359,20 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         }
 
         override fun visit(expression: Lambda) {
-            TODO("NOT_IMPLEMENTED")
+            val parameterString =
+                expression.parameters.joinToString(separator = ", ", prefix = "(", postfix = ")") { (name, type) ->
+                    if (withType) {
+                        "$name: $type"
+                    } else {
+                        name
+                    }
+                }
+            printer.printlnWithoutFurtherIndentation {
+                printWithoutBreak(x = parameterString)
+                printWithoutBreak(x = " => {")
+                expression.body.forEach(action = ::printStatement)
+                printWithoutBreak(x = "}")
+            }
         }
     }
 }
