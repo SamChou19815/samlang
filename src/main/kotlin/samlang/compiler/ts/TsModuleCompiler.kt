@@ -1,25 +1,28 @@
 package samlang.compiler.ts
 
+import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.ir.IrStatement
 import samlang.ast.lang.ClassDefinition
-import samlang.ast.lang.Module
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
 import samlang.compiler.ir.TS_UNIT
 import samlang.compiler.ir.lowerExpression
 
-internal fun compileTsModule(module: Module): TsModule {
+internal fun compileTsModule(imports: List<ModuleMembersImport>, classDefinition: ClassDefinition): TsModule {
     val typeDefinitions = arrayListOf<Pair<String, TypeDefinition>>()
     val functions = arrayListOf<TsFunction>()
-    for (classDefinition in module.classDefinitions) {
-        typeDefinitions.add(element = classDefinition.name to classDefinition.typeDefinition)
-        for (member in classDefinition.members) {
-            functions.add(element = compileTsFunction(classDefinition = classDefinition, classMember = member))
-        }
+    typeDefinitions.add(element = classDefinition.name to classDefinition.typeDefinition)
+    for (member in classDefinition.members) {
+        functions.add(element = compileTsFunction(classDefinition = classDefinition, classMember = member))
     }
-    return TsModule(imports = module.imports, typeDefinitions = typeDefinitions, functions = functions)
+    return TsModule(
+        imports = imports,
+        typeName = classDefinition.name,
+        typeDefinition = classDefinition.typeDefinition,
+        functions = functions
+    )
 }
 
 private fun compileTsFunction(

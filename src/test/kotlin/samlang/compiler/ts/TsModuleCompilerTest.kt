@@ -11,30 +11,17 @@ import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrStatement
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Expression
-import samlang.ast.lang.Module
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
 import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 
 class TsModuleCompilerTest : StringSpec() {
 
-    private fun assertCorrectlyCompiled(classDefinitions: List<ClassDefinition>, tsModule: TsModule) {
-        compileTsModule(module = Module(imports = emptyList(), classDefinitions = classDefinitions)) shouldBe tsModule
-    }
-
     private fun assertCorrectlyCompiled(classDefinition: ClassDefinition, tsModule: TsModule) {
-        compileTsModule(
-            module = Module(imports = emptyList(), classDefinitions = listOf(classDefinition))
-        ) shouldBe tsModule
+        compileTsModule(imports = emptyList(), classDefinition = classDefinition) shouldBe tsModule
     }
 
     init {
-        "Empty module is correctly compiled." {
-            assertCorrectlyCompiled(
-                classDefinitions = emptyList(),
-                tsModule = TsModule(imports = emptyList(), typeDefinitions = emptyList(), functions = emptyList())
-            )
-        }
         "Dummy module is correctly compiled." {
             assertCorrectlyCompiled(
                 classDefinition = ClassDefinition(
@@ -46,7 +33,8 @@ class TsModuleCompilerTest : StringSpec() {
                 ),
                 tsModule = TsModule(
                     imports = emptyList(),
-                    typeDefinitions = listOf("Foo" to DUMMY_TYPE_DEFINITION),
+                    typeName = "Foo",
+                    typeDefinition = DUMMY_TYPE_DEFINITION,
                     functions = emptyList()
                 )
             )
@@ -85,7 +73,8 @@ class TsModuleCompilerTest : StringSpec() {
                 ),
                 tsModule = TsModule(
                     imports = emptyList(),
-                    typeDefinitions = listOf("Test" to DUMMY_TYPE_DEFINITION),
+                    typeName = "Test",
+                    typeDefinition = DUMMY_TYPE_DEFINITION,
                     functions = listOf(
                         TsFunction(
                             name = "Test\$foo",
@@ -130,7 +119,8 @@ class TsModuleCompilerTest : StringSpec() {
                 ),
                 tsModule = TsModule(
                     imports = emptyList(),
-                    typeDefinitions = listOf("Foo" to DUMMY_TYPE_DEFINITION),
+                    typeName = "Foo",
+                    typeDefinition = DUMMY_TYPE_DEFINITION,
                     functions = listOf(
                         TsFunction(
                             name = "Foo\$bar",
@@ -173,7 +163,8 @@ class TsModuleCompilerTest : StringSpec() {
                 ),
                 tsModule = TsModule(
                     imports = emptyList(),
-                    typeDefinitions = listOf("Foo" to typeDefinition),
+                    typeName = "Foo",
+                    typeDefinition = typeDefinition,
                     functions = listOf(
                         TsFunction(
                             name = "Foo\$bar",

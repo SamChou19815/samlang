@@ -47,9 +47,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             printer.println()
         }
         if (withType) {
-            tsModule.typeDefinitions.forEach { (name, definition) ->
-                printTypeDefinition(name = name, typeDefinition = definition)
-            }
+            printTypeDefinition(name = tsModule.typeName, typeDefinition = tsModule.typeDefinition)
         }
     }
 

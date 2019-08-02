@@ -5,6 +5,7 @@ import samlang.ast.common.TypeDefinition
 
 data class TsModule(
     val imports: List<ModuleMembersImport>,
-    val typeDefinitions: List<Pair<String, TypeDefinition>>,
+    val typeName: String,
+    val typeDefinition: TypeDefinition,
     val functions: List<TsFunction>
 )
