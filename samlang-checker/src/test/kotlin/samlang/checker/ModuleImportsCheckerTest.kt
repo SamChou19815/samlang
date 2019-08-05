@@ -9,7 +9,7 @@ import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Module
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
-import samlang.ast.lang.Sources
+import samlang.ast.common.Sources
 
 class ModuleImportsCheckerTest : StringSpec() {
 
@@ -44,7 +44,7 @@ class ModuleImportsCheckerTest : StringSpec() {
             classDefinitions = members.map(transform = ::createMockClass)
         )
 
-    private fun createMockSources(modules: List<Pair<String, Module>>): Sources =
+    private fun createMockSources(modules: List<Pair<String, Module>>): Sources<Module> =
         Sources(
             moduleMappings = LinkedHashMap<ModuleReference, Module>().apply {
                 modules.forEach { (name, module) ->

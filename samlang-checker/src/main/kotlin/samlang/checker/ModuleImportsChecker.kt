@@ -1,14 +1,18 @@
 package samlang.checker
 
-import samlang.ast.lang.Module
 import samlang.ast.common.ModuleMembersImport
-import samlang.ast.lang.Sources
+import samlang.ast.common.Sources
+import samlang.ast.lang.Module
 import samlang.errors.UnresolvedNameError
 
-internal fun checkUndefinedImportsError(sources: Sources, module: Module, errorCollector: ErrorCollector): Module =
+internal fun checkUndefinedImportsError(
+    sources: Sources<Module>,
+    module: Module,
+    errorCollector: ErrorCollector
+): Module =
     ModuleImportsChecker(sources = sources, errorCollector = errorCollector).checkModuleImports(module = module)
 
-private class ModuleImportsChecker(private val sources: Sources, private val errorCollector: ErrorCollector) {
+private class ModuleImportsChecker(private val sources: Sources<Module>, private val errorCollector: ErrorCollector) {
 
     fun checkModuleImports(module: Module): Module {
         val checkedImports = module.imports.mapNotNull(transform = ::checkModuleMembersImport)

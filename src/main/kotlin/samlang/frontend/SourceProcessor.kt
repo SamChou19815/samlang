@@ -1,8 +1,8 @@
 package samlang.frontend
 
 import samlang.ast.common.ModuleReference
+import samlang.ast.common.Sources
 import samlang.ast.lang.Module
-import samlang.ast.lang.Sources
 import samlang.checker.ErrorCollector
 import samlang.checker.typeCheckSources
 import samlang.errors.CompilationFailedException
@@ -10,7 +10,7 @@ import samlang.parser.ModuleBuilder
 import samlang.util.createOrFail
 import java.io.InputStream
 
-fun processSources(sourceHandles: List<Pair<ModuleReference, InputStream>>): Sources {
+fun processSources(sourceHandles: List<Pair<ModuleReference, InputStream>>): Sources<Module> {
     val errorCollector = ErrorCollector()
     val moduleMappings = hashMapOf<ModuleReference, Module>()
     for ((moduleReference, inputStream) in sourceHandles) {

@@ -7,13 +7,14 @@ import kotlinx.collections.immutable.immutableSetOf
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range
-import samlang.ast.lang.Sources
+import samlang.ast.common.Sources
+import samlang.ast.lang.Module
 import samlang.errors.CyclicDependencyError
 
-internal fun getTypeCheckingOrder(sources: Sources, errorCollector: ErrorCollector): List<ModuleReference> =
+internal fun getTypeCheckingOrder(sources: Sources<Module>, errorCollector: ErrorCollector): List<ModuleReference> =
     CyclicDependencyChecker(sources = sources, errorCollector = errorCollector).getTypeCheckingOrder()
 
-private class CyclicDependencyChecker(sources: Sources, private val errorCollector: ErrorCollector) {
+private class CyclicDependencyChecker(sources: Sources<Module>, private val errorCollector: ErrorCollector) {
 
     /**
      * A (key, value) pair in this graph means (module A, modules that directly depend on module A).

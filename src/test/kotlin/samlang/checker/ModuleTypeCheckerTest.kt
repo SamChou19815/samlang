@@ -3,7 +3,7 @@ package samlang.checker
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import samlang.ast.common.ModuleReference
-import samlang.ast.lang.Sources
+import samlang.ast.common.Sources
 import samlang.errors.CompilationFailedException
 import samlang.parser.ModuleBuilder
 import samlang.programs.testPrograms
