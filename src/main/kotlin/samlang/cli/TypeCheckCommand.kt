@@ -4,7 +4,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
 import samlang.ast.common.ModuleReference
 import samlang.errors.CompilationFailedException
-import samlang.frontend.processSources
+import samlang.frontend.typeCheckSources
 import java.io.File
 import java.io.InputStream
 import kotlin.system.exitProcess
@@ -32,7 +32,7 @@ class TypeCheckCommand : CliktCommand(name = "check") {
             sourceHandles.add(element = moduleReference to file.inputStream())
         }
         try {
-            processSources(sourceHandles = sourceHandles)
+            typeCheckSources(sourceHandles = sourceHandles)
             echo(message = "No errors.", err = true)
         } catch (compilationFailedException: CompilationFailedException) {
             val errors = compilationFailedException.errors
