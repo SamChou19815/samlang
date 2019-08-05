@@ -1,6 +1,7 @@
 package samlang.compiler.ts
 
 import samlang.ast.common.ModuleMembersImport
+import samlang.ast.common.Sources
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.ir.IrStatement
@@ -12,7 +13,10 @@ import samlang.ast.ts.TsModuleFolder
 import samlang.compiler.ir.TS_UNIT
 import samlang.compiler.ir.lowerExpression
 
-fun compileTsModule(module: Module): TsModuleFolder {
+fun compileToTsSources(sources: Sources<Module>): Sources<TsModuleFolder> =
+    Sources(moduleMappings = sources.moduleMappings.mapValues { (_, module) -> compileTsModule(module = module) })
+
+private fun compileTsModule(module: Module): TsModuleFolder {
     val (imports, classes) = module
     return TsModuleFolder(subModules = classes.map { compileClassToTsModule(imports = imports, classDefinition = it) })
 }
