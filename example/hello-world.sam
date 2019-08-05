@@ -1,0 +1,3 @@
+class Main {
+    function main(): string = "Hello World!"
+}

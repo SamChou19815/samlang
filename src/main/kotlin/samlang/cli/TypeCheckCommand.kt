@@ -2,11 +2,10 @@ package samlang.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
-import samlang.ast.common.ModuleReference
 import samlang.errors.CompilationFailedException
+import samlang.frontend.collectSourceHandles
 import samlang.frontend.typeCheckSources
 import java.io.File
-import java.io.InputStream
 import kotlin.system.exitProcess
 
 class TypeCheckCommand : CliktCommand(name = "check") {
@@ -20,17 +19,7 @@ class TypeCheckCommand : CliktCommand(name = "check") {
             exitProcess(1)
         }
         echo(message = "Type checking sources in $sourceDirectory...", err = true)
-        val sourcePath = sourceDirectory.toPath()
-        val sourceHandles = arrayListOf<Pair<ModuleReference, InputStream>>()
-        sourceDirectory.walk().forEach { file ->
-            if (file.isDirectory || file.extension != "sam") {
-                return@forEach
-            }
-            val relativeFile = sourcePath.relativize(file.toPath()).toFile()
-            val moduleReference =
-                ModuleReference(parts = relativeFile.nameWithoutExtension.split("/").toList())
-            sourceHandles.add(element = moduleReference to file.inputStream())
-        }
+        val sourceHandles = collectSourceHandles(sourceDirectory = sourceDirectory)
         try {
             typeCheckSources(sourceHandles = sourceHandles)
             echo(message = "No errors.", err = true)

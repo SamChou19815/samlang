@@ -34,6 +34,21 @@ import samlang.ast.ts.TsModuleFolder
 import samlang.ast.ts.TsPattern
 import samlang.compiler.ir.TS_UNIT
 import samlang.util.IndentedPrinter
+import java.io.OutputStream
+import java.io.PrintStream
+
+fun printTsIndexModule(stream: OutputStream, tsModuleFolder: TsModuleFolder) {
+    // use 2-space
+    val indentedPrinter = IndentedPrinter(printStream = PrintStream(stream), indentationSymbol = "  ")
+    // With type does not matter.
+    TsPrinter(printer = indentedPrinter, withType = true).printIndexModule(tsModuleFolder = tsModuleFolder)
+}
+
+fun printTsModule(stream: OutputStream, tsModule: TsModule, withType: Boolean) {
+    // use 2-space
+    val indentedPrinter = IndentedPrinter(printStream = PrintStream(stream), indentationSymbol = "  ")
+    TsPrinter(printer = indentedPrinter, withType = withType).printModule(tsModule = tsModule)
+}
 
 private class TsPrinter(private val printer: IndentedPrinter, private val withType: Boolean) {
 
@@ -58,6 +73,8 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             printTypeDefinition(name = tsModule.typeName, typeDefinition = tsModule.typeDefinition)
         }
         tsModule.functions.forEach(action = ::printFunction)
+        val exports = tsModule.functions.asSequence().filter { it.shouldBeExported }.map { it.name }
+        printer.printWithBreak(x = exports.joinToString(separator = ", ", prefix = "export { ", postfix = " }"))
     }
 
     private fun printAliases() {
@@ -102,22 +119,19 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
     }
 
     private fun printFunction(tsFunction: TsFunction) {
-        val exportString = if (tsFunction.shouldBeExported) "export " else ""
         if (withType) {
             val (_, name, typeParameters, parameters, returnType) = tsFunction
             val typeParameterString = typeParametersToString(typeParameters = typeParameters)
             val parameterString = parameters.joinToString(separator = ", ") { (name, type) -> "$name: $type" }
             val returnTypeString = if (returnType == Type.unit) "void" else returnType.toString()
             printer.printWithBreak(
-                x = "${exportString}function $name$typeParameterString($parameterString): $returnTypeString {"
+                x = "function $name$typeParameterString($parameterString): $returnTypeString {"
             )
         } else {
             val parameterString = tsFunction.parameters.joinToString(separator = ", ") { it.first }
-            printer.printWithBreak(x = "${exportString}function ${tsFunction.name}($parameterString) {")
+            printer.printWithBreak(x = "function ${tsFunction.name}($parameterString) {")
         }
-        printer.indented {
-            printWithBreak(x = "// TODO")
-        }
+        printer.indented { tsFunction.body.forEach(::printStatement) }
         printer.printWithBreak(x = "}")
         printer.println()
     }
