@@ -18,7 +18,7 @@ import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 class TsModuleCompilerTest : StringSpec() {
 
     private fun assertCorrectlyCompiled(classDefinition: ClassDefinition, tsModule: TsModule) {
-        compileTsModule(imports = emptyList(), classDefinition = classDefinition) shouldBe tsModule
+        compileClassToTsModule(imports = emptyList(), classDefinition = classDefinition) shouldBe tsModule
     }
 
     init {

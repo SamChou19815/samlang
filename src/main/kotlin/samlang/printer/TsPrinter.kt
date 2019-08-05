@@ -30,6 +30,7 @@ import samlang.ast.ir.IrStatement.VariableAssignment
 import samlang.ast.ir.IrStatementVisitor
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
+import samlang.ast.ts.TsModuleFolder
 import samlang.ast.ts.TsPattern
 import samlang.compiler.ir.TS_UNIT
 import samlang.util.IndentedPrinter
@@ -38,6 +39,13 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
 
     private val statementPrinter: TsStatementPrinter = TsStatementPrinter()
     private val expressionPrinter: TsExpressionPrinter = TsExpressionPrinter()
+
+    fun printIndexModule(tsModuleFolder: TsModuleFolder) {
+        val names = tsModuleFolder.subModules.map { it.typeName }
+        names.forEach { name -> printer.printWithBreak(x = "import * as $name from './_$name';") }
+        printer.println()
+        printer.printWithBreak(x = names.joinToString(separator = ", ", prefix = "export { ", postfix = " }"))
+    }
 
     fun printModule(tsModule: TsModule) {
         printAliases()
@@ -64,8 +72,9 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
 
     private fun printImport(import: ModuleMembersImport) {
         val importedMemberString = import.importedMembers.joinToString(separator = ", ") { it.first }
-        val importedModuleString = import.importedModule.parts.joinToString(separator = "/")
-        printer.printWithBreak(x = "import { $importedMemberString } from \"/$importedModuleString\"")
+        // Insert additional _ before module part to avoid folder-module name conflicts.
+        val importedModuleString = import.importedModule.parts.joinToString(separator = "/") { "_$it" }
+        printer.printWithBreak(x = "import { $importedMemberString } from '/$importedModuleString';")
     }
 
     private fun printTypeDefinition(name: String, typeDefinition: TypeDefinition) {
