@@ -49,7 +49,7 @@ fun typeCheckSources(sourceHandles: List<Pair<ModuleReference, InputStream>>): S
     return createOrFail(item = checkedSources, errors = errorCollector.collectedErrors)
 }
 
-fun compileTsSources(source: Sources<Module>, outputDirectory: File, withType: Boolean = true) {
+fun compileTsSources(source: Sources<Module>, outputDirectory: File, withType: Boolean) {
     val tsSources = compileToTsSources(sources = source)
     val extension = if (withType) "ts" else "js"
     for ((moduleReference, tsModuleFolder) in tsSources.moduleMappings) {

@@ -4,6 +4,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.types.choice
 import samlang.errors.CompilationFailedException
 import samlang.frontend.collectSourceHandles
 import samlang.frontend.compileTsSources
@@ -16,6 +17,9 @@ class CompileCommand : CliktCommand(name = "compile") {
         "-o", "--output-directory",
         help = "Output directory of compilation result, default to ./out."
     ).default(value = "./out")
+    private val target: String by option("-t", "--target", help = "Compilation target")
+        .choice("ts", "js")
+        .default(value = "ts")
 
     private val configuration: Configuration by requireObject()
 
@@ -40,7 +44,6 @@ class CompileCommand : CliktCommand(name = "compile") {
             errors.forEach { echo(message = it.errorMessage) }
             return
         }
-        // TODO: allow JS compilation
-        compileTsSources(source = checkedSources, outputDirectory = outputDirectory)
+        compileTsSources(source = checkedSources, outputDirectory = outputDirectory, withType = target == "ts")
     }
 }
