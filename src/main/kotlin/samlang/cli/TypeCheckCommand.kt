@@ -18,8 +18,8 @@ class TypeCheckCommand : CliktCommand(name = "check") {
             echo(message = "$sourceDirectory is not a directory.", err = true)
             exitProcess(1)
         }
-        echo(message = "Type checking sources in $sourceDirectory...", err = true)
-        val sourceHandles = collectSourceHandles(sourceDirectory = sourceDirectory)
+        echo(message = "Type checking sources in `${configuration.sourceDirectory}` ...", err = true)
+        val sourceHandles = collectSourceHandles(sourceDirectory = sourceDirectory, exclude = configuration.exclude)
         try {
             typeCheckSources(sourceHandles = sourceHandles)
             echo(message = "No errors.", err = true)

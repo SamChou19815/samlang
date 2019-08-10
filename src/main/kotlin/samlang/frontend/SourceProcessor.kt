@@ -15,14 +15,18 @@ import java.io.File
 import java.io.InputStream
 import java.nio.file.Paths
 
-fun collectSourceHandles(sourceDirectory: File): List<Pair<ModuleReference, InputStream>> {
+fun collectSourceHandles(sourceDirectory: File, exclude: String?): List<Pair<ModuleReference, InputStream>> {
     val sourcePath = sourceDirectory.toPath()
     val sourceHandles = arrayListOf<Pair<ModuleReference, InputStream>>()
+    val excludeRegex = exclude?.let { Regex(it) }
     sourceDirectory.walk().forEach { file ->
         if (file.isDirectory || file.extension != "sam") {
             return@forEach
         }
-        val relativeFile = sourcePath.relativize(file.toPath()).toFile()
+        val relativeFile = sourcePath.relativize(file.toPath()).toFile().normalize()
+        if (excludeRegex != null && relativeFile.toString().matches(regex = excludeRegex)) {
+            return@forEach
+        }
         val moduleReference =
             ModuleReference(parts = relativeFile.nameWithoutExtension.split("/").toList())
         sourceHandles.add(element = moduleReference to file.inputStream())

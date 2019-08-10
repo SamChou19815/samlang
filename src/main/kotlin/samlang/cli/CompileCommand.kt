@@ -34,8 +34,8 @@ class CompileCommand : CliktCommand(name = "compile") {
             echo(message = "$outputDirectory is not a directory.", err = true)
             exitProcess(1)
         }
-        echo(message = "Compiling sources in $sourceDirectory...", err = true)
-        val sourceHandles = collectSourceHandles(sourceDirectory = sourceDirectory)
+        echo(message = "Compiling sources in `${configuration.sourceDirectory}` ...", err = true)
+        val sourceHandles = collectSourceHandles(sourceDirectory = sourceDirectory, exclude = configuration.exclude)
         val checkedSources = try {
             typeCheckSources(sourceHandles = sourceHandles)
         } catch (compilationFailedException: CompilationFailedException) {

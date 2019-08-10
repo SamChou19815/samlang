@@ -1,0 +1,2 @@
+#!/bin/bash
+./samlang-dev -e .*samlang/programs.* check
