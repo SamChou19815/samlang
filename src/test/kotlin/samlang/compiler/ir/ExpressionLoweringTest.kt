@@ -230,6 +230,64 @@ class ExpressionLoweringTest : StringSpec() {
                 )
             )
         }
+
+        "If/Else with panic in one branch lowering works." {
+            assertCorrectlyLowered(
+                expression = Expression.IfElse(
+                    range = dummyRange,
+                    type = unit,
+                    boolExpression = THIS,
+                    e1 = Expression.Panic(range = dummyRange, type = unit, expression = THIS),
+                    e2 = Expression.Val(
+                        range = dummyRange,
+                        type = unit,
+                        pattern = Pattern.WildCardPattern(range = dummyRange),
+                        typeAnnotation = unit,
+                        assignedExpression = THIS,
+                        nextExpression = null
+                    )
+                ),
+                expectedStatements = listOf(
+                    IrStatement.IfElse(
+                        booleanExpression = IR_THIS,
+                        s1 = listOf(IrStatement.Throw(expression = IR_THIS)),
+                        s2 = listOf(
+                            IrStatement.ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = unit,
+                                assignedExpression = IR_THIS
+                            )
+                        )
+                    )
+                )
+            )
+            assertCorrectlyLowered(
+                expression = Expression.IfElse(
+                    range = dummyRange,
+                    type = unit,
+                    boolExpression = THIS,
+                    e1 = Expression.Panic(range = dummyRange, type = unit, expression = THIS),
+                    e2 = THIS
+                ),
+                expected = LoweringResult(
+                    statements = listOf(
+                        IrStatement.LetDeclaration(name = "_LOWERING_0", typeAnnotation = unit),
+                        IrStatement.IfElse(
+                            booleanExpression = IR_THIS,
+                            s1 = listOf(
+                                IrStatement.Throw(expression = IR_THIS),
+                                IrStatement.VariableAssignment(name = "_LOWERING_0", assignedExpression = IR_UNIT)
+                            ),
+                            s2 = listOf(
+                                IrStatement.VariableAssignment(name = "_LOWERING_0", assignedExpression = IR_THIS)
+                            )
+                        )
+                    ),
+                    expression = IrExpression.Variable(name = "_LOWERING_0")
+                )
+            )
+        }
+
         "Match lowering works." {
             assertCorrectlyLowered(
                 expression = Expression.Match(

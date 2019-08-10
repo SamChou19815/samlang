@@ -38,6 +38,6 @@ sealed class TsPattern {
      * A wildcard pattern `_` that matches everything.
      */
     object WildCardPattern : TsPattern() {
-        override fun prettyPrint(): String = throw UnsupportedOperationException()
+        override fun prettyPrint(): String = "_"
     }
 }
