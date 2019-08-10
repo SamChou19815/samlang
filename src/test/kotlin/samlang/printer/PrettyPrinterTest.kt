@@ -5,7 +5,7 @@ import io.kotlintest.specs.StringSpec
 import samlang.common.getTypeCheckedModule
 import samlang.programs.testPrograms
 
-class PrinterTest : StringSpec() {
+class PrettyPrinterTest : StringSpec() {
 
     private val programs: List<Pair<String, String>> = testPrograms
         .filter { it.errorSet.isEmpty() }
