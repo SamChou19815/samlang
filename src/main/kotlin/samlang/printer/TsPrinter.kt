@@ -8,6 +8,7 @@ import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.TypeVisitor
 import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrExpression.Binary
+import samlang.ast.ir.IrExpression.This
 import samlang.ast.ir.IrExpression.ClassMember
 import samlang.ast.ir.IrExpression.FieldAccess
 import samlang.ast.ir.IrExpression.FunctionApplication
@@ -301,6 +302,10 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
 
         override fun visit(expression: Variable) {
             printer.printWithoutBreak(x = expression.name)
+        }
+
+        override fun visit(expression: This) {
+            printer.printWithoutBreak(x = "_this")
         }
 
         override fun visit(expression: ClassMember) {

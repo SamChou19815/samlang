@@ -7,13 +7,13 @@ import samlang.ast.common.Type.Companion.unit
 import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
-import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrStatement
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Expression
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
 import samlang.ast.common.Range.Companion.DUMMY as dummyRange
+import samlang.ast.ir.IrExpression.This as IR_THIS
 
 class TsModuleCompilerTest : StringSpec() {
 
@@ -187,7 +187,6 @@ class TsModuleCompilerTest : StringSpec() {
 
     companion object {
         private val THIS: Expression = Expression.This(range = dummyRange, type = unit)
-        private val IR_THIS: IrExpression = IrExpression.Variable(name = "_this")
         private val DUMMY_TYPE_DEFINITION: TypeDefinition = TypeDefinition.ofDummy(range = dummyRange)
     }
 }

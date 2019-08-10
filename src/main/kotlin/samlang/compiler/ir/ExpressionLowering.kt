@@ -12,6 +12,7 @@ import samlang.ast.ir.IrExpression.Literal
 import samlang.ast.ir.IrExpression.MethodAccess
 import samlang.ast.ir.IrExpression.ObjectConstructor
 import samlang.ast.ir.IrExpression.Ternary
+import samlang.ast.ir.IrExpression.This
 import samlang.ast.ir.IrExpression.TupleConstructor
 import samlang.ast.ir.IrExpression.Unary
 import samlang.ast.ir.IrExpression.Variable
@@ -62,7 +63,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         Literal(literal = expression.literal).asLoweringResult()
 
     override fun visit(expression: Expression.This, context: Unit): LoweringResult =
-        Variable(name = "_this").asLoweringResult()
+        This.asLoweringResult()
 
     override fun visit(expression: Expression.Variable, context: Unit): LoweringResult =
         Variable(name = expression.name).asLoweringResult()

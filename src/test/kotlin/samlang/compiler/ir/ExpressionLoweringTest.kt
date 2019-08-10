@@ -8,6 +8,7 @@ import samlang.ast.common.Type.Companion.int
 import samlang.ast.common.Type.Companion.unit
 import samlang.ast.common.UnaryOperator.NOT
 import samlang.ast.ir.IrExpression
+import samlang.ast.ir.IrExpression.This as IR_THIS
 import samlang.ast.ir.IrStatement
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Unary
@@ -381,6 +382,5 @@ class ExpressionLoweringTest : StringSpec() {
 
     companion object {
         private val THIS: Expression = Expression.This(range = dummyRange, type = unit)
-        private val IR_THIS: IrExpression = IrExpression.Variable(name = "_this")
     }
 }

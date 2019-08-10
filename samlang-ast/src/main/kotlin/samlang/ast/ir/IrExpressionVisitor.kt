@@ -9,6 +9,7 @@ package samlang.ast.ir
 interface IrExpressionVisitor<T> {
     fun visit(expression: IrExpression.Literal): T
     fun visit(expression: IrExpression.Variable): T
+    fun visit(expression: IrExpression.This): T
     fun visit(expression: IrExpression.ClassMember): T
     fun visit(expression: IrExpression.TupleConstructor): T
     fun visit(expression: IrExpression.ObjectConstructor): T

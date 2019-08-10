@@ -22,6 +22,10 @@ sealed class IrExpression(val precedence: Int) {
         override fun <T> accept(visitor: IrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
+    object This : IrExpression(precedence = 0) {
+        override fun <T> accept(visitor: IrExpressionVisitor<T>): T = visitor.visit(expression = this)
+    }
+
     data class ClassMember(val className: String, val memberName: String) : IrExpression(precedence = 0) {
         override fun <T> accept(visitor: IrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
