@@ -3,6 +3,7 @@ package samlang.printer
 import io.kotlintest.fail
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
+import samlang.ast.common.BinaryOperator
 import samlang.ast.common.Literal
 import samlang.ast.common.Range
 import samlang.ast.common.Type
@@ -441,6 +442,101 @@ class TsPrinterTest : StringSpec() {
             expectedJsClassModuleCode = """
                 function test(obj) {
                   const { foo, bar: baz } = { ...obj, foo: "foo", bar: "bar" };
+                }
+                
+                export { test };
+
+            """.trimIndent()
+        )
+
+        runCorrectlyPrintedTest(
+            testName = "Binary Expressions",
+            tsModule = TsModule(
+                imports = emptyList(),
+                typeName = "Test",
+                typeDefinition = TypeDefinition.ofDummy(range = Range.DUMMY),
+                functions = listOf(
+                    element = TsFunction(
+                        shouldBeExported = true,
+                        name = "test",
+                        typeParameters = emptyList(),
+                        parameters = emptyList(),
+                        returnType = Type.unit,
+                        body = listOf(
+                            IrStatement.ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = Type.string,
+                                assignedExpression = IrExpression.Binary(
+                                    operator = BinaryOperator.PLUS,
+                                    e1 = IrExpression.Literal(literal = Literal.of(value = 3)),
+                                    e2 = IrExpression.Literal(literal = Literal.of(value = 14))
+                                )
+                            ),
+                            IrStatement.ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = Type.string,
+                                assignedExpression = IrExpression.Binary(
+                                    operator = BinaryOperator.DIV,
+                                    e1 = IrExpression.Literal(literal = Literal.of(value = 3)),
+                                    e2 = IrExpression.Literal(literal = Literal.of(value = 14))
+                                )
+                            ),
+                            IrStatement.ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = Type.string,
+                                assignedExpression = IrExpression.Binary(
+                                    operator = BinaryOperator.DIV,
+                                    e1 = IrExpression.Literal(literal = Literal.of(value = 3)),
+                                    e2 = IrExpression.Binary(
+                                        operator = BinaryOperator.PLUS,
+                                        e1 = IrExpression.Literal(literal = Literal.of(value = 3)),
+                                        e2 = IrExpression.Literal(literal = Literal.of(value = 14))
+                                    )
+                                )
+                            ),
+                            IrStatement.ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = Type.string,
+                                assignedExpression = IrExpression.Binary(
+                                    operator = BinaryOperator.MUL,
+                                    e1 = IrExpression.Binary(
+                                        operator = BinaryOperator.PLUS,
+                                        e1 = IrExpression.Literal(literal = Literal.of(value = 3)),
+                                        e2 = IrExpression.Literal(literal = Literal.of(value = 14))
+                                    ),
+                                    e2 = IrExpression.Literal(literal = Literal.of(value = 3))
+                                )
+                            )
+                        )
+                    )
+                )
+            ),
+            expectedTsIndexModuleCode = """
+                import * as Test from './_Test';
+
+                export { Test };
+
+            """.trimIndent(),
+            expectedTsClassModuleCode = """
+                type Test = {
+                };
+                
+                function test(): void {
+                  3 + 14;
+                  Math.floor(3 / 14) ;
+                  Math.floor(3 / (3 + 14)) ;
+                  (3 + 14) * 3;
+                }
+                
+                export { test };
+
+            """.trimIndent(),
+            expectedJsClassModuleCode = """
+                function test() {
+                  3 + 14;
+                  Math.floor(3 / 14) ;
+                  Math.floor(3 / (3 + 14)) ;
+                  (3 + 14) * 3;
                 }
                 
                 export { test };

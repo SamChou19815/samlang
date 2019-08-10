@@ -396,11 +396,21 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             }
         }
 
+        private fun printNormalBinaryExpression(expression: Binary) {
+            expression.e1.printSelf(withParenthesis = expression.e1.precedence >= expression.precedence)
+            printer.printWithoutBreak(x = " ${expression.operator.symbol} ")
+            expression.e2.printSelf(withParenthesis = expression.e2.precedence >= expression.precedence)
+        }
+
         override fun visit(expression: Binary) {
             printer.printlnWithoutFurtherIndentation {
-                expression.e1.printSelf(withParenthesis = expression.e1.precedence >= expression.precedence)
-                printWithoutBreak(x = " ${expression.operator.symbol} ")
-                expression.e2.printSelf(withParenthesis = expression.e2.precedence >= expression.precedence)
+                if (expression.operator == BinaryOperator.DIV) {
+                    printWithoutBreak(x = "Math.floor(")
+                    printNormalBinaryExpression(expression = expression)
+                    printWithBreak(x = ")")
+                    return@printlnWithoutFurtherIndentation
+                }
+                printNormalBinaryExpression(expression = expression)
             }
         }
 
