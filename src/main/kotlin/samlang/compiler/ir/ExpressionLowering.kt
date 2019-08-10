@@ -4,6 +4,7 @@ import samlang.ast.common.Type
 import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrExpression.Binary
 import samlang.ast.ir.IrExpression.ClassMember
+import samlang.ast.ir.IrExpression.Companion.UNIT
 import samlang.ast.ir.IrExpression.FieldAccess
 import samlang.ast.ir.IrExpression.FunctionApplication
 import samlang.ast.ir.IrExpression.Lambda
@@ -31,15 +32,13 @@ import samlang.ast.ts.TsPattern
 internal fun lowerExpression(expression: Expression): LoweringResult =
     expression.accept(visitor = ExpressionLoweringVisitor(), context = Unit)
 
-internal val IR_UNIT: Literal = Literal(literal = samlang.ast.common.Literal.UnitLiteral)
-
 internal data class LoweringResult(val statements: List<IrStatement>, val expression: IrExpression)
 
 private fun IrExpression.asLoweringResult(statements: List<IrStatement> = emptyList()): LoweringResult =
     LoweringResult(statements = statements, expression = this)
 
 private fun List<IrStatement>.asLoweringResult(): LoweringResult =
-    LoweringResult(statements = this, expression = IR_UNIT)
+    LoweringResult(statements = this, expression = UNIT)
 
 private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult> {
 
@@ -145,7 +144,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         loweredStatements.add(element = Throw(expression = result.expression))
         return LoweringResult(
             statements = loweredStatements,
-            expression = IR_UNIT
+            expression = UNIT
         )
     }
 
@@ -180,7 +179,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 e2 = e2LoweringResult.expression
             ).asLoweringResult(statements = loweredStatements)
         }
-        if (e1LoweringResult.expression == IR_UNIT && e2LoweringResult.expression == IR_UNIT) {
+        if (e1LoweringResult.expression == UNIT && e2LoweringResult.expression == UNIT) {
             loweredStatements.add(
                 element = IfElse(
                     booleanExpression = boolExpression,
@@ -266,7 +265,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.Lambda, context: Unit): LoweringResult {
         val result = expression.body.lower()
-        return if (result.expression == IR_UNIT) {
+        return if (result.expression == UNIT) {
             Lambda(parameters = expression.parameters, body = result.statements).asLoweringResult()
         } else {
             Lambda(

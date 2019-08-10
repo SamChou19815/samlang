@@ -1,6 +1,7 @@
 package samlang.ast.ir
 
 import samlang.ast.common.BinaryOperator
+import samlang.ast.common.Literal
 import samlang.ast.common.Type
 import samlang.ast.common.UnaryOperator
 
@@ -80,5 +81,20 @@ sealed class IrExpression(val precedence: Int) {
         val body: List<IrStatement>
     ) : IrExpression(precedence = 11) {
         override fun <T> accept(visitor: IrExpressionVisitor<T>): T = visitor.visit(expression = this)
+    }
+
+    companion object {
+        @JvmField
+        val UNIT: Literal = Literal(literal = samlang.ast.common.Literal.UnitLiteral)
+        @JvmField
+        val TRUE: Literal = Literal(literal = samlang.ast.common.Literal.TRUE)
+        @JvmField
+        val FALSE: Literal = Literal(literal = samlang.ast.common.Literal.FALSE)
+
+        @JvmStatic
+        fun literal(value: Long): Literal = Literal(literal = samlang.ast.common.Literal.of(value = value))
+
+        @JvmStatic
+        fun literal(value: String): Literal = Literal(literal = samlang.ast.common.Literal.of(value = value))
     }
 }

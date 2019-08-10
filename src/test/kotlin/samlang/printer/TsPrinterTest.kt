@@ -4,13 +4,20 @@ import io.kotlintest.fail
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import samlang.ast.common.BinaryOperator
-import samlang.ast.common.Literal
 import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
-import samlang.ast.ir.IrExpression
-import samlang.ast.ir.IrStatement
+import samlang.ast.ir.IrExpression.Binary
+import samlang.ast.ir.IrExpression.Companion.TRUE
+import samlang.ast.ir.IrExpression.Companion.literal
+import samlang.ast.ir.IrExpression.ObjectConstructor
+import samlang.ast.ir.IrExpression.TupleConstructor
+import samlang.ast.ir.IrExpression.Variable
+import samlang.ast.ir.IrStatement.ConstantDefinition
+import samlang.ast.ir.IrStatement.IfElse
+import samlang.ast.ir.IrStatement.Return
+import samlang.ast.ir.IrStatement.Throw
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
 import samlang.ast.ts.TsModuleFolder
@@ -118,9 +125,7 @@ class TsPrinterTest : StringSpec() {
                         parameters = emptyList(),
                         returnType = Type.unit,
                         body = listOf(
-                            element = IrStatement.Throw(
-                                expression = IrExpression.Literal(literal = Literal.of(value = "Ah!"))
-                            )
+                            element = Throw(expression = literal(value = "Ah!"))
                         )
                     )
                 )
@@ -159,9 +164,7 @@ class TsPrinterTest : StringSpec() {
                         typeParameters = emptyList(),
                         parameters = emptyList(),
                         returnType = Type.unit,
-                        body = listOf(
-                            element = IrStatement.Return(expression = null)
-                        )
+                        body = listOf(element = Return(expression = null))
                     )
                 )
             ),
@@ -192,10 +195,10 @@ class TsPrinterTest : StringSpec() {
                         parameters = emptyList(),
                         returnType = Type.unit,
                         body = listOf(
-                            element = IrStatement.IfElse(
-                                booleanExpression = IrExpression.Literal(literal = Literal.of(value = true)),
-                                s1 = listOf(element = IrStatement.Return(expression = null)),
-                                s2 = listOf(element = IrStatement.Return(expression = null))
+                            element = IfElse(
+                                booleanExpression = TRUE,
+                                s1 = listOf(element = Return(expression = null)),
+                                s2 = listOf(element = Return(expression = null))
                             )
                         )
                     )
@@ -232,12 +235,12 @@ class TsPrinterTest : StringSpec() {
                         parameters = emptyList(),
                         returnType = Type.unit,
                         body = listOf(
-                            element = IrStatement.ConstantDefinition(
+                            element = ConstantDefinition(
                                 pattern = TsPattern.VariablePattern(
                                     name = "foo"
                                 ),
                                 typeAnnotation = Type.string,
-                                assignedExpression = IrExpression.Literal(literal = Literal.of(value = "bar"))
+                                assignedExpression = literal(value = "bar")
                             )
                         )
                     )
@@ -278,10 +281,10 @@ class TsPrinterTest : StringSpec() {
                         parameters = emptyList(),
                         returnType = Type.unit,
                         body = listOf(
-                            element = IrStatement.ConstantDefinition(
+                            element = ConstantDefinition(
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
-                                assignedExpression = IrExpression.Literal(literal = Literal.of(value = "bar"))
+                                assignedExpression = literal(value = "bar")
                             )
                         )
                     )
@@ -314,16 +317,13 @@ class TsPrinterTest : StringSpec() {
                         parameters = emptyList(),
                         returnType = Type.unit,
                         body = listOf(
-                            element = IrStatement.ConstantDefinition(
+                            element = ConstantDefinition(
                                 pattern = TsPattern.TuplePattern(
                                     destructedNames = listOf("foo", "bar")
                                 ),
                                 typeAnnotation = Type.TupleType(mappings = listOf(Type.string, Type.string)),
-                                assignedExpression = IrExpression.TupleConstructor(
-                                    expressionList = listOf(
-                                        IrExpression.Literal(literal = Literal.of(value = "foo")),
-                                        IrExpression.Literal(literal = Literal.of(value = "bar"))
-                                    )
+                                assignedExpression = TupleConstructor(
+                                    expressionList = listOf(literal(value = "foo"), literal(value = "bar"))
                                 )
                             )
                         )
@@ -370,16 +370,16 @@ class TsPrinterTest : StringSpec() {
                         parameters = listOf(element = "obj" to Type.id(identifier = "Test")),
                         returnType = Type.unit,
                         body = listOf(
-                            element = IrStatement.ConstantDefinition(
+                            element = ConstantDefinition(
                                 pattern = TsPattern.ObjectPattern(
                                     destructedNames = listOf("foo" to null, "bar" to "baz")
                                 ),
                                 typeAnnotation = Type.id(identifier = "Test"),
-                                assignedExpression = IrExpression.ObjectConstructor(
-                                    spreadExpression = IrExpression.Variable(name = "obj"),
+                                assignedExpression = ObjectConstructor(
+                                    spreadExpression = Variable(name = "obj"),
                                     fieldDeclaration = listOf(
-                                        "foo" to IrExpression.Literal(literal = Literal.of(value = "foo")),
-                                        "bar" to IrExpression.Literal(literal = Literal.of(value = "bar"))
+                                        "foo" to literal(value = "foo"),
+                                        "bar" to literal(value = "bar")
                                     )
                                 )
                             )
@@ -424,48 +424,48 @@ class TsPrinterTest : StringSpec() {
                         parameters = emptyList(),
                         returnType = Type.unit,
                         body = listOf(
-                            IrStatement.ConstantDefinition(
+                            ConstantDefinition(
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
-                                assignedExpression = IrExpression.Binary(
+                                assignedExpression = Binary(
                                     operator = BinaryOperator.PLUS,
-                                    e1 = IrExpression.Literal(literal = Literal.of(value = 3)),
-                                    e2 = IrExpression.Literal(literal = Literal.of(value = 14))
+                                    e1 = literal(value = 3),
+                                    e2 = literal(value = 14)
                                 )
                             ),
-                            IrStatement.ConstantDefinition(
+                            ConstantDefinition(
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
-                                assignedExpression = IrExpression.Binary(
+                                assignedExpression = Binary(
                                     operator = BinaryOperator.DIV,
-                                    e1 = IrExpression.Literal(literal = Literal.of(value = 3)),
-                                    e2 = IrExpression.Literal(literal = Literal.of(value = 14))
+                                    e1 = literal(value = 3),
+                                    e2 = literal(value = 14)
                                 )
                             ),
-                            IrStatement.ConstantDefinition(
+                            ConstantDefinition(
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
-                                assignedExpression = IrExpression.Binary(
+                                assignedExpression = Binary(
                                     operator = BinaryOperator.DIV,
-                                    e1 = IrExpression.Literal(literal = Literal.of(value = 3)),
-                                    e2 = IrExpression.Binary(
+                                    e1 = literal(value = 3),
+                                    e2 = Binary(
                                         operator = BinaryOperator.PLUS,
-                                        e1 = IrExpression.Literal(literal = Literal.of(value = 3)),
-                                        e2 = IrExpression.Literal(literal = Literal.of(value = 14))
+                                        e1 = literal(value = 3),
+                                        e2 = literal(value = 14)
                                     )
                                 )
                             ),
-                            IrStatement.ConstantDefinition(
+                            ConstantDefinition(
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
-                                assignedExpression = IrExpression.Binary(
+                                assignedExpression = Binary(
                                     operator = BinaryOperator.MUL,
-                                    e1 = IrExpression.Binary(
+                                    e1 = Binary(
                                         operator = BinaryOperator.PLUS,
-                                        e1 = IrExpression.Literal(literal = Literal.of(value = 3)),
-                                        e2 = IrExpression.Literal(literal = Literal.of(value = 14))
+                                        e1 = literal(value = 3),
+                                        e2 = literal(value = 14)
                                     ),
-                                    e2 = IrExpression.Literal(literal = Literal.of(value = 3))
+                                    e2 = literal(value = 3)
                                 )
                             )
                         )

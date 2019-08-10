@@ -40,15 +40,14 @@ sealed class Literal {
 
     companion object {
         @JvmField
-        val UNIT: UnitLiteral = UnitLiteral
+        val TRUE: BoolLiteral = BoolLiteral(value = true)
+        @JvmField
+        val FALSE: BoolLiteral = BoolLiteral(value = false)
 
         @JvmStatic
         fun of(value: Long): IntLiteral = IntLiteral(value = value)
 
         @JvmStatic
         fun of(value: String): StringLiteral = StringLiteral(value = value)
-
-        @JvmStatic
-        fun of(value: Boolean): BoolLiteral = BoolLiteral(value = value)
     }
 }

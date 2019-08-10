@@ -3,7 +3,6 @@ package samlang.compiler.ir
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import samlang.ast.common.BinaryOperator.PLUS
-import samlang.ast.common.Literal
 import samlang.ast.common.Type
 import samlang.ast.common.Type.Companion.int
 import samlang.ast.common.Type.Companion.unit
@@ -30,15 +29,15 @@ class ExpressionLoweringTest : StringSpec() {
 
     private fun assertCorrectlyLowered(expression: Expression, expectedStatements: List<IrStatement>) {
         lowerExpression(expression = expression) shouldBe LoweringResult(
-            statements = expectedStatements, expression = IR_UNIT
+            statements = expectedStatements, expression = IrExpression.UNIT
         )
     }
 
     init {
         "Statement/Expression only lowering works." {
             assertCorrectlyLowered(
-                expression = Expression.Literal(range = dummyRange, type = unit, literal = Literal.UNIT),
-                expectedExpression = IR_UNIT
+                expression = Expression.Literal.ofUnit(range = dummyRange),
+                expectedExpression = IrExpression.UNIT
             )
             assertCorrectlyLowered(
                 expression = Expression.Variable(range = dummyRange, type = unit, name = "foo"),
@@ -218,7 +217,7 @@ class ExpressionLoweringTest : StringSpec() {
                                 ),
                                 IrStatement.VariableAssignment(
                                     name = "_LOWERING_0",
-                                    assignedExpression = IR_UNIT
+                                    assignedExpression = IrExpression.UNIT
                                 )
                             ),
                             s2 = listOf(
@@ -276,7 +275,10 @@ class ExpressionLoweringTest : StringSpec() {
                             booleanExpression = IR_THIS,
                             s1 = listOf(
                                 IrStatement.Throw(expression = IR_THIS),
-                                IrStatement.VariableAssignment(name = "_LOWERING_0", assignedExpression = IR_UNIT)
+                                IrStatement.VariableAssignment(
+                                    name = "_LOWERING_0",
+                                    assignedExpression = IrExpression.UNIT
+                                )
                             ),
                             s2 = listOf(
                                 IrStatement.VariableAssignment(name = "_LOWERING_0", assignedExpression = IR_THIS)

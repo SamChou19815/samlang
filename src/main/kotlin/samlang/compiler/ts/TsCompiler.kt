@@ -4,13 +4,13 @@ import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
+import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrStatement
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Module
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
 import samlang.ast.ts.TsModuleFolder
-import samlang.compiler.ir.IR_UNIT
 import samlang.compiler.ir.lowerExpression
 
 fun compileToTsSources(sources: Sources<Module>): Sources<TsModuleFolder> =
@@ -42,7 +42,7 @@ private fun compileTsFunction(
 ): TsFunction {
     val mangledName = "${classDefinition.name}$${classMember.name}"
     val bodyLoweringResult = lowerExpression(expression = classMember.body)
-    val body = if (bodyLoweringResult.expression == IR_UNIT) {
+    val body = if (bodyLoweringResult.expression == IrExpression.UNIT) {
         bodyLoweringResult.statements
     } else {
         bodyLoweringResult.statements.plus(element = IrStatement.Return(expression = bodyLoweringResult.expression))

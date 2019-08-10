@@ -34,7 +34,6 @@ import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
 import samlang.ast.ts.TsModuleFolder
 import samlang.ast.ts.TsPattern
-import samlang.compiler.ir.IR_UNIT
 import samlang.util.IndentedPrinter
 import java.io.OutputStream
 import java.io.PrintStream
@@ -211,7 +210,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                             printWithoutBreak(x = "const $dataVariable = $matchedVariable.data;")
                         }
                         statements.forEach(action = ::printStatement)
-                        if (finalExpression != IR_UNIT) {
+                        if (finalExpression != IrExpression.UNIT) {
                             printlnWithoutFurtherIndentation {
                                 printWithoutBreak(x = "$assignedTemporaryVariable = ")
                                 printExpression(expression = finalExpression)
@@ -293,7 +292,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             } else accept(visitor = this@TsExpressionPrinter)
 
         override fun visit(expression: Literal) {
-            if (expression.literal == samlang.ast.common.Literal.UNIT) {
+            if (expression.literal == samlang.ast.common.Literal.UnitLiteral) {
                 printer.printWithoutBreak(x = "void 0")
             } else {
                 printer.printWithoutBreak(x = expression.literal.prettyPrintedValue)

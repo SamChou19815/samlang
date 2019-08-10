@@ -2,12 +2,11 @@ package samlang.parser
 
 import org.apache.commons.text.StringEscapeUtils
 import samlang.ast.common.BinaryOperator
-import samlang.ast.lang.Expression
-import samlang.ast.common.Literal
 import samlang.ast.common.Type
 import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.Type.TupleType
 import samlang.ast.common.UnaryOperator
+import samlang.ast.lang.Expression
 import samlang.errors.SyntaxError
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
@@ -37,21 +36,13 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
         val literalNode = ctx.literal()
         val range = literalNode.range
         // Case UNIT
-        literalNode.UNIT()?.let {
-            return Expression.Literal(range = range, type = Type.unit, literal = Literal.UNIT)
-        }
+        literalNode.UNIT()?.let { return Expression.Literal.ofUnit(range = range) }
         // Case TRUE
-        literalNode.TRUE()?.let {
-            return Expression.Literal(range = range, type = Type.bool, literal = Literal.of(value = true))
-        }
+        literalNode.TRUE()?.let { return Expression.Literal.ofTrue(range = range) }
         // Case FALSE
-        literalNode.FALSE()?.let {
-            return Expression.Literal(range = range, type = Type.bool, literal = Literal.of(value = false))
-        }
+        literalNode.FALSE()?.let { return Expression.Literal.ofFalse(range = range) }
         // Case MinInt
-        literalNode.MinInt()?.let {
-            return Expression.Literal(range = range, type = Type.int, literal = Literal.of(value = Long.MIN_VALUE))
-        }
+        literalNode.MinInt()?.let { return Expression.Literal.ofInt(range = range, value = Long.MIN_VALUE) }
         // Case INT
         literalNode.IntLiteral()?.let { node ->
             val token = node.symbol
@@ -66,15 +57,11 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
                 )
                 0L
             }
-            return Expression.Literal(range = range, type = Type.int, literal = Literal.IntLiteral(value = intValue))
+            return Expression.Literal.ofInt(range = range, value = intValue)
         }
         // Case STRING
         literalNode.StrLiteral()?.let {
-            return Expression.Literal(
-                range = range,
-                type = Type.string,
-                literal = Literal.of(value = stringLiteralToString(literal = it.text))
-            )
+            return Expression.Literal.ofString(range = range, value = stringLiteralToString(literal = it.text))
         }
         error(message = "Bad Literal: $ctx")
     }

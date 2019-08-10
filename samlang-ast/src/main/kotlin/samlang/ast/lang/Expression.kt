@@ -26,6 +26,23 @@ sealed class Expression(val precedence: Int) : Node {
 
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
+
+        companion object {
+            fun ofUnit(range: Range): Literal =
+                Literal(range = range, type = Type.unit, literal = samlang.ast.common.Literal.UnitLiteral)
+
+            fun ofTrue(range: Range): Literal =
+                Literal(range = range, type = Type.bool, literal = samlang.ast.common.Literal.TRUE)
+
+            fun ofFalse(range: Range): Literal =
+                Literal(range = range, type = Type.bool, literal = samlang.ast.common.Literal.FALSE)
+
+            fun ofInt(range: Range, value: Long): Literal =
+                Literal(range = range, type = Type.int, literal = samlang.ast.common.Literal.of(value = value))
+
+            fun ofString(range: Range, value: String): Literal =
+                Literal(range = range, type = Type.string, literal = samlang.ast.common.Literal.of(value = value))
+        }
     }
 
     data class This(override val range: Range, override val type: Type) : Expression(precedence = 0) {
