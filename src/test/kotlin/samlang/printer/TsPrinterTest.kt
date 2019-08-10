@@ -99,11 +99,6 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedTsClassModuleCode = """
-                // samlang aliases
-                type unit = void;
-                type int = number;
-                const unit = void 0;
-
                 type Test = {
                 };
                 
@@ -115,9 +110,6 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedJsClassModuleCode = """
-                // samlang aliases
-                const unit = void 0;
-
                 function test() {
                   throw new Error("Ah!");
                 }
@@ -153,11 +145,6 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedTsClassModuleCode = """
-                // samlang aliases
-                type unit = void;
-                type int = number;
-                const unit = void 0;
-
                 type Test = {
                 };
                 
@@ -169,9 +156,6 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedJsClassModuleCode = """
-                // samlang aliases
-                const unit = void 0;
-
                 function test() {
                   return;
                 }
@@ -211,11 +195,6 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedTsClassModuleCode = """
-                // samlang aliases
-                type unit = void;
-                type int = number;
-                const unit = void 0;
-
                 type Test = {
                 };
                 
@@ -231,9 +210,6 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedJsClassModuleCode = """
-                // samlang aliases
-                const unit = void 0;
-
                 function test() {
                   if (true) {
                     return;
@@ -279,11 +255,6 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedTsClassModuleCode = """
-                // samlang aliases
-                type unit = void;
-                type int = number;
-                const unit = void 0;
-
                 type Test = {
                 };
                 
@@ -295,9 +266,6 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedJsClassModuleCode = """
-                // samlang aliases
-                const unit = void 0;
-
                 function test() {
                   const foo = "bar";
                 }
@@ -337,11 +305,6 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedTsClassModuleCode = """
-                // samlang aliases
-                type unit = void;
-                type int = number;
-                const unit = void 0;
-
                 type Test = {
                 };
                 
@@ -353,11 +316,65 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedJsClassModuleCode = """
-                // samlang aliases
-                const unit = void 0;
-
                 function test() {
                   "bar";
+                }
+                
+                export { test };
+
+            """.trimIndent()
+        )
+
+        runCorrectlyPrintedTest(
+            testName = "Tuple Assignment",
+            tsModule = TsModule(
+                imports = emptyList(),
+                typeName = "Test",
+                typeDefinition = TypeDefinition.ofDummy(range = Range.DUMMY),
+                functions = listOf(
+                    element = TsFunction(
+                        shouldBeExported = true,
+                        name = "test",
+                        typeParameters = emptyList(),
+                        parameters = emptyList(),
+                        returnType = Type.unit,
+                        body = listOf(
+                            element = IrStatement.ConstantDefinition(
+                                pattern = TsPattern.TuplePattern(
+                                    destructedNames = listOf("foo", "bar")
+                                ),
+                                typeAnnotation = Type.TupleType(mappings = listOf(Type.string, Type.string)),
+                                assignedExpression = IrExpression.TupleConstructor(
+                                    expressionList = listOf(
+                                        IrExpression.Literal(literal = Literal.of(value = "foo")),
+                                        IrExpression.Literal(literal = Literal.of(value = "bar"))
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            ),
+            expectedTsIndexModuleCode = """
+                import * as Test from './_Test';
+
+                export { Test };
+
+            """.trimIndent(),
+            expectedTsClassModuleCode = """
+                type Test = {
+                };
+                
+                function test(): void {
+                  const [foo, bar]: [string, string] = ["foo", "bar"];
+                }
+                
+                export { test };
+
+            """.trimIndent(),
+            expectedJsClassModuleCode = """
+                function test() {
+                  const [foo, bar] = ["foo", "bar"];
                 }
                 
                 export { test };

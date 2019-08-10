@@ -55,8 +55,10 @@ sealed class Type {
     ) : Type() {
 
         override fun prettyPrint(): String {
-            val args = argumentTypes.joinToString(separator = ", ", prefix = "(", postfix = ")") { it.prettyPrint() }
-            return "$args -> ${returnType.prettyPrint()}"
+            val parameters = argumentTypes.joinToString(separator = ", ", prefix = "(", postfix = ")") {
+                it.prettyPrint()
+            }
+            return "$parameters -> ${returnType.prettyPrint()}"
         }
 
         override fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T =

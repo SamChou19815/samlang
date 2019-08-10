@@ -4,6 +4,7 @@ import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
+import samlang.ast.common.TypeVisitor
 import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrExpression.Binary
 import samlang.ast.ir.IrExpression.ClassMember
@@ -58,6 +59,7 @@ fun printTsModule(tsModule: TsModule, withType: Boolean): String =
 
 private class TsPrinter(private val printer: IndentedPrinter, private val withType: Boolean) {
 
+    private val typeToStringConverter: TsTypeToStringConverter = TsTypeToStringConverter()
     private val statementPrinter: TsStatementPrinter = TsStatementPrinter()
     private val expressionPrinter: TsExpressionPrinter = TsExpressionPrinter()
 
@@ -71,7 +73,6 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
     }
 
     fun printModule(tsModule: TsModule) {
-        printAliases()
         if (tsModule.imports.isNotEmpty()) {
             tsModule.imports.forEach(action = ::printImport)
             printer.println()
@@ -82,16 +83,6 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         tsModule.functions.forEach(action = ::printFunction)
         val exports = tsModule.functions.asSequence().filter { it.shouldBeExported }.map { it.name }
         printer.printWithBreak(x = exports.joinToString(separator = ", ", prefix = "export { ", postfix = " };"))
-    }
-
-    private fun printAliases() {
-        printer.printWithBreak(x = "// samlang aliases")
-        if (withType) {
-            printer.printWithBreak(x = "type unit = void;")
-            printer.printWithBreak(x = "type int = number;")
-        }
-        printer.printWithBreak(x = "const unit = void 0;")
-        printer.println()
     }
 
     private fun printImport(import: ModuleMembersImport) {
@@ -108,7 +99,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                 printer.printWithBreak(x = "type $name$typeParameterString = {")
                 printer.indented {
                     typeDefinition.mappings.forEach { (field, type) ->
-                        printWithBreak(x = "readonly $field: $type")
+                        printWithBreak(x = "readonly $field: ${type.toTsTypeString()}")
                     }
                 }
                 printer.printWithBreak(x = "};")
@@ -117,7 +108,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                 printer.printWithBreak(x = "type $name$typeParameterString =")
                 printer.indented {
                     typeDefinition.mappings.forEach { (tag, type) ->
-                        printWithBreak(x = """| { readonly _type: "$tag"; readonly data: $type }""")
+                        printWithBreak(x = """| { readonly _type: "$tag"; readonly data: ${type.toTsTypeString()} }""")
                     }
                 }
             }
@@ -129,10 +120,10 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         if (withType) {
             val (_, name, typeParameters, parameters, returnType) = tsFunction
             val typeParameterString = typeParametersToString(typeParameters = typeParameters)
-            val parameterString = parameters.joinToString(separator = ", ") { (name, type) -> "$name: $type" }
-            val returnTypeString = if (returnType == Type.unit) "void" else returnType.toString()
+            val parameterString =
+                parameters.joinToString(separator = ", ") { (name, type) -> "$name: ${type.toTsTypeString()}" }
             printer.printWithBreak(
-                x = "function $name$typeParameterString($parameterString): $returnTypeString {"
+                x = "function $name$typeParameterString($parameterString): ${returnType.toTsTypeString()} {"
             )
         } else {
             val parameterString = tsFunction.parameters.joinToString(separator = ", ") { it.first }
@@ -143,9 +134,38 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         printer.println()
     }
 
+    private fun Type.toTsTypeString(): String = this.accept(visitor = typeToStringConverter, context = Unit)
+
     private fun printStatement(statement: IrStatement): Unit = statement.accept(visitor = statementPrinter)
 
     private fun printExpression(expression: IrExpression): Unit = expression.accept(visitor = expressionPrinter)
+
+    private inner class TsTypeToStringConverter : TypeVisitor<Unit, String> {
+        override fun visit(type: Type.PrimitiveType, context: Unit): String = when (type.name) {
+            Type.PrimitiveTypeName.UNIT -> "void"
+            Type.PrimitiveTypeName.BOOL -> "boolean"
+            Type.PrimitiveTypeName.INT -> "number"
+            Type.PrimitiveTypeName.STRING -> "string"
+        }
+
+        override fun visit(type: Type.IdentifierType, context: Unit): String = type.typeArguments
+            .takeIf { it.isNotEmpty() }
+            ?.joinToString(separator = ", ", prefix = "${type.identifier}<", postfix = ">") { it.toTsTypeString() }
+            ?: type.identifier
+
+        override fun visit(type: Type.TupleType, context: Unit): String =
+            type.mappings.joinToString(separator = ", ", prefix = "[", postfix = "]") { it.toTsTypeString() }
+
+        override fun visit(type: Type.FunctionType, context: Unit): String {
+            val parameters = type.argumentTypes.joinToString(separator = ", ", prefix = "(", postfix = ")") {
+                it.toTsTypeString()
+            }
+            return "$parameters -> ${type.returnType.toTsTypeString()}"
+        }
+
+        override fun visit(type: Type.UndecidedType, context: Unit): String =
+            error(message = "There should be no undecided type at this point!")
+    }
 
     private inner class TsStatementPrinter : IrStatementVisitor<Unit> {
         override fun visit(statement: Throw) {
@@ -176,12 +196,12 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             val (type, assignedTemporaryVariable, matchedVariable, matchingList) = statement
             if (assignedTemporaryVariable != null) {
                 if (withType) {
-                    printer.printWithBreak(x = "let $assignedTemporaryVariable: $type;")
+                    printer.printWithBreak(x = "let $assignedTemporaryVariable: ${type.toTsTypeString()};")
                 } else {
                     printer.printWithBreak(x = "let $assignedTemporaryVariable;")
                 }
             }
-            printer.printWithBreak(x = "switch ($matchedVariable) {")
+            printer.printWithBreak(x = "switch ($matchedVariable._type) {")
             printer.indented {
                 matchingList.forEach { (tag, dataVariable, statements, finalExpression) ->
                     printWithoutBreak(x = "case \"$tag\": {")
@@ -237,7 +257,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             }
             printer.printlnWithoutFurtherIndentation {
                 if (withType) {
-                    printWithoutBreak(x = "const $pattern: $typeAnnotation = ")
+                    printWithoutBreak(x = "const $pattern: ${typeAnnotation.toTsTypeString()} = ")
                 } else {
                     printWithoutBreak(x = "const $pattern = ")
                 }
@@ -272,7 +292,11 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             } else accept(visitor = this@TsExpressionPrinter)
 
         override fun visit(expression: Literal) {
-            printer.printWithoutBreak(x = expression.literal.prettyPrintedValue)
+            if (expression.literal == samlang.ast.common.Literal.UNIT) {
+                printer.printWithoutBreak(x = "void 0")
+            } else {
+                printer.printWithoutBreak(x = expression.literal.prettyPrintedValue)
+            }
         }
 
         override fun visit(expression: Variable) {
@@ -392,7 +416,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             val parameterString =
                 expression.parameters.joinToString(separator = ", ", prefix = "(", postfix = ")") { (name, type) ->
                     if (withType) {
-                        "$name: $type"
+                        "$name: ${type.toTsTypeString()}"
                     } else {
                         name
                     }
