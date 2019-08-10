@@ -12,7 +12,7 @@ class RootCommand : CliktCommand(name = "sam") {
     ).default(value = ".")
     private val exclude: String? by option(
         "-e", "--exclude",
-        help = "Path pattern to exclude from source directory"
+        help = "Path pattern (Java regex syntax) to exclude from source directory."
     )
 
     private val configuration: Configuration by findObject { Configuration() }
