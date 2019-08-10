@@ -21,12 +21,14 @@ class TsPrinterTest : StringSpec() {
     private fun runCorrectlyPrintedTest(
         testName: String,
         tsModuleFolder: TsModuleFolder,
-        expectedTsIndexModuleCode: String,
+        expectedTsIndexModuleCode: String? = null,
         expectedTsClassModulesCode: List<String>,
-        expectedJsClassModulesCode: List<String>
+        expectedJsClassModulesCode: List<String?>
     ) {
-        "$testName: Index Module" {
-            printTsIndexModule(tsModuleFolder = tsModuleFolder) shouldBe expectedTsIndexModuleCode
+        if (expectedTsIndexModuleCode != null) {
+            "$testName: Index Module" {
+                printTsIndexModule(tsModuleFolder = tsModuleFolder) shouldBe expectedTsIndexModuleCode
+            }
         }
         if (expectedTsClassModulesCode.size != expectedJsClassModulesCode.size ||
             expectedTsClassModulesCode.size != tsModuleFolder.subModules.size
@@ -44,8 +46,10 @@ class TsPrinterTest : StringSpec() {
             "$testName: TS Module `${subModule.typeName}`" {
                 printTsModule(tsModule = subModule, withType = true) shouldBe expectedTsCode
             }
-            "$testName: JS Module `${subModule.typeName}`" {
-                printTsModule(tsModule = subModule, withType = false) shouldBe expectedJsCode
+            if (expectedJsCode != null) {
+                "$testName: JS Module `${subModule.typeName}`" {
+                    printTsModule(tsModule = subModule, withType = false) shouldBe expectedJsCode
+                }
             }
         }
     }
@@ -53,9 +57,9 @@ class TsPrinterTest : StringSpec() {
     private fun runCorrectlyPrintedTest(
         testName: String,
         tsModule: TsModule,
-        expectedTsIndexModuleCode: String,
+        expectedTsIndexModuleCode: String? = null,
         expectedTsClassModuleCode: String,
-        expectedJsClassModuleCode: String
+        expectedJsClassModuleCode: String? = null
     ): Unit = runCorrectlyPrintedTest(
         testName = testName,
         tsModuleFolder = TsModuleFolder(subModules = listOf(element = tsModule)),
@@ -71,6 +75,33 @@ class TsPrinterTest : StringSpec() {
             expectedTsIndexModuleCode = "export {  };\n",
             expectedTsClassModulesCode = emptyList(),
             expectedJsClassModulesCode = emptyList()
+        )
+
+        runCorrectlyPrintedTest(
+            testName = "Dummy Class Module",
+            tsModule = TsModule(
+                imports = emptyList(),
+                typeName = "Test",
+                typeDefinition = TypeDefinition.ofDummy(range = Range.DUMMY),
+                functions = emptyList()
+            ),
+            expectedTsIndexModuleCode = """
+                import * as Test from './_Test';
+
+                export { Test };
+
+            """.trimIndent(),
+            expectedTsClassModuleCode = """
+                type Test = {
+                };
+                
+                export {  };
+
+            """.trimIndent(),
+            expectedJsClassModuleCode = """
+                export {  };
+
+            """.trimIndent()
         )
 
         runCorrectlyPrintedTest(
@@ -94,12 +125,6 @@ class TsPrinterTest : StringSpec() {
                     )
                 )
             ),
-            expectedTsIndexModuleCode = """
-                import * as Test from './_Test';
-
-                export { Test };
-
-            """.trimIndent(),
             expectedTsClassModuleCode = """
                 type Test = {
                 };
@@ -140,25 +165,11 @@ class TsPrinterTest : StringSpec() {
                     )
                 )
             ),
-            expectedTsIndexModuleCode = """
-                import * as Test from './_Test';
-
-                export { Test };
-
-            """.trimIndent(),
             expectedTsClassModuleCode = """
                 type Test = {
                 };
                 
                 function test(): void {
-                  return;
-                }
-                
-                export { test };
-
-            """.trimIndent(),
-            expectedJsClassModuleCode = """
-                function test() {
                   return;
                 }
                 
@@ -190,29 +201,11 @@ class TsPrinterTest : StringSpec() {
                     )
                 )
             ),
-            expectedTsIndexModuleCode = """
-                import * as Test from './_Test';
-
-                export { Test };
-
-            """.trimIndent(),
             expectedTsClassModuleCode = """
                 type Test = {
                 };
                 
                 function test(): void {
-                  if (true) {
-                    return;
-                  } else {
-                    return;
-                  }
-                }
-                
-                export { test };
-
-            """.trimIndent(),
-            expectedJsClassModuleCode = """
-                function test() {
                   if (true) {
                     return;
                   } else {
@@ -250,12 +243,6 @@ class TsPrinterTest : StringSpec() {
                     )
                 )
             ),
-            expectedTsIndexModuleCode = """
-                import * as Test from './_Test';
-
-                export { Test };
-
-            """.trimIndent(),
             expectedTsClassModuleCode = """
                 type Test = {
                 };
@@ -300,25 +287,11 @@ class TsPrinterTest : StringSpec() {
                     )
                 )
             ),
-            expectedTsIndexModuleCode = """
-                import * as Test from './_Test';
-
-                export { Test };
-
-            """.trimIndent(),
             expectedTsClassModuleCode = """
                 type Test = {
                 };
                 
                 function test(): void {
-                  "bar";
-                }
-                
-                export { test };
-
-            """.trimIndent(),
-            expectedJsClassModuleCode = """
-                function test() {
                   "bar";
                 }
                 
@@ -357,12 +330,6 @@ class TsPrinterTest : StringSpec() {
                     )
                 )
             ),
-            expectedTsIndexModuleCode = """
-                import * as Test from './_Test';
-
-                export { Test };
-
-            """.trimIndent(),
             expectedTsClassModuleCode = """
                 type Test = {
                 };
@@ -420,12 +387,6 @@ class TsPrinterTest : StringSpec() {
                     )
                 )
             ),
-            expectedTsIndexModuleCode = """
-                import * as Test from './_Test';
-
-                export { Test };
-
-            """.trimIndent(),
             expectedTsClassModuleCode = """
                 type Test = {
                   readonly foo: number;
@@ -511,28 +472,11 @@ class TsPrinterTest : StringSpec() {
                     )
                 )
             ),
-            expectedTsIndexModuleCode = """
-                import * as Test from './_Test';
-
-                export { Test };
-
-            """.trimIndent(),
             expectedTsClassModuleCode = """
                 type Test = {
                 };
                 
                 function test(): void {
-                  3 + 14;
-                  Math.floor(3 / 14) ;
-                  Math.floor(3 / (3 + 14)) ;
-                  (3 + 14) * 3;
-                }
-                
-                export { test };
-
-            """.trimIndent(),
-            expectedJsClassModuleCode = """
-                function test() {
                   3 + 14;
                   Math.floor(3 / 14) ;
                   Math.floor(3 / (3 + 14)) ;
