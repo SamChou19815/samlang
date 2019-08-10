@@ -8,12 +8,12 @@ import samlang.ast.common.Type
 import samlang.ast.common.Type.Companion.int
 import samlang.ast.common.Type.Companion.unit
 import samlang.ast.common.UnaryOperator.NOT
+import samlang.ast.ir.IrExpression
+import samlang.ast.ir.IrStatement
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Unary
 import samlang.ast.lang.Pattern
-import samlang.ast.ir.IrExpression
 import samlang.ast.ts.TsPattern
-import samlang.ast.ir.IrStatement
 import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 
 class ExpressionLoweringTest : StringSpec() {
@@ -30,7 +30,7 @@ class ExpressionLoweringTest : StringSpec() {
 
     private fun assertCorrectlyLowered(expression: Expression, expectedStatements: List<IrStatement>) {
         lowerExpression(expression = expression) shouldBe LoweringResult(
-            statements = expectedStatements, expression = TS_UNIT
+            statements = expectedStatements, expression = IR_UNIT
         )
     }
 
@@ -38,7 +38,7 @@ class ExpressionLoweringTest : StringSpec() {
         "Statement/Expression only lowering works." {
             assertCorrectlyLowered(
                 expression = Expression.Literal(range = dummyRange, type = unit, literal = Literal.UNIT),
-                expectedExpression = TS_UNIT
+                expectedExpression = IR_UNIT
             )
             assertCorrectlyLowered(
                 expression = Expression.Variable(range = dummyRange, type = unit, name = "foo"),
@@ -146,6 +146,7 @@ class ExpressionLoweringTest : StringSpec() {
                 )
             )
         }
+
         "If/Else with statements lowering works." {
             assertCorrectlyLowered(
                 expression = Expression.IfElse(
@@ -217,7 +218,7 @@ class ExpressionLoweringTest : StringSpec() {
                                 ),
                                 IrStatement.VariableAssignment(
                                     name = "_LOWERING_0",
-                                    assignedExpression = TS_UNIT
+                                    assignedExpression = IR_UNIT
                                 )
                             ),
                             s2 = listOf(

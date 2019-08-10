@@ -10,7 +10,7 @@ import samlang.ast.lang.Module
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
 import samlang.ast.ts.TsModuleFolder
-import samlang.compiler.ir.TS_UNIT
+import samlang.compiler.ir.IR_UNIT
 import samlang.compiler.ir.lowerExpression
 
 fun compileToTsSources(sources: Sources<Module>): Sources<TsModuleFolder> =
@@ -42,7 +42,7 @@ private fun compileTsFunction(
 ): TsFunction {
     val mangledName = "${classDefinition.name}$${classMember.name}"
     val bodyLoweringResult = lowerExpression(expression = classMember.body)
-    val body = if (bodyLoweringResult.expression == TS_UNIT) {
+    val body = if (bodyLoweringResult.expression == IR_UNIT) {
         bodyLoweringResult.statements
     } else {
         bodyLoweringResult.statements.plus(element = IrStatement.Return(expression = bodyLoweringResult.expression))

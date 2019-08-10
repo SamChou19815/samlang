@@ -31,7 +31,7 @@ import samlang.ast.ts.TsPattern
 internal fun lowerExpression(expression: Expression): LoweringResult =
     expression.accept(visitor = ExpressionLoweringVisitor(), context = Unit)
 
-internal val TS_UNIT: Literal = Literal(literal = samlang.ast.common.Literal.UnitLiteral)
+internal val IR_UNIT: Literal = Literal(literal = samlang.ast.common.Literal.UnitLiteral)
 
 internal data class LoweringResult(val statements: List<IrStatement>, val expression: IrExpression)
 
@@ -39,7 +39,7 @@ private fun IrExpression.asLoweringResult(statements: List<IrStatement> = emptyL
     LoweringResult(statements = statements, expression = this)
 
 private fun List<IrStatement>.asLoweringResult(): LoweringResult =
-    LoweringResult(statements = this, expression = TS_UNIT)
+    LoweringResult(statements = this, expression = IR_UNIT)
 
 private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult> {
 
@@ -145,7 +145,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         loweredStatements.add(element = Throw(expression = result.expression))
         return LoweringResult(
             statements = loweredStatements,
-            expression = TS_UNIT
+            expression = IR_UNIT
         )
     }
 
@@ -180,7 +180,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 e2 = e2LoweringResult.expression
             ).asLoweringResult(statements = loweredStatements)
         }
-        if (e1LoweringResult.expression == TS_UNIT && e2LoweringResult.expression == TS_UNIT) {
+        if (e1LoweringResult.expression == IR_UNIT && e2LoweringResult.expression == IR_UNIT) {
             loweredStatements.add(
                 element = IfElse(
                     booleanExpression = boolExpression,
@@ -266,7 +266,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.Lambda, context: Unit): LoweringResult {
         val result = expression.body.lower()
-        return if (result.expression == TS_UNIT) {
+        return if (result.expression == IR_UNIT) {
             Lambda(parameters = expression.parameters, body = result.statements).asLoweringResult()
         } else {
             Lambda(
