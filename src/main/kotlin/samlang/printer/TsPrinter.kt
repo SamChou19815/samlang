@@ -1,5 +1,6 @@
 package samlang.printer
 
+import samlang.ast.common.BinaryOperator
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
@@ -99,7 +100,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                 printer.printWithBreak(x = "type $name$typeParameterString = {")
                 printer.indented {
                     typeDefinition.mappings.forEach { (field, type) ->
-                        printWithBreak(x = "readonly $field: ${type.toTsTypeString()}")
+                        printWithBreak(x = "readonly $field: ${type.toTsTypeString()};")
                     }
                 }
                 printer.printWithBreak(x = "};")
@@ -326,7 +327,10 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                 printWithoutBreak(x = "{ ")
                 if (spreadExpression != null) {
                     printWithoutBreak(x = "...")
-                    spreadExpression.printSelf(withParenthesis = true)
+                    spreadExpression.printSelf(
+                        withParenthesis = spreadExpression.precedence >= expression.precedence
+                    )
+                    printWithoutBreak(x = ", ")
                 }
                 fieldDeclaration.forEachIndexed { index, (name, e) ->
                     printWithoutBreak(x = name)

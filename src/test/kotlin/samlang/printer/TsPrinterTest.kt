@@ -7,6 +7,7 @@ import samlang.ast.common.Literal
 import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
+import samlang.ast.common.TypeDefinitionType
 import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrStatement
 import samlang.ast.ts.TsFunction
@@ -375,6 +376,71 @@ class TsPrinterTest : StringSpec() {
             expectedJsClassModuleCode = """
                 function test() {
                   const [foo, bar] = ["foo", "bar"];
+                }
+                
+                export { test };
+
+            """.trimIndent()
+        )
+
+        runCorrectlyPrintedTest(
+            testName = "Object Destructing",
+            tsModule = TsModule(
+                imports = emptyList(),
+                typeName = "Test",
+                typeDefinition = TypeDefinition(
+                    range = Range.DUMMY,
+                    type = TypeDefinitionType.OBJECT,
+                    typeParameters = emptyList(),
+                    mappings = mapOf("foo" to Type.int, "bar" to Type.bool)
+                ),
+                functions = listOf(
+                    element = TsFunction(
+                        shouldBeExported = true,
+                        name = "test",
+                        typeParameters = emptyList(),
+                        parameters = listOf(element = "obj" to Type.id(identifier = "Test")),
+                        returnType = Type.unit,
+                        body = listOf(
+                            element = IrStatement.ConstantDefinition(
+                                pattern = TsPattern.ObjectPattern(
+                                    destructedNames = listOf("foo" to null, "bar" to "baz")
+                                ),
+                                typeAnnotation = Type.id(identifier = "Test"),
+                                assignedExpression = IrExpression.ObjectConstructor(
+                                    spreadExpression = IrExpression.Variable(name = "obj"),
+                                    fieldDeclaration = listOf(
+                                        "foo" to IrExpression.Literal(literal = Literal.of(value = "foo")),
+                                        "bar" to IrExpression.Literal(literal = Literal.of(value = "bar"))
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            ),
+            expectedTsIndexModuleCode = """
+                import * as Test from './_Test';
+
+                export { Test };
+
+            """.trimIndent(),
+            expectedTsClassModuleCode = """
+                type Test = {
+                  readonly foo: number;
+                  readonly bar: boolean;
+                };
+                
+                function test(obj: Test): void {
+                  const { foo, bar: baz }: Test = { ...obj, foo: "foo", bar: "bar" };
+                }
+                
+                export { test };
+
+            """.trimIndent(),
+            expectedJsClassModuleCode = """
+                function test(obj) {
+                  const { foo, bar: baz } = { ...obj, foo: "foo", bar: "bar" };
                 }
                 
                 export { test };
