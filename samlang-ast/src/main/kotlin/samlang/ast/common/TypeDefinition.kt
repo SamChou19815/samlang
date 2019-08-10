@@ -10,7 +10,7 @@ data class TypeDefinition(
         /**
          * @return a dummy type definition used for util class.
          */
-        fun ofDummy(range: Range): TypeDefinition = TypeDefinition(
+        fun ofDummy(range: Range = Range.DUMMY): TypeDefinition = TypeDefinition(
             range = range,
             type = TypeDefinitionType.OBJECT,
             typeParameters = emptyList(),

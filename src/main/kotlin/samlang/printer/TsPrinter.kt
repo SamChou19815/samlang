@@ -50,6 +50,12 @@ fun printTsModule(stream: OutputStream, tsModule: TsModule, withType: Boolean) {
     TsPrinter(printer = indentedPrinter, withType = withType).printModule(tsModule = tsModule)
 }
 
+fun printTsIndexModule(tsModuleFolder: TsModuleFolder): String =
+    printToStream { stream -> printTsIndexModule(stream = stream, tsModuleFolder = tsModuleFolder) }
+
+fun printTsModule(tsModule: TsModule, withType: Boolean): String =
+    printToStream { stream -> printTsModule(stream = stream, tsModule = tsModule, withType = withType) }
+
 private class TsPrinter(private val printer: IndentedPrinter, private val withType: Boolean) {
 
     private val statementPrinter: TsStatementPrinter = TsStatementPrinter()
@@ -57,14 +63,15 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
 
     fun printIndexModule(tsModuleFolder: TsModuleFolder) {
         val names = tsModuleFolder.subModules.map { it.typeName }
-        names.forEach { name -> printer.printWithBreak(x = "import * as $name from './_$name';") }
-        printer.println()
-        printer.printWithBreak(x = names.joinToString(separator = ", ", prefix = "export { ", postfix = " }"))
+        if (names.isNotEmpty()) {
+            names.forEach { name -> printer.printWithBreak(x = "import * as $name from './_$name';") }
+            printer.println()
+        }
+        printer.printWithBreak(x = names.joinToString(separator = ", ", prefix = "export { ", postfix = " };"))
     }
 
     fun printModule(tsModule: TsModule) {
         printAliases()
-        printer.println()
         if (tsModule.imports.isNotEmpty()) {
             tsModule.imports.forEach(action = ::printImport)
             printer.println()
@@ -74,7 +81,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         }
         tsModule.functions.forEach(action = ::printFunction)
         val exports = tsModule.functions.asSequence().filter { it.shouldBeExported }.map { it.name }
-        printer.printWithBreak(x = exports.joinToString(separator = ", ", prefix = "export { ", postfix = " }"))
+        printer.printWithBreak(x = exports.joinToString(separator = ", ", prefix = "export { ", postfix = " };"))
     }
 
     private fun printAliases() {
@@ -104,7 +111,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                         printWithBreak(x = "readonly $field: $type")
                     }
                 }
-                printer.printWithBreak(x = "}")
+                printer.printWithBreak(x = "};")
             }
             TypeDefinitionType.VARIANT -> {
                 printer.printWithBreak(x = "type $name$typeParameterString =")
