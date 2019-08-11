@@ -8,7 +8,6 @@ import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.TypeVisitor
 import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrExpression.Binary
-import samlang.ast.ir.IrExpression.This
 import samlang.ast.ir.IrExpression.ClassMember
 import samlang.ast.ir.IrExpression.FieldAccess
 import samlang.ast.ir.IrExpression.FunctionApplication
@@ -17,6 +16,7 @@ import samlang.ast.ir.IrExpression.Literal
 import samlang.ast.ir.IrExpression.MethodAccess
 import samlang.ast.ir.IrExpression.ObjectConstructor
 import samlang.ast.ir.IrExpression.Ternary
+import samlang.ast.ir.IrExpression.This
 import samlang.ast.ir.IrExpression.TupleConstructor
 import samlang.ast.ir.IrExpression.Unary
 import samlang.ast.ir.IrExpression.Variable
@@ -309,7 +309,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         }
 
         override fun visit(expression: ClassMember) {
-            printer.printWithoutBreak(x = "${expression.className}$${expression.memberName}")
+            printer.printWithoutBreak(x = "${expression.className}.${expression.memberName}")
         }
 
         override fun visit(expression: TupleConstructor) {

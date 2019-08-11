@@ -9,12 +9,16 @@ import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.UnaryOperator
-import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrExpression.Binary
+import samlang.ast.ir.IrExpression.ClassMember
+import samlang.ast.ir.IrExpression.Companion
 import samlang.ast.ir.IrExpression.Companion.FALSE
 import samlang.ast.ir.IrExpression.Companion.TRUE
 import samlang.ast.ir.IrExpression.Companion.literal
-import samlang.ast.ir.IrExpression.*
+import samlang.ast.ir.IrExpression.FunctionApplication
+import samlang.ast.ir.IrExpression.MethodAccess
+import samlang.ast.ir.IrExpression.ObjectConstructor
+import samlang.ast.ir.IrExpression.This
 import samlang.ast.ir.IrExpression.TupleConstructor
 import samlang.ast.ir.IrExpression.Unary
 import samlang.ast.ir.IrExpression.Variable
@@ -584,6 +588,58 @@ class TsPrinterTest : StringSpec() {
                 
                 function test(): void {
                   ((...arguments) => foo(_this, ...arguments));
+                }
+                
+                export { test };
+
+            """.trimIndent()
+        )
+
+        runCorrectlyPrintedTest(
+            testName = "Function Call",
+            tsModule = TsModule(
+                imports = emptyList(),
+                typeName = "Test",
+                typeDefinition = TypeDefinition.ofDummy(range = Range.DUMMY),
+                functions = listOf(
+                    element = TsFunction(
+                        shouldBeExported = true,
+                        name = "test",
+                        typeParameters = emptyList(),
+                        parameters = emptyList(),
+                        returnType = Type.unit,
+                        body = listOf(
+                            ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = Type.bool,
+                                assignedExpression = FunctionApplication(
+                                    functionExpression = ClassMember(
+                                        className = "Test",
+                                        memberName = "foo"
+                                    ), arguments = listOf(element = Companion.literal(value = 1))
+                                )
+                            ),
+                            ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = Type.bool,
+                                assignedExpression = FunctionApplication(
+                                    functionExpression = MethodAccess(
+                                        expression = This,
+                                        methodName = "foo"
+                                    ), arguments = listOf(element = Companion.literal(value = 1))
+                                )
+                            )
+                        )
+                    )
+                )
+            ),
+            expectedTsClassModuleCode = """
+                type Test = {
+                };
+                
+                function test(): void {
+                  Test.foo(1);
+                  ((...arguments) => foo(_this, ...arguments))(1);
                 }
                 
                 export { test };
