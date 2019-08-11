@@ -1,6 +1,6 @@
 # SAMLANG
 
-[![Build Status](https://travis-ci.com/SamChou19815/samlang.svg?branch=master)](https://travis-ci.com/SamChou19815/samlang)
+[![Build Status](https://action-badges.now.sh/SamChou19815/samlang)](https://github.com/SamChou19815/samlang/actions)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.developersam/samlang/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.developersam/samlang)
 ![GitHub](https://img.shields.io/github/license/SamChou19815/samlang.svg)
 ![VSCode Extension](https://img.shields.io/visual-studio-marketplace/i/dev-sam.vscode-samlang.svg?label=vscode%20extension%20installs)
