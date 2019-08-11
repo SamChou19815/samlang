@@ -23,10 +23,12 @@ hs_err_pid*
 
 # IntelliJ IDEA
 /.idea/
+*.iml
+
+# Build Output Folders
 **/build/
 **/out/
 **/.gradle/
-*.iml
 
 # Generated Parser
 samlang-parser/src/main/java/
