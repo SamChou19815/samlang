@@ -326,7 +326,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         }
 
         override fun visit(expression: ObjectConstructor) {
-            val (spreadExpression, fieldDeclaration) = expression
+            val (_, spreadExpression, fieldDeclaration) = expression
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = "{ ")
                 if (spreadExpression != null) {
@@ -384,19 +384,34 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             }
         }
 
+        private fun printFunctionCallArguments(arguments: List<IrExpression>) {
+            printer.printWithoutBreak(x = "(")
+            arguments.forEachIndexed { index, e ->
+                e.printSelf()
+                if (index != arguments.size - 1) {
+                    printer.printWithBreak(x = ",")
+                }
+            }
+            printer.printWithoutBreak(x = ")")
+        }
+
         override fun visit(expression: FunctionApplication) {
             printer.printlnWithoutFurtherIndentation {
-                expression.functionExpression.printSelf(
-                    withParenthesis = expression.functionExpression.precedence >= expression.precedence
-                )
-                printWithoutBreak(x = "(")
-                expression.arguments.forEachIndexed { index, e ->
-                    e.printSelf()
-                    if (index != expression.arguments.size - 1) {
-                        printWithBreak(x = ",")
-                    }
+                val (_, functionExpression, arguments) = expression
+                if (functionExpression is MethodAccess) {
+                    val receiverType = functionExpression.expression.type
+                        as? Type.IdentifierType
+                        ?: error(message = "Method receiver must be a identifier type!")
+                    printWithoutBreak(x = "${receiverType.identifier}.${functionExpression.methodName}")
+                    val argumentsWithReceiver = arrayListOf(functionExpression.expression)
+                    argumentsWithReceiver.addAll(elements = arguments)
+                    printFunctionCallArguments(arguments = argumentsWithReceiver)
+                } else {
+                    functionExpression.printSelf(
+                        withParenthesis = expression.functionExpression.precedence >= expression.precedence
+                    )
+                    printFunctionCallArguments(arguments = arguments)
                 }
-                printWithoutBreak(x = ")")
             }
         }
 

@@ -60,23 +60,30 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.Literal, context: Unit): LoweringResult =
-        Literal(literal = expression.literal).asLoweringResult()
+        Literal(type = expression.type, literal = expression.literal).asLoweringResult()
 
     override fun visit(expression: Expression.This, context: Unit): LoweringResult =
-        This.asLoweringResult()
+        This(type = expression.type).asLoweringResult()
 
     override fun visit(expression: Expression.Variable, context: Unit): LoweringResult =
-        Variable(name = expression.name).asLoweringResult()
+        Variable(type = expression.type, name = expression.name).asLoweringResult()
 
     override fun visit(expression: Expression.ClassMember, context: Unit): LoweringResult =
-        ClassMember(className = expression.className, memberName = expression.memberName).asLoweringResult()
+        ClassMember(
+            type = expression.type,
+            className = expression.className,
+            memberName = expression.memberName
+        ).asLoweringResult()
 
     override fun visit(expression: Expression.TupleConstructor, context: Unit): LoweringResult {
         val loweredStatements = arrayListOf<IrStatement>()
         val loweredExpressionList = expression.expressionList.map {
             it.getLoweredAndAddStatements(statements = loweredStatements)
         }
-        return TupleConstructor(expressionList = loweredExpressionList).asLoweringResult(statements = loweredStatements)
+        return TupleConstructor(
+            type = expression.type,
+            expressionList = loweredExpressionList
+        ).asLoweringResult(statements = loweredStatements)
     }
 
     override fun visit(expression: Expression.ObjectConstructor, context: Unit): LoweringResult {
@@ -102,6 +109,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             }
         }
         return ObjectConstructor(
+            type = expression.type,
             spreadExpression = loweredSpreadExpression,
             fieldDeclaration = loweredFields
         ).asLoweringResult(statements = loweredStatements)
@@ -110,6 +118,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     override fun visit(expression: Expression.VariantConstructor, context: Unit): LoweringResult {
         val result = expression.data.lower()
         return VariantConstructor(
+            type = expression.type,
             tag = expression.tag,
             data = result.expression
         ).asLoweringResult(statements = result.statements)
@@ -118,6 +127,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     override fun visit(expression: Expression.FieldAccess, context: Unit): LoweringResult {
         val result = expression.expression.lower()
         return FieldAccess(
+            type = expression.type,
             expression = result.expression,
             fieldName = expression.fieldName
         ).asLoweringResult(statements = result.statements)
@@ -125,14 +135,17 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.MethodAccess, context: Unit): LoweringResult {
         val result = expression.expression.lower()
-        return MethodAccess(expression = result.expression, methodName = expression.methodName).asLoweringResult(
-            statements = result.statements
-        )
+        return MethodAccess(
+            type = expression.type,
+            expression = result.expression,
+            methodName = expression.methodName
+        ).asLoweringResult(statements = result.statements)
     }
 
     override fun visit(expression: Expression.Unary, context: Unit): LoweringResult {
         val result = expression.expression.lower()
         return Unary(
+            type = expression.type,
             operator = expression.operator,
             expression = result.expression
         ).asLoweringResult(statements = result.statements)
@@ -156,6 +169,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val loweredArguments =
             expression.arguments.map { it.getLoweredAndAddStatements(statements = loweredStatements) }
         return FunctionApplication(
+            type = expression.type,
             functionExpression = loweredFunctionExpression,
             arguments = loweredArguments
         ).asLoweringResult(statements = loweredStatements)
@@ -165,7 +179,12 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val loweredStatements = arrayListOf<IrStatement>()
         val e1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements)
         val e2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements)
-        return Binary(operator = expression.operator, e1 = e1, e2 = e2).asLoweringResult(statements = loweredStatements)
+        return Binary(
+            type = expression.type,
+            operator = expression.operator,
+            e1 = e1,
+            e2 = e2
+        ).asLoweringResult(statements = loweredStatements)
     }
 
     override fun visit(expression: Expression.IfElse, context: Unit): LoweringResult {
@@ -175,6 +194,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val e2LoweringResult = expression.e2.lower()
         if (e1LoweringResult.statements.isEmpty() && e2LoweringResult.statements.isEmpty()) {
             return Ternary(
+                type = expression.type,
                 boolExpression = boolExpression,
                 e1 = e1LoweringResult.expression,
                 e2 = e2LoweringResult.expression
@@ -216,7 +236,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         )
         return LoweringResult(
             statements = loweredStatements,
-            expression = Variable(name = variableForIfElseAssign)
+            expression = Variable(type = expression.type, name = variableForIfElseAssign)
         )
     }
 
@@ -260,16 +280,24 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                     matchingList = loweredMatchingList
                 )
             )
-            return Variable(name = temporaryVariable).asLoweringResult(statements = loweredStatements)
+            return Variable(
+                type = expression.type,
+                name = temporaryVariable
+            ).asLoweringResult(statements = loweredStatements)
         }
     }
 
     override fun visit(expression: Expression.Lambda, context: Unit): LoweringResult {
         val result = expression.body.lower()
         return if (result.expression == UNIT) {
-            Lambda(parameters = expression.parameters, body = result.statements).asLoweringResult()
+            Lambda(
+                type = expression.type,
+                parameters = expression.parameters,
+                body = result.statements
+            ).asLoweringResult()
         } else {
             Lambda(
+                type = expression.type,
                 parameters = expression.parameters,
                 body = result.statements.plus(element = Return(expression = result.expression))
             ).asLoweringResult()

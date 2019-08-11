@@ -331,6 +331,7 @@ class TsPrinterTest : StringSpec() {
                                 ),
                                 typeAnnotation = Type.TupleType(mappings = listOf(Type.string, Type.string)),
                                 assignedExpression = TupleConstructor(
+                                    type = Type.TupleType(mappings = listOf(Type.string, Type.string)),
                                     expressionList = listOf(literal(value = "foo"), literal(value = "bar"))
                                 )
                             )
@@ -384,7 +385,8 @@ class TsPrinterTest : StringSpec() {
                                 ),
                                 typeAnnotation = Type.id(identifier = "Test"),
                                 assignedExpression = ObjectConstructor(
-                                    spreadExpression = Variable(name = "obj"),
+                                    type = Type.id(identifier = "Test"),
+                                    spreadExpression = Variable(type = Type.id(identifier = "Test"), name = "obj"),
                                     fieldDeclaration = listOf(
                                         "foo" to literal(value = "foo"),
                                         "bar" to literal(value = "bar")
@@ -436,6 +438,7 @@ class TsPrinterTest : StringSpec() {
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = Unary(
+                                    type = Type.bool,
                                     operator = UnaryOperator.NOT,
                                     expression = TRUE
                                 )
@@ -444,8 +447,10 @@ class TsPrinterTest : StringSpec() {
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = Unary(
+                                    type = Type.bool,
                                     operator = UnaryOperator.NOT,
                                     expression = Unary(
+                                        type = Type.bool,
                                         operator = UnaryOperator.NOT,
                                         expression = FALSE
                                     )
@@ -455,6 +460,7 @@ class TsPrinterTest : StringSpec() {
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.int,
                                 assignedExpression = Unary(
+                                    type = Type.int,
                                     operator = UnaryOperator.NEG,
                                     expression = literal(value = 3)
                                 )
@@ -496,6 +502,7 @@ class TsPrinterTest : StringSpec() {
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = Binary(
+                                    type = Type.int,
                                     operator = BinaryOperator.PLUS,
                                     e1 = literal(value = 3),
                                     e2 = literal(value = 14)
@@ -505,6 +512,7 @@ class TsPrinterTest : StringSpec() {
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = Binary(
+                                    type = Type.int,
                                     operator = BinaryOperator.DIV,
                                     e1 = literal(value = 3),
                                     e2 = literal(value = 14)
@@ -514,9 +522,11 @@ class TsPrinterTest : StringSpec() {
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = Binary(
+                                    type = Type.int,
                                     operator = BinaryOperator.DIV,
                                     e1 = literal(value = 3),
                                     e2 = Binary(
+                                        type = Type.int,
                                         operator = BinaryOperator.PLUS,
                                         e1 = literal(value = 3),
                                         e2 = literal(value = 14)
@@ -527,8 +537,10 @@ class TsPrinterTest : StringSpec() {
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = Binary(
+                                    type = Type.int,
                                     operator = BinaryOperator.MUL,
                                     e1 = Binary(
+                                        type = Type.int,
                                         operator = BinaryOperator.PLUS,
                                         e1 = literal(value = 3),
                                         e2 = literal(value = 14)
@@ -576,7 +588,14 @@ class TsPrinterTest : StringSpec() {
                                     argumentTypes = listOf(element = Type.int),
                                     returnType = Type.bool
                                 ),
-                                assignedExpression = MethodAccess(expression = This, methodName = "foo")
+                                assignedExpression = MethodAccess(
+                                    type = Type.FunctionType(
+                                        argumentTypes = listOf(element = Type.int),
+                                        returnType = Type.bool
+                                    ),
+                                    expression = This(type = Type.id(identifier = "Test")),
+                                    methodName = "foo"
+                                )
                             )
                         )
                     )
@@ -613,7 +632,12 @@ class TsPrinterTest : StringSpec() {
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = FunctionApplication(
+                                    type = Type.bool,
                                     functionExpression = ClassMember(
+                                        type = Type.FunctionType(
+                                            argumentTypes = listOf(element = Type.int),
+                                            returnType = Type.bool
+                                        ),
                                         className = "Test",
                                         memberName = "foo"
                                     ), arguments = listOf(element = Companion.literal(value = 1))
@@ -623,8 +647,13 @@ class TsPrinterTest : StringSpec() {
                                 pattern = TsPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = FunctionApplication(
+                                    type = Type.bool,
                                     functionExpression = MethodAccess(
-                                        expression = This,
+                                        type = Type.FunctionType(
+                                            argumentTypes = listOf(element = Type.int),
+                                            returnType = Type.bool
+                                        ),
+                                        expression = This(type = Type.id(identifier = "Test")),
                                         methodName = "foo"
                                     ), arguments = listOf(element = Companion.literal(value = 1))
                                 )
@@ -639,7 +668,7 @@ class TsPrinterTest : StringSpec() {
                 
                 function test(): void {
                   Test.foo(1);
-                  ((...arguments) => foo(_this, ...arguments))(1);
+                  Test.foo(_this, 1);
                 }
                 
                 export { test };
