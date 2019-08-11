@@ -379,7 +379,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = expression.operator.symbol)
                 expression.expression.printSelf(
-                    withParenthesis = expression.expression.precedence >= expression.precedence
+                    withParenthesis = expression.expression.precedence > expression.precedence
                 )
             }
         }

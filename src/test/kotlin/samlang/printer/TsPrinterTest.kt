@@ -8,11 +8,15 @@ import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
+import samlang.ast.common.UnaryOperator
+import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrExpression.Binary
+import samlang.ast.ir.IrExpression.Companion.FALSE
 import samlang.ast.ir.IrExpression.Companion.TRUE
 import samlang.ast.ir.IrExpression.Companion.literal
-import samlang.ast.ir.IrExpression.ObjectConstructor
+import samlang.ast.ir.IrExpression.*
 import samlang.ast.ir.IrExpression.TupleConstructor
+import samlang.ast.ir.IrExpression.Unary
 import samlang.ast.ir.IrExpression.Variable
 import samlang.ast.ir.IrStatement.ConstantDefinition
 import samlang.ast.ir.IrStatement.IfElse
@@ -411,6 +415,66 @@ class TsPrinterTest : StringSpec() {
         )
 
         runCorrectlyPrintedTest(
+            testName = "Unary Expressions",
+            tsModule = TsModule(
+                imports = emptyList(),
+                typeName = "Test",
+                typeDefinition = TypeDefinition.ofDummy(range = Range.DUMMY),
+                functions = listOf(
+                    element = TsFunction(
+                        shouldBeExported = true,
+                        name = "test",
+                        typeParameters = emptyList(),
+                        parameters = emptyList(),
+                        returnType = Type.unit,
+                        body = listOf(
+                            ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = Type.bool,
+                                assignedExpression = Unary(
+                                    operator = UnaryOperator.NOT,
+                                    expression = TRUE
+                                )
+                            ),
+                            ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = Type.bool,
+                                assignedExpression = Unary(
+                                    operator = UnaryOperator.NOT,
+                                    expression = Unary(
+                                        operator = UnaryOperator.NOT,
+                                        expression = FALSE
+                                    )
+                                )
+                            ),
+                            ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = Type.int,
+                                assignedExpression = Unary(
+                                    operator = UnaryOperator.NEG,
+                                    expression = literal(value = 3)
+                                )
+                            )
+                        )
+                    )
+                )
+            ),
+            expectedTsClassModuleCode = """
+                type Test = {
+                };
+                
+                function test(): void {
+                  !true;
+                  !!false;
+                  -3;
+                }
+                
+                export { test };
+
+            """.trimIndent()
+        )
+
+        runCorrectlyPrintedTest(
             testName = "Binary Expressions",
             tsModule = TsModule(
                 imports = emptyList(),
@@ -481,6 +545,45 @@ class TsPrinterTest : StringSpec() {
                   Math.floor(3 / 14) ;
                   Math.floor(3 / (3 + 14)) ;
                   (3 + 14) * 3;
+                }
+                
+                export { test };
+
+            """.trimIndent()
+        )
+
+        runCorrectlyPrintedTest(
+            testName = "Method Reference",
+            tsModule = TsModule(
+                imports = emptyList(),
+                typeName = "Test",
+                typeDefinition = TypeDefinition.ofDummy(range = Range.DUMMY),
+                functions = listOf(
+                    element = TsFunction(
+                        shouldBeExported = true,
+                        name = "test",
+                        typeParameters = emptyList(),
+                        parameters = emptyList(),
+                        returnType = Type.unit,
+                        body = listOf(
+                            ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = Type.FunctionType(
+                                    argumentTypes = listOf(element = Type.int),
+                                    returnType = Type.bool
+                                ),
+                                assignedExpression = MethodAccess(expression = This, methodName = "foo")
+                            )
+                        )
+                    )
+                )
+            ),
+            expectedTsClassModuleCode = """
+                type Test = {
+                };
+                
+                function test(): void {
+                  ((...arguments) => foo(_this, ...arguments));
                 }
                 
                 export { test };
