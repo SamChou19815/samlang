@@ -113,7 +113,7 @@ sealed class IrExpression(val precedence: Int) {
     }
 
     data class Lambda(
-        override val type: Type,
+        override val type: Type.FunctionType,
         val parameters: List<Pair<String, Type>>,
         val body: List<IrStatement>
     ) : IrExpression(precedence = 11) {

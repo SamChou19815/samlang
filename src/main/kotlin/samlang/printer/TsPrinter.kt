@@ -456,6 +456,10 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                 }
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = parameterString)
+                if (withType) {
+                    printWithoutBreak(x = ": ")
+                    printWithoutBreak(x = expression.type.returnType.toTsTypeString())
+                }
                 printWithoutBreak(x = " => {")
                 expression.body.forEach(action = ::printStatement)
                 printWithoutBreak(x = "}")

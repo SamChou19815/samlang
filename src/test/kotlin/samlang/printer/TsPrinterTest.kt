@@ -9,11 +9,12 @@ import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.UnaryOperator
-import samlang.ast.ir.IrExpression.Binary
+import samlang.ast.ir.IrExpression.*
 import samlang.ast.ir.IrExpression.ClassMember
 import samlang.ast.ir.IrExpression.Companion
 import samlang.ast.ir.IrExpression.Companion.FALSE
 import samlang.ast.ir.IrExpression.Companion.TRUE
+import samlang.ast.ir.IrExpression.Companion.UNIT
 import samlang.ast.ir.IrExpression.Companion.literal
 import samlang.ast.ir.IrExpression.FunctionApplication
 import samlang.ast.ir.IrExpression.MethodAccess
@@ -669,6 +670,80 @@ class TsPrinterTest : StringSpec() {
                 function test(): void {
                   Test.foo(1);
                   Test.foo(_this, 1);
+                }
+                
+                export { test };
+
+            """.trimIndent()
+        )
+
+        runCorrectlyPrintedTest(
+            testName = "Lambda",
+            tsModule = TsModule(
+                imports = emptyList(),
+                typeName = "Test",
+                typeDefinition = TypeDefinition.ofDummy(range = Range.DUMMY),
+                functions = listOf(
+                    element = TsFunction(
+                        shouldBeExported = true,
+                        name = "test",
+                        typeParameters = emptyList(),
+                        parameters = emptyList(),
+                        returnType = Type.unit,
+                        body = listOf(
+                            ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = Type.bool,
+                                assignedExpression = Lambda(
+                                    type = Type.FunctionType(
+                                        argumentTypes = emptyList(),
+                                        returnType = Type.bool
+                                    ),
+                                    parameters = listOf(element = "foo" to Type.int),
+                                    body = listOf(
+                                        Return(expression = FALSE)
+                                    )
+                                )
+                            ),
+                            ConstantDefinition(
+                                pattern = TsPattern.WildCardPattern,
+                                typeAnnotation = Type.bool,
+                                assignedExpression = Lambda(
+                                    type = Type.FunctionType(
+                                        argumentTypes = listOf(element = Type.int),
+                                        returnType = Type.bool
+                                    ),
+                                    parameters = listOf(element = "foo" to Type.int),
+                                    body = listOf(
+                                        ConstantDefinition(
+                                            pattern = TsPattern.WildCardPattern,
+                                            typeAnnotation = Type.unit,
+                                            assignedExpression = UNIT
+                                        ),
+                                        Return(expression = TRUE)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            ),
+            expectedTsClassModuleCode = """
+                type Test = {
+                };
+                
+                function test(): void {
+                  (foo: number): boolean => {return false;};
+                  (foo: number): boolean => {void 0;return true;};
+                }
+                
+                export { test };
+
+            """.trimIndent(),
+            expectedJsClassModuleCode = """
+                function test() {
+                  (foo) => {return false;};
+                  (foo) => {void 0;return true;};
                 }
                 
                 export { test };
