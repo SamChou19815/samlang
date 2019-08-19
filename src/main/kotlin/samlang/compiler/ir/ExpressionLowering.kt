@@ -109,7 +109,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             }
         }
         return ObjectConstructor(
-            type = expression.type,
+            type = expression.type as Type.IdentifierType,
             spreadExpression = loweredSpreadExpression,
             fieldDeclaration = loweredFields
         ).asLoweringResult(statements = loweredStatements)
@@ -118,7 +118,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     override fun visit(expression: Expression.VariantConstructor, context: Unit): LoweringResult {
         val result = expression.data.lower()
         return VariantConstructor(
-            type = expression.type,
+            type = expression.type as Type.IdentifierType,
             tag = expression.tag,
             data = result.expression
         ).asLoweringResult(statements = result.statements)
@@ -260,12 +260,14 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 finalExpression = result.expression
             )
         }
+        val matchedExpressionType = matchedExpression.type as Type.IdentifierType
         if (expression.type == Type.unit) {
             loweredStatements.add(
                 element = Match(
                     type = expression.type,
                     assignedTemporaryVariable = null,
                     variableForMatchedExpression = variableForMatchedExpression,
+                    variableForMatchedExpressionType = matchedExpressionType,
                     matchingList = loweredMatchingList
                 )
             )
@@ -277,6 +279,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                     type = expression.type,
                     assignedTemporaryVariable = temporaryVariable,
                     variableForMatchedExpression = variableForMatchedExpression,
+                    variableForMatchedExpressionType = matchedExpressionType,
                     matchingList = loweredMatchingList
                 )
             )

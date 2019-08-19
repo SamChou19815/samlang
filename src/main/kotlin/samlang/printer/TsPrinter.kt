@@ -194,7 +194,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         }
 
         override fun visit(statement: Match) {
-            val (type, assignedTemporaryVariable, matchedVariable, matchingList) = statement
+            val (type, assignedTemporaryVariable, matchedVariable, _, matchingList) = statement
             if (assignedTemporaryVariable != null) {
                 if (withType) {
                     printer.printWithBreak(x = "let $assignedTemporaryVariable: ${type.toTsTypeString()};")

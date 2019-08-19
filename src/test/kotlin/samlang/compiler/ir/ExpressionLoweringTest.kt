@@ -4,6 +4,7 @@ import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import samlang.ast.common.BinaryOperator.PLUS
 import samlang.ast.common.Type
+import samlang.ast.common.Type.Companion.id
 import samlang.ast.common.Type.Companion.int
 import samlang.ast.common.Type.Companion.unit
 import samlang.ast.common.UnaryOperator.NOT
@@ -44,7 +45,7 @@ class ExpressionLoweringTest : StringSpec() {
                 expectedExpression = IrExpression.Variable(type = unit, name = "foo")
             )
             assertCorrectlyLowered(
-                expression = Expression.This(range = dummyRange, type = unit),
+                expression = Expression.This(range = dummyRange, type = DUMMY_IDENTIFIER_TYPE),
                 expectedExpression = IR_THIS
             )
             assertCorrectlyLowered(
@@ -65,7 +66,7 @@ class ExpressionLoweringTest : StringSpec() {
             assertCorrectlyLowered(
                 expression = Expression.ObjectConstructor(
                     range = dummyRange,
-                    type = unit,
+                    type = id(identifier = "Foo"),
                     spreadExpression = THIS,
                     fieldDeclarations = listOf(
                         Expression.ObjectConstructor.FieldConstructor.Field(
@@ -77,7 +78,7 @@ class ExpressionLoweringTest : StringSpec() {
                     )
                 ),
                 expectedExpression = IrExpression.ObjectConstructor(
-                    type = unit,
+                    type = id(identifier = "Foo"),
                     spreadExpression = IR_THIS,
                     fieldDeclaration = listOf(
                         "foo" to IR_THIS,
@@ -86,8 +87,17 @@ class ExpressionLoweringTest : StringSpec() {
                 )
             )
             assertCorrectlyLowered(
-                expression = Expression.VariantConstructor(range = dummyRange, type = unit, tag = "Foo", data = THIS),
-                expectedExpression = IrExpression.VariantConstructor(type = unit, tag = "Foo", data = IR_THIS)
+                expression = Expression.VariantConstructor(
+                    range = dummyRange,
+                    type = id(identifier = "Foo"),
+                    tag = "Foo",
+                    data = THIS
+                ),
+                expectedExpression = IrExpression.VariantConstructor(
+                    type = id(identifier = "Foo"),
+                    tag = "Foo",
+                    data = IR_THIS
+                )
             )
             assertCorrectlyLowered(
                 expression = Expression.FieldAccess(
@@ -295,7 +305,7 @@ class ExpressionLoweringTest : StringSpec() {
             assertCorrectlyLowered(
                 expression = Expression.Match(
                     range = dummyRange,
-                    type = unit,
+                    type = DUMMY_IDENTIFIER_TYPE,
                     matchedExpression = THIS,
                     matchingList = listOf(
                         Expression.Match.VariantPatternToExpr(
@@ -306,31 +316,35 @@ class ExpressionLoweringTest : StringSpec() {
                         )
                     )
                 ),
-                expectedStatements = listOf(
-                    IrStatement.ConstantDefinition(
-                        pattern = TsPattern.VariablePattern(name = "_LOWERING_0"),
-                        typeAnnotation = unit,
-                        assignedExpression = IR_THIS
-                    ),
-                    IrStatement.Match(
-                        type = unit,
-                        assignedTemporaryVariable = null,
-                        variableForMatchedExpression = "_LOWERING_0",
-                        matchingList = listOf(
-                            IrStatement.Match.VariantPatternToStatement(
-                                tag = "Foo",
-                                dataVariable = "bar",
-                                statements = emptyList(),
-                                finalExpression = IR_THIS
-                            ),
-                            IrStatement.Match.VariantPatternToStatement(
-                                tag = "Bar",
-                                dataVariable = null,
-                                statements = emptyList(),
-                                finalExpression = IR_THIS
+                expected = LoweringResult(
+                    statements = listOf(
+                        IrStatement.ConstantDefinition(
+                            pattern = TsPattern.VariablePattern(name = "_LOWERING_0"),
+                            typeAnnotation = DUMMY_IDENTIFIER_TYPE,
+                            assignedExpression = IR_THIS
+                        ),
+                        IrStatement.Match(
+                            type = DUMMY_IDENTIFIER_TYPE,
+                            assignedTemporaryVariable = "_LOWERING_1",
+                            variableForMatchedExpression = "_LOWERING_0",
+                            variableForMatchedExpressionType = DUMMY_IDENTIFIER_TYPE,
+                            matchingList = listOf(
+                                IrStatement.Match.VariantPatternToStatement(
+                                    tag = "Foo",
+                                    dataVariable = "bar",
+                                    statements = emptyList(),
+                                    finalExpression = IR_THIS
+                                ),
+                                IrStatement.Match.VariantPatternToStatement(
+                                    tag = "Bar",
+                                    dataVariable = null,
+                                    statements = emptyList(),
+                                    finalExpression = IR_THIS
+                                )
                             )
                         )
-                    )
+                    ),
+                    expression = IrExpression.Variable(type = DUMMY_IDENTIFIER_TYPE, name = "_LOWERING_1")
                 )
             )
             assertCorrectlyLowered(
@@ -351,13 +365,14 @@ class ExpressionLoweringTest : StringSpec() {
                     statements = listOf(
                         IrStatement.ConstantDefinition(
                             pattern = TsPattern.VariablePattern(name = "_LOWERING_0"),
-                            typeAnnotation = unit,
+                            typeAnnotation = DUMMY_IDENTIFIER_TYPE,
                             assignedExpression = IR_THIS
                         ),
                         IrStatement.Match(
                             type = int,
                             assignedTemporaryVariable = "_LOWERING_1",
                             variableForMatchedExpression = "_LOWERING_0",
+                            variableForMatchedExpressionType = DUMMY_IDENTIFIER_TYPE,
                             matchingList = listOf(
                                 IrStatement.Match.VariantPatternToStatement(
                                     tag = "Foo",
@@ -381,7 +396,8 @@ class ExpressionLoweringTest : StringSpec() {
     }
 
     companion object {
-        private val THIS: Expression = Expression.This(range = dummyRange, type = unit)
-        private val IR_THIS: IrExpression = IrExpression.This(type = unit)
+        private val DUMMY_IDENTIFIER_TYPE: Type.IdentifierType = id(identifier = "Dummy")
+        private val THIS: Expression = Expression.This(range = dummyRange, type = DUMMY_IDENTIFIER_TYPE)
+        private val IR_THIS: IrExpression = IrExpression.This(type = DUMMY_IDENTIFIER_TYPE)
     }
 }

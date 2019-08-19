@@ -47,7 +47,7 @@ sealed class IrExpression(val precedence: Int) {
     }
 
     data class ObjectConstructor(
-        override val type: Type,
+        override val type: Type.IdentifierType,
         val spreadExpression: IrExpression?,
         val fieldDeclaration: List<Pair<String, IrExpression>>
     ) : IrExpression(precedence = 1) {
@@ -55,7 +55,7 @@ sealed class IrExpression(val precedence: Int) {
     }
 
     data class VariantConstructor(
-        override val type: Type,
+        override val type: Type.IdentifierType,
         val tag: String,
         val data: IrExpression
     ) : IrExpression(precedence = 1) {

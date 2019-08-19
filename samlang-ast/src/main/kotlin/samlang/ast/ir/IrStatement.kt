@@ -26,6 +26,7 @@ sealed class IrStatement {
         val type: Type,
         val assignedTemporaryVariable: String?,
         val variableForMatchedExpression: String,
+        val variableForMatchedExpressionType: Type.IdentifierType,
         val matchingList: List<VariantPatternToStatement>
     ) : IrStatement() {
 
