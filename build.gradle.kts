@@ -83,18 +83,9 @@ tasks {
             events("passed", "skipped", "failed")
         }
     }
-    javadoc {
-        if (JavaVersion.current().isJava9Compatible) {
-            (options as StandardJavadocDocletOptions).addBooleanOption("html5", true)
-        }
-    }
     register<Jar>("sourcesJar") {
-        from(sourceSets["main"].allSource)
+        allprojects.forEach { from(it.sourceSets["main"].allSource) }
         archiveClassifier.set("sources")
-    }
-    register<Jar>("javadocJar") {
-        from(javadoc)
-        archiveClassifier.set("javadoc")
     }
     shadowJar {
         archiveBaseName.set(Constants.NAME)
@@ -113,7 +104,6 @@ publishing {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
             artifact(tasks["sourcesJar"])
-            artifact(tasks["javadocJar"])
             pom {
                 name.set("SAMLANG")
                 description.set("Sam's Programming Language")
