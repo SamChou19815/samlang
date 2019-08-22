@@ -1,0 +1,6 @@
+#!/bin/bash
+
+TAG="gcr.io/developer-sam/samlang-demo-backend"
+
+gcloud builds submit --tag "$TAG"
+gcloud beta run deploy --platform managed --image "$TAG" --memory 1Gi

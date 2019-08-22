@@ -1,4 +1,4 @@
-package samlang.demo
+package samlang.server
 
 import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference
  * A controller for web demo of SAMLANG.
  * Objects and functions defined here are designed to be easily used by a web server.
  */
-object WebDemoController {
+internal object WebDemoController {
 
     /**
      * All possible types of response.
@@ -54,7 +54,10 @@ object WebDemoController {
         try {
             rawModule = ModuleBuilder.buildModuleFromText(file = "demo.sam", text = programString)
         } catch (compilationFailedException: CompilationFailedException) {
-            return Response(type = WebDemoController.Type.BAD_SYNTAX, detail = compilationFailedException.errorMessage)
+            return Response(
+                type = WebDemoController.Type.BAD_SYNTAX,
+                detail = compilationFailedException.errorMessage
+            )
         }
         val errorCollector = ErrorCollector()
         val (checkedModule, _) = ModuleTypeChecker(errorCollector = errorCollector).typeCheck(

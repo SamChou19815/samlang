@@ -42,12 +42,12 @@ allprojects {
         implementation(kotlin(module = "stdlib-jdk8"))
         implementation(dependencyNotation = "org.apache.commons:commons-text:1.6")
         implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.1")
+        implementation(dependencyNotation = "org.slf4j:slf4j-api:1.7.28")
+        implementation(dependencyNotation = "org.slf4j:slf4j-simple:1.7.28")
         testImplementation(kotlin(module = "reflect"))
         testImplementation(kotlin(module = "test"))
         testImplementation(kotlin(module = "test-junit"))
         testImplementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.1.10")
-        testImplementation(dependencyNotation = "org.slf4j:slf4j-api:1.7.25")
-        testImplementation(dependencyNotation = "org.slf4j:slf4j-simple:1.7.25")
     }
     configure<JavaPluginConvention> {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -73,6 +73,8 @@ dependencies {
     implementation(project(":samlang-interpreter"))
     implementation(project(":samlang-compiler"))
     implementation(project(":samlang-printer"))
+    implementation(dependencyNotation = "com.google.code.gson:gson:2.8.5")
+    implementation(dependencyNotation = "com.sparkjava:spark-core:2.9.1")
     implementation(dependencyNotation = "com.github.ajalt:clikt:2.1.0")
 }
 

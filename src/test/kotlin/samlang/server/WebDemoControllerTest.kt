@@ -1,4 +1,4 @@
-package samlang.demo
+package samlang.server
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
