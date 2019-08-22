@@ -8,7 +8,7 @@ import samlang.ast.lang.Module
 /**
  * The interpreter used to evaluate an already type checked source with single module.
  */
-internal object ModuleInterpreter {
+object ModuleInterpreter {
 
     /**
      * Evaluate the [module] under some interpretation [context] (default to empty)

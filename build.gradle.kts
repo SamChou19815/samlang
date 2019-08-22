@@ -70,7 +70,9 @@ dependencies {
     implementation(project(":samlang-errors"))
     implementation(project(":samlang-utils"))
     implementation(project(":samlang-parser"))
+    implementation(project(":samlang-interpreter"))
     implementation(project(":samlang-compiler"))
+    implementation(project(":samlang-printer"))
     implementation(dependencyNotation = "com.github.ajalt:clikt:2.1.0")
 }
 
