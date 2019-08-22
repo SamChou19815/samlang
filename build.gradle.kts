@@ -7,9 +7,6 @@ plugins {
     id("org.jetbrains.dokka") version "0.9.18"
     id("org.jlleitschuh.gradle.ktlint") version "8.2.0" apply false
     id("org.jlleitschuh.gradle.ktlint-idea") version "8.2.0" apply false
-    maven
-    `maven-publish`
-    signing
 }
 
 object Constants {
@@ -83,10 +80,6 @@ tasks {
             events("passed", "skipped", "failed")
         }
     }
-    register<Jar>("sourcesJar") {
-        allprojects.forEach { from(it.sourceSets["main"].allSource) }
-        archiveClassifier.set("sources")
-    }
     shadowJar {
         archiveBaseName.set(Constants.NAME)
         archiveVersion.set(Constants.VERSION)
@@ -97,49 +90,4 @@ tasks {
         }
     }
     "assemble" { dependsOn(shadowJar) }
-}
-
-publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-            artifact(tasks["sourcesJar"])
-            pom {
-                name.set("SAMLANG")
-                description.set("Sam's Programming Language")
-                url.set("https://github.com/SamChou19815/samlang")
-                scm {
-                    url.set("https://github.com/SamChou19815/samlang")
-                    connection.set("https://github.com/SamChou19815/samlang/tree/master")
-                    developerConnection.set("scm:git:ssh://github.com:SamChou19815/samlang.git")
-                }
-                licenses {
-                    license {
-                        name.set("AGPL-3.0")
-                        url.set("https://opensource.org/licenses/AGPL-3.0")
-                    }
-                }
-                developers {
-                    developer {
-                        name.set("Developer Sam")
-                    }
-                }
-            }
-        }
-    }
-    repositories {
-        maven {
-            url = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
-            credentials {
-                val sonatypeUsername: String? by project
-                val sonatypePassword: String? by project
-                username = sonatypeUsername
-                password = sonatypePassword
-            }
-        }
-    }
-}
-
-signing {
-    sign(publishing.publications["mavenJava"])
 }
