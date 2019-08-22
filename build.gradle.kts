@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
     java
+    application
     kotlin(module = "jvm") version "1.3.41"
     id("com.github.johnrengelman.shadow") version "5.1.0"
     id("org.jetbrains.dokka") version "0.9.18"
@@ -19,6 +20,7 @@ version = Constants.VERSION
 
 allprojects {
     apply<JavaPlugin>()
+    apply<ApplicationPlugin>()
     plugins.withId("org.jetbrains.kotlin.jvm") {
         val compileKotlin: KotlinJvmCompile by tasks
         compileKotlin.kotlinOptions {
@@ -80,7 +82,11 @@ tasks {
             events("passed", "skipped", "failed")
         }
     }
+    application {
+        mainClassName = "samlang.Main"
+    }
     shadowJar {
+        minimize()
         archiveBaseName.set(Constants.NAME)
         archiveVersion.set(Constants.VERSION)
         manifest { attributes["Main-Class"] = "samlang.Main" }
