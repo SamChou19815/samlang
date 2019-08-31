@@ -56,7 +56,7 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
     private fun printImport(import: ModuleMembersImport) {
         val importedMemberString = import.importedMembers.joinToString(separator = ", ") { it.first }
         val importedModuleString = import.importedModule.parts.joinToString(separator = ".")
-        printer.printWithBreak(x = "import { $importedMemberString } from \"/$importedModuleString\"")
+        printer.printWithBreak(x = "import { $importedMemberString } from $importedModuleString")
     }
 
     private fun print(classDefinition: ClassDefinition) {
