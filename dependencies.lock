@@ -1,0 +1,716 @@
+{
+    "compileClasspath": {
+        "com.github.ajalt:clikt": {
+            "locked": "2.1.0",
+            "requested": "2.1.0"
+        },
+        "com.google.code.gson:gson": {
+            "locked": "2.8.5",
+            "requested": "2.8.5"
+        },
+        "com.sparkjava:spark-core": {
+            "locked": "2.9.1",
+            "requested": "2.9.1"
+        },
+        "org.antlr:antlr4": {
+            "firstLevelTransitive": [
+                "samlang:samlang-parser"
+            ],
+            "locked": "4.5"
+        },
+        "org.apache.commons:commons-text": {
+            "locked": "1.6",
+            "requested": "1.6"
+        },
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk8": {
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlinx:kotlinx-collections-immutable": {
+            "locked": "0.1",
+            "requested": "0.1"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "org.slf4j:slf4j-simple": {
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "samlang:samlang-ast": {
+            "project": true
+        },
+        "samlang:samlang-checker": {
+            "project": true
+        },
+        "samlang:samlang-compiler": {
+            "project": true
+        },
+        "samlang:samlang-errors": {
+            "project": true
+        },
+        "samlang:samlang-interpreter": {
+            "project": true
+        },
+        "samlang:samlang-parser": {
+            "project": true
+        },
+        "samlang:samlang-printer": {
+            "project": true
+        },
+        "samlang:samlang-utils": {
+            "project": true
+        }
+    },
+    "default": {
+        "com.github.ajalt:clikt": {
+            "locked": "2.1.0",
+            "requested": "2.1.0"
+        },
+        "com.google.code.gson:gson": {
+            "locked": "2.8.5",
+            "requested": "2.8.5"
+        },
+        "com.sparkjava:spark-core": {
+            "locked": "2.9.1",
+            "requested": "2.9.1"
+        },
+        "org.antlr:antlr4": {
+            "firstLevelTransitive": [
+                "samlang:samlang-parser"
+            ],
+            "locked": "4.5"
+        },
+        "org.apache.commons:commons-text": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "1.6",
+            "requested": "1.6"
+        },
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk8": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlinx:kotlinx-collections-immutable": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "0.1",
+            "requested": "0.1"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "org.slf4j:slf4j-simple": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "samlang:samlang-ast": {
+            "firstLevelTransitive": [
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer"
+            ],
+            "project": true
+        },
+        "samlang:samlang-checker": {
+            "project": true
+        },
+        "samlang:samlang-compiler": {
+            "project": true
+        },
+        "samlang:samlang-errors": {
+            "firstLevelTransitive": [
+                "samlang:samlang-checker",
+                "samlang:samlang-parser",
+                "samlang:samlang-utils"
+            ],
+            "project": true
+        },
+        "samlang:samlang-interpreter": {
+            "project": true
+        },
+        "samlang:samlang-parser": {
+            "project": true
+        },
+        "samlang:samlang-printer": {
+            "project": true
+        },
+        "samlang:samlang-utils": {
+            "firstLevelTransitive": [
+                "samlang:samlang-checker",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer"
+            ],
+            "project": true
+        }
+    },
+    "implementationDependenciesMetadata": {
+        "com.github.ajalt:clikt": {
+            "locked": "2.1.0",
+            "requested": "2.1.0"
+        },
+        "com.google.code.gson:gson": {
+            "locked": "2.8.5",
+            "requested": "2.8.5"
+        },
+        "com.sparkjava:spark-core": {
+            "locked": "2.9.1",
+            "requested": "2.9.1"
+        },
+        "org.antlr:antlr4": {
+            "firstLevelTransitive": [
+                "samlang:samlang-parser"
+            ],
+            "locked": "4.5"
+        },
+        "org.apache.commons:commons-text": {
+            "locked": "1.6",
+            "requested": "1.6"
+        },
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk8": {
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlinx:kotlinx-collections-immutable": {
+            "locked": "0.1",
+            "requested": "0.1"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "org.slf4j:slf4j-simple": {
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "samlang:samlang-ast": {
+            "project": true
+        },
+        "samlang:samlang-checker": {
+            "project": true
+        },
+        "samlang:samlang-compiler": {
+            "project": true
+        },
+        "samlang:samlang-errors": {
+            "project": true
+        },
+        "samlang:samlang-interpreter": {
+            "project": true
+        },
+        "samlang:samlang-parser": {
+            "project": true
+        },
+        "samlang:samlang-printer": {
+            "project": true
+        },
+        "samlang:samlang-utils": {
+            "project": true
+        }
+    },
+    "kotlinCompilerClasspath": {
+        "org.jetbrains.kotlin:kotlin-compiler-embeddable": {
+            "locked": "1.3.50"
+        }
+    },
+    "kotlinCompilerPluginClasspath": {
+        "org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable": {
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        }
+    },
+    "ktlint": {
+        "com.pinterest:ktlint": {
+            "locked": "0.34.2",
+            "requested": "0.34.2"
+        }
+    },
+    "runtimeClasspath": {
+        "com.github.ajalt:clikt": {
+            "locked": "2.1.0",
+            "requested": "2.1.0"
+        },
+        "com.google.code.gson:gson": {
+            "locked": "2.8.5",
+            "requested": "2.8.5"
+        },
+        "com.sparkjava:spark-core": {
+            "locked": "2.9.1",
+            "requested": "2.9.1"
+        },
+        "org.antlr:antlr4": {
+            "firstLevelTransitive": [
+                "samlang:samlang-parser"
+            ],
+            "locked": "4.5"
+        },
+        "org.apache.commons:commons-text": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "1.6",
+            "requested": "1.6"
+        },
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk8": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlinx:kotlinx-collections-immutable": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "0.1",
+            "requested": "0.1"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "org.slf4j:slf4j-simple": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "samlang:samlang-ast": {
+            "firstLevelTransitive": [
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer"
+            ],
+            "project": true
+        },
+        "samlang:samlang-checker": {
+            "project": true
+        },
+        "samlang:samlang-compiler": {
+            "project": true
+        },
+        "samlang:samlang-errors": {
+            "firstLevelTransitive": [
+                "samlang:samlang-checker",
+                "samlang:samlang-parser",
+                "samlang:samlang-utils"
+            ],
+            "project": true
+        },
+        "samlang:samlang-interpreter": {
+            "project": true
+        },
+        "samlang:samlang-parser": {
+            "project": true
+        },
+        "samlang:samlang-printer": {
+            "project": true
+        },
+        "samlang:samlang-utils": {
+            "firstLevelTransitive": [
+                "samlang:samlang-checker",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer"
+            ],
+            "project": true
+        }
+    },
+    "testCompileClasspath": {
+        "com.github.ajalt:clikt": {
+            "locked": "2.1.0",
+            "requested": "2.1.0"
+        },
+        "com.google.code.gson:gson": {
+            "locked": "2.8.5",
+            "requested": "2.8.5"
+        },
+        "com.sparkjava:spark-core": {
+            "locked": "2.9.1",
+            "requested": "2.9.1"
+        },
+        "io.kotlintest:kotlintest-runner-junit5": {
+            "locked": "3.1.10",
+            "requested": "3.1.10"
+        },
+        "org.antlr:antlr4": {
+            "firstLevelTransitive": [
+                "samlang:samlang-parser"
+            ],
+            "locked": "4.5"
+        },
+        "org.apache.commons:commons-text": {
+            "locked": "1.6",
+            "requested": "1.6"
+        },
+        "org.jetbrains.kotlin:kotlin-reflect": {
+            "locked": "1.3.50"
+        },
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk8": {
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlin:kotlin-test": {
+            "locked": "1.3.50"
+        },
+        "org.jetbrains.kotlin:kotlin-test-junit": {
+            "locked": "1.3.50"
+        },
+        "org.jetbrains.kotlinx:kotlinx-collections-immutable": {
+            "locked": "0.1",
+            "requested": "0.1"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "org.slf4j:slf4j-simple": {
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "samlang:samlang-ast": {
+            "project": true
+        },
+        "samlang:samlang-checker": {
+            "project": true
+        },
+        "samlang:samlang-compiler": {
+            "project": true
+        },
+        "samlang:samlang-errors": {
+            "project": true
+        },
+        "samlang:samlang-interpreter": {
+            "project": true
+        },
+        "samlang:samlang-parser": {
+            "project": true
+        },
+        "samlang:samlang-printer": {
+            "project": true
+        },
+        "samlang:samlang-utils": {
+            "project": true
+        }
+    },
+    "testImplementationDependenciesMetadata": {
+        "com.github.ajalt:clikt": {
+            "locked": "2.1.0",
+            "requested": "2.1.0"
+        },
+        "com.google.code.gson:gson": {
+            "locked": "2.8.5",
+            "requested": "2.8.5"
+        },
+        "com.sparkjava:spark-core": {
+            "locked": "2.9.1",
+            "requested": "2.9.1"
+        },
+        "io.kotlintest:kotlintest-runner-junit5": {
+            "locked": "3.1.10",
+            "requested": "3.1.10"
+        },
+        "org.antlr:antlr4": {
+            "firstLevelTransitive": [
+                "samlang:samlang-parser"
+            ],
+            "locked": "4.5"
+        },
+        "org.apache.commons:commons-text": {
+            "locked": "1.6",
+            "requested": "1.6"
+        },
+        "org.jetbrains.kotlin:kotlin-reflect": {
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk8": {
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlin:kotlin-test": {
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlin:kotlin-test-junit": {
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlinx:kotlinx-collections-immutable": {
+            "locked": "0.1",
+            "requested": "0.1"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "org.slf4j:slf4j-simple": {
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "samlang:samlang-ast": {
+            "project": true
+        },
+        "samlang:samlang-checker": {
+            "project": true
+        },
+        "samlang:samlang-compiler": {
+            "project": true
+        },
+        "samlang:samlang-errors": {
+            "project": true
+        },
+        "samlang:samlang-interpreter": {
+            "project": true
+        },
+        "samlang:samlang-parser": {
+            "project": true
+        },
+        "samlang:samlang-printer": {
+            "project": true
+        },
+        "samlang:samlang-utils": {
+            "project": true
+        }
+    },
+    "testRuntimeClasspath": {
+        "com.github.ajalt:clikt": {
+            "locked": "2.1.0",
+            "requested": "2.1.0"
+        },
+        "com.google.code.gson:gson": {
+            "locked": "2.8.5",
+            "requested": "2.8.5"
+        },
+        "com.sparkjava:spark-core": {
+            "locked": "2.9.1",
+            "requested": "2.9.1"
+        },
+        "io.kotlintest:kotlintest-runner-junit5": {
+            "locked": "3.1.10",
+            "requested": "3.1.10"
+        },
+        "org.antlr:antlr4": {
+            "firstLevelTransitive": [
+                "samlang:samlang-parser"
+            ],
+            "locked": "4.5"
+        },
+        "org.apache.commons:commons-text": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "1.6",
+            "requested": "1.6"
+        },
+        "org.jetbrains.kotlin:kotlin-reflect": {
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlin:kotlin-stdlib-jdk8": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlin:kotlin-test": {
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlin:kotlin-test-junit": {
+            "locked": "1.3.50",
+            "requested": "1.3.50"
+        },
+        "org.jetbrains.kotlinx:kotlinx-collections-immutable": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "0.1",
+            "requested": "0.1"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "org.slf4j:slf4j-simple": {
+            "firstLevelTransitive": [
+                "samlang:samlang-ast",
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer",
+                "samlang:samlang-utils"
+            ],
+            "locked": "1.7.28",
+            "requested": "1.7.28"
+        },
+        "samlang:samlang-ast": {
+            "firstLevelTransitive": [
+                "samlang:samlang-checker",
+                "samlang:samlang-compiler",
+                "samlang:samlang-errors",
+                "samlang:samlang-interpreter",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer"
+            ],
+            "project": true
+        },
+        "samlang:samlang-checker": {
+            "project": true
+        },
+        "samlang:samlang-compiler": {
+            "project": true
+        },
+        "samlang:samlang-errors": {
+            "firstLevelTransitive": [
+                "samlang:samlang-checker",
+                "samlang:samlang-parser",
+                "samlang:samlang-utils"
+            ],
+            "project": true
+        },
+        "samlang:samlang-interpreter": {
+            "project": true
+        },
+        "samlang:samlang-parser": {
+            "project": true
+        },
+        "samlang:samlang-printer": {
+            "project": true
+        },
+        "samlang:samlang-utils": {
+            "firstLevelTransitive": [
+                "samlang:samlang-checker",
+                "samlang:samlang-parser",
+                "samlang:samlang-printer"
+            ],
+            "project": true
+        }
+    }
+}
