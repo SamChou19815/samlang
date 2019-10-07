@@ -60,6 +60,12 @@ allprojects {
             maxParallelForks = 4
             reports.junitXml.isEnabled = false
         }
+        named<Test>(name = "test") {
+            useJUnitPlatform()
+            testLogging {
+                events("passed", "skipped", "failed")
+            }
+        }
     }
 }
 
@@ -82,12 +88,6 @@ dependencies {
 }
 
 tasks {
-    named<Test>(name = "test") {
-        useJUnitPlatform()
-        testLogging {
-            events("passed", "skipped", "failed")
-        }
-    }
     shadowJar {
         minimize()
         archiveBaseName.set(Constants.NAME)
@@ -98,5 +98,4 @@ tasks {
             shadow(archiveFile) { builtBy(shadowJar) }
         }
     }
-    "assemble" { dependsOn(shadowJar) }
 }
