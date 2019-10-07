@@ -2,6 +2,21 @@ name: CI
 on: [push]
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Set up JDK 11
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11
+      - name: Assemble
+        run: gradle assemble
+      - name: Upload Gradle Cache
+        uses: actions/upload-artifact@v1
+        with:
+          name: gradle-cache
+          path: ~/.gradle
   build:
     runs-on: ubuntu-latest
     steps:
@@ -10,6 +25,11 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
+      - name: Download Gradle Cache
+        uses: actions/download-artifact@v1
+        with:
+          name: gradle-cache
+          path: ~/.gradle
       - name: Build and Test
         run: gradle test
   integration-test:
@@ -20,6 +40,11 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
+      - name: Download Gradle Cache
+        uses: actions/download-artifact@v1
+        with:
+          name: gradle-cache
+          path: ~/.gradle
       - name: Generate FatJar
         run: gradle shadowJar
       - name: Type Check samlang Programs
