@@ -1,8 +1,6 @@
 # SAMLANG
 
 [![Build Status](https://github.com/SamChou19815/samlang/workflows/CI/badge.svg)](https://github.com/SamChou19815/samlang/actions)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/SamChou19815/samlang.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/SamChou19815/samlang/alerts/)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.developersam/samlang/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.developersam/samlang)
 ![GitHub](https://img.shields.io/github/license/SamChou19815/samlang.svg)
 ![VSCode Extension](https://img.shields.io/visual-studio-marketplace/i/dev-sam.vscode-samlang.svg?label=vscode%20extension%20installs)
 
@@ -16,9 +14,9 @@ Install the VSCode Extension at [Visual Studio Marketplace](https://marketplace.
 
 ## Current Status
 
-- Type-checker finished (no correctness guarantee)
-- Interpreter finished (no correctness guarantee)
-- Pretty-printer finished (no correctness guarantee)
-- Compiler NOT finished
+- Type-checker finished
+- Interpreter finished
+- Pretty-printer finished
+- Compiler finished
 - Some basic test cases provided and passed
 - Generally bad documentation
