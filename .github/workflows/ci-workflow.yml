@@ -10,6 +10,6 @@ jobs:
         with:
           java-version: 11
       - name: Build with Gradle
-        run: ./gradlew build
+        run: gradle build
       - name: Type Check samlang Programs
         run: ./scripts/samlang-check-repository
