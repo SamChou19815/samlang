@@ -11,12 +11,12 @@ jobs:
         with:
           java-version: 11
       - name: Assemble
-        run: gradle assemble
+        run: gradle -g build-cache/ assemble
       - name: Upload Gradle Cache
         uses: actions/upload-artifact@v1
         with:
           name: gradle-cache
-          path: ~/.gradle
+          path: build-cache/
   build:
     runs-on: ubuntu-latest
     needs: setup
@@ -30,9 +30,9 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: gradle-cache
-          path: ~/.gradle
+          path: build-cache/
       - name: Build and Test
-        run: gradle test
+        run: gradle -g build-cache/ test
   integration-test:
     runs-on: ubuntu-latest
     needs: setup
@@ -46,8 +46,8 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: gradle-cache
-          path: ~/.gradle
+          path: build-cache/
       - name: Generate FatJar
-        run: gradle shadowJar
+        run: gradle -g build-cache/ shadowJar
       - name: Type Check samlang Programs
         run: ./scripts/samlang-check-repository
