@@ -56,6 +56,10 @@ allprojects {
             kotlinOptions.jvmTarget = "11"
             kotlinOptions.freeCompilerArgs = listOf("-Xjvm-default=enable")
         }
+        withType<Test> {
+            maxParallelForks = 4
+            reports.junitXml.isEnabled = false
+        }
     }
 }
 
