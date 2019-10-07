@@ -9,7 +9,7 @@ import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.UnaryOperator
-import samlang.ast.ir.IrExpression.*
+import samlang.ast.ir.IrExpression.Binary
 import samlang.ast.ir.IrExpression.ClassMember
 import samlang.ast.ir.IrExpression.Companion
 import samlang.ast.ir.IrExpression.Companion.FALSE
@@ -17,6 +17,7 @@ import samlang.ast.ir.IrExpression.Companion.TRUE
 import samlang.ast.ir.IrExpression.Companion.UNIT
 import samlang.ast.ir.IrExpression.Companion.literal
 import samlang.ast.ir.IrExpression.FunctionApplication
+import samlang.ast.ir.IrExpression.Lambda
 import samlang.ast.ir.IrExpression.MethodAccess
 import samlang.ast.ir.IrExpression.ObjectConstructor
 import samlang.ast.ir.IrExpression.This

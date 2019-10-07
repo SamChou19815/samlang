@@ -1,8 +1,9 @@
 package samlang.checker
 
-import samlang.ast.lang.ExpressionVisitor
+import samlang.ast.common.Type
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
+import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.FieldAccess
 import samlang.ast.lang.Expression.FunctionApplication
 import samlang.ast.lang.Expression.IfElse
@@ -10,7 +11,6 @@ import samlang.ast.lang.Expression.Lambda
 import samlang.ast.lang.Expression.Literal
 import samlang.ast.lang.Expression.Match
 import samlang.ast.lang.Expression.MethodAccess
-import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.Panic
 import samlang.ast.lang.Expression.This
@@ -19,7 +19,7 @@ import samlang.ast.lang.Expression.Unary
 import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
-import samlang.ast.common.Type
+import samlang.ast.lang.ExpressionVisitor
 
 internal fun Expression.replaceTypeWithExpectedType(expectedType: Type): Expression =
     this.accept(visitor = TypeReplacerVisitor, context = expectedType)

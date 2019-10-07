@@ -2,11 +2,11 @@ package samlang.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.requireObject
+import java.io.File
+import kotlin.system.exitProcess
 import samlang.errors.CompilationFailedException
 import samlang.frontend.collectSourceHandles
 import samlang.frontend.typeCheckSources
-import java.io.File
-import kotlin.system.exitProcess
 
 class TypeCheckCommand : CliktCommand(name = "check") {
 

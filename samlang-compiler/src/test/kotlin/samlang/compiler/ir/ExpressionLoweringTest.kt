@@ -3,6 +3,7 @@ package samlang.compiler.ir
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import samlang.ast.common.BinaryOperator.PLUS
+import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 import samlang.ast.common.Type
 import samlang.ast.common.Type.Companion.id
 import samlang.ast.common.Type.Companion.int
@@ -14,7 +15,6 @@ import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Unary
 import samlang.ast.lang.Pattern
 import samlang.ast.ts.TsPattern
-import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 
 class ExpressionLoweringTest : StringSpec() {
 

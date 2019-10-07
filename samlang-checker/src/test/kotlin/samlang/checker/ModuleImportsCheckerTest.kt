@@ -2,14 +2,14 @@ package samlang.checker
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
+import samlang.ast.common.ModuleMembersImport
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range
+import samlang.ast.common.Sources
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Module
-import samlang.ast.common.ModuleMembersImport
-import samlang.ast.common.ModuleReference
-import samlang.ast.common.Sources
 
 class ModuleImportsCheckerTest : StringSpec() {
 

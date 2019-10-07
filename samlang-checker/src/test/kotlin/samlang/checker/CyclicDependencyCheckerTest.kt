@@ -5,8 +5,8 @@ import io.kotlintest.specs.StringSpec
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range
-import samlang.ast.lang.Module
 import samlang.ast.common.Sources
+import samlang.ast.lang.Module
 
 class CyclicDependencyCheckerTest : StringSpec() {
     private fun checkErrors(sources: List<Pair<String, List<String>>>, expectedErrors: List<String>) {

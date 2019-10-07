@@ -2,6 +2,7 @@ package samlang.compiler.ts
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
+import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 import samlang.ast.common.Type
 import samlang.ast.common.Type.Companion.unit
 import samlang.ast.common.Type.FunctionType
@@ -13,7 +14,6 @@ import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Expression
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
-import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 
 class TsModuleCompilerTest : StringSpec() {
 

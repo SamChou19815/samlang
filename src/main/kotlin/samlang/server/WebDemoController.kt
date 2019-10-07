@@ -1,5 +1,10 @@
 package samlang.server
 
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
+import java.nio.charset.Charset
+import java.util.concurrent.ThreadFactory
+import java.util.concurrent.atomic.AtomicReference
 import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
 import samlang.checker.ModuleTypeChecker
@@ -9,11 +14,6 @@ import samlang.interpreter.ModuleInterpreter
 import samlang.interpreter.PanicException
 import samlang.parser.ModuleBuilder
 import samlang.printer.prettyPrint
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
-import java.nio.charset.Charset
-import java.util.concurrent.ThreadFactory
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * A controller for web demo of SAMLANG.
@@ -65,7 +65,8 @@ internal object WebDemoController {
             typeCheckingContext = TypeCheckingContext.EMPTY
         )
         if (errorCollector.collectedErrors.isNotEmpty()) {
-            val errors = errorCollector.collectedErrors.map { it.withErrorModule(file = "demo.sam") }
+            val errors =
+                errorCollector.collectedErrors.map { it.withErrorModule(file = "demo.sam") }
             return Response(
                 type = WebDemoController.Type.BAD_TYPE,
                 detail = CompilationFailedException(errors = errors).errorMessage

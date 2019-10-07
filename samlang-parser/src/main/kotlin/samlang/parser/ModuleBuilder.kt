@@ -1,16 +1,16 @@
 package samlang.parser
 
+import java.io.InputStream
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
-import samlang.ast.lang.Module
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
+import samlang.ast.lang.Module
 import samlang.errors.CompilationFailedException
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer
 import samlang.parser.generated.PLParser
 import samlang.util.createOrFail
-import java.io.InputStream
 
 object ModuleBuilder {
 

@@ -1,10 +1,10 @@
 package samlang.server
 
 import com.google.gson.Gson
+import java.util.concurrent.Executors
 import spark.Spark.get
 import spark.Spark.port
 import spark.Spark.post
-import java.util.concurrent.Executors
 
 fun startServer() {
     val gson = Gson()

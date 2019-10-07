@@ -5,12 +5,12 @@ import com.github.ajalt.clikt.core.requireObject
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.choice
+import java.io.File
+import kotlin.system.exitProcess
 import samlang.errors.CompilationFailedException
 import samlang.frontend.collectSourceHandles
 import samlang.frontend.compileTsSources
 import samlang.frontend.typeCheckSources
-import java.io.File
-import kotlin.system.exitProcess
 
 class CompileCommand : CliktCommand(name = "compile") {
     private val out: String by option(

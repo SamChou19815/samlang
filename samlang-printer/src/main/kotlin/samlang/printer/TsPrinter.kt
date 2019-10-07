@@ -1,5 +1,7 @@
 package samlang.printer
 
+import java.io.OutputStream
+import java.io.PrintStream
 import samlang.ast.common.BinaryOperator
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.Type
@@ -36,8 +38,6 @@ import samlang.ast.ts.TsModule
 import samlang.ast.ts.TsModuleFolder
 import samlang.ast.ts.TsPattern
 import samlang.util.IndentedPrinter
-import java.io.OutputStream
-import java.io.PrintStream
 
 fun printTsIndexModule(stream: OutputStream, tsModuleFolder: TsModuleFolder) {
     // use 2-space

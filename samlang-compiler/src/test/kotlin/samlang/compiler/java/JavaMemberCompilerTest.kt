@@ -3,13 +3,13 @@ package samlang.compiler.java
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import samlang.ast.common.Range
+import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 import samlang.ast.common.Type
 import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrStatement
 import samlang.ast.java.JavaMethod
 import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Expression
-import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 
 class JavaMemberCompilerTest : StringSpec() {
 

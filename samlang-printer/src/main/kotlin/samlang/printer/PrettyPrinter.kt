@@ -1,5 +1,6 @@
 package samlang.printer
 
+import java.io.PrintStream
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.TypeDefinitionType.OBJECT
 import samlang.ast.common.TypeDefinitionType.VARIANT
@@ -26,7 +27,6 @@ import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Module
 import samlang.ast.lang.Pattern
 import samlang.util.IndentedPrinter
-import java.io.PrintStream
 
 fun prettyPrint(module: Module, printStream: PrintStream) {
     // use 4-space

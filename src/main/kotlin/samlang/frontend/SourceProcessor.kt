@@ -1,5 +1,8 @@
 package samlang.frontend
 
+import java.io.File
+import java.io.InputStream
+import java.nio.file.Paths
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.ast.lang.Module
@@ -11,9 +14,6 @@ import samlang.parser.ModuleBuilder
 import samlang.printer.printTsIndexModule
 import samlang.printer.printTsModule
 import samlang.util.createOrFail
-import java.io.File
-import java.io.InputStream
-import java.nio.file.Paths
 
 fun collectSourceHandles(sourceDirectory: File, exclude: String?): List<Pair<ModuleReference, InputStream>> {
     val sourcePath = sourceDirectory.toPath()

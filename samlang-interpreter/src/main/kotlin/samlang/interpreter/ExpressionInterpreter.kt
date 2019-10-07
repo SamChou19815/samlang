@@ -14,9 +14,15 @@ import samlang.ast.common.BinaryOperator.MUL
 import samlang.ast.common.BinaryOperator.NE
 import samlang.ast.common.BinaryOperator.OR
 import samlang.ast.common.BinaryOperator.PLUS
-import samlang.ast.lang.ExpressionVisitor
+import samlang.ast.common.Literal.BoolLiteral
+import samlang.ast.common.Literal.IntLiteral
+import samlang.ast.common.Literal.StringLiteral
+import samlang.ast.common.Literal.UnitLiteral
+import samlang.ast.common.Type
+import samlang.ast.common.UnaryOperator
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
+import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.FieldAccess
 import samlang.ast.lang.Expression.FunctionApplication
 import samlang.ast.lang.Expression.IfElse
@@ -24,7 +30,6 @@ import samlang.ast.lang.Expression.Lambda
 import samlang.ast.lang.Expression.Literal
 import samlang.ast.lang.Expression.Match
 import samlang.ast.lang.Expression.MethodAccess
-import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.Panic
 import samlang.ast.lang.Expression.This
@@ -33,13 +38,8 @@ import samlang.ast.lang.Expression.Unary
 import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
-import samlang.ast.common.Literal.BoolLiteral
-import samlang.ast.common.Literal.IntLiteral
-import samlang.ast.common.Literal.StringLiteral
-import samlang.ast.common.Literal.UnitLiteral
+import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Pattern
-import samlang.ast.common.Type
-import samlang.ast.common.UnaryOperator
 
 internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext, Value> {
 
