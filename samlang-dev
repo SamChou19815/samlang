@@ -1,3 +1,5 @@
 #!/bin/bash
 MY_PATH=$(dirname "$0")
-java -jar "${MY_PATH}"/build/libs/samlang-0.0.8-all.jar "$@"
+JAR_PATH="${MY_PATH}"/build/libs/samlang-0.0.8-all.jar
+[ -f "$JAR_PATH" ] || ./gradlew shadowJar
+java -jar "$JAR_PATH" "$@"
