@@ -19,6 +19,7 @@ jobs:
           path: ~/.gradle
   build:
     runs-on: ubuntu-latest
+    needs: setup
     steps:
       - uses: actions/checkout@master
       - name: Set up JDK 11
@@ -34,6 +35,7 @@ jobs:
         run: gradle test
   integration-test:
     runs-on: ubuntu-latest
+    needs: setup
     steps:
       - uses: actions/checkout@master
       - name: Set up JDK 11
