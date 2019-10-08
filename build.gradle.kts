@@ -4,7 +4,6 @@ plugins {
     java
     kotlin(module = "jvm") version "1.3.50"
     id("com.github.johnrengelman.shadow") version "5.1.0"
-    id("org.jetbrains.dokka") version "0.9.18"
     id("nebula.dependency-lock") version "8.0.0"
     id("org.jlleitschuh.gradle.ktlint") version "9.0.0" apply false
     id("org.jlleitschuh.gradle.ktlint-idea") version "9.0.0" apply false
