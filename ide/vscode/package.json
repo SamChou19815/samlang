@@ -41,11 +41,12 @@
     ]
   },
   "scripts": {
-    "postinstall": "node ./node_modules/vscode/bin/install && tsc"
+    "postinstall": "tsc"
   },
   "devDependencies": {
-    "@types/node": "*",
-    "vscode": "1.1.30",
-    "typescript": "3.3.3333"
+    "@types/node": "^12.7.12",
+    "@types/vscode": "1.39.0",
+    "vscode-test": "^1.2.0",
+    "typescript": "3.6.4"
   }
 }
