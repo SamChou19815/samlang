@@ -43,7 +43,6 @@ allprojects {
         implementation(dependencyNotation = "org.slf4j:slf4j-simple:1.7.28")
         testImplementation(kotlin(module = "reflect"))
         testImplementation(kotlin(module = "test"))
-        testImplementation(kotlin(module = "test-junit"))
         testImplementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.1.10")
     }
     configure<JavaPluginConvention> {
@@ -60,9 +59,7 @@ allprojects {
         }
         named<Test>(name = "test") {
             useJUnitPlatform()
-            testLogging {
-                events("passed", "skipped", "failed")
-            }
+            testLogging { events("skipped", "failed") }
         }
     }
 }
@@ -92,8 +89,6 @@ tasks {
         archiveVersion.set(Constants.VERSION)
         manifest { attributes["Main-Class"] = "samlang.Main" }
         isZip64 = true
-        artifacts {
-            shadow(archiveFile) { builtBy(shadowJar) }
-        }
+        artifacts { shadow(archiveFile) { builtBy(shadowJar) } }
     }
 }
