@@ -39,8 +39,6 @@ allprojects {
         implementation(kotlin(module = "stdlib-jdk8"))
         implementation(dependencyNotation = "org.apache.commons:commons-text:1.6")
         implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3")
-        implementation(dependencyNotation = "org.slf4j:slf4j-api:1.7.28")
-        implementation(dependencyNotation = "org.slf4j:slf4j-simple:1.7.28")
         testImplementation(kotlin(module = "reflect"))
         testImplementation(kotlin(module = "test"))
         testImplementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.1.10")
