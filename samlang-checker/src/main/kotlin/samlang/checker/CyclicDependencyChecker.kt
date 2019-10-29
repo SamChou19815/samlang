@@ -1,9 +1,9 @@
 package samlang.checker
 
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableSet
-import kotlinx.collections.immutable.immutableListOf
-import kotlinx.collections.immutable.immutableSetOf
+import kotlinx.collections.immutable.PersistentList
+import kotlinx.collections.immutable.PersistentSet
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentSetOf
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range
@@ -36,8 +36,8 @@ private class CyclicDependencyChecker(sources: Sources<Module>, private val erro
     }
 
     private data class OrderedPersistentSet<T>(
-        private val immutableSet: ImmutableSet<T> = immutableSetOf(),
-        val immutableList: ImmutableList<T> = immutableListOf()
+        private val immutableSet: PersistentSet<T> = persistentSetOf(),
+        val immutableList: PersistentList<T> = persistentListOf()
     ) {
 
         operator fun contains(element: T): Boolean = element in immutableSet

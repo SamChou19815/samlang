@@ -4,7 +4,6 @@ plugins {
     java
     kotlin(module = "jvm") version "1.3.50"
     id("com.github.johnrengelman.shadow") version "5.1.0"
-    id("nebula.dependency-lock") version "8.0.0"
     id("org.jlleitschuh.gradle.ktlint") version "9.0.0" apply false
     id("org.jlleitschuh.gradle.ktlint-idea") version "9.0.0" apply false
 }
@@ -35,12 +34,11 @@ allprojects {
 
     repositories {
         jcenter()
-        maven(url = "http://dl.bintray.com/kotlin/kotlinx")
     }
     dependencies {
         implementation(kotlin(module = "stdlib-jdk8"))
         implementation(dependencyNotation = "org.apache.commons:commons-text:1.6")
-        implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.1")
+        implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3")
         implementation(dependencyNotation = "org.slf4j:slf4j-api:1.7.28")
         implementation(dependencyNotation = "org.slf4j:slf4j-simple:1.7.28")
         testImplementation(kotlin(module = "reflect"))

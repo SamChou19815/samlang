@@ -1,10 +1,9 @@
 package samlang.checker
 
-import kotlinx.collections.immutable.ImmutableMap
-import kotlinx.collections.immutable.ImmutableSet
-import kotlinx.collections.immutable.immutableMapOf
-import kotlinx.collections.immutable.immutableSetOf
-import kotlinx.collections.immutable.plus
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.PersistentSet
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
@@ -15,18 +14,18 @@ import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnresolvedNameError
 
 data class TypeCheckingContext(
-    val classes: ImmutableMap<String, ClassType>,
+    val classes: PersistentMap<String, ClassType>,
     val currentClass: String,
-    val localGenericTypes: ImmutableSet<String>,
-    private val localValues: ImmutableMap<String, Type>
+    val localGenericTypes: PersistentSet<String>,
+    private val localValues: PersistentMap<String, Type>
 ) {
 
     data class TypeInfo(val isPublic: Boolean, val typeParams: List<String>?, val type: Type.FunctionType)
 
     data class ClassType(
         val typeDefinition: TypeDefinition,
-        val functions: ImmutableMap<String, TypeInfo>,
-        val methods: ImmutableMap<String, TypeInfo>
+        val functions: PersistentMap<String, TypeInfo>,
+        val methods: PersistentMap<String, TypeInfo>
     )
 
     private fun addNewClassTypeDefinition(
@@ -39,13 +38,13 @@ data class TypeCheckingContext(
         }
         val newModuleType = ClassType(
             typeDefinition = typeDefinition,
-            functions = immutableMapOf(),
-            methods = immutableMapOf()
+            functions = persistentMapOf(),
+            methods = persistentMapOf()
         )
         return TypeCheckingContext(
-            classes = classes.plus(pair = name to newModuleType),
+            classes = classes.put(key = name, value = newModuleType),
             currentClass = name,
-            localGenericTypes = localGenericTypes.plus(elements = typeDefinition.typeParameters),
+            localGenericTypes = localGenericTypes.addAll(elements = typeDefinition.typeParameters),
             localValues = localValues
         )
     }
@@ -74,10 +73,14 @@ data class TypeCheckingContext(
             }
         }
         val newCurrentModule = classes[currentClass]!!.copy(
-            functions = functions.fold(initial = immutableMapOf()) { m, pair -> m.plus(pair = pair) },
-            methods = methods.fold(initial = immutableMapOf()) { m, pair -> m.plus(pair = pair) }
+            functions = functions.fold(initial = persistentMapOf()) { member, (key, value) ->
+                member.put(key = key, value = value)
+            },
+            methods = methods.fold(initial = persistentMapOf()) { member, (key, value) ->
+                member.put(key = key, value = value)
+            }
         )
-        return copy(classes = classes.plus(pair = currentClass to newCurrentModule))
+        return copy(classes = classes.put(key = currentClass, value = newCurrentModule))
     }
 
     fun getLocalValueType(name: String): Type? = localValues[name]
@@ -143,7 +146,7 @@ data class TypeCheckingContext(
     }
 
     fun addLocalGenericTypes(genericTypes: Collection<String>): TypeCheckingContext =
-        copy(localGenericTypes = localGenericTypes.plus(elements = genericTypes))
+        copy(localGenericTypes = localGenericTypes.addAll(elements = genericTypes))
 
     fun getCurrentModuleTypeDefinition(): TypeDefinition? = classes[currentClass]?.typeDefinition
 
@@ -157,8 +160,8 @@ data class TypeCheckingContext(
             typeArguments = typeParameters.map { Type.id(identifier = it) }
         )
         return copy(
-            localValues = localValues.plus(pair = "this" to type),
-            localGenericTypes = localGenericTypes.plus(elements = typeParameters)
+            localValues = localValues.put(key = "this", value = type),
+            localGenericTypes = localGenericTypes.addAll(elements = typeParameters)
         )
     }
 
@@ -166,16 +169,16 @@ data class TypeCheckingContext(
         if (localValues.containsKey(name)) {
             throw CollisionError(collidedName = name, range = errorRange)
         }
-        return copy(localValues = localValues.plus(pair = name to type))
+        return copy(localValues = localValues.put(key = name, value = type))
     }
 
     companion object {
 
         val EMPTY: TypeCheckingContext = TypeCheckingContext(
-            classes = immutableMapOf(),
+            classes = persistentMapOf(),
             currentClass = "",
-            localGenericTypes = immutableSetOf(),
-            localValues = immutableMapOf()
+            localGenericTypes = persistentSetOf(),
+            localValues = persistentMapOf()
         )
     }
 }

@@ -1,7 +1,7 @@
 package samlang.interpreter
 
-import kotlinx.collections.immutable.ImmutableMap
-import kotlinx.collections.immutable.immutableMapOf
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentMapOf
 
 /**
  * Context for interpretation. It stores the previously computed values and references.
@@ -10,8 +10,8 @@ import kotlinx.collections.immutable.immutableMapOf
  * @param localValues the local values computed inside a function.
  */
 data class InterpretationContext(
-    val classes: ImmutableMap<String, ClassValue>,
-    val localValues: ImmutableMap<String, Value>
+    val classes: PersistentMap<String, ClassValue>,
+    val localValues: PersistentMap<String, Value>
 ) {
 
     /**
@@ -31,7 +31,7 @@ data class InterpretationContext(
          * An empty interpretation context. Used for initial setup for interpreter.
          */
         val EMPTY: InterpretationContext = InterpretationContext(
-            classes = immutableMapOf(), localValues = immutableMapOf()
+            classes = persistentMapOf(), localValues = persistentMapOf()
         )
     }
 }
