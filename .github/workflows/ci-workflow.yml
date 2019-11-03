@@ -10,6 +10,12 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
+      - name: Use Gradle Cache
+        uses: actions/cache@preview
+        with:
+          path: ~/.gradle/caches
+          key: gradle-${{ hashFiles('**/*.gradle.kts') }}
+          restore-keys: gradle-
       - name: Build and Test
         run: gradle test
   integration-test:
@@ -20,6 +26,12 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
+      - name: Use Gradle Cache
+        uses: actions/cache@preview
+        with:
+          path: ~/.gradle/caches
+          key: gradle-${{ hashFiles('**/*.gradle.kts') }}
+          restore-keys: gradle-
       - name: Generate FatJar
         run: gradle shadowJar
       - name: Type Check samlang Programs
