@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 plugins {
     java
     kotlin(module = "jvm") version "1.3.61"
-    id("com.github.johnrengelman.shadow") version "5.1.0"
+    id("com.github.johnrengelman.shadow") version "5.2.0"
     id("org.jlleitschuh.gradle.ktlint") version "9.0.0" apply false
     id("org.jlleitschuh.gradle.ktlint-idea") version "9.0.0" apply false
 }

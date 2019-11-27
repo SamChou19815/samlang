@@ -17,7 +17,7 @@ jobs:
           key: gradle-${{ hashFiles('**/*.gradle.kts') }}
           restore-keys: gradle-
       - name: Build and Test
-        run: gradle test
+        run: ./gradlew test
   integration-test:
     runs-on: ubuntu-latest
     steps:
@@ -33,6 +33,6 @@ jobs:
           key: gradle-${{ hashFiles('**/*.gradle.kts') }}
           restore-keys: gradle-
       - name: Generate FatJar
-        run: gradle shadowJar
+        run: ./gradlew shadowJar
       - name: Type Check samlang Programs
         run: ./scripts/samlang-check-repository
