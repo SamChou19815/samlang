@@ -6,6 +6,7 @@ EXCLUDE_PATTERN=".*/samlang/programs/bad\..*"
 ./samlang-dev -e "$EXCLUDE_PATTERN" compile --target ts --output-directory ./out/ts
 echo '{
   "compilerOptions": {
-    "rootDir": "."
+    "rootDir": ".",
+    "noEmit": true
   }
 }' > ./out/ts/tsconfig.json
