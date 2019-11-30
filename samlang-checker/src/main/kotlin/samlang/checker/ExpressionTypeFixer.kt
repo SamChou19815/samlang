@@ -278,11 +278,13 @@ private class TypeFixerVisitor(
         if (expression.nextExpression == null && context != Type.unit) {
             throw UnexpectedTypeError(expected = context, actual = Type.unit, range = errorRange)
         }
+        val fixedAssignedExpression = expression.assignedExpression.run {
+            tryFixType(expectedType = type.fixSelf(expectedType = null, errorRange = range))
+        }
         return expression.copy(
             type = expression.getFixedSelfType(expectedType = context),
-            assignedExpression = expression.assignedExpression.run {
-                tryFixType(expectedType = type.fixSelf(expectedType = null, errorRange = range))
-            },
+            typeAnnotation = fixedAssignedExpression.type,
+            assignedExpression = fixedAssignedExpression,
             nextExpression = expression.nextExpression?.tryFixType(expectedType = context)
         )
     }
