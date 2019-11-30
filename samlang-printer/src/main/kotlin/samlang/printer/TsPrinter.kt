@@ -25,7 +25,6 @@ import samlang.ast.ir.IrExpression.Unary
 import samlang.ast.ir.IrExpression.Variable
 import samlang.ast.ir.IrExpression.VariantConstructor
 import samlang.ast.ir.IrExpressionVisitor
-import samlang.ast.ir.IrStatement
 import samlang.ast.ir.IrStatement.ConstantDefinition
 import samlang.ast.ir.IrStatement.IfElse
 import samlang.ast.ir.IrStatement.LetDeclaration
@@ -62,8 +61,6 @@ fun printTsModule(tsModule: TsModule, withType: Boolean): String =
 private class TsPrinter(private val printer: IndentedPrinter, private val withType: Boolean) {
 
     private val typeToStringConverter: TsTypeToStringConverter = TsTypeToStringConverter()
-    private val statementPrinter: TsStatementPrinter = TsStatementPrinter()
-    private val expressionPrinter: TsExpressionPrinter = TsExpressionPrinter()
 
     fun printIndexModule(tsModuleFolder: TsModuleFolder) {
         val names = tsModuleFolder.subModules.map { it.typeName }
@@ -83,7 +80,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         if (withType) {
             printTypeDefinition(name = tsModule.typeName, typeDefinition = tsModule.typeDefinition)
         }
-        tsModule.functions.forEach(action = ::printFunction)
+        tsModule.functions.forEach { printFunction(moduleName = tsModule.typeName, tsFunction = it) }
         val exports = tsModule.functions.asSequence().filter { it.shouldBeExported }.map { it.name }
         printer.printWithBreak(x = exports.joinToString(separator = ", ", prefix = "export { ", postfix = " };"))
     }
@@ -123,7 +120,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         printer.println()
     }
 
-    private fun printFunction(tsFunction: TsFunction) {
+    private fun printFunction(moduleName: String, tsFunction: TsFunction) {
         if (withType) {
             val (_, name, typeParameters, parameters, returnType) = tsFunction
             val typeParameterString = typeParametersToString(typeParameters = typeParameters)
@@ -136,16 +133,16 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             val parameterString = tsFunction.parameters.joinToString(separator = ", ") { it.first }
             printer.printWithBreak(x = "function ${tsFunction.name}($parameterString) {")
         }
-        printer.indented { tsFunction.body.forEach(::printStatement) }
+        printer.indented {
+            tsFunction.body.forEach {
+                it.accept(visitor = TsStatementPrinter(moduleName = moduleName))
+            }
+        }
         printer.printWithBreak(x = "}")
         printer.println()
     }
 
     private fun Type.toTsTypeString(): String = this.accept(visitor = typeToStringConverter, context = Unit)
-
-    private fun printStatement(statement: IrStatement): Unit = statement.accept(visitor = statementPrinter)
-
-    private fun printExpression(expression: IrExpression): Unit = expression.accept(visitor = expressionPrinter)
 
     private inner class TsTypeToStringConverter : TypeVisitor<Unit, String> {
         override fun visit(type: Type.PrimitiveType, context: Unit): String = when (type.name) {
@@ -174,7 +171,12 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             error(message = "There should be no undecided type at this point!")
     }
 
-    private inner class TsStatementPrinter : IrStatementVisitor<Unit> {
+    private inner class TsStatementPrinter(private val moduleName: String) : IrStatementVisitor<Unit> {
+        private val expressionPrinter: TsExpressionPrinter = TsExpressionPrinter()
+
+        private fun printExpression(expression: IrExpression): Unit =
+            expression.accept(visitor = expressionPrinter)
+
         override fun visit(statement: Throw) {
             printer.printlnWithoutFurtherIndentation {
                 printer.printWithoutBreak(x = "throw new Error(")
@@ -190,11 +192,11 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                 printWithoutBreak(x = ") {")
             }
             printer.indented {
-                statement.s1.forEach(::printStatement)
+                statement.s1.forEach { it.accept(this@TsStatementPrinter) }
             }
             printer.printWithBreak(x = "} else {")
             printer.indented {
-                statement.s2.forEach(::printStatement)
+                statement.s2.forEach { it.accept(this@TsStatementPrinter) }
             }
             printer.printWithBreak(x = "}")
         }
@@ -216,7 +218,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                         if (dataVariable != null) {
                             printWithoutBreak(x = "const $dataVariable = $matchedVariable.data;")
                         }
-                        statements.forEach(action = ::printStatement)
+                        statements.forEach { it.accept(this@TsStatementPrinter) }
                         if (finalExpression != IrExpression.UNIT) {
                             printlnWithoutFurtherIndentation {
                                 printWithoutBreak(x = "$assignedTemporaryVariable = ")
@@ -285,190 +287,198 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                 }
             }
         }
-    }
 
-    private inner class TsExpressionPrinter : IrExpressionVisitor<Unit> {
+        private inner class TsExpressionPrinter : IrExpressionVisitor<Unit> {
 
-        private fun IrExpression.printSelf(withParenthesis: Boolean = false): Unit =
-            if (withParenthesis) {
-                printer.printlnWithoutFurtherIndentation {
-                    printWithoutBreak(x = "(")
-                    printSelf()
-                    print(x = ")", requireBreak = false)
-                }
-            } else accept(visitor = this@TsExpressionPrinter)
-
-        override fun visit(expression: Literal) {
-            if (expression.literal == samlang.ast.common.Literal.UnitLiteral) {
-                printer.printWithoutBreak(x = "void 0")
-            } else {
-                printer.printWithoutBreak(x = expression.literal.prettyPrintedValue)
-            }
-        }
-
-        override fun visit(expression: Variable) {
-            printer.printWithoutBreak(x = expression.name)
-        }
-
-        override fun visit(expression: This) {
-            printer.printWithoutBreak(x = "_this")
-        }
-
-        override fun visit(expression: ClassMember) {
-            printer.printWithoutBreak(x = "${expression.className}.${expression.memberName}")
-        }
-
-        override fun visit(expression: TupleConstructor) {
-            printer.printlnWithoutFurtherIndentation {
-                printWithoutBreak(x = "[")
-                expression.expressionList.forEachIndexed { index, e ->
-                    e.printSelf()
-                    if (index != expression.expressionList.size - 1) {
-                        printWithoutBreak(x = ", ")
+            private fun IrExpression.printSelf(withParenthesis: Boolean = false): Unit =
+                if (withParenthesis) {
+                    printer.printlnWithoutFurtherIndentation {
+                        printWithoutBreak(x = "(")
+                        printSelf()
+                        print(x = ")", requireBreak = false)
                     }
-                }
-                printWithoutBreak(x = "]")
-            }
-        }
+                } else accept(visitor = this@TsExpressionPrinter)
 
-        override fun visit(expression: ObjectConstructor) {
-            val (_, spreadExpression, fieldDeclaration) = expression
-            printer.printlnWithoutFurtherIndentation {
-                printWithoutBreak(x = "{ ")
-                if (spreadExpression != null) {
-                    printWithoutBreak(x = "...")
-                    spreadExpression.printSelf(
-                        withParenthesis = spreadExpression.precedence >= expression.precedence
-                    )
-                    printWithoutBreak(x = ", ")
-                }
-                fieldDeclaration.forEachIndexed { index, (name, e) ->
-                    printWithoutBreak(x = name)
-                    printWithoutBreak(x = ": ")
-                    e.printSelf()
-                    if (index != fieldDeclaration.size - 1) {
-                        printWithoutBreak(x = ", ")
-                    }
-                }
-                printWithoutBreak(x = " }")
-            }
-        }
-
-        override fun visit(expression: VariantConstructor) {
-            printer.printlnWithoutFurtherIndentation {
-                printWithoutBreak("{ _type: \"${expression.tag}\", data: ")
-                expression.data.printSelf()
-                printWithoutBreak(x = " }")
-            }
-        }
-
-        override fun visit(expression: FieldAccess) {
-            printer.printlnWithoutFurtherIndentation {
-                expression.expression.printSelf(
-                    withParenthesis = expression.expression.precedence >= expression.precedence
-                )
-                printWithoutBreak(x = ".${expression.fieldName}")
-            }
-        }
-
-        override fun visit(expression: MethodAccess) {
-            printer.printlnWithoutFurtherIndentation {
-                printWithoutBreak(x = "((...arguments) => ")
-                printWithoutBreak(x = expression.methodName)
-                printWithoutBreak(x = "(")
-                expression.expression.printSelf(withParenthesis = false)
-                printWithoutBreak(x = ", ...arguments))")
-            }
-        }
-
-        override fun visit(expression: Unary) {
-            printer.printlnWithoutFurtherIndentation {
-                printWithoutBreak(x = expression.operator.symbol)
-                expression.expression.printSelf(
-                    withParenthesis = expression.expression.precedence > expression.precedence
-                )
-            }
-        }
-
-        private fun printFunctionCallArguments(arguments: List<IrExpression>) {
-            printer.printWithoutBreak(x = "(")
-            arguments.forEachIndexed { index, e ->
-                e.printSelf()
-                if (index != arguments.size - 1) {
-                    printer.printWithBreak(x = ",")
-                }
-            }
-            printer.printWithoutBreak(x = ")")
-        }
-
-        override fun visit(expression: FunctionApplication) {
-            printer.printlnWithoutFurtherIndentation {
-                val (_, functionExpression, arguments) = expression
-                if (functionExpression is MethodAccess) {
-                    val receiverType = functionExpression.expression.type
-                        as? Type.IdentifierType
-                        ?: error(message = "Method receiver must be a identifier type!")
-                    printWithoutBreak(x = "${receiverType.identifier}.${functionExpression.methodName}")
-                    val argumentsWithReceiver = arrayListOf(functionExpression.expression)
-                    argumentsWithReceiver.addAll(elements = arguments)
-                    printFunctionCallArguments(arguments = argumentsWithReceiver)
+            override fun visit(expression: Literal) {
+                if (expression.literal == samlang.ast.common.Literal.UnitLiteral) {
+                    printer.printWithoutBreak(x = "void 0")
                 } else {
-                    functionExpression.printSelf(
-                        withParenthesis = expression.functionExpression.precedence >= expression.precedence
+                    printer.printWithoutBreak(x = expression.literal.prettyPrintedValue)
+                }
+            }
+
+            override fun visit(expression: Variable) {
+                printer.printWithoutBreak(x = expression.name)
+            }
+
+            override fun visit(expression: This) {
+                printer.printWithoutBreak(x = "_this")
+            }
+
+            override fun visit(expression: ClassMember) {
+                if (expression.className == moduleName) {
+                    printer.printWithoutBreak(x = expression.memberName)
+                } else {
+                    printer.printWithoutBreak(x = "${expression.className}.${expression.memberName}")
+                }
+            }
+
+            override fun visit(expression: TupleConstructor) {
+                printer.printlnWithoutFurtherIndentation {
+                    printWithoutBreak(x = "[")
+                    expression.expressionList.forEachIndexed { index, e ->
+                        e.printSelf()
+                        if (index != expression.expressionList.size - 1) {
+                            printWithoutBreak(x = ", ")
+                        }
+                    }
+                    printWithoutBreak(x = "]")
+                }
+            }
+
+            override fun visit(expression: ObjectConstructor) {
+                val (_, spreadExpression, fieldDeclaration) = expression
+                printer.printlnWithoutFurtherIndentation {
+                    printWithoutBreak(x = "{ ")
+                    if (spreadExpression != null) {
+                        printWithoutBreak(x = "...")
+                        spreadExpression.printSelf(
+                            withParenthesis = spreadExpression.precedence >= expression.precedence
+                        )
+                        printWithoutBreak(x = ", ")
+                    }
+                    fieldDeclaration.forEachIndexed { index, (name, e) ->
+                        printWithoutBreak(x = name)
+                        printWithoutBreak(x = ": ")
+                        e.printSelf()
+                        if (index != fieldDeclaration.size - 1) {
+                            printWithoutBreak(x = ", ")
+                        }
+                    }
+                    printWithoutBreak(x = " }")
+                }
+            }
+
+            override fun visit(expression: VariantConstructor) {
+                printer.printlnWithoutFurtherIndentation {
+                    printWithoutBreak("{ _type: \"${expression.tag}\", data: ")
+                    expression.data.printSelf()
+                    printWithoutBreak(x = " }")
+                }
+            }
+
+            override fun visit(expression: FieldAccess) {
+                printer.printlnWithoutFurtherIndentation {
+                    expression.expression.printSelf(
+                        withParenthesis = expression.expression.precedence >= expression.precedence
                     )
-                    printFunctionCallArguments(arguments = arguments)
+                    printWithoutBreak(x = ".${expression.fieldName}")
                 }
             }
-        }
 
-        private fun printNormalBinaryExpression(expression: Binary) {
-            expression.e1.printSelf(withParenthesis = expression.e1.precedence >= expression.precedence)
-            printer.printWithoutBreak(x = " ${expression.operator.symbol} ")
-            expression.e2.printSelf(withParenthesis = expression.e2.precedence >= expression.precedence)
-        }
-
-        override fun visit(expression: Binary) {
-            printer.printlnWithoutFurtherIndentation {
-                if (expression.operator == BinaryOperator.DIV) {
-                    printWithoutBreak(x = "Math.floor(")
-                    printNormalBinaryExpression(expression = expression)
-                    printWithBreak(x = ")")
-                    return@printlnWithoutFurtherIndentation
+            override fun visit(expression: MethodAccess) {
+                printer.printlnWithoutFurtherIndentation {
+                    printWithoutBreak(x = "((...arguments) => ")
+                    printWithoutBreak(x = expression.methodName)
+                    printWithoutBreak(x = "(")
+                    expression.expression.printSelf(withParenthesis = false)
+                    printWithoutBreak(x = ", ...arguments))")
                 }
-                printNormalBinaryExpression(expression = expression)
             }
-        }
 
-        override fun visit(expression: Ternary) {
-            printer.printlnWithoutFurtherIndentation {
-                expression.boolExpression.printSelf(
-                    withParenthesis = expression.boolExpression.precedence >= expression.precedence
-                )
-                printWithoutBreak(x = " ? ")
+            override fun visit(expression: Unary) {
+                printer.printlnWithoutFurtherIndentation {
+                    printWithoutBreak(x = expression.operator.symbol)
+                    expression.expression.printSelf(
+                        withParenthesis = expression.expression.precedence > expression.precedence
+                    )
+                }
+            }
+
+            private fun printFunctionCallArguments(arguments: List<IrExpression>) {
+                printer.printWithoutBreak(x = "(")
+                arguments.forEachIndexed { index, e ->
+                    e.printSelf()
+                    if (index != arguments.size - 1) {
+                        printer.printWithBreak(x = ",")
+                    }
+                }
+                printer.printWithoutBreak(x = ")")
+            }
+
+            override fun visit(expression: FunctionApplication) {
+                printer.printlnWithoutFurtherIndentation {
+                    val (_, functionExpression, arguments) = expression
+                    if (functionExpression is MethodAccess) {
+                        val receiverType = functionExpression.expression.type
+                                as? Type.IdentifierType
+                            ?: error(message = "Method receiver must be a identifier type!")
+                        if (receiverType.identifier == moduleName) {
+                            printWithoutBreak(x = functionExpression.methodName)
+                        } else {
+                            printWithoutBreak(x = "${receiverType.identifier}.${functionExpression.methodName}")
+                        }
+                        val argumentsWithReceiver = arrayListOf(functionExpression.expression)
+                        argumentsWithReceiver.addAll(elements = arguments)
+                        printFunctionCallArguments(arguments = argumentsWithReceiver)
+                    } else {
+                        functionExpression.printSelf(
+                            withParenthesis = expression.functionExpression.precedence >= expression.precedence
+                        )
+                        printFunctionCallArguments(arguments = arguments)
+                    }
+                }
+            }
+
+            private fun printNormalBinaryExpression(expression: Binary) {
                 expression.e1.printSelf(withParenthesis = expression.e1.precedence >= expression.precedence)
-                printWithoutBreak(x = " : ")
+                printer.printWithoutBreak(x = " ${expression.operator.symbol} ")
                 expression.e2.printSelf(withParenthesis = expression.e2.precedence >= expression.precedence)
             }
-        }
 
-        override fun visit(expression: Lambda) {
-            val parameterString =
-                expression.parameters.joinToString(separator = ", ", prefix = "(", postfix = ")") { (name, type) ->
-                    if (withType) {
-                        "$name: ${type.toTsTypeString()}"
-                    } else {
-                        name
+            override fun visit(expression: Binary) {
+                printer.printlnWithoutFurtherIndentation {
+                    if (expression.operator == BinaryOperator.DIV) {
+                        printWithoutBreak(x = "Math.floor(")
+                        printNormalBinaryExpression(expression = expression)
+                        printWithBreak(x = ")")
+                        return@printlnWithoutFurtherIndentation
                     }
+                    printNormalBinaryExpression(expression = expression)
                 }
-            printer.printlnWithoutFurtherIndentation {
-                printWithoutBreak(x = parameterString)
-                if (withType) {
-                    printWithoutBreak(x = ": ")
-                    printWithoutBreak(x = expression.type.returnType.toTsTypeString())
+            }
+
+            override fun visit(expression: Ternary) {
+                printer.printlnWithoutFurtherIndentation {
+                    expression.boolExpression.printSelf(
+                        withParenthesis = expression.boolExpression.precedence >= expression.precedence
+                    )
+                    printWithoutBreak(x = " ? ")
+                    expression.e1.printSelf(withParenthesis = expression.e1.precedence >= expression.precedence)
+                    printWithoutBreak(x = " : ")
+                    expression.e2.printSelf(withParenthesis = expression.e2.precedence >= expression.precedence)
                 }
-                printWithoutBreak(x = " => {")
-                expression.body.forEach(action = ::printStatement)
-                printWithoutBreak(x = "}")
+            }
+
+            override fun visit(expression: Lambda) {
+                val parameterString =
+                    expression.parameters.joinToString(separator = ", ", prefix = "(", postfix = ")") { (name, type) ->
+                        if (withType) {
+                            "$name: ${type.toTsTypeString()}"
+                        } else {
+                            name
+                        }
+                    }
+                printer.printlnWithoutFurtherIndentation {
+                    printWithoutBreak(x = parameterString)
+                    if (withType) {
+                        printWithoutBreak(x = ": ")
+                        printWithoutBreak(x = expression.type.returnType.toTsTypeString())
+                    }
+                    printWithoutBreak(x = " => {")
+                    expression.body.forEach { it.accept(this@TsStatementPrinter) }
+                    printWithoutBreak(x = "}")
+                }
             }
         }
     }

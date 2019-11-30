@@ -713,8 +713,8 @@ class TsPrinterTest : StringSpec() {
                 };
                 
                 function test(): void {
-                  Test.foo(1);
-                  Test.foo(_this, 1);
+                  foo(1);
+                  foo(_this, 1);
                 }
                 
                 export { test };
