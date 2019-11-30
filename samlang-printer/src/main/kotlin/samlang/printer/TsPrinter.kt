@@ -240,7 +240,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
 
         override fun visit(statement: LetDeclaration) {
             if (withType) {
-                printer.printWithBreak(x = "let ${statement.name}: ${statement.typeAnnotation};")
+                printer.printWithBreak(x = "let ${statement.name}: ${statement.typeAnnotation.toTsTypeString()};")
             } else {
                 printer.printWithBreak(x = "let ${statement.name};")
             }
