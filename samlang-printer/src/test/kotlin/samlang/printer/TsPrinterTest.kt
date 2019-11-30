@@ -617,6 +617,50 @@ class TsPrinterTest : StringSpec() {
         )
 
         runCorrectlyPrintedTest(
+            testName = "Return Method Reference",
+            tsModule = TsModule(
+                imports = emptyList(),
+                typeName = "Test",
+                typeDefinition = TypeDefinition.ofDummy(range = Range.DUMMY),
+                functions = listOf(
+                    element = TsFunction(
+                        shouldBeExported = true,
+                        name = "test",
+                        typeParameters = emptyList(),
+                        parameters = emptyList(),
+                        returnType = Type.FunctionType(
+                            argumentTypes = listOf(element = Type.int),
+                            returnType = Type.bool
+                        ),
+                        body = listOf(
+                            Return(
+                                expression = MethodAccess(
+                                    type = Type.FunctionType(
+                                        argumentTypes = listOf(element = Type.int),
+                                        returnType = Type.bool
+                                    ),
+                                    expression = This(type = Type.id(identifier = "Test")),
+                                    methodName = "foo"
+                                )
+                            )
+                        )
+                    )
+                )
+            ),
+            expectedTsClassModuleCode = """
+                type Test = {
+                };
+                
+                function test(): (number) => boolean {
+                  return ((...arguments) => foo(_this, ...arguments));
+                }
+                
+                export { test };
+
+            """.trimIndent()
+        )
+
+        runCorrectlyPrintedTest(
             testName = "Function Call",
             tsModule = TsModule(
                 imports = emptyList(),

@@ -161,7 +161,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             val parameters = type.argumentTypes.joinToString(separator = ", ", prefix = "(", postfix = ")") {
                 it.toTsTypeString()
             }
-            return "$parameters -> ${type.returnType.toTsTypeString()}"
+            return "$parameters => ${type.returnType.toTsTypeString()}"
         }
 
         override fun visit(type: Type.UndecidedType, context: Unit): String =
