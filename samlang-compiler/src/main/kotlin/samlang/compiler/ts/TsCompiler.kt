@@ -1,6 +1,8 @@
 package samlang.compiler.ts
 
 import samlang.ast.common.ModuleMembersImport
+import samlang.ast.common.ModuleReference
+import samlang.ast.common.Range
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
@@ -18,7 +20,18 @@ fun compileToTsSources(sources: Sources<Module>): Sources<TsModuleFolder> =
 
 private fun compileTsModule(module: Module): TsModuleFolder {
     val (imports, classes) = module
-    return TsModuleFolder(subModules = classes.map { compileClassToTsModule(imports = imports, classDefinition = it) })
+    val allImports = ArrayList(imports)
+    allImports.add(
+        element = ModuleMembersImport(
+            range = Range.DUMMY,
+            importedMembers = classes.map { it.name to Range.DUMMY },
+            importedModule = ModuleReference.ROOT,
+            importedModuleRange = Range.DUMMY
+        )
+    )
+    return TsModuleFolder(
+        subModules = classes.map { compileClassToTsModule(imports = allImports, classDefinition = it) }
+    )
 }
 
 internal fun compileClassToTsModule(imports: List<ModuleMembersImport>, classDefinition: ClassDefinition): TsModule {
@@ -40,7 +53,6 @@ private fun compileTsFunction(
     classDefinition: ClassDefinition,
     classMember: ClassDefinition.MemberDefinition
 ): TsFunction {
-    val mangledName = "${classDefinition.name}$${classMember.name}"
     val bodyLoweringResult = lowerExpression(expression = classMember.body)
     val body = if (bodyLoweringResult.expression == IrExpression.UNIT) {
         bodyLoweringResult.statements
@@ -67,7 +79,7 @@ private fun compileTsFunction(
     }
     return TsFunction(
         shouldBeExported = classMember.isPublic,
-        name = mangledName,
+        name = classMember.name,
         typeParameters = typeParameters,
         parameters = parameters,
         returnType = classMember.type.returnType,
