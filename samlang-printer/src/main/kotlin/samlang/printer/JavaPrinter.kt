@@ -57,6 +57,9 @@ fun printJavaOuterClass(moduleReference: ModuleReference, outerClass: JavaOuterC
         printJavaOuterClass(stream = stream, moduleReference = moduleReference, outerClass = outerClass)
     }
 
+fun javaizeName(name: String): String =
+    CaseUtils.toCamelCase(name, true, '-', '.')
+
 private class JavaPrinter(private val printer: IndentedPrinter) {
 
     private val statementPrinter: JavaStatementPrinter = JavaStatementPrinter()
@@ -66,7 +69,8 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
     fun printOuterClass(moduleReference: ModuleReference, outerClass: JavaOuterClass) {
         // Print package
-        val packageParts = moduleReference.parts.subList(fromIndex = 0, toIndex = moduleReference.parts.size - 1)
+        val parts = moduleReference.parts.map(transform = ::javaizeName)
+        val packageParts = parts.subList(fromIndex = 0, toIndex = moduleReference.parts.size - 1)
         if (packageParts.isNotEmpty()) {
             val packageName = packageParts.joinToString(separator = ".")
             printer.printWithBreak(x = "package $packageName;")
@@ -74,7 +78,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
 
         // Print imports
-        val simpleClassName = moduleReference.parts.last()
+        val simpleClassName = parts.last()
         val (imports, innerStaticClasses) = outerClass
         if (imports.isNotEmpty()) {
             imports.forEach(action = ::printImport)
@@ -91,7 +95,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
     }
 
     private fun printImport(oneImport: ModuleMembersImport) {
-        val modulePartString = oneImport.importedModule.parts.joinToString(separator = ".")
+        val modulePartString = oneImport.importedModule.parts.joinToString(separator = ".") { javaizeName(it) }
         oneImport.importedMembers.forEach { (memberName, _) ->
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = "$modulePartString.$memberName;")
