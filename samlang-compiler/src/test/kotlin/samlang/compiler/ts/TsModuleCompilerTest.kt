@@ -77,7 +77,7 @@ class TsModuleCompilerTest : StringSpec() {
                     typeDefinition = DUMMY_TYPE_DEFINITION,
                     functions = listOf(
                         TsFunction(
-                            name = "Test\$foo",
+                            name = "foo",
                             shouldBeExported = true,
                             typeParameters = emptyList(),
                             parameters = emptyList(),
@@ -85,7 +85,7 @@ class TsModuleCompilerTest : StringSpec() {
                             body = listOf(IrStatement.Return(expression = IR_THIS))
                         ),
                         TsFunction(
-                            name = "Test\$bar",
+                            name = "bar",
                             shouldBeExported = false,
                             typeParameters = emptyList(),
                             parameters = emptyList(),
@@ -123,7 +123,7 @@ class TsModuleCompilerTest : StringSpec() {
                     typeDefinition = DUMMY_TYPE_DEFINITION,
                     functions = listOf(
                         TsFunction(
-                            name = "Foo\$bar",
+                            name = "bar",
                             shouldBeExported = true,
                             typeParameters = emptyList(),
                             parameters = listOf("_this" to Type.id(identifier = "Foo")),
@@ -167,7 +167,7 @@ class TsModuleCompilerTest : StringSpec() {
                     typeDefinition = typeDefinition,
                     functions = listOf(
                         TsFunction(
-                            name = "Foo\$bar",
+                            name = "bar",
                             shouldBeExported = true,
                             typeParameters = listOf("A", "B", "C", "D"),
                             parameters = listOf(

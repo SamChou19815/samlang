@@ -4,6 +4,7 @@ import java.io.OutputStream
 import java.io.PrintStream
 import samlang.ast.common.BinaryOperator
 import samlang.ast.common.ModuleMembersImport
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
@@ -67,6 +68,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
     fun printIndexModule(tsModuleFolder: TsModuleFolder) {
         val names = tsModuleFolder.subModules.map { it.typeName }
         if (names.isNotEmpty()) {
+            // Insert additional _ before module part to avoid folder-module name conflicts.
             names.forEach { name -> printer.printWithBreak(x = "import * as $name from './_$name';") }
             printer.println()
         }
@@ -87,10 +89,14 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
     }
 
     private fun printImport(import: ModuleMembersImport) {
-        val importedMemberString = import.importedMembers.joinToString(separator = ", ") { it.first }
-        // Insert additional _ before module part to avoid folder-module name conflicts.
-        val importedModuleString = import.importedModule.parts.joinToString(separator = "/") { "_$it" }
-        printer.printWithBreak(x = "import { $importedMemberString } from '/$importedModuleString';")
+        val (_, importedMembers, importedModule, _) = import
+        val importedMemberString = importedMembers.joinToString(separator = ", ") { it.first }
+        val importedModuleString = if (importedModule == ModuleReference.ROOT) {
+            "."
+        } else {
+            "/${importedModule.parts.joinToString(separator = "/")}"
+        }
+        printer.printWithBreak(x = "import { $importedMemberString } from '$importedModuleString';")
     }
 
     private fun printTypeDefinition(name: String, typeDefinition: TypeDefinition) {
