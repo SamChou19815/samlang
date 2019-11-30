@@ -55,7 +55,7 @@ jobs:
           path: build/libs
       - name: Type Check samlang Programs
         run: ./scripts/samlang-check-repository
-  integration-test-compile-ts-js:
+  integration-test-compile:
     runs-on: ubuntu-latest
     needs: [generate-jar]
     steps:
@@ -71,5 +71,3 @@ jobs:
           path: build/libs
       - name: Compile samlang Programs
         run: ./scripts/samlang-compile-repository
-      - name: Check compiled TS code
-        run: tsc -p out/ts/tsconfig.json

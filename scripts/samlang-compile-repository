@@ -10,3 +10,5 @@ echo '{
     "noEmit": true
   }
 }' > ./out/ts/tsconfig.json
+echo 'Checking generating TS code...'
+tsc -p out/ts/tsconfig.json
