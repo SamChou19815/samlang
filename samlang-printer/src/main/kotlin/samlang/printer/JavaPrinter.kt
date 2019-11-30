@@ -66,13 +66,14 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
     fun printOuterClass(moduleReference: ModuleReference, outerClass: JavaOuterClass) {
         // Print package
-        val packageName = moduleReference.parts
-            .subList(fromIndex = 0, toIndex = moduleReference.parts.size - 1)
-            .joinToString(separator = ".")
-        printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = "package $packageName;")
+        val packageParts = moduleReference.parts.subList(fromIndex = 0, toIndex = moduleReference.parts.size - 1)
+        if (packageParts.isNotEmpty()) {
+            val packageName = packageParts.joinToString(separator = ".")
+            printer.printlnWithoutFurtherIndentation {
+                printWithoutBreak(x = "package $packageName;")
+            }
+            printer.println()
         }
-        printer.println()
 
         // Print imports
         val simpleClassName = moduleReference.parts.last()
@@ -84,7 +85,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
         // Print actual class
         printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = "public static final class $simpleClassName {")
+            printWithoutBreak(x = "public final class $simpleClassName {")
         }
         printer.indented {
             innerStaticClasses.forEach(action = ::printStaticInnerClass)
@@ -110,8 +111,10 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             printWithoutBreak(x = "public static class $className")
             if (typeDefinition.typeParameters.isNotEmpty()) {
                 printWithBreak(x = typeParametersToString(typeParameters = typeDefinition.typeParameters))
+                printWithoutBreak(x = "{")
+            } else {
+                printWithoutBreak(x = " {")
             }
-            printWithoutBreak(x = "{")
         }
         printer.indented {
             printTypeDefinition(className = className, definition = typeDefinition)
@@ -132,41 +135,34 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
     }
 
     private fun printObjectTypeDefinition(className: String, mapping: Map<String, Type>) {
-        // TODO: finish constructor of the main inner class.
-        printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = "private final class $className\$Builder {")
-        }
+        // TODO: finish constructor of the main inner class. Handle other is not null
+        printer.printWithBreak(x = "private $className($className other) {")
         printer.indented {
-            mapping.forEach { (fieldName, fieldType) ->
-                printlnWithoutFurtherIndentation {
-                    printWithoutBreak(x = "private ${fieldType.toJavaTypeString()} $fieldName;")
-                }
+            printWithBreak(x = "if (other != null) {")
+            indented {
+                mapping.forEach { (fieldName, _) -> printWithBreak(x = "this.$fieldName = other.$fieldName;") }
             }
-            mapping.forEach { (fieldName, fieldType) ->
-                printlnWithoutFurtherIndentation {
-                    val methodName = "set${CaseUtils.toCamelCase(fieldName, true)}"
-                    val methodBody = "this.$fieldName = $fieldName;"
-                    printWithoutBreak(
-                        x = "void $methodName(${fieldType.toJavaTypeString()} $fieldName) { $methodBody }"
-                    )
-                }
-            }
-            printlnWithoutFurtherIndentation {
-                // TODO: finish build method
-                printWithoutBreak(x = "$className build() { throw new Error(); }")
-            }
+            printWithBreak(x = "}")
         }
         printer.printWithBreak(x = "}")
+        mapping.forEach { (fieldName, fieldType) ->
+            printer.printWithBreak(x = "private ${fieldType.toJavaTypeString()} $fieldName;")
+        }
+        mapping.forEach { (fieldName, fieldType) ->
+            val methodName = "\$builderSet${CaseUtils.toCamelCase(fieldName, true)}"
+            val methodBody = "this.$fieldName = $fieldName; return this;"
+            printer.printWithBreak(
+                x = "$className $methodName(${fieldType.toJavaTypeString()} $fieldName) { $methodBody }"
+            )
+        }
     }
 
     private fun printVariantTypeDefinition(className: String, mapping: Map<String, Type>) {
-        mapping.forEach { (fieldName, fieldType) ->
-            printer.printlnWithoutFurtherIndentation {
-                printWithoutBreak(x = "private static final class $fieldName extends $className {")
-            }
+        mapping.forEach { (variantName, variantType) ->
+            printer.printWithBreak(x = "private static final class $variantName extends $className {")
             printer.indented {
-                printWithBreak(x = "private final ${fieldType.toJavaTypeString()} value;")
-                printWithBreak(x = "$className(${fieldType.toJavaTypeString()} value) { this.value = value; }")
+                printWithBreak(x = "private final ${variantType.toJavaTypeString()} value;")
+                printWithBreak(x = "$variantName(${variantType.toJavaTypeString()} value) { this.value = value; }")
             }
             printer.printWithBreak(x = "}")
         }
@@ -386,9 +382,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
         override fun visit(expression: ObjectConstructor) {
             val (type, spreadExpression, fieldDeclaration) = expression
-            val builderConstructorString =
-                IdentifierType(identifier = "Builder", typeArguments = type.typeArguments).toJavaTypeString()
-            printer.printWithoutBreak(x = "new ${type.identifier}$$builderConstructorString(")
+            printer.printWithoutBreak(x = "new ${type.identifier}(")
             if (spreadExpression == null) {
                 printer.printWithoutBreak(x = "null")
             } else {
@@ -396,11 +390,10 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             }
             printer.printWithoutBreak(x = ")")
             fieldDeclaration.forEach { (name, fieldExpression) ->
-                printer.printWithoutBreak(x = ".set${CaseUtils.toCamelCase(name, true)}(")
+                printer.printWithoutBreak(x = ".\$builderSet${CaseUtils.toCamelCase(name, true)}(")
                 printExpression(expression = fieldExpression)
                 printer.printWithoutBreak(x = ")")
             }
-            printer.printWithoutBreak(x = ".build()")
         }
 
         override fun visit(expression: VariantConstructor) {
