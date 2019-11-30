@@ -117,7 +117,11 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
     }
 
     private fun printTypeDefinition(name: String, typeDefinition: TypeDefinition) {
-        val typeParameterString = typeParametersToString(typeParameters = typeDefinition.typeParameters)
+        val typeParameterString = typeDefinition
+            .typeParameters
+            .takeIf { it.isNotEmpty() }
+            ?.joinToString(separator = ", ", prefix = "<", postfix = ">") { "T_$it" }
+            ?: ""
         when (typeDefinition.type) {
             TypeDefinitionType.OBJECT -> {
                 printer.printWithBreak(x = "export type T_$name$typeParameterString = {")
@@ -143,7 +147,10 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
     private fun printFunction(moduleName: String, tsFunction: TsFunction) {
         if (withType) {
             val (_, name, typeParameters, parameters, returnType) = tsFunction
-            val typeParameterString = typeParametersToString(typeParameters = typeParameters)
+            val typeParameterString = typeParameters
+                .takeIf { it.isNotEmpty() }
+                ?.joinToString(separator = ", ", prefix = "<", postfix = ">") { "T_$it" }
+                ?: ""
             val parameterString =
                 parameters.joinToString(separator = ", ") { (name, type) -> "$name: ${type.toTsTypeString()}" }
             printer.printWithBreak(
@@ -175,7 +182,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         override fun visit(type: Type.IdentifierType, context: Unit): String = type.typeArguments
             .takeIf { it.isNotEmpty() }
             ?.joinToString(separator = ", ", prefix = "T_${type.identifier}<", postfix = ">") { it.toTsTypeString() }
-            ?: type.identifier
+            ?: "T_${type.identifier}"
 
         override fun visit(type: Type.TupleType, context: Unit): String =
             type.mappings.joinToString(separator = ", ", prefix = "[", postfix = "]") { it.toTsTypeString() }

@@ -406,8 +406,8 @@ class TsPrinterTest : StringSpec() {
                   readonly bar: boolean;
                 };
                 
-                function test(obj: Test): void {
-                  const { foo, bar: baz }: Test = { ...obj, foo: "foo", bar: "bar" };
+                function test(obj: T_Test): void {
+                  const { foo, bar: baz }: T_Test = { ...obj, foo: "foo", bar: "bar" };
                 }
                 
                 export { test };
