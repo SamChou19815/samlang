@@ -9,6 +9,8 @@ import samlang.ast.common.Type.IdentifierType
 import samlang.ast.common.Type.PrimitiveType
 import samlang.ast.common.Type.TupleType
 import samlang.ast.common.Type.UndecidedType
+import samlang.ast.common.TypeDefinition
+import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.TypeVisitor
 import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrExpression.Binary
@@ -91,21 +93,68 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
     private fun printStaticInnerClass(staticInnerClass: JavaStaticInnerClass) {
         val (className, typeDefinition, methods) = staticInnerClass
         printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = "public static final class $className")
+            printWithoutBreak(x = "public static class $className")
             if (typeDefinition.typeParameters.isNotEmpty()) {
                 printWithBreak(x = typeParametersToString(typeParameters = typeDefinition.typeParameters))
             }
             printWithoutBreak(x = "{")
         }
         printer.indented {
-            // TODO: print type definition
+            printTypeDefinition(className = className, definition = typeDefinition)
             methods.forEach { method ->
                 println()
                 printMethod(method = method)
             }
         }
+        printer.printWithBreak(x = "}")
+    }
+
+    private fun printTypeDefinition(className: String, definition: TypeDefinition) {
+        if (definition.type == TypeDefinitionType.OBJECT) {
+            printObjectTypeDefinition(className = className, mapping = definition.mappings)
+        } else {
+            printVariantTypeDefinition(className = className, mapping = definition.mappings)
+        }
+    }
+
+    private fun printObjectTypeDefinition(className: String, mapping: Map<String, Type>) {
+        // TODO: finish constructor of the main inner class.
         printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = "}")
+            printWithoutBreak(x = "private final class $className\$Builder {")
+        }
+        printer.indented {
+            mapping.forEach { (fieldName, fieldType) ->
+                printlnWithoutFurtherIndentation {
+                    printWithoutBreak(x = "private ${fieldType.toJavaTypeString()} $fieldName;")
+                }
+            }
+            mapping.forEach { (fieldName, fieldType) ->
+                printlnWithoutFurtherIndentation {
+                    val methodName = "set${CaseUtils.toCamelCase(fieldName, true)}"
+                    val methodBody = "this.$fieldName = $fieldName;"
+                    printWithoutBreak(
+                        x = "void $methodName(${fieldType.toJavaTypeString()} $fieldName) { $methodBody }"
+                    )
+                }
+            }
+            printlnWithoutFurtherIndentation {
+                // TODO: finish build method
+                printWithoutBreak(x = "$className build() { throw new Error(); }")
+            }
+        }
+        printer.printWithBreak(x = "}")
+    }
+
+    private fun printVariantTypeDefinition(className: String, mapping: Map<String, Type>) {
+        mapping.forEach { (fieldName, fieldType) ->
+            printer.printlnWithoutFurtherIndentation {
+                printWithoutBreak(x = "private static final class $fieldName extends $className {")
+            }
+            printer.indented {
+                printWithBreak(x = "private final ${fieldType.toJavaTypeString()} value;")
+                printWithBreak(x = "$className(${fieldType.toJavaTypeString()} value) { this.value = value; }")
+            }
+            printer.printWithBreak(x = "}")
         }
     }
 
