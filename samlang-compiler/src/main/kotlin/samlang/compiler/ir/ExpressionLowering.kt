@@ -55,7 +55,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     private fun Expression.getLoweredAndAddStatements(statements: MutableList<IrStatement>): IrExpression {
         val result = this.lower()
-        statements.addAll(elements = statements)
+        statements.addAll(elements = result.statements)
         return result.expression
     }
 
