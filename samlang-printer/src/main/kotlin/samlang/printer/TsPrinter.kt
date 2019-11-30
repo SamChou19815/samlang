@@ -63,18 +63,27 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
     private val typeToStringConverter: TsTypeToStringConverter = TsTypeToStringConverter()
 
     fun printIndexModule(tsModuleFolder: TsModuleFolder) {
-        val names = tsModuleFolder.subModules.map { it.typeName }
+        val names = arrayListOf<String>()
+        names.addAll(tsModuleFolder.subModules.map { it.typeName })
         if (names.isNotEmpty()) {
             // Insert additional _ before module part to avoid folder-module name conflicts.
-            names.forEach { name -> printer.printWithBreak(x = "import * as $name from './_$name';") }
+            names.forEach { name ->
+                printer.printWithBreak(x = "import * as $name from './_$name';")
+                if (withType) {
+                    printer.printWithBreak(x = "import { T_$name } from './_$name';")
+                }
+            }
             printer.println()
+        }
+        if (withType) {
+            names.addAll(tsModuleFolder.subModules.map { "T_${it.typeName}" })
         }
         printer.printWithBreak(x = names.joinToString(separator = ", ", prefix = "export { ", postfix = " };"))
     }
 
     fun printModule(tsModule: TsModule) {
         if (tsModule.imports.isNotEmpty()) {
-            tsModule.imports.forEach(action = ::printImport)
+            tsModule.imports.forEach { printImport(moduleName = tsModule.typeName, import = it) }
             printer.println()
         }
         if (withType) {
@@ -85,22 +94,33 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         printer.printWithBreak(x = exports.joinToString(separator = ", ", prefix = "export { ", postfix = " };"))
     }
 
-    private fun printImport(import: ModuleMembersImport) {
+    private fun printImport(moduleName: String, import: ModuleMembersImport) {
         val (_, importedMembers, importedModule, _) = import
-        val importedMemberString = importedMembers.joinToString(separator = ", ") { it.first }
-        val importedModuleString = if (importedModule == ModuleReference.ROOT) {
-            "."
+        if (importedModule == ModuleReference.ROOT) {
+            val actualImportedMembers =
+                importedMembers.asSequence().map { it.first }.filter { it != moduleName }.toList()
+            val importedMemberString = actualImportedMembers.joinToString(separator = ", ")
+            printer.printWithBreak(x = "import { $importedMemberString } from '.';")
+            if (withType) {
+                val importedTypeString = actualImportedMembers.joinToString(separator = ", ") { "T_$it" }
+                printer.printWithBreak(x = "import { $importedTypeString } from '.';")
+            }
         } else {
-            "/${importedModule.parts.joinToString(separator = "/")}"
+            val importedMemberString = importedMembers.joinToString(separator = ", ") { it.first }
+            val importedModuleString = importedModule.parts.joinToString(separator = "/")
+            printer.printWithBreak(x = "import { $importedMemberString } from '/$importedModuleString';")
+            if (withType) {
+                val importedTypeString = importedMembers.joinToString(separator = ", ") { "T_${it.first}" }
+                printer.printWithBreak(x = "import { $importedTypeString } from '/$importedModuleString';")
+            }
         }
-        printer.printWithBreak(x = "import { $importedMemberString } from '$importedModuleString';")
     }
 
     private fun printTypeDefinition(name: String, typeDefinition: TypeDefinition) {
         val typeParameterString = typeParametersToString(typeParameters = typeDefinition.typeParameters)
         when (typeDefinition.type) {
             TypeDefinitionType.OBJECT -> {
-                printer.printWithBreak(x = "type $name$typeParameterString = {")
+                printer.printWithBreak(x = "export type T_$name$typeParameterString = {")
                 printer.indented {
                     typeDefinition.mappings.forEach { (field, type) ->
                         printWithBreak(x = "readonly $field: ${type.toTsTypeString()};")
@@ -109,7 +129,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                 printer.printWithBreak(x = "};")
             }
             TypeDefinitionType.VARIANT -> {
-                printer.printWithBreak(x = "type $name$typeParameterString =")
+                printer.printWithBreak(x = "export type T_$name$typeParameterString =")
                 printer.indented {
                     typeDefinition.mappings.forEach { (tag, type) ->
                         printWithBreak(x = """| { readonly _type: "$tag"; readonly data: ${type.toTsTypeString()} }""")
@@ -154,7 +174,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
 
         override fun visit(type: Type.IdentifierType, context: Unit): String = type.typeArguments
             .takeIf { it.isNotEmpty() }
-            ?.joinToString(separator = ", ", prefix = "${type.identifier}<", postfix = ">") { it.toTsTypeString() }
+            ?.joinToString(separator = ", ", prefix = "T_${type.identifier}<", postfix = ">") { it.toTsTypeString() }
             ?: type.identifier
 
         override fun visit(type: Type.TupleType, context: Unit): String =

@@ -104,12 +104,13 @@ class TsPrinterTest : StringSpec() {
             ),
             expectedTsIndexModuleCode = """
                 import * as Test from './_Test';
+                import { T_Test } from './_Test';
 
-                export { Test };
+                export { Test, T_Test };
 
             """.trimIndent(),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 export {  };
@@ -141,7 +142,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 function test(): void {
@@ -179,7 +180,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 function test(): void {
@@ -215,7 +216,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 function test(): void {
@@ -257,7 +258,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 function test(): void {
@@ -301,7 +302,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 function test(): void {
@@ -342,7 +343,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 function test(): void {
@@ -400,7 +401,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                   readonly foo: number;
                   readonly bar: boolean;
                 };
@@ -472,7 +473,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 function test(): void {
@@ -555,7 +556,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 function test(): void {
@@ -604,7 +605,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 function test(): void {
@@ -648,7 +649,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 function test(): (number) => boolean {
@@ -709,7 +710,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 function test(): void {
@@ -774,7 +775,7 @@ class TsPrinterTest : StringSpec() {
                 )
             ),
             expectedTsClassModuleCode = """
-                type Test = {
+                export type T_Test = {
                 };
                 
                 function test(): void {
