@@ -2,6 +2,7 @@ package samlang.printer
 
 import org.apache.commons.text.CaseUtils
 import samlang.ast.common.ModuleMembersImport
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Type
 import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.Type.IdentifierType
@@ -47,15 +48,27 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
     private var temporaryVariableId: Int = 0
 
-    fun printOuterClass(outerClass: JavaOuterClass) {
+    fun printOuterClass(moduleReference: ModuleReference, outerClass: JavaOuterClass) {
+        // Print package
+        val packageName = moduleReference.parts
+            .subList(fromIndex = 0, toIndex = moduleReference.parts.size - 1)
+            .joinToString(separator = ".")
+        printer.printlnWithoutFurtherIndentation {
+            printWithoutBreak(x = "package $packageName;")
+        }
+        printer.println()
+
+        // Print imports
+        val simpleClassName = moduleReference.parts.last()
         val (imports, innerStaticClasses) = outerClass
         if (imports.isNotEmpty()) {
             imports.forEach(action = ::printImport)
             printer.println()
         }
+
+        // Print actual class
         printer.printlnWithoutFurtherIndentation {
-            // TODO: print class name
-            printWithoutBreak(x = "public static final class TODO {")
+            printWithoutBreak(x = "public static final class $simpleClassName {")
         }
         printer.indented {
             innerStaticClasses.forEach(action = ::printStaticInnerClass)
