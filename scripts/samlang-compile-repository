@@ -1,0 +1,6 @@
+#!/bin/bash
+
+EXCLUDE_PATTERN=".*/samlang/programs/bad\..*"
+
+./samlang-dev -e "$EXCLUDE_PATTERN" compile --target js --output-directory ./out/js
+./samlang-dev -e "$EXCLUDE_PATTERN" compile --target ts --output-directory ./out/ts

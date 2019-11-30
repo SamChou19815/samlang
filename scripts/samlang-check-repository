@@ -1,2 +1,3 @@
 #!/bin/bash
-./samlang-dev -e .*samlang/programs.* check
+
+./samlang-dev -e .*/samlang/programs/bad\..* check
