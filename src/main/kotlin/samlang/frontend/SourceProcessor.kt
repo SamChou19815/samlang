@@ -8,6 +8,7 @@ import samlang.ast.common.Sources
 import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
 import samlang.checker.typeCheckSources
+import samlang.compiler.java.compileToJavaSources
 import samlang.compiler.ts.compileToTsSources
 import samlang.errors.CompilationFailedException
 import samlang.parser.ModuleBuilder
@@ -67,5 +68,12 @@ fun compileTsSources(source: Sources<Module>, outputDirectory: File, withType: B
                 .outputStream()
                 .use { printTsModule(stream = it, tsModule = subModule, withType = withType) }
         }
+    }
+}
+
+fun compileJavaSources(source: Sources<Module>, outputDirectory: File) {
+    val javaSources = compileToJavaSources(sources = source)
+    for ((moduleReference, _) in javaSources.moduleMappings) {
+        println(moduleReference)
     }
 }

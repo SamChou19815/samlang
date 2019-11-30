@@ -1,6 +1,7 @@
 package samlang.printer
 
 import org.apache.commons.text.CaseUtils
+import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.Type
 import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.Type.IdentifierType
@@ -33,6 +34,9 @@ import samlang.ast.ir.IrStatement.Return
 import samlang.ast.ir.IrStatement.Throw
 import samlang.ast.ir.IrStatement.VariableAssignment
 import samlang.ast.ir.IrStatementVisitor
+import samlang.ast.java.JavaMethod
+import samlang.ast.java.JavaOuterClass
+import samlang.ast.java.JavaStaticInnerClass
 import samlang.ast.ts.TsPattern
 import samlang.util.IndentedPrinter
 
@@ -42,6 +46,80 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
     private val expressionPrinter: JavaExpressionPrinter = JavaExpressionPrinter()
 
     private var temporaryVariableId: Int = 0
+
+    fun printOuterClass(outerClass: JavaOuterClass) {
+        val (imports, innerStaticClasses) = outerClass
+        if (imports.isNotEmpty()) {
+            imports.forEach(action = ::printImport)
+            printer.println()
+        }
+        printer.printlnWithoutFurtherIndentation {
+            // TODO: print class name
+            printWithoutBreak(x = "public static final class TODO {")
+        }
+        printer.indented {
+            innerStaticClasses.forEach(action = ::printStaticInnerClass)
+            println()
+        }
+        printer.printlnWithoutFurtherIndentation {
+            printWithoutBreak(x = "}")
+        }
+    }
+
+    private fun printImport(oneImport: ModuleMembersImport) {
+        val modulePartString = oneImport.importedModule.parts.joinToString(separator = ".")
+        oneImport.importedMembers.forEach { (memberName, _) ->
+            printer.printlnWithoutFurtherIndentation {
+                printWithoutBreak(x = "$modulePartString.$memberName;")
+            }
+        }
+    }
+
+    private fun printStaticInnerClass(staticInnerClass: JavaStaticInnerClass) {
+        val (className, typeDefinition, methods) = staticInnerClass
+        printer.printlnWithoutFurtherIndentation {
+            printWithoutBreak(x = "public static final class $className")
+            if (typeDefinition.typeParameters.isNotEmpty()) {
+                printWithBreak(x = typeParametersToString(typeParameters = typeDefinition.typeParameters))
+            }
+            printWithoutBreak(x = "{")
+        }
+        printer.indented {
+            // TODO: print type definition
+            methods.forEach { method ->
+                println()
+                printMethod(method = method)
+            }
+        }
+        printer.printlnWithoutFurtherIndentation {
+            printWithoutBreak(x = "}")
+        }
+    }
+
+    private fun printMethod(method: JavaMethod) {
+        printer.printlnWithoutFurtherIndentation {
+            printWithoutBreak(x = if (method.isPublic) "public " else "private ")
+            if (method.isStatic) {
+                printWithoutBreak(x = "static ")
+            }
+            if (method.typeParameters.isNotEmpty()) {
+                printWithBreak(x = typeParametersToString(typeParameters = method.typeParameters))
+            }
+            printWithBreak(x = method.returnType.toJavaTypeString())
+            printWithoutBreak(x = method.name)
+            printWithoutBreak(x = "(")
+            printWithoutBreak(
+                x = method.parameters.joinToString(separator = ", ") { (name, type) ->
+                    "${type.toJavaTypeString()} $name"
+                }
+            )
+            printWithoutBreak(x = ") {")
+        }
+        printer.indented { method.body.forEach(action = ::printStatement) }
+        printer.printlnWithoutFurtherIndentation {
+            printWithoutBreak(x = "}")
+        }
+    }
 
     private fun printStatement(statement: IrStatement): Unit = statement.accept(visitor = statementPrinter)
 
