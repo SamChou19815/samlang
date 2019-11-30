@@ -69,9 +69,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         val packageParts = moduleReference.parts.subList(fromIndex = 0, toIndex = moduleReference.parts.size - 1)
         if (packageParts.isNotEmpty()) {
             val packageName = packageParts.joinToString(separator = ".")
-            printer.printlnWithoutFurtherIndentation {
-                printWithoutBreak(x = "package $packageName;")
-            }
+            printer.printWithBreak(x = "package $packageName;")
             printer.println()
         }
 
@@ -84,16 +82,12 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
 
         // Print actual class
-        printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = "public final class $simpleClassName {")
-        }
+        printer.printWithBreak(x = "public final class $simpleClassName {")
         printer.indented {
             innerStaticClasses.forEach(action = ::printStaticInnerClass)
             println()
         }
-        printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = "}")
-        }
+        printer.printWithBreak(x = "}")
     }
 
     private fun printImport(oneImport: ModuleMembersImport) {
@@ -135,7 +129,6 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
     }
 
     private fun printObjectTypeDefinition(className: String, mapping: Map<String, Type>) {
-        // TODO: finish constructor of the main inner class. Handle other is not null
         printer.printWithBreak(x = "private $className($className other) {")
         printer.indented {
             printWithBreak(x = "if (other != null) {")
@@ -188,9 +181,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             printWithoutBreak(x = ") {")
         }
         printer.indented { method.body.forEach(action = ::printStatement) }
-        printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = "}")
-        }
+        printer.printWithBreak(x = "}")
     }
 
     private fun printStatement(statement: IrStatement): Unit = statement.accept(visitor = statementPrinter)
