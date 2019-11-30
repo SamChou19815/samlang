@@ -12,6 +12,7 @@ import samlang.compiler.java.compileToJavaSources
 import samlang.compiler.ts.compileToTsSources
 import samlang.errors.CompilationFailedException
 import samlang.parser.ModuleBuilder
+import samlang.printer.printJavaOuterClass
 import samlang.printer.printTsIndexModule
 import samlang.printer.printTsModule
 import samlang.util.createOrFail
@@ -73,7 +74,16 @@ fun compileTsSources(source: Sources<Module>, outputDirectory: File, withType: B
 
 fun compileJavaSources(source: Sources<Module>, outputDirectory: File) {
     val javaSources = compileToJavaSources(sources = source)
-    for ((moduleReference, _) in javaSources.moduleMappings) {
-        println(moduleReference)
+    for ((moduleReference, javaOuterClass) in javaSources.moduleMappings) {
+        val parts = moduleReference.parts
+        val outputFile = Paths.get(
+            outputDirectory.toString(),
+            *parts.subList(fromIndex = 0, toIndex = parts.size - 1).toTypedArray(),
+            "${parts.last()}.java"
+        ).toFile()
+        outputFile.parentFile.mkdirs()
+        outputFile.outputStream().use { stream ->
+            printJavaOuterClass(stream = stream, moduleReference = moduleReference, outerClass = javaOuterClass)
+        }
     }
 }

@@ -1,5 +1,7 @@
 package samlang.printer
 
+import java.io.OutputStream
+import java.io.PrintStream
 import org.apache.commons.text.CaseUtils
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
@@ -42,6 +44,18 @@ import samlang.ast.java.JavaOuterClass
 import samlang.ast.java.JavaStaticInnerClass
 import samlang.ast.ts.TsPattern
 import samlang.util.IndentedPrinter
+
+fun printJavaOuterClass(stream: OutputStream, moduleReference: ModuleReference, outerClass: JavaOuterClass) {
+    // use 2-space
+    val indentedPrinter = IndentedPrinter(printStream = PrintStream(stream), indentationSymbol = "  ")
+    // With type does not matter.
+    JavaPrinter(printer = indentedPrinter).printOuterClass(moduleReference = moduleReference, outerClass = outerClass)
+}
+
+fun printJavaOuterClass(moduleReference: ModuleReference, outerClass: JavaOuterClass): String =
+    printToStream { stream ->
+        printJavaOuterClass(stream = stream, moduleReference = moduleReference, outerClass = outerClass)
+    }
 
 private class JavaPrinter(private val printer: IndentedPrinter) {
 
