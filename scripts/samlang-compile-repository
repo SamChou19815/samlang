@@ -2,7 +2,10 @@
 
 EXCLUDE_PATTERN=".*/samlang/programs/bad\..*"
 
+# JS
 ./samlang-dev -e "$EXCLUDE_PATTERN" compile --target js --output-directory ./out/js
+
+# TS
 ./samlang-dev -e "$EXCLUDE_PATTERN" compile --target ts --output-directory ./out/ts
 echo '{
   "compilerOptions": {
@@ -12,3 +15,6 @@ echo '{
 }' > ./out/ts/tsconfig.json
 echo 'Checking generating TS code...'
 tsc -p out/ts/tsconfig.json
+
+# Java
+./samlang-dev -e "$EXCLUDE_PATTERN" compile --target java --output-directory ./out/java

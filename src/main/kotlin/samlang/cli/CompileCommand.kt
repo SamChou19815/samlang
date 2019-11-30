@@ -9,6 +9,7 @@ import java.io.File
 import kotlin.system.exitProcess
 import samlang.errors.CompilationFailedException
 import samlang.frontend.collectSourceHandles
+import samlang.frontend.compileJavaSources
 import samlang.frontend.compileTsSources
 import samlang.frontend.typeCheckSources
 
@@ -18,7 +19,7 @@ class CompileCommand : CliktCommand(name = "compile") {
         help = "Output directory of compilation result, default to ./out."
     ).default(value = "./out")
     private val target: String by option("-t", "--target", help = "Compilation target")
-        .choice("ts", "js")
+        .choice("ts", "js", "java")
         .default(value = "ts")
 
     private val configuration: Configuration by requireObject()
@@ -44,6 +45,10 @@ class CompileCommand : CliktCommand(name = "compile") {
             errors.forEach { echo(message = it.errorMessage) }
             return
         }
-        compileTsSources(source = checkedSources, outputDirectory = outputDirectory, withType = target == "ts")
+        when (target) {
+            "ts" -> compileTsSources(source = checkedSources, outputDirectory = outputDirectory, withType = true)
+            "js" -> compileTsSources(source = checkedSources, outputDirectory = outputDirectory, withType = false)
+            "java" -> compileJavaSources(source = checkedSources, outputDirectory = outputDirectory)
+        }
     }
 }
