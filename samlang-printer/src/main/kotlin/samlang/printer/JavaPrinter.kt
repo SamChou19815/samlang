@@ -337,6 +337,9 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
         override fun visit(statement: ConstantDefinition) {
             val (pattern, typeAnnotation, assignedExpression) = statement
+            if (pattern is TsPattern.WildCardPattern && assignedExpression !is FunctionApplication) {
+                return
+            }
             printer.printlnWithoutFurtherIndentation {
                 when (pattern) {
                     is TsPattern.TuplePattern -> {
@@ -365,10 +368,8 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                         printWithBreak(x = ";")
                     }
                     is TsPattern.WildCardPattern -> {
-                        if (assignedExpression is FunctionApplication) {
-                            printExpression(expression = assignedExpression)
-                            printWithBreak(x = ";")
-                        }
+                        printExpression(expression = assignedExpression)
+                        printWithBreak(x = ";")
                     }
                 }
             }
