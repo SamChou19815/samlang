@@ -76,6 +76,7 @@ fun compileTsSources(source: Sources<Module>, outputDirectory: File, withType: B
 
 fun compileJavaSources(source: Sources<Module>, outputDirectory: File) {
     val javaSources = compileToJavaSources(sources = source)
+    outputDirectory.mkdirs()
     Paths.get(outputDirectory.toString(), "SamlangIntrinsics$.java")
         .toFile()
         .outputStream()
