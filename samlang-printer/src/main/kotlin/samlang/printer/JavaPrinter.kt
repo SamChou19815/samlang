@@ -155,7 +155,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         if (definition.type == TypeDefinitionType.OBJECT) {
             printObjectTypeDefinition(className = className, definition = definition)
         } else {
-            printVariantTypeDefinition(className = className, mapping = definition.mappings)
+            printVariantTypeDefinition(className = className, definition = definition)
         }
     }
 
@@ -183,17 +183,21 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
     }
 
-    private fun printVariantTypeDefinition(className: String, mapping: Map<String, Type>) {
+    private fun printVariantTypeDefinition(className: String, definition: TypeDefinition) {
+        val (_, _, typeParameters, mapping) = definition
+        val typeParameterString = typeParametersToString(typeParameters = typeParameters)
+        val parentType = "$className$typeParameterString"
         mapping.forEach { (variantName, variantType) ->
-            val type = if (variantType is PrimitiveType && variantType.name == Type.PrimitiveTypeName.UNIT) {
+            val thisType = "$variantName$typeParameterString"
+            val valueType = if (variantType is PrimitiveType && variantType.name == Type.PrimitiveTypeName.UNIT) {
                 "Void"
             } else {
                 variantType.toJavaTypeString()
             }
-            printer.printWithBreak(x = "private static final class $variantName extends $className {")
+            printer.printWithBreak(x = "private static final class $thisType extends $parentType {")
             printer.indented {
-                printWithBreak(x = "private final $type value;")
-                printWithBreak(x = "$variantName($type value) { this.value = value; }")
+                printWithBreak(x = "private final $valueType value;")
+                printWithBreak(x = "$variantName($valueType value) { this.value = value; }")
             }
             printer.printWithBreak(x = "}")
         }
