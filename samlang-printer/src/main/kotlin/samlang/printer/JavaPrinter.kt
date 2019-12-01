@@ -351,8 +351,10 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                         printWithBreak(x = ";")
                     }
                     is TsPattern.WildCardPattern -> {
-                        printExpression(expression = assignedExpression)
-                        printWithBreak(x = ";")
+                        if (assignedExpression is FunctionApplication) {
+                            printExpression(expression = assignedExpression)
+                            printWithBreak(x = ";")
+                        }
                     }
                 }
             }
@@ -531,7 +533,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         override fun visit(expression: Lambda) {
             val parameterString =
                 expression.parameters.joinToString(separator = ", ", prefix = "(", postfix = ")") { (name, type) ->
-                    "$name: ${type.toJavaTypeString(boxed = true)}"
+                    "${type.toJavaTypeString(boxed = true)} $name"
                 }
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = parameterString)
