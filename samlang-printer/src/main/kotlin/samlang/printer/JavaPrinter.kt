@@ -75,23 +75,37 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
     private var temporaryVariableId: Int = 0
 
     fun printIntrinsics() {
-        printer.printWithBreak(x = "public interface SamlangIntrinsics\$ {")
+        printer.printWithBreak(x = "public final class SamlangIntrinsics\$ {")
         printer.indented {
+            printWithBreak(x = "private SamlangIntrinsics$() {}")
             for (size in 1 until 22) {
-                val argumentTypeParameters = (0 until size).toList().joinToString(separator = ", ") { "T$it" }
-                printer.printWithBreak(x = "public interface Tuple$size<$argumentTypeParameters> {}")
+                val numberList = (1..size).toList()
+                val argumentTypeParameters = numberList.joinToString(separator = ", ") { "T$it" }
+                printWithBreak(x = "public static final class Tuple$size<$argumentTypeParameters> {")
+                indented {
+                    for (i in 1..size) {
+                        printWithBreak(x = "private final T$i value$i;")
+                    }
+                    val parameters = numberList.joinToString(separator = ", ") { "T$it value$it" }
+                    printWithBreak(x = "public Tuple$size($parameters) {")
+                    indented {
+                        for (i in 1..size) {
+                            printWithBreak(x = "this.value$i = value$i;")
+                        }
+                    }
+                    printWithBreak(x = "}")
+                }
+                printWithBreak(x = "}")
             }
             for (size in 0..22) {
                 if (size == 0) {
-                    printer.printWithBreak(x = "public interface Function0<R> { R apply(); }")
+                    printWithBreak(x = "public interface Function0<R> { R apply(); }")
                 } else {
                     val argumentTypeParameters = (0 until size).toList().joinToString(separator = ", ") { "T$it" }
                     val methodParameters = (0 until size).toList().joinToString(separator = ", ") { "T$it arg$it" }
-                    printer.printWithBreak(x = "public interface Function$size<$argumentTypeParameters, R> {")
-                    printer.indented {
-                        printer.printWithBreak(x = "R apply($methodParameters);")
-                    }
-                    printer.printWithBreak(x = "}")
+                    printWithBreak(x = "public interface Function$size<$argumentTypeParameters, R> {")
+                    indented { printWithBreak(x = "R apply($methodParameters);") }
+                    printWithBreak(x = "}")
                 }
             }
         }
@@ -332,7 +346,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                         printWithBreak(x = ";")
                         pattern.destructedNames.forEachIndexed { index, name ->
                             if (name != null) {
-                                printWithoutBreak(x = "final var $name = $temporaryVariable.get$index();")
+                                printWithoutBreak(x = "final var $name = $temporaryVariable.value$index;")
                             }
                         }
                     }
