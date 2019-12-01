@@ -294,9 +294,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                 }
             }
             printer.printWithBreak(x = "} else {")
-            printer.indented {
-                printWithoutBreak(x = "throw new Error(\"NOT_EXHAUSTIVE!\");")
-            }
+            printer.indented { printWithBreak(x = "throw new Error(\"NOT_EXHAUSTIVE!\");") }
             printer.printWithBreak(x = "}")
         }
 
