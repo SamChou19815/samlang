@@ -153,14 +153,16 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
     private fun printTypeDefinition(className: String, definition: TypeDefinition) {
         if (definition.type == TypeDefinitionType.OBJECT) {
-            printObjectTypeDefinition(className = className, mapping = definition.mappings)
+            printObjectTypeDefinition(className = className, definition = definition)
         } else {
             printVariantTypeDefinition(className = className, mapping = definition.mappings)
         }
     }
 
-    private fun printObjectTypeDefinition(className: String, mapping: Map<String, Type>) {
-        printer.printWithBreak(x = "private $className($className other) {")
+    private fun printObjectTypeDefinition(className: String, definition: TypeDefinition) {
+        val (_, _, typeParameters, mapping) = definition
+        val thisTypeString = "$className${typeParametersToString(typeParameters = typeParameters)}"
+        printer.printWithBreak(x = "private $className($thisTypeString other) {")
         printer.indented {
             printWithBreak(x = "if (other != null) {")
             indented {
@@ -176,7 +178,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             val methodName = "\$builderSet${CaseUtils.toCamelCase(fieldName, true)}"
             val methodBody = "this.$fieldName = $fieldName; return this;"
             printer.printWithBreak(
-                x = "$className $methodName(${fieldType.toJavaTypeString()} $fieldName) { $methodBody }"
+                x = "$thisTypeString $methodName(${fieldType.toJavaTypeString()} $fieldName) { $methodBody }"
             )
         }
     }
