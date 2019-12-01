@@ -84,7 +84,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                 printWithBreak(x = "public static final class Tuple$size<$argumentTypeParameters> {")
                 indented {
                     for (i in 1..size) {
-                        printWithBreak(x = "private final T$i value$i;")
+                        printWithBreak(x = "public final T$i value$i;")
                     }
                     val parameters = numberList.joinToString(separator = ", ") { "T$it value$it" }
                     printWithBreak(x = "public Tuple$size($parameters) {")
