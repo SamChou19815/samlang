@@ -156,10 +156,15 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
     private fun printVariantTypeDefinition(className: String, mapping: Map<String, Type>) {
         mapping.forEach { (variantName, variantType) ->
+            val type = if (variantType is PrimitiveType && variantType.name == Type.PrimitiveTypeName.UNIT) {
+                "Void"
+            } else {
+                variantType.toJavaTypeString()
+            }
             printer.printWithBreak(x = "private static final class $variantName extends $className {")
             printer.indented {
-                printWithBreak(x = "private final ${variantType.toJavaTypeString()} value;")
-                printWithBreak(x = "$variantName(${variantType.toJavaTypeString()} value) { this.value = value; }")
+                printWithBreak(x = "private final $type value;")
+                printWithBreak(x = "$variantName($type value) { this.value = value; }")
             }
             printer.printWithBreak(x = "}")
         }
