@@ -280,7 +280,12 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                     if (dataVariable != null) {
                         printlnWithoutFurtherIndentation {
                             printWithoutBreak(x = "final var $dataVariable = ")
-                            printWithoutBreak(x = "((${matchedVariableType.toJavaTypeString()}) $matchedVariable).data;")
+                            val baseType = matchedVariableType.identifier
+                            val specificType = Type.id(
+                                identifier = tag, typeArguments = matchedVariableType.typeArguments
+                            )
+                            val castToType = "$baseType.${specificType.toJavaTypeString()}"
+                            printWithoutBreak(x = "(($castToType) $matchedVariable).value;")
                         }
                     }
                     statements.forEach(action = ::printStatement)
