@@ -14,6 +14,7 @@ import samlang.errors.CompilationFailedException
 import samlang.parser.ModuleBuilder
 import samlang.printer.javaizeName
 import samlang.printer.printJavaOuterClass
+import samlang.printer.printJavaSamlangIntrinsics
 import samlang.printer.printTsIndexModule
 import samlang.printer.printTsModule
 import samlang.util.createOrFail
@@ -75,6 +76,10 @@ fun compileTsSources(source: Sources<Module>, outputDirectory: File, withType: B
 
 fun compileJavaSources(source: Sources<Module>, outputDirectory: File) {
     val javaSources = compileToJavaSources(sources = source)
+    Paths.get(outputDirectory.toString(), "SamlangIntrinsics$.java")
+        .toFile()
+        .outputStream()
+        .use(block = ::printJavaSamlangIntrinsics)
     for ((moduleReference, javaOuterClass) in javaSources.moduleMappings) {
         val parts = moduleReference.parts
         val outputFile = Paths.get(

@@ -48,14 +48,21 @@ import samlang.util.IndentedPrinter
 fun printJavaOuterClass(stream: OutputStream, moduleReference: ModuleReference, outerClass: JavaOuterClass) {
     // use 2-space
     val indentedPrinter = IndentedPrinter(printStream = PrintStream(stream), indentationSymbol = "  ")
-    // With type does not matter.
     JavaPrinter(printer = indentedPrinter).printOuterClass(moduleReference = moduleReference, outerClass = outerClass)
+}
+
+fun printJavaSamlangIntrinsics(stream: OutputStream) {
+    // use 2-space
+    val indentedPrinter = IndentedPrinter(printStream = PrintStream(stream), indentationSymbol = "  ")
+    JavaPrinter(printer = indentedPrinter).printIntrinsics()
 }
 
 fun printJavaOuterClass(moduleReference: ModuleReference, outerClass: JavaOuterClass): String =
     printToStream { stream ->
         printJavaOuterClass(stream = stream, moduleReference = moduleReference, outerClass = outerClass)
     }
+
+fun getJavaSamlangIntrinsics(): String = printToStream { stream -> printJavaSamlangIntrinsics(stream = stream) }
 
 fun javaizeName(name: String): String =
     CaseUtils.toCamelCase(name, true, '-', '.')
@@ -66,6 +73,25 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
     private val expressionPrinter: JavaExpressionPrinter = JavaExpressionPrinter()
 
     private var temporaryVariableId: Int = 0
+
+    fun printIntrinsics() {
+        printer.printWithBreak(x = "public interface SamlangIntrinsics\$ {")
+        printer.indented {
+            for (size in 1 until 22) {
+                val argumentTypeParameters = (0 until size).toList().joinToString(separator = ", ") { "T$it" }
+                printer.printWithBreak(x = "public interface Tuple$size<$argumentTypeParameters> {}")
+            }
+            for (size in 0..22) {
+                val argumentTypeParameters = (0 until size).toList().joinToString(separator = ", ") { "T$it" }
+                if (size == 0) {
+                    printer.printWithBreak(x = "public interface Function0<R> {}")
+                } else {
+                    printer.printWithBreak(x = "public interface Function$size<$argumentTypeParameters, R> {}")
+                }
+            }
+        }
+        printer.printWithBreak(x = "}")
+    }
 
     fun printOuterClass(moduleReference: ModuleReference, outerClass: JavaOuterClass) {
         // Print package
@@ -80,7 +106,8 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         // Print imports
         val simpleClassName = parts.last()
         val (imports, innerStaticClasses) = outerClass
-        if (imports.isNotEmpty()) {
+        if (parts.size > 1) {
+            printer.printWithBreak(x = "import SamlangIntrinsics\$;")
             imports.forEach(action = ::printImport)
             printer.println()
         }
@@ -365,7 +392,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
         override fun visit(expression: TupleConstructor) {
             val expressions = expression.expressionList
-            printer.printWithoutBreak(x = "new SamlangIntrinsics\$Tuple${expressions.size}<")
+            printer.printWithoutBreak(x = "new SamlangIntrinsics$.Tuple${expressions.size}<")
             printer.printWithoutBreak(
                 x = expressions.joinToString(separator = ", ") { it.type.toJavaTypeString(boxed = true) }
             )
@@ -531,7 +558,7 @@ private object JavaContextAwareTypeToStringConverter : TypeVisitor<Boolean, Stri
         if (size > 22) {
             TODO("Enforce tuple mapping size limit.")
         }
-        return mappings.joinToString(separator = ", ", prefix = "SamlangIntrinsics\$Tuple$size<", postfix = ">") {
+        return mappings.joinToString(separator = ", ", prefix = "SamlangIntrinsics$.Tuple$size<", postfix = ">") {
             it.toBoxedString()
         }
     }
@@ -544,7 +571,7 @@ private object JavaContextAwareTypeToStringConverter : TypeVisitor<Boolean, Stri
         }
         return argumentTypes.joinToString(
             separator = ", ",
-            prefix = "SamlangIntrinsics\$Function$size<",
+            prefix = "SamlangIntrinsics$.Function$size<",
             postfix = ", ${returnType.toBoxedString()}>"
         ) { it.toBoxedString() }
     }
