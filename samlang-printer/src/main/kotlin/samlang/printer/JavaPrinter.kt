@@ -296,9 +296,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                         printExpression(expression = assignedExpression)
                         printWithBreak(x = ";")
                         pattern.destructedNames.forEach { (name, alias) ->
-                            val getMethodCall =
-                                "$temporaryVariable.get${CaseUtils.toCamelCase(name, true)}()"
-                            printWithoutBreak(x = "final var ${alias ?: name} = $getMethodCall;")
+                            printWithoutBreak(x = "final var ${alias ?: name} = $temporaryVariable.$name;")
                         }
                     }
                     is TsPattern.VariablePattern -> {
