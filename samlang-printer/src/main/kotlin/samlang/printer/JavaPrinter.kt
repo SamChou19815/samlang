@@ -82,11 +82,16 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                 printer.printWithBreak(x = "public interface Tuple$size<$argumentTypeParameters> {}")
             }
             for (size in 0..22) {
-                val argumentTypeParameters = (0 until size).toList().joinToString(separator = ", ") { "T$it" }
                 if (size == 0) {
-                    printer.printWithBreak(x = "public interface Function0<R> {}")
+                    printer.printWithBreak(x = "public interface Function0<R> { R apply(); }")
                 } else {
-                    printer.printWithBreak(x = "public interface Function$size<$argumentTypeParameters, R> {}")
+                    val argumentTypeParameters = (0 until size).toList().joinToString(separator = ", ") { "T$it" }
+                    val methodParameters = (0 until size).toList().joinToString(separator = ", ") { "T$it arg$it" }
+                    printer.printWithBreak(x = "public interface Function$size<$argumentTypeParameters, R> {")
+                    printer.indented {
+                        printer.printWithBreak(x = "R apply($methodParameters);")
+                    }
+                    printer.printWithBreak(x = "}")
                 }
             }
         }
@@ -498,6 +503,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                         functionExpression.printSelf(
                             withParenthesis = expression.functionExpression.precedence >= expression.precedence
                         )
+                        printWithoutBreak(x = ".apply")
                         printFunctionCallArguments(arguments = arguments)
                     }
                 }
