@@ -240,10 +240,10 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             printer.printWithBreak(x = "switch ($matchedVariable._type) {")
             printer.indented {
                 matchingList.forEach { (tag, dataVariable, statements, finalExpression) ->
-                    printWithoutBreak(x = "case \"$tag\": {")
+                    printWithBreak(x = "case \"$tag\": {")
                     printer.indented {
                         if (dataVariable != null) {
-                            printWithoutBreak(x = "const $dataVariable = $matchedVariable.data;")
+                            printWithBreak(x = "const $dataVariable = $matchedVariable.data;")
                         }
                         statements.forEach { it.accept(this@TsStatementPrinter) }
                         if (finalExpression != IrExpression.UNIT) {
@@ -253,13 +253,13 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                                 printWithoutBreak(x = ";")
                             }
                         }
-                        printWithoutBreak(x = "break;")
+                        printWithBreak(x = "break;")
                     }
-                    printWithoutBreak(x = "}")
+                    printWithBreak(x = "}")
                 }
-                printWithoutBreak(x = "default:")
+                printWithBreak(x = "default:")
                 printer.indented {
-                    printWithoutBreak(x = "throw new Error('Impossible!');")
+                    printWithBreak(x = "throw new Error('Impossible!');")
                 }
             }
             printer.printWithBreak(x = "}")

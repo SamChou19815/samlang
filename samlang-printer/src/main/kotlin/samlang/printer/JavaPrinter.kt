@@ -240,8 +240,10 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                 }
                 printer.indented {
                     if (dataVariable != null) {
-                        printWithoutBreak(x = "final var $dataVariable = ")
-                        printWithoutBreak(x = "((${matchedVariableType.toJavaTypeString()}) $matchedVariable).data;")
+                        printlnWithoutFurtherIndentation {
+                            printWithoutBreak(x = "final var $dataVariable = ")
+                            printWithoutBreak(x = "((${matchedVariableType.toJavaTypeString()}) $matchedVariable).data;")
+                        }
                     }
                     statements.forEach(action = ::printStatement)
                     if (finalExpression != IrExpression.UNIT) {
