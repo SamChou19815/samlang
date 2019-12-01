@@ -1,4 +1,4 @@
-FROM gradle:5.6-jdk11 as builder
+FROM gradle:6.0-jdk11 as builder
 
 COPY build.gradle.kts .
 COPY settings.gradle .
@@ -12,7 +12,7 @@ COPY samlang-printer ./samlang-printer
 COPY samlang-utils ./samlang-utils
 COPY src ./src
 
-RUN gradle build
+RUN gradle shadowJar
 
 FROM openjdk:11-jre
 
