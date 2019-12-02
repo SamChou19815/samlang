@@ -323,7 +323,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
 
         override fun visit(statement: LetDeclaration) {
-            printer.printWithBreak(x = "${statement.typeAnnotation} ${statement.name};")
+            printer.printWithBreak(x = "${statement.typeAnnotation.toJavaTypeString()} ${statement.name};")
         }
 
         override fun visit(statement: VariableAssignment) {
