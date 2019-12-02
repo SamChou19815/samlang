@@ -10,6 +10,7 @@ import samlang.ast.ir.IrExpression.FunctionApplication
 import samlang.ast.ir.IrExpression.Lambda
 import samlang.ast.ir.IrExpression.Literal
 import samlang.ast.ir.IrExpression.MethodAccess
+import samlang.ast.ir.IrExpression.Never
 import samlang.ast.ir.IrExpression.ObjectConstructor
 import samlang.ast.ir.IrExpression.Ternary
 import samlang.ast.ir.IrExpression.This
@@ -159,7 +160,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         loweredStatements.add(element = Throw(expression = result.expression))
         return LoweringResult(
             statements = loweredStatements,
-            expression = UNIT
+            expression = IrExpression.Never
         )
     }
 
@@ -201,7 +202,8 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 e2 = e2LoweringResult.expression
             ).asLoweringResult(statements = loweredStatements)
         }
-        if (e1LoweringResult.expression == UNIT && e2LoweringResult.expression == UNIT) {
+        if ((e1LoweringResult.expression == UNIT || e1LoweringResult.expression == Never) &&
+            (e2LoweringResult.expression == UNIT || e2LoweringResult.expression == Never)) {
             loweredStatements.add(
                 element = IfElse(
                     booleanExpression = boolExpression,
@@ -218,23 +220,27 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 typeAnnotation = expression.type
             )
         )
-        loweredStatements.add(
-            element = IfElse(
-                booleanExpression = boolExpression,
-                s1 = e1LoweringResult.statements.plus(
-                    element = VariableAssignment(
-                        name = variableForIfElseAssign,
-                        assignedExpression = e1LoweringResult.expression
-                    )
-                ),
-                s2 = e2LoweringResult.statements.plus(
-                    element = VariableAssignment(
-                        name = variableForIfElseAssign,
-                        assignedExpression = e2LoweringResult.expression
-                    )
+        val loweredS1 = if (e1LoweringResult.expression == Never) {
+            e1LoweringResult.statements
+        } else {
+            e1LoweringResult.statements.plus(
+                element = VariableAssignment(
+                    name = variableForIfElseAssign,
+                    assignedExpression = e1LoweringResult.expression
                 )
             )
-        )
+        }
+        val loweredS2 = if (e2LoweringResult.expression == Never) {
+            e2LoweringResult.statements
+        } else {
+            e2LoweringResult.statements.plus(
+                element = VariableAssignment(
+                    name = variableForIfElseAssign,
+                    assignedExpression = e2LoweringResult.expression
+                )
+            )
+        }
+        loweredStatements.add(element = IfElse(booleanExpression = boolExpression, s1 = loweredS1, s2 = loweredS2))
         return LoweringResult(
             statements = loweredStatements,
             expression = Variable(type = expression.type, name = variableForIfElseAssign)

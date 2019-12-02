@@ -7,6 +7,7 @@ package samlang.ast.ir
  * @param T type of the visitor return value.
  */
 interface IrExpressionVisitor<T> {
+    fun visit(expression: IrExpression.Never): T
     fun visit(expression: IrExpression.Literal): T
     fun visit(expression: IrExpression.Variable): T
     fun visit(expression: IrExpression.This): T

@@ -16,6 +16,12 @@ sealed class IrExpression(val precedence: Int) {
 
     abstract fun <T> accept(visitor: IrExpressionVisitor<T>): T
 
+    object Never : IrExpression(precedence = 0) {
+        override val type: Type get() = error(message = "Never supposed to be queried.")
+        override fun toString(): String = "NEVER"
+        override fun <T> accept(visitor: IrExpressionVisitor<T>): T = visitor.visit(expression = this)
+    }
+
     data class Literal(
         override val type: Type,
         val literal: samlang.ast.common.Literal

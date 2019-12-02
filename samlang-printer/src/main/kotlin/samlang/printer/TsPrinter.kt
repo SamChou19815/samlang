@@ -326,6 +326,10 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                     }
                 } else accept(visitor = this@TsExpressionPrinter)
 
+            override fun visit(expression: IrExpression.Never) {
+                printer.printWithoutBreak(x = "void 0")
+            }
+
             override fun visit(expression: Literal) {
                 if (expression.literal == samlang.ast.common.Literal.UnitLiteral) {
                     printer.printWithoutBreak(x = "void 0")

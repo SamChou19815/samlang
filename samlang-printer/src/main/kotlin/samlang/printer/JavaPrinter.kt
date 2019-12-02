@@ -22,6 +22,7 @@ import samlang.ast.ir.IrExpression.FunctionApplication
 import samlang.ast.ir.IrExpression.Lambda
 import samlang.ast.ir.IrExpression.Literal
 import samlang.ast.ir.IrExpression.MethodAccess
+import samlang.ast.ir.IrExpression.Never
 import samlang.ast.ir.IrExpression.ObjectConstructor
 import samlang.ast.ir.IrExpression.Ternary
 import samlang.ast.ir.IrExpression.This
@@ -308,7 +309,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                         }
                     }
                     statements.forEach(action = ::printStatement)
-                    if (finalExpression != IrExpression.UNIT) {
+                    if (finalExpression != Never) {
                         printlnWithoutFurtherIndentation {
                             printWithoutBreak(x = "$assignedTemporaryVariable = ")
                             printExpression(expression = finalExpression)
@@ -327,6 +328,9 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
 
         override fun visit(statement: VariableAssignment) {
+            if (statement.assignedExpression == Never) {
+                return
+            }
             printer.printlnWithoutFurtherIndentation {
                 printWithBreak(x = statement.name)
                 printWithBreak(x = "=")
@@ -377,6 +381,9 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
         override fun visit(statement: Return) {
             val returnedExpression = statement.expression
+            if (returnedExpression == Never) {
+                return
+            }
             if (returnedExpression == null) {
                 printer.printWithBreak(x = "return;")
             } else {
@@ -399,6 +406,10 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                     print(x = ")", requireBreak = false)
                 }
             } else accept(visitor = this@JavaExpressionPrinter)
+
+        override fun visit(expression: Never) {
+            error(message = "We should *never* print `never`!")
+        }
 
         override fun visit(expression: Literal) {
             val literalString = when (val literal = expression.literal) {

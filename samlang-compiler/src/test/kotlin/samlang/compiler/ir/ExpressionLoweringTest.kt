@@ -128,7 +128,10 @@ class ExpressionLoweringTest : StringSpec() {
             )
             assertCorrectlyLowered(
                 expression = Expression.Panic(range = dummyRange, type = unit, expression = THIS),
-                expectedStatements = listOf(IrStatement.Throw(expression = IR_THIS))
+                expected = LoweringResult(
+                    statements = listOf(IrStatement.Throw(expression = IR_THIS)),
+                    expression = IrExpression.Never
+                )
             )
             assertCorrectlyLowered(
                 expression = Expression.FunctionApplication(
@@ -295,13 +298,7 @@ class ExpressionLoweringTest : StringSpec() {
                         IrStatement.LetDeclaration(name = "_LOWERING_0", typeAnnotation = unit),
                         IrStatement.IfElse(
                             booleanExpression = IR_THIS,
-                            s1 = listOf(
-                                IrStatement.Throw(expression = IR_THIS),
-                                IrStatement.VariableAssignment(
-                                    name = "_LOWERING_0",
-                                    assignedExpression = IrExpression.UNIT
-                                )
-                            ),
+                            s1 = listOf(IrStatement.Throw(expression = IR_THIS)),
                             s2 = listOf(
                                 IrStatement.VariableAssignment(name = "_LOWERING_0", assignedExpression = IR_THIS)
                             )
