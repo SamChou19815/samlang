@@ -1,48 +1,64 @@
 public final class SamlangIntrinsics$ {
   private SamlangIntrinsics$() {}
-  public static final class Tuple1<T1> {
+  public static final class Tuple1<T0> {
+    public final T0 value0;
+    public Tuple1(T0 value0) {
+      this.value0 = value0;
+    }
+  }
+  public static final class Tuple2<T0, T1> {
+    public final T0 value0;
     public final T1 value1;
-    public Tuple1(T1 value1) {
+    public Tuple2(T0 value0, T1 value1) {
+      this.value0 = value0;
       this.value1 = value1;
     }
   }
-  public static final class Tuple2<T1, T2> {
+  public static final class Tuple3<T0, T1, T2> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
-    public Tuple2(T1 value1, T2 value2) {
+    public Tuple3(T0 value0, T1 value1, T2 value2) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
     }
   }
-  public static final class Tuple3<T1, T2, T3> {
+  public static final class Tuple4<T0, T1, T2, T3> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
-    public Tuple3(T1 value1, T2 value2, T3 value3) {
+    public Tuple4(T0 value0, T1 value1, T2 value2, T3 value3) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
     }
   }
-  public static final class Tuple4<T1, T2, T3, T4> {
+  public static final class Tuple5<T0, T1, T2, T3, T4> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
     public final T4 value4;
-    public Tuple4(T1 value1, T2 value2, T3 value3, T4 value4) {
+    public Tuple5(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
       this.value4 = value4;
     }
   }
-  public static final class Tuple5<T1, T2, T3, T4, T5> {
+  public static final class Tuple6<T0, T1, T2, T3, T4, T5> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
     public final T4 value4;
     public final T5 value5;
-    public Tuple5(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5) {
+    public Tuple6(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -50,14 +66,16 @@ public final class SamlangIntrinsics$ {
       this.value5 = value5;
     }
   }
-  public static final class Tuple6<T1, T2, T3, T4, T5, T6> {
+  public static final class Tuple7<T0, T1, T2, T3, T4, T5, T6> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
     public final T4 value4;
     public final T5 value5;
     public final T6 value6;
-    public Tuple6(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6) {
+    public Tuple7(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -66,7 +84,8 @@ public final class SamlangIntrinsics$ {
       this.value6 = value6;
     }
   }
-  public static final class Tuple7<T1, T2, T3, T4, T5, T6, T7> {
+  public static final class Tuple8<T0, T1, T2, T3, T4, T5, T6, T7> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -74,7 +93,8 @@ public final class SamlangIntrinsics$ {
     public final T5 value5;
     public final T6 value6;
     public final T7 value7;
-    public Tuple7(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7) {
+    public Tuple8(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -84,7 +104,8 @@ public final class SamlangIntrinsics$ {
       this.value7 = value7;
     }
   }
-  public static final class Tuple8<T1, T2, T3, T4, T5, T6, T7, T8> {
+  public static final class Tuple9<T0, T1, T2, T3, T4, T5, T6, T7, T8> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -93,7 +114,8 @@ public final class SamlangIntrinsics$ {
     public final T6 value6;
     public final T7 value7;
     public final T8 value8;
-    public Tuple8(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8) {
+    public Tuple9(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -104,7 +126,8 @@ public final class SamlangIntrinsics$ {
       this.value8 = value8;
     }
   }
-  public static final class Tuple9<T1, T2, T3, T4, T5, T6, T7, T8, T9> {
+  public static final class Tuple10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -114,7 +137,8 @@ public final class SamlangIntrinsics$ {
     public final T7 value7;
     public final T8 value8;
     public final T9 value9;
-    public Tuple9(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9) {
+    public Tuple10(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -126,7 +150,8 @@ public final class SamlangIntrinsics$ {
       this.value9 = value9;
     }
   }
-  public static final class Tuple10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> {
+  public static final class Tuple11<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -137,7 +162,8 @@ public final class SamlangIntrinsics$ {
     public final T8 value8;
     public final T9 value9;
     public final T10 value10;
-    public Tuple10(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10) {
+    public Tuple11(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -150,7 +176,8 @@ public final class SamlangIntrinsics$ {
       this.value10 = value10;
     }
   }
-  public static final class Tuple11<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> {
+  public static final class Tuple12<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -162,7 +189,8 @@ public final class SamlangIntrinsics$ {
     public final T9 value9;
     public final T10 value10;
     public final T11 value11;
-    public Tuple11(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11) {
+    public Tuple12(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -176,7 +204,8 @@ public final class SamlangIntrinsics$ {
       this.value11 = value11;
     }
   }
-  public static final class Tuple12<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> {
+  public static final class Tuple13<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -189,7 +218,8 @@ public final class SamlangIntrinsics$ {
     public final T10 value10;
     public final T11 value11;
     public final T12 value12;
-    public Tuple12(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12) {
+    public Tuple13(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -204,7 +234,8 @@ public final class SamlangIntrinsics$ {
       this.value12 = value12;
     }
   }
-  public static final class Tuple13<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> {
+  public static final class Tuple14<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -218,7 +249,8 @@ public final class SamlangIntrinsics$ {
     public final T11 value11;
     public final T12 value12;
     public final T13 value13;
-    public Tuple13(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13) {
+    public Tuple14(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -234,7 +266,8 @@ public final class SamlangIntrinsics$ {
       this.value13 = value13;
     }
   }
-  public static final class Tuple14<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> {
+  public static final class Tuple15<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -249,7 +282,8 @@ public final class SamlangIntrinsics$ {
     public final T12 value12;
     public final T13 value13;
     public final T14 value14;
-    public Tuple14(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14) {
+    public Tuple15(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -266,7 +300,8 @@ public final class SamlangIntrinsics$ {
       this.value14 = value14;
     }
   }
-  public static final class Tuple15<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> {
+  public static final class Tuple16<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -282,7 +317,8 @@ public final class SamlangIntrinsics$ {
     public final T13 value13;
     public final T14 value14;
     public final T15 value15;
-    public Tuple15(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15) {
+    public Tuple16(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -300,7 +336,8 @@ public final class SamlangIntrinsics$ {
       this.value15 = value15;
     }
   }
-  public static final class Tuple16<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16> {
+  public static final class Tuple17<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -317,7 +354,8 @@ public final class SamlangIntrinsics$ {
     public final T14 value14;
     public final T15 value15;
     public final T16 value16;
-    public Tuple16(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15, T16 value16) {
+    public Tuple17(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15, T16 value16) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -336,7 +374,8 @@ public final class SamlangIntrinsics$ {
       this.value16 = value16;
     }
   }
-  public static final class Tuple17<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17> {
+  public static final class Tuple18<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -354,7 +393,8 @@ public final class SamlangIntrinsics$ {
     public final T15 value15;
     public final T16 value16;
     public final T17 value17;
-    public Tuple17(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15, T16 value16, T17 value17) {
+    public Tuple18(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15, T16 value16, T17 value17) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -374,7 +414,8 @@ public final class SamlangIntrinsics$ {
       this.value17 = value17;
     }
   }
-  public static final class Tuple18<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18> {
+  public static final class Tuple19<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -393,7 +434,8 @@ public final class SamlangIntrinsics$ {
     public final T16 value16;
     public final T17 value17;
     public final T18 value18;
-    public Tuple18(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15, T16 value16, T17 value17, T18 value18) {
+    public Tuple19(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15, T16 value16, T17 value17, T18 value18) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -414,7 +456,8 @@ public final class SamlangIntrinsics$ {
       this.value18 = value18;
     }
   }
-  public static final class Tuple19<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> {
+  public static final class Tuple20<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -434,7 +477,8 @@ public final class SamlangIntrinsics$ {
     public final T17 value17;
     public final T18 value18;
     public final T19 value19;
-    public Tuple19(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15, T16 value16, T17 value17, T18 value18, T19 value19) {
+    public Tuple20(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15, T16 value16, T17 value17, T18 value18, T19 value19) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -456,7 +500,8 @@ public final class SamlangIntrinsics$ {
       this.value19 = value19;
     }
   }
-  public static final class Tuple20<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20> {
+  public static final class Tuple21<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20> {
+    public final T0 value0;
     public final T1 value1;
     public final T2 value2;
     public final T3 value3;
@@ -477,7 +522,8 @@ public final class SamlangIntrinsics$ {
     public final T18 value18;
     public final T19 value19;
     public final T20 value20;
-    public Tuple20(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15, T16 value16, T17 value17, T18 value18, T19 value19, T20 value20) {
+    public Tuple21(T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15, T16 value16, T17 value17, T18 value18, T19 value19, T20 value20) {
+      this.value0 = value0;
       this.value1 = value1;
       this.value2 = value2;
       this.value3 = value3;
@@ -498,52 +544,6 @@ public final class SamlangIntrinsics$ {
       this.value18 = value18;
       this.value19 = value19;
       this.value20 = value20;
-    }
-  }
-  public static final class Tuple21<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21> {
-    public final T1 value1;
-    public final T2 value2;
-    public final T3 value3;
-    public final T4 value4;
-    public final T5 value5;
-    public final T6 value6;
-    public final T7 value7;
-    public final T8 value8;
-    public final T9 value9;
-    public final T10 value10;
-    public final T11 value11;
-    public final T12 value12;
-    public final T13 value13;
-    public final T14 value14;
-    public final T15 value15;
-    public final T16 value16;
-    public final T17 value17;
-    public final T18 value18;
-    public final T19 value19;
-    public final T20 value20;
-    public final T21 value21;
-    public Tuple21(T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6, T7 value7, T8 value8, T9 value9, T10 value10, T11 value11, T12 value12, T13 value13, T14 value14, T15 value15, T16 value16, T17 value17, T18 value18, T19 value19, T20 value20, T21 value21) {
-      this.value1 = value1;
-      this.value2 = value2;
-      this.value3 = value3;
-      this.value4 = value4;
-      this.value5 = value5;
-      this.value6 = value6;
-      this.value7 = value7;
-      this.value8 = value8;
-      this.value9 = value9;
-      this.value10 = value10;
-      this.value11 = value11;
-      this.value12 = value12;
-      this.value13 = value13;
-      this.value14 = value14;
-      this.value15 = value15;
-      this.value16 = value16;
-      this.value17 = value17;
-      this.value18 = value18;
-      this.value19 = value19;
-      this.value20 = value20;
-      this.value21 = value21;
     }
   }
   public interface Function0<R> { R apply(); }

@@ -79,17 +79,17 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         printer.indented {
             printWithBreak(x = "private SamlangIntrinsics$() {}")
             for (size in 1 until 22) {
-                val numberList = (1..size).toList()
+                val numberList = (0 until size).toList()
                 val argumentTypeParameters = numberList.joinToString(separator = ", ") { "T$it" }
                 printWithBreak(x = "public static final class Tuple$size<$argumentTypeParameters> {")
                 indented {
-                    for (i in 1..size) {
+                    for (i in 0 until size) {
                         printWithBreak(x = "public final T$i value$i;")
                     }
                     val parameters = numberList.joinToString(separator = ", ") { "T$it value$it" }
                     printWithBreak(x = "public Tuple$size($parameters) {")
                     indented {
-                        for (i in 1..size) {
+                        for (i in 0 until size) {
                             printWithBreak(x = "this.value$i = value$i;")
                         }
                     }
