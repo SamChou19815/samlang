@@ -1,6 +1,8 @@
 package samlang.compiler.java
 
 import samlang.ast.common.Sources
+import samlang.ast.common.Type
+import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrExpression.Companion.UNIT
 import samlang.ast.ir.IrExpression.Never
 import samlang.ast.ir.IrStatement
@@ -9,6 +11,7 @@ import samlang.ast.java.JavaOuterClass
 import samlang.ast.java.JavaStaticInnerClass
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Module
+import samlang.ast.ts.TsPattern
 import samlang.compiler.ir.lowerExpression
 
 fun compileToJavaSources(sources: Sources<Module>): Sources<JavaOuterClass> =
@@ -32,7 +35,18 @@ internal fun compileJavaMethod(classMember: ClassDefinition.MemberDefinition): J
     val body = if (bodyLoweringResult.expression == UNIT || bodyLoweringResult.expression == Never) {
         bodyLoweringResult.statements
     } else {
-        bodyLoweringResult.statements.plus(element = IrStatement.Return(expression = bodyLoweringResult.expression))
+        val additionStatementForFinalExpression =
+            if (classMember.body.type == Type.unit &&
+                bodyLoweringResult.expression is IrExpression.FunctionApplication) {
+                IrStatement.ConstantDefinition(
+                    pattern = TsPattern.WildCardPattern,
+                    typeAnnotation = Type.unit,
+                    assignedExpression = bodyLoweringResult.expression
+                )
+            } else {
+                IrStatement.Return(expression = bodyLoweringResult.expression)
+            }
+        bodyLoweringResult.statements.plus(element = additionStatementForFinalExpression)
     }
     return JavaMethod(
         isPublic = classMember.isPublic,
