@@ -78,6 +78,7 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
     override fun visitModuleMemberExpr(ctx: PLParser.ModuleMemberExprContext): Expression = Expression.ClassMember(
         range = ctx.range,
         type = Type.undecided(),
+        typeArguments = emptyList(), // At parsing time, the information is not resolved yet.
         className = ctx.UpperId().symbol.text,
         memberName = ctx.LowerId().symbol.text
     )

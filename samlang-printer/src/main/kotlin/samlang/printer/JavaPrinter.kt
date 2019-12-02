@@ -506,7 +506,15 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                 val (_, functionExpression, arguments) = expression
                 when (functionExpression) {
                     is ClassMember -> {
-                        printWithoutBreak(x = "${functionExpression.className}.${functionExpression.memberName}")
+                        val (_, typeArguments, className, memberName) = functionExpression
+                        if (typeArguments.isEmpty()) {
+                            printWithoutBreak(x = "$className.$memberName")
+                        } else {
+                            val typeArgumentString = typeArguments.joinToString(separator = ", ") {
+                                it.toJavaTypeString(boxed = true)
+                            }
+                            printWithoutBreak(x = "$className.<$typeArgumentString>$memberName")
+                        }
                         printFunctionCallArguments(arguments = arguments)
                     }
                     is MethodAccess -> {

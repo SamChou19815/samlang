@@ -120,14 +120,14 @@ private class ExpressionTypeCheckerVisitor(
     }
 
     override fun visit(expression: ClassMember, ctx: TypeCheckingContext, expectedType: Type): Expression {
-        val (range, _, moduleName, memberName) = expression
-        val locallyInferredType = ctx.getClassFunctionType(
+        val (range, _, _, moduleName, memberName) = expression
+        val (locallyInferredType, undecidedTypeArguments) = ctx.getClassFunctionType(
             module = moduleName, member = memberName, errorRange = range
         )
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = locallyInferredType, errorRange = range
         )
-        return expression.copy(type = constraintInferredType)
+        return expression.copy(type = constraintInferredType, typeArguments = undecidedTypeArguments)
     }
 
     override fun visit(

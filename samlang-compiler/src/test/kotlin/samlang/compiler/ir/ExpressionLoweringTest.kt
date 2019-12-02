@@ -49,8 +49,19 @@ class ExpressionLoweringTest : StringSpec() {
                 expectedExpression = IR_THIS
             )
             assertCorrectlyLowered(
-                expression = Expression.ClassMember(range = dummyRange, type = unit, className = "A", memberName = "b"),
-                expectedExpression = IrExpression.ClassMember(type = unit, className = "A", memberName = "b")
+                expression = Expression.ClassMember(
+                    range = dummyRange,
+                    type = unit,
+                    typeArguments = emptyList(),
+                    className = "A",
+                    memberName = "b"
+                ),
+                expectedExpression = IrExpression.ClassMember(
+                    type = unit,
+                    typeArguments = emptyList(),
+                    className = "A",
+                    memberName = "b"
+                )
             )
             assertCorrectlyLowered(
                 expression = Expression.TupleConstructor(

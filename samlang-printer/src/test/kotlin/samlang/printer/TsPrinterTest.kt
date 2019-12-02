@@ -685,6 +685,7 @@ class TsPrinterTest : StringSpec() {
                                             argumentTypes = listOf(element = Type.int),
                                             returnType = Type.bool
                                         ),
+                                        typeArguments = emptyList(),
                                         className = "Test",
                                         memberName = "foo"
                                     ), arguments = listOf(element = Companion.literal(value = 1))

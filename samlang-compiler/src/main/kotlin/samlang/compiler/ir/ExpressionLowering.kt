@@ -71,6 +71,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     override fun visit(expression: Expression.ClassMember, context: Unit): LoweringResult =
         ClassMember(
             type = expression.type,
+            typeArguments = expression.typeArguments,
             className = expression.className,
             memberName = expression.memberName
         ).asLoweringResult()

@@ -33,6 +33,7 @@ sealed class IrExpression(val precedence: Int) {
 
     data class ClassMember(
         override val type: Type,
+        val typeArguments: List<Type>,
         val className: String,
         val memberName: String
     ) : IrExpression(precedence = 0) {

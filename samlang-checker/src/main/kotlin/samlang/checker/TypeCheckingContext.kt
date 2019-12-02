@@ -89,16 +89,16 @@ data class TypeCheckingContext(
         module: String,
         member: String,
         errorRange: Range
-    ): Type {
+    ): Pair<Type, List<Type>> {
         val typeInfo = classes[module]?.functions?.get(member)?.takeIf { module == currentClass || it.isPublic }
             ?: throw UnresolvedNameError(unresolvedName = "$module::$member", range = errorRange)
         return if (typeInfo.typeParams == null) {
-            typeInfo.type
+            typeInfo.type to emptyList()
         } else {
-            val (typeWithParametersUndecided, _) = undecideTypeParameters(
+            val (typeWithParametersUndecided, typeParameters) = undecideTypeParameters(
                 type = typeInfo.type, typeParameters = typeInfo.typeParams
             )
-            typeWithParametersUndecided
+            typeWithParametersUndecided to typeParameters
         }
     }
 

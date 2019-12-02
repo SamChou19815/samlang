@@ -64,6 +64,7 @@ sealed class Expression(val precedence: Int) : Node {
     data class ClassMember(
         override val range: Range,
         override val type: Type,
+        val typeArguments: List<Type>,
         val className: String,
         val memberName: String
     ) : Expression(precedence = 0) {

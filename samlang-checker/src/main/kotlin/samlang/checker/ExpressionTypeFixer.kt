@@ -109,7 +109,12 @@ private class TypeFixerVisitor(
         expression.copy(type = expression.getFixedSelfType(expectedType = context))
 
     override fun visit(expression: ClassMember, context: Type): Expression =
-        expression.copy(type = expression.getFixedSelfType(expectedType = context))
+        expression.copy(
+            type = expression.getFixedSelfType(expectedType = context),
+            typeArguments = expression.typeArguments.map { typeArgument ->
+                typeArgument.fixSelf(expectedType = null, errorRange = expression.range)
+            }
+        )
 
     override fun visit(expression: TupleConstructor, context: Type): Expression {
         val newType = expression.type.fixSelf(expectedType = context, errorRange = expression.range) as TupleType
