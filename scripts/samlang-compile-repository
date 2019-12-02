@@ -16,8 +16,11 @@ echo '{
     "noEmit": true
   }
 }' > ./out/ts/tsconfig.json
-echo 'Checking generating TS code...'
+echo 'Checking generating TS code...' >&2
 tsc -p out/ts/tsconfig.json
 
 # Java
 ./samlang-dev -e "$EXCLUDE_PATTERN" compile --target java --output-directory ./out/java
+echo 'Checking generating Java code...' >&2
+javac ./out/java/*.java
+rm ./out/java/*.class
