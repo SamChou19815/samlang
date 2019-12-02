@@ -12,6 +12,18 @@ Read the docs at [the official documentation site](https://samlang-docs.develope
 
 Install the VSCode Extension at [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=dev-sam.vscode-samlang).
 
+## Language Features
+
+- Type Inference
+- First Class Functions
+- Pattern Matching
+
+## Supported Backends
+
+- TypeScript
+- JavaScript
+- Java
+
 ## Current Status
 
 - Type-checker finished
