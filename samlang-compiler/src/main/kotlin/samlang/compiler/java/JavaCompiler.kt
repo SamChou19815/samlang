@@ -1,7 +1,8 @@
 package samlang.compiler.java
 
 import samlang.ast.common.Sources
-import samlang.ast.ir.IrExpression
+import samlang.ast.ir.IrExpression.Companion.UNIT
+import samlang.ast.ir.IrExpression.Never
 import samlang.ast.ir.IrStatement
 import samlang.ast.java.JavaMethod
 import samlang.ast.java.JavaOuterClass
@@ -28,7 +29,7 @@ private fun compileJavaInnerStaticClass(classDefinition: ClassDefinition): JavaS
 
 internal fun compileJavaMethod(classMember: ClassDefinition.MemberDefinition): JavaMethod {
     val bodyLoweringResult = lowerExpression(expression = classMember.body)
-    val body = if (bodyLoweringResult.expression == IrExpression.UNIT) {
+    val body = if (bodyLoweringResult.expression == UNIT || bodyLoweringResult.expression == Never) {
         bodyLoweringResult.statements
     } else {
         bodyLoweringResult.statements.plus(element = IrStatement.Return(expression = bodyLoweringResult.expression))

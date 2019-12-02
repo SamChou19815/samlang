@@ -158,10 +158,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val result = expression.expression.lower()
         loweredStatements.addAll(elements = result.statements)
         loweredStatements.add(element = Throw(expression = result.expression))
-        return LoweringResult(
-            statements = loweredStatements,
-            expression = IrExpression.Never
-        )
+        return LoweringResult(statements = loweredStatements, expression = Never)
     }
 
     override fun visit(expression: Expression.FunctionApplication, context: Unit): LoweringResult {
@@ -299,7 +296,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.Lambda, context: Unit): LoweringResult {
         val result = expression.body.lower()
-        return if (result.expression == UNIT) {
+        return if (result.expression == UNIT || result.expression == Never) {
             Lambda(
                 type = expression.type,
                 parameters = expression.parameters,

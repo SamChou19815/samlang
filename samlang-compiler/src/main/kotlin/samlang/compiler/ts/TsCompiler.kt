@@ -6,7 +6,8 @@ import samlang.ast.common.Range
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
-import samlang.ast.ir.IrExpression
+import samlang.ast.ir.IrExpression.Companion.UNIT
+import samlang.ast.ir.IrExpression.Never
 import samlang.ast.ir.IrStatement
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Module
@@ -54,7 +55,7 @@ private fun compileTsFunction(
     classMember: ClassDefinition.MemberDefinition
 ): TsFunction {
     val bodyLoweringResult = lowerExpression(expression = classMember.body)
-    val body = if (bodyLoweringResult.expression == IrExpression.UNIT) {
+    val body = if (bodyLoweringResult.expression == UNIT || bodyLoweringResult.expression == Never) {
         bodyLoweringResult.statements
     } else {
         bodyLoweringResult.statements.plus(element = IrStatement.Return(expression = bodyLoweringResult.expression))

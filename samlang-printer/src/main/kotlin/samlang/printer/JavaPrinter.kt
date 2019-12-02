@@ -381,9 +381,6 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
         override fun visit(statement: Return) {
             val returnedExpression = statement.expression
-            if (returnedExpression == Never) {
-                return
-            }
             if (returnedExpression == null) {
                 printer.printWithBreak(x = "return;")
             } else {
