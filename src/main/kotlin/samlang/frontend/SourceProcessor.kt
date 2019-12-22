@@ -22,21 +22,18 @@ import samlang.util.createOrFail
 
 fun collectSourceHandles(sourceDirectory: File, exclude: String?): List<Pair<ModuleReference, InputStream>> {
     val sourcePath = sourceDirectory.toPath()
-    val sourceHandles = arrayListOf<Pair<ModuleReference, InputStream>>()
     val excludeGlobMatcher = exclude?.let { FileSystems.getDefault().getPathMatcher("glob:$it") }
-    sourceDirectory.walk().forEach { file ->
+    return sourceDirectory.walk().mapNotNull { file ->
         if (file.isDirectory || file.extension != "sam") {
-            return@forEach
+            return@mapNotNull null
         }
         val relativeFile = sourcePath.relativize(file.toPath()).toFile().normalize()
         if (excludeGlobMatcher != null && excludeGlobMatcher.matches(relativeFile.toPath())) {
-            return@forEach
+            return@mapNotNull null
         }
-        val moduleReference =
-            ModuleReference(parts = relativeFile.nameWithoutExtension.split("/").toList())
-        sourceHandles.add(element = moduleReference to file.inputStream())
-    }
-    return sourceHandles
+        val moduleReference = ModuleReference(parts = relativeFile.nameWithoutExtension.split(File.separator).toList())
+        moduleReference to file.inputStream()
+    }.toList()
 }
 
 fun typeCheckSources(sourceHandles: List<Pair<ModuleReference, InputStream>>): Sources<Module> {
