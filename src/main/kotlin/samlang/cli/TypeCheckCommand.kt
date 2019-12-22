@@ -1,7 +1,6 @@
 package samlang.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
-import com.github.ajalt.clikt.core.requireObject
 import java.io.File
 import kotlin.system.exitProcess
 import samlang.errors.CompilationFailedException
@@ -9,17 +8,15 @@ import samlang.frontend.collectSourceHandles
 import samlang.frontend.typeCheckSources
 
 class TypeCheckCommand : CliktCommand(name = "check") {
-
-    private val configuration: Configuration by requireObject()
-
     override fun run() {
+        val configuration = parseConfiguration()
         val sourceDirectory = File(configuration.sourceDirectory).absoluteFile
         if (!sourceDirectory.isDirectory) {
             echo(message = "$sourceDirectory is not a directory.", err = true)
             exitProcess(1)
         }
         echo(message = "Type checking sources in `${configuration.sourceDirectory}` ...", err = true)
-        val sourceHandles = collectSourceHandles(sourceDirectory = sourceDirectory, exclude = configuration.exclude)
+        val sourceHandles = collectSourceHandles(configuration = configuration)
         try {
             typeCheckSources(sourceHandles = sourceHandles)
             echo(message = "No errors.", err = true)

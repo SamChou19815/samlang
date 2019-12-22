@@ -1,11 +1,8 @@
 package samlang.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
-import com.github.ajalt.clikt.core.requireObject
-import com.github.ajalt.clikt.parameters.options.default
-import com.github.ajalt.clikt.parameters.options.option
-import com.github.ajalt.clikt.parameters.types.choice
 import java.io.File
+import java.nio.file.Paths
 import kotlin.system.exitProcess
 import samlang.errors.CompilationFailedException
 import samlang.frontend.collectSourceHandles
@@ -14,29 +11,20 @@ import samlang.frontend.compileTsSources
 import samlang.frontend.typeCheckSources
 
 class CompileCommand : CliktCommand(name = "compile") {
-    private val out: String by option(
-        "-o", "--output-directory",
-        help = "Output directory of compilation result, default to ./out."
-    ).default(value = "./out")
-    private val target: String by option("-t", "--target", help = "Compilation target")
-        .choice("ts", "js", "java")
-        .default(value = "ts")
-
-    private val configuration: Configuration by requireObject()
-
     override fun run() {
+        val configuration = parseConfiguration()
         val sourceDirectory = File(configuration.sourceDirectory).absoluteFile
         if (!sourceDirectory.isDirectory) {
             echo(message = "$sourceDirectory is not a directory.", err = true)
             exitProcess(1)
         }
-        val outputDirectory = File(out).absoluteFile
+        val outputDirectory = File(configuration.outputDirectory).absoluteFile
         if (outputDirectory.exists() && !outputDirectory.isDirectory) {
             echo(message = "$outputDirectory is not a directory.", err = true)
             exitProcess(1)
         }
         echo(message = "Compiling sources in `${configuration.sourceDirectory}` ...", err = true)
-        val sourceHandles = collectSourceHandles(sourceDirectory = sourceDirectory, exclude = configuration.exclude)
+        val sourceHandles = collectSourceHandles(configuration = configuration)
         val checkedSources = try {
             typeCheckSources(sourceHandles = sourceHandles)
         } catch (compilationFailedException: CompilationFailedException) {
@@ -45,10 +33,23 @@ class CompileCommand : CliktCommand(name = "compile") {
             errors.forEach { echo(message = it.errorMessage) }
             return
         }
-        when (target) {
-            "ts" -> compileTsSources(source = checkedSources, outputDirectory = outputDirectory, withType = true)
-            "js" -> compileTsSources(source = checkedSources, outputDirectory = outputDirectory, withType = false)
-            "java" -> compileJavaSources(source = checkedSources, outputDirectory = outputDirectory)
+        for (target in configuration.targets) {
+            when (target) {
+                "ts" -> compileTsSources(
+                    source = checkedSources,
+                    outputDirectory = Paths.get(outputDirectory.toString(), "ts").toFile(),
+                    withType = true
+                )
+                "js" -> compileTsSources(
+                    source = checkedSources,
+                    outputDirectory = Paths.get(outputDirectory.toString(), "js").toFile(),
+                    withType = false
+                )
+                "java" -> compileJavaSources(
+                    source = checkedSources,
+                    outputDirectory = Paths.get(outputDirectory.toString(), "java").toFile()
+                )
+            }
         }
     }
 }

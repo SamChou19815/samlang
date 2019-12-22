@@ -3,13 +3,9 @@
 # Fail on any integration test fail.
 set -e
 
-EXCLUDE_PATTERN="**/bad.*.sam"
-
-# JS
-./samlang-dev -e "$EXCLUDE_PATTERN" compile --target js --output-directory ./out/js
+./samlang-dev compile
 
 # TS
-./samlang-dev -e "$EXCLUDE_PATTERN" compile --target ts --output-directory ./out/ts
 echo '{
   "compilerOptions": {
     "rootDir": ".",
@@ -20,7 +16,6 @@ echo 'Checking generating TS code...' >&2
 tsc -p out/ts/tsconfig.json
 
 # Java
-./samlang-dev -e "$EXCLUDE_PATTERN" compile --target java --output-directory ./out/java
 echo 'Checking generating Java code...' >&2
 javac ./out/java/*.java
 rm ./out/java/*.class

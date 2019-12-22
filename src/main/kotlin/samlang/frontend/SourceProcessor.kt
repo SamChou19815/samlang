@@ -4,6 +4,7 @@ import java.io.File
 import java.io.InputStream
 import java.nio.file.FileSystems
 import java.nio.file.Paths
+import samlang.Configuration
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.ast.lang.Module
@@ -20,15 +21,17 @@ import samlang.printer.printTsIndexModule
 import samlang.printer.printTsModule
 import samlang.util.createOrFail
 
-fun collectSourceHandles(sourceDirectory: File, exclude: String?): List<Pair<ModuleReference, InputStream>> {
-    val sourcePath = sourceDirectory.toPath()
-    val excludeGlobMatcher = exclude?.let { FileSystems.getDefault().getPathMatcher("glob:$it") }
-    return sourceDirectory.walk().mapNotNull { file ->
+fun collectSourceHandles(configuration: Configuration): List<Pair<ModuleReference, InputStream>> {
+    val sourcePath = Paths.get(configuration.sourceDirectory)
+    val excludeGlobMatchers = configuration.excludes.map { glob ->
+        FileSystems.getDefault().getPathMatcher("glob:$glob")
+    }
+    return File(configuration.sourceDirectory).walk().mapNotNull { file ->
         if (file.isDirectory || file.extension != "sam") {
             return@mapNotNull null
         }
         val relativeFile = sourcePath.relativize(file.toPath()).toFile().normalize()
-        if (excludeGlobMatcher != null && excludeGlobMatcher.matches(relativeFile.toPath())) {
+        if (excludeGlobMatchers.any { it.matches(relativeFile.toPath()) }) {
             return@mapNotNull null
         }
         val moduleReference = ModuleReference(parts = relativeFile.nameWithoutExtension.split(File.separator).toList())
