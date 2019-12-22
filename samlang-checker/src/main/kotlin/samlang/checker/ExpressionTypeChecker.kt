@@ -41,6 +41,7 @@ import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.Pattern
 import samlang.errors.CollisionError
+import samlang.errors.CompileTimeError
 import samlang.errors.DuplicateFieldDeclarationError
 import samlang.errors.ExtraFieldInObjectError
 import samlang.errors.IllegalOtherClassFieldAccess
@@ -92,6 +93,11 @@ private class ExpressionTypeCheckerVisitor(
     private fun Expression.toChecked(ctx: TypeCheckingContext, expectedType: Type = this.type): Expression =
         this.toChecked(visitor = this@ExpressionTypeCheckerVisitor, context = ctx, expectedType = expectedType)
 
+    private fun Expression.errorWith(expectedType: Type, error: CompileTimeError): Expression {
+        errorCollector.add(compileTimeError = error)
+        return this.replaceTypeWithExpectedType(expectedType = expectedType)
+    }
+
     override fun visit(expression: Literal, ctx: TypeCheckingContext, expectedType: Type): Expression {
         constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = expression.type, errorRange = expression.range
@@ -101,7 +107,10 @@ private class ExpressionTypeCheckerVisitor(
     }
 
     override fun visit(expression: This, ctx: TypeCheckingContext, expectedType: Type): Expression {
-        val type = ctx.getLocalValueType(name = "this") ?: throw IllegalThisError(range = expression.range)
+        val type = ctx.getLocalValueType(name = "this") ?: return expression.errorWith(
+            expectedType = expectedType,
+            error = IllegalThisError(range = expression.range)
+        )
         // don't need the return value because the type must be exact
         constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = type, errorRange = expression.range
@@ -111,8 +120,10 @@ private class ExpressionTypeCheckerVisitor(
 
     override fun visit(expression: Variable, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, _, name) = expression
-        val locallyInferredType =
-            ctx.getLocalValueType(name = name) ?: throw UnresolvedNameError(unresolvedName = name, range = range)
+        val locallyInferredType = ctx.getLocalValueType(name = name) ?: return expression.errorWith(
+            expectedType = expectedType,
+            error = UnresolvedNameError(unresolvedName = name, range = range)
+        )
         val inferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = locallyInferredType, errorRange = range
         )
@@ -160,10 +171,7 @@ private class ExpressionTypeCheckerVisitor(
                     val type = checkedExpression.type
                     val name = fieldDeclaration.name
                     if (declaredFieldTypes.put(key = name, value = type) != null) {
-                        throw DuplicateFieldDeclarationError(
-                            fieldName = name,
-                            range = fieldDeclaration.range
-                        )
+                        throw DuplicateFieldDeclarationError(fieldName = name, range = fieldDeclaration.range)
                     }
                     checkedDeclarations.add(fieldDeclaration.copy(type = type, expression = checkedExpression))
                 }
@@ -174,10 +182,7 @@ private class ExpressionTypeCheckerVisitor(
                         .toChecked(ctx = ctx)
                     val type = checkedExpr.type
                     if (declaredFieldTypes.put(key = name, value = type) != null) {
-                        throw DuplicateFieldDeclarationError(
-                            fieldName = name,
-                            range = fieldDeclaration.range
-                        )
+                        throw DuplicateFieldDeclarationError(fieldName = name, range = fieldDeclaration.range)
                     }
                     checkedDeclarations.add(fieldDeclaration.copy(type = type))
                 }
@@ -194,7 +199,10 @@ private class ExpressionTypeCheckerVisitor(
         val (range, _, spreadExpression, fieldDeclarations) = expression
         val (_, _, typeParameters, typeMappings) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
-            ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = range)
+            ?: return expression.errorWith(
+                expectedType = expectedType,
+                error = UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = range)
+            )
         val checkedSpreadExpression = spreadExpression?.toChecked(ctx = ctx)
         val (declaredFieldTypes, checkedDeclarations) = typeCheckFieldDeclarations(
             fieldDeclarations = fieldDeclarations, ctx = ctx
@@ -206,9 +214,9 @@ private class ExpressionTypeCheckerVisitor(
             // In this case, keys does not need to perfectly match because we have fall back.
             for ((k, actualType) in declaredFieldTypes) {
                 val nameRange = nameRangeMap[k] ?: error("Name not found!")
-                val expectedFieldType = typeMappings[k] ?: throw ExtraFieldInObjectError(
-                    extraField = k,
-                    range = nameRange
+                val expectedFieldType = typeMappings[k] ?: return expression.errorWith(
+                    expectedType = expectedType,
+                    error = ExtraFieldInObjectError(extraField = k, range = nameRange)
                 )
                 checkedMappings[k] = constraintAwareTypeChecker.checkAndInfer(
                     expectedType = expectedFieldType, actualType = actualType, errorRange = nameRange
@@ -218,10 +226,13 @@ private class ExpressionTypeCheckerVisitor(
         } else {
             // In this case, all keys must perfectly match because we have no fall back
             if (typeMappings.keys != declaredFieldTypes.keys) {
-                throw InconsistentFieldsInObjectError(
-                    expectedFields = typeMappings.keys,
-                    actualFields = declaredFieldTypes.keys,
-                    range = expression.range
+                return expression.errorWith(
+                    expectedType = expectedType,
+                    error = InconsistentFieldsInObjectError(
+                        expectedFields = typeMappings.keys,
+                        actualFields = declaredFieldTypes.keys,
+                        range = expression.range
+                    )
                 )
             }
             val (genericsResolvedTypeMappings, autoGeneratedUndecidedTypes) = undecideTypeParameters(
@@ -266,9 +277,15 @@ private class ExpressionTypeCheckerVisitor(
         val (range, _, tag, data) = expression
         val (_, _, typeParameters, typeMappings) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == VARIANT }
-            ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = VARIANT, range = range)
+            ?: return expression.errorWith(
+                expectedType = expectedType,
+                error = UnsupportedClassTypeDefinitionError(typeDefinitionType = VARIANT, range = range)
+            )
         val checkedData = data.toChecked(ctx = ctx)
-        val associatedDataType = typeMappings[tag] ?: throw UnresolvedNameError(unresolvedName = tag, range = range)
+        val associatedDataType = typeMappings[tag] ?: return expression.errorWith(
+            expectedType = expectedType,
+            error = UnresolvedNameError(unresolvedName = tag, range = range)
+        )
         val (genericsResolvedAssociatedDataType, autoGeneratedUndecidedTypes) = undecideTypeParameters(
             type = associatedDataType,
             typeParameters = typeParameters
@@ -294,7 +311,10 @@ private class ExpressionTypeCheckerVisitor(
         val (range, _, assignedExpression, fieldName) = expression
         val (_, _, typeParameters, _) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
-            ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = range)
+            ?: return expression.errorWith(
+                expectedType = expectedType,
+                error = UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = range)
+            )
         val expectedFieldType = IdentifierType(
             identifier = ctx.currentClass,
             typeArguments = Type.undecidedList(number = typeParameters.size)
@@ -306,9 +326,9 @@ private class ExpressionTypeCheckerVisitor(
             typeDefinitionType = OBJECT,
             errorRange = assignedExpression.range
         )
-        val locallyInferredFieldType = fieldMappings[fieldName] ?: throw UnresolvedNameError(
-            unresolvedName = fieldName,
-            range = range
+        val locallyInferredFieldType = fieldMappings[fieldName] ?: return expression.errorWith(
+            expectedType = expectedType,
+            error = UnresolvedNameError(unresolvedName = fieldName, range = range)
         )
         val constraintInferredFieldType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = locallyInferredFieldType, errorRange = expression.range
@@ -320,10 +340,13 @@ private class ExpressionTypeCheckerVisitor(
         val (range, _, expressionToCallMethod, methodName) = expression
         val checkedExpression = expressionToCallMethod.toChecked(ctx = ctx)
         val (checkedExprTypeIdentifier, checkedExprTypeArguments) = checkedExpression.type as? IdentifierType
-            ?: throw UnexpectedTypeKindError(
-                expectedTypeKind = "identifier",
-                actualType = checkedExpression.type,
-                range = expressionToCallMethod.range
+            ?: return expression.errorWith(
+                expectedType = expectedType,
+                error = UnexpectedTypeKindError(
+                    expectedTypeKind = "identifier",
+                    actualType = checkedExpression.type,
+                    range = expressionToCallMethod.range
+                )
             )
         val locallyInferredType = ctx.getClassMethodType(
             module = checkedExprTypeIdentifier,
@@ -369,10 +392,13 @@ private class ExpressionTypeCheckerVisitor(
         )
         val checkedFunctionExpression = functionExpression.toChecked(ctx = ctx, expectedType = expectedTypeForFunction)
         val (locallyInferredArgTypes, locallyInferredReturnType) = checkedFunctionExpression.type as? FunctionType
-            ?: throw UnexpectedTypeKindError(
-                expectedTypeKind = "function",
-                actualType = checkedFunctionExpression.type,
-                range = functionExpression.range
+            ?: return expression.errorWith(
+                expectedType = expectedType,
+                error = UnexpectedTypeKindError(
+                    expectedTypeKind = "function",
+                    actualType = checkedFunctionExpression.type,
+                    range = functionExpression.range
+                )
             )
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = locallyInferredReturnType, errorRange = range
@@ -450,17 +476,26 @@ private class ExpressionTypeCheckerVisitor(
                     errorRange = matchedExpression.range
                 )
             }
-            is UndecidedType -> throw InsufficientTypeInferenceContextError(checkedMatchedExpression.range)
-            else -> throw UnexpectedTypeKindError(
-                expectedTypeKind = "identifier",
-                actualType = checkedMatchedExpressionType,
-                range = matchedExpression.range
+            is UndecidedType -> return expression.errorWith(
+                expectedType = expectedType,
+                error = InsufficientTypeInferenceContextError(checkedMatchedExpression.range)
+            )
+            else -> return expression.errorWith(
+                expectedType = expectedType,
+                error = UnexpectedTypeKindError(
+                    expectedTypeKind = "identifier",
+                    actualType = checkedMatchedExpressionType,
+                    range = matchedExpression.range
+                )
             )
         }
         val unusedMappings = variantMappings.toMutableMap()
         val checkedMatchingList = matchingList.map { (range, tag, dataVariable, correspondingExpr) ->
             val mappingDataType = unusedMappings[tag]
-                ?: throw UnresolvedNameError(unresolvedName = tag, range = range)
+                ?: return expression.errorWith(
+                    expectedType = expectedType,
+                    error = UnresolvedNameError(unresolvedName = tag, range = range)
+                )
             val newContext = dataVariable?.let {
                 ctx.addLocalValueType(name = it, type = mappingDataType, errorRange = range)
             } ?: ctx
@@ -490,7 +525,10 @@ private class ExpressionTypeCheckerVisitor(
         val names = hashSetOf<String>()
         for ((name, _) in arguments) {
             if (!names.add(name)) {
-                throw CollisionError(collidedName = name, range = range)
+                return expression.errorWith(
+                    expectedType = expectedType,
+                    error = CollisionError(collidedName = name, range = range)
+                )
             }
         }
         // setting up types and update context
@@ -524,10 +562,13 @@ private class ExpressionTypeCheckerVisitor(
         val checkedAssignedExprType = checkedAssignedExpr.type
         val newContext = when (pattern) {
             is Pattern.TuplePattern -> {
-                val tupleType = checkedAssignedExprType as? TupleType ?: throw UnexpectedTypeKindError(
-                    expectedTypeKind = "tuple",
-                    actualType = checkedAssignedExprType,
-                    range = assignedExpr.range
+                val tupleType = checkedAssignedExprType as? TupleType ?: return expression.errorWith(
+                    expectedType = expectedType,
+                    error = UnexpectedTypeKindError(
+                        expectedTypeKind = "tuple",
+                        actualType = checkedAssignedExprType,
+                        range = assignedExpr.range
+                    )
                 )
                 SizeMismatchError.check(
                     sizeDescription = "tuple",
@@ -543,15 +584,21 @@ private class ExpressionTypeCheckerVisitor(
             }
             is Pattern.ObjectPattern -> {
                 val identifierType = checkedAssignedExprType as? IdentifierType
-                    ?: throw UnexpectedTypeKindError(
-                        expectedTypeKind = "identifier",
-                        actualType = checkedAssignedExprType,
-                        range = assignedExpr.range
+                    ?: return expression.errorWith(
+                        expectedType = expectedType,
+                        error = UnexpectedTypeKindError(
+                            expectedTypeKind = "identifier",
+                            actualType = checkedAssignedExprType,
+                            range = assignedExpr.range
+                        )
                     )
                 if (identifierType.identifier != ctx.currentClass) {
-                    throw IllegalOtherClassFieldAccess(
-                        className = identifierType.identifier,
-                        range = pattern.range
+                    return expression.errorWith(
+                        expectedType = expectedType,
+                        error = IllegalOtherClassFieldAccess(
+                            className = identifierType.identifier,
+                            range = pattern.range
+                        )
                     )
                 }
                 val fieldMappings = ClassTypeDefinitionResolver.getTypeDefinition(
@@ -562,7 +609,10 @@ private class ExpressionTypeCheckerVisitor(
                 )
                 pattern.destructedNames.fold(initial = ctx) { context, (originalName, renamedName) ->
                     val fieldType = fieldMappings[originalName]
-                        ?: throw UnresolvedNameError(unresolvedName = originalName, range = pattern.range)
+                        ?: return expression.errorWith(
+                            expectedType = expectedType,
+                            error = UnresolvedNameError(unresolvedName = originalName, range = pattern.range)
+                        )
                     val nameToBeUsed = renamedName ?: originalName
                     context.addLocalValueType(name = nameToBeUsed, type = fieldType, errorRange = pattern.range)
                 }
