@@ -9,8 +9,8 @@ package samlang
  * @param targets compilation targets, default to type checking only (empty list).
  */
 data class Configuration(
-    val sourceDirectory: String = ".",
-    val outputDirectory: String = "out",
-    val excludes: List<String> = emptyList(),
-    val targets: List<String> = emptyList()
+    val sourceDirectory: String,
+    val outputDirectory: String,
+    val excludes: List<String>,
+    val targets: Set<String>
 )
