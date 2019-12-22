@@ -9,12 +9,18 @@ import samlang.ast.common.Range
  *
  * @param E type of the entity to lookup against location.
  */
-class LocationLookup<E> {
+class LocationLookup<E : Any> {
 
     /**
      * Mapping from source path to a list of (entity, position range of entity)
      */
     private val locationTable: MutableMap<String, MutableMap<Range, E>> = mutableMapOf()
+
+    fun get(sourcePath: String, position: Position): E? {
+        val location = getBestLocation(sourcePath = sourcePath, position = position) ?: return null
+        val localTable = locationTable[location.sourcePath] ?: error(message = "Bad getBestLocation implementation!")
+        return localTable[location.range] ?: error(message = "Bad getBestLocation implementation!")
+    }
 
     operator fun set(location: Location, entity: E) {
         val (sourcePath, range) = location

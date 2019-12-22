@@ -16,17 +16,25 @@ class LocationLookupTest : StringSpec() {
             lookup[location] = Unit
             lookup.getBestLocation(sourcePath = "foo", position = range.start) shouldBe location
             lookup.getBestLocation(sourcePath = "foo", position = range.end) shouldBe location
+            lookup.getBestLocation(sourcePath = "foo", position = Position(line = 100, column = 100)) shouldBe null
+            lookup.get(sourcePath = "foo", position = range.start) shouldBe Unit
+            lookup.get(sourcePath = "foo", position = range.end) shouldBe Unit
+            lookup.get(sourcePath = "foo", position = Position(line = 100, column = 100)) shouldBe null
         }
-        "getBestLocation favors small range." {
-            val lookup = LocationLookup<Unit>()
+        "get favors small range." {
+            val lookup = LocationLookup<Int>()
             val smallRange = Range(start = Position(line = 2, column = 1), end = Position(line = 3, column = 2))
             val smallLocation = Location(sourcePath = "foo", range = smallRange)
             val bigRange = Range(start = Position(line = 1, column = 1), end = Position(line = 30, column = 2))
             val bigLocation = Location(sourcePath = "foo", range = bigRange)
-            lookup[smallLocation] = Unit
-            lookup[bigLocation] = Unit
+            lookup[smallLocation] = 1
+            lookup[bigLocation] = 2
             lookup.getBestLocation(sourcePath = "foo", position = Position(line = 3, column = 1)) shouldBe smallLocation
             lookup.getBestLocation(sourcePath = "foo", position = Position(line = 10, column = 2)) shouldBe bigLocation
+            lookup.getBestLocation(sourcePath = "foo", position = Position(line = 100, column = 100)) shouldBe null
+            lookup.get(sourcePath = "foo", position = Position(line = 3, column = 1)) shouldBe 1
+            lookup.get(sourcePath = "foo", position = Position(line = 10, column = 2)) shouldBe 2
+            lookup.get(sourcePath = "foo", position = Position(line = 100, column = 100)) shouldBe null
         }
     }
 }
