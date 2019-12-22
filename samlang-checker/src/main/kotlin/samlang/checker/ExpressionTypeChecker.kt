@@ -503,8 +503,10 @@ private class ExpressionTypeCheckerVisitor(
                     expectedType = expectedType,
                     error = UnresolvedNameError(unresolvedName = tag, range = range)
                 )
-            val newContext = dataVariable?.let {
-                ctx.addLocalValueType(name = it, type = mappingDataType, errorRange = range)
+            val newContext = dataVariable?.let { name ->
+                ctx.addLocalValueType(name = name, type = mappingDataType) {
+                    errorCollector.add(compileTimeError = CollisionError(collidedName = name, range = range))
+                }
             } ?: ctx
             unusedMappings.remove(key = tag)
             Match.VariantPatternToExpr(
@@ -542,8 +544,9 @@ private class ExpressionTypeCheckerVisitor(
         var currentContext = ctx
         val checkedArguments = arguments.map { (argumentName, argumentType) ->
             val checkedArgumentType = argumentType.validate(context = ctx, errorRange = range)
-            currentContext =
-                currentContext.addLocalValueType(name = argumentName, type = checkedArgumentType, errorRange = range)
+            currentContext = currentContext.addLocalValueType(name = argumentName, type = checkedArgumentType) {
+                errorCollector.add(compileTimeError = CollisionError(collidedName = argumentName, range = range))
+            }
             argumentName to checkedArgumentType
         }
         val checkedBody = body.toChecked(ctx = currentContext, expectedType = functionType.returnType)
@@ -586,7 +589,9 @@ private class ExpressionTypeCheckerVisitor(
                 pattern.destructedNames.zip(tupleType.mappings).asSequence().mapNotNull { (nameWithPosOpt, t) ->
                     if (nameWithPosOpt == null) null else nameWithPosOpt to t
                 }.fold(initial = ctx) { context, (name, elementType) ->
-                    context.addLocalValueType(name = name, type = elementType, errorRange = pattern.range)
+                    context.addLocalValueType(name = name, type = elementType) {
+                        errorCollector.add(CollisionError(collidedName = name, range = pattern.range))
+                    }
                 }
             }
             is Pattern.ObjectPattern -> {
@@ -621,12 +626,16 @@ private class ExpressionTypeCheckerVisitor(
                             error = UnresolvedNameError(unresolvedName = originalName, range = pattern.range)
                         )
                     val nameToBeUsed = renamedName ?: originalName
-                    context.addLocalValueType(name = nameToBeUsed, type = fieldType, errorRange = pattern.range)
+                    context.addLocalValueType(name = nameToBeUsed, type = fieldType) {
+                        errorCollector.add(CollisionError(collidedName = nameToBeUsed, range = pattern.range))
+                    }
                 }
             }
             is Pattern.VariablePattern -> {
                 val (p, n) = pattern
-                ctx.addLocalValueType(name = n, type = checkedAssignedExprType, errorRange = p)
+                ctx.addLocalValueType(name = n, type = checkedAssignedExprType) {
+                    errorCollector.add(compileTimeError = CollisionError(collidedName = n, range = p))
+                }
             }
             is Pattern.WildCardPattern -> ctx
         }

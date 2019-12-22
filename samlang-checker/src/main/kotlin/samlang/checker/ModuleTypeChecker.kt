@@ -6,20 +6,13 @@ import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Module
 import samlang.errors.CollisionError
-import samlang.util.Either
 
 class ModuleTypeChecker(val errorCollector: ErrorCollector) {
 
     fun typeCheck(module: Module, typeCheckingContext: TypeCheckingContext): Pair<Module, TypeCheckingContext> {
         // First pass: add type definitions to classDefinitions
         var currentContext = module.classDefinitions.fold(initial = typeCheckingContext) { context, definition ->
-            when (val result = context.addClassTypeDefinition(classDefinition = definition)) {
-                is Either.Left -> result.v
-                is Either.Right -> {
-                    errorCollector.add(compileTimeError = result.v)
-                    context
-                }
-            }
+            context.addClassTypeDefinition(classDefinition = definition, errorCollector = errorCollector)
         }
         // Second pass: validating module's top level properties, excluding whether member's types are well-defined.
         val passedTypeValidationClasses = module.classDefinitions.filter { classDefinition ->
@@ -73,20 +66,16 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
         // We consistently put passedCheck on the right hand side to avoid short-circuiting.
         // In this way, we can report as many errors as possible.
         val (range, _, typeParameters, mappings) = typeDefinition
-        passedCheck = errorCollector.passCheck { typeParameters.checkNameCollision(range = range) } && passedCheck
-        passedCheck = errorCollector.passCheck { mappings.keys.checkNameCollision(range = range) } && passedCheck
+        passedCheck = typeParameters.checkNameCollision(range = range) && passedCheck
+        passedCheck = mappings.keys.checkNameCollision(range = range) && passedCheck
         passedCheck = mappings.values.fold(initial = passedCheck) { previouslyPassedCheck, type ->
             errorCollector.passCheck {
                 type.validate(context = typeCheckingContext, errorRange = range)
             } && previouslyPassedCheck
         }
-        passedCheck = errorCollector.passCheck {
-            checkNameCollision(namesWithRange = classMembers.map { it.name to it.nameRange })
-        } && passedCheck
+        passedCheck = checkNameCollision(namesWithRange = classMembers.map { it.name to it.nameRange }) && passedCheck
         passedCheck = classMembers.fold(initial = passedCheck) { previouslyPassedCheck, moduleMember ->
-            errorCollector.passCheck {
-                moduleMember.typeParameters.checkNameCollision(range = moduleMember.range)
-            } && previouslyPassedCheck
+            moduleMember.typeParameters.checkNameCollision(range = moduleMember.range) && previouslyPassedCheck
         }
         return passedCheck
     }
@@ -133,7 +122,9 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
         contextForTypeCheckingBody = contextForTypeCheckingBody.addLocalGenericTypes(genericTypes = typeParameters)
         contextForTypeCheckingBody = parameters.fold(initial = contextForTypeCheckingBody) { tempContext, parameter ->
             val parameterType = parameter.type.validate(context = tempContext, errorRange = parameter.typeRange)
-            tempContext.addLocalValueType(name = parameter.name, type = parameterType, errorRange = parameter.nameRange)
+            tempContext.addLocalValueType(name = parameter.name, type = parameterType) {
+                errorCollector.add(CollisionError(collidedName = parameter.name, range = parameter.nameRange))
+            }
         }
         val checkedBody = body.typeCheck(
             errorCollector = errorCollector,
@@ -143,21 +134,25 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
         return memberDefinition.copy(body = checkedBody)
     }
 
-    private fun Collection<String>.checkNameCollision(range: Range) {
+    private fun Collection<String>.checkNameCollision(range: Range): Boolean {
         val nameSet = hashSetOf<String>()
         forEach { name ->
             if (!nameSet.add(element = name)) {
-                throw CollisionError(collidedName = name, range = range)
+                errorCollector.add(compileTimeError = CollisionError(collidedName = name, range = range))
+                return false
             }
         }
+        return true
     }
 
-    private fun checkNameCollision(namesWithRange: Collection<Pair<String, Range>>) {
+    private fun checkNameCollision(namesWithRange: Collection<Pair<String, Range>>): Boolean {
         val nameSet = hashSetOf<String>()
         namesWithRange.forEach { (name, range) ->
             if (!nameSet.add(element = name)) {
-                throw CollisionError(collidedName = name, range = range)
+                errorCollector.add(compileTimeError = CollisionError(collidedName = name, range = range))
+                return false
             }
         }
+        return true
     }
 }

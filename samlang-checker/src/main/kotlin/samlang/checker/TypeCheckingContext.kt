@@ -12,7 +12,6 @@ import samlang.errors.CollisionError
 import samlang.errors.NotWellDefinedIdentifierError
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnresolvedNameError
-import samlang.util.Either
 
 data class TypeCheckingContext(
     val classes: PersistentMap<String, ClassType>,
@@ -31,24 +30,23 @@ data class TypeCheckingContext(
 
     private fun addNewClassTypeDefinition(
         name: String,
-        nameRange: Range,
-        typeDefinition: TypeDefinition
-    ): Either<TypeCheckingContext, CollisionError> {
+        typeDefinition: TypeDefinition,
+        onCollision: () -> Unit
+    ): TypeCheckingContext {
         if (classes.containsKey(key = name)) {
-            return Either.Right(v = CollisionError(collidedName = name, range = nameRange))
+            onCollision()
+            return this
         }
         val newModuleType = ClassType(
             typeDefinition = typeDefinition,
             functions = persistentMapOf(),
             methods = persistentMapOf()
         )
-        return Either.Left(
-            v = TypeCheckingContext(
+        return TypeCheckingContext(
             classes = classes.put(key = name, value = newModuleType),
             currentClass = name,
             localGenericTypes = localGenericTypes.addAll(elements = typeDefinition.typeParameters),
             localValues = localValues
-        )
         )
     }
 
@@ -56,12 +54,13 @@ data class TypeCheckingContext(
      * @return a new context with [classDefinition]'s type definition without [classDefinition]'s members.
      * It does not check validity of types of the given [classDefinition].
      */
-    fun addClassTypeDefinition(classDefinition: ClassDefinition): Either<TypeCheckingContext, CollisionError> =
-        addNewClassTypeDefinition(
-            name = classDefinition.name,
-            nameRange = classDefinition.nameRange,
-            typeDefinition = classDefinition.typeDefinition
-        )
+    fun addClassTypeDefinition(classDefinition: ClassDefinition, errorCollector: ErrorCollector): TypeCheckingContext {
+        val name = classDefinition.name
+        val nameRange = classDefinition.nameRange
+        return addNewClassTypeDefinition(name = name, typeDefinition = classDefinition.typeDefinition) {
+            errorCollector.add(compileTimeError = CollisionError(collidedName = name, range = nameRange))
+        }
+    }
 
     fun addMembersAndMethodsToCurrentClass(
         members: List<Triple<String, Boolean, TypeInfo>>
@@ -168,9 +167,10 @@ data class TypeCheckingContext(
         )
     }
 
-    fun addLocalValueType(name: String, type: Type, errorRange: Range): TypeCheckingContext {
+    fun addLocalValueType(name: String, type: Type, onCollision: () -> Unit): TypeCheckingContext {
         if (localValues.containsKey(name)) {
-            throw CollisionError(collidedName = name, range = errorRange)
+            onCollision()
+            return this
         }
         return copy(localValues = localValues.put(key = name, value = type))
     }
