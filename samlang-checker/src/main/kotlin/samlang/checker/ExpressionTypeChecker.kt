@@ -52,6 +52,7 @@ import samlang.errors.SizeMismatchError
 import samlang.errors.UnexpectedTypeKindError
 import samlang.errors.UnresolvedNameError
 import samlang.errors.UnsupportedClassTypeDefinitionError
+import samlang.util.Either
 
 internal fun Expression.typeCheck(
     errorCollector: ErrorCollector,
@@ -161,7 +162,7 @@ private class ExpressionTypeCheckerVisitor(
     private fun typeCheckFieldDeclarations(
         fieldDeclarations: List<FieldConstructor>,
         ctx: TypeCheckingContext
-    ): Pair<Map<String, Type>, List<FieldConstructor>> {
+    ): Either<Pair<Map<String, Type>, List<FieldConstructor>>, DuplicateFieldDeclarationError> {
         val declaredFieldTypes = mutableMapOf<String, Type>()
         val checkedDeclarations = arrayListOf<FieldConstructor>()
         for (fieldDeclaration in fieldDeclarations) {
@@ -171,7 +172,9 @@ private class ExpressionTypeCheckerVisitor(
                     val type = checkedExpression.type
                     val name = fieldDeclaration.name
                     if (declaredFieldTypes.put(key = name, value = type) != null) {
-                        throw DuplicateFieldDeclarationError(fieldName = name, range = fieldDeclaration.range)
+                        return Either.Right(
+                            v = DuplicateFieldDeclarationError(fieldName = name, range = fieldDeclaration.range)
+                        )
                     }
                     checkedDeclarations.add(fieldDeclaration.copy(type = type, expression = checkedExpression))
                 }
@@ -182,13 +185,15 @@ private class ExpressionTypeCheckerVisitor(
                         .toChecked(ctx = ctx)
                     val type = checkedExpr.type
                     if (declaredFieldTypes.put(key = name, value = type) != null) {
-                        throw DuplicateFieldDeclarationError(fieldName = name, range = fieldDeclaration.range)
+                        return Either.Right(
+                            v = DuplicateFieldDeclarationError(fieldName = name, range = fieldDeclaration.range)
+                        )
                     }
                     checkedDeclarations.add(fieldDeclaration.copy(type = type))
                 }
             }
         }
-        return declaredFieldTypes to checkedDeclarations
+        return Either.Left(v = declaredFieldTypes to checkedDeclarations)
     }
 
     override fun visit(
@@ -204,9 +209,11 @@ private class ExpressionTypeCheckerVisitor(
                 error = UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = range)
             )
         val checkedSpreadExpression = spreadExpression?.toChecked(ctx = ctx)
-        val (declaredFieldTypes, checkedDeclarations) = typeCheckFieldDeclarations(
-            fieldDeclarations = fieldDeclarations, ctx = ctx
-        )
+        val (declaredFieldTypes, checkedDeclarations) =
+            when (val result = typeCheckFieldDeclarations(fieldDeclarations = fieldDeclarations, ctx = ctx)) {
+                is Either.Left -> result.v
+                is Either.Right -> return expression.errorWith(expectedType = expectedType, error = result.v)
+            }
         val checkedMappings = hashMapOf<String, Type>()
         // used to quickly get the range where one declaration goes wrong
         val nameRangeMap = fieldDeclarations.asSequence().map { it.name to it.range }.toMap()
