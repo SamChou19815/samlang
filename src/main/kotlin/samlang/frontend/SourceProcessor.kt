@@ -2,6 +2,7 @@ package samlang.frontend
 
 import java.io.File
 import java.io.InputStream
+import java.nio.file.FileSystems
 import java.nio.file.Paths
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
@@ -22,13 +23,13 @@ import samlang.util.createOrFail
 fun collectSourceHandles(sourceDirectory: File, exclude: String?): List<Pair<ModuleReference, InputStream>> {
     val sourcePath = sourceDirectory.toPath()
     val sourceHandles = arrayListOf<Pair<ModuleReference, InputStream>>()
-    val excludeRegex = exclude?.let { Regex(it) }
+    val excludeGlobMatcher = exclude?.let { FileSystems.getDefault().getPathMatcher("glob:$it") }
     sourceDirectory.walk().forEach { file ->
         if (file.isDirectory || file.extension != "sam") {
             return@forEach
         }
         val relativeFile = sourcePath.relativize(file.toPath()).toFile().normalize()
-        if (excludeRegex != null && relativeFile.toString().matches(regex = excludeRegex)) {
+        if (excludeGlobMatcher != null && excludeGlobMatcher.matches(relativeFile.toPath())) {
             return@forEach
         }
         val moduleReference =

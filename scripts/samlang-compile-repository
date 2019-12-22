@@ -3,7 +3,7 @@
 # Fail on any integration test fail.
 set -e
 
-EXCLUDE_PATTERN=".*/samlang/programs/bad\..*"
+EXCLUDE_PATTERN="**/bad.*.sam"
 
 # JS
 ./samlang-dev -e "$EXCLUDE_PATTERN" compile --target js --output-directory ./out/js
