@@ -2,11 +2,8 @@ package samlang.server
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
-import java.util.concurrent.ThreadFactory
 
 class WebDemoControllerTest : StringSpec() {
-
-    private val threadFactory: ThreadFactory = ThreadFactory { runnable -> Thread(runnable) }
 
     init {
         "good-program-gets-good-result" {
@@ -16,8 +13,7 @@ class WebDemoControllerTest : StringSpec() {
                     class Main {
                         function main(): int = 42
                     }
-                """.trimIndent(),
-                threadFactory = threadFactory
+                """.trimIndent()
             )
             resp.type shouldBe WebDemoController.Type.GOOD_PROGRAM
             (resp.detail as WebDemoController.SuccessResponseDetail).result shouldBe "Value: 42"
@@ -29,10 +25,8 @@ class WebDemoControllerTest : StringSpec() {
                     class Main {
                         function main(): int = Main::main()
                     }
-                """.trimIndent(),
-                threadFactory = threadFactory
+                """.trimIndent()
             )
-            println()
             resp.type shouldBe WebDemoController.Type.GOOD_PROGRAM
             (resp.detail as WebDemoController.SuccessResponseDetail).result shouldBe "Panic: StackOverflowException"
         }
@@ -48,15 +42,13 @@ class WebDemoControllerTest : StringSpec() {
 
                         function main(): int = Main::fib(300)
                     }
-                """.trimIndent(),
-                threadFactory = threadFactory
+                """.trimIndent()
             )
-            println()
             resp.type shouldBe WebDemoController.Type.GOOD_PROGRAM
             (resp.detail as WebDemoController.SuccessResponseDetail).result shouldBe "Panic: TimeLimitExceeded (1s)"
         }
         "bad-syntax-program-gets-rejected" {
-            val resp = WebDemoController.interpret(programString = "lol", threadFactory = threadFactory)
+            val resp = WebDemoController.interpret(programString = "lol")
             resp.type shouldBe WebDemoController.Type.BAD_SYNTAX
         }
         "bad-type-program-gets-rejected" {
@@ -65,8 +57,7 @@ class WebDemoControllerTest : StringSpec() {
                 class Main {
                     function main(): int = "Ah!"
                 }
-            """.trimIndent(),
-                threadFactory = threadFactory
+            """.trimIndent()
             )
             resp.type shouldBe WebDemoController.Type.BAD_TYPE
         }

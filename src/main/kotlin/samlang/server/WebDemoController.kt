@@ -3,8 +3,8 @@ package samlang.server
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 import java.nio.charset.Charset
-import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.concurrent.thread
 import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
 import samlang.checker.ModuleTypeChecker
@@ -46,10 +46,9 @@ internal object WebDemoController {
      * Interpret a [programString] and try to return an interpreted value and the type-annotated pretty-printed
      * program.
      * Otherwise, return appropriate error responses.
-     * It uses [threadFactory] to create a new thread.
      */
     @JvmStatic
-    fun interpret(programString: String, threadFactory: ThreadFactory): Response {
+    fun interpret(programString: String): Response {
         val rawModule: Module
         try {
             rawModule = ModuleBuilder.buildModuleFromText(file = "demo.sam", text = programString)
@@ -68,7 +67,7 @@ internal object WebDemoController {
         }
         // passed all the compile time checks, start to interpret
         val atomicStringValue = AtomicReference<String>()
-        val evalThread = threadFactory.newThread {
+        val evalThread = thread {
             val callback = try {
                 "Value: ${ModuleInterpreter.eval(module = checkedModule)}"
             } catch (e: PanicException) {
@@ -76,7 +75,6 @@ internal object WebDemoController {
             }
             atomicStringValue.set(callback)
         }
-        evalThread.start()
         evalThread.join(1000) // impose time limit
         val result: String = atomicStringValue.get() ?: kotlin.run {
             @Suppress(names = ["DEPRECATION"])
