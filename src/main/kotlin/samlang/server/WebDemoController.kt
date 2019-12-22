@@ -54,10 +54,7 @@ internal object WebDemoController {
         try {
             rawModule = ModuleBuilder.buildModuleFromText(file = "demo.sam", text = programString)
         } catch (compilationFailedException: CompilationFailedException) {
-            return Response(
-                type = WebDemoController.Type.BAD_SYNTAX,
-                detail = compilationFailedException.errorMessage
-            )
+            return Response(type = Type.BAD_SYNTAX, detail = compilationFailedException.errorMessage)
         }
         val errorCollector = ErrorCollector()
         val (checkedModule, _) = ModuleTypeChecker(errorCollector = errorCollector).typeCheck(
@@ -67,10 +64,7 @@ internal object WebDemoController {
         if (errorCollector.collectedErrors.isNotEmpty()) {
             val errors =
                 errorCollector.collectedErrors.map { it.withErrorModule(file = "demo.sam") }
-            return Response(
-                type = WebDemoController.Type.BAD_TYPE,
-                detail = CompilationFailedException(errors = errors).errorMessage
-            )
+            return Response(type = Type.BAD_TYPE, detail = CompilationFailedException(errors = errors).errorMessage)
         }
         // passed all the compile time checks, start to interpret
         val atomicStringValue = AtomicReference<String>()
@@ -95,11 +89,8 @@ internal object WebDemoController {
         val charset = Charset.forName("UTF-8")
         val prettyPrintedProgram = String(bytes = stringOut.toByteArray(), charset = charset)
         return Response(
-            type = WebDemoController.Type.GOOD_PROGRAM,
-            detail = SuccessResponseDetail(
-                result = result,
-                prettyPrintedProgram = prettyPrintedProgram
-            )
+            type = Type.GOOD_PROGRAM,
+            detail = SuccessResponseDetail(result = result, prettyPrintedProgram = prettyPrintedProgram)
         )
     }
 }
