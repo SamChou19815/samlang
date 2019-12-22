@@ -2,6 +2,8 @@ package samlang.ast.common
 
 data class Range(val start: Position, val end: Position) {
 
+    operator fun contains(position: Position): Boolean = position in start..end
+
     infix fun union(other: Range): Range =
         Range(start = minOf(a = start, b = other.start), end = maxOf(a = end, b = other.end))
 
