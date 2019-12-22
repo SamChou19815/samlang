@@ -6,11 +6,25 @@ import com.google.gson.JsonParser
 import java.io.File
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.nio.file.Paths
 
 internal class IllFormattedConfigurationException(val reason: String) : RuntimeException(reason)
 
-internal fun parseConfiguration(file: File): samlang.Configuration =
-    file.inputStream().use { parseConfiguration(inputStream = it) }
+internal fun parseConfiguration(): samlang.Configuration {
+    val currentDirectory = Paths.get("").toAbsolutePath().toFile()
+    var configurationDirectory: File? = currentDirectory
+    while (configurationDirectory != null) {
+        val configurationFile = Paths.get(configurationDirectory.toString(), "sconfig.json").toFile()
+        if (configurationFile.exists()) {
+            if (configurationFile.isDirectory) {
+                throw IllFormattedConfigurationException(reason = "Configuration file cannot be a directory.")
+            }
+            return configurationFile.inputStream().use { parseConfiguration(inputStream = it) }
+        }
+        configurationDirectory = configurationDirectory.parentFile
+    }
+    throw IllFormattedConfigurationException(reason = "Configuration file is not found.")
+}
 
 internal fun parseConfiguration(string: String): samlang.Configuration =
     string.byteInputStream().use { parseConfiguration(inputStream = it) }

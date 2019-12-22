@@ -77,5 +77,8 @@ class ConfigurationParserTest : StringSpec() {
                 parseConfiguration(string = """{ "targets": ["3"] }""")
             }
         }
+        "can parse project configuration file." {
+            parseConfiguration()
+        }
     }
 }
