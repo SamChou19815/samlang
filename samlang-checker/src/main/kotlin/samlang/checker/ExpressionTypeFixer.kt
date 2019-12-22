@@ -40,6 +40,7 @@ import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.ExpressionVisitor
+import samlang.errors.CompileTimeError
 import samlang.errors.InsufficientTypeInferenceContextError
 import samlang.errors.UnexpectedTypeError
 import samlang.errors.UnsupportedClassTypeDefinitionError
@@ -67,6 +68,11 @@ private class TypeFixerVisitor(
     private val ctx: TypeCheckingContext,
     private val errorRange: Range
 ) : ExpressionVisitor<Type, Expression> {
+
+    private fun Expression.errorWith(expectedType: Type, error: CompileTimeError): Expression {
+        errorCollector.add(compileTimeError = error)
+        return this.replaceTypeWithExpectedType(expectedType = expectedType)
+    }
 
     private fun Expression.tryFixType(expectedType: Type = this.type): Expression =
         this.collectPotentialError(errorCollector = errorCollector) {
@@ -131,7 +137,10 @@ private class TypeFixerVisitor(
             expression.type.fixSelf(expectedType = context, errorRange = expression.range) as IdentifierType
         val (_, _, typeParameters, mapping) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
-            ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = errorRange)
+            ?: return expression.errorWith(
+                expectedType = context,
+                error = UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = errorRange)
+            )
         val newTypeArguments = newType.typeArguments
         val betterMapping = run {
             val replacementMap = typeParameters.checkedZip(other = newTypeArguments).toMap()
@@ -162,7 +171,10 @@ private class TypeFixerVisitor(
         val newType = expression.getFixedSelfType(expectedType = context) as IdentifierType
         val (_, _, typeParameters, mapping) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == VARIANT }
-            ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = VARIANT, range = errorRange)
+            ?: return expression.errorWith(
+                expectedType = context,
+                error = UnsupportedClassTypeDefinitionError(typeDefinitionType = VARIANT, range = errorRange)
+            )
         var dataType = mapping[expression.tag] ?: blameTypeChecker()
         dataType = ClassTypeDefinitionResolver.applyGenericTypeParameters(
             type = dataType, context = typeParameters.checkedZip(other = newType.typeArguments).toMap()
@@ -205,10 +217,9 @@ private class TypeFixerVisitor(
     override fun visit(expression: FunctionApplication, context: Type): Expression {
         val funExprType = expression.functionExpression.getFixedSelfType(expectedType = null) as FunctionType
         if (context != funExprType.returnType) {
-            throw UnexpectedTypeError(
-                expected = context,
-                actual = funExprType.returnType,
-                range = errorRange
+            return expression.errorWith(
+                expectedType = context,
+                error = UnexpectedTypeError(expected = context, actual = funExprType.returnType, range = errorRange)
             )
         }
         return expression.copy(
@@ -229,10 +240,9 @@ private class TypeFixerVisitor(
                 val t1 = expression.e1.getFixedSelfType(expectedType = null)
                 val t2 = expression.e1.getFixedSelfType(expectedType = null)
                 if (t1 != t2) {
-                    throw UnexpectedTypeError(
-                        expected = t1,
-                        actual = t2,
-                        range = errorRange
+                    return expression.errorWith(
+                        expectedType = context,
+                        error = UnexpectedTypeError(expected = t1, actual = t2, range = errorRange)
                     )
                 }
                 val newE1 = expression.e1.tryFixType(expectedType = t1)
@@ -281,7 +291,10 @@ private class TypeFixerVisitor(
 
     override fun visit(expression: Val, context: Type): Expression {
         if (expression.nextExpression == null && context != Type.unit) {
-            throw UnexpectedTypeError(expected = context, actual = Type.unit, range = errorRange)
+            return expression.errorWith(
+                expectedType = context,
+                error = UnexpectedTypeError(expected = context, actual = Type.unit, range = errorRange)
+            )
         }
         val fixedAssignedExpression = expression.assignedExpression.run {
             tryFixType(expectedType = type.fixSelf(expectedType = null, errorRange = range))

@@ -24,8 +24,7 @@ import samlang.ast.lang.ExpressionVisitor
 internal fun Expression.replaceTypeWithExpectedType(expectedType: Type): Expression =
     this.accept(visitor = TypeReplacerVisitor, context = expectedType)
 
-private object TypeReplacerVisitor :
-    ExpressionVisitor<Type, Expression> {
+private object TypeReplacerVisitor : ExpressionVisitor<Type, Expression> {
     override fun visit(expression: Literal, context: Type): Expression = expression.copy(type = context)
     override fun visit(expression: This, context: Type): Expression = expression.copy(type = context)
     override fun visit(expression: Variable, context: Type): Expression = expression.copy(type = context)

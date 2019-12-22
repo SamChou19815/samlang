@@ -6,14 +6,20 @@ import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Module
 import samlang.errors.CollisionError
+import samlang.util.Either
 
 class ModuleTypeChecker(val errorCollector: ErrorCollector) {
 
     fun typeCheck(module: Module, typeCheckingContext: TypeCheckingContext): Pair<Module, TypeCheckingContext> {
         // First pass: add type definitions to classDefinitions
         var currentContext = module.classDefinitions.fold(initial = typeCheckingContext) { context, definition ->
-            errorCollector.returnNullOnCollectedError { context.addClassTypeDefinition(classDefinition = definition) }
-                ?: context
+            when (val result = context.addClassTypeDefinition(classDefinition = definition)) {
+                is Either.Left -> result.v
+                is Either.Right -> {
+                    errorCollector.add(compileTimeError = result.v)
+                    context
+                }
+            }
         }
         // Second pass: validating module's top level properties, excluding whether member's types are well-defined.
         val passedTypeValidationClasses = module.classDefinitions.filter { classDefinition ->

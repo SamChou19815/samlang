@@ -12,6 +12,7 @@ import samlang.errors.CollisionError
 import samlang.errors.NotWellDefinedIdentifierError
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnresolvedNameError
+import samlang.util.Either
 
 data class TypeCheckingContext(
     val classes: PersistentMap<String, ClassType>,
@@ -32,20 +33,22 @@ data class TypeCheckingContext(
         name: String,
         nameRange: Range,
         typeDefinition: TypeDefinition
-    ): TypeCheckingContext {
+    ): Either<TypeCheckingContext, CollisionError> {
         if (classes.containsKey(key = name)) {
-            throw CollisionError(collidedName = name, range = nameRange)
+            return Either.Right(v = CollisionError(collidedName = name, range = nameRange))
         }
         val newModuleType = ClassType(
             typeDefinition = typeDefinition,
             functions = persistentMapOf(),
             methods = persistentMapOf()
         )
-        return TypeCheckingContext(
+        return Either.Left(
+            v = TypeCheckingContext(
             classes = classes.put(key = name, value = newModuleType),
             currentClass = name,
             localGenericTypes = localGenericTypes.addAll(elements = typeDefinition.typeParameters),
             localValues = localValues
+        )
         )
     }
 
@@ -53,7 +56,7 @@ data class TypeCheckingContext(
      * @return a new context with [classDefinition]'s type definition without [classDefinition]'s members.
      * It does not check validity of types of the given [classDefinition].
      */
-    fun addClassTypeDefinition(classDefinition: ClassDefinition): TypeCheckingContext =
+    fun addClassTypeDefinition(classDefinition: ClassDefinition): Either<TypeCheckingContext, CollisionError> =
         addNewClassTypeDefinition(
             name = classDefinition.name,
             nameRange = classDefinition.nameRange,
