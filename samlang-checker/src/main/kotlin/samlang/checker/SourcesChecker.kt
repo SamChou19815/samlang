@@ -14,10 +14,9 @@ fun typeCheckSources(sources: Sources<Module>): Sources<Module> {
 fun typeCheckSources(sources: Sources<Module>, errorCollector: ErrorCollector): Sources<Module> {
     // TODO: Include stdlib into globalTypingContext
     val globalTypingContext = GlobalTypingContextBuilder.buildGlobalTypingContext(sources = sources)
-    val typeCheckingOrder = getTypeCheckingOrder(sources = sources, errorCollector = errorCollector)
     // TODO: Include checked stdlib into newMappings
     val newMappings = mutableMapOf<ModuleReference, Module>()
-    for (moduleReference in typeCheckingOrder) {
+    for (moduleReference in sources.moduleMappings.keys) {
         newMappings[moduleReference] = typeCheckModule(
             sources = sources,
             globalTypingContext = globalTypingContext,
