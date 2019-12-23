@@ -4,6 +4,7 @@ import io.kotlintest.specs.StringSpec
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.parser.ModuleBuilder
+import samlang.util.createOrFail
 
 class SourcesCheckerTest : StringSpec({
     "Several sources integration test" {
@@ -67,6 +68,8 @@ class SourcesCheckerTest : StringSpec({
                 )
             )
         )
-        typeCheckSources(sources = sources)
+        val errorCollector = ErrorCollector()
+        val checkedSources = typeCheckSources(sources = sources, errorCollector = errorCollector)
+        createOrFail(item = checkedSources, errors = errorCollector.collectedErrors)
     }
 })

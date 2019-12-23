@@ -8,6 +8,7 @@ import samlang.errors.CompilationFailedException
 import samlang.parser.ModuleBuilder
 import samlang.programs.testPrograms
 import samlang.stdlib.StandardLibrary
+import samlang.util.createOrFail
 
 class ModuleTypeCheckerTest : StringSpec() {
 
@@ -15,7 +16,9 @@ class ModuleTypeCheckerTest : StringSpec() {
         return try {
             val module = ModuleBuilder.buildModuleFromText(file = "$id.sam", text = code)
             val sources = Sources(mapOf(ModuleReference(moduleName = id) to module))
-            typeCheckSources(sources = sources)
+            val errorCollector = ErrorCollector()
+            val checkedSources = typeCheckSources(sources = sources, errorCollector = errorCollector)
+            createOrFail(item = checkedSources, errors = errorCollector.collectedErrors)
             emptySet()
         } catch (compilationFailedException: CompilationFailedException) {
             compilationFailedException.errors.map { it.errorMessage }.toSortedSet()

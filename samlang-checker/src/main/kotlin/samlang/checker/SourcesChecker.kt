@@ -3,13 +3,6 @@ package samlang.checker
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.ast.lang.Module
-import samlang.util.createOrFail
-
-fun typeCheckSources(sources: Sources<Module>): Sources<Module> {
-    val errorCollector = ErrorCollector()
-    val checkedSources = typeCheckSources(sources = sources, errorCollector = errorCollector)
-    return createOrFail(item = checkedSources, errors = errorCollector.collectedErrors)
-}
 
 fun typeCheckSources(sources: Sources<Module>, errorCollector: ErrorCollector): Sources<Module> {
     // TODO: Include stdlib into globalTypingContext
