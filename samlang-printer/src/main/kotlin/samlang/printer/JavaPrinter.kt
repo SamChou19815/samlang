@@ -79,7 +79,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         printer.printWithBreak(x = "public final class SamlangIntrinsics\$ {")
         printer.indented {
             printWithBreak(x = "private SamlangIntrinsics$() {}")
-            for (size in 1 until 22) {
+            for (size in 1..22) {
                 val numberList = (0 until size).toList()
                 val argumentTypeParameters = numberList.joinToString(separator = ", ") { "T$it" }
                 printWithBreak(x = "public static final class Tuple$size<$argumentTypeParameters> {")
@@ -604,7 +604,7 @@ private object JavaContextAwareTypeToStringConverter : TypeVisitor<Boolean, Stri
         val mappings = type.mappings
         val size = mappings.size
         if (size > 22) {
-            TODO("Enforce tuple mapping size limit.")
+            error(message = "Should be enforced in parser!")
         }
         return mappings.joinToString(separator = ", ", prefix = "SamlangIntrinsics$.Tuple$size<", postfix = ">") {
             it.toBoxedString()
@@ -615,7 +615,7 @@ private object JavaContextAwareTypeToStringConverter : TypeVisitor<Boolean, Stri
         val (argumentTypes, returnType) = type
         val size = argumentTypes.size
         if (size > 22) {
-            TODO("Enforce argument type size limit.")
+            error(message = "Should be enforced in parser!")
         }
         return argumentTypes.joinToString(
             separator = ", ",

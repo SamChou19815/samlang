@@ -84,9 +84,17 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
     )
 
     override fun visitTupleConstructor(ctx: PLParser.TupleConstructorContext): Expression {
+        val range = ctx.range
         val expressionList = ctx.expression().map { it.toExpression() }
+        if (expressionList.size > 22) {
+            syntaxErrorListener.addSyntaxError(
+                syntaxError = SyntaxError(
+                    file = syntaxErrorListener.file, range = range, reason = "Tuple size exceeds 22."
+                )
+            )
+        }
         val type = TupleType(mappings = expressionList.map { it.type })
-        return Expression.TupleConstructor(range = ctx.range, type = type, expressionList = expressionList)
+        return Expression.TupleConstructor(range = range, type = type, expressionList = expressionList)
     }
 
     private inner class ObjectFieldDeclarationBuilder : PLBaseVisitor<Expression.ObjectConstructor.FieldConstructor>() {
@@ -244,6 +252,14 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
             val name = nameNode.text
             val type = oneArg.typeAnnotation()?.typeExpr()?.accept(TypeBuilder) ?: Type.undecided()
             name to type
+        }
+        val range = ctx.range
+        if (arguments.size > 22) {
+            syntaxErrorListener.addSyntaxError(
+                syntaxError = SyntaxError(
+                    file = syntaxErrorListener.file, range = range, reason = "Lambda argument size exceeds 22."
+                )
+            )
         }
         return Expression.Lambda(
             range = ctx.range,
