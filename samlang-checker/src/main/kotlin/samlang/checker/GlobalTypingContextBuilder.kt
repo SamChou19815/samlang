@@ -40,7 +40,7 @@ internal object GlobalTypingContextBuilder {
             .map { classDefinition -> classDefinition.name to buildClassType(classDefinition = classDefinition) }
             .toMap()
             .toPersistentMap()
-        return ModuleTypingContext(classes = classes)
+        return ModuleTypingContext(definedClasses = classes, importedClasses = persistentMapOf())
     }
 
     /**
@@ -55,10 +55,10 @@ internal object GlobalTypingContextBuilder {
         val importedClassTypes = module.imports.mapNotNull { oneImport ->
             val importedModuleContext = modules[oneImport.importedModule] ?: return@mapNotNull null
             oneImport.importedMembers.mapNotNull { (className, _) ->
-                importedModuleContext.classes[className]?.let { className to it }
+                importedModuleContext.definedClasses[className]?.let { className to it }
             }
-        }.flatten().toMap()
-        return moduleTypingContext.copy(classes = moduleTypingContext.classes.putAll(m = importedClassTypes))
+        }.flatten().toMap().toPersistentMap()
+        return moduleTypingContext.copy(importedClasses = importedClassTypes)
     }
 
     /**

@@ -60,9 +60,11 @@ private fun typeCheckModule(
         module = module,
         errorCollector = errorCollector
     )
+    val moduleContext = globalTypingContext.modules[moduleReference]
+        ?: error(message = "Missing module $moduleReference!")
     val checkedModule = ModuleTypeChecker(errorCollector = moduleErrorCollector).typeCheck(
         module = module,
-        classes = globalTypingContext.modules[moduleReference]!!.classes
+        classes = moduleContext.definedClasses.putAll(m = moduleContext.importedClasses)
     )
     errorCollector.addErrorsWithModules(
         errorCollector = moduleErrorCollector,

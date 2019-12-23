@@ -51,9 +51,13 @@ class GlobalTypingContextBuilderTest : StringSpec() {
             )
             GlobalTypingContextBuilder.buildGlobalTypingContext(sources = sources) shouldBe GlobalTypingContext(
                 modules = persistentMapOf(
-                    module0Reference to ModuleTypingContext(classes = persistentMapOf("Class0" to commonClassType)),
+                    module0Reference to ModuleTypingContext(
+                        definedClasses = persistentMapOf("Class0" to commonClassType),
+                        importedClasses = persistentMapOf()
+                    ),
                     module1Reference to ModuleTypingContext(
-                        classes = persistentMapOf("Class0" to commonClassType, "Class1" to commonClassType)
+                        definedClasses = persistentMapOf("Class1" to commonClassType),
+                        importedClasses = persistentMapOf("Class0" to commonClassType)
                     )
                 )
             )
