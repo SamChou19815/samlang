@@ -9,11 +9,12 @@ fun typeCheckSources(sources: Sources<Module>, errorCollector: ErrorCollector): 
     val globalTypingContext = GlobalTypingContextBuilder.buildGlobalTypingContext(sources = sources)
     // TODO: Include checked stdlib into newMappings
     val newMappings = mutableMapOf<ModuleReference, Module>()
-    for (moduleReference in sources.moduleMappings.keys) {
+    for ((moduleReference, module) in sources.moduleMappings) {
         newMappings[moduleReference] = typeCheckModule(
             sources = sources,
             globalTypingContext = globalTypingContext,
             moduleReference = moduleReference,
+            module = module,
             errorCollector = errorCollector
         )
     }
@@ -22,17 +23,23 @@ fun typeCheckSources(sources: Sources<Module>, errorCollector: ErrorCollector): 
 
 fun typeCheckSourcesIncrementally(
     sources: Sources<Module>,
-    updatedSourceList: List<ModuleReference>,
+    globalTypingContext: GlobalTypingContext,
+    affectedSourceList: List<ModuleReference>,
     errorCollector: ErrorCollector
 ): Map<ModuleReference, Module> {
-    // TODO: Create incremental version of `GlobalTypingContextBuilder.buildGlobalTypingContext()`.
-    val globalTypingContext = GlobalTypingContextBuilder.buildGlobalTypingContext(sources = sources)
+    val updatedGlobalTypingContext = GlobalTypingContextBuilder.updateGlobalTypingContext(
+        globalTypingContext = globalTypingContext,
+        sources = sources,
+        potentiallyAffectedModuleReferences = affectedSourceList
+    )
     val newMappings = mutableMapOf<ModuleReference, Module>()
-    for (moduleReference in updatedSourceList) {
+    for (moduleReference in affectedSourceList) {
+        val module = sources.moduleMappings[moduleReference] ?: continue
         newMappings[moduleReference] = typeCheckModule(
             sources = sources,
-            globalTypingContext = globalTypingContext,
+            globalTypingContext = updatedGlobalTypingContext,
             moduleReference = moduleReference,
+            module = module,
             errorCollector = errorCollector
         )
     }
@@ -43,11 +50,10 @@ private fun typeCheckModule(
     sources: Sources<Module>,
     globalTypingContext: GlobalTypingContext,
     moduleReference: ModuleReference,
+    module: Module,
     errorCollector: ErrorCollector
 ): Module {
     val moduleErrorCollector = ErrorCollector()
-    val module = sources.moduleMappings[moduleReference]
-        ?: error(message = "The module should be found since we just visited it in the previous pass.")
     checkUndefinedImportsError(
         sources = sources,
         module = module,
