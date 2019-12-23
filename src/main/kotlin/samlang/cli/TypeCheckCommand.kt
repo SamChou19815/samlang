@@ -4,8 +4,8 @@ import com.github.ajalt.clikt.core.CliktCommand
 import java.io.File
 import kotlin.system.exitProcess
 import samlang.errors.CompilationFailedException
-import samlang.frontend.collectSourceHandles
-import samlang.frontend.typeCheckSources
+import samlang.service.SourceChecker
+import samlang.service.SourceCollector
 
 class TypeCheckCommand : CliktCommand(name = "check") {
     override fun run() {
@@ -16,9 +16,9 @@ class TypeCheckCommand : CliktCommand(name = "check") {
             exitProcess(1)
         }
         echo(message = "Type checking sources in `${configuration.sourceDirectory}` ...", err = true)
-        val sourceHandles = collectSourceHandles(configuration = configuration)
+        val sourceHandles = SourceCollector.collectHandles(configuration = configuration)
         try {
-            typeCheckSources(sourceHandles = sourceHandles)
+            SourceChecker.typeCheck(sourceHandles = sourceHandles)
             echo(message = "No errors.", err = true)
         } catch (compilationFailedException: CompilationFailedException) {
             val errors = compilationFailedException.errors

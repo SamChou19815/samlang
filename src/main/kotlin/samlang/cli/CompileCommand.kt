@@ -5,10 +5,9 @@ import java.io.File
 import java.nio.file.Paths
 import kotlin.system.exitProcess
 import samlang.errors.CompilationFailedException
-import samlang.frontend.collectSourceHandles
-import samlang.frontend.compileJavaSources
-import samlang.frontend.compileTsSources
-import samlang.frontend.typeCheckSources
+import samlang.service.SourceChecker
+import samlang.service.SourceCollector
+import samlang.service.SourceCompiler
 
 class CompileCommand : CliktCommand(name = "compile") {
     override fun run() {
@@ -24,9 +23,9 @@ class CompileCommand : CliktCommand(name = "compile") {
             exitProcess(1)
         }
         echo(message = "Compiling sources in `${configuration.sourceDirectory}` ...", err = true)
-        val sourceHandles = collectSourceHandles(configuration = configuration)
+        val sourceHandles = SourceCollector.collectHandles(configuration = configuration)
         val checkedSources = try {
-            typeCheckSources(sourceHandles = sourceHandles)
+            SourceChecker.typeCheck(sourceHandles = sourceHandles)
         } catch (compilationFailedException: CompilationFailedException) {
             val errors = compilationFailedException.errors
             echo(message = "Found ${errors.size} error(s).", err = true)
@@ -35,17 +34,17 @@ class CompileCommand : CliktCommand(name = "compile") {
         }
         for (target in configuration.targets) {
             when (target) {
-                "ts" -> compileTsSources(
+                "ts" -> SourceCompiler.compileTsSources(
                     source = checkedSources,
                     outputDirectory = Paths.get(outputDirectory.toString(), "ts").toFile(),
                     withType = true
                 )
-                "js" -> compileTsSources(
+                "js" -> SourceCompiler.compileTsSources(
                     source = checkedSources,
                     outputDirectory = Paths.get(outputDirectory.toString(), "js").toFile(),
                     withType = false
                 )
-                "java" -> compileJavaSources(
+                "java" -> SourceCompiler.compileJavaSources(
                     source = checkedSources,
                     outputDirectory = Paths.get(outputDirectory.toString(), "java").toFile()
                 )

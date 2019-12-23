@@ -1,11 +1,10 @@
-package samlang.lsp.service
+package samlang.service
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import samlang.ast.common.Location
 import samlang.ast.common.Position
 import samlang.ast.common.Range
-import samlang.lsp.services.LocationLookup
 
 class LocationLookupTest : StringSpec() {
     init {

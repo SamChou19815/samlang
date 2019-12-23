@@ -1,4 +1,4 @@
-package samlang.lsp.services
+package samlang.service
 
 import samlang.ast.common.Location
 import samlang.ast.common.Position
