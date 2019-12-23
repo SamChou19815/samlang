@@ -8,9 +8,7 @@ import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.lang.ClassDefinition
-import samlang.errors.NotWellDefinedIdentifierError
 import samlang.errors.TypeParamSizeMismatchError
-import samlang.errors.UnresolvedNameError
 
 data class TypeCheckingContext(
     val classes: PersistentMap<String, ClassType>,
@@ -86,13 +84,9 @@ data class TypeCheckingContext(
 
     fun getLocalValueType(name: String): Type? = localValues[name]
 
-    fun getClassFunctionType(
-        module: String,
-        member: String,
-        errorRange: Range
-    ): Pair<Type, List<Type>> {
+    fun getClassFunctionType(module: String, member: String): Pair<Type, List<Type>>? {
         val typeInfo = classes[module]?.functions?.get(member)?.takeIf { module == currentClass || it.isPublic }
-            ?: throw UnresolvedNameError(unresolvedName = "$module::$member", range = errorRange)
+            ?: return null
         return if (typeInfo.typeParams == null) {
             typeInfo.type to emptyList()
         } else {
@@ -108,9 +102,9 @@ data class TypeCheckingContext(
         typeArguments: List<Type>,
         methodName: String,
         errorRange: Range
-    ): Type.FunctionType {
+    ): Type.FunctionType? {
         val typeInfo = classes[module]?.methods?.get(methodName)?.takeIf { module == currentClass || it.isPublic }
-            ?: throw UnresolvedNameError(unresolvedName = methodName, range = errorRange)
+            ?: return null
         val partiallyFixedType = if (typeInfo.typeParams == null) {
             typeInfo.type
         } else {
@@ -132,17 +126,13 @@ data class TypeCheckingContext(
         return fullyFixedType as Type.FunctionType
     }
 
-    fun checkIfIdentifierTypeIsWellDefined(name: String, typeArgumentLength: Int, errorRange: Range) {
-        val isGood = if (name in localGenericTypes) {
+    fun identifierTypeIsWellDefined(name: String, typeArgumentLength: Int): Boolean {
+        return if (name in localGenericTypes) {
             typeArgumentLength == 0
         } else {
-            val typeDef = classes[name]?.typeDefinition
-                ?: throw NotWellDefinedIdentifierError(badIdentifier = name, range = errorRange)
+            val typeDef = classes[name]?.typeDefinition ?: return false
             val typeParams = typeDef.typeParameters
             typeParams.size == typeArgumentLength
-        }
-        if (!isGood) {
-            throw NotWellDefinedIdentifierError(badIdentifier = name, range = errorRange)
         }
     }
 

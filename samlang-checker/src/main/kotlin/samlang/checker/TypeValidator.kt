@@ -8,6 +8,7 @@ import samlang.ast.common.Type.PrimitiveType
 import samlang.ast.common.Type.TupleType
 import samlang.ast.common.Type.UndecidedType
 import samlang.ast.common.TypeVisitor
+import samlang.errors.NotWellDefinedIdentifierError
 
 internal fun Type.validate(context: TypeCheckingContext, errorRange: Range): Type =
     accept(visitor = TypeValidator(errorRange = errorRange), context = context)
@@ -22,11 +23,9 @@ private class TypeValidator(private val errorRange: Range) :
 
     override fun visit(type: IdentifierType, context: TypeCheckingContext): Type {
         val (name, typeArguments) = type
-        context.checkIfIdentifierTypeIsWellDefined(
-            name = name,
-            typeArgumentLength = typeArguments.size,
-            errorRange = errorRange
-        )
+        if (!context.identifierTypeIsWellDefined(name = name, typeArgumentLength = typeArguments.size)) {
+            throw NotWellDefinedIdentifierError(badIdentifier = name, range = errorRange)
+        }
         return type.copy(typeArguments = typeArguments.map { it.accept(visitor = this, context = context) })
     }
 
