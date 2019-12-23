@@ -21,29 +21,31 @@ import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.ExpressionVisitor
 
-internal fun Expression.replaceTypeWithExpectedType(expectedType: Type): Expression =
-    this.accept(visitor = TypeReplacerVisitor, context = expectedType)
+internal object TypeReplacer {
+    fun replaceWithExpectedType(expression: Expression, expectedType: Type): Expression =
+        expression.accept(visitor = TypeReplacerVisitor, context = expectedType)
 
-private object TypeReplacerVisitor : ExpressionVisitor<Type, Expression> {
-    override fun visit(expression: Literal, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: This, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: Variable, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: ClassMember, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: TupleConstructor, context: Type): Expression =
-        if (context is Type.TupleType) expression.copy(type = context) else expression
+    private object TypeReplacerVisitor : ExpressionVisitor<Type, Expression> {
+        override fun visit(expression: Literal, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: This, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: Variable, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: ClassMember, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: TupleConstructor, context: Type): Expression =
+            if (context is Type.TupleType) expression.copy(type = context) else expression
 
-    override fun visit(expression: ObjectConstructor, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: VariantConstructor, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: FieldAccess, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: MethodAccess, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: Unary, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: Panic, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: FunctionApplication, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: Binary, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: IfElse, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: Match, context: Type): Expression = expression.copy(type = context)
-    override fun visit(expression: Lambda, context: Type): Expression =
-        if (context is Type.FunctionType) expression.copy(type = context) else expression
+        override fun visit(expression: ObjectConstructor, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: VariantConstructor, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: FieldAccess, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: MethodAccess, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: Unary, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: Panic, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: FunctionApplication, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: Binary, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: IfElse, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: Match, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: Lambda, context: Type): Expression =
+            if (context is Type.FunctionType) expression.copy(type = context) else expression
 
-    override fun visit(expression: Val, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: Val, context: Type): Expression = expression.copy(type = context)
+    }
 }

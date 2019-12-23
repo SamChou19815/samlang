@@ -91,7 +91,7 @@ private class ExpressionTypeCheckerVisitor(
 
     private fun Expression.errorWith(expectedType: Type, error: CompileTimeError): Expression {
         errorCollector.add(compileTimeError = error)
-        return this.replaceTypeWithExpectedType(expectedType = expectedType)
+        return TypeReplacer.replaceWithExpectedType(expression = this, expectedType = expectedType)
     }
 
     override fun visit(expression: Literal, ctx: TypeCheckingContext, expectedType: Type): Expression {
@@ -546,7 +546,7 @@ private class ExpressionTypeCheckerVisitor(
         for ((name, _) in arguments) {
             if (!names.add(name)) {
                 errorCollector.reportCollisionError(name = name, range = range)
-                return expression.replaceTypeWithExpectedType(expectedType = expectedType)
+                return TypeReplacer.replaceWithExpectedType(expression = expression, expectedType = expectedType)
             }
         }
         // setting up types and update context
@@ -554,7 +554,7 @@ private class ExpressionTypeCheckerVisitor(
         val checkedArguments = arguments.map { (argumentName, argumentType) ->
             val checkedArgumentType = argumentType.validate(
                 context = ctx, errorCollector = errorCollector, errorRange = range
-            ) ?: return expression.replaceTypeWithExpectedType(expectedType = expectedType)
+            ) ?: return TypeReplacer.replaceWithExpectedType(expression = expression, expectedType = expectedType)
             currentContext = currentContext.addLocalValueType(name = argumentName, type = checkedArgumentType) {
                 errorCollector.reportCollisionError(name = argumentName, range = range)
             }
