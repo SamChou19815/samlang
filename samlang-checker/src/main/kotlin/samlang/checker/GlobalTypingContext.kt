@@ -2,6 +2,7 @@ package samlang.checker
 
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.lang.ClassDefinition
@@ -9,7 +10,7 @@ import samlang.ast.lang.ClassDefinition
 /**
  * A collection of all modules' typing context.
  */
-data class GlobalTypingContext(val modules: PersistentMap<String, ModuleTypingContext>) {
+data class GlobalTypingContext(val modules: PersistentMap<ModuleReference, ModuleTypingContext>) {
     /**
      * All type definitions global to a module.
      */
