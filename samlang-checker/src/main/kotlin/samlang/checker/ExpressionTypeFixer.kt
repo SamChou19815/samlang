@@ -41,7 +41,6 @@ import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.ExpressionVisitor
 import samlang.errors.CompileTimeError
-import samlang.errors.InsufficientTypeInferenceContextError
 import samlang.errors.UnexpectedTypeError
 import samlang.errors.UnsupportedClassTypeDefinitionError
 
@@ -80,10 +79,13 @@ private class TypeFixerVisitor(
         }
 
     private fun Type.fixSelf(expectedType: Type?, errorRange: Range): Type {
-        val fullyResolvedType = resolution.resolveType(unresolvedType = this)
-        if (collectUndecidedTypeIndices(type = fullyResolvedType).isNotEmpty()) {
-            throw InsufficientTypeInferenceContextError(range = errorRange)
-        }
+        val fullyResolvedPotentiallyUndecidedType = resolution.resolveType(unresolvedType = this)
+        val fullyResolvedType =
+            if (collectUndecidedTypeIndices(type = fullyResolvedPotentiallyUndecidedType).isNotEmpty()) {
+                fullyResolvedPotentiallyUndecidedType.resolveType { Type.int }
+            } else {
+                fullyResolvedPotentiallyUndecidedType
+            }
         if (expectedType == null) {
             return fullyResolvedType
         }

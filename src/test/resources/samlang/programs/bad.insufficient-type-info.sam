@@ -1,7 +1,0 @@
-// ERROR_COUNT: 1
-// insufficient-type-info.sam:6:37-6:72: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.
-
-class NotEnoughTypeInfo {
-    function <T> randomFunction(): T = panic("I can be any type!")
-    function main(): unit = val _ = NotEnoughTypeInfo::randomFunction();
-}
