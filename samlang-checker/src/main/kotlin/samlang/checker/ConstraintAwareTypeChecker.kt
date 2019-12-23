@@ -12,7 +12,7 @@ import samlang.errors.SizeMismatchError
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnexpectedTypeError
 
-internal class ConstraintAwareTypeChecker(val resolution: TypeResolution) {
+internal class ConstraintAwareTypeChecker(val resolution: TypeResolution, private val errorCollector: ErrorCollector) {
 
     fun checkAndInfer(expectedType: Type, actualType: Type, errorRange: Range): Type {
         val partiallyResolvedActualType = resolution.resolveType(unresolvedType = actualType)
@@ -23,11 +23,14 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution) {
                 context = partiallyResolvedExpectedType
             )
         } catch (_: ConflictError) {
-            throw UnexpectedTypeError(
-                expected = partiallyResolvedExpectedType,
-                actual = partiallyResolvedActualType,
-                range = errorRange
+            errorCollector.add(
+                compileTimeError = UnexpectedTypeError(
+                    expected = partiallyResolvedExpectedType,
+                    actual = partiallyResolvedActualType,
+                    range = errorRange
+                )
             )
+            partiallyResolvedExpectedType
         }
     }
 

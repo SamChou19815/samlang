@@ -89,7 +89,7 @@ private class ExpressionTypeCheckerVisitor(
 ) : TypeCheckerVisitor {
 
     private val constraintAwareTypeChecker: ConstraintAwareTypeChecker =
-        ConstraintAwareTypeChecker(resolution = resolution)
+        ConstraintAwareTypeChecker(resolution = resolution, errorCollector = errorCollector)
 
     private fun Expression.toChecked(ctx: TypeCheckingContext, expectedType: Type = this.type): Expression =
         this.toChecked(visitor = this@ExpressionTypeCheckerVisitor, context = ctx, expectedType = expectedType)
