@@ -3,18 +3,14 @@ package samlang.common
 import io.kotlintest.fail
 import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
-import samlang.checker.ModuleTypeChecker
-import samlang.checker.TypeCheckingContext
+import samlang.checker.typeCheckSingleModuleSource
 import samlang.parser.ModuleBuilder
 
-internal fun getTypeCheckedModule(
-    code: String,
-    typeCheckingContext: TypeCheckingContext = TypeCheckingContext.EMPTY
-): Module {
+internal fun getTypeCheckedModule(code: String): Module {
     val errorCollector = ErrorCollector()
-    val (module, _) = ModuleTypeChecker(errorCollector = errorCollector).typeCheck(
+    val module = typeCheckSingleModuleSource(
         module = ModuleBuilder.buildModuleFromText(file = "test.sam", text = code),
-        typeCheckingContext = typeCheckingContext
+        errorCollector = errorCollector
     )
     if (errorCollector.collectedErrors.isNotEmpty()) {
         fail(msg = "Detected errors: ${errorCollector.collectedErrors}")

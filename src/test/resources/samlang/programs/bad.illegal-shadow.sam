@@ -9,8 +9,8 @@ class A {}
 class A {}
 
 class ConflictingFunctions {
-    function test(): unit = test()
-    function test(): unit = test()
+    function test(): unit = ConflictingFunctions::test()
+    function test(): unit = ConflictingFunctions::test()
 }
 
 class ConflictingMethods(a: int) {
@@ -20,7 +20,7 @@ class ConflictingMethods(a: int) {
 
 class ConflictingMethodsAndFunctions(a: int) {
     method test(): int = 42
-    function test(): unit = test()
+    function test(): unit = ConflictingMethodsAndFunctions::test()
 }
 
 class Main {

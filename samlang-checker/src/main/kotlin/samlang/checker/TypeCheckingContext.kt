@@ -7,7 +7,7 @@ import kotlinx.collections.immutable.persistentSetOf
 import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
-import samlang.ast.lang.ClassDefinition
+import samlang.checker.GlobalTypingContext.ClassType
 import samlang.errors.CompileTimeError
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnresolvedNameError
@@ -19,72 +19,6 @@ data class TypeCheckingContext(
     val localGenericTypes: PersistentSet<String>,
     private val localValues: PersistentMap<String, Type>
 ) {
-
-    data class TypeInfo(val isPublic: Boolean, val typeParams: List<String>?, val type: Type.FunctionType)
-
-    data class ClassType(
-        val typeDefinition: TypeDefinition,
-        val functions: PersistentMap<String, TypeInfo>,
-        val methods: PersistentMap<String, TypeInfo>
-    )
-
-    private fun addNewClassTypeDefinition(
-        name: String,
-        typeDefinition: TypeDefinition,
-        onCollision: () -> Unit
-    ): TypeCheckingContext {
-        if (classes.containsKey(key = name)) {
-            onCollision()
-            return this
-        }
-        val newModuleType = ClassType(
-            typeDefinition = typeDefinition,
-            functions = persistentMapOf(),
-            methods = persistentMapOf()
-        )
-        return TypeCheckingContext(
-            classes = classes.put(key = name, value = newModuleType),
-            currentClass = name,
-            localGenericTypes = localGenericTypes.addAll(elements = typeDefinition.typeParameters),
-            localValues = localValues
-        )
-    }
-
-    /**
-     * @return a new context with [classDefinition]'s type definition without [classDefinition]'s members.
-     * It does not check validity of types of the given [classDefinition].
-     */
-    fun addClassTypeDefinition(classDefinition: ClassDefinition, errorCollector: ErrorCollector): TypeCheckingContext {
-        val name = classDefinition.name
-        val nameRange = classDefinition.nameRange
-        return addNewClassTypeDefinition(name = name, typeDefinition = classDefinition.typeDefinition) {
-            errorCollector.reportCollisionError(name = name, range = nameRange)
-        }
-    }
-
-    fun addMembersAndMethodsToCurrentClass(
-        members: List<Triple<String, Boolean, TypeInfo>>
-    ): TypeCheckingContext {
-        val functions = arrayListOf<Pair<String, TypeInfo>>()
-        val methods = arrayListOf<Pair<String, TypeInfo>>()
-        for ((name, isMethod, typeInfo) in members) {
-            if (isMethod) {
-                methods.add(name to typeInfo)
-            } else {
-                functions.add(name to typeInfo)
-            }
-        }
-        val newCurrentModule = classes[currentClass]!!.copy(
-            functions = functions.fold(initial = persistentMapOf()) { member, (key, value) ->
-                member.put(key = key, value = value)
-            },
-            methods = methods.fold(initial = persistentMapOf()) { member, (key, value) ->
-                member.put(key = key, value = value)
-            }
-        )
-        return copy(classes = classes.put(key = currentClass, value = newCurrentModule))
-    }
-
     fun getLocalValueType(name: String): Type? = localValues[name]
 
     fun getClassFunctionType(module: String, member: String): Pair<Type, List<Type>>? {

@@ -7,8 +7,7 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
-import samlang.checker.ModuleTypeChecker
-import samlang.checker.TypeCheckingContext
+import samlang.checker.typeCheckSingleModuleSource
 import samlang.errors.CompilationFailedException
 import samlang.interpreter.ModuleInterpreter
 import samlang.interpreter.PanicException
@@ -56,10 +55,7 @@ internal object WebDemoController {
             return Response(type = Type.BAD_SYNTAX, detail = compilationFailedException.errorMessage)
         }
         val errorCollector = ErrorCollector()
-        val (checkedModule, _) = ModuleTypeChecker(errorCollector = errorCollector).typeCheck(
-            module = rawModule,
-            typeCheckingContext = TypeCheckingContext.EMPTY
-        )
+        val checkedModule = typeCheckSingleModuleSource(module = rawModule, errorCollector = errorCollector)
         if (errorCollector.collectedErrors.isNotEmpty()) {
             val errors =
                 errorCollector.collectedErrors.map { it.withErrorModule(file = "demo.sam") }

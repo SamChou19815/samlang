@@ -1,48 +1,36 @@
 package samlang.checker
 
+import kotlinx.collections.immutable.toPersistentSet
 import samlang.ast.common.Range
 import samlang.ast.common.TypeDefinition
-import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Module
 
-class ModuleTypeChecker(val errorCollector: ErrorCollector) {
+internal class ModuleTypeChecker(val errorCollector: ErrorCollector) {
 
-    fun typeCheck(module: Module, typeCheckingContext: TypeCheckingContext): Pair<Module, TypeCheckingContext> {
-        // First pass: add type definitions to classDefinitions
-        var currentContext = module.classDefinitions.fold(initial = typeCheckingContext) { context, definition ->
-            context.addClassTypeDefinition(classDefinition = definition, errorCollector = errorCollector)
-        }
-        // Second pass: validating module's top level properties, excluding whether member's types are well-defined.
-        val passedTypeValidationClasses = module.classDefinitions.filter { classDefinition ->
+    fun typeCheck(module: Module, typeCheckingContext: TypeCheckingContext): Module {
+        checkNameCollision(namesWithRange = module.classDefinitions.map { it.name to it.nameRange })
+        val checkedClasses = module.classDefinitions.map { classDefinition ->
+            val currentClass = classDefinition.name
+            val context = typeCheckingContext.copy(
+                currentClass = currentClass,
+                localGenericTypes = classDefinition.typeDefinition.typeParameters.toPersistentSet()
+            )
+            // First pass: validating module's top level properties, excluding whether member's types are well-defined.
             checkClassTopLevelValidity(
                 typeDefinition = classDefinition.typeDefinition,
                 classMembers = classDefinition.members,
-                typeCheckingContext = currentContext
+                typeCheckingContext = context
             )
+            // Second pass: type check all members' function body
+            val members = classDefinition.members
+            partiallyCheckMembers(classMembers = members, typeCheckingContext = context)
+            val checkedMembers = members.mapNotNull { member ->
+                typeCheckMemberDefinition(memberDefinition = member, typeCheckingContext = context)
+            }
+            classDefinition.copy(members = checkedMembers)
         }
-        // Third pass: add module's members to typing context.
-        val partiallyCheckedClasses = arrayListOf<ClassDefinition>()
-        currentContext = passedTypeValidationClasses.fold(initial = currentContext) { context, classDefinition ->
-            val (partiallyCheckedMembers, contextWithModuleMembers) = getPartiallyCheckedMembersAndNewContext(
-                classMembers = classDefinition.members,
-                typeCheckingContext = context.copy(currentClass = classDefinition.name)
-            )
-            partiallyCheckedClasses.add(element = classDefinition.copy(members = partiallyCheckedMembers))
-            contextWithModuleMembers
-        }
-        // Fourth pass: type check all members' function body
-        val checkedClasses = partiallyCheckedClasses.map { classDefinition ->
-            classDefinition.copy(
-                members = classDefinition.members.mapNotNull { member ->
-                    typeCheckMemberDefinition(
-                        memberDefinition = member,
-                        typeCheckingContext = currentContext.copy(currentClass = classDefinition.name)
-                    )
-                }
-            )
-        }
-        return module.copy(classDefinitions = checkedClasses) to currentContext
+        return module.copy(classDefinitions = checkedClasses)
     }
 
     /**
@@ -53,38 +41,28 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
      * - whether [classMembers]'s type parameters have no name collision.
      * - whether [classMembers] have methods when we are in a util module.
      * - whether [classMembers]'s types are well defined.
-     *
-     * If all checks are passed, return the updated type checking context with members information.
      */
     private fun checkClassTopLevelValidity(
         typeDefinition: TypeDefinition,
         classMembers: List<MemberDefinition>,
         typeCheckingContext: TypeCheckingContext
-    ): Boolean {
-        var passedCheck = true
+    ) {
         // We consistently put passedCheck on the right hand side to avoid short-circuiting.
         // In this way, we can report as many errors as possible.
         val (range, _, typeParameters, mappings) = typeDefinition
-        passedCheck = typeParameters.checkNameCollision(range = range) && passedCheck
-        passedCheck = mappings.keys.checkNameCollision(range = range) && passedCheck
-        passedCheck = mappings.values.fold(initial = passedCheck) { previouslyPassedCheck, type ->
-            val validationResult = type.validate(
-                context = typeCheckingContext, errorCollector = errorCollector, errorRange = range
-            ) != null
-            validationResult && previouslyPassedCheck
+        typeParameters.checkNameCollision(range = range)
+        mappings.keys.checkNameCollision(range = range)
+        mappings.values.forEach { type ->
+            type.validate(context = typeCheckingContext, errorCollector = errorCollector, errorRange = range)
         }
-        passedCheck = checkNameCollision(namesWithRange = classMembers.map { it.name to it.nameRange }) && passedCheck
-        passedCheck = classMembers.fold(initial = passedCheck) { previouslyPassedCheck, moduleMember ->
-            moduleMember.typeParameters.checkNameCollision(range = moduleMember.range) && previouslyPassedCheck
+        checkNameCollision(namesWithRange = classMembers.map { it.name to it.nameRange })
+        classMembers.forEach { moduleMember ->
+            moduleMember.typeParameters.checkNameCollision(range = moduleMember.range)
         }
-        return passedCheck
     }
 
-    private fun getPartiallyCheckedMembersAndNewContext(
-        classMembers: List<MemberDefinition>,
-        typeCheckingContext: TypeCheckingContext
-    ): Pair<List<MemberDefinition>, TypeCheckingContext> {
-        val partiallyCheckedMembers = classMembers.filter { member ->
+    private fun partiallyCheckMembers(classMembers: List<MemberDefinition>, typeCheckingContext: TypeCheckingContext) {
+        classMembers.forEach { member ->
             val typeParameters = member.typeParameters
             var newContext = typeCheckingContext.addLocalGenericTypes(genericTypes = typeParameters)
             if (member.isMethod) {
@@ -95,24 +73,8 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
                     newContext = updatedNewContext
                 }
             }
-            member.type.validate(
-                context = newContext, errorCollector = errorCollector, errorRange = member.range
-            ) != null
+            member.type.validate(context = newContext, errorCollector = errorCollector, errorRange = member.range)
         }
-        val memberTypeInfo = partiallyCheckedMembers.map { member ->
-            Triple(
-                first = member.name,
-                second = member.isMethod,
-                third = TypeCheckingContext.TypeInfo(
-                    isPublic = member.isPublic,
-                    typeParams = member.typeParameters,
-                    type = member.type
-                )
-            )
-        }
-        val newContext =
-            typeCheckingContext.addMembersAndMethodsToCurrentClass(members = memberTypeInfo)
-        return partiallyCheckedMembers to newContext
     }
 
     private fun typeCheckMemberDefinition(
@@ -138,25 +100,21 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
         return memberDefinition.copy(body = checkedBody)
     }
 
-    private fun Collection<String>.checkNameCollision(range: Range): Boolean {
+    private fun Collection<String>.checkNameCollision(range: Range) {
         val nameSet = hashSetOf<String>()
         forEach { name ->
             if (!nameSet.add(element = name)) {
                 errorCollector.reportCollisionError(name = name, range = range)
-                return false
             }
         }
-        return true
     }
 
-    private fun checkNameCollision(namesWithRange: Collection<Pair<String, Range>>): Boolean {
+    private fun checkNameCollision(namesWithRange: Collection<Pair<String, Range>>) {
         val nameSet = hashSetOf<String>()
         namesWithRange.forEach { (name, range) ->
             if (!nameSet.add(element = name)) {
                 errorCollector.reportCollisionError(name = name, range = range)
-                return false
             }
         }
-        return true
     }
 }
