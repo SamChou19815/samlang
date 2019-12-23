@@ -34,7 +34,7 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
         // Fourth pass: type check all members' function body
         val checkedClasses = partiallyCheckedClasses.map { classDefinition ->
             classDefinition.copy(
-                members = classDefinition.members.map { member ->
+                members = classDefinition.members.mapNotNull { member ->
                     typeCheckMemberDefinition(
                         memberDefinition = member,
                         typeCheckingContext = currentContext.copy(currentClass = classDefinition.name)
@@ -68,9 +68,10 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
         passedCheck = typeParameters.checkNameCollision(range = range) && passedCheck
         passedCheck = mappings.keys.checkNameCollision(range = range) && passedCheck
         passedCheck = mappings.values.fold(initial = passedCheck) { previouslyPassedCheck, type ->
-            errorCollector.passCheck {
-                type.validate(context = typeCheckingContext, errorRange = range)
-            } && previouslyPassedCheck
+            val validationResult = type.validate(
+                context = typeCheckingContext, errorCollector = errorCollector, errorRange = range
+            ) != null
+            validationResult && previouslyPassedCheck
         }
         passedCheck = checkNameCollision(namesWithRange = classMembers.map { it.name to it.nameRange }) && passedCheck
         passedCheck = classMembers.fold(initial = passedCheck) { previouslyPassedCheck, moduleMember ->
@@ -94,7 +95,9 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
                     newContext = updatedNewContext
                 }
             }
-            errorCollector.passCheck { member.type.validate(context = newContext, errorRange = member.range) }
+            member.type.validate(
+                context = newContext, errorCollector = errorCollector, errorRange = member.range
+            ) != null
         }
         val memberTypeInfo = partiallyCheckedMembers.map { member ->
             Triple(
@@ -115,12 +118,14 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
     private fun typeCheckMemberDefinition(
         memberDefinition: MemberDefinition,
         typeCheckingContext: TypeCheckingContext
-    ): MemberDefinition {
+    ): MemberDefinition? {
         val (_, _, isMethod, _, _, typeParameters, type, parameters, body) = memberDefinition
         var contextForTypeCheckingBody = if (isMethod) typeCheckingContext.addThisType() else typeCheckingContext
         contextForTypeCheckingBody = contextForTypeCheckingBody.addLocalGenericTypes(genericTypes = typeParameters)
         contextForTypeCheckingBody = parameters.fold(initial = contextForTypeCheckingBody) { tempContext, parameter ->
-            val parameterType = parameter.type.validate(context = tempContext, errorRange = parameter.typeRange)
+            val parameterType = parameter.type.validate(
+                context = tempContext, errorCollector = errorCollector, errorRange = parameter.typeRange
+            ) ?: return null
             tempContext.addLocalValueType(name = parameter.name, type = parameterType) {
                 errorCollector.reportCollisionError(name = parameter.name, range = parameter.nameRange)
             }
