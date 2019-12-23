@@ -8,7 +8,10 @@ import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.lang.ClassDefinition
+import samlang.errors.CompileTimeError
 import samlang.errors.TypeParamSizeMismatchError
+import samlang.errors.UnresolvedNameError
+import samlang.util.Either
 
 data class TypeCheckingContext(
     val classes: PersistentMap<String, ClassType>,
@@ -102,9 +105,9 @@ data class TypeCheckingContext(
         typeArguments: List<Type>,
         methodName: String,
         errorRange: Range
-    ): Type.FunctionType? {
+    ): Either<Type.FunctionType, CompileTimeError> {
         val typeInfo = classes[module]?.methods?.get(methodName)?.takeIf { module == currentClass || it.isPublic }
-            ?: return null
+            ?: return Either.Right(v = UnresolvedNameError(unresolvedName = methodName, range = errorRange))
         val partiallyFixedType = if (typeInfo.typeParams == null) {
             typeInfo.type
         } else {
@@ -114,16 +117,20 @@ data class TypeCheckingContext(
             typeWithParametersUndecided
         }
         val typeParameters = classes[module]!!.typeDefinition.typeParameters
-        TypeParamSizeMismatchError.check(
-            expectedSize = typeParameters.size,
-            actualSize = typeArguments.size,
-            range = errorRange
-        )
+        if (typeParameters.size != typeArguments.size) {
+            return Either.Right(
+                v = TypeParamSizeMismatchError(
+                    expectedSize = typeParameters.size,
+                    actualSize = typeArguments.size,
+                    range = errorRange
+                )
+            )
+        }
         val fullyFixedType = ClassTypeDefinitionResolver.applyGenericTypeParameters(
             type = partiallyFixedType,
             context = typeParameters.zip(typeArguments).toMap()
         )
-        return fullyFixedType as Type.FunctionType
+        return Either.Left(v = fullyFixedType as Type.FunctionType)
     }
 
     fun identifierTypeIsWellDefined(name: String, typeArgumentLength: Int): Boolean {

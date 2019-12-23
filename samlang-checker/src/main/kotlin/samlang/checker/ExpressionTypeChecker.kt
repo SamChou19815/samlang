@@ -360,15 +360,16 @@ private class ExpressionTypeCheckerVisitor(
                     range = expressionToCallMethod.range
                 )
             )
-        val locallyInferredType = ctx.getClassMethodType(
+        val methodTypeOrError = ctx.getClassMethodType(
             module = checkedExprTypeIdentifier,
             typeArguments = checkedExprTypeArguments,
             methodName = methodName,
             errorRange = range
-        ) ?: return expression.errorWith(
-            expectedType = expectedType,
-            error = UnresolvedNameError(unresolvedName = methodName, range = range)
         )
+        val locallyInferredType = when (methodTypeOrError) {
+            is Either.Left -> methodTypeOrError.v
+            is Either.Right -> return expression.errorWith(expectedType = expectedType, error = methodTypeOrError.v)
+        }
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = locallyInferredType, errorRange = range
         )

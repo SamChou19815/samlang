@@ -35,12 +35,16 @@ internal object ClassTypeDefinitionResolver {
             ?: return Either.Right(
                 v = UnsupportedClassTypeDefinitionError(typeDefinitionType = typeDefinitionType, range = errorRange)
             )
-        return run {
-            TypeParamSizeMismatchError.check(
-                expectedSize = typeParameters.size,
-                actualSize = typeArguments.size,
-                range = errorRange
+        if (typeParameters.size != typeArguments.size) {
+            return Either.Right(
+                v = TypeParamSizeMismatchError(
+                    expectedSize = typeParameters.size,
+                    actualSize = typeArguments.size,
+                    range = errorRange
+                )
             )
+        }
+        return run {
             varMap.mapValues { (_, v) ->
                 applyGenericTypeParameters(
                     type = v,

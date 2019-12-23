@@ -9,7 +9,6 @@ import samlang.ast.common.Type.TupleType
 import samlang.ast.common.Type.UndecidedType
 import samlang.ast.common.TypeVisitor
 import samlang.errors.SizeMismatchError
-import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnexpectedTypeError
 
 internal class ConstraintAwareTypeChecker(val resolution: TypeResolution, private val errorCollector: ErrorCollector) {
@@ -65,14 +64,12 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution, privat
         override fun visit(type: IdentifierType, context: Type): Type = when (context) {
             is UndecidedType -> type.meetWithUndecidedType(undecidedType = context)
             is IdentifierType -> {
-                if (type.identifier != context.identifier) {
+                if (type.identifier != context.identifier || context.typeArguments.size != type.typeArguments.size) {
                     throw ConflictError()
                 }
-                val inferredTypeArguments = TypeParamSizeMismatchError.check(
-                    expectedList = context.typeArguments,
-                    actualList = type.typeArguments,
-                    range = errorRange
-                ).map { (expect, actual) -> meet(actualType = actual, expectedType = expect) }
+                val inferredTypeArguments = context.typeArguments
+                    .zip(other = type.typeArguments)
+                    .map { (expect, actual) -> meet(actualType = actual, expectedType = expect) }
                 type.copy(typeArguments = inferredTypeArguments)
             }
             else -> throw ConflictError()
