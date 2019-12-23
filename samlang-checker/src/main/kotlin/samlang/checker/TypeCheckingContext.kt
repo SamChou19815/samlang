@@ -2,8 +2,6 @@ package samlang.checker
 
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.PersistentSet
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.persistentSetOf
 import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
@@ -103,15 +101,5 @@ data class TypeCheckingContext(
             return this
         }
         return copy(localValues = localValues.put(key = name, value = type))
-    }
-
-    companion object {
-
-        val EMPTY: TypeCheckingContext = TypeCheckingContext(
-            classes = persistentMapOf(),
-            currentClass = "",
-            localGenericTypes = persistentSetOf(),
-            localValues = persistentMapOf()
-        )
     }
 }

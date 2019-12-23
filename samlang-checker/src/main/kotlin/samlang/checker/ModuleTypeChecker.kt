@@ -1,14 +1,23 @@
 package samlang.checker
 
+import kotlinx.collections.immutable.PersistentMap
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toPersistentSet
 import samlang.ast.common.Range
 import samlang.ast.common.TypeDefinition
 import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Module
 
-internal class ModuleTypeChecker(val errorCollector: ErrorCollector) {
+internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
 
-    fun typeCheck(module: Module, typeCheckingContext: TypeCheckingContext): Module {
+    fun typeCheck(module: Module, classes: PersistentMap<String, GlobalTypingContext.ClassType>): Module {
+        val typeCheckingContext = TypeCheckingContext(
+            classes = classes,
+            currentClass = "",
+            localGenericTypes = persistentSetOf(),
+            localValues = persistentMapOf()
+        )
         checkNameCollision(namesWithRange = module.classDefinitions.map { it.name to it.nameRange })
         val checkedClasses = module.classDefinitions.map { classDefinition ->
             val currentClass = classDefinition.name
