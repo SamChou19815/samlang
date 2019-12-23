@@ -18,25 +18,39 @@ fun typeCheckSources(sources: Sources<Module>, errorCollector: ErrorCollector): 
     // TODO: Include checked stdlib into newMappings
     val newMappings = mutableMapOf<ModuleReference, Module>()
     for (moduleReference in typeCheckingOrder) {
-        val moduleErrorCollector = ErrorCollector()
-        val module = sources.moduleMappings[moduleReference]
-            ?: error(message = "The module should be found since we just visited it in the previous pass.")
-        checkUndefinedImportsError(
+        newMappings[moduleReference] = typeCheckModule(
             sources = sources,
-            module = module,
+            globalTypingContext = globalTypingContext,
+            moduleReference = moduleReference,
             errorCollector = errorCollector
         )
-        val checkedModule = ModuleTypeChecker(errorCollector = moduleErrorCollector).typeCheck(
-            module = module,
-            classes = globalTypingContext.modules[moduleReference]!!.classes
-        )
-        errorCollector.addErrorsWithModules(
-            errorCollector = moduleErrorCollector,
-            moduleReference = moduleReference
-        )
-        newMappings[moduleReference] = checkedModule
     }
     return Sources(moduleMappings = newMappings)
+}
+
+private fun typeCheckModule(
+    sources: Sources<Module>,
+    globalTypingContext: GlobalTypingContext,
+    moduleReference: ModuleReference,
+    errorCollector: ErrorCollector
+): Module {
+    val moduleErrorCollector = ErrorCollector()
+    val module = sources.moduleMappings[moduleReference]
+        ?: error(message = "The module should be found since we just visited it in the previous pass.")
+    checkUndefinedImportsError(
+        sources = sources,
+        module = module,
+        errorCollector = errorCollector
+    )
+    val checkedModule = ModuleTypeChecker(errorCollector = moduleErrorCollector).typeCheck(
+        module = module,
+        classes = globalTypingContext.modules[moduleReference]!!.classes
+    )
+    errorCollector.addErrorsWithModules(
+        errorCollector = moduleErrorCollector,
+        moduleReference = moduleReference
+    )
+    return checkedModule
 }
 
 fun typeCheckSingleModuleSource(module: Module, errorCollector: ErrorCollector): Module {
