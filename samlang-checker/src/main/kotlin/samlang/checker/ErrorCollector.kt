@@ -7,6 +7,7 @@ import samlang.errors.CompileTimeError
 
 class ErrorCollector {
 
+    private val _collectedErrors: MutableList<CompileTimeError> = arrayListOf()
     val collectedErrors: List<CompileTimeError> get() = _collectedErrors
 
     internal fun addErrorsWithModules(errorCollector: ErrorCollector, moduleReference: ModuleReference) {
@@ -16,20 +17,10 @@ class ErrorCollector {
         }
     }
 
-    private val _collectedErrors: MutableList<CompileTimeError> = arrayListOf()
-
     fun add(compileTimeError: CompileTimeError) {
         _collectedErrors.add(element = compileTimeError)
     }
 
     fun reportCollisionError(name: String, range: Range): Unit =
         add(compileTimeError = CollisionError(collidedName = name, range = range))
-
-    internal inline fun <T> returnNullOnCollectedError(crossinline checker: () -> T): T? =
-        try {
-            checker()
-        } catch (compileTimeError: CompileTimeError) {
-            _collectedErrors.add(element = compileTimeError)
-            null
-        }
 }

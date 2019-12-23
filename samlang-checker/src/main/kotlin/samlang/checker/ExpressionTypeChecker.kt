@@ -76,10 +76,7 @@ private fun Expression.toChecked(
     visitor: ExpressionTypeCheckerVisitor,
     context: TypeCheckingContext,
     expectedType: Type
-): Expression =
-    visitor.errorCollector.returnNullOnCollectedError {
-        this.accept(visitor = visitor, context = context to expectedType)
-    } ?: this.replaceTypeWithExpectedType(expectedType = expectedType)
+): Expression = this.accept(visitor = visitor, context = context to expectedType)
 
 private class ExpressionTypeCheckerVisitor(
     private val resolution: TypeResolution,
