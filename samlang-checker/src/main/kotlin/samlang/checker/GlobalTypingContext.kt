@@ -7,18 +7,18 @@ import samlang.ast.common.TypeDefinition
 import samlang.ast.lang.ClassDefinition
 
 /**
- * A collection of all files' typing context.
+ * A collection of all modules' typing context.
  */
-data class GlobalTypingContext(val files: PersistentMap<String, FileTypingContext>) {
+data class GlobalTypingContext(val modules: PersistentMap<String, ModuleTypingContext>) {
     /**
-     * All type definitions global to a file.
+     * All type definitions global to a module.
      */
-    data class FileTypingContext(val classes: PersistentMap<String, ClassType>) {
+    data class ModuleTypingContext(val classes: PersistentMap<String, ClassType>) {
         /**
          * @return a new context with [classDefinition]'s type definition without [classDefinition]'s members.
          * It does not check validity of types of the given [classDefinition]. If there is a collision, return `null`.
          */
-        fun addClassTypeDefinition(classDefinition: ClassDefinition): FileTypingContext? {
+        fun addClassTypeDefinition(classDefinition: ClassDefinition): ModuleTypingContext? {
             val name = classDefinition.name
             if (classes.containsKey(key = name)) {
                 return null
@@ -28,7 +28,7 @@ data class GlobalTypingContext(val files: PersistentMap<String, FileTypingContex
                 functions = persistentMapOf(),
                 methods = persistentMapOf()
             )
-            return FileTypingContext(classes = classes.put(key = name, value = newModuleType))
+            return ModuleTypingContext(classes = classes.put(key = name, value = newModuleType))
         }
     }
 
