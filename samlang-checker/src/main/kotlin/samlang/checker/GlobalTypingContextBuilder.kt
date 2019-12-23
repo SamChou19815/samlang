@@ -31,6 +31,34 @@ internal object GlobalTypingContextBuilder {
         return GlobalTypingContext(modules = phase2Modules)
     }
 
+    fun updateGlobalTypingContext(
+        globalTypingContext: GlobalTypingContext,
+        sources: Sources<Module>,
+        potentiallyAffectedModuleReferences: Collection<ModuleReference>
+    ): GlobalTypingContext {
+        val moduleMappings = sources.moduleMappings
+        var modules = globalTypingContext.modules
+        // Phase 1: Build defined classes
+        for (moduleReference in potentiallyAffectedModuleReferences) {
+            val module = moduleMappings[moduleReference]
+            modules = if (module == null) {
+                modules.remove(key = moduleReference)
+            } else {
+                modules.put(key = moduleReference, value = buildModuleTypingContextPhase1(module = module))
+            }
+        }
+        // Phase 2: Build imported classes
+        for (moduleReference in potentiallyAffectedModuleReferences) {
+            val module = moduleMappings[moduleReference] ?: continue
+            val context = modules[moduleReference] ?: error(message = "Should be there!")
+            val updatedModuleContext = buildModuleTypingContextPhase2(
+                modules = modules, module = module, moduleTypingContext = context
+            )
+            modules = modules.put(key = moduleReference, value = updatedModuleContext)
+        }
+        return globalTypingContext.copy(modules = modules)
+    }
+
     /**
      * @return module's typing context built from reading class definitions, imports are ignored in this phase since
      * they will be patched back in phase 2.
