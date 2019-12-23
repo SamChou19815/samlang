@@ -16,13 +16,21 @@ class DependencyTracker {
     fun getReverseDependencies(moduleReference: ModuleReference): Set<ModuleReference> =
         reverseDependency[moduleReference] ?: emptySet()
 
-    fun update(moduleReference: ModuleReference, importedModules: Collection<ModuleReference>) {
+    /**
+     * Update dependency tracker with [moduleReference] and [importedModules].
+     * If [importedModules] is null, it means that we want to remove [moduleReference] from system.
+     */
+    fun update(moduleReference: ModuleReference, importedModules: Collection<ModuleReference>?) {
         val oldImportedModules = forwardDependency[moduleReference]
         if (oldImportedModules != null) {
             for (oldImportedModule in oldImportedModules) {
                 val reverseDependencySet = reverseDependency[oldImportedModule] ?: continue
                 reverseDependencySet.remove(moduleReference)
             }
+        }
+        if (importedModules == null) {
+            forwardDependency.remove(key = moduleReference)
+            return
         }
         val newImportedModules = importedModules.toSet()
         forwardDependency[moduleReference] = newImportedModules
