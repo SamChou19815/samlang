@@ -65,25 +65,27 @@ private class CyclicDependencyChecker(sources: Sources<Module>, private val erro
                 fromIndex = fullChain.indexOfFirst { it == importedModuleReference },
                 toIndex = fullChain.size
             ).map { it.toString() }
-            throw CyclicDependencyError(
-                moduleReference = importer,
-                range = imported.range,
-                cyclicDependencyChain = cyclicDependencyChain
+            errorCollector.add(
+                compileTimeError = CyclicDependencyError(
+                    moduleReference = importer,
+                    range = imported.range,
+                    cyclicDependencyChain = cyclicDependencyChain
+                )
             )
+            return
         }
         visitedSet.add(element = importedModuleReference)
         val newParentChain = parentChain + importedModuleReference
         val dependencies = dependencyGraph[importedModuleReference] ?: return
         for (importedDependency in dependencies) {
-            errorCollector.check {
-                tryToBuildDAG(
-                    importer = importedModuleReference,
-                    imported = importedDependency,
-                    parentChain = newParentChain
-                )
-            }
+            tryToBuildDAG(
+                importer = importedModuleReference,
+                imported = importedDependency,
+                parentChain = newParentChain
+            )
         }
         visitingList.add(element = importedModuleReference)
+        return
     }
 
     private fun tryToBuildDAG(startingModule: ModuleReference) {
