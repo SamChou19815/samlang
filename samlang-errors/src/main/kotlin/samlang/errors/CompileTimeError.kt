@@ -7,7 +7,7 @@ open class CompileTimeError(
     val range: Range,
     val type: String? = null,
     val reason: String
-) : RuntimeException(reason) {
+) {
 
     private val defaultErrorType: String
         get() = javaClass.simpleName.let { name ->
