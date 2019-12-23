@@ -68,7 +68,6 @@ internal fun Expression.typeCheck(
     return checkedExpression.fixType(
         expectedType = expectedType,
         resolution = resolution,
-        errorCollector = errorCollector,
         typeCheckingContext = typeCheckingContext
     )
 }

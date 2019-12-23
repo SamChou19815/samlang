@@ -13,7 +13,6 @@ import samlang.ast.common.BinaryOperator.MUL
 import samlang.ast.common.BinaryOperator.NE
 import samlang.ast.common.BinaryOperator.OR
 import samlang.ast.common.BinaryOperator.PLUS
-import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.Type.IdentifierType
@@ -40,43 +39,23 @@ import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.ExpressionVisitor
-import samlang.errors.CompileTimeError
-import samlang.errors.UnexpectedTypeError
-import samlang.errors.UnsupportedClassTypeDefinitionError
 
 internal fun Expression.fixType(
     expectedType: Type,
     resolution: TypeResolution,
-    errorCollector: ErrorCollector,
     typeCheckingContext: TypeCheckingContext
 ): Expression {
-    val visitor = TypeFixerVisitor(
-        resolution = resolution,
-        errorCollector = errorCollector,
-        ctx = typeCheckingContext,
-        errorRange = this.range
-    )
-    return this.collectPotentialError(errorCollector = errorCollector) {
-        this.accept(visitor = visitor, context = expectedType)
-    }
+    val visitor = TypeFixerVisitor(resolution = resolution, ctx = typeCheckingContext)
+    return this.accept(visitor = visitor, context = expectedType)
 }
 
 private class TypeFixerVisitor(
     private val resolution: TypeResolution,
-    private val errorCollector: ErrorCollector,
-    private val ctx: TypeCheckingContext,
-    private val errorRange: Range
+    private val ctx: TypeCheckingContext
 ) : ExpressionVisitor<Type, Expression> {
 
-    private fun Expression.errorWith(expectedType: Type, error: CompileTimeError): Expression {
-        errorCollector.add(compileTimeError = error)
-        return this.replaceTypeWithExpectedType(expectedType = expectedType)
-    }
-
     private fun Expression.tryFixType(expectedType: Type = this.type): Expression =
-        this.collectPotentialError(errorCollector = errorCollector) {
-            this.accept(visitor = this@TypeFixerVisitor, context = expectedType)
-        }
+        this.accept(visitor = this@TypeFixerVisitor, context = expectedType)
 
     private fun Type.fixSelf(expectedType: Type?): Type {
         val resolvedPotentiallyUndecidedType = resolution.resolveType(unresolvedType = this)
@@ -136,10 +115,7 @@ private class TypeFixerVisitor(
         val newType = expression.type.fixSelf(expectedType = context) as IdentifierType
         val (_, _, typeParameters, mapping) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
-            ?: return expression.errorWith(
-                expectedType = context,
-                error = UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = errorRange)
-            )
+            ?: error(message = "Not in an object class!")
         val newTypeArguments = newType.typeArguments
         val betterMapping = run {
             val replacementMap = typeParameters.checkedZip(other = newTypeArguments).toMap()
@@ -170,10 +146,7 @@ private class TypeFixerVisitor(
         val newType = expression.getFixedSelfType(expectedType = context) as IdentifierType
         val (_, _, typeParameters, mapping) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == VARIANT }
-            ?: return expression.errorWith(
-                expectedType = context,
-                error = UnsupportedClassTypeDefinitionError(typeDefinitionType = VARIANT, range = errorRange)
-            )
+            ?: error(message = "Not in a variant class!")
         var dataType = mapping[expression.tag] ?: blameTypeChecker()
         dataType = ClassTypeDefinitionResolver.applyGenericTypeParameters(
             type = dataType, context = typeParameters.checkedZip(other = newType.typeArguments).toMap()
@@ -216,10 +189,7 @@ private class TypeFixerVisitor(
     override fun visit(expression: FunctionApplication, context: Type): Expression {
         val funExprType = expression.functionExpression.getFixedSelfType(expectedType = null) as FunctionType
         if (context != funExprType.returnType) {
-            return expression.errorWith(
-                expectedType = context,
-                error = UnexpectedTypeError(expected = context, actual = funExprType.returnType, range = errorRange)
-            )
+            error(message = "Return type (${funExprType.returnType}$ mismatches with context ($context).")
         }
         return expression.copy(
             type = expression.getFixedSelfType(expectedType = context),
@@ -239,10 +209,7 @@ private class TypeFixerVisitor(
                 val t1 = expression.e1.getFixedSelfType(expectedType = null)
                 val t2 = expression.e1.getFixedSelfType(expectedType = null)
                 if (t1 != t2) {
-                    return expression.errorWith(
-                        expectedType = context,
-                        error = UnexpectedTypeError(expected = t1, actual = t2, range = errorRange)
-                    )
+                    error(message = "Comparing non-equal types: $t1, $t2.")
                 }
                 val newE1 = expression.e1.tryFixType(expectedType = t1)
                 val newE2 = expression.e2.tryFixType(expectedType = t1)
@@ -290,10 +257,7 @@ private class TypeFixerVisitor(
 
     override fun visit(expression: Val, context: Type): Expression {
         if (expression.nextExpression == null && context != Type.unit) {
-            return expression.errorWith(
-                expectedType = context,
-                error = UnexpectedTypeError(expected = context, actual = Type.unit, range = errorRange)
-            )
+            error(message = "expression.nextExpression == null && context == $context")
         }
         val fixedAssignedExpression = expression.assignedExpression.run {
             tryFixType(expectedType = type.fixSelf(expectedType = null))
