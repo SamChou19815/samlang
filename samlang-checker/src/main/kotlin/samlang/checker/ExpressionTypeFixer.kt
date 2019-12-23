@@ -78,25 +78,25 @@ private class TypeFixerVisitor(
             this.accept(visitor = this@TypeFixerVisitor, context = expectedType)
         }
 
-    private fun Type.fixSelf(expectedType: Type?, errorRange: Range): Type {
-        val fullyResolvedPotentiallyUndecidedType = resolution.resolveType(unresolvedType = this)
-        val fullyResolvedType =
-            if (collectUndecidedTypeIndices(type = fullyResolvedPotentiallyUndecidedType).isNotEmpty()) {
-                fullyResolvedPotentiallyUndecidedType.resolveType { Type.int }
+    private fun Type.fixSelf(expectedType: Type?): Type {
+        val resolvedPotentiallyUndecidedType = resolution.resolveType(unresolvedType = this)
+        val resolvedType =
+            if (collectUndecidedTypeIndices(type = resolvedPotentiallyUndecidedType).isNotEmpty()) {
+                resolvedPotentiallyUndecidedType.resolveType { Type.int }
             } else {
-                fullyResolvedPotentiallyUndecidedType
+                resolvedPotentiallyUndecidedType
             }
         if (expectedType == null) {
-            return fullyResolvedType
+            return resolvedType
         }
-        if (fullyResolvedType != expectedType) {
-            throw UnexpectedTypeError(expected = expectedType, actual = fullyResolvedType, range = errorRange)
+        if (resolvedType != expectedType) {
+            error(message = "resolvedType($resolvedType) should be consistent with expectedType($expectedType)!")
         }
         return expectedType
     }
 
     private fun Expression.getFixedSelfType(expectedType: Type?): Type =
-        type.fixSelf(expectedType = expectedType, errorRange = range)
+        type.fixSelf(expectedType = expectedType)
 
     private fun <T1, T2> List<T1>.checkedZip(other: List<T2>): List<Pair<T1, T2>> {
         if (size != other.size) {
@@ -119,13 +119,11 @@ private class TypeFixerVisitor(
     override fun visit(expression: ClassMember, context: Type): Expression =
         expression.copy(
             type = expression.getFixedSelfType(expectedType = context),
-            typeArguments = expression.typeArguments.map { typeArgument ->
-                typeArgument.fixSelf(expectedType = null, errorRange = expression.range)
-            }
+            typeArguments = expression.typeArguments.map { typeArgument -> typeArgument.fixSelf(expectedType = null) }
         )
 
     override fun visit(expression: TupleConstructor, context: Type): Expression {
-        val newType = expression.type.fixSelf(expectedType = context, errorRange = expression.range) as TupleType
+        val newType = expression.type.fixSelf(expectedType = context) as TupleType
         return expression.copy(
             type = newType,
             expressionList = expression.expressionList.zip(newType.mappings).map { (expression, type) ->
@@ -135,8 +133,7 @@ private class TypeFixerVisitor(
     }
 
     override fun visit(expression: ObjectConstructor, context: Type): Expression {
-        val newType =
-            expression.type.fixSelf(expectedType = context, errorRange = expression.range) as IdentifierType
+        val newType = expression.type.fixSelf(expectedType = context) as IdentifierType
         val (_, _, typeParameters, mapping) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
             ?: return expression.errorWith(
@@ -152,8 +149,8 @@ private class TypeFixerVisitor(
         }
         val newSpreadExpr = expression.spreadExpression?.tryFixType(expectedType = context)
         val newDeclarations = expression.fieldDeclarations.map { dec ->
-            val expTypeForDec = betterMapping[dec.name] ?: blameTypeChecker()
-            val betterType = dec.type.fixSelf(expectedType = expTypeForDec, errorRange = dec.range)
+            val expressionTypeForDeclaration = betterMapping[dec.name] ?: blameTypeChecker()
+            val betterType = dec.type.fixSelf(expectedType = expressionTypeForDeclaration)
             when (dec) {
                 is ObjectConstructor.FieldConstructor.Field -> dec.copy(
                     type = betterType,
@@ -283,9 +280,9 @@ private class TypeFixerVisitor(
         val newType = expression.getFixedSelfType(expectedType = context) as FunctionType
         return expression.copy(
             type = newType,
-            parameters = expression.parameters.checkedZip(other = newType.argumentTypes).map { (vAndOriginalT, t) ->
-                val (v, originalT) = vAndOriginalT
-                v to originalT.fixSelf(expectedType = t, errorRange = expression.range)
+            parameters = expression.parameters.checkedZip(other = newType.argumentTypes).map { (pAndOriginalT, t) ->
+                val (parameter, originalT) = pAndOriginalT
+                parameter to originalT.fixSelf(expectedType = t)
             },
             body = expression.body.tryFixType(expectedType = newType.returnType)
         )
@@ -299,7 +296,7 @@ private class TypeFixerVisitor(
             )
         }
         val fixedAssignedExpression = expression.assignedExpression.run {
-            tryFixType(expectedType = type.fixSelf(expectedType = null, errorRange = range))
+            tryFixType(expectedType = type.fixSelf(expectedType = null))
         }
         return expression.copy(
             type = expression.getFixedSelfType(expectedType = context),
