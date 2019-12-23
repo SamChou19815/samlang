@@ -28,6 +28,25 @@ fun typeCheckSources(sources: Sources<Module>, errorCollector: ErrorCollector): 
     return Sources(moduleMappings = newMappings)
 }
 
+fun typeCheckSourcesIncrementally(
+    sources: Sources<Module>,
+    updatedSourceList: List<ModuleReference>,
+    errorCollector: ErrorCollector
+): Map<ModuleReference, Module> {
+    // TODO: Create incremental version of `GlobalTypingContextBuilder.buildGlobalTypingContext()`.
+    val globalTypingContext = GlobalTypingContextBuilder.buildGlobalTypingContext(sources = sources)
+    val newMappings = mutableMapOf<ModuleReference, Module>()
+    for (moduleReference in updatedSourceList) {
+        newMappings[moduleReference] = typeCheckModule(
+            sources = sources,
+            globalTypingContext = globalTypingContext,
+            moduleReference = moduleReference,
+            errorCollector = errorCollector
+        )
+    }
+    return newMappings
+}
+
 private fun typeCheckModule(
     sources: Sources<Module>,
     globalTypingContext: GlobalTypingContext,
