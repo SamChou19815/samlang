@@ -47,7 +47,7 @@ import samlang.errors.IllegalOtherClassFieldAccess
 import samlang.errors.IllegalThisError
 import samlang.errors.InconsistentFieldsInObjectError
 import samlang.errors.InsufficientTypeInferenceContextError
-import samlang.errors.SizeMismatchError
+import samlang.errors.TupleSizeMismatchError
 import samlang.errors.UnexpectedTypeKindError
 import samlang.errors.UnresolvedNameError
 import samlang.errors.UnsupportedClassTypeDefinitionError
@@ -595,12 +595,17 @@ private class ExpressionTypeCheckerVisitor(
                         range = assignedExpr.range
                     )
                 )
-                SizeMismatchError.check(
-                    sizeDescription = "tuple",
-                    expectedSize = tupleType.mappings.size,
-                    actualSize = pattern.destructedNames.size,
-                    range = assignedExpr.range
-                )
+                val expectedSize = tupleType.mappings.size
+                val actualSize = pattern.destructedNames.size
+                if (expectedSize != actualSize) {
+                    errorCollector.add(
+                        compileTimeError = TupleSizeMismatchError(
+                            expectedSize = expectedSize,
+                            actualSize = actualSize,
+                            range = assignedExpr.range
+                        )
+                    )
+                }
                 pattern.destructedNames.zip(tupleType.mappings).asSequence().mapNotNull { (nameWithPosOpt, t) ->
                     if (nameWithPosOpt == null) null else nameWithPosOpt to t
                 }.fold(initial = ctx) { context, (name, elementType) ->

@@ -8,7 +8,6 @@ import samlang.ast.common.Type.PrimitiveType
 import samlang.ast.common.Type.TupleType
 import samlang.ast.common.Type.UndecidedType
 import samlang.ast.common.TypeVisitor
-import samlang.errors.SizeMismatchError
 import samlang.errors.UnexpectedTypeError
 
 internal class ConstraintAwareTypeChecker(val resolution: TypeResolution, private val errorCollector: ErrorCollector) {
@@ -77,28 +76,30 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution, privat
 
         override fun visit(type: TupleType, context: Type): Type = when (context) {
             is UndecidedType -> type.meetWithUndecidedType(undecidedType = context)
-            is TupleType -> type.copy(
-                mappings = SizeMismatchError.checkNotNull(
-                    sizeDescription = "tuple",
-                    expectedList = context.mappings,
-                    actualList = type.mappings,
-                    range = errorRange
-                ).map { (expect, actual) -> meet(actualType = actual, expectedType = expect) }
-            )
+            is TupleType -> {
+                if (context.mappings.size != type.mappings.size) {
+                    throw ConflictError()
+                }
+                val meetMappings = context.mappings
+                    .zip(other = type.mappings)
+                    .map { (expect, actual) -> meet(actualType = actual, expectedType = expect) }
+                type.copy(mappings = meetMappings)
+            }
             else -> throw ConflictError()
         }
 
         override fun visit(type: FunctionType, context: Type): Type = when (context) {
             is UndecidedType -> type.meetWithUndecidedType(undecidedType = context)
-            is FunctionType -> type.copy(
-                argumentTypes = SizeMismatchError.checkNotNull(
-                    sizeDescription = "function parameters",
-                    expectedList = context.argumentTypes,
-                    actualList = type.argumentTypes,
-                    range = errorRange
-                ).map { (expect, actual) -> meet(actualType = actual, expectedType = expect) },
-                returnType = meet(actualType = type.returnType, expectedType = context.returnType)
-            )
+            is FunctionType -> {
+                if (context.argumentTypes.size != type.argumentTypes.size) {
+                    throw ConflictError()
+                }
+                val meetArguments = context.argumentTypes
+                    .zip(other = type.argumentTypes)
+                    .map { (expect, actual) -> meet(actualType = actual, expectedType = expect) }
+                val meetReturn = meet(actualType = type.returnType, expectedType = context.returnType)
+                type.copy(argumentTypes = meetArguments, returnType = meetReturn)
+            }
             else -> throw ConflictError()
         }
 
