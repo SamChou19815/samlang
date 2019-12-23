@@ -8,7 +8,6 @@ import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.lang.ClassDefinition
-import samlang.errors.CollisionError
 import samlang.errors.NotWellDefinedIdentifierError
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnresolvedNameError
@@ -58,7 +57,7 @@ data class TypeCheckingContext(
         val name = classDefinition.name
         val nameRange = classDefinition.nameRange
         return addNewClassTypeDefinition(name = name, typeDefinition = classDefinition.typeDefinition) {
-            errorCollector.add(compileTimeError = CollisionError(collidedName = name, range = nameRange))
+            errorCollector.reportCollisionError(name = name, range = nameRange)
         }
     }
 

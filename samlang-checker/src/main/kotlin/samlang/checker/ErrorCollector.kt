@@ -1,6 +1,8 @@
 package samlang.checker
 
 import samlang.ast.common.ModuleReference
+import samlang.ast.common.Range
+import samlang.errors.CollisionError
 import samlang.errors.CompileTimeError
 
 internal inline fun <T> T.collectPotentialError(errorCollector: ErrorCollector, crossinline checker: T.() -> T): T =
@@ -22,6 +24,9 @@ class ErrorCollector {
     fun add(compileTimeError: CompileTimeError) {
         _collectedErrors.add(element = compileTimeError)
     }
+
+    fun reportCollisionError(name: String, range: Range): Unit =
+        add(compileTimeError = CollisionError(collidedName = name, range = range))
 
     internal inline fun <T> collectPotentialError(unchecked: T, crossinline checker: (T) -> T): T =
         try {

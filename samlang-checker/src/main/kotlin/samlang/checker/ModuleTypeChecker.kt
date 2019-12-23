@@ -5,7 +5,6 @@ import samlang.ast.common.TypeDefinition
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Module
-import samlang.errors.CollisionError
 
 class ModuleTypeChecker(val errorCollector: ErrorCollector) {
 
@@ -123,7 +122,7 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
         contextForTypeCheckingBody = parameters.fold(initial = contextForTypeCheckingBody) { tempContext, parameter ->
             val parameterType = parameter.type.validate(context = tempContext, errorRange = parameter.typeRange)
             tempContext.addLocalValueType(name = parameter.name, type = parameterType) {
-                errorCollector.add(CollisionError(collidedName = parameter.name, range = parameter.nameRange))
+                errorCollector.reportCollisionError(name = parameter.name, range = parameter.nameRange)
             }
         }
         val checkedBody = body.typeCheck(
@@ -138,7 +137,7 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
         val nameSet = hashSetOf<String>()
         forEach { name ->
             if (!nameSet.add(element = name)) {
-                errorCollector.add(compileTimeError = CollisionError(collidedName = name, range = range))
+                errorCollector.reportCollisionError(name = name, range = range)
                 return false
             }
         }
@@ -149,7 +148,7 @@ class ModuleTypeChecker(val errorCollector: ErrorCollector) {
         val nameSet = hashSetOf<String>()
         namesWithRange.forEach { (name, range) ->
             if (!nameSet.add(element = name)) {
-                errorCollector.add(compileTimeError = CollisionError(collidedName = name, range = range))
+                errorCollector.reportCollisionError(name = name, range = range)
                 return false
             }
         }

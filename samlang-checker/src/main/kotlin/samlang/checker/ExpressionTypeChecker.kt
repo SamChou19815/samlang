@@ -40,7 +40,6 @@ import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.Pattern
-import samlang.errors.CollisionError
 import samlang.errors.CompileTimeError
 import samlang.errors.DuplicateFieldDeclarationError
 import samlang.errors.ExtraFieldInObjectError
@@ -505,7 +504,7 @@ private class ExpressionTypeCheckerVisitor(
                 )
             val newContext = dataVariable?.let { name ->
                 ctx.addLocalValueType(name = name, type = mappingDataType) {
-                    errorCollector.add(compileTimeError = CollisionError(collidedName = name, range = range))
+                    errorCollector.reportCollisionError(name = name, range = range)
                 }
             } ?: ctx
             unusedMappings.remove(key = tag)
@@ -534,10 +533,8 @@ private class ExpressionTypeCheckerVisitor(
         val names = hashSetOf<String>()
         for ((name, _) in arguments) {
             if (!names.add(name)) {
-                return expression.errorWith(
-                    expectedType = expectedType,
-                    error = CollisionError(collidedName = name, range = range)
-                )
+                errorCollector.reportCollisionError(name = name, range = range)
+                return expression.replaceTypeWithExpectedType(expectedType = expectedType)
             }
         }
         // setting up types and update context
@@ -545,7 +542,7 @@ private class ExpressionTypeCheckerVisitor(
         val checkedArguments = arguments.map { (argumentName, argumentType) ->
             val checkedArgumentType = argumentType.validate(context = ctx, errorRange = range)
             currentContext = currentContext.addLocalValueType(name = argumentName, type = checkedArgumentType) {
-                errorCollector.add(compileTimeError = CollisionError(collidedName = argumentName, range = range))
+                errorCollector.reportCollisionError(name = argumentName, range = range)
             }
             argumentName to checkedArgumentType
         }
@@ -590,7 +587,7 @@ private class ExpressionTypeCheckerVisitor(
                     if (nameWithPosOpt == null) null else nameWithPosOpt to t
                 }.fold(initial = ctx) { context, (name, elementType) ->
                     context.addLocalValueType(name = name, type = elementType) {
-                        errorCollector.add(CollisionError(collidedName = name, range = pattern.range))
+                        errorCollector.reportCollisionError(name = name, range = pattern.range)
                     }
                 }
             }
@@ -627,14 +624,14 @@ private class ExpressionTypeCheckerVisitor(
                         )
                     val nameToBeUsed = renamedName ?: originalName
                     context.addLocalValueType(name = nameToBeUsed, type = fieldType) {
-                        errorCollector.add(CollisionError(collidedName = nameToBeUsed, range = pattern.range))
+                        errorCollector.reportCollisionError(name = nameToBeUsed, range = pattern.range)
                     }
                 }
             }
             is Pattern.VariablePattern -> {
                 val (p, n) = pattern
                 ctx.addLocalValueType(name = n, type = checkedAssignedExprType) {
-                    errorCollector.add(compileTimeError = CollisionError(collidedName = n, range = p))
+                    errorCollector.reportCollisionError(name = n, range = p)
                 }
             }
             is Pattern.WildCardPattern -> ctx
