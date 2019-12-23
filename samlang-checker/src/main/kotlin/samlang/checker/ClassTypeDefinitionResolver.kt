@@ -9,9 +9,11 @@ import samlang.ast.common.Type.TupleType
 import samlang.ast.common.Type.UndecidedType
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.TypeVisitor
+import samlang.errors.CompileTimeError
 import samlang.errors.IllegalOtherClassMatch
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnsupportedClassTypeDefinitionError
+import samlang.util.Either
 
 internal object ClassTypeDefinitionResolver {
 
@@ -23,14 +25,16 @@ internal object ClassTypeDefinitionResolver {
         typeDefinitionType: TypeDefinitionType,
         context: TypeCheckingContext,
         errorRange: Range
-    ): Map<String, Type> {
+    ): Either<Map<String, Type>, CompileTimeError> {
         val (id, typeArguments) = identifierType
         if (id != context.currentClass) {
-            throw IllegalOtherClassMatch(range = errorRange)
+            return Either.Right(v = IllegalOtherClassMatch(range = errorRange))
         }
         val (_, _, typeParameters, varMap) = context.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == typeDefinitionType }
-            ?: throw UnsupportedClassTypeDefinitionError(typeDefinitionType = typeDefinitionType, range = errorRange)
+            ?: return Either.Right(
+                v = UnsupportedClassTypeDefinitionError(typeDefinitionType = typeDefinitionType, range = errorRange)
+            )
         return run {
             TypeParamSizeMismatchError.check(
                 expectedSize = typeParameters.size,
@@ -42,7 +46,7 @@ internal object ClassTypeDefinitionResolver {
                     type = v,
                     context = typeParameters.zip(typeArguments).toMap()
                 )
-            }
+            }.let { Either.Left(v = it) }
         }
     }
 

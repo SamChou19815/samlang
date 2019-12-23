@@ -328,12 +328,16 @@ private class ExpressionTypeCheckerVisitor(
             typeArguments = Type.undecidedList(number = typeParameters.size)
         )
         val checkedAssignedExpression = assignedExpression.toChecked(ctx = ctx, expectedType = expectedFieldType)
-        val fieldMappings = ClassTypeDefinitionResolver.getTypeDefinition(
+        val fieldMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
             identifierType = checkedAssignedExpression.type as IdentifierType,
             context = ctx,
             typeDefinitionType = OBJECT,
             errorRange = assignedExpression.range
         )
+        val fieldMappings = when (fieldMappingsOrError) {
+            is Either.Left -> fieldMappingsOrError.v
+            is Either.Right -> return expression.errorWith(expectedType = expectedType, error = fieldMappingsOrError.v)
+        }
         val locallyInferredFieldType = fieldMappings[fieldName] ?: return expression.errorWith(
             expectedType = expectedType,
             error = UnresolvedNameError(unresolvedName = fieldName, range = range)
@@ -480,12 +484,18 @@ private class ExpressionTypeCheckerVisitor(
         val checkedMatchedExpression = matchedExpression.toChecked(ctx = ctx)
         val variantMappings = when (val checkedMatchedExpressionType = checkedMatchedExpression.type) {
             is IdentifierType -> {
-                ClassTypeDefinitionResolver.getTypeDefinition(
+                val variantMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
                     identifierType = checkedMatchedExpressionType,
                     context = ctx,
                     typeDefinitionType = VARIANT,
                     errorRange = matchedExpression.range
                 )
+                when (variantMappingsOrError) {
+                    is Either.Left -> variantMappingsOrError.v
+                    is Either.Right -> return expression.errorWith(
+                        expectedType = expectedType, error = variantMappingsOrError.v
+                    )
+                }
             }
             is UndecidedType -> return expression.errorWith(
                 expectedType = expectedType,
@@ -615,12 +625,18 @@ private class ExpressionTypeCheckerVisitor(
                         )
                     )
                 }
-                val fieldMappings = ClassTypeDefinitionResolver.getTypeDefinition(
+                val fieldMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
                     identifierType = identifierType,
                     context = ctx,
                     typeDefinitionType = OBJECT,
                     errorRange = assignedExpr.range
                 )
+                val fieldMappings = when (fieldMappingsOrError) {
+                    is Either.Left -> fieldMappingsOrError.v
+                    is Either.Right -> return expression.errorWith(
+                        expectedType = expectedType, error = fieldMappingsOrError.v
+                    )
+                }
                 pattern.destructedNames.fold(initial = ctx) { context, (originalName, renamedName) ->
                     val fieldType = fieldMappings[originalName]
                         ?: return expression.errorWith(
