@@ -111,6 +111,7 @@ internal class LanguageServerState(configuration: Configuration) {
         )
         checkedModules.putAll(from = updatedModules)
         _globalTypingContext = updatedContext
+        affectedSourceList.forEach { affectedSource -> errors.remove(key = affectedSource) }
         updateErrors(updatedErrors = errorCollector.collectedErrors)
     }
 }
