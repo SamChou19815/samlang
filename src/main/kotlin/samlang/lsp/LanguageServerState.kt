@@ -8,6 +8,7 @@ import samlang.checker.DependencyTracker
 import samlang.checker.ErrorCollector
 import samlang.checker.typeCheckSources
 import samlang.errors.CompilationFailedException
+import samlang.errors.CompileTimeError
 import samlang.parser.ModuleBuilder
 import samlang.service.SourceCollector
 
@@ -16,9 +17,9 @@ internal class LanguageServerState {
     private val rawSources: MutableMap<ModuleReference, String> = hashMapOf()
     private val rawModules: MutableMap<ModuleReference, Module> = hashMapOf()
     private val checkedModules: MutableMap<ModuleReference, Module>
+    private val errors: MutableMap<ModuleReference, List<CompileTimeError>> = hashMapOf()
 
     init {
-        // TODO: Separate errors into modules
         val errorCollector = ErrorCollector()
         for ((moduleReference, inputStream) in SourceCollector.collectHandles(configuration = Configuration.parse())) {
             val sourceCode = inputStream.bufferedReader().use { it.readText() }
@@ -33,16 +34,25 @@ internal class LanguageServerState {
             sources = Sources(moduleMappings = rawModules),
             errorCollector = errorCollector
         ).moduleMappings.toMutableMap()
+        updateErrors(updatedErrors = errorCollector.collectedErrors)
     }
 
     fun update(moduleReference: ModuleReference, sourceCode: String) {
         try {
             updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
         } catch (exception: CompilationFailedException) {
-            // TODO handle error
+            updateErrors(updatedErrors = exception.errors)
             return
         }
-        // TODO
+        /*
+        val errorCollector = ErrorCollector()
+        typeCheckSourcesIncrementally(
+            sources = Sources(moduleMappings = rawModules),
+            globalTypingContext = TODO(),
+            affectedSourceList = listOf(moduleReference),
+            errorCollector = errorCollector
+        )
+        */
     }
 
     private fun updateRawModule(moduleReference: ModuleReference, sourceCode: String) {
@@ -56,6 +66,10 @@ internal class LanguageServerState {
             importedModules = rawModule.imports.map { it.importedModule }
         )
         rawModules[moduleReference] = rawModule
+    }
+
+    private fun updateErrors(updatedErrors: Collection<CompileTimeError>) {
+        updatedErrors.groupBy { it.moduleReference ?: error(message = "Bad error") }.let { errors.putAll(from = it) }
     }
 
     fun remove(moduleReference: ModuleReference) {
