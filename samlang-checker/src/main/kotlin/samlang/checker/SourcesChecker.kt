@@ -60,7 +60,7 @@ private fun typeCheckModule(
     checkUndefinedImportsError(
         sources = sources,
         module = module,
-        errorCollector = errorCollector
+        errorCollector = moduleErrorCollector
     )
     val moduleContext = globalTypingContext.modules[moduleReference]
         ?: error(message = "Missing module $moduleReference!")
