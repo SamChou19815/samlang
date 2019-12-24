@@ -14,7 +14,7 @@ import samlang.errors.CompileTimeError
 import samlang.parser.ModuleBuilder
 import samlang.service.SourceCollector
 
-internal class LanguageServerState {
+internal class LanguageServerState(configuration: Configuration) {
     private val dependencyTracker: DependencyTracker = DependencyTracker()
     private val rawSources: MutableMap<ModuleReference, String> = hashMapOf()
     private val rawModules: MutableMap<ModuleReference, Module> = hashMapOf()
@@ -24,7 +24,7 @@ internal class LanguageServerState {
 
     init {
         val errorCollector = ErrorCollector()
-        for ((moduleReference, inputStream) in SourceCollector.collectHandles(configuration = Configuration.parse())) {
+        for ((moduleReference, inputStream) in SourceCollector.collectHandles(configuration = configuration)) {
             val sourceCode = inputStream.bufferedReader().use { it.readText() }
             try {
                 val rawModule = updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
