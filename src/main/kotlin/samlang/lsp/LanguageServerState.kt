@@ -19,8 +19,10 @@ internal class LanguageServerState(configuration: Configuration) {
     private val rawSources: MutableMap<ModuleReference, String> = hashMapOf()
     private val rawModules: MutableMap<ModuleReference, Module> = hashMapOf()
     private val checkedModules: MutableMap<ModuleReference, Module>
+
     private val errors: MutableMap<ModuleReference, List<CompileTimeError>> = hashMapOf()
-    private var globalTypingContext: GlobalTypingContext
+    private var _globalTypingContext: GlobalTypingContext
+    val globalTypingContext: GlobalTypingContext get() = _globalTypingContext
 
     init {
         val errorCollector = ErrorCollector()
@@ -42,9 +44,13 @@ internal class LanguageServerState(configuration: Configuration) {
             errorCollector = errorCollector
         )
         checkedModules = checkedSources.moduleMappings.toMutableMap()
-        globalTypingContext = context
+        _globalTypingContext = context
         updateErrors(updatedErrors = errorCollector.collectedErrors)
     }
+
+    val allErrors: List<CompileTimeError> get() = errors.values.flatten()
+
+    fun getErrors(moduleReference: ModuleReference): List<CompileTimeError> = errors[moduleReference] ?: emptyList()
 
     fun update(moduleReference: ModuleReference, sourceCode: String) {
         val rawModule = try {
@@ -81,7 +87,8 @@ internal class LanguageServerState(configuration: Configuration) {
     }
 
     private fun reportChanges(moduleReference: ModuleReference, module: Module?): List<ModuleReference> {
-        val affected = HashSet(dependencyTracker.getReverseDependencies(moduleReference = moduleReference))
+        val affected = hashSetOf(moduleReference)
+        affected.addAll(elements = dependencyTracker.getReverseDependencies(moduleReference = moduleReference))
         if (module == null) {
             dependencyTracker.update(moduleReference = moduleReference, importedModules = null)
         } else {
@@ -98,12 +105,12 @@ internal class LanguageServerState(configuration: Configuration) {
         val errorCollector = ErrorCollector()
         val (updatedModules, updatedContext) = typeCheckSourcesIncrementally(
             sources = Sources(moduleMappings = rawModules),
-            globalTypingContext = globalTypingContext,
+            globalTypingContext = _globalTypingContext,
             affectedSourceList = affectedSourceList,
             errorCollector = errorCollector
         )
         checkedModules.putAll(from = updatedModules)
-        globalTypingContext = updatedContext
+        _globalTypingContext = updatedContext
         updateErrors(updatedErrors = errorCollector.collectedErrors)
     }
 }
