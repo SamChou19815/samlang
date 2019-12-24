@@ -34,6 +34,10 @@ class LocationLookup<E : Any> {
         }
     }
 
+    fun purge(moduleReference: ModuleReference) {
+        locationTable.remove(key = moduleReference)
+    }
+
     /**
      * Visible for testing.
      *
