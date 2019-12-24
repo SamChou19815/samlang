@@ -1,10 +1,12 @@
 package samlang.ast.common
 
+import java.io.File
+
 data class ModuleReference(val parts: List<String>) {
 
     constructor(moduleName: String) : this(parts = listOf(moduleName))
 
-    fun toFilename(): String = parts.joinToString(separator = "/", postfix = ".sam")
+    fun toFilename(): String = parts.joinToString(separator = File.separator, postfix = ".sam")
     override fun toString(): String = parts.joinToString(separator = ".")
 
     companion object {

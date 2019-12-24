@@ -18,20 +18,23 @@ internal class LanguageServerState {
     private val checkedModules: MutableMap<ModuleReference, Module>
 
     init {
+        // TODO: Separate errors into modules
         val errorCollector = ErrorCollector()
         for ((moduleReference, inputStream) in SourceCollector.collectHandles(configuration = Configuration.parse())) {
             val sourceCode = inputStream.bufferedReader().use { it.readText() }
             rawSources[moduleReference] = sourceCode
             try {
-                val rawModule = ModuleBuilder.buildModuleFromText(file = "TODO", text = sourceCode)
+                val rawModule = ModuleBuilder.buildModuleFromText(
+                    file = moduleReference.toFilename(),
+                    text = sourceCode
+                )
                 dependencyTracker.update(
                     moduleReference = moduleReference,
                     importedModules = rawModule.imports.map { it.importedModule }
                 )
                 rawModules[moduleReference] = rawModule
             } catch (exception: CompilationFailedException) {
-                // TODO: collect errors
-                exception.errors
+                exception.errors.forEach { errorCollector.add(compileTimeError = it) }
                 continue
             }
         }

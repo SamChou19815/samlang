@@ -1,14 +1,13 @@
 package samlang.service
 
 import java.io.File
-import java.io.InputStream
 import java.nio.file.FileSystems
 import java.nio.file.Paths
 import samlang.Configuration
 import samlang.ast.common.ModuleReference
 
 object SourceCollector {
-    fun collectHandles(configuration: Configuration): List<Pair<ModuleReference, InputStream>> {
+    fun collectHandles(configuration: Configuration): List<Pair<ModuleReference, File>> {
         val sourcePath = Paths.get(configuration.sourceDirectory)
         val excludeGlobMatchers = configuration.excludes.map { glob ->
             FileSystems.getDefault().getPathMatcher("glob:$glob")
@@ -24,7 +23,7 @@ object SourceCollector {
             val moduleReference = ModuleReference(
                 parts = relativeFile.nameWithoutExtension.split(File.separator).toList()
             )
-            moduleReference to file.inputStream()
+            moduleReference to file
         }.toList()
     }
 }
