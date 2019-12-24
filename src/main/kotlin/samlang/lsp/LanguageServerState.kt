@@ -2,7 +2,9 @@ package samlang.lsp
 
 import samlang.Configuration
 import samlang.ast.common.ModuleReference
+import samlang.ast.common.Position
 import samlang.ast.common.Sources
+import samlang.ast.common.Type
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Module
 import samlang.checker.DependencyTracker
@@ -63,6 +65,9 @@ internal class LanguageServerState(configuration: Configuration) {
     fun getErrors(moduleReference: ModuleReference): List<CompileTimeError> = errors[moduleReference] ?: emptyList()
 
     fun getCheckedModule(moduleReference: ModuleReference): Module? = checkedModules[moduleReference]
+
+    fun queryType(moduleReference: ModuleReference, position: Position): Type? =
+        _locationLookup.get(moduleReference = moduleReference, position = position)?.type
 
     fun update(moduleReference: ModuleReference, sourceCode: String) {
         val rawModule = try {
