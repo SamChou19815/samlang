@@ -3,6 +3,7 @@ package samlang.lsp
 import samlang.Configuration
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
+import samlang.ast.lang.Expression
 import samlang.ast.lang.Module
 import samlang.checker.DependencyTracker
 import samlang.checker.ErrorCollector
@@ -12,6 +13,9 @@ import samlang.checker.typeCheckSourcesIncrementally
 import samlang.errors.CompilationFailedException
 import samlang.errors.CompileTimeError
 import samlang.parser.ModuleBuilder
+import samlang.service.LocationLookup
+import samlang.service.LocationLookupBuilder
+import samlang.service.ReadOnlyLocationLookup
 import samlang.service.SourceCollector
 
 internal class LanguageServerState(configuration: Configuration) {
@@ -23,6 +27,8 @@ internal class LanguageServerState(configuration: Configuration) {
     private val errors: MutableMap<ModuleReference, List<CompileTimeError>> = hashMapOf()
     private var _globalTypingContext: GlobalTypingContext
     val globalTypingContext: GlobalTypingContext get() = _globalTypingContext
+    private var _locationLookup: LocationLookup<Expression> = LocationLookup()
+    val locationLookup: ReadOnlyLocationLookup<Expression> = _locationLookup
 
     init {
         val errorCollector = ErrorCollector()
@@ -68,6 +74,7 @@ internal class LanguageServerState(configuration: Configuration) {
         rawModules.remove(key = moduleReference)
         checkedModules.remove(key = moduleReference)
         errors.remove(key = moduleReference)
+        _locationLookup.purge(moduleReference = moduleReference)
         val affected = reportChanges(moduleReference = moduleReference, module = null)
         incrementalTypeCheck(affectedSourceList = affected)
     }
@@ -79,6 +86,9 @@ internal class LanguageServerState(configuration: Configuration) {
             text = sourceCode
         )
         rawModules[moduleReference] = rawModule
+        LocationLookupBuilder(locationLookup = _locationLookup).rebuild(
+            moduleReference = moduleReference, module = rawModule
+        )
         return rawModule
     }
 
