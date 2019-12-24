@@ -6,7 +6,9 @@ import samlang.ast.common.Sources
 import samlang.ast.lang.Module
 import samlang.checker.DependencyTracker
 import samlang.checker.ErrorCollector
+import samlang.checker.GlobalTypingContext
 import samlang.checker.typeCheckSources
+import samlang.checker.typeCheckSourcesIncrementally
 import samlang.errors.CompilationFailedException
 import samlang.errors.CompileTimeError
 import samlang.parser.ModuleBuilder
@@ -18,6 +20,7 @@ internal class LanguageServerState {
     private val rawModules: MutableMap<ModuleReference, Module> = hashMapOf()
     private val checkedModules: MutableMap<ModuleReference, Module>
     private val errors: MutableMap<ModuleReference, List<CompileTimeError>> = hashMapOf()
+    private var globalTypingContext: GlobalTypingContext
 
     init {
         val errorCollector = ErrorCollector()
@@ -34,10 +37,12 @@ internal class LanguageServerState {
                 continue
             }
         }
-        checkedModules = typeCheckSources(
+        val (checkedSources, context) = typeCheckSources(
             sources = Sources(moduleMappings = rawModules),
             errorCollector = errorCollector
-        ).moduleMappings.toMutableMap()
+        )
+        checkedModules = checkedSources.moduleMappings.toMutableMap()
+        globalTypingContext = context
         updateErrors(updatedErrors = errorCollector.collectedErrors)
     }
 
@@ -48,24 +53,17 @@ internal class LanguageServerState {
             updateErrors(updatedErrors = exception.errors)
             return
         }
-        /*
         val affected = reportChanges(moduleReference = moduleReference, module = rawModule)
-        val errorCollector = ErrorCollector()
-        typeCheckSourcesIncrementally(
-            sources = Sources(moduleMappings = rawModules),
-            globalTypingContext = TODO(),
-            affectedSourceList = affected,
-            errorCollector = errorCollector
-        )
-        */
+        incrementalTypeCheck(affectedSourceList = affected)
     }
 
     fun remove(moduleReference: ModuleReference) {
         rawSources.remove(key = moduleReference)
         rawModules.remove(key = moduleReference)
         checkedModules.remove(key = moduleReference)
+        errors.remove(key = moduleReference)
         val affected = reportChanges(moduleReference = moduleReference, module = null)
-        // typeCheckSourcesIncrementally(sources = , affectedSourceList = , errorCollector = )
+        incrementalTypeCheck(affectedSourceList = affected)
     }
 
     private fun updateRawModule(moduleReference: ModuleReference, sourceCode: String): Module {
@@ -94,5 +92,18 @@ internal class LanguageServerState {
         }
         affected.addAll(elements = dependencyTracker.getReverseDependencies(moduleReference = moduleReference))
         return affected.toList()
+    }
+
+    private fun incrementalTypeCheck(affectedSourceList: List<ModuleReference>) {
+        val errorCollector = ErrorCollector()
+        val (updatedModules, updatedContext) = typeCheckSourcesIncrementally(
+            sources = Sources(moduleMappings = rawModules),
+            globalTypingContext = globalTypingContext,
+            affectedSourceList = affectedSourceList,
+            errorCollector = errorCollector
+        )
+        checkedModules.putAll(from = updatedModules)
+        globalTypingContext = updatedContext
+        updateErrors(updatedErrors = errorCollector.collectedErrors)
     }
 }

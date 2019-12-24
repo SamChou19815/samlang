@@ -4,7 +4,10 @@ import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.ast.lang.Module
 
-fun typeCheckSources(sources: Sources<Module>, errorCollector: ErrorCollector): Sources<Module> {
+fun typeCheckSources(
+    sources: Sources<Module>,
+    errorCollector: ErrorCollector
+): Pair<Sources<Module>, GlobalTypingContext> {
     // TODO: Include stdlib into globalTypingContext
     val globalTypingContext = GlobalTypingContextBuilder.buildGlobalTypingContext(sources = sources)
     // TODO: Include checked stdlib into newMappings
@@ -18,7 +21,7 @@ fun typeCheckSources(sources: Sources<Module>, errorCollector: ErrorCollector): 
             errorCollector = errorCollector
         )
     }
-    return Sources(moduleMappings = newMappings)
+    return Sources(moduleMappings = newMappings) to globalTypingContext
 }
 
 fun typeCheckSourcesIncrementally(
@@ -26,7 +29,7 @@ fun typeCheckSourcesIncrementally(
     globalTypingContext: GlobalTypingContext,
     affectedSourceList: List<ModuleReference>,
     errorCollector: ErrorCollector
-): Map<ModuleReference, Module> {
+): Pair<Map<ModuleReference, Module>, GlobalTypingContext> {
     val updatedGlobalTypingContext = GlobalTypingContextBuilder.updateGlobalTypingContext(
         globalTypingContext = globalTypingContext,
         sources = sources,
@@ -43,7 +46,7 @@ fun typeCheckSourcesIncrementally(
             errorCollector = errorCollector
         )
     }
-    return newMappings
+    return newMappings to updatedGlobalTypingContext
 }
 
 private fun typeCheckModule(
@@ -74,8 +77,9 @@ private fun typeCheckModule(
 
 fun typeCheckSingleModuleSource(module: Module, errorCollector: ErrorCollector): Module {
     val moduleReference = ModuleReference(moduleName = "Test")
-    return typeCheckSources(
+    val (checkedSources, _) = typeCheckSources(
         sources = Sources(moduleMappings = mapOf(moduleReference to module)),
         errorCollector = errorCollector
-    ).moduleMappings[moduleReference] ?: error(message = "Should be there!")
+    )
+    return checkedSources.moduleMappings[moduleReference] ?: error(message = "Should be there!")
 }
