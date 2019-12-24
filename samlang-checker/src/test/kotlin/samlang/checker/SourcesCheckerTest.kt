@@ -51,19 +51,19 @@ class SourcesCheckerTest : StringSpec({
         val sources = Sources(
             moduleMappings = mapOf(
                 ModuleReference(moduleName = "A") to ModuleBuilder.buildModuleFromText(
-                    file = "A.sam",
+                    moduleReference = ModuleReference(moduleName = "A"),
                     text = sourceA
                 ),
                 ModuleReference(moduleName = "B") to ModuleBuilder.buildModuleFromText(
-                    file = "B.sam",
+                    moduleReference = ModuleReference(moduleName = "B"),
                     text = sourceB
                 ),
                 ModuleReference(moduleName = "C") to ModuleBuilder.buildModuleFromText(
-                    file = "C.sam",
+                    moduleReference = ModuleReference(moduleName = "C"),
                     text = sourceC
                 ),
                 ModuleReference(moduleName = "D") to ModuleBuilder.buildModuleFromText(
-                    file = "D.sam",
+                    moduleReference = ModuleReference(moduleName = "D"),
                     text = sourceD
                 )
             )

@@ -16,7 +16,7 @@ object SourceChecker {
         for ((moduleReference, file) in sourceHandles) {
             val module = file.inputStream().use { stream ->
                 try {
-                    ModuleBuilder.buildModule(file = moduleReference.toFilename(), inputStream = stream)
+                    ModuleBuilder.buildModule(moduleReference = moduleReference, inputStream = stream)
                 } catch (compilationFailedException: CompilationFailedException) {
                     compilationFailedException.errors.forEach { errorCollector.add(compileTimeError = it) }
                     null

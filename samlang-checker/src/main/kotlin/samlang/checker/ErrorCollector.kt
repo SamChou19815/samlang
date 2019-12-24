@@ -11,9 +11,8 @@ class ErrorCollector {
     val collectedErrors: List<CompileTimeError> get() = _collectedErrors
 
     internal fun addErrorsWithModules(errorCollector: ErrorCollector, moduleReference: ModuleReference) {
-        val moduleFile = moduleReference.toFilename()
         errorCollector._collectedErrors.forEach { error ->
-            _collectedErrors.add(element = error.withErrorModule(file = moduleFile))
+            _collectedErrors.add(element = error.withErrorModule(moduleReference = moduleReference))
         }
     }
 

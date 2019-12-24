@@ -14,9 +14,9 @@ import samlang.util.createOrFail
 
 object ModuleBuilder {
 
-    fun buildModule(file: String, inputStream: InputStream): Module {
+    fun buildModule(moduleReference: ModuleReference, inputStream: InputStream): Module {
         val parser = PLParser(CommonTokenStream(PLLexer(ANTLRInputStream(inputStream))))
-        val errorListener = SyntaxErrorListener(file = file)
+        val errorListener = SyntaxErrorListener(moduleReference = moduleReference)
         parser.removeErrorListeners()
         parser.addErrorListener(errorListener)
         val sourceVisitor = Visitor(syntaxErrorListener = errorListener)
@@ -29,8 +29,8 @@ object ModuleBuilder {
         return createOrFail(item = module, errors = errors)
     }
 
-    fun buildModuleFromText(file: String, text: String): Module =
-        buildModule(file = file, inputStream = text.byteInputStream())
+    fun buildModuleFromText(moduleReference: ModuleReference, text: String): Module =
+        buildModule(moduleReference = moduleReference, inputStream = text.byteInputStream())
 
     private class Visitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module>() {
 

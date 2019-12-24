@@ -14,8 +14,9 @@ class ModuleTypeCheckerTest : StringSpec() {
 
     private fun getTypeErrors(id: String, code: String): Set<String> {
         return try {
-            val module = ModuleBuilder.buildModuleFromText(file = "$id.sam", text = code)
-            val sources = Sources(mapOf(ModuleReference(moduleName = id) to module))
+            val moduleReference = ModuleReference(moduleName = id)
+            val module = ModuleBuilder.buildModuleFromText(moduleReference = moduleReference, text = code)
+            val sources = Sources(mapOf(moduleReference to module))
             val errorCollector = ErrorCollector()
             val checkedSources = typeCheckSources(sources = sources, errorCollector = errorCollector)
             createOrFail(item = checkedSources, errors = errorCollector.collectedErrors)

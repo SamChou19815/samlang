@@ -5,6 +5,7 @@ import java.io.PrintStream
 import java.nio.charset.Charset
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
+import samlang.ast.common.ModuleReference
 import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
 import samlang.checker.typeCheckSingleModuleSource
@@ -48,17 +49,17 @@ internal object WebDemoController {
      */
     @JvmStatic
     fun interpret(programString: String): Response {
+        val moduleReference = ModuleReference(moduleName = "Demo")
         val rawModule: Module
         try {
-            rawModule = ModuleBuilder.buildModuleFromText(file = "demo.sam", text = programString)
+            rawModule = ModuleBuilder.buildModuleFromText(moduleReference = moduleReference, text = programString)
         } catch (compilationFailedException: CompilationFailedException) {
             return Response(type = Type.BAD_SYNTAX, detail = compilationFailedException.errorMessage)
         }
         val errorCollector = ErrorCollector()
         val checkedModule = typeCheckSingleModuleSource(module = rawModule, errorCollector = errorCollector)
         if (errorCollector.collectedErrors.isNotEmpty()) {
-            val errors =
-                errorCollector.collectedErrors.map { it.withErrorModule(file = "demo.sam") }
+            val errors = errorCollector.collectedErrors.map { it.withErrorModule(moduleReference) }
             return Response(type = Type.BAD_TYPE, detail = CompilationFailedException(errors = errors).errorMessage)
         }
         // passed all the compile time checks, start to interpret

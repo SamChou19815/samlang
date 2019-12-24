@@ -48,7 +48,7 @@ internal class LanguageServerState {
     private fun updateRawModule(moduleReference: ModuleReference, sourceCode: String) {
         rawSources[moduleReference] = sourceCode
         val rawModule = ModuleBuilder.buildModuleFromText(
-            file = moduleReference.toFilename(),
+            moduleReference = moduleReference,
             text = sourceCode
         )
         dependencyTracker.update(

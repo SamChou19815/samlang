@@ -50,7 +50,7 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
             val intValue = text.toLongOrNull() ?: kotlin.run {
                 syntaxErrorListener.addSyntaxError(
                     syntaxError = SyntaxError(
-                        file = syntaxErrorListener.file,
+                        moduleReference = syntaxErrorListener.moduleReference,
                         range = token.range,
                         reason = "Not a 64-bit integer."
                     )
@@ -89,7 +89,9 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
         if (expressionList.size > 22) {
             syntaxErrorListener.addSyntaxError(
                 syntaxError = SyntaxError(
-                    file = syntaxErrorListener.file, range = range, reason = "Tuple size exceeds 22."
+                    moduleReference = syntaxErrorListener.moduleReference,
+                    range = range,
+                    reason = "Tuple size exceeds 22."
                 )
             )
         }
@@ -257,7 +259,9 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
         if (arguments.size > 22) {
             syntaxErrorListener.addSyntaxError(
                 syntaxError = SyntaxError(
-                    file = syntaxErrorListener.file, range = range, reason = "Lambda argument size exceeds 22."
+                    moduleReference = syntaxErrorListener.moduleReference,
+                    range = range,
+                    reason = "Lambda argument size exceeds 22."
                 )
             )
         }
