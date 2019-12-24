@@ -1,6 +1,7 @@
 package samlang.service
 
 import samlang.ast.common.Location
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Position
 import samlang.ast.common.Range
 
@@ -12,13 +13,14 @@ import samlang.ast.common.Range
 class LocationLookup<E : Any> {
 
     /**
-     * Mapping from source path to a list of (entity, position range of entity)
+     * Mapping from module reference to a list of (entity, position range of entity)
      */
-    private val locationTable: MutableMap<String, MutableMap<Range, E>> = mutableMapOf()
+    private val locationTable: MutableMap<ModuleReference, MutableMap<Range, E>> = mutableMapOf()
 
-    fun get(sourcePath: String, position: Position): E? {
-        val location = getBestLocation(sourcePath = sourcePath, position = position) ?: return null
-        val localTable = locationTable[location.sourcePath] ?: error(message = "Bad getBestLocation implementation!")
+    fun get(moduleReference: ModuleReference, position: Position): E? {
+        val location = getBestLocation(moduleReference = moduleReference, position = position) ?: return null
+        val localTable = locationTable[location.moduleReference]
+            ?: error(message = "Bad getBestLocation implementation!")
         return localTable[location.range] ?: error(message = "Bad getBestLocation implementation!")
     }
 
@@ -35,11 +37,11 @@ class LocationLookup<E : Any> {
     /**
      * Visible for testing.
      *
-     * @return the narrowest possible location correspond to given [position] at [sourcePath]. If there is no location
-     * that contains the given position, `null` is returned.
+     * @return the narrowest possible location correspond to given [position] at [moduleReference]. If there is no
+     * location that contains the given position, `null` is returned.
      */
-    internal fun getBestLocation(sourcePath: String, position: Position): Location? {
-        val fileLocationMap = locationTable[sourcePath] ?: return null
+    internal fun getBestLocation(moduleReference: ModuleReference, position: Position): Location? {
+        val fileLocationMap = locationTable[moduleReference] ?: return null
         var bestWeight = Int.MAX_VALUE
         var bestLocation: Location? = null
         for (range in fileLocationMap.keys) {
@@ -51,7 +53,7 @@ class LocationLookup<E : Any> {
             val weight = (range.end.line - range.start.line) * 1000 + (range.end.column - range.start.column)
             if (weight < bestWeight) {
                 bestWeight = weight
-                bestLocation = Location(sourcePath = sourcePath, range = range)
+                bestLocation = Location(moduleReference = moduleReference, range = range)
             }
         }
         return bestLocation
