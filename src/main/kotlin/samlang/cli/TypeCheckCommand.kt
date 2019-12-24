@@ -3,14 +3,14 @@ package samlang.cli
 import com.github.ajalt.clikt.core.CliktCommand
 import java.io.File
 import kotlin.system.exitProcess
+import samlang.Configuration
 import samlang.errors.CompilationFailedException
-import samlang.parseConfiguration
 import samlang.service.SourceChecker
 import samlang.service.SourceCollector
 
 class TypeCheckCommand : CliktCommand(name = "check") {
     override fun run() {
-        val configuration = parseConfiguration()
+        val configuration = Configuration.parse()
         val sourceDirectory = File(configuration.sourceDirectory).absoluteFile
         if (!sourceDirectory.isDirectory) {
             echo(message = "$sourceDirectory is not a directory.", err = true)

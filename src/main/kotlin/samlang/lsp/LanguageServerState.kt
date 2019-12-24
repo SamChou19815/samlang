@@ -1,5 +1,6 @@
 package samlang.lsp
 
+import samlang.Configuration
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.ast.lang.Module
@@ -7,7 +8,6 @@ import samlang.checker.DependencyTracker
 import samlang.checker.ErrorCollector
 import samlang.checker.typeCheckSources
 import samlang.errors.CompilationFailedException
-import samlang.parseConfiguration
 import samlang.parser.ModuleBuilder
 import samlang.service.SourceCollector
 
@@ -19,7 +19,7 @@ internal class LanguageServerState {
 
     init {
         val errorCollector = ErrorCollector()
-        for ((moduleReference, inputStream) in SourceCollector.collectHandles(configuration = parseConfiguration())) {
+        for ((moduleReference, inputStream) in SourceCollector.collectHandles(configuration = Configuration.parse())) {
             val sourceCode = inputStream.bufferedReader().use { it.readText() }
             rawSources[moduleReference] = sourceCode
             try {
