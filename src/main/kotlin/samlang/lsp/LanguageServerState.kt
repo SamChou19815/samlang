@@ -24,7 +24,11 @@ internal class LanguageServerState {
         for ((moduleReference, inputStream) in SourceCollector.collectHandles(configuration = Configuration.parse())) {
             val sourceCode = inputStream.bufferedReader().use { it.readText() }
             try {
-                updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
+                val rawModule = updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
+                dependencyTracker.update(
+                    moduleReference = moduleReference,
+                    importedModules = rawModule.imports.map { it.importedModule }
+                )
             } catch (exception: CompilationFailedException) {
                 exception.errors.forEach { errorCollector.add(compileTimeError = it) }
                 continue
@@ -38,47 +42,57 @@ internal class LanguageServerState {
     }
 
     fun update(moduleReference: ModuleReference, sourceCode: String) {
-        try {
+        val rawModule = try {
             updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
         } catch (exception: CompilationFailedException) {
             updateErrors(updatedErrors = exception.errors)
             return
         }
         /*
+        val affected = reportChanges(moduleReference = moduleReference, module = rawModule)
         val errorCollector = ErrorCollector()
         typeCheckSourcesIncrementally(
             sources = Sources(moduleMappings = rawModules),
             globalTypingContext = TODO(),
-            affectedSourceList = listOf(moduleReference),
+            affectedSourceList = affected,
             errorCollector = errorCollector
         )
         */
-    }
-
-    private fun updateRawModule(moduleReference: ModuleReference, sourceCode: String) {
-        rawSources[moduleReference] = sourceCode
-        val rawModule = ModuleBuilder.buildModuleFromText(
-            moduleReference = moduleReference,
-            text = sourceCode
-        )
-        dependencyTracker.update(
-            moduleReference = moduleReference,
-            importedModules = rawModule.imports.map { it.importedModule }
-        )
-        rawModules[moduleReference] = rawModule
-    }
-
-    private fun updateErrors(updatedErrors: Collection<CompileTimeError>) {
-        updatedErrors.groupBy { it.moduleReference ?: error(message = "Bad error") }.let { errors.putAll(from = it) }
     }
 
     fun remove(moduleReference: ModuleReference) {
         rawSources.remove(key = moduleReference)
         rawModules.remove(key = moduleReference)
         checkedModules.remove(key = moduleReference)
-        val affected = HashSet(dependencyTracker.getReverseDependencies(moduleReference = moduleReference))
-        dependencyTracker.update(moduleReference = moduleReference, importedModules = null)
-        affected.addAll(elements = dependencyTracker.getReverseDependencies(moduleReference = moduleReference))
+        val affected = reportChanges(moduleReference = moduleReference, module = null)
         // typeCheckSourcesIncrementally(sources = , affectedSourceList = , errorCollector = )
+    }
+
+    private fun updateRawModule(moduleReference: ModuleReference, sourceCode: String): Module {
+        rawSources[moduleReference] = sourceCode
+        val rawModule = ModuleBuilder.buildModuleFromText(
+            moduleReference = moduleReference,
+            text = sourceCode
+        )
+        rawModules[moduleReference] = rawModule
+        return rawModule
+    }
+
+    private fun updateErrors(updatedErrors: Collection<CompileTimeError>) {
+        updatedErrors.groupBy { it.moduleReference ?: error(message = "Bad error") }.let { errors.putAll(from = it) }
+    }
+
+    private fun reportChanges(moduleReference: ModuleReference, module: Module?): List<ModuleReference> {
+        val affected = HashSet(dependencyTracker.getReverseDependencies(moduleReference = moduleReference))
+        if (module == null) {
+            dependencyTracker.update(moduleReference = moduleReference, importedModules = null)
+        } else {
+            dependencyTracker.update(
+                moduleReference = moduleReference,
+                importedModules = module.imports.map { it.importedModule }
+            )
+        }
+        affected.addAll(elements = dependencyTracker.getReverseDependencies(moduleReference = moduleReference))
+        return affected.toList()
     }
 }
