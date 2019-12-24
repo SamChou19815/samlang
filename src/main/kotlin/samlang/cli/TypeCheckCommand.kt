@@ -10,7 +10,12 @@ import samlang.service.SourceCollector
 
 class TypeCheckCommand : CliktCommand(name = "check") {
     override fun run() {
-        val configuration = Configuration.parse()
+        val configuration = try {
+            Configuration.parse()
+        } catch (exception: Configuration.IllFormattedConfigurationException) {
+            echo(message = exception.reason, err = true)
+            exitProcess(status = 1)
+        }
         val sourceDirectory = File(configuration.sourceDirectory).absoluteFile
         if (!sourceDirectory.isDirectory) {
             echo(message = "$sourceDirectory is not a directory.", err = true)
