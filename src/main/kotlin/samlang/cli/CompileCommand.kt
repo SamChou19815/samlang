@@ -5,6 +5,7 @@ import java.io.File
 import java.nio.file.Paths
 import kotlin.system.exitProcess
 import samlang.errors.CompilationFailedException
+import samlang.parseConfiguration
 import samlang.service.SourceChecker
 import samlang.service.SourceCollector
 import samlang.service.SourceCompiler

@@ -6,8 +6,8 @@ import samlang.ast.lang.Module
 import samlang.checker.DependencyTracker
 import samlang.checker.ErrorCollector
 import samlang.checker.typeCheckSources
-import samlang.cli.parseConfiguration
 import samlang.errors.CompilationFailedException
+import samlang.parseConfiguration
 import samlang.parser.ModuleBuilder
 import samlang.service.SourceCollector
 

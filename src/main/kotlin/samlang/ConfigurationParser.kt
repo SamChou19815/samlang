@@ -1,4 +1,4 @@
-package samlang.cli
+package samlang
 
 import com.google.gson.JsonElement
 import com.google.gson.JsonParseException
@@ -10,7 +10,7 @@ import java.nio.file.Paths
 
 internal class IllFormattedConfigurationException(val reason: String) : RuntimeException(reason)
 
-internal fun parseConfiguration(): samlang.Configuration {
+internal fun parseConfiguration(): Configuration {
     val currentDirectory = Paths.get("").toAbsolutePath().toFile()
     var configurationDirectory: File? = currentDirectory
     while (configurationDirectory != null) {
@@ -26,19 +26,28 @@ internal fun parseConfiguration(): samlang.Configuration {
     throw IllFormattedConfigurationException(reason = "Configuration file is not found.")
 }
 
-internal fun parseConfiguration(string: String): samlang.Configuration =
+internal fun parseConfiguration(string: String): Configuration =
     string.byteInputStream().use { parseConfiguration(inputStream = it) }
 
-private fun parseConfiguration(inputStream: InputStream): samlang.Configuration {
+private fun parseConfiguration(inputStream: InputStream): Configuration {
     try {
         val parsedJson = JsonParser.parseReader(InputStreamReader(inputStream))
         if (!parsedJson.isJsonObject) {
             throw IllFormattedConfigurationException(reason = "Configuration file is not a json.")
         }
         val configurationJson = parsedJson.asJsonObject
-        val sourceDirectory = configurationJson.get("sourceDirectory")?.let { parseStringStrict(it) } ?: "."
-        val outputDirectory = configurationJson.get("outputDirectory")?.let { parseStringStrict(it) } ?: "out"
-        val excludes = parseOptionalStringList(jsonElement = configurationJson.get("excludes"))
+        val sourceDirectory = configurationJson.get("sourceDirectory")?.let {
+            parseStringStrict(
+                it
+            )
+        } ?: "."
+        val outputDirectory = configurationJson.get("outputDirectory")?.let {
+            parseStringStrict(
+                it
+            )
+        } ?: "out"
+        val excludes =
+            parseOptionalStringList(jsonElement = configurationJson.get("excludes"))
         val targets = parseOptionalStringList(jsonElement = configurationJson.get("targets"))
         val acceptableTargets = setOf("ts", "js", "java")
         for (target in targets) {
@@ -46,7 +55,7 @@ private fun parseConfiguration(inputStream: InputStream): samlang.Configuration 
                 throw IllFormattedConfigurationException(reason = "$target is not an acceptable compilation target.")
             }
         }
-        return samlang.Configuration(
+        return Configuration(
             sourceDirectory = sourceDirectory,
             outputDirectory = outputDirectory,
             excludes = excludes,

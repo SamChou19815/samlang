@@ -1,4 +1,4 @@
-package samlang.cli
+package samlang
 
 import io.kotlintest.shouldBe
 import io.kotlintest.shouldThrow
@@ -7,7 +7,7 @@ import io.kotlintest.specs.StringSpec
 class ConfigurationParserTest : StringSpec() {
     init {
         "empty configuration can parse." {
-            parseConfiguration(string = "{}") shouldBe samlang.Configuration(
+            parseConfiguration(string = "{}") shouldBe Configuration(
                 sourceDirectory = ".",
                 outputDirectory = "out",
                 excludes = emptyList(),
@@ -16,7 +16,7 @@ class ConfigurationParserTest : StringSpec() {
         }
         "partial configuration can parse." {
             val json = """{ "sourceDirectory": "source", "targets": ["ts", "js", "java"] }"""
-            parseConfiguration(string = json) shouldBe samlang.Configuration(
+            parseConfiguration(string = json) shouldBe Configuration(
                 sourceDirectory = "source",
                 outputDirectory = "out",
                 excludes = emptyList(),
@@ -32,7 +32,7 @@ class ConfigurationParserTest : StringSpec() {
                 "targets": ["ts", "js", "java"]
             }
             """.trimIndent()
-            parseConfiguration(string = json) shouldBe samlang.Configuration(
+            parseConfiguration(string = json) shouldBe Configuration(
                 sourceDirectory = "source",
                 outputDirectory = "output",
                 excludes = listOf("foo", "bar"),
@@ -40,11 +40,23 @@ class ConfigurationParserTest : StringSpec() {
             )
         }
         "empty string does not parse." {
-            shouldThrow<IllFormattedConfigurationException> { parseConfiguration(string = "") }
+            shouldThrow<IllFormattedConfigurationException> {
+                parseConfiguration(
+                    string = ""
+                )
+            }
         }
         "bad json does not parse." {
-            shouldThrow<IllFormattedConfigurationException> { parseConfiguration(string = "{") }
-            shouldThrow<IllFormattedConfigurationException> { parseConfiguration(string = "}") }
+            shouldThrow<IllFormattedConfigurationException> {
+                parseConfiguration(
+                    string = "{"
+                )
+            }
+            shouldThrow<IllFormattedConfigurationException> {
+                parseConfiguration(
+                    string = "}"
+                )
+            }
         }
         "bad format does not parse." {
             shouldThrow<IllFormattedConfigurationException> {

@@ -4,6 +4,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import java.io.File
 import kotlin.system.exitProcess
 import samlang.errors.CompilationFailedException
+import samlang.parseConfiguration
 import samlang.service.SourceChecker
 import samlang.service.SourceCollector
 
