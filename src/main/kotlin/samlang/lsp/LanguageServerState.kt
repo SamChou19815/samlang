@@ -50,6 +50,10 @@ internal class LanguageServerState(configuration: Configuration) {
             errorCollector = errorCollector
         )
         checkedModules = checkedSources.moduleMappings.toMutableMap()
+        val locationLookupBuilder = LocationLookupBuilder(locationLookup = _locationLookup)
+        checkedModules.forEach { (moduleReference, checkedModule) ->
+            locationLookupBuilder.rebuild(moduleReference = moduleReference, module = checkedModule)
+        }
         _globalTypingContext = context
         updateErrors(updatedErrors = errorCollector.collectedErrors)
     }
@@ -88,9 +92,6 @@ internal class LanguageServerState(configuration: Configuration) {
             text = sourceCode
         )
         rawModules[moduleReference] = rawModule
-        LocationLookupBuilder(locationLookup = _locationLookup).rebuild(
-            moduleReference = moduleReference, module = rawModule
-        )
         return rawModule
     }
 
@@ -122,6 +123,10 @@ internal class LanguageServerState(configuration: Configuration) {
             errorCollector = errorCollector
         )
         checkedModules.putAll(from = updatedModules)
+        val locationLookupBuilder = LocationLookupBuilder(locationLookup = _locationLookup)
+        updatedModules.forEach { (moduleReference, checkedModule) ->
+            locationLookupBuilder.rebuild(moduleReference = moduleReference, module = checkedModule)
+        }
         _globalTypingContext = updatedContext
         affectedSourceList.forEach { affectedSource -> errors.remove(key = affectedSource) }
         updateErrors(updatedErrors = errorCollector.collectedErrors)
