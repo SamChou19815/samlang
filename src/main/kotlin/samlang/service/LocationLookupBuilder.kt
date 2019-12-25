@@ -30,8 +30,17 @@ class LocationLookupBuilder(val locationLookup: LocationLookup<Expression>) {
         locationLookup.purge(moduleReference = moduleReference)
         val visitor = BuildLocationLookupVisitor(moduleReference = moduleReference)
         module.classDefinitions.forEach { classDefinition ->
+            val className = classDefinition.name
+            visitor.build(
+                expression = Variable(
+                    range = classDefinition.nameRange,
+                    type = Type.IdentifierType(identifier = "class $className", typeArguments = emptyList()),
+                    name = classDefinition.name
+                )
+            )
             classDefinition.members.forEach { member ->
-                member.body.accept(visitor = visitor, context = Unit)
+                visitor.build(expression = Variable(range = member.nameRange, type = member.type, name = member.name))
+                visitor.build(expression = member.body)
             }
         }
     }
@@ -150,7 +159,7 @@ class LocationLookupBuilder(val locationLookup: LocationLookup<Expression>) {
             accept(visitor = this@BuildLocationLookupVisitor, context = Unit)
         }
 
-        private fun build(expression: Expression) {
+        fun build(expression: Expression) {
             locationLookup[Location(moduleReference = moduleReference, range = expression.range)] = expression
         }
     }
