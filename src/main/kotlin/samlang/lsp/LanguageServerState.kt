@@ -3,6 +3,7 @@ package samlang.lsp
 import samlang.Configuration
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Position
+import samlang.ast.common.Range
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
 import samlang.ast.lang.Expression
@@ -66,8 +67,10 @@ internal class LanguageServerState(configuration: Configuration) {
 
     fun getCheckedModule(moduleReference: ModuleReference): Module? = checkedModules[moduleReference]
 
-    fun queryType(moduleReference: ModuleReference, position: Position): Type? =
-        _locationLookup.get(moduleReference = moduleReference, position = position)?.type
+    fun queryType(moduleReference: ModuleReference, position: Position): Pair<Type, Range>? {
+        val expression = _locationLookup.get(moduleReference = moduleReference, position = position) ?: return null
+        return expression.type to expression.range
+    }
 
     fun update(moduleReference: ModuleReference, sourceCode: String) {
         val rawModule = try {

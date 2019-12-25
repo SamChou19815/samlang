@@ -15,6 +15,9 @@ import org.eclipse.lsp4j.DidSaveTextDocumentParams
 import org.eclipse.lsp4j.Hover
 import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.InitializeResult
+import org.eclipse.lsp4j.MarkedString
+import org.eclipse.lsp4j.Position as Lsp4jPosition
+import org.eclipse.lsp4j.Range as Lsp4jRange
 import org.eclipse.lsp4j.ServerCapabilities
 import org.eclipse.lsp4j.TextDocumentPositionParams
 import org.eclipse.lsp4j.TextDocumentSyncKind
@@ -25,6 +28,8 @@ import org.eclipse.lsp4j.services.TextDocumentService as Lsp4jTextDocumentServic
 import org.eclipse.lsp4j.services.WorkspaceService as Lsp4jWorkspaceService
 import samlang.Configuration
 import samlang.ast.common.ModuleReference
+import samlang.ast.common.Position
+import samlang.ast.common.Range
 
 class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer {
     private val state: LanguageServerState = LanguageServerState(configuration = configuration)
@@ -83,8 +88,17 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer {
         }
 
         override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover> {
-            // TODO: add actual stuff to hover response.
-            return CompletableFuture.completedFuture(Hover())
+            val moduleReference = uriToModuleReference(uri = position.textDocument.uri)
+                ?: return CompletableFuture.completedFuture(null)
+            val samlangPosition = position.position.asPosition()
+            val (type, range) = state
+                .queryType(moduleReference = moduleReference, position = samlangPosition)
+                ?: return CompletableFuture.completedFuture(null)
+            val hoverResult = Hover(
+                listOf(Either.forRight(MarkedString("SAMLANG", type.toString()))),
+                range.asLsp4jRange()
+            )
+            return CompletableFuture.completedFuture(hoverResult)
         }
 
         private fun uriToModuleReference(uri: String): ModuleReference? {
@@ -95,6 +109,12 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer {
             val parts = uri.substring(startIndex = 0, endIndex = extensionIndex).split(File.separator)
             return ModuleReference(parts = parts)
         }
+
+        private fun Lsp4jPosition.asPosition(): Position = Position(line = line, column = character)
+
+        private fun Position.asLsp4jPosition(): Lsp4jPosition = Lsp4jPosition(line, column)
+
+        private fun Range.asLsp4jRange(): Lsp4jRange = Lsp4jRange(start.asLsp4jPosition(), end.asLsp4jPosition())
     }
 
     private inner class WorkspaceService : org.eclipse.lsp4j.services.WorkspaceService {
