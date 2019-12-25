@@ -64,21 +64,16 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer {
     override fun getWorkspaceService(): Lsp4jWorkspaceService = workspaceService
 
     private inner class TextDocumentService : Lsp4jTextDocumentService {
-        override fun didOpen(params: DidOpenTextDocumentParams) {
-            val document = params.textDocument
-            document.version
-            val sourceCode = document.text
-            val moduleReference = document.uri
-                .let { it.substring(startIndex = 0, endIndex = it.lastIndexOf(string = ".sam")) }
-                .let { ModuleReference(parts = it.split(File.separator)) }
-            state.update(moduleReference = moduleReference, sourceCode = sourceCode)
-        }
+        override fun didOpen(params: DidOpenTextDocumentParams): Unit = Unit
 
         override fun didSave(params: DidSaveTextDocumentParams): Unit = Unit
 
         override fun didClose(params: DidCloseTextDocumentParams): Unit = Unit
 
         override fun didChange(params: DidChangeTextDocumentParams) {
+            val moduleReference = uriToModuleReference(uri = params.textDocument.uri) ?: return
+            val sourceCode = params.contentChanges[0].text
+            state.update(moduleReference = moduleReference, sourceCode = sourceCode)
         }
 
         override fun completion(
@@ -90,6 +85,15 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer {
         override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover> {
             // TODO: add actual stuff to hover response.
             return CompletableFuture.completedFuture(Hover())
+        }
+
+        private fun uriToModuleReference(uri: String): ModuleReference? {
+            val extensionIndex = uri.lastIndexOf(string = ".sam")
+            if (extensionIndex == -1) {
+                return null
+            }
+            val parts = uri.substring(startIndex = 0, endIndex = extensionIndex).split(File.separator)
+            return ModuleReference(parts = parts)
         }
     }
 
