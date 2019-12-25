@@ -140,7 +140,7 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
                 .autoComplete(moduleReference = moduleReference, position = samlangPosition)
                 .map { (name, type) ->
                     CompletionItem(name).apply {
-                        detail = type.toString()
+                        detail = type
                         kind = CompletionItemKind.Field
                     }
                 }

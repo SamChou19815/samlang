@@ -29,5 +29,12 @@ data class GlobalTypingContext(val modules: PersistentMap<ModuleReference, Modul
     /**
      * Typing information for a function.
      */
-    data class TypeInfo(val isPublic: Boolean, val typeParams: List<String>?, val type: Type.FunctionType)
+    data class TypeInfo(val isPublic: Boolean, val typeParams: List<String>?, val type: Type.FunctionType) {
+        override fun toString(): String =
+            if (typeParams == null || typeParams.isEmpty()) {
+                type.toString()
+            } else {
+                typeParams.joinToString(separator = ", ", prefix = "<", postfix = ">") + type.toString()
+            }
+    }
 }
