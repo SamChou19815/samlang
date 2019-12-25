@@ -10,11 +10,7 @@ plugins {
 
 object Constants {
     const val NAME: String = "samlang"
-    const val VERSION: String = "0.0.8"
 }
-
-group = Constants.NAME
-version = Constants.VERSION
 
 allprojects {
     apply<JavaPlugin>()
@@ -62,10 +58,6 @@ allprojects {
     }
 }
 
-subprojects {
-    version = Constants.VERSION
-}
-
 dependencies {
     implementation(project(":samlang-ast"))
     implementation(project(":samlang-checker"))
@@ -85,7 +77,6 @@ tasks {
     shadowJar {
         minimize()
         archiveBaseName.set(Constants.NAME)
-        archiveVersion.set(Constants.VERSION)
         manifest { attributes["Main-Class"] = "samlang.Main" }
         isZip64 = true
         artifacts { shadow(archiveFile) { builtBy(shadowJar) } }
