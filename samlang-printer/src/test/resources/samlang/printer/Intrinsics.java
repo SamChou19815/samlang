@@ -1,4 +1,4 @@
-package SamlangIntrinsics$;
+package stdlib;
 
 public final class SamlangIntrinsics$ {
   private SamlangIntrinsics$() {}
