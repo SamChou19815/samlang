@@ -38,7 +38,17 @@
         "scopeName": "text.samlang",
         "path": "./syntaxes/samlang.json"
       }
-    ]
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "SAMLANG Language Service Configuration",
+      "properties": {
+        "samlang.programPath": {
+          "type": "string",
+          "description": "Path to `samlang` program."
+        }
+      }
+    }
   },
   "scripts": {
     "postinstall": "tsc"

@@ -60,7 +60,15 @@ export function activate(_: vscode.ExtensionContext) {
     provideDocumentFormattingEdits
   });
 
-  const serverOptions = { command: 'samlang', args: ['lsp'] };
+  const programPath = vscode.workspace.getConfiguration().get('samlang.programPath');
+  if (typeof programPath != 'string') {
+    throw new Error(`Invalid program path: ${programPath}.`);
+  }
+  console.log(`Connecting to ${programPath}...`);
+  const serverOptions = {
+    command: 'java',
+    args: ['-jar', programPath, 'lsp']
+  };
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: 'file', language: 'samlang' }]
   };
