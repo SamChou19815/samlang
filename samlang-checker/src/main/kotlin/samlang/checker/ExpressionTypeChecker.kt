@@ -127,11 +127,12 @@ private class ExpressionTypeCheckerVisitor(
     }
 
     override fun visit(expression: ClassMember, ctx: TypeCheckingContext, expectedType: Type): Expression {
-        val (range, _, _, module, member) = expression
-        val (locallyInferredType, undecidedTypeArguments) = ctx.getClassFunctionType(module = module, member = member)
+        val (range, _, _, className, _, member) = expression
+        val (locallyInferredType, undecidedTypeArguments) = ctx
+            .getClassFunctionType(module = className, member = member)
             ?: return expression.errorWith(
                 expectedType = expectedType,
-                error = UnresolvedNameError(unresolvedName = "$module::$member", range = range)
+                error = UnresolvedNameError(unresolvedName = "$className::$member", range = range)
             )
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = locallyInferredType, errorRange = range

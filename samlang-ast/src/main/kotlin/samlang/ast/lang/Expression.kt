@@ -66,6 +66,7 @@ sealed class Expression(val precedence: Int) : Node {
         override val type: Type,
         val typeArguments: List<Type>,
         val className: String,
+        val classNameRange: Range,
         val memberName: String
     ) : Expression(precedence = 0) {
 

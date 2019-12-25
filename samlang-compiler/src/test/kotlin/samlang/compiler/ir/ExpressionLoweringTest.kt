@@ -54,6 +54,7 @@ class ExpressionLoweringTest : StringSpec() {
                     type = unit,
                     typeArguments = emptyList(),
                     className = "A",
+                    classNameRange = dummyRange,
                     memberName = "b"
                 ),
                 expectedExpression = IrExpression.ClassMember(

@@ -2,6 +2,7 @@ package samlang.service
 
 import samlang.ast.common.Location
 import samlang.ast.common.ModuleReference
+import samlang.ast.common.Type
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
 import samlang.ast.lang.Expression.ClassMember
@@ -43,7 +44,16 @@ class LocationLookupBuilder(val locationLookup: LocationLookup<Expression>) {
 
         override fun visit(expression: Variable, context: Unit): Unit = build(expression = expression)
 
-        override fun visit(expression: ClassMember, context: Unit): Unit = build(expression = expression)
+        override fun visit(expression: ClassMember, context: Unit) {
+            val className = expression.className
+            val syntheticVariable = Variable(
+                range = expression.classNameRange,
+                type = Type.IdentifierType(identifier = "class $className", typeArguments = emptyList()),
+                name = className
+            )
+            build(expression = syntheticVariable)
+            build(expression = expression)
+        }
 
         override fun visit(expression: TupleConstructor, context: Unit) {
             expression.expressionList.forEach { it.buildRecursively() }
