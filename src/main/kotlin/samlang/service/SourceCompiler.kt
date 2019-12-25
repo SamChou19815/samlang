@@ -34,7 +34,9 @@ object SourceCompiler {
     fun compileJavaSources(source: Sources<Module>, outputDirectory: File) {
         val javaSources = compileToJavaSources(sources = source)
         outputDirectory.mkdirs()
-        Paths.get(outputDirectory.toString(), "SamlangIntrinsics$.java")
+        val samlangIntrinsicsPath = Paths.get(outputDirectory.toString(), "SamlangIntrinsics$").toFile()
+        samlangIntrinsicsPath.mkdirs()
+        Paths.get(outputDirectory.toString(), "SamlangIntrinsics$", "SamlangIntrinsics$.java")
             .toFile()
             .outputStream()
             .use(block = ::printJavaSamlangIntrinsics)

@@ -1,3 +1,5 @@
+package SamlangIntrinsics$;
+
 public final class SamlangIntrinsics$ {
   private SamlangIntrinsics$() {}
   public static final class Tuple1<T0> {

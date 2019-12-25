@@ -76,6 +76,8 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
     private var temporaryVariableId: Int = 0
 
     fun printIntrinsics() {
+        printer.printWithBreak(x = "package SamlangIntrinsics\$;")
+        printer.println()
         printer.printWithBreak(x = "public final class SamlangIntrinsics\$ {")
         printer.indented {
             printWithBreak(x = "private SamlangIntrinsics$() {}")
@@ -127,7 +129,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         val simpleClassName = parts.last()
         val (imports, innerStaticClasses) = outerClass
         if (parts.size > 1) {
-            printer.printWithBreak(x = "import SamlangIntrinsics\$;")
+            printer.printWithBreak(x = "import SamlangIntrinsics\$.SamlangIntrinsics\$;")
             imports.forEach(action = ::printImport)
             printer.println()
         }

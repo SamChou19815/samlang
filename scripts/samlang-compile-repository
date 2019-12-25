@@ -17,5 +17,5 @@ tsc -p out/ts/tsconfig.json
 
 # Java
 echo 'Checking generating Java code...' >&2
-javac ./out/java/*.java
-rm ./out/java/*.class
+javac -cp ./out/java/ ./out/java/**/*.java
+rm ./out/java/**/*.class
