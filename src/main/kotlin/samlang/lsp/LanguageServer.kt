@@ -1,6 +1,8 @@
 package samlang.lsp
 
 import java.io.File
+import java.net.URI
+import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionList
@@ -33,7 +35,7 @@ import samlang.ast.common.ModuleReference
 import samlang.ast.common.Position
 import samlang.ast.common.Range
 
-class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer, LanguageClientAware {
+class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageServer, LanguageClientAware {
     private val state: LanguageServerState = LanguageServerState(configuration = configuration)
     private val textDocumentService: TextDocumentService = TextDocumentService()
     private val workspaceService: WorkspaceService = WorkspaceService()
@@ -100,10 +102,10 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer, Langua
         }
 
         override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover> {
-            System.err.println("Hover request: $position")
             val moduleReference = uriToModuleReference(uri = position.textDocument.uri)
                 ?: return CompletableFuture.completedFuture(null)
             val samlangPosition = position.position.asPosition()
+            System.err.println("Hover request: $moduleReference $samlangPosition")
             val (type, range) = state
                 .queryType(moduleReference = moduleReference, position = samlangPosition)
                 ?: return CompletableFuture.completedFuture(null)
@@ -115,11 +117,16 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer, Langua
         }
 
         private fun uriToModuleReference(uri: String): ModuleReference? {
-            val extensionIndex = uri.lastIndexOf(string = ".sam")
+            val relativePath = Paths.get(configuration.sourceDirectory)
+                .toAbsolutePath()
+                .relativize(Paths.get(URI(uri).path))
+                .toString()
+            val extensionIndex = relativePath.lastIndexOf(string = ".sam")
             if (extensionIndex == -1) {
                 return null
             }
-            val parts = uri.substring(startIndex = 0, endIndex = extensionIndex).split(File.separator)
+            val relativePathWithoutExtension = relativePath.substring(startIndex = 0, endIndex = extensionIndex)
+            val parts = relativePathWithoutExtension.split(File.separator)
             return ModuleReference(parts = parts)
         }
 
