@@ -17,7 +17,7 @@ RUN gradle shadowJar
 FROM openjdk:11-jre
 
 # Copy the jar to the production image from the builder stage.
-COPY --from=builder /home/gradle/build/libs/samlang-0.0.8-all.jar /samlang.jar
+COPY --from=builder /home/gradle/build/libs/samlang-all.jar /samlang.jar
 
 # Run the server subcommand on container startup.
 CMD [ "java", "-jar", "/samlang.jar", "server" ]
