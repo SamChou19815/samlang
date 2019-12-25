@@ -23,6 +23,7 @@ import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Module
+import samlang.ast.lang.Pattern
 
 class LocationLookupBuilder(val locationLookup: LocationLookup<Expression>) {
     fun rebuild(moduleReference: ModuleReference, module: Module) {
@@ -134,7 +135,13 @@ class LocationLookupBuilder(val locationLookup: LocationLookup<Expression>) {
         }
 
         override fun visit(expression: Val, context: Unit) {
-            expression.assignedExpression.buildRecursively()
+            val assignedExpression = expression.assignedExpression
+            val assignedExpressionType = assignedExpression.type
+            val pattern = expression.pattern
+            if (pattern is Pattern.VariablePattern) {
+                build(expression = Variable(range = pattern.range, type = assignedExpressionType, name = pattern.name))
+            }
+            assignedExpression.buildRecursively()
             expression.nextExpression?.buildRecursively()
             build(expression = expression)
         }
