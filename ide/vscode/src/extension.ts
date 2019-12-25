@@ -1,6 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
+import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient';
 
 const provideDocumentFormattingEdits = (document: vscode.TextDocument): vscode.TextEdit[] => {
   // const whitespace
@@ -58,4 +59,19 @@ export function activate(_: vscode.ExtensionContext) {
   vscode.languages.registerDocumentFormattingEditProvider('SAMLANG', {
     provideDocumentFormattingEdits
   });
+
+  const serverOptions = { command: 'samlang', args: ['lsp'] };
+  const clientOptions: LanguageClientOptions = {
+    documentSelector: [{ scheme: 'file', language: 'samlang' }]
+  };
+
+  const languageClient = new LanguageClient(
+    'samlang',
+    'SAMLANG Language Client',
+    serverOptions,
+    clientOptions
+  );
+
+  languageClient.registerProposedFeatures();
+  languageClient.start();
 }
