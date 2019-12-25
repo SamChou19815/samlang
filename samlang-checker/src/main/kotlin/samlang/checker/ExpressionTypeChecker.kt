@@ -325,7 +325,9 @@ private class ExpressionTypeCheckerVisitor(
             val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
                 expectedType = expectedType, actualType = locallyInferredType, errorRange = expression.range
             )
-            return expression.copy(type = constraintInferredType, expression = checkedExpression)
+            return MethodAccess(
+                range = range, type = constraintInferredType, expression = checkedExpression, methodName = fieldName
+            )
         }
         val (_, _, typeParameters, _) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
