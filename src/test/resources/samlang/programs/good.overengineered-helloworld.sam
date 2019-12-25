@@ -10,7 +10,7 @@ class HelloWorld(
 
     public function getGlobalMessage(): string =
         val hw = { message: "Hello World!" };
-        hw::getMessage()
+        hw.getMessage()
 
 }
 

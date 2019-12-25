@@ -191,7 +191,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
                 requireBreak = false,
                 withParenthesis = expression.expression.precedence >= expression.precedence
             )
-            print(x = "::${expression.methodName}", requireBreak = context)
+            print(x = ".${expression.methodName}", requireBreak = context)
         }
     }
 

@@ -48,7 +48,7 @@ class Main {
     val e = c % c;
 
   function methodAndFunctionReference(): int =
-    Clazz.of()::thisTest()
+    Clazz.of().thisTest()
 
   function panicTest(reason: string): Clazz = panic(reason)
 
@@ -56,7 +56,7 @@ class Main {
     val _ = Main.literalsAndSimpleExpressions();
     val _ = Main.variables(3, "hi");
     val _ = Main.methodAndFunctionReference();
-    val _ = Main.panicTest("Ah!")::thisTest();
+    val _ = Main.panicTest("Ah!").thisTest();
     val _ = Main.binaryExpressions();
     val _ = Main.lambdaTest(3);
     Main.functionsTest()
@@ -69,8 +69,8 @@ class Main {
     val e: bool = List.of(3) == List.of(a * 3);
 
   function lambdaTest(a: int): string =
-    val b: Option<string> = Option.none()::toSome(3)::map(Main.lambdaTest);
-    val c: Option<string> = Option.none()::toSome(3)::map((x) -> "empty");
+    val b: Option<string> = Option.none().toSome(3).map(Main.lambdaTest);
+    val c: Option<string> = Option.none().toSome(3).map((x) -> "empty");
     "hello world"
 
 }

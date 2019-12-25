@@ -80,7 +80,6 @@ DOT : '.';
 
 
 BAR : '|';
-COLONCOLON : '::';
 ARROW : '->';
 
 /*

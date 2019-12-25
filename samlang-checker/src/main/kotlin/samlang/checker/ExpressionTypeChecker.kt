@@ -314,6 +314,19 @@ private class ExpressionTypeCheckerVisitor(
 
     override fun visit(expression: FieldAccess, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, _, assignedExpression, fieldName) = expression
+        val tryTypeCheckMethodAccessResult = tryTypeCheckMethodAccess(
+            expression = MethodAccess(
+                range = range, type = expression.type, expression = assignedExpression, methodName = fieldName
+            ),
+            ctx = ctx
+        )
+        if (tryTypeCheckMethodAccessResult is Either.Left) {
+            val (checkedExpression, locallyInferredType) = tryTypeCheckMethodAccessResult.v
+            val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
+                expectedType = expectedType, actualType = locallyInferredType, errorRange = expression.range
+            )
+            return expression.copy(type = constraintInferredType, expression = checkedExpression)
+        }
         val (_, _, typeParameters, _) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
             ?: return expression.errorWith(
@@ -345,13 +358,15 @@ private class ExpressionTypeCheckerVisitor(
         return expression.copy(type = constraintInferredFieldType, expression = checkedAssignedExpression)
     }
 
-    override fun visit(expression: MethodAccess, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    private fun tryTypeCheckMethodAccess(
+        expression: MethodAccess,
+        ctx: TypeCheckingContext
+    ): Either<Pair<Expression, FunctionType>, CompileTimeError> {
         val (range, _, expressionToCallMethod, methodName) = expression
         val checkedExpression = expressionToCallMethod.toChecked(ctx = ctx)
         val (checkedExprTypeIdentifier, checkedExprTypeArguments) = checkedExpression.type as? IdentifierType
-            ?: return expression.errorWith(
-                expectedType = expectedType,
-                error = UnexpectedTypeKindError(
+            ?: return Either.Right(
+                v = UnexpectedTypeKindError(
                     expectedTypeKind = "identifier",
                     actualType = checkedExpression.type,
                     range = expressionToCallMethod.range
@@ -363,12 +378,20 @@ private class ExpressionTypeCheckerVisitor(
             methodName = methodName,
             errorRange = range
         )
-        val locallyInferredType = when (methodTypeOrError) {
-            is Either.Left -> methodTypeOrError.v
-            is Either.Right -> return expression.errorWith(expectedType = expectedType, error = methodTypeOrError.v)
+        return when (methodTypeOrError) {
+            is Either.Left -> Either.Left(v = checkedExpression to methodTypeOrError.v)
+            is Either.Right -> Either.Right(v = methodTypeOrError.v)
+        }
+    }
+
+    override fun visit(expression: MethodAccess, ctx: TypeCheckingContext, expectedType: Type): Expression {
+        val result = tryTypeCheckMethodAccess(expression = expression, ctx = ctx)
+        val (checkedExpression, locallyInferredType) = when (result) {
+            is Either.Left -> result.v
+            is Either.Right -> return expression.errorWith(expectedType = expectedType, error = result.v)
         }
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
-            expectedType = expectedType, actualType = locallyInferredType, errorRange = range
+            expectedType = expectedType, actualType = locallyInferredType, errorRange = expression.range
         )
         return expression.copy(type = constraintInferredType, expression = checkedExpression)
     }

@@ -152,13 +152,6 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
         fieldName = ctx.LowerId().symbol.text
     )
 
-    override fun visitMethodAccessExpr(ctx: PLParser.MethodAccessExprContext): Expression = Expression.MethodAccess(
-        range = ctx.range,
-        type = Type.undecided(),
-        expression = ctx.expression().toExpression(),
-        methodName = ctx.LowerId().symbol.text
-    )
-
     override fun visitNotExpr(ctx: PLParser.NotExprContext): Expression = Expression.Unary(
         range = ctx.range,
         type = Type.bool,

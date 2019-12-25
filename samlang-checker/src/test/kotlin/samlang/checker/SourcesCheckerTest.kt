@@ -30,7 +30,7 @@ class SourcesCheckerTest : StringSpec({
                 public method intValue(): int =
                     match (this) {
                         | Int v -> v
-                        | B b -> b::intValue()
+                        | B b -> b.intValue()
                     }
             }
         """.trimIndent()
@@ -40,7 +40,7 @@ class SourcesCheckerTest : StringSpec({
             import { C } from C
             
             class IdentifyChecker {
-                public function equals(c1: C, c2: C): bool = c1::intValue() == c2::intValue() 
+                public function equals(c1: C, c2: C): bool = c1.intValue() == c2.intValue() 
             }
             
             class Main {

@@ -57,7 +57,6 @@ expression
     | LBRACE (SPREAD expression COMMA)? objectFieldDeclarations RBRACE # ObjConstructor
     | UpperId LPAREN expression RPAREN # VariantConstructor
     | expression DOT LowerId # FieldAccessExpr
-    | expression COLONCOLON LowerId # MethodAccessExpr
     | MINUS expression # NegExpr
     | NOT expression # NotExpr
     | PANIC LPAREN expression RPAREN # PanicExpr
