@@ -15,7 +15,9 @@ data class GlobalTypingContext(val modules: PersistentMap<ModuleReference, Modul
     data class ModuleTypingContext(
         val definedClasses: PersistentMap<String, ClassType>,
         val importedClasses: PersistentMap<String, ClassType>
-    )
+    ) {
+        fun getAnyClassType(className: String): ClassType? = definedClasses[className] ?: importedClasses[className]
+    }
 
     /**
      * Typing information for a class.

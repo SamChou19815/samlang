@@ -24,16 +24,12 @@ internal class LanguageServerServices(private val state: LanguageServerState) {
         val moduleContext = state.globalTypingContext.modules[moduleReference] ?: return emptyList()
         if (type.identifier.startsWith(prefix = "class ")) {
             val className = type.identifier.substring(startIndex = 6)
-            val relevantClassType = moduleContext.definedClasses[className]
-                ?: moduleContext.importedClasses[className]
-                ?: return emptyList()
+            val relevantClassType = moduleContext.getAnyClassType(className = className) ?: return emptyList()
             return relevantClassType.functions.map { (name, typeInfo) ->
                 name to typeInfo.toString()
             }
         }
-        val relevantClassType = moduleContext.definedClasses[type.identifier]
-            ?: moduleContext.importedClasses[type.identifier]
-            ?: return emptyList()
+        val relevantClassType = moduleContext.getAnyClassType(className = type.identifier) ?: return emptyList()
         if (relevantClassType.typeDefinition.type != TypeDefinitionType.OBJECT) {
             return emptyList()
         }
