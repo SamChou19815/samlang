@@ -8,11 +8,11 @@ import samlang.ast.common.ModuleReference
 
 object SourceCollector {
     fun collectHandles(configuration: Configuration): List<Pair<ModuleReference, File>> {
-        val sourcePath = Paths.get(configuration.sourceDirectory)
+        val sourcePath = Paths.get(configuration.sourceDirectory).toAbsolutePath()
         val excludeGlobMatchers = configuration.excludes.map { glob ->
             FileSystems.getDefault().getPathMatcher("glob:$glob")
         }
-        return File(configuration.sourceDirectory).walk().mapNotNull { file ->
+        return sourcePath.toFile().walk().mapNotNull { file ->
             if (file.isDirectory || file.extension != "sam") {
                 return@mapNotNull null
             }
@@ -20,9 +20,7 @@ object SourceCollector {
             if (excludeGlobMatchers.any { it.matches(relativeFile.toPath()) }) {
                 return@mapNotNull null
             }
-            val moduleReference = ModuleReference(
-                parts = relativeFile.nameWithoutExtension.split(File.separator).toList()
-            )
+            val moduleReference = ModuleReference(parts = relativeFile.nameWithoutExtension.split(File.separator))
             moduleReference to file
         }.toList()
     }

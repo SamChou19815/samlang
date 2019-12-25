@@ -89,7 +89,7 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
         override fun didChange(params: DidChangeTextDocumentParams) {
             val uri = params.textDocument.uri
             System.err.println("Did change: $uri")
-            val moduleReference = uriToModuleReference(uri = uri) ?: return
+            val moduleReference = uriToModuleReference(uri = uri)
             val sourceCode = params.contentChanges[0].text
             state.update(moduleReference = moduleReference, sourceCode = sourceCode)
         }
@@ -103,30 +103,25 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
 
         override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover> {
             val moduleReference = uriToModuleReference(uri = position.textDocument.uri)
-                ?: return CompletableFuture.completedFuture(null)
             val samlangPosition = position.position.asPosition()
             System.err.println("Hover request: $moduleReference $samlangPosition")
             val (type, range) = state
                 .queryType(moduleReference = moduleReference, position = samlangPosition)
                 ?: return CompletableFuture.completedFuture(null)
             val hoverResult = Hover(
-                listOf(Either.forRight(MarkedString("SAMLANG", type.toString()))),
+                listOf(Either.forRight(MarkedString("samlang", type.toString()))),
                 range.asLsp4jRange()
             )
             return CompletableFuture.completedFuture(hoverResult)
         }
 
-        private fun uriToModuleReference(uri: String): ModuleReference? {
-            val relativePath = Paths.get(configuration.sourceDirectory)
+        private fun uriToModuleReference(uri: String): ModuleReference {
+            val name = Paths.get(configuration.sourceDirectory)
                 .toAbsolutePath()
                 .relativize(Paths.get(URI(uri).path))
-                .toString()
-            val extensionIndex = relativePath.lastIndexOf(string = ".sam")
-            if (extensionIndex == -1) {
-                return null
-            }
-            val relativePathWithoutExtension = relativePath.substring(startIndex = 0, endIndex = extensionIndex)
-            val parts = relativePathWithoutExtension.split(File.separator)
+                .toFile()
+                .nameWithoutExtension
+            val parts = name.split(File.separator)
             return ModuleReference(parts = parts)
         }
 
