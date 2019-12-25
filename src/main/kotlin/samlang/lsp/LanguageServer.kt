@@ -42,6 +42,7 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer, Langua
 
     override fun connect(client: LanguageClient) {
         this.client = client
+        System.err.println("Connected to the client.")
     }
 
     override fun initialize(params: InitializeParams): CompletableFuture<InitializeResult> {
@@ -84,7 +85,9 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer, Langua
         override fun didClose(params: DidCloseTextDocumentParams): Unit = Unit
 
         override fun didChange(params: DidChangeTextDocumentParams) {
-            val moduleReference = uriToModuleReference(uri = params.textDocument.uri) ?: return
+            val uri = params.textDocument.uri
+            System.err.println("Did change: $uri")
+            val moduleReference = uriToModuleReference(uri = uri) ?: return
             val sourceCode = params.contentChanges[0].text
             state.update(moduleReference = moduleReference, sourceCode = sourceCode)
         }
@@ -92,10 +95,12 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer, Langua
         override fun completion(
             position: CompletionParams
         ): CompletableFuture<Either<List<CompletionItem>, CompletionList>> {
+            System.err.println("Completion request: $position")
             return CompletableFuture.completedFuture(Either.forLeft(emptyList()))
         }
 
         override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover> {
+            System.err.println("Hover request: $position")
             val moduleReference = uriToModuleReference(uri = position.textDocument.uri)
                 ?: return CompletableFuture.completedFuture(null)
             val samlangPosition = position.position.asPosition()
