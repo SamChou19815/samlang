@@ -9,6 +9,8 @@ import org.eclipse.lsp4j.CompletionItemKind
 import org.eclipse.lsp4j.CompletionList
 import org.eclipse.lsp4j.CompletionOptions
 import org.eclipse.lsp4j.CompletionParams
+import org.eclipse.lsp4j.Diagnostic
+import org.eclipse.lsp4j.DiagnosticSeverity
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
 import org.eclipse.lsp4j.DidChangeWatchedFilesParams
@@ -20,6 +22,7 @@ import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.InitializeResult
 import org.eclipse.lsp4j.MarkedString
 import org.eclipse.lsp4j.Position as Lsp4jPosition
+import org.eclipse.lsp4j.PublishDiagnosticsParams
 import org.eclipse.lsp4j.Range as Lsp4jRange
 import org.eclipse.lsp4j.ServerCapabilities
 import org.eclipse.lsp4j.TextDocumentPositionParams
@@ -94,7 +97,8 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
             System.err.println("Did change: $uri")
             val moduleReference = uriToModuleReference(uri = uri)
             val sourceCode = params.contentChanges[0].text
-            state.update(moduleReference = moduleReference, sourceCode = sourceCode)
+            val affected = state.update(moduleReference = moduleReference, sourceCode = sourceCode)
+            publishDiagnostics(affectedModules = affected)
         }
 
         override fun completion(
@@ -127,6 +131,20 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
                 range.asLsp4jRange()
             )
             return CompletableFuture.completedFuture(hoverResult)
+        }
+
+        private fun publishDiagnostics(affectedModules: List<ModuleReference>) {
+            val rootUri = Paths.get(configuration.sourceDirectory).toAbsolutePath().toUri()
+            for (affectedModule in affectedModules) {
+                val parameters = PublishDiagnosticsParams().apply {
+                    uri = rootUri.resolve(affectedModule.toFilename()).toString()
+                    diagnostics = state.getErrors(moduleReference = affectedModule).map { error ->
+                        Diagnostic(error.range.asLsp4jRange(), error.reason, DiagnosticSeverity.Error, "samlang")
+                    }
+                }
+                System.err.println(parameters)
+                client.publishDiagnostics(parameters)
+            }
         }
 
         private fun uriToModuleReference(uri: String): ModuleReference {

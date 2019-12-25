@@ -34,6 +34,7 @@ internal class LanguageServerState(configuration: Configuration) {
         val errorCollector = ErrorCollector()
         for ((moduleReference, inputStream) in SourceCollector.collectHandles(configuration = configuration)) {
             val sourceCode = inputStream.bufferedReader().use { it.readText() }
+            errors[moduleReference] = emptyList()
             try {
                 val rawModule = updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
                 dependencyTracker.update(
@@ -64,25 +65,27 @@ internal class LanguageServerState(configuration: Configuration) {
 
     fun getCheckedModule(moduleReference: ModuleReference): Module? = checkedModules[moduleReference]
 
-    fun update(moduleReference: ModuleReference, sourceCode: String) {
+    fun update(moduleReference: ModuleReference, sourceCode: String): List<ModuleReference> {
         val rawModule = try {
             updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
         } catch (exception: CompilationFailedException) {
             updateErrors(updatedErrors = exception.errors)
-            return
+            return listOf(moduleReference)
         }
         val affected = reportChanges(moduleReference = moduleReference, module = rawModule)
         incrementalTypeCheck(affectedSourceList = affected)
+        return affected
     }
 
-    fun remove(moduleReference: ModuleReference) {
+    fun remove(moduleReference: ModuleReference): List<ModuleReference> {
         rawSources.remove(key = moduleReference)
         rawModules.remove(key = moduleReference)
         checkedModules.remove(key = moduleReference)
-        errors.remove(key = moduleReference)
+        errors[moduleReference] = emptyList()
         _locationLookup.purge(moduleReference = moduleReference)
         val affected = reportChanges(moduleReference = moduleReference, module = null)
         incrementalTypeCheck(affectedSourceList = affected)
+        return affected
     }
 
     private fun updateRawModule(moduleReference: ModuleReference, sourceCode: String): Module {
