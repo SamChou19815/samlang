@@ -4,7 +4,6 @@ import java.net.URI
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import org.eclipse.lsp4j.CompletionItem
-import org.eclipse.lsp4j.CompletionItemKind
 import org.eclipse.lsp4j.CompletionList
 import org.eclipse.lsp4j.CompletionOptions
 import org.eclipse.lsp4j.CompletionParams
@@ -138,10 +137,10 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
             System.err.println("Completion request: $triggerCharacter $moduleReference $samlangPosition")
             val completionItems = service
                 .autoComplete(moduleReference = moduleReference, position = samlangPosition)
-                .map { (name, type) ->
-                    CompletionItem(name).apply {
-                        detail = type
-                        kind = CompletionItemKind.Field
+                .map { (itemName, itemKind, itemType) ->
+                    CompletionItem(itemName).apply {
+                        detail = itemType
+                        kind = itemKind
                     }
                 }
             return CompletableFuture.completedFuture(Either.forLeft(completionItems))
