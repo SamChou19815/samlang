@@ -31,12 +31,20 @@ internal class LanguageServerServices(private val state: LanguageServerState) {
             }
         }
         val relevantClassType = moduleContext.getAnyClassType(className = type.identifier) ?: return emptyList()
-        if (relevantClassType.typeDefinition.type != TypeDefinitionType.OBJECT) {
-            return emptyList()
+        val completionResults = arrayListOf<CompletionItem>()
+        if (relevantClassType.typeDefinition.type == TypeDefinitionType.OBJECT) {
+            relevantClassType.typeDefinition.mappings.forEach { (name, type) ->
+                completionResults.add(
+                    element = CompletionItem(name = name, kind = CompletionItemKind.Field, type = type.toString())
+                )
+            }
         }
-        return relevantClassType.typeDefinition.mappings.map { (name, type) ->
-            CompletionItem(name = name, kind = CompletionItemKind.Field, type = type.toString())
+        relevantClassType.methods.forEach { (name, typeInfo) ->
+            completionResults.add(
+                element = CompletionItem(name = name, kind = CompletionItemKind.Method, type = typeInfo.toString())
+            )
         }
+        return completionResults
     }
 
     data class CompletionItem(val name: String, val kind: CompletionItemKind, val type: String)
