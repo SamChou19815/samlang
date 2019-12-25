@@ -1,5 +1,6 @@
 package samlang.lsp
 
+import java.io.File
 import java.util.concurrent.CompletableFuture
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionList
@@ -20,6 +21,7 @@ import org.eclipse.lsp4j.services.LanguageServer as Lsp4jLanguageServer
 import org.eclipse.lsp4j.services.TextDocumentService as Lsp4jTextDocumentService
 import org.eclipse.lsp4j.services.WorkspaceService as Lsp4jWorkspaceService
 import samlang.Configuration
+import samlang.ast.common.ModuleReference
 
 class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer {
     private val state: LanguageServerState = LanguageServerState(configuration = configuration)
@@ -35,7 +37,7 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer {
 
     override fun shutdown(): CompletableFuture<Any> = CompletableFuture.completedFuture(Unit)
 
-    override fun exit() {}
+    override fun exit(): Unit = Unit
 
     override fun getTextDocumentService(): Lsp4jTextDocumentService = textDocumentService
 
@@ -43,19 +45,20 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer {
 
     private inner class TextDocumentService : Lsp4jTextDocumentService {
         override fun didOpen(params: DidOpenTextDocumentParams) {
-            TODO("NOT_IMPLEMENTED")
+            val document = params.textDocument
+            document.version
+            val sourceCode = document.text
+            val moduleReference = document.uri
+                .let { it.substring(startIndex = 0, endIndex = it.lastIndexOf(string = ".sam")) }
+                .let { ModuleReference(parts = it.split(File.separator)) }
+            state.update(moduleReference = moduleReference, sourceCode = sourceCode)
         }
 
-        override fun didSave(params: DidSaveTextDocumentParams) {
-            TODO("NOT_IMPLEMENTED")
-        }
+        override fun didSave(params: DidSaveTextDocumentParams): Unit = Unit
 
-        override fun didClose(params: DidCloseTextDocumentParams) {
-            TODO("NOT_IMPLEMENTED")
-        }
+        override fun didClose(params: DidCloseTextDocumentParams): Unit = Unit
 
         override fun didChange(params: DidChangeTextDocumentParams) {
-            TODO("NOT_IMPLEMENTED")
         }
 
         override fun completion(
@@ -71,12 +74,8 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer {
     }
 
     private inner class WorkspaceService : org.eclipse.lsp4j.services.WorkspaceService {
-        override fun didChangeWatchedFiles(params: DidChangeWatchedFilesParams) {
-            TODO("NOT_IMPLEMENTED")
-        }
+        override fun didChangeWatchedFiles(params: DidChangeWatchedFilesParams): Unit = Unit
 
-        override fun didChangeConfiguration(params: DidChangeConfigurationParams) {
-            TODO("NOT_IMPLEMENTED")
-        }
+        override fun didChangeConfiguration(params: DidChangeConfigurationParams): Unit = Unit
     }
 }
