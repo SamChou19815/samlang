@@ -102,7 +102,8 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
         ): CompletableFuture<Either<List<CompletionItem>, CompletionList>> {
             val moduleReference = uriToModuleReference(uri = position.textDocument.uri)
             val samlangPosition = position.position.asPosition()
-            System.err.println("Completion request: $moduleReference $samlangPosition")
+            val triggerCharacter = position.context.triggerCharacter
+            System.err.println("Completion request: $triggerCharacter $moduleReference $samlangPosition")
             val completionItems = service
                 .autoComplete(moduleReference = moduleReference, position = samlangPosition)
                 .map { (name, type) ->
