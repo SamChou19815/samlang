@@ -11,4 +11,5 @@ Features:
 - Commenting
 - Parens autoclosing
 - Syntax Highlighting
-- Autoindentation (Turn on `editor.formatonSave` or manually run the `Format Document` command)
+- Autoindentation
+- Type Query on hover
