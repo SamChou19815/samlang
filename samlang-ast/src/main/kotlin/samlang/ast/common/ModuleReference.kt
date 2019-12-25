@@ -16,5 +16,11 @@ data class ModuleReference(val parts: List<String>) {
          * since it cannot be named according to the syntax so no module can depend on it.
          */
         val ROOT: ModuleReference = ModuleReference(parts = emptyList())
+
+        fun fromRelativeFile(file: File): ModuleReference {
+            val parts = ArrayList(file.parent.split(File.separator))
+            parts.add(element = file.nameWithoutExtension)
+            return ModuleReference(parts = parts)
+        }
     }
 }
