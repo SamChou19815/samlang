@@ -6,5 +6,5 @@ class Option<T>(Some(T), None(unit)) {
 }
 class Main {
   function main(): unit =
-    val a = Option::none();
+    val a = Option.none();
 }

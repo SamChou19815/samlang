@@ -1,9 +1,9 @@
 // ERROR_COUNT: 0
 
 class A {
-    public function a(): int = B::b()
+    public function a(): int = B.b()
 }
 
 class B {
-    public function b(): int = A::a()
+    public function b(): int = A.a()
 }

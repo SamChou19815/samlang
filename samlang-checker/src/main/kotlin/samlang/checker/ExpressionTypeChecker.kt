@@ -132,7 +132,7 @@ private class ExpressionTypeCheckerVisitor(
             .getClassFunctionType(module = className, member = member)
             ?: return expression.errorWith(
                 expectedType = expectedType,
-                error = UnresolvedNameError(unresolvedName = "$className::$member", range = range)
+                error = UnresolvedNameError(unresolvedName = "$className.$member", range = range)
             )
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = locallyInferredType, errorRange = range

@@ -1,16 +1,16 @@
 // ERROR_COUNT: 12
-// illegal-binary-operations.sam:25:35-25:45: [UnexpectedType]: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
-// illegal-binary-operations.sam:26:30-26:40: [UnexpectedType]: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
-// illegal-binary-operations.sam:27:37-27:47: [UnexpectedType]: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
-// illegal-binary-operations.sam:28:47-28:49: [UnexpectedType]: Expected: `Box<__UNDECIDED__>`, actual: `int`.
-// illegal-binary-operations.sam:29:31-29:41: [UnexpectedType]: Expected: `() -> bool`, actual: `() -> Box<__UNDECIDED__>`.
-// illegal-binary-operations.sam:30:40-30:50: [UnexpectedType]: Expected: `() -> bool`, actual: `() -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:25:35-25:44: [UnexpectedType]: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:26:30-26:39: [UnexpectedType]: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:27:37-27:46: [UnexpectedType]: Expected: `() -> int`, actual: `() -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:28:46-28:48: [UnexpectedType]: Expected: `Box<__UNDECIDED__>`, actual: `int`.
+// illegal-binary-operations.sam:29:31-29:40: [UnexpectedType]: Expected: `() -> bool`, actual: `() -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:30:40-30:49: [UnexpectedType]: Expected: `() -> bool`, actual: `() -> Box<__UNDECIDED__>`.
 // illegal-binary-operations.sam:31:35-31:40: [UnexpectedType]: Expected: `int`, actual: `bool`.
 // illegal-binary-operations.sam:32:30-32:35: [UnexpectedType]: Expected: `int`, actual: `bool`.
 // illegal-binary-operations.sam:32:38-32:43: [UnexpectedType]: Expected: `int`, actual: `bool`.
-// illegal-binary-operations.sam:34:48-34:55: [UnexpectedType]: Expected: `(int) -> Box<bool>`, actual: `(__UNDECIDED__) -> Box<__UNDECIDED__>`.
-// illegal-binary-operations.sam:37:47-37:64: [UnexpectedType]: Expected: `() -> Box<__UNDECIDED__>`, actual: `() -> AnotherBox<__UNDECIDED__>`.
-// illegal-binary-operations.sam:40:42-40:49: [UnexpectedType]: Expected: `(Box<Box<bool>>) -> Box<Box<Box<int>>>`, actual: `(__UNDECIDED__) -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:34:47-34:53: [UnexpectedType]: Expected: `(int) -> Box<bool>`, actual: `(__UNDECIDED__) -> Box<__UNDECIDED__>`.
+// illegal-binary-operations.sam:37:46-37:62: [UnexpectedType]: Expected: `() -> Box<__UNDECIDED__>`, actual: `() -> AnotherBox<__UNDECIDED__>`.
+// illegal-binary-operations.sam:40:39-40:45: [UnexpectedType]: Expected: `(Box<Box<bool>>) -> Box<Box<Box<int>>>`, actual: `(__UNDECIDED__) -> Box<__UNDECIDED__>`.
 
 class Box<T>(value: T) {
     public function <T> empty(): Box<T> = { value: panic("PANIC") }
@@ -22,20 +22,20 @@ class AnotherBox<T>(value: T) {
 }
 
 class Main {
-    function test01(): int = 42 + Box::empty()
-    function test02(): int = Box::empty() + 42
-    function test03(): bool = 42 == Box::empty()
-    function test04(): bool = Box::empty() == 42
-    function test05(): bool = Box::empty() || false
-    function test06(): bool = false || Box::empty()
+    function test01(): int = 42 + Box.empty()
+    function test02(): int = Box.empty() + 42
+    function test03(): bool = 42 == Box.empty()
+    function test04(): bool = Box.empty() == 42
+    function test05(): bool = Box.empty() || false
+    function test06(): bool = false || Box.empty()
     function test07(): int = 42 * false
     function test08(): int = false + false
-    function test09(): bool = Box::of(true) == Box::of(false)
-    function test10(): bool = Box::of(true) == Box::of(42)
-    function test11(): bool = Box::of(true) == Box::empty()
-    function test12(): bool = Box::empty() == Box::of(42)
-    function test13(): bool = Box::empty() == AnotherBox::empty()
+    function test09(): bool = Box.of(true) == Box.of(false)
+    function test10(): bool = Box.of(true) == Box.of(42)
+    function test11(): bool = Box.of(true) == Box.empty()
+    function test12(): bool = Box.empty() == Box.of(42)
+    function test13(): bool = Box.empty() == AnotherBox.empty()
     function test14(): bool =
         // Deeply nested type inconsistencies
-        Box::of(Box::of(Box::of(42))) == Box::of(Box::of(Box::of(false)))
+        Box.of(Box.of(Box.of(42))) == Box.of(Box.of(Box.of(false)))
 }

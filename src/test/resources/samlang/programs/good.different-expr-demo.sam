@@ -54,6 +54,6 @@ class Main {
         );
         a + 1
 
-    function main(): int = Foo::bar() * Main::oof()
+    function main(): int = Foo.bar() * Main.oof()
 
 }

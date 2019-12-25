@@ -122,7 +122,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
     }
 
     override fun visit(expression: ClassMember, context: Boolean) {
-        printer.print(x = "${expression.className}::${expression.memberName}", requireBreak = context)
+        printer.print(x = "${expression.className}.${expression.memberName}", requireBreak = context)
     }
 
     override fun visit(expression: TupleConstructor, context: Boolean) {

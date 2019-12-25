@@ -48,29 +48,29 @@ class Main {
     val e = c % c;
 
   function methodAndFunctionReference(): int =
-    Clazz::of()::thisTest()
+    Clazz.of()::thisTest()
 
   function panicTest(reason: string): Clazz = panic(reason)
 
   function functionsTest(): unit =
-    val _ = Main::literalsAndSimpleExpressions();
-    val _ = Main::variables(3, "hi");
-    val _ = Main::methodAndFunctionReference();
-    val _ = Main::panicTest("Ah!")::thisTest();
-    val _ = Main::binaryExpressions();
-    val _ = Main::lambdaTest(3);
-    Main::functionsTest()
+    val _ = Main.literalsAndSimpleExpressions();
+    val _ = Main.variables(3, "hi");
+    val _ = Main.methodAndFunctionReference();
+    val _ = Main.panicTest("Ah!")::thisTest();
+    val _ = Main.binaryExpressions();
+    val _ = Main.lambdaTest(3);
+    Main.functionsTest()
 
   function binaryExpressions(): unit =
     val a: int = 1 * 2 + 3 / 4 % 5 - 6;
     val b: bool = a < a && 1 > 3 || 2 <= 4 && 5 >= 6;
     val c: bool = a == 2;
-    val d: bool = Main::panicTest("ha") != Clazz::of();
-    val e: bool = List::of(3) == List::of(a * 3);
+    val d: bool = Main.panicTest("ha") != Clazz.of();
+    val e: bool = List.of(3) == List.of(a * 3);
 
   function lambdaTest(a: int): string =
-    val b: Option<string> = Option::none()::toSome(3)::map(Main::lambdaTest);
-    val c: Option<string> = Option::none()::toSome(3)::map((x) -> "empty");
+    val b: Option<string> = Option.none()::toSome(3)::map(Main.lambdaTest);
+    val c: Option<string> = Option.none()::toSome(3)::map((x) -> "empty");
     "hello world"
 
 }

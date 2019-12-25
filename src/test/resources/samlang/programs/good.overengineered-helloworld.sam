@@ -15,5 +15,5 @@ class HelloWorld(
 }
 
 class Main {
-    function main(): string = HelloWorld::getGlobalMessage()
+    function main(): string = HelloWorld.getGlobalMessage()
 }

@@ -52,7 +52,7 @@ expression
     | literal # LiteralExpr
     | THIS # ThisExpr
     | LowerId # VariableExpr
-    | UpperId COLONCOLON LowerId # ModuleMemberExpr
+    | UpperId DOT LowerId # ModuleMemberExpr
     | LBRACKET expression (COMMA expression)+ COMMA? RBRACKET # TupleConstructor
     | LBRACE (SPREAD expression COMMA)? objectFieldDeclarations RBRACE # ObjConstructor
     | UpperId LPAREN expression RPAREN # VariantConstructor

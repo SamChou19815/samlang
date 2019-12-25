@@ -1,5 +1,5 @@
 // ERROR_COUNT: 1
-// access-private-member.sam:14:17-14:21: [UnresolvedName]: Name `A::b` is not resolved.
+// access-private-member.sam:14:17-14:20: [UnresolvedName]: Name `A.b` is not resolved.
 
 class A {
     function b(): int = 3
@@ -11,6 +11,6 @@ class C(v: bool) {
 
 class Main {
     public function main(): unit =
-        val _ = A::b();
-        val _ = C::init();
+        val _ = A.b();
+        val _ = C.init();
 }

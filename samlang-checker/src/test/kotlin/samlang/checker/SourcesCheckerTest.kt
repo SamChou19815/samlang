@@ -17,7 +17,7 @@ class SourcesCheckerTest : StringSpec({
             import { A } from A
             
             class B(value: int) {
-                public function of(): B = { value: A::a() }
+                public function of(): B = { value: A.a() }
                 public method intValue(): int = this.value
             }
         """.trimIndent()
@@ -45,7 +45,7 @@ class SourcesCheckerTest : StringSpec({
             
             class Main {
                 function main(): bool = 
-                    IdentifyChecker::equals(C::ofInt(A::a()), C::ofB(B::of()))
+                    IdentifyChecker.equals(C.ofInt(A.a()), C.ofB(B.of()))
             }
         """.trimIndent()
         val sources = Sources(

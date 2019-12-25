@@ -23,7 +23,7 @@ class WebDemoControllerTest : StringSpec() {
                 programString =
                 """
                     class Main {
-                        function main(): int = Main::main()
+                        function main(): int = Main.main()
                     }
                 """.trimIndent()
             )
@@ -38,9 +38,9 @@ class WebDemoControllerTest : StringSpec() {
                         function fib(n: int): int =
                           if n == 0 then 0
                           else if n == 1 then 1
-                          else Main::fib(n - 2) + Main::fib(n - 1)
+                          else Main.fib(n - 2) + Main.fib(n - 1)
 
-                        function main(): int = Main::fib(300)
+                        function main(): int = Main.fib(300)
                     }
                 """.trimIndent()
             )
