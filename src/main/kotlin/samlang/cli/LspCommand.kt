@@ -1,7 +1,6 @@
 package samlang.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
-import java.net.Socket
 import kotlin.system.exitProcess
 import org.eclipse.lsp4j.launch.LSPLauncher
 import samlang.Configuration
@@ -16,9 +15,9 @@ class LspCommand : CliktCommand(name = "lsp") {
             exitProcess(status = 1)
         }
         val server = LanguageServer(configuration = configuration)
-        Socket("localhost", 8233).use { socket ->
-            val launcher = LSPLauncher.createServerLauncher(server, socket.getInputStream(), socket.getOutputStream())
-            launcher.startListening()
-        }
+        val launcher = LSPLauncher.createServerLauncher(server, System.`in`, System.out)
+        val client = launcher.remoteProxy
+        server.connect(client)
+        launcher.startListening().get()
     }
 }

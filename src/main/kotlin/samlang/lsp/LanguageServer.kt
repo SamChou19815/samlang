@@ -23,6 +23,8 @@ import org.eclipse.lsp4j.TextDocumentPositionParams
 import org.eclipse.lsp4j.TextDocumentSyncKind
 import org.eclipse.lsp4j.TextDocumentSyncOptions
 import org.eclipse.lsp4j.jsonrpc.messages.Either
+import org.eclipse.lsp4j.services.LanguageClient
+import org.eclipse.lsp4j.services.LanguageClientAware
 import org.eclipse.lsp4j.services.LanguageServer as Lsp4jLanguageServer
 import org.eclipse.lsp4j.services.TextDocumentService as Lsp4jTextDocumentService
 import org.eclipse.lsp4j.services.WorkspaceService as Lsp4jWorkspaceService
@@ -31,10 +33,16 @@ import samlang.ast.common.ModuleReference
 import samlang.ast.common.Position
 import samlang.ast.common.Range
 
-class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer {
+class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer, LanguageClientAware {
     private val state: LanguageServerState = LanguageServerState(configuration = configuration)
     private val textDocumentService: TextDocumentService = TextDocumentService()
     private val workspaceService: WorkspaceService = WorkspaceService()
+
+    private lateinit var client: LanguageClient
+
+    override fun connect(client: LanguageClient) {
+        this.client = client
+    }
 
     override fun initialize(params: InitializeParams): CompletableFuture<InitializeResult> {
         val serverCapabilities = ServerCapabilities().apply {
