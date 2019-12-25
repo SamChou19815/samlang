@@ -8,9 +8,7 @@ fun typeCheckSources(
     sources: Sources<Module>,
     errorCollector: ErrorCollector
 ): Pair<Sources<Module>, GlobalTypingContext> {
-    // TODO: Include stdlib into globalTypingContext
     val globalTypingContext = GlobalTypingContextBuilder.buildGlobalTypingContext(sources = sources)
-    // TODO: Include checked stdlib into newMappings
     val newMappings = mutableMapOf<ModuleReference, Module>()
     for ((moduleReference, module) in sources.moduleMappings) {
         newMappings[moduleReference] = typeCheckModule(

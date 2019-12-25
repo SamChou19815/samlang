@@ -7,7 +7,6 @@ import samlang.ast.common.Sources
 import samlang.errors.CompilationFailedException
 import samlang.parser.ModuleBuilder
 import samlang.programs.testPrograms
-import samlang.stdlib.StandardLibrary
 import samlang.util.createOrFail
 
 class ModuleTypeCheckerTest : StringSpec() {
@@ -27,7 +26,6 @@ class ModuleTypeCheckerTest : StringSpec() {
     }
 
     init {
-        "stdlib" { getTypeErrors(id = "standard-library", code = StandardLibrary.sourceCode) shouldBe emptySet() }
         testPrograms.forEach { (id, errorSet, code) -> id { getTypeErrors(id = id, code = code) shouldBe errorSet } }
     }
 }
