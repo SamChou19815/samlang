@@ -37,6 +37,8 @@ import samlang.ast.common.Range
 
 class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageServer, LanguageClientAware {
     private val state: LanguageServerState = LanguageServerState(configuration = configuration)
+    private val service: LanguageServerServices = LanguageServerServices(state = state)
+
     private val textDocumentService: TextDocumentService = TextDocumentService()
     private val workspaceService: WorkspaceService = WorkspaceService()
 
@@ -105,7 +107,7 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
             val moduleReference = uriToModuleReference(uri = position.textDocument.uri)
             val samlangPosition = position.position.asPosition()
             System.err.println("Hover request: $moduleReference $samlangPosition")
-            val (type, range) = state
+            val (type, range) = service
                 .queryType(moduleReference = moduleReference, position = samlangPosition)
                 ?: return CompletableFuture.completedFuture(null)
             val hoverResult = Hover(
