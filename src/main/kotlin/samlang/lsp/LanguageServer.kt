@@ -5,6 +5,7 @@ import java.net.URI
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import org.eclipse.lsp4j.CompletionItem
+import org.eclipse.lsp4j.CompletionItemKind
 import org.eclipse.lsp4j.CompletionList
 import org.eclipse.lsp4j.CompletionOptions
 import org.eclipse.lsp4j.CompletionParams
@@ -99,8 +100,18 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
         override fun completion(
             position: CompletionParams
         ): CompletableFuture<Either<List<CompletionItem>, CompletionList>> {
-            System.err.println("Completion request: $position")
-            return CompletableFuture.completedFuture(Either.forLeft(emptyList()))
+            val moduleReference = uriToModuleReference(uri = position.textDocument.uri)
+            val samlangPosition = position.position.asPosition()
+            System.err.println("Completion request: $moduleReference $samlangPosition")
+            val completionItems = service
+                .autoComplete(moduleReference = moduleReference, position = samlangPosition)
+                .map { (name, type) ->
+                    CompletionItem(name).apply {
+                        detail = type.toString()
+                        kind = CompletionItemKind.Field
+                    }
+                }
+            return CompletableFuture.completedFuture(Either.forLeft(completionItems))
         }
 
         override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover> {
