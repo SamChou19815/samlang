@@ -4,6 +4,7 @@ import java.io.File
 import java.util.concurrent.CompletableFuture
 import org.eclipse.lsp4j.CompletionItem
 import org.eclipse.lsp4j.CompletionList
+import org.eclipse.lsp4j.CompletionOptions
 import org.eclipse.lsp4j.CompletionParams
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.DidChangeTextDocumentParams
@@ -16,6 +17,8 @@ import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.InitializeResult
 import org.eclipse.lsp4j.ServerCapabilities
 import org.eclipse.lsp4j.TextDocumentPositionParams
+import org.eclipse.lsp4j.TextDocumentSyncKind
+import org.eclipse.lsp4j.TextDocumentSyncOptions
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import org.eclipse.lsp4j.services.LanguageServer as Lsp4jLanguageServer
 import org.eclipse.lsp4j.services.TextDocumentService as Lsp4jTextDocumentService
@@ -30,7 +33,24 @@ class LanguageServer(configuration: Configuration) : Lsp4jLanguageServer {
 
     override fun initialize(params: InitializeParams): CompletableFuture<InitializeResult> {
         val serverCapabilities = ServerCapabilities().apply {
+            textDocumentSync = Either.forRight(TextDocumentSyncOptions().apply { change = TextDocumentSyncKind.Full })
             hoverProvider = true
+            completionProvider = CompletionOptions(false, listOf("."))
+            signatureHelpProvider = null
+            definitionProvider = false
+            referencesProvider = false
+            documentHighlightProvider = false
+            documentSymbolProvider = false
+            workspaceSymbolProvider = false
+            codeActionProvider = null
+            codeLensProvider = null
+            documentFormattingProvider = false
+            documentRangeFormattingProvider = false
+            documentOnTypeFormattingProvider = null
+            renameProvider = null
+            documentLinkProvider = null
+            executeCommandProvider = null
+            experimental = null
         }
         return CompletableFuture.completedFuture(InitializeResult(serverCapabilities))
     }
