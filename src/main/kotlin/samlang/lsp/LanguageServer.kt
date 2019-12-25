@@ -74,6 +74,7 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
             executeCommandProvider = null
             experimental = null
         }
+        publishDiagnostics(affectedModules = state.allModulesWithError)
         return CompletableFuture.completedFuture(InitializeResult(serverCapabilities))
     }
 
@@ -84,6 +85,36 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
     override fun getTextDocumentService(): Lsp4jTextDocumentService = textDocumentService
 
     override fun getWorkspaceService(): Lsp4jWorkspaceService = workspaceService
+
+    private fun publishDiagnostics(affectedModules: List<ModuleReference>) {
+        val rootUri = Paths.get(configuration.sourceDirectory).toAbsolutePath().toUri()
+        for (affectedModule in affectedModules) {
+            val parameters = PublishDiagnosticsParams().apply {
+                uri = rootUri.resolve(affectedModule.toFilename()).toString()
+                diagnostics = state.getErrors(moduleReference = affectedModule).map { error ->
+                    Diagnostic(error.range.asLsp4jRange(), error.reason, DiagnosticSeverity.Error, "samlang")
+                }
+            }
+            System.err.println(parameters)
+            client.publishDiagnostics(parameters)
+        }
+    }
+
+    private fun uriToModuleReference(uri: String): ModuleReference {
+        val name = Paths.get(configuration.sourceDirectory)
+            .toAbsolutePath()
+            .relativize(Paths.get(URI(uri).path))
+            .toFile()
+            .nameWithoutExtension
+        val parts = name.split(File.separator)
+        return ModuleReference(parts = parts)
+    }
+
+    private fun Lsp4jPosition.asPosition(): Position = Position(line = line, column = character)
+
+    private fun Position.asLsp4jPosition(): Lsp4jPosition = Lsp4jPosition(line, column)
+
+    private fun Range.asLsp4jRange(): Lsp4jRange = Lsp4jRange(start.asLsp4jPosition(), end.asLsp4jPosition())
 
     private inner class TextDocumentService : Lsp4jTextDocumentService {
         override fun didOpen(params: DidOpenTextDocumentParams): Unit = Unit
@@ -132,36 +163,6 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
             )
             return CompletableFuture.completedFuture(hoverResult)
         }
-
-        private fun publishDiagnostics(affectedModules: List<ModuleReference>) {
-            val rootUri = Paths.get(configuration.sourceDirectory).toAbsolutePath().toUri()
-            for (affectedModule in affectedModules) {
-                val parameters = PublishDiagnosticsParams().apply {
-                    uri = rootUri.resolve(affectedModule.toFilename()).toString()
-                    diagnostics = state.getErrors(moduleReference = affectedModule).map { error ->
-                        Diagnostic(error.range.asLsp4jRange(), error.reason, DiagnosticSeverity.Error, "samlang")
-                    }
-                }
-                System.err.println(parameters)
-                client.publishDiagnostics(parameters)
-            }
-        }
-
-        private fun uriToModuleReference(uri: String): ModuleReference {
-            val name = Paths.get(configuration.sourceDirectory)
-                .toAbsolutePath()
-                .relativize(Paths.get(URI(uri).path))
-                .toFile()
-                .nameWithoutExtension
-            val parts = name.split(File.separator)
-            return ModuleReference(parts = parts)
-        }
-
-        private fun Lsp4jPosition.asPosition(): Position = Position(line = line, column = character)
-
-        private fun Position.asLsp4jPosition(): Lsp4jPosition = Lsp4jPosition(line, column)
-
-        private fun Range.asLsp4jRange(): Lsp4jRange = Lsp4jRange(start.asLsp4jPosition(), end.asLsp4jPosition())
     }
 
     private inner class WorkspaceService : org.eclipse.lsp4j.services.WorkspaceService {

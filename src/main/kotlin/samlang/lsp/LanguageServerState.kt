@@ -59,6 +59,8 @@ internal class LanguageServerState(configuration: Configuration) {
         updateErrors(updatedErrors = errorCollector.collectedErrors)
     }
 
+    val allModulesWithError: List<ModuleReference> get() = errors.keys.toList()
+
     val allErrors: List<CompileTimeError> get() = errors.values.flatten()
 
     fun getErrors(moduleReference: ModuleReference): List<CompileTimeError> = errors[moduleReference] ?: emptyList()
