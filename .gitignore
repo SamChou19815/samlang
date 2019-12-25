@@ -34,5 +34,9 @@ hs_err_pid*
 samlang-parser/src/main/java/
 *.tokens
 
+# Node
+node_modules
+*.vsix
+
 # System Files
 .DS_Store
