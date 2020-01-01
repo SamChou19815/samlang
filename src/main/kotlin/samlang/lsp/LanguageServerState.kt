@@ -65,8 +65,6 @@ internal class LanguageServerState(configuration: Configuration) {
 
     fun getErrors(moduleReference: ModuleReference): List<CompileTimeError> = errors[moduleReference] ?: emptyList()
 
-    fun getCheckedModule(moduleReference: ModuleReference): Module? = checkedModules[moduleReference]
-
     fun update(moduleReference: ModuleReference, sourceCode: String): List<ModuleReference> {
         val rawModule = try {
             updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
