@@ -61,7 +61,7 @@ private class TypeFixerVisitor(
         val resolvedPotentiallyUndecidedType = resolution.resolveType(unresolvedType = this)
         val resolvedType =
             if (collectUndecidedTypeIndices(type = resolvedPotentiallyUndecidedType).isNotEmpty()) {
-                resolvedPotentiallyUndecidedType.resolveType { Type.int }
+                resolvedPotentiallyUndecidedType.resolveType { Type.unit }
             } else {
                 resolvedPotentiallyUndecidedType
             }
