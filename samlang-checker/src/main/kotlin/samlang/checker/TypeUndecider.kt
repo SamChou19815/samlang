@@ -42,8 +42,7 @@ internal fun undecideTypeParameters(
 private fun Type.undecide(context: Map<String, UndecidedType>): Type =
     accept(visitor = UndecideTypeParametersVisitor, context = context)
 
-private object UndecideTypeParametersVisitor :
-    TypeVisitor<Map<String, UndecidedType>, Type> {
+private object UndecideTypeParametersVisitor : TypeVisitor<Map<String, UndecidedType>, Type> {
 
     override fun visit(type: PrimitiveType, context: Map<String, UndecidedType>): Type = type
 
