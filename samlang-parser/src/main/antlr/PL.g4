@@ -69,7 +69,7 @@ expression
     | IF expression THEN expression ELSE expression # IfElseExpr
     | MATCH LPAREN expression RPAREN LBRACE patternToExpr+ RBRACE # MatchExpr
     | LPAREN optionallyAnnotatedParameter (COMMA optionallyAnnotatedParameter)* COMMA? RPAREN ARROW expression # FunExpr
-    | VAL pattern typeAnnotation? ASSIGN expression SEMICOLON? expression? # ValExpr
+    | VAL pattern typeAnnotation? ASSIGN expression SEMICOLON expression? # ValExpr
     ;
 
 objectFieldDeclarations : objectFieldDeclaration (COMMA objectFieldDeclaration)* COMMA?;

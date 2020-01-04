@@ -1,0 +1,18 @@
+// ERROR_COUNT: 6
+// optional-semicolon.sam:12:5-12:8: [SyntaxError]: mismatched input 'val' expecting {'(', ';', '.', '*', '/', '%', '+', '-', '==', '<', '<=', '>', '>=', '!=', '&&', '||'}
+// optional-semicolon.sam:13:13-13:14: [UnresolvedName]: Name `a` is not resolved.
+// optional-semicolon.sam:15:5-15:8: [SyntaxError]: mismatched input 'val' expecting {'(', ';', '.', '*', '/', '%', '+', '-', '==', '<', '<=', '>', '>=', '!=', '&&', '||'}
+// optional-semicolon.sam:16:19-16:20: [UnresolvedName]: Name `a` is not resolved.
+// optional-semicolon.sam:17:5-17:8: [SyntaxError]: mismatched input 'val' expecting {'(', ';', '.', '*', '/', '%', '+', '-', '==', '<', '<=', '>', '>=', '!=', '&&', '||'}
+// optional-semicolon.sam:18:1-18:2: [SyntaxError]: extraneous input '}' expecting {<EOF>, 'class'}
+
+class Main(a: int, b: bool) {
+  function main(): unit =
+    val _ = 3
+    val a = 2;
+    val c = a - 3;
+    val d = c * 7
+    val b = true;
+    val [_, e] = [a, c]
+    val _ = { a: e, b }
+}

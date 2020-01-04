@@ -10,7 +10,6 @@ class InterpreterTest : StringSpec() {
     private data class TestCase(val id: String, val code: String, val expectedResult: Value)
 
     private val expectations: Map<String, Value> = mapOf(
-        "optional-semicolon" to Value.UnitValue,
         "simple-no-ctx" to Value.UnitValue,
         "simple-no-ctx-annotated" to Value.UnitValue,
         "hello-world" to Value.StringValue(value = "Hello World!"),
