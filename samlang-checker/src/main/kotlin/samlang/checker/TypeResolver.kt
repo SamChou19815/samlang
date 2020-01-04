@@ -10,8 +10,8 @@ import samlang.ast.common.TypeVisitor
 
 private typealias ResolveTypeFunction = (undecidedType: UndecidedType) -> Type
 
-internal fun Type.resolveType(function: ResolveTypeFunction): Type =
-    accept(visitor = TypeResolverVisitor, context = function)
+internal fun resolveType(type: Type, function: ResolveTypeFunction): Type =
+    type.accept(visitor = TypeResolverVisitor, context = function)
 
 private object TypeResolverVisitor :
     TypeVisitor<ResolveTypeFunction, Type> {
@@ -19,15 +19,15 @@ private object TypeResolverVisitor :
     override fun visit(type: PrimitiveType, context: ResolveTypeFunction): Type = type
 
     override fun visit(type: IdentifierType, context: ResolveTypeFunction): Type =
-        type.copy(typeArguments = type.typeArguments.map { it.resolveType(function = context) })
+        type.copy(typeArguments = type.typeArguments.map { it.accept(visitor = this, context = context) })
 
     override fun visit(type: TupleType, context: ResolveTypeFunction): Type =
-        type.copy(mappings = type.mappings.map { it.resolveType(function = context) })
+        type.copy(mappings = type.mappings.map { it.accept(visitor = this, context = context) })
 
     override fun visit(type: FunctionType, context: ResolveTypeFunction): Type =
         type.copy(
-            argumentTypes = type.argumentTypes.map { it.resolveType(function = context) },
-            returnType = type.returnType.resolveType(function = context)
+            argumentTypes = type.argumentTypes.map { it.accept(visitor = this, context = context) },
+            returnType = type.returnType.accept(visitor = this, context = context)
         )
 
     override fun visit(type: UndecidedType, context: ResolveTypeFunction): Type = context(type)
