@@ -33,8 +33,8 @@ internal class LanguageServerState(configuration: Configuration) {
         val errorCollector = ErrorCollector()
         for ((moduleReference, inputStream) in SourceCollector.collectHandles(configuration = configuration)) {
             val sourceCode = inputStream.bufferedReader().use { it.readText() }
-            errors[moduleReference] = emptyList()
-            val rawModule = updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
+            val (rawModule, parseErrors) = updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
+            parseErrors.forEach { errorCollector.add(compileTimeError = it) }
             dependencyTracker.update(
                 moduleReference = moduleReference,
                 importedModules = rawModule.imports.map { it.importedModule }
@@ -60,9 +60,9 @@ internal class LanguageServerState(configuration: Configuration) {
     fun getErrors(moduleReference: ModuleReference): List<CompileTimeError> = errors[moduleReference] ?: emptyList()
 
     fun update(moduleReference: ModuleReference, sourceCode: String): List<ModuleReference> {
-        val rawModule = updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
+        val (rawModule, parseErrors) = updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
         val affected = reportChanges(moduleReference = moduleReference, module = rawModule)
-        incrementalTypeCheck(affectedSourceList = affected)
+        incrementalTypeCheck(affectedSourceList = affected, parseErrors = parseErrors)
         return affected
     }
 
@@ -73,19 +73,21 @@ internal class LanguageServerState(configuration: Configuration) {
         errors[moduleReference] = emptyList()
         _locationLookup.purge(moduleReference = moduleReference)
         val affected = reportChanges(moduleReference = moduleReference, module = null)
-        incrementalTypeCheck(affectedSourceList = affected)
+        incrementalTypeCheck(affectedSourceList = affected, parseErrors = emptyList())
         return affected
     }
 
-    private fun updateRawModule(moduleReference: ModuleReference, sourceCode: String): Module {
+    private fun updateRawModule(
+        moduleReference: ModuleReference,
+        sourceCode: String
+    ): Pair<Module, List<CompileTimeError>> {
         rawSources[moduleReference] = sourceCode
-        val (rawModule, parseErrors) = ModuleBuilder.buildModuleFromText(
+        val result = ModuleBuilder.buildModuleFromText(
             moduleReference = moduleReference,
             text = sourceCode
         )
-        rawModules[moduleReference] = rawModule
-        updateErrors(updatedErrors = parseErrors)
-        return rawModule
+        rawModules[moduleReference] = result.first
+        return result
     }
 
     private fun updateErrors(updatedErrors: Collection<CompileTimeError>) {
@@ -107,7 +109,7 @@ internal class LanguageServerState(configuration: Configuration) {
         return affected.toList()
     }
 
-    private fun incrementalTypeCheck(affectedSourceList: List<ModuleReference>) {
+    private fun incrementalTypeCheck(affectedSourceList: List<ModuleReference>, parseErrors: List<CompileTimeError>) {
         val errorCollector = ErrorCollector()
         val (updatedModules, updatedContext) = typeCheckSourcesIncrementally(
             sources = Sources(moduleMappings = rawModules),
@@ -122,6 +124,6 @@ internal class LanguageServerState(configuration: Configuration) {
         }
         _globalTypingContext = updatedContext
         affectedSourceList.forEach { affectedSource -> errors.remove(key = affectedSource) }
-        updateErrors(updatedErrors = errorCollector.collectedErrors)
+        updateErrors(updatedErrors = parseErrors + errorCollector.collectedErrors)
     }
 }
