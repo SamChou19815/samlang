@@ -1,0 +1,6 @@
+// ERROR_COUNT: 1
+// invalid-property-declaration-syntax.sam:4:12-4:15: [SyntaxError]: no viable alternative at input 'val'
+
+class Main(val a: int, val b: int) {
+    function main(): int = 42
+}

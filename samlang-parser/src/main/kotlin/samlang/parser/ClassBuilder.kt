@@ -14,7 +14,7 @@ import samlang.parser.generated.PLParser.TypeParametersDeclarationContext
 import samlang.parser.generated.PLParser.UtilClassHeaderContext
 import samlang.parser.generated.PLParser.VariantTypeContext
 
-internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<ClassDefinition>() {
+internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<ClassDefinition?>() {
 
     private val expressionBuilder: ExpressionBuilder = ExpressionBuilder(syntaxErrorListener = syntaxErrorListener)
 
@@ -33,14 +33,14 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
         }
     }
 
-    private inner class ModuleTypeDefinitionBuilder : PLBaseVisitor<TypeDefinition>() {
+    private inner class ModuleTypeDefinitionBuilder : PLBaseVisitor<TypeDefinition?>() {
 
-        override fun visitClassHeader(ctx: ClassHeaderContext): TypeDefinition {
+        override fun visitClassHeader(ctx: ClassHeaderContext): TypeDefinition? {
             val rawTypeParams: TypeParametersDeclarationContext? = ctx.typeParametersDeclaration()
             val rawTypeDeclaration = ctx.typeDeclaration()
             val typeParameters = rawTypeParams?.typeParameters ?: emptyList()
             val range = rawTypeParams?.range?.union(rawTypeDeclaration.range) ?: rawTypeDeclaration.range
-            return rawTypeDeclaration.accept(TypeDefinitionBuilder(range, typeParameters))
+            return rawTypeDeclaration.accept(TypeDefinitionBuilder(range, typeParameters)) ?: return null
         }
 
         override fun visitUtilClassHeader(ctx: UtilClassHeaderContext): TypeDefinition =
@@ -49,16 +49,16 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
         private inner class TypeDefinitionBuilder(
             private val range: Range,
             private val typeParameters: List<String>
-        ) : PLBaseVisitor<TypeDefinition>() {
+        ) : PLBaseVisitor<TypeDefinition?>() {
 
             override fun visitObjType(ctx: ObjTypeContext): TypeDefinition =
                 TypeDefinition(
                     range = range,
                     type = TypeDefinitionType.OBJECT,
                     typeParameters = typeParameters,
-                    mappings = ctx.objectTypeFieldDeclaration().asSequence().map { c ->
+                    mappings = ctx.objectTypeFieldDeclaration().asSequence().mapNotNull { c ->
                         val name = c.LowerId().symbol.text
-                        val type = c.typeAnnotation().typeExpr().accept(TypeBuilder)
+                        val type = c.typeAnnotation().typeExpr().accept(TypeBuilder) ?: return@mapNotNull null
                         name to type
                     }.toMap()
                 )
@@ -68,16 +68,16 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
                     range = range,
                     type = TypeDefinitionType.VARIANT,
                     typeParameters = typeParameters,
-                    mappings = ctx.variantTypeConstructorDeclaration().asSequence().map { c ->
+                    mappings = ctx.variantTypeConstructorDeclaration().asSequence().mapNotNull { c ->
                         val name = c.UpperId().symbol.text
-                        val type = c.typeExpr().accept(TypeBuilder)
+                        val type = c.typeExpr().accept(TypeBuilder) ?: return@mapNotNull null
                         name to type
                     }.toMap()
                 )
         }
     }
 
-    private fun buildClassMemberDefinition(ctx: ClassMemberDefinitionContext): ClassDefinition.MemberDefinition {
+    private fun buildClassMemberDefinition(ctx: ClassMemberDefinitionContext): ClassDefinition.MemberDefinition? {
         val nameSymbol = ctx.LowerId().symbol
         val parameters = ctx.annotatedVariable().map { annotatedVariable ->
             val parameterNameSymbol = annotatedVariable.LowerId().symbol
@@ -85,14 +85,19 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
             ClassDefinition.MemberDefinition.Parameter(
                 name = parameterNameSymbol.text,
                 nameRange = parameterNameSymbol.range,
-                type = typeExpression.accept(TypeBuilder),
+                type = typeExpression.accept(TypeBuilder) ?: return null,
                 typeRange = typeExpression.range
             )
         }
         val type = Type.FunctionType(
             argumentTypes = parameters.map { it.type },
-            returnType = ctx.typeExpr().accept(TypeBuilder)
+            returnType = ctx.typeExpr().accept(TypeBuilder) ?: return null
         )
+        val body = ctx.expression().let { expressionContext ->
+            expressionContext.accept(expressionBuilder) ?: ExpressionBuilder.dummyExpression(
+                range = expressionContext.range
+            )
+        }
         return ClassDefinition.MemberDefinition(
             range = ctx.range,
             isPublic = ctx.PUBLIC() != null,
@@ -102,18 +107,18 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
             typeParameters = ctx.typeParametersDeclaration()?.typeParameters ?: emptyList(),
             type = type,
             parameters = parameters,
-            body = ctx.expression().accept(expressionBuilder)
+            body = body
         )
     }
 
-    override fun visitClazz(ctx: ClazzContext): ClassDefinition {
+    override fun visitClazz(ctx: ClazzContext): ClassDefinition? {
         val (name, nameRange) = ctx.classHeaderDeclaration().accept(ModuleNameBuilder)
         return ClassDefinition(
             range = ctx.range,
             nameRange = nameRange,
             name = name,
-            typeDefinition = ctx.classHeaderDeclaration().accept(ModuleTypeDefinitionBuilder()),
-            members = ctx.classMemberDefinition().map { buildClassMemberDefinition(ctx = it) }
+            typeDefinition = ctx.classHeaderDeclaration().accept(ModuleTypeDefinitionBuilder()) ?: return null,
+            members = ctx.classMemberDefinition().mapNotNull { buildClassMemberDefinition(ctx = it) }
         )
     }
 }

@@ -2,35 +2,36 @@ package samlang.parser
 
 import org.apache.commons.text.StringEscapeUtils
 import samlang.ast.common.BinaryOperator
+import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.Type.TupleType
 import samlang.ast.common.UnaryOperator
 import samlang.ast.lang.Expression
+import samlang.ast.lang.Pattern
 import samlang.errors.SyntaxError
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 
-/**
- * Builder of expression nodes.
- */
-internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Expression>() {
-
-    private fun PLParser.ExpressionContext.toExpression(): Expression = this.accept(this@ExpressionBuilder)
-
-    override fun visitNestedExpr(ctx: PLParser.NestedExprContext): Expression = ctx.expression().toExpression()
-
-    /**
-     * Converts string literal in [literal] to actual string.
-     */
-    private fun stringLiteralToString(literal: String): String {
-        val firstChar = literal.first()
-        val lastChar = literal.last()
-        if (firstChar != '"' || lastChar != '"') {
-            error(message = "Bad Literal: $literal")
+internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Expression?>() {
+    private fun PLParser.ExpressionContext.toExpression(): Expression {
+        val expression = this.accept(this@ExpressionBuilder)
+        if (expression == null) {
+            val range = this.range
+            val tokenListString = this.children.joinToString(separator = ", ", prefix = "[", postfix = "]") { it.text }
+            syntaxErrorListener.addSyntaxError(
+                syntaxError = SyntaxError(
+                    moduleReference = syntaxErrorListener.moduleReference,
+                    range = range,
+                    reason = "Cannot build expression with tokens: $tokenListString."
+                )
+            )
+            return dummyExpression(range = range)
         }
-        return StringEscapeUtils.unescapeJava(literal.substring(startIndex = 1, endIndex = literal.length - 1))
+        return expression
     }
+
+    override fun visitNestedExpr(ctx: PLParser.NestedExprContext): Expression? = ctx.expression().toExpression()
 
     override fun visitLiteralExpr(ctx: PLParser.LiteralExprContext): Expression {
         val literalNode = ctx.literal()
@@ -242,7 +243,7 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
         }
     )
 
-    override fun visitFunExpr(ctx: PLParser.FunExprContext): Expression {
+    override fun visitFunExpr(ctx: PLParser.FunExprContext): Expression? {
         val arguments = ctx.optionallyAnnotatedParameter().map { oneArg ->
             val nameNode = oneArg.LowerId().symbol
             val name = nameNode.text
@@ -272,13 +273,34 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
 
     override fun visitValExpr(ctx: PLParser.ValExprContext): Expression {
         val typeAnnotation = ctx.typeAnnotation()?.typeExpr()?.accept(TypeBuilder) ?: Type.undecided()
+        val pattern = ctx.pattern().let { patternContext ->
+            patternContext.accept(PatternBuilder) ?: Pattern.WildCardPattern(range = patternContext.range)
+        }
         return Expression.Val(
             range = ctx.range,
             type = Type.undecided(),
-            pattern = ctx.pattern().accept(PatternBuilder),
+            pattern = pattern,
             typeAnnotation = typeAnnotation,
             assignedExpression = ctx.expression(0).toExpression(),
             nextExpression = ctx.expression(1)?.toExpression()
         )
+    }
+
+    companion object {
+        fun dummyExpression(range: Range): Expression = Expression.Panic(
+            range = range,
+            type = Type.undecided(),
+            expression = Expression.Literal.ofString(range = range, value = "dummy")
+        )
+
+        /** Converts string literal in [literal] to actual string. */
+        private fun stringLiteralToString(literal: String): String {
+            val firstChar = literal.first()
+            val lastChar = literal.last()
+            if (firstChar != '"' || lastChar != '"') {
+                error(message = "Bad Literal: $literal")
+            }
+            return StringEscapeUtils.unescapeJava(literal.substring(startIndex = 1, endIndex = literal.length - 1))
+        }
     }
 }

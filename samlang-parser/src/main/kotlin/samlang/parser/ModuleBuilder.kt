@@ -21,13 +21,14 @@ object ModuleBuilder {
         val moduleContext = parser.module()
         val errors = errorListener.syntaxErrors
         val module = moduleContext.accept(sourceVisitor)
+            ?: Module(imports = emptyList(), classDefinitions = emptyList())
         return module to errors
     }
 
     fun buildModuleFromText(moduleReference: ModuleReference, text: String): Pair<Module, List<CompileTimeError>> =
         buildModule(moduleReference = moduleReference, inputStream = text.byteInputStream())
 
-    private class Visitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module>() {
+    private class Visitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module?>() {
 
         private val classBuilder: ClassBuilder = ClassBuilder(syntaxErrorListener = syntaxErrorListener)
 
@@ -45,7 +46,7 @@ object ModuleBuilder {
         override fun visitModule(ctx: PLParser.ModuleContext): Module =
             Module(
                 imports = ctx.importModuleMembers().map(transform = ::buildModuleMembersImport),
-                classDefinitions = ctx.clazz().map { it.accept(classBuilder) }
+                classDefinitions = ctx.clazz().mapNotNull { it.accept(classBuilder) }
             )
     }
 }

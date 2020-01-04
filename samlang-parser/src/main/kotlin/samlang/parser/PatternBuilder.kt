@@ -4,7 +4,7 @@ import samlang.ast.lang.Pattern
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 
-internal object PatternBuilder : PLBaseVisitor<Pattern>() {
+internal object PatternBuilder : PLBaseVisitor<Pattern?>() {
 
     override fun visitTuplePattern(ctx: PLParser.TuplePatternContext): Pattern = Pattern.TuplePattern(
         range = ctx.range,
