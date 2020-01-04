@@ -6,7 +6,6 @@ import java.nio.charset.Charset
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import samlang.ast.common.ModuleReference
-import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
 import samlang.checker.typeCheckSingleModuleSource
 import samlang.errors.CompilationFailedException
@@ -50,11 +49,12 @@ internal object WebDemoController {
     @JvmStatic
     fun interpret(programString: String): Response {
         val moduleReference = ModuleReference(moduleName = "Demo")
-        val rawModule: Module
-        try {
-            rawModule = ModuleBuilder.buildModuleFromText(moduleReference = moduleReference, text = programString)
-        } catch (compilationFailedException: CompilationFailedException) {
-            return Response(type = Type.BAD_SYNTAX, detail = compilationFailedException.errorMessage)
+        val (rawModule, parseErrors) = ModuleBuilder.buildModuleFromText(
+            moduleReference = moduleReference,
+            text = programString
+        )
+        if (parseErrors.isNotEmpty()) {
+            return Response(type = Type.BAD_SYNTAX, detail = parseErrors)
         }
         val errorCollector = ErrorCollector()
         val checkedModule = typeCheckSingleModuleSource(module = rawModule, errorCollector = errorCollector)

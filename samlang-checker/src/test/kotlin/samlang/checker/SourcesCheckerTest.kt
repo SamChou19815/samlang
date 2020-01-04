@@ -53,19 +53,19 @@ class SourcesCheckerTest : StringSpec({
                 ModuleReference(moduleName = "A") to ModuleBuilder.buildModuleFromText(
                     moduleReference = ModuleReference(moduleName = "A"),
                     text = sourceA
-                ),
+                ).first,
                 ModuleReference(moduleName = "B") to ModuleBuilder.buildModuleFromText(
                     moduleReference = ModuleReference(moduleName = "B"),
                     text = sourceB
-                ),
+                ).first,
                 ModuleReference(moduleName = "C") to ModuleBuilder.buildModuleFromText(
                     moduleReference = ModuleReference(moduleName = "C"),
                     text = sourceC
-                ),
+                ).first,
                 ModuleReference(moduleName = "D") to ModuleBuilder.buildModuleFromText(
                     moduleReference = ModuleReference(moduleName = "D"),
                     text = sourceD
-                )
+                ).first
             )
         )
         val errorCollector = ErrorCollector()

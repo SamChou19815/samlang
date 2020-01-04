@@ -10,7 +10,6 @@ import samlang.checker.ErrorCollector
 import samlang.checker.GlobalTypingContext
 import samlang.checker.typeCheckSources
 import samlang.checker.typeCheckSourcesIncrementally
-import samlang.errors.CompilationFailedException
 import samlang.errors.CompileTimeError
 import samlang.parser.ModuleBuilder
 import samlang.service.LocationLookup
@@ -35,16 +34,11 @@ internal class LanguageServerState(configuration: Configuration) {
         for ((moduleReference, inputStream) in SourceCollector.collectHandles(configuration = configuration)) {
             val sourceCode = inputStream.bufferedReader().use { it.readText() }
             errors[moduleReference] = emptyList()
-            try {
-                val rawModule = updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
-                dependencyTracker.update(
-                    moduleReference = moduleReference,
-                    importedModules = rawModule.imports.map { it.importedModule }
-                )
-            } catch (exception: CompilationFailedException) {
-                exception.errors.forEach { errorCollector.add(compileTimeError = it) }
-                continue
-            }
+            val rawModule = updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
+            dependencyTracker.update(
+                moduleReference = moduleReference,
+                importedModules = rawModule.imports.map { it.importedModule }
+            )
         }
         val (checkedSources, context) = typeCheckSources(
             sources = Sources(moduleMappings = rawModules),
@@ -66,12 +60,7 @@ internal class LanguageServerState(configuration: Configuration) {
     fun getErrors(moduleReference: ModuleReference): List<CompileTimeError> = errors[moduleReference] ?: emptyList()
 
     fun update(moduleReference: ModuleReference, sourceCode: String): List<ModuleReference> {
-        val rawModule = try {
-            updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
-        } catch (exception: CompilationFailedException) {
-            updateErrors(updatedErrors = exception.errors)
-            return listOf(moduleReference)
-        }
+        val rawModule = updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
         val affected = reportChanges(moduleReference = moduleReference, module = rawModule)
         incrementalTypeCheck(affectedSourceList = affected)
         return affected
@@ -90,11 +79,12 @@ internal class LanguageServerState(configuration: Configuration) {
 
     private fun updateRawModule(moduleReference: ModuleReference, sourceCode: String): Module {
         rawSources[moduleReference] = sourceCode
-        val rawModule = ModuleBuilder.buildModuleFromText(
+        val (rawModule, parseErrors) = ModuleBuilder.buildModuleFromText(
             moduleReference = moduleReference,
             text = sourceCode
         )
         rawModules[moduleReference] = rawModule
+        updateErrors(updatedErrors = parseErrors)
         return rawModule
     }
 

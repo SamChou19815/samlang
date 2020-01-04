@@ -10,7 +10,10 @@ import samlang.parser.ModuleBuilder
 internal fun getTypeCheckedModule(code: String): Module {
     val errorCollector = ErrorCollector()
     val module = typeCheckSingleModuleSource(
-        module = ModuleBuilder.buildModuleFromText(moduleReference = ModuleReference(moduleName = "test"), text = code),
+        module = ModuleBuilder.buildModuleFromText(
+            moduleReference = ModuleReference(moduleName = "test"),
+            text = code
+        ).first,
         errorCollector = errorCollector
     )
     if (errorCollector.collectedErrors.isNotEmpty()) {

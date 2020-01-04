@@ -6,15 +6,13 @@ import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
 import samlang.ast.lang.Module
-import samlang.errors.CompilationFailedException
+import samlang.errors.CompileTimeError
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer
 import samlang.parser.generated.PLParser
-import samlang.util.createOrFail
 
 object ModuleBuilder {
-
-    fun buildModule(moduleReference: ModuleReference, inputStream: InputStream): Module {
+    fun buildModule(moduleReference: ModuleReference, inputStream: InputStream): Pair<Module, List<CompileTimeError>> {
         val parser = PLParser(CommonTokenStream(PLLexer(ANTLRInputStream(inputStream))))
         val errorListener = SyntaxErrorListener(moduleReference = moduleReference)
         parser.removeErrorListeners()
@@ -22,14 +20,11 @@ object ModuleBuilder {
         val sourceVisitor = Visitor(syntaxErrorListener = errorListener)
         val moduleContext = parser.module()
         val errors = errorListener.syntaxErrors
-        if (errors.isNotEmpty()) {
-            throw CompilationFailedException(errors = errors)
-        }
         val module = moduleContext.accept(sourceVisitor)
-        return createOrFail(item = module, errors = errors)
+        return module to errors
     }
 
-    fun buildModuleFromText(moduleReference: ModuleReference, text: String): Module =
+    fun buildModuleFromText(moduleReference: ModuleReference, text: String): Pair<Module, List<CompileTimeError>> =
         buildModule(moduleReference = moduleReference, inputStream = text.byteInputStream())
 
     private class Visitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module>() {
