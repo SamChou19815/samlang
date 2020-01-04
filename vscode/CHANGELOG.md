@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.0.4
+
+Added support for some completion snippets.
+
 ## 0.0.3
 
 Added support for LSP.
