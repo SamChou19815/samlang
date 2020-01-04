@@ -40,7 +40,7 @@ class LocationLookupBuilder(val locationLookup: LocationLookup<Expression>) {
             )
             classDefinition.members.forEach { member ->
                 visitor.build(expression = Variable(range = member.nameRange, type = member.type, name = member.name))
-                visitor.build(expression = member.body)
+                member.body.accept(visitor = visitor, context = Unit)
             }
         }
     }

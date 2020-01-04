@@ -1,7 +1,6 @@
 package samlang.ast.common
 
 data class Range(val start: Position, val end: Position) {
-
     operator fun contains(position: Position): Boolean = position in start..end
 
     operator fun contains(range: Range): Boolean = contains(position = range.start) && contains(position = range.end)
