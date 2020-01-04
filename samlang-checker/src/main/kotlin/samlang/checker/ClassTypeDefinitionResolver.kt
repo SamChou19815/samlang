@@ -16,7 +16,6 @@ import samlang.errors.UnsupportedClassTypeDefinitionError
 import samlang.util.Either
 
 internal object ClassTypeDefinitionResolver {
-
     fun applyGenericTypeParameters(type: Type, context: Map<String, Type>): Type =
         type.accept(visitor = Visitor, context = context)
 
@@ -44,24 +43,21 @@ internal object ClassTypeDefinitionResolver {
                 )
             )
         }
-        return run {
-            varMap.mapValues { (_, v) ->
-                applyGenericTypeParameters(
-                    type = v,
-                    context = typeParameters.zip(typeArguments).toMap()
-                )
-            }.let { Either.Left(v = it) }
-        }
+        return varMap.mapValues { (_, v) ->
+            applyGenericTypeParameters(
+                type = v,
+                context = typeParameters.zip(typeArguments).toMap()
+            )
+        }.let { Either.Left(v = it) }
     }
 
     private object Visitor : TypeVisitor<Map<String, Type>, Type> {
-
         override fun visit(type: PrimitiveType, context: Map<String, Type>): Type = type
 
         override fun visit(type: IdentifierType, context: Map<String, Type>): Type {
             val typeArguments = type.typeArguments
             if (typeArguments.isNotEmpty()) {
-                val newTypeArguments = typeArguments.map { applyGenericTypeParameters(type = it, context = context) }
+                val newTypeArguments = typeArguments.map { it.accept(visitor = this, context = context) }
                 return type.copy(typeArguments = newTypeArguments)
             }
             val replacement = context[type.identifier]
@@ -72,12 +68,12 @@ internal object ClassTypeDefinitionResolver {
         }
 
         override fun visit(type: TupleType, context: Map<String, Type>): Type =
-            TupleType(mappings = type.mappings.map { applyGenericTypeParameters(type = it, context = context) })
+            TupleType(mappings = type.mappings.map { it.accept(visitor = this, context = context) })
 
         override fun visit(type: FunctionType, context: Map<String, Type>): Type =
             FunctionType(
-                argumentTypes = type.argumentTypes.map { applyGenericTypeParameters(type = it, context = context) },
-                returnType = applyGenericTypeParameters(type = type.returnType, context = context)
+                argumentTypes = type.argumentTypes.map { it.accept(visitor = this, context = context) },
+                returnType = type.returnType.accept(visitor = this, context = context)
             )
 
         override fun visit(type: UndecidedType, context: Map<String, Type>): Type = type
