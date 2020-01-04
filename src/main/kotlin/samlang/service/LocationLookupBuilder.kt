@@ -149,6 +149,8 @@ class LocationLookupBuilder(val locationLookup: LocationLookup<Expression>) {
             val pattern = expression.pattern
             if (pattern is Pattern.VariablePattern) {
                 build(expression = Variable(range = pattern.range, type = assignedExpressionType, name = pattern.name))
+            } else if (pattern is Pattern.ObjectPattern) {
+                build(expression = Variable(range = pattern.range, type = assignedExpressionType, name = "_"))
             }
             assignedExpression.buildRecursively()
             expression.nextExpression?.buildRecursively()
