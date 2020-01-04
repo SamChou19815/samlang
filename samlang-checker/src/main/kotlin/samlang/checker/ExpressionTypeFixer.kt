@@ -40,17 +40,18 @@ import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.ExpressionVisitor
 
-internal fun Expression.fixType(
+internal fun fixExpressionType(
+    expression: Expression,
     expectedType: Type,
-    resolution: TypeResolution,
+    resolution: ReadOnlyTypeResolution,
     typeCheckingContext: TypeCheckingContext
 ): Expression {
     val visitor = TypeFixerVisitor(resolution = resolution, ctx = typeCheckingContext)
-    return this.accept(visitor = visitor, context = expectedType)
+    return expression.accept(visitor = visitor, context = expectedType)
 }
 
 private class TypeFixerVisitor(
-    private val resolution: TypeResolution,
+    private val resolution: ReadOnlyTypeResolution,
     private val ctx: TypeCheckingContext
 ) : ExpressionVisitor<Type, Expression> {
 

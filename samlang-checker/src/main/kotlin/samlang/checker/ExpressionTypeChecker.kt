@@ -65,7 +65,8 @@ internal fun Expression.typeCheck(
     if (errorCollector.collectedErrors.isNotEmpty()) {
         return checkedExpression
     }
-    return checkedExpression.fixType(
+    return fixExpressionType(
+        expression = checkedExpression,
         expectedType = expectedType,
         resolution = resolution,
         typeCheckingContext = typeCheckingContext
