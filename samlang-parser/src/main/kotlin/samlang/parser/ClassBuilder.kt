@@ -20,7 +20,7 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
 
     private val TypeParametersDeclarationContext.typeParameters: List<String> get() = UpperId().map { it.symbol.text }
 
-    private object ModuleNameBuilder : PLBaseVisitor<Pair<String, Range>>() {
+    private object ModuleNameBuilder : PLBaseVisitor<Pair<String, Range>?>() {
 
         override fun visitClassHeader(ctx: ClassHeaderContext): Pair<String, Range> {
             val symbol = ctx.UpperId().symbol
@@ -112,7 +112,7 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
     }
 
     override fun visitClazz(ctx: ClazzContext): ClassDefinition? {
-        val (name, nameRange) = ctx.classHeaderDeclaration().accept(ModuleNameBuilder)
+        val (name, nameRange) = ctx.classHeaderDeclaration().accept(ModuleNameBuilder) ?: return null
         return ClassDefinition(
             range = ctx.range,
             nameRange = nameRange,
