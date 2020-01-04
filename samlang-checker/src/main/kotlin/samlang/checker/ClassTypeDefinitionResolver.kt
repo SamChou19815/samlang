@@ -54,8 +54,7 @@ internal object ClassTypeDefinitionResolver {
         }
     }
 
-    private object Visitor :
-        TypeVisitor<Map<String, Type>, Type> {
+    private object Visitor : TypeVisitor<Map<String, Type>, Type> {
 
         override fun visit(type: PrimitiveType, context: Map<String, Type>): Type = type
 

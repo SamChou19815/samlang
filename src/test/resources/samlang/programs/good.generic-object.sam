@@ -1,0 +1,11 @@
+// ERROR_COUNT: 0
+
+class GenericObject<T1, T2>(v1: T1, v2: T2) {
+    function main(): unit =
+        val _ = (v2) -> (
+            if (v2 + 1 == 3) then
+                { v1: 3, v2 }
+            else
+                { v1: 3, v2 }
+        );
+}

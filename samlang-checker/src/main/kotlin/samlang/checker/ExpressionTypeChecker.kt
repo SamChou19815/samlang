@@ -200,7 +200,7 @@ private class ExpressionTypeCheckerVisitor(
         ctx: TypeCheckingContext,
         expectedType: Type
     ): Expression {
-        val (range, _, _, spreadExpression, fieldDeclarations) = expression
+        val (range, _, spreadExpression, fieldDeclarations) = expression
         val (_, _, typeParameters, typeMappings) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
             ?: return expression.errorWith(
@@ -270,7 +270,6 @@ private class ExpressionTypeCheckerVisitor(
         return ObjectConstructor(
             range = range,
             type = constraintInferredType,
-            typeParameters = typeParameters,
             spreadExpression = checkedSpreadExpression,
             fieldDeclarations = enhancedFieldDeclarations
         )

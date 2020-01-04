@@ -79,7 +79,6 @@ class ExpressionLoweringTest : StringSpec() {
                 expression = Expression.ObjectConstructor(
                     range = dummyRange,
                     type = id(identifier = "Foo"),
-                    typeParameters = emptyList(),
                     spreadExpression = THIS,
                     fieldDeclarations = listOf(
                         Expression.ObjectConstructor.FieldConstructor.Field(

@@ -17,7 +17,6 @@ import samlang.ast.common.Type
 import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.Type.IdentifierType
 import samlang.ast.common.Type.TupleType
-import samlang.ast.common.TypeDefinitionType.OBJECT
 import samlang.ast.common.TypeDefinitionType.VARIANT
 import samlang.ast.common.UnaryOperator
 import samlang.ast.lang.Expression
@@ -114,20 +113,9 @@ private class TypeFixerVisitor(
 
     override fun visit(expression: ObjectConstructor, context: Type): Expression {
         val newType = expression.type.fixSelf(expectedType = context) as IdentifierType
-        val (_, _, _, mapping) = ctx.getCurrentModuleTypeDefinition()
-            ?.takeIf { it.type == OBJECT }
-            ?: error(message = "Not in an object class!")
-        val newTypeArguments = newType.typeArguments
-        val betterMapping = run {
-            val replacementMap = expression.typeParameters.checkedZip(other = newTypeArguments).toMap()
-            mapping.mapValues { (_, v) ->
-                ClassTypeDefinitionResolver.applyGenericTypeParameters(type = v, context = replacementMap)
-            }
-        }
         val newSpreadExpr = expression.spreadExpression?.tryFixType(expectedType = context)
         val newDeclarations = expression.fieldDeclarations.map { dec ->
-            val expressionTypeForDeclaration = betterMapping[dec.name] ?: blameTypeChecker()
-            val betterType = dec.type.fixSelf(expectedType = expressionTypeForDeclaration)
+            val betterType = dec.type.fixSelf(expectedType = null)
             when (dec) {
                 is ObjectConstructor.FieldConstructor.Field -> dec.copy(
                     type = betterType,

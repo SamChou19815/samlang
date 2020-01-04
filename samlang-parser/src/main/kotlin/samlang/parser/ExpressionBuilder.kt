@@ -132,7 +132,6 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
         return Expression.ObjectConstructor(
             range = ctx.range,
             type = Type.undecided(),
-            typeParameters = emptyList(), // At parsing time, the information is not resolved yet.
             spreadExpression = ctx.expression()?.toExpression(),
             fieldDeclarations = ctx.objectFieldDeclarations().objectFieldDeclaration()
                 .map { it.accept(objectFieldDeclarationBuilder) }
