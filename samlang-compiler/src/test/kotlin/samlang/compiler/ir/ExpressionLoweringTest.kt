@@ -102,7 +102,6 @@ class ExpressionLoweringTest : StringSpec() {
                 expression = Expression.VariantConstructor(
                     range = dummyRange,
                     type = id(identifier = "Foo"),
-                    typeParameters = emptyList(),
                     tag = "Foo",
                     data = THIS
                 ),

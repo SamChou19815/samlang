@@ -46,7 +46,6 @@ sealed class Expression(val precedence: Int) : Node {
     }
 
     data class This(override val range: Range, override val type: Type) : Expression(precedence = 0) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
@@ -56,7 +55,6 @@ sealed class Expression(val precedence: Int) : Node {
         override val type: Type,
         val name: String
     ) : Expression(precedence = 0) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
@@ -69,7 +67,6 @@ sealed class Expression(val precedence: Int) : Node {
         val classNameRange: Range,
         val memberName: String
     ) : Expression(precedence = 0) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
@@ -79,7 +76,6 @@ sealed class Expression(val precedence: Int) : Node {
         override val type: Type.TupleType,
         val expressionList: List<Expression>
     ) : Expression(precedence = 1) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
@@ -90,9 +86,7 @@ sealed class Expression(val precedence: Int) : Node {
         val spreadExpression: Expression?,
         val fieldDeclarations: List<FieldConstructor>
     ) : Expression(precedence = 1) {
-
         sealed class FieldConstructor {
-
             abstract val range: Range
             abstract val type: Type
             abstract val name: String
@@ -105,7 +99,6 @@ sealed class Expression(val precedence: Int) : Node {
                 override val name: String,
                 val expression: Expression
             ) : FieldConstructor() {
-
                 override fun copyWithNewType(type: Type): FieldConstructor = copy(type = type)
             }
 
@@ -114,7 +107,6 @@ sealed class Expression(val precedence: Int) : Node {
                 override val type: Type,
                 override val name: String
             ) : FieldConstructor() {
-
                 override fun copyWithNewType(type: Type): FieldConstructor = copy(type = type)
             }
         }
@@ -126,11 +118,9 @@ sealed class Expression(val precedence: Int) : Node {
     data class VariantConstructor(
         override val range: Range,
         override val type: Type,
-        val typeParameters: List<String>,
         val tag: String,
         val data: Expression
     ) : Expression(precedence = 1) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
@@ -141,7 +131,6 @@ sealed class Expression(val precedence: Int) : Node {
         val expression: Expression,
         val fieldName: String
     ) : Expression(precedence = 1) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
@@ -152,7 +141,6 @@ sealed class Expression(val precedence: Int) : Node {
         val expression: Expression,
         val methodName: String
     ) : Expression(precedence = 2) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
@@ -163,7 +151,6 @@ sealed class Expression(val precedence: Int) : Node {
         val operator: UnaryOperator,
         val expression: Expression
     ) : Expression(precedence = 3) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
@@ -173,7 +160,6 @@ sealed class Expression(val precedence: Int) : Node {
         override val type: Type,
         val expression: Expression
     ) : Expression(precedence = 3) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
@@ -196,7 +182,6 @@ sealed class Expression(val precedence: Int) : Node {
         val operator: BinaryOperator,
         val e2: Expression
     ) : Expression(precedence = 5 + operator.precedence) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
@@ -208,7 +193,6 @@ sealed class Expression(val precedence: Int) : Node {
         val e1: Expression,
         val e2: Expression
     ) : Expression(precedence = 10) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
@@ -219,7 +203,6 @@ sealed class Expression(val precedence: Int) : Node {
         val matchedExpression: Expression,
         val matchingList: List<VariantPatternToExpr>
     ) : Expression(precedence = 11) {
-
         data class VariantPatternToExpr(
             val range: Range,
             val tag: String,
@@ -237,7 +220,6 @@ sealed class Expression(val precedence: Int) : Node {
         val parameters: List<Pair<String, Type>>,
         val body: Expression
     ) : Expression(precedence = 12) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }
@@ -250,7 +232,6 @@ sealed class Expression(val precedence: Int) : Node {
         val assignedExpression: Expression,
         val nextExpression: Expression?
     ) : Expression(precedence = 13) {
-
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }

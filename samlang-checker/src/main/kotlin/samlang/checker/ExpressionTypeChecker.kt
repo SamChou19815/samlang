@@ -65,12 +65,7 @@ internal fun Expression.typeCheck(
     if (errorCollector.collectedErrors.isNotEmpty()) {
         return checkedExpression
     }
-    return fixExpressionType(
-        expression = checkedExpression,
-        expectedType = expectedType,
-        resolution = resolution,
-        typeCheckingContext = typeCheckingContext
-    )
+    return fixExpressionType(expression = checkedExpression, expectedType = expectedType, resolution = resolution)
 }
 
 private fun Expression.toChecked(
@@ -280,7 +275,7 @@ private class ExpressionTypeCheckerVisitor(
         ctx: TypeCheckingContext,
         expectedType: Type
     ): Expression {
-        val (range, _, _, tag, data) = expression
+        val (range, _, tag, data) = expression
         val (_, _, typeParameters, typeMappings) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == VARIANT }
             ?: return expression.errorWith(
@@ -310,7 +305,7 @@ private class ExpressionTypeCheckerVisitor(
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = locallyInferredType, errorRange = range
         )
-        return expression.copy(type = constraintInferredType, typeParameters = typeParameters, data = checkedData)
+        return expression.copy(type = constraintInferredType, data = checkedData)
     }
 
     override fun visit(expression: FieldAccess, ctx: TypeCheckingContext, expectedType: Type): Expression {

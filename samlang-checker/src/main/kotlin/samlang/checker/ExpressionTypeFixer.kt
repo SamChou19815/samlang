@@ -17,7 +17,6 @@ import samlang.ast.common.Type
 import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.Type.IdentifierType
 import samlang.ast.common.Type.TupleType
-import samlang.ast.common.TypeDefinitionType.VARIANT
 import samlang.ast.common.UnaryOperator
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
@@ -42,17 +41,10 @@ import samlang.ast.lang.ExpressionVisitor
 internal fun fixExpressionType(
     expression: Expression,
     expectedType: Type,
-    resolution: ReadOnlyTypeResolution,
-    typeCheckingContext: TypeCheckingContext
-): Expression {
-    val visitor = TypeFixerVisitor(resolution = resolution, ctx = typeCheckingContext)
-    return expression.accept(visitor = visitor, context = expectedType)
-}
+    resolution: ReadOnlyTypeResolution
+): Expression = expression.accept(visitor = TypeFixerVisitor(resolution = resolution), context = expectedType)
 
-private class TypeFixerVisitor(
-    private val resolution: ReadOnlyTypeResolution,
-    private val ctx: TypeCheckingContext
-) : ExpressionVisitor<Type, Expression> {
+private class TypeFixerVisitor(private val resolution: ReadOnlyTypeResolution) : ExpressionVisitor<Type, Expression> {
 
     private fun Expression.tryFixType(expectedType: Type = this.type): Expression =
         this.accept(visitor = this@TypeFixerVisitor, context = expectedType)
@@ -133,17 +125,8 @@ private class TypeFixerVisitor(
 
     override fun visit(expression: VariantConstructor, context: Type): Expression {
         val newType = expression.getFixedSelfType(expectedType = context) as IdentifierType
-        val (_, _, _, mapping) = ctx.getCurrentModuleTypeDefinition()
-            ?.takeIf { it.type == VARIANT }
-            ?: error(message = "Not in a variant class!")
-        var dataType = mapping[expression.tag] ?: blameTypeChecker()
-        dataType = ClassTypeDefinitionResolver.applyGenericTypeParameters(
-            type = dataType, context = expression.typeParameters.checkedZip(other = newType.typeArguments).toMap()
-        )
-        return expression.copy(
-            type = newType,
-            data = expression.data.tryFixType(expectedType = dataType)
-        )
+        val data = expression.data.let { it.tryFixType(expectedType = it.type.fixSelf(expectedType = null)) }
+        return expression.copy(type = newType, data = data)
     }
 
     override fun visit(expression: FieldAccess, context: Type): Expression = expression.copy(
