@@ -11,7 +11,8 @@
     "vscode": "^1.41.0"
   },
   "categories": [
-    "Programming Languages"
+    "Programming Languages",
+    "Snippets"
   ],
   "icon": "images/samlang.png",
   "main": "./out/src/extension",
@@ -37,6 +38,12 @@
         "language": "samlang",
         "scopeName": "text.samlang",
         "path": "./syntaxes/samlang.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "samlang",
+        "path": "./snippets.json"
       }
     ],
     "configuration": {
