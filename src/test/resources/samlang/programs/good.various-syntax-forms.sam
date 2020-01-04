@@ -7,7 +7,6 @@ class Clazz(t: int) {
      val i: int = this.t;
      val { t as j } = this;
      i + j
-
 }
 
 class Option<T>(Some(T), None(unit)) {
@@ -72,5 +71,4 @@ class Main {
     val b: Option<string> = Option.none().toSome(3).map(Main.lambdaTest);
     val c: Option<string> = Option.none().toSome(3).map((x) -> "empty");
     "hello world"
-
 }

@@ -1,20 +1,14 @@
 // ERROR_COUNT: 0
 
 class Math {
-
     function plus(a: int, b: int): int = a + b
-
     function cosine(angleInDegree: int): int = panic("Not supported!")
-
 }
 
 class Student(name: string, age: int) {
-
     public method getName(): string = this.name
     method getAge(): int = this.age
-
     function dummyStudent(): Student = { name: "RANDOM_BABY", age: 0 }
-
 }
 
 class PrimitiveType(
@@ -44,22 +38,16 @@ class FunctionExample {
 }
 
 class Box<T>(content: T) {
-
     public function <T> init(content: T): Box<T> = { content } // object short hand syntax
-
     public method getContent(): T = val { content } = this; content
-
 }
 
 class Option<T>(None(unit), Some(T)) {
-
     public function <T> getNone(): Option<T> = None(unit)
     public function <T> getSome(d: T): Option<T> = Some(d)
-
     public method <R> map(f: (T) -> R): Option<R> =
         match (this) {
             | None _ -> None(unit)
             | Some d -> Some(f(d))
         }
-
 }

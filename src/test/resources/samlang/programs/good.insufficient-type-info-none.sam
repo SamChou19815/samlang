@@ -5,6 +5,5 @@ class Option<T>(Some(T), None(unit)) {
   public method toSome(t: T): Option<T> = Some(t)
 }
 class Main {
-  function main(): unit =
-    val a = Option.none();
+  function main(): unit = val a = Option.none();
 }

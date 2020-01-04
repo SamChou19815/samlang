@@ -1,9 +1,6 @@
 // ERROR_COUNT: 0
 
-class HelloWorld(
-    message: string,
-) {
-
+class HelloWorld(message: string) {
     method getMessage(): string =
         val { message } = this;
         message
@@ -11,7 +8,6 @@ class HelloWorld(
     public function getGlobalMessage(): string =
         val hw = { message: "Hello World!" };
         hw.getMessage()
-
 }
 
 class Main {
