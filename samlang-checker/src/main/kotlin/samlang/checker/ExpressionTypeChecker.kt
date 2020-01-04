@@ -200,7 +200,7 @@ private class ExpressionTypeCheckerVisitor(
         ctx: TypeCheckingContext,
         expectedType: Type
     ): Expression {
-        val (range, _, spreadExpression, fieldDeclarations) = expression
+        val (range, _, _, spreadExpression, fieldDeclarations) = expression
         val (_, _, typeParameters, typeMappings) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
             ?: return expression.errorWith(
@@ -270,6 +270,7 @@ private class ExpressionTypeCheckerVisitor(
         return ObjectConstructor(
             range = range,
             type = constraintInferredType,
+            typeParameters = typeParameters,
             spreadExpression = checkedSpreadExpression,
             fieldDeclarations = enhancedFieldDeclarations
         )
@@ -280,7 +281,7 @@ private class ExpressionTypeCheckerVisitor(
         ctx: TypeCheckingContext,
         expectedType: Type
     ): Expression {
-        val (range, _, tag, data) = expression
+        val (range, _, _, tag, data) = expression
         val (_, _, typeParameters, typeMappings) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == VARIANT }
             ?: return expression.errorWith(
@@ -310,7 +311,7 @@ private class ExpressionTypeCheckerVisitor(
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = locallyInferredType, errorRange = range
         )
-        return expression.copy(type = constraintInferredType, data = checkedData)
+        return expression.copy(type = constraintInferredType, typeParameters = typeParameters, data = checkedData)
     }
 
     override fun visit(expression: FieldAccess, ctx: TypeCheckingContext, expectedType: Type): Expression {

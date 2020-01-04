@@ -87,6 +87,7 @@ sealed class Expression(val precedence: Int) : Node {
     data class ObjectConstructor(
         override val range: Range,
         override val type: Type,
+        val typeParameters: List<String>,
         val spreadExpression: Expression?,
         val fieldDeclarations: List<FieldConstructor>
     ) : Expression(precedence = 1) {
@@ -126,6 +127,7 @@ sealed class Expression(val precedence: Int) : Node {
     data class VariantConstructor(
         override val range: Range,
         override val type: Type,
+        val typeParameters: List<String>,
         val tag: String,
         val data: Expression
     ) : Expression(precedence = 1) {

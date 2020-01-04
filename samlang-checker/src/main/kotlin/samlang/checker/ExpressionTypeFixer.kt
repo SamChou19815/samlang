@@ -114,12 +114,12 @@ private class TypeFixerVisitor(
 
     override fun visit(expression: ObjectConstructor, context: Type): Expression {
         val newType = expression.type.fixSelf(expectedType = context) as IdentifierType
-        val (_, _, typeParameters, mapping) = ctx.getCurrentModuleTypeDefinition()
+        val (_, _, _, mapping) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
             ?: error(message = "Not in an object class!")
         val newTypeArguments = newType.typeArguments
         val betterMapping = run {
-            val replacementMap = typeParameters.checkedZip(other = newTypeArguments).toMap()
+            val replacementMap = expression.typeParameters.checkedZip(other = newTypeArguments).toMap()
             mapping.mapValues { (_, v) ->
                 ClassTypeDefinitionResolver.applyGenericTypeParameters(type = v, context = replacementMap)
             }
@@ -145,12 +145,12 @@ private class TypeFixerVisitor(
 
     override fun visit(expression: VariantConstructor, context: Type): Expression {
         val newType = expression.getFixedSelfType(expectedType = context) as IdentifierType
-        val (_, _, typeParameters, mapping) = ctx.getCurrentModuleTypeDefinition()
+        val (_, _, _, mapping) = ctx.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == VARIANT }
             ?: error(message = "Not in a variant class!")
         var dataType = mapping[expression.tag] ?: blameTypeChecker()
         dataType = ClassTypeDefinitionResolver.applyGenericTypeParameters(
-            type = dataType, context = typeParameters.checkedZip(other = newType.typeArguments).toMap()
+            type = dataType, context = expression.typeParameters.checkedZip(other = newType.typeArguments).toMap()
         )
         return expression.copy(
             type = newType,
