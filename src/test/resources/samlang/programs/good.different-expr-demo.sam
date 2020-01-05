@@ -47,7 +47,7 @@ class Main {
             );
             b
         );
-        val [b, c, _] = [1, "bool", true];
+        val [e, f, _] = [1, "bool", true];
         a + 1
 
     function main(): int = Foo.bar() * Main.oof()
