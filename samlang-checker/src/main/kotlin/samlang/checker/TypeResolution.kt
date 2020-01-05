@@ -39,7 +39,7 @@ internal class TypeResolution : ReadOnlyTypeResolution {
     }
 
     override fun resolveType(unresolvedType: Type): Type =
-        resolveType(type = unresolvedType, function = this::getPartiallyResolvedType)
+        TypeResolver.resolveType(type = unresolvedType, function = this::getPartiallyResolvedType)
 
     /**
      * Establish an aliasing relation between [undecidedType1] and [undecidedType2].

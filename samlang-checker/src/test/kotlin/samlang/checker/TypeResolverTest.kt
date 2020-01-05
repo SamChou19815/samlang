@@ -52,6 +52,6 @@ class TypeResolverTest : StringSpec() {
             }
         }
 
-        private fun resolve(type: Type): Type = resolveType(type = type, function = resolver)
+        private fun resolve(type: Type): Type = TypeResolver.resolveType(type = type, function = resolver)
     }
 }

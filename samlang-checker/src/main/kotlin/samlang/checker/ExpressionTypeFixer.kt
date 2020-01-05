@@ -52,8 +52,8 @@ private class TypeFixerVisitor(private val resolution: ReadOnlyTypeResolution) :
     private fun Type.fixSelf(expectedType: Type?): Type {
         val resolvedPotentiallyUndecidedType = resolution.resolveType(unresolvedType = this)
         val resolvedType =
-            if (collectUndecidedTypeIndices(type = resolvedPotentiallyUndecidedType).isNotEmpty()) {
-                resolveType(type = resolvedPotentiallyUndecidedType) { Type.unit }
+            if (UndecidedTypeCollector.collectUndecidedTypeIndices(resolvedPotentiallyUndecidedType).isNotEmpty()) {
+                TypeResolver.resolveType(type = resolvedPotentiallyUndecidedType) { Type.unit }
             } else {
                 resolvedPotentiallyUndecidedType
             }

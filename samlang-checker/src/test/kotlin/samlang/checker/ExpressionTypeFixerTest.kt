@@ -119,6 +119,6 @@ class ExpressionTypeFixerTest : StringSpec() {
             error(message = "Not necessary for this test.")
 
         override fun resolveType(unresolvedType: Type): Type =
-            resolveType(type = unresolvedType, function = TypeResolverTest.resolver)
+            TypeResolver.resolveType(type = unresolvedType, function = TypeResolverTest.resolver)
     }
 }

@@ -7,7 +7,7 @@ import samlang.ast.common.Type
 class UndecidedTypeCollectorTest : StringSpec() {
     init {
         "Can correctly find all undecided types." {
-            collectUndecidedTypeIndices(
+            UndecidedTypeCollector.collectUndecidedTypeIndices(
                 type = Type.FunctionType(
                     argumentTypes = listOf(
                         Type.IdentifierType(
