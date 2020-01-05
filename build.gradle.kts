@@ -58,6 +58,13 @@ allprojects {
     }
 }
 
+subprojects {
+    // Disable the test report for the individual test task
+    tasks.named<Test>("test") {
+        reports.html.isEnabled = false
+    }
+}
+
 dependencies {
     implementation(project(":samlang-ast"))
     implementation(project(":samlang-checker"))
@@ -81,4 +88,10 @@ tasks {
         isZip64 = true
         artifacts { shadow(archiveFile) { builtBy(shadowJar) } }
     }
+    register<TestReport>("testReport") {
+        destinationDir = file("$buildDir/reports/allTests")
+        // Include the results from the `test` task in all subprojects
+        reportOn(subprojects.map { it.tasks["test"] } + this@tasks["test"])
+    }
+    "build" { dependsOn("testReport") }
 }
