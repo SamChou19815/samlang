@@ -28,7 +28,6 @@ enum class BinaryOperator(val symbol: String, val precedence: Int) {
          * @throws IllegalArgumentException if the given [text] is not a binary operator.
          */
         @JvmStatic
-        fun fromRaw(text: String): BinaryOperator = symbolTable[text]
-            ?: throw IllegalArgumentException("Not a supported binary operator.")
+        fun fromRaw(text: String): BinaryOperator? = symbolTable[text]
     }
 }

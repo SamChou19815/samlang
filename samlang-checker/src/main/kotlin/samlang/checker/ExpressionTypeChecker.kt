@@ -44,6 +44,7 @@ import samlang.errors.CompileTimeError
 import samlang.errors.DuplicateFieldDeclarationError
 import samlang.errors.ExtraFieldInObjectError
 import samlang.errors.IllegalOtherClassFieldAccess
+import samlang.errors.IllegalOtherClassMatch
 import samlang.errors.IllegalThisError
 import samlang.errors.InconsistentFieldsInObjectError
 import samlang.errors.InsufficientTypeInferenceContextError
@@ -330,33 +331,32 @@ private class ExpressionTypeCheckerVisitor(
                 range = range, type = constraintInferredType, expression = checkedExpression, methodName = fieldName
             )
         }
-        val (_, _, typeParameters, _) = accessibleGlobalTypingContext.getCurrentModuleTypeDefinition()
-            ?.takeIf { it.type == OBJECT }
-            ?: return expression.errorWith(
+        val checkedObjectExpression = objectExpression.toChecked(ctx = ctx)
+        val betterExpression = expression.copy(expression = checkedObjectExpression)
+        val checkedObjectExpressionType = checkedObjectExpression.type
+        if (checkedObjectExpressionType !is IdentifierType) {
+            return betterExpression.errorWith(
                 expectedType = expectedType,
-                error = UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = range)
+                error = IllegalOtherClassMatch(range = objectExpression.range)
             )
-        val expectedFieldType = IdentifierType(
-            identifier = accessibleGlobalTypingContext.currentClass,
-            typeArguments = Type.undecidedList(number = typeParameters.size)
-        )
-        val checkedObjectExpression = objectExpression.toChecked(ctx = ctx, expectedType = expectedFieldType)
+        }
         val fieldMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
-            identifierType = checkedObjectExpression.type as IdentifierType,
+            identifierType = checkedObjectExpressionType,
             context = accessibleGlobalTypingContext,
             typeDefinitionType = OBJECT,
             errorRange = objectExpression.range
         )
         val fieldMappings = when (fieldMappingsOrError) {
             is Either.Left -> fieldMappingsOrError.v
-            is Either.Right -> return expression.errorWith(expectedType = expectedType, error = fieldMappingsOrError.v)
-        }
-        val locallyInferredFieldType = fieldMappings[fieldName] ?: return expression
-            .copy(expression = checkedObjectExpression)
-            .errorWith(
+            is Either.Right -> return betterExpression.errorWith(
                 expectedType = expectedType,
-                error = UnresolvedNameError(unresolvedName = fieldName, range = range)
+                error = fieldMappingsOrError.v
             )
+        }
+        val locallyInferredFieldType = fieldMappings[fieldName] ?: return betterExpression.errorWith(
+            expectedType = expectedType,
+            error = UnresolvedNameError(unresolvedName = fieldName, range = range)
+        )
         val constraintInferredFieldType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = locallyInferredFieldType, errorRange = expression.range
         )

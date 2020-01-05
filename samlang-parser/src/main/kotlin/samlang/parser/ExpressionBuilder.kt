@@ -183,53 +183,51 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
             arguments = ctx.functionArguments().expression().map { it.toExpression() }
         )
 
-    override fun visitFactorExpr(ctx: PLParser.FactorExprContext): Expression = Expression.Binary(
-        range = ctx.range,
-        type = Type.int,
-        operator = BinaryOperator.fromRaw(text = ctx.factorOperator().text),
-        e1 = ctx.expression(0).toExpression(),
-        e2 = ctx.expression(1).toExpression()
-    )
+    override fun visitFactorExpr(ctx: PLParser.FactorExprContext): Expression? {
+        val operator = BinaryOperator.fromRaw(text = ctx.factorOperator().text) ?: return null
+        val e1 = ctx.expression(0)?.toExpression() ?: return null
+        val e2 = ctx.expression(1)?.toExpression() ?: return null
+        return Expression.Binary(range = ctx.range, type = Type.int, operator = operator, e1 = e1, e2 = e2)
+    }
 
-    override fun visitTermExpr(ctx: PLParser.TermExprContext): Expression = Expression.Binary(
-        range = ctx.range,
-        type = Type.int,
-        operator = BinaryOperator.fromRaw(text = ctx.termOperator().text),
-        e1 = ctx.expression(0).toExpression(),
-        e2 = ctx.expression(1).toExpression()
-    )
+    override fun visitTermExpr(ctx: PLParser.TermExprContext): Expression? {
+        val operator = BinaryOperator.fromRaw(text = ctx.termOperator().text) ?: return null
+        val e1 = ctx.expression(0)?.toExpression() ?: return null
+        val e2 = ctx.expression(1)?.toExpression() ?: return null
+        return Expression.Binary(range = ctx.range, type = Type.int, operator = operator, e1 = e1, e2 = e2)
+    }
 
-    override fun visitComparisonExpr(ctx: PLParser.ComparisonExprContext): Expression = Expression.Binary(
-        range = ctx.range,
-        type = Type.bool,
-        operator = BinaryOperator.fromRaw(text = ctx.comparisonOperator().text),
-        e1 = ctx.expression(0).toExpression(),
-        e2 = ctx.expression(1).toExpression()
-    )
+    override fun visitComparisonExpr(ctx: PLParser.ComparisonExprContext): Expression? {
+        val operator = BinaryOperator.fromRaw(text = ctx.comparisonOperator().text) ?: return null
+        val e1 = ctx.expression(0)?.toExpression() ?: return null
+        val e2 = ctx.expression(1)?.toExpression() ?: return null
+        return Expression.Binary(range = ctx.range, type = Type.bool, operator = operator, e1 = e1, e2 = e2)
+    }
 
-    override fun visitConjunctionExpr(ctx: PLParser.ConjunctionExprContext): Expression = Expression.Binary(
-        range = ctx.range,
-        type = Type.bool,
-        operator = BinaryOperator.AND,
-        e1 = ctx.expression(0).toExpression(),
-        e2 = ctx.expression(1).toExpression()
-    )
+    override fun visitConjunctionExpr(ctx: PLParser.ConjunctionExprContext): Expression? {
+        val e1 = ctx.expression(1)?.toExpression() ?: return null
+        val e2 = ctx.expression(1)?.toExpression() ?: return null
+        return Expression.Binary(range = ctx.range, type = Type.bool, operator = BinaryOperator.AND, e1 = e1, e2 = e2)
+    }
 
-    override fun visitDisjunctionExpr(ctx: PLParser.DisjunctionExprContext): Expression = Expression.Binary(
-        range = ctx.range,
-        type = Type.bool,
-        operator = BinaryOperator.OR,
-        e1 = ctx.expression(0).toExpression(),
-        e2 = ctx.expression(1).toExpression()
-    )
+    override fun visitDisjunctionExpr(ctx: PLParser.DisjunctionExprContext): Expression? {
+        val e1 = ctx.expression(0)?.toExpression() ?: return null
+        val e2 = ctx.expression(1)?.toExpression() ?: return null
+        return Expression.Binary(range = ctx.range, type = Type.bool, operator = BinaryOperator.OR, e1 = e1, e2 = e2)
+    }
 
-    override fun visitIfElseExpr(ctx: PLParser.IfElseExprContext): Expression = Expression.IfElse(
-        range = ctx.range,
-        type = Type.undecided(),
-        boolExpression = ctx.expression(0).toExpression(),
-        e1 = ctx.expression(1).toExpression(),
-        e2 = ctx.expression(2).toExpression()
-    )
+    override fun visitIfElseExpr(ctx: PLParser.IfElseExprContext): Expression? {
+        val boolExpression = ctx.expression(0)?.toExpression() ?: return null
+        val e1 = ctx.expression(1)?.toExpression() ?: return null
+        val e2 = ctx.expression(2)?.toExpression() ?: return null
+        return Expression.IfElse(
+            range = ctx.range,
+            type = Type.undecided(),
+            boolExpression = boolExpression,
+            e1 = e1,
+            e2 = e2
+        )
+    }
 
     override fun visitMatchExpr(ctx: PLParser.MatchExprContext): Expression = Expression.Match(
         range = ctx.range,
@@ -273,17 +271,18 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
         )
     }
 
-    override fun visitValExpr(ctx: PLParser.ValExprContext): Expression {
+    override fun visitValExpr(ctx: PLParser.ValExprContext): Expression? {
         val typeAnnotation = ctx.typeAnnotation()?.typeExpr()?.accept(TypeBuilder) ?: Type.undecided()
         val pattern = ctx.pattern().let { patternContext ->
             patternContext.accept(PatternBuilder) ?: Pattern.WildCardPattern(range = patternContext.range)
         }
+        val assignedExpression = ctx.expression(0)?.toExpression() ?: return null
         return Expression.Val(
             range = ctx.range,
             type = Type.undecided(),
             pattern = pattern,
             typeAnnotation = typeAnnotation,
-            assignedExpression = ctx.expression(0).toExpression(),
+            assignedExpression = assignedExpression,
             nextExpression = ctx.expression(1)?.toExpression()
         )
     }
