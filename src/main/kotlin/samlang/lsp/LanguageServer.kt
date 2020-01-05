@@ -93,7 +93,6 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
                     Diagnostic(error.range.asLsp4jRange(), error.reason, DiagnosticSeverity.Error, "samlang")
                 }
             }
-            System.err.println(parameters)
             client.publishDiagnostics(parameters)
         }
     }

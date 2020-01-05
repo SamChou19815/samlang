@@ -314,10 +314,10 @@ private class ExpressionTypeCheckerVisitor(
     }
 
     override fun visit(expression: FieldAccess, ctx: LocalTypingContext, expectedType: Type): Expression {
-        val (range, _, assignedExpression, fieldName) = expression
+        val (range, _, objectExpression, fieldName) = expression
         val tryTypeCheckMethodAccessResult = tryTypeCheckMethodAccess(
             expression = MethodAccess(
-                range = range, type = expression.type, expression = assignedExpression, methodName = fieldName
+                range = range, type = expression.type, expression = objectExpression, methodName = fieldName
             ),
             ctx = ctx
         )
@@ -340,25 +340,27 @@ private class ExpressionTypeCheckerVisitor(
             identifier = accessibleGlobalTypingContext.currentClass,
             typeArguments = Type.undecidedList(number = typeParameters.size)
         )
-        val checkedAssignedExpression = assignedExpression.toChecked(ctx = ctx, expectedType = expectedFieldType)
+        val checkedObjectExpression = objectExpression.toChecked(ctx = ctx, expectedType = expectedFieldType)
         val fieldMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
-            identifierType = checkedAssignedExpression.type as IdentifierType,
+            identifierType = checkedObjectExpression.type as IdentifierType,
             context = accessibleGlobalTypingContext,
             typeDefinitionType = OBJECT,
-            errorRange = assignedExpression.range
+            errorRange = objectExpression.range
         )
         val fieldMappings = when (fieldMappingsOrError) {
             is Either.Left -> fieldMappingsOrError.v
             is Either.Right -> return expression.errorWith(expectedType = expectedType, error = fieldMappingsOrError.v)
         }
-        val locallyInferredFieldType = fieldMappings[fieldName] ?: return expression.errorWith(
-            expectedType = expectedType,
-            error = UnresolvedNameError(unresolvedName = fieldName, range = range)
-        )
+        val locallyInferredFieldType = fieldMappings[fieldName] ?: return expression
+            .copy(expression = checkedObjectExpression)
+            .errorWith(
+                expectedType = expectedType,
+                error = UnresolvedNameError(unresolvedName = fieldName, range = range)
+            )
         val constraintInferredFieldType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = locallyInferredFieldType, errorRange = expression.range
         )
-        return expression.copy(type = constraintInferredFieldType, expression = checkedAssignedExpression)
+        return expression.copy(type = constraintInferredFieldType, expression = checkedObjectExpression)
     }
 
     private fun tryTypeCheckMethodAccess(

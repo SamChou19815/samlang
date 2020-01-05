@@ -6,6 +6,7 @@ import samlang.ast.common.Position
 import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinitionType
+import samlang.ast.lang.Expression
 
 internal class LanguageServerServices(private val state: LanguageServerState) {
     fun queryType(moduleReference: ModuleReference, position: Position): Pair<Type, Range>? {
@@ -14,21 +15,24 @@ internal class LanguageServerServices(private val state: LanguageServerState) {
     }
 
     fun autoComplete(moduleReference: ModuleReference, position: Position): List<CompletionItem> {
-        val queryPosition = position.copy(column = position.column - 1)
         if (position.column < 0) {
             return emptyList()
         }
         val expression = state.locationLookup
-            .get(moduleReference = moduleReference, position = queryPosition)
+            .get(moduleReference = moduleReference, position = position)
             ?: return emptyList()
-        val type = expression.type as? Type.IdentifierType ?: return emptyList()
         val moduleContext = state.globalTypingContext.modules[moduleReference] ?: return emptyList()
-        if (type.identifier.startsWith(prefix = "class ")) {
-            val className = type.identifier.substring(startIndex = 6)
+        if (expression is Expression.ClassMember) {
+            val className = expression.className
             val relevantClassType = moduleContext.getAnyClassType(className = className) ?: return emptyList()
             return relevantClassType.functions.map { (name, typeInfo) ->
                 CompletionItem(name = name, kind = CompletionItemKind.Function, type = typeInfo.toString())
             }
+        }
+        val type = when (expression) {
+            is Expression.FieldAccess -> expression.expression.type as? Type.IdentifierType ?: return emptyList()
+            is Expression.MethodAccess -> expression.expression.type as? Type.IdentifierType ?: return emptyList()
+            else -> return emptyList()
         }
         val relevantClassType = moduleContext.getAnyClassType(className = type.identifier) ?: return emptyList()
         val completionResults = arrayListOf<CompletionItem>()
