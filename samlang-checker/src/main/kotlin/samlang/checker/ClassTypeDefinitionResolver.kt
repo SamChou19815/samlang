@@ -22,7 +22,7 @@ internal object ClassTypeDefinitionResolver {
     fun getTypeDefinition(
         identifierType: IdentifierType,
         typeDefinitionType: TypeDefinitionType,
-        context: TypeCheckingContext,
+        context: AccessibleGlobalTypingContext,
         errorRange: Range
     ): Either<Map<String, Type>, CompileTimeError> {
         val (id, typeArguments) = identifierType

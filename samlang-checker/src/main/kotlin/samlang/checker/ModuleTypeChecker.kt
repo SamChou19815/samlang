@@ -2,7 +2,6 @@ package samlang.checker
 
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toPersistentSet
 import samlang.ast.common.Range
 import samlang.ast.common.TypeDefinition
@@ -10,32 +9,31 @@ import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Module
 
 internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
-
     fun typeCheck(module: Module, classes: PersistentMap<String, GlobalTypingContext.ClassType>): Module {
-        val typeCheckingContext = TypeCheckingContext(
-            classes = classes,
-            currentClass = "",
-            localGenericTypes = persistentSetOf(),
-            localValues = persistentMapOf()
-        )
+        val typeCheckingContext = TypeCheckingContext(localValues = persistentMapOf())
         checkNameCollision(namesWithRange = module.classDefinitions.map { it.name to it.nameRange })
         val checkedClasses = module.classDefinitions.map { classDefinition ->
             val currentClass = classDefinition.name
-            val context = typeCheckingContext.copy(
-                currentClass = currentClass,
-                localGenericTypes = classDefinition.typeDefinition.typeParameters.toPersistentSet()
+            val accessibleGlobalTypingContext = AccessibleGlobalTypingContext(
+                classes = classes,
+                typeParameters = classDefinition.typeDefinition.typeParameters.toPersistentSet(),
+                currentClass = currentClass
             )
             // First pass: validating module's top level properties, excluding whether member's types are well-defined.
             checkClassTopLevelValidity(
                 typeDefinition = classDefinition.typeDefinition,
                 classMembers = classDefinition.members,
-                typeCheckingContext = context
+                accessibleGlobalTypingContext = accessibleGlobalTypingContext
             )
             // Second pass: type check all members' function body
             val members = classDefinition.members
-            partiallyCheckMembers(classMembers = members, typeCheckingContext = context)
+            partiallyCheckMembers(classMembers = members, accessibleGlobalTypingContext = accessibleGlobalTypingContext)
             val checkedMembers = members.mapNotNull { member ->
-                typeCheckMemberDefinition(memberDefinition = member, typeCheckingContext = context)
+                typeCheckMemberDefinition(
+                    memberDefinition = member,
+                    accessibleGlobalTypingContext = accessibleGlobalTypingContext,
+                    typeCheckingContext = typeCheckingContext
+                )
             }
             classDefinition.copy(members = checkedMembers)
         }
@@ -54,7 +52,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
     private fun checkClassTopLevelValidity(
         typeDefinition: TypeDefinition,
         classMembers: List<MemberDefinition>,
-        typeCheckingContext: TypeCheckingContext
+        accessibleGlobalTypingContext: AccessibleGlobalTypingContext
     ) {
         // We consistently put passedCheck on the right hand side to avoid short-circuiting.
         // In this way, we can report as many errors as possible.
@@ -62,7 +60,11 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
         typeParameters.checkNameCollision(range = range)
         mappings.keys.checkNameCollision(range = range)
         mappings.values.forEach { type ->
-            type.validate(context = typeCheckingContext, errorCollector = errorCollector, errorRange = range)
+            type.validate(
+                accessibleGlobalTypingContext = accessibleGlobalTypingContext,
+                errorCollector = errorCollector,
+                errorRange = range
+            )
         }
         checkNameCollision(namesWithRange = classMembers.map { it.name to it.nameRange })
         classMembers.forEach { moduleMember ->
@@ -70,32 +72,54 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
         }
     }
 
-    private fun partiallyCheckMembers(classMembers: List<MemberDefinition>, typeCheckingContext: TypeCheckingContext) {
+    private fun partiallyCheckMembers(
+        classMembers: List<MemberDefinition>,
+        accessibleGlobalTypingContext: AccessibleGlobalTypingContext
+    ) {
         classMembers.forEach { member ->
             val typeParameters = member.typeParameters
-            var newContext = typeCheckingContext.addLocalGenericTypes(genericTypes = typeParameters)
+            var accessibleGlobalTypingContextWithAdditionalTypeParameters = accessibleGlobalTypingContext
+                .withAdditionalTypeParameters(typeParameters = typeParameters)
             if (member.isMethod) {
-                val updatedNewContext = newContext.getCurrentModuleTypeDefinition()
-                    ?.typeParameters
-                    ?.let { newContext.addLocalGenericTypes(genericTypes = it) }
+                val updatedNewContext =
+                    accessibleGlobalTypingContextWithAdditionalTypeParameters.getCurrentModuleTypeDefinition()
+                        ?.typeParameters?.let {
+                        accessibleGlobalTypingContextWithAdditionalTypeParameters.withAdditionalTypeParameters(
+                            typeParameters = it
+                        )
+                    }
                 if (updatedNewContext != null) {
-                    newContext = updatedNewContext
+                    accessibleGlobalTypingContextWithAdditionalTypeParameters = updatedNewContext
                 }
             }
-            member.type.validate(context = newContext, errorCollector = errorCollector, errorRange = member.range)
+            member.type.validate(
+                accessibleGlobalTypingContext = accessibleGlobalTypingContextWithAdditionalTypeParameters,
+                errorCollector = errorCollector,
+                errorRange = member.range
+            )
         }
     }
 
     private fun typeCheckMemberDefinition(
         memberDefinition: MemberDefinition,
+        accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
         typeCheckingContext: TypeCheckingContext
     ): MemberDefinition? {
         val (_, _, isMethod, _, _, typeParameters, type, parameters, body) = memberDefinition
-        var contextForTypeCheckingBody = if (isMethod) typeCheckingContext.addThisType() else typeCheckingContext
-        contextForTypeCheckingBody = contextForTypeCheckingBody.addLocalGenericTypes(genericTypes = typeParameters)
+        var contextForTypeCheckingBody = if (isMethod) {
+            typeCheckingContext.addLocalValueType(name = "this", type = accessibleGlobalTypingContext.thisType) {
+                error(message = "Should not collide")
+            }
+        } else {
+            typeCheckingContext
+        }
+        val accessibleGlobalTypingContextWithAdditionalTypeParameters = accessibleGlobalTypingContext
+            .withAdditionalTypeParameters(typeParameters = typeParameters)
         contextForTypeCheckingBody = parameters.fold(initial = contextForTypeCheckingBody) { tempContext, parameter ->
             val parameterType = parameter.type.validate(
-                context = tempContext, errorCollector = errorCollector, errorRange = parameter.typeRange
+                accessibleGlobalTypingContext = accessibleGlobalTypingContextWithAdditionalTypeParameters,
+                errorCollector = errorCollector,
+                errorRange = parameter.typeRange
             ) ?: return null
             tempContext.addLocalValueType(name = parameter.name, type = parameterType) {
                 errorCollector.reportCollisionError(name = parameter.name, range = parameter.nameRange)
@@ -103,6 +127,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
         }
         val checkedBody = body.typeCheck(
             errorCollector = errorCollector,
+            accessibleGlobalTypingContext = accessibleGlobalTypingContextWithAdditionalTypeParameters,
             typeCheckingContext = contextForTypeCheckingBody,
             expectedType = type.returnType
         )

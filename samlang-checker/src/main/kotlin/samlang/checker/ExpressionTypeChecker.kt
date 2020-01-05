@@ -55,11 +55,16 @@ import samlang.util.Either
 
 internal fun Expression.typeCheck(
     errorCollector: ErrorCollector,
+    accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
     typeCheckingContext: TypeCheckingContext,
     expectedType: Type
 ): Expression {
     val resolution = TypeResolution()
-    val visitor = ExpressionTypeCheckerVisitor(resolution = resolution, errorCollector = errorCollector)
+    val visitor = ExpressionTypeCheckerVisitor(
+        accessibleGlobalTypingContext = accessibleGlobalTypingContext,
+        resolution = resolution,
+        errorCollector = errorCollector
+    )
     val checkedExpression =
         this.toChecked(visitor = visitor, context = typeCheckingContext, expectedType = expectedType)
     if (errorCollector.collectedErrors.isNotEmpty()) {
@@ -75,6 +80,7 @@ private fun Expression.toChecked(
 ): Expression = this.accept(visitor = visitor, context = context to expectedType)
 
 private class ExpressionTypeCheckerVisitor(
+    private val accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
     private val resolution: TypeResolution,
     val errorCollector: ErrorCollector
 ) : TypeCheckerVisitor {
@@ -124,7 +130,7 @@ private class ExpressionTypeCheckerVisitor(
 
     override fun visit(expression: ClassMember, ctx: TypeCheckingContext, expectedType: Type): Expression {
         val (range, _, _, className, _, member) = expression
-        val (locallyInferredType, undecidedTypeArguments) = ctx
+        val (locallyInferredType, undecidedTypeArguments) = accessibleGlobalTypingContext
             .getClassFunctionType(module = className, member = member)
             ?: return expression.errorWith(
                 expectedType = expectedType,
@@ -196,7 +202,7 @@ private class ExpressionTypeCheckerVisitor(
         expectedType: Type
     ): Expression {
         val (range, _, spreadExpression, fieldDeclarations) = expression
-        val (_, _, typeParameters, typeMappings) = ctx.getCurrentModuleTypeDefinition()
+        val (_, _, typeParameters, typeMappings) = accessibleGlobalTypingContext.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
             ?: return expression.errorWith(
                 expectedType = expectedType,
@@ -251,7 +257,7 @@ private class ExpressionTypeCheckerVisitor(
                 resolution.getPartiallyResolvedType(undecidedType = undecidedType)
             }
             IdentifierType(
-                identifier = ctx.currentClass,
+                identifier = accessibleGlobalTypingContext.currentClass,
                 typeArguments = constraintInferredTypeArguments
             )
         }
@@ -276,7 +282,7 @@ private class ExpressionTypeCheckerVisitor(
         expectedType: Type
     ): Expression {
         val (range, _, tag, data) = expression
-        val (_, _, typeParameters, typeMappings) = ctx.getCurrentModuleTypeDefinition()
+        val (_, _, typeParameters, typeMappings) = accessibleGlobalTypingContext.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == VARIANT }
             ?: return expression.errorWith(
                 expectedType = expectedType,
@@ -300,7 +306,7 @@ private class ExpressionTypeCheckerVisitor(
             resolution.getPartiallyResolvedType(undecidedType = undecidedType)
         }
         val locallyInferredType = IdentifierType(
-            identifier = ctx.currentClass, typeArguments = constraintInferredTypeArgs
+            identifier = accessibleGlobalTypingContext.currentClass, typeArguments = constraintInferredTypeArgs
         )
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = locallyInferredType, errorRange = range
@@ -325,20 +331,20 @@ private class ExpressionTypeCheckerVisitor(
                 range = range, type = constraintInferredType, expression = checkedExpression, methodName = fieldName
             )
         }
-        val (_, _, typeParameters, _) = ctx.getCurrentModuleTypeDefinition()
+        val (_, _, typeParameters, _) = accessibleGlobalTypingContext.getCurrentModuleTypeDefinition()
             ?.takeIf { it.type == OBJECT }
             ?: return expression.errorWith(
                 expectedType = expectedType,
                 error = UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = range)
             )
         val expectedFieldType = IdentifierType(
-            identifier = ctx.currentClass,
+            identifier = accessibleGlobalTypingContext.currentClass,
             typeArguments = Type.undecidedList(number = typeParameters.size)
         )
         val checkedAssignedExpression = assignedExpression.toChecked(ctx = ctx, expectedType = expectedFieldType)
         val fieldMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
             identifierType = checkedAssignedExpression.type as IdentifierType,
-            context = ctx,
+            context = accessibleGlobalTypingContext,
             typeDefinitionType = OBJECT,
             errorRange = assignedExpression.range
         )
@@ -370,7 +376,7 @@ private class ExpressionTypeCheckerVisitor(
                     range = expressionToCallMethod.range
                 )
             )
-        val methodTypeOrError = ctx.getClassMethodType(
+        val methodTypeOrError = accessibleGlobalTypingContext.getClassMethodType(
             module = checkedExprTypeIdentifier,
             typeArguments = checkedExprTypeArguments,
             methodName = methodName,
@@ -505,7 +511,7 @@ private class ExpressionTypeCheckerVisitor(
             is IdentifierType -> {
                 val variantMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
                     identifierType = checkedMatchedExpressionType,
-                    context = ctx,
+                    context = accessibleGlobalTypingContext,
                     typeDefinitionType = VARIANT,
                     errorRange = matchedExpression.range
                 )
@@ -575,7 +581,9 @@ private class ExpressionTypeCheckerVisitor(
         var currentContext = ctx
         val checkedArguments = arguments.map { (argumentName, argumentType) ->
             val checkedArgumentType = argumentType.validate(
-                context = ctx, errorCollector = errorCollector, errorRange = range
+                accessibleGlobalTypingContext = accessibleGlobalTypingContext,
+                errorCollector = errorCollector,
+                errorRange = range
             ) ?: return TypeReplacer.replaceWithExpectedType(expression = expression, expectedType = expectedType)
             currentContext = currentContext.addLocalValueType(name = argumentName, type = checkedArgumentType) {
                 errorCollector.reportCollisionError(name = argumentName, range = range)
@@ -642,7 +650,7 @@ private class ExpressionTypeCheckerVisitor(
                             range = assignedExpr.range
                         )
                     )
-                if (identifierType.identifier != ctx.currentClass) {
+                if (identifierType.identifier != accessibleGlobalTypingContext.currentClass) {
                     return expression.errorWith(
                         expectedType = expectedType,
                         error = IllegalOtherClassFieldAccess(
@@ -653,7 +661,7 @@ private class ExpressionTypeCheckerVisitor(
                 }
                 val fieldMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
                     identifierType = identifierType,
-                    context = ctx,
+                    context = accessibleGlobalTypingContext,
                     typeDefinitionType = OBJECT,
                     errorRange = assignedExpr.range
                 )
