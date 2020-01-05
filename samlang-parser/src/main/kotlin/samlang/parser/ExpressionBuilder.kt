@@ -18,7 +18,9 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
         val expression = this.accept(this@ExpressionBuilder)
         if (expression == null) {
             val range = this.range
-            val tokenListString = this.children.joinToString(separator = ", ", prefix = "[", postfix = "]") { it.text }
+            val tokenListString = this.children
+                ?.joinToString(separator = ", ", prefix = "[", postfix = "]") { it.text }
+                ?: "UNABLE_TO_REPRODUCE_TOKENS"
             syntaxErrorListener.addSyntaxError(
                 syntaxError = SyntaxError(
                     moduleReference = syntaxErrorListener.moduleReference,
