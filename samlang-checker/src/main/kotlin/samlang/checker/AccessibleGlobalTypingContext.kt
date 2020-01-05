@@ -12,11 +12,11 @@ import samlang.errors.UnresolvedNameError
 import samlang.util.Either
 
 /** Keep track of a set of global symbols that are accessible to a local context. */
-data class AccessibleGlobalTypingContext(
+internal data class AccessibleGlobalTypingContext(
     private val classes: PersistentMap<String, ClassType>,
     val typeParameters: PersistentSet<String>,
     val currentClass: String
-) {
+) : IdentifierTypeValidator {
     fun getClassFunctionType(module: String, member: String): Pair<Type, List<Type>>? {
         val typeInfo = classes[module]?.functions?.get(member)?.takeIf { module == currentClass || it.isPublic }
             ?: return null
@@ -72,7 +72,7 @@ data class AccessibleGlobalTypingContext(
                 typeArguments = classes[currentClass]!!.typeDefinition.typeParameters.map { Type.id(identifier = it) }
             )
 
-    fun identifierTypeIsWellDefined(name: String, typeArgumentLength: Int): Boolean {
+    override fun identifierTypeIsWellDefined(name: String, typeArgumentLength: Int): Boolean {
         return if (name in typeParameters) {
             typeArgumentLength == 0
         } else {

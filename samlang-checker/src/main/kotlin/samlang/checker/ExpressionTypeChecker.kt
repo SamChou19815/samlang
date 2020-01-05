@@ -582,7 +582,7 @@ private class ExpressionTypeCheckerVisitor(
         val checkedArguments = arguments.map { (argumentName, argumentType) ->
             val argumentTypeIsValid = validateType(
                 type = argumentType,
-                accessibleGlobalTypingContext = accessibleGlobalTypingContext,
+                identifierTypeValidator = accessibleGlobalTypingContext,
                 errorCollector = errorCollector,
                 errorRange = range
             )

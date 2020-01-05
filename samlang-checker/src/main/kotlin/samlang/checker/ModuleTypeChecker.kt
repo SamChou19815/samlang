@@ -62,7 +62,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
         mappings.values.forEach { type ->
             validateType(
                 type = type,
-                accessibleGlobalTypingContext = accessibleGlobalTypingContext,
+                identifierTypeValidator = accessibleGlobalTypingContext,
                 errorCollector = errorCollector,
                 errorRange = range
             )
@@ -95,7 +95,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
             }
             validateType(
                 type = member.type,
-                accessibleGlobalTypingContext = accessibleGlobalTypingContextWithAdditionalTypeParameters,
+                identifierTypeValidator = accessibleGlobalTypingContextWithAdditionalTypeParameters,
                 errorCollector = errorCollector,
                 errorRange = member.range
             )
@@ -121,7 +121,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
             val parameterType = parameter.type
             val parameterIsValid = validateType(
                 type = parameterType,
-                accessibleGlobalTypingContext = accessibleGlobalTypingContextWithAdditionalTypeParameters,
+                identifierTypeValidator = accessibleGlobalTypingContextWithAdditionalTypeParameters,
                 errorCollector = errorCollector,
                 errorRange = parameter.typeRange
             )
