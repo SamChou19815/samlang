@@ -93,5 +93,6 @@ tasks {
         // Include the results from the `test` task in all subprojects
         reportOn(subprojects.map { it.tasks["test"] } + this@tasks["test"])
     }
+    "assemble" { dependsOn(shadowJar) }
     "build" { dependsOn("testReport") }
 }
