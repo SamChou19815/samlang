@@ -635,11 +635,12 @@ private class ExpressionTypeCheckerVisitor(
                         )
                     )
                 }
-                pattern.destructedNames.zip(tupleType.mappings).asSequence().mapNotNull { (nameWithPosOpt, t) ->
-                    if (nameWithPosOpt == null) null else nameWithPosOpt to t
-                }.fold(initial = ctx) { context, (name, elementType) ->
+                pattern.destructedNames.zip(tupleType.mappings).asSequence().mapNotNull { (nameWithRange, t) ->
+                    val (name, nameRange) = nameWithRange
+                    if (name == null) null else Triple(first = name, second = nameRange, third = t)
+                }.fold(initial = ctx) { context, (name, nameRange, elementType) ->
                     context.addLocalValueType(name = name, type = elementType) {
-                        errorCollector.reportCollisionError(name = name, range = pattern.range)
+                        errorCollector.reportCollisionError(name = name, range = nameRange)
                     }
                 }
             }

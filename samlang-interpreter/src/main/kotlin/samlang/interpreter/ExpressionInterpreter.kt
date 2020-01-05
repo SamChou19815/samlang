@@ -252,8 +252,8 @@ internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext,
         val ctx = when (val p = expression.pattern) {
             is Pattern.TuplePattern -> {
                 val tupleValues = (assignedValue as Value.TupleValue).tupleContent
-                val additionalMappings = p.destructedNames.zip(tupleValues).mapNotNull { (name, value) ->
-                    name?.let { it to value }
+                val additionalMappings = p.destructedNames.zip(tupleValues).mapNotNull { (nameWithRange, value) ->
+                    nameWithRange?.first?.let { it to value }
                 }
                 context.copy(localValues = context.localValues.plus(pairs = additionalMappings))
             }

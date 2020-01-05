@@ -291,7 +291,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
         printer.printlnWithoutFurtherIndentation {
             val patternString = when (val p = expression.pattern) {
                 is Pattern.TuplePattern -> {
-                    p.destructedNames.joinToString(separator = ", ", prefix = "[", postfix = "]") { it ?: "_" }
+                    p.destructedNames.joinToString(separator = ", ", prefix = "[", postfix = "]") { it?.first ?: "_" }
                 }
                 is Pattern.ObjectPattern -> {
                     p.destructedNames.joinToString(separator = ", ", prefix = "{ ", postfix = " }") { (o, n) ->

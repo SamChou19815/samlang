@@ -146,11 +146,21 @@ class LocationLookupBuilder(val locationLookup: LocationLookup<Expression>) {
         override fun visit(expression: Val, context: Unit) {
             val assignedExpression = expression.assignedExpression
             val assignedExpressionType = assignedExpression.type
-            val pattern = expression.pattern
-            if (pattern is Pattern.VariablePattern) {
-                build(expression = Variable(range = pattern.range, type = assignedExpressionType, name = pattern.name))
-            } else if (pattern is Pattern.ObjectPattern) {
-                build(expression = Variable(range = pattern.range, type = assignedExpressionType, name = "_"))
+            when (val pattern = expression.pattern) {
+                is Pattern.TuplePattern -> {
+                    val assignedTupleTypeMappings = (assignedExpressionType as Type.TupleType).mappings
+                    pattern.destructedNames.forEachIndexed { index, (name, range) ->
+                        val type = assignedTupleTypeMappings[index]
+                        build(expression = Variable(range = range, type = type, name = name ?: "_"))
+                    }
+                }
+                is Pattern.ObjectPattern -> Unit
+                is Pattern.VariablePattern -> build(
+                    expression = Variable(range = pattern.range, type = assignedExpressionType, name = pattern.name)
+                )
+                is Pattern.WildCardPattern -> build(
+                    expression = Variable(range = pattern.range, type = assignedExpressionType, name = "_")
+                )
             }
             assignedExpression.buildRecursively()
             expression.nextExpression?.buildRecursively()

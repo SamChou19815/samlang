@@ -316,8 +316,12 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val loweredAssignedExpression =
             expression.assignedExpression.getLoweredAndAddStatements(statements = loweredStatements)
         val tsPattern = when (val pattern = expression.pattern) {
-            is Pattern.TuplePattern -> TsPattern.TuplePattern(destructedNames = pattern.destructedNames)
-            is Pattern.ObjectPattern -> TsPattern.ObjectPattern(destructedNames = pattern.destructedNames)
+            is Pattern.TuplePattern -> TsPattern.TuplePattern(
+                destructedNames = pattern.destructedNames.map { it?.first }
+            )
+            is Pattern.ObjectPattern -> TsPattern.ObjectPattern(
+                destructedNames = pattern.destructedNames.map { (name, renamed, _) -> name to renamed }
+            )
             is Pattern.VariablePattern -> TsPattern.VariablePattern(name = pattern.name)
             is Pattern.WildCardPattern -> TsPattern.WildCardPattern
         }
