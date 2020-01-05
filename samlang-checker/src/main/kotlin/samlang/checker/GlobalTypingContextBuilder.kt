@@ -10,11 +10,8 @@ import samlang.checker.GlobalTypingContext.ClassType
 import samlang.checker.GlobalTypingContext.ModuleTypingContext
 import samlang.checker.GlobalTypingContext.TypeInfo
 
-/**
- * Responsible for building the global typing environment as part of pre-processing phase.
- */
+/** Responsible for building the global typing environment as part of pre-processing phase. */
 internal object GlobalTypingContextBuilder {
-
     fun buildGlobalTypingContext(sources: Sources<Module>): GlobalTypingContext {
         val phase1Modules = hashMapOf<ModuleReference, ModuleTypingContext>()
         for ((moduleReference, module) in sources.moduleMappings) {

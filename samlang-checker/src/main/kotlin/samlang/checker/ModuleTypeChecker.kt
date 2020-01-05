@@ -10,7 +10,7 @@ import samlang.ast.lang.Module
 
 internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
     fun typeCheck(module: Module, classes: PersistentMap<String, GlobalTypingContext.ClassType>): Module {
-        val typeCheckingContext = TypeCheckingContext(localValues = persistentMapOf())
+        val localTypingContext = LocalTypingContext(localValues = persistentMapOf())
         checkNameCollision(namesWithRange = module.classDefinitions.map { it.name to it.nameRange })
         val checkedClasses = module.classDefinitions.map { classDefinition ->
             val currentClass = classDefinition.name
@@ -32,7 +32,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
                 typeCheckMemberDefinition(
                     memberDefinition = member,
                     accessibleGlobalTypingContext = accessibleGlobalTypingContext,
-                    typeCheckingContext = typeCheckingContext
+                    localTypingContext = localTypingContext
                 )
             }
             classDefinition.copy(members = checkedMembers)
@@ -105,15 +105,15 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
     private fun typeCheckMemberDefinition(
         memberDefinition: MemberDefinition,
         accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-        typeCheckingContext: TypeCheckingContext
+        localTypingContext: LocalTypingContext
     ): MemberDefinition? {
         val (_, _, isMethod, _, _, typeParameters, type, parameters, body) = memberDefinition
         var contextForTypeCheckingBody = if (isMethod) {
-            typeCheckingContext.addLocalValueType(name = "this", type = accessibleGlobalTypingContext.thisType) {
+            localTypingContext.addLocalValueType(name = "this", type = accessibleGlobalTypingContext.thisType) {
                 error(message = "Should not collide")
             }
         } else {
-            typeCheckingContext
+            localTypingContext
         }
         val accessibleGlobalTypingContextWithAdditionalTypeParameters = accessibleGlobalTypingContext
             .withAdditionalTypeParameters(typeParameters = typeParameters)
@@ -135,7 +135,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
         val checkedBody = body.typeCheck(
             errorCollector = errorCollector,
             accessibleGlobalTypingContext = accessibleGlobalTypingContextWithAdditionalTypeParameters,
-            typeCheckingContext = contextForTypeCheckingBody,
+            localTypingContext = contextForTypeCheckingBody,
             expectedType = type.returnType
         )
         return memberDefinition.copy(body = checkedBody)

@@ -56,7 +56,7 @@ import samlang.util.Either
 internal fun Expression.typeCheck(
     errorCollector: ErrorCollector,
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-    typeCheckingContext: TypeCheckingContext,
+    localTypingContext: LocalTypingContext,
     expectedType: Type
 ): Expression {
     val resolution = TypeResolution()
@@ -65,8 +65,7 @@ internal fun Expression.typeCheck(
         resolution = resolution,
         errorCollector = errorCollector
     )
-    val checkedExpression =
-        this.toChecked(visitor = visitor, context = typeCheckingContext, expectedType = expectedType)
+    val checkedExpression = this.toChecked(visitor = visitor, context = localTypingContext, expectedType = expectedType)
     if (errorCollector.collectedErrors.isNotEmpty()) {
         return checkedExpression
     }
@@ -75,7 +74,7 @@ internal fun Expression.typeCheck(
 
 private fun Expression.toChecked(
     visitor: ExpressionTypeCheckerVisitor,
-    context: TypeCheckingContext,
+    context: LocalTypingContext,
     expectedType: Type
 ): Expression = this.accept(visitor = visitor, context = context to expectedType)
 
@@ -88,7 +87,7 @@ private class ExpressionTypeCheckerVisitor(
     private val constraintAwareTypeChecker: ConstraintAwareTypeChecker =
         ConstraintAwareTypeChecker(resolution = resolution, errorCollector = errorCollector)
 
-    private fun Expression.toChecked(ctx: TypeCheckingContext, expectedType: Type = this.type): Expression =
+    private fun Expression.toChecked(ctx: LocalTypingContext, expectedType: Type = this.type): Expression =
         this.toChecked(visitor = this@ExpressionTypeCheckerVisitor, context = ctx, expectedType = expectedType)
 
     private fun Expression.errorWith(expectedType: Type, error: CompileTimeError): Expression {
@@ -96,7 +95,7 @@ private class ExpressionTypeCheckerVisitor(
         return TypeReplacer.replaceWithExpectedType(expression = this, expectedType = expectedType)
     }
 
-    override fun visit(expression: Literal, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: Literal, ctx: LocalTypingContext, expectedType: Type): Expression {
         constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = expression.type, errorRange = expression.range
         )
@@ -104,7 +103,7 @@ private class ExpressionTypeCheckerVisitor(
         return expression
     }
 
-    override fun visit(expression: This, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: This, ctx: LocalTypingContext, expectedType: Type): Expression {
         val type = ctx.getLocalValueType(name = "this") ?: return expression.errorWith(
             expectedType = expectedType,
             error = IllegalThisError(range = expression.range)
@@ -116,7 +115,7 @@ private class ExpressionTypeCheckerVisitor(
         return expression.copy(type = type)
     }
 
-    override fun visit(expression: Variable, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: Variable, ctx: LocalTypingContext, expectedType: Type): Expression {
         val (range, _, name) = expression
         val locallyInferredType = ctx.getLocalValueType(name = name) ?: return expression.errorWith(
             expectedType = expectedType,
@@ -128,7 +127,7 @@ private class ExpressionTypeCheckerVisitor(
         return expression.copy(type = inferredType)
     }
 
-    override fun visit(expression: ClassMember, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: ClassMember, ctx: LocalTypingContext, expectedType: Type): Expression {
         val (range, _, _, className, _, member) = expression
         val (locallyInferredType, undecidedTypeArguments) = accessibleGlobalTypingContext
             .getClassFunctionType(module = className, member = member)
@@ -144,7 +143,7 @@ private class ExpressionTypeCheckerVisitor(
 
     override fun visit(
         expression: TupleConstructor,
-        ctx: TypeCheckingContext,
+        ctx: LocalTypingContext,
         expectedType: Type
     ): Expression {
         val (range, impreciseTupleType, expressionList) = expression
@@ -161,7 +160,7 @@ private class ExpressionTypeCheckerVisitor(
 
     private fun typeCheckFieldDeclarations(
         fieldDeclarations: List<FieldConstructor>,
-        ctx: TypeCheckingContext
+        ctx: LocalTypingContext
     ): Either<Pair<Map<String, Type>, List<FieldConstructor>>, DuplicateFieldDeclarationError> {
         val declaredFieldTypes = mutableMapOf<String, Type>()
         val checkedDeclarations = arrayListOf<FieldConstructor>()
@@ -198,7 +197,7 @@ private class ExpressionTypeCheckerVisitor(
 
     override fun visit(
         expression: ObjectConstructor,
-        ctx: TypeCheckingContext,
+        ctx: LocalTypingContext,
         expectedType: Type
     ): Expression {
         val (range, _, spreadExpression, fieldDeclarations) = expression
@@ -278,7 +277,7 @@ private class ExpressionTypeCheckerVisitor(
 
     override fun visit(
         expression: VariantConstructor,
-        ctx: TypeCheckingContext,
+        ctx: LocalTypingContext,
         expectedType: Type
     ): Expression {
         val (range, _, tag, data) = expression
@@ -314,7 +313,7 @@ private class ExpressionTypeCheckerVisitor(
         return expression.copy(type = constraintInferredType, data = checkedData)
     }
 
-    override fun visit(expression: FieldAccess, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: FieldAccess, ctx: LocalTypingContext, expectedType: Type): Expression {
         val (range, _, assignedExpression, fieldName) = expression
         val tryTypeCheckMethodAccessResult = tryTypeCheckMethodAccess(
             expression = MethodAccess(
@@ -364,7 +363,7 @@ private class ExpressionTypeCheckerVisitor(
 
     private fun tryTypeCheckMethodAccess(
         expression: MethodAccess,
-        ctx: TypeCheckingContext
+        ctx: LocalTypingContext
     ): Either<Pair<Expression, FunctionType>, CompileTimeError> {
         val (range, _, expressionToCallMethod, methodName) = expression
         val checkedExpression = expressionToCallMethod.toChecked(ctx = ctx)
@@ -388,7 +387,7 @@ private class ExpressionTypeCheckerVisitor(
         }
     }
 
-    override fun visit(expression: MethodAccess, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: MethodAccess, ctx: LocalTypingContext, expectedType: Type): Expression {
         val result = tryTypeCheckMethodAccess(expression = expression, ctx = ctx)
         val (checkedExpression, locallyInferredType) = when (result) {
             is Either.Left -> result.v
@@ -400,7 +399,7 @@ private class ExpressionTypeCheckerVisitor(
         return expression.copy(type = constraintInferredType, expression = checkedExpression)
     }
 
-    override fun visit(expression: Unary, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: Unary, ctx: LocalTypingContext, expectedType: Type): Expression {
         val (range, type, _, subExpression) = expression
         constraintAwareTypeChecker.checkAndInfer(
             expectedType = expectedType, actualType = type, errorRange = range
@@ -409,7 +408,7 @@ private class ExpressionTypeCheckerVisitor(
         return expression.copy(expression = checkedSubExpression)
     }
 
-    override fun visit(expression: Panic, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: Panic, ctx: LocalTypingContext, expectedType: Type): Expression {
         val (range, type, subExpression) = expression
         val checkedSubExpression =
             subExpression.toChecked(ctx = ctx, expectedType = Type.string)
@@ -421,7 +420,7 @@ private class ExpressionTypeCheckerVisitor(
 
     override fun visit(
         expression: FunctionApplication,
-        ctx: TypeCheckingContext,
+        ctx: LocalTypingContext,
         expectedType: Type
     ): Expression {
         val (range, _, functionExpression, arguments) = expression
@@ -454,7 +453,7 @@ private class ExpressionTypeCheckerVisitor(
         )
     }
 
-    override fun visit(expression: Binary, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: Binary, ctx: LocalTypingContext, expectedType: Type): Expression {
         val (range, _, e1, op, e2) = expression
         val checkedExpression = when (op) {
             MUL, DIV, MOD, PLUS, MINUS -> expression.copy(
@@ -481,7 +480,7 @@ private class ExpressionTypeCheckerVisitor(
         return checkedExpression
     }
 
-    override fun visit(expression: IfElse, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: IfElse, ctx: LocalTypingContext, expectedType: Type): Expression {
         val (_, _, boolExpression, e1, e2) = expression
         val checkedBoolExpression = boolExpression.toChecked(ctx = ctx, expectedType = Type.bool)
         val checkedE1 = e1.toChecked(ctx = ctx, expectedType = expectedType)
@@ -504,7 +503,7 @@ private class ExpressionTypeCheckerVisitor(
         )
     }
 
-    override fun visit(expression: Match, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: Match, ctx: LocalTypingContext, expectedType: Type): Expression {
         val (range, _, matchedExpression, matchingList) = expression
         val checkedMatchedExpression = matchedExpression.toChecked(ctx = ctx)
         val variantMappings = when (val checkedMatchedExpressionType = checkedMatchedExpression.type) {
@@ -567,7 +566,7 @@ private class ExpressionTypeCheckerVisitor(
         )
     }
 
-    override fun visit(expression: Lambda, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: Lambda, ctx: LocalTypingContext, expectedType: Type): Expression {
         val (range, functionType, arguments, body) = expression
         // check duplicated name among themselves first
         val names = hashSetOf<String>()
@@ -611,7 +610,7 @@ private class ExpressionTypeCheckerVisitor(
         )
     }
 
-    override fun visit(expression: Val, ctx: TypeCheckingContext, expectedType: Type): Expression {
+    override fun visit(expression: Val, ctx: LocalTypingContext, expectedType: Type): Expression {
         val (range, _, pattern, typeAnnotation, assignedExpr, nextExpr) = expression
         val checkedAssignedExpr = assignedExpr.toChecked(ctx = ctx, expectedType = typeAnnotation)
         val checkedAssignedExprType = checkedAssignedExpr.type
