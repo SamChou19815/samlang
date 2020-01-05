@@ -580,15 +580,19 @@ private class ExpressionTypeCheckerVisitor(
         // setting up types and update context
         var currentContext = ctx
         val checkedArguments = arguments.map { (argumentName, argumentType) ->
-            val checkedArgumentType = argumentType.validate(
+            val argumentTypeIsValid = validateType(
+                type = argumentType,
                 accessibleGlobalTypingContext = accessibleGlobalTypingContext,
                 errorCollector = errorCollector,
                 errorRange = range
-            ) ?: return TypeReplacer.replaceWithExpectedType(expression = expression, expectedType = expectedType)
-            currentContext = currentContext.addLocalValueType(name = argumentName, type = checkedArgumentType) {
+            )
+            if (!argumentTypeIsValid) {
+                return TypeReplacer.replaceWithExpectedType(expression = expression, expectedType = expectedType)
+            }
+            currentContext = currentContext.addLocalValueType(name = argumentName, type = argumentType) {
                 errorCollector.reportCollisionError(name = argumentName, range = range)
             }
-            argumentName to checkedArgumentType
+            argumentName to argumentType
         }
         val checkedBody = body.toChecked(ctx = currentContext, expectedType = functionType.returnType)
         // merge a somewhat good locally inferred type

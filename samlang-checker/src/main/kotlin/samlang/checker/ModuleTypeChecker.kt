@@ -60,7 +60,8 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
         typeParameters.checkNameCollision(range = range)
         mappings.keys.checkNameCollision(range = range)
         mappings.values.forEach { type ->
-            type.validate(
+            validateType(
+                type = type,
                 accessibleGlobalTypingContext = accessibleGlobalTypingContext,
                 errorCollector = errorCollector,
                 errorRange = range
@@ -92,7 +93,8 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
                     accessibleGlobalTypingContextWithAdditionalTypeParameters = updatedNewContext
                 }
             }
-            member.type.validate(
+            validateType(
+                type = member.type,
                 accessibleGlobalTypingContext = accessibleGlobalTypingContextWithAdditionalTypeParameters,
                 errorCollector = errorCollector,
                 errorRange = member.range
@@ -116,11 +118,16 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
         val accessibleGlobalTypingContextWithAdditionalTypeParameters = accessibleGlobalTypingContext
             .withAdditionalTypeParameters(typeParameters = typeParameters)
         contextForTypeCheckingBody = parameters.fold(initial = contextForTypeCheckingBody) { tempContext, parameter ->
-            val parameterType = parameter.type.validate(
+            val parameterType = parameter.type
+            val parameterIsValid = validateType(
+                type = parameterType,
                 accessibleGlobalTypingContext = accessibleGlobalTypingContextWithAdditionalTypeParameters,
                 errorCollector = errorCollector,
                 errorRange = parameter.typeRange
-            ) ?: return null
+            )
+            if (!parameterIsValid) {
+                return null
+            }
             tempContext.addLocalValueType(name = parameter.name, type = parameterType) {
                 errorCollector.reportCollisionError(name = parameter.name, range = parameter.nameRange)
             }
