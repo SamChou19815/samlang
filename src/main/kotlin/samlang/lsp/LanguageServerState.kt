@@ -1,6 +1,7 @@
 package samlang.lsp
 
 import samlang.Configuration
+import samlang.ast.common.Location
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.ast.lang.Expression
@@ -26,8 +27,10 @@ internal class LanguageServerState(configuration: Configuration) {
     private val errors: MutableMap<ModuleReference, List<CompileTimeError>> = hashMapOf()
     private var _globalTypingContext: GlobalTypingContext
     val globalTypingContext: GlobalTypingContext get() = _globalTypingContext
-    private var _locationLookup: LocationLookup<Expression> = LocationLookup()
-    val locationLookup: ReadOnlyLocationLookup<Expression> = _locationLookup
+    private var _expressionLocationLookup: LocationLookup<Expression> = LocationLookup()
+    private var _classLocationLookup: LocationLookup<String> = LocationLookup()
+    val expressionLocationLookup: ReadOnlyLocationLookup<Expression> = _expressionLocationLookup
+    val classLocationLookup: ReadOnlyLocationLookup<String> = _classLocationLookup
 
     init {
         val errorCollector = ErrorCollector()
@@ -45,9 +48,13 @@ internal class LanguageServerState(configuration: Configuration) {
             errorCollector = errorCollector
         )
         checkedModules = checkedSources.moduleMappings.toMutableMap()
-        val locationLookupBuilder = LocationLookupBuilder(locationLookup = _locationLookup)
+        val locationLookupBuilder = LocationLookupBuilder(locationLookup = _expressionLocationLookup)
         checkedModules.forEach { (moduleReference, checkedModule) ->
             locationLookupBuilder.rebuild(moduleReference = moduleReference, module = checkedModule)
+            checkedModule.classDefinitions.forEach { classDefinition ->
+                val location = Location(moduleReference = moduleReference, range = classDefinition.range)
+                _classLocationLookup[location] = classDefinition.name
+            }
         }
         _globalTypingContext = context
         updateErrors(updatedErrors = errorCollector.collectedErrors)
@@ -71,7 +78,8 @@ internal class LanguageServerState(configuration: Configuration) {
         rawModules.remove(key = moduleReference)
         checkedModules.remove(key = moduleReference)
         errors[moduleReference] = emptyList()
-        _locationLookup.purge(moduleReference = moduleReference)
+        _expressionLocationLookup.purge(moduleReference = moduleReference)
+        _classLocationLookup.purge(moduleReference = moduleReference)
         val affected = reportChanges(moduleReference = moduleReference, module = null)
         incrementalTypeCheck(affectedSourceList = affected, parseErrors = emptyList())
         return affected
@@ -118,9 +126,13 @@ internal class LanguageServerState(configuration: Configuration) {
             errorCollector = errorCollector
         )
         checkedModules.putAll(from = updatedModules)
-        val locationLookupBuilder = LocationLookupBuilder(locationLookup = _locationLookup)
+        val locationLookupBuilder = LocationLookupBuilder(locationLookup = _expressionLocationLookup)
         updatedModules.forEach { (moduleReference, checkedModule) ->
             locationLookupBuilder.rebuild(moduleReference = moduleReference, module = checkedModule)
+            checkedModule.classDefinitions.forEach { classDefinition ->
+                val location = Location(moduleReference = moduleReference, range = classDefinition.range)
+                _classLocationLookup[location] = classDefinition.name
+            }
         }
         _globalTypingContext = updatedContext
         affectedSourceList.forEach { affectedSource -> errors.remove(key = affectedSource) }

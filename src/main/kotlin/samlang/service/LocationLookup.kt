@@ -11,10 +11,7 @@ import samlang.ast.common.Range
  * @param E type of the entity to lookup against location.
  */
 class LocationLookup<E : Any> : ReadOnlyLocationLookup<E> {
-
-    /**
-     * Mapping from module reference to a list of (entity, position range of entity)
-     */
+    /** Mapping from module reference to a list of (entity, position range of entity) */
     private val locationTable: MutableMap<ModuleReference, MutableMap<Range, E>> = mutableMapOf()
 
     override fun get(moduleReference: ModuleReference, position: Position): E? {

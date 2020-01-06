@@ -10,7 +10,7 @@ import samlang.ast.lang.Expression
 
 internal class LanguageServerServices(private val state: LanguageServerState) {
     fun queryType(moduleReference: ModuleReference, position: Position): Pair<Type, Range>? {
-        val expression = state.locationLookup.get(moduleReference = moduleReference, position = position) ?: return null
+        val expression = state.expressionLocationLookup.get(moduleReference = moduleReference, position = position) ?: return null
         return expression.type to expression.range
     }
 
@@ -18,7 +18,10 @@ internal class LanguageServerServices(private val state: LanguageServerState) {
         if (position.column < 0) {
             return emptyList()
         }
-        val expression = state.locationLookup
+        val expression = state.expressionLocationLookup
+            .get(moduleReference = moduleReference, position = position)
+            ?: return emptyList()
+        val classOfExpression = state.classLocationLookup
             .get(moduleReference = moduleReference, position = position)
             ?: return emptyList()
         val moduleContext = state.globalTypingContext.modules[moduleReference] ?: return emptyList()
@@ -36,7 +39,8 @@ internal class LanguageServerServices(private val state: LanguageServerState) {
         }
         val relevantClassType = moduleContext.getAnyClassType(className = type.identifier) ?: return emptyList()
         val completionResults = arrayListOf<CompletionItem>()
-        if (relevantClassType.typeDefinition.type == TypeDefinitionType.OBJECT) {
+        val isInsideClass = classOfExpression == type.identifier
+        if (isInsideClass && relevantClassType.typeDefinition.type == TypeDefinitionType.OBJECT) {
             relevantClassType.typeDefinition.mappings.forEach { (name, type) ->
                 completionResults.add(
                     element = CompletionItem(name = name, kind = CompletionItemKind.Field, type = type.toString())
@@ -44,9 +48,11 @@ internal class LanguageServerServices(private val state: LanguageServerState) {
             }
         }
         relevantClassType.methods.forEach { (name, typeInfo) ->
-            completionResults.add(
-                element = CompletionItem(name = name, kind = CompletionItemKind.Method, type = typeInfo.toString())
-            )
+            if (isInsideClass || typeInfo.isPublic) {
+                completionResults.add(
+                    element = CompletionItem(name = name, kind = CompletionItemKind.Method, type = typeInfo.toString())
+                )
+            }
         }
         return completionResults
     }
