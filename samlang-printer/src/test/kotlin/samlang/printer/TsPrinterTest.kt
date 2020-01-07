@@ -113,12 +113,16 @@ class TsPrinterTest : StringSpec() {
                 export type T_Test = {
                 };
                 
+                let _: any = undefined;
+                
                 export {  };
 
             """.trimIndent(),
             expectedJsClassModuleCode = """
+                let _ = undefined;
+                
                 export {  };
-
+                
             """.trimIndent()
         )
 
@@ -144,6 +148,8 @@ class TsPrinterTest : StringSpec() {
             expectedTsClassModuleCode = """
                 export type T_Test = {
                 };
+
+                let _: any = undefined;
                 
                 function test(): void {
                   throw new Error("Ah!");
@@ -153,6 +159,8 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedJsClassModuleCode = """
+                let _ = undefined;
+                
                 function test() {
                   throw new Error("Ah!");
                 }
@@ -182,6 +190,8 @@ class TsPrinterTest : StringSpec() {
             expectedTsClassModuleCode = """
                 export type T_Test = {
                 };
+                
+                let _: any = undefined;
                 
                 function test(): void {
                   return;
@@ -218,6 +228,8 @@ class TsPrinterTest : StringSpec() {
             expectedTsClassModuleCode = """
                 export type T_Test = {
                 };
+
+                let _: any = undefined;
                 
                 function test(): void {
                   if (true) {
@@ -261,6 +273,8 @@ class TsPrinterTest : StringSpec() {
                 export type T_Test = {
                 };
                 
+                let _: any = undefined;
+                
                 function test(): void {
                   const foo: string = "bar";
                 }
@@ -269,6 +283,8 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedJsClassModuleCode = """
+                let _ = undefined;
+                
                 function test() {
                   const foo = "bar";
                 }
@@ -305,8 +321,10 @@ class TsPrinterTest : StringSpec() {
                 export type T_Test = {
                 };
                 
+                let _: any = undefined;
+                
                 function test(): void {
-                  "bar";
+                  _ = "bar";
                 }
                 
                 export { test };
@@ -346,6 +364,8 @@ class TsPrinterTest : StringSpec() {
                 export type T_Test = {
                 };
                 
+                let _: any = undefined;
+                
                 function test(): void {
                   const [foo, bar]: [string, string] = ["foo", "bar"];
                 }
@@ -354,6 +374,8 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedJsClassModuleCode = """
+                let _ = undefined;
+                
                 function test() {
                   const [foo, bar] = ["foo", "bar"];
                 }
@@ -406,6 +428,8 @@ class TsPrinterTest : StringSpec() {
                   readonly bar: boolean;
                 };
                 
+                let _: any = undefined;
+                
                 function test(obj: T_Test): void {
                   const { foo, bar: baz }: T_Test = { ...obj, foo: "foo", bar: "bar" };
                 }
@@ -414,6 +438,8 @@ class TsPrinterTest : StringSpec() {
 
             """.trimIndent(),
             expectedJsClassModuleCode = """
+                let _ = undefined;
+                
                 function test(obj) {
                   const { foo, bar: baz } = { ...obj, foo: "foo", bar: "bar" };
                 }
@@ -476,10 +502,12 @@ class TsPrinterTest : StringSpec() {
                 export type T_Test = {
                 };
                 
+                let _: any = undefined;
+                
                 function test(): void {
-                  !true;
-                  !!false;
-                  -3;
+                  _ = !true;
+                  _ = !!false;
+                  _ = -3;
                 }
                 
                 export { test };
@@ -559,11 +587,13 @@ class TsPrinterTest : StringSpec() {
                 export type T_Test = {
                 };
                 
+                let _: any = undefined;
+                
                 function test(): void {
-                  3 + 14;
-                  Math.floor(3 / 14) ;
-                  Math.floor(3 / (3 + 14)) ;
-                  (3 + 14) * 3;
+                  _ = 3 + 14;
+                  _ = Math.floor(3 / 14) ;
+                  _ = Math.floor(3 / (3 + 14)) ;
+                  _ = (3 + 14) * 3;
                 }
                 
                 export { test };
@@ -608,8 +638,10 @@ class TsPrinterTest : StringSpec() {
                 export type T_Test = {
                 };
                 
+                let _: any = undefined;
+                
                 function test(): void {
-                  ((...arguments) => foo(_this, ...arguments));
+                  _ = ((...arguments) => foo(_this, ...arguments));
                 }
                 
                 export { test };
@@ -651,6 +683,8 @@ class TsPrinterTest : StringSpec() {
             expectedTsClassModuleCode = """
                 export type T_Test = {
                 };
+                
+                let _: any = undefined;
                 
                 function test(): (number) => boolean {
                   return ((...arguments) => foo(_this, ...arguments));
@@ -714,9 +748,11 @@ class TsPrinterTest : StringSpec() {
                 export type T_Test = {
                 };
                 
+                let _: any = undefined;
+                
                 function test(): void {
-                  foo(1);
-                  foo(_this, 1);
+                  _ = foo(1);
+                  _ = foo(_this, 1);
                 }
                 
                 export { test };
@@ -779,18 +815,22 @@ class TsPrinterTest : StringSpec() {
                 export type T_Test = {
                 };
                 
+                let _: any = undefined;
+                
                 function test(): void {
-                  (foo: number): boolean => {return false;};
-                  (foo: number): boolean => {void 0;return true;};
+                  _ = (foo: number): boolean => {return false;};
+                  _ = (foo: number): boolean => {_ = void 0;return true;};
                 }
                 
                 export { test };
 
             """.trimIndent(),
             expectedJsClassModuleCode = """
+                let _ = undefined;
+                
                 function test() {
-                  (foo) => {return false;};
-                  (foo) => {void 0;return true;};
+                  _ = (foo) => {return false;};
+                  _ = (foo) => {_ = void 0;return true;};
                 }
                 
                 export { test };

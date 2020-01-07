@@ -89,6 +89,13 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
         if (withType) {
             printTypeDefinition(name = tsModule.typeName, typeDefinition = tsModule.typeDefinition)
         }
+        // Helper for wildcard assign to deal with tricky JS syntax
+        if (withType) {
+            printer.printWithBreak(x = "let _: any = undefined;")
+        } else {
+            printer.printWithBreak(x = "let _ = undefined;")
+        }
+        printer.println()
         tsModule.functions.forEach { printFunction(moduleName = tsModule.typeName, tsFunction = it) }
         val exports = tsModule.functions.asSequence().filter { it.shouldBeExported }.map { it.name }
         printer.printWithBreak(x = exports.joinToString(separator = ", ", prefix = "export { ", postfix = " };"))
@@ -286,6 +293,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             val (pattern, typeAnnotation, assignedExpression) = statement
             if (pattern == TsPattern.WildCardPattern) {
                 printer.printlnWithoutFurtherIndentation {
+                    printWithoutBreak(x = "_ = ")
                     printExpression(expression = assignedExpression)
                     printWithoutBreak(x = ";")
                 }
