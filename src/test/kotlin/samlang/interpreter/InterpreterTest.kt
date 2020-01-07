@@ -10,10 +10,39 @@ class InterpreterTest : StringSpec() {
     private data class TestCase(val id: String, val code: String, val expectedResult: Value)
 
     private val expectations: Map<String, Value> = mapOf(
-        "simple-no-ctx" to Value.UnitValue,
-        "simple-no-ctx-annotated" to Value.UnitValue,
+        "block-in-if-else" to Value.UnitValue,
+        "different-expr-demo" to Value.IntValue(value = 42),
+        "forty-two" to Value.IntValue(value = 42),
         "hello-world" to Value.StringValue(value = "Hello World!"),
-        "forty-two" to Value.IntValue(value = 42)
+        "lots-of-fields-and-methods" to Value.UnitValue,
+        "overengineered-hello-world" to Value.StringValue(value = "Hello World!"),
+        "overengineered-hello-world2" to Value.StringValue(value = "Hello World!"),
+        "polymorphic-option" to Value.VariantValue(tag = "Some", data = Value.StringValue(value = "hi")),
+        "sam-in-samlang-list" to Value.ObjectValue(
+            objectContent = mapOf(
+                "name" to Value.StringValue(value = "Sam Zhou"),
+                "github" to Value.StringValue(value = "SamChou19815"),
+                "projects" to Value.VariantValue(
+                    tag = "Cons",
+                    data = Value.TupleValue(
+                        tupleContent = listOf(
+                            Value.StringValue(value = "..."),
+                            Value.VariantValue(
+                                tag = "Cons",
+                                data = Value.TupleValue(
+                                    tupleContent = listOf(
+                                        Value.StringValue(value = "SAMLANG"),
+                                        Value.VariantValue(tag = "Nil", data = Value.UnitValue)
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        ),
+        "simple-no-ctx" to Value.UnitValue,
+        "simple-no-ctx-annotated" to Value.UnitValue
     )
 
     private val testCases: List<TestCase> = testPrograms
