@@ -66,17 +66,12 @@ internal fun typeCheckExpression(
         resolution = resolution,
         errorCollector = errorCollector
     )
-    val checkedExpression = expression.toChecked(visitor = visitor, expectedType = expectedType)
+    val checkedExpression = expression.accept(visitor = visitor, context = expectedType)
     if (errorCollector.collectedErrors.isNotEmpty()) {
         return checkedExpression
     }
     return fixExpressionType(expression = checkedExpression, expectedType = expectedType, resolution = resolution)
 }
-
-private fun Expression.toChecked(
-    visitor: ExpressionTypeCheckerVisitor,
-    expectedType: Type
-): Expression = this.accept(visitor = visitor, context = expectedType)
 
 private class ExpressionTypeCheckerVisitor(
     private val accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
@@ -96,7 +91,7 @@ private class ExpressionTypeCheckerVisitor(
         )
 
     private fun Expression.toChecked(expectedType: Type = this.type): Expression =
-        this.toChecked(visitor = this@ExpressionTypeCheckerVisitor, expectedType = expectedType)
+        this.accept(visitor = this@ExpressionTypeCheckerVisitor, context = expectedType)
 
     override fun typeCheck(expression: Expression, expectedType: Type): Expression =
         expression.toChecked(expectedType = expectedType)
