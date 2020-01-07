@@ -1,0 +1,13 @@
+// ERROR_COUNT: 0
+
+class Main(a: int, b: bool) {
+  function main(): unit = {
+    val _ = 3
+    val a = 2;
+    val c = a - 3;
+    val d = c * 7
+    val b = true;
+    val [_, e] = [a, c]
+    val _ = { a: e, b }
+  }
+}

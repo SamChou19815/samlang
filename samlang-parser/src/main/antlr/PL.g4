@@ -50,7 +50,7 @@ patternToExpr : BAR (UpperId varOrWildCard) ARROW expression;
 statementBlock : LBRACE statement* expression? RBRACE;
 
 statement
-    : VAL pattern typeAnnotation? ASSIGN expression SEMICOLON # ValStatement
+    : VAL pattern typeAnnotation? ASSIGN expression SEMICOLON? # ValStatement
     ;
 
 expression
