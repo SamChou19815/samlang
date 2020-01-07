@@ -26,6 +26,7 @@ import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrExpressionVisitor
 import samlang.ast.hir.HighIrPattern
+import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.ConstantDefinition
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDeclaration
@@ -321,6 +322,14 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                     printWithoutBreak(x = ";")
                 }
             }
+        }
+
+        override fun visit(statement: HighIrStatement.Block) {
+            printer.printWithBreak(x = "{")
+            printer.indented {
+                statement.statements.forEach { it.accept(visitor = this@TsStatementPrinter) }
+            }
+            printer.printWithBreak(x = "}")
         }
 
         private inner class TsExpressionPrinter : HighIrExpressionVisitor<Unit> {

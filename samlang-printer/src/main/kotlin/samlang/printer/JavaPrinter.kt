@@ -393,6 +393,14 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                 }
             }
         }
+
+        override fun visit(statement: HighIrStatement.Block) {
+            printer.printWithBreak(x = "{")
+            printer.indented {
+                statement.statements.forEach { it.accept(visitor = this@JavaStatementPrinter) }
+            }
+            printer.printWithBreak(x = "}")
+        }
     }
 
     private inner class JavaExpressionPrinter : HighIrExpressionVisitor<Unit> {
