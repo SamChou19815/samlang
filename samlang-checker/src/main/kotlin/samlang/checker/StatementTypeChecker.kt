@@ -16,7 +16,7 @@ import samlang.util.Either
 internal class StatementTypeChecker(
     private val accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
     private val errorCollector: ErrorCollector,
-    private val expressionTypeChecker: ExpressionTypeCheckerWithGlobalContext
+    private val expressionTypeChecker: ExpressionTypeCheckerWithContext
 ) {
     fun typeCheck(
         statementBlock: StatementBlock,
@@ -46,14 +46,12 @@ internal class StatementTypeChecker(
         val checkedExpression = if (expression != null) {
             expressionTypeChecker.typeCheck(
                 expression = expression,
-                localTypingContext = localContext,
                 expectedType = expectedType
             )
         } else {
             // Force the type checker to resolve expected type to unit.
             expressionTypeChecker.typeCheck(
                 expression = Expression.Literal.ofUnit(range = statementBlock.range),
-                localTypingContext = localContext,
                 expectedType = expectedType
             )
             null
@@ -70,7 +68,6 @@ internal class StatementTypeChecker(
         val (_, pattern, typeAnnotation, assignedExpression) = statement
         val checkedAssignedExpression = expressionTypeChecker.typeCheck(
             expression = assignedExpression,
-            localTypingContext = localContext,
             expectedType = typeAnnotation
         )
         val betterStatement = statement.copy(assignedExpression = checkedAssignedExpression)
