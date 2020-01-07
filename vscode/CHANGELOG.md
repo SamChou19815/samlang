@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.0.5
+
+Update `val` snippet to match the new expression syntax.
+
 ## 0.0.4
 
 Added support for some completion snippets.

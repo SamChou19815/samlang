@@ -1,7 +1,7 @@
 {
   "`val` expression": {
     "prefix": "val",
-    "body": ["val $1 = $2;", "$3"],
+    "body": ["val $1 = $2;"],
     "description": "Define a variable."
   },
   "object class": {
