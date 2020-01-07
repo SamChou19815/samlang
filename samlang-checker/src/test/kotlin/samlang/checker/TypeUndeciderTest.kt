@@ -19,24 +19,25 @@ class TypeUndeciderTest : StringSpec() {
                 ),
                 returnType = Type.TupleType(mappings = listOf(Type.id(identifier = "T3"), Type.id(identifier = "T4")))
             )
-            undecideTypeParameters(type = source, typeParameters = listOf("T1", "T2", "T3", "T4")).first shouldBe
-                    Type.FunctionType(
-                        argumentTypes = listOf(
-                            Type.IdentifierType(
-                                identifier = "A",
-                                typeArguments = listOf(Type.bool, Type.UndecidedType(index = 0))
-                            ),
-                            Type.unit,
-                            Type.unit,
-                            Type.TupleType(mappings = listOf(Type.UndecidedType(index = 1)))
-                        ),
-                        returnType = Type.TupleType(
-                            mappings = listOf(
-                                Type.UndecidedType(index = 2),
-                                Type.UndecidedType(index = 3)
-                            )
-                        )
+            TypeUndecider.undecideTypeParameters(
+                type = source, typeParameters = listOf("T1", "T2", "T3", "T4")
+            ).first shouldBe Type.FunctionType(
+                argumentTypes = listOf(
+                    Type.IdentifierType(
+                        identifier = "A",
+                        typeArguments = listOf(Type.bool, Type.UndecidedType(index = 0))
+                    ),
+                    Type.unit,
+                    Type.unit,
+                    Type.TupleType(mappings = listOf(Type.UndecidedType(index = 1)))
+                ),
+                returnType = Type.TupleType(
+                    mappings = listOf(
+                        Type.UndecidedType(index = 2),
+                        Type.UndecidedType(index = 3)
                     )
+                )
+            )
         }
     }
 }

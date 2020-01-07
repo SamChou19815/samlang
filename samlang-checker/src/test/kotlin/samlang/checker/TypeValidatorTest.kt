@@ -85,7 +85,7 @@ class TypeValidatorTest : StringSpec() {
     }
 
     private fun testWith(embeddedType: Type.IdentifierType): String? =
-        validateType(
+        TypeValidator.validateType(
             type = Type.FunctionType(
                 argumentTypes = listOf(Type.TupleType(mappings = listOf(Type.int))),
                 returnType = Type.FunctionType(

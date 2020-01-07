@@ -23,7 +23,7 @@ internal data class AccessibleGlobalTypingContext(
         return if (typeInfo.typeParams == null) {
             typeInfo.type to emptyList()
         } else {
-            val (typeWithParametersUndecided, typeParameters) = undecideTypeParameters(
+            val (typeWithParametersUndecided, typeParameters) = TypeUndecider.undecideTypeParameters(
                 type = typeInfo.type, typeParameters = typeInfo.typeParams
             )
             typeWithParametersUndecided to typeParameters
@@ -41,7 +41,7 @@ internal data class AccessibleGlobalTypingContext(
         val partiallyFixedType = if (typeInfo.typeParams == null) {
             typeInfo.type
         } else {
-            val (typeWithParametersUndecided, _) = undecideTypeParameters(
+            val (typeWithParametersUndecided, _) = TypeUndecider.undecideTypeParameters(
                 type = typeInfo.type, typeParameters = typeInfo.typeParams
             )
             typeWithParametersUndecided
