@@ -5,8 +5,8 @@ import io.kotlintest.specs.StringSpec
 import samlang.ast.common.Range
 import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 import samlang.ast.common.Type
-import samlang.ast.ir.IrExpression
-import samlang.ast.ir.IrStatement
+import samlang.ast.hir.HighIrExpression
+import samlang.ast.hir.HighIrStatement
 import samlang.ast.java.JavaMethod
 import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Expression
@@ -38,7 +38,7 @@ class JavaMemberCompilerTest : StringSpec() {
                     typeParameters = emptyList(),
                     parameters = emptyList(),
                     returnType = Type.unit,
-                    body = listOf(IrStatement.Return(expression = IR_THIS))
+                    body = listOf(HighIrStatement.Return(expression = IR_THIS))
                 )
             )
             assertCorrectlyCompiled(
@@ -60,7 +60,7 @@ class JavaMemberCompilerTest : StringSpec() {
                     typeParameters = emptyList(),
                     parameters = emptyList(),
                     returnType = Type.unit,
-                    body = listOf(IrStatement.Return(expression = IR_THIS))
+                    body = listOf(HighIrStatement.Return(expression = IR_THIS))
                 )
             )
             assertCorrectlyCompiled(
@@ -90,6 +90,6 @@ class JavaMemberCompilerTest : StringSpec() {
 
     companion object {
         private val THIS: Expression = Expression.This(range = dummyRange, type = Type.unit)
-        private val IR_THIS: IrExpression = IrExpression.This(type = Type.unit)
+        private val IR_THIS: HighIrExpression = HighIrExpression.This(type = Type.unit)
     }
 }

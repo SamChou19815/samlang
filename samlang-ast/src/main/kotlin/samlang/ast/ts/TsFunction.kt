@@ -1,7 +1,7 @@
 package samlang.ast.ts
 
 import samlang.ast.common.Type
-import samlang.ast.ir.IrStatement
+import samlang.ast.hir.HighIrStatement
 
 data class TsFunction(
     val shouldBeExported: Boolean,
@@ -9,5 +9,5 @@ data class TsFunction(
     val typeParameters: List<String>,
     val parameters: List<Pair<String, Type>>,
     val returnType: Type,
-    val body: List<IrStatement>
+    val body: List<HighIrStatement>
 )

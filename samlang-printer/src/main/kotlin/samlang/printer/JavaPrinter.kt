@@ -14,33 +14,33 @@ import samlang.ast.common.Type.UndecidedType
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.TypeVisitor
-import samlang.ast.ir.IrExpression
-import samlang.ast.ir.IrExpression.Binary
-import samlang.ast.ir.IrExpression.ClassMember
-import samlang.ast.ir.IrExpression.FieldAccess
-import samlang.ast.ir.IrExpression.FunctionApplication
-import samlang.ast.ir.IrExpression.Lambda
-import samlang.ast.ir.IrExpression.Literal
-import samlang.ast.ir.IrExpression.MethodAccess
-import samlang.ast.ir.IrExpression.Never
-import samlang.ast.ir.IrExpression.ObjectConstructor
-import samlang.ast.ir.IrExpression.Ternary
-import samlang.ast.ir.IrExpression.This
-import samlang.ast.ir.IrExpression.TupleConstructor
-import samlang.ast.ir.IrExpression.Unary
-import samlang.ast.ir.IrExpression.Variable
-import samlang.ast.ir.IrExpression.VariantConstructor
-import samlang.ast.ir.IrExpressionVisitor
-import samlang.ast.ir.IrPattern
-import samlang.ast.ir.IrStatement
-import samlang.ast.ir.IrStatement.ConstantDefinition
-import samlang.ast.ir.IrStatement.IfElse
-import samlang.ast.ir.IrStatement.LetDeclaration
-import samlang.ast.ir.IrStatement.Match
-import samlang.ast.ir.IrStatement.Return
-import samlang.ast.ir.IrStatement.Throw
-import samlang.ast.ir.IrStatement.VariableAssignment
-import samlang.ast.ir.IrStatementVisitor
+import samlang.ast.hir.HighIrExpression
+import samlang.ast.hir.HighIrExpression.Binary
+import samlang.ast.hir.HighIrExpression.ClassMember
+import samlang.ast.hir.HighIrExpression.FieldAccess
+import samlang.ast.hir.HighIrExpression.FunctionApplication
+import samlang.ast.hir.HighIrExpression.Lambda
+import samlang.ast.hir.HighIrExpression.Literal
+import samlang.ast.hir.HighIrExpression.MethodAccess
+import samlang.ast.hir.HighIrExpression.Never
+import samlang.ast.hir.HighIrExpression.ObjectConstructor
+import samlang.ast.hir.HighIrExpression.Ternary
+import samlang.ast.hir.HighIrExpression.This
+import samlang.ast.hir.HighIrExpression.TupleConstructor
+import samlang.ast.hir.HighIrExpression.Unary
+import samlang.ast.hir.HighIrExpression.Variable
+import samlang.ast.hir.HighIrExpression.VariantConstructor
+import samlang.ast.hir.HighIrExpressionVisitor
+import samlang.ast.hir.HighIrPattern
+import samlang.ast.hir.HighIrStatement
+import samlang.ast.hir.HighIrStatement.ConstantDefinition
+import samlang.ast.hir.HighIrStatement.IfElse
+import samlang.ast.hir.HighIrStatement.LetDeclaration
+import samlang.ast.hir.HighIrStatement.Match
+import samlang.ast.hir.HighIrStatement.Return
+import samlang.ast.hir.HighIrStatement.Throw
+import samlang.ast.hir.HighIrStatement.VariableAssignment
+import samlang.ast.hir.HighIrStatementVisitor
 import samlang.ast.java.JavaMethod
 import samlang.ast.java.JavaOuterClass
 import samlang.ast.java.JavaStaticInnerClass
@@ -248,9 +248,9 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         printer.printWithBreak(x = "}")
     }
 
-    private fun printStatement(statement: IrStatement): Unit = statement.accept(visitor = statementPrinter)
+    private fun printStatement(statement: HighIrStatement): Unit = statement.accept(visitor = statementPrinter)
 
-    private fun printExpression(expression: IrExpression): Unit = expression.accept(visitor = expressionPrinter)
+    private fun printExpression(expression: HighIrExpression): Unit = expression.accept(visitor = expressionPrinter)
 
     private fun allocateVariable(): String {
         val id = temporaryVariableId
@@ -258,7 +258,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         return "_JAVA_PRINTING_$id"
     }
 
-    private inner class JavaStatementPrinter : IrStatementVisitor<Unit> {
+    private inner class JavaStatementPrinter : HighIrStatementVisitor<Unit> {
         override fun visit(statement: Throw) {
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = "throw new Error(")
@@ -343,12 +343,12 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
         override fun visit(statement: ConstantDefinition) {
             val (pattern, typeAnnotation, assignedExpression) = statement
-            if (pattern is IrPattern.WildCardPattern && assignedExpression !is FunctionApplication) {
+            if (pattern is HighIrPattern.WildCardPattern && assignedExpression !is FunctionApplication) {
                 return
             }
             printer.printlnWithoutFurtherIndentation {
                 when (pattern) {
-                    is IrPattern.TuplePattern -> {
+                    is HighIrPattern.TuplePattern -> {
                         val temporaryVariable = allocateVariable()
                         printWithoutBreak(x = "${typeAnnotation.toJavaTypeString()} $temporaryVariable = ")
                         printExpression(expression = assignedExpression)
@@ -359,7 +359,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                             }
                         }
                     }
-                    is IrPattern.ObjectPattern -> {
+                    is HighIrPattern.ObjectPattern -> {
                         val temporaryVariable = allocateVariable()
                         printWithoutBreak(x = "${typeAnnotation.toJavaTypeString()} $temporaryVariable = ")
                         printExpression(expression = assignedExpression)
@@ -368,12 +368,12 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                             printWithoutBreak(x = "final var ${alias ?: name} = $temporaryVariable.$name;")
                         }
                     }
-                    is IrPattern.VariablePattern -> {
+                    is HighIrPattern.VariablePattern -> {
                         printWithoutBreak(x = "${typeAnnotation.toJavaTypeString()} ${pattern.name} = ")
                         printExpression(expression = assignedExpression)
                         printWithBreak(x = ";")
                     }
-                    is IrPattern.WildCardPattern -> {
+                    is HighIrPattern.WildCardPattern -> {
                         printExpression(expression = assignedExpression)
                         printWithBreak(x = ";")
                     }
@@ -395,9 +395,9 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
     }
 
-    private inner class JavaExpressionPrinter : IrExpressionVisitor<Unit> {
+    private inner class JavaExpressionPrinter : HighIrExpressionVisitor<Unit> {
 
-        private fun IrExpression.printSelf(withParenthesis: Boolean = false): Unit =
+        private fun HighIrExpression.printSelf(withParenthesis: Boolean = false): Unit =
             if (withParenthesis) {
                 printer.printlnWithoutFurtherIndentation {
                     printWithoutBreak(x = "(")
@@ -500,7 +500,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             }
         }
 
-        private fun printFunctionCallArguments(arguments: List<IrExpression>) {
+        private fun printFunctionCallArguments(arguments: List<HighIrExpression>) {
             printer.printWithoutBreak(x = "(")
             arguments.forEachIndexed { index, e ->
                 e.printSelf()

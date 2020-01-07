@@ -2,11 +2,11 @@ package samlang.compiler.java
 
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
-import samlang.ast.ir.IrExpression
-import samlang.ast.ir.IrExpression.Companion.UNIT
-import samlang.ast.ir.IrExpression.Never
-import samlang.ast.ir.IrPattern
-import samlang.ast.ir.IrStatement
+import samlang.ast.hir.HighIrExpression
+import samlang.ast.hir.HighIrExpression.Companion.UNIT
+import samlang.ast.hir.HighIrExpression.Never
+import samlang.ast.hir.HighIrPattern
+import samlang.ast.hir.HighIrStatement
 import samlang.ast.java.JavaMethod
 import samlang.ast.java.JavaOuterClass
 import samlang.ast.java.JavaStaticInnerClass
@@ -37,14 +37,14 @@ internal fun compileJavaMethod(classMember: ClassDefinition.MemberDefinition): J
     } else {
         val additionStatementForFinalExpression =
             if (classMember.body.type == Type.unit &&
-                bodyLoweringResult.expression is IrExpression.FunctionApplication) {
-                IrStatement.ConstantDefinition(
-                    pattern = IrPattern.WildCardPattern,
+                bodyLoweringResult.expression is HighIrExpression.FunctionApplication) {
+                HighIrStatement.ConstantDefinition(
+                    pattern = HighIrPattern.WildCardPattern,
                     typeAnnotation = Type.unit,
                     assignedExpression = bodyLoweringResult.expression
                 )
             } else {
-                IrStatement.Return(expression = bodyLoweringResult.expression)
+                HighIrStatement.Return(expression = bodyLoweringResult.expression)
             }
         bodyLoweringResult.statements.plus(element = additionStatementForFinalExpression)
     }

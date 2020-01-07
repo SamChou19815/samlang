@@ -9,31 +9,31 @@ import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.TypeVisitor
-import samlang.ast.ir.IrExpression
-import samlang.ast.ir.IrExpression.Binary
-import samlang.ast.ir.IrExpression.ClassMember
-import samlang.ast.ir.IrExpression.FieldAccess
-import samlang.ast.ir.IrExpression.FunctionApplication
-import samlang.ast.ir.IrExpression.Lambda
-import samlang.ast.ir.IrExpression.Literal
-import samlang.ast.ir.IrExpression.MethodAccess
-import samlang.ast.ir.IrExpression.ObjectConstructor
-import samlang.ast.ir.IrExpression.Ternary
-import samlang.ast.ir.IrExpression.This
-import samlang.ast.ir.IrExpression.TupleConstructor
-import samlang.ast.ir.IrExpression.Unary
-import samlang.ast.ir.IrExpression.Variable
-import samlang.ast.ir.IrExpression.VariantConstructor
-import samlang.ast.ir.IrExpressionVisitor
-import samlang.ast.ir.IrPattern
-import samlang.ast.ir.IrStatement.ConstantDefinition
-import samlang.ast.ir.IrStatement.IfElse
-import samlang.ast.ir.IrStatement.LetDeclaration
-import samlang.ast.ir.IrStatement.Match
-import samlang.ast.ir.IrStatement.Return
-import samlang.ast.ir.IrStatement.Throw
-import samlang.ast.ir.IrStatement.VariableAssignment
-import samlang.ast.ir.IrStatementVisitor
+import samlang.ast.hir.HighIrExpression
+import samlang.ast.hir.HighIrExpression.Binary
+import samlang.ast.hir.HighIrExpression.ClassMember
+import samlang.ast.hir.HighIrExpression.FieldAccess
+import samlang.ast.hir.HighIrExpression.FunctionApplication
+import samlang.ast.hir.HighIrExpression.Lambda
+import samlang.ast.hir.HighIrExpression.Literal
+import samlang.ast.hir.HighIrExpression.MethodAccess
+import samlang.ast.hir.HighIrExpression.ObjectConstructor
+import samlang.ast.hir.HighIrExpression.Ternary
+import samlang.ast.hir.HighIrExpression.This
+import samlang.ast.hir.HighIrExpression.TupleConstructor
+import samlang.ast.hir.HighIrExpression.Unary
+import samlang.ast.hir.HighIrExpression.Variable
+import samlang.ast.hir.HighIrExpression.VariantConstructor
+import samlang.ast.hir.HighIrExpressionVisitor
+import samlang.ast.hir.HighIrPattern
+import samlang.ast.hir.HighIrStatement.ConstantDefinition
+import samlang.ast.hir.HighIrStatement.IfElse
+import samlang.ast.hir.HighIrStatement.LetDeclaration
+import samlang.ast.hir.HighIrStatement.Match
+import samlang.ast.hir.HighIrStatement.Return
+import samlang.ast.hir.HighIrStatement.Throw
+import samlang.ast.hir.HighIrStatement.VariableAssignment
+import samlang.ast.hir.HighIrStatementVisitor
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
 import samlang.ast.ts.TsModuleFolder
@@ -205,10 +205,10 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             error(message = "There should be no undecided type at this point!")
     }
 
-    private inner class TsStatementPrinter(private val moduleName: String) : IrStatementVisitor<Unit> {
+    private inner class TsStatementPrinter(private val moduleName: String) : HighIrStatementVisitor<Unit> {
         private val expressionPrinter: TsExpressionPrinter = TsExpressionPrinter()
 
-        private fun printExpression(expression: IrExpression): Unit =
+        private fun printExpression(expression: HighIrExpression): Unit =
             expression.accept(visitor = expressionPrinter)
 
         override fun visit(statement: Throw) {
@@ -253,7 +253,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                             printWithBreak(x = "const $dataVariable = $matchedVariable.data;")
                         }
                         statements.forEach { it.accept(this@TsStatementPrinter) }
-                        if (finalExpression != IrExpression.UNIT) {
+                        if (finalExpression != HighIrExpression.UNIT) {
                             printlnWithoutFurtherIndentation {
                                 printWithoutBreak(x = "$assignedTemporaryVariable = ")
                                 printExpression(expression = finalExpression)
@@ -291,7 +291,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
 
         override fun visit(statement: ConstantDefinition) {
             val (pattern, typeAnnotation, assignedExpression) = statement
-            if (pattern == IrPattern.WildCardPattern) {
+            if (pattern == HighIrPattern.WildCardPattern) {
                 printer.printlnWithoutFurtherIndentation {
                     printWithoutBreak(x = "_ = ")
                     printExpression(expression = assignedExpression)
@@ -323,9 +323,9 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             }
         }
 
-        private inner class TsExpressionPrinter : IrExpressionVisitor<Unit> {
+        private inner class TsExpressionPrinter : HighIrExpressionVisitor<Unit> {
 
-            private fun IrExpression.printSelf(withParenthesis: Boolean = false): Unit =
+            private fun HighIrExpression.printSelf(withParenthesis: Boolean = false): Unit =
                 if (withParenthesis) {
                     printer.printlnWithoutFurtherIndentation {
                         printWithoutBreak(x = "(")
@@ -334,7 +334,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                     }
                 } else accept(visitor = this@TsExpressionPrinter)
 
-            override fun visit(expression: IrExpression.Never) {
+            override fun visit(expression: HighIrExpression.Never) {
                 printer.printWithoutBreak(x = "void 0")
             }
 
@@ -434,7 +434,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                 }
             }
 
-            private fun printFunctionCallArguments(arguments: List<IrExpression>) {
+            private fun printFunctionCallArguments(arguments: List<HighIrExpression>) {
                 printer.printWithoutBreak(x = "(")
                 arguments.forEachIndexed { index, e ->
                     e.printSelf()

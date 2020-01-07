@@ -8,8 +8,8 @@ import samlang.ast.common.Type.Companion.unit
 import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
-import samlang.ast.ir.IrExpression
-import samlang.ast.ir.IrStatement
+import samlang.ast.hir.HighIrExpression
+import samlang.ast.hir.HighIrStatement
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Expression
 import samlang.ast.ts.TsFunction
@@ -82,7 +82,7 @@ class TsModuleCompilerTest : StringSpec() {
                             typeParameters = emptyList(),
                             parameters = emptyList(),
                             returnType = unit,
-                            body = listOf(IrStatement.Return(expression = IR_THIS))
+                            body = listOf(HighIrStatement.Return(expression = IR_THIS))
                         ),
                         TsFunction(
                             name = "bar",
@@ -90,7 +90,7 @@ class TsModuleCompilerTest : StringSpec() {
                             typeParameters = emptyList(),
                             parameters = emptyList(),
                             returnType = unit,
-                            body = listOf(IrStatement.Return(expression = IR_THIS))
+                            body = listOf(HighIrStatement.Return(expression = IR_THIS))
                         )
                     )
                 )
@@ -128,7 +128,7 @@ class TsModuleCompilerTest : StringSpec() {
                             typeParameters = emptyList(),
                             parameters = listOf("_this" to Type.id(identifier = "Foo")),
                             returnType = unit,
-                            body = listOf(IrStatement.Return(expression = IR_THIS))
+                            body = listOf(HighIrStatement.Return(expression = IR_THIS))
                         )
                     )
                 )
@@ -177,7 +177,7 @@ class TsModuleCompilerTest : StringSpec() {
                                 )
                             ),
                             returnType = unit,
-                            body = listOf(IrStatement.Return(expression = IR_THIS))
+                            body = listOf(HighIrStatement.Return(expression = IR_THIS))
                         )
                     )
                 )
@@ -187,7 +187,7 @@ class TsModuleCompilerTest : StringSpec() {
 
     companion object {
         private val THIS: Expression = Expression.This(range = dummyRange, type = unit)
-        private val IR_THIS: IrExpression = IrExpression.This(type = unit)
+        private val IR_THIS: HighIrExpression = HighIrExpression.This(type = unit)
         private val DUMMY_TYPE_DEFINITION: TypeDefinition = TypeDefinition.ofDummy(range = dummyRange)
     }
 }

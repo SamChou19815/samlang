@@ -9,26 +9,26 @@ import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.UnaryOperator
-import samlang.ast.ir.IrExpression.Binary
-import samlang.ast.ir.IrExpression.ClassMember
-import samlang.ast.ir.IrExpression.Companion
-import samlang.ast.ir.IrExpression.Companion.FALSE
-import samlang.ast.ir.IrExpression.Companion.TRUE
-import samlang.ast.ir.IrExpression.Companion.UNIT
-import samlang.ast.ir.IrExpression.Companion.literal
-import samlang.ast.ir.IrExpression.FunctionApplication
-import samlang.ast.ir.IrExpression.Lambda
-import samlang.ast.ir.IrExpression.MethodAccess
-import samlang.ast.ir.IrExpression.ObjectConstructor
-import samlang.ast.ir.IrExpression.This
-import samlang.ast.ir.IrExpression.TupleConstructor
-import samlang.ast.ir.IrExpression.Unary
-import samlang.ast.ir.IrExpression.Variable
-import samlang.ast.ir.IrPattern
-import samlang.ast.ir.IrStatement.ConstantDefinition
-import samlang.ast.ir.IrStatement.IfElse
-import samlang.ast.ir.IrStatement.Return
-import samlang.ast.ir.IrStatement.Throw
+import samlang.ast.hir.HighIrExpression.Binary
+import samlang.ast.hir.HighIrExpression.ClassMember
+import samlang.ast.hir.HighIrExpression.Companion
+import samlang.ast.hir.HighIrExpression.Companion.FALSE
+import samlang.ast.hir.HighIrExpression.Companion.TRUE
+import samlang.ast.hir.HighIrExpression.Companion.UNIT
+import samlang.ast.hir.HighIrExpression.Companion.literal
+import samlang.ast.hir.HighIrExpression.FunctionApplication
+import samlang.ast.hir.HighIrExpression.Lambda
+import samlang.ast.hir.HighIrExpression.MethodAccess
+import samlang.ast.hir.HighIrExpression.ObjectConstructor
+import samlang.ast.hir.HighIrExpression.This
+import samlang.ast.hir.HighIrExpression.TupleConstructor
+import samlang.ast.hir.HighIrExpression.Unary
+import samlang.ast.hir.HighIrExpression.Variable
+import samlang.ast.hir.HighIrPattern
+import samlang.ast.hir.HighIrStatement.ConstantDefinition
+import samlang.ast.hir.HighIrStatement.IfElse
+import samlang.ast.hir.HighIrStatement.Return
+import samlang.ast.hir.HighIrStatement.Throw
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
 import samlang.ast.ts.TsModuleFolder
@@ -259,7 +259,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             element = ConstantDefinition(
-                                pattern = IrPattern.VariablePattern(
+                                pattern = HighIrPattern.VariablePattern(
                                     name = "foo"
                                 ),
                                 typeAnnotation = Type.string,
@@ -309,7 +309,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             element = ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = literal(value = "bar")
                             )
@@ -347,7 +347,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             element = ConstantDefinition(
-                                pattern = IrPattern.TuplePattern(
+                                pattern = HighIrPattern.TuplePattern(
                                     destructedNames = listOf("foo", "bar")
                                 ),
                                 typeAnnotation = Type.TupleType(mappings = listOf(Type.string, Type.string)),
@@ -405,7 +405,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             element = ConstantDefinition(
-                                pattern = IrPattern.ObjectPattern(
+                                pattern = HighIrPattern.ObjectPattern(
                                     destructedNames = listOf("foo" to null, "bar" to "baz")
                                 ),
                                 typeAnnotation = Type.id(identifier = "Test"),
@@ -464,7 +464,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = Unary(
                                     type = Type.bool,
@@ -473,7 +473,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = Unary(
                                     type = Type.bool,
@@ -486,7 +486,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.int,
                                 assignedExpression = Unary(
                                     type = Type.int,
@@ -530,7 +530,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = Binary(
                                     type = Type.int,
@@ -540,7 +540,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = Binary(
                                     type = Type.int,
@@ -550,7 +550,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = Binary(
                                     type = Type.int,
@@ -565,7 +565,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = Binary(
                                     type = Type.int,
@@ -616,7 +616,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.FunctionType(
                                     argumentTypes = listOf(element = Type.int),
                                     returnType = Type.bool
@@ -710,7 +710,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = FunctionApplication(
                                     type = Type.bool,
@@ -726,7 +726,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = FunctionApplication(
                                     type = Type.bool,
@@ -775,7 +775,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = Lambda(
                                     type = Type.FunctionType(
@@ -789,7 +789,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = IrPattern.WildCardPattern,
+                                pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = Lambda(
                                     type = Type.FunctionType(
@@ -799,7 +799,7 @@ class TsPrinterTest : StringSpec() {
                                     parameters = listOf(element = "foo" to Type.int),
                                     body = listOf(
                                         ConstantDefinition(
-                                            pattern = IrPattern.WildCardPattern,
+                                            pattern = HighIrPattern.WildCardPattern,
                                             typeAnnotation = Type.unit,
                                             assignedExpression = UNIT
                                         ),

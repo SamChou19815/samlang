@@ -1,32 +1,32 @@
 package samlang.compiler.ir
 
 import samlang.ast.common.Type
-import samlang.ast.ir.IrExpression
-import samlang.ast.ir.IrExpression.Binary
-import samlang.ast.ir.IrExpression.ClassMember
-import samlang.ast.ir.IrExpression.Companion.UNIT
-import samlang.ast.ir.IrExpression.FieldAccess
-import samlang.ast.ir.IrExpression.FunctionApplication
-import samlang.ast.ir.IrExpression.Lambda
-import samlang.ast.ir.IrExpression.Literal
-import samlang.ast.ir.IrExpression.MethodAccess
-import samlang.ast.ir.IrExpression.Never
-import samlang.ast.ir.IrExpression.ObjectConstructor
-import samlang.ast.ir.IrExpression.Ternary
-import samlang.ast.ir.IrExpression.This
-import samlang.ast.ir.IrExpression.TupleConstructor
-import samlang.ast.ir.IrExpression.Unary
-import samlang.ast.ir.IrExpression.Variable
-import samlang.ast.ir.IrExpression.VariantConstructor
-import samlang.ast.ir.IrPattern
-import samlang.ast.ir.IrStatement
-import samlang.ast.ir.IrStatement.ConstantDefinition
-import samlang.ast.ir.IrStatement.IfElse
-import samlang.ast.ir.IrStatement.LetDeclaration
-import samlang.ast.ir.IrStatement.Match
-import samlang.ast.ir.IrStatement.Return
-import samlang.ast.ir.IrStatement.Throw
-import samlang.ast.ir.IrStatement.VariableAssignment
+import samlang.ast.hir.HighIrExpression
+import samlang.ast.hir.HighIrExpression.Binary
+import samlang.ast.hir.HighIrExpression.ClassMember
+import samlang.ast.hir.HighIrExpression.Companion.UNIT
+import samlang.ast.hir.HighIrExpression.FieldAccess
+import samlang.ast.hir.HighIrExpression.FunctionApplication
+import samlang.ast.hir.HighIrExpression.Lambda
+import samlang.ast.hir.HighIrExpression.Literal
+import samlang.ast.hir.HighIrExpression.MethodAccess
+import samlang.ast.hir.HighIrExpression.Never
+import samlang.ast.hir.HighIrExpression.ObjectConstructor
+import samlang.ast.hir.HighIrExpression.Ternary
+import samlang.ast.hir.HighIrExpression.This
+import samlang.ast.hir.HighIrExpression.TupleConstructor
+import samlang.ast.hir.HighIrExpression.Unary
+import samlang.ast.hir.HighIrExpression.Variable
+import samlang.ast.hir.HighIrExpression.VariantConstructor
+import samlang.ast.hir.HighIrPattern
+import samlang.ast.hir.HighIrStatement
+import samlang.ast.hir.HighIrStatement.ConstantDefinition
+import samlang.ast.hir.HighIrStatement.IfElse
+import samlang.ast.hir.HighIrStatement.LetDeclaration
+import samlang.ast.hir.HighIrStatement.Match
+import samlang.ast.hir.HighIrStatement.Return
+import samlang.ast.hir.HighIrStatement.Throw
+import samlang.ast.hir.HighIrStatement.VariableAssignment
 import samlang.ast.lang.Expression
 import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Pattern
@@ -35,12 +35,12 @@ import samlang.ast.lang.Statement
 internal fun lowerExpression(expression: Expression): LoweringResult =
     expression.accept(visitor = ExpressionLoweringVisitor(), context = Unit)
 
-internal data class LoweringResult(val statements: List<IrStatement>, val expression: IrExpression)
+internal data class LoweringResult(val statements: List<HighIrStatement>, val expression: HighIrExpression)
 
-private fun IrExpression.asLoweringResult(statements: List<IrStatement> = emptyList()): LoweringResult =
+private fun HighIrExpression.asLoweringResult(statements: List<HighIrStatement> = emptyList()): LoweringResult =
     LoweringResult(statements = statements, expression = this)
 
-private fun List<IrStatement>.asLoweringResult(): LoweringResult =
+private fun List<HighIrStatement>.asLoweringResult(): LoweringResult =
     LoweringResult(statements = this, expression = UNIT)
 
 private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult> {
@@ -55,7 +55,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     private fun Expression.lower(): LoweringResult = accept(visitor = this@ExpressionLoweringVisitor, context = Unit)
 
-    private fun Expression.getLoweredAndAddStatements(statements: MutableList<IrStatement>): IrExpression {
+    private fun Expression.getLoweredAndAddStatements(statements: MutableList<HighIrStatement>): HighIrExpression {
         val result = this.lower()
         statements.addAll(elements = result.statements)
         return result.expression
@@ -79,7 +79,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         ).asLoweringResult()
 
     override fun visit(expression: Expression.TupleConstructor, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<IrStatement>()
+        val loweredStatements = arrayListOf<HighIrStatement>()
         val loweredExpressionList = expression.expressionList.map {
             it.getLoweredAndAddStatements(statements = loweredStatements)
         }
@@ -90,7 +90,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.ObjectConstructor, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<IrStatement>()
+        val loweredStatements = arrayListOf<HighIrStatement>()
         val loweredSpreadExpression =
             expression.spreadExpression?.getLoweredAndAddStatements(statements = loweredStatements)
         val loweredFields = expression.fieldDeclarations.map { fieldConstructor ->
@@ -155,7 +155,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.Panic, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<IrStatement>()
+        val loweredStatements = arrayListOf<HighIrStatement>()
         val result = expression.expression.lower()
         loweredStatements.addAll(elements = result.statements)
         loweredStatements.add(element = Throw(expression = result.expression))
@@ -163,7 +163,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.FunctionApplication, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<IrStatement>()
+        val loweredStatements = arrayListOf<HighIrStatement>()
         val loweredFunctionExpression =
             expression.functionExpression.getLoweredAndAddStatements(statements = loweredStatements)
         val loweredArguments =
@@ -176,7 +176,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.Binary, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<IrStatement>()
+        val loweredStatements = arrayListOf<HighIrStatement>()
         val e1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements)
         val e2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements)
         return Binary(
@@ -188,7 +188,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.IfElse, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<IrStatement>()
+        val loweredStatements = arrayListOf<HighIrStatement>()
         val boolExpression = expression.boolExpression.getLoweredAndAddStatements(statements = loweredStatements)
         val e1LoweringResult = expression.e1.lower()
         val e2LoweringResult = expression.e2.lower()
@@ -247,12 +247,12 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.Match, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<IrStatement>()
+        val loweredStatements = arrayListOf<HighIrStatement>()
         val matchedExpression = expression.matchedExpression.getLoweredAndAddStatements(statements = loweredStatements)
         val variableForMatchedExpression = allocateTemporaryVariable()
         loweredStatements.add(
             element = ConstantDefinition(
-                pattern = IrPattern.VariablePattern(name = variableForMatchedExpression),
+                pattern = HighIrPattern.VariablePattern(name = variableForMatchedExpression),
                 typeAnnotation = expression.matchedExpression.type,
                 assignedExpression = matchedExpression
             )
@@ -315,21 +315,21 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.StatementBlockExpression, context: Unit): LoweringResult {
         val block = expression.block
-        val loweredStatements = arrayListOf<IrStatement>()
+        val loweredStatements = arrayListOf<HighIrStatement>()
         for (statement in block.statements) {
             when (statement) {
                 is Statement.Val -> {
                     val loweredAssignedExpression =
                         statement.assignedExpression.getLoweredAndAddStatements(statements = loweredStatements)
                     val loweredPattern = when (val pattern = statement.pattern) {
-                        is Pattern.TuplePattern -> IrPattern.TuplePattern(
+                        is Pattern.TuplePattern -> HighIrPattern.TuplePattern(
                             destructedNames = pattern.destructedNames.map { it.first }
                         )
-                        is Pattern.ObjectPattern -> IrPattern.ObjectPattern(
+                        is Pattern.ObjectPattern -> HighIrPattern.ObjectPattern(
                             destructedNames = pattern.destructedNames.map { (name, renamed, _) -> name to renamed }
                         )
-                        is Pattern.VariablePattern -> IrPattern.VariablePattern(name = pattern.name)
-                        is Pattern.WildCardPattern -> IrPattern.WildCardPattern
+                        is Pattern.VariablePattern -> HighIrPattern.VariablePattern(name = pattern.name)
+                        is Pattern.WildCardPattern -> HighIrPattern.WildCardPattern
                     }
                     loweredStatements += ConstantDefinition(
                         pattern = loweredPattern,

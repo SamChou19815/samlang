@@ -6,9 +6,9 @@ import samlang.ast.common.Range
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
-import samlang.ast.ir.IrExpression.Companion.UNIT
-import samlang.ast.ir.IrExpression.Never
-import samlang.ast.ir.IrStatement
+import samlang.ast.hir.HighIrExpression.Companion.UNIT
+import samlang.ast.hir.HighIrExpression.Never
+import samlang.ast.hir.HighIrStatement
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Module
 import samlang.ast.ts.TsFunction
@@ -58,7 +58,7 @@ private fun compileTsFunction(
     val body = if (bodyLoweringResult.expression == UNIT || bodyLoweringResult.expression == Never) {
         bodyLoweringResult.statements
     } else {
-        bodyLoweringResult.statements.plus(element = IrStatement.Return(expression = bodyLoweringResult.expression))
+        bodyLoweringResult.statements.plus(element = HighIrStatement.Return(expression = bodyLoweringResult.expression))
     }
     val classTypeParameters = classDefinition.typeDefinition.typeParameters
     val thisType = Type.IdentifierType(
