@@ -52,26 +52,12 @@ import samlang.errors.UnresolvedNameError
 import samlang.errors.UnsupportedClassTypeDefinitionError
 import samlang.util.Either
 
-internal fun Expression.typeCheck(
-    errorCollector: ErrorCollector,
-    accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-    localTypingContext: LocalTypingContext,
-    expectedType: Type
-): Expression = typeCheckExpression(
-    expression = this,
-    errorCollector = errorCollector,
-    accessibleGlobalTypingContext = accessibleGlobalTypingContext,
-    resolution = TypeResolution(),
-    localTypingContext = localTypingContext,
-    expectedType = expectedType
-)
-
 internal fun typeCheckExpression(
     expression: Expression,
     errorCollector: ErrorCollector,
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-    resolution: TypeResolution,
     localTypingContext: LocalTypingContext,
+    resolution: TypeResolution,
     expectedType: Type
 ): Expression {
     val visitor = ExpressionTypeCheckerVisitor(

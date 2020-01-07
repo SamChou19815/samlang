@@ -127,10 +127,12 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
                 errorCollector.reportCollisionError(name = parameter.name, range = parameter.nameRange)
             }
         }
-        val checkedBody = body.typeCheck(
+        val checkedBody = typeCheckExpression(
+            expression = body,
             errorCollector = errorCollector,
             accessibleGlobalTypingContext = accessibleGlobalTypingContextWithAdditionalTypeParameters,
             localTypingContext = localTypingContext,
+            resolution = TypeResolution(),
             expectedType = type.returnType
         )
         return memberDefinition.copy(body = checkedBody)
