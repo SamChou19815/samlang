@@ -1,7 +1,6 @@
 package samlang.checker
 
 import kotlinx.collections.immutable.PersistentMap
-import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toPersistentSet
 import samlang.ast.common.Range
 import samlang.ast.common.TypeDefinition
@@ -10,7 +9,6 @@ import samlang.ast.lang.Module
 
 internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
     fun typeCheck(module: Module, classes: PersistentMap<String, GlobalTypingContext.ClassType>): Module {
-        val localTypingContext = LocalTypingContext(localValues = persistentMapOf())
         checkNameCollision(namesWithRange = module.classDefinitions.map { it.name to it.nameRange })
         val checkedClasses = module.classDefinitions.map { classDefinition ->
             val currentClass = classDefinition.name
@@ -31,8 +29,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
             val checkedMembers = members.mapNotNull { member ->
                 typeCheckMemberDefinition(
                     memberDefinition = member,
-                    accessibleGlobalTypingContext = accessibleGlobalTypingContext,
-                    localTypingContext = localTypingContext
+                    accessibleGlobalTypingContext = accessibleGlobalTypingContext
                 )
             }
             classDefinition.copy(members = checkedMembers)
@@ -104,20 +101,18 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
 
     private fun typeCheckMemberDefinition(
         memberDefinition: MemberDefinition,
-        accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-        localTypingContext: LocalTypingContext
+        accessibleGlobalTypingContext: AccessibleGlobalTypingContext
     ): MemberDefinition? {
+        val localTypingContext = LocalTypingContext()
         val (_, _, isMethod, _, _, typeParameters, type, parameters, body) = memberDefinition
-        var contextForTypeCheckingBody = if (isMethod) {
+        if (isMethod) {
             localTypingContext.addLocalValueType(name = "this", type = accessibleGlobalTypingContext.thisType) {
                 error(message = "Should not collide")
             }
-        } else {
-            localTypingContext
         }
         val accessibleGlobalTypingContextWithAdditionalTypeParameters = accessibleGlobalTypingContext
             .withAdditionalTypeParameters(typeParameters = typeParameters)
-        contextForTypeCheckingBody = parameters.fold(initial = contextForTypeCheckingBody) { tempContext, parameter ->
+        parameters.forEach { parameter ->
             val parameterType = parameter.type
             val parameterIsValid = validateType(
                 type = parameterType,
@@ -128,14 +123,14 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
             if (!parameterIsValid) {
                 return null
             }
-            tempContext.addLocalValueType(name = parameter.name, type = parameterType) {
+            localTypingContext.addLocalValueType(name = parameter.name, type = parameterType) {
                 errorCollector.reportCollisionError(name = parameter.name, range = parameter.nameRange)
             }
         }
         val checkedBody = body.typeCheck(
             errorCollector = errorCollector,
             accessibleGlobalTypingContext = accessibleGlobalTypingContextWithAdditionalTypeParameters,
-            localTypingContext = contextForTypeCheckingBody,
+            localTypingContext = localTypingContext,
             expectedType = type.returnType
         )
         return memberDefinition.copy(body = checkedBody)

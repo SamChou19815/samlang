@@ -22,29 +22,38 @@ internal class StatementTypeChecker(
         statementBlock: StatementBlock,
         expectedType: Type,
         localContext: LocalTypingContext
+    ): StatementBlock = localContext.withNestedScope {
+        typeCheckInNestedScope(
+            statementBlock = statementBlock,
+            expectedType = expectedType,
+            localContext = localContext
+        )
+    }
+
+    private fun typeCheckInNestedScope(
+        statementBlock: StatementBlock,
+        expectedType: Type,
+        localContext: LocalTypingContext
     ): StatementBlock {
-        var currentLocalContext = localContext
         val checkedStatements = arrayListOf<Statement>()
         for (statement in statementBlock.statements) {
-            val (checkedStatement, updatedContext) = typeCheck(
+            checkedStatements += typeCheck(
                 statement = statement,
-                localContext = currentLocalContext
+                localContext = localContext
             )
-            checkedStatements += checkedStatement
-            currentLocalContext = updatedContext
         }
         val expression = statementBlock.expression
         val checkedExpression = if (expression != null) {
             expressionTypeChecker.typeCheck(
                 expression = expression,
-                localTypingContext = currentLocalContext,
+                localTypingContext = localContext,
                 expectedType = expectedType
             )
         } else {
             // Force the type checker to resolve expected type to unit.
             expressionTypeChecker.typeCheck(
                 expression = Expression.Literal.ofUnit(range = statementBlock.range),
-                localTypingContext = currentLocalContext,
+                localTypingContext = localContext,
                 expectedType = expectedType
             )
             null
@@ -52,12 +61,12 @@ internal class StatementTypeChecker(
         return statementBlock.copy(statements = checkedStatements, expression = checkedExpression)
     }
 
-    private fun typeCheck(statement: Statement, localContext: LocalTypingContext): Pair<Statement, LocalTypingContext> =
+    private fun typeCheck(statement: Statement, localContext: LocalTypingContext): Statement =
         when (statement) {
             is Val -> typeCheckVal(statement = statement, localContext = localContext)
         }
 
-    private fun typeCheckVal(statement: Val, localContext: LocalTypingContext): Pair<Val, LocalTypingContext> {
+    private fun typeCheckVal(statement: Val, localContext: LocalTypingContext): Val {
         val (_, pattern, typeAnnotation, assignedExpression) = statement
         val checkedAssignedExpression = expressionTypeChecker.typeCheck(
             expression = assignedExpression,
@@ -66,7 +75,7 @@ internal class StatementTypeChecker(
         )
         val betterStatement = statement.copy(assignedExpression = checkedAssignedExpression)
         val checkedAssignedExprType = checkedAssignedExpression.type
-        val newLocalContext = when (pattern) {
+        when (pattern) {
             is Pattern.TuplePattern -> {
                 val tupleType = checkedAssignedExprType as? Type.TupleType ?: kotlin.run {
                     errorCollector.add(
@@ -76,7 +85,7 @@ internal class StatementTypeChecker(
                             range = assignedExpression.range
                         )
                     )
-                    return betterStatement to localContext
+                    return betterStatement
                 }
                 val expectedSize = tupleType.mappings.size
                 val actualSize = pattern.destructedNames.size
@@ -92,8 +101,8 @@ internal class StatementTypeChecker(
                 pattern.destructedNames.zip(tupleType.mappings).asSequence().mapNotNull { (nameWithRange, t) ->
                     val (name, nameRange) = nameWithRange
                     if (name == null) null else Triple(first = name, second = nameRange, third = t)
-                }.fold(initial = localContext) { context, (name, nameRange, elementType) ->
-                    context.addLocalValueType(name = name, type = elementType) {
+                }.forEach { (name, nameRange, elementType) ->
+                    localContext.addLocalValueType(name = name, type = elementType) {
                         errorCollector.reportCollisionError(name = name, range = nameRange)
                     }
                 }
@@ -107,7 +116,7 @@ internal class StatementTypeChecker(
                             range = assignedExpression.range
                         )
                     )
-                    return betterStatement to localContext
+                    return betterStatement
                 }
                 if (identifierType.identifier != accessibleGlobalTypingContext.currentClass) {
                     errorCollector.add(
@@ -116,7 +125,7 @@ internal class StatementTypeChecker(
                             range = pattern.range
                         )
                     )
-                    return betterStatement to localContext
+                    return betterStatement
                 }
                 val fieldMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
                     identifierType = identifierType,
@@ -128,16 +137,16 @@ internal class StatementTypeChecker(
                     is Either.Left -> fieldMappingsOrError.v
                     is Either.Right -> {
                         errorCollector.add(compileTimeError = fieldMappingsOrError.v)
-                        return betterStatement to localContext
+                        return betterStatement
                     }
                 }
-                pattern.destructedNames.fold(initial = localContext) { context, (originalName, renamedName) ->
+                pattern.destructedNames.forEach { (originalName, renamedName) ->
                     val fieldType = fieldMappings[originalName] ?: kotlin.run {
                         errorCollector.add(UnresolvedNameError(unresolvedName = originalName, range = pattern.range))
-                        return betterStatement to localContext
+                        return betterStatement
                     }
                     val nameToBeUsed = renamedName ?: originalName
-                    context.addLocalValueType(name = nameToBeUsed, type = fieldType) {
+                    localContext.addLocalValueType(name = nameToBeUsed, type = fieldType) {
                         errorCollector.reportCollisionError(name = nameToBeUsed, range = pattern.range)
                     }
                 }
@@ -148,8 +157,8 @@ internal class StatementTypeChecker(
                     errorCollector.reportCollisionError(name = n, range = p)
                 }
             }
-            is Pattern.WildCardPattern -> localContext
+            is Pattern.WildCardPattern -> Unit
         }
-        return betterStatement to newLocalContext
+        return betterStatement
     }
 }

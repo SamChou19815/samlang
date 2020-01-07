@@ -572,17 +572,24 @@ private class ExpressionTypeCheckerVisitor(
                     expectedType = expectedType,
                     error = UnresolvedNameError(unresolvedName = tag, range = range)
                 )
-            val newContext = dataVariable?.let { name ->
-                ctx.addLocalValueType(name = name, type = mappingDataType) {
-                    errorCollector.reportCollisionError(name = name, range = range)
-                }
-            } ?: ctx
             unusedMappings.remove(key = tag)
+            val checkedExpression = if (dataVariable == null) {
+                ctx.withNestedScope {
+                    correspondingExpr.toChecked(ctx = ctx, expectedType = expectedType)
+                }
+            } else {
+                ctx.addLocalValueType(name = dataVariable, type = mappingDataType) {
+                    errorCollector.reportCollisionError(name = dataVariable, range = range)
+                }
+                val checked = correspondingExpr.toChecked(ctx = ctx, expectedType = expectedType)
+                ctx.removeLocalValue(name = dataVariable)
+                checked
+            }
             Match.VariantPatternToExpr(
                 range = range,
                 tag = tag,
                 dataVariable = dataVariable,
-                expression = correspondingExpr.toChecked(ctx = newContext, expectedType = expectedType)
+                expression = checkedExpression
             )
         }
         val finalType =
@@ -608,23 +615,25 @@ private class ExpressionTypeCheckerVisitor(
             }
         }
         // setting up types and update context
-        var currentContext = ctx
-        val checkedArguments = arguments.map { (argumentName, argumentType) ->
-            val argumentTypeIsValid = validateType(
-                type = argumentType,
-                identifierTypeValidator = accessibleGlobalTypingContext,
-                errorCollector = errorCollector,
-                errorRange = range
-            )
-            if (!argumentTypeIsValid) {
-                return TypeReplacer.replaceWithExpectedType(expression = expression, expectedType = expectedType)
+        val (checkedArguments, checkedBody) = ctx.withNestedScope {
+            val checkedArguments = arguments.map { (argumentName, argumentType) ->
+                val argumentTypeIsValid = validateType(
+                    type = argumentType,
+                    identifierTypeValidator = accessibleGlobalTypingContext,
+                    errorCollector = errorCollector,
+                    errorRange = range
+                )
+                if (!argumentTypeIsValid) {
+                    return@withNestedScope null
+                }
+                ctx.addLocalValueType(name = argumentName, type = argumentType) {
+                    errorCollector.reportCollisionError(name = argumentName, range = range)
+                }
+                argumentName to argumentType
             }
-            currentContext = currentContext.addLocalValueType(name = argumentName, type = argumentType) {
-                errorCollector.reportCollisionError(name = argumentName, range = range)
-            }
-            argumentName to argumentType
-        }
-        val checkedBody = body.toChecked(ctx = currentContext, expectedType = functionType.returnType)
+            val checkedBody = body.toChecked(ctx = ctx, expectedType = functionType.returnType)
+            checkedArguments to checkedBody
+        } ?: return TypeReplacer.replaceWithExpectedType(expression = expression, expectedType = expectedType)
         // merge a somewhat good locally inferred type
         val locallyInferredType = functionType.copy(
             argumentTypes = checkedArguments.map { it.second },
