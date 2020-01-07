@@ -31,6 +31,7 @@ import samlang.ast.ir.IrExpression.Unary
 import samlang.ast.ir.IrExpression.Variable
 import samlang.ast.ir.IrExpression.VariantConstructor
 import samlang.ast.ir.IrExpressionVisitor
+import samlang.ast.ir.IrPattern
 import samlang.ast.ir.IrStatement
 import samlang.ast.ir.IrStatement.ConstantDefinition
 import samlang.ast.ir.IrStatement.IfElse
@@ -43,7 +44,6 @@ import samlang.ast.ir.IrStatementVisitor
 import samlang.ast.java.JavaMethod
 import samlang.ast.java.JavaOuterClass
 import samlang.ast.java.JavaStaticInnerClass
-import samlang.ast.ts.TsPattern
 import samlang.util.IndentedPrinter
 
 fun printJavaOuterClass(stream: OutputStream, moduleReference: ModuleReference, outerClass: JavaOuterClass) {
@@ -343,12 +343,12 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
         override fun visit(statement: ConstantDefinition) {
             val (pattern, typeAnnotation, assignedExpression) = statement
-            if (pattern is TsPattern.WildCardPattern && assignedExpression !is FunctionApplication) {
+            if (pattern is IrPattern.WildCardPattern && assignedExpression !is FunctionApplication) {
                 return
             }
             printer.printlnWithoutFurtherIndentation {
                 when (pattern) {
-                    is TsPattern.TuplePattern -> {
+                    is IrPattern.TuplePattern -> {
                         val temporaryVariable = allocateVariable()
                         printWithoutBreak(x = "${typeAnnotation.toJavaTypeString()} $temporaryVariable = ")
                         printExpression(expression = assignedExpression)
@@ -359,7 +359,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                             }
                         }
                     }
-                    is TsPattern.ObjectPattern -> {
+                    is IrPattern.ObjectPattern -> {
                         val temporaryVariable = allocateVariable()
                         printWithoutBreak(x = "${typeAnnotation.toJavaTypeString()} $temporaryVariable = ")
                         printExpression(expression = assignedExpression)
@@ -368,12 +368,12 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                             printWithoutBreak(x = "final var ${alias ?: name} = $temporaryVariable.$name;")
                         }
                     }
-                    is TsPattern.VariablePattern -> {
+                    is IrPattern.VariablePattern -> {
                         printWithoutBreak(x = "${typeAnnotation.toJavaTypeString()} ${pattern.name} = ")
                         printExpression(expression = assignedExpression)
                         printWithBreak(x = ";")
                     }
-                    is TsPattern.WildCardPattern -> {
+                    is IrPattern.WildCardPattern -> {
                         printExpression(expression = assignedExpression)
                         printWithBreak(x = ";")
                     }

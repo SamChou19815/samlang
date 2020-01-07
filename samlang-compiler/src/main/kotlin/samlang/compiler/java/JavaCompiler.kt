@@ -5,13 +5,13 @@ import samlang.ast.common.Type
 import samlang.ast.ir.IrExpression
 import samlang.ast.ir.IrExpression.Companion.UNIT
 import samlang.ast.ir.IrExpression.Never
+import samlang.ast.ir.IrPattern
 import samlang.ast.ir.IrStatement
 import samlang.ast.java.JavaMethod
 import samlang.ast.java.JavaOuterClass
 import samlang.ast.java.JavaStaticInnerClass
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Module
-import samlang.ast.ts.TsPattern
 import samlang.compiler.ir.lowerExpression
 
 fun compileToJavaSources(sources: Sources<Module>): Sources<JavaOuterClass> =
@@ -39,7 +39,7 @@ internal fun compileJavaMethod(classMember: ClassDefinition.MemberDefinition): J
             if (classMember.body.type == Type.unit &&
                 bodyLoweringResult.expression is IrExpression.FunctionApplication) {
                 IrStatement.ConstantDefinition(
-                    pattern = TsPattern.WildCardPattern,
+                    pattern = IrPattern.WildCardPattern,
                     typeAnnotation = Type.unit,
                     assignedExpression = bodyLoweringResult.expression
                 )

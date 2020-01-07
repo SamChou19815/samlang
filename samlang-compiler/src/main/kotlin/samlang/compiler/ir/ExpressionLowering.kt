@@ -18,6 +18,7 @@ import samlang.ast.ir.IrExpression.TupleConstructor
 import samlang.ast.ir.IrExpression.Unary
 import samlang.ast.ir.IrExpression.Variable
 import samlang.ast.ir.IrExpression.VariantConstructor
+import samlang.ast.ir.IrPattern
 import samlang.ast.ir.IrStatement
 import samlang.ast.ir.IrStatement.ConstantDefinition
 import samlang.ast.ir.IrStatement.IfElse
@@ -30,7 +31,6 @@ import samlang.ast.lang.Expression
 import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Pattern
 import samlang.ast.lang.Statement
-import samlang.ast.ts.TsPattern
 
 internal fun lowerExpression(expression: Expression): LoweringResult =
     expression.accept(visitor = ExpressionLoweringVisitor(), context = Unit)
@@ -252,7 +252,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val variableForMatchedExpression = allocateTemporaryVariable()
         loweredStatements.add(
             element = ConstantDefinition(
-                pattern = TsPattern.VariablePattern(name = variableForMatchedExpression),
+                pattern = IrPattern.VariablePattern(name = variableForMatchedExpression),
                 typeAnnotation = expression.matchedExpression.type,
                 assignedExpression = matchedExpression
             )
@@ -322,14 +322,14 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                     val loweredAssignedExpression =
                         statement.assignedExpression.getLoweredAndAddStatements(statements = loweredStatements)
                     val loweredPattern = when (val pattern = statement.pattern) {
-                        is Pattern.TuplePattern -> TsPattern.TuplePattern(
+                        is Pattern.TuplePattern -> IrPattern.TuplePattern(
                             destructedNames = pattern.destructedNames.map { it.first }
                         )
-                        is Pattern.ObjectPattern -> TsPattern.ObjectPattern(
+                        is Pattern.ObjectPattern -> IrPattern.ObjectPattern(
                             destructedNames = pattern.destructedNames.map { (name, renamed, _) -> name to renamed }
                         )
-                        is Pattern.VariablePattern -> TsPattern.VariablePattern(name = pattern.name)
-                        is Pattern.WildCardPattern -> TsPattern.WildCardPattern
+                        is Pattern.VariablePattern -> IrPattern.VariablePattern(name = pattern.name)
+                        is Pattern.WildCardPattern -> IrPattern.WildCardPattern
                     }
                     loweredStatements += ConstantDefinition(
                         pattern = loweredPattern,

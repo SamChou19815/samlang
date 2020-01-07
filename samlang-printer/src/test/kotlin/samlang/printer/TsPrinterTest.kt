@@ -24,6 +24,7 @@ import samlang.ast.ir.IrExpression.This
 import samlang.ast.ir.IrExpression.TupleConstructor
 import samlang.ast.ir.IrExpression.Unary
 import samlang.ast.ir.IrExpression.Variable
+import samlang.ast.ir.IrPattern
 import samlang.ast.ir.IrStatement.ConstantDefinition
 import samlang.ast.ir.IrStatement.IfElse
 import samlang.ast.ir.IrStatement.Return
@@ -31,7 +32,6 @@ import samlang.ast.ir.IrStatement.Throw
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
 import samlang.ast.ts.TsModuleFolder
-import samlang.ast.ts.TsPattern
 
 class TsPrinterTest : StringSpec() {
 
@@ -259,7 +259,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             element = ConstantDefinition(
-                                pattern = TsPattern.VariablePattern(
+                                pattern = IrPattern.VariablePattern(
                                     name = "foo"
                                 ),
                                 typeAnnotation = Type.string,
@@ -309,7 +309,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             element = ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = literal(value = "bar")
                             )
@@ -347,7 +347,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             element = ConstantDefinition(
-                                pattern = TsPattern.TuplePattern(
+                                pattern = IrPattern.TuplePattern(
                                     destructedNames = listOf("foo", "bar")
                                 ),
                                 typeAnnotation = Type.TupleType(mappings = listOf(Type.string, Type.string)),
@@ -405,7 +405,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             element = ConstantDefinition(
-                                pattern = TsPattern.ObjectPattern(
+                                pattern = IrPattern.ObjectPattern(
                                     destructedNames = listOf("foo" to null, "bar" to "baz")
                                 ),
                                 typeAnnotation = Type.id(identifier = "Test"),
@@ -464,7 +464,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = Unary(
                                     type = Type.bool,
@@ -473,7 +473,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = Unary(
                                     type = Type.bool,
@@ -486,7 +486,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.int,
                                 assignedExpression = Unary(
                                     type = Type.int,
@@ -530,7 +530,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = Binary(
                                     type = Type.int,
@@ -540,7 +540,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = Binary(
                                     type = Type.int,
@@ -550,7 +550,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = Binary(
                                     type = Type.int,
@@ -565,7 +565,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.string,
                                 assignedExpression = Binary(
                                     type = Type.int,
@@ -616,7 +616,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.FunctionType(
                                     argumentTypes = listOf(element = Type.int),
                                     returnType = Type.bool
@@ -710,7 +710,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = FunctionApplication(
                                     type = Type.bool,
@@ -726,7 +726,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = FunctionApplication(
                                     type = Type.bool,
@@ -775,7 +775,7 @@ class TsPrinterTest : StringSpec() {
                         returnType = Type.unit,
                         body = listOf(
                             ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = Lambda(
                                     type = Type.FunctionType(
@@ -789,7 +789,7 @@ class TsPrinterTest : StringSpec() {
                                 )
                             ),
                             ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
                                 assignedExpression = Lambda(
                                     type = Type.FunctionType(
@@ -799,7 +799,7 @@ class TsPrinterTest : StringSpec() {
                                     parameters = listOf(element = "foo" to Type.int),
                                     body = listOf(
                                         ConstantDefinition(
-                                            pattern = TsPattern.WildCardPattern,
+                                            pattern = IrPattern.WildCardPattern,
                                             typeAnnotation = Type.unit,
                                             assignedExpression = UNIT
                                         ),

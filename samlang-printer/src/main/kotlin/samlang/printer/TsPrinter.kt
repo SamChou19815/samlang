@@ -25,6 +25,7 @@ import samlang.ast.ir.IrExpression.Unary
 import samlang.ast.ir.IrExpression.Variable
 import samlang.ast.ir.IrExpression.VariantConstructor
 import samlang.ast.ir.IrExpressionVisitor
+import samlang.ast.ir.IrPattern
 import samlang.ast.ir.IrStatement.ConstantDefinition
 import samlang.ast.ir.IrStatement.IfElse
 import samlang.ast.ir.IrStatement.LetDeclaration
@@ -36,7 +37,6 @@ import samlang.ast.ir.IrStatementVisitor
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
 import samlang.ast.ts.TsModuleFolder
-import samlang.ast.ts.TsPattern
 import samlang.util.IndentedPrinter
 
 fun printTsIndexModule(stream: OutputStream, tsModuleFolder: TsModuleFolder) {
@@ -291,7 +291,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
 
         override fun visit(statement: ConstantDefinition) {
             val (pattern, typeAnnotation, assignedExpression) = statement
-            if (pattern == TsPattern.WildCardPattern) {
+            if (pattern == IrPattern.WildCardPattern) {
                 printer.printlnWithoutFurtherIndentation {
                     printWithoutBreak(x = "_ = ")
                     printExpression(expression = assignedExpression)

@@ -10,13 +10,13 @@ import samlang.ast.common.Type.Companion.int
 import samlang.ast.common.Type.Companion.unit
 import samlang.ast.common.UnaryOperator.NOT
 import samlang.ast.ir.IrExpression
+import samlang.ast.ir.IrPattern
 import samlang.ast.ir.IrStatement
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Unary
 import samlang.ast.lang.Pattern
 import samlang.ast.lang.Statement
 import samlang.ast.lang.StatementBlock
-import samlang.ast.ts.TsPattern
 
 class ExpressionLoweringTest : StringSpec() {
 
@@ -218,14 +218,14 @@ class ExpressionLoweringTest : StringSpec() {
                         booleanExpression = IR_THIS,
                         s1 = listOf(
                             IrStatement.ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = unit,
                                 assignedExpression = IR_THIS
                             )
                         ),
                         s2 = listOf(
                             IrStatement.ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = unit,
                                 assignedExpression = IR_THIS
                             )
@@ -263,7 +263,7 @@ class ExpressionLoweringTest : StringSpec() {
                             booleanExpression = IR_THIS,
                             s1 = listOf(
                                 IrStatement.ConstantDefinition(
-                                    pattern = TsPattern.WildCardPattern,
+                                    pattern = IrPattern.WildCardPattern,
                                     typeAnnotation = unit,
                                     assignedExpression = IR_THIS
                                 ),
@@ -312,7 +312,7 @@ class ExpressionLoweringTest : StringSpec() {
                         s1 = listOf(IrStatement.Throw(expression = IR_THIS)),
                         s2 = listOf(
                             IrStatement.ConstantDefinition(
-                                pattern = TsPattern.WildCardPattern,
+                                pattern = IrPattern.WildCardPattern,
                                 typeAnnotation = unit,
                                 assignedExpression = IR_THIS
                             )
@@ -362,7 +362,7 @@ class ExpressionLoweringTest : StringSpec() {
                 expected = LoweringResult(
                     statements = listOf(
                         IrStatement.ConstantDefinition(
-                            pattern = TsPattern.VariablePattern(name = "_LOWERING_0"),
+                            pattern = IrPattern.VariablePattern(name = "_LOWERING_0"),
                             typeAnnotation = DUMMY_IDENTIFIER_TYPE,
                             assignedExpression = IR_THIS
                         ),
@@ -407,7 +407,7 @@ class ExpressionLoweringTest : StringSpec() {
                 expected = LoweringResult(
                     statements = listOf(
                         IrStatement.ConstantDefinition(
-                            pattern = TsPattern.VariablePattern(name = "_LOWERING_0"),
+                            pattern = IrPattern.VariablePattern(name = "_LOWERING_0"),
                             typeAnnotation = DUMMY_IDENTIFIER_TYPE,
                             assignedExpression = IR_THIS
                         ),

@@ -1,7 +1,6 @@
 package samlang.ast.ir
 
 import samlang.ast.common.Type
-import samlang.ast.ts.TsPattern
 
 /**
  * A collection of statements for common IR.
@@ -49,7 +48,7 @@ sealed class IrStatement {
     }
 
     data class ConstantDefinition(
-        val pattern: TsPattern,
+        val pattern: IrPattern,
         val typeAnnotation: Type,
         val assignedExpression: IrExpression
     ) : IrStatement() {
