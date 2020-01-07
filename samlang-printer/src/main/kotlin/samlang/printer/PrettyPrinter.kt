@@ -17,15 +17,17 @@ import samlang.ast.lang.Expression.Match
 import samlang.ast.lang.Expression.MethodAccess
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.Panic
+import samlang.ast.lang.Expression.StatementBlockExpression
 import samlang.ast.lang.Expression.This
 import samlang.ast.lang.Expression.TupleConstructor
 import samlang.ast.lang.Expression.Unary
-import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Module
 import samlang.ast.lang.Pattern
+import samlang.ast.lang.Statement
+import samlang.ast.lang.StatementBlock
 import samlang.util.IndentedPrinter
 
 fun prettyPrint(module: Module, printStream: PrintStream) {
@@ -245,15 +247,31 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
     }
 
     override fun visit(expression: IfElse, context: Boolean) {
+        val e1 = expression.e1
+        val e2 = expression.e2
+        val e1IsBlock = e1 is StatementBlockExpression
+        val e2IsBlock = e2 is StatementBlockExpression
         printer.printlnWithoutFurtherIndentation {
             printWithoutBreak(x = "if (")
             expression.boolExpression.printSelf(requireBreak = false)
-            printWithoutBreak(x = ") then (")
+            printWithoutBreak(x = ") then ${if (e1IsBlock) "{" else "("}")
         }
-        printer.indented { expression.e1.printSelf(requireBreak = true) }
-        printer.printWithBreak(x = ") else (")
-        printer.indented { expression.e2.printSelf(requireBreak = true) }
-        printer.print(x = ")", requireBreak = context)
+        printer.indented {
+            if (e1IsBlock) {
+                printBlock(block = (e1 as StatementBlockExpression).block)
+            } else {
+                e1.printSelf(requireBreak = true)
+            }
+        }
+        printer.printWithBreak(x = "${if (e1IsBlock) "}" else ")"} else ${if (e2IsBlock) "{" else "("}")
+        printer.indented {
+            if (e2IsBlock) {
+                printBlock(block = (e2 as StatementBlockExpression).block)
+            } else {
+                e2.printSelf(requireBreak = true)
+            }
+        }
+        printer.print(x = if (e2IsBlock) "}" else ")", requireBreak = context)
     }
 
     override fun visit(expression: Match, context: Boolean) {
@@ -287,33 +305,47 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
         printer.print(x = ")", requireBreak = context)
     }
 
-    override fun visit(expression: Val, context: Boolean) {
-        printer.printlnWithoutFurtherIndentation {
-            val patternString = when (val p = expression.pattern) {
-                is Pattern.TuplePattern -> {
-                    p.destructedNames.joinToString(separator = ", ", prefix = "[", postfix = "]") { it?.first ?: "_" }
+    override fun visit(expression: StatementBlockExpression, context: Boolean) {
+        printer.printWithBreak(x = "{")
+        printer.indented {
+            printBlock(block = expression.block)
+        }
+        printer.printWithBreak(x = "}")
+    }
+
+    private fun printBlock(block: StatementBlock) {
+        block.statements.forEach { statement ->
+            printer.printlnWithoutFurtherIndentation {
+                when (statement) {
+                    is Statement.Val -> printVal(statement = statement)
                 }
-                is Pattern.ObjectPattern -> {
-                    p.destructedNames.joinToString(separator = ", ", prefix = "{ ", postfix = " }") { (o, n) ->
-                        if (n == null) {
-                            o
-                        } else {
-                            "$o as $n"
-                        }
+            }
+        }
+        val expression = block.expression
+        if (expression != null) {
+            printer.printlnWithoutFurtherIndentation { expression.printSelf(requireBreak = false) }
+        }
+    }
+
+    private fun printVal(statement: Statement.Val) {
+        val patternString = when (val p = statement.pattern) {
+            is Pattern.TuplePattern -> {
+                p.destructedNames.joinToString(separator = ", ", prefix = "[", postfix = "]") { it.first ?: "_" }
+            }
+            is Pattern.ObjectPattern -> {
+                p.destructedNames.joinToString(separator = ", ", prefix = "{ ", postfix = " }") { (o, n) ->
+                    if (n == null) {
+                        o
+                    } else {
+                        "$o as $n"
                     }
                 }
-                is Pattern.VariablePattern -> p.name
-                is Pattern.WildCardPattern -> "_"
             }
-            printWithBreak(x = "val $patternString: ${expression.assignedExpression.type} = (")
+            is Pattern.VariablePattern -> p.name
+            is Pattern.WildCardPattern -> "_"
         }
-        printer.indented { expression.assignedExpression.printSelf(requireBreak = true) }
-        val nextExpression = expression.nextExpression
-        if (nextExpression == null) {
-            printer.print(x = ");", requireBreak = context)
-        } else {
-            printer.printWithBreak(x = ");")
-            nextExpression.printSelf(requireBreak = context)
-        }
+        printer.printWithoutBreak(x = "val $patternString: ${statement.assignedExpression.type} = ")
+        statement.assignedExpression.printSelf(requireBreak = false)
+        printer.printWithBreak(x = ";")
     }
 }

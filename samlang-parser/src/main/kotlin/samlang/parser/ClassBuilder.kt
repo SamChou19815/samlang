@@ -5,7 +5,9 @@ import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.lang.ClassDefinition
+import samlang.ast.lang.Expression
 import samlang.parser.generated.PLBaseVisitor
+import samlang.parser.generated.PLParser
 import samlang.parser.generated.PLParser.ClassHeaderContext
 import samlang.parser.generated.PLParser.ClassMemberDefinitionContext
 import samlang.parser.generated.PLParser.ClazzContext
@@ -15,8 +17,10 @@ import samlang.parser.generated.PLParser.UtilClassHeaderContext
 import samlang.parser.generated.PLParser.VariantTypeContext
 
 internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<ClassDefinition?>() {
-
-    private val expressionBuilder: ExpressionBuilder = ExpressionBuilder(syntaxErrorListener = syntaxErrorListener)
+    private val statementBlockBuilder: StatementBlockBuilder =
+        StatementBlockBuilder(expressionBuilder = this::buildExpression)
+    private val expressionBuilder: ExpressionBuilder =
+        ExpressionBuilder(syntaxErrorListener = syntaxErrorListener) { it.accept(statementBlockBuilder) }
 
     private val TypeParametersDeclarationContext.typeParameters: List<String> get() = UpperId().map { it.symbol.text }
 
@@ -93,11 +97,7 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
             argumentTypes = parameters.map { it.type },
             returnType = ctx.typeExpr().accept(TypeBuilder) ?: return null
         )
-        val body = ctx.expression().let { expressionContext ->
-            expressionContext.accept(expressionBuilder) ?: ExpressionBuilder.dummyExpression(
-                range = expressionContext.range
-            )
-        }
+        val body = buildExpression(expressionContext = ctx.expression())
         return ClassDefinition.MemberDefinition(
             range = ctx.range,
             isPublic = ctx.PUBLIC() != null,
@@ -121,4 +121,9 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
             members = ctx.classMemberDefinition().mapNotNull { buildClassMemberDefinition(ctx = it) }
         )
     }
+
+    private fun buildExpression(expressionContext: PLParser.ExpressionContext): Expression =
+        expressionContext.accept(expressionBuilder) ?: ExpressionBuilder.dummyExpression(
+            range = expressionContext.range
+        )
 }

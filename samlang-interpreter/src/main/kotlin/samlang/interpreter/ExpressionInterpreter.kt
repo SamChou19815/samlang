@@ -32,14 +32,15 @@ import samlang.ast.lang.Expression.Match
 import samlang.ast.lang.Expression.MethodAccess
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.Panic
+import samlang.ast.lang.Expression.StatementBlockExpression
 import samlang.ast.lang.Expression.This
 import samlang.ast.lang.Expression.TupleConstructor
 import samlang.ast.lang.Expression.Unary
-import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Pattern
+import samlang.ast.lang.Statement
 
 internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext, Value> {
 
@@ -246,33 +247,43 @@ internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext,
         context = context
     )
 
-    override fun visit(expression: Val, context: InterpretationContext): Value {
-        val assignedValue = eval(expression = expression.assignedExpression, context = context)
-        val nextExpression = expression.nextExpression
-        val ctx = when (val p = expression.pattern) {
-            is Pattern.TuplePattern -> {
-                val tupleValues = (assignedValue as Value.TupleValue).tupleContent
-                val additionalMappings = p.destructedNames.zip(tupleValues).mapNotNull { (nameWithRange, value) ->
-                    nameWithRange?.first?.let { it to value }
+    override fun visit(expression: StatementBlockExpression, context: InterpretationContext): Value {
+        val block = expression.block
+        var currentContext = context
+        for (statement in block.statements) {
+            when (statement) {
+                is Statement.Val -> {
+                    val assignedValue = eval(expression = statement.assignedExpression, context = currentContext)
+                    currentContext = when (val p = statement.pattern) {
+                        is Pattern.TuplePattern -> {
+                            val tupleValues = (assignedValue as Value.TupleValue).tupleContent
+                            val additionalMappings =
+                                p.destructedNames.zip(tupleValues).mapNotNull { (nameWithRange, value) ->
+                                    nameWithRange.first?.let { it to value }
+                                }
+                            currentContext.copy(localValues = context.localValues.plus(pairs = additionalMappings))
+                        }
+                        is Pattern.ObjectPattern -> {
+                            val objectValueMappings = (assignedValue as Value.ObjectValue).objectContent
+                            val additionalMappings = p.destructedNames.map { (original, renamed) ->
+                                val v = objectValueMappings[original] ?: blameTypeChecker()
+                                (renamed ?: original) to v
+                            }
+                            currentContext.copy(localValues = context.localValues.plus(pairs = additionalMappings))
+                        }
+                        is Pattern.VariablePattern -> currentContext.copy(
+                            localValues = currentContext.localValues.plus(pair = p.name to assignedValue)
+                        )
+                        is Pattern.WildCardPattern -> currentContext
+                    }
                 }
-                context.copy(localValues = context.localValues.plus(pairs = additionalMappings))
             }
-            is Pattern.ObjectPattern -> {
-                val objectValueMappings = (assignedValue as Value.ObjectValue).objectContent
-                val additionalMappings = p.destructedNames.map { (original, renamed) ->
-                    val v = objectValueMappings[original] ?: blameTypeChecker()
-                    (renamed ?: original) to v
-                }
-                context.copy(localValues = context.localValues.plus(pairs = additionalMappings))
-            }
-            is Pattern.VariablePattern -> context.copy(
-                localValues = context.localValues.plus(pair = p.name to assignedValue)
-            )
-            is Pattern.WildCardPattern -> context
         }
-        if (nextExpression == null) {
-            return Value.UnitValue
+        val finalExpression = block.expression
+        return if (finalExpression == null) {
+            Value.UnitValue
+        } else {
+            eval(expression = finalExpression, context = currentContext)
         }
-        return eval(expression = nextExpression, context = ctx)
     }
 }

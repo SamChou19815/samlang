@@ -13,10 +13,10 @@ import samlang.ast.lang.Expression.Match
 import samlang.ast.lang.Expression.MethodAccess
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.Panic
+import samlang.ast.lang.Expression.StatementBlockExpression
 import samlang.ast.lang.Expression.This
 import samlang.ast.lang.Expression.TupleConstructor
 import samlang.ast.lang.Expression.Unary
-import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.ExpressionVisitor
@@ -92,7 +92,7 @@ internal interface TypeCheckerVisitor :
         visit(expression = expression, ctx = context.first, expectedType = context.second)
 
     @JvmDefault
-    override fun visit(expression: Val, context: Pair<LocalTypingContext, Type>): Expression =
+    override fun visit(expression: StatementBlockExpression, context: Pair<LocalTypingContext, Type>): Expression =
         visit(expression = expression, ctx = context.first, expectedType = context.second)
 
     fun visit(expression: Literal, ctx: LocalTypingContext, expectedType: Type): Expression
@@ -111,5 +111,5 @@ internal interface TypeCheckerVisitor :
     fun visit(expression: IfElse, ctx: LocalTypingContext, expectedType: Type): Expression
     fun visit(expression: Match, ctx: LocalTypingContext, expectedType: Type): Expression
     fun visit(expression: Lambda, ctx: LocalTypingContext, expectedType: Type): Expression
-    fun visit(expression: Val, ctx: LocalTypingContext, expectedType: Type): Expression
+    fun visit(expression: StatementBlockExpression, ctx: LocalTypingContext, expectedType: Type): Expression
 }

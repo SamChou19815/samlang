@@ -10,7 +10,8 @@ class C(v: bool) {
 }
 
 class Main {
-    public function main(): unit =
+    public function main(): unit = {
         val _ = A.b();
         val _ = C.init();
+    }
 }

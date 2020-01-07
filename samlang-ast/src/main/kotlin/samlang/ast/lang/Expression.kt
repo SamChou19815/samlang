@@ -224,14 +224,11 @@ sealed class Expression(val precedence: Int) : Node {
             visitor.visit(expression = this, context = context)
     }
 
-    data class Val(
+    data class StatementBlockExpression(
         override val range: Range,
         override val type: Type,
-        val pattern: Pattern,
-        val typeAnnotation: Type,
-        val assignedExpression: Expression,
-        val nextExpression: Expression?
-    ) : Expression(precedence = 13) {
+        val block: StatementBlock
+    ) : Expression(precedence = 0) {
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
     }

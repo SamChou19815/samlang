@@ -1,0 +1,155 @@
+package samlang.checker
+
+import samlang.ast.common.Type
+import samlang.ast.common.TypeDefinitionType
+import samlang.ast.lang.Expression
+import samlang.ast.lang.Pattern
+import samlang.ast.lang.Statement
+import samlang.ast.lang.Statement.Val
+import samlang.ast.lang.StatementBlock
+import samlang.errors.IllegalOtherClassFieldAccess
+import samlang.errors.TupleSizeMismatchError
+import samlang.errors.UnexpectedTypeKindError
+import samlang.errors.UnresolvedNameError
+import samlang.util.Either
+
+internal class StatementTypeChecker(
+    private val accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
+    private val errorCollector: ErrorCollector,
+    private val expressionTypeChecker: ExpressionTypeCheckerWithGlobalContext
+) {
+    fun typeCheck(
+        statementBlock: StatementBlock,
+        expectedType: Type,
+        localContext: LocalTypingContext
+    ): StatementBlock {
+        var currentLocalContext = localContext
+        val checkedStatements = arrayListOf<Statement>()
+        for (statement in statementBlock.statements) {
+            val (checkedStatement, updatedContext) = typeCheck(
+                statement = statement,
+                localContext = currentLocalContext
+            )
+            checkedStatements += checkedStatement
+            currentLocalContext = updatedContext
+        }
+        val expression = statementBlock.expression
+        val checkedExpression = if (expression != null) {
+            expressionTypeChecker.typeCheck(
+                expression = expression,
+                localTypingContext = currentLocalContext,
+                expectedType = expectedType
+            )
+        } else {
+            // Force the type checker to resolve expected type to unit.
+            expressionTypeChecker.typeCheck(
+                expression = Expression.Literal.ofUnit(range = statementBlock.range),
+                localTypingContext = currentLocalContext,
+                expectedType = expectedType
+            )
+            null
+        }
+        return statementBlock.copy(statements = checkedStatements, expression = checkedExpression)
+    }
+
+    private fun typeCheck(statement: Statement, localContext: LocalTypingContext): Pair<Statement, LocalTypingContext> =
+        when (statement) {
+            is Val -> typeCheckVal(statement = statement, localContext = localContext)
+        }
+
+    private fun typeCheckVal(statement: Val, localContext: LocalTypingContext): Pair<Val, LocalTypingContext> {
+        val (_, pattern, typeAnnotation, assignedExpression) = statement
+        val checkedAssignedExpression = expressionTypeChecker.typeCheck(
+            expression = assignedExpression,
+            localTypingContext = localContext,
+            expectedType = typeAnnotation
+        )
+        val betterStatement = statement.copy(assignedExpression = checkedAssignedExpression)
+        val checkedAssignedExprType = checkedAssignedExpression.type
+        val newLocalContext = when (pattern) {
+            is Pattern.TuplePattern -> {
+                val tupleType = checkedAssignedExprType as? Type.TupleType ?: kotlin.run {
+                    errorCollector.add(
+                        compileTimeError = UnexpectedTypeKindError(
+                            expectedTypeKind = "tuple",
+                            actualType = checkedAssignedExprType,
+                            range = assignedExpression.range
+                        )
+                    )
+                    return betterStatement to localContext
+                }
+                val expectedSize = tupleType.mappings.size
+                val actualSize = pattern.destructedNames.size
+                if (expectedSize != actualSize) {
+                    errorCollector.add(
+                        compileTimeError = TupleSizeMismatchError(
+                            expectedSize = expectedSize,
+                            actualSize = actualSize,
+                            range = assignedExpression.range
+                        )
+                    )
+                }
+                pattern.destructedNames.zip(tupleType.mappings).asSequence().mapNotNull { (nameWithRange, t) ->
+                    val (name, nameRange) = nameWithRange
+                    if (name == null) null else Triple(first = name, second = nameRange, third = t)
+                }.fold(initial = localContext) { context, (name, nameRange, elementType) ->
+                    context.addLocalValueType(name = name, type = elementType) {
+                        errorCollector.reportCollisionError(name = name, range = nameRange)
+                    }
+                }
+            }
+            is Pattern.ObjectPattern -> {
+                val identifierType = checkedAssignedExprType as? Type.IdentifierType ?: kotlin.run {
+                    errorCollector.add(
+                        compileTimeError = UnexpectedTypeKindError(
+                            expectedTypeKind = "identifier",
+                            actualType = checkedAssignedExprType,
+                            range = assignedExpression.range
+                        )
+                    )
+                    return betterStatement to localContext
+                }
+                if (identifierType.identifier != accessibleGlobalTypingContext.currentClass) {
+                    errorCollector.add(
+                        compileTimeError = IllegalOtherClassFieldAccess(
+                            className = identifierType.identifier,
+                            range = pattern.range
+                        )
+                    )
+                    return betterStatement to localContext
+                }
+                val fieldMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
+                    identifierType = identifierType,
+                    context = accessibleGlobalTypingContext,
+                    typeDefinitionType = TypeDefinitionType.OBJECT,
+                    errorRange = assignedExpression.range
+                )
+                val fieldMappings = when (fieldMappingsOrError) {
+                    is Either.Left -> fieldMappingsOrError.v
+                    is Either.Right -> {
+                        errorCollector.add(compileTimeError = fieldMappingsOrError.v)
+                        return betterStatement to localContext
+                    }
+                }
+                pattern.destructedNames.fold(initial = localContext) { context, (originalName, renamedName) ->
+                    val fieldType = fieldMappings[originalName] ?: kotlin.run {
+                        errorCollector.add(UnresolvedNameError(unresolvedName = originalName, range = pattern.range))
+                        return betterStatement to localContext
+                    }
+                    val nameToBeUsed = renamedName ?: originalName
+                    context.addLocalValueType(name = nameToBeUsed, type = fieldType) {
+                        errorCollector.reportCollisionError(name = nameToBeUsed, range = pattern.range)
+                    }
+                }
+            }
+            is Pattern.VariablePattern -> {
+                val (p, n) = pattern
+                localContext.addLocalValueType(name = n, type = checkedAssignedExprType) {
+                    errorCollector.reportCollisionError(name = n, range = p)
+                }
+            }
+            is Pattern.WildCardPattern -> localContext
+        }
+        return betterStatement to newLocalContext
+    }
+}

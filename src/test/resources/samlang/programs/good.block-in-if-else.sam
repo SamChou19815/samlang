@@ -1,0 +1,11 @@
+// ERROR_COUNT: 0
+
+class Main {
+  function main(): unit =
+    if (true) then {
+      val _ = 3;
+      unit
+    } else {
+      unit
+    }
+}

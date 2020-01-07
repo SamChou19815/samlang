@@ -24,6 +24,7 @@ AS : 'as';
 // Visibility modifiers
 PRIVATE : 'private';
 PROTECTED : 'protected';
+INTERNAL : 'internal';
 PUBLIC : 'public';
 
 // Control Flow
@@ -32,6 +33,7 @@ THEN : 'then';
 ELSE : 'else';
 MATCH : 'match';
 PANIC : 'panic';
+RETURN : 'return';
 
 // Type Keywords
 INT : 'int';
@@ -73,6 +75,7 @@ RBRACKET : ']';
 
 // SEPARATORS
 
+QUESTION : '?';
 SEMICOLON : ';';
 COLON : ':';
 COMMA : ',';

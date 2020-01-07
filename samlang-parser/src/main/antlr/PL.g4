@@ -47,6 +47,12 @@ typeAnnotation : COLON typeExpr;
 
 patternToExpr : BAR (UpperId varOrWildCard) ARROW expression;
 
+statementBlock : LBRACE statement* expression? RBRACE;
+
+statement
+    : VAL pattern typeAnnotation? ASSIGN expression SEMICOLON # ValStatement
+    ;
+
 expression
     : LPAREN expression RPAREN # NestedExpr
     | literal # LiteralExpr
@@ -69,7 +75,7 @@ expression
     | IF expression THEN expression ELSE expression # IfElseExpr
     | MATCH LPAREN expression RPAREN LBRACE patternToExpr+ RBRACE # MatchExpr
     | LPAREN optionallyAnnotatedParameter (COMMA optionallyAnnotatedParameter)* COMMA? RPAREN ARROW expression # FunExpr
-    | VAL pattern typeAnnotation? ASSIGN expression SEMICOLON expression? # ValExpr
+    | statementBlock # StatementBlockExpr
     ;
 
 objectFieldDeclarations : objectFieldDeclaration (COMMA objectFieldDeclaration)* COMMA?;

@@ -17,7 +17,7 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution, privat
         val partiallyResolvedExpectedType = resolution.resolveType(unresolvedType = expectedType)
         return try {
             partiallyResolvedActualType.accept(
-                visitor = Visitor(errorRange = errorRange),
+                visitor = Visitor(),
                 context = partiallyResolvedExpectedType
             )
         } catch (_: ConflictError) {
@@ -38,8 +38,7 @@ internal class ConstraintAwareTypeChecker(val resolution: TypeResolution, privat
      * typeExpr -> actual type, not allowed to have free type
      * context -> expected type, if it's undecided type, we need to resolve it.
      */
-    private inner class Visitor(private val errorRange: Range) :
-        TypeVisitor<Type, Type> {
+    private inner class Visitor : TypeVisitor<Type, Type> {
 
         private fun meet(actualType: Type, expectedType: Type): Type =
             actualType.accept(visitor = this@Visitor, context = expectedType)

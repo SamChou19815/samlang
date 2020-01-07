@@ -15,15 +15,17 @@ import samlang.ast.lang.Expression.Match
 import samlang.ast.lang.Expression.MethodAccess
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.Panic
+import samlang.ast.lang.Expression.StatementBlockExpression
 import samlang.ast.lang.Expression.This
 import samlang.ast.lang.Expression.TupleConstructor
 import samlang.ast.lang.Expression.Unary
-import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Module
 import samlang.ast.lang.Pattern
+import samlang.ast.lang.Statement
+import samlang.ast.lang.StatementBlock
 
 class LocationLookupBuilder(val locationLookup: LocationLookup<Expression>) {
     fun rebuild(moduleReference: ModuleReference, module: Module) {
@@ -143,10 +145,23 @@ class LocationLookupBuilder(val locationLookup: LocationLookup<Expression>) {
             build(expression = expression)
         }
 
-        override fun visit(expression: Val, context: Unit) {
-            val assignedExpression = expression.assignedExpression
+        override fun visit(expression: StatementBlockExpression, context: Unit) {
+            buildBlock(block = expression.block)
+        }
+
+        private fun buildBlock(block: StatementBlock) {
+            block.statements.forEach { statement ->
+                when (statement) {
+                    is Statement.Val -> buildVal(statement = statement)
+                }
+            }
+            block.expression?.buildRecursively()
+        }
+
+        private fun buildVal(statement: Statement.Val) {
+            val assignedExpression = statement.assignedExpression
             val assignedExpressionType = assignedExpression.type
-            when (val pattern = expression.pattern) {
+            when (val pattern = statement.pattern) {
                 is Pattern.TuplePattern -> {
                     val assignedTupleTypeMappings = (assignedExpressionType as Type.TupleType).mappings
                     pattern.destructedNames.forEachIndexed { index, (name, range) ->
@@ -163,8 +178,6 @@ class LocationLookupBuilder(val locationLookup: LocationLookup<Expression>) {
                 )
             }
             assignedExpression.buildRecursively()
-            expression.nextExpression?.buildRecursively()
-            build(expression = expression)
         }
 
         private fun Expression.buildRecursively() {

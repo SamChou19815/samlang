@@ -7,11 +7,13 @@ class Option<T>(Some(T), None(unit)) {
 
 class Main {
   function main(): Option<string> = Option.none().toSome("hi")
-  function main2(): Option<string> =
+  function main2(): Option<string> = {
     val a = Option.none();
     a.toSome("hi")
+  }
 
-  function main3(): Option<string> =
+  function main3(): Option<string> = {
     val a: Option<string> = Option.none();
     a.toSome("hi")
+  }
 }

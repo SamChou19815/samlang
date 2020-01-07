@@ -14,6 +14,8 @@ import samlang.ast.ir.IrStatement
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Unary
 import samlang.ast.lang.Pattern
+import samlang.ast.lang.Statement
+import samlang.ast.lang.StatementBlock
 import samlang.ast.ts.TsPattern
 
 class ExpressionLoweringTest : StringSpec() {
@@ -178,21 +180,37 @@ class ExpressionLoweringTest : StringSpec() {
                     range = dummyRange,
                     type = unit,
                     boolExpression = THIS,
-                    e1 = Expression.Val(
+                    e1 = Expression.StatementBlockExpression(
                         range = dummyRange,
                         type = unit,
-                        pattern = Pattern.WildCardPattern(range = dummyRange),
-                        typeAnnotation = unit,
-                        assignedExpression = THIS,
-                        nextExpression = null
+                        block = StatementBlock(
+                            range = dummyRange,
+                            statements = listOf(
+                                Statement.Val(
+                                    range = dummyRange,
+                                    pattern = Pattern.WildCardPattern(range = dummyRange),
+                                    typeAnnotation = unit,
+                                    assignedExpression = THIS
+                                )
+                            ),
+                            expression = null
+                        )
                     ),
-                    e2 = Expression.Val(
+                    e2 = Expression.StatementBlockExpression(
                         range = dummyRange,
                         type = unit,
-                        pattern = Pattern.WildCardPattern(range = dummyRange),
-                        typeAnnotation = unit,
-                        assignedExpression = THIS,
-                        nextExpression = null
+                        block = StatementBlock(
+                            range = dummyRange,
+                            statements = listOf(
+                                Statement.Val(
+                                    range = dummyRange,
+                                    pattern = Pattern.WildCardPattern(range = dummyRange),
+                                    typeAnnotation = unit,
+                                    assignedExpression = THIS
+                                )
+                            ),
+                            expression = null
+                        )
                     )
                 ),
                 expectedStatements = listOf(
@@ -220,13 +238,21 @@ class ExpressionLoweringTest : StringSpec() {
                     range = dummyRange,
                     type = unit,
                     boolExpression = THIS,
-                    e1 = Expression.Val(
+                    e1 = Expression.StatementBlockExpression(
                         range = dummyRange,
                         type = unit,
-                        pattern = Pattern.WildCardPattern(range = dummyRange),
-                        typeAnnotation = unit,
-                        assignedExpression = THIS,
-                        nextExpression = null
+                        block = StatementBlock(
+                            range = dummyRange,
+                            statements = listOf(
+                                Statement.Val(
+                                    range = dummyRange,
+                                    pattern = Pattern.WildCardPattern(range = dummyRange),
+                                    typeAnnotation = unit,
+                                    assignedExpression = THIS
+                                )
+                            ),
+                            expression = null
+                        )
                     ),
                     e2 = THIS
                 ),
@@ -263,13 +289,21 @@ class ExpressionLoweringTest : StringSpec() {
                     type = unit,
                     boolExpression = THIS,
                     e1 = Expression.Panic(range = dummyRange, type = unit, expression = THIS),
-                    e2 = Expression.Val(
+                    e2 = Expression.StatementBlockExpression(
                         range = dummyRange,
                         type = unit,
-                        pattern = Pattern.WildCardPattern(range = dummyRange),
-                        typeAnnotation = unit,
-                        assignedExpression = THIS,
-                        nextExpression = null
+                        block = StatementBlock(
+                            range = dummyRange,
+                            statements = listOf(
+                                Statement.Val(
+                                    range = dummyRange,
+                                    pattern = Pattern.WildCardPattern(range = dummyRange),
+                                    typeAnnotation = unit,
+                                    assignedExpression = THIS
+                                )
+                            ),
+                            expression = null
+                        )
                     )
                 ),
                 expectedStatements = listOf(

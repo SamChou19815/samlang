@@ -33,22 +33,19 @@ import samlang.ast.lang.Expression.MethodAccess
 import samlang.ast.lang.Expression.ObjectConstructor
 import samlang.ast.lang.Expression.ObjectConstructor.FieldConstructor
 import samlang.ast.lang.Expression.Panic
+import samlang.ast.lang.Expression.StatementBlockExpression
 import samlang.ast.lang.Expression.This
 import samlang.ast.lang.Expression.TupleConstructor
 import samlang.ast.lang.Expression.Unary
-import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
-import samlang.ast.lang.Pattern
 import samlang.errors.CompileTimeError
 import samlang.errors.DuplicateFieldDeclarationError
 import samlang.errors.ExtraFieldInObjectError
-import samlang.errors.IllegalOtherClassFieldAccess
 import samlang.errors.IllegalOtherClassMatch
 import samlang.errors.IllegalThisError
 import samlang.errors.InconsistentFieldsInObjectError
 import samlang.errors.InsufficientTypeInferenceContextError
-import samlang.errors.TupleSizeMismatchError
 import samlang.errors.UnexpectedTypeKindError
 import samlang.errors.UnresolvedNameError
 import samlang.errors.UnsupportedClassTypeDefinitionError
@@ -59,14 +56,33 @@ internal fun Expression.typeCheck(
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
     localTypingContext: LocalTypingContext,
     expectedType: Type
+): Expression = typeCheckExpression(
+    expression = this,
+    errorCollector = errorCollector,
+    accessibleGlobalTypingContext = accessibleGlobalTypingContext,
+    resolution = TypeResolution(),
+    localTypingContext = localTypingContext,
+    expectedType = expectedType
+)
+
+internal fun typeCheckExpression(
+    expression: Expression,
+    errorCollector: ErrorCollector,
+    accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
+    resolution: TypeResolution,
+    localTypingContext: LocalTypingContext,
+    expectedType: Type
 ): Expression {
-    val resolution = TypeResolution()
     val visitor = ExpressionTypeCheckerVisitor(
         accessibleGlobalTypingContext = accessibleGlobalTypingContext,
         resolution = resolution,
         errorCollector = errorCollector
     )
-    val checkedExpression = this.toChecked(visitor = visitor, context = localTypingContext, expectedType = expectedType)
+    val checkedExpression = expression.toChecked(
+        visitor = visitor,
+        context = localTypingContext,
+        expectedType = expectedType
+    )
     if (errorCollector.collectedErrors.isNotEmpty()) {
         return checkedExpression
     }
@@ -83,13 +99,26 @@ private class ExpressionTypeCheckerVisitor(
     private val accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
     private val resolution: TypeResolution,
     val errorCollector: ErrorCollector
-) : TypeCheckerVisitor {
+) : TypeCheckerVisitor, ExpressionTypeCheckerWithGlobalContext {
 
     private val constraintAwareTypeChecker: ConstraintAwareTypeChecker =
         ConstraintAwareTypeChecker(resolution = resolution, errorCollector = errorCollector)
+    private val statementTypeChecker: StatementTypeChecker =
+        StatementTypeChecker(
+            accessibleGlobalTypingContext =
+            accessibleGlobalTypingContext,
+            errorCollector = errorCollector,
+            expressionTypeChecker = this
+        )
 
     private fun Expression.toChecked(ctx: LocalTypingContext, expectedType: Type = this.type): Expression =
         this.toChecked(visitor = this@ExpressionTypeCheckerVisitor, context = ctx, expectedType = expectedType)
+
+    override fun typeCheck(
+        expression: Expression,
+        localTypingContext: LocalTypingContext,
+        expectedType: Type
+    ): Expression = expression.toChecked(ctx = localTypingContext, expectedType = expectedType)
 
     private fun Expression.errorWith(expectedType: Type, error: CompileTimeError): Expression {
         errorCollector.add(compileTimeError = error)
@@ -612,108 +641,15 @@ private class ExpressionTypeCheckerVisitor(
         )
     }
 
-    override fun visit(expression: Val, ctx: LocalTypingContext, expectedType: Type): Expression {
-        val (range, _, pattern, typeAnnotation, assignedExpr, nextExpr) = expression
-        val checkedAssignedExpr = assignedExpr.toChecked(ctx = ctx, expectedType = typeAnnotation)
-        val checkedAssignedExprType = checkedAssignedExpr.type
-        val newContext = when (pattern) {
-            is Pattern.TuplePattern -> {
-                val tupleType = checkedAssignedExprType as? TupleType ?: return expression.errorWith(
-                    expectedType = expectedType,
-                    error = UnexpectedTypeKindError(
-                        expectedTypeKind = "tuple",
-                        actualType = checkedAssignedExprType,
-                        range = assignedExpr.range
-                    )
-                )
-                val expectedSize = tupleType.mappings.size
-                val actualSize = pattern.destructedNames.size
-                if (expectedSize != actualSize) {
-                    errorCollector.add(
-                        compileTimeError = TupleSizeMismatchError(
-                            expectedSize = expectedSize,
-                            actualSize = actualSize,
-                            range = assignedExpr.range
-                        )
-                    )
-                }
-                pattern.destructedNames.zip(tupleType.mappings).asSequence().mapNotNull { (nameWithRange, t) ->
-                    val (name, nameRange) = nameWithRange
-                    if (name == null) null else Triple(first = name, second = nameRange, third = t)
-                }.fold(initial = ctx) { context, (name, nameRange, elementType) ->
-                    context.addLocalValueType(name = name, type = elementType) {
-                        errorCollector.reportCollisionError(name = name, range = nameRange)
-                    }
-                }
-            }
-            is Pattern.ObjectPattern -> {
-                val identifierType = checkedAssignedExprType as? IdentifierType
-                    ?: return expression.errorWith(
-                        expectedType = expectedType,
-                        error = UnexpectedTypeKindError(
-                            expectedTypeKind = "identifier",
-                            actualType = checkedAssignedExprType,
-                            range = assignedExpr.range
-                        )
-                    )
-                if (identifierType.identifier != accessibleGlobalTypingContext.currentClass) {
-                    return expression.errorWith(
-                        expectedType = expectedType,
-                        error = IllegalOtherClassFieldAccess(
-                            className = identifierType.identifier,
-                            range = pattern.range
-                        )
-                    )
-                }
-                val fieldMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
-                    identifierType = identifierType,
-                    context = accessibleGlobalTypingContext,
-                    typeDefinitionType = OBJECT,
-                    errorRange = assignedExpr.range
-                )
-                val fieldMappings = when (fieldMappingsOrError) {
-                    is Either.Left -> fieldMappingsOrError.v
-                    is Either.Right -> return expression.errorWith(
-                        expectedType = expectedType, error = fieldMappingsOrError.v
-                    )
-                }
-                pattern.destructedNames.fold(initial = ctx) { context, (originalName, renamedName) ->
-                    val fieldType = fieldMappings[originalName]
-                        ?: return expression.errorWith(
-                            expectedType = expectedType,
-                            error = UnresolvedNameError(unresolvedName = originalName, range = pattern.range)
-                        )
-                    val nameToBeUsed = renamedName ?: originalName
-                    context.addLocalValueType(name = nameToBeUsed, type = fieldType) {
-                        errorCollector.reportCollisionError(name = nameToBeUsed, range = pattern.range)
-                    }
-                }
-            }
-            is Pattern.VariablePattern -> {
-                val (p, n) = pattern
-                ctx.addLocalValueType(name = n, type = checkedAssignedExprType) {
-                    errorCollector.reportCollisionError(name = n, range = p)
-                }
-            }
-            is Pattern.WildCardPattern -> ctx
-        }
-        val checkedNextExpression = if (nextExpr == null) {
-            constraintAwareTypeChecker.checkAndInfer(
-                expectedType = expectedType,
-                actualType = Type.unit,
-                errorRange = range
-            )
-            null
-        } else {
-            nextExpr.toChecked(ctx = newContext, expectedType = expectedType)
-        }
-        return Val(
-            range = range,
-            type = checkedNextExpression?.type ?: Type.unit,
-            pattern = pattern,
-            typeAnnotation = checkedAssignedExprType,
-            assignedExpression = checkedAssignedExpr,
-            nextExpression = checkedNextExpression
+    override fun visit(expression: StatementBlockExpression, ctx: LocalTypingContext, expectedType: Type): Expression {
+        val checkedStatementBlock = statementTypeChecker.typeCheck(
+            statementBlock = expression.block,
+            localContext = ctx,
+            expectedType = expectedType
+        )
+        return expression.copy(
+            type = checkedStatementBlock.expression?.type ?: Type.unit,
+            block = checkedStatementBlock
         )
     }
 }

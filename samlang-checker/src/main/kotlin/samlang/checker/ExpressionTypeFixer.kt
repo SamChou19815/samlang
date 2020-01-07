@@ -33,10 +33,10 @@ import samlang.ast.lang.Expression.Panic
 import samlang.ast.lang.Expression.This
 import samlang.ast.lang.Expression.TupleConstructor
 import samlang.ast.lang.Expression.Unary
-import samlang.ast.lang.Expression.Val
 import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.ExpressionVisitor
+import samlang.ast.lang.Statement
 
 internal fun fixExpressionType(
     expression: Expression,
@@ -227,18 +227,26 @@ private class TypeFixerVisitor(private val resolution: ReadOnlyTypeResolution) :
         )
     }
 
-    override fun visit(expression: Val, context: Type): Expression {
-        if (expression.nextExpression == null && context != Type.unit) {
-            error(message = "expression.nextExpression == null && context == $context")
+    override fun visit(expression: Expression.StatementBlockExpression, context: Type): Expression {
+        val block = expression.block
+        if (block.expression == null && context != Type.unit) {
+            error(message = "block.expression == null && context == $context")
         }
-        val fixedAssignedExpression = expression.assignedExpression.run {
-            tryFixType(expectedType = type.fixSelf(expectedType = null))
+        val fixedStatements = block.statements.map { statement ->
+            when (statement) {
+                is Statement.Val -> {
+                    val fixedAssignedExpression = statement.assignedExpression.run {
+                        tryFixType(expectedType = type.fixSelf(expectedType = null))
+                    }
+                    statement.copy(
+                        typeAnnotation = fixedAssignedExpression.type,
+                        assignedExpression = fixedAssignedExpression
+                    )
+                }
+            }
         }
-        return expression.copy(
-            type = expression.getFixedSelfType(expectedType = context),
-            typeAnnotation = fixedAssignedExpression.type,
-            assignedExpression = fixedAssignedExpression,
-            nextExpression = expression.nextExpression?.tryFixType(expectedType = context)
-        )
+        val fixedExpression = block.expression?.tryFixType(expectedType = context)
+        val fixedBlock = block.copy(statements = fixedStatements, expression = fixedExpression)
+        return expression.copy(type = context, block = fixedBlock)
     }
 }

@@ -29,6 +29,7 @@ import samlang.ast.ir.IrStatement.VariableAssignment
 import samlang.ast.lang.Expression
 import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Pattern
+import samlang.ast.lang.Statement
 import samlang.ast.ts.TsPattern
 
 internal fun lowerExpression(expression: Expression): LoweringResult =
@@ -200,7 +201,8 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             ).asLoweringResult(statements = loweredStatements)
         }
         if ((e1LoweringResult.expression == UNIT || e1LoweringResult.expression == Never) &&
-            (e2LoweringResult.expression == UNIT || e2LoweringResult.expression == Never)) {
+            (e2LoweringResult.expression == UNIT || e2LoweringResult.expression == Never)
+        ) {
             loweredStatements.add(
                 element = IfElse(
                     booleanExpression = boolExpression,
@@ -311,29 +313,34 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         }
     }
 
-    override fun visit(expression: Expression.Val, context: Unit): LoweringResult {
+    override fun visit(expression: Expression.StatementBlockExpression, context: Unit): LoweringResult {
+        val block = expression.block
         val loweredStatements = arrayListOf<IrStatement>()
-        val loweredAssignedExpression =
-            expression.assignedExpression.getLoweredAndAddStatements(statements = loweredStatements)
-        val tsPattern = when (val pattern = expression.pattern) {
-            is Pattern.TuplePattern -> TsPattern.TuplePattern(
-                destructedNames = pattern.destructedNames.map { it?.first }
-            )
-            is Pattern.ObjectPattern -> TsPattern.ObjectPattern(
-                destructedNames = pattern.destructedNames.map { (name, renamed, _) -> name to renamed }
-            )
-            is Pattern.VariablePattern -> TsPattern.VariablePattern(name = pattern.name)
-            is Pattern.WildCardPattern -> TsPattern.WildCardPattern
+        for (statement in block.statements) {
+            when (statement) {
+                is Statement.Val -> {
+                    val loweredAssignedExpression =
+                        statement.assignedExpression.getLoweredAndAddStatements(statements = loweredStatements)
+                    val loweredPattern = when (val pattern = statement.pattern) {
+                        is Pattern.TuplePattern -> TsPattern.TuplePattern(
+                            destructedNames = pattern.destructedNames.map { it.first }
+                        )
+                        is Pattern.ObjectPattern -> TsPattern.ObjectPattern(
+                            destructedNames = pattern.destructedNames.map { (name, renamed, _) -> name to renamed }
+                        )
+                        is Pattern.VariablePattern -> TsPattern.VariablePattern(name = pattern.name)
+                        is Pattern.WildCardPattern -> TsPattern.WildCardPattern
+                    }
+                    loweredStatements += ConstantDefinition(
+                        pattern = loweredPattern,
+                        typeAnnotation = statement.typeAnnotation,
+                        assignedExpression = loweredAssignedExpression
+                    )
+                }
+            }
         }
-        loweredStatements.add(
-            element = ConstantDefinition(
-                pattern = tsPattern,
-                typeAnnotation = expression.typeAnnotation,
-                assignedExpression = loweredAssignedExpression
-            )
-        )
-        val nextExpression = expression.nextExpression ?: return loweredStatements.asLoweringResult()
-        return nextExpression
+        val finalExpression = block.expression ?: return loweredStatements.asLoweringResult()
+        return finalExpression
             .getLoweredAndAddStatements(statements = loweredStatements)
             .asLoweringResult(statements = loweredStatements)
     }

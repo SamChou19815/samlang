@@ -13,21 +13,23 @@ class Option<T>(None(unit), Some(T)) {
 }
 
 class Obj(d: int, e: int) {
-    function valExample(): int =
+    function valExample(): int = {
         val a: int = 1;
         val b = 2;
         val [_, c] = ["dd", 3];
         val { e as d } = { d: 5, e: 4 };
         val _ = 42;
         a + b * c / d
+    }
 }
 
 class Main {
     function identity(a: int): int = a
 
-    function random(): int =
+    function random(): int = {
         val a = 42; // very random
         a
+    }
 
     function oof(): int = 14
 
@@ -38,17 +40,18 @@ class Main {
             a / b
         )
 
-    function nestedVal(): int =
-        val a = (
+    function nestedVal(): int = {
+        val a = {
             val b = 4;
-            val c = (
+            val c = {
                 val d = b;
                 b
-            );
+            };
             b
-        );
+        };
         val [e, f, _] = [1, "bool", true];
         a + 1
+    }
 
     function main(): int = Foo.bar() * Main.oof()
 }

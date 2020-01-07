@@ -24,5 +24,5 @@ interface ExpressionVisitor<in C, out T> {
     fun visit(expression: Expression.IfElse, context: C): T
     fun visit(expression: Expression.Match, context: C): T
     fun visit(expression: Expression.Lambda, context: C): T
-    fun visit(expression: Expression.Val, context: C): T
+    fun visit(expression: Expression.StatementBlockExpression, context: C): T
 }

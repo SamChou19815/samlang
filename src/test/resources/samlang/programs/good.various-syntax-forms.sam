@@ -1,12 +1,13 @@
 // ERROR_COUNT: 0
 
 class Clazz(t: int) {
-   public function of(): Clazz = { t: 42 }
+    public function of(): Clazz = { t: 42 }
 
-   public method thisTest(): int =
-     val i: int = this.t;
-     val { t as j } = this;
-     i + j
+    public method thisTest(): int = {
+      val i: int = this.t;
+      val { t as j } = this;
+      i + j
+    }
 }
 
 class Option<T>(Some(T), None(unit)) {
@@ -31,7 +32,7 @@ class List<T>(Nil(unit), Cons([T * List<T>])) {
 }
 
 class Main {
-  function literalsAndSimpleExpressions(): unit =
+  function literalsAndSimpleExpressions(): unit = {
     val _ = 42;
     val _ = -65536;
     val _ = true;
@@ -40,18 +41,20 @@ class Main {
     val _ = !false;
     val _ = "aaa";
     val _ = unit;
+  }
 
-  function variables(a: int, b: string): unit =
+  function variables(a: int, b: string): unit = {
     val c = 3 + a;
     val d = b == b;
     val e = c % c;
+  }
 
   function methodAndFunctionReference(): int =
     Clazz.of().thisTest()
 
   function panicTest(reason: string): Clazz = panic(reason)
 
-  function functionsTest(): unit =
+  function functionsTest(): unit = {
     val _ = Main.literalsAndSimpleExpressions();
     val _ = Main.variables(3, "hi");
     val _ = Main.methodAndFunctionReference();
@@ -59,16 +62,19 @@ class Main {
     val _ = Main.binaryExpressions();
     val _ = Main.lambdaTest(3);
     Main.functionsTest()
+  }
 
-  function binaryExpressions(): unit =
+  function binaryExpressions(): unit = {
     val a: int = 1 * 2 + 3 / 4 % 5 - 6;
     val b: bool = a < a && 1 > 3 || 2 <= 4 && 5 >= 6;
     val c: bool = a == 2;
     val d: bool = Main.panicTest("ha") != Clazz.of();
     val e: bool = List.of(3) == List.of(a * 3);
+  }
 
-  function lambdaTest(a: int): string =
+  function lambdaTest(a: int): string = {
     val b: Option<string> = Option.none().toSome(3).map(Main.lambdaTest);
     val c: Option<string> = Option.none().toSome(3).map((x) -> "empty");
     "hello world"
+  }
 }

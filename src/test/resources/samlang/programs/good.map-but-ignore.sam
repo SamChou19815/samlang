@@ -1,7 +1,7 @@
 // ERROR_COUNT: 0
 
 class Option<T>(None(unit), Some(T)) {
-    public method <R> mapButIgnore(f: (T) -> R): unit =
+    public method <R> mapButIgnore(f: (T) -> R): unit = {
         val _ = match (this) {
             // Resolved to Option<UNDECIDED>
             | None _ -> None(unit)
@@ -11,4 +11,5 @@ class Option<T>(None(unit), Some(T)) {
             // which is bad!
             | Some d -> Some(f(d))
         };
+    }
 }

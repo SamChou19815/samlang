@@ -8,12 +8,15 @@ import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.Type.TupleType
 import samlang.ast.common.UnaryOperator
 import samlang.ast.lang.Expression
-import samlang.ast.lang.Pattern
+import samlang.ast.lang.StatementBlock
 import samlang.errors.SyntaxError
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 
-internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Expression?>() {
+internal class ExpressionBuilder(
+    private val syntaxErrorListener: SyntaxErrorListener,
+    private val statementBlockBuilder: (PLParser.StatementBlockContext) -> StatementBlock?
+) : PLBaseVisitor<Expression?>() {
     private fun PLParser.ExpressionContext.toExpression(): Expression {
         val expression = this.accept(this@ExpressionBuilder)
         if (expression == null) {
@@ -271,20 +274,9 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
         )
     }
 
-    override fun visitValExpr(ctx: PLParser.ValExprContext): Expression? {
-        val typeAnnotation = ctx.typeAnnotation()?.typeExpr()?.accept(TypeBuilder) ?: Type.undecided()
-        val pattern = ctx.pattern().let { patternContext ->
-            patternContext.accept(PatternBuilder) ?: Pattern.WildCardPattern(range = patternContext.range)
-        }
-        val assignedExpression = ctx.expression(0)?.toExpression() ?: return null
-        return Expression.Val(
-            range = ctx.range,
-            type = Type.undecided(),
-            pattern = pattern,
-            typeAnnotation = typeAnnotation,
-            assignedExpression = assignedExpression,
-            nextExpression = ctx.expression(1)?.toExpression()
-        )
+    override fun visitStatementBlockExpr(ctx: PLParser.StatementBlockExprContext): Expression? {
+        val statementBlock = statementBlockBuilder(ctx.statementBlock()) ?: return null
+        return Expression.StatementBlockExpression(range = ctx.range, type = Type.undecided(), block = statementBlock)
     }
 
     companion object {

@@ -24,7 +24,8 @@ class ConflictingMethodsAndFunctions(a: int) {
 }
 
 class Main {
-    function main(): unit =
+    function main(): unit = {
         val a = 42;
         val a = 42;
+    }
 }

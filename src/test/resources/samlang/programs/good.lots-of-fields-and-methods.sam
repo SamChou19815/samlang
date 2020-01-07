@@ -8,8 +8,9 @@ class SamObject<T>(sam: T, good: bool, linesOfCode: int) {
 }
 
 class Main {
-  function main(): unit =
+  function main(): unit = {
     val sam = SamObject.create("sam zhou");
     val s = sam.getSam();
     val linesOfCode = if (sam.isGood()) then sam.getLinesOfCode() else 0;
+  }
 }
