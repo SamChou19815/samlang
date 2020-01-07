@@ -56,9 +56,11 @@ private fun compileTsFunction(
 ): TsFunction {
     val bodyLoweringResult = lowerExpression(expression = classMember.body)
     val body = if (bodyLoweringResult.expression == UNIT || bodyLoweringResult.expression == Never) {
-        bodyLoweringResult.statements
+        bodyLoweringResult.unwrappedStatements
     } else {
-        bodyLoweringResult.statements.plus(element = HighIrStatement.Return(expression = bodyLoweringResult.expression))
+        bodyLoweringResult.unwrappedStatements.plus(
+            element = HighIrStatement.Return(expression = bodyLoweringResult.expression)
+        )
     }
     val classTypeParameters = classDefinition.typeDefinition.typeParameters
     val thisType = Type.IdentifierType(

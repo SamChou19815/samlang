@@ -32,8 +32,9 @@ private fun compileJavaInnerStaticClass(classDefinition: ClassDefinition): JavaS
 
 internal fun compileJavaMethod(classMember: ClassDefinition.MemberDefinition): JavaMethod {
     val bodyLoweringResult = lowerExpression(expression = classMember.body)
+    val statements = bodyLoweringResult.unwrappedStatements
     val body = if (bodyLoweringResult.expression == UNIT || bodyLoweringResult.expression == Never) {
-        bodyLoweringResult.statements
+        statements
     } else {
         val additionStatementForFinalExpression =
             if (classMember.body.type == Type.unit &&
@@ -46,7 +47,7 @@ internal fun compileJavaMethod(classMember: ClassDefinition.MemberDefinition): J
             } else {
                 HighIrStatement.Return(expression = bodyLoweringResult.expression)
             }
-        bodyLoweringResult.statements.plus(element = additionStatementForFinalExpression)
+        statements.plus(element = additionStatementForFinalExpression)
     }
     return JavaMethod(
         isPublic = classMember.isPublic,

@@ -123,7 +123,11 @@ class ExpressionLoweringTest : StringSpec() {
                 expression = Expression.MethodAccess(
                     range = dummyRange, type = unit, expression = THIS, methodName = "foo"
                 ),
-                expectedExpression = HighIrExpression.MethodAccess(type = unit, expression = IR_THIS, methodName = "foo")
+                expectedExpression = HighIrExpression.MethodAccess(
+                    type = unit,
+                    expression = IR_THIS,
+                    methodName = "foo"
+                )
             )
             assertCorrectlyLowered(
                 expression = Unary(range = dummyRange, type = unit, operator = NOT, expression = THIS),
@@ -433,6 +437,74 @@ class ExpressionLoweringTest : StringSpec() {
                         )
                     ),
                     expression = HighIrExpression.Variable(type = int, name = "_LOWERING_1")
+                )
+            )
+        }
+
+        "Inner Scope does not pollute outer one" {
+            assertCorrectlyLowered(
+                expression = Expression.StatementBlockExpression(
+                    range = dummyRange,
+                    type = unit,
+                    block = StatementBlock(
+                        range = dummyRange,
+                        statements = listOf(
+                            Statement.Val(
+                                range = dummyRange,
+                                pattern = Pattern.VariablePattern(range = dummyRange, name = "a"),
+                                typeAnnotation = unit,
+                                assignedExpression = Expression.StatementBlockExpression(
+                                    range = dummyRange,
+                                    type = unit,
+                                    block = StatementBlock(
+                                        range = dummyRange,
+                                        statements = listOf(
+                                            Statement.Val(
+                                                range = dummyRange,
+                                                pattern = Pattern.VariablePattern(range = dummyRange, name = "a"),
+                                                typeAnnotation = unit,
+                                                assignedExpression = THIS
+                                            )
+                                        ),
+                                        expression = Expression.Variable(range = dummyRange, type = unit, name = "a")
+                                    )
+                                )
+                            )
+                        ),
+                        expression = null
+                    )
+                ),
+                expected = LoweringResult(
+                    statements = listOf(
+                        HighIrStatement.Block(
+                            statements = listOf(
+                                HighIrStatement.LetDeclaration(name = "_LOWERING_0", typeAnnotation = unit),
+                                HighIrStatement.Block(
+                                    statements = listOf(
+                                        HighIrStatement.ConstantDefinition(
+                                            pattern = HighIrPattern.VariablePattern(name = "a"),
+                                            typeAnnotation = unit,
+                                            assignedExpression = IR_THIS
+                                        ),
+                                        HighIrStatement.VariableAssignment(
+                                            name = "_LOWERING_0",
+                                            assignedExpression = HighIrExpression.Variable(
+                                                type = unit, name = "a"
+                                            )
+                                        )
+                                    )
+                                ),
+                                HighIrStatement.ConstantDefinition(
+                                    pattern = HighIrPattern.VariablePattern(name = "a"),
+                                    typeAnnotation = unit,
+                                    assignedExpression = HighIrExpression.Variable(
+                                        type = unit, name = "_LOWERING_0"
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    expression = HighIrExpression.UNIT
                 )
             )
         }

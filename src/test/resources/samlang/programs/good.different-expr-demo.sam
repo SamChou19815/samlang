@@ -44,12 +44,12 @@ class Main {
         val a = {
             val b = 4;
             val c = {
-                val d = b;
+                val c = b;
                 b
             };
-            b
+            c
         };
-        val [e, f, _] = [1, "bool", true];
+        val [e, b, _] = [1, "bool", true];
         a + 1
     }
 
