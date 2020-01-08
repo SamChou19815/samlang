@@ -274,6 +274,7 @@ class ExpressionBuilder internal constructor(
                 returnType = Type.undecided()
             ),
             parameters = arguments,
+            captured = emptyMap(), // Dummy value. Can only be resolved after type checking.
             body = ctx.expression().toExpression()
         )
     }

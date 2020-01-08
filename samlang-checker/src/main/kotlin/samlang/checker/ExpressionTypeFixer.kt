@@ -218,6 +218,7 @@ private class TypeFixerVisitor(private val resolution: ReadOnlyTypeResolution) :
                 val (parameter, originalT) = pAndOriginalT
                 parameter to originalT.fixSelf(expectedType = t)
             },
+            captured = expression.captured.mapValues { (_, type) -> type.fixSelf(expectedType = null) },
             body = expression.body.tryFixType(expectedType = newType.returnType)
         )
     }

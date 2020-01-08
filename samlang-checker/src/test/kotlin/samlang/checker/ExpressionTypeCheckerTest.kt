@@ -4,6 +4,7 @@ import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.persistentSetOf
+import samlang.ast.common.BinaryOperator
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Position
 import samlang.ast.common.Range
@@ -648,6 +649,7 @@ class ExpressionTypeCheckerTest : StringSpec() {
                                         returnType = Type.int
                                     ),
                                     parameters = listOf("b" to Type.bool, "t" to Type.int, "f" to Type.int),
+                                    captured = emptyMap(),
                                     body = Expression.IfElse(
                                         range = Range(
                                             start = Position(line = 0, column = 28),
@@ -760,17 +762,252 @@ class ExpressionTypeCheckerTest : StringSpec() {
                 """.trimIndent(),
                 expectedType = Type.unit
             )
+            val source = """
+                            {
+                                val f = (a, b, c) -> {
+                                    val f = (d, e) -> a + b + c + d + e;
+                                    f(1, 2)
+                                };
+                                f(3, 4, 5)
+                            }
+                         """.trimIndent()
+            val expectedExpression = Expression.StatementBlockExpression(
+                range = Range(start = Position(line = 0, column = 0), end = Position(line = 6, column = 1)),
+                type = Type.int,
+                block = StatementBlock(
+                    range = Range(start = Position(line = 0, column = 0), end = Position(line = 6, column = 1)),
+                    statements = listOf(
+                        Statement.Val(
+                            range = Range(
+                                start = Position(line = 1, column = 4),
+                                end = Position(line = 4, column = 6)
+                            ),
+                            pattern = Pattern.VariablePattern(
+                                range = Range(
+                                    start = Position(line = 1, column = 8),
+                                    end = Position(line = 1, column = 9)
+                                ),
+                                name = "f"
+                            ),
+                            typeAnnotation = Type.FunctionType(
+                                argumentTypes = listOf(Type.int, Type.int, Type.int),
+                                returnType = Type.int
+                            ),
+                            assignedExpression = Expression.Lambda(
+                                range = Range(
+                                    start = Position(line = 1, column = 12),
+                                    end = Position(line = 4, column = 5)
+                                ),
+                                type = Type.FunctionType(
+                                    argumentTypes = listOf(Type.int, Type.int, Type.int),
+                                    returnType = Type.int
+                                ),
+                                parameters = listOf("a" to Type.int, "b" to Type.int, "c" to Type.int),
+                                captured = emptyMap(),
+                                body = Expression.StatementBlockExpression(
+                                    range = Range(
+                                        start = Position(line = 1, column = 25),
+                                        end = Position(line = 4, column = 5)
+                                    ),
+                                    type = Type.int,
+                                    block = StatementBlock(
+                                        range = Range(
+                                            start = Position(line = 1, column = 25),
+                                            end = Position(line = 4, column = 5)
+                                        ),
+                                        statements = listOf(
+                                            Statement.Val(
+                                                range = Range(
+                                                    start = Position(line = 2, column = 8),
+                                                    end = Position(line = 2, column = 44)
+                                                ),
+                                                pattern = Pattern.VariablePattern(
+                                                    range = Range(
+                                                        start = Position(line = 2, column = 12),
+                                                        end = Position(line = 2, column = 13)
+                                                    ),
+                                                    name = "f"
+                                                ),
+                                                typeAnnotation = Type.FunctionType(
+                                                    argumentTypes = listOf(Type.int, Type.int),
+                                                    returnType = Type.int
+                                                ),
+                                                assignedExpression = Expression.Lambda(
+                                                    range = Range(
+                                                        start = Position(line = 2, column = 16),
+                                                        end = Position(line = 2, column = 43)
+                                                    ),
+                                                    type = Type.FunctionType(
+                                                        argumentTypes = listOf(Type.int, Type.int),
+                                                        returnType = Type.int
+                                                    ),
+                                                    parameters = listOf("d" to Type.int, "e" to Type.int),
+                                                    captured = mapOf(
+                                                        "a" to Type.int,
+                                                        "b" to Type.int,
+                                                        "c" to Type.int
+                                                    ),
+                                                    body = Expression.Binary(
+                                                        range = Range(
+                                                            start = Position(line = 2, column = 26),
+                                                            end = Position(line = 2, column = 43)
+                                                        ),
+                                                        type = Type.int,
+                                                        operator = BinaryOperator.PLUS,
+                                                        e1 = Expression.Binary(
+                                                            range = Range(
+                                                                start = Position(line = 2, column = 26),
+                                                                end = Position(line = 2, column = 39)
+                                                            ),
+                                                            type = Type.int,
+                                                            operator = BinaryOperator.PLUS,
+                                                            e1 = Expression.Binary(
+                                                                range = Range(
+                                                                    start = Position(line = 2, column = 26),
+                                                                    end = Position(line = 2, column = 35)
+                                                                ),
+                                                                type = Type.int,
+                                                                operator = BinaryOperator.PLUS,
+                                                                e1 = Expression.Binary(
+                                                                    range = Range(
+                                                                        start = Position(line = 2, column = 26),
+                                                                        end = Position(line = 2, column = 31)
+                                                                    ),
+                                                                    type = Type.int,
+                                                                    operator = BinaryOperator.PLUS,
+                                                                    e1 = Expression.Variable(
+                                                                        range = Range(
+                                                                            start = Position(line = 2, column = 26),
+                                                                            end = Position(line = 2, column = 27)
+                                                                        ),
+                                                                        type = Type.int,
+                                                                        name = "a"
+                                                                    ),
+                                                                    e2 = Expression.Variable(
+                                                                        range = Range(
+                                                                            start = Position(line = 2, column = 30),
+                                                                            end = Position(line = 2, column = 31)
+                                                                        ),
+                                                                        type = Type.int,
+                                                                        name = "b"
+                                                                    )
+                                                                ),
+                                                                e2 = Expression.Variable(
+                                                                    range = Range(
+                                                                        start = Position(line = 2, column = 34),
+                                                                        end = Position(line = 2, column = 35)
+                                                                    ),
+                                                                    type = Type.int,
+                                                                    name = "c"
+                                                                )
+                                                            ),
+                                                            e2 = Expression.Variable(
+                                                                range = Range(
+                                                                    start = Position(line = 2, column = 38),
+                                                                    end = Position(line = 2, column = 39)
+                                                                ),
+                                                                type = Type.int,
+                                                                name = "d"
+                                                            )
+                                                        ),
+                                                        e2 = Expression.Variable(
+                                                            range = Range(
+                                                                start = Position(line = 2, column = 42),
+                                                                end = Position(line = 2, column = 43)
+                                                            ),
+                                                            type = Type.int,
+                                                            name = "e"
+                                                        )
+                                                    )
+                                                )
+                                            )
+                                        ),
+                                        expression = Expression.FunctionApplication(
+                                            range = Range(
+                                                start = Position(line = 3, column = 8),
+                                                end = Position(line = 3, column = 15)
+                                            ),
+                                            type = Type.int,
+                                            functionExpression = Expression.Variable(
+                                                range = Range(
+                                                    start = Position(line = 3, column = 8),
+                                                    end = Position(line = 3, column = 9)
+                                                ),
+                                                type = Type.FunctionType(
+                                                    argumentTypes = listOf(Type.int, Type.int),
+                                                    returnType = Type.int
+                                                ),
+                                                name = "f"
+                                            ),
+                                            arguments = listOf(
+                                                Expression.Literal.ofInt(
+                                                    range = Range(
+                                                        start = Position(line = 3, column = 10),
+                                                        end = Position(line = 3, column = 11)
+                                                    ),
+                                                    value = 1
+                                                ),
+                                                Expression.Literal.ofInt(
+                                                    range = Range(
+                                                        start = Position(line = 3, column = 13),
+                                                        end = Position(line = 3, column = 14)
+                                                    ),
+                                                    value = 2
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    expression = Expression.FunctionApplication(
+                        range = Range(
+                            start = Position(line = 5, column = 4),
+                            end = Position(line = 5, column = 14)
+                        ),
+                        type = Type.int,
+                        functionExpression = Expression.Variable(
+                            range = Range(
+                                start = Position(line = 5, column = 4),
+                                end = Position(line = 5, column = 5)
+                            ),
+                            type = Type.FunctionType(
+                                argumentTypes = listOf(Type.int, Type.int, Type.int),
+                                returnType = Type.int
+                            ),
+                            name = "f"
+                        ),
+                        arguments = listOf(
+                            Expression.Literal.ofInt(
+                                range = Range(
+                                    start = Position(line = 5, column = 6),
+                                    end = Position(line = 5, column = 7)
+                                ),
+                                value = 3
+                            ),
+                            Expression.Literal.ofInt(
+                                range = Range(
+                                    start = Position(line = 5, column = 9),
+                                    end = Position(line = 5, column = 10)
+                                ),
+                                value = 4
+                            ),
+                            Expression.Literal.ofInt(
+                                range = Range(
+                                    start = Position(line = 5, column = 12),
+                                    end = Position(line = 5, column = 13)
+                                ),
+                                value = 5
+                            )
+                        )
+                    )
+                )
+            )
             assertCheck(
-                source = """
-                    {
-                        val f = (a, b, c) -> {
-                            val f = (d, e) -> a + b + c + d + e;
-                            f(1, 2)
-                        };
-                        f(3, 4, 5)
-                    }
-                """.trimIndent(),
-                expectedType = Type.int
+                source = source,
+                expectedType = Type.int,
+                expectedExpression = expectedExpression
             )
         }
     }

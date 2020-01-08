@@ -62,6 +62,7 @@ object ModuleInterpreter {
                 range = member.range,
                 type = member.type,
                 parameters = member.parameters.map { it.name to it.type },
+                captured = emptyMap(),
                 body = member.body
             )
             val value = ExpressionInterpreter.visit(expression = lambda, context = context)

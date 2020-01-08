@@ -217,6 +217,7 @@ sealed class Expression(val precedence: Int) : Node {
         override val range: Range,
         override val type: Type.FunctionType,
         val parameters: List<Pair<String, Type>>,
+        val captured: Map<String, Type>,
         val body: Expression
     ) : Expression(precedence = 12) {
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =

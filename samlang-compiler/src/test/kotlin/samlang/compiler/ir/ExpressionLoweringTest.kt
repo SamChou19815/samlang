@@ -166,6 +166,7 @@ class ExpressionLoweringTest : StringSpec() {
                     range = dummyRange,
                     type = Type.FunctionType(argumentTypes = emptyList(), returnType = unit),
                     parameters = emptyList(),
+                    captured = emptyMap(),
                     body = THIS
                 ),
                 expectedExpression = HighIrExpression.Lambda(

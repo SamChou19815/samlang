@@ -70,6 +70,7 @@ class ExpressionTypeFixerTest : StringSpec() {
                         range = Range.DUMMY,
                         type = Type.FunctionType(argumentTypes = listOf(Type.int), returnType = Type.unit),
                         parameters = listOf("a" to Type.int),
+                        captured = emptyMap(),
                         body = Expression.Literal.ofUnit(range = Range.DUMMY)
                     ),
                     arguments = listOf(
@@ -92,6 +93,7 @@ class ExpressionTypeFixerTest : StringSpec() {
                             returnType = Type.UndecidedType(index = 8)
                         ),
                         parameters = listOf("a" to Type.int),
+                        captured = emptyMap(),
                         body = Expression.Literal.ofUnit(range = Range.DUMMY)
                     ),
                     arguments = listOf(

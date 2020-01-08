@@ -585,7 +585,7 @@ private class ExpressionTypeCheckerVisitor(
     }
 
     override fun visit(expression: Lambda, context: Type): Expression {
-        val (range, functionType, arguments, body) = expression
+        val (range, functionType, arguments, _, body) = expression
         // check duplicated name among themselves first
         val names = hashSetOf<String>()
         for ((name, _) in arguments) {
@@ -595,7 +595,7 @@ private class ExpressionTypeCheckerVisitor(
             }
         }
         // setting up types and update context
-        val (checkedArguments, checkedBody) = localTypingContext.withNestedScope {
+        val (checkedArgumentsAndBody, captured) = localTypingContext.withNestedScopeReturnCaptured {
             val checkedArguments = arguments.map { (argumentName, argumentType) ->
                 val argumentTypeIsValid = TypeValidator.validateType(
                     type = argumentType,
@@ -604,7 +604,7 @@ private class ExpressionTypeCheckerVisitor(
                     errorRange = range
                 )
                 if (!argumentTypeIsValid) {
-                    return@withNestedScope null
+                    return@withNestedScopeReturnCaptured null
                 }
                 localTypingContext.addLocalValueType(name = argumentName, type = argumentType) {
                     errorCollector.reportCollisionError(name = argumentName, range = range)
@@ -613,7 +613,9 @@ private class ExpressionTypeCheckerVisitor(
             }
             val checkedBody = body.toChecked(expectedType = functionType.returnType)
             checkedArguments to checkedBody
-        } ?: return TypeReplacer.replaceWithExpectedType(expression = expression, expectedType = context)
+        }
+        val (checkedArguments, checkedBody) = checkedArgumentsAndBody
+            ?: return TypeReplacer.replaceWithExpectedType(expression = expression, expectedType = context)
         // merge a somewhat good locally inferred type
         val locallyInferredType = functionType.copy(
             argumentTypes = checkedArguments.map { it.second },
@@ -627,6 +629,7 @@ private class ExpressionTypeCheckerVisitor(
                 range = range,
                 type = constraintInferredType,
                 parameters = checkedArguments,
+                captured = captured,
                 body = checkedBody
             )
         } else {
