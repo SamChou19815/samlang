@@ -42,7 +42,6 @@ import samlang.ast.lang.Expression.VariantConstructor
 import samlang.ast.lang.ExpressionVisitor
 import samlang.errors.CompileTimeError
 import samlang.errors.DuplicateFieldDeclarationError
-import samlang.errors.ExtraFieldInObjectError
 import samlang.errors.IllegalThisError
 import samlang.errors.InconsistentFieldsInObjectError
 import samlang.errors.InsufficientTypeInferenceContextError
@@ -195,14 +194,13 @@ private class ExpressionTypeCheckerVisitor(
     }
 
     override fun visit(expression: ObjectConstructor, context: Type): Expression {
-        val (range, _, spreadExpression, fieldDeclarations) = expression
+        val (range, _, fieldDeclarations) = expression
         val (_, _, typeParameters, _, typeMappings) = accessibleGlobalTypingContext.getCurrentClassTypeDefinition()
             ?.takeIf { it.type == OBJECT }
             ?: return expression.errorWith(
                 expectedType = context,
                 error = UnsupportedClassTypeDefinitionError(typeDefinitionType = OBJECT, range = range)
             )
-        val checkedSpreadExpression = spreadExpression?.toChecked()
         val (declaredFieldTypes, checkedDeclarations) =
             when (val result = typeCheckFieldDeclarations(fieldDeclarations = fieldDeclarations)) {
                 is Either.Left -> result.v
@@ -211,20 +209,7 @@ private class ExpressionTypeCheckerVisitor(
         val checkedMappings = hashMapOf<String, Type>()
         // used to quickly get the range where one declaration goes wrong
         val nameRangeMap = fieldDeclarations.asSequence().map { it.name to it.range }.toMap()
-        val locallyInferredType = if (checkedSpreadExpression != null) {
-            // In this case, keys does not need to perfectly match because we have fall back.
-            for ((k, actualType) in declaredFieldTypes) {
-                val nameRange = nameRangeMap[k] ?: error("Name not found!")
-                val (expectedFieldType, _) = typeMappings[k] ?: return expression.errorWith(
-                    expectedType = context,
-                    error = ExtraFieldInObjectError(extraField = k, range = nameRange)
-                )
-                checkedMappings[k] = constraintAwareTypeChecker.checkAndInfer(
-                    expectedType = expectedFieldType, actualType = actualType, errorRange = nameRange
-                )
-            }
-            checkedSpreadExpression.type
-        } else {
+        val locallyInferredType = kotlin.run {
             // In this case, all keys must perfectly match because we have no fall back
             if (typeMappings.keys != declaredFieldTypes.keys) {
                 return expression.errorWith(
@@ -265,7 +250,6 @@ private class ExpressionTypeCheckerVisitor(
         return ObjectConstructor(
             range = range,
             type = constraintInferredType,
-            spreadExpression = checkedSpreadExpression,
             fieldDeclarations = enhancedFieldDeclarations
         )
     }

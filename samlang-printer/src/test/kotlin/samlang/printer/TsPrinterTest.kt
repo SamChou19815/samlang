@@ -24,7 +24,6 @@ import samlang.ast.hir.HighIrExpression.ObjectConstructor
 import samlang.ast.hir.HighIrExpression.This
 import samlang.ast.hir.HighIrExpression.TupleConstructor
 import samlang.ast.hir.HighIrExpression.Unary
-import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement.ConstantDefinition
 import samlang.ast.hir.HighIrStatement.IfElse
@@ -416,7 +415,6 @@ class TsPrinterTest : StringSpec() {
                                 typeAnnotation = Type.id(identifier = "Test"),
                                 assignedExpression = ObjectConstructor(
                                     type = Type.id(identifier = "Test"),
-                                    spreadExpression = Variable(type = Type.id(identifier = "Test"), name = "obj"),
                                     fieldDeclaration = listOf(
                                         "foo" to literal(value = "foo"),
                                         "bar" to literal(value = "bar")
@@ -436,7 +434,7 @@ class TsPrinterTest : StringSpec() {
                 let _: any = undefined;
                 
                 function test(obj: T_Test): void {
-                  const { foo, bar: baz }: T_Test = { ...obj, foo: "foo", bar: "bar" };
+                  const { foo, bar: baz }: T_Test = { foo: "foo", bar: "bar" };
                 }
                 
                 export { test };
@@ -446,7 +444,7 @@ class TsPrinterTest : StringSpec() {
                 let _ = undefined;
                 
                 function test(obj) {
-                  const { foo, bar: baz } = { ...obj, foo: "foo", bar: "bar" };
+                  const { foo, bar: baz } = { foo: "foo", bar: "bar" };
                 }
                 
                 export { test };

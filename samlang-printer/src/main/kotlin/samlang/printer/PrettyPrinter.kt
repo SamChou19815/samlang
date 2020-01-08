@@ -152,14 +152,6 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
     override fun visit(expression: ObjectConstructor, context: Boolean) {
         printer.printWithBreak(x = "{")
         printer.indented {
-            val spreadExpression = expression.spreadExpression
-            if (spreadExpression != null) {
-                printlnWithoutFurtherIndentation {
-                    printWithoutBreak(x = "...")
-                    spreadExpression.printSelf(requireBreak = false)
-                    printWithBreak(x = ",")
-                }
-            }
             expression.fieldDeclarations.forEach { constructor ->
                 printlnWithoutFurtherIndentation {
                     when (constructor) {

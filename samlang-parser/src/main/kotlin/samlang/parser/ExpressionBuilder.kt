@@ -137,7 +137,6 @@ internal class ExpressionBuilder(
         return Expression.ObjectConstructor(
             range = ctx.range,
             type = Type.undecided(),
-            spreadExpression = ctx.expression()?.toExpression(),
             fieldDeclarations = ctx.objectFieldDeclarations().objectFieldDeclaration()
                 .map { it.accept(objectFieldDeclarationBuilder) }
         )

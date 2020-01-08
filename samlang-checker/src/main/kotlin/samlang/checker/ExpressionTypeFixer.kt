@@ -105,7 +105,6 @@ private class TypeFixerVisitor(private val resolution: ReadOnlyTypeResolution) :
 
     override fun visit(expression: ObjectConstructor, context: Type): Expression {
         val newType = expression.type.fixSelf(expectedType = context) as IdentifierType
-        val newSpreadExpr = expression.spreadExpression?.tryFixType(expectedType = context)
         val newDeclarations = expression.fieldDeclarations.map { dec ->
             val betterType = dec.type.fixSelf(expectedType = null)
             when (dec) {
@@ -116,11 +115,7 @@ private class TypeFixerVisitor(private val resolution: ReadOnlyTypeResolution) :
                 is ObjectConstructor.FieldConstructor.FieldShorthand -> dec.copy(type = betterType)
             }
         }
-        return expression.copy(
-            type = newType,
-            spreadExpression = newSpreadExpr,
-            fieldDeclarations = newDeclarations
-        )
+        return expression.copy(type = newType, fieldDeclarations = newDeclarations)
     }
 
     override fun visit(expression: VariantConstructor, context: Type): Expression {

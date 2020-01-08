@@ -70,10 +70,6 @@ internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext,
 
     override fun visit(expression: ObjectConstructor, context: InterpretationContext): Value.ObjectValue {
         val objectContent = mutableMapOf<String, Value>()
-        expression.spreadExpression?.let { e ->
-            val obj = eval(expression = e, context = context) as Value.ObjectValue
-            objectContent.putAll(from = obj.objectContent)
-        }
         expression.fieldDeclarations.forEach { declaration ->
             when (declaration) {
                 is ObjectConstructor.FieldConstructor.Field -> {

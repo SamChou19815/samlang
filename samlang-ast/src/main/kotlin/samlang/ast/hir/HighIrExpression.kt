@@ -54,7 +54,6 @@ sealed class HighIrExpression(val precedence: Int) {
 
     data class ObjectConstructor(
         override val type: Type.IdentifierType,
-        val spreadExpression: HighIrExpression?,
         val fieldDeclaration: List<Pair<String, HighIrExpression>>
     ) : HighIrExpression(precedence = 1) {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)

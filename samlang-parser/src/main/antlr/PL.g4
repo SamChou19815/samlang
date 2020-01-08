@@ -60,7 +60,7 @@ expression
     | LowerId # VariableExpr
     | UpperId DOT LowerId # ModuleMemberExpr
     | LBRACKET expression (COMMA expression)+ COMMA? RBRACKET # TupleConstructor
-    | LBRACE (SPREAD expression COMMA)? objectFieldDeclarations RBRACE # ObjConstructor
+    | LBRACE objectFieldDeclarations RBRACE # ObjConstructor
     | UpperId LPAREN expression RPAREN # VariantConstructor
     | expression DOT LowerId # FieldAccessExpr
     | MINUS expression # NegExpr

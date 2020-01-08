@@ -390,16 +390,9 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             }
 
             override fun visit(expression: ObjectConstructor) {
-                val (_, spreadExpression, fieldDeclaration) = expression
+                val (_, fieldDeclaration) = expression
                 printer.printlnWithoutFurtherIndentation {
                     printWithoutBreak(x = "{ ")
-                    if (spreadExpression != null) {
-                        printWithoutBreak(x = "...")
-                        spreadExpression.printSelf(
-                            withParenthesis = spreadExpression.precedence >= expression.precedence
-                        )
-                        printWithoutBreak(x = ", ")
-                    }
                     fieldDeclaration.forEachIndexed { index, (name, e) ->
                         printWithoutBreak(x = name)
                         printWithoutBreak(x = ": ")

@@ -101,8 +101,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.ObjectConstructor, context: Unit): LoweringResult {
         val loweredStatements = arrayListOf<HighIrStatement>()
-        val loweredSpreadExpression =
-            expression.spreadExpression?.getLoweredAndAddStatements(statements = loweredStatements)
         val loweredFields = expression.fieldDeclarations.map { fieldConstructor ->
             when (fieldConstructor) {
                 is Expression.ObjectConstructor.FieldConstructor.Field -> {
@@ -121,11 +119,8 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 }
             }
         }
-        return ObjectConstructor(
-            type = expression.type as Type.IdentifierType,
-            spreadExpression = loweredSpreadExpression,
-            fieldDeclaration = loweredFields
-        ).asLoweringResult(statements = loweredStatements)
+        return ObjectConstructor(type = expression.type as Type.IdentifierType, fieldDeclaration = loweredFields)
+            .asLoweringResult(statements = loweredStatements)
     }
 
     override fun visit(expression: Expression.VariantConstructor, context: Unit): LoweringResult {

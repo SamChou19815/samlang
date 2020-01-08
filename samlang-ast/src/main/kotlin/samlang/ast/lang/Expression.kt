@@ -83,7 +83,6 @@ sealed class Expression(val precedence: Int) : Node {
     data class ObjectConstructor(
         override val range: Range,
         override val type: Type,
-        val spreadExpression: Expression?,
         val fieldDeclarations: List<FieldConstructor>
     ) : Expression(precedence = 1) {
         sealed class FieldConstructor {

@@ -460,14 +460,8 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
 
         override fun visit(expression: ObjectConstructor) {
-            val (type, spreadExpression, fieldDeclaration) = expression
-            printer.printWithoutBreak(x = "new ${type.toJavaTypeString()}(")
-            if (spreadExpression == null) {
-                printer.printWithoutBreak(x = "null")
-            } else {
-                printExpression(expression = spreadExpression)
-            }
-            printer.printWithoutBreak(x = ")")
+            val (type, fieldDeclaration) = expression
+            printer.printWithoutBreak(x = "new ${type.toJavaTypeString()}(null)")
             fieldDeclaration.forEach { (name, fieldExpression) ->
                 printer.printWithoutBreak(x = ".\$builderSet${CaseUtils.toCamelCase(name, true)}(")
                 printExpression(expression = fieldExpression)

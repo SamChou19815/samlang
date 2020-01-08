@@ -81,7 +81,6 @@ class ExpressionLoweringTest : StringSpec() {
                 expression = Expression.ObjectConstructor(
                     range = dummyRange,
                     type = id(identifier = "Foo"),
-                    spreadExpression = THIS,
                     fieldDeclarations = listOf(
                         Expression.ObjectConstructor.FieldConstructor.Field(
                             range = dummyRange, type = unit, name = "foo", expression = THIS
@@ -93,7 +92,6 @@ class ExpressionLoweringTest : StringSpec() {
                 ),
                 expectedExpression = HighIrExpression.ObjectConstructor(
                     type = id(identifier = "Foo"),
-                    spreadExpression = IR_THIS,
                     fieldDeclaration = listOf(
                         "foo" to IR_THIS,
                         "bar" to HighIrExpression.Variable(type = unit, name = "bar")
