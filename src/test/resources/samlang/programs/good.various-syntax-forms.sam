@@ -1,6 +1,6 @@
 // ERROR_COUNT: 0
 
-class Clazz(t: int) {
+class Clazz(val t: int) {
     public function of(): Clazz = { t: 42 }
 
     public method thisTest(): int = {

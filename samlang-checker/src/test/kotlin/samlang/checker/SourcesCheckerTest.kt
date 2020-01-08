@@ -16,7 +16,7 @@ class SourcesCheckerTest : StringSpec({
         val sourceB = """
             import { A } from A
             
-            class B(value: int) {
+            class B(val value: int) {
                 public function of(): B = { value: A.a() }
                 public method intValue(): int = this.value
             }

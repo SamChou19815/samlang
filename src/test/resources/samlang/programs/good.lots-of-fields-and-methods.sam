@@ -1,6 +1,6 @@
 // ERROR_COUNT: 0
 
-class SamObject<T>(sam: T, good: bool, linesOfCode: int) {
+class SamObject<T>(val sam: T, val good: bool, val linesOfCode: int) {
   public function <T> create(sam: T): SamObject<T> = { sam, good: true, linesOfCode: 100000 }
   public method getSam(): T = this.sam
   public method isGood(): bool = true

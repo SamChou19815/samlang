@@ -70,7 +70,7 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
             printer.printWithBreak(x = "class $name${typeParametersToString(typeParameters = typeParameters)}(")
             printer.indented {
                 when (typeDefinitionType) {
-                    OBJECT -> mappings.forEach { (field, type) -> printWithBreak(x = "$field: $type,") }
+                    OBJECT -> mappings.forEach { (field, type) -> printWithBreak(x = "val $field: $type,") }
                     VARIANT -> mappings.forEach { (tag, dataType) -> printWithBreak(x = "$tag($dataType),") }
                 }
             }

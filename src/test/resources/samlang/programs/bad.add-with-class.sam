@@ -1,7 +1,7 @@
 // ERROR_COUNT: 1
 // add-with-class.sam:9:32-9:38: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.
 
-class A(a: int) {
+class A(val a: int) {
     public function init(): A = { a: 42 }
 }
 

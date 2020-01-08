@@ -5,7 +5,7 @@ class Math {
     function cosine(angleInDegree: int): int = panic("Not supported!")
 }
 
-class Student(name: string, age: int) {
+class Student(val name: string, val age: int) {
     public method getName(): string = this.name
     method getAge(): int = this.age
     function dummyStudent(): Student = { name: "RANDOM_BABY", age: 0 }
@@ -37,7 +37,7 @@ class FunctionExample {
     public function <T> getIdentityFunction(): (T) -> T = (x) -> x
 }
 
-class Box<T>(content: T) {
+class Box<T>(val content: T) {
     public function <T> init(content: T): Box<T> = { content } // object short hand syntax
     public method getContent(): T = {
         val { content } = this; content

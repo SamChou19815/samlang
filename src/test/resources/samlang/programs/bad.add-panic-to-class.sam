@@ -2,7 +2,7 @@
 // add-panic-to-class.sam:10:43-10:49: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.
 // add-panic-to-class.sam:11:29-11:35: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.
 
-class A(a: int) {
+class A(val a: int) {
     public function init(): A = { a: 42 }
 }
 

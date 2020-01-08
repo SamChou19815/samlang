@@ -5,7 +5,7 @@ class A {
     function b(): int = 3
 }
 
-class C(v: bool) {
+class C(val v: bool) {
     public function init(): C = { v: true }
 }
 

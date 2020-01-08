@@ -1,6 +1,6 @@
 // ERROR_COUNT: 0
 
-class Foo(a: int) {
+class Foo(val a: int) {
     public function bar(): int = 3
 }
 
@@ -12,7 +12,7 @@ class Option<T>(None(unit), Some(T)) {
         }
 }
 
-class Obj(d: int, e: int) {
+class Obj(val d: int, val e: int) {
     function valExample(): int = {
         val a: int = 1;
         val b = 2;

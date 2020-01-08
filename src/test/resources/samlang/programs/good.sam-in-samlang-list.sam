@@ -7,8 +7,8 @@ class List<T>(Nil(unit), Cons([T * List<T>])) {
     Cons([t, this])
 }
 class Developer(
-  name: string, github: string,
-  projects: List<string>,
+  val name: string, val github: string,
+  val projects: List<string>,
 ) {
   public function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...")

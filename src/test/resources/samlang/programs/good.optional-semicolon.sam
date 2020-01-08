@@ -1,6 +1,6 @@
 // ERROR_COUNT: 0
 
-class Main(a: int, b: bool) {
+class Main(val a: int, val b: bool) {
   function main(): unit = {
     val _ = 3
     val a = 2;

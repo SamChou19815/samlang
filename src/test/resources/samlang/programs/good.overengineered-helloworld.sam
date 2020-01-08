@@ -1,6 +1,6 @@
 // ERROR_COUNT: 0
 
-class HelloWorld(message: string) {
+class HelloWorld(val message: string) {
     method getMessage(): string = {
         val { message } = this;
         message
