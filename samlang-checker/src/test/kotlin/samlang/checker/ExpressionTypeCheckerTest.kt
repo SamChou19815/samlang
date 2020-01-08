@@ -11,6 +11,9 @@ import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.lang.Expression
+import samlang.ast.lang.Pattern
+import samlang.ast.lang.Statement
+import samlang.ast.lang.StatementBlock
 import samlang.parser.ExpressionBuilder
 
 class ExpressionTypeCheckerTest : StringSpec() {
@@ -286,6 +289,488 @@ class ExpressionTypeCheckerTest : StringSpec() {
                 source = "!false",
                 expectedType = Type.int,
                 expectedErrors = listOf("Test.sam:1:1-1:7: [UnexpectedType]: Expected: `int`, actual: `bool`.")
+            )
+        }
+        "Panic with string argument type checks." {
+            assertCheck(source = "panic(\"\")", expectedType = Type.unit)
+            assertCheck(source = "panic(\"\")", expectedType = Type.bool)
+            assertCheck(source = "panic(\"\")", expectedType = Type.int)
+            assertCheck(source = "panic(\"\")", expectedType = Type.string)
+            assertCheck(source = "panic(\"\")", expectedType = Type.TupleType(mappings = listOf(Type.int, Type.bool)))
+        }
+        "Panic with non-string argument does not type check." {
+            assertCheck(
+                source = "panic(3)",
+                expectedType = Type.unit,
+                expectedErrors = listOf("Test.sam:1:7-1:8: [UnexpectedType]: Expected: `string`, actual: `int`.")
+            )
+        }
+        "Good function application type checks." {
+            assertCheck(source = "Test.helloWorld(\"\")", expectedType = Type.unit)
+            assertCheck(source = "{foo:true,bar:3}.baz(3)", expectedType = Type.bool)
+            assertCheck(source = "((i) -> true)(3)", expectedType = Type.bool)
+        }
+        "Calling a non-function does not type check." {
+            assertCheck(
+                source = "3(3)",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:2: [UnexpectedType]: Expected: `(int) -> unit`, actual: `int`.",
+                    "Test.sam:1:1-1:2: [UnexpectedTypeKind]: Expect kind: `function`, actual: `int`."
+                )
+            )
+        }
+        "Function application with bad arguments does not type check." {
+            assertCheck(
+                source = "Test.helloWorld(3)",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:16: [UnexpectedType]: Expected: `(int) -> unit`, actual: `(string) -> unit`."
+                )
+            )
+            assertCheck(
+                source = "{foo:true,bar:3}.baz(unit)",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:21: [UnexpectedType]: Expected: `(unit) -> bool`, actual: `(int) -> bool`."
+                )
+            )
+            assertCheck(
+                source = "((i: int) -> true)(unit)",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:2-1:18: [UnexpectedType]: Expected: `(unit) -> bool`, actual: `(int) -> bool`."
+                )
+            )
+        }
+        "Function application with bad return type does not type check." {
+            assertCheck(
+                source = "Test.helloWorld(\"\")",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:16: [UnexpectedType]: Expected: `(string) -> bool`, actual: `(string) -> unit`."
+                )
+            )
+            assertCheck(
+                source = "{foo:true,bar:3}.baz(3)",
+                expectedType = Type.int,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:21: [UnexpectedType]: Expected: `(int) -> int`, actual: `(int) -> bool`."
+                )
+            )
+            assertCheck(
+                source = "((i) -> true)(3)",
+                expectedType = Type.int,
+                expectedErrors = listOf(
+                    "Test.sam:1:2-1:13: [UnexpectedType]: Expected: `(int) -> int`, actual: `(__UNDECIDED__) -> bool`."
+                )
+            )
+        }
+        "Good binary expressions type check." {
+            assertCheck(source = "1 * 1", expectedType = Type.int)
+            assertCheck(source = "1 - 1", expectedType = Type.int)
+            assertCheck(source = "1 % 1", expectedType = Type.int)
+            assertCheck(source = "1 + 1", expectedType = Type.int)
+            assertCheck(source = "1 - 1", expectedType = Type.int)
+            assertCheck(source = "1 < 1", expectedType = Type.bool)
+            assertCheck(source = "1 <= 1", expectedType = Type.bool)
+            assertCheck(source = "1 > 1", expectedType = Type.bool)
+            assertCheck(source = "1 >= 1", expectedType = Type.bool)
+            assertCheck(source = "true || false", expectedType = Type.bool)
+            assertCheck(source = "false && true", expectedType = Type.bool)
+            assertCheck(source = "1 == 1", expectedType = Type.bool)
+            assertCheck(source = "true == false", expectedType = Type.bool)
+            assertCheck(source = "unit != unit", expectedType = Type.bool)
+            assertCheck(source = "\"\" != \"3\"", expectedType = Type.bool)
+            assertCheck(source = "{ val _ = (t, f) -> t == f; }", expectedType = Type.unit)
+        }
+        "Binary expressions with bad arguments do not type check." {
+            assertCheck(
+                source = "\"1\" * \"1\"",
+                expectedType = Type.int,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:4: [UnexpectedType]: Expected: `int`, actual: `string`.",
+                    "Test.sam:1:7-1:10: [UnexpectedType]: Expected: `int`, actual: `string`."
+                )
+            )
+            assertCheck(
+                source = "\"1\" - 1",
+                expectedType = Type.int,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:4: [UnexpectedType]: Expected: `int`, actual: `string`."
+                )
+            )
+            assertCheck(
+                source = "1 % \"1\"",
+                expectedType = Type.int,
+                expectedErrors = listOf(
+                    "Test.sam:1:5-1:8: [UnexpectedType]: Expected: `int`, actual: `string`."
+                )
+            )
+            assertCheck(
+                source = "1 + unit",
+                expectedType = Type.int,
+                expectedErrors = listOf(
+                    "Test.sam:1:5-1:9: [UnexpectedType]: Expected: `int`, actual: `unit`."
+                )
+            )
+            assertCheck(
+                source = "false - 1",
+                expectedType = Type.int,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:6: [UnexpectedType]: Expected: `int`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "\"\" < false",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:3: [UnexpectedType]: Expected: `int`, actual: `string`.",
+                    "Test.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "1 <= false",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "1 > \"\"",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:5-1:7: [UnexpectedType]: Expected: `int`, actual: `string`."
+                )
+            )
+            assertCheck(
+                source = "true >= 1",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:5: [UnexpectedType]: Expected: `int`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "unit || 4",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:5: [UnexpectedType]: Expected: `bool`, actual: `unit`.",
+                    "Test.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "2 && 3",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:6-1:7: [UnexpectedType]: Expected: `bool`, actual: `int`.",
+                    "Test.sam:1:6-1:7: [UnexpectedType]: Expected: `bool`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "1 == false",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:6-1:11: [UnexpectedType]: Expected: `int`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "true == 3",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "unit != 3",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:9-1:10: [UnexpectedType]: Expected: `unit`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "\"\" != 3",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:7-1:8: [UnexpectedType]: Expected: `string`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "{ val _ = (t: int, f: bool) -> t == f; }",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:37-1:38: [UnexpectedType]: Expected: `int`, actual: `bool`."
+                )
+            )
+        }
+        "Binary expressions with bad expected type do not type check." {
+            assertCheck(
+                source = "1 * 1",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "1 - 1",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "1 % 1",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "1 + 1",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "1 - 1",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "1 < 1",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "1 <= 1",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "1 > 1",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:6: [UnexpectedType]: Expected: `unit`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "1 >= 1",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "true || false",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "false && true",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "1 == 1",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:7: [UnexpectedType]: Expected: `unit`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "true == false",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "unit != unit",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:13: [UnexpectedType]: Expected: `unit`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "\"\" != \"3\"",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:1-1:10: [UnexpectedType]: Expected: `unit`, actual: `bool`."
+                )
+            )
+        }
+        "Good if else type checks." {
+            assertCheck(source = "if true then unit else unit", expectedType = Type.unit)
+            assertCheck(source = "if true then false else true", expectedType = Type.bool)
+            assertCheck(source = "if false then 1 else 0", expectedType = Type.int)
+            assertCheck(source = "if false then \"\" else \"\"", expectedType = Type.string)
+            assertCheck(
+                source = "{ val _ = (b, t, f: int) -> if b then t else f }",
+                expectedType = Type.unit,
+                expectedExpression = Expression.StatementBlockExpression(
+                    range = Range(start = Position(line = 0, column = 0), end = Position(line = 0, column = 48)),
+                    type = Type.unit,
+                    block = StatementBlock(
+                        range = Range(start = Position(line = 0, column = 0), end = Position(line = 0, column = 48)),
+                        statements = listOf(
+                            Statement.Val(
+                                range = Range(
+                                    start = Position(line = 0, column = 2),
+                                    end = Position(line = 0, column = 46)
+                                ),
+                                pattern = Pattern.WildCardPattern(
+                                    range = Range(
+                                        start = Position(line = 0, column = 6),
+                                        end = Position(line = 0, column = 7)
+                                    )
+                                ),
+                                typeAnnotation = Type.FunctionType(
+                                    argumentTypes = listOf(Type.bool, Type.int, Type.int),
+                                    returnType = Type.int
+                                ),
+                                assignedExpression = Expression.Lambda(
+                                    range = Range(
+                                        start = Position(line = 0, column = 10),
+                                        end = Position(line = 0, column = 46)
+                                    ),
+                                    type = Type.FunctionType(
+                                        argumentTypes = listOf(Type.bool, Type.int, Type.int),
+                                        returnType = Type.int
+                                    ),
+                                    parameters = listOf("b" to Type.bool, "t" to Type.int, "f" to Type.int),
+                                    body = Expression.IfElse(
+                                        range = Range(
+                                            start = Position(line = 0, column = 28),
+                                            end = Position(line = 0, column = 46)
+                                        ),
+                                        type = Type.int,
+                                        boolExpression = Expression.Variable(
+                                            range = Range(
+                                                start = Position(line = 0, column = 31),
+                                                end = Position(line = 0, column = 32)
+                                            ),
+                                            type = Type.bool,
+                                            name = "b"
+                                        ),
+                                        e1 = Expression.Variable(
+                                            range = Range(
+                                                start = Position(line = 0, column = 38),
+                                                end = Position(line = 0, column = 39)
+                                            ),
+                                            type = Type.int,
+                                            name = "t"
+                                        ),
+                                        e2 = Expression.Variable(
+                                            range = Range(
+                                                start = Position(line = 0, column = 45),
+                                                end = Position(line = 0, column = 46)
+                                            ),
+                                            type = Type.int,
+                                            name = "f"
+                                        )
+                                    )
+                                )
+                            )
+                        ),
+                        expression = null
+                    )
+                )
+            )
+            assertCheck(
+                source = "{ val _ = (b, t: int, f) -> if b then t else f }",
+                expectedType = Type.unit
+            )
+        }
+        "Bad if else does not type check." {
+            assertCheck(
+                source = "if true then 1 else unit",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:14-1:15: [UnexpectedType]: Expected: `unit`, actual: `int`.",
+                    "Test.sam:1:14-1:15: [UnexpectedType]: Expected: `unit`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "if true then false else 1",
+                expectedType = Type.bool,
+                expectedErrors = listOf(
+                    "Test.sam:1:25-1:26: [UnexpectedType]: Expected: `bool`, actual: `int`.",
+                    "Test.sam:1:25-1:26: [UnexpectedType]: Expected: `bool`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "if false then 1 else false",
+                expectedType = Type.int,
+                expectedErrors = listOf(
+                    "Test.sam:1:22-1:27: [UnexpectedType]: Expected: `int`, actual: `bool`.",
+                    "Test.sam:1:22-1:27: [UnexpectedType]: Expected: `int`, actual: `bool`."
+                )
+            )
+            assertCheck(
+                source = "if false then \"\" else 3",
+                expectedType = Type.string,
+                expectedErrors = listOf(
+                    "Test.sam:1:23-1:24: [UnexpectedType]: Expected: `string`, actual: `int`.",
+                    "Test.sam:1:23-1:24: [UnexpectedType]: Expected: `string`, actual: `int`."
+                )
+            )
+            assertCheck(
+                source = "{ val _ = (b, t: bool, f: int) -> if b then t else f }",
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:1:52-1:53: [UnexpectedType]: Expected: `bool`, actual: `int`."
+                )
+            )
+        }
+        "Match variant inside object class does not type check." {
+            assertCheck(
+                source = """
+                    {
+                        val _ = (t: Test2) -> (
+                            match (t) {
+                                | Foo _ -> 1
+                                | Bar s -> 2
+                            }
+                        );
+                    }
+                """.trimIndent(),
+                expectedType = Type.unit,
+                expectedErrors = listOf(
+                    "Test.sam:3:16-3:17: [IllegalOtherClassMatch]: " +
+                            "It is illegal to match on a value of other class's type."
+                )
+            )
+        }
+        "Good lambda type checks." {
+            assertCheck(
+                source = """
+                    {
+                        val _ = (a, b, c) -> if a(b + 1) then b else c;
+                    }
+                """.trimIndent(),
+                expectedType = Type.unit
+            )
+            assertCheck(
+                source = """
+                    {
+                        val f = (a, b, c) -> {
+                            val f = (d, e) -> a + b + c + d + e;
+                            f(1, 2)
+                        };
+                        f(3, 4, 5)
+                    }
+                """.trimIndent(),
+                expectedType = Type.int
             )
         }
     }
