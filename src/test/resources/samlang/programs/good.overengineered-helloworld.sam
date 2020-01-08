@@ -1,12 +1,12 @@
 // ERROR_COUNT: 0
 
 class HelloWorld(val message: string) {
-    method getMessage(): string = {
+    private method getMessage(): string = {
         val { message } = this;
         message
     }
 
-    public function getGlobalMessage(): string = {
+    function getGlobalMessage(): string = {
         val hw = { message: "Hello World!" };
         hw.getMessage()
     }

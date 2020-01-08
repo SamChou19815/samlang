@@ -85,7 +85,7 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
 
     private fun printMember(member: ClassDefinition.MemberDefinition) {
         val (_, isPublic, isMethod, _, name, typeParameters, type, parameters, body) = member
-        val memberVisibility = if (isPublic) "public " else ""
+        val memberVisibility = if (isPublic) "" else "private "
         val memberType = if (isMethod) "method" else "function"
         val typeParameterString = typeParametersToString(typeParameters = typeParameters)
         val argsString = parameters.joinToString(

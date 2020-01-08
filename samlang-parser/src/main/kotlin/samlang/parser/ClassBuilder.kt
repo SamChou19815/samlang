@@ -100,7 +100,7 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
         val body = buildExpression(expressionContext = ctx.expression())
         return ClassDefinition.MemberDefinition(
             range = ctx.range,
-            isPublic = ctx.PUBLIC() != null,
+            isPublic = ctx.PRIVATE() == null,
             isMethod = ctx.METHOD() != null,
             nameRange = nameSymbol.range,
             name = nameSymbol.text,

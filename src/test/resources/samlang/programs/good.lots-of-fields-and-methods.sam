@@ -1,10 +1,10 @@
 // ERROR_COUNT: 0
 
 class SamObject<T>(val sam: T, val good: bool, val linesOfCode: int) {
-  public function <T> create(sam: T): SamObject<T> = { sam, good: true, linesOfCode: 100000 }
-  public method getSam(): T = this.sam
-  public method isGood(): bool = true
-  public method getLinesOfCode(): int = 0 + this.linesOfCode
+  function <T> create(sam: T): SamObject<T> = { sam, good: true, linesOfCode: 100000 }
+  method getSam(): T = this.sam
+  method isGood(): bool = true
+  method getLinesOfCode(): int = 0 + this.linesOfCode
 }
 
 class Main {

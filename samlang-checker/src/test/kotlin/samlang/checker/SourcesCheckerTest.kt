@@ -10,24 +10,24 @@ class SourcesCheckerTest : StringSpec({
     "Several sources integration test" {
         val sourceA = """
             class A {
-                public function a(): int = 42
+                function a(): int = 42
             }
         """.trimIndent()
         val sourceB = """
             import { A } from A
             
             class B(val value: int) {
-                public function of(): B = { value: A.a() }
-                public method intValue(): int = this.value
+                function of(): B = { value: A.a() }
+                method intValue(): int = this.value
             }
         """.trimIndent()
         val sourceC = """
             import { B } from B
             
             class C(Int(int), B(B)) {
-                public function ofInt(value: int): C = Int(value)
-                public function ofB(b: B): C = B(b)
-                public method intValue(): int =
+                function ofInt(value: int): C = Int(value)
+                function ofB(b: B): C = B(b)
+                method intValue(): int =
                     match (this) {
                         | Int v -> v
                         | B b -> b.intValue()
@@ -40,7 +40,7 @@ class SourcesCheckerTest : StringSpec({
             import { C } from C
             
             class IdentifyChecker {
-                public function equals(c1: C, c2: C): bool = c1.intValue() == c2.intValue() 
+                function equals(c1: C, c2: C): bool = c1.intValue() == c2.intValue() 
             }
             
             class Main {

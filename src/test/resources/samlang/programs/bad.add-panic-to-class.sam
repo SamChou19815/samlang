@@ -3,11 +3,11 @@
 // add-panic-to-class.sam:11:29-11:35: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.
 
 class A(val a: int) {
-    public function init(): A = { a: 42 }
+    function init(): A = { a: 42 }
 }
 
 class Main {
     function main1(): int = panic("Ah") + A.init()
     function main2(): int = A.init() + panic("Ah")
-    function main(): int = Main.main1() + Main.main2()
+    private function main(): int = Main.main1() + Main.main2()
 }

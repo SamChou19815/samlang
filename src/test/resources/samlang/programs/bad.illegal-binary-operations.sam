@@ -13,12 +13,12 @@
 // illegal-binary-operations.sam:40:39-40:45: [UnexpectedType]: Expected: `(Box<Box<bool>>) -> Box<Box<Box<int>>>`, actual: `(__UNDECIDED__) -> Box<__UNDECIDED__>`.
 
 class Box<T>(val value: T) {
-    public function <T> empty(): Box<T> = { value: panic("PANIC") }
-    public function <T> of(value: T): Box<T> = { value }
+    function <T> empty(): Box<T> = { value: panic("PANIC") }
+    function <T> of(value: T): Box<T> = { value }
 }
 
 class AnotherBox<T>(val value: T) {
-    public function <T> empty(): AnotherBox<T> = { value: panic("PANIC") }
+    function <T> empty(): AnotherBox<T> = { value: panic("PANIC") }
 }
 
 class Main {

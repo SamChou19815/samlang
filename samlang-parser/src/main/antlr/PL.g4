@@ -15,7 +15,7 @@ classHeaderDeclaration
     | CLASS UpperId # UtilClassHeader
     ;
 classMemberDefinition
-    : PUBLIC? (FUNCTION | METHOD) typeParametersDeclaration? LowerId
+    : PRIVATE? (FUNCTION | METHOD) typeParametersDeclaration? LowerId
         LPAREN (annotatedVariable (COMMA annotatedVariable)* COMMA?)? RPAREN (COLON typeExpr)?
       ASSIGN expression
     ;

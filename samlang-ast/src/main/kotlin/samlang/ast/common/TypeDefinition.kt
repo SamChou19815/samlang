@@ -7,9 +7,7 @@ data class TypeDefinition(
     val mappings: Map<String, Type>
 ) : Node {
     companion object {
-        /**
-         * @return a dummy type definition used for util class.
-         */
+        /** @return a dummy type definition used for util class. */
         fun ofDummy(range: Range = Range.DUMMY): TypeDefinition = TypeDefinition(
             range = range,
             type = TypeDefinitionType.OBJECT,

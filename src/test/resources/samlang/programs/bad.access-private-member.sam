@@ -2,15 +2,15 @@
 // access-private-member.sam:14:17-14:20: [UnresolvedName]: Name `A.b` is not resolved.
 
 class A {
-    function b(): int = 3
+    private function b(): int = 3
 }
 
 class C(val v: bool) {
-    public function init(): C = { v: true }
+    function init(): C = { v: true }
 }
 
 class Main {
-    public function main(): unit = {
+    function main(): unit = {
         val _ = A.b();
         val _ = C.init();
     }

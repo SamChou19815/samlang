@@ -1,8 +1,8 @@
 // ERROR_COUNT: 0
 
 class NewYear2019<T>(val message: T) {
-    public function init(): NewYear2019<string> = { message: "Hello World!" }
-    public method getMessage(): T = {
+    function init(): NewYear2019<string> = { message: "Hello World!" }
+    method getMessage(): T = {
         val { message as msg } = this; msg
     }
 }

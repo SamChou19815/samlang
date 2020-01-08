@@ -6,7 +6,7 @@ class Math {
 }
 
 class Student(val name: string, val age: int) {
-    public method getName(): string = this.name
+    method getName(): string = this.name
     method getAge(): int = this.age
     function dummyStudent(): Student = { name: "RANDOM_BABY", age: 0 }
 }
@@ -18,13 +18,13 @@ class PrimitiveType(
     B(bool),
 ) {
     // some random functions
-    public function getUnit(): PrimitiveType = U(unit)
-    public function getInteger(): PrimitiveType = I(42)
-    public function getString(): PrimitiveType = S("Answer to life, universe, and everything.")
-    public function getBool(): PrimitiveType = B(false)
+    function getUnit(): PrimitiveType = U(unit)
+    function getInteger(): PrimitiveType = I(42)
+    function getString(): PrimitiveType = S("Answer to life, universe, and everything.")
+    function getBool(): PrimitiveType = B(false)
 
     // pattern matching!
-    public method isTruthy(): bool =
+    method isTruthy(): bool =
         match (this) {
             | U _ -> false
             | I i -> i != 0
@@ -34,20 +34,20 @@ class PrimitiveType(
 }
 
 class FunctionExample {
-    public function <T> getIdentityFunction(): (T) -> T = (x) -> x
+    function <T> getIdentityFunction(): (T) -> T = (x) -> x
 }
 
 class Box<T>(val content: T) {
-    public function <T> init(content: T): Box<T> = { content } // object short hand syntax
-    public method getContent(): T = {
+    function <T> init(content: T): Box<T> = { content } // object short hand syntax
+    method getContent(): T = {
         val { content } = this; content
     }
 }
 
 class Option<T>(None(unit), Some(T)) {
-    public function <T> getNone(): Option<T> = None(unit)
-    public function <T> getSome(d: T): Option<T> = Some(d)
-    public method <R> map(f: (T) -> R): Option<R> =
+    function <T> getNone(): Option<T> = None(unit)
+    function <T> getSome(d: T): Option<T> = Some(d)
+    method <R> map(f: (T) -> R): Option<R> =
         match (this) {
             | None _ -> None(unit)
             | Some d -> Some(f(d))

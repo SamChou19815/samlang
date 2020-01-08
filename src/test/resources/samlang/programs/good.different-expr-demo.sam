@@ -1,7 +1,7 @@
 // ERROR_COUNT: 0
 
 class Foo(val a: int) {
-    public function bar(): int = 3
+    function bar(): int = 3
 }
 
 class Option<T>(None(unit), Some(T)) {

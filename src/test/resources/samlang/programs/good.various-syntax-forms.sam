@@ -1,9 +1,9 @@
 // ERROR_COUNT: 0
 
 class Clazz(val t: int) {
-    public function of(): Clazz = { t: 42 }
+    function of(): Clazz = { t: 42 }
 
-    public method thisTest(): int = {
+    method thisTest(): int = {
       val i: int = this.t;
       val { t as j } = this;
       i + j
@@ -11,13 +11,13 @@ class Clazz(val t: int) {
 }
 
 class Option<T>(Some(T), None(unit)) {
-  public function <T> none(): Option<T> = None(unit)
-  public method toSome(t: T): Option<T> = Some(t)
-  public method isNone(): bool = match (this) {
+  function <T> none(): Option<T> = None(unit)
+  method toSome(t: T): Option<T> = Some(t)
+  method isNone(): bool = match (this) {
     | None _ -> true
     | Some _ -> false
   }
-  public method <R> map(f: (T) -> R): Option<R> =
+  method <R> map(f: (T) -> R): Option<R> =
     match (this) {
       | None _ -> None(unit)
       | Some t -> Some(f(t))
@@ -25,9 +25,9 @@ class Option<T>(Some(T), None(unit)) {
 }
 
 class List<T>(Nil(unit), Cons([T * List<T>])) {
-  public function <T> of(t: T): List<T> =
+  function <T> of(t: T): List<T> =
     Cons([t, Nil(unit)])
-  public method cons(t: T): List<T> =
+  method cons(t: T): List<T> =
     Cons([t, this])
 }
 
