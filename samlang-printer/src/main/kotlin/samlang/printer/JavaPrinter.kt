@@ -327,7 +327,9 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
 
         override fun visit(statement: LetDeclaration) {
-            printer.printWithBreak(x = "${statement.typeAnnotation.toJavaTypeString()} ${statement.name};")
+            val type = statement.typeAnnotation
+            val typeString = if (type == Type.unit) "Void" else type.toJavaTypeString()
+            printer.printWithBreak(x = "$typeString ${statement.name};")
         }
 
         override fun visit(statement: VariableAssignment) {
@@ -347,11 +349,12 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             if (pattern is HighIrPattern.WildCardPattern && assignedExpression !is FunctionApplication) {
                 return
             }
+            val typeString = if (typeAnnotation == Type.unit) "Void" else typeAnnotation.toJavaTypeString()
             printer.printlnWithoutFurtherIndentation {
                 when (pattern) {
                     is HighIrPattern.TuplePattern -> {
                         val temporaryVariable = allocateVariable()
-                        printWithoutBreak(x = "${typeAnnotation.toJavaTypeString()} $temporaryVariable = ")
+                        printWithoutBreak(x = "$typeString $temporaryVariable = ")
                         assignedExpression.accept(visitor = expressionPrinter)
                         printWithBreak(x = ";")
                         pattern.destructedNames.forEachIndexed { index, name ->
@@ -362,7 +365,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                     }
                     is HighIrPattern.ObjectPattern -> {
                         val temporaryVariable = allocateVariable()
-                        printWithoutBreak(x = "${typeAnnotation.toJavaTypeString()} $temporaryVariable = ")
+                        printWithoutBreak(x = "$typeString $temporaryVariable = ")
                         assignedExpression.accept(visitor = expressionPrinter)
                         printWithBreak(x = ";")
                         pattern.destructedNames.forEach { (name, alias) ->
@@ -370,9 +373,15 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                         }
                     }
                     is HighIrPattern.VariablePattern -> {
-                        printWithoutBreak(x = "${typeAnnotation.toJavaTypeString()} ${pattern.name} = ")
-                        assignedExpression.accept(visitor = expressionPrinter)
-                        printWithBreak(x = ";")
+                        if (typeString == "Void") {
+                            assignedExpression.accept(visitor = expressionPrinter)
+                            printWithBreak(x = ";")
+                            printWithBreak(x = "$typeString ${pattern.name} = null;")
+                        } else {
+                            printWithoutBreak(x = "$typeString ${pattern.name} = ")
+                            assignedExpression.accept(visitor = expressionPrinter)
+                            printWithBreak(x = ";")
+                        }
                     }
                     is HighIrPattern.WildCardPattern -> {
                         assignedExpression.accept(visitor = expressionPrinter)
