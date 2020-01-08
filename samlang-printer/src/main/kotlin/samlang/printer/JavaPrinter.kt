@@ -69,10 +69,6 @@ fun javaizeName(name: String): String =
     CaseUtils.toCamelCase(name, true, '-', '.')
 
 private class JavaPrinter(private val printer: IndentedPrinter) {
-
-    private val statementPrinter: JavaStatementPrinter = JavaStatementPrinter()
-    private val expressionPrinter: JavaExpressionPrinter = JavaExpressionPrinter()
-
     private var temporaryVariableId: Int = 0
 
     fun printIntrinsics() {
@@ -167,7 +163,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             printTypeDefinition(className = className, definition = typeDefinition)
             methods.forEach { method ->
                 println()
-                printMethod(method = method)
+                printMethod(method = method, typeDefinition = typeDefinition)
             }
         }
         printer.printWithBreak(x = "}")
@@ -184,27 +180,25 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
     private fun printObjectTypeDefinition(className: String, definition: TypeDefinition) {
         val (_, _, typeParameters, names, mapping) = definition
         val thisTypeString = "$className${typeParametersToString(typeParameters = typeParameters)}"
-        printer.printWithBreak(x = "private $className($thisTypeString other) {")
-        printer.indented {
-            printWithBreak(x = "if (other != null) {")
-            indented {
-                mapping.forEach { (fieldName, _) -> printWithBreak(x = "this.$fieldName = other.$fieldName;") }
-            }
-            printWithBreak(x = "}")
-        }
-        printer.printWithBreak(x = "}")
-        names.forEach { fieldName ->
-            val (type, isPublic) = mapping[fieldName] ?: error(message = "Bad type definition")
+        val orderedMapping = names.map { it to (mapping[it] ?: error(message = "Bad type definition")) }
+        orderedMapping.forEach { (fieldName, fieldType) ->
+            val (type, isPublic) = fieldType
             val modifier = if (isPublic) "public" else "private"
             printer.printWithBreak(x = "$modifier ${type.toJavaTypeString()} $fieldName;")
         }
-        mapping.forEach { (fieldName, fieldType) ->
-            val methodName = "\$builderSet${CaseUtils.toCamelCase(fieldName, true)}"
-            val methodBody = "this.$fieldName = $fieldName; return this;"
-            printer.printWithBreak(
-                x = "$thisTypeString $methodName(${fieldType.type.toJavaTypeString()} $fieldName) { $methodBody }"
-            )
+        val constructorParameters = orderedMapping.joinToString(separator = ", ") { (fieldName, fieldType) ->
+            "${fieldType.type.toJavaTypeString()} $fieldName"
         }
+        printer.printWithBreak(x = "private $className($constructorParameters) {")
+        printer.indented { names.forEach { field -> printWithBreak(x = "this.$field = $field;") } }
+        printer.printWithBreak(x = "}")
+        if (orderedMapping.isEmpty()) {
+            printer.printWithBreak(x = "private $className($thisTypeString other) {")
+        } else {
+            printer.printWithBreak(x = "private $className($thisTypeString other, $constructorParameters) {")
+        }
+        printer.indented { names.forEach { field -> printWithBreak(x = "this.$field = $field;") } }
+        printer.printWithBreak(x = "}")
     }
 
     private fun printVariantTypeDefinition(className: String, definition: TypeDefinition) {
@@ -228,7 +222,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
     }
 
-    private fun printMethod(method: JavaMethod) {
+    private fun printMethod(method: JavaMethod, typeDefinition: TypeDefinition) {
         printer.printlnWithoutFurtherIndentation {
             printWithoutBreak(x = if (method.isPublic) "public " else "private ")
             if (method.isStatic) {
@@ -247,13 +241,10 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             )
             printWithoutBreak(x = ") {")
         }
-        printer.indented { method.body.forEach(action = ::printStatement) }
+        val statementPrinter = JavaStatementPrinter(typeDefinition = typeDefinition)
+        printer.indented { method.body.forEach { it.accept(visitor = statementPrinter) } }
         printer.printWithBreak(x = "}")
     }
-
-    private fun printStatement(statement: HighIrStatement): Unit = statement.accept(visitor = statementPrinter)
-
-    private fun printExpression(expression: HighIrExpression): Unit = expression.accept(visitor = expressionPrinter)
 
     private fun allocateVariable(): String {
         val id = temporaryVariableId
@@ -261,11 +252,18 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         return "_JAVA_PRINTING_$id"
     }
 
-    private inner class JavaStatementPrinter : HighIrStatementVisitor<Unit> {
+    private inner class JavaStatementPrinter(typeDefinition: TypeDefinition) : HighIrStatementVisitor<Unit> {
+        private val expressionPrinter: JavaExpressionPrinter = JavaExpressionPrinter(
+            typeDefinition = typeDefinition,
+            printStatement = this::printStatement
+        )
+
+        private fun printStatement(statement: HighIrStatement): Unit = statement.accept(visitor = this)
+
         override fun visit(statement: Throw) {
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = "throw new Error(")
-                printExpression(expression = statement.expression)
+                statement.expression.accept(visitor = expressionPrinter)
                 printWithoutBreak(x = ");")
             }
         }
@@ -273,7 +271,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         override fun visit(statement: IfElse) {
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = "if (")
-                printExpression(expression = statement.booleanExpression)
+                statement.booleanExpression.accept(visitor = expressionPrinter)
                 printWithoutBreak(x = ") {")
             }
             printer.indented {
@@ -317,7 +315,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                     if (finalExpression != Never) {
                         printlnWithoutFurtherIndentation {
                             printWithoutBreak(x = "$assignedTemporaryVariable = ")
-                            printExpression(expression = finalExpression)
+                            finalExpression.accept(visitor = expressionPrinter)
                             printWithoutBreak(x = ";")
                         }
                     }
@@ -339,7 +337,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             printer.printlnWithoutFurtherIndentation {
                 printWithBreak(x = statement.name)
                 printWithBreak(x = "=")
-                printExpression(expression = statement.assignedExpression)
+                statement.assignedExpression.accept(visitor = expressionPrinter)
                 printWithoutBreak(";")
             }
         }
@@ -354,7 +352,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                     is HighIrPattern.TuplePattern -> {
                         val temporaryVariable = allocateVariable()
                         printWithoutBreak(x = "${typeAnnotation.toJavaTypeString()} $temporaryVariable = ")
-                        printExpression(expression = assignedExpression)
+                        assignedExpression.accept(visitor = expressionPrinter)
                         printWithBreak(x = ";")
                         pattern.destructedNames.forEachIndexed { index, name ->
                             if (name != null) {
@@ -365,7 +363,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                     is HighIrPattern.ObjectPattern -> {
                         val temporaryVariable = allocateVariable()
                         printWithoutBreak(x = "${typeAnnotation.toJavaTypeString()} $temporaryVariable = ")
-                        printExpression(expression = assignedExpression)
+                        assignedExpression.accept(visitor = expressionPrinter)
                         printWithBreak(x = ";")
                         pattern.destructedNames.forEach { (name, alias) ->
                             printWithoutBreak(x = "final var ${alias ?: name} = $temporaryVariable.$name;")
@@ -373,11 +371,11 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                     }
                     is HighIrPattern.VariablePattern -> {
                         printWithoutBreak(x = "${typeAnnotation.toJavaTypeString()} ${pattern.name} = ")
-                        printExpression(expression = assignedExpression)
+                        assignedExpression.accept(visitor = expressionPrinter)
                         printWithBreak(x = ";")
                     }
                     is HighIrPattern.WildCardPattern -> {
-                        printExpression(expression = assignedExpression)
+                        assignedExpression.accept(visitor = expressionPrinter)
                         printWithBreak(x = ";")
                     }
                 }
@@ -391,7 +389,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             } else {
                 printer.printlnWithoutFurtherIndentation {
                     printWithoutBreak(x = "return ")
-                    printExpression(expression = returnedExpression)
+                    returnedExpression.accept(visitor = expressionPrinter)
                     printWithoutBreak(x = ";")
                 }
             }
@@ -406,7 +404,10 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
     }
 
-    private inner class JavaExpressionPrinter : HighIrExpressionVisitor<Unit> {
+    private inner class JavaExpressionPrinter(
+        private val typeDefinition: TypeDefinition,
+        private val printStatement: (HighIrStatement) -> Unit
+    ) : HighIrExpressionVisitor<Unit> {
 
         private fun HighIrExpression.printSelf(withParenthesis: Boolean = false): Unit =
             if (withParenthesis) {
@@ -451,7 +452,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             printer.printWithoutBreak(x = ">(")
             val size = expressions.size
             for (i in 0 until size) {
-                printExpression(expression = expressions[i])
+                expressions[i].accept(visitor = this)
                 if (i < size - 1) {
                     printer.printWithoutBreak(x = ", ")
                 }
@@ -461,12 +462,17 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
         override fun visit(expression: ObjectConstructor) {
             val (type, fieldDeclaration) = expression
-            printer.printWithoutBreak(x = "new ${type.toJavaTypeString()}(null)")
-            fieldDeclaration.forEach { (name, fieldExpression) ->
-                printer.printWithoutBreak(x = ".\$builderSet${CaseUtils.toCamelCase(name, true)}(")
-                printExpression(expression = fieldExpression)
-                printer.printWithoutBreak(x = ")")
+            val fields = typeDefinition.names
+            val declarationMap = fieldDeclaration.toMap()
+            printer.printWithoutBreak(x = "new ${type.toJavaTypeString()}(")
+            fields.asSequence().forEachIndexed { i, fieldName ->
+                val expressionToAssignToField = declarationMap[fieldName] ?: error(message = "Bad declaration!")
+                expressionToAssignToField.accept(visitor = this)
+                if (i != fields.size - 1) {
+                    printer.printWithoutBreak(x = ", ")
+                }
             }
+            printer.printWithoutBreak(x = ")")
         }
 
         override fun visit(expression: VariantConstructor) {
@@ -474,7 +480,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             val innerConstructorString =
                 IdentifierType(identifier = expression.tag, typeArguments = typeArguments).toJavaTypeString()
             printer.printWithoutBreak(x = "new $identifier.$innerConstructorString(")
-            printExpression(expression = expression.data)
+            expression.data.accept(visitor = this)
             printer.printWithoutBreak(x = ")")
         }
 
@@ -576,7 +582,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             printer.printlnWithoutFurtherIndentation {
                 printWithoutBreak(x = parameterString)
                 printWithoutBreak(x = " -> {")
-                expression.body.forEach(action = ::printStatement)
+                expression.body.forEach(action = printStatement)
                 printWithoutBreak(x = "}")
             }
         }
