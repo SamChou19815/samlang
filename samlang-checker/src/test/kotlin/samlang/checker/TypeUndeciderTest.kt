@@ -7,6 +7,7 @@ import samlang.ast.common.Type
 class TypeUndeciderTest : StringSpec() {
     init {
         "Can undecide one big nested type." {
+            Type.resetUndecidedTypeIndex()
             val source = Type.FunctionType(
                 argumentTypes = listOf(
                     Type.IdentifierType(

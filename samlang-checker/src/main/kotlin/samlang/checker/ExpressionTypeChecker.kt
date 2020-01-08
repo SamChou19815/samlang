@@ -152,10 +152,21 @@ private class ExpressionTypeCheckerVisitor(
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = context, actualType = locallyInferredType, errorRange = range
         )
-        return expression.copy(
-            type = constraintInferredType as TupleType,
-            expressionList = checkedExpressionList
-        )
+        return if (constraintInferredType is TupleType) {
+            expression.copy(
+                type = constraintInferredType,
+                expressionList = checkedExpressionList
+            )
+        } else {
+            expression.errorWith(
+                expectedType = context,
+                error = UnexpectedTypeKindError(
+                    expectedTypeKind = "tuple",
+                    actualType = constraintInferredType,
+                    range = range
+                )
+            )
+        }
     }
 
     private fun typeCheckFieldDeclarations(
@@ -246,12 +257,23 @@ private class ExpressionTypeCheckerVisitor(
         }
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = context, actualType = locallyInferredType, errorRange = range
-        ) as IdentifierType
-        return ObjectConstructor(
-            range = range,
-            type = constraintInferredType,
-            fieldDeclarations = enhancedFieldDeclarations
         )
+        return if (constraintInferredType is IdentifierType) {
+            ObjectConstructor(
+                range = range,
+                type = constraintInferredType,
+                fieldDeclarations = enhancedFieldDeclarations
+            )
+        } else {
+            expression.errorWith(
+                expectedType = context,
+                error = UnexpectedTypeKindError(
+                    expectedTypeKind = "class",
+                    actualType = constraintInferredType,
+                    range = range
+                )
+            )
+        }
     }
 
     override fun visit(expression: VariantConstructor, context: Type): Expression {
@@ -307,6 +329,12 @@ private class ExpressionTypeCheckerVisitor(
         val checkedObjectExpression = objectExpression.toChecked()
         val betterExpression = expression.copy(expression = checkedObjectExpression)
         val checkedObjectExpressionType = checkedObjectExpression.type
+        if (checkedObjectExpressionType is UndecidedType) {
+            return checkedObjectExpression.errorWith(
+                expectedType = context,
+                error = InsufficientTypeInferenceContextError(range = checkedObjectExpression.range)
+            )
+        }
         if (checkedObjectExpressionType !is IdentifierType) {
             return betterExpression.errorWith(
                 expectedType = context,
@@ -351,14 +379,20 @@ private class ExpressionTypeCheckerVisitor(
     ): Either<Pair<Expression, FunctionType>, CompileTimeError> {
         val (range, _, expressionToCallMethod, methodName) = expression
         val checkedExpression = expressionToCallMethod.toChecked()
-        val (checkedExprTypeIdentifier, checkedExprTypeArguments) = checkedExpression.type as? IdentifierType
-            ?: return Either.Right(
+        val checkedExpressionType = checkedExpression.type
+        if (checkedExpressionType is UndecidedType) {
+            return Either.Right(v = InsufficientTypeInferenceContextError(range = checkedExpression.range))
+        }
+        if (checkedExpressionType !is IdentifierType) {
+            return Either.Right(
                 v = UnexpectedTypeKindError(
                     expectedTypeKind = "identifier",
-                    actualType = checkedExpression.type,
+                    actualType = checkedExpressionType,
                     range = expressionToCallMethod.range
                 )
             )
+        }
+        val (checkedExprTypeIdentifier, checkedExprTypeArguments) = checkedExpressionType
         val methodTypeOrError = accessibleGlobalTypingContext.getClassMethodType(
             module = checkedExprTypeIdentifier,
             typeArguments = checkedExprTypeArguments,
@@ -587,13 +621,24 @@ private class ExpressionTypeCheckerVisitor(
         )
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = context, actualType = locallyInferredType, errorRange = range
-        ) as FunctionType
-        return Lambda(
-            range = range,
-            type = constraintInferredType,
-            parameters = checkedArguments,
-            body = checkedBody
         )
+        return if (constraintInferredType is FunctionType) {
+            Lambda(
+                range = range,
+                type = constraintInferredType,
+                parameters = checkedArguments,
+                body = checkedBody
+            )
+        } else {
+            expression.errorWith(
+                expectedType = context,
+                error = UnexpectedTypeKindError(
+                    expectedTypeKind = "function",
+                    actualType = constraintInferredType,
+                    range = range
+                )
+            )
+        }
     }
 
     override fun visit(expression: StatementBlockExpression, context: Type): Expression {

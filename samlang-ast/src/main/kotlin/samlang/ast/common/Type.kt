@@ -80,7 +80,6 @@ sealed class Type {
     }
 
     companion object {
-
         private var nextUndecidedTypeIndex: Int = 0
 
         @JvmField
@@ -112,6 +111,12 @@ sealed class Type {
                 list.add(element = undecided())
             }
             return list
+        }
+
+        /** Exposed for testing only. Never call this in production code. */
+        @JvmStatic
+        fun resetUndecidedTypeIndex() {
+            nextUndecidedTypeIndex = 0
         }
     }
 }

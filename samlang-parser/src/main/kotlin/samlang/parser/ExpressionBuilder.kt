@@ -1,18 +1,25 @@
 package samlang.parser
 
+import org.antlr.v4.runtime.ANTLRInputStream
+import org.antlr.v4.runtime.CommonTokenStream
 import org.apache.commons.text.StringEscapeUtils
 import samlang.ast.common.BinaryOperator
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.Type.TupleType
 import samlang.ast.common.UnaryOperator
 import samlang.ast.lang.Expression
+import samlang.errors.CompileTimeError
 import samlang.errors.SyntaxError
 import samlang.parser.generated.PLBaseVisitor
+import samlang.parser.generated.PLLexer
 import samlang.parser.generated.PLParser
 
-internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Expression?>() {
+class ExpressionBuilder internal constructor(
+    private val syntaxErrorListener: SyntaxErrorListener
+) : PLBaseVisitor<Expression?>() {
     private val statementBlockBuilder: StatementBlockBuilder = StatementBlockBuilder { it.toExpression() }
 
     private fun PLParser.ExpressionContext.toExpression(): Expression {
@@ -277,7 +284,17 @@ internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorLis
     }
 
     companion object {
-        fun dummyExpression(range: Range): Expression = Expression.Panic(
+        fun build(source: String, moduleReference: ModuleReference): Pair<Expression?, List<CompileTimeError>> {
+            val parser = PLParser(CommonTokenStream(PLLexer(ANTLRInputStream(source.byteInputStream()))))
+            val errorListener = SyntaxErrorListener(moduleReference = moduleReference)
+            parser.removeErrorListeners()
+            parser.addErrorListener(errorListener)
+            val builder = ExpressionBuilder(syntaxErrorListener = errorListener)
+            val expression = parser.expression().accept(builder)
+            return expression to errorListener.syntaxErrors
+        }
+
+        internal fun dummyExpression(range: Range): Expression = Expression.Panic(
             range = range,
             type = Type.undecided(),
             expression = Expression.Literal.ofString(range = range, value = "dummy")
