@@ -130,12 +130,14 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             .takeIf { it.isNotEmpty() }
             ?.joinToString(separator = ", ", prefix = "<", postfix = ">") { "T_$it" }
             ?: ""
-        when (typeDefinition.type) {
+        val (_, typeDefinitionType, _, names, mappings) = typeDefinition
+        when (typeDefinitionType) {
             TypeDefinitionType.OBJECT -> {
                 printer.printWithBreak(x = "export type T_$name$typeParameterString = {")
                 printer.indented {
-                    typeDefinition.mappings.forEach { (field, fieldType) ->
-                        printWithBreak(x = "readonly $field: ${fieldType.type.toTsTypeString()};")
+                    names.forEach { field ->
+                        val (fieldType, _) = mappings[field] ?: error(message = "Bad type definition")
+                        printWithBreak(x = "readonly $field: ${fieldType.toTsTypeString()};")
                     }
                 }
                 printer.printWithBreak(x = "};")
@@ -143,9 +145,10 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             TypeDefinitionType.VARIANT -> {
                 printer.printWithBreak(x = "export type T_$name$typeParameterString =")
                 printer.indented {
-                    typeDefinition.mappings.forEach { (tag, fieldType) ->
+                    names.forEach { tag ->
+                        val (fieldType, _) = mappings[tag] ?: error(message = "Bad type definition")
                         printWithBreak(
-                            x = """| { readonly _type: "$tag"; readonly data: ${fieldType.type.toTsTypeString()} }"""
+                            x = """| { readonly _type: "$tag"; readonly data: ${fieldType.toTsTypeString()} }"""
                         )
                     }
                 }

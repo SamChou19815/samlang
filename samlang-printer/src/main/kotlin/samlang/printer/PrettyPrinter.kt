@@ -63,20 +63,23 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
 
     private fun print(classDefinition: ClassDefinition) {
         val (_, _, name, typeDefinition, members) = classDefinition
-        val (_, typeDefinitionType, typeParameters, _, mappings) = typeDefinition
+        val (_, typeDefinitionType, typeParameters, names, mappings) = typeDefinition
         if (typeDefinition.mappings.isEmpty()) {
             printer.printWithBreak(x = "class $name {")
         } else {
             printer.printWithBreak(x = "class $name${typeParametersToString(typeParameters = typeParameters)}(")
             printer.indented {
-                when (typeDefinitionType) {
-                    OBJECT -> mappings.forEach { (field, fieldType) ->
-                        val (type, isPublic) = fieldType
-                        val modifier = if (isPublic) "" else "private "
-                        printWithBreak(x = "${modifier}val $field: $type,")
-                    }
-                    VARIANT -> mappings.forEach { (tag, fieldType) ->
-                        printWithBreak(x = "$tag(${fieldType.type}),")
+                names.forEach { name ->
+                    val fieldType = mappings[name] ?: error(message = "Bad type definition!")
+                    when (typeDefinitionType) {
+                        OBJECT -> {
+                            val (type, isPublic) = fieldType
+                            val modifier = if (isPublic) "" else "private "
+                            printWithBreak(x = "${modifier}val $name: $type,")
+                        }
+                        VARIANT -> {
+                            printWithBreak(x = "$name(${fieldType.type}),")
+                        }
                     }
                 }
             }

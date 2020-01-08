@@ -182,7 +182,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
     }
 
     private fun printObjectTypeDefinition(className: String, definition: TypeDefinition) {
-        val (_, _, typeParameters, _, mapping) = definition
+        val (_, _, typeParameters, names, mapping) = definition
         val thisTypeString = "$className${typeParametersToString(typeParameters = typeParameters)}"
         printer.printWithBreak(x = "private $className($thisTypeString other) {")
         printer.indented {
@@ -193,8 +193,8 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             printWithBreak(x = "}")
         }
         printer.printWithBreak(x = "}")
-        mapping.forEach { (fieldName, fieldType) ->
-            val (type, isPublic) = fieldType
+        names.forEach { fieldName ->
+            val (type, isPublic) = mapping[fieldName] ?: error(message = "Bad type definition")
             val modifier = if (isPublic) "public" else "private"
             printer.printWithBreak(x = "$modifier ${type.toJavaTypeString()} $fieldName;")
         }
