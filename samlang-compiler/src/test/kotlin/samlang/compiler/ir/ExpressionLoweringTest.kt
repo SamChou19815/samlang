@@ -172,6 +172,7 @@ class ExpressionLoweringTest : StringSpec() {
                 expectedExpression = HighIrExpression.Lambda(
                     parameters = emptyList(),
                     type = Type.FunctionType(argumentTypes = emptyList(), returnType = unit),
+                    captured = emptyMap(),
                     body = listOf(HighIrStatement.Return(expression = IR_THIS))
                 )
             )

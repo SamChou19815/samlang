@@ -786,6 +786,7 @@ class TsPrinterTest : StringSpec() {
                                         returnType = Type.bool
                                     ),
                                     parameters = listOf(element = "foo" to Type.int),
+                                    captured = emptyMap(),
                                     body = listOf(
                                         Return(expression = FALSE)
                                     )
@@ -800,6 +801,7 @@ class TsPrinterTest : StringSpec() {
                                         returnType = Type.bool
                                     ),
                                     parameters = listOf(element = "foo" to Type.int),
+                                    captured = emptyMap(),
                                     body = listOf(
                                         ConstantDefinition(
                                             pattern = HighIrPattern.WildCardPattern,

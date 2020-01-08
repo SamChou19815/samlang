@@ -120,6 +120,7 @@ sealed class HighIrExpression(val precedence: Int) {
     data class Lambda(
         override val type: Type.FunctionType,
         val parameters: List<Pair<String, Type>>,
+        val captured: Map<String, Type>,
         val body: List<HighIrStatement>
     ) : HighIrExpression(precedence = 11) {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)

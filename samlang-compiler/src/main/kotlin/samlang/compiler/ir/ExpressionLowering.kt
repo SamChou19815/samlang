@@ -307,12 +307,14 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             Lambda(
                 type = expression.type,
                 parameters = expression.parameters,
+                captured = expression.captured,
                 body = result.statements
             ).asLoweringResult()
         } else {
             Lambda(
                 type = expression.type,
                 parameters = expression.parameters,
+                captured = expression.captured,
                 body = result.statements.plus(element = Return(expression = result.expression))
             ).asLoweringResult()
         }
