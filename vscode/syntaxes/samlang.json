@@ -26,7 +26,7 @@
 			"patterns": [
 				{
 					"name": "keyword.control.samlang",
-					"match": "\\b(val|as|if|then|else|match|class|public|function|method|import|from)\\b"
+					"match": "\\b(val|as|if|then|else|match|class|public|private|function|method|import|from)\\b"
 				},
 				{
 					"name": "support.function.builtin",
