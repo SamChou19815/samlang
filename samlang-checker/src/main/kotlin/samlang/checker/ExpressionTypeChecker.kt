@@ -196,7 +196,7 @@ private class ExpressionTypeCheckerVisitor(
 
     override fun visit(expression: ObjectConstructor, context: Type): Expression {
         val (range, _, spreadExpression, fieldDeclarations) = expression
-        val (_, _, typeParameters, typeMappings) = accessibleGlobalTypingContext.getCurrentClassTypeDefinition()
+        val (_, _, typeParameters, _, typeMappings) = accessibleGlobalTypingContext.getCurrentClassTypeDefinition()
             ?.takeIf { it.type == OBJECT }
             ?: return expression.errorWith(
                 expectedType = context,
@@ -272,7 +272,7 @@ private class ExpressionTypeCheckerVisitor(
 
     override fun visit(expression: VariantConstructor, context: Type): Expression {
         val (range, _, tag, data) = expression
-        val (_, _, typeParameters, typeMappings) = accessibleGlobalTypingContext.getCurrentClassTypeDefinition()
+        val (_, _, typeParameters, _, typeMappings) = accessibleGlobalTypingContext.getCurrentClassTypeDefinition()
             ?.takeIf { it.type == VARIANT }
             ?: return expression.errorWith(
                 expectedType = context,

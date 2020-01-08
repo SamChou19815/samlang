@@ -63,7 +63,7 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
 
     private fun print(classDefinition: ClassDefinition) {
         val (_, _, name, typeDefinition, members) = classDefinition
-        val (_, typeDefinitionType, typeParameters, mappings) = typeDefinition
+        val (_, typeDefinitionType, typeParameters, _, mappings) = typeDefinition
         if (typeDefinition.mappings.isEmpty()) {
             printer.printWithBreak(x = "class $name {")
         } else {

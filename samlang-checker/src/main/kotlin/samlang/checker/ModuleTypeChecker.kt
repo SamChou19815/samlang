@@ -53,7 +53,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
     ) {
         // We consistently put passedCheck on the right hand side to avoid short-circuiting.
         // In this way, we can report as many errors as possible.
-        val (range, _, typeParameters, mappings) = typeDefinition
+        val (range, _, typeParameters, _, mappings) = typeDefinition
         typeParameters.checkNameCollision(range = range)
         mappings.keys.checkNameCollision(range = range)
         mappings.values.forEach { (type, _) ->

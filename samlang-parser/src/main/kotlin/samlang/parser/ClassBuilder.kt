@@ -57,31 +57,35 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
 
             override fun visitObjType(ctx: ObjTypeContext): TypeDefinition {
                 val rawDeclarations = ctx.objectTypeFieldDeclaration()
-                val mappings = rawDeclarations.asSequence().mapNotNull { c ->
+                val mappings = rawDeclarations.mapNotNull { c ->
                     val name = c.LowerId().symbol.text
                     val isPublic = c.PRIVATE() == null
                     val type = c.typeAnnotation().typeExpr().accept(TypeBuilder) ?: return@mapNotNull null
                     name to TypeDefinition.FieldType(type = type, isPublic = isPublic)
-                }.toMap()
+                }
+                val names = mappings.map { it.first }
                 return TypeDefinition(
                     range = range,
                     type = TypeDefinitionType.OBJECT,
                     typeParameters = typeParameters,
-                    mappings = mappings
+                    names = names,
+                    mappings = mappings.toMap()
                 )
             }
 
             override fun visitVariantType(ctx: VariantTypeContext): TypeDefinition {
-                val mappings = ctx.variantTypeConstructorDeclaration().asSequence().mapNotNull { c ->
+                val mappings = ctx.variantTypeConstructorDeclaration().mapNotNull { c ->
                     val name = c.UpperId().symbol.text
                     val type = c.typeExpr().accept(TypeBuilder) ?: return@mapNotNull null
                     name to TypeDefinition.FieldType(type = type, isPublic = false)
-                }.toMap()
+                }
+                val names = mappings.map { it.first }
                 return TypeDefinition(
                     range = range,
                     type = TypeDefinitionType.VARIANT,
                     typeParameters = typeParameters,
-                    mappings = mappings
+                    names = names,
+                    mappings = mappings.toMap()
                 )
             }
         }

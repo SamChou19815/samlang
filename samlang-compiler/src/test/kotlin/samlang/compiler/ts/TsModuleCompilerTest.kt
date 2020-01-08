@@ -139,6 +139,7 @@ class TsModuleCompilerTest : StringSpec() {
                 range = dummyRange,
                 type = TypeDefinitionType.OBJECT,
                 typeParameters = listOf("A", "B"),
+                names = emptyList(),
                 mappings = emptyMap()
             )
             assertCorrectlyCompiled(

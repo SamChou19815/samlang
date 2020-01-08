@@ -395,9 +395,11 @@ class TsPrinterTest : StringSpec() {
                     range = Range.DUMMY,
                     type = TypeDefinitionType.OBJECT,
                     typeParameters = emptyList(),
+                    names = listOf("foo", "bar"),
                     mappings = mapOf(
                         "foo" to FieldType(type = Type.int, isPublic = true),
-                        "bar" to FieldType(type = Type.bool, isPublic = true))
+                        "bar" to FieldType(type = Type.bool, isPublic = true)
+                    )
                 ),
                 functions = listOf(
                     element = TsFunction(

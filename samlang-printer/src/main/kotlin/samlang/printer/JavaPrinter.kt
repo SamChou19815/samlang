@@ -182,7 +182,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
     }
 
     private fun printObjectTypeDefinition(className: String, definition: TypeDefinition) {
-        val (_, _, typeParameters, mapping) = definition
+        val (_, _, typeParameters, _, mapping) = definition
         val thisTypeString = "$className${typeParametersToString(typeParameters = typeParameters)}"
         printer.printWithBreak(x = "private $className($thisTypeString other) {")
         printer.indented {
@@ -208,7 +208,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
     }
 
     private fun printVariantTypeDefinition(className: String, definition: TypeDefinition) {
-        val (_, _, typeParameters, mapping) = definition
+        val (_, _, typeParameters, _, mapping) = definition
         val typeParameterString = typeParametersToString(typeParameters = typeParameters)
         val parentType = "$className$typeParameterString"
         mapping.forEach { (variantName, variantType) ->

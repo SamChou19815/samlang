@@ -30,7 +30,7 @@ internal object ClassTypeDefinitionResolver {
         if (id != context.currentClass && typeDefinitionType == TypeDefinitionType.VARIANT) {
             return Either.Right(v = IllegalOtherClassMatch(range = errorRange))
         }
-        val (_, _, typeParameters, varMap) = context.getClassTypeDefinition(className = id)
+        val (_, _, typeParameters, _, varMap) = context.getClassTypeDefinition(className = id)
             ?.takeIf { it.type == typeDefinitionType }
             ?: return Either.Right(
                 v = UnsupportedClassTypeDefinitionError(typeDefinitionType = typeDefinitionType, range = errorRange)
