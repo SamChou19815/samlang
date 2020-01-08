@@ -14,6 +14,9 @@ internal class LocalTypingContext {
             val stack = stacks[level]
             val type = stack.getLocalValueType(name = name)
             if (type != null) {
+                for (capturedLevel in ((level + 1) until stacks.size)) {
+                    stacks[capturedLevel].capturedValues[name] = type
+                }
                 return type
             }
         }
@@ -42,8 +45,18 @@ internal class LocalTypingContext {
         return result
     }
 
+    fun <T> withNestedScopeReturnCaptured(block: () -> T): Pair<T, Map<String, Type>> {
+        stacks += ContextLayer()
+        val result = block()
+        val removedStack = stacks.removeAt(index = stacks.size - 1)
+        return result to removedStack.capturedValues
+    }
+
     /** One layer of the typing context. We should stack a new layer when encounter a new nested scope. */
-    private class ContextLayer(private val localValues: MutableMap<String, Type> = mutableMapOf()) {
+    private class ContextLayer(
+        private val localValues: MutableMap<String, Type> = mutableMapOf(),
+        val capturedValues: MutableMap<String, Type> = mutableMapOf()
+    ) {
         fun getLocalValueType(name: String): Type? = localValues[name]
 
         fun addLocalValueType(name: String, type: Type, onCollision: () -> Unit) {
