@@ -55,29 +55,35 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
             private val typeParameters: List<String>
         ) : PLBaseVisitor<TypeDefinition?>() {
 
-            override fun visitObjType(ctx: ObjTypeContext): TypeDefinition =
-                TypeDefinition(
+            override fun visitObjType(ctx: ObjTypeContext): TypeDefinition {
+                val rawDeclarations = ctx.objectTypeFieldDeclaration()
+                val mappings = rawDeclarations.asSequence().mapNotNull { c ->
+                    val name = c.LowerId().symbol.text
+                    val isPublic = c.PRIVATE() == null
+                    val type = c.typeAnnotation().typeExpr().accept(TypeBuilder) ?: return@mapNotNull null
+                    name to TypeDefinition.FieldType(type = type, isPublic = isPublic)
+                }.toMap()
+                return TypeDefinition(
                     range = range,
                     type = TypeDefinitionType.OBJECT,
                     typeParameters = typeParameters,
-                    mappings = ctx.objectTypeFieldDeclaration().asSequence().mapNotNull { c ->
-                        val name = c.LowerId().symbol.text
-                        val type = c.typeAnnotation().typeExpr().accept(TypeBuilder) ?: return@mapNotNull null
-                        name to type
-                    }.toMap()
+                    mappings = mappings
                 )
+            }
 
-            override fun visitVariantType(ctx: VariantTypeContext): TypeDefinition =
-                TypeDefinition(
+            override fun visitVariantType(ctx: VariantTypeContext): TypeDefinition {
+                val mappings = ctx.variantTypeConstructorDeclaration().asSequence().mapNotNull { c ->
+                    val name = c.UpperId().symbol.text
+                    val type = c.typeExpr().accept(TypeBuilder) ?: return@mapNotNull null
+                    name to TypeDefinition.FieldType(type = type, isPublic = false)
+                }.toMap()
+                return TypeDefinition(
                     range = range,
                     type = TypeDefinitionType.VARIANT,
                     typeParameters = typeParameters,
-                    mappings = ctx.variantTypeConstructorDeclaration().asSequence().mapNotNull { c ->
-                        val name = c.UpperId().symbol.text
-                        val type = c.typeExpr().accept(TypeBuilder) ?: return@mapNotNull null
-                        name to type
-                    }.toMap()
+                    mappings = mappings
                 )
+            }
         }
     }
 

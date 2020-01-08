@@ -56,7 +56,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
         val (range, _, typeParameters, mappings) = typeDefinition
         typeParameters.checkNameCollision(range = range)
         mappings.keys.checkNameCollision(range = range)
-        mappings.values.forEach { type ->
+        mappings.values.forEach { (type, _) ->
             TypeValidator.validateType(
                 type = type,
                 identifierTypeValidator = accessibleGlobalTypingContext,
@@ -80,7 +80,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
                 .withAdditionalTypeParameters(typeParameters = typeParameters)
             if (member.isMethod) {
                 val updatedNewContext =
-                    accessibleGlobalTypingContextWithAdditionalTypeParameters.getCurrentModuleTypeDefinition()
+                    accessibleGlobalTypingContextWithAdditionalTypeParameters.getCurrentClassTypeDefinition()
                         ?.typeParameters?.let {
                         accessibleGlobalTypingContextWithAdditionalTypeParameters.withAdditionalTypeParameters(
                             typeParameters = it

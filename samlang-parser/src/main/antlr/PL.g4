@@ -25,7 +25,7 @@ typeDeclaration
     : objectTypeFieldDeclaration (COMMA objectTypeFieldDeclaration)* COMMA? # ObjType
     | variantTypeConstructorDeclaration (COMMA variantTypeConstructorDeclaration)+ COMMA? # VariantType
     ;
-objectTypeFieldDeclaration : VAL LowerId typeAnnotation;
+objectTypeFieldDeclaration : PRIVATE? VAL LowerId typeAnnotation;
 variantTypeConstructorDeclaration : UpperId LPAREN typeExpr RPAREN;
 
 // Type expressions

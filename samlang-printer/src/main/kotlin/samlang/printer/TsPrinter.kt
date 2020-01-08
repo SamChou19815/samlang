@@ -134,8 +134,8 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             TypeDefinitionType.OBJECT -> {
                 printer.printWithBreak(x = "export type T_$name$typeParameterString = {")
                 printer.indented {
-                    typeDefinition.mappings.forEach { (field, type) ->
-                        printWithBreak(x = "readonly $field: ${type.toTsTypeString()};")
+                    typeDefinition.mappings.forEach { (field, fieldType) ->
+                        printWithBreak(x = "readonly $field: ${fieldType.type.toTsTypeString()};")
                     }
                 }
                 printer.printWithBreak(x = "};")
@@ -143,8 +143,10 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             TypeDefinitionType.VARIANT -> {
                 printer.printWithBreak(x = "export type T_$name$typeParameterString =")
                 printer.indented {
-                    typeDefinition.mappings.forEach { (tag, type) ->
-                        printWithBreak(x = """| { readonly _type: "$tag"; readonly data: ${type.toTsTypeString()} }""")
+                    typeDefinition.mappings.forEach { (tag, fieldType) ->
+                        printWithBreak(
+                            x = """| { readonly _type: "$tag"; readonly data: ${fieldType.type.toTsTypeString()} }"""
+                        )
                     }
                 }
             }

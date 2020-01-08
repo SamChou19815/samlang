@@ -7,6 +7,7 @@ import samlang.ast.common.Type.IdentifierType
 import samlang.ast.common.Type.PrimitiveType
 import samlang.ast.common.Type.TupleType
 import samlang.ast.common.Type.UndecidedType
+import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.TypeVisitor
 import samlang.errors.CompileTimeError
@@ -24,12 +25,12 @@ internal object ClassTypeDefinitionResolver {
         typeDefinitionType: TypeDefinitionType,
         context: AccessibleGlobalTypingContext,
         errorRange: Range
-    ): Either<Map<String, Type>, CompileTimeError> {
+    ): Either<Map<String, TypeDefinition.FieldType>, CompileTimeError> {
         val (id, typeArguments) = identifierType
-        if (id != context.currentClass) {
+        if (id != context.currentClass && typeDefinitionType == TypeDefinitionType.VARIANT) {
             return Either.Right(v = IllegalOtherClassMatch(range = errorRange))
         }
-        val (_, _, typeParameters, varMap) = context.getCurrentModuleTypeDefinition()
+        val (_, _, typeParameters, varMap) = context.getClassTypeDefinition(className = id)
             ?.takeIf { it.type == typeDefinitionType }
             ?: return Either.Right(
                 v = UnsupportedClassTypeDefinitionError(typeDefinitionType = typeDefinitionType, range = errorRange)
@@ -44,10 +45,12 @@ internal object ClassTypeDefinitionResolver {
             )
         }
         return varMap.mapValues { (_, v) ->
-            applyGenericTypeParameters(
-                type = v,
+            val (declaredType, isPublic) = v
+            val genericTypeParameterAppliedType = applyGenericTypeParameters(
+                type = declaredType,
                 context = typeParameters.zip(typeArguments).toMap()
             )
+            TypeDefinition.FieldType(type = genericTypeParameterAppliedType, isPublic = isPublic)
         }.let { Either.Left(v = it) }
     }
 

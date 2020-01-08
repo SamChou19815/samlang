@@ -7,7 +7,6 @@ import samlang.ast.lang.Pattern
 import samlang.ast.lang.Statement
 import samlang.ast.lang.Statement.Val
 import samlang.ast.lang.StatementBlock
-import samlang.errors.IllegalOtherClassFieldAccess
 import samlang.errors.TupleSizeMismatchError
 import samlang.errors.UnexpectedTypeKindError
 import samlang.errors.UnresolvedNameError
@@ -115,15 +114,6 @@ internal class StatementTypeChecker(
                     )
                     return betterStatement
                 }
-                if (identifierType.identifier != accessibleGlobalTypingContext.currentClass) {
-                    errorCollector.add(
-                        compileTimeError = IllegalOtherClassFieldAccess(
-                            className = identifierType.identifier,
-                            range = pattern.range
-                        )
-                    )
-                    return betterStatement
-                }
                 val fieldMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
                     identifierType = identifierType,
                     context = accessibleGlobalTypingContext,
@@ -138,7 +128,11 @@ internal class StatementTypeChecker(
                     }
                 }
                 pattern.destructedNames.forEach { (originalName, renamedName) ->
-                    val fieldType = fieldMappings[originalName] ?: kotlin.run {
+                    val (fieldType, isPublic) = fieldMappings[originalName] ?: kotlin.run {
+                        errorCollector.add(UnresolvedNameError(unresolvedName = originalName, range = pattern.range))
+                        return betterStatement
+                    }
+                    if (identifierType.identifier != accessibleGlobalTypingContext.currentClass && !isPublic) {
                         errorCollector.add(UnresolvedNameError(unresolvedName = originalName, range = pattern.range))
                         return betterStatement
                     }

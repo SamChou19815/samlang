@@ -1,0 +1,22 @@
+// ERROR_COUNT: 2
+// illegal-private-field-access.sam:18:9-18:15: [UnresolvedName]: Name `b` is not resolved.
+// illegal-private-field-access.sam:20:13-20:16: [UnresolvedName]: Name `b` is not resolved.
+
+class Fields(val a: int, private val b: bool) {
+  function get(): Fields = {
+    val f = { a: 3, b: true };
+    val {a, b} = f;
+    val _ = f.a;
+    val _ = f.b;
+    f
+  }
+}
+
+class Main {
+  function main(): unit = {
+    val f = Fields.get();
+    val {a, b} = f;
+    val _ = f.a;
+    val _ = f.b;
+  }
+}

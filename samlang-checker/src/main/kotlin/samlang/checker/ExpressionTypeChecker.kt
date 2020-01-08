@@ -43,7 +43,6 @@ import samlang.ast.lang.ExpressionVisitor
 import samlang.errors.CompileTimeError
 import samlang.errors.DuplicateFieldDeclarationError
 import samlang.errors.ExtraFieldInObjectError
-import samlang.errors.IllegalOtherClassMatch
 import samlang.errors.IllegalThisError
 import samlang.errors.InconsistentFieldsInObjectError
 import samlang.errors.InsufficientTypeInferenceContextError
@@ -197,7 +196,7 @@ private class ExpressionTypeCheckerVisitor(
 
     override fun visit(expression: ObjectConstructor, context: Type): Expression {
         val (range, _, spreadExpression, fieldDeclarations) = expression
-        val (_, _, typeParameters, typeMappings) = accessibleGlobalTypingContext.getCurrentModuleTypeDefinition()
+        val (_, _, typeParameters, typeMappings) = accessibleGlobalTypingContext.getCurrentClassTypeDefinition()
             ?.takeIf { it.type == OBJECT }
             ?: return expression.errorWith(
                 expectedType = context,
@@ -216,7 +215,7 @@ private class ExpressionTypeCheckerVisitor(
             // In this case, keys does not need to perfectly match because we have fall back.
             for ((k, actualType) in declaredFieldTypes) {
                 val nameRange = nameRangeMap[k] ?: error("Name not found!")
-                val expectedFieldType = typeMappings[k] ?: return expression.errorWith(
+                val (expectedFieldType, _) = typeMappings[k] ?: return expression.errorWith(
                     expectedType = context,
                     error = ExtraFieldInObjectError(extraField = k, range = nameRange)
                 )
@@ -242,7 +241,7 @@ private class ExpressionTypeCheckerVisitor(
                 typeParameters = typeParameters
             )
             for ((k, actualType) in declaredFieldTypes) {
-                val reqType = genericsResolvedTypeMappings[k] ?: error("Name not found!")
+                val (reqType, _) = genericsResolvedTypeMappings[k] ?: error("Name not found!")
                 val nameRange = nameRangeMap[k] ?: error("Name not found!")
                 checkedMappings[k] = constraintAwareTypeChecker.checkAndInfer(
                     expectedType = reqType, actualType = actualType, errorRange = nameRange
@@ -273,14 +272,14 @@ private class ExpressionTypeCheckerVisitor(
 
     override fun visit(expression: VariantConstructor, context: Type): Expression {
         val (range, _, tag, data) = expression
-        val (_, _, typeParameters, typeMappings) = accessibleGlobalTypingContext.getCurrentModuleTypeDefinition()
+        val (_, _, typeParameters, typeMappings) = accessibleGlobalTypingContext.getCurrentClassTypeDefinition()
             ?.takeIf { it.type == VARIANT }
             ?: return expression.errorWith(
                 expectedType = context,
                 error = UnsupportedClassTypeDefinitionError(typeDefinitionType = VARIANT, range = range)
             )
         val checkedData = data.toChecked()
-        val associatedDataType = typeMappings[tag] ?: return expression.errorWith(
+        val (associatedDataType, _) = typeMappings[tag] ?: return expression.errorWith(
             expectedType = context,
             error = UnresolvedNameError(unresolvedName = tag, range = range)
         )
@@ -327,7 +326,11 @@ private class ExpressionTypeCheckerVisitor(
         if (checkedObjectExpressionType !is IdentifierType) {
             return betterExpression.errorWith(
                 expectedType = context,
-                error = IllegalOtherClassMatch(range = objectExpression.range)
+                error = UnexpectedTypeKindError(
+                    expectedTypeKind = "identifier",
+                    actualType = checkedObjectExpressionType,
+                    range = checkedObjectExpression.range
+                )
             )
         }
         val fieldMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
@@ -343,10 +346,16 @@ private class ExpressionTypeCheckerVisitor(
                 error = fieldMappingsOrError.v
             )
         }
-        val locallyInferredFieldType = fieldMappings[fieldName] ?: return betterExpression.errorWith(
+        val (locallyInferredFieldType, isPublic) = fieldMappings[fieldName] ?: return betterExpression.errorWith(
             expectedType = context,
             error = UnresolvedNameError(unresolvedName = fieldName, range = range)
         )
+        if (checkedObjectExpressionType.identifier != accessibleGlobalTypingContext.currentClass && !isPublic) {
+            betterExpression.errorWith(
+                expectedType = context,
+                error = UnresolvedNameError(unresolvedName = fieldName, range = range)
+            )
+        }
         val constraintInferredFieldType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = context, actualType = locallyInferredFieldType, errorRange = expression.range
         )
@@ -520,7 +529,7 @@ private class ExpressionTypeCheckerVisitor(
         }
         val unusedMappings = variantMappings.toMutableMap()
         val checkedMatchingList = matchingList.map { (range, tag, dataVariable, correspondingExpr) ->
-            val mappingDataType = unusedMappings[tag]
+            val (mappingDataType, _) = unusedMappings[tag]
                 ?: return expression.errorWith(
                     expectedType = context,
                     error = UnresolvedNameError(unresolvedName = tag, range = range)

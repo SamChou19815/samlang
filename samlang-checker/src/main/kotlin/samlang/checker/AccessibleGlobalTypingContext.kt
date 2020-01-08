@@ -63,7 +63,9 @@ internal data class AccessibleGlobalTypingContext(
         return Either.Left(v = fullyFixedType as Type.FunctionType)
     }
 
-    fun getCurrentModuleTypeDefinition(): TypeDefinition? = classes[currentClass]?.typeDefinition
+    fun getCurrentClassTypeDefinition(): TypeDefinition? = classes[currentClass]?.typeDefinition
+
+    fun getClassTypeDefinition(className: String): TypeDefinition? = classes[className]?.typeDefinition
 
     val thisType: Type
         get() =

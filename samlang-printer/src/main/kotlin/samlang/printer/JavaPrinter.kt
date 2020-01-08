@@ -194,13 +194,15 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
         printer.printWithBreak(x = "}")
         mapping.forEach { (fieldName, fieldType) ->
-            printer.printWithBreak(x = "private ${fieldType.toJavaTypeString()} $fieldName;")
+            val (type, isPublic) = fieldType
+            val modifier = if (isPublic) "public" else "private"
+            printer.printWithBreak(x = "$modifier ${type.toJavaTypeString()} $fieldName;")
         }
         mapping.forEach { (fieldName, fieldType) ->
             val methodName = "\$builderSet${CaseUtils.toCamelCase(fieldName, true)}"
             val methodBody = "this.$fieldName = $fieldName; return this;"
             printer.printWithBreak(
-                x = "$thisTypeString $methodName(${fieldType.toJavaTypeString()} $fieldName) { $methodBody }"
+                x = "$thisTypeString $methodName(${fieldType.type.toJavaTypeString()} $fieldName) { $methodBody }"
             )
         }
     }
@@ -210,11 +212,12 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         val typeParameterString = typeParametersToString(typeParameters = typeParameters)
         val parentType = "$className$typeParameterString"
         mapping.forEach { (variantName, variantType) ->
+            val type = variantType.type
             val thisType = "$variantName$typeParameterString"
-            val valueType = if (variantType is PrimitiveType && variantType.name == Type.PrimitiveTypeName.UNIT) {
+            val valueType = if (type is PrimitiveType && type.name == Type.PrimitiveTypeName.UNIT) {
                 "Void"
             } else {
-                variantType.toJavaTypeString()
+                type.toJavaTypeString()
             }
             printer.printWithBreak(x = "private static final class $thisType extends $parentType {")
             printer.indented {

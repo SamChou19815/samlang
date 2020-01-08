@@ -7,6 +7,7 @@ import samlang.ast.common.BinaryOperator
 import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
+import samlang.ast.common.TypeDefinition.FieldType
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression.Binary
@@ -394,7 +395,9 @@ class TsPrinterTest : StringSpec() {
                     range = Range.DUMMY,
                     type = TypeDefinitionType.OBJECT,
                     typeParameters = emptyList(),
-                    mappings = mapOf("foo" to Type.int, "bar" to Type.bool)
+                    mappings = mapOf(
+                        "foo" to FieldType(type = Type.int, isPublic = true),
+                        "bar" to FieldType(type = Type.bool, isPublic = true))
                 ),
                 functions = listOf(
                     element = TsFunction(
