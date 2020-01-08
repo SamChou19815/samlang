@@ -8,15 +8,13 @@ import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.Type.TupleType
 import samlang.ast.common.UnaryOperator
 import samlang.ast.lang.Expression
-import samlang.ast.lang.StatementBlock
 import samlang.errors.SyntaxError
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 
-internal class ExpressionBuilder(
-    private val syntaxErrorListener: SyntaxErrorListener,
-    private val statementBlockBuilder: (PLParser.StatementBlockContext) -> StatementBlock?
-) : PLBaseVisitor<Expression?>() {
+internal class ExpressionBuilder(private val syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Expression?>() {
+    private val statementBlockBuilder: StatementBlockBuilder = StatementBlockBuilder { it.toExpression() }
+
     private fun PLParser.ExpressionContext.toExpression(): Expression {
         val expression = this.accept(this@ExpressionBuilder)
         if (expression == null) {
@@ -274,7 +272,7 @@ internal class ExpressionBuilder(
     }
 
     override fun visitStatementBlockExpr(ctx: PLParser.StatementBlockExprContext): Expression? {
-        val statementBlock = statementBlockBuilder(ctx.statementBlock()) ?: return null
+        val statementBlock = ctx.statementBlock().accept(statementBlockBuilder) ?: return null
         return Expression.StatementBlockExpression(range = ctx.range, type = Type.undecided(), block = statementBlock)
     }
 

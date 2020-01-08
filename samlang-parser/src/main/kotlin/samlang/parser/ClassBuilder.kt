@@ -17,10 +17,7 @@ import samlang.parser.generated.PLParser.UtilClassHeaderContext
 import samlang.parser.generated.PLParser.VariantTypeContext
 
 internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<ClassDefinition?>() {
-    private val statementBlockBuilder: StatementBlockBuilder =
-        StatementBlockBuilder(expressionBuilder = this::buildExpression)
-    private val expressionBuilder: ExpressionBuilder =
-        ExpressionBuilder(syntaxErrorListener = syntaxErrorListener) { it.accept(statementBlockBuilder) }
+    private val expressionBuilder: ExpressionBuilder = ExpressionBuilder(syntaxErrorListener = syntaxErrorListener)
 
     private val TypeParametersDeclarationContext.typeParameters: List<String> get() = UpperId().map { it.symbol.text }
 
