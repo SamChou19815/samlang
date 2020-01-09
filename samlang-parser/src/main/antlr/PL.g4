@@ -58,7 +58,7 @@ expression
     | literal # LiteralExpr
     | THIS # ThisExpr
     | LowerId # VariableExpr
-    | UpperId DOT LowerId # ModuleMemberExpr
+    | UpperId DOT LowerId # ClassMemberExpr
     | LBRACKET expression (COMMA expression)+ COMMA? RBRACKET # TupleConstructor
     | LBRACE objectFieldDeclarations RBRACE # ObjConstructor
     | UpperId LPAREN expression RPAREN # VariantConstructor

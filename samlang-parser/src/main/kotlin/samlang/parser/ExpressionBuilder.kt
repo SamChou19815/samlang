@@ -84,7 +84,7 @@ class ExpressionBuilder internal constructor(
         name = ctx.LowerId().symbol.text
     )
 
-    override fun visitModuleMemberExpr(ctx: PLParser.ModuleMemberExprContext): Expression = Expression.ClassMember(
+    override fun visitClassMemberExpr(ctx: PLParser.ClassMemberExprContext): Expression = Expression.ClassMember(
         range = ctx.range,
         type = Type.undecided(),
         typeArguments = emptyList(), // At parsing time, the information is not resolved yet.
