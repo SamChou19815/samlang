@@ -92,17 +92,17 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
         val nameSymbol = ctx.LowerId().symbol
         val parameters = ctx.annotatedVariable().map { annotatedVariable ->
             val parameterNameSymbol = annotatedVariable.LowerId().symbol
-            val typeExpression = annotatedVariable.typeAnnotation().typeExpr()
+            val typeExpression = annotatedVariable.typeAnnotation()?.typeExpr()
             ClassDefinition.MemberDefinition.Parameter(
                 name = parameterNameSymbol.text,
                 nameRange = parameterNameSymbol.range,
-                type = typeExpression.accept(TypeBuilder) ?: return null,
+                type = typeExpression?.accept(TypeBuilder) ?: return null,
                 typeRange = typeExpression.range
             )
         }
         val type = Type.FunctionType(
             argumentTypes = parameters.map { it.type },
-            returnType = ctx.typeExpr().accept(TypeBuilder) ?: return null
+            returnType = ctx.typeExpr()?.accept(TypeBuilder) ?: return null
         )
         val body = buildExpression(expressionContext = ctx.expression())
         return ClassDefinition.MemberDefinition(
