@@ -1,4 +1,4 @@
-package samlang.compiler.ir
+package samlang.compiler.hir
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec

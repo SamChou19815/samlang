@@ -12,7 +12,7 @@ import samlang.ast.lang.Module
 import samlang.ast.ts.TsFunction
 import samlang.ast.ts.TsModule
 import samlang.ast.ts.TsModuleFolder
-import samlang.compiler.ir.lowerExpression
+import samlang.compiler.hir.lowerExpression
 
 fun compileToTsSources(sources: Sources<Module>): Sources<TsModuleFolder> =
     Sources(moduleMappings = sources.moduleMappings.mapValues { (_, module) -> compileTsModule(module = module) })

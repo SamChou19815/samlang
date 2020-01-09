@@ -1,4 +1,4 @@
-package samlang.compiler.ir
+package samlang.compiler.hir
 
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrExpression

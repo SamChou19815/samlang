@@ -4,7 +4,7 @@ import java.io.File
 import java.nio.file.Paths
 import samlang.ast.common.Sources
 import samlang.ast.lang.Module
-import samlang.compiler.ir.compileSources
+import samlang.compiler.hir.compileSources
 import samlang.compiler.ts.compileToTsSources
 import samlang.printer.javaizeName
 import samlang.printer.printJavaOuterClass
