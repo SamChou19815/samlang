@@ -1,5 +1,6 @@
 package samlang.compiler.mir
 
+import samlang.ast.common.BinaryOperator
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
@@ -31,13 +32,21 @@ import samlang.ast.hir.HighIrStatement.Throw
 import samlang.ast.hir.HighIrStatement.VariableAssignment
 import samlang.ast.hir.HighIrStatementVisitor
 import samlang.ast.mir.MidIrExpression
+import samlang.ast.mir.MidIrExpression.Companion.ADD
 import samlang.ast.mir.MidIrExpression.Companion.CONST
+import samlang.ast.mir.MidIrExpression.Companion.ESEQ
+import samlang.ast.mir.MidIrExpression.Companion.MALLOC
+import samlang.ast.mir.MidIrExpression.Companion.MEM
 import samlang.ast.mir.MidIrExpression.Companion.ONE
+import samlang.ast.mir.MidIrExpression.Companion.OP
 import samlang.ast.mir.MidIrExpression.Companion.SUB
 import samlang.ast.mir.MidIrExpression.Companion.TEMP
 import samlang.ast.mir.MidIrExpression.Companion.XOR
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
+import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
+import samlang.ast.mir.MidIrStatement.Companion.MOVE
+import samlang.ast.mir.MidIrStatement.Companion.SEQ
 
 /** Generate non-canonical mid IR in the first pass */
 internal class MidIrFirstPassGenerator(private val allocator: MidIrResourceAllocator) {
@@ -103,7 +112,16 @@ internal class MidIrFirstPassGenerator(private val allocator: MidIrResourceAlloc
         }
 
         override fun visit(expression: TupleConstructor): MidIrExpression {
-            TODO(reason = "NOT_IMPLEMENTED")
+            val tupleTemporary = allocator.allocateTemp()
+            val statements = arrayListOf<MidIrStatement>()
+            statements += MOVE(tupleTemporary, MALLOC(CONST(value = expression.expressionList.size * 8L)))
+            expression.expressionList.forEachIndexed { index, argument ->
+                statements += MOVE(
+                    destination = MEM(expression = ADD(e1 = tupleTemporary, e2 = CONST(value = index * 8L))),
+                    source = translate(expression = argument)
+                )
+            }
+            return ESEQ(SEQ(statements), tupleTemporary)
         }
 
         override fun visit(expression: ObjectConstructor): MidIrExpression {
@@ -145,7 +163,24 @@ internal class MidIrFirstPassGenerator(private val allocator: MidIrResourceAlloc
         }
 
         override fun visit(expression: Binary): MidIrExpression {
-            TODO(reason = "NOT_IMPLEMENTED")
+            val e1 = translate(expression = expression.e1)
+            val e2 = translate(expression = expression.e2)
+            val operator = when (expression.operator) {
+                BinaryOperator.MUL -> MidIrOperator.MUL
+                BinaryOperator.DIV -> MidIrOperator.DIV
+                BinaryOperator.MOD -> MidIrOperator.MOD
+                BinaryOperator.PLUS -> MidIrOperator.ADD
+                BinaryOperator.MINUS -> MidIrOperator.SUB
+                BinaryOperator.LT -> MidIrOperator.LT
+                BinaryOperator.LE -> MidIrOperator.LE
+                BinaryOperator.GT -> MidIrOperator.GT
+                BinaryOperator.GE -> MidIrOperator.GE
+                BinaryOperator.EQ -> MidIrOperator.EQ
+                BinaryOperator.NE -> MidIrOperator.NE
+                BinaryOperator.AND -> TODO(reason = "NOT_IMPLEMENTED")
+                BinaryOperator.OR -> TODO(reason = "NOT_IMPLEMENTED")
+            }
+            return OP(op = operator, e1 = e1, e2 = e2)
         }
 
         override fun visit(expression: Ternary): MidIrExpression {
