@@ -21,6 +21,7 @@ import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrExpressionVisitor
+import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.Block
 import samlang.ast.hir.HighIrStatement.ConstantDefinition
@@ -45,6 +46,7 @@ import samlang.ast.mir.MidIrExpression.Companion.XOR
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
 import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
+import samlang.ast.mir.MidIrStatement.Companion.EXPR
 import samlang.ast.mir.MidIrStatement.Companion.MOVE
 import samlang.ast.mir.MidIrStatement.Companion.SEQ
 
@@ -71,25 +73,33 @@ internal class MidIrFirstPassGenerator(private val allocator: MidIrResourceAlloc
             TODO(reason = "NOT_IMPLEMENTED")
         }
 
-        override fun visit(statement: LetDeclaration): MidIrStatement {
-            TODO(reason = "NOT_IMPLEMENTED")
-        }
+        override fun visit(statement: LetDeclaration): MidIrStatement =
+            MOVE(destination = TEMP(id = statement.name), source = ZERO)
 
-        override fun visit(statement: VariableAssignment): MidIrStatement {
-            TODO(reason = "NOT_IMPLEMENTED")
-        }
+        override fun visit(statement: VariableAssignment): MidIrStatement =
+            MOVE(
+                destination = allocator.getTemporaryByVariable(variableName = statement.name),
+                source = translate(expression = statement.assignedExpression)
+            )
 
         override fun visit(statement: ConstantDefinition): MidIrStatement {
-            TODO(reason = "NOT_IMPLEMENTED")
+            val assignedExpression = translate(expression = statement.assignedExpression)
+            return when (val pattern = statement.pattern) {
+                is HighIrPattern.ObjectPattern -> TODO(reason = "NOT_IMPLEMENTED")
+                is HighIrPattern.TuplePattern -> TODO(reason = "NOT_IMPLEMENTED")
+                is HighIrPattern.VariablePattern -> MOVE(
+                    destination = allocator.getTemporaryByVariable(variableName = pattern.name),
+                    source = assignedExpression
+                )
+                is HighIrPattern.WildCardPattern -> EXPR(expression = assignedExpression)
+            }
         }
 
-        override fun visit(statement: Return): MidIrStatement {
-            TODO(reason = "NOT_IMPLEMENTED")
-        }
+        override fun visit(statement: Return): MidIrStatement =
+            MidIrStatement.Return(returnedExpression = statement.expression?.let { translate(expression = it) })
 
-        override fun visit(statement: Block): MidIrStatement {
-            TODO(reason = "NOT_IMPLEMENTED")
-        }
+        override fun visit(statement: Block): MidIrStatement =
+            SEQ(statements = statement.statements.map { translate(statement = it) })
     }
 
     private inner class ExpressionGenerator : HighIrExpressionVisitor<MidIrExpression> {

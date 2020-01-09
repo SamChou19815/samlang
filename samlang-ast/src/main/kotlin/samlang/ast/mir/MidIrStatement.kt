@@ -91,14 +91,8 @@ sealed class MidIrStatement {
     }
 
     @Canonical
-    data class Return(val returnedExpressions: List<MidIrExpression> = emptyList()) : MidIrStatement() {
-        override fun toString(): String {
-            if (returnedExpressions.isEmpty()) {
-                return "return;"
-            }
-            return returnedExpressions
-                .joinToString(separator = ", ", prefix = "return ", postfix = ";")
-        }
+    data class Return(val returnedExpression: MidIrExpression? = null) : MidIrStatement() {
+        override fun toString(): String = if (returnedExpression == null) "return;" else "return $returnedExpression;"
 
         override fun <C, T> accept(visitor: MidIrStatementVisitor<C, T>, context: C): T =
             visitor.visit(node = this, context = context)
