@@ -61,6 +61,15 @@ sealed class Type {
             return "$parameters -> ${returnType.prettyPrint()}"
         }
 
+        fun prettyPrintWithDummyArgumentName(): String {
+            var argumentId = 0
+            return argumentTypes.joinToString(separator = ", ", prefix = "(", postfix = "): $returnType") {
+                val oneArgument = "a$argumentId: $it"
+                argumentId++
+                oneArgument
+            }
+        }
+
         override fun <C, T> accept(visitor: TypeVisitor<C, T>, context: C): T =
             visitor.visit(type = this, context = context)
     }

@@ -18,6 +18,7 @@ import org.eclipse.lsp4j.DidSaveTextDocumentParams
 import org.eclipse.lsp4j.Hover
 import org.eclipse.lsp4j.InitializeParams
 import org.eclipse.lsp4j.InitializeResult
+import org.eclipse.lsp4j.InsertTextFormat
 import org.eclipse.lsp4j.MarkedString
 import org.eclipse.lsp4j.Position as Lsp4jPosition
 import org.eclipse.lsp4j.PublishDiagnosticsParams
@@ -136,13 +137,15 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
             System.err.println("Completion request: $triggerCharacter $moduleReference $samlangPosition")
             val completionItems = service
                 .autoComplete(moduleReference = moduleReference, position = samlangPosition)
-                .map { (itemName, itemKind, itemType) ->
+                .map { (itemName, itemText, isSnippet, itemKind, itemType) ->
                     CompletionItem(itemName).apply {
                         detail = itemType
                         kind = itemKind
+                        insertText = itemText
+                        insertTextFormat = if (isSnippet) InsertTextFormat.Snippet else InsertTextFormat.PlainText
                     }
                 }
-            return CompletableFuture.completedFuture(Either.forLeft(completionItems))
+            return CompletableFuture.completedFuture(Either.forRight(CompletionList(false, completionItems)))
         }
 
         override fun hover(position: TextDocumentPositionParams): CompletableFuture<Hover> {

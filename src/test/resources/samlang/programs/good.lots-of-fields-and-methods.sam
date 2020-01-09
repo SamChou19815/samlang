@@ -5,11 +5,13 @@ class SamObject<T>(val sam: T, val good: bool, val linesOfCode: int) {
   method getSam(): T = this.sam
   method isGood(): bool = true
   method getLinesOfCode(): int = 0 + this.linesOfCode
+  method withDifferentLOC(linesOfCode: int): SamObject<T> =
+    { sam: this.sam, good: this.good, linesOfCode }
 }
 
 class Main {
   function main(): unit = {
-    val sam = SamObject.create("sam zhou");
+    val sam = SamObject.create("sam zhou").withDifferentLOC(100001);
     val s = sam.getSam();
     val linesOfCode = if (sam.isGood()) then sam.getLinesOfCode() else 0;
   }
