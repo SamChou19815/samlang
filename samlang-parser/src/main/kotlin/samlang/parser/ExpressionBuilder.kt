@@ -46,8 +46,6 @@ class ExpressionBuilder internal constructor(
     override fun visitLiteralExpr(ctx: PLParser.LiteralExprContext): Expression {
         val literalNode = ctx.literal()
         val range = literalNode.range
-        // Case UNIT
-        literalNode.UNIT()?.let { return Expression.Literal.ofUnit(range = range) }
         // Case TRUE
         literalNode.TRUE()?.let { return Expression.Literal.ofTrue(range = range) }
         // Case FALSE

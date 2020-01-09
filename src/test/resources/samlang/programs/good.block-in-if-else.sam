@@ -4,8 +4,23 @@ class Main {
   function main(): unit =
     if (true) then {
       val _ = 3;
-      unit
+      {}
     } else {
-      unit
+      {}
+    }
+
+  function main2(): int =
+    if (true) then {
+      val _ = 3;
+      3
+    } else {
+      2
+    }
+
+  function main3(): unit =
+    if (true) then {
+      val _ = 3;
+    } else {
+      // Do nothing...
     }
 }

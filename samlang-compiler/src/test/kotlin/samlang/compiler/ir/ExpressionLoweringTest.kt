@@ -32,16 +32,12 @@ class ExpressionLoweringTest : StringSpec() {
 
     private fun assertCorrectlyLowered(expression: Expression, expectedStatements: List<HighIrStatement>) {
         lowerExpression(expression = expression) shouldBe LoweringResult(
-            statements = expectedStatements, expression = HighIrExpression.UNIT
+            statements = expectedStatements, expression = null
         )
     }
 
     init {
         "Statement/Expression only lowering works." {
-            assertCorrectlyLowered(
-                expression = Expression.Literal.ofUnit(range = dummyRange),
-                expectedExpression = HighIrExpression.UNIT
-            )
             assertCorrectlyLowered(
                 expression = Expression.Variable(range = dummyRange, type = unit, name = "foo"),
                 expectedExpression = HighIrExpression.Variable(type = unit, name = "foo")
@@ -133,9 +129,17 @@ class ExpressionLoweringTest : StringSpec() {
             )
             assertCorrectlyLowered(
                 expression = Expression.Panic(range = dummyRange, type = unit, expression = THIS),
-                expected = LoweringResult(
-                    statements = listOf(HighIrStatement.Throw(expression = IR_THIS)),
-                    expression = HighIrExpression.Never
+                expectedStatements = listOf(HighIrStatement.Throw(expression = IR_THIS))
+            )
+            assertCorrectlyLowered(
+                expression = Expression.FunctionApplication(
+                    range = dummyRange,
+                    type = int,
+                    functionExpression = THIS,
+                    arguments = listOf(THIS, THIS)
+                ),
+                expectedExpression = HighIrExpression.FunctionApplication(
+                    type = int, functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
                 )
             )
             assertCorrectlyLowered(
@@ -145,8 +149,14 @@ class ExpressionLoweringTest : StringSpec() {
                     functionExpression = THIS,
                     arguments = listOf(THIS, THIS)
                 ),
-                expectedExpression = HighIrExpression.FunctionApplication(
-                    type = unit, functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
+                expectedStatements = listOf(
+                    HighIrStatement.ConstantDefinition(
+                        pattern = HighIrPattern.WildCardPattern,
+                        typeAnnotation = unit,
+                        assignedExpression = HighIrExpression.FunctionApplication(
+                            type = unit, functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
+                        )
+                    )
                 )
             )
             assertCorrectlyLowered(
@@ -258,30 +268,24 @@ class ExpressionLoweringTest : StringSpec() {
                             expression = null
                         )
                     ),
-                    e2 = THIS
+                    e2 = Expression.StatementBlockExpression(
+                        range = dummyRange,
+                        type = unit,
+                        block = StatementBlock(range = dummyRange, statements = emptyList(), expression = null)
+                    )
                 ),
-                expected = LoweringResult(
-                    statements = listOf(
-                        HighIrStatement.LetDeclaration(name = "_LOWERING_0", typeAnnotation = unit),
-                        HighIrStatement.IfElse(
-                            booleanExpression = IR_THIS,
-                            s1 = listOf(
-                                HighIrStatement.ConstantDefinition(
-                                    pattern = HighIrPattern.WildCardPattern,
-                                    typeAnnotation = unit,
-                                    assignedExpression = IR_THIS
-                                ),
-                                HighIrStatement.VariableAssignment(
-                                    name = "_LOWERING_0",
-                                    assignedExpression = HighIrExpression.UNIT
-                                )
-                            ),
-                            s2 = listOf(
-                                HighIrStatement.VariableAssignment(name = "_LOWERING_0", assignedExpression = IR_THIS)
+                expectedStatements = listOf(
+                    HighIrStatement.IfElse(
+                        booleanExpression = IR_THIS,
+                        s1 = listOf(
+                            HighIrStatement.ConstantDefinition(
+                                pattern = HighIrPattern.WildCardPattern,
+                                typeAnnotation = unit,
+                                assignedExpression = IR_THIS
                             )
-                        )
-                    ),
-                    expression = HighIrExpression.Variable(type = unit, name = "_LOWERING_0")
+                        ),
+                        s2 = emptyList()
+                    )
                 )
             )
         }
@@ -474,37 +478,34 @@ class ExpressionLoweringTest : StringSpec() {
                         expression = null
                     )
                 ),
-                expected = LoweringResult(
-                    statements = listOf(
-                        HighIrStatement.Block(
-                            statements = listOf(
-                                HighIrStatement.LetDeclaration(name = "_LOWERING_0", typeAnnotation = unit),
-                                HighIrStatement.Block(
-                                    statements = listOf(
-                                        HighIrStatement.ConstantDefinition(
-                                            pattern = HighIrPattern.VariablePattern(name = "a"),
-                                            typeAnnotation = unit,
-                                            assignedExpression = IR_THIS
-                                        ),
-                                        HighIrStatement.VariableAssignment(
-                                            name = "_LOWERING_0",
-                                            assignedExpression = HighIrExpression.Variable(
-                                                type = unit, name = "a"
-                                            )
+                expectedStatements = listOf(
+                    HighIrStatement.Block(
+                        statements = listOf(
+                            HighIrStatement.LetDeclaration(name = "_LOWERING_0", typeAnnotation = unit),
+                            HighIrStatement.Block(
+                                statements = listOf(
+                                    HighIrStatement.ConstantDefinition(
+                                        pattern = HighIrPattern.VariablePattern(name = "a"),
+                                        typeAnnotation = unit,
+                                        assignedExpression = IR_THIS
+                                    ),
+                                    HighIrStatement.VariableAssignment(
+                                        name = "_LOWERING_0",
+                                        assignedExpression = HighIrExpression.Variable(
+                                            type = unit, name = "a"
                                         )
                                     )
-                                ),
-                                HighIrStatement.ConstantDefinition(
-                                    pattern = HighIrPattern.VariablePattern(name = "a"),
-                                    typeAnnotation = unit,
-                                    assignedExpression = HighIrExpression.Variable(
-                                        type = unit, name = "_LOWERING_0"
-                                    )
+                                )
+                            ),
+                            HighIrStatement.ConstantDefinition(
+                                pattern = HighIrPattern.VariablePattern(name = "a"),
+                                typeAnnotation = unit,
+                                assignedExpression = HighIrExpression.Variable(
+                                    type = unit, name = "_LOWERING_0"
                                 )
                             )
                         )
-                    ),
-                    expression = HighIrExpression.UNIT
+                    )
                 )
             )
         }

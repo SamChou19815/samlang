@@ -3,8 +3,6 @@ package samlang.compiler.java
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrExpression
-import samlang.ast.hir.HighIrExpression.Companion.UNIT
-import samlang.ast.hir.HighIrExpression.Never
 import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.java.JavaMethod
@@ -33,7 +31,8 @@ private fun compileJavaInnerStaticClass(classDefinition: ClassDefinition): JavaS
 internal fun compileJavaMethod(classMember: ClassDefinition.MemberDefinition): JavaMethod {
     val bodyLoweringResult = lowerExpression(expression = classMember.body)
     val statements = bodyLoweringResult.unwrappedStatements
-    val body = if (bodyLoweringResult.expression == UNIT || bodyLoweringResult.expression == Never) {
+    val finalExpression = bodyLoweringResult.expression
+    val body = if (finalExpression == null) {
         statements
     } else {
         val additionStatementForFinalExpression =

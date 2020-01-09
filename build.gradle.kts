@@ -58,13 +58,6 @@ allprojects {
     }
 }
 
-subprojects {
-    // Disable the test report for the individual test task
-    tasks.named<Test>("test") {
-        reports.html.isEnabled = false
-    }
-}
-
 dependencies {
     implementation(project(":samlang-ast"))
     implementation(project(":samlang-checker"))

@@ -103,4 +103,4 @@ termOperator : PLUS | MINUS;
 comparisonOperator : LT | LE | GT | GE | STRUCT_EQ | STRUCT_NE;
 
 // Literals
-literal : UNIT | TRUE | FALSE | MinInt | IntLiteral | StrLiteral;
+literal : TRUE | FALSE | MinInt | IntLiteral | StrLiteral;

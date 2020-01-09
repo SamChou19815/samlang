@@ -10,8 +10,8 @@ class Clazz(val t: int) {
     }
 }
 
-class Option<T>(Some(T), None(unit)) {
-  function <T> none(): Option<T> = None(unit)
+class Option<T>(Some(T), None(bool)) {
+  function <T> none(): Option<T> = None(true)
   method toSome(t: T): Option<T> = Some(t)
   method isNone(): bool = match (this) {
     | None _ -> true
@@ -19,14 +19,14 @@ class Option<T>(Some(T), None(unit)) {
   }
   method <R> map(f: (T) -> R): Option<R> =
     match (this) {
-      | None _ -> None(unit)
+      | None _ -> None(true)
       | Some t -> Some(f(t))
     }
 }
 
-class List<T>(Nil(unit), Cons([T * List<T>])) {
+class List<T>(Nil(bool), Cons([T * List<T>])) {
   function <T> of(t: T): List<T> =
-    Cons([t, Nil(unit)])
+    Cons([t, Nil(true)])
   method cons(t: T): List<T> =
     Cons([t, this])
 }
@@ -40,7 +40,7 @@ class Main {
     val _ = !true;
     val _ = !false;
     val _ = "aaa";
-    val _ = unit;
+    val _ = {};
   }
 
   function variables(a: int, b: string): unit = {

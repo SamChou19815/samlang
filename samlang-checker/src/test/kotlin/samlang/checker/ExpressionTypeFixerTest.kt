@@ -10,12 +10,7 @@ import samlang.ast.lang.Expression
 class ExpressionTypeFixerTest : StringSpec() {
     init {
         "Literals' types are unchanged" {
-            assertCorrectlyFixed(
-                expected = Expression.Literal.ofUnit(range = Range.DUMMY),
-                unfixed = Expression.Literal.ofUnit(range = Range.DUMMY),
-                type = Type.unit
-            )
-            assertThrows(unfixed = Expression.Literal.ofUnit(range = Range.DUMMY), type = Type.int)
+            assertThrows(unfixed = Expression.Literal.ofTrue(range = Range.DUMMY), type = Type.int)
             assertCorrectlyFixed(
                 expected = Expression.Literal.ofInt(range = Range.DUMMY, value = 1),
                 unfixed = Expression.Literal.ofInt(range = Range.DUMMY, value = 1),
@@ -60,18 +55,18 @@ class ExpressionTypeFixerTest : StringSpec() {
         "Deep expression's type is correctly resolved" {
             val expected = Expression.IfElse(
                 range = Range.DUMMY,
-                type = Type.unit,
+                type = Type.bool,
                 boolExpression = Expression.Literal.ofTrue(range = Range.DUMMY),
-                e1 = Expression.Literal.ofUnit(range = Range.DUMMY),
+                e1 = Expression.Literal.ofTrue(range = Range.DUMMY),
                 e2 = Expression.FunctionApplication(
                     range = Range.DUMMY,
-                    type = Type.unit,
+                    type = Type.bool,
                     functionExpression = Expression.Lambda(
                         range = Range.DUMMY,
-                        type = Type.FunctionType(argumentTypes = listOf(Type.int), returnType = Type.unit),
+                        type = Type.FunctionType(argumentTypes = listOf(Type.int), returnType = Type.bool),
                         parameters = listOf("a" to Type.int),
                         captured = emptyMap(),
-                        body = Expression.Literal.ofUnit(range = Range.DUMMY)
+                        body = Expression.Literal.ofTrue(range = Range.DUMMY)
                     ),
                     arguments = listOf(
                         Expression.Variable(range = Range.DUMMY, type = Type.int, name = "v")
@@ -80,28 +75,28 @@ class ExpressionTypeFixerTest : StringSpec() {
             )
             val unfixed = Expression.IfElse(
                 range = Range.DUMMY,
-                type = Type.UndecidedType(index = 0),
+                type = Type.UndecidedType(index = 1),
                 boolExpression = Expression.Literal.ofTrue(range = Range.DUMMY),
-                e1 = Expression.Literal.ofUnit(range = Range.DUMMY),
+                e1 = Expression.Literal.ofTrue(range = Range.DUMMY),
                 e2 = Expression.FunctionApplication(
                     range = Range.DUMMY,
-                    type = Type.UndecidedType(index = 4),
+                    type = Type.UndecidedType(index = 5),
                     functionExpression = Expression.Lambda(
                         range = Range.DUMMY,
                         type = Type.FunctionType(
                             argumentTypes = listOf(Type.int),
-                            returnType = Type.UndecidedType(index = 8)
+                            returnType = Type.UndecidedType(index = 9)
                         ),
                         parameters = listOf("a" to Type.int),
                         captured = emptyMap(),
-                        body = Expression.Literal.ofUnit(range = Range.DUMMY)
+                        body = Expression.Literal.ofTrue(range = Range.DUMMY)
                     ),
                     arguments = listOf(
                         Expression.Variable(range = Range.DUMMY, type = Type.UndecidedType(index = 2), name = "v")
                     )
                 )
             )
-            assertCorrectlyFixed(expected = expected, unfixed = unfixed, type = Type.unit)
+            assertCorrectlyFixed(expected = expected, unfixed = unfixed, type = Type.bool)
             assertThrows(unfixed = unfixed, type = Type.int)
         }
     }

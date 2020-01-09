@@ -32,18 +32,12 @@ import samlang.parser.ExpressionBuilder
 class ExpressionTypeCheckerTest : StringSpec() {
     init {
         "Simple literal type checks under correct expected type." {
-            assertCheck(source = "unit", expectedType = unit)
             assertCheck(source = "true", expectedType = bool)
             assertCheck(source = "false", expectedType = bool)
             assertCheck(source = "42", expectedType = int)
             assertCheck(source = "\"a\"", expectedType = string)
         }
         "Simple literal does not type check under wrong expected type." {
-            assertCheck(
-                source = "unit",
-                expectedType = int,
-                expectedErrors = listOf("Test.sam:1:1-1:5: [UnexpectedType]: Expected: `int`, actual: `unit`.")
-            )
             assertCheck(
                 source = "true",
                 expectedType = unit,
@@ -306,14 +300,14 @@ class ExpressionTypeCheckerTest : StringSpec() {
                 )
             )
             assertCheck(
-                source = "{foo:true,bar:3}.baz(unit)",
+                source = "{foo:true,bar:3}.baz({})",
                 expectedType = bool,
                 expectedErrors = listOf(
                     "Test.sam:1:1-1:21: [UnexpectedType]: Expected: `(unit) -> bool`, actual: `(int) -> bool`."
                 )
             )
             assertCheck(
-                source = "((i: int) -> true)(unit)",
+                source = "((i: int) -> true)({})",
                 expectedType = bool,
                 expectedErrors = listOf(
                     "Test.sam:1:2-1:18: [UnexpectedType]: Expected: `(unit) -> bool`, actual: `(int) -> bool`."
@@ -357,7 +351,7 @@ class ExpressionTypeCheckerTest : StringSpec() {
             assertCheck(source = "false && true", expectedType = bool)
             assertCheck(source = "1 == 1", expectedType = bool)
             assertCheck(source = "true == false", expectedType = bool)
-            assertCheck(source = "unit != unit", expectedType = bool)
+            assertCheck(source = "false != true", expectedType = bool)
             assertCheck(source = "\"\" != \"3\"", expectedType = bool)
             assertCheck(source = "{ val _ = (t, f) -> t == f; }", expectedType = unit)
         }
@@ -381,9 +375,9 @@ class ExpressionTypeCheckerTest : StringSpec() {
                 expectedErrors = listOf("Test.sam:1:5-1:8: [UnexpectedType]: Expected: `int`, actual: `string`.")
             )
             assertCheck(
-                source = "1 + unit",
+                source = "1 + false",
                 expectedType = int,
-                expectedErrors = listOf("Test.sam:1:5-1:9: [UnexpectedType]: Expected: `int`, actual: `unit`.")
+                expectedErrors = listOf("Test.sam:1:5-1:10: [UnexpectedType]: Expected: `int`, actual: `bool`.")
             )
             assertCheck(
                 source = "false - 1",
@@ -414,12 +408,9 @@ class ExpressionTypeCheckerTest : StringSpec() {
                 expectedErrors = listOf("Test.sam:1:1-1:5: [UnexpectedType]: Expected: `int`, actual: `bool`.")
             )
             assertCheck(
-                source = "unit || 4",
+                source = "false || 4",
                 expectedType = bool,
-                expectedErrors = listOf(
-                    "Test.sam:1:1-1:5: [UnexpectedType]: Expected: `bool`, actual: `unit`.",
-                    "Test.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`."
-                )
+                expectedErrors = listOf("Test.sam:1:10-1:11: [UnexpectedType]: Expected: `bool`, actual: `int`.")
             )
             assertCheck(
                 source = "2 && 3",
@@ -440,9 +431,9 @@ class ExpressionTypeCheckerTest : StringSpec() {
                 expectedErrors = listOf("Test.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`.")
             )
             assertCheck(
-                source = "unit != 3",
+                source = "true != 3",
                 expectedType = bool,
-                expectedErrors = listOf("Test.sam:1:9-1:10: [UnexpectedType]: Expected: `unit`, actual: `int`.")
+                expectedErrors = listOf("Test.sam:1:9-1:10: [UnexpectedType]: Expected: `bool`, actual: `int`.")
             )
             assertCheck(
                 source = "\"\" != 3",
@@ -522,7 +513,7 @@ class ExpressionTypeCheckerTest : StringSpec() {
                 expectedErrors = listOf("Test.sam:1:1-1:14: [UnexpectedType]: Expected: `unit`, actual: `bool`.")
             )
             assertCheck(
-                source = "unit != unit",
+                source = "true != true",
                 expectedType = unit,
                 expectedErrors = listOf("Test.sam:1:1-1:13: [UnexpectedType]: Expected: `unit`, actual: `bool`.")
             )
@@ -533,7 +524,6 @@ class ExpressionTypeCheckerTest : StringSpec() {
             )
         }
         "Good if else type checks." {
-            assertCheck(source = "if true then unit else unit", expectedType = unit)
             assertCheck(source = "if true then false else true", expectedType = bool)
             assertCheck(source = "if false then 1 else 0", expectedType = int)
             assertCheck(source = "if false then \"\" else \"\"", expectedType = string)
@@ -593,14 +583,6 @@ class ExpressionTypeCheckerTest : StringSpec() {
             )
         }
         "Bad if else does not type check." {
-            assertCheck(
-                source = "if true then 1 else unit",
-                expectedType = unit,
-                expectedErrors = listOf(
-                    "Test.sam:1:14-1:15: [UnexpectedType]: Expected: `unit`, actual: `int`.",
-                    "Test.sam:1:14-1:15: [UnexpectedType]: Expected: `unit`, actual: `int`."
-                )
-            )
             assertCheck(
                 source = "if true then false else 1",
                 expectedType = bool,

@@ -7,7 +7,7 @@ package samlang.ast.hir
  * @param T type of the visitor return value.
  */
 interface HighIrExpressionVisitor<T> {
-    fun visit(expression: HighIrExpression.Never): T
+    fun visit(expression: HighIrExpression.UnitExpression): T
     fun visit(expression: HighIrExpression.Literal): T
     fun visit(expression: HighIrExpression.Variable): T
     fun visit(expression: HighIrExpression.This): T

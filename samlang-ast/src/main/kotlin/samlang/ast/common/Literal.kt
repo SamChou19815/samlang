@@ -4,18 +4,10 @@ package samlang.ast.common
  * A collection of all supported literals.
  */
 sealed class Literal {
-
     /**
      * A value to be pretty printed.
      */
     abstract val prettyPrintedValue: String
-
-    /**
-     * The `unit` literal.
-     */
-    object UnitLiteral : Literal() {
-        override val prettyPrintedValue: String = "unit"
-    }
 
     /**
      * An int literal, like 42.

@@ -22,12 +22,12 @@ import samlang.ast.hir.HighIrExpression.FunctionApplication
 import samlang.ast.hir.HighIrExpression.Lambda
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
-import samlang.ast.hir.HighIrExpression.Never
 import samlang.ast.hir.HighIrExpression.ObjectConstructor
 import samlang.ast.hir.HighIrExpression.Ternary
 import samlang.ast.hir.HighIrExpression.This
 import samlang.ast.hir.HighIrExpression.TupleConstructor
 import samlang.ast.hir.HighIrExpression.Unary
+import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrExpressionVisitor
@@ -312,7 +312,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                         }
                     }
                     statements.forEach(action = ::printStatement)
-                    if (finalExpression != Never) {
+                    if (finalExpression != null) {
                         printlnWithoutFurtherIndentation {
                             printWithoutBreak(x = "$assignedTemporaryVariable = ")
                             finalExpression.accept(visitor = expressionPrinter)
@@ -333,9 +333,6 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
 
         override fun visit(statement: VariableAssignment) {
-            if (statement.assignedExpression == Never) {
-                return
-            }
             printer.printlnWithoutFurtherIndentation {
                 printWithBreak(x = statement.name)
                 printWithBreak(x = "=")
@@ -427,13 +424,12 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                 }
             } else accept(visitor = this@JavaExpressionPrinter)
 
-        override fun visit(expression: Never) {
-            error(message = "We should *never* print `never`!")
+        override fun visit(expression: UnitExpression) {
+            printer.printWithoutBreak(x = "null")
         }
 
         override fun visit(expression: Literal) {
             val literalString = when (val literal = expression.literal) {
-                samlang.ast.common.Literal.UnitLiteral -> "null"
                 is samlang.ast.common.Literal.IntLiteral -> "${literal.value}L"
                 else -> literal.prettyPrintedValue
             }

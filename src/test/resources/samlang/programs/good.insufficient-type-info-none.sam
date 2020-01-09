@@ -1,7 +1,7 @@
 // ERROR_COUNT: 0
 
-class Option<T>(Some(T), None(unit)) {
-  function <T> none(): Option<T> = None(unit)
+class Option<T>(Some(T), None(bool)) {
+  function <T> none(): Option<T> = None(true)
   method toSome(t: T): Option<T> = Some(t)
 }
 class Main {

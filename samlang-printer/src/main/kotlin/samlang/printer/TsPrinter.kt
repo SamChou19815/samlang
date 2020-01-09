@@ -22,6 +22,7 @@ import samlang.ast.hir.HighIrExpression.Ternary
 import samlang.ast.hir.HighIrExpression.This
 import samlang.ast.hir.HighIrExpression.TupleConstructor
 import samlang.ast.hir.HighIrExpression.Unary
+import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrExpressionVisitor
@@ -259,7 +260,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                             printWithBreak(x = "const $dataVariable = $matchedVariable.data;")
                         }
                         statements.forEach { it.accept(this@TsStatementPrinter) }
-                        if (finalExpression != HighIrExpression.UNIT) {
+                        if (finalExpression != null) {
                             printlnWithoutFurtherIndentation {
                                 printWithoutBreak(x = "$assignedTemporaryVariable = ")
                                 printExpression(expression = finalExpression)
@@ -348,16 +349,12 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                     }
                 } else accept(visitor = this@TsExpressionPrinter)
 
-            override fun visit(expression: HighIrExpression.Never) {
+            override fun visit(expression: UnitExpression) {
                 printer.printWithoutBreak(x = "void 0")
             }
 
             override fun visit(expression: Literal) {
-                if (expression.literal == samlang.ast.common.Literal.UnitLiteral) {
-                    printer.printWithoutBreak(x = "void 0")
-                } else {
-                    printer.printWithoutBreak(x = expression.literal.prettyPrintedValue)
-                }
+                printer.printWithoutBreak(x = expression.literal.prettyPrintedValue)
             }
 
             override fun visit(expression: Variable) {

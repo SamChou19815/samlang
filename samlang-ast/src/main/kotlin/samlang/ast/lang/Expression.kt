@@ -28,9 +28,6 @@ sealed class Expression(val precedence: Int) : Node {
             visitor.visit(expression = this, context = context)
 
         companion object {
-            fun ofUnit(range: Range): Literal =
-                Literal(range = range, type = Type.unit, literal = samlang.ast.common.Literal.UnitLiteral)
-
             fun ofTrue(range: Range): Literal =
                 Literal(range = range, type = Type.bool, literal = samlang.ast.common.Literal.TRUE)
 

@@ -17,7 +17,6 @@ import samlang.ast.common.BinaryOperator.PLUS
 import samlang.ast.common.Literal.BoolLiteral
 import samlang.ast.common.Literal.IntLiteral
 import samlang.ast.common.Literal.StringLiteral
-import samlang.ast.common.Literal.UnitLiteral
 import samlang.ast.common.Type
 import samlang.ast.common.UnaryOperator
 import samlang.ast.lang.Expression
@@ -50,7 +49,6 @@ internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext,
         expression.accept(visitor = ExpressionInterpreter, context = context)
 
     override fun visit(expression: Literal, context: InterpretationContext): Value = when (val l = expression.literal) {
-        UnitLiteral -> Value.UnitValue
         is IntLiteral -> Value.IntValue(value = l.value)
         is StringLiteral -> Value.StringValue(value = l.value)
         is BoolLiteral -> Value.BoolValue(value = l.value)

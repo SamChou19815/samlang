@@ -33,7 +33,7 @@ sealed class HighIrStatement {
             val tag: String,
             val dataVariable: String?,
             val statements: List<HighIrStatement>,
-            val finalExpression: HighIrExpression
+            val finalExpression: HighIrExpression?
         )
 
         override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)

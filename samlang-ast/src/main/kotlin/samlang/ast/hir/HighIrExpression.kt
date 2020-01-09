@@ -15,9 +15,9 @@ sealed class HighIrExpression(val precedence: Int) {
 
     abstract fun <T> accept(visitor: HighIrExpressionVisitor<T>): T
 
-    object Never : HighIrExpression(precedence = 0) {
-        override val type: Type get() = error(message = "Never supposed to be queried.")
-        override fun toString(): String = "NEVER"
+    object UnitExpression : HighIrExpression(precedence = 0) {
+        override val type: Type get() = Type.unit
+        override fun toString(): String = "unit"
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
@@ -127,8 +127,6 @@ sealed class HighIrExpression(val precedence: Int) {
     }
 
     companion object {
-        @JvmField
-        val UNIT: Literal = Literal(type = Type.unit, literal = samlang.ast.common.Literal.UnitLiteral)
         @JvmField
         val TRUE: Literal = Literal(type = Type.bool, literal = samlang.ast.common.Literal.TRUE)
         @JvmField

@@ -12,13 +12,13 @@ class Student(val name: string, val age: int) {
 }
 
 class PrimitiveType(
-    U(unit),
+    U(bool),
     I(int),
     S(string),
     B(bool),
 ) {
     // some random functions
-    function getUnit(): PrimitiveType = U(unit)
+    function getUnit(): PrimitiveType = U(false)
     function getInteger(): PrimitiveType = I(42)
     function getString(): PrimitiveType = S("Answer to life, universe, and everything.")
     function getBool(): PrimitiveType = B(false)
@@ -45,11 +45,11 @@ class Box<T>(val content: T) {
 }
 
 class Option<T>(None(unit), Some(T)) {
-    function <T> getNone(): Option<T> = None(unit)
+    function <T> getNone(): Option<T> = None({})
     function <T> getSome(d: T): Option<T> = Some(d)
     method <R> map(f: (T) -> R): Option<R> =
         match (this) {
-            | None _ -> None(unit)
+            | None _ -> None({})
             | Some d -> Some(f(d))
         }
 }

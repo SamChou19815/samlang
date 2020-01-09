@@ -10,12 +10,12 @@ import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinition.FieldType
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.UnaryOperator
+import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.ClassMember
 import samlang.ast.hir.HighIrExpression.Companion
 import samlang.ast.hir.HighIrExpression.Companion.FALSE
 import samlang.ast.hir.HighIrExpression.Companion.TRUE
-import samlang.ast.hir.HighIrExpression.Companion.UNIT
 import samlang.ast.hir.HighIrExpression.Companion.literal
 import samlang.ast.hir.HighIrExpression.FunctionApplication
 import samlang.ast.hir.HighIrExpression.Lambda
@@ -806,7 +806,7 @@ class TsPrinterTest : StringSpec() {
                                         ConstantDefinition(
                                             pattern = HighIrPattern.WildCardPattern,
                                             typeAnnotation = Type.unit,
-                                            assignedExpression = UNIT
+                                            assignedExpression = HighIrExpression.UnitExpression
                                         ),
                                         Return(expression = TRUE)
                                     )

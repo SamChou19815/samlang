@@ -10,6 +10,7 @@ import samlang.ast.hir.HighIrStatement
 import samlang.ast.java.JavaMethod
 import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Expression
+import samlang.ast.lang.StatementBlock
 
 class JavaMemberCompilerTest : StringSpec() {
 
@@ -73,7 +74,11 @@ class JavaMemberCompilerTest : StringSpec() {
                     typeParameters = emptyList(),
                     type = Type.FunctionType(argumentTypes = emptyList(), returnType = Type.unit),
                     parameters = emptyList(),
-                    body = Expression.Literal.ofUnit(range = dummyRange)
+                    body = Expression.StatementBlockExpression(
+                        range = Range.DUMMY,
+                        type = Type.unit,
+                        block = StatementBlock(range = Range.DUMMY, statements = emptyList(), expression = null)
+                    )
                 ),
                 javaMethod = JavaMethod(
                     isPublic = false,

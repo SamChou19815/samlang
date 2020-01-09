@@ -50,7 +50,11 @@ internal class StatementTypeChecker(
         } else {
             // Force the type checker to resolve expected type to unit.
             expressionTypeChecker.typeCheck(
-                expression = Expression.Literal.ofUnit(range = statementBlock.range),
+                expression = Expression.Panic(
+                    range = statementBlock.range,
+                    type = Type.unit,
+                    expression = Expression.Literal.ofString(range = statementBlock.range, value = "")
+                ),
                 expectedType = expectedType
             )
             null
