@@ -1,34 +1,31 @@
-package samlang.compiler.java
+package samlang.compiler.ir
 
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrClassDefinition
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrFunction
+import samlang.ast.hir.HighIrModule
 import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
-import samlang.ast.java.JavaOuterClass
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Module
-import samlang.compiler.ir.lowerExpression
 
-fun compileToJavaSources(sources: Sources<Module>): Sources<JavaOuterClass> =
-    Sources(moduleMappings = sources.moduleMappings.mapValues { (_, module) -> compileJavaOuterClass(module = module) })
+fun compileSources(sources: Sources<Module>): Sources<HighIrModule> =
+    Sources(moduleMappings = sources.moduleMappings.mapValues { (_, module) -> compileModule(module = module) })
 
-private fun compileJavaOuterClass(module: Module): JavaOuterClass =
-    JavaOuterClass(
-        imports = module.imports,
-        innerStaticClasses = module.classDefinitions.map(transform = ::compileJavaInnerStaticClass)
-    )
+private fun compileModule(module: Module): HighIrModule =
+    HighIrModule(imports = module.imports, classDefinitions = module.classDefinitions.map(::compileClassDefinition))
 
-private fun compileJavaInnerStaticClass(classDefinition: ClassDefinition): HighIrClassDefinition =
+private fun compileClassDefinition(classDefinition: ClassDefinition): HighIrClassDefinition =
     HighIrClassDefinition(
         className = classDefinition.name,
         typeDefinition = classDefinition.typeDefinition,
-        members = classDefinition.members.map(transform = ::compileJavaMethod)
+        members = classDefinition.members.map(transform = ::compileFunction)
     )
 
-internal fun compileJavaMethod(classMember: ClassDefinition.MemberDefinition): HighIrFunction {
+/** Exposed for testing. */
+internal fun compileFunction(classMember: ClassDefinition.MemberDefinition): HighIrFunction {
     val bodyLoweringResult = lowerExpression(expression = classMember.body)
     val statements = bodyLoweringResult.unwrappedStatements
     val finalExpression = bodyLoweringResult.expression

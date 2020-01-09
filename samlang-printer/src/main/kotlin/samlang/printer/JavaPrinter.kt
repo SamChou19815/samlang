@@ -33,6 +33,7 @@ import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrExpressionVisitor
 import samlang.ast.hir.HighIrFunction
+import samlang.ast.hir.HighIrModule
 import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.ConstantDefinition
@@ -43,10 +44,9 @@ import samlang.ast.hir.HighIrStatement.Return
 import samlang.ast.hir.HighIrStatement.Throw
 import samlang.ast.hir.HighIrStatement.VariableAssignment
 import samlang.ast.hir.HighIrStatementVisitor
-import samlang.ast.java.JavaOuterClass
 import samlang.util.IndentedPrinter
 
-fun printJavaOuterClass(stream: OutputStream, moduleReference: ModuleReference, outerClass: JavaOuterClass) {
+fun printJavaOuterClass(stream: OutputStream, moduleReference: ModuleReference, outerClass: HighIrModule) {
     // use 2-space
     val indentedPrinter = IndentedPrinter(printStream = PrintStream(stream), indentationSymbol = "  ")
     JavaPrinter(printer = indentedPrinter).printOuterClass(moduleReference = moduleReference, outerClass = outerClass)
@@ -58,7 +58,7 @@ fun printJavaSamlangIntrinsics(stream: OutputStream) {
     JavaPrinter(printer = indentedPrinter).printIntrinsics()
 }
 
-fun printJavaOuterClass(moduleReference: ModuleReference, outerClass: JavaOuterClass): String =
+fun printJavaOuterClass(moduleReference: ModuleReference, outerClass: HighIrModule): String =
     printToStream { stream ->
         printJavaOuterClass(stream = stream, moduleReference = moduleReference, outerClass = outerClass)
     }
@@ -111,7 +111,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         printer.printWithBreak(x = "}")
     }
 
-    fun printOuterClass(moduleReference: ModuleReference, outerClass: JavaOuterClass) {
+    fun printOuterClass(moduleReference: ModuleReference, outerClass: HighIrModule) {
         // Print package
         val parts = moduleReference.parts.map(transform = ::javaizeName)
         val packageParts = parts.subList(fromIndex = 0, toIndex = moduleReference.parts.size - 1)

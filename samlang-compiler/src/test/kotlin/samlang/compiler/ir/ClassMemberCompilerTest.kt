@@ -1,4 +1,4 @@
-package samlang.compiler.java
+package samlang.compiler.ir
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
@@ -12,10 +12,9 @@ import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Expression
 import samlang.ast.lang.StatementBlock
 
-class JavaMemberCompilerTest : StringSpec() {
-
+class ClassMemberCompilerTest : StringSpec() {
     private fun assertCorrectlyCompiled(classMember: MemberDefinition, javaMethod: HighIrFunction) {
-        compileJavaMethod(classMember = classMember) shouldBe javaMethod
+        compileFunction(classMember = classMember) shouldBe javaMethod
     }
 
     init {

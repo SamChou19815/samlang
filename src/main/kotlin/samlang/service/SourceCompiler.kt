@@ -4,7 +4,7 @@ import java.io.File
 import java.nio.file.Paths
 import samlang.ast.common.Sources
 import samlang.ast.lang.Module
-import samlang.compiler.java.compileToJavaSources
+import samlang.compiler.ir.compileSources
 import samlang.compiler.ts.compileToTsSources
 import samlang.printer.javaizeName
 import samlang.printer.printJavaOuterClass
@@ -32,7 +32,7 @@ object SourceCompiler {
     }
 
     fun compileJavaSources(source: Sources<Module>, outputDirectory: File) {
-        val javaSources = compileToJavaSources(sources = source)
+        val javaSources = compileSources(sources = source)
         outputDirectory.mkdirs()
         val samlangIntrinsicsPath = Paths.get(outputDirectory.toString(), "stdlib").toFile()
         samlangIntrinsicsPath.mkdirs()
