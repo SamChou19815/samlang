@@ -12,11 +12,13 @@ import samlang.ast.common.TypeVisitor
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.ClassMember
+import samlang.ast.hir.HighIrExpression.ClosureApplication
 import samlang.ast.hir.HighIrExpression.FieldAccess
 import samlang.ast.hir.HighIrExpression.FunctionApplication
 import samlang.ast.hir.HighIrExpression.Lambda
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
+import samlang.ast.hir.HighIrExpression.MethodApplication
 import samlang.ast.hir.HighIrExpression.ObjectConstructor
 import samlang.ast.hir.HighIrExpression.Ternary
 import samlang.ast.hir.HighIrExpression.This
@@ -451,25 +453,38 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
 
             override fun visit(expression: FunctionApplication) {
                 printer.printlnWithoutFurtherIndentation {
-                    val (_, functionExpression, arguments) = expression
-                    if (functionExpression is MethodAccess) {
-                        val receiverType = functionExpression.expression.type
-                                as? Type.IdentifierType
-                            ?: error(message = "Method receiver must be a identifier type!")
-                        if (receiverType.identifier == moduleName) {
-                            printWithoutBreak(x = functionExpression.methodName)
-                        } else {
-                            printWithoutBreak(x = "${receiverType.identifier}.${functionExpression.methodName}")
-                        }
-                        val argumentsWithReceiver = arrayListOf(functionExpression.expression)
-                        argumentsWithReceiver.addAll(elements = arguments)
-                        printFunctionCallArguments(arguments = argumentsWithReceiver)
+                    ClassMember(
+                        type = Type.unit,
+                        typeArguments = expression.typeArguments,
+                        className = expression.functionParent,
+                        memberName = expression.functionName
+                    ).printSelf()
+                    printFunctionCallArguments(arguments = expression.arguments)
+                }
+            }
+
+            override fun visit(expression: MethodApplication) {
+                printer.printlnWithoutFurtherIndentation {
+                    val receiverType = expression.objectExpression.type
+                            as? Type.IdentifierType
+                        ?: error(message = "Method receiver must be a identifier type!")
+                    if (receiverType.identifier == moduleName) {
+                        printWithoutBreak(x = expression.methodName)
                     } else {
-                        functionExpression.printSelf(
-                            withParenthesis = expression.functionExpression.precedence >= expression.precedence
-                        )
-                        printFunctionCallArguments(arguments = arguments)
+                        printWithoutBreak(x = "${receiverType.identifier}.${expression.methodName}")
                     }
+                    val argumentsWithReceiver = arrayListOf(expression.objectExpression)
+                    argumentsWithReceiver.addAll(elements = expression.arguments)
+                    printFunctionCallArguments(arguments = argumentsWithReceiver)
+                }
+            }
+
+            override fun visit(expression: ClosureApplication) {
+                printer.printlnWithoutFurtherIndentation {
+                    expression.functionExpression.printSelf(
+                        withParenthesis = expression.functionExpression.precedence >= expression.precedence
+                    )
+                    printFunctionCallArguments(arguments = expression.arguments)
                 }
             }
 

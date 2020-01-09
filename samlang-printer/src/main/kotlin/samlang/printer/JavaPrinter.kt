@@ -18,11 +18,13 @@ import samlang.ast.hir.HighIrClassDefinition
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.ClassMember
+import samlang.ast.hir.HighIrExpression.ClosureApplication
 import samlang.ast.hir.HighIrExpression.FieldAccess
 import samlang.ast.hir.HighIrExpression.FunctionApplication
 import samlang.ast.hir.HighIrExpression.Lambda
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
+import samlang.ast.hir.HighIrExpression.MethodApplication
 import samlang.ast.hir.HighIrExpression.ObjectConstructor
 import samlang.ast.hir.HighIrExpression.Ternary
 import samlang.ast.hir.HighIrExpression.This
@@ -529,35 +531,36 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
 
         override fun visit(expression: FunctionApplication) {
             printer.printlnWithoutFurtherIndentation {
-                val (_, functionExpression, arguments) = expression
-                when (functionExpression) {
-                    is ClassMember -> {
-                        val (_, typeArguments, className, memberName) = functionExpression
-                        if (typeArguments.isEmpty()) {
-                            printWithoutBreak(x = "$className.$memberName")
-                        } else {
-                            val typeArgumentString = typeArguments.joinToString(separator = ", ") {
-                                it.toJavaTypeString(boxed = true)
-                            }
-                            printWithoutBreak(x = "$className.<$typeArgumentString>$memberName")
-                        }
-                        printFunctionCallArguments(arguments = arguments)
+                val (_, className, memberName, typeArguments, arguments) = expression
+                if (typeArguments.isEmpty()) {
+                    printWithoutBreak(x = "$className.$memberName")
+                } else {
+                    val typeArgumentString = typeArguments.joinToString(separator = ", ") {
+                        it.toJavaTypeString(boxed = true)
                     }
-                    is MethodAccess -> {
-                        functionExpression.expression.printSelf(
-                            withParenthesis = functionExpression.expression.precedence >= expression.precedence
-                        )
-                        printWithoutBreak(x = ".${functionExpression.methodName}")
-                        printFunctionCallArguments(arguments = arguments)
-                    }
-                    else -> {
-                        functionExpression.printSelf(
-                            withParenthesis = expression.functionExpression.precedence >= expression.precedence
-                        )
-                        printWithoutBreak(x = ".apply")
-                        printFunctionCallArguments(arguments = arguments)
-                    }
+                    printWithoutBreak(x = "$className.<$typeArgumentString>$memberName")
                 }
+                printFunctionCallArguments(arguments = arguments)
+            }
+        }
+
+        override fun visit(expression: MethodApplication) {
+            printer.printlnWithoutFurtherIndentation {
+                expression.objectExpression.printSelf(
+                    withParenthesis = expression.objectExpression.precedence >= expression.precedence
+                )
+                printWithoutBreak(x = ".${expression.methodName}")
+                printFunctionCallArguments(arguments = expression.arguments)
+            }
+        }
+
+        override fun visit(expression: ClosureApplication) {
+            printer.printlnWithoutFurtherIndentation {
+                expression.functionExpression.printSelf(
+                    withParenthesis = expression.functionExpression.precedence >= expression.precedence
+                )
+                printer.printWithoutBreak(x = ".apply")
+                printFunctionCallArguments(arguments = expression.arguments)
             }
         }
 

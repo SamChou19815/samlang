@@ -135,10 +135,48 @@ class ExpressionLoweringTest : StringSpec() {
                 expression = Expression.FunctionApplication(
                     range = dummyRange,
                     type = int,
-                    functionExpression = THIS,
+                    functionExpression = Expression.ClassMember(
+                        range = dummyRange,
+                        type = int,
+                        typeArguments = listOf(int),
+                        className = "Foo",
+                        classNameRange = dummyRange,
+                        memberName = "bar"
+                    ),
                     arguments = listOf(THIS, THIS)
                 ),
                 expectedExpression = HighIrExpression.FunctionApplication(
+                    type = int,
+                    functionParent = "Foo",
+                    functionName = "bar",
+                    typeArguments = listOf(int),
+                    arguments = listOf(IR_THIS, IR_THIS)
+                )
+            )
+            assertCorrectlyLowered(
+                expression = Expression.FunctionApplication(
+                    range = dummyRange,
+                    type = int,
+                    functionExpression = Expression.MethodAccess(
+                        range = dummyRange,
+                        type = int,
+                        expression = THIS,
+                        methodName = "fooBar"
+                    ),
+                    arguments = listOf(THIS, THIS)
+                ),
+                expectedExpression = HighIrExpression.MethodApplication(
+                    type = int, objectExpression = IR_THIS, methodName = "fooBar", arguments = listOf(IR_THIS, IR_THIS)
+                )
+            )
+            assertCorrectlyLowered(
+                expression = Expression.FunctionApplication(
+                    range = dummyRange,
+                    type = int,
+                    functionExpression = THIS,
+                    arguments = listOf(THIS, THIS)
+                ),
+                expectedExpression = HighIrExpression.ClosureApplication(
                     type = int, functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
                 )
             )
@@ -153,7 +191,7 @@ class ExpressionLoweringTest : StringSpec() {
                     HighIrStatement.ConstantDefinition(
                         pattern = HighIrPattern.WildCardPattern,
                         typeAnnotation = unit,
-                        assignedExpression = HighIrExpression.FunctionApplication(
+                        assignedExpression = HighIrExpression.ClosureApplication(
                             type = unit, functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
                         )
                     )

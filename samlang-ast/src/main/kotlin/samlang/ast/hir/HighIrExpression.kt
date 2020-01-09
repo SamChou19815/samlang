@@ -93,6 +93,25 @@ sealed class HighIrExpression(val precedence: Int) {
 
     data class FunctionApplication(
         override val type: Type,
+        val functionParent: String,
+        val functionName: String,
+        val typeArguments: List<Type>,
+        val arguments: List<HighIrExpression>
+    ) : HighIrExpression(precedence = 4) {
+        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
+    }
+
+    data class MethodApplication(
+        override val type: Type,
+        val objectExpression: HighIrExpression,
+        val methodName: String,
+        val arguments: List<HighIrExpression>
+    ) : HighIrExpression(precedence = 4) {
+        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
+    }
+
+    data class ClosureApplication(
+        override val type: Type,
         val functionExpression: HighIrExpression,
         val arguments: List<HighIrExpression>
     ) : HighIrExpression(precedence = 4) {

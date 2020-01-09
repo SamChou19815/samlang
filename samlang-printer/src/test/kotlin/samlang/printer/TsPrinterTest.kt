@@ -12,7 +12,6 @@ import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
-import samlang.ast.hir.HighIrExpression.ClassMember
 import samlang.ast.hir.HighIrExpression.Companion
 import samlang.ast.hir.HighIrExpression.Companion.FALSE
 import samlang.ast.hir.HighIrExpression.Companion.TRUE
@@ -20,6 +19,7 @@ import samlang.ast.hir.HighIrExpression.Companion.literal
 import samlang.ast.hir.HighIrExpression.FunctionApplication
 import samlang.ast.hir.HighIrExpression.Lambda
 import samlang.ast.hir.HighIrExpression.MethodAccess
+import samlang.ast.hir.HighIrExpression.MethodApplication
 import samlang.ast.hir.HighIrExpression.ObjectConstructor
 import samlang.ast.hir.HighIrExpression.This
 import samlang.ast.hir.HighIrExpression.TupleConstructor
@@ -717,30 +717,20 @@ class TsPrinterTest : StringSpec() {
                                 typeAnnotation = Type.bool,
                                 assignedExpression = FunctionApplication(
                                     type = Type.bool,
-                                    functionExpression = ClassMember(
-                                        type = Type.FunctionType(
-                                            argumentTypes = listOf(element = Type.int),
-                                            returnType = Type.bool
-                                        ),
-                                        typeArguments = emptyList(),
-                                        className = "Test",
-                                        memberName = "foo"
-                                    ), arguments = listOf(element = Companion.literal(value = 1))
+                                    functionParent = "Test",
+                                    functionName = "foo",
+                                    typeArguments = emptyList(),
+                                    arguments = listOf(element = Companion.literal(value = 1))
                                 )
                             ),
                             ConstantDefinition(
                                 pattern = HighIrPattern.WildCardPattern,
                                 typeAnnotation = Type.bool,
-                                assignedExpression = FunctionApplication(
+                                assignedExpression = MethodApplication(
                                     type = Type.bool,
-                                    functionExpression = MethodAccess(
-                                        type = Type.FunctionType(
-                                            argumentTypes = listOf(element = Type.int),
-                                            returnType = Type.bool
-                                        ),
-                                        expression = This(type = Type.id(identifier = "Test")),
-                                        methodName = "foo"
-                                    ), arguments = listOf(element = Companion.literal(value = 1))
+                                    objectExpression = This(type = Type.id(identifier = "Test")),
+                                    methodName = "foo",
+                                    arguments = listOf(element = literal(value = 1))
                                 )
                             )
                         )
