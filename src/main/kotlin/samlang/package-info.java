@@ -1,4 +1,2 @@
-/**
- * The root package.
- */
+/** The root package. */
 package samlang;
