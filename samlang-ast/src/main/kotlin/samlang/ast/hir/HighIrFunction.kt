@@ -1,11 +1,10 @@
-package samlang.ast.java
+package samlang.ast.hir
 
 import samlang.ast.common.Type
-import samlang.ast.hir.HighIrStatement
 
-data class JavaMethod(
+data class HighIrFunction(
     val isPublic: Boolean,
-    val isStatic: Boolean,
+    val isMethod: Boolean,
     val name: String,
     val typeParameters: List<String>,
     val parameters: List<Pair<String, Type>>,

@@ -14,6 +14,7 @@ import samlang.ast.common.Type.UndecidedType
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
 import samlang.ast.common.TypeVisitor
+import samlang.ast.hir.HighIrClassDefinition
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.ClassMember
@@ -31,6 +32,7 @@ import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrExpressionVisitor
+import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.ConstantDefinition
@@ -41,9 +43,7 @@ import samlang.ast.hir.HighIrStatement.Return
 import samlang.ast.hir.HighIrStatement.Throw
 import samlang.ast.hir.HighIrStatement.VariableAssignment
 import samlang.ast.hir.HighIrStatementVisitor
-import samlang.ast.java.JavaMethod
 import samlang.ast.java.JavaOuterClass
-import samlang.ast.java.JavaStaticInnerClass
 import samlang.util.IndentedPrinter
 
 fun printJavaOuterClass(stream: OutputStream, moduleReference: ModuleReference, outerClass: JavaOuterClass) {
@@ -148,8 +148,8 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
     }
 
-    private fun printStaticInnerClass(staticInnerClass: JavaStaticInnerClass) {
-        val (className, typeDefinition, methods) = staticInnerClass
+    private fun printStaticInnerClass(staticInnerClass: HighIrClassDefinition) {
+        val (className, typeDefinition, members) = staticInnerClass
         printer.printlnWithoutFurtherIndentation {
             printWithoutBreak(x = "public static class $className")
             if (typeDefinition.typeParameters.isNotEmpty()) {
@@ -161,7 +161,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
         printer.indented {
             printTypeDefinition(className = className, definition = typeDefinition)
-            methods.forEach { method ->
+            members.forEach { method ->
                 println()
                 printMethod(method = method, typeDefinition = typeDefinition)
             }
@@ -222,10 +222,10 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
         }
     }
 
-    private fun printMethod(method: JavaMethod, typeDefinition: TypeDefinition) {
+    private fun printMethod(method: HighIrFunction, typeDefinition: TypeDefinition) {
         printer.printlnWithoutFurtherIndentation {
             printWithoutBreak(x = if (method.isPublic) "public " else "private ")
-            if (method.isStatic) {
+            if (!method.isMethod) {
                 printWithoutBreak(x = "static ")
             }
             if (method.typeParameters.isNotEmpty()) {

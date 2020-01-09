@@ -6,15 +6,15 @@ import samlang.ast.common.Range
 import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrExpression
+import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrStatement
-import samlang.ast.java.JavaMethod
 import samlang.ast.lang.ClassDefinition.MemberDefinition
 import samlang.ast.lang.Expression
 import samlang.ast.lang.StatementBlock
 
 class JavaMemberCompilerTest : StringSpec() {
 
-    private fun assertCorrectlyCompiled(classMember: MemberDefinition, javaMethod: JavaMethod) {
+    private fun assertCorrectlyCompiled(classMember: MemberDefinition, javaMethod: HighIrFunction) {
         compileJavaMethod(classMember = classMember) shouldBe javaMethod
     }
 
@@ -32,9 +32,9 @@ class JavaMemberCompilerTest : StringSpec() {
                     parameters = emptyList(),
                     body = THIS
                 ),
-                javaMethod = JavaMethod(
+                javaMethod = HighIrFunction(
                     isPublic = true,
-                    isStatic = true,
+                    isMethod = false,
                     name = "foo",
                     typeParameters = emptyList(),
                     parameters = emptyList(),
@@ -54,9 +54,9 @@ class JavaMemberCompilerTest : StringSpec() {
                     parameters = emptyList(),
                     body = THIS
                 ),
-                javaMethod = JavaMethod(
+                javaMethod = HighIrFunction(
                     isPublic = false,
-                    isStatic = true,
+                    isMethod = false,
                     name = "bar",
                     typeParameters = emptyList(),
                     parameters = emptyList(),
@@ -80,9 +80,9 @@ class JavaMemberCompilerTest : StringSpec() {
                         block = StatementBlock(range = Range.DUMMY, statements = emptyList(), expression = null)
                     )
                 ),
-                javaMethod = JavaMethod(
+                javaMethod = HighIrFunction(
                     isPublic = false,
-                    isStatic = true,
+                    isMethod = false,
                     name = "bar",
                     typeParameters = emptyList(),
                     parameters = emptyList(),

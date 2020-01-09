@@ -2,12 +2,12 @@ package samlang.compiler.java
 
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
+import samlang.ast.hir.HighIrClassDefinition
 import samlang.ast.hir.HighIrExpression
+import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
-import samlang.ast.java.JavaMethod
 import samlang.ast.java.JavaOuterClass
-import samlang.ast.java.JavaStaticInnerClass
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Module
 import samlang.compiler.ir.lowerExpression
@@ -21,14 +21,14 @@ private fun compileJavaOuterClass(module: Module): JavaOuterClass =
         innerStaticClasses = module.classDefinitions.map(transform = ::compileJavaInnerStaticClass)
     )
 
-private fun compileJavaInnerStaticClass(classDefinition: ClassDefinition): JavaStaticInnerClass =
-    JavaStaticInnerClass(
+private fun compileJavaInnerStaticClass(classDefinition: ClassDefinition): HighIrClassDefinition =
+    HighIrClassDefinition(
         className = classDefinition.name,
         typeDefinition = classDefinition.typeDefinition,
-        methods = classDefinition.members.map(transform = ::compileJavaMethod)
+        members = classDefinition.members.map(transform = ::compileJavaMethod)
     )
 
-internal fun compileJavaMethod(classMember: ClassDefinition.MemberDefinition): JavaMethod {
+internal fun compileJavaMethod(classMember: ClassDefinition.MemberDefinition): HighIrFunction {
     val bodyLoweringResult = lowerExpression(expression = classMember.body)
     val statements = bodyLoweringResult.unwrappedStatements
     val finalExpression = bodyLoweringResult.expression
@@ -48,9 +48,9 @@ internal fun compileJavaMethod(classMember: ClassDefinition.MemberDefinition): J
             }
         statements.plus(element = additionStatementForFinalExpression)
     }
-    return JavaMethod(
+    return HighIrFunction(
         isPublic = classMember.isPublic,
-        isStatic = !classMember.isMethod,
+        isMethod = classMember.isMethod,
         name = classMember.name,
         typeParameters = classMember.typeParameters,
         parameters = classMember.parameters.map { it.name to it.type },

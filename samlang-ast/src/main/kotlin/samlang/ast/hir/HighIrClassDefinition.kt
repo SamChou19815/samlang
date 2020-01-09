@@ -1,9 +1,9 @@
-package samlang.ast.java
+package samlang.ast.hir
 
 import samlang.ast.common.TypeDefinition
 
-data class JavaStaticInnerClass(
+data class HighIrClassDefinition(
     val className: String,
     val typeDefinition: TypeDefinition,
-    val methods: List<JavaMethod>
+    val members: List<HighIrFunction>
 )
