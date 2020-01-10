@@ -257,7 +257,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
             }
             printer.printWithBreak(x = "switch ($matchedVariable._type) {")
             printer.indented {
-                matchingList.forEach { (tag, dataVariable, statements, finalExpression) ->
+                matchingList.forEach { (tag, _, dataVariable, statements, finalExpression) ->
                     printWithBreak(x = "case \"$tag\": {")
                     printer.indented {
                         if (dataVariable != null) {

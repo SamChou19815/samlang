@@ -358,7 +358,7 @@ private class ExpressionTypeCheckerVisitor(
             typeDefinitionType = OBJECT,
             errorRange = objectExpression.range
         )
-        val fieldMappings = when (fieldMappingsOrError) {
+        val (fieldNames, fieldMappings) = when (fieldMappingsOrError) {
             is Either.Left -> fieldMappingsOrError.v
             is Either.Right -> return betterExpression.errorWith(
                 expectedType = context,
@@ -378,7 +378,15 @@ private class ExpressionTypeCheckerVisitor(
         val constraintInferredFieldType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = context, actualType = locallyInferredFieldType, errorRange = expression.range
         )
-        return expression.copy(type = constraintInferredFieldType, expression = checkedObjectExpression)
+        val fieldOrder = fieldNames.indexOf(element = fieldName)
+        if (fieldOrder == -1) {
+            error(message = "Bad field!")
+        }
+        return expression.copy(
+            type = constraintInferredFieldType,
+            fieldOrder = fieldOrder,
+            expression = checkedObjectExpression
+        )
     }
 
     private fun tryTypeCheckMethodAccess(
@@ -536,7 +544,7 @@ private class ExpressionTypeCheckerVisitor(
     override fun visit(expression: Match, context: Type): Expression {
         val (range, _, matchedExpression, matchingList) = expression
         val checkedMatchedExpression = matchedExpression.toChecked()
-        val variantMappings = when (val checkedMatchedExpressionType = checkedMatchedExpression.type) {
+        val (variantNames, variantMappings) = when (val checkedMatchedExpressionType = checkedMatchedExpression.type) {
             is IdentifierType -> {
                 val variantMappingsOrError = ClassTypeDefinitionResolver.getTypeDefinition(
                     identifierType = checkedMatchedExpressionType,
@@ -565,7 +573,7 @@ private class ExpressionTypeCheckerVisitor(
             )
         }
         val unusedMappings = variantMappings.toMutableMap()
-        val checkedMatchingList = matchingList.map { (range, tag, dataVariable, correspondingExpr) ->
+        val checkedMatchingList = matchingList.map { (range, tag, _, dataVariable, correspondingExpr) ->
             val (mappingDataType, _) = unusedMappings[tag]
                 ?: return expression.errorWith(
                     expectedType = context,
@@ -584,9 +592,14 @@ private class ExpressionTypeCheckerVisitor(
                 localTypingContext.removeLocalValue(name = dataVariable)
                 checked
             }
+            val tagOrder = variantNames.indexOf(element = tag)
+            if (tagOrder == -1) {
+                error(message = "Bad field!")
+            }
             Match.VariantPatternToExpr(
                 range = range,
                 tag = tag,
+                tagOrder = tagOrder,
                 dataVariable = dataVariable,
                 expression = checkedExpression
             )

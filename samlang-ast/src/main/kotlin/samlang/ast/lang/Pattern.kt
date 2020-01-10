@@ -14,8 +14,10 @@ sealed class Pattern {
     /** An object pattern like `{ foo, bar }`. */
     data class ObjectPattern(
         override val range: Range,
-        val destructedNames: List<Triple<String, String?, Range>>
-    ) : Pattern()
+        val destructedNames: List<DestructedName>
+    ) : Pattern() {
+        data class DestructedName(val fieldName: String, val fieldOrder: Int, val alias: String?, val range: Range)
+    }
 
     /** A simple variable pattern like `var1`. */
     data class VariablePattern(override val range: Range, val name: String) : Pattern()

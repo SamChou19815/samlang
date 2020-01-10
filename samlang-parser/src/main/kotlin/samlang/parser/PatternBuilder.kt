@@ -1,6 +1,5 @@
 package samlang.parser
 
-import samlang.ast.common.Range
 import samlang.ast.lang.Pattern
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
@@ -15,14 +14,26 @@ internal object PatternBuilder : PLBaseVisitor<Pattern?>() {
         }
     )
 
-    private object FieldNameBuilder : PLBaseVisitor<Triple<String, String?, Range>?>() {
+    private object FieldNameBuilder : PLBaseVisitor<Pattern.ObjectPattern.DestructedName?>() {
 
-        override fun visitRawVar(ctx: PLParser.RawVarContext): Triple<String, String?, Range> =
-            ctx.LowerId().symbol.let { Triple(first = it.text, second = null, third = it.range) }
+        override fun visitRawVar(ctx: PLParser.RawVarContext): Pattern.ObjectPattern.DestructedName =
+            ctx.LowerId().symbol.let {
+                Pattern.ObjectPattern.DestructedName(
+                    fieldName = it.text,
+                    fieldOrder = -1,
+                    alias = null,
+                    range = it.range
+                )
+            }
 
-        override fun visitRenamedVar(ctx: PLParser.RenamedVarContext): Triple<String, String?, Range> {
+        override fun visitRenamedVar(ctx: PLParser.RenamedVarContext): Pattern.ObjectPattern.DestructedName {
             val idList = ctx.LowerId()
-            return Triple(first = idList[0].symbol.text, second = idList[1].symbol.text, third = ctx.range)
+            return Pattern.ObjectPattern.DestructedName(
+                fieldName = idList[0].symbol.text,
+                fieldOrder = -1,
+                alias = idList[1].symbol.text,
+                range = ctx.range
+            )
         }
     }
 

@@ -410,7 +410,10 @@ class TsPrinterTest : StringSpec() {
                         body = listOf(
                             element = ConstantDefinition(
                                 pattern = HighIrPattern.ObjectPattern(
-                                    destructedNames = listOf("foo" to null, "bar" to "baz")
+                                    destructedNames = listOf(
+                                        Triple(first = "foo", second = 0, third = null),
+                                        Triple(first = "bar", second = 1, third = "baz")
+                                    )
                                 ),
                                 typeAnnotation = Type.id(identifier = "Test"),
                                 assignedExpression = ObjectConstructor(

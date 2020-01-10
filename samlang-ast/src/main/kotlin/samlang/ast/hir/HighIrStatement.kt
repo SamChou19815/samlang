@@ -31,6 +31,7 @@ sealed class HighIrStatement {
 
         data class VariantPatternToStatement(
             val tag: String,
+            val tagOrder: Int,
             val dataVariable: String?,
             val statements: List<HighIrStatement>,
             val finalExpression: HighIrExpression?

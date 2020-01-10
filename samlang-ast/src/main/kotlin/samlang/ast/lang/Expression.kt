@@ -127,7 +127,8 @@ sealed class Expression(val precedence: Int) : Node {
         override val range: Range,
         override val type: Type,
         val expression: Expression,
-        val fieldName: String
+        val fieldName: String,
+        val fieldOrder: Int
     ) : Expression(precedence = 1) {
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)
@@ -214,6 +215,7 @@ sealed class Expression(val precedence: Int) : Node {
         data class VariantPatternToExpr(
             val range: Range,
             val tag: String,
+            val tagOrder: Int,
             val dataVariable: String?,
             val expression: Expression
         )

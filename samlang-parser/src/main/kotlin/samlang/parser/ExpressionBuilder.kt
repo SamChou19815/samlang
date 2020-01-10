@@ -159,7 +159,8 @@ class ExpressionBuilder internal constructor(
         range = ctx.range,
         type = Type.undecided(),
         expression = ctx.expression().toExpression(),
-        fieldName = ctx.LowerId().symbol.text
+        fieldName = ctx.LowerId().symbol.text,
+        fieldOrder = -1 // To be resolved during type checking
     )
 
     override fun visitNotExpr(ctx: PLParser.NotExprContext): Expression = Expression.Unary(
@@ -268,6 +269,7 @@ class ExpressionBuilder internal constructor(
             Expression.Match.VariantPatternToExpr(
                 range = pattern2Expr.range,
                 tag = pattern2Expr.UpperId().symbol.text,
+                tagOrder = -1, // To be resolved during type checking
                 dataVariable = pattern2Expr.varOrWildCard().LowerId()?.symbol?.text,
                 expression = pattern2Expr.expression().toExpression()
             )

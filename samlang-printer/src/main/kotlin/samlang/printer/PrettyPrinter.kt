@@ -343,7 +343,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
                 p.destructedNames.joinToString(separator = ", ", prefix = "[", postfix = "]") { it.first ?: "_" }
             }
             is Pattern.ObjectPattern -> {
-                p.destructedNames.joinToString(separator = ", ", prefix = "{ ", postfix = " }") { (o, n) ->
+                p.destructedNames.joinToString(separator = ", ", prefix = "{ ", postfix = " }") { (o, _, n, _) ->
                     if (n == null) {
                         o
                     } else {

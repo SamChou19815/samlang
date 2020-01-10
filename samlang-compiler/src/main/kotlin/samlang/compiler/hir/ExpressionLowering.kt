@@ -142,7 +142,8 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         return FieldAccess(
             type = expression.type,
             expression = result.expression ?: error(message = "Object expression must be lowered!"),
-            fieldName = expression.fieldName
+            fieldName = expression.fieldName,
+            fieldOrder = expression.fieldOrder
         ).asLoweringResult(statements = result.statements)
     }
 
@@ -318,6 +319,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             val result = patternToExpression.expression.lower()
             Match.VariantPatternToStatement(
                 tag = patternToExpression.tag,
+                tagOrder = patternToExpression.tagOrder,
                 dataVariable = patternToExpression.dataVariable,
                 statements = result.statements,
                 finalExpression = result.expression
@@ -391,7 +393,9 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                             destructedNames = pattern.destructedNames.map { it.first }
                         )
                         is Pattern.ObjectPattern -> HighIrPattern.ObjectPattern(
-                            destructedNames = pattern.destructedNames.map { (name, renamed, _) -> name to renamed }
+                            destructedNames = pattern.destructedNames.map { (name, order, renamed, _) ->
+                                Triple(first = name, second = order, third = renamed)
+                            }
                         )
                         is Pattern.VariablePattern -> HighIrPattern.VariablePattern(name = pattern.name)
                         is Pattern.WildCardPattern -> HighIrPattern.WildCardPattern

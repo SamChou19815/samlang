@@ -295,7 +295,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
             }
             val totalNumberOfCases = matchingList.size
             for (i in 0 until totalNumberOfCases) {
-                val (tag, dataVariable, statements, finalExpression) = matchingList[i]
+                val (tag, _, dataVariable, statements, finalExpression) = matchingList[i]
                 printer.printlnWithoutFurtherIndentation {
                     if (i > 0) {
                         printWithoutBreak(x = "} else ")

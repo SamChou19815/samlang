@@ -25,12 +25,12 @@ internal object ClassTypeDefinitionResolver {
         typeDefinitionType: TypeDefinitionType,
         context: AccessibleGlobalTypingContext,
         errorRange: Range
-    ): Either<Map<String, TypeDefinition.FieldType>, CompileTimeError> {
+    ): Either<Pair<List<String>, Map<String, TypeDefinition.FieldType>>, CompileTimeError> {
         val (id, typeArguments) = identifierType
         if (id != context.currentClass && typeDefinitionType == TypeDefinitionType.VARIANT) {
             return Either.Right(v = IllegalOtherClassMatch(range = errorRange))
         }
-        val (_, _, typeParameters, _, varMap) = context.getClassTypeDefinition(className = id)
+        val (_, _, typeParameters, names, varMap) = context.getClassTypeDefinition(className = id)
             ?.takeIf { it.type == typeDefinitionType }
             ?: return Either.Right(
                 v = UnsupportedClassTypeDefinitionError(typeDefinitionType = typeDefinitionType, range = errorRange)
@@ -51,7 +51,7 @@ internal object ClassTypeDefinitionResolver {
                 context = typeParameters.zip(typeArguments).toMap()
             )
             TypeDefinition.FieldType(type = genericTypeParameterAppliedType, isPublic = isPublic)
-        }.let { Either.Left(v = it) }
+        }.let { Either.Left(v = names to it) }
     }
 
     private object Visitor : TypeVisitor<Map<String, Type>, Type> {

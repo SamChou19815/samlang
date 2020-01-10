@@ -75,7 +75,7 @@ internal class StatementTypeChecker(
         )
         val betterStatement = statement.copy(assignedExpression = checkedAssignedExpression)
         val checkedAssignedExprType = checkedAssignedExpression.type
-        when (pattern) {
+        val checkedPattern = when (pattern) {
             is Pattern.TuplePattern -> {
                 val tupleType = checkedAssignedExprType as? Type.TupleType ?: kotlin.run {
                     errorCollector.add(
@@ -106,6 +106,7 @@ internal class StatementTypeChecker(
                         errorCollector.reportCollisionError(name = name, range = nameRange)
                     }
                 }
+                pattern
             }
             is Pattern.ObjectPattern -> {
                 val identifierType = checkedAssignedExprType as? Type.IdentifierType ?: kotlin.run {
@@ -124,36 +125,42 @@ internal class StatementTypeChecker(
                     typeDefinitionType = TypeDefinitionType.OBJECT,
                     errorRange = assignedExpression.range
                 )
-                val fieldMappings = when (fieldMappingsOrError) {
+                val (fieldNames, fieldMappings) = when (fieldMappingsOrError) {
                     is Either.Left -> fieldMappingsOrError.v
                     is Either.Right -> {
                         errorCollector.add(compileTimeError = fieldMappingsOrError.v)
                         return betterStatement
                     }
                 }
-                pattern.destructedNames.forEach { (originalName, renamedName) ->
+                val fieldOrderMapping = fieldNames.asSequence().mapIndexed { index, name -> name to index }.toMap()
+                val orderedDestructuredName = pattern.destructedNames.map { destructuredName ->
+                    val (originalName, _, renamedName, fieldRange) = destructuredName
                     val (fieldType, isPublic) = fieldMappings[originalName] ?: kotlin.run {
-                        errorCollector.add(UnresolvedNameError(unresolvedName = originalName, range = pattern.range))
+                        errorCollector.add(UnresolvedNameError(unresolvedName = originalName, range = fieldRange))
                         return betterStatement
                     }
                     if (identifierType.identifier != accessibleGlobalTypingContext.currentClass && !isPublic) {
-                        errorCollector.add(UnresolvedNameError(unresolvedName = originalName, range = pattern.range))
+                        errorCollector.add(UnresolvedNameError(unresolvedName = originalName, range = fieldRange))
                         return betterStatement
                     }
                     val nameToBeUsed = renamedName ?: originalName
                     localContext.addLocalValueType(name = nameToBeUsed, type = fieldType) {
-                        errorCollector.reportCollisionError(name = nameToBeUsed, range = pattern.range)
+                        errorCollector.reportCollisionError(name = nameToBeUsed, range = fieldRange)
                     }
-                }
+                    val order = fieldOrderMapping[originalName] ?: error(message = "Bad field!")
+                    destructuredName.copy(fieldOrder = order)
+                }.sortedBy { it.fieldOrder }
+                pattern.copy(destructedNames = orderedDestructuredName)
             }
             is Pattern.VariablePattern -> {
                 val (p, n) = pattern
                 localContext.addLocalValueType(name = n, type = checkedAssignedExprType) {
                     errorCollector.reportCollisionError(name = n, range = p)
                 }
+                pattern
             }
-            is Pattern.WildCardPattern -> Unit
+            is Pattern.WildCardPattern -> pattern
         }
-        return betterStatement
+        return betterStatement.copy(pattern = checkedPattern)
     }
 }

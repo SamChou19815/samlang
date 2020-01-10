@@ -280,7 +280,7 @@ internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext,
                         }
                         is Pattern.ObjectPattern -> {
                             val objectValueMappings = (assignedValue as Value.ObjectValue).objectContent
-                            val additionalMappings = p.destructedNames.map { (original, renamed) ->
+                            val additionalMappings = p.destructedNames.map { (original, _, renamed) ->
                                 val v = objectValueMappings[original] ?: blameTypeChecker()
                                 (renamed ?: original) to v
                             }

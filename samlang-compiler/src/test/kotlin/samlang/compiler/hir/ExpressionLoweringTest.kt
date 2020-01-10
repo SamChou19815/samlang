@@ -111,9 +111,11 @@ class ExpressionLoweringTest : StringSpec() {
             )
             assertCorrectlyLowered(
                 expression = Expression.FieldAccess(
-                    range = dummyRange, type = unit, expression = THIS, fieldName = "foo"
+                    range = dummyRange, type = unit, expression = THIS, fieldName = "foo", fieldOrder = 0
                 ),
-                expectedExpression = HighIrExpression.FieldAccess(type = unit, expression = IR_THIS, fieldName = "foo")
+                expectedExpression = HighIrExpression.FieldAccess(
+                    type = unit, expression = IR_THIS, fieldName = "foo", fieldOrder = 0
+                )
             )
             assertCorrectlyLowered(
                 expression = Expression.MethodAccess(
@@ -405,10 +407,10 @@ class ExpressionLoweringTest : StringSpec() {
                     matchedExpression = THIS,
                     matchingList = listOf(
                         Expression.Match.VariantPatternToExpr(
-                            range = dummyRange, tag = "Foo", dataVariable = "bar", expression = THIS
+                            range = dummyRange, tag = "Foo", tagOrder = 0, dataVariable = "bar", expression = THIS
                         ),
                         Expression.Match.VariantPatternToExpr(
-                            range = dummyRange, tag = "Bar", dataVariable = null, expression = THIS
+                            range = dummyRange, tag = "Bar", tagOrder = 1, dataVariable = null, expression = THIS
                         )
                     )
                 ),
@@ -427,12 +429,14 @@ class ExpressionLoweringTest : StringSpec() {
                             matchingList = listOf(
                                 HighIrStatement.Match.VariantPatternToStatement(
                                     tag = "Foo",
+                                    tagOrder = 0,
                                     dataVariable = "bar",
                                     statements = emptyList(),
                                     finalExpression = IR_THIS
                                 ),
                                 HighIrStatement.Match.VariantPatternToStatement(
                                     tag = "Bar",
+                                    tagOrder = 1,
                                     dataVariable = null,
                                     statements = emptyList(),
                                     finalExpression = IR_THIS
@@ -450,10 +454,10 @@ class ExpressionLoweringTest : StringSpec() {
                     matchedExpression = THIS,
                     matchingList = listOf(
                         Expression.Match.VariantPatternToExpr(
-                            range = dummyRange, tag = "Foo", dataVariable = "bar", expression = THIS
+                            range = dummyRange, tag = "Foo", tagOrder = 0, dataVariable = "bar", expression = THIS
                         ),
                         Expression.Match.VariantPatternToExpr(
-                            range = dummyRange, tag = "Bar", dataVariable = null, expression = THIS
+                            range = dummyRange, tag = "Bar", tagOrder = 1, dataVariable = null, expression = THIS
                         )
                     )
                 ),
@@ -472,12 +476,14 @@ class ExpressionLoweringTest : StringSpec() {
                             matchingList = listOf(
                                 HighIrStatement.Match.VariantPatternToStatement(
                                     tag = "Foo",
+                                    tagOrder = 0,
                                     dataVariable = "bar",
                                     statements = emptyList(),
                                     finalExpression = IR_THIS
                                 ),
                                 HighIrStatement.Match.VariantPatternToStatement(
                                     tag = "Bar",
+                                    tagOrder = 1,
                                     dataVariable = null,
                                     statements = emptyList(),
                                     finalExpression = IR_THIS

@@ -1,5 +1,5 @@
 // ERROR_COUNT: 2
-// illegal-private-field-access.sam:18:9-18:15: [UnresolvedName]: Name `b` is not resolved.
+// illegal-private-field-access.sam:18:13-18:14: [UnresolvedName]: Name `b` is not resolved.
 // illegal-private-field-access.sam:20:13-20:16: [UnresolvedName]: Name `b` is not resolved.
 
 class Fields(val a: int, private val b: bool) {

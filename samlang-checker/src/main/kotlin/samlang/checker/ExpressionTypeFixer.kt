@@ -205,10 +205,11 @@ private class TypeFixerVisitor(private val resolution: ReadOnlyTypeResolution) :
         return expression.copy(
             type = expression.getFixedSelfType(expectedType = context),
             matchedExpression = expression.matchedExpression.tryFixType(expectedType = matchedExpressionType),
-            matchingList = expression.matchingList.map { (range, tag, dataVar, expression) ->
+            matchingList = expression.matchingList.map { (range, tag, tagOrder, dataVar, expression) ->
                 Match.VariantPatternToExpr(
                     range = range,
                     tag = tag,
+                    tagOrder = tagOrder,
                     dataVariable = dataVar,
                     expression = expression.tryFixType(expectedType = context)
                 )
