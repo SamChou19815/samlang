@@ -36,6 +36,7 @@ import samlang.ast.hir.HighIrStatement.Return
 import samlang.ast.hir.HighIrStatement.Throw
 import samlang.ast.hir.HighIrStatement.VariableAssignment
 import samlang.ast.hir.HighIrStatementVisitor
+import samlang.ast.lang.Module
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.ADD
 import samlang.ast.mir.MidIrExpression.Companion.CALL
@@ -59,11 +60,14 @@ import samlang.ast.mir.MidIrStatement.Companion.MOVE
 import samlang.ast.mir.MidIrStatement.Companion.SEQ
 import samlang.ast.mir.MidIrStatement.Jump
 import samlang.ast.mir.MidIrStatement.Label
+import samlang.checker.GlobalTypingContext
 
 /** Generate non-canonical mid IR in the first pass */
 internal class MidIrFirstPassGenerator(
     private val allocator: MidIrResourceAllocator,
-    private val moduleReference: ModuleReference
+    private val globalTypingContext: GlobalTypingContext,
+    private val moduleReference: ModuleReference,
+    private val module: Module
 ) {
     private val statementGenerator: StatementGenerator = StatementGenerator()
     private val expressionGenerator: ExpressionGenerator = ExpressionGenerator()
@@ -78,6 +82,21 @@ internal class MidIrFirstPassGenerator(
 
     private fun translate(expression: HighIrExpression): MidIrExpression =
         expression.accept(visitor = expressionGenerator)
+
+    private fun getFunctionName(className: String, functionName: String): String =
+        NameEncoder.encodeFunctionName(
+            moduleReference = getModuleOfClass(className = className),
+            className = className,
+            functionName = functionName
+        )
+
+    private fun getModuleOfClass(className: String): ModuleReference = module
+        .imports
+        .mapNotNull { oneImport ->
+            if (oneImport.importedMembers.any { it.first == className }) oneImport.importedModule else null
+        }
+        .firstOrNull()
+        ?: this.moduleReference
 
     private fun cJumpTranslate(
         expression: HighIrExpression,
@@ -259,21 +278,13 @@ internal class MidIrFirstPassGenerator(
         override fun visit(expression: FunctionApplication): MidIrExpression =
             CALL(
                 functionExpr = NAME(
-                    name = NameEncoder.encodeFunctionName(
-                        moduleReference = moduleReference,
-                        className = expression.className,
-                        functionName = expression.functionName
-                    )
+                    name = getFunctionName(className = expression.className, functionName = expression.functionName)
                 ),
                 args = expression.arguments.map { translate(expression = it) }
             )
 
         override fun visit(expression: MethodApplication): MidIrExpression {
-            val name = NameEncoder.encodeFunctionName(
-                moduleReference = moduleReference,
-                className = expression.className,
-                functionName = expression.methodName
-            )
+            val name = getFunctionName(className = expression.className, functionName = expression.methodName)
             val arguments = arrayListOf(translate(expression = expression.objectExpression))
             expression.arguments.forEach { arguments += translate(expression = it) }
             return CALL(functionExpr = NAME(name = name), args = arguments)
