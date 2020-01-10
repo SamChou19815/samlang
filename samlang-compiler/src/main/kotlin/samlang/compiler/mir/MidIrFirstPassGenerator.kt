@@ -252,7 +252,19 @@ internal class MidIrFirstPassGenerator(
         }
 
         override fun visit(expression: VariantConstructor): MidIrExpression {
-            TODO(reason = "NOT_IMPLEMENTED")
+            val variantTemporary = allocator.allocateTemp()
+            val statements = listOf(
+                MOVE(variantTemporary, MALLOC(CONST(value = 16L))),
+                MOVE(
+                    destination = MEM(expression = variantTemporary),
+                    source = CONST(value = expression.tagOrder.toLong())
+                ),
+                MOVE(
+                    destination = MEM(expression = ADD(e1 = variantTemporary, e2 = CONST(value = 8L))),
+                    source = translate(expression = expression.data)
+                )
+            )
+            return ESEQ(SEQ(statements), variantTemporary)
         }
 
         override fun visit(expression: FieldAccess): MidIrExpression {
