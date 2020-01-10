@@ -295,7 +295,17 @@ internal class MidIrFirstPassGenerator(
         override fun visit(expression: This): MidIrExpression = TEMP(id = "_this")
 
         override fun visit(expression: ClassMember): MidIrExpression {
-            TODO(reason = "NOT_IMPLEMENTED")
+            val name = getFunctionName(className = expression.className, functionName = expression.memberName)
+            val closureTemporary = allocator.allocateTemp()
+            val statements = listOf(
+                MOVE(closureTemporary, MALLOC(CONST(value = 16L))),
+                MOVE(destination = MEM(expression = closureTemporary), source = NAME(name = name)),
+                MOVE(
+                    destination = MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),
+                    source = CONST(value = 0L)
+                )
+            )
+            return ESEQ(SEQ(statements), closureTemporary)
         }
 
         override fun visit(expression: TupleConstructor): MidIrExpression {
@@ -349,7 +359,17 @@ internal class MidIrFirstPassGenerator(
             )
 
         override fun visit(expression: MethodAccess): MidIrExpression {
-            TODO(reason = "NOT_IMPLEMENTED")
+            val name = getFunctionName(className = expression.className, functionName = expression.methodName)
+            val closureTemporary = allocator.allocateTemp()
+            val statements = listOf(
+                MOVE(closureTemporary, MALLOC(CONST(value = 16L))),
+                MOVE(destination = MEM(expression = closureTemporary), source = NAME(name = name)),
+                MOVE(
+                    destination = MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),
+                    source = translate(expression = expression)
+                )
+            )
+            return ESEQ(SEQ(statements), closureTemporary)
         }
 
         override fun visit(expression: Unary): MidIrExpression {
@@ -389,7 +409,33 @@ internal class MidIrFirstPassGenerator(
         }
 
         override fun visit(expression: ClosureApplication): MidIrExpression {
-            TODO(reason = "NOT_IMPLEMENTED")
+            val closure = translate(expression = expression.functionExpression)
+            val arguments = expression.arguments.map { translate(expression = it) }
+            val contextTemp = allocator.allocateTemp()
+            val collectorTemp = allocator.allocateTemp()
+            val simpleCaseLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_SIMPLE")
+            val complexCaseLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_COMPLEX")
+            val endLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_APP_END")
+            val statements = listOf(
+                MOVE(destination = contextTemp, source = MEM(ADD(e1 = closure, e2 = CONST(value = 8)))),
+                CJUMP(condition = EQ(e1 = contextTemp, e2 = ZERO), label1 = simpleCaseLabel, label2 = complexCaseLabel),
+                Label(name = simpleCaseLabel),
+                // No context (context is null)
+                CALL_FUNCTION(
+                    expression = MEM(expression = closure),
+                    arguments = arguments,
+                    returnCollector = collectorTemp
+                ),
+                Jump(label = endLabel),
+                Label(name = complexCaseLabel),
+                CALL_FUNCTION(
+                    expression = MEM(expression = closure),
+                    arguments = arrayListOf<MidIrExpression>(contextTemp).apply { addAll(arguments) },
+                    returnCollector = collectorTemp
+                ),
+                Label(name = endLabel)
+            )
+            return ESEQ(statement = SEQ(statements = statements), expression = collectorTemp)
         }
 
         override fun visit(expression: Binary): MidIrExpression {
