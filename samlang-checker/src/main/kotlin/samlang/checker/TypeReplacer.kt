@@ -3,6 +3,7 @@ package samlang.checker
 import samlang.ast.common.Type
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
+import samlang.ast.lang.Expression.BuiltInFunctionCall
 import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.FieldAccess
 import samlang.ast.lang.Expression.FunctionApplication
@@ -39,6 +40,7 @@ internal object TypeReplacer {
         override fun visit(expression: MethodAccess, context: Type): Expression = expression.copy(type = context)
         override fun visit(expression: Unary, context: Type): Expression = expression.copy(type = context)
         override fun visit(expression: Panic, context: Type): Expression = expression.copy(type = context)
+        override fun visit(expression: BuiltInFunctionCall, context: Type): Expression = expression.copy(type = context)
         override fun visit(expression: FunctionApplication, context: Type): Expression = expression.copy(type = context)
         override fun visit(expression: Binary, context: Type): Expression = expression.copy(type = context)
         override fun visit(expression: IfElse, context: Type): Expression = expression.copy(type = context)

@@ -3,6 +3,7 @@ package samlang.compiler.hir
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
+import samlang.ast.hir.HighIrExpression.BuiltInFunctionApplication
 import samlang.ast.hir.HighIrExpression.ClassMember
 import samlang.ast.hir.HighIrExpression.ClosureApplication
 import samlang.ast.hir.HighIrExpression.FieldAccess
@@ -170,6 +171,23 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             expression = result.expression ?: error(message = "String in panic must be lowered!")
         )
         return LoweringResult(statements = loweredStatements, expression = null)
+    }
+
+    override fun visit(expression: Expression.BuiltInFunctionCall, context: Unit): LoweringResult {
+        val loweredStatements = arrayListOf<HighIrStatement>()
+        val (statements, argument) = expression.argumentExpression.lower()
+        loweredStatements += statements
+        if (argument == null) {
+            error(message = "Builtin function argument must be lowered!")
+        }
+        return LoweringResult(
+            statements = loweredStatements,
+            expression = BuiltInFunctionApplication(
+                type = expression.type,
+                functionName = expression.functionName,
+                argument = argument
+            )
+        )
     }
 
     override fun visit(expression: Expression.FunctionApplication, context: Unit): LoweringResult {

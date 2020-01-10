@@ -14,6 +14,7 @@ import samlang.ast.common.BinaryOperator.MUL
 import samlang.ast.common.BinaryOperator.NE
 import samlang.ast.common.BinaryOperator.OR
 import samlang.ast.common.BinaryOperator.PLUS
+import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.Literal.BoolLiteral
 import samlang.ast.common.Literal.IntLiteral
 import samlang.ast.common.Literal.StringLiteral
@@ -21,6 +22,7 @@ import samlang.ast.common.Type
 import samlang.ast.common.UnaryOperator
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
+import samlang.ast.lang.Expression.BuiltInFunctionCall
 import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.FieldAccess
 import samlang.ast.lang.Expression.FunctionApplication
@@ -126,6 +128,25 @@ internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext,
                 context = context
             ) as Value.StringValue).value
         )
+
+    override fun visit(expression: BuiltInFunctionCall, context: InterpretationContext): Value {
+        val argumentValue = eval(expression = expression.argumentExpression, context = context)
+        return when (expression.functionName) {
+            BuiltInFunctionName.STRING_TO_INT -> {
+                val value = (argumentValue as Value.StringValue).value
+                value.toLongOrNull()
+                    ?.let { Value.IntValue(value = it) }
+                    ?: throw PanicException(reason = "Cannot convert `$value` to int.")
+            }
+            BuiltInFunctionName.INT_TO_STRING -> Value.StringValue(
+                value = (argumentValue as Value.IntValue).value.toString()
+            )
+            BuiltInFunctionName.PRINTLN -> {
+                println((argumentValue as Value.StringValue).value)
+                Value.UnitValue
+            }
+        }
+    }
 
     override fun visit(expression: FunctionApplication, context: InterpretationContext): Value {
         val (args, body, ctx) = eval(

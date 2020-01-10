@@ -7,6 +7,7 @@ import samlang.ast.common.TypeDefinitionType.VARIANT
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
+import samlang.ast.lang.Expression.BuiltInFunctionCall
 import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.FieldAccess
 import samlang.ast.lang.Expression.FunctionApplication
@@ -212,6 +213,14 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
         printer.printlnWithoutFurtherIndentation {
             printWithoutBreak(x = "panic(")
             expression.expression.printSelf(requireBreak = false)
+            print(x = ")", requireBreak = context)
+        }
+    }
+
+    override fun visit(expression: BuiltInFunctionCall, context: Boolean) {
+        printer.printlnWithoutFurtherIndentation {
+            printWithoutBreak(x = "${expression.functionName.displayName}(")
+            expression.argumentExpression.printSelf(requireBreak = false)
             print(x = ")", requireBreak = context)
         }
     }

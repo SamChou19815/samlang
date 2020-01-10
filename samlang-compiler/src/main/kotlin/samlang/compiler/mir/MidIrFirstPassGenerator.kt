@@ -5,6 +5,7 @@ import samlang.ast.common.GlobalVariable
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
+import samlang.ast.hir.HighIrExpression.BuiltInFunctionApplication
 import samlang.ast.hir.HighIrExpression.ClassMember
 import samlang.ast.hir.HighIrExpression.ClosureApplication
 import samlang.ast.hir.HighIrExpression.FieldAccess
@@ -173,6 +174,10 @@ internal class MidIrFirstPassGenerator(private val allocator: MidIrResourceAlloc
                 UnaryOperator.NOT -> XOR(e1 = child, e2 = ONE)
                 UnaryOperator.NEG -> SUB(e1 = ZERO, e2 = child)
             }
+        }
+
+        override fun visit(expression: BuiltInFunctionApplication): MidIrExpression {
+            TODO("NOT_IMPLEMENTED")
         }
 
         override fun visit(expression: FunctionApplication): MidIrExpression {

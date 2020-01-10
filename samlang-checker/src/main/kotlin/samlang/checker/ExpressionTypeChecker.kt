@@ -13,6 +13,7 @@ import samlang.ast.common.BinaryOperator.MUL
 import samlang.ast.common.BinaryOperator.NE
 import samlang.ast.common.BinaryOperator.OR
 import samlang.ast.common.BinaryOperator.PLUS
+import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.Type
 import samlang.ast.common.Type.FunctionType
 import samlang.ast.common.Type.IdentifierType
@@ -431,6 +432,18 @@ private class ExpressionTypeCheckerVisitor(
             expectedType = context, actualType = type, errorRange = range
         )
         return expression.copy(type = constraintInferredType, expression = checkedSubExpression)
+    }
+
+    override fun visit(expression: Expression.BuiltInFunctionCall, context: Type): Expression {
+        val (range, type, functionName, argumentExpression) = expression
+        val expectedArgumentType = when (functionName) {
+            BuiltInFunctionName.STRING_TO_INT -> Type.string
+            BuiltInFunctionName.INT_TO_STRING -> Type.int
+            BuiltInFunctionName.PRINTLN -> Type.string
+        }
+        val checkedArgument = argumentExpression.toChecked(expectedType = expectedArgumentType)
+        constraintAwareTypeChecker.checkAndInfer(expectedType = context, actualType = type, errorRange = range)
+        return expression.copy(argumentExpression = checkedArgument)
     }
 
     override fun visit(expression: FunctionApplication, context: Type): Expression {

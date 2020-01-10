@@ -20,6 +20,7 @@ import samlang.ast.common.Type.TupleType
 import samlang.ast.common.UnaryOperator
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
+import samlang.ast.lang.Expression.BuiltInFunctionCall
 import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.FieldAccess
 import samlang.ast.lang.Expression.FunctionApplication
@@ -151,6 +152,11 @@ private class TypeFixerVisitor(private val resolution: ReadOnlyTypeResolution) :
     override fun visit(expression: Panic, context: Type): Expression = expression.copy(
         type = expression.getFixedSelfType(expectedType = context),
         expression = expression.expression.tryFixType()
+    )
+
+    override fun visit(expression: BuiltInFunctionCall, context: Type): Expression = expression.copy(
+        type = expression.getFixedSelfType(expectedType = context),
+        argumentExpression = expression.argumentExpression.tryFixType()
     )
 
     override fun visit(expression: FunctionApplication, context: Type): Expression {

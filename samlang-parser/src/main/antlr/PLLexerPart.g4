@@ -47,8 +47,14 @@ FALSE : 'false';
 THIS : 'this';
 WILDCARD : '_';
 
+// Builtins
+STRING2INT: 'stringToInt';
+INT2STRING: 'intToString';
+PRINTLN: 'println';
+
 // Forbidden Names
 SELF : 'self';
+CONST : 'const';
 LET : 'let';
 VAR : 'var';
 TYPE : 'type';
@@ -56,7 +62,6 @@ INTERFACE : 'interface';
 EXTENDS : 'extends';
 IMPLEMENTS : 'implements';
 EXPORT : 'export';
-CONST : 'const';
 
 /*
  * ----------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 package samlang.ast.hir
 
 import samlang.ast.common.BinaryOperator
+import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.Type
 import samlang.ast.common.UnaryOperator
 
@@ -88,6 +89,14 @@ sealed class HighIrExpression(val precedence: Int) {
         val operator: UnaryOperator,
         val expression: HighIrExpression
     ) : HighIrExpression(precedence = 3) {
+        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
+    }
+
+    data class BuiltInFunctionApplication(
+        override val type: Type,
+        val functionName: BuiltInFunctionName,
+        val argument: HighIrExpression
+    ) : HighIrExpression(precedence = 4) {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 

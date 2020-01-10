@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import org.apache.commons.text.StringEscapeUtils
 import samlang.ast.common.BinaryOperator
+import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range
 import samlang.ast.common.Type
@@ -179,6 +180,30 @@ class ExpressionBuilder internal constructor(
         type = Type.undecided(),
         expression = ctx.expression().toExpression()
     )
+
+    override fun visitStringToIntExpr(ctx: PLParser.StringToIntExprContext): Expression =
+        Expression.BuiltInFunctionCall(
+            range = ctx.range,
+            type = Type.int,
+            functionName = BuiltInFunctionName.STRING_TO_INT,
+            argumentExpression = ctx.expression().toExpression()
+        )
+
+    override fun visitIntToStringExpr(ctx: PLParser.IntToStringExprContext): Expression =
+        Expression.BuiltInFunctionCall(
+            range = ctx.range,
+            type = Type.string,
+            functionName = BuiltInFunctionName.INT_TO_STRING,
+            argumentExpression = ctx.expression().toExpression()
+        )
+
+    override fun visitPrintLineExpr(ctx: PLParser.PrintLineExprContext): Expression =
+        Expression.BuiltInFunctionCall(
+            range = ctx.range,
+            type = Type.unit,
+            functionName = BuiltInFunctionName.PRINTLN,
+            argumentExpression = ctx.expression().toExpression()
+        )
 
     override fun visitFunctionApplicationExpr(ctx: PLParser.FunctionApplicationExprContext): Expression =
         Expression.FunctionApplication(

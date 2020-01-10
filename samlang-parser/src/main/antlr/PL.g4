@@ -66,6 +66,9 @@ expression
     | MINUS expression # NegExpr
     | NOT expression # NotExpr
     | PANIC LPAREN expression RPAREN # PanicExpr
+    | STRING2INT LPAREN expression RPAREN # StringToIntExpr
+    | INT2STRING LPAREN expression RPAREN # IntToStringExpr
+    | PRINTLN LPAREN expression RPAREN # PrintLineExpr
     | expression functionArguments # FunctionApplicationExpr
     | expression factorOperator expression # FactorExpr
     | expression termOperator expression # TermExpr

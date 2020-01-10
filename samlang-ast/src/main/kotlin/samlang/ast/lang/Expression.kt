@@ -1,6 +1,7 @@
 package samlang.ast.lang
 
 import samlang.ast.common.BinaryOperator
+import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.Node
 import samlang.ast.common.Range
 import samlang.ast.common.Type
@@ -155,6 +156,16 @@ sealed class Expression(val precedence: Int) : Node {
         override val range: Range,
         override val type: Type,
         val expression: Expression
+    ) : Expression(precedence = 3) {
+        override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
+            visitor.visit(expression = this, context = context)
+    }
+
+    data class BuiltInFunctionCall(
+        override val range: Range,
+        override val type: Type,
+        val functionName: BuiltInFunctionName,
+        val argumentExpression: Expression
     ) : Expression(precedence = 3) {
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =
             visitor.visit(expression = this, context = context)

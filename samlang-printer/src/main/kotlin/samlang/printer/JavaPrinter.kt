@@ -3,6 +3,7 @@ package samlang.printer
 import java.io.OutputStream
 import java.io.PrintStream
 import org.apache.commons.text.CaseUtils
+import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Type
@@ -17,6 +18,7 @@ import samlang.ast.common.TypeVisitor
 import samlang.ast.hir.HighIrClassDefinition
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
+import samlang.ast.hir.HighIrExpression.BuiltInFunctionApplication
 import samlang.ast.hir.HighIrExpression.ClassMember
 import samlang.ast.hir.HighIrExpression.ClosureApplication
 import samlang.ast.hir.HighIrExpression.FieldAccess
@@ -527,6 +529,19 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                 }
             }
             printer.printWithoutBreak(x = ")")
+        }
+
+        override fun visit(expression: BuiltInFunctionApplication) {
+            val functionName = when (expression.functionName) {
+                BuiltInFunctionName.STRING_TO_INT -> "Long.parseLong"
+                BuiltInFunctionName.INT_TO_STRING -> "String.valueOf"
+                BuiltInFunctionName.PRINTLN -> "System.out.println"
+            }
+            printer.printlnWithoutFurtherIndentation {
+                printWithoutBreak(x = "$functionName(")
+                expression.argument.printSelf()
+                printWithoutBreak(x = ")")
+            }
         }
 
         override fun visit(expression: FunctionApplication) {

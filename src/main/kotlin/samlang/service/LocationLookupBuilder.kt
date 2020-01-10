@@ -5,6 +5,7 @@ import samlang.ast.common.ModuleReference
 import samlang.ast.common.Type
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Binary
+import samlang.ast.lang.Expression.BuiltInFunctionCall
 import samlang.ast.lang.Expression.ClassMember
 import samlang.ast.lang.Expression.FieldAccess
 import samlang.ast.lang.Expression.FunctionApplication
@@ -110,6 +111,11 @@ class LocationLookupBuilder(val locationLookup: LocationLookup<Expression>) {
 
         override fun visit(expression: Panic, context: Unit) {
             expression.expression.buildRecursively()
+            build(expression = expression)
+        }
+
+        override fun visit(expression: BuiltInFunctionCall, context: Unit) {
+            expression.argumentExpression.buildRecursively()
             build(expression = expression)
         }
 

@@ -19,6 +19,7 @@ interface ExpressionVisitor<in C, out T> {
     fun visit(expression: Expression.MethodAccess, context: C): T
     fun visit(expression: Expression.Unary, context: C): T
     fun visit(expression: Expression.Panic, context: C): T
+    fun visit(expression: Expression.BuiltInFunctionCall, context: C): T
     fun visit(expression: Expression.FunctionApplication, context: C): T
     fun visit(expression: Expression.Binary, context: C): T
     fun visit(expression: Expression.IfElse, context: C): T
