@@ -64,7 +64,7 @@ import samlang.ast.mir.MidIrStatement.Companion.SEQ
 import samlang.ast.mir.MidIrStatement.Jump
 import samlang.ast.mir.MidIrStatement.Label
 
-/** Generate non-canonical mid IR in the first pass */
+/** Generate non-canonical mid IR in the first pass. */
 internal class MidIrFirstPassGenerator(
     private val allocator: MidIrResourceAllocator,
     private val moduleReference: ModuleReference,
