@@ -514,6 +514,20 @@ internal class MidIrFirstPassGenerator(
         }
 
         override fun visit(expression: Lambda): MidIrExpression {
+            val capturedVariables = expression.captured.keys.toList()
+            val capturedVariablesMapping = capturedVariables
+                .asSequence()
+                .mapIndexed { index, variable -> variable to index }
+                .toMap()
+            val contextTemp = allocator.allocateTemp()
+            val statements = arrayListOf<MidIrStatement>()
+            statements += MOVE(contextTemp, MALLOC(sizeExpr = CONST(value = capturedVariables.size * 8L)))
+            capturedVariables.forEachIndexed { index, variable ->
+                statements += MOVE(
+                    destination = MEM(expression = ADD(e1 = contextTemp, e2 = CONST(value = index * 8L))),
+                    source = allocator.getTemporaryByVariable(variableName = variable)
+                )
+            }
             TODO(reason = "NOT_IMPLEMENTED")
         }
     }
