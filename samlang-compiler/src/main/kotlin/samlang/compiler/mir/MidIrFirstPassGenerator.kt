@@ -1,7 +1,9 @@
 package samlang.compiler.mir
 
 import samlang.ast.common.BinaryOperator
+import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.GlobalVariable
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
@@ -36,6 +38,7 @@ import samlang.ast.hir.HighIrStatement.VariableAssignment
 import samlang.ast.hir.HighIrStatementVisitor
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.ADD
+import samlang.ast.mir.MidIrExpression.Companion.CALL
 import samlang.ast.mir.MidIrExpression.Companion.CONST
 import samlang.ast.mir.MidIrExpression.Companion.ESEQ
 import samlang.ast.mir.MidIrExpression.Companion.MALLOC
@@ -55,7 +58,10 @@ import samlang.ast.mir.MidIrStatement.Companion.MOVE
 import samlang.ast.mir.MidIrStatement.Companion.SEQ
 
 /** Generate non-canonical mid IR in the first pass */
-internal class MidIrFirstPassGenerator(private val allocator: MidIrResourceAllocator) {
+internal class MidIrFirstPassGenerator(
+    private val allocator: MidIrResourceAllocator,
+    private val moduleReference: ModuleReference
+) {
     private val statementGenerator: StatementGenerator = StatementGenerator()
     private val expressionGenerator: ExpressionGenerator = ExpressionGenerator()
 
@@ -71,13 +77,11 @@ internal class MidIrFirstPassGenerator(private val allocator: MidIrResourceAlloc
         expression.accept(visitor = expressionGenerator)
 
     private inner class StatementGenerator : HighIrStatementVisitor<MidIrStatement> {
-        override fun visit(statement: Throw): MidIrStatement {
-            return CALL_FUNCTION(
-                functionName = "throw_builtin",
-                arguments = listOf(translate(statement.expression)),
-                returnCollector = null
-            )
-        }
+        override fun visit(statement: Throw): MidIrStatement = CALL_FUNCTION(
+            functionName = NameEncoder.nameOfThrow,
+            arguments = listOf(translate(expression = statement.expression)),
+            returnCollector = null
+        )
 
         override fun visit(statement: IfElse): MidIrStatement {
             TODO(reason = "NOT_IMPLEMENTED")
@@ -181,13 +185,28 @@ internal class MidIrFirstPassGenerator(private val allocator: MidIrResourceAlloc
             }
         }
 
-        override fun visit(expression: BuiltInFunctionApplication): MidIrExpression {
-            TODO("NOT_IMPLEMENTED")
-        }
+        override fun visit(expression: BuiltInFunctionApplication): MidIrExpression = CALL(
+            functionExpr = NAME(
+                name = when (expression.functionName) {
+                    BuiltInFunctionName.STRING_TO_INT -> NameEncoder.nameOfStringToInt
+                    BuiltInFunctionName.INT_TO_STRING -> NameEncoder.nameOfStringToInt
+                    BuiltInFunctionName.PRINTLN -> NameEncoder.nameOfPrintln
+                }
+            ),
+            args = listOf(translate(expression = expression.argument))
+        )
 
-        override fun visit(expression: FunctionApplication): MidIrExpression {
-            TODO(reason = "NOT_IMPLEMENTED")
-        }
+        override fun visit(expression: FunctionApplication): MidIrExpression =
+            CALL(
+                functionExpr = NAME(
+                    name = NameEncoder.encodeFunctionName(
+                        moduleReference = moduleReference,
+                        className = expression.functionParent,
+                        functionName = expression.functionName
+                    )
+                ),
+                args = expression.arguments.map { translate(expression = it) }
+            )
 
         override fun visit(expression: MethodApplication): MidIrExpression {
             TODO(reason = "NOT_IMPLEMENTED")
