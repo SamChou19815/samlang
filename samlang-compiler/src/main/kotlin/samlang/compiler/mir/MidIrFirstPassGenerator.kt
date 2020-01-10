@@ -209,7 +209,14 @@ internal class MidIrFirstPassGenerator(
             )
 
         override fun visit(expression: MethodApplication): MidIrExpression {
-            TODO(reason = "NOT_IMPLEMENTED")
+            val name = NameEncoder.encodeFunctionName(
+                moduleReference = moduleReference,
+                className = expression.className,
+                functionName = expression.methodName
+            )
+            val arguments = arrayListOf(translate(expression = expression.objectExpression))
+            expression.arguments.forEach { arguments += translate(expression = it) }
+            return CALL(functionExpr = NAME(name = name), args = arguments)
         }
 
         override fun visit(expression: ClosureApplication): MidIrExpression {
