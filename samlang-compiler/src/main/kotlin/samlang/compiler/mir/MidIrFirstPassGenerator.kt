@@ -61,12 +61,10 @@ import samlang.ast.mir.MidIrStatement.Companion.MOVE
 import samlang.ast.mir.MidIrStatement.Companion.SEQ
 import samlang.ast.mir.MidIrStatement.Jump
 import samlang.ast.mir.MidIrStatement.Label
-import samlang.checker.GlobalTypingContext
 
 /** Generate non-canonical mid IR in the first pass */
 internal class MidIrFirstPassGenerator(
     private val allocator: MidIrResourceAllocator,
-    private val globalTypingContext: GlobalTypingContext,
     private val moduleReference: ModuleReference,
     private val module: Module
 ) {
