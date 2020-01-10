@@ -1,6 +1,7 @@
 package samlang.compiler.mir
 
 import samlang.ast.common.BinaryOperator
+import samlang.ast.common.GlobalVariable
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
@@ -38,6 +39,7 @@ import samlang.ast.mir.MidIrExpression.Companion.CONST
 import samlang.ast.mir.MidIrExpression.Companion.ESEQ
 import samlang.ast.mir.MidIrExpression.Companion.MALLOC
 import samlang.ast.mir.MidIrExpression.Companion.MEM
+import samlang.ast.mir.MidIrExpression.Companion.NAME
 import samlang.ast.mir.MidIrExpression.Companion.ONE
 import samlang.ast.mir.MidIrExpression.Companion.OP
 import samlang.ast.mir.MidIrExpression.Companion.SUB
@@ -54,6 +56,12 @@ import samlang.ast.mir.MidIrStatement.Companion.SEQ
 internal class MidIrFirstPassGenerator(private val allocator: MidIrResourceAllocator) {
     private val statementGenerator: StatementGenerator = StatementGenerator()
     private val expressionGenerator: ExpressionGenerator = ExpressionGenerator()
+
+    private val globalVariableCollector: MutableSet<GlobalVariable> = LinkedHashSet()
+    private val stringContentMapping: MutableMap<GlobalVariable, String> = hashMapOf()
+
+    val globalVariables: Set<GlobalVariable> get() = globalVariableCollector
+    val globalVariablesStringContentMapping: Map<GlobalVariable, String> get() = stringContentMapping
 
     fun translate(statement: HighIrStatement): MidIrStatement = statement.accept(visitor = statementGenerator)
 
@@ -109,7 +117,14 @@ internal class MidIrFirstPassGenerator(private val allocator: MidIrResourceAlloc
             when (val literal = expression.literal) {
                 is samlang.ast.common.Literal.BoolLiteral -> CONST(value = if (literal.value) 1 else 0)
                 is samlang.ast.common.Literal.IntLiteral -> CONST(value = literal.value)
-                is samlang.ast.common.Literal.StringLiteral -> TODO(reason = "NOT_IMPLEMENTED")
+                is samlang.ast.common.Literal.StringLiteral -> {
+                    val (referenceVariable, contentVariable) =
+                        allocator.allocateStringGlobalVariable(string = literal.value)
+                    globalVariableCollector += referenceVariable
+                    globalVariableCollector += contentVariable
+                    stringContentMapping[contentVariable] = literal.value
+                    NAME(name = referenceVariable.name)
+                }
             }
 
         override fun visit(expression: Variable): MidIrExpression =

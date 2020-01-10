@@ -1,13 +1,16 @@
 package samlang.compiler.mir
 
+import samlang.ast.common.GlobalVariable
 import samlang.ast.mir.MidIrExpression.Companion.TEMP
 import samlang.ast.mir.MidIrExpression.Temporary
 
 /** An allocator for one time or many time use resources, including temp and label. */
 internal class MidIrResourceAllocator(private val functionName: String) {
-    private var nextLabelId = 0
-    private var nextTempId = 0
+    private var nextLabelId: Int = 0
+    private var nextTempId: Int = 0
+    private var nextGlobalVariableId: Int = 0
     private val tempMap: MutableMap<String, Temporary> = hashMapOf()
+    private val globalVariableReferenceMap: MutableMap<String, GlobalVariable> = LinkedHashMap()
 
     /**
      * Allocate a label for IR usage.
@@ -64,5 +67,30 @@ internal class MidIrResourceAllocator(private val functionName: String) {
     fun getTemporaryByVariable(variableName: String?): Temporary {
         val name = "$functionName:$variableName"
         return tempMap[name] ?: error(message = "Variable name [$variableName] not found.")
+    }
+
+    fun allocateStringGlobalVariable(string: String): Pair<GlobalVariable, GlobalVariable> =
+        allocateLongGlobalVariable(reference = "STRING_REFERENCE_$string") to
+                allocateStringArrayGlobalVariable(string = string)
+
+    private fun allocateStringArrayGlobalVariable(string: String): GlobalVariable {
+        val existing = globalVariableReferenceMap["STRING_CONTENT_$string"]
+        if (existing != null) {
+            return existing
+        }
+        val variable = GlobalVariable(name = "GLOBAL_$nextGlobalVariableId", size = 8 * string.length + 8)
+        nextGlobalVariableId++
+        globalVariableReferenceMap["STRING_$string"] = variable
+        return variable
+    }
+
+    private fun allocateLongGlobalVariable(reference: String): GlobalVariable {
+        val existing = globalVariableReferenceMap[reference]
+        if (existing != null) {
+            return existing
+        }
+        val variable = GlobalVariable(name = "GLOBAL_$nextGlobalVariableId", size = 8)
+        nextGlobalVariableId++
+        return variable
     }
 }
