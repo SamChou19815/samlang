@@ -150,6 +150,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         return MethodAccess(
             type = expression.type,
             expression = result.expression ?: error(message = "Object expression must be lowered!"),
+            className = (expression.expression.type as Type.IdentifierType).identifier,
             methodName = expression.methodName
         ).asLoweringResult(statements = result.statements)
     }
@@ -216,7 +217,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             is MethodAccess -> MethodApplication(
                 type = type,
                 objectExpression = loweredFunctionExpression.expression,
-                className = (loweredFunctionExpression.expression.type as Type.IdentifierType).identifier,
+                className = loweredFunctionExpression.className,
                 methodName = loweredFunctionExpression.methodName,
                 arguments = loweredArguments
             )

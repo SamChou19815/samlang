@@ -79,6 +79,7 @@ sealed class HighIrExpression(val precedence: Int) {
     data class MethodAccess(
         override val type: Type,
         val expression: HighIrExpression,
+        val className: String,
         val methodName: String
     ) : HighIrExpression(precedence = 2) {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)

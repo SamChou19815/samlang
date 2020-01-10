@@ -120,6 +120,7 @@ class ExpressionLoweringTest : StringSpec() {
                 expectedExpression = HighIrExpression.MethodAccess(
                     type = unit,
                     expression = IR_THIS,
+                    className = DUMMY_IDENTIFIER_TYPE.identifier,
                     methodName = "foo"
                 )
             )

@@ -630,6 +630,7 @@ class TsPrinterTest : StringSpec() {
                                         returnType = Type.bool
                                     ),
                                     expression = This(type = Type.id(identifier = "Test")),
+                                    className = "Test",
                                     methodName = "foo"
                                 )
                             )
@@ -676,6 +677,7 @@ class TsPrinterTest : StringSpec() {
                                         returnType = Type.bool
                                     ),
                                     expression = This(type = Type.id(identifier = "Test")),
+                                    className = "Test",
                                     methodName = "foo"
                                 )
                             )
