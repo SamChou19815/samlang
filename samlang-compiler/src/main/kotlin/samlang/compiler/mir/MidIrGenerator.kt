@@ -12,11 +12,11 @@ import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Return
 
-private class MidIrGenerator private constructor(
+class MidIrGenerator private constructor(
+    private val globalResourceAllocator: MidIrGlobalResourceAllocator,
     private val moduleReference: ModuleReference,
     private val module: HighIrModule
 ) {
-    private val globalResourceAllocator: MidIrGlobalResourceAllocator = MidIrGlobalResourceAllocator()
     private val globalVariables: MutableSet<StringGlobalVariable> = LinkedHashSet()
     private val functions: MutableList<MidIrFunction> = arrayListOf()
 
@@ -77,22 +77,22 @@ private class MidIrGenerator private constructor(
 
     companion object {
         @JvmStatic
-        fun generate(sources: Sources<HighIrModule>): Sources<MidIrCompilationUnit> =
-            Sources(
-                moduleMappings = sources.moduleMappings.mapValues { (moduleReference, module) ->
-                    generateCompilationUnit(moduleReference, module)
-                }
-            )
-
-        private fun generateCompilationUnit(
-            moduleReference: ModuleReference,
-            module: HighIrModule
-        ): MidIrCompilationUnit {
-            val generator = MidIrGenerator(moduleReference = moduleReference, module = module)
+        fun generate(sources: Sources<HighIrModule>): MidIrCompilationUnit {
+            val globalResourceAllocator = MidIrGlobalResourceAllocator()
+            val globalVariables = arrayListOf<StringGlobalVariable>()
+            val functions = arrayListOf<MidIrFunction>()
+            sources.moduleMappings.forEach { (moduleReference, module) ->
+                val generator = MidIrGenerator(
+                    globalResourceAllocator = globalResourceAllocator,
+                    moduleReference = moduleReference,
+                    module = module
+                )
+                globalVariables += generator.globalVariables
+                functions += generator.functions
+            }
             return MidIrCompilationUnit(
-                moduleReference = moduleReference,
-                globalVariables = generator.globalVariables.toList(),
-                functions = generator.functions.asSequence().map { it.functionName to it }.toMap()
+                globalVariables = globalVariables,
+                functions = functions.asSequence().map { it.functionName to it }.toMap()
             )
         }
     }

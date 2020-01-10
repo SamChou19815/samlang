@@ -1,10 +1,8 @@
 package samlang.ast.mir
 
-import samlang.ast.common.ModuleReference
 import samlang.ast.common.StringGlobalVariable
 
 data class MidIrCompilationUnit(
-    val moduleReference: ModuleReference,
     val globalVariables: List<StringGlobalVariable>,
     val functions: Map<String, MidIrFunction>
 ) {
