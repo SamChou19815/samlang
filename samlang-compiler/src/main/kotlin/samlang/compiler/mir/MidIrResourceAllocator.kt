@@ -9,6 +9,7 @@ internal class MidIrResourceAllocator(private val functionName: String) {
     private var nextLabelId: Int = 0
     private var nextTempId: Int = 0
     private var nextGlobalVariableId: Int = 0
+    private var nextLambdaFunctionId: Int = 0
     private val tempMap: MutableMap<String, Temporary> = hashMapOf()
     private val globalVariableReferenceMap: MutableMap<String, GlobalVariable> = LinkedHashMap()
 
@@ -92,5 +93,11 @@ internal class MidIrResourceAllocator(private val functionName: String) {
         val variable = GlobalVariable(name = "GLOBAL_$nextGlobalVariableId", size = 8)
         nextGlobalVariableId++
         return variable
+    }
+
+    fun allocateLambdaFunctionName(): String {
+        val id = nextLambdaFunctionId
+        nextLambdaFunctionId++
+        return "function_lambda_$id"
     }
 }

@@ -4,6 +4,7 @@ import samlang.ast.common.BinaryOperator
 import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.GlobalVariable
 import samlang.ast.common.ModuleReference
+import samlang.ast.common.Type
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
@@ -52,6 +53,7 @@ import samlang.ast.mir.MidIrExpression.Companion.SUB
 import samlang.ast.mir.MidIrExpression.Companion.TEMP
 import samlang.ast.mir.MidIrExpression.Companion.XOR
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
+import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
@@ -73,9 +75,11 @@ internal class MidIrFirstPassGenerator(
 
     private val globalVariableCollector: MutableSet<GlobalVariable> = LinkedHashSet()
     private val stringContentMapping: MutableMap<GlobalVariable, String> = hashMapOf()
+    private val lambdaFunctionsCollector: MutableList<MidIrFunction> = arrayListOf()
 
     val globalVariables: Set<GlobalVariable> get() = globalVariableCollector
     val globalVariablesStringContentMapping: Map<GlobalVariable, String> get() = stringContentMapping
+    val emittedLambdaFunctions: List<MidIrFunction> get() = lambdaFunctionsCollector
 
     fun translate(statement: HighIrStatement): MidIrStatement = statement.accept(visitor = statementGenerator)
 
@@ -364,7 +368,7 @@ internal class MidIrFirstPassGenerator(
                 MOVE(destination = MEM(expression = closureTemporary), source = NAME(name = name)),
                 MOVE(
                     destination = MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),
-                    source = translate(expression = expression)
+                    source = translate(expression = expression.expression)
                 )
             )
             return ESEQ(SEQ(statements), closureTemporary)
@@ -531,7 +535,27 @@ internal class MidIrFirstPassGenerator(
                 )
             }
             expression.body.forEach { lambdaStatements += translate(statement = it) }
-            TODO(reason = "NOT_IMPLEMENTED")
+            val lambdaArguments = arrayListOf(lambdaContextTemp).apply {
+                addAll(elements = expression.parameters.map { allocator.allocateTemp(variableName = it.first) })
+            }
+            val lambdaName = allocator.allocateLambdaFunctionName()
+            val lambdaFunction = MidIrFunction(
+                functionName = lambdaName,
+                argumentTemps = lambdaArguments,
+                mainBodyStatements = lambdaStatements,
+                numberOfArguments = lambdaArguments.size,
+                hasReturn = expression.type.returnType != Type.unit,
+                isPublic = false
+            )
+            lambdaFunctionsCollector += lambdaFunction
+            val closureTemporary = allocator.allocateTemp()
+            statements += MOVE(closureTemporary, MALLOC(CONST(value = 16L)))
+            statements += MOVE(destination = MEM(expression = closureTemporary), source = NAME(name = lambdaName))
+            statements += MOVE(
+                destination = MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),
+                source = contextTemp
+            )
+            return ESEQ(SEQ(statements), closureTemporary)
         }
     }
 }
