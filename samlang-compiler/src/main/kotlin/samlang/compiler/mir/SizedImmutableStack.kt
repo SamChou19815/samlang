@@ -24,28 +24,15 @@ internal class SizedImmutableStack<T> {
      */
     private constructor(element: T, prev: SizedImmutableStack<T>) {
         getSizeFunction = prev.getSizeFunction
-        val size = prev.size() + getSizeFunction(element)
+        val size = prev.size + getSizeFunction(element)
         node = Node(size, element, prev.node)
     }
 
-    /**
-     * @return total size of the stack.
-     */
-    fun size(): Int {
-        return node?.size ?: 0
-    }
+    val size: Int get() = node?.size ?: 0
 
-    /**
-     * @param element the element to add to the stack.
-     * @return the new stack with element added.
-     */
-    operator fun plus(element: T): SizedImmutableStack<T> {
-        return SizedImmutableStack(element, this)
-    }
+    operator fun plus(element: T): SizedImmutableStack<T> = SizedImmutableStack(element, this)
 
-    /**
-     * @return a collection that puts the first element in the stack first.
-     */
+    /** @return a collection that puts the first element in the stack first. */
     fun toReversedOrderedCollection(): Collection<T> {
         var currentNode = node
         val tempList = ArrayList<T>()

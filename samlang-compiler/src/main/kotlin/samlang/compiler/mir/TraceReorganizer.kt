@@ -223,7 +223,7 @@ internal class TraceReorganizer private constructor(blocksInOriginalOrder: List<
         for (nextId in targetIds) {
             val fullTrace = buildTrace(id = nextId, visited = newVisited, memoizedResult = memoizedResult)
             if (fullTrace != null) {
-                if (fullTrace.size() > bestTrace.size()) {
+                if (fullTrace.size > bestTrace.size) {
                     bestTrace = fullTrace
                 }
             }
