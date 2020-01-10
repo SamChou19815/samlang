@@ -30,7 +30,7 @@ sealed class MidIrStatement {
     }
 
     @Canonical
-    data class MultipleReturnCall(
+    data class CallFunction(
         val functionExpr: MidIrExpression,
         val arguments: List<MidIrExpression>,
         val returnCollector: Temporary?
@@ -113,22 +113,22 @@ sealed class MidIrStatement {
             IgnoreExpression(expression = expression)
 
         @JvmStatic
-        fun MULTIPLE_RETURN_CALL(
+        fun CALL_FUNCTION(
             functionName: String,
             arguments: List<MidIrExpression>,
             returnCollector: Temporary?
-        ): MultipleReturnCall = MultipleReturnCall(
+        ): CallFunction = CallFunction(
             functionExpr = MidIrExpression.Name(name = functionName),
             arguments = arguments,
             returnCollector = returnCollector
         )
 
         @JvmStatic
-        fun MULTIPLE_RETURN_CALL(
+        fun CALL_FUNCTION(
             expression: MidIrExpression,
             arguments: List<MidIrExpression>,
             returnCollector: Temporary?
-        ): MultipleReturnCall = MultipleReturnCall(
+        ): CallFunction = CallFunction(
             functionExpr = expression,
             arguments = arguments,
             returnCollector = returnCollector

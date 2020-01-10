@@ -49,6 +49,7 @@ import samlang.ast.mir.MidIrExpression.Companion.XOR
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
 import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
+import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
 import samlang.ast.mir.MidIrStatement.Companion.EXPR
 import samlang.ast.mir.MidIrStatement.Companion.MOVE
 import samlang.ast.mir.MidIrStatement.Companion.SEQ
@@ -71,7 +72,11 @@ internal class MidIrFirstPassGenerator(private val allocator: MidIrResourceAlloc
 
     private inner class StatementGenerator : HighIrStatementVisitor<MidIrStatement> {
         override fun visit(statement: Throw): MidIrStatement {
-            TODO(reason = "NOT_IMPLEMENTED")
+            return CALL_FUNCTION(
+                functionName = "throw_builtin",
+                arguments = listOf(translate(statement.expression)),
+                returnCollector = null
+            )
         }
 
         override fun visit(statement: IfElse): MidIrStatement {
