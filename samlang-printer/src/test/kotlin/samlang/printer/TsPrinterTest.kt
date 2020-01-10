@@ -717,7 +717,7 @@ class TsPrinterTest : StringSpec() {
                                 typeAnnotation = Type.bool,
                                 assignedExpression = FunctionApplication(
                                     type = Type.bool,
-                                    functionParent = "Test",
+                                    className = "Test",
                                     functionName = "foo",
                                     typeArguments = emptyList(),
                                     arguments = listOf(element = Companion.literal(value = 1))
@@ -729,6 +729,7 @@ class TsPrinterTest : StringSpec() {
                                 assignedExpression = MethodApplication(
                                     type = Type.bool,
                                     objectExpression = This(type = Type.id(identifier = "Test")),
+                                    className = "Test",
                                     methodName = "foo",
                                     arguments = listOf(element = literal(value = 1))
                                 )

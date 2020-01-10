@@ -208,7 +208,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val functionApplication = when (loweredFunctionExpression) {
             is ClassMember -> FunctionApplication(
                 type = type,
-                functionParent = loweredFunctionExpression.className,
+                className = loweredFunctionExpression.className,
                 functionName = loweredFunctionExpression.memberName,
                 typeArguments = loweredFunctionExpression.typeArguments,
                 arguments = loweredArguments
@@ -216,6 +216,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             is MethodAccess -> MethodApplication(
                 type = type,
                 objectExpression = loweredFunctionExpression.expression,
+                className = (loweredFunctionExpression.expression.type as Type.IdentifierType).identifier,
                 methodName = loweredFunctionExpression.methodName,
                 arguments = loweredArguments
             )

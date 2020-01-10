@@ -102,7 +102,7 @@ sealed class HighIrExpression(val precedence: Int) {
 
     data class FunctionApplication(
         override val type: Type,
-        val functionParent: String,
+        val className: String,
         val functionName: String,
         val typeArguments: List<Type>,
         val arguments: List<HighIrExpression>
@@ -113,6 +113,7 @@ sealed class HighIrExpression(val precedence: Int) {
     data class MethodApplication(
         override val type: Type,
         val objectExpression: HighIrExpression,
+        val className: String,
         val methodName: String,
         val arguments: List<HighIrExpression>
     ) : HighIrExpression(precedence = 4) {

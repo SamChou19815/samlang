@@ -471,7 +471,7 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
                     ClassMember(
                         type = Type.unit,
                         typeArguments = expression.typeArguments,
-                        className = expression.functionParent,
+                        className = expression.className,
                         memberName = expression.functionName
                     ).printSelf()
                     printFunctionCallArguments(arguments = expression.arguments)

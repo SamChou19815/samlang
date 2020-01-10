@@ -201,7 +201,7 @@ internal class MidIrFirstPassGenerator(
                 functionExpr = NAME(
                     name = NameEncoder.encodeFunctionName(
                         moduleReference = moduleReference,
-                        className = expression.functionParent,
+                        className = expression.className,
                         functionName = expression.functionName
                     )
                 ),

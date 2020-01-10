@@ -147,7 +147,7 @@ class ExpressionLoweringTest : StringSpec() {
                 ),
                 expectedExpression = HighIrExpression.FunctionApplication(
                     type = int,
-                    functionParent = "Foo",
+                    className = "Foo",
                     functionName = "bar",
                     typeArguments = listOf(int),
                     arguments = listOf(IR_THIS, IR_THIS)
@@ -166,7 +166,11 @@ class ExpressionLoweringTest : StringSpec() {
                     arguments = listOf(THIS, THIS)
                 ),
                 expectedExpression = HighIrExpression.MethodApplication(
-                    type = int, objectExpression = IR_THIS, methodName = "fooBar", arguments = listOf(IR_THIS, IR_THIS)
+                    type = int,
+                    objectExpression = IR_THIS,
+                    className = DUMMY_IDENTIFIER_TYPE.identifier,
+                    methodName = "fooBar",
+                    arguments = listOf(IR_THIS, IR_THIS)
                 )
             )
             assertCorrectlyLowered(
