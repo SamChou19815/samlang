@@ -207,7 +207,8 @@ private class ExpressionTypeCheckerVisitor(
 
     override fun visit(expression: ObjectConstructor, context: Type): Expression {
         val (range, _, fieldDeclarations) = expression
-        val (_, _, typeParameters, _, typeMappings) = accessibleGlobalTypingContext.getCurrentClassTypeDefinition()
+        val (_, _, typeParameters, fieldNames, typeMappings) = accessibleGlobalTypingContext
+            .getCurrentClassTypeDefinition()
             ?.takeIf { it.type == OBJECT }
             ?: return expression.errorWith(
                 expectedType = context,
@@ -260,11 +261,11 @@ private class ExpressionTypeCheckerVisitor(
             expectedType = context, actualType = locallyInferredType, errorRange = range
         )
         return if (constraintInferredType is IdentifierType) {
-            ObjectConstructor(
-                range = range,
-                type = constraintInferredType,
-                fieldDeclarations = enhancedFieldDeclarations
-            )
+            val fieldOrderMap = fieldNames.asSequence().mapIndexed { index, name -> name to index }.toMap()
+            val sortedFields = enhancedFieldDeclarations.sortedBy {
+                fieldOrderMap[it.name] ?: error(message = "Missing field!")
+            }
+            ObjectConstructor(range = range, type = constraintInferredType, fieldDeclarations = sortedFields)
         } else {
             expression.errorWith(
                 expectedType = context,
