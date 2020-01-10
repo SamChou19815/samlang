@@ -2,8 +2,8 @@ package samlang.compiler.mir
 
 import samlang.ast.common.BinaryOperator
 import samlang.ast.common.BuiltInFunctionName
-import samlang.ast.common.GlobalVariable
 import samlang.ast.common.ModuleReference
+import samlang.ast.common.StringGlobalVariable
 import samlang.ast.common.Type
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
@@ -26,6 +26,7 @@ import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrExpressionVisitor
+import samlang.ast.hir.HighIrModule
 import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.Block
@@ -37,7 +38,6 @@ import samlang.ast.hir.HighIrStatement.Return
 import samlang.ast.hir.HighIrStatement.Throw
 import samlang.ast.hir.HighIrStatement.VariableAssignment
 import samlang.ast.hir.HighIrStatementVisitor
-import samlang.ast.lang.Module
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.ADD
 import samlang.ast.mir.MidIrExpression.Companion.CALL
@@ -68,17 +68,15 @@ import samlang.ast.mir.MidIrStatement.Label
 internal class MidIrFirstPassGenerator(
     private val allocator: MidIrResourceAllocator,
     private val moduleReference: ModuleReference,
-    private val module: Module
+    private val module: HighIrModule
 ) {
     private val statementGenerator: StatementGenerator = StatementGenerator()
     private val expressionGenerator: ExpressionGenerator = ExpressionGenerator()
 
-    private val globalVariableCollector: MutableSet<GlobalVariable> = LinkedHashSet()
-    private val stringContentMapping: MutableMap<GlobalVariable, String> = hashMapOf()
+    private val stringGlobalVariableCollector: MutableSet<StringGlobalVariable> = LinkedHashSet()
     private val lambdaFunctionsCollector: MutableList<MidIrFunction> = arrayListOf()
 
-    val globalVariables: Set<GlobalVariable> get() = globalVariableCollector
-    val globalVariablesStringContentMapping: Map<GlobalVariable, String> get() = stringContentMapping
+    val stringGlobalVariables: Set<StringGlobalVariable> get() = stringGlobalVariableCollector
     val emittedLambdaFunctions: List<MidIrFunction> get() = lambdaFunctionsCollector
 
     fun translate(statement: HighIrStatement): MidIrStatement = statement.accept(visitor = statementGenerator)
@@ -282,11 +280,15 @@ internal class MidIrFirstPassGenerator(
                 is samlang.ast.common.Literal.BoolLiteral -> CONST(value = if (literal.value) 1 else 0)
                 is samlang.ast.common.Literal.IntLiteral -> CONST(value = literal.value)
                 is samlang.ast.common.Literal.StringLiteral -> {
-                    val (referenceVariable, contentVariable) =
-                        allocator.allocateStringGlobalVariable(string = literal.value)
-                    globalVariableCollector += referenceVariable
-                    globalVariableCollector += contentVariable
-                    stringContentMapping[contentVariable] = literal.value
+                    val value = literal.value
+                    val (referenceVariable, contentVariable) = allocator
+                        .globalResourceAllocator
+                        .allocateStringGlobalVariable(string = value)
+                    stringGlobalVariableCollector += StringGlobalVariable(
+                        referenceVariable = referenceVariable,
+                        contentVariable = contentVariable,
+                        content = value
+                    )
                     NAME(name = referenceVariable.name)
                 }
             }
@@ -388,7 +390,7 @@ internal class MidIrFirstPassGenerator(
             functionExpr = NAME(
                 name = when (expression.functionName) {
                     BuiltInFunctionName.STRING_TO_INT -> NameEncoder.nameOfStringToInt
-                    BuiltInFunctionName.INT_TO_STRING -> NameEncoder.nameOfStringToInt
+                    BuiltInFunctionName.INT_TO_STRING -> NameEncoder.nameOfIntToString
                     BuiltInFunctionName.PRINTLN -> NameEncoder.nameOfPrintln
                 }
             ),
@@ -538,7 +540,7 @@ internal class MidIrFirstPassGenerator(
             val lambdaArguments = arrayListOf(lambdaContextTemp).apply {
                 addAll(elements = expression.parameters.map { allocator.allocateTemp(variableName = it.first) })
             }
-            val lambdaName = allocator.allocateLambdaFunctionName()
+            val lambdaName = allocator.globalResourceAllocator.allocateLambdaFunctionName()
             val lambdaFunction = MidIrFunction(
                 functionName = lambdaName,
                 argumentTemps = lambdaArguments,
