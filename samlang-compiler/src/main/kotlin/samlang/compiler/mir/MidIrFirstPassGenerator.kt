@@ -128,8 +128,7 @@ internal class MidIrFirstPassGenerator(
                     cJumpTranslate(e2, trueLabel, falseLabel, statementCollector)
                     return
                 }
-                else -> {
-                }
+                else -> Unit
             }
         }
         statementCollector += CJUMP(
@@ -182,8 +181,42 @@ internal class MidIrFirstPassGenerator(
         override fun visit(statement: ConstantDefinition): MidIrStatement {
             val assignedExpression = translate(expression = statement.assignedExpression)
             return when (val pattern = statement.pattern) {
-                is HighIrPattern.ObjectPattern -> TODO(reason = "NOT_IMPLEMENTED")
-                is HighIrPattern.TuplePattern -> TODO(reason = "NOT_IMPLEMENTED")
+                is HighIrPattern.ObjectPattern -> {
+                    val temporary = allocator.allocateTemp()
+                    val statements = arrayListOf<MidIrStatement>()
+                    statements += MOVE(destination = temporary, source = assignedExpression)
+                    pattern.destructedNames.forEach { (_, order, name) ->
+                        if (name == null) {
+                            return@forEach
+                        }
+                        val assignedTemporary = allocator.allocateTemp(variableName = name)
+                        statements += MOVE(
+                            destination = assignedTemporary,
+                            source = MEM(
+                                expression = ADD(e1 = temporary, e2 = CONST(value = order * 8L))
+                            )
+                        )
+                    }
+                    SEQ(statements = statements)
+                }
+                is HighIrPattern.TuplePattern -> {
+                    val temporary = allocator.allocateTemp()
+                    val statements = arrayListOf<MidIrStatement>()
+                    statements += MOVE(destination = temporary, source = assignedExpression)
+                    pattern.destructedNames.forEachIndexed { index, name ->
+                        if (name == null) {
+                            return@forEachIndexed
+                        }
+                        val assignedTemporary = allocator.allocateTemp(variableName = name)
+                        statements += MOVE(
+                            destination = assignedTemporary,
+                            source = MEM(
+                                expression = ADD(e1 = temporary, e2 = CONST(value = index * 8L))
+                            )
+                        )
+                    }
+                    SEQ(statements = statements)
+                }
                 is HighIrPattern.VariablePattern -> MOVE(
                     destination = allocator.getTemporaryByVariable(variableName = pattern.name),
                     source = assignedExpression
@@ -268,7 +301,13 @@ internal class MidIrFirstPassGenerator(
         }
 
         override fun visit(expression: FieldAccess): MidIrExpression {
-            TODO(reason = "NOT_IMPLEMENTED")
+            val objectExpression = translate(expression = expression.expression)
+            val order = expression.fieldOrder
+            return if (order == 0) {
+                MEM(expression = objectExpression)
+            } else {
+                MEM(expression = ADD(e1 = objectExpression, e2 = CONST(value = order * 8L)))
+            }
         }
 
         override fun visit(expression: MethodAccess): MidIrExpression {
