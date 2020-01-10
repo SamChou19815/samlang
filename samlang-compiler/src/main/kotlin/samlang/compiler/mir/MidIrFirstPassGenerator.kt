@@ -85,7 +85,7 @@ internal class MidIrFirstPassGenerator(
         expression.accept(visitor = expressionGenerator)
 
     private fun getFunctionName(className: String, functionName: String): String =
-        NameEncoder.encodeFunctionName(
+        MidIrNameEncoder.encodeFunctionName(
             moduleReference = getModuleOfClass(className = className),
             className = className,
             functionName = functionName
@@ -141,7 +141,7 @@ internal class MidIrFirstPassGenerator(
 
     private inner class StatementGenerator : HighIrStatementVisitor<MidIrStatement> {
         override fun visit(statement: Throw): MidIrStatement = CALL_FUNCTION(
-            functionName = NameEncoder.nameOfThrow,
+            functionName = MidIrNameEncoder.nameOfThrow,
             arguments = listOf(translate(expression = statement.expression)),
             returnCollector = null
         )
@@ -389,9 +389,9 @@ internal class MidIrFirstPassGenerator(
         override fun visit(expression: BuiltInFunctionApplication): MidIrExpression = CALL(
             functionExpr = NAME(
                 name = when (expression.functionName) {
-                    BuiltInFunctionName.STRING_TO_INT -> NameEncoder.nameOfStringToInt
-                    BuiltInFunctionName.INT_TO_STRING -> NameEncoder.nameOfIntToString
-                    BuiltInFunctionName.PRINTLN -> NameEncoder.nameOfPrintln
+                    BuiltInFunctionName.STRING_TO_INT -> MidIrNameEncoder.nameOfStringToInt
+                    BuiltInFunctionName.INT_TO_STRING -> MidIrNameEncoder.nameOfIntToString
+                    BuiltInFunctionName.PRINTLN -> MidIrNameEncoder.nameOfPrintln
                 }
             ),
             args = listOf(translate(expression = expression.argument))

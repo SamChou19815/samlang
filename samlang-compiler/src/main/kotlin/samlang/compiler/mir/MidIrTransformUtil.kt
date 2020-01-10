@@ -14,7 +14,7 @@ import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrOperator
 
-object IrTransformUtil {
+object MidIrTransformUtil {
     /**
      * Invert the condition in the most efficient way.
      *

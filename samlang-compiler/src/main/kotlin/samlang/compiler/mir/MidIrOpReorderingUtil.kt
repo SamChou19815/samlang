@@ -5,7 +5,7 @@ import samlang.ast.mir.MidIrExpression.Companion.OP_FLEX_ORDER
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
 
 /** Safely reordering IR op nodes so that equivalent op also has same syntactic form. */
-internal object IrOpReorderingUtil {
+internal object MidIrOpReorderingUtil {
     @JvmStatic
     fun reorder(expression: MidIrExpression): MidIrExpression =
         expression.accept(visitor = ReorderVisitor, context = Unit)

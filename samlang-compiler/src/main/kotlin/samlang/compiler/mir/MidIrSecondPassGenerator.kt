@@ -59,7 +59,7 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
         expressionList: List<MidIrExpression>
     ): Pair<MutableList<MidIrStatement>, List<MidIrExpression>> {
         if (allCanonical(expressions = expressionList)) {
-            return arrayListOf<MidIrStatement>() to expressionList.map { IrOpReorderingUtil.reorder(it) }
+            return arrayListOf<MidIrStatement>() to expressionList.map { MidIrOpReorderingUtil.reorder(it) }
         }
         val argsLoweringResult = expressionList.map { this.lower(it) }
         val argsTempList = arrayListOf<MidIrExpression>()
@@ -91,8 +91,8 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
                 // if both dest and src are canonical, then we don't need to change anything.
                 return listOf(
                     MoveMem(
-                        memLocation = IrOpReorderingUtil.reorder(dest),
-                        source = IrOpReorderingUtil.reorder(src)
+                        memLocation = MidIrOpReorderingUtil.reorder(dest),
+                        source = MidIrOpReorderingUtil.reorder(src)
                     )
                 )
             }
@@ -161,14 +161,14 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
             val loweringResultOfE2 = lower(e2)
             if (bothCanonical(e1, e2)) {
                 // if both e1 and e2 are canonical, then we don't need to change anything.
-                return ESEQ(SEQ(), IrOpReorderingUtil.reorder(node))
+                return ESEQ(SEQ(), MidIrOpReorderingUtil.reorder(node))
             }
             val e1Temp = allocator.allocateTemp()
             val newSequence = loweringResultOfE1.statements.toMutableList()
             newSequence.add(MOVE(e1Temp, loweringResultOfE1.expression))
             newSequence.addAll(loweringResultOfE2.statements)
             val e2Expr = loweringResultOfE2.expression
-            val newExpr = IrOpReorderingUtil.reorder(OP(node.operator, e1Temp, e2Expr))
+            val newExpr = MidIrOpReorderingUtil.reorder(OP(node.operator, e1Temp, e2Expr))
             return ESEQ(SEQ(newSequence), newExpr)
         }
 

@@ -16,7 +16,7 @@ import samlang.ast.mir.MidIrStatement.Return
  *
  * @param blocksInOriginalOrder a list of blocks in their original order.
  */
-internal class TraceReorganizer private constructor(blocksInOriginalOrder: List<BasicBlock>) {
+internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: List<BasicBlock>) {
     private val emptyTrackStack: SizedImmutableStack<String> = SizedImmutableStack { label -> getStackSize(label) }
     /** The mapping from label to block id. */
     private val labelBlockMap: MutableMap<String, BasicBlock> = hashMapOf()
@@ -268,7 +268,7 @@ internal class TraceReorganizer private constructor(blocksInOriginalOrder: List<
                     when {
                         actualTrueTarget == traceImmediateNext -> {
                             // need to invert condition
-                            val condition = IrTransformUtil.invertCondition(condition1)
+                            val condition = MidIrTransformUtil.invertCondition(condition1)
                             newInstructions += CJUMP_FALLTHROUGH(condition, actualFalseTarget)
                         }
                         actualFalseTarget == traceImmediateNext -> {
@@ -331,7 +331,7 @@ internal class TraceReorganizer private constructor(blocksInOriginalOrder: List<
         @JvmStatic
         fun reorder(allocator: MidIrResourceAllocator, originalStatements: List<MidIrStatement>): List<MidIrStatement> {
             val basicBlocks = BasicBlock.from(allocator = allocator, statements = originalStatements)
-            return TraceReorganizer(blocksInOriginalOrder = basicBlocks)
+            return MidIrTraceReorganizer(blocksInOriginalOrder = basicBlocks)
                 .fixBlocks()
                 .asSequence()
                 .map { it.instructions }

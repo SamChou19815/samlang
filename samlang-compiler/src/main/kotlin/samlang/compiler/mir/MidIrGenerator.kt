@@ -24,7 +24,7 @@ private class MidIrGenerator private constructor(
         module.classDefinitions.forEach { classDefinition ->
             val className = classDefinition.className
             classDefinition.members.forEach { member ->
-                val encodedFunctionName = NameEncoder.encodeFunctionName(
+                val encodedFunctionName = MidIrNameEncoder.encodeFunctionName(
                     moduleReference = moduleReference,
                     className = className,
                     functionName = member.name
@@ -59,7 +59,10 @@ private class MidIrGenerator private constructor(
             .toList()
         // for safety, always add return. We may be able to optimize it away later.
         var mainBodyStatements: List<MidIrStatement> = loweredBodySequence.toMutableList().apply { add(Return()) }
-        mainBodyStatements = TraceReorganizer.reorder(allocator = allocator, originalStatements = mainBodyStatements)
+        mainBodyStatements = MidIrTraceReorganizer.reorder(
+            allocator = allocator,
+            originalStatements = mainBodyStatements
+        )
         functions += MidIrFunction(
             functionName = encodedFunctionName,
             argumentTemps = allocatedArgs,
