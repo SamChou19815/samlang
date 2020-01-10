@@ -15,11 +15,8 @@ private fun interpretFunction(irFunction: MidIrFunction, arguments: List<Long>, 
     }
     val statements = irFunction.mainBodyStatements
     val interpreter = MidIrStatementInterpreter(
-        heap = environment.heap,
-        expressionVisitor = MidIrExpressionInterpreter(
-            globalVariables = environment.globalVariables,
-            heap = environment.heap
-        ),
+        environment = environment,
+        expressionVisitor = MidIrExpressionInterpreter(environment = environment),
         statements = statements
     )
     var returnedValue: Long? = null
@@ -32,7 +29,7 @@ private fun interpretFunction(irFunction: MidIrFunction, arguments: List<Long>, 
 }
 
 private class MidIrStatementInterpreter(
-    private val heap: MutableMap<Long, Long>,
+    private val environment: GlobalEnvironment,
     private val expressionVisitor: MidIrExpressionInterpreter,
     statements: List<MidIrStatement>
 ) : MidIrLoweredStatementVisitor<StackFrame, Unit> {
@@ -57,13 +54,63 @@ private class MidIrStatementInterpreter(
     }
 
     override fun visit(node: MidIrStatement.MoveMem, context: StackFrame) {
-        heap[node.memLocation.accept(visitor = expressionVisitor, context = context)] =
+        environment.heap[node.memLocation.accept(visitor = expressionVisitor, context = context)] =
             node.source.accept(visitor = expressionVisitor, context = context)
         _programCounter++
     }
 
     override fun visit(node: MidIrStatement.CallFunction, context: StackFrame) {
-        TODO(reason = "NOT_IMPLEMENTED")
+        val arguments = node.arguments.map { it.accept(visitor = expressionVisitor, context = context) }
+        val functionExpression = node.functionExpr
+        if (functionExpression !is MidIrExpression.Name) {
+            error(message = "Unsupported function call for function $functionExpression.")
+        }
+        val result = when (val functionName = functionExpression.name) {
+            "builtin_malloc" -> {
+                require(value = arguments.size == 1)
+                val size = arguments[0]
+                val start = environment.heapPointer
+                environment.heapPointer += size
+                start
+            }
+            "builtin_throw" -> {
+                require(value = arguments.size == 1)
+                val argument = arguments[0]
+                val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
+                throw PanicException(reason = string)
+            }
+            "builtin_stringToInt" -> {
+                require(value = arguments.size == 1)
+                val argument = arguments[0]
+                val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
+                string.toLongOrNull() ?: throw PanicException(reason = "Bad string: $string")
+            }
+            "builtin_intToString" -> {
+                require(value = arguments.size == 1)
+                val stringForm = arguments[0].toString()
+                val location = environment.heapPointer
+                environment.heapPointer += 8
+                environment.strings[location] = stringForm
+                location
+            }
+            "builtin_println" -> {
+                require(value = arguments.size == 1)
+                val argument = arguments[0]
+                val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
+                environment.printed.append(string).append('\n')
+                0L
+            }
+            else -> {
+                val function = environment.functions[functionName]
+                    ?: error(message = "Missing function $functionName")
+                interpretFunction(
+                    irFunction = function,
+                    arguments = arguments,
+                    environment = environment
+                )
+            }
+        }
+        node.returnCollector?.let { context[it.id] = result }
     }
 
     override fun visit(node: MidIrStatement.Jump, context: StackFrame) {
@@ -89,11 +136,13 @@ private class MidIrStatementInterpreter(
 }
 
 private class MidIrExpressionInterpreter(
-    private val globalVariables: Map<String, Long>,
-    private val heap: Map<Long, Long>
+    private val environment: GlobalEnvironment
 ) : MidIrLoweredExpressionVisitor<StackFrame, Long> {
     override fun visit(node: MidIrExpression.Constant, context: StackFrame): Long = node.value
-    override fun visit(node: MidIrExpression.Name, context: StackFrame): Long = globalVariables[node.name] ?: 0
+
+    override fun visit(node: MidIrExpression.Name, context: StackFrame): Long =
+        environment.globalVariables[node.name] ?: 0
+
     override fun visit(node: MidIrExpression.Temporary, context: StackFrame): Long = context[node.id]
 
     override fun visit(node: MidIrExpression.Op, context: StackFrame): Long {
@@ -130,12 +179,16 @@ private class MidIrExpressionInterpreter(
     private fun toInt(boolean: Boolean): Long = if (boolean) 1L else 0L
 
     override fun visit(node: MidIrExpression.Mem, context: StackFrame): Long =
-        heap[node.expression.accept(visitor = this, context = context)] ?: 0
+        environment.heap[node.expression.accept(visitor = this, context = context)] ?: 0
 }
 
 private class GlobalEnvironment(
+    val functions: Map<String, MidIrFunction>,
     val globalVariables: Map<String, Long>,
-    val heap: MutableMap<Long, Long>
+    val strings: MutableMap<Long, String>,
+    val heap: MutableMap<Long, Long>,
+    var heapPointer: Long,
+    val printed: StringBuilder
 )
 
 private class StackFrame {

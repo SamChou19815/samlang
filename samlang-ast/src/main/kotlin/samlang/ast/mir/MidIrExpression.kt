@@ -243,10 +243,6 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
 
         @JvmStatic
         fun MALLOC(sizeExpr: MidIrExpression): Call =
-            Call(functionExpr = Name(name = "_xi_alloc"), arguments = listOf(sizeExpr))
-
-        @JvmStatic
-        fun OUT_OF_BOUND(): Call =
-            Call(functionExpr = Name(name = "_xi_out_of_bounds"), arguments = emptyList())
+            Call(functionExpr = Name(name = "builtin_malloc"), arguments = listOf(sizeExpr))
     }
 }
