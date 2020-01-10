@@ -90,10 +90,7 @@ class MidIrGenerator private constructor(
                 globalVariables += generator.globalVariables
                 functions += generator.functions
             }
-            return MidIrCompilationUnit(
-                globalVariables = globalVariables,
-                functions = functions.asSequence().map { it.functionName to it }.toMap()
-            )
+            return MidIrCompilationUnit(globalVariables = globalVariables, functions = functions)
         }
     }
 }

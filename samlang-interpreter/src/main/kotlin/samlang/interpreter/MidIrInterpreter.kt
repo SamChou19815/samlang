@@ -1,11 +1,45 @@
 package samlang.interpreter
 
+import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
+
+/**
+ * Interpret [compilationUnit] using [entryPoint] as the main function.
+ *
+ * @return the printed string.
+ */
+fun interpret(compilationUnit: MidIrCompilationUnit, entryPoint: String): String {
+    val environment = setupEnvironment(compilationUnit = compilationUnit)
+    val function = environment.functions[entryPoint] ?: error(message = "Bad function.")
+    interpretFunction(irFunction = function, environment = environment, arguments = emptyList())
+    return environment.printed.toString()
+}
+
+private fun setupEnvironment(compilationUnit: MidIrCompilationUnit): GlobalEnvironment {
+    val functions = compilationUnit.functions.map { it.functionName to it }.toMap()
+    val globalVariables = hashMapOf<String, Long>()
+    val strings = hashMapOf<Long, String>()
+    var heapPointer = 10000L
+    compilationUnit.globalVariables.forEach { (variable, _, content) ->
+        val location = heapPointer
+        globalVariables[variable.name] = location
+        strings[location] = content
+        heapPointer += 8
+    }
+    return GlobalEnvironment(
+        functions = functions,
+        globalVariables = globalVariables,
+        strings = strings,
+        heap = hashMapOf(),
+        heapPointer = heapPointer,
+        printed = StringBuilder()
+    )
+}
 
 private fun interpretFunction(irFunction: MidIrFunction, arguments: List<Long>, environment: GlobalEnvironment): Long {
     require(value = irFunction.argumentTemps.size == arguments.size)
