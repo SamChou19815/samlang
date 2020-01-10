@@ -369,7 +369,7 @@ private class JavaPrinter(private val printer: IndentedPrinter) {
                         printWithoutBreak(x = "$typeString $temporaryVariable = ")
                         assignedExpression.accept(visitor = expressionPrinter)
                         printWithBreak(x = ";")
-                        pattern.destructedNames.forEach { (name, alias) ->
+                        pattern.destructedNames.forEach { (name, _, alias) ->
                             printWithoutBreak(x = "final var ${alias ?: name} = $temporaryVariable.$name;")
                         }
                     }
