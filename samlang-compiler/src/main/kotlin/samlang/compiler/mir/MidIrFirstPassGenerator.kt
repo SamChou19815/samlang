@@ -284,8 +284,6 @@ internal class MidIrFirstPassGenerator(
         }
 
         override fun visit(expression: Binary): MidIrExpression {
-            val e1 = translate(expression = expression.e1)
-            val e2 = translate(expression = expression.e2)
             val operator = when (expression.operator) {
                 BinaryOperator.MUL -> MidIrOperator.MUL
                 BinaryOperator.DIV -> MidIrOperator.DIV
@@ -298,9 +296,39 @@ internal class MidIrFirstPassGenerator(
                 BinaryOperator.GE -> MidIrOperator.GE
                 BinaryOperator.EQ -> MidIrOperator.EQ
                 BinaryOperator.NE -> MidIrOperator.NE
-                BinaryOperator.AND -> TODO(reason = "NOT_IMPLEMENTED")
-                BinaryOperator.OR -> TODO(reason = "NOT_IMPLEMENTED")
+                BinaryOperator.AND -> {
+                    val expr1Label = allocator.allocateLabel()
+                    val expr2Label = allocator.allocateLabel()
+                    val valueTemp = allocator.allocateTemp()
+                    val finalLabel = allocator.allocateLabel()
+                    val sequence = arrayListOf<MidIrStatement>()
+                    sequence += MOVE(valueTemp, ZERO)
+                    cJumpTranslate(expression.e1, expr1Label, finalLabel, sequence)
+                    sequence += Label(name = expr1Label)
+                    cJumpTranslate(expression.e2, expr2Label, finalLabel, sequence)
+                    sequence += Label(name = expr2Label)
+                    sequence += MOVE(valueTemp, ONE)
+                    sequence += Label(name = finalLabel)
+                    return ESEQ(statement = SEQ(sequence), expression = valueTemp)
+                }
+                BinaryOperator.OR -> {
+                    val expr1Label = allocator.allocateLabel()
+                    val expr2Label = allocator.allocateLabel()
+                    val valueTemp = allocator.allocateTemp()
+                    val finalLabel = allocator.allocateLabel()
+                    val sequence = arrayListOf<MidIrStatement>()
+                    sequence += MOVE(valueTemp, ONE)
+                    cJumpTranslate(expression.e1, finalLabel, expr1Label, sequence)
+                    sequence += Label(name = expr1Label)
+                    cJumpTranslate(expression.e2, finalLabel, expr2Label, sequence)
+                    sequence += Label(name = expr2Label)
+                    sequence += MOVE(valueTemp, ZERO)
+                    sequence += Label(name = finalLabel)
+                    return ESEQ(statement = SEQ(sequence), expression = valueTemp)
+                }
             }
+            val e1 = translate(expression = expression.e1)
+            val e2 = translate(expression = expression.e2)
             return OP(op = operator, e1 = e1, e2 = e2)
         }
 
