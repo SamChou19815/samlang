@@ -53,9 +53,12 @@ import samlang.ast.mir.MidIrExpression.Companion.ZERO
 import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
+import samlang.ast.mir.MidIrStatement.Companion.CJUMP
 import samlang.ast.mir.MidIrStatement.Companion.EXPR
 import samlang.ast.mir.MidIrStatement.Companion.MOVE
 import samlang.ast.mir.MidIrStatement.Companion.SEQ
+import samlang.ast.mir.MidIrStatement.Jump
+import samlang.ast.mir.MidIrStatement.Label
 
 /** Generate non-canonical mid IR in the first pass */
 internal class MidIrFirstPassGenerator(
@@ -76,6 +79,47 @@ internal class MidIrFirstPassGenerator(
     private fun translate(expression: HighIrExpression): MidIrExpression =
         expression.accept(visitor = expressionGenerator)
 
+    private fun cJumpTranslate(
+        expression: HighIrExpression,
+        trueLabel: String,
+        falseLabel: String,
+        statementCollector: MutableList<MidIrStatement>
+    ) {
+        if (expression is Literal) {
+            if ((expression.literal as samlang.ast.common.Literal.BoolLiteral).value) {
+                statementCollector.add(Jump(trueLabel))
+            } else {
+                statementCollector.add(Jump(falseLabel))
+            }
+            return
+        }
+        if (expression is Binary) {
+            val (_, e1, op, e2) = expression
+            val freshLabel = allocator.allocateLabel()
+            when (op) {
+                BinaryOperator.AND -> {
+                    cJumpTranslate(e1, freshLabel, falseLabel, statementCollector)
+                    statementCollector.add(Label(freshLabel))
+                    cJumpTranslate(e2, trueLabel, falseLabel, statementCollector)
+                    return
+                }
+                BinaryOperator.OR -> {
+                    cJumpTranslate(e1, trueLabel, freshLabel, statementCollector)
+                    statementCollector.add(Label(freshLabel))
+                    cJumpTranslate(e2, trueLabel, falseLabel, statementCollector)
+                    return
+                }
+                else -> {
+                }
+            }
+        }
+        statementCollector += CJUMP(
+            condition = translate(expression = expression),
+            label1 = trueLabel,
+            label2 = falseLabel
+        )
+    }
+
     private inner class StatementGenerator : HighIrStatementVisitor<MidIrStatement> {
         override fun visit(statement: Throw): MidIrStatement = CALL_FUNCTION(
             functionName = NameEncoder.nameOfThrow,
@@ -84,7 +128,23 @@ internal class MidIrFirstPassGenerator(
         )
 
         override fun visit(statement: IfElse): MidIrStatement {
-            TODO(reason = "NOT_IMPLEMENTED")
+            val sequence = arrayListOf<MidIrStatement>()
+            val ifBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "TRUE_BRANCH")
+            val elseBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "FALSE_BRANCH")
+            val endLabel = allocator.allocateLabelWithAnnotation(annotation = "END")
+            cJumpTranslate(
+                expression = statement.booleanExpression,
+                trueLabel = ifBranchLabel,
+                falseLabel = elseBranchLabel,
+                statementCollector = sequence
+            )
+            sequence += Label(name = ifBranchLabel)
+            sequence += translate(statement = Block(statements = statement.s1))
+            sequence += Jump(label = endLabel)
+            sequence += Label(name = elseBranchLabel)
+            sequence += translate(statement = Block(statements = statement.s2))
+            sequence += Label(name = endLabel)
+            return SEQ(statements = sequence)
         }
 
         override fun visit(statement: Match): MidIrStatement {
@@ -245,7 +305,29 @@ internal class MidIrFirstPassGenerator(
         }
 
         override fun visit(expression: Ternary): MidIrExpression {
-            TODO(reason = "NOT_IMPLEMENTED")
+            val temporaryForTernary = allocator.allocateTemp().id
+            return ESEQ(
+                statement = SEQ(
+                    translate(
+                        statement = IfElse(
+                            booleanExpression = expression.boolExpression,
+                            s1 = listOf(
+                                VariableAssignment(
+                                    name = temporaryForTernary,
+                                    assignedExpression = expression.e1
+                                )
+                            ),
+                            s2 = listOf(
+                                VariableAssignment(
+                                    name = temporaryForTernary,
+                                    assignedExpression = expression.e2
+                                )
+                            )
+                        )
+                    )
+                ),
+                expression = TEMP(id = temporaryForTernary)
+            )
         }
 
         override fun visit(expression: Lambda): MidIrExpression {
