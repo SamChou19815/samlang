@@ -116,6 +116,7 @@ sealed class Expression(val precedence: Int) : Node {
         override val range: Range,
         override val type: Type,
         val tag: String,
+        val tagOrder: Int,
         val data: Expression
     ) : Expression(precedence = 1) {
         override fun <C, T> accept(visitor: ExpressionVisitor<C, T>, context: C): T =

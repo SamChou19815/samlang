@@ -63,6 +63,7 @@ sealed class HighIrExpression(val precedence: Int) {
     data class VariantConstructor(
         override val type: Type.IdentifierType,
         val tag: String,
+        val tagOrder: Int,
         val data: HighIrExpression
     ) : HighIrExpression(precedence = 1) {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)

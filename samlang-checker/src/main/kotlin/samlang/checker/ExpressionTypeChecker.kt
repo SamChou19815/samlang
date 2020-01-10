@@ -279,8 +279,9 @@ private class ExpressionTypeCheckerVisitor(
     }
 
     override fun visit(expression: VariantConstructor, context: Type): Expression {
-        val (range, _, tag, data) = expression
-        val (_, _, typeParameters, _, typeMappings) = accessibleGlobalTypingContext.getCurrentClassTypeDefinition()
+        val (range, _, tag, _, data) = expression
+        val (_, _, typeParameters, variantNames, typeMappings) = accessibleGlobalTypingContext
+            .getCurrentClassTypeDefinition()
             ?.takeIf { it.type == VARIANT }
             ?: return expression.errorWith(
                 expectedType = context,
@@ -309,7 +310,11 @@ private class ExpressionTypeCheckerVisitor(
         val constraintInferredType = constraintAwareTypeChecker.checkAndInfer(
             expectedType = context, actualType = locallyInferredType, errorRange = range
         )
-        return expression.copy(type = constraintInferredType, data = checkedData)
+        val order = variantNames.indexOf(element = tag)
+        if (order == -1) {
+            error(message = "Bad tag!")
+        }
+        return expression.copy(type = constraintInferredType, tagOrder = order, data = checkedData)
     }
 
     override fun visit(expression: FieldAccess, context: Type): Expression {

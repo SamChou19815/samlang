@@ -151,6 +151,7 @@ class ExpressionBuilder internal constructor(
             range = ctx.range,
             type = Type.undecided(),
             tag = ctx.UpperId().symbol.text,
+            tagOrder = -1, // To be resolved during type checking
             data = ctx.expression().toExpression()
         )
 

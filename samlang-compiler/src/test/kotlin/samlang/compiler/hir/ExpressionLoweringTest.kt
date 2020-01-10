@@ -99,11 +99,13 @@ class ExpressionLoweringTest : StringSpec() {
                     range = dummyRange,
                     type = id(identifier = "Foo"),
                     tag = "Foo",
+                    tagOrder = 1,
                     data = THIS
                 ),
                 expectedExpression = HighIrExpression.VariantConstructor(
                     type = id(identifier = "Foo"),
                     tag = "Foo",
+                    tagOrder = 1,
                     data = IR_THIS
                 )
             )

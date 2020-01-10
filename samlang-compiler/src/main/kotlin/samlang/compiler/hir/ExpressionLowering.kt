@@ -132,6 +132,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         return VariantConstructor(
             type = expression.type as Type.IdentifierType,
             tag = expression.tag,
+            tagOrder = expression.tagOrder,
             data = result.expression ?: UnitExpression
         ).asLoweringResult(statements = result.statements)
     }
