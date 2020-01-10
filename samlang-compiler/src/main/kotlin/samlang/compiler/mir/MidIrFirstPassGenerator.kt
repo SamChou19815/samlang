@@ -239,7 +239,16 @@ internal class MidIrFirstPassGenerator(
         }
 
         override fun visit(expression: ObjectConstructor): MidIrExpression {
-            TODO(reason = "NOT_IMPLEMENTED")
+            val objectTemporary = allocator.allocateTemp()
+            val statements = arrayListOf<MidIrStatement>()
+            statements += MOVE(objectTemporary, MALLOC(CONST(value = expression.fieldDeclaration.size * 8L)))
+            expression.fieldDeclaration.forEachIndexed { index, (_, fieldExpression) ->
+                statements += MOVE(
+                    destination = MEM(expression = ADD(e1 = objectTemporary, e2 = CONST(value = index * 8L))),
+                    source = translate(expression = fieldExpression)
+                )
+            }
+            return ESEQ(SEQ(statements), objectTemporary)
         }
 
         override fun visit(expression: VariantConstructor): MidIrExpression {
