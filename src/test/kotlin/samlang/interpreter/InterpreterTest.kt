@@ -11,6 +11,7 @@ class InterpreterTest : StringSpec() {
 
     private val expectations: Map<String, Value> = mapOf(
         "block-in-if-else" to Value.UnitValue,
+        "builtins" to Value.StringValue(value = "42"),
         "different-expr-demo" to Value.IntValue(value = 42),
         "forty-two" to Value.IntValue(value = 42),
         "hello-world" to Value.StringValue(value = "Hello World!"),

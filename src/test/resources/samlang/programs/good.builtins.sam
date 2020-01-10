@@ -1,0 +1,9 @@
+// ERROR_COUNT: 0
+
+class Main {
+  function main(): string = {
+    val value = intToString(stringToInt("42"));
+    val _ = println(value);
+    value
+  }
+}
