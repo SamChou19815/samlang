@@ -300,15 +300,13 @@ internal class MidIrFirstPassGenerator(
             return ESEQ(SEQ(statements), variantTemporary)
         }
 
-        override fun visit(expression: FieldAccess): MidIrExpression {
-            val objectExpression = translate(expression = expression.expression)
-            val order = expression.fieldOrder
-            return if (order == 0) {
-                MEM(expression = objectExpression)
-            } else {
-                MEM(expression = ADD(e1 = objectExpression, e2 = CONST(value = order * 8L)))
-            }
-        }
+        override fun visit(expression: FieldAccess): MidIrExpression =
+            MEM(
+                expression = ADD(
+                    e1 = translate(expression = expression.expression),
+                    e2 = CONST(value = expression.fieldOrder * 8L)
+                )
+            )
 
         override fun visit(expression: MethodAccess): MidIrExpression {
             TODO(reason = "NOT_IMPLEMENTED")
