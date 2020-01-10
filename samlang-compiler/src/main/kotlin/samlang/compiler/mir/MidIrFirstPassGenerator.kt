@@ -41,6 +41,7 @@ import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.ADD
 import samlang.ast.mir.MidIrExpression.Companion.CALL
 import samlang.ast.mir.MidIrExpression.Companion.CONST
+import samlang.ast.mir.MidIrExpression.Companion.EQ
 import samlang.ast.mir.MidIrExpression.Companion.ESEQ
 import samlang.ast.mir.MidIrExpression.Companion.MALLOC
 import samlang.ast.mir.MidIrExpression.Companion.MEM
@@ -149,7 +150,7 @@ internal class MidIrFirstPassGenerator(
             val sequence = arrayListOf<MidIrStatement>()
             val ifBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "TRUE_BRANCH")
             val elseBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "FALSE_BRANCH")
-            val endLabel = allocator.allocateLabelWithAnnotation(annotation = "END")
+            val endLabel = allocator.allocateLabelWithAnnotation(annotation = "IF_ELSE_END")
             cJumpTranslate(
                 expression = statement.booleanExpression,
                 trueLabel = ifBranchLabel,
@@ -166,7 +167,46 @@ internal class MidIrFirstPassGenerator(
         }
 
         override fun visit(statement: Match): MidIrStatement {
-            TODO(reason = "NOT_IMPLEMENTED")
+            statement.matchingList
+            val matchedTemp = allocator.getTemporaryByVariable(variableName = statement.variableForMatchedExpression)
+            val finalAssignedVariable = statement.assignedTemporaryVariable
+            val tagTemp = allocator.allocateTemp()
+            val statements = arrayListOf<MidIrStatement>()
+            statements += MOVE(destination = tagTemp, source = matchedTemp)
+            val matchingList = statement.matchingList
+            val matchBranchLabels = matchingList.map {
+                allocator.allocateLabelWithAnnotation(annotation = "MATCH_BRANCH_${it.tagOrder}")
+            }
+            val endLabel = allocator.allocateLabelWithAnnotation(annotation = "MATCH_END")
+            matchingList.forEachIndexed { index, variantPatternToStatement ->
+                val dataVariable = variantPatternToStatement.dataVariable
+                val currentLabel = matchBranchLabels[index]
+                statements += CJUMP(
+                    condition = EQ(tagTemp, CONST(variantPatternToStatement.tagOrder.toLong())),
+                    label1 = currentLabel,
+                    label2 = if (index < matchBranchLabels.size - 1) matchBranchLabels[index + 1] else endLabel
+                )
+                statements += Label(name = currentLabel)
+                if (dataVariable != null) {
+                    statements += MOVE(
+                        destination = allocator.allocateTemp(variableName = dataVariable),
+                        source = ADD(e1 = matchedTemp, e2 = CONST(value = 8))
+                    )
+                }
+                variantPatternToStatement.statements.forEach { statements += translate(statement = it) }
+                val finalAssignedExpression = variantPatternToStatement.finalExpression
+                if (finalAssignedVariable == null) {
+                    require(value = finalAssignedExpression == null)
+                } else {
+                    require(value = finalAssignedExpression != null)
+                    statements += MOVE(
+                        destination = allocator.getTemporaryByVariable(variableName = finalAssignedVariable),
+                        source = translate(expression = finalAssignedExpression)
+                    )
+                }
+                statements += Jump(label = endLabel)
+            }
+            return SEQ(statements = statements)
         }
 
         override fun visit(statement: LetDeclaration): MidIrStatement =
