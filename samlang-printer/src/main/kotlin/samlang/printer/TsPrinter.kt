@@ -455,8 +455,8 @@ private class TsPrinter(private val printer: IndentedPrinter, private val withTy
 
             override fun visit(expression: BuiltInFunctionApplication) {
                 val functionName = when (expression.functionName) {
-                    BuiltInFunctionName.STRING_TO_INT -> "String"
-                    BuiltInFunctionName.INT_TO_STRING -> "parseInt"
+                    BuiltInFunctionName.STRING_TO_INT -> "parseInt"
+                    BuiltInFunctionName.INT_TO_STRING -> "String"
                     BuiltInFunctionName.PRINTLN -> "console.log"
                 }
                 printer.printlnWithoutFurtherIndentation {
