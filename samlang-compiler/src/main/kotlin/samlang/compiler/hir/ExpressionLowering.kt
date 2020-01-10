@@ -180,14 +180,20 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         if (argument == null) {
             error(message = "Builtin function argument must be lowered!")
         }
-        return LoweringResult(
-            statements = loweredStatements,
-            expression = BuiltInFunctionApplication(
-                type = expression.type,
-                functionName = expression.functionName,
-                argument = argument
-            )
+        val functionApplication = BuiltInFunctionApplication(
+            type = expression.type,
+            functionName = expression.functionName,
+            argument = argument
         )
+        if (expression.type != Type.unit) {
+            return functionApplication.asLoweringResult(statements = loweredStatements)
+        }
+        loweredStatements += ConstantDefinition(
+            pattern = HighIrPattern.WildCardPattern,
+            typeAnnotation = Type.unit,
+            assignedExpression = functionApplication
+        )
+        return loweredStatements.asLoweringResult()
     }
 
     override fun visit(expression: Expression.FunctionApplication, context: Unit): LoweringResult {
