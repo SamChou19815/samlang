@@ -40,16 +40,6 @@ class CompileCommand : CliktCommand(name = "compile") {
         }
         for (target in configuration.targets) {
             when (target) {
-                "ts" -> SourceCompiler.compileTsSources(
-                    source = checkedSources,
-                    outputDirectory = Paths.get(outputDirectory.toString(), "ts").toFile(),
-                    withType = true
-                )
-                "js" -> SourceCompiler.compileTsSources(
-                    source = checkedSources,
-                    outputDirectory = Paths.get(outputDirectory.toString(), "js").toFile(),
-                    withType = false
-                )
                 "java" -> SourceCompiler.compileJavaSources(
                     source = checkedSources,
                     outputDirectory = Paths.get(outputDirectory.toString(), "java").toFile()

@@ -1,4 +1,4 @@
 {
   "excludes": ["**/bad/*.sam", "build/**", "out/**"],
-  "targets": ["js", "ts", "java"]
+  "targets": ["java"]
 }

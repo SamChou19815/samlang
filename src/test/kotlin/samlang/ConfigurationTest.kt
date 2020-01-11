@@ -16,12 +16,12 @@ class ConfigurationTest : StringSpec() {
             )
         }
         "partial configuration can parse." {
-            val json = """{ "sourceDirectory": "source", "targets": ["ts", "js", "java"] }"""
+            val json = """{ "sourceDirectory": "source", "targets": ["java"] }"""
             Configuration.parse(string = json) shouldBe Configuration(
                 sourceDirectory = "source",
                 outputDirectory = "out",
                 excludes = emptyList(),
-                targets = setOf("ts", "js", "java")
+                targets = setOf("java")
             )
         }
         "full configuration can parse." {
@@ -30,14 +30,14 @@ class ConfigurationTest : StringSpec() {
                 "sourceDirectory": "source",
                 "outputDirectory": "output",
                 "excludes": ["foo", "bar"],
-                "targets": ["ts", "js", "java"]
+                "targets": ["java"]
             }
             """.trimIndent()
             Configuration.parse(string = json) shouldBe Configuration(
                 sourceDirectory = "source",
                 outputDirectory = "output",
                 excludes = listOf("foo", "bar"),
-                targets = setOf("ts", "js", "java")
+                targets = setOf("java")
             )
         }
         "empty string does not parse." {
