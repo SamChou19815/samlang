@@ -326,30 +326,26 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             )
         }
         val matchedExpressionType = matchedExpression.type as Type.IdentifierType
-        return when {
-            loweredMatchingList.all { it.finalExpression == null } -> {
-                loweredStatements += Match(
-                    type = expression.type,
-                    assignedTemporaryVariable = null,
-                    variableForMatchedExpression = variableForMatchedExpression,
-                    variableForMatchedExpressionType = matchedExpressionType,
-                    matchingList = loweredMatchingList
-                )
-                loweredStatements.asLoweringResult()
-            }
-            loweredMatchingList.all { it.finalExpression != null } -> {
-                val temporaryVariable = allocateTemporaryVariable()
-                loweredStatements += Match(
-                    type = expression.type,
-                    assignedTemporaryVariable = temporaryVariable,
-                    variableForMatchedExpression = variableForMatchedExpression,
-                    variableForMatchedExpressionType = matchedExpressionType,
-                    matchingList = loweredMatchingList
-                )
-                Variable(type = expression.type, name = temporaryVariable)
-                    .asLoweringResult(statements = loweredStatements)
-            }
-            else -> error(message = "Either all final lowered expression should be null or not null.")
+        return if (loweredMatchingList.all { it.finalExpression == null }) {
+            loweredStatements += Match(
+                type = expression.type,
+                assignedTemporaryVariable = null,
+                variableForMatchedExpression = variableForMatchedExpression,
+                variableForMatchedExpressionType = matchedExpressionType,
+                matchingList = loweredMatchingList
+            )
+            loweredStatements.asLoweringResult()
+        } else {
+            val temporaryVariable = allocateTemporaryVariable()
+            loweredStatements += Match(
+                type = expression.type,
+                assignedTemporaryVariable = temporaryVariable,
+                variableForMatchedExpression = variableForMatchedExpression,
+                variableForMatchedExpressionType = matchedExpressionType,
+                matchingList = loweredMatchingList
+            )
+            Variable(type = expression.type, name = temporaryVariable)
+                .asLoweringResult(statements = loweredStatements)
         }
     }
 
