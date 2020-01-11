@@ -1,12 +1,12 @@
 // ERROR_COUNT: 0
 
 class NewYear2019<T>(val message: T) {
-    function init(): NewYear2019<string> = { message: "Hello World!" }
-    method getMessage(): T = {
-        val { message as msg } = this; msg
-    }
+  function init(): NewYear2019<string> = { message: "Hello World!" }
+  method getMessage(): T = {
+    val { message as msg } = this; msg
+  }
 }
 
 class Main {
-    function main(): string = NewYear2019.init().getMessage()
+  function main(): string = NewYear2019.init().getMessage()
 }

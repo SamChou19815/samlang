@@ -1,7 +1,7 @@
 // ERROR_COUNT: 1
-// simple-mismatch.sam:6:28-6:32: [UnexpectedType]: Expected: `int`, actual: `bool`.
+// simple-mismatch.sam:6:26-6:30: [UnexpectedType]: Expected: `int`, actual: `bool`.
 
 class Main {
-    // should be type bool!
-    function main(): int = true
+  // should be type bool!
+  function main(): int = true
 }

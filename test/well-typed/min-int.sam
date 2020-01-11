@@ -1,5 +1,5 @@
 // ERROR_COUNT: 0
 
 class Main {
-    function main(): int = -9223372036854775808
+  function main(): int = -9223372036854775808
 }

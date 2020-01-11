@@ -5,7 +5,7 @@
  * This version is fully annotated.
  */
 class Main {
-    function main(): unit = {
-        val _: ((int) -> bool, int, int) -> int = (a, b, c) -> if a(b + 1) then b else c;
-    }
+  function main(): unit = {
+    val _: ((int) -> bool, int, int) -> int = (a, b, c) -> if a(b + 1) then b else c;
+  }
 }

@@ -1,7 +1,7 @@
 // ERROR_COUNT: 2
-// undefined-type.sam:6:5-6:36: [NotWellDefinedIdentifier]: `HelloWorld` is not well defined.
-// undefined-type.sam:6:35-6:36: [UnexpectedType]: Expected: `HelloWorld`, actual: `int`.
+// undefined-type.sam:6:3-6:34: [NotWellDefinedIdentifier]: `HelloWorld` is not well defined.
+// undefined-type.sam:6:33-6:34: [UnexpectedType]: Expected: `HelloWorld`, actual: `int`.
 
 class Main {
-    function main(): HelloWorld = 1
+  function main(): HelloWorld = 1
 }

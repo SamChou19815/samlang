@@ -2,5 +2,5 @@
 // invalid-property-declaration-syntax.sam:4:12-4:13: [SyntaxError]: no viable alternative at input 'a'
 
 class Main(a: int, val b: int) {
-    function main(): int = 42
+  function main(): int = 42
 }

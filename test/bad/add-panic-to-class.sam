@@ -1,13 +1,13 @@
 // ERROR_COUNT: 2
-// add-panic-to-class.sam:10:43-10:49: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.
-// add-panic-to-class.sam:11:29-11:35: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.
+// add-panic-to-class.sam:10:41-10:47: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.
+// add-panic-to-class.sam:11:27-11:33: [UnexpectedType]: Expected: `() -> int`, actual: `() -> A`.
 
 class A(val a: int) {
-    function init(): A = { a: 42 }
+  function init(): A = { a: 42 }
 }
 
 class Main {
-    function main1(): int = panic("Ah") + A.init()
-    function main2(): int = A.init() + panic("Ah")
-    private function main(): int = Main.main1() + Main.main2()
+  function main1(): int = panic("Ah") + A.init()
+  function main2(): int = A.init() + panic("Ah")
+  private function main(): int = Main.main1() + Main.main2()
 }

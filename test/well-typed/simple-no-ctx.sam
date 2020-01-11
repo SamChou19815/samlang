@@ -5,7 +5,7 @@
  * This version is NOT annotated.
  */
 class Main {
-    function main(): unit = {
-        val _ = (a, b, c) -> if a(b + 1) then b else c;
-    }
+  function main(): unit = {
+    val _ = (a, b, c) -> if a(b + 1) then b else c;
+  }
 }
