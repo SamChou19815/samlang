@@ -1,21 +1,28 @@
 package samlang.interpreter
 
+import samlang.ast.common.ModuleReference
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
+import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 
 /**
- * Interpret [compilationUnit] using [entryPoint] as the main function.
+ * Interpret [compilationUnit] using [entryModule]'s main function as the main function.
  *
  * @return the printed string.
  */
-fun interpret(compilationUnit: MidIrCompilationUnit, entryPoint: String): String {
+fun interpretCompilationUnit(compilationUnit: MidIrCompilationUnit, entryModule: ModuleReference): String {
     val environment = setupEnvironment(compilationUnit = compilationUnit)
-    val function = environment.functions[entryPoint] ?: error(message = "Bad function.")
+    val mainFunctionName = MidIrNameEncoder.encodeFunctionName(
+        moduleReference = entryModule,
+        className = "Main",
+        functionName = "main"
+    )
+    val function = environment.functions[mainFunctionName] ?: error(message = "Bad function.")
     interpretFunction(irFunction = function, environment = environment, arguments = emptyList())
     return environment.printed.toString()
 }

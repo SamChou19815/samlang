@@ -54,6 +54,7 @@ import samlang.ast.mir.MidIrExpression.Companion.TEMP
 import samlang.ast.mir.MidIrExpression.Companion.XOR
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
 import samlang.ast.mir.MidIrFunction
+import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION

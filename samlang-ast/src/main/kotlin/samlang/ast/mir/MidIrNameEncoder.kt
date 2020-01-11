@@ -1,8 +1,8 @@
-package samlang.compiler.mir
+package samlang.ast.mir
 
 import samlang.ast.common.ModuleReference
 
-internal object MidIrNameEncoder {
+object MidIrNameEncoder {
     val nameOfThrow: String = encodeBuiltinName(name = "throw")
     val nameOfStringToInt: String = encodeBuiltinName(name = "stringToInt")
     val nameOfIntToString: String = encodeBuiltinName(name = "intToString")

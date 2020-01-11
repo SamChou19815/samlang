@@ -9,6 +9,7 @@ import samlang.ast.hir.HighIrModule
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrFunction
+import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Return
 
