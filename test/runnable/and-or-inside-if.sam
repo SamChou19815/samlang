@@ -1,0 +1,21 @@
+// ERROR_COUNT: 0
+
+class Main {
+  function main(): unit = {
+    val i = 1;
+    val j = 2;
+    if (i < j && i > 0 && j > 0) then {
+      val a = 3;
+      val b = 4;
+      if (a > b || a + b > 0 && true) then println("one") else println("two")
+    } else {
+      val a = 3;
+      val b = 4;
+      if (a == 2 || b == 4) then {
+        println("three")
+      } else {
+        println("four")
+      }
+    }
+  }
+}

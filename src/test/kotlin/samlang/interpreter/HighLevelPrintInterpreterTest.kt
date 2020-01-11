@@ -12,8 +12,10 @@ class HighLevelPrintInterpreterTest : StringSpec() {
     private data class TestCase(val id: String, val code: String, val expectedPrinted: String)
 
     private val expectations: Map<String, String> = mapOf(
+        "and-or-inside-if" to "one",
         "block-in-if-else" to "",
         "builtins" to "42",
+        "correct-op" to "OK",
         "different-expr-demo" to "42",
         "different-modules-demo" to "OK",
         "generic-object-test" to "2\n42",
@@ -38,7 +40,6 @@ class HighLevelPrintInterpreterTest : StringSpec() {
                     moduleReference = dummyModuleReference,
                     module = compileModule(module = checkedProgram)
                 )
-                println(message = irCompilationUnit)
                 val actualIrPrinted = interpretCompilationUnit(
                     compilationUnit = irCompilationUnit,
                     entryModule = dummyModuleReference
