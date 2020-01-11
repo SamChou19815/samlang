@@ -34,7 +34,7 @@ private fun File.toTestProgram(): TestProgram {
 }
 
 private fun loadPrograms(): List<TestProgram> {
-    val programFiles: Array<File> = File("src/test/resources/samlang/programs").listFiles()
+    val programFiles: Array<File> = File("test").listFiles()
         ?: error(message = "Test program folder not found.")
     return programFiles.mapNotNull { file -> file.takeIf { it.extension == "sam" }?.toTestProgram() }
 }
