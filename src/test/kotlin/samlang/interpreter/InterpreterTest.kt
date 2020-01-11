@@ -61,7 +61,7 @@ class InterpreterTest : StringSpec() {
         for ((id, code, expectedValue) in testCases) {
             "interpreter expected value: $id" {
                 val checkedProgram = getTypeCheckedModule(code = code)
-                val v = ModuleInterpreter.eval(module = checkedProgram)
+                val v = ModuleInterpreter().eval(module = checkedProgram)
                 v shouldBe expectedValue
             }
         }

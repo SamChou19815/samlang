@@ -5,10 +5,18 @@ import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Module
 
-/**
- * The interpreter used to evaluate an already type checked source with single module.
- */
-object ModuleInterpreter {
+/** The interpreter used to evaluate an already type checked source with single module. */
+class ModuleInterpreter {
+    private val expressionInterpreter: ExpressionInterpreter = ExpressionInterpreter()
+
+    /**
+     * Run the [module] under some interpretation [context] (default to empty)
+     * to get all printed strings or a [PanicException].
+     */
+    fun run(module: Module, context: InterpretationContext = InterpretationContext.EMPTY): String {
+        eval(module = module, context = context)
+        return expressionInterpreter.printed
+    }
 
     /**
      * Evaluate the [module] under some interpretation [context] (default to empty)
@@ -51,7 +59,7 @@ object ModuleInterpreter {
         if (mainFunction.arguments.isNotEmpty()) {
             return Value.UnitValue
         }
-        return ExpressionInterpreter.eval(expression = mainFunction.body, context = mainFunction.context)
+        return expressionInterpreter.eval(expression = mainFunction.body, context = mainFunction.context)
     }
 
     private fun eval(classDefinition: ClassDefinition, context: InterpretationContext): InterpretationContext {
@@ -65,7 +73,7 @@ object ModuleInterpreter {
                 captured = emptyMap(),
                 body = member.body
             )
-            val value = ExpressionInterpreter.visit(expression = lambda, context = context)
+            val value = expressionInterpreter.visit(expression = lambda, context = context)
             if (member.isMethod) {
                 methods[member.name] = value
             } else {

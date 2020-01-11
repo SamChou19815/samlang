@@ -43,12 +43,15 @@ import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Pattern
 import samlang.ast.lang.Statement
 
-internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext, Value> {
+internal class ExpressionInterpreter : ExpressionVisitor<InterpretationContext, Value> {
+    private val printedCollector: StringBuilder = StringBuilder()
 
-    private fun blameTypeChecker(message: String = ""): Nothing = error(message = message)
+    val printed: String get() = printedCollector.toString()
 
     fun eval(expression: Expression, context: InterpretationContext): Value =
-        expression.accept(visitor = ExpressionInterpreter, context = context)
+        expression.accept(visitor = this, context = context)
+
+    private fun blameTypeChecker(message: String = ""): Nothing = error(message = message)
 
     override fun visit(expression: Literal, context: InterpretationContext): Value = when (val l = expression.literal) {
         is IntLiteral -> Value.IntValue(value = l.value)
@@ -142,7 +145,7 @@ internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext,
                 value = (argumentValue as Value.IntValue).value.toString()
             )
             BuiltInFunctionName.PRINTLN -> {
-                println((argumentValue as Value.StringValue).value)
+                printedCollector.append((argumentValue as Value.StringValue).value).append('\n')
                 Value.UnitValue
             }
         }

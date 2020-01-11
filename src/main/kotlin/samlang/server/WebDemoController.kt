@@ -66,7 +66,7 @@ internal object WebDemoController {
         val atomicStringValue = AtomicReference<String>()
         val evalThread = thread {
             val callback = try {
-                "Value: ${ModuleInterpreter.eval(module = checkedModule)}"
+                "Value: ${ModuleInterpreter().eval(module = checkedModule)}"
             } catch (e: PanicException) {
                 "Panic: ${e.reason}"
             }
