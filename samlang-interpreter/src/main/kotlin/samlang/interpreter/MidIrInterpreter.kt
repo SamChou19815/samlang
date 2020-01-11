@@ -223,7 +223,7 @@ private class MidIrExpressionInterpreter(
                 value1 % value2
             }
             MidIrOperator.ADD -> value1 + value2
-            MidIrOperator.SUB -> value1 + value2
+            MidIrOperator.SUB -> value1 - value2
             MidIrOperator.XOR -> value1 xor value2
             MidIrOperator.LT -> toInt(boolean = value1 < value2)
             MidIrOperator.LE -> toInt(boolean = value1 <= value2)

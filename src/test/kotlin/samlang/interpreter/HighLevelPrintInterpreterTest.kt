@@ -2,7 +2,6 @@ package samlang.interpreter
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
-import org.opentest4j.AssertionFailedError
 import samlang.ast.common.ModuleReference
 import samlang.common.getTypeCheckedModule
 import samlang.compiler.hir.compileModule
@@ -47,8 +46,6 @@ class HighLevelPrintInterpreterTest : StringSpec() {
                     ).trim()
                     actualIrPrinted shouldBe expectedPrinted
                 } catch (_: PanicException) {
-                    // TODO: actually fix it
-                } catch (_: AssertionFailedError) {
                     // TODO: actually fix it
                 }
             }
