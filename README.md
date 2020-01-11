@@ -20,9 +20,8 @@ Install the VSCode Extension at [Visual Studio Marketplace](https://marketplace.
 
 ## Supported Backends
 
-- TypeScript
-- JavaScript
 - Java
+- _X86 Assembly_ (WIP)
 
 ## Current Status
 
@@ -30,5 +29,6 @@ Install the VSCode Extension at [Visual Studio Marketplace](https://marketplace.
 - Interpreter finished
 - Pretty-printer finished
 - Compiler finished
-- Some basic test cases provided and passed
+- X86 Assembly support in progress
+- Some basic and intermediate test cases provided and passed
 - Generally bad documentation
