@@ -64,16 +64,22 @@ class Main {
   private function assertTrue(condition: bool, message: string): unit =
     if (condition) then {} else panic(message)
 
+  private function assertFalse(condition: bool, message: string): unit =
+    if (!condition) then {} else panic(message)
+
+  private function assertEquals(e1: int, e2: int, message: string): unit =
+    if (e1 == e2) then {} else panic(intToString(e1))
+
   private function consistencyTest(): unit = {
-    val _ = Main.assertTrue(Option.getSome(3).map((i) -> i + 1).forceValue() == 4, "Ah1");
-    val _ = Main.assertTrue(Box.init(42).getContent() == 42, "Ah2");
-    val _ = Main.assertTrue(FunctionExample.getIdentityFunction()(42) == 42, "Ah3");
-    val _ = Main.assertTrue(Student.dummyStudent().getAge() == 0, "Ah4");
-    val _ = Main.assertTrue(Math.plus(2, 2) == 4, "Ah5");
-    val _ = Main.assertTrue(!(PrimitiveType.getUnit().isTruthy()), "Ah6");
+    val _ = Main.assertEquals(Option.getSome(3).map((i) -> i + 1).forceValue(), 4, "Ah1");
+    val _ = Main.assertEquals(Box.init(42).getContent(), 42, "Ah2");
+    val _ = Main.assertEquals(FunctionExample.getIdentityFunction()(42), 42, "Ah3");
+    val _ = Main.assertEquals(Student.dummyStudent().getAge(), 0, "Ah4");
+    val _ = Main.assertEquals(Math.plus(2, 2), 4, "Ah5");
+    val _ = Main.assertFalse(PrimitiveType.getUnit().isTruthy(), "Ah6");
     val _ = Main.assertTrue(PrimitiveType.getInteger().isTruthy(), "Ah7");
     val _ = Main.assertTrue(PrimitiveType.getString().isTruthy(), "Ah8");
-    val _ = Main.assertTrue(!(PrimitiveType.getBool().isTruthy()), "Ah9");
+    val _ = Main.assertFalse(PrimitiveType.getBool().isTruthy(), "Ah9");
   }
 
   function main(): unit = {

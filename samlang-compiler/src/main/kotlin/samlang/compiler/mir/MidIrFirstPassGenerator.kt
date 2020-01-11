@@ -197,7 +197,7 @@ internal class MidIrFirstPassGenerator(
                 if (dataVariable != null) {
                     statements += MOVE(
                         destination = allocator.allocateTemp(variableName = dataVariable),
-                        source = ADD(e1 = matchedTemp, e2 = CONST(value = 8))
+                        source = MEM(expression = ADD(e1 = matchedTemp, e2 = CONST(value = 8)))
                     )
                 }
                 variantPatternToStatement.statements.forEach { statements += translate(statement = it) }

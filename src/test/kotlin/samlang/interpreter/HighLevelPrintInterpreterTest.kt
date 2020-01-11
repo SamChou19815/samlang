@@ -39,15 +39,11 @@ class HighLevelPrintInterpreterTest : StringSpec() {
                     module = compileModule(module = checkedProgram)
                 )
                 println(message = irCompilationUnit)
-                try {
-                    val actualIrPrinted = interpretCompilationUnit(
-                        compilationUnit = irCompilationUnit,
-                        entryModule = dummyModuleReference
-                    ).trim()
-                    actualIrPrinted shouldBe expectedPrinted
-                } catch (_: PanicException) {
-                    // TODO: actually fix it
-                }
+                val actualIrPrinted = interpretCompilationUnit(
+                    compilationUnit = irCompilationUnit,
+                    entryModule = dummyModuleReference
+                ).trim()
+                actualIrPrinted shouldBe expectedPrinted
             }
         }
     }
