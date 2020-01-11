@@ -16,9 +16,10 @@ class Obj(val d: int, val e: int) {
     function valExample(): int = {
         val a: int = 1;
         val b = 2;
-        val [_, c] = ["dd", 3];
-        val { e as d } = { d: 5, e: 4 };
+        val [_, c] = ["dd", 3]; // c = 3
+        val { e as d } = { d: 5, e: 4 }; // d = 4
         val _ = 42;
+        // 1 + 2 * 3 / 4 = 1 + 6/4 = 1 + 1 = 2
         a + b * c / d
     }
 }
@@ -46,12 +47,14 @@ class Main {
             val c = {
                 val c = b;
                 b
-            };
+            }; // c = 4
             c
-        };
+        }; // 4
         val [e, b, _] = [1, "bool", true];
-        a + 1
+        a + 1 // 5
     }
 
-    function main(): int = Foo.bar() * Main.oof()
+    function main(): int = Main.identity(
+        Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
+    )
 }

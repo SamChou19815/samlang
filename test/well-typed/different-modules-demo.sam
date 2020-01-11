@@ -47,9 +47,37 @@ class Box<T>(val content: T) {
 class Option<T>(None(unit), Some(T)) {
     function <T> getNone(): Option<T> = None({})
     function <T> getSome(d: T): Option<T> = Some(d)
+    method forceValue(): T =
+        match (this) {
+            | None _ -> panic("Ah")
+            | Some v -> v
+        }
     method <R> map(f: (T) -> R): Option<R> =
         match (this) {
             | None _ -> None({})
             | Some d -> Some(f(d))
         }
+}
+
+class Main {
+
+    private function assert(condition: bool, message: string): unit =
+        if (condition) then {} else panic(message)
+
+    private function consistencyTest(): unit = {
+        val _ = Main.assert(Option.getSome(3).map((i) -> i + 1).forceValue() == 4, "Ah1");
+        val _ = Main.assert(Box.init(42).getContent() == 42, "Ah2");
+        val _ = Main.assert(FunctionExample.getIdentityFunction()(42) == 42, "Ah3");
+        val _ = Main.assert(Student.dummyStudent().getAge() == 0, "Ah4");
+        val _ = Main.assert(Math.plus(2, 2) == 4, "Ah5");
+        val _ = Main.assert(!(PrimitiveType.getUnit().isTruthy()), "Ah6");
+        val _ = Main.assert(PrimitiveType.getInteger().isTruthy(), "Ah7");
+        val _ = Main.assert(PrimitiveType.getString().isTruthy(), "Ah8");
+        val _ = Main.assert(!(PrimitiveType.getBool().isTruthy()), "Ah9");
+    }
+
+    function main(): int = {
+        val _ = Main.consistencyTest();
+        3
+    }
 }

@@ -7,3 +7,7 @@ class A {
 class B {
   function b(): int = A.a()
 }
+
+class Main {
+  function main(): unit = {}
+}

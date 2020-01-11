@@ -18,3 +18,7 @@ class Option<T>(None(unit), Some(T)) {
         val _ = Some(none.mapButIgnore((it) -> it)).mapButIgnore((it) -> it);
     }
 }
+
+class Main {
+    function main(): unit = Option.main()
+}

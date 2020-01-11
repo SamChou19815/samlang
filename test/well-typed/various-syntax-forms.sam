@@ -77,4 +77,11 @@ class Main {
     val c: Option<string> = Option.none().toSome(3).map((x) -> "empty");
     "hello world"
   }
+
+  function main(): int = {
+    val _ = Main.literalsAndSimpleExpressions();
+    val _ = Main.variables(3, "sss");
+    val v = Main.methodAndFunctionReference(); // 42 + 42 == 84
+    v
+  }
 }

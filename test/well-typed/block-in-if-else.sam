@@ -3,6 +3,8 @@
 class Main {
   function main(): unit =
     if (true) then {
+      val _ = Main.main2();
+      val _ = Main.main3();
       val _ = 3;
       {}
     } else {

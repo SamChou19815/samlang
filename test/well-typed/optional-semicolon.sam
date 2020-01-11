@@ -1,7 +1,7 @@
 // ERROR_COUNT: 0
 
 class Main(val a: int, val b: bool) {
-  function main(): unit = {
+  function main(): int = {
     val _ = 3
     val a = 2;
     val c = a - 3;
@@ -9,5 +9,7 @@ class Main(val a: int, val b: bool) {
     val b = true;
     val [_, e] = [a, c]
     val _ = { a: e, b }
+    val finalValue = a + c + d + (if (b) then 0 else panic("")) + e; // 2 + (-1) + (-7) + (-1) = -7
+    finalValue
   }
 }
