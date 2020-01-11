@@ -62,6 +62,7 @@ INTERFACE : 'interface';
 EXTENDS : 'extends';
 IMPLEMENTS : 'implements';
 EXPORT : 'export';
+ASSERT : 'assert';
 
 /*
  * ----------------------------------------------------------------------------
