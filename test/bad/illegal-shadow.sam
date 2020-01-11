@@ -1,9 +1,10 @@
-// ERROR_COUNT: 5
-// illegal-shadow.sam:9:7-9:8: [Collision]: Name `A` collides with a previously defined name.
-// illegal-shadow.sam:13:12-13:16: [Collision]: Name `test` collides with a previously defined name.
-// illegal-shadow.sam:18:10-18:14: [Collision]: Name `test` collides with a previously defined name.
-// illegal-shadow.sam:23:12-23:16: [Collision]: Name `test` collides with a previously defined name.
-// illegal-shadow.sam:29:9-29:10: [Collision]: Name `a` collides with a previously defined name.
+// ERROR_COUNT: 6
+// illegal-shadow.sam:10:7-10:8: [Collision]: Name `A` collides with a previously defined name.
+// illegal-shadow.sam:14:12-14:16: [Collision]: Name `test` collides with a previously defined name.
+// illegal-shadow.sam:19:10-19:14: [Collision]: Name `test` collides with a previously defined name.
+// illegal-shadow.sam:24:12-24:16: [Collision]: Name `test` collides with a previously defined name.
+// illegal-shadow.sam:28:28-28:32: [Collision]: Name `test` collides with a previously defined name.
+// illegal-shadow.sam:34:9-34:10: [Collision]: Name `a` collides with a previously defined name.
 
 class A {}
 class A {}
@@ -21,6 +22,10 @@ class ConflictingMethods(val a: int) {
 class ConflictingMethodsAndFunctions(val a: int) {
   method test(): int = 42
   function test(): unit = ConflictingMethodsAndFunctions.test()
+}
+
+class FunctionParametersConflict {
+  function test(test: int, test: int): unit = {}
 }
 
 class Main {
