@@ -6,12 +6,20 @@ import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.errors.CompilationFailedException
 import samlang.parser.ModuleBuilder
-import samlang.programs.testPrograms
+import samlang.programs.badTestPrograms
+import samlang.programs.goodTestPrograms
 import samlang.util.createOrFail
 
 class ModuleTypeCheckerTest : StringSpec() {
     init {
-        testPrograms.forEach { (id, errorSet, code) -> id { getTypeErrors(id = id, code = code) shouldBe errorSet } }
+        listOf(goodTestPrograms, badTestPrograms).flatten().forEach { (id, errorSet, code) ->
+            val testName = if (errorSet.isEmpty()) {
+                "Good: $id"
+            } else {
+                "Bad: $id"
+            }
+            testName { getTypeErrors(id = id, code = code) shouldBe errorSet }
+        }
     }
 
     private fun getTypeErrors(id: String, code: String): Set<String> {

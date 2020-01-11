@@ -3,15 +3,13 @@ package samlang.printer
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import samlang.common.getTypeCheckedModule
-import samlang.programs.testPrograms
+import samlang.programs.goodTestPrograms
 
 class PrettyPrinterTest : StringSpec() {
 
-    private val programs: List<Pair<String, String>> = testPrograms
-        .filter { it.errorSet.isEmpty() }
-        .map { (id, _, code) ->
-            id to code
-        }
+    private val programs: List<Pair<String, String>> = goodTestPrograms.map { (id, _, code) ->
+        id to code
+    }
 
     init {
         for ((id, code) in programs) {

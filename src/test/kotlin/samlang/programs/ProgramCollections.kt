@@ -1,6 +1,7 @@
 package samlang.programs
 
 import java.io.File
+import java.nio.file.Paths
 
 private const val SUMMARY_LINE_PREFIX = "// ERROR_COUNT: "
 
@@ -33,10 +34,11 @@ private fun File.toTestProgram(): TestProgram {
     )
 }
 
-private fun loadPrograms(): List<TestProgram> {
-    val programFiles: Array<File> = File("test").listFiles()
+private fun loadPrograms(type: String): List<TestProgram> {
+    val programFiles: Array<File> = Paths.get("test", type).toFile().listFiles()
         ?: error(message = "Test program folder not found.")
-    return programFiles.mapNotNull { file -> file.takeIf { it.extension == "sam" }?.toTestProgram() }
+    return programFiles.mapNotNull { file -> file.takeIf { it.extension == "sam" }?.toTestProgram() }.sortedBy { it.id }
 }
 
-val testPrograms: List<TestProgram> = loadPrograms()
+val goodTestPrograms: List<TestProgram> = loadPrograms(type = "good")
+val badTestPrograms: List<TestProgram> = loadPrograms(type = "bad")

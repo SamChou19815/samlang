@@ -3,7 +3,7 @@ package samlang.interpreter
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
 import samlang.common.getTypeCheckedModule
-import samlang.programs.testPrograms
+import samlang.programs.goodTestPrograms
 
 class InterpreterTest : StringSpec() {
 
@@ -46,12 +46,10 @@ class InterpreterTest : StringSpec() {
         "simple-no-ctx-annotated" to Value.UnitValue
     )
 
-    private val testCases: List<TestCase> = testPrograms
-        .filter { it.errorSet.isEmpty() }
-        .mapNotNull { (id, _, code) ->
-            val exp = expectations[id] ?: return@mapNotNull null
-            TestCase(id, code, exp)
-        }
+    private val testCases: List<TestCase> = goodTestPrograms.mapNotNull { (id, _, code) ->
+        val exp = expectations[id] ?: return@mapNotNull null
+        TestCase(id, code, exp)
+    }
 
     init {
         for ((id, code, expectedValue) in testCases) {
