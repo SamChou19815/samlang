@@ -20,7 +20,7 @@ class InterpreterTest : StringSpec() {
         "lots-of-fields-and-methods" to Value.UnitValue,
         "map-but-ignore" to Value.UnitValue,
         "min-int" to Value.IntValue(value = Long.MIN_VALUE),
-        "optional-semicolon" to Value.IntValue(value = -7),
+        "optional-semicolon" to Value.UnitValue,
         "overengineered-hello-world" to Value.StringValue(value = "Hello World!"),
         "overengineered-hello-world2" to Value.StringValue(value = "Hello World!"),
         "polymorphic-option" to Value.VariantValue(tag = "Some", data = Value.StringValue(value = "hi")),

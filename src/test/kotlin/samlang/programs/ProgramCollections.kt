@@ -33,5 +33,5 @@ private fun loadPrograms(type: String): List<TestProgram> {
 }
 
 val badTestPrograms: List<TestProgram> = loadPrograms(type = "bad")
-val runnableTestPrograms: List<TestProgram> = emptyList()
+val runnableTestPrograms: List<TestProgram> = loadPrograms(type = "runnable")
 val wellTypedTestPrograms: List<TestProgram> = loadPrograms(type = "well-typed") + runnableTestPrograms
