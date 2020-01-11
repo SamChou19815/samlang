@@ -5,7 +5,7 @@ import io.kotlintest.specs.StringSpec
 import samlang.common.getTypeCheckedModule
 import samlang.programs.wellTypedTestPrograms
 
-class InterpreterTest : StringSpec() {
+class HighLevelValueInterpreterTest : StringSpec() {
     private data class TestCase(val id: String, val code: String, val expectedResult: Value)
 
     private val expectations: Map<String, Value> = mapOf(
