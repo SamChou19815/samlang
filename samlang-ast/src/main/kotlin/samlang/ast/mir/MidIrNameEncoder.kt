@@ -11,5 +11,5 @@ object MidIrNameEncoder {
     private fun encodeBuiltinName(name: String): String = "builtin_$name"
 
     fun encodeFunctionName(moduleReference: ModuleReference, className: String, functionName: String): String =
-        "function_${moduleReference.parts.joinToString(separator = "__")}_${className}_$functionName}"
+        "function_${moduleReference.parts.joinToString(separator = "__")}_${className}_$functionName"
 }

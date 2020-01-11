@@ -130,10 +130,7 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
         override fun visit(node: ConditionalJump, context: Unit): List<MidIrStatement> {
             val loweringResult = lower(node.condition)
             val newSequence = loweringResult.statements.toMutableList()
-            val loweredExpr = loweringResult.expression
-            val label1 = node.label1
-            val label2 = node.label2
-            newSequence += CJUMP(loweredExpr, label1, label2)
+            newSequence += CJUMP(loweringResult.expression, node.label1, node.label2)
             return newSequence
         }
 
@@ -145,6 +142,9 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
         override fun visit(node: Return, context: Unit): List<MidIrStatement> {
             val returnedExpression = node.returnedExpression ?: return listOf(node)
             val (newSequence, loweredReturnExpression) = lower(expression = returnedExpression)
+            require(value = isCanonical(loweredReturnExpression)) {
+                "Bad. original $returnedExpression new: $loweredReturnExpression"
+            }
             return newSequence.statements + Return(returnedExpression = loweredReturnExpression)
         }
     }
@@ -205,8 +205,7 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
         override fun visit(node: Temporary, context: Unit): Boolean = true
 
         override fun visit(node: Op, context: Unit): Boolean =
-            node.e1.accept(visitor = this, context = Unit) &&
-                    node.e2.accept(visitor = this, context = Unit)
+            node.e1.accept(visitor = this, context = Unit) && node.e2.accept(visitor = this, context = Unit)
 
         override fun visit(node: Mem, context: Unit): Boolean =
             node.expression.accept(visitor = this, context = Unit)

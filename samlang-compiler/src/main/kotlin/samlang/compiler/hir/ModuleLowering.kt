@@ -14,7 +14,7 @@ import samlang.ast.lang.Module
 fun compileSources(sources: Sources<Module>): Sources<HighIrModule> =
     Sources(moduleMappings = sources.moduleMappings.mapValues { (_, module) -> compileModule(module = module) })
 
-private fun compileModule(module: Module): HighIrModule =
+fun compileModule(module: Module): HighIrModule =
     HighIrModule(imports = module.imports, classDefinitions = module.classDefinitions.map(::compileClassDefinition))
 
 private fun compileClassDefinition(classDefinition: ClassDefinition): HighIrClassDefinition =

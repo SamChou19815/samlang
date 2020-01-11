@@ -38,10 +38,19 @@ private fun setupEnvironment(compilationUnit: MidIrCompilationUnit): GlobalEnvir
         strings[location] = content
         heapPointer += 8
     }
+    val functionsGlobals = hashMapOf<Long, String>()
+    compilationUnit.functions.forEach { function ->
+        val location = heapPointer
+        val name = function.functionName
+        globalVariables[name] = location
+        functionsGlobals[location] = name
+        heapPointer += 8
+    }
     return GlobalEnvironment(
         functions = functions,
         globalVariables = globalVariables,
         strings = strings,
+        functionsGlobals = functionsGlobals,
         heap = hashMapOf(),
         heapPointer = heapPointer,
         printed = StringBuilder()
@@ -103,59 +112,69 @@ private class MidIrStatementInterpreter(
     override fun visit(node: MidIrStatement.CallFunction, context: StackFrame) {
         val arguments = node.arguments.map { it.accept(visitor = expressionVisitor, context = context) }
         val functionExpression = node.functionExpr
-        if (functionExpression !is MidIrExpression.Name) {
-            error(message = "Unsupported function call for function $functionExpression.")
+        val functionName = if (functionExpression is MidIrExpression.Name) {
+            val functionName = functionExpression.name
+            val result = when (functionName) {
+                "builtin_malloc" -> {
+                    require(value = arguments.size == 1)
+                    val size = arguments[0]
+                    val start = environment.heapPointer
+                    environment.heapPointer += size
+                    start
+                }
+                "builtin_throw" -> {
+                    require(value = arguments.size == 1)
+                    val argument = arguments[0]
+                    val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
+                    throw PanicException(reason = string)
+                }
+                "builtin_stringToInt" -> {
+                    require(value = arguments.size == 1)
+                    val argument = arguments[0]
+                    val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
+                    string.toLongOrNull() ?: throw PanicException(reason = "Bad string: $string")
+                }
+                "builtin_intToString" -> {
+                    require(value = arguments.size == 1)
+                    val stringForm = arguments[0].toString()
+                    val location = environment.heapPointer
+                    environment.heapPointer += 8
+                    environment.strings[location] = stringForm
+                    location
+                }
+                "builtin_println" -> {
+                    require(value = arguments.size == 1)
+                    val argument = arguments[0]
+                    val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
+                    environment.printed.append(string).append('\n')
+                    0L
+                }
+                else -> null
+            }
+            if (result != null) {
+                node.returnCollector?.let { context[it.id] = result }
+                _programCounter++
+                return
+            }
+            functionName
+        } else {
+            val functionAddress = functionExpression.accept(visitor = expressionVisitor, context = context)
+            environment.functionsGlobals[functionAddress] ?: error(message = "Undefined function!")
         }
-        val result = when (val functionName = functionExpression.name) {
-            "builtin_malloc" -> {
-                require(value = arguments.size == 1)
-                val size = arguments[0]
-                val start = environment.heapPointer
-                environment.heapPointer += size
-                start
-            }
-            "builtin_throw" -> {
-                require(value = arguments.size == 1)
-                val argument = arguments[0]
-                val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
-                throw PanicException(reason = string)
-            }
-            "builtin_stringToInt" -> {
-                require(value = arguments.size == 1)
-                val argument = arguments[0]
-                val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
-                string.toLongOrNull() ?: throw PanicException(reason = "Bad string: $string")
-            }
-            "builtin_intToString" -> {
-                require(value = arguments.size == 1)
-                val stringForm = arguments[0].toString()
-                val location = environment.heapPointer
-                environment.heapPointer += 8
-                environment.strings[location] = stringForm
-                location
-            }
-            "builtin_println" -> {
-                require(value = arguments.size == 1)
-                val argument = arguments[0]
-                val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
-                environment.printed.append(string).append('\n')
-                0L
-            }
-            else -> {
-                val function = environment.functions[functionName]
-                    ?: error(message = "Missing function $functionName")
-                interpretFunction(
-                    irFunction = function,
-                    arguments = arguments,
-                    environment = environment
-                )
-            }
-        }
+        val function = environment.functions[functionName]
+            ?: error(message = "Missing function $functionName")
+        val result = interpretFunction(
+            irFunction = function,
+            arguments = arguments,
+            environment = environment
+        )
         node.returnCollector?.let { context[it.id] = result }
+        _programCounter++
     }
 
     override fun visit(node: MidIrStatement.Jump, context: StackFrame) {
-        _programCounter = (labelMapping[node.label] ?: error("BAD!"))
+        val label = node.label
+        _programCounter = (labelMapping[label] ?: error("BAD label: $label!"))
     }
 
     override fun visit(node: MidIrStatement.ConditionalJumpFallThrough, context: StackFrame) {
@@ -182,7 +201,7 @@ private class MidIrExpressionInterpreter(
     override fun visit(node: MidIrExpression.Constant, context: StackFrame): Long = node.value
 
     override fun visit(node: MidIrExpression.Name, context: StackFrame): Long =
-        environment.globalVariables[node.name] ?: 0
+        environment.globalVariables[node.name] ?: error(message = "Referencing undefined global ${node.name}!")
 
     override fun visit(node: MidIrExpression.Temporary, context: StackFrame): Long = context[node.id]
 
@@ -226,6 +245,7 @@ private class MidIrExpressionInterpreter(
 private class GlobalEnvironment(
     val functions: Map<String, MidIrFunction>,
     val globalVariables: Map<String, Long>,
+    val functionsGlobals: Map<Long, String>,
     val strings: MutableMap<Long, String>,
     val heap: MutableMap<Long, Long>,
     var heapPointer: Long,

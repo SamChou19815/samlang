@@ -66,6 +66,6 @@ internal class MidIrResourceAllocator(
      */
     fun getTemporaryByVariable(variableName: String?): Temporary {
         val name = "$functionName:$variableName"
-        return tempMap[name] ?: error(message = "Variable name [$variableName] not found.")
+        return tempMap[name] ?: error(message = "Variable name [$variableName] not found. Available: ${tempMap.keys}")
     }
 }

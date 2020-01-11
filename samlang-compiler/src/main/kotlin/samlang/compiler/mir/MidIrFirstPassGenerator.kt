@@ -174,6 +174,12 @@ internal class MidIrFirstPassGenerator(
             val tagTemp = allocator.allocateTemp()
             val statements = arrayListOf<MidIrStatement>()
             statements += MOVE(destination = tagTemp, source = matchedTemp)
+            if (finalAssignedVariable != null) {
+                statements += MOVE(
+                    destination = allocator.allocateTemp(variableName = finalAssignedVariable),
+                    source = ZERO
+                )
+            }
             val matchingList = statement.matchingList
             val matchBranchLabels = matchingList.map {
                 allocator.allocateLabelWithAnnotation(annotation = "MATCH_BRANCH_${it.tagOrder}")
@@ -198,8 +204,7 @@ internal class MidIrFirstPassGenerator(
                 val finalAssignedExpression = variantPatternToStatement.finalExpression
                 if (finalAssignedVariable == null) {
                     require(value = finalAssignedExpression == null)
-                } else {
-                    require(value = finalAssignedExpression != null)
+                } else if (finalAssignedExpression != null) {
                     statements += MOVE(
                         destination = allocator.getTemporaryByVariable(variableName = finalAssignedVariable),
                         source = translate(expression = finalAssignedExpression)
@@ -207,17 +212,22 @@ internal class MidIrFirstPassGenerator(
                 }
                 statements += Jump(label = endLabel)
             }
+            statements += Label(name = endLabel)
             return SEQ(statements = statements)
         }
 
         override fun visit(statement: LetDeclaration): MidIrStatement =
-            MOVE(destination = TEMP(id = statement.name), source = ZERO)
+            MOVE(destination = allocator.allocateTemp(variableName = statement.name), source = ZERO)
 
         override fun visit(statement: VariableAssignment): MidIrStatement =
-            MOVE(
-                destination = allocator.getTemporaryByVariable(variableName = statement.name),
-                source = translate(expression = statement.assignedExpression)
-            )
+            try {
+                MOVE(
+                    destination = allocator.getTemporaryByVariable(variableName = statement.name),
+                    source = translate(expression = statement.assignedExpression)
+                )
+            } catch (e: IllegalStateException) {
+                error("AHHH! $statement. BAD ${e.message}")
+            }
 
         override fun visit(statement: ConstantDefinition): MidIrStatement {
             val assignedExpression = translate(expression = statement.assignedExpression)
@@ -226,11 +236,8 @@ internal class MidIrFirstPassGenerator(
                     val temporary = allocator.allocateTemp()
                     val statements = arrayListOf<MidIrStatement>()
                     statements += MOVE(destination = temporary, source = assignedExpression)
-                    pattern.destructedNames.forEach { (_, order, name) ->
-                        if (name == null) {
-                            return@forEach
-                        }
-                        val assignedTemporary = allocator.allocateTemp(variableName = name)
+                    pattern.destructedNames.forEach { (original, order, alias) ->
+                        val assignedTemporary = allocator.allocateTemp(variableName = alias ?: original)
                         statements += MOVE(
                             destination = assignedTemporary,
                             source = MEM(
@@ -259,7 +266,7 @@ internal class MidIrFirstPassGenerator(
                     SEQ(statements = statements)
                 }
                 is HighIrPattern.VariablePattern -> MOVE(
-                    destination = allocator.getTemporaryByVariable(variableName = pattern.name),
+                    destination = allocator.allocateTemp(variableName = pattern.name),
                     source = assignedExpression
                 )
                 is HighIrPattern.WildCardPattern -> EXPR(expression = assignedExpression)
@@ -270,7 +277,11 @@ internal class MidIrFirstPassGenerator(
             MidIrStatement.Return(returnedExpression = statement.expression?.let { translate(expression = it) })
 
         override fun visit(statement: Block): MidIrStatement =
-            SEQ(statements = statement.statements.map { translate(statement = it) })
+            try {
+                SEQ(statements = statement.statements.map { translate(statement = it) })
+            } catch (e: IllegalStateException) {
+                error(message = "AHHH! BLOCK\n $statement.\n\n ${e.message}")
+            }
     }
 
     private inner class ExpressionGenerator : HighIrExpressionVisitor<MidIrExpression> {
@@ -493,29 +504,24 @@ internal class MidIrFirstPassGenerator(
         }
 
         override fun visit(expression: Ternary): MidIrExpression {
-            val temporaryForTernary = allocator.allocateTemp().id
-            return ESEQ(
-                statement = SEQ(
-                    translate(
-                        statement = IfElse(
-                            booleanExpression = expression.boolExpression,
-                            s1 = listOf(
-                                VariableAssignment(
-                                    name = temporaryForTernary,
-                                    assignedExpression = expression.e1
-                                )
-                            ),
-                            s2 = listOf(
-                                VariableAssignment(
-                                    name = temporaryForTernary,
-                                    assignedExpression = expression.e2
-                                )
-                            )
-                        )
-                    )
-                ),
-                expression = TEMP(id = temporaryForTernary)
+            val temporaryForTernary = allocator.allocateTemp()
+            val sequence = arrayListOf<MidIrStatement>()
+            val ifBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "TRUE_BRANCH")
+            val elseBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "FALSE_BRANCH")
+            val endLabel = allocator.allocateLabelWithAnnotation(annotation = "IF_ELSE_END")
+            cJumpTranslate(
+                expression = expression.boolExpression,
+                trueLabel = ifBranchLabel,
+                falseLabel = elseBranchLabel,
+                statementCollector = sequence
             )
+            sequence += Label(name = ifBranchLabel)
+            sequence += MOVE(destination = temporaryForTernary, source = translate(expression = expression.e1))
+            sequence += Jump(label = endLabel)
+            sequence += Label(name = elseBranchLabel)
+            sequence += MOVE(destination = temporaryForTernary, source = translate(expression = expression.e2))
+            sequence += Label(name = endLabel)
+            return ESEQ(statement = SEQ(statements = sequence), expression = temporaryForTernary)
         }
 
         override fun visit(expression: Lambda): MidIrExpression {
@@ -529,18 +535,18 @@ internal class MidIrFirstPassGenerator(
                     source = allocator.getTemporaryByVariable(variableName = variable)
                 )
             }
+            val lambdaContextTemp = allocator.allocateTemp(variableName = "_context")
+            val lambdaArguments = arrayListOf(lambdaContextTemp).apply {
+                addAll(elements = expression.parameters.map { allocator.allocateTemp(variableName = it.first) })
+            }
             val lambdaStatements = arrayListOf<MidIrStatement>()
-            val lambdaContextTemp = allocator.getTemporaryByVariable(variableName = "_context")
             capturedVariables.forEachIndexed { index, variable ->
                 lambdaStatements += MOVE(
-                    destination = allocator.getTemporaryByVariable(variableName = variable),
+                    destination = allocator.allocateTemp(variableName = variable),
                     source = MEM(expression = ADD(e1 = lambdaContextTemp, e2 = CONST(value = index * 8L)))
                 )
             }
             expression.body.forEach { lambdaStatements += translate(statement = it) }
-            val lambdaArguments = arrayListOf(lambdaContextTemp).apply {
-                addAll(elements = expression.parameters.map { allocator.allocateTemp(variableName = it.first) })
-            }
             val lambdaName = allocator.globalResourceAllocator.allocateLambdaFunctionName()
             val lambdaFunction = MidIrFunction(
                 functionName = lambdaName,

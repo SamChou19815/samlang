@@ -53,16 +53,10 @@ class MidIrGenerator private constructor(
         }
         val args = function.parameters
         args.forEach { (name, _) -> allocatedArgs += allocator.allocateTemp(variableName = name) }
-        val loweredBodySequence = function.body
-            .map { generator1stPass.translate(statement = it) }
-            .map { generator2ndPass.lower(statement = it) }
-            .flatten()
-            .toList()
-        // for safety, always add return. We may be able to optimize it away later.
-        var mainBodyStatements: List<MidIrStatement> = loweredBodySequence.toMutableList().apply { add(Return()) }
-        mainBodyStatements = MidIrTraceReorganizer.reorder(
-            allocator = allocator,
-            originalStatements = mainBodyStatements
+        val mainBodyStatements = cleanupAfterFirstPass(
+            statements = function.body.map { generator1stPass.translate(statement = it) },
+            generator2ndPass = generator2ndPass,
+            allocator = allocator
         )
         functions += MidIrFunction(
             functionName = encodedFunctionName,
@@ -72,8 +66,32 @@ class MidIrGenerator private constructor(
             hasReturn = function.returnType != Type.unit,
             isPublic = function.isPublic
         )
-        functions += generator1stPass.emittedLambdaFunctions
+        functions += generator1stPass.emittedLambdaFunctions.map { emittedLambdaFunction ->
+            val processedLambdaBody: List<MidIrStatement> = cleanupAfterFirstPass(
+                statements = emittedLambdaFunction.mainBodyStatements,
+                generator2ndPass = generator2ndPass,
+                allocator = allocator
+            )
+            emittedLambdaFunction.copy(mainBodyStatements = processedLambdaBody)
+        }
         globalVariables += generator1stPass.stringGlobalVariables
+    }
+
+    private fun cleanupAfterFirstPass(
+        statements: List<MidIrStatement>,
+        generator2ndPass: MidIrSecondPassGenerator,
+        allocator: MidIrResourceAllocator
+    ): List<MidIrStatement> {
+        var processed: List<MidIrStatement> = statements
+            .map { generator2ndPass.lower(statement = it) }
+            .flatten()
+            .toMutableList()
+            .apply { add(Return()) }
+        processed = MidIrTraceReorganizer.reorder(
+            allocator = allocator,
+            originalStatements = processed
+        )
+        return processed
     }
 
     companion object {
