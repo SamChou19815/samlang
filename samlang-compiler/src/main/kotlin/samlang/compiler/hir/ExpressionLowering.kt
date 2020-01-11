@@ -291,7 +291,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             )
         }
         val loweredS2 = if (e2LoweredExpression == null) {
-            e1LoweringStatements
+            e2LoweringStatements
         } else {
             e2LoweringStatements.plus(
                 element = VariableAssignment(name = variableForIfElseAssign, assignedExpression = e2LoweredExpression)
