@@ -76,8 +76,8 @@ class Main {
     val _ = Main.assertTrue(!(PrimitiveType.getBool().isTruthy()), "Ah9");
   }
 
-  function main(): int = {
+  function main(): unit = {
     val _ = Main.consistencyTest();
-    3
+    println("OK")
   }
 }

@@ -54,7 +54,7 @@ class Main {
     a + 1 // 5
   }
 
-  function main(): int = Main.identity(
+  function main(): unit = println(intToString(Main.identity(
     Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
-  )
+  )))
 }

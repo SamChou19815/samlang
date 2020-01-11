@@ -1,9 +1,8 @@
 // ERROR_COUNT: 0
 
 class Main {
-  function main(): string = {
+  function main(): unit = {
     val value = intToString(stringToInt("42"));
     val _ = println(value);
-    value
   }
 }

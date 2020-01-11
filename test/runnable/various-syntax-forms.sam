@@ -78,10 +78,10 @@ class Main {
     "hello world"
   }
 
-  function main(): int = {
+  function main(): unit = {
     val _ = Main.literalsAndSimpleExpressions();
     val _ = Main.variables(3, "sss");
     val v = Main.methodAndFunctionReference(); // 42 + 42 == 84
-    v
+    println(intToString(v))
   }
 }
