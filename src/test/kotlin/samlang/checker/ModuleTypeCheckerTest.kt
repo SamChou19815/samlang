@@ -7,12 +7,12 @@ import samlang.ast.common.Sources
 import samlang.errors.CompilationFailedException
 import samlang.parser.ModuleBuilder
 import samlang.programs.badTestPrograms
-import samlang.programs.goodTestPrograms
+import samlang.programs.wellTypedTestPrograms
 import samlang.util.createOrFail
 
 class ModuleTypeCheckerTest : StringSpec() {
     init {
-        listOf(goodTestPrograms, badTestPrograms).flatten().forEach { (id, errorSet, code) ->
+        listOf(wellTypedTestPrograms, badTestPrograms).flatten().forEach { (id, errorSet, code) ->
             val testName = if (errorSet.isEmpty()) {
                 "Good: $id"
             } else {

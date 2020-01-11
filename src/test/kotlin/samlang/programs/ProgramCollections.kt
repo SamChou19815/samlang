@@ -32,5 +32,6 @@ private fun loadPrograms(type: String): List<TestProgram> {
     return programFiles.mapNotNull { file -> file.takeIf { it.extension == "sam" }?.toTestProgram() }.sortedBy { it.id }
 }
 
-val goodTestPrograms: List<TestProgram> = loadPrograms(type = "good")
 val badTestPrograms: List<TestProgram> = loadPrograms(type = "bad")
+val runnableTestPrograms: List<TestProgram> = emptyList()
+val wellTypedTestPrograms: List<TestProgram> = loadPrograms(type = "well-typed") + runnableTestPrograms
