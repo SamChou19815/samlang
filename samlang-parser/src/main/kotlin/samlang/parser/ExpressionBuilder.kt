@@ -237,7 +237,7 @@ class ExpressionBuilder internal constructor(
     }
 
     override fun visitConjunctionExpr(ctx: PLParser.ConjunctionExprContext): Expression? {
-        val e1 = ctx.expression(1)?.toExpression() ?: return null
+        val e1 = ctx.expression(0)?.toExpression() ?: return null
         val e2 = ctx.expression(1)?.toExpression() ?: return null
         return Expression.Binary(range = ctx.range, type = Type.bool, operator = BinaryOperator.AND, e1 = e1, e2 = e2)
     }

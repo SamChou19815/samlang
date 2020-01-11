@@ -416,7 +416,7 @@ class ExpressionTypeCheckerTest : StringSpec() {
                 source = "2 && 3",
                 expectedType = bool,
                 expectedErrors = listOf(
-                    "Test.sam:1:6-1:7: [UnexpectedType]: Expected: `bool`, actual: `int`.",
+                    "Test.sam:1:1-1:2: [UnexpectedType]: Expected: `bool`, actual: `int`.",
                     "Test.sam:1:6-1:7: [UnexpectedType]: Expected: `bool`, actual: `int`."
                 )
             )

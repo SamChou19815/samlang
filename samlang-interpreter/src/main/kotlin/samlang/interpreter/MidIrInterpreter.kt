@@ -232,7 +232,7 @@ private class MidIrExpressionInterpreter(
             MidIrOperator.EQ -> toInt(boolean = value1 == value2)
             MidIrOperator.NE -> toInt(boolean = value1 != value2)
             MidIrOperator.AND -> if (value1 == 0L) 0L else if (value2 == 0L) 0L else 1L
-            MidIrOperator.OR -> if (value1 == 1L) 1L else if (value2 == 1L) 1L else 0L
+            MidIrOperator.OR -> if (value1 != 0L) 1L else if (value2 != 0L) 1L else 0L
         }
     }
 
