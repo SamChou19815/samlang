@@ -7,10 +7,6 @@ private const val SUMMARY_LINE_PREFIX = "// ERROR_COUNT: "
 
 private fun File.toTestProgram(): TestProgram {
     val name = this.nameWithoutExtension
-    val nameParts = name.split(".")
-    if (nameParts.size != 2) {
-        error(message = "Bad file name: $name.")
-    }
     val lines = this.useLines { it.toList() }
     // Find number of errors
     assert(value = lines.isNotEmpty())
@@ -23,15 +19,11 @@ private fun File.toTestProgram(): TestProgram {
     for (errorLineIndex in 1..expectedErrorCount) {
         val errorLine = lines[errorLineIndex]
         assert(value = errorLine.startsWith(prefix = "//"))
-        errorSet.add(element = errorLine.substring(startIndex = 2).trim())
+        errorSet += errorLine.substring(startIndex = 2).trim()
     }
     // Collect real source code.
     val code = lines.joinToString(separator = "\n", postfix = "\n")
-    return TestProgram(
-        id = nameParts[1],
-        errorSet = errorSet,
-        code = code
-    )
+    return TestProgram(id = name, errorSet = errorSet, code = code)
 }
 
 private fun loadPrograms(type: String): List<TestProgram> {
