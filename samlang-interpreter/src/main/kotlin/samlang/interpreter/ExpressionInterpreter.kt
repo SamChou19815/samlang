@@ -45,7 +45,7 @@ import samlang.ast.lang.Statement
 
 internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext, Value> {
 
-    private fun blameTypeChecker(): Nothing = error(message = "Bad type checker!")
+    private fun blameTypeChecker(message: String = ""): Nothing = error(message = message)
 
     fun eval(expression: Expression, context: InterpretationContext): Value =
         expression.accept(visitor = ExpressionInterpreter, context = context)
@@ -57,10 +57,10 @@ internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext,
     }
 
     override fun visit(expression: This, context: InterpretationContext): Value =
-        context.localValues["this"] ?: blameTypeChecker()
+        context.localValues["this"] ?: blameTypeChecker(message = "Missing `this`")
 
     override fun visit(expression: Variable, context: InterpretationContext): Value =
-        context.localValues[expression.name] ?: blameTypeChecker()
+        context.localValues[expression.name] ?: blameTypeChecker(message = "Missing variable: $expression.")
 
     override fun visit(expression: ClassMember, context: InterpretationContext): Value =
         context.classes[expression.className]?.functions?.get(key = expression.memberName) ?: blameTypeChecker()
@@ -276,7 +276,7 @@ internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext,
                                 p.destructedNames.zip(tupleValues).mapNotNull { (nameWithRange, value) ->
                                     nameWithRange.first?.let { it to value }
                                 }
-                            currentContext.copy(localValues = context.localValues.plus(pairs = additionalMappings))
+                            currentContext.copy(localValues = currentContext.localValues + additionalMappings)
                         }
                         is Pattern.ObjectPattern -> {
                             val objectValueMappings = (assignedValue as Value.ObjectValue).objectContent
@@ -284,10 +284,10 @@ internal object ExpressionInterpreter : ExpressionVisitor<InterpretationContext,
                                 val v = objectValueMappings[original] ?: blameTypeChecker()
                                 (renamed ?: original) to v
                             }
-                            currentContext.copy(localValues = context.localValues.plus(pairs = additionalMappings))
+                            currentContext.copy(localValues = currentContext.localValues + additionalMappings)
                         }
                         is Pattern.VariablePattern -> currentContext.copy(
-                            localValues = currentContext.localValues.plus(pair = p.name to assignedValue)
+                            localValues = currentContext.localValues + (p.name to assignedValue)
                         )
                         is Pattern.WildCardPattern -> currentContext
                     }

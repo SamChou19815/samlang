@@ -35,7 +35,7 @@ object ModuleInterpreter {
             throw PanicException(reason = "My thread is dead.")
         } catch (e: Throwable) {
             e.printStackTrace()
-            throw PanicException(reason = "Internal Interpreter Error. We will investigate.")
+            throw PanicException(reason = "Internal Interpreter Error ${e.message}. We will investigate.")
         }
     }
 
