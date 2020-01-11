@@ -92,5 +92,18 @@ class MidIrGenerator private constructor(
             }
             return MidIrCompilationUnit(globalVariables = globalVariables, functions = functions)
         }
+
+        @JvmStatic
+        fun generate(moduleReference: ModuleReference, module: HighIrModule): MidIrCompilationUnit {
+            val generator = MidIrGenerator(
+                globalResourceAllocator = MidIrGlobalResourceAllocator(),
+                moduleReference = moduleReference,
+                module = module
+            )
+            return MidIrCompilationUnit(
+                globalVariables = generator.globalVariables.toList(),
+                functions = generator.functions
+            )
+        }
     }
 }
