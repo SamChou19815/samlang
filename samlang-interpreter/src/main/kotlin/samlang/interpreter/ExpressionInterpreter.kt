@@ -162,81 +162,81 @@ internal class ExpressionInterpreter : ExpressionVisitor<InterpretationContext, 
     }
 
     override fun visit(expression: Binary, context: InterpretationContext): Value {
-        val v1 = eval(expression = expression.e1, context = context)
-        val v2 = eval(expression = expression.e2, context = context)
         return when (expression.operator) {
             MUL -> {
-                v1 as Value.IntValue
-                v2 as Value.IntValue
+                val v1 = eval(expression = expression.e1, context = context) as Value.IntValue
+                val v2 = eval(expression = expression.e2, context = context) as Value.IntValue
                 Value.IntValue(value = v1.value * v2.value)
             }
             DIV -> {
-                v1 as Value.IntValue
-                v2 as Value.IntValue
+                val v1 = eval(expression = expression.e1, context = context) as Value.IntValue
+                val v2 = eval(expression = expression.e2, context = context) as Value.IntValue
                 if (v2.value == 0L) {
                     throw PanicException(reason = "Division by zero!")
                 }
                 Value.IntValue(value = v1.value / v2.value)
             }
             MOD -> {
-                v1 as Value.IntValue
-                v2 as Value.IntValue
+                val v1 = eval(expression = expression.e1, context = context) as Value.IntValue
+                val v2 = eval(expression = expression.e2, context = context) as Value.IntValue
                 if (v2.value == 0L) {
                     throw PanicException(reason = "Mod by zero!")
                 }
                 Value.IntValue(value = v1.value % v2.value)
             }
             PLUS -> {
-                v1 as Value.IntValue
-                v2 as Value.IntValue
+                val v1 = eval(expression = expression.e1, context = context) as Value.IntValue
+                val v2 = eval(expression = expression.e2, context = context) as Value.IntValue
                 Value.IntValue(value = v1.value + v2.value)
             }
             MINUS -> {
-                v1 as Value.IntValue
-                v2 as Value.IntValue
+                val v1 = eval(expression = expression.e1, context = context) as Value.IntValue
+                val v2 = eval(expression = expression.e2, context = context) as Value.IntValue
                 Value.IntValue(value = v1.value - v2.value)
             }
             LT -> {
-                v1 as Value.IntValue
-                v2 as Value.IntValue
+                val v1 = eval(expression = expression.e1, context = context) as Value.IntValue
+                val v2 = eval(expression = expression.e2, context = context) as Value.IntValue
                 Value.BoolValue(value = v1.value < v2.value)
             }
             LE -> {
-                v1 as Value.IntValue
-                v2 as Value.IntValue
+                val v1 = eval(expression = expression.e1, context = context) as Value.IntValue
+                val v2 = eval(expression = expression.e2, context = context) as Value.IntValue
                 Value.BoolValue(value = v1.value <= v2.value)
             }
             GT -> {
-                v1 as Value.IntValue
-                v2 as Value.IntValue
+                val v1 = eval(expression = expression.e1, context = context) as Value.IntValue
+                val v2 = eval(expression = expression.e2, context = context) as Value.IntValue
                 Value.BoolValue(value = v1.value > v2.value)
             }
             GE -> {
-                v1 as Value.IntValue
-                v2 as Value.IntValue
+                val v1 = eval(expression = expression.e1, context = context) as Value.IntValue
+                val v2 = eval(expression = expression.e2, context = context) as Value.IntValue
                 Value.BoolValue(value = v1.value >= v2.value)
             }
             EQ -> {
+                val v1 = eval(expression = expression.e1, context = context)
+                val v2 = eval(expression = expression.e2, context = context)
                 if (v1 is Value.FunctionValue || v2 is Value.FunctionValue) {
                     throw PanicException(reason = "Cannot compare functions!")
                 }
                 Value.BoolValue(value = v1 == v2)
             }
             NE -> {
+                val v1 = eval(expression = expression.e1, context = context)
+                val v2 = eval(expression = expression.e2, context = context)
                 if (v1 is Value.FunctionValue || v2 is Value.FunctionValue) {
                     throw PanicException(reason = "Cannot compare functions!")
                 }
                 Value.BoolValue(value = v1 != v2)
             }
             AND -> {
-                v1 as Value.BoolValue
-                v2 as Value.BoolValue
-                Value.BoolValue(value = v1.value && v2.value)
+                val v1 = eval(expression = expression.e1, context = context) as Value.BoolValue
+                if (!v1.value) Value.BoolValue(value = false) else eval(expression = expression.e2, context = context)
             }
             OR -> {
-                v1 as Value.BoolValue
-                v2 as Value.BoolValue
-                Value.BoolValue(value = v1.value || v2.value)
+                val v1 = eval(expression = expression.e1, context = context) as Value.BoolValue
+                if (v1.value) Value.BoolValue(value = true) else eval(expression = expression.e2, context = context)
             }
         }
     }

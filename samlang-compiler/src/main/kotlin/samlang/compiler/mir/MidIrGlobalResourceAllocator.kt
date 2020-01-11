@@ -28,6 +28,7 @@ internal class MidIrGlobalResourceAllocator {
             return existing
         }
         val variable = GlobalVariable(name = "GLOBAL_$nextGlobalVariableId", size = 8)
+        globalVariableReferenceMap[reference] = variable
         nextGlobalVariableId++
         return variable
     }

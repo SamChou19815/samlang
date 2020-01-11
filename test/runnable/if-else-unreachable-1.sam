@@ -1,0 +1,16 @@
+// ERROR_COUNT: 0
+
+class Main {
+  function main(): unit = {
+    val i = 2;
+    val j = 3;
+    if (i > j) then
+      println("shouldn't reach here")
+    else if (j < i) then
+      println("shouldn't reach here")
+    else if (i < 0) then
+      println("shouldn't reach here")
+    else
+      println("success")
+  }
+}

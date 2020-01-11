@@ -1,0 +1,5 @@
+// ERROR_COUNT: 0
+
+class Main {
+  function main(): unit = println("Hello World!")
+}

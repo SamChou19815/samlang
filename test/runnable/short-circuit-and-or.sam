@@ -1,0 +1,61 @@
+// ERROR_COUNT: 0
+
+class Main {
+  function printAndReturn(b: bool, i: int): bool = {
+    val _ = println(intToString(i));
+    b
+  }
+
+  function printlnBool(b: bool): unit = if (b) then println("true") else println("false")
+
+  function testAndShortCircuitInExpression(): unit = {
+    val b1 = Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1); // [0] [1]
+    val _ = Main.printlnBool(b1); // false
+    val b2 = Main.printAndReturn(true, 0) && Main.printAndReturn(true, 1); // [0] [1]
+    val _ = Main.printlnBool(b2); // true
+    val b3 = Main.printAndReturn(false, 0) && Main.printAndReturn(false, 1); // [0]
+    val _ = Main.printlnBool(b3); // false
+    val b4 = Main.printAndReturn(false, 0) && Main.printAndReturn(true, 1); // [0]
+    val _ = Main.printlnBool(b4); // false
+  }
+
+  function testOrShortCircuitInExpression(): unit = {
+    val b1 = Main.printAndReturn(true, 0) || Main.printAndReturn(false, 1); // [0]
+    val _ = Main.printlnBool(b1); // true
+    val b2 = Main.printAndReturn(true, 0) || Main.printAndReturn(true, 1); // [0]
+    val _ = Main.printlnBool(b2); // true
+    val b3 = Main.printAndReturn(false, 0) || Main.printAndReturn(false, 1); // [0] [1]
+    val _ = Main.printlnBool(b3); // false
+    val b4 = Main.printAndReturn(false, 0) || Main.printAndReturn(true, 1); // [0] [1]
+    val _ = Main.printlnBool(b4); // true
+  }
+
+  function testAndShortCircuitInIf(): unit = {
+    // [0] [1]
+    val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1)) then panic("Ah") else {};
+    // [0] [1]
+    val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(true, 1)) then {} else panic("Ah");
+    // [0]
+    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(false, 1)) then panic("Ah") else {};
+    // [0]
+    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(true, 1)) then panic("Ah") else {};
+  }
+
+  function testOrShortCircuitInIf(): unit = {
+    // [0]
+    val _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(false, 1)) then {} else panic("Ah");
+    // [0]
+    val _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(true, 1)) then {} else panic("Ah");
+    // [0] [1]
+    val _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(false, 1)) then panic("Ah") else {};
+    // [0] [1]
+    val _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(true, 1)) then {} else panic("Ah");
+  }
+
+  function main(): unit = {
+    val _ = Main.testAndShortCircuitInExpression();
+    val _ = Main.testOrShortCircuitInExpression();
+    val _ = Main.testAndShortCircuitInIf();
+    val _ = Main.testOrShortCircuitInIf();
+  }
+}

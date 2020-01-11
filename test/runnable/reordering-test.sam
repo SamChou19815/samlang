@@ -1,0 +1,64 @@
+// ERROR_COUNT: 0
+
+class Main {
+  function assertEqual(a: int, b: int): unit = if (a != b) then panic("") else {}
+
+  function main(): unit = {
+    val v0 = if (true) then {
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      65536
+    } else 42;
+    val v1 = if (false) then 42 else {
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      65536
+    };
+    val v2 = if (!true) then 42 else {
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      65536
+    };
+    val v3 = if (!false) then {
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      val _ = 0;
+      65536
+    } else 42;
+    val _ = Main.assertEqual(v0, v1);
+    val _ = Main.assertEqual(v2, v3);
+    val _ = Main.assertEqual(v0, v2);
+    println("OK")
+  }
+}
