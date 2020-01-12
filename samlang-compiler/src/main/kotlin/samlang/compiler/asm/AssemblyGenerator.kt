@@ -28,7 +28,6 @@ import samlang.optimization.SimpleOptimizations
 class AssemblyGenerator private constructor(
     compilationUnit: MidIrCompilationUnit,
     private val enableRealRegisterAllocation: Boolean,
-    private val enableMoveCoalescing: Boolean,
     private val removeComments: Boolean
 ) {
     private val publicFunctions: MutableList<String> = arrayListOf()
@@ -60,8 +59,7 @@ class AssemblyGenerator private constructor(
         if (enableRealRegisterAllocation) {
             val allocator = RealRegisterAllocator(
                 functionContext = context,
-                tiledInstructions = tiledInstructions,
-                withMoveCoalescing = enableMoveCoalescing
+                tiledInstructions = tiledInstructions
             )
             registerAllocatedInstructions = allocator.realInstructions
             numberOfTemporariesOnStack = allocator.numberOfTemporariesOnStack
@@ -96,13 +94,11 @@ class AssemblyGenerator private constructor(
         fun generate(
             compilationUnit: MidIrCompilationUnit,
             enableRealRegisterAllocation: Boolean = true,
-            enableMoveCoalescing: Boolean = true,
             removeComments: Boolean = true
         ): AssemblyProgram {
             val generator = AssemblyGenerator(
                 compilationUnit = compilationUnit,
                 enableRealRegisterAllocation = enableRealRegisterAllocation,
-                enableMoveCoalescing = enableMoveCoalescing,
                 removeComments = removeComments
             )
             return AssemblyProgram(

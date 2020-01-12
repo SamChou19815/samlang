@@ -12,4 +12,7 @@ object MidIrNameEncoder {
 
     fun encodeFunctionName(moduleReference: ModuleReference, className: String, functionName: String): String =
         "function_${moduleReference.parts.joinToString(separator = "__")}_${className}_$functionName"
+
+    fun encodeMainFunctionName(moduleReference: ModuleReference): String =
+        encodeFunctionName(moduleReference = moduleReference, className = "Main", functionName = "main")
 }

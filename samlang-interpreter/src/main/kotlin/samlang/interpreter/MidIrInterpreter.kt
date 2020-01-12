@@ -17,11 +17,7 @@ import samlang.ast.mir.MidIrStatement
  */
 fun interpretCompilationUnit(compilationUnit: MidIrCompilationUnit, entryModule: ModuleReference): String {
     val environment = setupEnvironment(compilationUnit = compilationUnit)
-    val mainFunctionName = MidIrNameEncoder.encodeFunctionName(
-        moduleReference = entryModule,
-        className = "Main",
-        functionName = "main"
-    )
+    val mainFunctionName = MidIrNameEncoder.encodeMainFunctionName(moduleReference = entryModule)
     val function = environment.functions[mainFunctionName] ?: error(message = "Bad function.")
     interpretFunction(irFunction = function, environment = environment, arguments = emptyList())
     return environment.printed.toString()

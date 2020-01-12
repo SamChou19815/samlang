@@ -28,12 +28,10 @@ import samlang.compiler.asm.ralloc.RegisterCollector.collect
  *
  * @param functionContext the mutable context of a function.
  * @param tiledInstructions the assembly instructions to perform live variable analysis.
- * @param withMoveCoalescing whether to enable move coalescing.
  */
 class RealRegisterAllocator(
     private val functionContext: FunctionContext,
-    tiledInstructions: List<AssemblyInstruction>,
-    withMoveCoalescing: Boolean
+    tiledInstructions: List<AssemblyInstruction>
 ) {
     /*
      * ================================================================================
@@ -46,8 +44,6 @@ class RealRegisterAllocator(
 
     /** The assembly instructions to perform register allocation. */
     private var instructions: List<AssemblyInstruction>
-    /** Whether to enable move coalescing */
-    private val enableMoveCoalescing: Boolean
     /** A the mappings for all spilled vars. */
     private val spilledVarMappings: MutableMap<String, Mem> = hashMapOf()
     /** The generated new instructions. */
@@ -130,7 +126,6 @@ class RealRegisterAllocator(
 
     init {
         instructions = addCalleeSavedRegsMoves(tiledInstructions)
-        enableMoveCoalescing = withMoveCoalescing
         val initialNonMachineRegisters = collect(
             abstractAssemblyInstruction = instructions,
             excludeMachineRegisters = true
@@ -292,22 +287,20 @@ class RealRegisterAllocator(
             val instruction = instructions[i]
             val liveSet = HashSet(liveMap[i])
             val useSet = useMap[i]
-            if (enableMoveCoalescing) {
-                // if isMoveInstruction(instruction) then
-                if (instruction is MoveToReg) {
-                    val (dest1, srcArg) = instruction
-                    val dest = dest1.id
-                    if (srcArg is Reg) {
-                        val src = srcArg.id
-                        val move = RegMove(dest, src)
-                        // live := live / use(I)
-                        liveSet.removeAll(useSet)
-                        // moveList[n] := moveList[n] union {I}
-                        moveMap.computeIfAbsent(dest) { hashSetOf() }.add(move)
-                        moveMap.computeIfAbsent(src) { hashSetOf() }.add(move)
-                        // workListMoves := workListMoves union {I}
-                        workListMoves.add(move)
-                    }
+            // if isMoveInstruction(instruction) then
+            if (instruction is MoveToReg) {
+                val (dest1, srcArg) = instruction
+                val dest = dest1.id
+                if (srcArg is Reg) {
+                    val src = srcArg.id
+                    val move = RegMove(dest, src)
+                    // live := live / use(I)
+                    liveSet.removeAll(useSet)
+                    // moveList[n] := moveList[n] union {I}
+                    moveMap.computeIfAbsent(dest) { hashSetOf() }.add(move)
+                    moveMap.computeIfAbsent(src) { hashSetOf() }.add(move)
+                    // workListMoves := workListMoves union {I}
+                    workListMoves.add(move)
                 }
             }
             val defSet = defMap[i]
