@@ -59,8 +59,7 @@ class LiveVariableAnalysis(
 
     init {
         val graph = fromAsm(instructions)
-        val findDefUseVisitor =
-            FindDefUseVisitor()
+        val findDefUseVisitor = FindDefUseVisitor()
         // setup defs, uses, empty in and out
         val len = instructions.size
         defs = Array(size = len) { hashSetOf<String>() }
@@ -110,11 +109,10 @@ class LiveVariableAnalysis(
         }
 
         override fun visit(node: MoveFromLong) {
-            node.dest.matchRegOrMem({ reg: Reg ->
-                findDef(reg)
-            }) { mem: AssemblyArgs.Mem ->
-                findUseForMem(mem)
-            }
+            node.dest.matchRegOrMem(
+                regF = { reg -> findDef(reg) },
+                memF = { mem -> findUseForMem(mem) }
+            )
         }
 
         override fun visit(node: MoveToMem) {

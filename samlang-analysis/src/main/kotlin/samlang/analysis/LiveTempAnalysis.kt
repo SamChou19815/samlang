@@ -26,10 +26,10 @@ class LiveTempAnalysis(statements: List<MidIrStatement>) {
         val findDefUseVisitor = FindDefUseVisitor()
         // setup defs, uses, empty in and out
         val len = statements.size
-        defs = Array(size = len) { HashSet<String>() }
-        uses = Array(size = len) { HashSet<String>() }
-        val inSet: Array<MutableSet<String>> = Array(size = len) { HashSet<String>() }
-        liveTempOut = Array(size = len) { HashSet<String>() }
+        defs = Array(size = len) { hashSetOf<String>() }
+        uses = Array(size = len) { hashSetOf<String>() }
+        val inSet: Array<MutableSet<String>> = Array(size = len) { hashSetOf<String>() }
+        liveTempOut = Array(size = len) { hashSetOf<String>() }
         for (i in 0 until len) {
             val statement = statements[i]
             statement.accept(visitor = findDefUseVisitor, context = i)
@@ -60,6 +60,7 @@ class LiveTempAnalysis(statements: List<MidIrStatement>) {
 
         override fun visit(node: CallFunction, context: Int) {
             node.returnCollector?.let { temp -> findDef(temporary = temp.id, id = context) }
+            findUse(expression = node.functionExpr, id = context)
             node.arguments.forEach { findUse(expression = it, id = context) }
         }
 

@@ -50,10 +50,11 @@ object InlineOptimizer {
             }
             val oldFunctionsMap = tempUnit.functions.asSequence().map { it.functionName to it }.toMap()
             val newFunctions = tempUnit.functions.map { oldFunction ->
-                if (oldFunction.functionName in functionThatCanPerformInlining) {
+                val functionName = oldFunction.functionName
+                if (functionName in functionThatCanPerformInlining) {
                     inlineRewrite(
                         irFunction = oldFunction,
-                        functionsToInline = functionsToInline.toMutableSet().apply { remove(oldFunction.functionName) },
+                        functionsToInline = functionsToInline.toMutableSet().apply { remove(functionName) },
                         functions = oldFunctionsMap
                     )
                 } else {

@@ -125,12 +125,11 @@ class MidIrGenerator private constructor(
                 moduleReference = moduleReference,
                 module = module
             )
-            return optimizer.optimize(
-                source = MidIrCompilationUnit(
-                    globalVariables = generator.globalVariables.toList(),
-                    functions = generator.functions
-                )
+            val unoptimized = MidIrCompilationUnit(
+                globalVariables = generator.globalVariables.toList(),
+                functions = generator.functions
             )
+            return optimizer.optimize(source = unoptimized)
         }
     }
 }

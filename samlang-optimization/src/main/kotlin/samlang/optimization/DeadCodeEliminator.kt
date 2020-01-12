@@ -20,7 +20,7 @@ internal object DeadCodeEliminator {
             val statement = statements[i]
             if (statement is MidIrStatement.MoveTemp) {
                 val (dest, source) = statement
-                if (!liveTempOut[i].contains(dest) && source.accept(SafeRemovalVisitor, Unit)) {
+                if (dest !in liveTempOut[i] && source.accept(SafeRemovalVisitor, Unit)) {
                     // check source does not trigger potential exception.
                     continue
                 }
