@@ -50,11 +50,9 @@ interface MidIrStatementOptimizer : Optimizer<List<MidIrStatement>> {
                 if (doesPerformCommonSubExpressionElimination) {
                     optimized = CommonSubExpressionEliminator.optimize(optimized)
                 }
-                /*
                 if (doesPerformDeadCodeElimination) {
                     optimized = DeadCodeEliminator.optimizeIr(optimized)
                 }
-                 */
                 return SimpleOptimizations.optimizeIr(optimized)
             }
         }
