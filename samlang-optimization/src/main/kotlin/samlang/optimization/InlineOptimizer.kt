@@ -38,23 +38,24 @@ object InlineOptimizer {
                 val functionName = function.functionName
                 val cost = getInliningCost(function, statementInlineCostVisitor)
                 if (cost <= INLINE_THRESHOLD) {
-                    functionsToInline.add(functionName)
+                    functionsToInline += functionName
                 }
                 if (cost <= PERFORM_INLINE_THRESHOLD) {
-                    functionThatCanPerformInlining.add(functionName)
+                    functionThatCanPerformInlining += functionName
                 }
             }
             functionsToInline.retainAll(statementInlineCostVisitor.mentionedFunctionNames)
             if (functionsToInline.isEmpty()) {
                 return tempUnit
             }
-            val newFunctions = arrayListOf<MidIrFunction>()
             val oldFunctionsMap = tempUnit.functions.asSequence().map { it.functionName to it }.toMap()
-            for (oldFunction in tempUnit.functions) {
-                newFunctions += if (oldFunction.functionName in functionThatCanPerformInlining) {
-                    val functionToLineForThisFunction = functionsToInline.toMutableSet()
-                    functionToLineForThisFunction.remove(oldFunction.functionName)
-                    inlineRewrite(oldFunction, functionToLineForThisFunction, oldFunctionsMap)
+            val newFunctions = tempUnit.functions.map { oldFunction ->
+                if (oldFunction.functionName in functionThatCanPerformInlining) {
+                    inlineRewrite(
+                        irFunction = oldFunction,
+                        functionsToInline = functionsToInline.toMutableSet().apply { remove(oldFunction.functionName) },
+                        functions = oldFunctionsMap
+                    )
                 } else {
                     oldFunction
                 }
@@ -222,7 +223,7 @@ object InlineOptimizer {
         override fun visit(node: Return, context: Unit) {
             node.returnedExpression?.let { expression ->
                 require(value = returnCollector != null)
-                newMainBodyStatements += MOVE(returnCollector, expression)
+                newMainBodyStatements += MOVE(returnCollector, transform(expression = expression))
             }
             // jump to the end of the statements.
             newMainBodyStatements += Jump(endLabel)

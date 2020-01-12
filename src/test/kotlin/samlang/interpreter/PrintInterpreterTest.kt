@@ -14,7 +14,7 @@ import samlang.optimization.COPY_OPT
 import samlang.optimization.CP_OPT
 import samlang.optimization.CSE_OPT
 import samlang.optimization.DCE_OPT
-// import samlang.optimization.INL_OPT
+import samlang.optimization.INL_OPT
 import samlang.optimization.Optimizer
 import samlang.optimization.VN_OPT
 import samlang.programs.runnableTestPrograms
@@ -63,11 +63,9 @@ class PrintInterpreterTest : StringSpec() {
             "[dce] ir printed expected value: $id" {
                 testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = DCE_OPT)
             }
-            /*
             "[inl] ir printed expected value: $id" {
                 testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = INL_OPT)
             }
-             */
         }
     }
 
@@ -84,6 +82,7 @@ class PrintInterpreterTest : StringSpec() {
         optimizer: Optimizer<MidIrCompilationUnit>
     ) {
         val irCompilationUnit = generateIr(module = module, optimizer = optimizer)
+        println(irCompilationUnit)
         val actualIrPrinted = interpretCompilationUnit(
             compilationUnit = irCompilationUnit,
             entryModule = dummyModuleReference
