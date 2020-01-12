@@ -159,7 +159,8 @@ private class MidIrStatementInterpreter(
             functionName
         } else {
             val functionAddress = functionExpression.accept(visitor = expressionVisitor, context = context)
-            environment.functionsGlobals[functionAddress] ?: error(message = "Undefined function!")
+            environment.functionsGlobals[functionAddress]
+                ?: error(message = "Undefined function at $functionAddress! Expression: $functionExpression")
         }
         val function = environment.functions[functionName]
             ?: error(message = "Missing function $functionName")

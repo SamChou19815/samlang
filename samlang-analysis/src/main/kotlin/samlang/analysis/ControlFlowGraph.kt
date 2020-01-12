@@ -3,6 +3,9 @@ package samlang.analysis
 import java.util.ArrayDeque
 import java.util.Deque
 import java.util.TreeMap
+import samlang.ast.asm.AssemblyInstruction
+import samlang.ast.asm.AssemblyInstruction.JumpLabel
+import samlang.ast.asm.AssemblyInstruction.JumpType
 import samlang.ast.mir.MidIrStatement
 
 /**
@@ -149,5 +152,36 @@ class ControlFlowGraph<I> private constructor(
                 getConditionalJumpLabel = { (it as? MidIrStatement.ConditionalJumpFallThrough)?.label1 },
                 isReturn = { it is MidIrStatement.Return }
             )
+
+        /**
+         * Build a control flow graph from a list of assembly instructions for a function.
+         *
+         * @param functionInstructions the function instructions as the basis of the control flow graph.
+         * @return the built graph.
+         */
+        @JvmStatic
+        fun fromAsm(
+            functionInstructions: List<AssemblyInstruction>
+        ): ControlFlowGraph<AssemblyInstruction> {
+            return ControlFlowGraph(
+                functionInstructions,
+                { (it as? AssemblyInstruction.Label)?.label },
+                { instruction ->
+                    if (instruction !is JumpLabel) {
+                        return@ControlFlowGraph null
+                    }
+                    val (type, label) = instruction
+                    if (type === JumpType.JMP) label else null
+                },
+                { instruction ->
+                    if (instruction !is JumpLabel) {
+                        return@ControlFlowGraph null
+                    }
+                    val (type, label) = instruction
+                    if (type !== JumpType.JMP) label else null
+                },
+                { it is AssemblyInstruction.Return }
+            )
+        }
     }
 }
