@@ -103,3 +103,8 @@ val INL_OPT: IrCompilationUnitOptimizer = IrCompilationUnitOptimizer(
     ),
     doesPerformInlining = true
 )
+
+val ALL_OPT: IrCompilationUnitOptimizer = IrCompilationUnitOptimizer(
+    statementOptimizer = MidIrStatementOptimizer.allEnabled,
+    doesPerformInlining = true
+)

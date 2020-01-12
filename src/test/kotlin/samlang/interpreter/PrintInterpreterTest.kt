@@ -9,6 +9,7 @@ import samlang.common.getTypeCheckedModule
 import samlang.compiler.hir.compileModule
 import samlang.compiler.mir.MidIrGenerator
 import samlang.optimization.ALG_OPT
+import samlang.optimization.ALL_OPT
 import samlang.optimization.CF_OPT
 import samlang.optimization.COPY_OPT
 import samlang.optimization.CP_OPT
@@ -65,6 +66,9 @@ class PrintInterpreterTest : StringSpec() {
             }
             "[inl] ir printed expected value: $id" {
                 testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = INL_OPT)
+            }
+            "[all-optimizations] ir printed expected value: $id" {
+                testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = ALL_OPT)
             }
         }
     }
