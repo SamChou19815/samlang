@@ -67,14 +67,13 @@ class AssemblyPrinter private constructor(
     }
 
     private fun printGlobalVariable(globalVariable: GlobalVariable, content: String?) {
-        val (name, size) = globalVariable
         printlnInstruction(instructionLine = ".data")
         printlnInstruction(instructionLine = ".align 8")
-        printer.println("$name:")
+        printer.println("${globalVariable.name}:")
         if (content == null) {
-            printlnInstruction(instructionLine = ".zero $size")
+            printlnInstruction(instructionLine = ".zero ${globalVariable.size}")
         } else {
-            printlnInstruction(instructionLine = ".quad $size")
+            printlnInstruction(instructionLine = ".quad ${content.length}")
             content.chars().forEach { character ->
                 printlnInstruction(instructionLine = ".quad $character ## ${character.toChar()}")
             }

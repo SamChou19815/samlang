@@ -6,6 +6,8 @@ import java.nio.file.Paths
 import kotlin.system.exitProcess
 import samlang.Configuration
 import samlang.errors.CompilationFailedException
+import samlang.optimization.IrCompilationUnitOptimizer
+import samlang.optimization.MidIrStatementOptimizer
 import samlang.service.SourceChecker
 import samlang.service.SourceCollector
 import samlang.service.SourceCompiler
@@ -43,6 +45,14 @@ class CompileCommand : CliktCommand(name = "compile") {
                 "java" -> SourceCompiler.compileJavaSources(
                     source = checkedSources,
                     outputDirectory = Paths.get(outputDirectory.toString(), "java").toFile()
+                )
+                "x86" -> SourceCompiler.compileToX86Assembly(
+                    source = checkedSources,
+                    optimizer = IrCompilationUnitOptimizer(
+                        statementOptimizer = MidIrStatementOptimizer.allEnabled,
+                        doesPerformInlining = true
+                    ),
+                    outputDirectory = Paths.get(outputDirectory.toString(), "x86").toFile()
                 )
             }
         }

@@ -30,14 +30,14 @@ class ConfigurationTest : StringSpec() {
                 "sourceDirectory": "source",
                 "outputDirectory": "output",
                 "excludes": ["foo", "bar"],
-                "targets": ["java"]
+                "targets": ["java", "x86"]
             }
             """.trimIndent()
             Configuration.parse(string = json) shouldBe Configuration(
                 sourceDirectory = "source",
                 outputDirectory = "output",
                 excludes = listOf("foo", "bar"),
-                targets = setOf("java")
+                targets = setOf("java", "x86")
             )
         }
         "empty string does not parse." {

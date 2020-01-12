@@ -95,9 +95,9 @@ class AssemblyGenerator private constructor(
         @JvmStatic
         fun generate(
             compilationUnit: MidIrCompilationUnit,
-            enableRealRegisterAllocation: Boolean,
-            enableMoveCoalescing: Boolean,
-            removeComments: Boolean
+            enableRealRegisterAllocation: Boolean = true,
+            enableMoveCoalescing: Boolean = true,
+            removeComments: Boolean = true
         ): AssemblyProgram {
             val generator = AssemblyGenerator(
                 compilationUnit = compilationUnit,

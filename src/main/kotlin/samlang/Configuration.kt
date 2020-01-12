@@ -54,7 +54,7 @@ data class Configuration(
                 val outputDirectory = configurationJson.get("outputDirectory")?.let { parseStringStrict(it) } ?: "out"
                 val excludes = parseOptionalStringList(jsonElement = configurationJson.get("excludes"))
                 val targets = parseOptionalStringList(jsonElement = configurationJson.get("targets"))
-                val acceptableTargets = setOf("java")
+                val acceptableTargets = setOf("java", "x86")
                 for (target in targets) {
                     if (target !in acceptableTargets) {
                         throw IllFormattedConfigurationException(
