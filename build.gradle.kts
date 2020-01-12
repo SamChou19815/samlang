@@ -37,7 +37,7 @@ allprojects {
         implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3")
         testImplementation(kotlin(module = "reflect"))
         testImplementation(kotlin(module = "test"))
-        testImplementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.1.10")
+        testImplementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.4.2")
     }
     configure<JavaPluginConvention> {
         sourceCompatibility = JavaVersion.VERSION_11
