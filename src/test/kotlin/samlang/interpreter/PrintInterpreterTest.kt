@@ -1,7 +1,7 @@
 package samlang.interpreter
 
 import io.kotlintest.shouldBe
-import io.kotlintest.specs.StringSpec
+import io.kotlintest.specs.FreeSpec
 import samlang.ast.common.ModuleReference
 import samlang.ast.lang.Module
 import samlang.ast.mir.MidIrCompilationUnit
@@ -20,7 +20,7 @@ import samlang.optimization.Optimizer
 import samlang.optimization.VN_OPT
 import samlang.programs.runnableTestPrograms
 
-class PrintInterpreterTest : StringSpec() {
+class PrintInterpreterTest : FreeSpec() {
     private data class TestCase(val id: String, val code: String, val expectedPrinted: String)
 
     private val testCases: List<TestCase> = runnableTestPrograms.map { (id, _, code) ->
@@ -32,43 +32,31 @@ class PrintInterpreterTest : StringSpec() {
     init {
         for ((id, code, expectedPrinted) in testCases) {
             val module = getTypeCheckedModule(code = code)
-            "program printed expected value: $id" {
-                val actualProgramPrinted = ModuleInterpreter().run(module = module).trim()
-                actualProgramPrinted shouldBe expectedPrinted
-            }
-            "[no-optimization] ir printed expected value: $id" {
-                testGeneratedIrInterpretation(
-                    module = module,
-                    expectedPrinted = expectedPrinted,
-                    optimizer = Optimizer.getNoOpOptimizer()
-                )
-            }
-            "[cp] ir printed expected value: $id" {
-                testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = CP_OPT)
-            }
-            "[alg] ir printed expected value: $id" {
-                testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = ALG_OPT)
-            }
-            "[cf] ir printed expected value: $id" {
-                testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = CF_OPT)
-            }
-            "[copy] ir printed expected value: $id" {
-                testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = COPY_OPT)
-            }
-            "[vn] ir printed expected value: $id" {
-                testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = VN_OPT)
-            }
-            "[cse] ir printed expected value: $id" {
-                testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = CSE_OPT)
-            }
-            "[dce] ir printed expected value: $id" {
-                testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = DCE_OPT)
-            }
-            "[inl] ir printed expected value: $id" {
-                testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = INL_OPT)
-            }
-            "[all-optimizations] ir printed expected value: $id" {
-                testGeneratedIrInterpretation(module = module, expectedPrinted = expectedPrinted, optimizer = ALL_OPT)
+            "printed expected value: $id" - {
+                "Program" {
+                    val actualProgramPrinted = ModuleInterpreter().run(module = module).trim()
+                    actualProgramPrinted shouldBe expectedPrinted
+                }
+                "IR[no-optimization]" - {
+                    testGeneratedIr(
+                        module = module,
+                        expectedPrinted = expectedPrinted,
+                        optimizer = Optimizer.getNoOpOptimizer()
+                    )
+                }
+                "IR[cp]" - { testGeneratedIr(module = module, expectedPrinted = expectedPrinted, optimizer = CP_OPT) }
+                "IR[alg]" - { testGeneratedIr(module = module, expectedPrinted = expectedPrinted, optimizer = ALG_OPT) }
+                "IR[cf]" - { testGeneratedIr(module = module, expectedPrinted = expectedPrinted, optimizer = CF_OPT) }
+                "IR[copy]" - {
+                    testGeneratedIr(module = module, expectedPrinted = expectedPrinted, optimizer = COPY_OPT)
+                }
+                "IR[vn]" - { testGeneratedIr(module = module, expectedPrinted = expectedPrinted, optimizer = VN_OPT) }
+                "IR[cse]" - { testGeneratedIr(module = module, expectedPrinted = expectedPrinted, optimizer = CSE_OPT) }
+                "IR[dce]" - { testGeneratedIr(module = module, expectedPrinted = expectedPrinted, optimizer = DCE_OPT) }
+                "IR[inl]" - { testGeneratedIr(module = module, expectedPrinted = expectedPrinted, optimizer = INL_OPT) }
+                "IR[all-optimizations]" - {
+                    testGeneratedIr(module = module, expectedPrinted = expectedPrinted, optimizer = ALL_OPT)
+                }
             }
         }
     }
@@ -80,7 +68,7 @@ class PrintInterpreterTest : StringSpec() {
             optimizer = optimizer
         )
 
-    private fun testGeneratedIrInterpretation(
+    private fun testGeneratedIr(
         module: Module,
         expectedPrinted: String,
         optimizer: Optimizer<MidIrCompilationUnit>
