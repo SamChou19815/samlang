@@ -1,0 +1,13 @@
+// ERROR_COUNT: 0
+
+class Main {
+  function printInt(i: int): unit = println(intToString(i))
+
+  function test(a: int, b: int): unit = {
+    val _ = Main.printInt((a * b + a) + (a * b + a));
+    val _ = Main.printInt(a * b);
+    val _ = Main.printInt(a * b + a);
+  }
+
+  function main(): unit = Main.test(3, 4)
+}

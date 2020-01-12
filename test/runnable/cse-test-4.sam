@@ -1,0 +1,21 @@
+// ERROR_COUNT: 0
+
+class Main {
+  function test(totalPicograms: int, i: int): int = {
+    val maxLong = 9223372036854775807;
+    if (i >= 300) then
+      totalPicograms
+    else {
+      val megagrams = maxLong - i;
+      val kilograms = megagrams / 1000;
+      val grams = (megagrams / 1000) / 1000;
+      val milligrams = ((megagrams / 1000) / 1000) / 1000;
+      val micrograms = (((megagrams / 1000) / 1000) / 1000) / 1000;
+      val nanograms = ((((megagrams / 1000) / 1000) / 1000) / 1000) / 1000;
+      val picograms = (((((megagrams / 1000) / 1000) / 1000) / 1000) / 1000) / 1000;
+      Main.test(totalPicograms + picograms, i + 1)
+    }
+  }
+
+  function main(): unit = println(intToString(Main.test(0, 0)))
+}

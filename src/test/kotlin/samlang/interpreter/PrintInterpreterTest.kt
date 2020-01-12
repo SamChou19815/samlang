@@ -86,7 +86,6 @@ class PrintInterpreterTest : StringSpec() {
         optimizer: Optimizer<MidIrCompilationUnit>
     ) {
         val irCompilationUnit = generateIr(module = module, optimizer = optimizer)
-        println(irCompilationUnit)
         val actualIrPrinted = interpretCompilationUnit(
             compilationUnit = irCompilationUnit,
             entryModule = dummyModuleReference
