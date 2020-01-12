@@ -1,0 +1,14 @@
+// ERROR_COUNT: 0
+
+class Main {
+  function test(acc: int, i: int): int =
+    if (i >= 10*10*2) then
+      acc
+    else {
+      // +7
+      Main.test(acc + 1 + 2 * 3 - 4 / 5 % 10000000 / 1234, i + 1)
+    }
+
+  // 200 * 7 = 1400
+  function main(): unit = println(intToString(Main.test(0, 0)))
+}

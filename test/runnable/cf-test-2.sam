@@ -1,0 +1,17 @@
+// ERROR_COUNT: 0
+
+class Main {
+  function test(acc: int, i: int): int =
+    if (i >= 10*10*2) then
+      acc
+    else {
+      // 35
+      val increase = (1+2*3-4/5%10000000/12334) + (1+2*3-4/5%10000000/12334) +
+                     (1+2*3-4/5%10000000/12334) + (1+2*3-4/5%10000000/12334) +
+                     (1+2*3-4/5%10000000/12334);
+      Main.test(acc + increase, i + 1)
+    }
+
+  // 35 * 200 = 7000
+  function main(): unit = println(intToString(Main.test(0, 0)))
+}
