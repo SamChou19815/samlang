@@ -12,6 +12,7 @@ import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Return
+import samlang.optimization.Optimizer
 import samlang.optimization.SimpleOptimizations
 
 class MidIrGenerator private constructor(
@@ -95,7 +96,7 @@ class MidIrGenerator private constructor(
 
     companion object {
         @JvmStatic
-        fun generate(sources: Sources<HighIrModule>): MidIrCompilationUnit {
+        fun generate(sources: Sources<HighIrModule>, optimizer: Optimizer<MidIrCompilationUnit>): MidIrCompilationUnit {
             val globalResourceAllocator = MidIrGlobalResourceAllocator()
             val globalVariables = arrayListOf<StringGlobalVariable>()
             val functions = arrayListOf<MidIrFunction>()
@@ -108,19 +109,27 @@ class MidIrGenerator private constructor(
                 globalVariables += generator.globalVariables
                 functions += generator.functions
             }
-            return MidIrCompilationUnit(globalVariables = globalVariables, functions = functions)
+            return optimizer.optimize(
+                source = MidIrCompilationUnit(globalVariables = globalVariables, functions = functions)
+            )
         }
 
         @JvmStatic
-        fun generate(moduleReference: ModuleReference, module: HighIrModule): MidIrCompilationUnit {
+        fun generate(
+            moduleReference: ModuleReference,
+            module: HighIrModule,
+            optimizer: Optimizer<MidIrCompilationUnit>
+        ): MidIrCompilationUnit {
             val generator = MidIrGenerator(
                 globalResourceAllocator = MidIrGlobalResourceAllocator(),
                 moduleReference = moduleReference,
                 module = module
             )
-            return MidIrCompilationUnit(
-                globalVariables = generator.globalVariables.toList(),
-                functions = generator.functions
+            return optimizer.optimize(
+                source = MidIrCompilationUnit(
+                    globalVariables = generator.globalVariables.toList(),
+                    functions = generator.functions
+                )
             )
         }
     }

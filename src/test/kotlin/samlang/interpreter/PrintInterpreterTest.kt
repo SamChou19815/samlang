@@ -6,6 +6,7 @@ import samlang.ast.common.ModuleReference
 import samlang.common.getTypeCheckedModule
 import samlang.compiler.hir.compileModule
 import samlang.compiler.mir.MidIrGenerator
+import samlang.optimization.Optimizer
 import samlang.programs.runnableTestPrograms
 
 class PrintInterpreterTest : StringSpec() {
@@ -52,7 +53,8 @@ class PrintInterpreterTest : StringSpec() {
                 actualProgramPrinted shouldBe expectedPrinted
                 val irCompilationUnit = MidIrGenerator.generate(
                     moduleReference = dummyModuleReference,
-                    module = compileModule(module = checkedProgram)
+                    module = compileModule(module = checkedProgram),
+                    optimizer = Optimizer.getNoOpOptimizer()
                 )
                 val actualIrPrinted = interpretCompilationUnit(
                     compilationUnit = irCompilationUnit,
