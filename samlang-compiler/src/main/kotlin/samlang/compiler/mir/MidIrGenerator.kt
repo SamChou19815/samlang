@@ -12,6 +12,7 @@ import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Return
+import samlang.optimization.SimpleOptimizations
 
 class MidIrGenerator private constructor(
     private val globalResourceAllocator: MidIrGlobalResourceAllocator,
@@ -87,10 +88,8 @@ class MidIrGenerator private constructor(
             .flatten()
             .toMutableList()
             .apply { add(Return()) }
-        processed = MidIrTraceReorganizer.reorder(
-            allocator = allocator,
-            originalStatements = processed
-        )
+        processed = MidIrTraceReorganizer.reorder(allocator = allocator, originalStatements = processed)
+        processed = SimpleOptimizations.optimizeIr(statements = processed)
         return processed
     }
 

@@ -7,7 +7,7 @@ import samlang.ast.mir.MidIrStatement.Jump
 
 /** The class that performs a series of simple optimizations. */
 @Suppress(names = ["ComplexRedundantLet"])
-internal object SimpleOptimizations {
+object SimpleOptimizations {
     /**
      * Perform these optimizations in order and return an optimized sequence of instructions.
      * - unreachable code elimination
