@@ -8,7 +8,7 @@ import samlang.compiler.hir.compileModule
 import samlang.compiler.mir.MidIrGenerator
 import samlang.programs.runnableTestPrograms
 
-class HighLevelPrintInterpreterTest : StringSpec() {
+class PrintInterpreterTest : StringSpec() {
     private data class TestCase(val id: String, val code: String, val expectedPrinted: String)
 
     private val expectations: Map<String, String> = mapOf(
