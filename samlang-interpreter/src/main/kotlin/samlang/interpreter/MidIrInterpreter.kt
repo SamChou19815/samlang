@@ -28,10 +28,10 @@ private fun setupEnvironment(compilationUnit: MidIrCompilationUnit): GlobalEnvir
     val globalVariables = hashMapOf<String, Long>()
     val strings = hashMapOf<Long, String>()
     var heapPointer = 10000L
-    compilationUnit.globalVariables.forEach { (variable, _, content) ->
+    compilationUnit.globalVariables.forEach { (name, content) ->
         val location = heapPointer
-        globalVariables[variable.name] = location
-        strings[location] = content
+        globalVariables[name] = location
+        strings[location + 8] = content
         heapPointer += 8
     }
     val functionsGlobals = hashMapOf<Long, String>()

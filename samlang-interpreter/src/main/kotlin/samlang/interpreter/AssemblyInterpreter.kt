@@ -68,27 +68,17 @@ class AssemblyInterpreter(program: AssemblyProgram, entryModule: ModuleReference
 
     init {
         var globalVarsTotalSize = 10000L
-        for ((referenceVariable, contentVariable, content) in program.globalVariables) {
+        for ((name, content) in program.globalVariables) {
             // Setup content variable size
-            val contentSize = contentVariable.size.toLong()
-            require(value = contentSize % 8 == 0L) { "BAD SIZE: $contentSize" }
-            require(value = contentSize / 8 - 1 == content.length.toLong())
             val contentStart = globalVarsTotalSize
-            nameToMemoryAddress[contentVariable.name] = contentStart
-            globalVarsTotalSize += contentSize
-            // Setup reference variable size
-            require(value = referenceVariable.size == 8)
-            val referenceAddress = globalVarsTotalSize
-            nameToMemoryAddress[referenceVariable.name] = referenceAddress
-            globalVarsTotalSize += 8
+            nameToMemoryAddress[name] = contentStart
+            globalVarsTotalSize += content.length * 8 + 8
             // Setup content
             memory[contentStart] = content.length.toLong()
             val characterStart = contentStart + 8L
             content.toCharArray().forEachIndexed { index, character ->
                 memory[characterStart + 8 * index] = character.toLong()
             }
-            // Make reference point to content
-            memory[referenceAddress] = characterStart
         }
         // allocate space for global vars
         calloc(globalVarsTotalSize)

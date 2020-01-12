@@ -1,8 +1,8 @@
 package samlang.compiler.mir
 
+import samlang.ast.common.GlobalVariable
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
-import samlang.ast.common.StringGlobalVariable
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrModule
@@ -20,7 +20,7 @@ class MidIrGenerator private constructor(
     private val moduleReference: ModuleReference,
     private val module: HighIrModule
 ) {
-    private val globalVariables: MutableSet<StringGlobalVariable> = LinkedHashSet()
+    private val globalVariables: MutableSet<GlobalVariable> = LinkedHashSet()
     private val functions: MutableList<MidIrFunction> = arrayListOf()
 
     init {
@@ -98,7 +98,7 @@ class MidIrGenerator private constructor(
         @JvmStatic
         fun generate(sources: Sources<HighIrModule>, optimizer: Optimizer<MidIrCompilationUnit>): MidIrCompilationUnit {
             val globalResourceAllocator = MidIrGlobalResourceAllocator()
-            val globalVariables = arrayListOf<StringGlobalVariable>()
+            val globalVariables = arrayListOf<GlobalVariable>()
             val functions = arrayListOf<MidIrFunction>()
             sources.moduleMappings.forEach { (moduleReference, module) ->
                 val generator = MidIrGenerator(

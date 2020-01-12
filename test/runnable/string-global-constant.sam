@@ -1,5 +1,15 @@
 // ERROR_COUNT: 0
 
 class Main {
-  function main(): unit = if "a" == "a" then println("OK") else println("BAD")
+  function main(): unit = {
+    val a1 = "a";
+    val a2 = "a";
+    if a1 == a2 then
+      println("OK")
+    else {
+      val _ = println("BAD");
+      val _ = println(a1);
+      val _ = println(a2);
+    }
+  }
 }

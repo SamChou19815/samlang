@@ -51,10 +51,7 @@ class AssemblyPrinter private constructor(
         }
         printlnInstruction(instructionLine = ".align 8")
         // global vars init
-        for ((referenceVariable, contentVariable, content) in program.globalVariables) {
-            printGlobalVariable(globalVariable = referenceVariable, content = null)
-            printGlobalVariable(globalVariable = contentVariable, content = content)
-        }
+        program.globalVariables.forEach { printGlobalVariable(globalVariable = it) }
         printer.flush()
     }
 
@@ -66,17 +63,14 @@ class AssemblyPrinter private constructor(
         }
     }
 
-    private fun printGlobalVariable(globalVariable: GlobalVariable, content: String?) {
+    private fun printGlobalVariable(globalVariable: GlobalVariable) {
+        val (name, content) = globalVariable
         printlnInstruction(instructionLine = ".data")
         printlnInstruction(instructionLine = ".align 8")
-        printer.println("${globalVariable.name}:")
-        if (content == null) {
-            printlnInstruction(instructionLine = ".zero ${globalVariable.size}")
-        } else {
-            printlnInstruction(instructionLine = ".quad ${content.length}")
-            content.chars().forEach { character ->
-                printlnInstruction(instructionLine = ".quad $character ## ${character.toChar()}")
-            }
+        printer.println("$name:")
+        printlnInstruction(instructionLine = ".quad ${content.length}")
+        content.chars().forEach { character ->
+            printlnInstruction(instructionLine = ".quad $character ## ${character.toChar()}")
         }
         printlnInstruction(instructionLine = ".text")
     }

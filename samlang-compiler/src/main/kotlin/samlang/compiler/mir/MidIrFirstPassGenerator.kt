@@ -2,8 +2,8 @@ package samlang.compiler.mir
 
 import samlang.ast.common.BinaryOperator
 import samlang.ast.common.BuiltInFunctionName
+import samlang.ast.common.GlobalVariable
 import samlang.ast.common.ModuleReference
-import samlang.ast.common.StringGlobalVariable
 import samlang.ast.common.Type
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
@@ -42,6 +42,7 @@ import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.ADD
 import samlang.ast.mir.MidIrExpression.Companion.CALL
 import samlang.ast.mir.MidIrExpression.Companion.CONST
+import samlang.ast.mir.MidIrExpression.Companion.EIGHT
 import samlang.ast.mir.MidIrExpression.Companion.EQ
 import samlang.ast.mir.MidIrExpression.Companion.ESEQ
 import samlang.ast.mir.MidIrExpression.Companion.MALLOC
@@ -74,10 +75,10 @@ internal class MidIrFirstPassGenerator(
     private val statementGenerator: StatementGenerator = StatementGenerator()
     private val expressionGenerator: ExpressionGenerator = ExpressionGenerator()
 
-    private val stringGlobalVariableCollector: MutableSet<StringGlobalVariable> = LinkedHashSet()
+    private val stringGlobalVariableCollector: MutableSet<GlobalVariable> = LinkedHashSet()
     private val lambdaFunctionsCollector: MutableList<MidIrFunction> = arrayListOf()
 
-    val stringGlobalVariables: Set<StringGlobalVariable> get() = stringGlobalVariableCollector
+    val stringGlobalVariables: Set<GlobalVariable> get() = stringGlobalVariableCollector
     val emittedLambdaFunctions: List<MidIrFunction> get() = lambdaFunctionsCollector
 
     fun translate(statement: HighIrStatement): MidIrStatement = statement.accept(visitor = statementGenerator)
@@ -293,15 +294,11 @@ internal class MidIrFirstPassGenerator(
                 is samlang.ast.common.Literal.IntLiteral -> CONST(value = literal.value)
                 is samlang.ast.common.Literal.StringLiteral -> {
                     val value = literal.value
-                    val (referenceVariable, contentVariable) = allocator
+                    val contentVariable = allocator
                         .globalResourceAllocator
-                        .allocateStringGlobalVariable(string = value)
-                    stringGlobalVariableCollector += StringGlobalVariable(
-                        referenceVariable = referenceVariable,
-                        contentVariable = contentVariable,
-                        content = value
-                    )
-                    NAME(name = referenceVariable.name)
+                        .allocateStringArrayGlobalVariable(string = value)
+                    stringGlobalVariableCollector += contentVariable
+                    ADD(e1 = NAME(name = contentVariable.name), e2 = EIGHT)
                 }
             }
 

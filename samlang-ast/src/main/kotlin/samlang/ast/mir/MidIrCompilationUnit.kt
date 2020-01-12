@@ -1,9 +1,9 @@
 package samlang.ast.mir
 
-import samlang.ast.common.StringGlobalVariable
+import samlang.ast.common.GlobalVariable
 
 data class MidIrCompilationUnit(
-    val globalVariables: List<StringGlobalVariable>,
+    val globalVariables: List<GlobalVariable>,
     val functions: List<MidIrFunction>
 ) {
     override fun toString(): String {

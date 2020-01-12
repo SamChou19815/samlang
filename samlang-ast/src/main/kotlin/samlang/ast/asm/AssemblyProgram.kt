@@ -1,9 +1,9 @@
 package samlang.ast.asm
 
-import samlang.ast.common.StringGlobalVariable
+import samlang.ast.common.GlobalVariable
 
 data class AssemblyProgram(
-    val globalVariables: List<StringGlobalVariable>,
+    val globalVariables: List<GlobalVariable>,
     val publicFunctions: List<String>,
     val instructions: List<AssemblyInstruction>
 )

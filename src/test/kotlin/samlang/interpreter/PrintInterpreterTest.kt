@@ -56,22 +56,18 @@ class PrintInterpreterTest : FreeSpec() {
                         optimizer = ALL_OPT
                     )
                     "ASM[no-ralloc]" - {
-                        /*
                         testAsm(
                             irCompilationUnit = fullyOptimizedIr,
                             expectedPrinted = expectedPrinted,
                             enableRegisterAllocation = false
                         )
-                         */
                     }
                     "ASM[with-ralloc]" - {
-                        /*
                         testAsm(
                             irCompilationUnit = fullyOptimizedIr,
                             expectedPrinted = expectedPrinted,
                             enableRegisterAllocation = true
                         )
-                         */
                     }
                 }
             }
