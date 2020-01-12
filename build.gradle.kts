@@ -65,6 +65,8 @@ dependencies {
     implementation(project(":samlang-utils"))
     implementation(project(":samlang-parser"))
     implementation(project(":samlang-interpreter"))
+    implementation(project(":samlang-analysis"))
+    implementation(project(":samlang-optimization"))
     implementation(project(":samlang-compiler"))
     implementation(project(":samlang-printer"))
     implementation(dependencyNotation = "com.google.code.gson:gson:2.8.6")
