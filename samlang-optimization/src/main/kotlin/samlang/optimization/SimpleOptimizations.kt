@@ -34,7 +34,9 @@ object SimpleOptimizations {
      */
     @JvmStatic
     fun optimizeIr(statements: List<MidIrStatement>): List<MidIrStatement> =
-        withoutUnreachableCode(statements) { ControlFlowGraph.fromIr(it) }
+        withoutConsecutiveJumpsInIr(statements = statements)
+            .let { withoutUnreachableCode(it) { ControlFlowGraph.fromIr(it) } }
+            .let { withoutConsecutiveJumpsInIr(it) }
             .let { withoutImmediateJumpInIr(it) }
             .let { withoutUnusedLabelInIr(it) }
 
@@ -99,9 +101,7 @@ object SimpleOptimizations {
         }
     }
 
-    private fun withoutUnusedLabelInAsm(
-        instructions: List<AssemblyInstruction>
-    ): List<AssemblyInstruction> {
+    private fun withoutUnusedLabelInAsm(instructions: List<AssemblyInstruction>): List<AssemblyInstruction> {
         val usedLabels = instructions.mapNotNullTo(hashSetOf(), { (it as? JumpLabel)?.label })
         return instructions.filter { instruction ->
             if (instruction is AssemblyInstruction.Label) {
@@ -112,9 +112,7 @@ object SimpleOptimizations {
         }
     }
 
-    private fun withoutImmediateJumpInIr(
-        statements: List<MidIrStatement>
-    ): List<MidIrStatement> {
+    private fun withoutImmediateJumpInIr(statements: List<MidIrStatement>): List<MidIrStatement> {
         val newStatements = arrayListOf<MidIrStatement>()
         val len = statements.size
         for (i in 0 until len) {
@@ -135,9 +133,44 @@ object SimpleOptimizations {
                 }
             }
             // cannot optimize, give up
-            newStatements.add(s)
+            newStatements += s
         }
         return newStatements
+    }
+
+    private fun withoutConsecutiveJumpsInIr(statements: List<MidIrStatement>): List<MidIrStatement> {
+        val singleJumpLabelMap = hashMapOf<String, String>() // label -> jump target
+        val len = statements.size
+        for (i in 0 until len) {
+            if (i >= len - 1) {
+                continue
+            }
+            val currentStatement = statements[i] as? MidIrStatement.Label ?: continue
+            val nextStatement = statements[i + 1] as? Jump ?: continue
+            // Now we have established a single jump label
+            singleJumpLabelMap[currentStatement.name] = nextStatement.label
+        }
+        // It might be the case that we find something like l1 -> l2, l2 -> l3.
+        // This pass standardized the map into l1 -> l3, l2 -> l3.
+        val optimizedJumpLabelMap = singleJumpLabelMap.mapValues { (_, target) ->
+            var finalTarget = target
+            while (true) {
+                val nextTarget = singleJumpLabelMap[finalTarget] ?: break
+                finalTarget = nextTarget
+            }
+            finalTarget
+        }
+        return statements.map { statement ->
+            if (statement is Jump) {
+                val optimizedLabel = optimizedJumpLabelMap[statement.label]
+                if (optimizedLabel != null) Jump(label = optimizedLabel) else statement
+            } else if (statement is ConditionalJumpFallThrough) {
+                val optimizedLabel = optimizedJumpLabelMap[statement.label1]
+                if (optimizedLabel != null) statement.copy(label1 = optimizedLabel) else statement
+            } else {
+                statement
+            }
+        }
     }
 
     private fun withoutImmediateJumpInAsm(

@@ -32,8 +32,8 @@ class ControlFlowGraph<I> private constructor(
     private val parentMap: MutableMap<Int, MutableSet<Int>>
 
     init {
-        nodeMap = HashMap()
-        val labelIdMap = HashMap<String, Int>()
+        nodeMap = hashMapOf()
+        val labelIdMap = hashMapOf<String, Int>()
         val len = functionInstructions.size
         // first pass: construct nodeMap and labelIdMap
         for (id in 0 until len) {

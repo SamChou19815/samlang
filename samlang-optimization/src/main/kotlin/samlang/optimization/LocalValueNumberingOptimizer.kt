@@ -24,7 +24,8 @@ object LocalValueNumberingOptimizer {
     fun optimize(statements: List<MidIrStatement>): List<MidIrStatement> {
         val infoList = LocalValueNumberingAnalysis(statements).numberingInfoListIn
         return statements.mapIndexed { i, statement ->
-            statement.accept(StatementRewriterVisitor, infoList[i] ?: throw Error())
+            val numberingInfo = infoList[i] ?: error(message = "Missing information for $statement")
+            statement.accept(visitor = StatementRewriterVisitor, context = numberingInfo)
         }
     }
 
