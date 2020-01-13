@@ -15,7 +15,7 @@
 /** Core runtime */
 
 int GC_ready = 0;
-void* builtin_malloc(samlang_int size) {
+void* SAMLANG_BUILTIN(malloc)(samlang_int size) {
     if (!GC_ready) {
         /*
          * This check unfortunately needs to be here, since
@@ -37,7 +37,7 @@ void registerFinalizer(void* object, Finalizer* fin) {
 
 // Internal helper for making arrays
 static void* mkArray(int bytes, int cells) {
-    samlang_int* memory = builtin_malloc(bytes + sizeof(samlang_int));
+    samlang_int* memory = SAMLANG_BUILTIN(malloc)(bytes + sizeof(samlang_int));
     memory[0] = cells;
     return memory + 1;
 }
@@ -54,7 +54,7 @@ static samlang_string mkString(const char* in) {
     return out;
 }
 
-extern void compiled_program_main(samlang_string[]);
+extern void SAMLANG_COMPILED_MAIN(samlang_string[]);
 
 int main(int argc, char *argv[]) {
     // Create arguments array.
@@ -64,11 +64,11 @@ int main(int argc, char *argv[]) {
         args[c] = mkString(argv[c]);
 
     // transfer to program's main
-    compiled_program_main(args);
+    SAMLANG_COMPILED_MAIN(args);
     return 0;
 }
 
-static void builtin_print(samlang_string str) {
+static void SAMLANG_BUILTIN(print)(samlang_string str) {
     int c;
     int len = str[-1];
     for (c = 0; c < len; ++c) {
@@ -76,12 +76,12 @@ static void builtin_print(samlang_string str) {
     }
 }
 
-void builtin_println(samlang_string str) {
-    builtin_print(str);
+void SAMLANG_BUILTIN(println)(samlang_string str) {
+    SAMLANG_BUILTIN(print)(str);
     fputc('\n', stdout);
 }
 
-samlang_int builtin_stringToInt(samlang_string str) {
+samlang_int SAMLANG_BUILTIN(stringToInt)(samlang_string str) {
     // ### should this worry about overflow?
     int len = str[-1];
     int neg = 0;
@@ -89,9 +89,9 @@ samlang_int builtin_stringToInt(samlang_string str) {
     samlang_int ok = 0;
 
     if (!len) {
-        builtin_print(mkString("Bad string: "));
-        builtin_print(str);
-        builtin_println(mkString(""));
+        SAMLANG_BUILTIN(print)(mkString("Bad string: "));
+        SAMLANG_BUILTIN(print)(str);
+        SAMLANG_BUILTIN(println)(mkString(""));
         return num;
     }
 
@@ -105,9 +105,9 @@ samlang_int builtin_stringToInt(samlang_string str) {
             num = 10 * num + (str[c] - '0');
         } else {
             num = 0;
-            builtin_print(mkString("Bad string: "));
-            builtin_print(str);
-            builtin_println(mkString(""));
+            SAMLANG_BUILTIN(print)(mkString("Bad string: "));
+            SAMLANG_BUILTIN(print)(str);
+            SAMLANG_BUILTIN(println)(mkString(""));
             return num; // returning (0, false);
         }
     }
@@ -119,7 +119,7 @@ samlang_int builtin_stringToInt(samlang_string str) {
     return num;
 }
 
-samlang_string builtin_intToString(samlang_int in) {
+samlang_string SAMLANG_BUILTIN(intToString)(samlang_int in) {
     char buffer[32]; // more than enough to represent 64-bit numbers
 
 #if defined(WINDOWS) || defined(WIN32)
@@ -131,8 +131,8 @@ samlang_string builtin_intToString(samlang_int in) {
     return mkString(buffer);
 }
 
-void builtin_throw(samlang_string in) {
-    builtin_println(in);
+void SAMLANG_BUILTIN(throw)(samlang_string in) {
+    SAMLANG_BUILTIN(println)(in);
     exit(1);
 }
 
