@@ -69,7 +69,11 @@ object SourceCompiler {
                         System.err.println(line)
                     }
                 }
+            } else {
+                gccProcess.inputStream.close()
+                gccProcess.errorStream.close()
             }
+            gccProcess.outputStream.close()
         }
         return withoutLinkError
     }
