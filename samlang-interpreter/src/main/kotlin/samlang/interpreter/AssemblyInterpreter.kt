@@ -38,10 +38,9 @@ import samlang.ast.asm.AssemblyInstruction.ShiftType
 import samlang.ast.asm.AssemblyInstructionVisitor
 import samlang.ast.asm.AssemblyProgram
 import samlang.ast.asm.RegOrMem
-import samlang.ast.common.ModuleReference
 import samlang.ast.mir.MidIrNameEncoder
 
-class AssemblyInterpreter(program: AssemblyProgram, entryModule: ModuleReference) {
+class AssemblyInterpreter(program: AssemblyProgram) {
     /** The list of all instructions. */
     private val instructions: List<AssemblyInstruction> = program.instructions
     /** The mapping between label and instruction number. Useful for jump. */
@@ -90,8 +89,7 @@ class AssemblyInterpreter(program: AssemblyProgram, entryModule: ModuleReference
             }
         }
         registers[RSP.id] = 0x780000000L // set stack pointer
-        val mainFunctionName = MidIrNameEncoder.encodeMainFunctionName(moduleReference = entryModule)
-        instructionPointer = labelInstructionNumberMapping[mainFunctionName]!!
+        instructionPointer = labelInstructionNumberMapping[MidIrNameEncoder.compiledProgramMain]!!
         currentHeapEndPointer = globalVarsTotalSize.toInt()
         printCollector = StringBuilder()
         visitor = InterpreterVisitor()

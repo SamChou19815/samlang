@@ -78,7 +78,8 @@ class PrintInterpreterTest : FreeSpec() {
         MidIrGenerator.generate(
             moduleReference = dummyModuleReference,
             module = compileModule(module = module),
-            optimizer = optimizer
+            optimizer = optimizer,
+            entryModuleReference = dummyModuleReference
         )
 
     private fun testIr(
@@ -87,10 +88,7 @@ class PrintInterpreterTest : FreeSpec() {
         optimizer: Optimizer<MidIrCompilationUnit>
     ): MidIrCompilationUnit {
         val irCompilationUnit = generateIr(module = module, optimizer = optimizer)
-        val actualIrPrinted = interpretCompilationUnit(
-            compilationUnit = irCompilationUnit,
-            entryModule = dummyModuleReference
-        ).trim()
+        val actualIrPrinted = interpretCompilationUnit(compilationUnit = irCompilationUnit).trim()
         actualIrPrinted shouldBe expectedPrinted
         return irCompilationUnit
     }
@@ -104,9 +102,7 @@ class PrintInterpreterTest : FreeSpec() {
             compilationUnit = irCompilationUnit,
             enableRealRegisterAllocation = enableRegisterAllocation
         )
-        val actualPrinted = AssemblyInterpreter(program = program, entryModule = dummyModuleReference)
-            .interpretationResult
-            .trim()
+        val actualPrinted = AssemblyInterpreter(program = program).interpretationResult.trim()
         actualPrinted shouldBe expectedPrinted
     }
 }

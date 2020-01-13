@@ -2,6 +2,7 @@ package samlang.service
 
 import java.io.File
 import java.nio.file.Paths
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.ast.lang.Module
 import samlang.ast.mir.MidIrCompilationUnit
@@ -40,11 +41,16 @@ object SourceCompiler {
 
     fun compileToX86Assembly(
         source: Sources<Module>,
+        entryModuleReference: ModuleReference,
         optimizer: Optimizer<MidIrCompilationUnit>,
         outputDirectory: File
     ) {
         val highIrSources = compileSources(sources = source)
-        val midIrCompilationUnit = MidIrGenerator.generate(sources = highIrSources, optimizer = optimizer)
+        val midIrCompilationUnit = MidIrGenerator.generate(
+            sources = highIrSources,
+            entryModuleReference = entryModuleReference,
+            optimizer = optimizer
+        )
         val assemblyProgram = AssemblyGenerator.generate(compilationUnit = midIrCompilationUnit)
         outputDirectory.mkdirs()
         val outputFile = Paths.get(outputDirectory.toString(), "program.s").toFile()

@@ -1,6 +1,5 @@
 package samlang.interpreter
 
-import samlang.ast.common.ModuleReference
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrFunction
@@ -15,10 +14,9 @@ import samlang.ast.mir.MidIrStatement
  *
  * @return the printed string.
  */
-fun interpretCompilationUnit(compilationUnit: MidIrCompilationUnit, entryModule: ModuleReference): String {
+fun interpretCompilationUnit(compilationUnit: MidIrCompilationUnit): String {
     val environment = setupEnvironment(compilationUnit = compilationUnit)
-    val mainFunctionName = MidIrNameEncoder.encodeMainFunctionName(moduleReference = entryModule)
-    val function = environment.functions[mainFunctionName] ?: error(message = "Bad function.")
+    val function = environment.functions[MidIrNameEncoder.compiledProgramMain] ?: error(message = "Bad function.")
     interpretFunction(irFunction = function, environment = environment, arguments = emptyList())
     return environment.printed.toString()
 }

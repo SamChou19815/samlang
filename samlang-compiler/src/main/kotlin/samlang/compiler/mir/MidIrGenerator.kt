@@ -11,6 +11,7 @@ import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrStatement
+import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
 import samlang.ast.mir.MidIrStatement.Return
 import samlang.optimization.Optimizer
 import samlang.optimization.SimpleOptimizations
@@ -18,7 +19,8 @@ import samlang.optimization.SimpleOptimizations
 class MidIrGenerator private constructor(
     private val globalResourceAllocator: MidIrGlobalResourceAllocator,
     private val moduleReference: ModuleReference,
-    private val module: HighIrModule
+    private val module: HighIrModule,
+    entryModuleReference: ModuleReference
 ) {
     private val globalVariables: MutableSet<GlobalVariable> = LinkedHashSet()
     private val functions: MutableList<MidIrFunction> = arrayListOf()
@@ -35,6 +37,21 @@ class MidIrGenerator private constructor(
                 translateAndAdd(encodedFunctionName = encodedFunctionName, function = member)
             }
         }
+        functions += MidIrFunction(
+            functionName = MidIrNameEncoder.compiledProgramMain,
+            argumentTemps = emptyList(),
+            mainBodyStatements = listOf(
+                CALL_FUNCTION(
+                    functionName = MidIrNameEncoder.encodeMainFunctionName(moduleReference = entryModuleReference),
+                    arguments = emptyList(),
+                    returnCollector = null
+                ),
+                Return(returnedExpression = null)
+            ),
+            numberOfArguments = 0,
+            hasReturn = false,
+            isPublic = true
+        )
     }
 
     private fun translateAndAdd(encodedFunctionName: String, function: HighIrFunction) {
@@ -96,7 +113,11 @@ class MidIrGenerator private constructor(
 
     companion object {
         @JvmStatic
-        fun generate(sources: Sources<HighIrModule>, optimizer: Optimizer<MidIrCompilationUnit>): MidIrCompilationUnit {
+        fun generate(
+            sources: Sources<HighIrModule>,
+            entryModuleReference: ModuleReference,
+            optimizer: Optimizer<MidIrCompilationUnit>
+        ): MidIrCompilationUnit {
             val globalResourceAllocator = MidIrGlobalResourceAllocator()
             val globalVariables = arrayListOf<GlobalVariable>()
             val functions = arrayListOf<MidIrFunction>()
@@ -104,7 +125,8 @@ class MidIrGenerator private constructor(
                 val generator = MidIrGenerator(
                     globalResourceAllocator = globalResourceAllocator,
                     moduleReference = moduleReference,
-                    module = module
+                    module = module,
+                    entryModuleReference = entryModuleReference
                 )
                 globalVariables += generator.globalVariables
                 functions += generator.functions
@@ -118,12 +140,14 @@ class MidIrGenerator private constructor(
         fun generate(
             moduleReference: ModuleReference,
             module: HighIrModule,
+            entryModuleReference: ModuleReference,
             optimizer: Optimizer<MidIrCompilationUnit>
         ): MidIrCompilationUnit {
             val generator = MidIrGenerator(
                 globalResourceAllocator = MidIrGlobalResourceAllocator(),
                 moduleReference = moduleReference,
-                module = module
+                module = module,
+                entryModuleReference = entryModuleReference
             )
             val unoptimized = MidIrCompilationUnit(
                 globalVariables = generator.globalVariables.toList(),

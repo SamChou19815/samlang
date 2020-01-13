@@ -5,6 +5,7 @@ import java.io.File
 import java.nio.file.Paths
 import kotlin.system.exitProcess
 import samlang.Configuration
+import samlang.ast.common.ModuleReference
 import samlang.errors.CompilationFailedException
 import samlang.optimization.IrCompilationUnitOptimizer
 import samlang.optimization.MidIrStatementOptimizer
@@ -48,6 +49,7 @@ class CompileCommand : CliktCommand(name = "compile") {
                 )
                 "x86" -> SourceCompiler.compileToX86Assembly(
                     source = checkedSources,
+                    entryModuleReference = ModuleReference.ROOT, // TODO
                     optimizer = IrCompilationUnitOptimizer(
                         statementOptimizer = MidIrStatementOptimizer.allEnabled,
                         doesPerformInlining = true
