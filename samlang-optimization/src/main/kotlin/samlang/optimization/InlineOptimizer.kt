@@ -223,8 +223,9 @@ object InlineOptimizer {
 
         override fun visit(node: Return, context: Unit) {
             node.returnedExpression?.let { expression ->
-                require(value = returnCollector != null)
-                newMainBodyStatements += MOVE(returnCollector, transform(expression = expression))
+                if (returnCollector != null) {
+                    newMainBodyStatements += MOVE(returnCollector, transform(expression = expression))
+                }
             }
             // jump to the end of the statements.
             newMainBodyStatements += Jump(endLabel)

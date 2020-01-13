@@ -58,4 +58,22 @@ object SourceCompiler {
             AssemblyPrinter(writer = it, includeComments = false).printProgram(program = assemblyProgram)
         }
     }
+
+    fun compileToX86Assembly(
+        source: Sources<Module>,
+        optimizer: Optimizer<MidIrCompilationUnit>,
+        outputDirectory: File
+    ) {
+        val highIrSources = compileSources(sources = source)
+        val unoptimizedCompilationUnits = MidIrGenerator.generateWithMultipleEntries(sources = highIrSources)
+        for ((moduleReference, unoptimizedCompilationUnit) in unoptimizedCompilationUnits.moduleMappings) {
+            val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
+            val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
+            val outputFile = Paths.get(outputDirectory.toString(), "$moduleReference.s").toFile()
+            outputFile.parentFile.mkdirs()
+            outputFile.writer().use {
+                AssemblyPrinter(writer = it, includeComments = false).printProgram(program = assemblyProgram)
+            }
+        }
+    }
 }
