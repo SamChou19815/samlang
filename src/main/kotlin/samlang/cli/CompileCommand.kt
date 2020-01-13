@@ -54,7 +54,7 @@ class CompileCommand : CliktCommand(name = "compile") {
             ),
             outputDirectory = Paths.get(outputDirectory.toString(), "x86").toFile()
         )
-        SourceCompiler.compileToX86Assembly(
+        val noLinkError = SourceCompiler.compileToX86Assembly(
             source = checkedSources,
             optimizer = IrCompilationUnitOptimizer(
                 statementOptimizer = MidIrStatementOptimizer.allEnabled,
@@ -62,5 +62,9 @@ class CompileCommand : CliktCommand(name = "compile") {
             ),
             outputDirectory = Paths.get(outputDirectory.toString(), "x86").toFile()
         )
+        if (!noLinkError) {
+            echo(message = "Compiled output has link errors.", err = true)
+            exitProcess(status = 1)
+        }
     }
 }

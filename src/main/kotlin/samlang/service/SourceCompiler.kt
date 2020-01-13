@@ -63,10 +63,11 @@ object SourceCompiler {
         source: Sources<Module>,
         optimizer: Optimizer<MidIrCompilationUnit>,
         outputDirectory: File
-    ) {
+    ): Boolean {
         val highIrSources = compileSources(sources = source)
         val unoptimizedCompilationUnits = MidIrGenerator.generateWithMultipleEntries(sources = highIrSources)
         val runtime = Runtime.getRuntime()
+        var withoutLinkError = true
         for ((moduleReference, unoptimizedCompilationUnit) in unoptimizedCompilationUnits.moduleMappings) {
             val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
             val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
@@ -78,6 +79,7 @@ object SourceCompiler {
             val outputProgramFile = Paths.get(outputDirectory.toString(), moduleReference.toString()).toString()
             val gccProcess = runtime.exec("./runtime/link-samlang.sh -o $outputProgramFile $outputAssemblyFile")
             if (gccProcess.waitFor() != 0) {
+                withoutLinkError = false
                 System.err.println("Failed to link $moduleReference. Linker errors are printed below:")
                 gccProcess.inputStream.use {
                     val reader = it.bufferedReader()
@@ -95,5 +97,6 @@ object SourceCompiler {
                 }
             }
         }
+        return withoutLinkError
     }
 }
