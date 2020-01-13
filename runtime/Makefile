@@ -24,7 +24,7 @@ libsam.a: $(GCLIB) libsam/libsam.o
 	gcc $(CFLAGS) $(ABI_FLAG) -c -o $@ $<
 
 $(GCLIB): $(GCLIBDIR)/configure
-	cd $(GCLIBDIR); ./configure; make; make check
+	cd $(GCLIBDIR); ./configure; make
 
 $(GCLIBDIR)/configure:
 	# extract and install dependencies
