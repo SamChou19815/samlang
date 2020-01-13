@@ -353,7 +353,7 @@ class AssemblyInterpreter(program: AssemblyProgram) {
                             setValue(RAX, value)
                             return
                         }
-                        "builtin_malloc" -> {
+                        MidIrNameEncoder.nameOfMalloc -> {
                             setValue(RAX, calloc(getValue(RDI)))
                             return
                         }

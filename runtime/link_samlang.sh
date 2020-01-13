@@ -8,6 +8,6 @@
 DIR=$(dirname $0)
 ABI_FLAG=$($DIR/platform-flags.sh)
 
-echo "ABI_FLAG = $ABI_FLAG"
+# echo "ABI_FLAG = $ABI_FLAG"
 
 gcc $ABI_FLAG "$@" -L$DIR -lsam -lpthread 2>&1

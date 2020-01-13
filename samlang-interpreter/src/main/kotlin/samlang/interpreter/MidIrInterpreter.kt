@@ -109,26 +109,26 @@ private class MidIrStatementInterpreter(
         val functionName = if (functionExpression is MidIrExpression.Name) {
             val functionName = functionExpression.name
             val result = when (functionName) {
-                "builtin_malloc" -> {
+                MidIrNameEncoder.nameOfMalloc -> {
                     require(value = arguments.size == 1)
                     val size = arguments[0]
                     val start = environment.heapPointer
                     environment.heapPointer += size
                     start
                 }
-                "builtin_throw" -> {
+                MidIrNameEncoder.nameOfThrow -> {
                     require(value = arguments.size == 1)
                     val argument = arguments[0]
                     val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
                     throw PanicException(reason = string)
                 }
-                "builtin_stringToInt" -> {
+                MidIrNameEncoder.nameOfStringToInt -> {
                     require(value = arguments.size == 1)
                     val argument = arguments[0]
                     val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
                     string.toLongOrNull() ?: throw PanicException(reason = "Bad string: $string")
                 }
-                "builtin_intToString" -> {
+                MidIrNameEncoder.nameOfIntToString -> {
                     require(value = arguments.size == 1)
                     val stringForm = arguments[0].toString()
                     val location = environment.heapPointer
@@ -136,7 +136,7 @@ private class MidIrStatementInterpreter(
                     environment.strings[location] = stringForm
                     location
                 }
-                "builtin_println" -> {
+                MidIrNameEncoder.nameOfPrintln -> {
                     require(value = arguments.size == 1)
                     val argument = arguments[0]
                     val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
