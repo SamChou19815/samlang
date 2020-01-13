@@ -51,7 +51,7 @@ object SourceCompiler {
                 AssemblyPrinter(writer = it, includeComments = false).printProgram(program = assemblyProgram)
             }
             val outputProgramFile = Paths.get(outputDirectory.toString(), moduleReference.toString()).toString()
-            val gccProcess = runtime.exec("./runtime/link-samlang.sh -o $outputProgramFile $outputAssemblyFile")
+            val gccProcess = runtime.exec("gcc -o $outputProgramFile $outputAssemblyFile -Lruntime -lsam -lpthread")
             if (gccProcess.waitFor() != 0) {
                 withoutLinkError = false
                 System.err.println("Failed to link $moduleReference. Linker errors are printed below:")
