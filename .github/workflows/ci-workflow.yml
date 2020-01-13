@@ -20,5 +20,7 @@ jobs:
         run: ./gradlew build
       - name: Type Check samlang Programs
         run: ./scripts/samlang-check-repository
+      - name: Setup SAMLANG Runtime
+        run: cd runtime && make
       - name: Compile samlang Programs
         run: ./scripts/samlang-compile-repository
