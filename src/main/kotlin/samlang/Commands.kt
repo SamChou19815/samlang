@@ -1,17 +1,22 @@
-package samlang.cli
+package samlang
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.NoRunCliktCommand
 import java.io.File
 import java.nio.file.Paths
 import kotlin.system.exitProcess
-import samlang.Configuration
+import org.eclipse.lsp4j.launch.LSPLauncher
 import samlang.ast.common.ModuleReference
 import samlang.errors.CompilationFailedException
+import samlang.lsp.LanguageServer
 import samlang.optimization.IrCompilationUnitOptimizer
 import samlang.optimization.MidIrStatementOptimizer
+import samlang.server.startServer
 import samlang.service.SourceChecker
 import samlang.service.SourceCollector
 import samlang.service.SourceCompiler
+
+class RootCommand : NoRunCliktCommand(name = "samlang")
 
 class CompileCommand : CliktCommand(name = "compile") {
     override fun run() {
@@ -66,5 +71,25 @@ class CompileCommand : CliktCommand(name = "compile") {
             echo(message = "Compiled output has link errors.", err = true)
             exitProcess(status = 1)
         }
+    }
+}
+
+class ServerCommand : CliktCommand(name = "server") {
+    override fun run(): Unit = startServer()
+}
+
+class LspCommand : CliktCommand(name = "lsp") {
+    override fun run() {
+        val configuration = try {
+            Configuration.parse()
+        } catch (exception: Configuration.IllFormattedConfigurationException) {
+            echo(message = exception.reason, err = true)
+            exitProcess(status = 1)
+        }
+        val server = LanguageServer(configuration = configuration)
+        val launcher = LSPLauncher.createServerLauncher(server, System.`in`, System.out)
+        val client = launcher.remoteProxy
+        server.connect(client)
+        launcher.startListening().get()
     }
 }
