@@ -14,10 +14,11 @@ const read = filename => fs.readFileSync(filename).toString();
 
 /**
  * @param {string} command
+ * @param {string[]} args
  * @returns {string}
  */
-const runWithErrorCheck = command => {
-  const result = spawnSync(command);
+const runWithErrorCheck = (command, args = []) => {
+  const result = spawnSync(command, args);
   if (result.status !== 0) {
     throw new Error(`Command \`${command}\` failed with ${result.status}.`);
   }
@@ -26,7 +27,7 @@ const runWithErrorCheck = command => {
 
 const basePath = './out/x86';
 
-const getPrograms = () => {
+const getX86Programs = () => {
   /** @type {string[]} */
   const programs = [];
   fs.readdirSync(basePath).forEach(filename => {
@@ -69,8 +70,11 @@ const compare = (expected, actual) => {
   return false;
 };
 
+console.error('Compiling...');
+runWithErrorCheck('./samlang-dev', ['compile']);
+console.error('Compiled!');
 console.error('Checking generated X86 code...');
-if (!compare(read('./scripts/snapshot.txt'), interpretPrograms(getPrograms()))) {
+if (!compare(read('./scripts/snapshot.txt'), interpretPrograms(getX86Programs()))) {
   process.exit(1);
 }
 console.error('Generated X86 code is good.');

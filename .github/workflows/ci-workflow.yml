@@ -24,4 +24,4 @@ jobs:
       - name: Build SAMLANG Runtime
         run: cd runtime && make
       - name: Compile samlang Programs
-        run: ./scripts/samlang-compile-repository
+        run: ./scripts/compile-repository.js

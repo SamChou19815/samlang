@@ -17,8 +17,4 @@ Install the VSCode Extension at [Visual Studio Marketplace](https://marketplace.
 - Type Inference
 - First Class Functions
 - Pattern Matching
-
-## Supported Backends
-
-- X86 Assembly
-- Java
+- Produce Native X86 Machine Code

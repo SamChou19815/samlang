@@ -52,10 +52,6 @@ private class CompileCommand : CliktCommand(name = "compile") {
             errors.forEach { echo(message = it.errorMessage) }
             return
         }
-        SourceCompiler.compileJavaSources(
-            source = checkedSources,
-            outputDirectory = Paths.get(outputDirectory.toString(), "java").toFile()
-        )
         SourceCompiler.compileToX86Assembly(
             source = checkedSources,
             entryModuleReference = ModuleReference.ROOT, // TODO
