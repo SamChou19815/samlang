@@ -6,10 +6,15 @@ VSCode [SAMLANG](https://samlang.developersam.com) support.
 
 This extension is developed based on [VSCode-Xi](https://github.com/Chillee/VSCode-Xi).
 
-Features:
+## LSP Features
+
+- Publish Type Errors
+- Type Query on hover
+- Autocompletion
+
+## Extension Features
 
 - Commenting
 - Parens autoclosing
 - Syntax Highlighting
 - Autoindentation
-- Type Query on hover
