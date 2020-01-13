@@ -6,14 +6,14 @@ set -e
 ./samlang-dev compile
 
 # X86
-echo 'Checking generating X86 code...' >&2
+echo 'Checking generated X86 code...' >&2
 rm ./out/x86/program.s
 node scripts/run-programs.js > scripts/result-to-test-against-snapshot.txt
 diff scripts/result-to-test-against-snapshot.txt scripts/snapshot.txt
 rm scripts/result-to-test-against-snapshot.txt
 
 # Java
-echo 'Checking generating Java code...' >&2
+echo 'Checking generated Java code...' >&2
 find out/java/ -name "*.java" > sources.txt
 javac -cp ./out/java @sources.txt
 rm ./out/java/**/*.class
