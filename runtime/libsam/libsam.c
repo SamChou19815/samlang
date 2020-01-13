@@ -86,7 +86,6 @@ samlang_int SAMLANG_BUILTIN(stringToInt)(samlang_string str) {
     int len = str[-1];
     int neg = 0;
     samlang_int num = 0;
-    samlang_int ok = 0;
 
     if (!len) {
         SAMLANG_BUILTIN(print)(mkString("Bad string: "));
@@ -112,7 +111,6 @@ samlang_int SAMLANG_BUILTIN(stringToInt)(samlang_string str) {
         }
     }
 
-    ok = 1;
     if (neg) {
         num = -num;
     }
@@ -125,7 +123,7 @@ samlang_string SAMLANG_BUILTIN(intToString)(samlang_int in) {
 #if defined(WINDOWS) || defined(WIN32)
     sprintf(buffer, "%I64d", in);
 #else
-    sprintf(buffer, "%lld", in);
+    sprintf(buffer, "%ld", in);
 #endif
 
     return mkString(buffer);
