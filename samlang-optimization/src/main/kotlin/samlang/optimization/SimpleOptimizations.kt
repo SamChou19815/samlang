@@ -34,8 +34,9 @@ object SimpleOptimizations {
      */
     @JvmStatic
     fun optimizeIr(statements: List<MidIrStatement>): List<MidIrStatement> =
-        withoutConsecutiveJumpsInIr(statements = statements)
-            .let { withoutUnreachableCode(it) { ControlFlowGraph.fromIr(it) } }
+        coalesceConsecutiveLabels(statements = statements)
+            .let { withoutConsecutiveJumpsInIr(it) }
+            .let { withoutUnreachableCode(it) { lines -> ControlFlowGraph.fromIr(functionStatements = lines) } }
             .let { withoutConsecutiveJumpsInIr(it) }
             .let { withoutImmediateJumpInIr(it) }
             .let { withoutUnusedLabelInIr(it) }
@@ -136,6 +137,48 @@ object SimpleOptimizations {
             newStatements += s
         }
         return newStatements
+    }
+
+    private fun coalesceConsecutiveLabels(statements: List<MidIrStatement>): List<MidIrStatement> {
+        val nextEquivalentLabelMap = hashMapOf<String, String>()
+        val len = statements.size
+        for (i in 0 until len) {
+            if (i >= len - 1) {
+                continue
+            }
+            val currentStatement = statements[i] as? MidIrStatement.Label ?: continue
+            val nextStatement = statements[i + 1] as? MidIrStatement.Label ?: continue
+            // Now we have established a single jump label
+            nextEquivalentLabelMap[currentStatement.name] = nextStatement.name
+        }
+        // It might be the case that we find something like l1 -> l2, l2 -> l3.
+        // This pass standardized the map into l1 -> l3, l2 -> l3.
+        val optimizedNextEquivalentLabelMap = nextEquivalentLabelMap.mapValues { (_, target) ->
+            var finalTarget = target
+            while (true) {
+                val nextTarget = nextEquivalentLabelMap[finalTarget] ?: break
+                finalTarget = nextTarget
+            }
+            finalTarget
+        }
+        return statements.mapNotNull { statement ->
+            when (statement) {
+                is MidIrStatement.Label -> if (optimizedNextEquivalentLabelMap.containsKey(key = statement.name)) {
+                    null
+                } else {
+                    statement
+                }
+                is Jump -> {
+                    val optimizedLabel = optimizedNextEquivalentLabelMap[statement.label]
+                    if (optimizedLabel != null) Jump(label = optimizedLabel) else statement
+                }
+                is ConditionalJumpFallThrough -> {
+                    val optimizedLabel = optimizedNextEquivalentLabelMap[statement.label1]
+                    if (optimizedLabel != null) statement.copy(label1 = optimizedLabel) else statement
+                }
+                else -> statement
+            }
+        }
     }
 
     private fun withoutConsecutiveJumpsInIr(statements: List<MidIrStatement>): List<MidIrStatement> {
