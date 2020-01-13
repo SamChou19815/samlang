@@ -149,30 +149,3 @@ OK
 
 #./out/x86/test.runnable.various-syntax-forms
 84
-
-#./out/x86/test.well-typed.allowed-cyclic-classes
-
-#./out/x86/test.well-typed.forty-two
-
-#./out/x86/test.well-typed.hello-world
-
-#./out/x86/test.well-typed.insufficient-type-info
-I can be any type!
-
-#./out/x86/test.well-typed.insufficient-type-info-none
-
-#./out/x86/test.well-typed.lots-of-fields-and-methods
-
-#./out/x86/test.well-typed.min-int
-
-#./out/x86/test.well-typed.overengineered-helloworld
-
-#./out/x86/test.well-typed.overengineered-helloworld2
-
-#./out/x86/test.well-typed.polymorphic-option
-
-#./out/x86/test.well-typed.sam-in-samlang-list
-
-#./out/x86/test.well-typed.simple-no-ctx
-
-#./out/x86/test.well-typed.simple-no-ctx-annotated

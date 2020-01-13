@@ -6,11 +6,7 @@ set -e
 ./samlang-dev compile
 
 # X86
-echo 'Checking generated X86 code...' >&2
-rm ./out/x86/program.s
 ./scripts/run-programs.js
-diff scripts/result-to-test-against-snapshot.txt scripts/snapshot.txt
-rm scripts/result-to-test-against-snapshot.txt
 
 # Java
 echo 'Checking generated Java code...' >&2
