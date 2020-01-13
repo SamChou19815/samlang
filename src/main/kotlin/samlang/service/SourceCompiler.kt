@@ -46,12 +46,12 @@ object SourceCompiler {
         outputDirectory: File
     ) {
         val highIrSources = compileSources(sources = source)
-        val midIrCompilationUnit = MidIrGenerator.generate(
+        val unoptimizedCompilationUnit = MidIrGenerator.generate(
             sources = highIrSources,
-            entryModuleReference = entryModuleReference,
-            optimizer = optimizer
+            entryModuleReference = entryModuleReference
         )
-        val assemblyProgram = AssemblyGenerator.generate(compilationUnit = midIrCompilationUnit)
+        val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
+        val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
         outputDirectory.mkdirs()
         val outputFile = Paths.get(outputDirectory.toString(), "program.s").toFile()
         outputFile.writer().use {

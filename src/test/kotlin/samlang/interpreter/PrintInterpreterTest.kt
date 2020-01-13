@@ -74,13 +74,13 @@ class PrintInterpreterTest : FreeSpec() {
         }
     }
 
-    private fun generateIr(module: Module, optimizer: Optimizer<MidIrCompilationUnit>): MidIrCompilationUnit =
-        MidIrGenerator.generate(
+    private fun generateIr(module: Module, optimizer: Optimizer<MidIrCompilationUnit>): MidIrCompilationUnit {
+        val unoptimized = MidIrGenerator.generate(
             moduleReference = dummyModuleReference,
-            module = compileModule(module = module),
-            optimizer = optimizer,
-            entryModuleReference = dummyModuleReference
+            module = compileModule(module = module)
         )
+        return optimizer.optimize(source = unoptimized)
+    }
 
     private fun testIr(
         module: Module,
