@@ -24,12 +24,12 @@ class CompileCommand : CliktCommand(name = "compile") {
         val sourceDirectory = File(configuration.sourceDirectory).absoluteFile
         if (!sourceDirectory.isDirectory) {
             echo(message = "$sourceDirectory is not a directory.", err = true)
-            exitProcess(1)
+            exitProcess(status = 1)
         }
         val outputDirectory = File(configuration.outputDirectory).absoluteFile
         if (outputDirectory.exists() && !outputDirectory.isDirectory) {
             echo(message = "$outputDirectory is not a directory.", err = true)
-            exitProcess(1)
+            exitProcess(status = 1)
         }
         echo(message = "Compiling sources in `${configuration.sourceDirectory}` ...", err = true)
         val sourceHandles = SourceCollector.collectHandles(configuration = configuration)
@@ -41,22 +41,18 @@ class CompileCommand : CliktCommand(name = "compile") {
             errors.forEach { echo(message = it.errorMessage) }
             return
         }
-        for (target in configuration.targets) {
-            when (target) {
-                "java" -> SourceCompiler.compileJavaSources(
-                    source = checkedSources,
-                    outputDirectory = Paths.get(outputDirectory.toString(), "java").toFile()
-                )
-                "x86" -> SourceCompiler.compileToX86Assembly(
-                    source = checkedSources,
-                    entryModuleReference = ModuleReference.ROOT, // TODO
-                    optimizer = IrCompilationUnitOptimizer(
-                        statementOptimizer = MidIrStatementOptimizer.allEnabled,
-                        doesPerformInlining = true
-                    ),
-                    outputDirectory = Paths.get(outputDirectory.toString(), "x86").toFile()
-                )
-            }
-        }
+        SourceCompiler.compileJavaSources(
+            source = checkedSources,
+            outputDirectory = Paths.get(outputDirectory.toString(), "java").toFile()
+        )
+        SourceCompiler.compileToX86Assembly(
+            source = checkedSources,
+            entryModuleReference = ModuleReference.ROOT, // TODO
+            optimizer = IrCompilationUnitOptimizer(
+                statementOptimizer = MidIrStatementOptimizer.allEnabled,
+                doesPerformInlining = true
+            ),
+            outputDirectory = Paths.get(outputDirectory.toString(), "x86").toFile()
+        )
     }
 }

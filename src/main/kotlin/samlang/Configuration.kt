@@ -14,13 +14,11 @@ import java.nio.file.Paths
  * @param sourceDirectory source directory to process, default to the current working directory.
  * @param outputDirectory output directory of compilation result, default to `out`.
  * @param excludes path patterns (glob syntax) to exclude from source directory.
- * @param targets compilation targets, default to type checking only (empty list).
  */
 data class Configuration(
     val sourceDirectory: String,
     val outputDirectory: String,
-    val excludes: List<String>,
-    val targets: Set<String>
+    val excludes: List<String>
 ) {
     class IllFormattedConfigurationException(val reason: String) : RuntimeException(reason)
     companion object {
@@ -53,20 +51,10 @@ data class Configuration(
                 val sourceDirectory = configurationJson.get("sourceDirectory")?.let { parseStringStrict(it) } ?: "."
                 val outputDirectory = configurationJson.get("outputDirectory")?.let { parseStringStrict(it) } ?: "out"
                 val excludes = parseOptionalStringList(jsonElement = configurationJson.get("excludes"))
-                val targets = parseOptionalStringList(jsonElement = configurationJson.get("targets"))
-                val acceptableTargets = setOf("java", "x86")
-                for (target in targets) {
-                    if (target !in acceptableTargets) {
-                        throw IllFormattedConfigurationException(
-                            reason = "$target is not an acceptable compilation target."
-                        )
-                    }
-                }
                 return Configuration(
                     sourceDirectory = sourceDirectory,
                     outputDirectory = outputDirectory,
-                    excludes = excludes,
-                    targets = targets.toSet()
+                    excludes = excludes
                 )
             } catch (jsonParseException: JsonParseException) {
                 throw IllFormattedConfigurationException(

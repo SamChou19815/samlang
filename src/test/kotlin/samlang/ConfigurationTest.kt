@@ -11,17 +11,15 @@ class ConfigurationTest : StringSpec() {
             Configuration.parse(string = "{}") shouldBe Configuration(
                 sourceDirectory = ".",
                 outputDirectory = "out",
-                excludes = emptyList(),
-                targets = emptySet()
+                excludes = emptyList()
             )
         }
         "partial configuration can parse." {
-            val json = """{ "sourceDirectory": "source", "targets": ["java"] }"""
+            val json = """{ "sourceDirectory": "source" }"""
             Configuration.parse(string = json) shouldBe Configuration(
                 sourceDirectory = "source",
                 outputDirectory = "out",
-                excludes = emptyList(),
-                targets = setOf("java")
+                excludes = emptyList()
             )
         }
         "full configuration can parse." {
@@ -29,15 +27,13 @@ class ConfigurationTest : StringSpec() {
             {
                 "sourceDirectory": "source",
                 "outputDirectory": "output",
-                "excludes": ["foo", "bar"],
-                "targets": ["java", "x86"]
+                "excludes": ["foo", "bar"]
             }
             """.trimIndent()
             Configuration.parse(string = json) shouldBe Configuration(
                 sourceDirectory = "source",
                 outputDirectory = "output",
-                excludes = listOf("foo", "bar"),
-                targets = setOf("java", "x86")
+                excludes = listOf("foo", "bar")
             )
         }
         "empty string does not parse." {
@@ -64,24 +60,10 @@ class ConfigurationTest : StringSpec() {
                 Configuration.parse(string = """{ "excludes": 3 }""")
             }
             shouldThrow<IllFormattedConfigurationException> {
-                Configuration.parse(string = """{ "targets": 3 }""")
-            }
-            shouldThrow<IllFormattedConfigurationException> {
                 Configuration.parse(string = """{ "excludes": [3] }""")
             }
             shouldThrow<IllFormattedConfigurationException> {
-                Configuration.parse(string = """{ "targets": [3] }""")
-            }
-            shouldThrow<IllFormattedConfigurationException> {
                 Configuration.parse(string = """{ "excludes": ["3", 4] }""")
-            }
-            shouldThrow<IllFormattedConfigurationException> {
-                Configuration.parse(string = """{ "targets": ["3", 4] }""")
-            }
-        }
-        "bad target does not parse." {
-            shouldThrow<IllFormattedConfigurationException> {
-                Configuration.parse(string = """{ "targets": ["3"] }""")
             }
         }
         "can parse project configuration file." {
