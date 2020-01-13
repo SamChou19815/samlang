@@ -5,11 +5,10 @@ import samlang.cli.CompileCommand
 import samlang.cli.LspCommand
 import samlang.cli.RootCommand
 import samlang.cli.ServerCommand
-import samlang.cli.TypeCheckCommand
 
 /** Entry point of samlang language service. */
 object Main {
     @JvmStatic
     fun main(args: Array<String>): Unit =
-        RootCommand().subcommands(TypeCheckCommand(), CompileCommand(), ServerCommand(), LspCommand()).main(args)
+        RootCommand().subcommands(CompileCommand(), ServerCommand(), LspCommand()).main(args)
 }
