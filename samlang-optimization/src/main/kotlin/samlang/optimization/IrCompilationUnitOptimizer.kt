@@ -19,7 +19,7 @@ class IrCompilationUnitOptimizer(
             intermediate = optimizeAtStatementLevel(intermediate)
             if (doesPerformInlining) {
                 intermediate = SimpleOptimizations.removeUnusedNames(
-                    irCompilationUnit = InlineOptimizer.optimize(intermediate)
+                    irCompilationUnit = InlineOptimizer.optimize(compilationUnit = intermediate)
                 )
             }
             intermediate = optimizeAtStatementLevel(intermediate)

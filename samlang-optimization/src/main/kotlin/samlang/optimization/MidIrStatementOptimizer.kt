@@ -24,10 +24,11 @@ interface MidIrStatementOptimizer : Optimizer<List<MidIrStatement>> {
             doesPerformDeadCodeElimination: Boolean
         ): MidIrStatementOptimizer = object : MidIrStatementOptimizer {
             override fun optimize(source: List<MidIrStatement>): List<MidIrStatement> {
-                var optimized = source
-                optimized = ConstantPropagationOptimizer.optimize(optimized)
-                optimized = AlgebraicOptimizer.optimize(optimized)
-                optimized = ConstantFolder.optimize(optimized)
+                var optimized = ConstantFolder.optimize(
+                    statements = AlgebraicOptimizer.optimize(
+                        statements = ConstantPropagationOptimizer.optimize(source)
+                    )
+                )
                 if (doesPerformCopyPropagation) {
                     optimized = CopyPropagationOptimizer.optimize(optimized)
                 }

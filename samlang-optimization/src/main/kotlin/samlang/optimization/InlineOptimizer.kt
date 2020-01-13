@@ -23,7 +23,7 @@ import samlang.ast.mir.MidIrStatement.Return
 
 object InlineOptimizer {
     /** The threshold max tolerable cost of inlining.  */
-    private const val INLINE_THRESHOLD = 25
+    private const val INLINE_THRESHOLD = 30
     /** The threshold max tolerable cost of performing inlining.  */
     private const val PERFORM_INLINE_THRESHOLD = 1000
 
