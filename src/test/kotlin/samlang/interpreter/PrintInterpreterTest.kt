@@ -10,11 +10,8 @@ import samlang.common.getTypeCheckedModule
 import samlang.compiler.asm.AssemblyGenerator
 import samlang.compiler.hir.compileModule
 import samlang.compiler.mir.MidIrGenerator
-import samlang.optimization.ALG_OPT
 import samlang.optimization.ALL_OPT
-import samlang.optimization.CF_OPT
 import samlang.optimization.COPY_OPT
-import samlang.optimization.CP_OPT
 import samlang.optimization.CSE_OPT
 import samlang.optimization.DCE_OPT
 import samlang.optimization.INL_OPT
@@ -49,9 +46,6 @@ class PrintInterpreterTest : FreeSpec() {
         }
         for ((id, ir, expected) in irTestCases) {
             "IR[no-opt]: $id" - { testIr(ir = ir, expected = expected, optimizer = Optimizer.getNoOpOptimizer()) }
-            "IR[cp]: $id" - { testIr(ir = ir, expected = expected, optimizer = CP_OPT) }
-            "IR[alg]: $id" - { testIr(ir = ir, expected = expected, optimizer = ALG_OPT) }
-            "IR[cf]: $id" - { testIr(ir = ir, expected = expected, optimizer = CF_OPT) }
             "IR[copy]: $id" - { testIr(ir = ir, expected = expected, optimizer = COPY_OPT) }
             "IR[vn]: $id" - { testIr(ir = ir, expected = expected, optimizer = VN_OPT) }
             "IR[cse]: $id" - { testIr(ir = ir, expected = expected, optimizer = CSE_OPT) }
