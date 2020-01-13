@@ -14,6 +14,7 @@ import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
 import samlang.ast.mir.MidIrStatement.Return
 import samlang.optimization.SimpleOptimizations
+import samlang.optimization.TailRecursionOptimizer
 
 class MidIrGenerator private constructor(
     private val globalResourceAllocator: MidIrGlobalResourceAllocator,
@@ -119,7 +120,7 @@ class MidIrGenerator private constructor(
                     module = module
                 )
                 globalVariables += generator.globalVariables
-                functions += generator.functions
+                functions += generator.functions.map { TailRecursionOptimizer.optimize(it) }
             }
             return MidIrCompilationUnit(globalVariables = globalVariables.toList(), functions = functions)
         }
