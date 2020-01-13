@@ -66,13 +66,33 @@ object SourceCompiler {
     ) {
         val highIrSources = compileSources(sources = source)
         val unoptimizedCompilationUnits = MidIrGenerator.generateWithMultipleEntries(sources = highIrSources)
+        val runtime = Runtime.getRuntime()
         for ((moduleReference, unoptimizedCompilationUnit) in unoptimizedCompilationUnits.moduleMappings) {
             val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
             val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
-            val outputFile = Paths.get(outputDirectory.toString(), "$moduleReference.s").toFile()
-            outputFile.parentFile.mkdirs()
-            outputFile.writer().use {
+            val outputAssemblyFile = Paths.get(outputDirectory.toString(), "$moduleReference.s").toFile()
+            outputAssemblyFile.parentFile.mkdirs()
+            outputAssemblyFile.writer().use {
                 AssemblyPrinter(writer = it, includeComments = false).printProgram(program = assemblyProgram)
+            }
+            val outputProgramFile = Paths.get(outputDirectory.toString(), moduleReference.toString()).toString()
+            val gccProcess = runtime.exec("./runtime/link-samlang.sh -o $outputProgramFile $outputAssemblyFile")
+            if (gccProcess.waitFor() != 0) {
+                System.err.println("Failed to link $moduleReference. Linker errors are printed below:")
+                gccProcess.inputStream.use {
+                    val reader = it.bufferedReader()
+                    while (true) {
+                        val line = reader.readLine() ?: break
+                        System.err.println(line)
+                    }
+                }
+                gccProcess.errorStream.use {
+                    val reader = it.bufferedReader()
+                    while (true) {
+                        val line = reader.readLine() ?: break
+                        System.err.println(line)
+                    }
+                }
             }
         }
     }
