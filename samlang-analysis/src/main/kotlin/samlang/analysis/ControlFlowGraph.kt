@@ -82,7 +82,19 @@ class ControlFlowGraph<I> private constructor(
 
     /** @return the start node of the graph. */
     val startNode: Node<I>
-        get() = nodeMap[0] ?: throw Error("Bad list of IR. The list should not be empty.")
+        get() = nodeMap[0] ?: throw Error("Bad list of instructions. The list should not be empty.")
+
+    /** @return a list of nodes with no children and reachable from start node. */
+    val reachableEndNodes: List<Node<I>>
+        get() {
+            val collector = arrayListOf<Node<I>>()
+            dfs { node ->
+                if (getChildrenIds(node.id).isEmpty()) {
+                    collector += node
+                }
+            }
+            return collector
+        }
 
     /**
      * @param id the id of the node for which we want to know its children.
