@@ -12,8 +12,12 @@ object MidIrNameEncoder {
 
     private fun encodeBuiltinName(name: String): String = "_builtin_$name"
 
-    fun encodeFunctionName(moduleReference: ModuleReference, className: String, functionName: String): String =
-        "_function_${moduleReference.parts.joinToString(separator = "__")}_${className}_$functionName"
+    fun encodeFunctionName(moduleReference: ModuleReference, className: String, functionName: String): String {
+        val encodedModuleReference = moduleReference.parts.joinToString(separator = "__") {
+            it.replace(oldChar = '-', newChar = '_')
+        }
+        return "_module_${encodedModuleReference}_class_${className}_function_$functionName"
+    }
 
     fun encodeMainFunctionName(moduleReference: ModuleReference): String =
         encodeFunctionName(moduleReference = moduleReference, className = "Main", functionName = "main")

@@ -81,7 +81,7 @@ void builtin_println(samlang_string str) {
     fputc('\n', stdout);
 }
 
-samlang_int stringToInt(samlang_string str) {
+samlang_int builtin_stringToInt(samlang_string str) {
     // ### should this worry about overflow?
     int len = str[-1];
     int neg = 0;
@@ -131,7 +131,7 @@ samlang_string builtin_intToString(samlang_int in) {
     return mkString(buffer);
 }
 
-void builtin_panic(samlang_string in) {
+void builtin_throw(samlang_string in) {
     builtin_println(in);
     exit(1);
 }

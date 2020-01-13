@@ -6,3 +6,6 @@ class NotEnoughTypeInfo {
     val _ = NotEnoughTypeInfo.randomFunction();
   }
 }
+class Main {
+  function main(): unit = NotEnoughTypeInfo.main()
+}

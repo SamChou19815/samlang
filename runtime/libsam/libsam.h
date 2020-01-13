@@ -28,7 +28,7 @@ SAMLANG_EXPORT void registerFinalizer(void*, Finalizer*);
 extern samlang_int builtin_stringToInt(samlang_string);
 extern samlang_string builtin_intToString(samlang_int);
 extern void builtin_println(samlang_string);
-extern void builtin_panic(samlang_string);
+extern void builtin_throw(samlang_string);
 
 static void printUcs4char(long int c, FILE *stream);
 
