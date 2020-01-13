@@ -1,7 +1,7 @@
 package samlang.optimization
 
 import samlang.analysis.ControlFlowGraph
-import samlang.analysis.UsedFunctionAnalysis
+import samlang.analysis.UsedNameAnalysis
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.JumpLabel
 import samlang.ast.mir.MidIrCompilationUnit
@@ -14,17 +14,14 @@ import samlang.ast.mir.MidIrStatement.Jump
 @Suppress(names = ["ComplexRedundantLet"])
 object SimpleOptimizations {
     @JvmStatic
-    fun removeUnusedFunctions(irCompilationUnit: MidIrCompilationUnit): MidIrCompilationUnit {
-        val usedFunctionNames = UsedFunctionAnalysis.getUsedFunctions(irCompilationUnit = irCompilationUnit)
-        val usedFunctions = irCompilationUnit.functions.mapNotNull { function ->
+    fun removeUnusedNames(irCompilationUnit: MidIrCompilationUnit): MidIrCompilationUnit {
+        val usedNames = UsedNameAnalysis.getUsedNames(irCompilationUnit = irCompilationUnit)
+        val usedGlobals = irCompilationUnit.globalVariables.filter { it.name in usedNames }
+        val usedFunctions = irCompilationUnit.functions.filter { function ->
             val name = function.functionName
-            if (name == MidIrNameEncoder.compiledProgramMain || name in usedFunctionNames) {
-                function
-            } else {
-                null
-            }
+            name == MidIrNameEncoder.compiledProgramMain || name in usedNames
         }
-        return irCompilationUnit.copy(functions = usedFunctions)
+        return MidIrCompilationUnit(globalVariables = usedGlobals, functions = usedFunctions)
     }
 
     /**
@@ -154,7 +151,8 @@ object SimpleOptimizations {
                 val (_, label) = instruction
                 val nextInstruction = instructions[i + 1]
                 if (nextInstruction is AssemblyInstruction.Label &&
-                    nextInstruction.label == label) {
+                    nextInstruction.label == label
+                ) {
                     // do not add this. still add next since the label might be used by others
                     continue
                 }

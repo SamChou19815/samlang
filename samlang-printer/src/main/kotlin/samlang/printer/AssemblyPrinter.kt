@@ -39,7 +39,6 @@ class AssemblyPrinter private constructor(
         printlnInstruction(instructionLine = ".intel_syntax noprefix")
         printlnInstruction(instructionLine = ".p2align 4, 0x90")
         printlnInstruction(instructionLine = ".align 8")
-        printlnInstruction(instructionLine = ".globl _Imain_paai")
         for (publicFunction in program.publicFunctions) {
             printlnInstruction(instructionLine = ".globl $publicFunction")
         }

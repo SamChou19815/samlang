@@ -110,7 +110,7 @@ class MidIrGenerator private constructor(
 
         private fun generateWithoutEntry(sources: Sources<HighIrModule>): MidIrCompilationUnit {
             val globalResourceAllocator = MidIrGlobalResourceAllocator()
-            val globalVariables = arrayListOf<GlobalVariable>()
+            val globalVariables = LinkedHashSet<GlobalVariable>()
             val functions = arrayListOf<MidIrFunction>()
             sources.moduleMappings.forEach { (moduleReference, module) ->
                 val generator = MidIrGenerator(
@@ -121,11 +121,11 @@ class MidIrGenerator private constructor(
                 globalVariables += generator.globalVariables
                 functions += generator.functions
             }
-            return MidIrCompilationUnit(globalVariables = globalVariables, functions = functions)
+            return MidIrCompilationUnit(globalVariables = globalVariables.toList(), functions = functions)
         }
 
         private fun MidIrCompilationUnit.addMain(entryModuleReference: ModuleReference): MidIrCompilationUnit =
-            SimpleOptimizations.removeUnusedFunctions(
+            SimpleOptimizations.removeUnusedNames(
                 irCompilationUnit = MidIrCompilationUnit(
                     globalVariables = globalVariables,
                     functions = functions + getCompiledProgramMainFunction(entryModuleReference = entryModuleReference)

@@ -11,9 +11,9 @@ import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrStatement
 
 /** Find all actually called functions to help perform dead function elimination. */
-object UsedFunctionAnalysis {
+object UsedNameAnalysis {
     @JvmStatic
-    fun getUsedFunctions(irCompilationUnit: MidIrCompilationUnit): Set<String> {
+    fun getUsedNames(irCompilationUnit: MidIrCompilationUnit): Set<String> {
         val used = mutableSetOf<String>()
         val (_, functions) = irCompilationUnit
         val usedFunctionMap = functions.map { it.functionName to getOtherFunctionsUsedBy(function = it) }.toMap()

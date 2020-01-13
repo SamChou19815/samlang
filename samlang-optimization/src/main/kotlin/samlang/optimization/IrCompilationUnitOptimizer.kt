@@ -18,7 +18,7 @@ class IrCompilationUnitOptimizer(
         for (i in 0..3) {
             intermediate = optimizeAtStatementLevel(intermediate)
             if (doesPerformInlining) {
-                intermediate = SimpleOptimizations.removeUnusedFunctions(
+                intermediate = SimpleOptimizations.removeUnusedNames(
                     irCompilationUnit = InlineOptimizer.optimize(intermediate)
                 )
             }
