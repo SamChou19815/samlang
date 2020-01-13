@@ -34,7 +34,7 @@ object SimpleOptimizations {
      */
     @JvmStatic
     fun optimizeIr(statements: List<MidIrStatement>): List<MidIrStatement> =
-        coalesceConsecutiveLabels(statements = statements)
+        coalesceConsecutiveLabelsForIr(statements = statements)
             .let { withoutConsecutiveJumpsInIr(it) }
             .let { withoutUnreachableCode(it) { lines -> ControlFlowGraph.fromIr(functionStatements = lines) } }
             .let { withoutConsecutiveJumpsInIr(it) }
@@ -57,16 +57,11 @@ object SimpleOptimizations {
         instructions: List<AssemblyInstruction>,
         removeComments: Boolean
     ): List<AssemblyInstruction> =
-        withoutUnreachableCode(instructions) { ControlFlowGraph.fromAsm(it) }
+        (if (removeComments) instructions.filter { it !is AssemblyInstruction.Comment } else instructions)
+            .let { coalesceConsecutiveLabelsForAsm(it) }
+            .let { withoutUnreachableCode(it) { lines -> ControlFlowGraph.fromAsm(functionInstructions = lines) } }
             .let { withoutImmediateJumpInAsm(it) }
             .let { withoutUnusedLabelInAsm(it) }
-            .let {
-                if (removeComments) {
-                    it.filter { i -> i !is AssemblyInstruction.Comment }
-                } else {
-                    it
-                }
-            }
 
     private fun <T> withoutUnreachableCode(
         instructions: List<T>,
@@ -139,7 +134,7 @@ object SimpleOptimizations {
         return newStatements
     }
 
-    private fun coalesceConsecutiveLabels(statements: List<MidIrStatement>): List<MidIrStatement> {
+    private fun coalesceConsecutiveLabelsForIr(statements: List<MidIrStatement>): List<MidIrStatement> {
         val nextEquivalentLabelMap = hashMapOf<String, String>()
         val len = statements.size
         for (i in 0 until len) {
@@ -150,6 +145,9 @@ object SimpleOptimizations {
             val nextStatement = statements[i + 1] as? MidIrStatement.Label ?: continue
             // Now we have established a single jump label
             nextEquivalentLabelMap[currentStatement.name] = nextStatement.name
+        }
+        if (nextEquivalentLabelMap.isEmpty()) {
+            return statements
         }
         // It might be the case that we find something like l1 -> l2, l2 -> l3.
         // This pass standardized the map into l1 -> l3, l2 -> l3.
@@ -212,6 +210,48 @@ object SimpleOptimizations {
                 if (optimizedLabel != null) statement.copy(label1 = optimizedLabel) else statement
             } else {
                 statement
+            }
+        }
+    }
+
+    private fun coalesceConsecutiveLabelsForAsm(instructions: List<AssemblyInstruction>): List<AssemblyInstruction> {
+        val nextEquivalentLabelMap = hashMapOf<String, String>()
+        val len = instructions.size
+        for (i in 0 until len) {
+            if (i >= len - 1) {
+                continue
+            }
+            val currentInstruction = instructions[i] as? AssemblyInstruction.Label ?: continue
+            val nextInstruction = instructions[i + 1] as? AssemblyInstruction.Label ?: continue
+            // Now we have established a single jump label
+            nextEquivalentLabelMap[currentInstruction.label] = nextInstruction.label
+        }
+        if (nextEquivalentLabelMap.isEmpty()) {
+            return instructions
+        }
+        // It might be the case that we find something like l1 -> l2, l2 -> l3.
+        // This pass standardized the map into l1 -> l3, l2 -> l3.
+        val optimizedNextEquivalentLabelMap = nextEquivalentLabelMap.mapValues { (_, target) ->
+            var finalTarget = target
+            while (true) {
+                val nextTarget = nextEquivalentLabelMap[finalTarget] ?: break
+                finalTarget = nextTarget
+            }
+            finalTarget
+        }
+        return instructions.mapNotNull { instruction ->
+            when (instruction) {
+                is AssemblyInstruction.Label ->
+                    if (optimizedNextEquivalentLabelMap.containsKey(key = instruction.label)) {
+                        null
+                    } else {
+                        instruction
+                    }
+                is JumpLabel -> {
+                    val optimizedLabel = optimizedNextEquivalentLabelMap[instruction.label]
+                    if (optimizedLabel != null) instruction.copy(label = optimizedLabel) else instruction
+                }
+                else -> instruction
             }
         }
     }

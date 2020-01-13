@@ -54,7 +54,7 @@ class AssemblyGenerator private constructor(
         var tiledInstructions: List<AssemblyInstruction> = DpTiling(context).tile(statementsToTile)
         // simple optimizations
         tiledInstructions = SimpleOptimizations.optimizeAsm(tiledInstructions, removeComments)
-        var registerAllocatedInstructions: List<AssemblyInstruction?>
+        val registerAllocatedInstructions: List<AssemblyInstruction>
         val numberOfTemporariesOnStack: Int
         if (enableRealRegisterAllocation) {
             val allocator = RealRegisterAllocator(
@@ -68,13 +68,10 @@ class AssemblyGenerator private constructor(
             registerAllocatedInstructions = allocator.getRealInstructions()
             numberOfTemporariesOnStack = allocator.numberOfTemporariesOnStack
         }
-        registerAllocatedInstructions = SimpleOptimizations.optimizeAsm(
-            registerAllocatedInstructions, removeComments
-        )
         val fixedInstructions = CallingConventionFixer(
             context = context,
             numberOfTemporariesOnStack = numberOfTemporariesOnStack,
-            mainFunctionBody = registerAllocatedInstructions,
+            mainFunctionBody = SimpleOptimizations.optimizeAsm(registerAllocatedInstructions, removeComments),
             removeComments = removeComments
         ).bodyWithCorrectCallingConvention
         instructions.addAll(fixedInstructions)
@@ -86,7 +83,6 @@ class AssemblyGenerator private constructor(
          *
          * @param compilationUnit the compilation unit.
          * @param enableRealRegisterAllocation whether to enable the real register allocation.
-         * @param enableMoveCoalescing whether to enable move coalescing.
          * @param removeComments whether to remove comments.
          * @return the generated assembly instructions.
          */

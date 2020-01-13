@@ -34,7 +34,7 @@ class IrCompilationUnitOptimizer(
             for (i in 0..4) {
                 statements = statementOptimizer.optimize(statements)
             }
-            newFunctions += oldFunction.copy(mainBodyStatements = statements)
+            newFunctions += TailRecursionOptimizer.optimize(oldFunction.copy(mainBodyStatements = statements))
         }
         return compilationUnit.copy(functions = newFunctions)
     }
