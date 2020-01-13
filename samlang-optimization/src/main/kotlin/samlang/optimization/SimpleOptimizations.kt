@@ -1,8 +1,11 @@
 package samlang.optimization
 
 import samlang.analysis.ControlFlowGraph
+import samlang.analysis.UsedFunctionAnalysis
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.JumpLabel
+import samlang.ast.mir.MidIrCompilationUnit
+import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.ConditionalJumpFallThrough
 import samlang.ast.mir.MidIrStatement.Jump
@@ -10,6 +13,20 @@ import samlang.ast.mir.MidIrStatement.Jump
 /** The class that performs a series of simple optimizations. */
 @Suppress(names = ["ComplexRedundantLet"])
 object SimpleOptimizations {
+    @JvmStatic
+    fun removeUnusedFunctions(irCompilationUnit: MidIrCompilationUnit): MidIrCompilationUnit {
+        val usedFunctionNames = UsedFunctionAnalysis.getUsedFunctions(irCompilationUnit = irCompilationUnit)
+        val usedFunctions = irCompilationUnit.functions.mapNotNull { function ->
+            val name = function.functionName
+            if (name == MidIrNameEncoder.compiledProgramMain || name in usedFunctionNames) {
+                function
+            } else {
+                null
+            }
+        }
+        return irCompilationUnit.copy(functions = usedFunctions)
+    }
+
     /**
      * Perform these optimizations in order and return an optimized sequence of instructions.
      * - unreachable code elimination

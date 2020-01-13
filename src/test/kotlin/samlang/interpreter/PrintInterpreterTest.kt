@@ -3,6 +3,7 @@ package samlang.interpreter
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.FreeSpec
 import samlang.ast.common.ModuleReference
+import samlang.ast.common.Sources
 import samlang.ast.lang.Module
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.common.getTypeCheckedModule
@@ -22,87 +23,75 @@ import samlang.optimization.VN_OPT
 import samlang.programs.runnableTestPrograms
 
 class PrintInterpreterTest : FreeSpec() {
-    private data class TestCase(val id: String, val code: String, val expectedPrinted: String)
+    private data class TestCase<M>(val id: String, val module: M, val expected: String)
 
-    private val testCases: List<TestCase> = runnableTestPrograms.map { (id, _, code) ->
-        val expectedPrinted = printInterpreterExpectedResult[id] ?: error(message = "Missing result for $id.")
-        TestCase(id = id, code = code, expectedPrinted = expectedPrinted.trim())
+    private val programTestCases: List<TestCase<Module>> = runnableTestPrograms.map { (id, _, code) ->
+        val expected = printInterpreterExpectedResult[id] ?: error(message = "Missing result for $id.")
+        TestCase(id = id, module = getTypeCheckedModule(code = code), expected = expected.trim())
     }
-    private val dummyModuleReference = ModuleReference(moduleName = "Dummy")
+    private val irTestCases: List<TestCase<MidIrCompilationUnit>> = kotlin.run {
+        val irSources = MidIrGenerator.generateWithMultipleEntries(
+            sources = Sources(
+                moduleMappings = programTestCases.asSequence().map { (id, module, _) ->
+                    ModuleReference(moduleName = id) to compileModule(module = module)
+                }.toMap()
+            )
+        ).moduleMappings
+        programTestCases.map { (id, _, expected) ->
+            val ir = irSources[ModuleReference(moduleName = id)] ?: error(message = "Missing $id in compiled output!")
+            TestCase(id = id, module = ir, expected = expected)
+        }
+    }
 
     init {
-        for ((id, code, expectedPrinted) in testCases) {
-            val module = getTypeCheckedModule(code = code)
-            "printed expected value: $id" - {
-                "Program" {
-                    val actualProgramPrinted = ModuleInterpreter().run(module = module).trim()
-                    actualProgramPrinted shouldBe expectedPrinted
-                }
-                "IR[no-opt]" - {
-                    testIr(module = module, expectedPrinted = expectedPrinted, optimizer = Optimizer.getNoOpOptimizer())
-                }
-                "IR[cp]" - { testIr(module = module, expectedPrinted = expectedPrinted, optimizer = CP_OPT) }
-                "IR[alg]" - { testIr(module = module, expectedPrinted = expectedPrinted, optimizer = ALG_OPT) }
-                "IR[cf]" - { testIr(module = module, expectedPrinted = expectedPrinted, optimizer = CF_OPT) }
-                "IR[copy]" - { testIr(module = module, expectedPrinted = expectedPrinted, optimizer = COPY_OPT) }
-                "IR[vn]" - { testIr(module = module, expectedPrinted = expectedPrinted, optimizer = VN_OPT) }
-                "IR[cse]" - { testIr(module = module, expectedPrinted = expectedPrinted, optimizer = CSE_OPT) }
-                "IR[dce]" - { testIr(module = module, expectedPrinted = expectedPrinted, optimizer = DCE_OPT) }
-                "IR[inl]" - { testIr(module = module, expectedPrinted = expectedPrinted, optimizer = INL_OPT) }
-                "IR[all-optimizations]" - {
-                    val fullyOptimizedIr = testIr(
-                        module = module,
-                        expectedPrinted = expectedPrinted,
-                        optimizer = ALL_OPT
+        for ((id, module, expected) in programTestCases) {
+            "Program: $id" - { ModuleInterpreter().run(module = module).trim() shouldBe expected }
+        }
+        for ((id, ir, expected) in irTestCases) {
+            "IR[no-opt]: $id" - { testIr(ir = ir, expected = expected, optimizer = Optimizer.getNoOpOptimizer()) }
+            "IR[cp]: $id" - { testIr(ir = ir, expected = expected, optimizer = CP_OPT) }
+            "IR[alg]: $id" - { testIr(ir = ir, expected = expected, optimizer = ALG_OPT) }
+            "IR[cf]: $id" - { testIr(ir = ir, expected = expected, optimizer = CF_OPT) }
+            "IR[copy]: $id" - { testIr(ir = ir, expected = expected, optimizer = COPY_OPT) }
+            "IR[vn]: $id" - { testIr(ir = ir, expected = expected, optimizer = VN_OPT) }
+            "IR[cse]: $id" - { testIr(ir = ir, expected = expected, optimizer = CSE_OPT) }
+            "IR[dce]: $id" - { testIr(ir = ir, expected = expected, optimizer = DCE_OPT) }
+            "IR[inl]: $id" - { testIr(ir = ir, expected = expected, optimizer = INL_OPT) }
+            "IR[all-optimizations]: $id" - {
+                val fullyOptimizedIr = testIr(ir = ir, expected = expected, optimizer = ALL_OPT)
+                "ASM[no-ralloc]" - {
+                    testAsm(
+                        irCompilationUnit = fullyOptimizedIr,
+                        expected = expected,
+                        enableRegisterAllocation = false
                     )
-                    "ASM[no-ralloc]" - {
-                        testAsm(
-                            irCompilationUnit = fullyOptimizedIr,
-                            expectedPrinted = expectedPrinted,
-                            enableRegisterAllocation = false
-                        )
-                    }
-                    "ASM[with-ralloc]" - {
-                        testAsm(
-                            irCompilationUnit = fullyOptimizedIr,
-                            expectedPrinted = expectedPrinted,
-                            enableRegisterAllocation = true
-                        )
-                    }
+                }
+                "ASM[with-ralloc]" - {
+                    testAsm(
+                        irCompilationUnit = fullyOptimizedIr,
+                        expected = expected,
+                        enableRegisterAllocation = true
+                    )
                 }
             }
         }
     }
 
-    private fun generateIr(module: Module, optimizer: Optimizer<MidIrCompilationUnit>): MidIrCompilationUnit {
-        val unoptimized = MidIrGenerator.generate(
-            moduleReference = dummyModuleReference,
-            module = compileModule(module = module)
-        )
-        return optimizer.optimize(source = unoptimized)
-    }
-
     private fun testIr(
-        module: Module,
-        expectedPrinted: String,
+        ir: MidIrCompilationUnit,
+        expected: String,
         optimizer: Optimizer<MidIrCompilationUnit>
     ): MidIrCompilationUnit {
-        val irCompilationUnit = generateIr(module = module, optimizer = optimizer)
-        val actualIrPrinted = interpretCompilationUnit(compilationUnit = irCompilationUnit).trim()
-        actualIrPrinted shouldBe expectedPrinted
-        return irCompilationUnit
+        val optimized = optimizer.optimize(source = ir)
+        interpretCompilationUnit(compilationUnit = optimized).trim() shouldBe expected
+        return optimized
     }
 
-    private fun testAsm(
-        irCompilationUnit: MidIrCompilationUnit,
-        expectedPrinted: String,
-        enableRegisterAllocation: Boolean
-    ) {
+    private fun testAsm(irCompilationUnit: MidIrCompilationUnit, expected: String, enableRegisterAllocation: Boolean) {
         val program = AssemblyGenerator.generate(
             compilationUnit = irCompilationUnit,
             enableRealRegisterAllocation = enableRegisterAllocation
         )
-        val actualPrinted = AssemblyInterpreter(program = program).interpretationResult.trim()
-        actualPrinted shouldBe expectedPrinted
+        AssemblyInterpreter(program = program).interpretationResult.trim() shouldBe expected
     }
 }

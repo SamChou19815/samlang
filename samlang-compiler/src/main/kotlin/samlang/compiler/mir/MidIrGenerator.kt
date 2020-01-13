@@ -18,8 +18,7 @@ import samlang.optimization.SimpleOptimizations
 class MidIrGenerator private constructor(
     private val globalResourceAllocator: MidIrGlobalResourceAllocator,
     private val moduleReference: ModuleReference,
-    private val module: HighIrModule,
-    entryModuleReference: ModuleReference
+    private val module: HighIrModule
 ) {
     private val globalVariables: MutableSet<GlobalVariable> = LinkedHashSet()
     private val functions: MutableList<MidIrFunction> = arrayListOf()
@@ -36,21 +35,6 @@ class MidIrGenerator private constructor(
                 translateAndAdd(encodedFunctionName = encodedFunctionName, function = member)
             }
         }
-        functions += MidIrFunction(
-            functionName = MidIrNameEncoder.compiledProgramMain,
-            argumentTemps = emptyList(),
-            mainBodyStatements = listOf(
-                CALL_FUNCTION(
-                    functionName = MidIrNameEncoder.encodeMainFunctionName(moduleReference = entryModuleReference),
-                    arguments = emptyList(),
-                    returnCollector = null
-                ),
-                Return(returnedExpression = null)
-            ),
-            numberOfArguments = 0,
-            hasReturn = false,
-            isPublic = true
-        )
     }
 
     private fun translateAndAdd(encodedFunctionName: String, function: HighIrFunction) {
@@ -112,7 +96,19 @@ class MidIrGenerator private constructor(
 
     companion object {
         @JvmStatic
-        fun generate(sources: Sources<HighIrModule>, entryModuleReference: ModuleReference): MidIrCompilationUnit {
+        fun generate(sources: Sources<HighIrModule>, entryModuleReference: ModuleReference): MidIrCompilationUnit =
+            generateWithoutEntry(sources = sources).addMain(entryModuleReference = entryModuleReference)
+
+        @JvmStatic
+        fun generateWithMultipleEntries(sources: Sources<HighIrModule>): Sources<MidIrCompilationUnit> {
+            val withoutEntry = generateWithoutEntry(sources = sources)
+            val irMappings = sources.moduleMappings.mapValues { (moduleReference, _) ->
+                withoutEntry.addMain(entryModuleReference = moduleReference)
+            }
+            return Sources(moduleMappings = irMappings)
+        }
+
+        private fun generateWithoutEntry(sources: Sources<HighIrModule>): MidIrCompilationUnit {
             val globalResourceAllocator = MidIrGlobalResourceAllocator()
             val globalVariables = arrayListOf<GlobalVariable>()
             val functions = arrayListOf<MidIrFunction>()
@@ -120,8 +116,7 @@ class MidIrGenerator private constructor(
                 val generator = MidIrGenerator(
                     globalResourceAllocator = globalResourceAllocator,
                     moduleReference = moduleReference,
-                    module = module,
-                    entryModuleReference = entryModuleReference
+                    module = module
                 )
                 globalVariables += generator.globalVariables
                 functions += generator.functions
@@ -129,18 +124,29 @@ class MidIrGenerator private constructor(
             return MidIrCompilationUnit(globalVariables = globalVariables, functions = functions)
         }
 
-        @JvmStatic
-        fun generate(moduleReference: ModuleReference, module: HighIrModule): MidIrCompilationUnit {
-            val generator = MidIrGenerator(
-                globalResourceAllocator = MidIrGlobalResourceAllocator(),
-                moduleReference = moduleReference,
-                module = module,
-                entryModuleReference = moduleReference
+        private fun MidIrCompilationUnit.addMain(entryModuleReference: ModuleReference): MidIrCompilationUnit =
+            SimpleOptimizations.removeUnusedFunctions(
+                irCompilationUnit = MidIrCompilationUnit(
+                    globalVariables = globalVariables,
+                    functions = functions + getCompiledProgramMainFunction(entryModuleReference = entryModuleReference)
+                )
             )
-            return MidIrCompilationUnit(
-                globalVariables = generator.globalVariables.toList(),
-                functions = generator.functions
+
+        private fun getCompiledProgramMainFunction(entryModuleReference: ModuleReference): MidIrFunction =
+            MidIrFunction(
+                functionName = MidIrNameEncoder.compiledProgramMain,
+                argumentTemps = emptyList(),
+                mainBodyStatements = listOf(
+                    CALL_FUNCTION(
+                        functionName = MidIrNameEncoder.encodeMainFunctionName(moduleReference = entryModuleReference),
+                        arguments = emptyList(),
+                        returnCollector = null
+                    ),
+                    Return(returnedExpression = null)
+                ),
+                numberOfArguments = 0,
+                hasReturn = false,
+                isPublic = true
             )
-        }
     }
 }
