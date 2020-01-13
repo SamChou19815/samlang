@@ -176,4 +176,3 @@ I can be any type!
 #./out/x86/test.well-typed.simple-no-ctx
 
 #./out/x86/test.well-typed.simple-no-ctx-annotated
-

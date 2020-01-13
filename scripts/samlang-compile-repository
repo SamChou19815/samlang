@@ -8,7 +8,7 @@ set -e
 # X86
 echo 'Checking generated X86 code...' >&2
 rm ./out/x86/program.s
-node scripts/run-programs.js > scripts/result-to-test-against-snapshot.txt
+./scripts/run-programs.js
 diff scripts/result-to-test-against-snapshot.txt scripts/snapshot.txt
 rm scripts/result-to-test-against-snapshot.txt
 
