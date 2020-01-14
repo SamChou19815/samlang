@@ -8,6 +8,7 @@ import samlang.ast.asm.AssemblyArgs.MEM
 import samlang.ast.asm.AssemblyArgs.RAX
 import samlang.ast.asm.AssemblyArgs.RDI
 import samlang.ast.asm.AssemblyArgs.RDX
+import samlang.ast.asm.AssemblyArgs.RSI
 import samlang.ast.asm.AssemblyArgs.RSP
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.AlBinaryOpMemDest
@@ -351,6 +352,17 @@ class AssemblyInterpreter(program: AssemblyProgram) {
                             val strToParse = readArray(getValue(RDI))
                             val value = strToParse.toLongOrNull() ?: throw PanicException("Bad string: $strToParse")
                             setValue(RAX, value)
+                            return
+                        }
+                        MidIrNameEncoder.nameOfStringConcat -> {
+                            val concatString = (readArray(getValue(RDI)) + readArray(getValue(RSI))).toCharArray()
+                            val memStartingPointer = calloc(concatString.size * 8 + 8.toLong())
+                            setMem(memStartingPointer, concatString.size.toLong())
+                            val stringStartPointer = memStartingPointer + 8
+                            for (i in concatString.indices) {
+                                setMem(stringStartPointer + i * 8, concatString[i].toLong())
+                            }
+                            setValue(RAX, stringStartPointer)
                             return
                         }
                         MidIrNameEncoder.nameOfMalloc -> {

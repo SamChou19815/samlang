@@ -8,6 +8,7 @@ val printInterpreterExpectedResult: Map<String, String> = mapOf(
     "cf-test-1" to "361200",
     "cf-test-2" to "7000",
     "cf-test-3" to "1400",
+    "concat-string" to "Hello World!",
     "cse-test-1" to "30\n12\n15",
     "cse-test-2" to "OK",
     "cse-test-3" to "2181",

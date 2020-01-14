@@ -15,6 +15,9 @@ one
 #./out/x86/test.runnable.cf-test-3
 1400
 
+#./out/x86/test.runnable.concat-string
+Hello World!
+
 #./out/x86/test.runnable.correct-op
 OK
 

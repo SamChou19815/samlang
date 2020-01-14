@@ -10,7 +10,7 @@
 typedef int64_t samlang_int;
 typedef samlang_int *samlang_string;
 
-#define samlang_length(a) *(xiint *)((a)-1)
+#define samlang_length(a) *(samlang_int *)((a)-1)
 
 #ifdef __cplusplus
 #define SAMLANG_EXPORT extern "C"
@@ -37,6 +37,7 @@ SAMLANG_EXPORT void registerFinalizer(void*, Finalizer*);
 
 extern samlang_int SAMLANG_BUILTIN(stringToInt)(samlang_string);
 extern samlang_string SAMLANG_BUILTIN(intToString)(samlang_int);
+extern samlang_string SAMLANG_BUILTIN(stringConcat)(samlang_string, samlang_string);
 extern void SAMLANG_BUILTIN(println)(samlang_string);
 extern void SAMLANG_BUILTIN(throw)(samlang_string);
 

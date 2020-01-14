@@ -136,6 +136,15 @@ private class MidIrStatementInterpreter(
                     environment.strings[location] = stringForm
                     location
                 }
+                MidIrNameEncoder.nameOfStringConcat -> {
+                    require(value = arguments.size == 2)
+                    val string1 = environment.strings[arguments[0]] ?: error(message = "Bad string at ${arguments[0]}")
+                    val string2 = environment.strings[arguments[1]] ?: error(message = "Bad string at ${arguments[1]}")
+                    val location = environment.heapPointer
+                    environment.heapPointer += 8
+                    environment.strings[location] = string1 + string2
+                    location
+                }
                 MidIrNameEncoder.nameOfPrintln -> {
                     require(value = arguments.size == 1)
                     val argument = arguments[0]

@@ -129,6 +129,22 @@ samlang_string SAMLANG_BUILTIN(intToString)(samlang_int in) {
     return mkString(buffer);
 }
 
+samlang_string SAMLANG_BUILTIN(stringConcat)(samlang_string s1, samlang_string s2) {
+    samlang_int l1 = samlang_length(s1);
+    samlang_int l2 = samlang_length(s2);
+    samlang_int total_length = l1 + l2;
+    samlang_int* stringArray = (samlang_int*) SAMLANG_BUILTIN(malloc)(total_length * 8);
+    stringArray[0] = total_length;
+    samlang_string string = &stringArray[1];
+    for (samlang_int i = 0; i < l1; i++) {
+        string[i] = s1[i];
+    }
+    for (samlang_int i = 0; i < l2; i++) {
+        string[l1 + i] = s2[i];
+    }
+    return string;
+}
+
 void SAMLANG_BUILTIN(throw)(samlang_string in) {
     SAMLANG_BUILTIN(println)(in);
     exit(1);
