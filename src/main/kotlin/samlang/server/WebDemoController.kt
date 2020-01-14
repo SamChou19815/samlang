@@ -54,7 +54,8 @@ internal object WebDemoController {
             text = programString
         )
         if (parseErrors.isNotEmpty()) {
-            return Response(type = Type.BAD_SYNTAX, detail = parseErrors)
+            val detail = parseErrors.joinToString(separator = "\n") { it.errorMessage }
+            return Response(type = Type.BAD_SYNTAX, detail = detail)
         }
         val errorCollector = ErrorCollector()
         val checkedModule = typeCheckSingleModuleSource(module = rawModule, errorCollector = errorCollector)
