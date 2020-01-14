@@ -277,15 +277,23 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) : Expressi
         }
         printer.indented {
             expression.matchingList.forEach { variantPatternToExpr ->
+                val afterMatchExpression = variantPatternToExpr.expression
+                val isComplex = afterMatchExpression.isComplex
                 printlnWithoutFurtherIndentation {
                     printWithoutBreak(x = "| ${variantPatternToExpr.tag} ")
                     printWithoutBreak(x = variantPatternToExpr.dataVariable ?: "_")
-                    printWithoutBreak(x = " -> (")
+                    if (isComplex) {
+                        printWithoutBreak(x = " -> (")
+                    } else {
+                        printWithoutBreak(x = " -> (")
+                        afterMatchExpression.printSelf()
+                        printWithoutBreak(x = ")")
+                    }
                 }
-                indented {
-                    printlnWithoutFurtherIndentation { variantPatternToExpr.expression.printSelf() }
+                if (isComplex) {
+                    indented { afterMatchExpression.printSelf() }
+                    printWithBreak(x = ")")
                 }
-                printWithoutBreak(x = ")")
             }
         }
         printer.print(x = "}", requireBreak = context)
@@ -298,7 +306,14 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) : Expressi
             ) { (n, t) -> "$n: $t" }
             printWithoutBreak(x = "$argsString -> (")
         }
-        printer.indented { expression.body.printSelf() }
+        printer.indented {
+            val body = expression.body
+            if (body.isComplex) {
+                expression.body.printSelf()
+            } else {
+                printlnWithoutFurtherIndentation { expression.body.printSelf() }
+            }
+        }
         printer.printlnWithoutFurtherIndentation { printWithoutBreak(x = ")") }
     }
 
