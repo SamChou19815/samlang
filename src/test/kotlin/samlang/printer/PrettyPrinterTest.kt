@@ -6,10 +6,7 @@ import samlang.common.getTypeCheckedModule
 import samlang.programs.wellTypedTestPrograms
 
 class PrettyPrinterTest : StringSpec() {
-
-    private val programs: List<Pair<String, String>> = wellTypedTestPrograms.map { (id, _, code) ->
-        id to code
-    }
+    private val programs: List<Pair<String, String>> = wellTypedTestPrograms.map { (id, _, code) -> id to code }
 
     init {
         for ((id, code) in programs) {

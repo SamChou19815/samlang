@@ -41,9 +41,7 @@ fun prettyPrint(module: Module): String =
     printToStream { printStream -> prettyPrint(module = module, printStream = printStream) }
 
 private class TopLevelPrinter(private val printer: IndentedPrinter) {
-
-    private val expressionPrinter: ExpressionPrinter =
-        ExpressionPrinter(printer = printer)
+    private val expressionPrinter: ExpressionPrinter = ExpressionPrinter(printer = printer)
 
     fun print(module: Module) {
         if (module.imports.isNotEmpty()) {
@@ -98,162 +96,149 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
         val memberVisibility = if (isPublic) "" else "private "
         val memberType = if (isMethod) "method" else "function"
         val typeParameterString = typeParametersToString(typeParameters = typeParameters)
-        val argsString = parameters.joinToString(
-            separator = ", ", prefix = "(", postfix = ")"
-        ) { (name, _, type, _) -> "$name: $type" }
+        val argsString = parameters.joinToString(separator = ", ", prefix = "(", postfix = ")") { (name, _, type, _) ->
+            "$name: $type"
+        }
         val returnTypeString = type.returnType.prettyPrint()
         val header = "$memberVisibility$memberType$typeParameterString $name$argsString: $returnTypeString ="
+        if (body is StatementBlockExpression) {
+            val block = body.block
+            if (block.statements.isEmpty() && block.expression == null) {
+                printer.printWithBreak(x = "$header {}")
+                printer.println()
+                return
+            }
+            printer.printWithBreak(x = "$header {")
+            printer.indented {
+                expressionPrinter.printBlock(block = body.block)
+            }
+            printer.printWithBreak(x = "}")
+            printer.println()
+            return
+        }
         printer.printWithBreak(x = header)
-        printer.indented { body.accept(visitor = expressionPrinter, context = true) }
+        printer.indented {
+            if (body.isComplex) {
+                body.accept(visitor = expressionPrinter, context = true)
+            } else {
+                printlnWithoutFurtherIndentation { body.accept(visitor = expressionPrinter, context = true) }
+            }
+        }
         printer.println()
     }
 }
 
-private class ExpressionPrinter(private val printer: IndentedPrinter) :
-    ExpressionVisitor<Boolean, Unit> {
+private class ExpressionPrinter(private val printer: IndentedPrinter) : ExpressionVisitor<Boolean, Unit> {
 
-    private fun Expression.printSelf(requireBreak: Boolean, withParenthesis: Boolean = false): Unit =
+    private fun Expression.printSelf(withParenthesis: Boolean = false): Unit =
         if (withParenthesis) {
-            printer.printlnWithoutFurtherIndentation {
-                printWithoutBreak(x = "(")
-                printSelf(requireBreak = false)
-                print(x = ")", requireBreak = requireBreak)
-            }
-        } else accept(visitor = this@ExpressionPrinter, context = requireBreak)
+            printer.printWithoutBreak(x = "(")
+            printSelf()
+            printer.printWithoutBreak(x = ")")
+        } else {
+            accept(visitor = this@ExpressionPrinter, context = false)
+        }
 
-    override fun visit(expression: Literal, context: Boolean) {
-        printer.print(x = expression.literal.prettyPrintedValue, requireBreak = context)
-    }
+    override fun visit(expression: Literal, context: Boolean): Unit =
+        printer.printWithoutBreak(x = expression.literal.prettyPrintedValue)
 
-    override fun visit(expression: This, context: Boolean) {
-        printer.print(x = "this", requireBreak = context)
-    }
+    override fun visit(expression: This, context: Boolean): Unit = printer.printWithoutBreak(x = "this")
 
-    override fun visit(expression: Variable, context: Boolean) {
-        printer.print(x = expression.name, requireBreak = context)
-    }
+    override fun visit(expression: Variable, context: Boolean): Unit =
+        printer.printWithoutBreak(x = expression.name)
 
-    override fun visit(expression: ClassMember, context: Boolean) {
-        printer.print(x = "${expression.className}.${expression.memberName}", requireBreak = context)
-    }
+    override fun visit(expression: ClassMember, context: Boolean): Unit =
+        printer.printWithoutBreak(x = "${expression.className}.${expression.memberName}")
 
     override fun visit(expression: TupleConstructor, context: Boolean) {
-        printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = "[")
-            expression.expressionList.forEachIndexed { index, e ->
-                e.printSelf(requireBreak = false)
-                if (index != expression.expressionList.size - 1) {
-                    printWithBreak(x = ",")
-                }
+        printer.printWithoutBreak(x = "[")
+        expression.expressionList.forEachIndexed { index, e ->
+            e.printSelf()
+            if (index != expression.expressionList.size - 1) {
+                printer.printWithoutBreak(x = ", ")
             }
-            print(x = "]", requireBreak = context)
         }
+        printer.printWithoutBreak(x = "]")
     }
 
     override fun visit(expression: ObjectConstructor, context: Boolean) {
-        printer.printWithBreak(x = "{")
-        printer.indented {
-            expression.fieldDeclarations.forEach { constructor ->
-                printlnWithoutFurtherIndentation {
-                    when (constructor) {
-                        is ObjectConstructor.FieldConstructor.Field -> {
-                            printWithBreak(x = "${constructor.name}:")
-                            constructor.expression.printSelf(requireBreak = false)
-                        }
-                        is ObjectConstructor.FieldConstructor.FieldShorthand -> {
-                            printWithoutBreak(x = constructor.name)
-                        }
-                    }
-                    printWithBreak(x = ",")
+        printer.printWithoutBreak(x = "{ ")
+        expression.fieldDeclarations.forEach { constructor ->
+            when (constructor) {
+                is ObjectConstructor.FieldConstructor.Field -> {
+                    printer.printWithoutBreak(x = "${constructor.name}: ")
+                    constructor.expression.printSelf()
+                }
+                is ObjectConstructor.FieldConstructor.FieldShorthand -> {
+                    printer.printWithoutBreak(x = constructor.name)
                 }
             }
+            printer.printWithoutBreak(x = ", ")
         }
-        printer.print(x = "}", requireBreak = context)
+        printer.printWithoutBreak(x = "}")
     }
 
     override fun visit(expression: VariantConstructor, context: Boolean) {
-        printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = "${expression.tag}(")
-            expression.data.printSelf(requireBreak = false)
-            print(x = ")", requireBreak = context)
-        }
+        printer.printWithoutBreak(x = "${expression.tag}(")
+        expression.data.printSelf()
+        printer.printWithoutBreak(x = ")")
     }
 
     override fun visit(expression: FieldAccess, context: Boolean) {
-        printer.printlnWithoutFurtherIndentation {
-            expression.expression.printSelf(
-                requireBreak = false,
-                withParenthesis = expression.expression.precedence >= expression.precedence
-            )
-            print(x = ".${expression.fieldName}", requireBreak = context)
-        }
+        expression.expression.printSelf(
+            withParenthesis = expression.expression.precedence >= expression.precedence
+        )
+        printer.printWithoutBreak(x = ".${expression.fieldName}")
     }
 
     override fun visit(expression: MethodAccess, context: Boolean) {
-        printer.printlnWithoutFurtherIndentation {
-            expression.expression.printSelf(
-                requireBreak = false,
-                withParenthesis = expression.expression.precedence >= expression.precedence
-            )
-            print(x = ".${expression.methodName}", requireBreak = context)
-        }
+        expression.expression.printSelf(
+            withParenthesis = expression.expression.precedence >= expression.precedence
+        )
+        printer.printWithoutBreak(x = ".${expression.methodName}")
     }
 
     override fun visit(expression: Unary, context: Boolean) {
-        printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = expression.operator.symbol)
-            expression.expression.printSelf(
-                requireBreak = context,
-                withParenthesis = expression.expression.precedence >= expression.precedence
-            )
-        }
+        printer.printWithoutBreak(x = expression.operator.symbol)
+        expression.expression.printSelf(
+            withParenthesis = expression.expression.precedence >= expression.precedence
+        )
     }
 
     override fun visit(expression: Panic, context: Boolean) {
-        printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = "panic(")
-            expression.expression.printSelf(requireBreak = false)
-            print(x = ")", requireBreak = context)
-        }
+        printer.printWithoutBreak(x = "panic(")
+        expression.expression.printSelf()
+        printer.printWithoutBreak(x = ")")
     }
 
     override fun visit(expression: BuiltInFunctionCall, context: Boolean) {
-        printer.printlnWithoutFurtherIndentation {
-            printWithoutBreak(x = "${expression.functionName.displayName}(")
-            expression.argumentExpression.printSelf(requireBreak = false)
-            print(x = ")", requireBreak = context)
-        }
+        printer.printWithoutBreak(x = "${expression.functionName.displayName}(")
+        expression.argumentExpression.printSelf()
+        printer.printWithoutBreak(x = ")")
     }
 
     override fun visit(expression: FunctionApplication, context: Boolean) {
-        printer.printlnWithoutFurtherIndentation {
-            expression.functionExpression.printSelf(
-                requireBreak = false,
-                withParenthesis = expression.functionExpression.precedence >= expression.precedence
-            )
-            printWithoutBreak(x = "(")
-            expression.arguments.forEachIndexed { index, e ->
-                e.printSelf(requireBreak = false)
-                if (index != expression.arguments.size - 1) {
-                    printWithBreak(x = ",")
-                }
+        expression.functionExpression.printSelf(
+            withParenthesis = expression.functionExpression.precedence >= expression.precedence
+        )
+        printer.printWithoutBreak(x = "(")
+        expression.arguments.forEachIndexed { index, e ->
+            e.printSelf()
+            if (index != expression.arguments.size - 1) {
+                printer.printWithoutBreak(x = ", ")
             }
-            print(x = ")", requireBreak = context)
         }
+        printer.printWithoutBreak(x = ")")
     }
 
     override fun visit(expression: Binary, context: Boolean) {
-        printer.printlnWithoutFurtherIndentation {
-            expression.e1.printSelf(
-                requireBreak = true,
-                withParenthesis = expression.e1.precedence >= expression.precedence
-            )
-            printWithBreak(x = expression.operator.symbol)
-            expression.e2.printSelf(
-                requireBreak = context,
-                withParenthesis = expression.e2.precedence >= expression.precedence
-            )
-        }
+        expression.e1.printSelf(
+            withParenthesis = expression.e1.precedence >= expression.precedence
+        )
+        printer.printWithoutBreak(x = " ${expression.operator.symbol} ")
+        expression.e2.printSelf(
+            withParenthesis = expression.e2.precedence >= expression.precedence
+        )
     }
 
     override fun visit(expression: IfElse, context: Boolean) {
@@ -263,14 +248,14 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
         val e2IsBlock = e2 is StatementBlockExpression
         printer.printlnWithoutFurtherIndentation {
             printWithoutBreak(x = "if (")
-            expression.boolExpression.printSelf(requireBreak = false)
+            expression.boolExpression.printSelf()
             printWithoutBreak(x = ") then ${if (e1IsBlock) "{" else "("}")
         }
         printer.indented {
             if (e1IsBlock) {
                 printBlock(block = (e1 as StatementBlockExpression).block)
             } else {
-                e1.printSelf(requireBreak = true)
+                printlnWithoutFurtherIndentation { e1.printSelf() }
             }
         }
         printer.printWithBreak(x = "${if (e1IsBlock) "}" else ")"} else ${if (e2IsBlock) "{" else "("}")
@@ -278,7 +263,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
             if (e2IsBlock) {
                 printBlock(block = (e2 as StatementBlockExpression).block)
             } else {
-                e2.printSelf(requireBreak = true)
+                printlnWithoutFurtherIndentation { e2.printSelf() }
             }
         }
         printer.print(x = if (e2IsBlock) "}" else ")", requireBreak = context)
@@ -287,18 +272,20 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
     override fun visit(expression: Match, context: Boolean) {
         printer.printlnWithoutFurtherIndentation {
             printWithoutBreak(x = "match (")
-            expression.matchedExpression.printSelf(requireBreak = false)
-            printWithBreak(x = ") {")
+            expression.matchedExpression.printSelf()
+            printWithoutBreak(x = ") {")
         }
         printer.indented {
             expression.matchingList.forEach { variantPatternToExpr ->
                 printlnWithoutFurtherIndentation {
-                    printWithBreak(x = "| ${variantPatternToExpr.tag}")
-                    printWithBreak(x = variantPatternToExpr.dataVariable ?: "_")
-                    printWithBreak(x = "-> (")
+                    printWithoutBreak(x = "| ${variantPatternToExpr.tag} ")
+                    printWithoutBreak(x = variantPatternToExpr.dataVariable ?: "_")
+                    printWithoutBreak(x = " -> (")
                 }
-                indented { variantPatternToExpr.expression.printSelf(requireBreak = true) }
-                printWithBreak(x = ")")
+                indented {
+                    printlnWithoutFurtherIndentation { variantPatternToExpr.expression.printSelf() }
+                }
+                printWithoutBreak(x = ")")
             }
         }
         printer.print(x = "}", requireBreak = context)
@@ -309,10 +296,10 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
             val argsString = expression.parameters.joinToString(
                 separator = ", ", prefix = "(", postfix = ")"
             ) { (n, t) -> "$n: $t" }
-            printWithBreak(x = "$argsString -> (")
+            printWithoutBreak(x = "$argsString -> (")
         }
-        printer.indented { expression.body.printSelf(requireBreak = true) }
-        printer.print(x = ")", requireBreak = context)
+        printer.indented { expression.body.printSelf() }
+        printer.printlnWithoutFurtherIndentation { printWithoutBreak(x = ")") }
     }
 
     override fun visit(expression: StatementBlockExpression, context: Boolean) {
@@ -323,7 +310,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
         printer.printWithBreak(x = "}")
     }
 
-    private fun printBlock(block: StatementBlock) {
+    fun printBlock(block: StatementBlock) {
         block.statements.forEach { statement ->
             printer.printlnWithoutFurtherIndentation {
                 when (statement) {
@@ -333,7 +320,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
         }
         val expression = block.expression
         if (expression != null) {
-            printer.printlnWithoutFurtherIndentation { expression.printSelf(requireBreak = false) }
+            printer.printlnWithoutFurtherIndentation { expression.printSelf() }
         }
     }
 
@@ -355,7 +342,31 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) :
             is Pattern.WildCardPattern -> "_"
         }
         printer.printWithoutBreak(x = "val $patternString: ${statement.assignedExpression.type} = ")
-        statement.assignedExpression.printSelf(requireBreak = false)
+        statement.assignedExpression.printSelf()
         printer.printWithBreak(x = ";")
     }
+}
+
+private val Expression.isComplex: Boolean get() = accept(visitor = ExpressionComplexityEstimator, context = Unit)
+
+/** statements are complex -> true, simple expressions are not complex -> false. */
+private object ExpressionComplexityEstimator : ExpressionVisitor<Unit, Boolean> {
+    override fun visit(expression: Literal, context: Unit): Boolean = false
+    override fun visit(expression: This, context: Unit): Boolean = false
+    override fun visit(expression: Variable, context: Unit): Boolean = false
+    override fun visit(expression: ClassMember, context: Unit): Boolean = false
+    override fun visit(expression: TupleConstructor, context: Unit): Boolean = false
+    override fun visit(expression: ObjectConstructor, context: Unit): Boolean = false
+    override fun visit(expression: VariantConstructor, context: Unit): Boolean = false
+    override fun visit(expression: FieldAccess, context: Unit): Boolean = false
+    override fun visit(expression: MethodAccess, context: Unit): Boolean = false
+    override fun visit(expression: Unary, context: Unit): Boolean = false
+    override fun visit(expression: Panic, context: Unit): Boolean = false
+    override fun visit(expression: BuiltInFunctionCall, context: Unit): Boolean = false
+    override fun visit(expression: FunctionApplication, context: Unit): Boolean = false
+    override fun visit(expression: Binary, context: Unit): Boolean = false
+    override fun visit(expression: IfElse, context: Unit): Boolean = true
+    override fun visit(expression: Match, context: Unit): Boolean = true
+    override fun visit(expression: Lambda, context: Unit): Boolean = true
+    override fun visit(expression: StatementBlockExpression, context: Unit): Boolean = true
 }
