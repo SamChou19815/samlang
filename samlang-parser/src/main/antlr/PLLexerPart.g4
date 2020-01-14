@@ -84,6 +84,7 @@ RBRACKET : ']';
 QUESTION : '?';
 SEMICOLON : ';';
 COLON : ':';
+COLONCOLON : '::';
 COMMA : ',';
 DOT : '.';
 

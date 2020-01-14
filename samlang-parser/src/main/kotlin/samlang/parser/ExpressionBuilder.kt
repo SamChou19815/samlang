@@ -242,6 +242,18 @@ class ExpressionBuilder internal constructor(
         return Expression.Binary(range = ctx.range, type = Type.bool, operator = BinaryOperator.AND, e1 = e1, e2 = e2)
     }
 
+    override fun visitConcatExpr(ctx: PLParser.ConcatExprContext): Expression? {
+        val e1 = ctx.expression(0)?.toExpression() ?: return null
+        val e2 = ctx.expression(1)?.toExpression() ?: return null
+        return Expression.Binary(
+            range = ctx.range,
+            type = Type.string,
+            operator = BinaryOperator.CONCAT,
+            e1 = e1,
+            e2 = e2
+        )
+    }
+
     override fun visitDisjunctionExpr(ctx: PLParser.DisjunctionExprContext): Expression? {
         val e1 = ctx.expression(0)?.toExpression() ?: return null
         val e2 = ctx.expression(1)?.toExpression() ?: return null

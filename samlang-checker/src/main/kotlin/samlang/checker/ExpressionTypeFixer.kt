@@ -1,6 +1,7 @@
 package samlang.checker
 
 import samlang.ast.common.BinaryOperator.AND
+import samlang.ast.common.BinaryOperator.CONCAT
 import samlang.ast.common.BinaryOperator.DIV
 import samlang.ast.common.BinaryOperator.EQ
 import samlang.ast.common.BinaryOperator.GE
@@ -175,7 +176,7 @@ private class TypeFixerVisitor(private val resolution: ReadOnlyTypeResolution) :
 
     override fun visit(expression: Binary, context: Type): Expression {
         val (newE1, newE2) = when (expression.operator) {
-            MUL, DIV, MOD, PLUS, MINUS, LT, LE, GT, GE, AND, OR -> {
+            MUL, DIV, MOD, PLUS, MINUS, LT, LE, GT, GE, AND, OR, CONCAT -> {
                 expression.e1.tryFixType() to expression.e2.tryFixType()
             }
             NE, EQ -> {

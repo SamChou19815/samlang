@@ -75,6 +75,7 @@ expression
     | expression comparisonOperator expression # ComparisonExpr
     | expression AND expression # ConjunctionExpr
     | expression OR expression # DisjunctionExpr
+    | expression COLONCOLON expression # ConcatExpr
     | IF expression THEN expression ELSE expression # IfElseExpr
     | MATCH LPAREN expression RPAREN LBRACE patternToExpr+ RBRACE # MatchExpr
     | LPAREN optionallyAnnotatedParameter (COMMA optionallyAnnotatedParameter)* COMMA? RPAREN ARROW expression # FunExpr

@@ -1,6 +1,7 @@
 package samlang.checker
 
 import samlang.ast.common.BinaryOperator.AND
+import samlang.ast.common.BinaryOperator.CONCAT
 import samlang.ast.common.BinaryOperator.DIV
 import samlang.ast.common.BinaryOperator.EQ
 import samlang.ast.common.BinaryOperator.GE
@@ -510,6 +511,10 @@ private class ExpressionTypeCheckerVisitor(
             AND, OR -> expression.copy(
                 e1 = e1.toChecked(expectedType = Type.bool),
                 e2 = e2.toChecked(expectedType = Type.bool)
+            )
+            CONCAT -> expression.copy(
+                e1 = e1.toChecked(expectedType = Type.string),
+                e2 = e2.toChecked(expectedType = Type.string)
             )
         }
         constraintAwareTypeChecker.checkAndInfer(

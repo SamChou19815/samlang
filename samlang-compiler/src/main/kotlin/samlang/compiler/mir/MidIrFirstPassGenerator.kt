@@ -494,6 +494,12 @@ internal class MidIrFirstPassGenerator(
                     sequence += Label(name = finalLabel)
                     return ESEQ(statement = SEQ(sequence), expression = valueTemp)
                 }
+                BinaryOperator.CONCAT -> {
+                    return CALL(
+                        functionExpr = NAME(MidIrNameEncoder.nameOfStringConcat),
+                        args = listOf(translate(expression.e1), translate(expression.e2))
+                    )
+                }
             }
             val e1 = translate(expression = expression.e1)
             val e2 = translate(expression = expression.e2)

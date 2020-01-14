@@ -2,6 +2,7 @@ package samlang.interpreter
 
 import kotlinx.collections.immutable.plus
 import samlang.ast.common.BinaryOperator.AND
+import samlang.ast.common.BinaryOperator.CONCAT
 import samlang.ast.common.BinaryOperator.DIV
 import samlang.ast.common.BinaryOperator.EQ
 import samlang.ast.common.BinaryOperator.GE
@@ -237,6 +238,11 @@ internal class ExpressionInterpreter : ExpressionVisitor<InterpretationContext, 
             OR -> {
                 val v1 = eval(expression = expression.e1, context = context) as Value.BoolValue
                 if (v1.value) Value.BoolValue(value = true) else eval(expression = expression.e2, context = context)
+            }
+            CONCAT -> {
+                val v1 = eval(expression = expression.e1, context = context) as Value.StringValue
+                val v2 = eval(expression = expression.e2, context = context) as Value.StringValue
+                return Value.StringValue(value = v1.value + v2.value)
             }
         }
     }

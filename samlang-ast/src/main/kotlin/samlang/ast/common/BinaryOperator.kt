@@ -11,7 +11,7 @@ enum class BinaryOperator(val symbol: String, val precedence: Int) {
     LT(symbol = "<", precedence = 2), LE(symbol = "<=", precedence = 2),
     GT(symbol = ">", precedence = 2), GE(symbol = ">=", precedence = 2),
     EQ(symbol = "==", precedence = 2), NE(symbol = "!=", precedence = 2),
-    AND(symbol = "&&", precedence = 3), OR(symbol = "||", precedence = 4);
+    AND(symbol = "&&", precedence = 3), OR(symbol = "||", precedence = 4), CONCAT(symbol = "::", precedence = 4);
 
     companion object {
         /**

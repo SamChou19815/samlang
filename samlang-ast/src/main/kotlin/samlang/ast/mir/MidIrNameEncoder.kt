@@ -5,6 +5,7 @@ import samlang.ast.common.ModuleReference
 object MidIrNameEncoder {
     val nameOfThrow: String = encodeBuiltinName(name = "throw")
     val nameOfMalloc: String = encodeBuiltinName(name = "malloc")
+    val nameOfStringConcat: String = encodeBuiltinName(name = "stringConcat")
     val nameOfStringToInt: String = encodeBuiltinName(name = "stringToInt")
     val nameOfIntToString: String = encodeBuiltinName(name = "intToString")
     val nameOfPrintln: String = encodeBuiltinName(name = "println")
