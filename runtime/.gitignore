@@ -1,7 +1,0 @@
-# gcc output
-*.o
-*.a
-
-# extracted dependencies
-gc-7.6.4
-!deps/*.gz
