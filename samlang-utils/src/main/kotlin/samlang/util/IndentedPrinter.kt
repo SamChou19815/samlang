@@ -40,9 +40,6 @@ class IndentedPrinter(private val printStream: PrintStream, private val indentat
         printIndentation()
         if (disableIndentation) {
             printStream.print(x)
-            if (requireBreak) {
-                printStream.print(' ')
-            }
         } else {
             if (requireBreak) {
                 printStream.println(x)

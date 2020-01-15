@@ -76,16 +76,13 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
                             val modifier = if (isPublic) "" else "private "
                             printWithBreak(x = "${modifier}val $name: $type,")
                         }
-                        VARIANT -> {
-                            printWithBreak(x = "$name(${fieldType.type}),")
-                        }
+                        VARIANT -> printWithBreak(x = "$name(${fieldType.type}),")
                     }
                 }
             }
             printer.printWithBreak(x = ") {")
         }
         printer.indented {
-            println()
             members.forEach { printMember(member = it) }
         }
         printer.printWithBreak(x = "}")
@@ -100,35 +97,43 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
             "$name: $type"
         }
         val returnTypeString = type.returnType.prettyPrint()
-        val header = "$memberVisibility$memberType$typeParameterString $name$argsString: $returnTypeString ="
-        if (body is StatementBlockExpression) {
-            val block = body.block
-            if (block.statements.isEmpty() && block.expression == null) {
-                printer.printWithBreak(x = "$header {}")
-                printer.println()
-                return
-            }
-            printer.printWithBreak(x = "$header {")
-            printer.indented {
-                expressionPrinter.printBlock(block = body.block)
-            }
-            printer.printWithBreak(x = "}")
-            printer.println()
-            return
-        }
-        printer.printWithBreak(x = header)
-        printer.indented { expressionPrinter.flexiblePrint(expression = body) }
-        printer.println()
+        val header = "$memberVisibility$memberType$typeParameterString $name$argsString: $returnTypeString = "
+        expressionPrinter.printAfterExistingLine(header = header, footer = "", expression = body)
     }
 }
 
 private class ExpressionPrinter(private val printer: IndentedPrinter) : ExpressionVisitor<Unit, Unit> {
+    fun printAfterExistingLine(header: String, footer: String, expression: Expression) {
+        if (expression is StatementBlockExpression) {
+            val block = expression.block
+            if (block.statements.isEmpty() && block.expression == null) {
+                printer.printWithBreak(x = "$header{}$footer")
+                return
+            }
+            printer.printWithBreak(x = "$header{")
+            printer.indented { printBlock(block = block) }
+            printer.printWithBreak(x = "}$footer")
+            return
+        }
+        if (expression.isShort) {
+            printer.printlnWithoutFurtherIndentation {
+                printer.printWithoutBreak(x = header)
+                flexiblePrint(expression = expression)
+                printer.printWithBreak(x = footer)
+            }
+        } else {
+            printer.printWithBreak(x = header)
+            printer.indented { flexiblePrint(expression = expression) }
+            printer.printWithBreak(x = footer)
+        }
+    }
+
     /**
      * Print an [expression] correctly regardless of whether it's simple or complex.
      * If it is complex, we directly print it.
      * If it is simple, we print it within a new line.
      */
-    fun flexiblePrint(expression: Expression) {
+    private fun flexiblePrint(expression: Expression) {
         if (expression.isComplex) {
             expression.accept(visitor = this, context = Unit)
         } else {
@@ -171,7 +176,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) : Expressi
 
     override fun visit(expression: ObjectConstructor, context: Unit) {
         printer.printWithoutBreak(x = "{ ")
-        expression.fieldDeclarations.forEach { constructor ->
+        expression.fieldDeclarations.forEachIndexed { index, constructor ->
             when (constructor) {
                 is ObjectConstructor.FieldConstructor.Field -> {
                     printer.printWithoutBreak(x = "${constructor.name}: ")
@@ -181,9 +186,11 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) : Expressi
                     printer.printWithoutBreak(x = constructor.name)
                 }
             }
-            printer.printWithoutBreak(x = ", ")
+            if (index != expression.fieldDeclarations.size - 1) {
+                printer.printWithoutBreak(x = ", ")
+            }
         }
-        printer.printWithoutBreak(x = "}")
+        printer.printWithoutBreak(x = " }")
     }
 
     override fun visit(expression: VariantConstructor, context: Unit) {
@@ -347,25 +354,37 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) : Expressi
             is Pattern.WildCardPattern -> "_"
         }
         val valHeader = "val $patternString: ${statement.assignedExpression.type} = "
-        val assignedExpression = statement.assignedExpression
-        if (assignedExpression is StatementBlockExpression) {
-            val block = assignedExpression.block
-            if (block.statements.isEmpty() && block.expression == null) {
-                printer.printWithBreak(x = "$valHeader{};")
-                return
-            }
-            printer.printWithBreak(x = "$valHeader{")
-            printer.indented { printBlock(block = block) }
-            printer.printWithBreak(x = "};")
-            return
-        }
-        printer.printWithoutBreak(x = valHeader)
-        flexiblePrint(expression = assignedExpression)
-        printer.printWithBreak(x = ";")
+        printAfterExistingLine(header = valHeader, footer = ";", expression = statement.assignedExpression)
     }
 }
 
+private val Expression.isShort: Boolean get() = accept(visitor = ExpressionShortnessEstimator, context = Unit)
 private val Expression.isComplex: Boolean get() = accept(visitor = ExpressionComplexityEstimator, context = Unit)
+
+private object ExpressionShortnessEstimator : ExpressionVisitor<Unit, Boolean> {
+    override fun visit(expression: Literal, context: Unit): Boolean = true
+    override fun visit(expression: This, context: Unit): Boolean = true
+    override fun visit(expression: Variable, context: Unit): Boolean = true
+    override fun visit(expression: ClassMember, context: Unit): Boolean = true
+    override fun visit(expression: TupleConstructor, context: Unit): Boolean = true
+    override fun visit(expression: ObjectConstructor, context: Unit): Boolean = false
+    override fun visit(expression: VariantConstructor, context: Unit): Boolean = true
+    override fun visit(expression: FieldAccess, context: Unit): Boolean = true
+    override fun visit(expression: MethodAccess, context: Unit): Boolean = true
+    override fun visit(expression: Unary, context: Unit): Boolean = expression.expression.isShort
+    override fun visit(expression: Panic, context: Unit): Boolean = false
+    override fun visit(expression: BuiltInFunctionCall, context: Unit): Boolean = true
+
+    override fun visit(expression: FunctionApplication, context: Unit): Boolean =
+        (expression.arguments.isEmpty() || expression.arguments.size == 1 && expression.arguments[0].isShort) &&
+                expression.functionExpression.isShort
+
+    override fun visit(expression: Binary, context: Unit): Boolean = expression.e1.isShort && expression.e2.isShort
+    override fun visit(expression: IfElse, context: Unit): Boolean = false
+    override fun visit(expression: Match, context: Unit): Boolean = false
+    override fun visit(expression: Lambda, context: Unit): Boolean = false
+    override fun visit(expression: StatementBlockExpression, context: Unit): Boolean = false
+}
 
 /** statements are complex -> true, simple expressions are not complex -> false. */
 private object ExpressionComplexityEstimator : ExpressionVisitor<Unit, Boolean> {
