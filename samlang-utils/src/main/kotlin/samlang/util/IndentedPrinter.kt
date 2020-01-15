@@ -36,7 +36,7 @@ class IndentedPrinter(private val printStream: PrintStream, private val indentat
         }
     }
 
-    fun print(x: Any, requireBreak: Boolean) {
+    private fun print(x: Any, requireBreak: Boolean) {
         printIndentation()
         if (disableIndentation) {
             printStream.print(x)
