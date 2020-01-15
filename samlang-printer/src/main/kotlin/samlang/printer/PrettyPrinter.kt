@@ -46,11 +46,11 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
     fun print(module: Module) {
         if (module.imports.isNotEmpty()) {
             module.imports.forEach(action = ::printImport)
-            printer.println()
+            printer.printWithBreak(x = "")
         }
         module.classDefinitions.forEach { classDefinition ->
             print(classDefinition = classDefinition)
-            printer.println()
+            printer.printWithBreak(x = "")
         }
     }
 
@@ -116,7 +116,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) : Expressi
             return
         }
         if (expression.isShort) {
-            printer.printlnWithoutFurtherIndentation {
+            printer.printInline {
                 printer.printWithoutBreak(x = header)
                 flexiblePrint(expression = expression)
                 printer.printWithBreak(x = footer)
@@ -137,7 +137,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) : Expressi
         if (expression.isComplex) {
             expression.accept(visitor = this, context = Unit)
         } else {
-            printer.printlnWithoutFurtherIndentation {
+            printer.printInline {
                 expression.accept(visitor = this@ExpressionPrinter, context = Unit)
             }
         }
@@ -255,7 +255,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) : Expressi
         val e2 = expression.e2
         val e1IsBlock = e1 is StatementBlockExpression
         val e2IsBlock = e2 is StatementBlockExpression
-        printer.printlnWithoutFurtherIndentation {
+        printer.printInline {
             printWithoutBreak(x = "if (")
             expression.boolExpression.printSelf()
             printWithoutBreak(x = ") then ${if (e1IsBlock) "{" else "("}")
@@ -279,7 +279,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) : Expressi
     }
 
     override fun visit(expression: Match, context: Unit) {
-        printer.printlnWithoutFurtherIndentation {
+        printer.printInline {
             printWithoutBreak(x = "match (")
             expression.matchedExpression.printSelf()
             printWithoutBreak(x = ") {")
@@ -288,7 +288,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) : Expressi
             expression.matchingList.forEach { variantPatternToExpr ->
                 val afterMatchExpression = variantPatternToExpr.expression
                 val isComplex = afterMatchExpression.isComplex
-                printlnWithoutFurtherIndentation {
+                printInline {
                     printWithoutBreak(x = "| ${variantPatternToExpr.tag} ")
                     printWithoutBreak(x = variantPatternToExpr.dataVariable ?: "_")
                     if (isComplex) {
@@ -309,7 +309,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) : Expressi
     }
 
     override fun visit(expression: Lambda, context: Unit) {
-        printer.printlnWithoutFurtherIndentation {
+        printer.printInline {
             val argsString = expression.parameters.joinToString(
                 separator = ", ", prefix = "(", postfix = ")"
             ) { (n, t) -> "$n: $t" }
@@ -331,7 +331,7 @@ private class ExpressionPrinter(private val printer: IndentedPrinter) : Expressi
 
     fun printBlock(block: StatementBlock) {
         block.statements.forEach { statement ->
-            printer.printlnWithoutFurtherIndentation {
+            printer.printInline {
                 when (statement) {
                     is Statement.Val -> printVal(statement = statement)
                 }

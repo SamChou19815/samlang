@@ -7,7 +7,7 @@ class IndentedPrinter(private val printStream: PrintStream, private val indentat
     private var disableIndentation: Boolean = false
     private var currentIndentationLevel: Int = 0
 
-    fun printlnWithoutFurtherIndentation(thunk: IndentedPrinter.() -> Unit) {
+    fun printInline(thunk: IndentedPrinter.() -> Unit) {
         if (!disableIndentation) {
             printIndentation()
         }
@@ -36,6 +36,9 @@ class IndentedPrinter(private val printStream: PrintStream, private val indentat
         }
     }
 
+    fun printWithBreak(x: Any): Unit = print(x = x, requireBreak = true)
+    fun printWithoutBreak(x: Any): Unit = print(x = x, requireBreak = false)
+
     private fun print(x: Any, requireBreak: Boolean) {
         printIndentation()
         if (disableIndentation) {
@@ -46,18 +49,6 @@ class IndentedPrinter(private val printStream: PrintStream, private val indentat
             } else {
                 printStream.print(x)
             }
-        }
-    }
-
-    fun printWithBreak(x: Any): Unit = print(x = x, requireBreak = true)
-
-    fun printWithoutBreak(x: Any): Unit = print(x = x, requireBreak = false)
-
-    fun println() {
-        if (disableIndentation) {
-            printStream.print(' ')
-        } else {
-            printStream.println()
         }
     }
 }
