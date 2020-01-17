@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Build all programs.
+cd runtime && make && cd ../
+./gradlew build
+
+# Create release folder
+mkdir build
+rm -rf build/release
+mkdir build/release
+mkdir build/release/runtime
+cp build/libs/samlang-all.jar build/release/
+cp runtime/libsam.a build/release/runtime
+echo '#!/bin/bash
+java -jar samlang-all.jar "$@"' > build/release/samlang
+chmod +x build/release/samlang
