@@ -42,6 +42,7 @@ object SourceCompiler {
         val unoptimizedCompilationUnits = MidIrGenerator.generateWithMultipleEntries(sources = highIrSources)
         val runtime = Runtime.getRuntime()
         var withoutLinkError = true
+        val jarPath = Paths.get(System.getProperty("java.class.path")).toAbsolutePath().toString()
         for ((moduleReference, unoptimizedCompilationUnit) in unoptimizedCompilationUnits.moduleMappings) {
             val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
             val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
@@ -51,7 +52,9 @@ object SourceCompiler {
                 AssemblyPrinter(writer = it, includeComments = false).printProgram(program = assemblyProgram)
             }
             val outputProgramFile = Paths.get(outputDirectory.toString(), moduleReference.toString()).toString()
-            val gccProcess = runtime.exec("gcc -o $outputProgramFile $outputAssemblyFile -Lruntime -lsam -lpthread")
+            val runtimePath = Paths.get(File(jarPath).parentFile.parentFile.parentFile.toString(), "runtime").toString()
+            val linkCommand = "gcc -o $outputProgramFile $outputAssemblyFile -L$runtimePath -lsam -lpthread"
+            val gccProcess = runtime.exec(linkCommand)
             if (gccProcess.waitFor() != 0) {
                 withoutLinkError = false
                 System.err.println("Failed to link $moduleReference. Linker errors are printed below:")
