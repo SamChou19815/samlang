@@ -8,7 +8,7 @@ Sam's Programming Language
 
 <img alt="SAMLANG" src="https://raw.githubusercontent.com/SamChou19815/design/master/samlang.png" width=300 height=300/>
 
-Read the docs at [the official documentation site](https://samlang-docs.developersam.com).
+Read the docs at [the official documentation site](https://samlang.developersam.com).
 
 Install the VSCode Extension at [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=dev-sam.vscode-samlang).
 
