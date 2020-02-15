@@ -23,6 +23,7 @@ class GlobalTypingContextBuilderTest : StringSpec() {
                 range = Range.DUMMY,
                 name = "Class0",
                 nameRange = Range.DUMMY,
+                isPublic = true,
                 typeDefinition = typeDefinition,
                 members = emptyList()
             )
@@ -30,6 +31,15 @@ class GlobalTypingContextBuilderTest : StringSpec() {
                 range = Range.DUMMY,
                 name = "Class1",
                 nameRange = Range.DUMMY,
+                isPublic = true,
+                typeDefinition = typeDefinition,
+                members = emptyList()
+            )
+            val class2 = ClassDefinition(
+                range = Range.DUMMY,
+                name = "Class1",
+                nameRange = Range.DUMMY,
+                isPublic = false,
                 typeDefinition = typeDefinition,
                 members = emptyList()
             )
@@ -43,7 +53,7 @@ class GlobalTypingContextBuilderTest : StringSpec() {
                         importedMembers = listOf("Class0" to Range.DUMMY)
                     )
                 ),
-                classDefinitions = listOf(class1)
+                classDefinitions = listOf(class1, class2)
             )
             val sources = Sources(moduleMappings = mapOf(module0Reference to module0, module1Reference to module1))
             val commonClassType = ClassType(

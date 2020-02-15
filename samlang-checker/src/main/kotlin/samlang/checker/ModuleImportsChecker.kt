@@ -30,7 +30,10 @@ private class ModuleImportsChecker(private val sources: Sources<Module>, private
             )
             return null
         }
-        val availableMembersSet = availableMembers.classDefinitions.map { it.name }.toSet()
+        val availableMembersSet = availableMembers
+            .classDefinitions
+            .mapNotNull { if (it.isPublic) it.name else null }
+            .toSet()
         val checkedMemberImports = import.importedMembers.filter { (importedMember, range) ->
             val isWellDefined = importedMember in availableMembersSet
             if (!isWellDefined) {

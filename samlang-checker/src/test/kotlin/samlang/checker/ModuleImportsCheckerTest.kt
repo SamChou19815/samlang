@@ -13,11 +13,12 @@ import samlang.ast.lang.Module
 
 class ModuleImportsCheckerTest : StringSpec() {
 
-    private fun createMockClass(name: String): ClassDefinition =
+    private fun createMockClass(name: String, isPublic: Boolean): ClassDefinition =
         ClassDefinition(
             range = Range.DUMMY,
             name = name,
             nameRange = Range.DUMMY,
+            isPublic = isPublic,
             typeDefinition = TypeDefinition(
                 range = Range.DUMMY,
                 type = TypeDefinitionType.OBJECT,
@@ -31,7 +32,7 @@ class ModuleImportsCheckerTest : StringSpec() {
     private fun createMockModule(
         name: String,
         imports: List<Pair<String, List<String>>> = emptyList(),
-        members: List<String> = emptyList()
+        members: List<Pair<String, Boolean>> = emptyList()
     ): Pair<String, Module> =
         name to Module(
             imports = imports.map { (name, members) ->
@@ -42,7 +43,9 @@ class ModuleImportsCheckerTest : StringSpec() {
                     importedModuleRange = Range.DUMMY
                 )
             },
-            classDefinitions = members.map(transform = ::createMockClass)
+            classDefinitions = members.map { (className, isPublic) ->
+                createMockClass(name = className, isPublic = isPublic)
+            }
         )
 
     private fun createMockSources(modules: List<Pair<String, Module>>): Sources<Module> =
@@ -76,8 +79,8 @@ class ModuleImportsCheckerTest : StringSpec() {
             checkErrors(
                 modules = listOf(
                     createMockModule(name = "A"),
-                    createMockModule(name = "B", members = listOf("foo")),
-                    createMockModule(name = "C", members = listOf("bar"))
+                    createMockModule(name = "B", members = listOf("foo" to true)),
+                    createMockModule(name = "C", members = listOf("bar" to true))
                 ),
                 errors = listOf()
             )
@@ -85,8 +88,16 @@ class ModuleImportsCheckerTest : StringSpec() {
         "Cyclic dependency causes no errors." {
             checkErrors(
                 modules = listOf(
-                    createMockModule(name = "A", imports = listOf("B" to listOf("Bar")), members = listOf("Foo")),
-                    createMockModule(name = "B", imports = listOf("A" to listOf("Foo")), members = listOf("Bar"))
+                    createMockModule(
+                        name = "A",
+                        imports = listOf("B" to listOf("Bar")),
+                        members = listOf("Foo" to true)
+                    ),
+                    createMockModule(
+                        name = "B",
+                        imports = listOf("A" to listOf("Foo")),
+                        members = listOf("Bar" to true)
+                    )
                 ),
                 errors = listOf()
             )
@@ -103,6 +114,15 @@ class ModuleImportsCheckerTest : StringSpec() {
                     "B.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.",
                     "B.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved."
                 )
+            )
+        }
+        "Importing private classes cause errors." {
+            checkErrors(
+                modules = listOf(
+                    createMockModule(name = "A", members = listOf("Foo" to false)),
+                    createMockModule(name = "B", imports = listOf("A" to listOf("Foo")))
+                ),
+                errors = listOf("B.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.")
             )
         }
     }

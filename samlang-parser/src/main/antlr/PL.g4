@@ -11,8 +11,8 @@ clazz : classHeaderDeclaration LBRACE classMemberDefinition* RBRACE;
 
 // Module Level Declarations
 classHeaderDeclaration
-    : CLASS UpperId typeParametersDeclaration? LPAREN typeDeclaration RPAREN # ClassHeader
-    | CLASS UpperId # UtilClassHeader
+    : PRIVATE? CLASS UpperId typeParametersDeclaration? LPAREN typeDeclaration RPAREN # ClassHeader
+    | PRIVATE? CLASS UpperId # UtilClassHeader
     ;
 classMemberDefinition
     : PRIVATE? (FUNCTION | METHOD) typeParametersDeclaration? LowerId

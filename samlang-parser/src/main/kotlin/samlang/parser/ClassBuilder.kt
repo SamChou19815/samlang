@@ -21,16 +21,18 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
 
     private val TypeParametersDeclarationContext.typeParameters: List<String> get() = UpperId().map { it.symbol.text }
 
-    private object ModuleNameBuilder : PLBaseVisitor<Pair<String, Range>?>() {
+    private object ModuleNameBuilder : PLBaseVisitor<Triple<Boolean, String, Range>?>() {
 
-        override fun visitClassHeader(ctx: ClassHeaderContext): Pair<String, Range> {
+        override fun visitClassHeader(ctx: ClassHeaderContext): Triple<Boolean, String, Range> {
+            val isPublic = ctx.PRIVATE() == null
             val symbol = ctx.UpperId().symbol
-            return symbol.text to symbol.range
+            return Triple(first = isPublic, second = symbol.text, third = symbol.range)
         }
 
-        override fun visitUtilClassHeader(ctx: UtilClassHeaderContext): Pair<String, Range> {
+        override fun visitUtilClassHeader(ctx: UtilClassHeaderContext): Triple<Boolean, String, Range> {
+            val isPublic = ctx.PRIVATE() == null
             val symbol = ctx.UpperId().symbol
-            return symbol.text to symbol.range
+            return Triple(first = isPublic, second = symbol.text, third = symbol.range)
         }
     }
 
@@ -119,11 +121,12 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
     }
 
     override fun visitClazz(ctx: ClazzContext): ClassDefinition? {
-        val (name, nameRange) = ctx.classHeaderDeclaration().accept(ModuleNameBuilder) ?: return null
+        val (isPublic, name, nameRange) = ctx.classHeaderDeclaration().accept(ModuleNameBuilder) ?: return null
         return ClassDefinition(
             range = ctx.range,
             nameRange = nameRange,
             name = name,
+            isPublic = isPublic,
             typeDefinition = ctx.classHeaderDeclaration().accept(ModuleTypeDefinitionBuilder()) ?: return null,
             members = ctx.classMemberDefinition().mapNotNull { buildClassMemberDefinition(ctx = it) }
         )

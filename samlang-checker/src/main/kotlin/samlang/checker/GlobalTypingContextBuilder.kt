@@ -62,7 +62,14 @@ internal object GlobalTypingContextBuilder {
      */
     private fun buildModuleTypingContextPhase1(module: Module): ModuleTypingContext {
         val classes = module.classDefinitions
-            .map { classDefinition -> classDefinition.name to buildClassType(classDefinition = classDefinition) }
+            .mapNotNull { classDefinition ->
+                if (!classDefinition.isPublic) {
+                    return@mapNotNull null
+                }
+                val className = classDefinition.name
+                val classType = buildClassType(classDefinition = classDefinition)
+                className to classType
+            }
             .toMap()
             .toPersistentMap()
         return ModuleTypingContext(definedClasses = classes, importedClasses = persistentMapOf())

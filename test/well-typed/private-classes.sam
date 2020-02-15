@@ -1,0 +1,9 @@
+// ERROR_COUNT: 0
+
+private class Util {}
+private class Foo(val bar: int) {}
+private class Jar(Bar(int), Baz(bool)) {}
+
+class Main {
+  function main(): unit = {}
+}
