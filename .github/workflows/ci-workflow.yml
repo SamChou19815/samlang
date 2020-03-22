@@ -2,6 +2,12 @@ name: CI
 on: [push]
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Gradle Wrapper Validation
+        uses: gradle/wrapper-validation-action@v1.0.3
   build:
     runs-on: ${{ matrix.os }}
     strategy:
