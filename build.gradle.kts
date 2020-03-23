@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
 
 plugins {
     java
-    kotlin(module = "jvm") version "1.3.70"
+    kotlin(module = "jvm") version "1.3.71"
     id("com.github.johnrengelman.shadow") version "5.2.0"
     id("org.jlleitschuh.gradle.ktlint") version "9.1.1" apply false
     id("org.jlleitschuh.gradle.ktlint-idea") version "9.1.1" apply false
