@@ -1,8 +1,5 @@
 package samlang.compiler.asm.ralloc
 
-import java.util.HashSet
-import java.util.SortedMap
-import java.util.TreeMap
 import samlang.ast.asm.AssemblyArgs
 import samlang.ast.asm.AssemblyArgs.CONST
 import samlang.ast.asm.AssemblyArgs.MEM
@@ -22,7 +19,7 @@ import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
  * A set of utility functions related to dealing with callee saved registers.
  */
 internal object CalleeSavedUtil {
-    private val REGS: SortedMap<Reg, Reg> = TreeMap<Reg, Reg>().apply {
+    private val REGS: Map<Reg, Reg> = sortedMapOf<Reg, Reg>().apply {
         this[REG(id = "RBX_CALLEE_SAVED_STORAGE")] = RBX
         this[REG(id = "R12_CALLEE_SAVED_STORAGE")] = R12
         this[REG(id = "R13_CALLEE_SAVED_STORAGE")] = R13
@@ -64,8 +61,8 @@ internal object CalleeSavedUtil {
         spilledVarMappings: MutableMap<String, AssemblyArgs.Mem>,
         unusedCalleeSavedRegisters: Set<String>
     ): Map<AssemblyArgs.Mem, AssemblyArgs.Mem> {
-        val usedNames = HashSet<String>()
-        val unusedNames = HashSet<String>()
+        val usedNames = hashSetOf<String>()
+        val unusedNames = hashSetOf<String>()
         for ((name, mem) in spilledVarMappings) {
             if (unusedCalleeSavedRegisters.contains(name)) {
                 unusedNames.add(name)

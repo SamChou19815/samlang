@@ -2,7 +2,6 @@ package samlang.analysis
 
 import java.util.ArrayDeque
 import java.util.Deque
-import java.util.TreeMap
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.JumpLabel
 import samlang.ast.asm.AssemblyInstruction.JumpType
@@ -44,7 +43,7 @@ class ControlFlowGraph<I> private constructor(
                 labelIdMap[label] = id
             }
         }
-        childrenMap = TreeMap()
+        childrenMap = sortedMapOf()
         // second pass: construct childrenMap
         for (id in 0 until len) {
             val statement = functionInstructions[id]
@@ -69,7 +68,7 @@ class ControlFlowGraph<I> private constructor(
             }
         }
         // third pass: construct parentMap
-        parentMap = TreeMap()
+        parentMap = sortedMapOf()
         for ((parentId, value) in childrenMap) {
             for (childId in value) {
                 parentMap.computeIfAbsent(childId) { hashSetOf() }.add(parentId)

@@ -1,6 +1,5 @@
 package samlang.optimization
 
-import java.util.TreeSet
 import samlang.analysis.AvailableExpressionAnalysis
 import samlang.analysis.AvailableExpressionAnalysis.ExprInfo
 import samlang.ast.mir.ContainsTempDetector
@@ -125,7 +124,7 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
                         continue
                     }
                     if (id >= appearId && expr == exprToSearch) {
-                        usageMaps[appearId].computeIfAbsent(expr) { TreeSet() }.add(id)
+                        usageMaps[appearId].computeIfAbsent(expr) { sortedSetOf() }.add(id)
                     }
                 }
             }

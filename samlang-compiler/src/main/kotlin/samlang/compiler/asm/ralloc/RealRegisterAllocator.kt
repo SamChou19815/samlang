@@ -2,11 +2,7 @@ package samlang.compiler.asm.ralloc
 
 import java.util.ArrayDeque
 import java.util.Deque
-import java.util.HashMap
-import java.util.HashSet
 import java.util.Queue
-import java.util.TreeSet
-import java.util.function.Consumer
 import samlang.analysis.LiveVariableAnalysis
 import samlang.ast.asm.AssemblyArgs.Mem
 import samlang.ast.asm.AssemblyArgs.Reg
@@ -70,18 +66,18 @@ class RealRegisterAllocator(
      * Variables marked for spilling during this round; initially empty.
      * We use tree set to maintain a relative clean order of variables.
      */
-    private val spilledVars: MutableSet<String> = TreeSet()
+    private val spilledVars: MutableSet<String> = sortedSetOf()
     /**
      * Registers that have been coalesced; when u <- v is coalesced, v is added to
      * this set and u put back on some work list (or vice versa).
      * We use tree set to maintain a relative clean order of variables.
      */
-    private val coalescedVars: MutableSet<String> = TreeSet()
+    private val coalescedVars: MutableSet<String> = sortedSetOf()
     /**
      * Variables successfully colored.
      * We use tree set to maintain a relative clean order of variables.
      */
-    private val coloredVars: MutableSet<String> = TreeSet()
+    private val coloredVars: MutableSet<String> = sortedSetOf()
     /** Stack containing temporaries removed from the graph. */
     private val selectStack: Deque<String> = ArrayDeque()
 
@@ -382,7 +378,7 @@ class RealRegisterAllocator(
     private fun simplify() {
         val varToSimplify = simplifyWorkList.poll() ?: throw Error("Impossible!")
         selectStack.push(varToSimplify)
-        adjacentSet(varToSimplify).forEach(Consumer { variable: String -> decrementDegree(variable) })
+        adjacentSet(varToSimplify).forEach { variable -> decrementDegree(variable) }
     }
 
     private fun decrementDegree(variable: String) {
@@ -578,7 +574,7 @@ class RealRegisterAllocator(
     private fun assignColors() {
         while (!selectStack.isEmpty()) {
             val variable = selectStack.pop()
-            val okRegs = TreeSet(OK_REGS)
+            val okRegs = sortedSetOf(*OK_REGS.toTypedArray())
             val adjacentVars =
                 interferenceGraph.getAdjacentList(variable)
             for (conflictingVar in adjacentVars) {

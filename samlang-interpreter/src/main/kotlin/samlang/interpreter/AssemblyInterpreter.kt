@@ -1,7 +1,6 @@
 package samlang.interpreter
 
 import java.math.BigInteger
-import java.util.TreeMap
 import samlang.ast.asm.AssemblyArg
 import samlang.ast.asm.AssemblyArgs
 import samlang.ast.asm.AssemblyArgs.MEM
@@ -51,7 +50,7 @@ class AssemblyInterpreter(program: AssemblyProgram) {
     /** Current register values. It will only be lazily provisioned. */
     private val registers: MutableMap<String, Long> = hashMapOf()
     /** Current memory content. It will only be lazily provisioned. */
-    private val memory: MutableMap<Long, Long> = TreeMap()
+    private val memory: MutableMap<Long, Long> = sortedMapOf()
     /**
      * Current flags.
      * The flags are not exactly the same as the x86 ones.
