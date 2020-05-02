@@ -1,7 +1,7 @@
 package samlang.parser
 
 import java.io.InputStream
-import org.antlr.v4.runtime.ANTLRInputStream
+import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
@@ -13,7 +13,7 @@ import samlang.parser.generated.PLParser
 
 object ModuleBuilder {
     fun buildModule(moduleReference: ModuleReference, inputStream: InputStream): Pair<Module, List<CompileTimeError>> {
-        val parser = PLParser(CommonTokenStream(PLLexer(ANTLRInputStream(inputStream))))
+        val parser = PLParser(CommonTokenStream(PLLexer(CharStreams.fromStream(inputStream))))
         val errorListener = SyntaxErrorListener(moduleReference = moduleReference)
         parser.removeErrorListeners()
         parser.addErrorListener(errorListener)

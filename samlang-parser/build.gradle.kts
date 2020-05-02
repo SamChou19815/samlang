@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    antlr(dependencyNotation = "org.antlr:antlr4:4.5")
+    antlr(dependencyNotation = "org.antlr:antlr4:4.8")
     implementation(project(":samlang-ast"))
     implementation(project(":samlang-errors"))
     implementation(project(":samlang-utils"))
