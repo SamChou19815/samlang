@@ -1,6 +1,6 @@
 package samlang.parser
 
-import org.antlr.v4.runtime.ANTLRInputStream
+import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import org.apache.commons.text.StringEscapeUtils
 import samlang.ast.common.BinaryOperator
@@ -324,7 +324,7 @@ class ExpressionBuilder internal constructor(
 
     companion object {
         fun build(source: String, moduleReference: ModuleReference): Pair<Expression?, List<CompileTimeError>> {
-            val parser = PLParser(CommonTokenStream(PLLexer(ANTLRInputStream(source.byteInputStream()))))
+            val parser = PLParser(CommonTokenStream(PLLexer(CharStreams.fromStream(source.byteInputStream()))))
             val errorListener = SyntaxErrorListener(moduleReference = moduleReference)
             parser.removeErrorListeners()
             parser.addErrorListener(errorListener)
