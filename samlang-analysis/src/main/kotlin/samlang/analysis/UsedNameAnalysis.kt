@@ -1,7 +1,5 @@
 package samlang.analysis
 
-import java.util.ArrayDeque
-import java.util.Queue
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrFunction
@@ -17,10 +15,10 @@ object UsedNameAnalysis {
         val used = mutableSetOf<String>()
         val (_, functions) = irCompilationUnit
         val usedFunctionMap = functions.map { it.functionName to getOtherFunctionsUsedBy(function = it) }.toMap()
-        val queue: Queue<String> = ArrayDeque()
+        val queue = ArrayDeque<String>()
         queue += MidIrNameEncoder.compiledProgramMain
         while (queue.isNotEmpty()) {
-            val functionName = queue.poll()
+            val functionName = queue.removeFirst()
             val usedByThisFunction = usedFunctionMap[functionName] ?: continue
             usedByThisFunction.forEach { usedFunction ->
                 if (usedFunction !in used) {

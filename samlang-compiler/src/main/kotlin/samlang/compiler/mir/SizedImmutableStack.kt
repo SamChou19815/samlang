@@ -1,7 +1,5 @@
 package samlang.compiler.mir
 
-import java.util.ArrayDeque
-
 /**
  * The stack that keeps track of the actual size of the content.
  * This collection assumes that each element in this collection has a suitable size function.

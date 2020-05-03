@@ -1,7 +1,5 @@
 package samlang.analysis
 
-import java.util.ArrayDeque
-import java.util.Queue
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentSetOf
 import samlang.ast.mir.MidIrExpression.Temporary
@@ -33,13 +31,13 @@ class AvailableCopyAnalysis(private val statements: List<MidIrStatement>) {
     }
 
     private fun computeInOutSets() {
-        val nodes: Queue<Int> = ArrayDeque()
+        val nodes = ArrayDeque<Int>()
         for (i in out.indices) {
             nodes.add(i)
         }
         val transferFunctionVisitor = TransferFunctionVisitor()
         while (!nodes.isEmpty()) {
-            val nodeId = nodes.poll()
+            val nodeId = nodes.removeFirst()
             // for all copy: dest -> src
             val newInSetCopyMap = hashMapOf<String, String>()
             val conflictingDestSet = hashSetOf<String>()

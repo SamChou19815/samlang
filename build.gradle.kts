@@ -45,7 +45,7 @@ allprojects {
     tasks {
         withType<KotlinJvmCompile> {
             kotlinOptions.jvmTarget = "11"
-            kotlinOptions.freeCompilerArgs = listOf("-Xjvm-default=enable")
+            kotlinOptions.freeCompilerArgs = listOf("-Xjvm-default=enable", "-Xopt-in=kotlin.ExperimentalStdlibApi")
         }
         withType<Test> {
             maxParallelForks = 4

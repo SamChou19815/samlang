@@ -1,6 +1,5 @@
 package samlang.analysis
 
-import java.util.ArrayDeque
 import samlang.analysis.ControlFlowGraph.Companion.fromAsm
 import samlang.ast.asm.AssemblyArg
 import samlang.ast.asm.AssemblyArgs
@@ -277,10 +276,10 @@ class LiveVariableAnalysis(
         ) {
             val nodes = ArrayDeque<Int>()
             for (i in inSet.indices) {
-                nodes.push(i)
+                nodes += i
             }
             while (!nodes.isEmpty()) {
-                val nodeId = nodes.pop()
+                val nodeId = nodes.removeFirst()
                 // compute out[n] = union of all { in[n’] | n' in children[n] }
                 val newOutSet = hashSetOf<String>()
                 for (childNodeId in graph.getChildrenIds(nodeId)) {
