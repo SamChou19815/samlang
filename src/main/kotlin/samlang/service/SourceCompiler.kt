@@ -29,7 +29,8 @@ object SourceCompiler {
         outputDirectory.mkdirs()
         val outputFile = Paths.get(outputDirectory.toString(), "program.s").toFile()
         outputFile.writer().use {
-            AssemblyPrinter(writer = it, includeComments = false).printProgram(program = assemblyProgram)
+            it.write(AssemblyPrinter(includeComments = false).printProgram(program = assemblyProgram))
+            it.flush()
         }
     }
 
@@ -49,7 +50,8 @@ object SourceCompiler {
             val outputAssemblyFile = Paths.get(outputDirectory.toString(), "$moduleReference.s").toFile()
             outputAssemblyFile.parentFile.mkdirs()
             outputAssemblyFile.writer().use {
-                AssemblyPrinter(writer = it, includeComments = false).printProgram(program = assemblyProgram)
+                it.write(AssemblyPrinter(includeComments = false).printProgram(program = assemblyProgram))
+                it.flush()
             }
             val outputProgramFile = Paths.get(outputDirectory.toString(), moduleReference.toString()).toString()
             val runtimePath = Paths.get(File(jarPath).parentFile.parentFile.parentFile.toString(), "runtime").toString()

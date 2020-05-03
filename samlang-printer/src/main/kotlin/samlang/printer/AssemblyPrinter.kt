@@ -1,40 +1,21 @@
 package samlang.printer
 
-import java.io.PrintWriter
-import java.io.StringWriter
-import java.io.Writer
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.SetOnFlag
 import samlang.ast.asm.AssemblyProgram
 import samlang.ast.common.GlobalVariable
+import samlang.util.StringBuilderPrintDevice
 
 /**
  * The printer utility for assembly instructions.
  * It is used to printed already compiled assembly.
  *
- * @param writer the Java writer to use.
- * @param hasInstructionTabPrefix whether to add tab before each instruction.
  * @param includeComments whether to include comments.
  */
-class AssemblyPrinter private constructor(
-    writer: Writer,
-    private val hasInstructionTabPrefix: Boolean,
-    private val includeComments: Boolean
-) {
-    /** The printer to use.  */
-    private val printer: PrintWriter = if (writer is PrintWriter) writer else PrintWriter(writer)
+class AssemblyPrinter(private val includeComments: Boolean) {
+    private val device: StringBuilderPrintDevice = StringBuilderPrintDevice()
 
-    /**
-     * @param writer the Java writer to use.
-     * @param includeComments whether to include comments.
-     */
-    constructor(writer: Writer, includeComments: Boolean) : this(
-        writer = writer,
-        hasInstructionTabPrefix = true,
-        includeComments = includeComments
-    )
-
-    fun printProgram(program: AssemblyProgram) {
+    fun printProgram(program: AssemblyProgram): String {
         printlnInstruction(instructionLine = ".text")
         printlnInstruction(instructionLine = ".intel_syntax noprefix")
         printlnInstruction(instructionLine = ".p2align 4, 0x90")
@@ -51,12 +32,12 @@ class AssemblyPrinter private constructor(
         printlnInstruction(instructionLine = ".align 8")
         // global vars init
         program.globalVariables.forEach { printGlobalVariable(globalVariable = it) }
-        printer.flush()
+        return device.dump()
     }
 
     private fun printInstruction(instruction: AssemblyInstruction) {
         when (instruction) {
-            is AssemblyInstruction.Label -> printer.println(instruction)
+            is AssemblyInstruction.Label -> device.println(instruction)
             is SetOnFlag -> instruction.toString().split("\n").forEach { printlnInstruction(it) }
             else -> printlnInstruction(instruction.toString())
         }
@@ -66,7 +47,7 @@ class AssemblyPrinter private constructor(
         val (name, content) = globalVariable
         printlnInstruction(instructionLine = ".data")
         printlnInstruction(instructionLine = ".align 8")
-        printer.println("$name:")
+        device.println("$name:")
         printlnInstruction(instructionLine = ".quad ${content.length}")
         content.chars().forEach { character ->
             printlnInstruction(instructionLine = ".quad $character ## ${character.toChar()}")
@@ -75,24 +56,6 @@ class AssemblyPrinter private constructor(
     }
 
     private fun printlnInstruction(instructionLine: String) {
-        if (hasInstructionTabPrefix) {
-            printer.println("\t" + instructionLine)
-        } else {
-            printer.println(instructionLine)
-        }
-    }
-
-    companion object {
-        @JvmStatic
-        fun instructionsToString(instructions: List<AssemblyInstruction>): String {
-            val stringWriter = StringWriter()
-            val printer = AssemblyPrinter(
-                writer = stringWriter,
-                hasInstructionTabPrefix = false,
-                includeComments = true
-            )
-            instructions.forEach { printer.printInstruction(instruction = it) }
-            return stringWriter.toString()
-        }
+        device.println("\t" + instructionLine)
     }
 }
