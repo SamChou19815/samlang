@@ -1,6 +1,5 @@
 package samlang.interpreter
 
-import java.math.BigInteger
 import samlang.ast.asm.AssemblyArg
 import samlang.ast.asm.AssemblyArgs
 import samlang.ast.asm.AssemblyArgs.MEM
@@ -414,12 +413,8 @@ class AssemblyInterpreter(program: AssemblyProgram) {
         override fun visit(node: IMulOneArg) {
             val raxValue = getValue(RAX)
             val argValue = getValue(node.arg)
-            val bigIntegerValue =
-                BigInteger.valueOf(raxValue).multiply(BigInteger.valueOf(argValue))
-            val higherResultValue: Long = bigIntegerValue.shiftRight(64).toLong()
-            val lowerResultValue: Long = bigIntegerValue.toLong()
-            setValue(RDX, higherResultValue)
-            setValue(RAX, lowerResultValue)
+            setValue(regOrMem = RDX, value = 0L)
+            setValue(regOrMem = RAX, value = raxValue * argValue)
         }
 
         override fun visit(node: IMulTwoArgs) {
