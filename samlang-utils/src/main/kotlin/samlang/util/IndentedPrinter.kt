@@ -1,8 +1,6 @@
 package samlang.util
 
-import java.io.PrintStream
-
-class IndentedPrinter(private val printStream: PrintStream, private val indentationSymbol: String) {
+class IndentedPrinter(private val device: PrintDevice, private val indentationSymbol: String) {
 
     private var disableIndentation: Boolean = false
     private var currentIndentationLevel: Int = 0
@@ -16,7 +14,7 @@ class IndentedPrinter(private val printStream: PrintStream, private val indentat
         thunk()
         disableIndentation = tempDisableIndentation
         if (!disableIndentation) {
-            printStream.println()
+            device.println()
         }
     }
 
@@ -32,7 +30,7 @@ class IndentedPrinter(private val printStream: PrintStream, private val indentat
 
     private fun printIndentation() {
         if (!disableIndentation) {
-            repeat(times = currentIndentationLevel) { printStream.print(indentationSymbol) }
+            repeat(times = currentIndentationLevel) { device.print(indentationSymbol) }
         }
     }
 
@@ -42,12 +40,12 @@ class IndentedPrinter(private val printStream: PrintStream, private val indentat
     private fun print(x: Any, requireBreak: Boolean) {
         printIndentation()
         if (disableIndentation) {
-            printStream.print(x)
+            device.print(x)
         } else {
             if (requireBreak) {
-                printStream.println(x)
+                device.println(x)
             } else {
-                printStream.print(x)
+                device.print(x)
             }
         }
     }

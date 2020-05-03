@@ -1,8 +1,5 @@
 package samlang.server
 
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
-import java.nio.charset.Charset
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import samlang.ast.common.ModuleReference
@@ -80,10 +77,7 @@ internal object WebDemoController {
             "Panic: TimeLimitExceeded (1s)"
         }
         // now pretty-print
-        val stringOut = ByteArrayOutputStream()
-        PrintStream(stringOut, true, "UTF-8").use { prettyPrint(checkedModule, it) }
-        val charset = Charset.forName("UTF-8")
-        val prettyPrintedProgram = String(bytes = stringOut.toByteArray(), charset = charset)
+        val prettyPrintedProgram = prettyPrint(module = checkedModule)
         return Response(
             type = Type.GOOD_PROGRAM,
             detail = SuccessResponseDetail(result = result, prettyPrintedProgram = prettyPrintedProgram)

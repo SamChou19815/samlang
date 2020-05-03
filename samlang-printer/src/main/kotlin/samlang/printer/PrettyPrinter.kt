@@ -1,6 +1,5 @@
 package samlang.printer
 
-import java.io.PrintStream
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.TypeDefinitionType.OBJECT
 import samlang.ast.common.TypeDefinitionType.VARIANT
@@ -30,15 +29,16 @@ import samlang.ast.lang.Pattern
 import samlang.ast.lang.Statement
 import samlang.ast.lang.StatementBlock
 import samlang.util.IndentedPrinter
+import samlang.util.PrintDevice
 
-fun prettyPrint(module: Module, printStream: PrintStream) {
+fun prettyPrint(module: Module, device: PrintDevice) {
     // use 4-space
-    val indentedPrinter = IndentedPrinter(printStream = printStream, indentationSymbol = "    ")
+    val indentedPrinter = IndentedPrinter(device = device, indentationSymbol = "    ")
     TopLevelPrinter(printer = indentedPrinter).print(module = module)
 }
 
 fun prettyPrint(module: Module): String =
-    printToStream { printStream -> prettyPrint(module = module, printStream = printStream) }
+    printToDevice { device -> prettyPrint(module = module, device = device) }
 
 private class TopLevelPrinter(private val printer: IndentedPrinter) {
     private val expressionPrinter: ExpressionPrinter = ExpressionPrinter(printer = printer)

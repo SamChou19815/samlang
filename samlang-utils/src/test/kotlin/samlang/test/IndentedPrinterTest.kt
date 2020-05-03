@@ -2,9 +2,8 @@ package samlang.test
 
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
 import samlang.util.IndentedPrinter
+import samlang.util.StringBuilderPrintDevice
 
 class IndentedPrinterTest : StringSpec() {
     init {
@@ -35,9 +34,9 @@ class IndentedPrinterTest : StringSpec() {
     }
 
     private fun printToString(printerFunction: IndentedPrinter.() -> Unit): String {
-        val stringStream = ByteArrayOutputStream()
-        val printer = IndentedPrinter(printStream = PrintStream(stringStream, true), indentationSymbol = "  ")
+        val device = StringBuilderPrintDevice()
+        val printer = IndentedPrinter(device = device, indentationSymbol = "  ")
         printer.printerFunction()
-        return stringStream.toString()
+        return device.dump()
     }
 }
