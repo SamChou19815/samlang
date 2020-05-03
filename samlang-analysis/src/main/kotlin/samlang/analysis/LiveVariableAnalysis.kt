@@ -276,7 +276,7 @@ class LiveVariableAnalysis(
         ) {
             val nodes = ArrayDeque<Int>()
             for (i in inSet.indices) {
-                nodes += i
+                nodes.addFirst(i)
             }
             while (!nodes.isEmpty()) {
                 val nodeId = nodes.removeFirst()

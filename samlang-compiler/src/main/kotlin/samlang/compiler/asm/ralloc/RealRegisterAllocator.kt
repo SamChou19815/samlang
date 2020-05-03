@@ -1,8 +1,5 @@
 package samlang.compiler.asm.ralloc
 
-import java.util.ArrayDeque
-import java.util.Deque
-import java.util.Queue
 import samlang.analysis.LiveVariableAnalysis
 import samlang.ast.asm.AssemblyArgs.Mem
 import samlang.ast.asm.AssemblyArgs.Reg
@@ -57,11 +54,11 @@ class RealRegisterAllocator(
     /** Temporary registers, not pre-colored and not yet processed. */
     private val initial: MutableSet<String>
     /** List of low-degree non-move-related variables. */
-    private val simplifyWorkList: Queue<String> = SetQueue()
+    private val simplifyWorkList: SetQueue<String> = SetQueue()
     /** List of low-degree move-related variables. */
-    private val freezeWorkList: Queue<String> = SetQueue()
+    private val freezeWorkList: SetQueue<String> = SetQueue()
     /** High-degree variables. */
-    private val spillWorkList: Queue<String> = SetQueue()
+    private val spillWorkList: SetQueue<String> = SetQueue()
     /**
      * Variables marked for spilling during this round; initially empty.
      * We use tree set to maintain a relative clean order of variables.
@@ -79,7 +76,7 @@ class RealRegisterAllocator(
      */
     private val coloredVars: MutableSet<String> = sortedSetOf()
     /** Stack containing temporaries removed from the graph. */
-    private val selectStack: Deque<String> = ArrayDeque()
+    private val selectStack: ArrayDeque<String> = ArrayDeque()
 
     /*
      * ================================================================================
@@ -377,7 +374,7 @@ class RealRegisterAllocator(
 
     private fun simplify() {
         val varToSimplify = simplifyWorkList.poll() ?: throw Error("Impossible!")
-        selectStack.push(varToSimplify)
+        selectStack.addFirst(varToSimplify)
         adjacentSet(varToSimplify).forEach { variable -> decrementDegree(variable) }
     }
 
@@ -573,7 +570,7 @@ class RealRegisterAllocator(
 
     private fun assignColors() {
         while (!selectStack.isEmpty()) {
-            val variable = selectStack.pop()
+            val variable = selectStack.removeFirst()
             val okRegs = sortedSetOf(*OK_REGS.toTypedArray())
             val adjacentVars =
                 interferenceGraph.getAdjacentList(variable)
