@@ -1,7 +1,5 @@
 package samlang.analysis
 
-import java.util.ArrayDeque
-import java.util.Queue
 import samlang.ast.mir.ContainsTempDetector
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Temporary
@@ -37,12 +35,12 @@ class AvailableExpressionAnalysis(private val statements: List<MidIrStatement>) 
     }
 
     private fun computeInOutSets() {
-        val nodes: Queue<Int> = ArrayDeque()
+        val nodes = ArrayDeque<Int>()
         for (i in expressionOut.indices) {
             nodes += i
         }
         while (!nodes.isEmpty()) {
-            val nodeId = nodes.poll()
+            val nodeId = nodes.removeFirst()
             val newInMap = hashMapOf<MidIrExpression, Int>()
             val expressionsToRemove = hashSetOf<MidIrExpression>()
             graph.getParentIds(nodeId).asSequence().map { prevNodeId -> expressionOut[prevNodeId] }.forEach { set ->

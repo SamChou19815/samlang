@@ -1,7 +1,5 @@
 package samlang.compiler.mir
 
-import java.util.ArrayDeque
-import java.util.Deque
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentSetOf
 import samlang.ast.mir.MidIrStatement
@@ -25,7 +23,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
     /** A set of currently unused blocks. */
     private val unusedBlocks: MutableSet<String?> = hashSetOf()
     /** The original trace order. */
-    private val originalTrace: Deque<String> = ArrayDeque()
+    private val originalTrace: ArrayDeque<String> = ArrayDeque()
     /** The new trace to be built. */
     private val newTrace: MutableList<String> = arrayListOf()
 
@@ -160,7 +158,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
         while (true) {
             var labelToStart: String? = null
             while (!originalTrace.isEmpty()) {
-                labelToStart = originalTrace.pollFirst()
+                labelToStart = originalTrace.removeFirst()
                 labelToStart = if (labelToStart in unusedBlocks) {
                     break
                 } else {

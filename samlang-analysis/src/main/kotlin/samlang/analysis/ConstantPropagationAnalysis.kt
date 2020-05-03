@@ -1,7 +1,5 @@
 package samlang.analysis
 
-import java.util.ArrayDeque
-import java.util.Queue
 import samlang.analysis.ConstantPropagationAnalysis.ConstantStatus.KnownConstant
 import samlang.analysis.ConstantPropagationAnalysis.ConstantStatus.Unknown
 import samlang.ast.mir.MidIrExpression
@@ -42,12 +40,12 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
     }
 
     private fun computeInOutSet() {
-        val nodes: Queue<Int> = ArrayDeque()
+        val nodes = ArrayDeque<Int>()
         for (i in out.indices) {
             nodes += i
         }
         while (!nodes.isEmpty()) {
-            val nodeId = nodes.poll()
+            val nodeId = nodes.removeFirst()
             val statement = originalStatements[nodeId]
             val newInMap = hashMapOf<String, ConstantStatus>()
             for (parentId in graph.getParentIds(nodeId)) {

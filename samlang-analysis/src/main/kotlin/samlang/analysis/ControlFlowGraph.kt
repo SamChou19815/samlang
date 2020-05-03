@@ -1,7 +1,5 @@
 package samlang.analysis
 
-import java.util.ArrayDeque
-import java.util.Deque
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.JumpLabel
 import samlang.ast.asm.AssemblyInstruction.JumpType
@@ -123,13 +121,13 @@ class ControlFlowGraph<I> private constructor(
     }
 
     fun dfs(visitor: (Node<I>) -> Unit) {
-        val stack: Deque<Node<I>> = ArrayDeque()
+        val stack = ArrayDeque<Node<I>>()
         val visited = hashSetOf<Int>()
         val firstNode = nodeMap[0] ?: return
         stack.add(firstNode)
         while (!stack.isEmpty()) {
-            val node = stack.pollLast()
-            if (node != null && visited.add(node.id)) {
+            val node = stack.removeLast()
+            if (visited.add(node.id)) {
                 visitor(node)
                 stack.addAll(getChildren(node.id))
             }

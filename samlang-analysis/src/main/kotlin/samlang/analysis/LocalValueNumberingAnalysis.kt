@@ -1,7 +1,5 @@
 package samlang.analysis
 
-import java.util.ArrayDeque
-import java.util.Queue
 import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import samlang.ast.mir.ContainsTempDetector
@@ -42,10 +40,10 @@ class LocalValueNumberingAnalysis(statements: List<MidIrStatement>) {
     }
 
     private fun computeLocalValueNumberingInfo() {
-        val workList: Queue<ControlFlowGraph.Node<MidIrStatement>> = ArrayDeque()
+        val workList = ArrayDeque<ControlFlowGraph.Node<MidIrStatement>>()
         workList.add(graph.startNode)
         while (!workList.isEmpty()) {
-            val start = workList.poll()
+            val start = workList.removeFirst()
             dfs(node = start, isFirst = true, info = NumberingInfo(), workList = workList)
         }
     }
@@ -60,7 +58,7 @@ class LocalValueNumberingAnalysis(statements: List<MidIrStatement>) {
         node: ControlFlowGraph.Node<MidIrStatement>,
         isFirst: Boolean,
         info: NumberingInfo,
-        workList: Queue<ControlFlowGraph.Node<MidIrStatement>>
+        workList: ArrayDeque<ControlFlowGraph.Node<MidIrStatement>>
     ) {
         val id = node.id
         if (visited.contains(id)) {
