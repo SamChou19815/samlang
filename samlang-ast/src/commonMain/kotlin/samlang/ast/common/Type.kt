@@ -91,20 +91,14 @@ sealed class Type {
     companion object {
         private var nextUndecidedTypeIndex: Int = 0
 
-        @JvmField
         val unit: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.UNIT)
-        @JvmField
         val bool: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.BOOL)
-        @JvmField
         val int: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.INT)
-        @JvmField
         val string: PrimitiveType = PrimitiveType(name = PrimitiveTypeName.STRING)
 
-        @JvmStatic
         fun id(identifier: String, typeArguments: List<Type> = emptyList()): IdentifierType =
             IdentifierType(identifier = identifier, typeArguments = typeArguments)
 
-        @JvmStatic
         fun undecided(): UndecidedType {
             val type = UndecidedType(
                 index = nextUndecidedTypeIndex
@@ -113,9 +107,8 @@ sealed class Type {
             return type
         }
 
-        @JvmStatic
         fun undecidedList(number: Int): List<UndecidedType> {
-            val list = arrayListOf<UndecidedType>()
+            val list = mutableListOf<UndecidedType>()
             for (i in 0 until number) {
                 list.add(element = undecided())
             }
@@ -123,7 +116,6 @@ sealed class Type {
         }
 
         /** Exposed for testing only. Never call this in production code. */
-        @JvmStatic
         fun resetUndecidedTypeIndex() {
             nextUndecidedTypeIndex = 0
         }

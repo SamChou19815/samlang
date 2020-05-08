@@ -18,97 +18,72 @@ sealed class AssemblyInstruction {
 
         // / 1 - data transfer
 
-        @JvmStatic
         fun MOVE(dest: Reg, value: Long): AssemblyInstruction {
-            return try {
-                val intValue = Math.toIntExact(value)
-                MoveToReg(dest, CONST(value = intValue))
-            } catch (e: ArithmeticException) {
+            return if (value > Int.MAX_VALUE || value < Int.MIN_VALUE) {
                 MoveFromLong(dest, value)
+            } else {
+                MoveToReg(dest, CONST(value = value.toInt()))
             }
         }
 
-        @JvmStatic
         fun MOVE(dest: Mem, src: ConstOrReg): MoveToMem = MoveToMem(dest = dest, src = src)
 
-        @JvmStatic
         fun MOVE(dest: Reg, src: AssemblyArg): MoveToReg = MoveToReg(dest = dest, src = src)
 
-        @JvmStatic
         fun LEA(dest: Reg, src: Mem): LoadEffectiveAddress =
             LoadEffectiveAddress(dest = dest, mem = src)
 
         // / 2 - control flow
 
-        @JvmStatic
         fun CMP(minuend: RegOrMem, subtrahend: ConstOrReg): CmpConstOrReg =
             CmpConstOrReg(minuend = minuend, subtrahend = subtrahend)
 
-        @JvmStatic
         fun CMP(minuend: Reg, subtrahend: Mem): CmpMem =
             CmpMem(minuend = minuend, subtrahend = subtrahend)
 
-        @JvmStatic
         fun SET(type: JumpType, reg: Reg): SetOnFlag = SetOnFlag(type = type, reg = reg)
 
-        @JvmStatic
         fun JUMP(type: JumpType, label: String): JumpLabel = JumpLabel(type = type, label = label)
 
-        @JvmStatic
         fun JUMP(type: JumpType, arg: AssemblyArg): JumpAddress =
             JumpAddress(type = type, arg = arg)
 
-        @JvmStatic
         fun CALL(address: AssemblyArg): CallAddress = CallAddress(address = address)
 
-        @JvmStatic
         fun RET(): Return = Return
 
         // / 3 - arithmetic
-        @JvmStatic
         fun BIN_OP(type: AlBinaryOpType, dest: Mem, src: ConstOrReg): AlBinaryOpMemDest =
             AlBinaryOpMemDest(type = type, dest = dest, src = src)
 
-        @JvmStatic
         fun BIN_OP(type: AlBinaryOpType, dest: Reg, src: AssemblyArg): AlBinaryOpRegDest =
             AlBinaryOpRegDest(type = type, dest = dest, src = src)
 
-        @JvmStatic
         fun IMUL(arg: RegOrMem): IMulOneArg = IMulOneArg(arg = arg)
 
-        @JvmStatic
         fun IMUL(dest: Reg, src: RegOrMem): IMulTwoArgs = IMulTwoArgs(dest = dest, src = src)
 
-        @JvmStatic
         fun IMUL(dest: Reg, src: RegOrMem, immediate: Const): IMulThreeArgs =
             IMulThreeArgs(dest = dest, src = src, immediate = immediate)
 
-        @JvmStatic
         fun CQO(): Cqo = Cqo
 
-        @JvmStatic
         fun IDIV(arg: RegOrMem): IDiv = IDiv(divisor = arg)
 
-        @JvmStatic
         fun UN_OP(type: AlUnaryOpType, arg: RegOrMem): AlUnaryOp =
             AlUnaryOp(type = type, dest = arg)
 
-        @JvmStatic
         fun SHIFT(type: ShiftType, dest: RegOrMem, count: Int): Shift =
             Shift(type = type, dest = dest, count = count)
 
         // / 4 - other
 
-        @JvmStatic
         fun PUSH(arg: AssemblyArg): Push = Push(arg = arg)
 
-        @JvmStatic
         fun POP(regOrMem: RegOrMem): Pop = Pop(arg = regOrMem)
 
-        @JvmStatic
         fun LABEL(label: String): Label = Label(label = label)
 
-        @JvmStatic
         fun COMMENT(comment: Any): Comment = Comment(comment = comment.toString())
 
         private fun argToString(arg: AssemblyArg): String =

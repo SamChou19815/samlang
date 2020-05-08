@@ -17,13 +17,11 @@ interface AssemblyArg {
         memF: (AssemblyArgs.Mem) -> T
     ): T
 
-    @JvmDefault
     fun <T> matchConstVsRegOrMem(
         constF: (AssemblyArgs.Const) -> T,
         regOrMemF: (RegOrMem) -> T
     ): T = match(constF, regOrMemF, regOrMemF)
 
-    @JvmDefault
     fun <T> matchConstOrRegVsMem(
         constOrRegF: (ConstOrReg) -> T,
         memF: (AssemblyArgs.Mem) -> T

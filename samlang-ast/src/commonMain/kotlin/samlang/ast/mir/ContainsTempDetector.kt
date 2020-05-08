@@ -15,7 +15,6 @@ object ContainsTempDetector {
      * @param temporary the temporary to detect.
      * @return whether the given expression contains the temporary.
      */
-    @JvmStatic
     fun check(expression: MidIrExpression, temporary: Temporary): Boolean = expression.accept(Visitor, temporary)
 
     private object Visitor : MidIrLoweredExpressionVisitor<Temporary, Boolean> {

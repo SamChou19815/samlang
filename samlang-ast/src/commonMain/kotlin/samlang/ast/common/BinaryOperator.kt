@@ -17,7 +17,6 @@ enum class BinaryOperator(val symbol: String, val precedence: Int) {
         /**
          * [symbolTable] is the map that converts a string to the enum value.
          */
-        @JvmStatic
         private val symbolTable: Map<String, BinaryOperator> =
             values().asSequence().map { it.symbol to it }.toMap()
 
@@ -27,7 +26,6 @@ enum class BinaryOperator(val symbol: String, val precedence: Int) {
          * @param text the binary operator in the string form.
          * @throws IllegalArgumentException if the given [text] is not a binary operator.
          */
-        @JvmStatic
         fun fromRaw(text: String): BinaryOperator? = symbolTable[text]
     }
 }

@@ -159,16 +159,12 @@ sealed class HighIrExpression(val precedence: Int) {
     }
 
     companion object {
-        @JvmField
         val TRUE: Literal = Literal(type = Type.bool, literal = samlang.ast.common.Literal.TRUE)
-        @JvmField
         val FALSE: Literal = Literal(type = Type.bool, literal = samlang.ast.common.Literal.FALSE)
 
-        @JvmStatic
         fun literal(value: Long): Literal =
             Literal(type = Type.int, literal = samlang.ast.common.Literal.of(value = value))
 
-        @JvmStatic
         fun literal(value: String): Literal =
             Literal(type = Type.string, literal = samlang.ast.common.Literal.of(value = value))
     }

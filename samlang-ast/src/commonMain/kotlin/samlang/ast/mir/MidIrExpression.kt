@@ -10,9 +10,9 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
 
     @Canonical
     data class Constant(val value: Long) : MidIrExpression(classOrder = 0) {
-        val intValue: Int? = try {
-            Math.toIntExact(value)
-        } catch (_: ArithmeticException) {
+        val intValue: Int? = if (value >= Int.MIN_VALUE && value <= Int.MAX_VALUE) {
+            value.toInt()
+        } else {
             null
         }
 
@@ -83,11 +83,18 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
             if (c != 0) {
                 return c
             }
-            return Integer.signum(e1.compareTo(otherOp.e1)) +
-                    Integer.signum(e1.compareTo(otherOp.e2)) +
-                    Integer.signum(e2.compareTo(otherOp.e1)) +
-                    Integer.signum(e2.compareTo(otherOp.e2))
+            return signNumber(e1.compareTo(otherOp.e1)) +
+                    signNumber(e1.compareTo(otherOp.e2)) +
+                    signNumber(e2.compareTo(otherOp.e1)) +
+                    signNumber(e2.compareTo(otherOp.e2))
         }
+
+        private fun signNumber(number: Int): Int =
+            when {
+                number == 0 -> 0
+                number > 0 -> 1
+                else -> -1
+            }
     }
 
     @Canonical
@@ -134,26 +141,18 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
 
     @Suppress(names = ["FunctionName"])
     companion object {
-        @JvmField
         val ZERO: Constant = Constant(value = 0)
-        @JvmField
         val ONE: Constant = Constant(value = 1)
-        @JvmField
         val MINUS_ONE: Constant = Constant(value = -1)
-        @JvmField
         val EIGHT: Constant = Constant(value = 8)
 
-        @JvmStatic
         fun CONST(value: Long): Constant = Constant(value = value)
 
-        @JvmStatic
         fun TEMP(id: String): Temporary = Temporary(id = id)
 
-        @JvmStatic
         fun OP(op: MidIrOperator, e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = op, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun OP_FLEX_ORDER(op: MidIrOperator, e1: MidIrExpression, e2: MidIrExpression): Op {
             when (op) {
                 MidIrOperator.ADD, MidIrOperator.MUL,
@@ -168,80 +167,60 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
             }
         }
 
-        @JvmStatic
         fun ADD(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.ADD, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun SUB(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.SUB, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun MUL(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.MUL, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun DIV(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.DIV, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun MOD(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.MOD, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun AND(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.AND, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun OR(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.OR, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun XOR(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.XOR, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun LT(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.LT, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun GT(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.GT, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun LE(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.LE, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun GE(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.GE, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun EQ(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = MidIrOperator.EQ, e1 = e1, e2 = e2)
 
-        @JvmStatic
         fun NE(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(MidIrOperator.NE, e1, e2)
 
-        @JvmStatic
         fun MEM(expression: MidIrExpression): Mem = Mem(expression = expression)
 
-        @JvmStatic
         fun NAMED_MEM(name: String): Mem = Mem(expression = Name(name = name))
 
-        @JvmStatic
         fun ESEQ(statement: MidIrStatement.Sequence, expression: MidIrExpression): ExprSequence =
             ExprSequence(sequence = statement, expression = expression)
 
-        @JvmStatic
         fun NAME(name: String): Name = Name(name = name)
 
-        @JvmStatic
         fun CALL(functionExpr: MidIrExpression, args: List<MidIrExpression>): Call =
             Call(functionExpr = functionExpr, arguments = args)
 
-        @JvmStatic
         fun MALLOC(sizeExpr: MidIrExpression): Call =
             Call(functionExpr = Name(name = MidIrNameEncoder.nameOfMalloc), arguments = listOf(sizeExpr))
     }

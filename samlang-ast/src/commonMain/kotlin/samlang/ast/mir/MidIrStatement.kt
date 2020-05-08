@@ -100,19 +100,15 @@ sealed class MidIrStatement {
 
     @Suppress(names = ["FunctionName"])
     companion object {
-        @JvmStatic
         fun MOVE(destination: Temporary, source: MidIrExpression): MoveTemp =
             MoveTemp(tempId = destination.id, source = source)
 
-        @JvmStatic
         fun MOVE(destination: Mem, source: MidIrExpression): MoveMem =
             MoveMem(memLocation = destination.expression, source = source)
 
-        @JvmStatic
         fun EXPR(expression: MidIrExpression): IgnoreExpression =
             IgnoreExpression(expression = expression)
 
-        @JvmStatic
         fun CALL_FUNCTION(
             functionName: String,
             arguments: List<MidIrExpression>,
@@ -123,7 +119,6 @@ sealed class MidIrStatement {
             returnCollector = returnCollector
         )
 
-        @JvmStatic
         fun CALL_FUNCTION(
             expression: MidIrExpression,
             arguments: List<MidIrExpression>,
@@ -134,18 +129,14 @@ sealed class MidIrStatement {
             returnCollector = returnCollector
         )
 
-        @JvmStatic
         fun SEQ(statements: List<MidIrStatement>): Sequence = Sequence(statements = statements)
 
-        @JvmStatic
         fun SEQ(vararg statements: MidIrStatement): Sequence =
             Sequence(statements = listOf(*statements))
 
-        @JvmStatic
         fun CJUMP(condition: MidIrExpression, label1: String, label2: String): ConditionalJump =
             ConditionalJump(condition = condition, label1 = label1, label2 = label2)
 
-        @JvmStatic
         fun CJUMP_FALLTHROUGH(condition: MidIrExpression, label1: String): ConditionalJumpFallThrough =
             ConditionalJumpFallThrough(condition = condition, label1 = label1)
     }

@@ -11,7 +11,6 @@ data class Range(val start: Position, val end: Position) {
     override fun toString(): String = "$start-$end"
 
     companion object {
-        @JvmField
         val DUMMY: Range = Range(
             start = Position.DUMMY,
             end = Position.DUMMY

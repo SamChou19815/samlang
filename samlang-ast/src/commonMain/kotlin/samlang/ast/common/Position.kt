@@ -10,7 +10,6 @@ data class Position(val line: Int, val column: Int) : Comparable<Position> {
     override fun toString(): String = "${line + 1}:${column + 1}"
 
     companion object {
-        @JvmField
         val DUMMY: Position = Position(line = -1, column = -1)
     }
 }

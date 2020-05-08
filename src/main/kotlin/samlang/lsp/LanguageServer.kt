@@ -1,5 +1,6 @@
 package samlang.lsp
 
+import java.io.File
 import java.net.URI
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
@@ -103,7 +104,9 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
             .toAbsolutePath()
             .relativize(Paths.get(URI(uri).path))
             .toFile()
-        return ModuleReference.fromRelativeFile(file = relativeFile)
+        val parts = ArrayList(relativeFile.parent.split(File.separator))
+        parts.add(element = relativeFile.nameWithoutExtension)
+        return ModuleReference(parts = parts)
     }
 
     private fun Lsp4jPosition.asPosition(): Position = Position(line = line, column = character)
