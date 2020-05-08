@@ -21,13 +21,13 @@ import samlang.ast.mir.MidIrStatement.MoveMem
 import samlang.ast.mir.MidIrStatement.MoveTemp
 import samlang.ast.mir.MidIrStatement.Return
 
+@ExperimentalStdlibApi
 object InlineOptimizer {
     /** The threshold max tolerable cost of inlining.  */
     private const val INLINE_THRESHOLD = 30
     /** The threshold max tolerable cost of performing inlining.  */
     private const val PERFORM_INLINE_THRESHOLD = 1000
 
-    @JvmStatic
     fun optimize(compilationUnit: MidIrCompilationUnit): MidIrCompilationUnit {
         var tempUnit = compilationUnit
         for (i in 0..4) {

@@ -19,8 +19,8 @@ import samlang.ast.mir.MidIrStatement.MoveMem
 import samlang.ast.mir.MidIrStatement.MoveTemp
 import samlang.ast.mir.MidIrStatement.Return
 
+@ExperimentalStdlibApi
 object LocalValueNumberingOptimizer {
-    @JvmStatic
     fun optimize(statements: List<MidIrStatement>): List<MidIrStatement> {
         val infoList = LocalValueNumberingAnalysis(statements).numberingInfoListIn
         return statements.mapIndexed { i, statement ->

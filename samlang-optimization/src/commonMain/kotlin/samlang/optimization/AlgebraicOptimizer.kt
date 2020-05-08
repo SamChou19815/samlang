@@ -24,7 +24,6 @@ import samlang.ast.mir.MidIrStatement.Return
 import samlang.ast.mir.MidIrStatement.Sequence
 
 internal object AlgebraicOptimizer {
-    @JvmStatic
     fun optimize(statements: List<MidIrStatement>): List<MidIrStatement> =
         statements.map { optimize(statement = it) }
 

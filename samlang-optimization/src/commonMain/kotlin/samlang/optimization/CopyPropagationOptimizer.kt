@@ -17,6 +17,7 @@ import samlang.ast.mir.MidIrStatement.MoveMem
 import samlang.ast.mir.MidIrStatement.MoveTemp
 import samlang.ast.mir.MidIrStatement.Return
 
+@ExperimentalStdlibApi
 internal class CopyPropagationOptimizer private constructor(
     statements: List<MidIrStatement>,
     analysisResult: AvailableCopyAnalysis
@@ -125,7 +126,6 @@ internal class CopyPropagationOptimizer private constructor(
     }
 
     companion object {
-        @JvmStatic
         fun optimize(statements: List<MidIrStatement>): List<MidIrStatement> =
             CopyPropagationOptimizer(
                 statements = statements,

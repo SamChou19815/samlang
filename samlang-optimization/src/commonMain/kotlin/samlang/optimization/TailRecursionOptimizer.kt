@@ -6,7 +6,6 @@ import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.MOVE
 
 object TailRecursionOptimizer {
-    @JvmStatic
     fun optimize(function: MidIrFunction): MidIrFunction {
         val selfCallIds = mutableSetOf<Int>()
         val oldStatements = function.mainBodyStatements
@@ -23,7 +22,7 @@ object TailRecursionOptimizer {
                 return@forEachIndexed
             }
             val collector = statement.returnCollector
-            val acceptableCollectors = collector?.let { hashSetOf(it) } ?: hashSetOf()
+            val acceptableCollectors = collector?.let { mutableSetOf(it) } ?: mutableSetOf()
             for (nextStatementIndex in (index + 1) until oldStatements.size) {
                 val nextStatement = oldStatements[nextStatementIndex]
                 if (nextStatement is MidIrStatement.Label) {

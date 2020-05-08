@@ -9,6 +9,7 @@ import samlang.ast.mir.MidIrFunction
  * @param statementOptimizer the statement optimizer to use.
  * @param doesPerformInlining whether to perform inlining.
  */
+@ExperimentalStdlibApi
 class IrCompilationUnitOptimizer(
     private val statementOptimizer: MidIrStatementOptimizer,
     private val doesPerformInlining: Boolean

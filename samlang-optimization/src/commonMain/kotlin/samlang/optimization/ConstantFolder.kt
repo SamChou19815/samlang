@@ -24,13 +24,11 @@ import samlang.ast.mir.MidIrStatement.Return
 import samlang.ast.mir.MidIrStatement.Sequence
 
 internal object ConstantFolder {
-    @JvmStatic
     fun optimize(statements: List<MidIrStatement>): List<MidIrStatement> =
         statements.mapNotNull { fold(statement = it) }
 
     private fun fold(statement: MidIrStatement): MidIrStatement? = statement.accept(StatementFolder, Unit)
 
-    @JvmStatic
     fun fold(expression: MidIrExpression): MidIrExpression = expression.accept(ExpressionFolder, Unit)
 
     private object StatementFolder : MidIrLoweredStatementVisitor<Unit, MidIrStatement?> {

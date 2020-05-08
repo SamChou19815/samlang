@@ -2,13 +2,13 @@ package samlang.optimization
 
 import samlang.ast.mir.MidIrStatement
 
+@ExperimentalStdlibApi
 interface MidIrStatementOptimizer : Optimizer<List<MidIrStatement>> {
     object AllDisabled : MidIrStatementOptimizer {
         override fun optimize(source: List<MidIrStatement>): List<MidIrStatement> = source
     }
 
     companion object {
-        @JvmField
         val allEnabled: MidIrStatementOptimizer = get(
             doesPerformCopyPropagation = true,
             doesPerformLocalValueNumbering = true,
@@ -16,7 +16,6 @@ interface MidIrStatementOptimizer : Optimizer<List<MidIrStatement>> {
             doesPerformDeadCodeElimination = true
         )
 
-        @JvmStatic
         fun get(
             doesPerformCopyPropagation: Boolean,
             doesPerformLocalValueNumbering: Boolean,

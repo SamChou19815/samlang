@@ -6,12 +6,12 @@ import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 
+@ExperimentalStdlibApi
 internal object DeadCodeEliminator {
     /**
      * @param statements the statements to optimize.
      * @return the optimized statements.
      */
-    @JvmStatic
     fun optimizeIr(statements: List<MidIrStatement>): List<MidIrStatement> {
         val liveTempOut = LiveTempAnalysis(statements = statements).liveTempOut
         val len = statements.size

@@ -11,9 +11,7 @@ internal object OptimizationResourceAllocator {
     private var tempId: Int = 0
     private var labelId: Int = 0
 
-    @JvmStatic
     fun nextTemp(): MidIrExpression.Temporary = TEMP(id = "_TEMP_OPT_" + tempId++)
 
-    @JvmStatic
     fun nextLabel(): String = "LABEL_OPT_" + labelId++
 }

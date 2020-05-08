@@ -26,6 +26,7 @@ import samlang.ast.mir.MidIrStatement.Return
  * The eliminator for common sub-expressions.
  * It will not try to eliminate simple constant, temp, add, sub, and, or, xor.
  */
+@ExperimentalStdlibApi
 internal class CommonSubExpressionEliminator private constructor(statements: List<MidIrStatement>) {
     /** The available analysis into the nodes.  */
     private val out: Array<MutableSet<ExprInfo>> = AvailableExpressionAnalysis(statements).expressionOut
@@ -124,7 +125,13 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
                         continue
                     }
                     if (id >= appearId && expr == exprToSearch) {
-                        usageMaps[appearId].computeIfAbsent(expr) { sortedSetOf() }.add(id)
+                        val usages = usageMaps[appearId]
+                        val expressionUsages = usages[expr]
+                        if (expressionUsages == null) {
+                            usages[expr] = mutableSetOf(id)
+                        } else {
+                            expressionUsages.add(id)
+                        }
                     }
                 }
             }
@@ -214,7 +221,6 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
     }
 
     companion object {
-        @JvmStatic
         fun optimize(statements: List<MidIrStatement>): List<MidIrStatement> =
             CommonSubExpressionEliminator(statements).newStatements
 

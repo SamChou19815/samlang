@@ -12,8 +12,8 @@ import samlang.ast.mir.MidIrStatement.Jump
 
 /** The class that performs a series of simple optimizations. */
 @Suppress(names = ["ComplexRedundantLet"])
+@ExperimentalStdlibApi
 object SimpleOptimizations {
-    @JvmStatic
     fun removeUnusedNames(irCompilationUnit: MidIrCompilationUnit): MidIrCompilationUnit {
         val usedNames = UsedNameAnalysis.getUsedNames(irCompilationUnit = irCompilationUnit)
         val usedGlobals = irCompilationUnit.globalVariables.filter { it.name in usedNames }
@@ -32,7 +32,6 @@ object SimpleOptimizations {
      *
      * @return a list of all optimized statements.
      */
-    @JvmStatic
     fun optimizeIr(statements: List<MidIrStatement>): List<MidIrStatement> =
         coalesceConsecutiveLabelsForIr(statements = statements)
             .let { withoutConsecutiveJumpsInIr(it) }
@@ -52,7 +51,6 @@ object SimpleOptimizations {
      * @param removeComments whether to remove comments.
      * @return a list of all optimized instructions.
      */
-    @JvmStatic
     fun optimizeAsm(
         instructions: List<AssemblyInstruction>,
         removeComments: Boolean

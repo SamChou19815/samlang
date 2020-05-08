@@ -18,6 +18,7 @@ import samlang.ast.mir.MidIrStatement.MoveMem
 import samlang.ast.mir.MidIrStatement.MoveTemp
 import samlang.ast.mir.MidIrStatement.Return
 
+@ExperimentalStdlibApi
 internal class ConstantPropagationOptimizer private constructor(
     statements: List<MidIrStatement>,
     analysisResult: ConstantPropagationAnalysis
@@ -111,7 +112,6 @@ internal class ConstantPropagationOptimizer private constructor(
     }
 
     companion object {
-        @JvmStatic
         fun optimize(statements: List<MidIrStatement>): List<MidIrStatement> {
             val analysis = ConstantPropagationAnalysis(statements = statements)
             return ConstantPropagationOptimizer(statements = statements, analysisResult = analysis).newStatements
