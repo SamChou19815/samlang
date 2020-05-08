@@ -20,13 +20,11 @@ kotlin {
             }
         }
         val jvmMain by getting {
-            dependsOn(commonMain)
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib")
             }
         }
         val jsMain by getting {
-            dependsOn(commonMain)
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib-js")
             }
