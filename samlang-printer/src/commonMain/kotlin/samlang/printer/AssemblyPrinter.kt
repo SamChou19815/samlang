@@ -12,7 +12,8 @@ import samlang.util.StringBuilderPrintDevice
  *
  * @param includeComments whether to include comments.
  */
-class AssemblyPrinter(private val includeComments: Boolean) {
+@ExperimentalStdlibApi
+class AssemblyPrinter(private val includeComments: Boolean, private val osTarget: OsTarget) {
     private val device: StringBuilderPrintDevice = StringBuilderPrintDevice()
 
     fun printProgram(program: AssemblyProgram): String {
@@ -24,7 +25,7 @@ class AssemblyPrinter(private val includeComments: Boolean) {
             printlnInstruction(instructionLine = ".globl $publicFunction")
         }
         program.instructions.forEach { printInstruction(instruction = it) }
-        when (OsTarget.DEFAULT) {
+        when (osTarget) {
             OsTarget.LINUX -> printlnInstruction(instructionLine = ".section .ctors")
             OsTarget.MAC_OS -> printlnInstruction(instructionLine = ".mod_init_func")
             OsTarget.WINDOWS -> printlnInstruction(instructionLine = ".section .ctors,\"w\"")
@@ -49,8 +50,8 @@ class AssemblyPrinter(private val includeComments: Boolean) {
         printlnInstruction(instructionLine = ".align 8")
         device.println("$name:")
         printlnInstruction(instructionLine = ".quad ${content.length}")
-        content.chars().forEach { character ->
-            printlnInstruction(instructionLine = ".quad $character ## ${character.toChar()}")
+        content.toCharArray().forEach { character ->
+            printlnInstruction(instructionLine = ".quad $character ## ${character}")
         }
         printlnInstruction(instructionLine = ".text")
     }

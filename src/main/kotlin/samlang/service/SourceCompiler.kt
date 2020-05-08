@@ -11,8 +11,11 @@ import samlang.compiler.hir.compileSources
 import samlang.compiler.mir.MidIrGenerator
 import samlang.optimization.Optimizer
 import samlang.printer.AssemblyPrinter
+import samlang.printer.OsTarget
 
 object SourceCompiler {
+    private val osTarget: OsTarget = OsTarget.getOsFromString(osNameString = System.getProperty("os.name"))
+
     fun compileToX86Assembly(
         source: Sources<Module>,
         entryModuleReference: ModuleReference,
@@ -29,7 +32,8 @@ object SourceCompiler {
         outputDirectory.mkdirs()
         val outputFile = Paths.get(outputDirectory.toString(), "program.s").toFile()
         outputFile.writer().use {
-            it.write(AssemblyPrinter(includeComments = false).printProgram(program = assemblyProgram))
+            it.write(AssemblyPrinter(includeComments = false, osTarget = osTarget)
+                .printProgram(program = assemblyProgram))
             it.flush()
         }
     }
@@ -50,7 +54,8 @@ object SourceCompiler {
             val outputAssemblyFile = Paths.get(outputDirectory.toString(), "$moduleReference.s").toFile()
             outputAssemblyFile.parentFile.mkdirs()
             outputAssemblyFile.writer().use {
-                it.write(AssemblyPrinter(includeComments = false).printProgram(program = assemblyProgram))
+                it.write(AssemblyPrinter(includeComments = false, osTarget = osTarget)
+                    .printProgram(program = assemblyProgram))
                 it.flush()
             }
             val outputProgramFile = Paths.get(outputDirectory.toString(), moduleReference.toString()).toString()
