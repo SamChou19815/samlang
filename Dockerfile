@@ -1,7 +1,7 @@
 FROM gradle:6.0-jdk11 as builder
 
 COPY build.gradle.kts .
-COPY settings.gradle .
+COPY settings.gradle.kts .
 COPY samlang-analysis ./samlang-analysis
 COPY samlang-ast ./samlang-ast
 COPY samlang-checker ./samlang-checker
