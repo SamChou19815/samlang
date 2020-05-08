@@ -51,7 +51,7 @@ class AssemblyPrinter(private val includeComments: Boolean, private val osTarget
         device.println("$name:")
         printlnInstruction(instructionLine = ".quad ${content.length}")
         content.toCharArray().forEach { character ->
-            printlnInstruction(instructionLine = ".quad $character ## $character")
+            printlnInstruction(instructionLine = ".quad ${character.toLong()} ## $character")
         }
         printlnInstruction(instructionLine = ".text")
     }
