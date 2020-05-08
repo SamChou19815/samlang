@@ -18,17 +18,21 @@ kotlin {
                 implementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.4.2")
             }
         }
-        val jvmMain by getting {
+        jvm().compilations["main"].defaultSourceSet {
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib")
             }
         }
-        val jvmTest by getting {}
-        val jsMain by getting {
+        jvm().compilations["test"].defaultSourceSet {
+            dependencies {}
+        }
+        js().compilations["main"].defaultSourceSet {
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib-js")
             }
         }
-        val jsTest by getting {}
+        js().compilations["test"].defaultSourceSet {
+            dependencies {}
+        }
     }
 }

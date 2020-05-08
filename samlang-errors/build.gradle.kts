@@ -12,15 +12,21 @@ kotlin {
                 implementation(project(":samlang-ast"))
             }
         }
-        val jvmMain by getting {
+        jvm().compilations["main"].defaultSourceSet {
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib")
             }
         }
-        val jsMain by getting {
+        jvm().compilations["test"].defaultSourceSet {
+            dependencies {}
+        }
+        js().compilations["main"].defaultSourceSet {
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib-js")
             }
+        }
+        js().compilations["test"].defaultSourceSet {
+            dependencies {}
         }
     }
 }

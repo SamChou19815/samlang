@@ -8,10 +8,6 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint-idea") version "9.2.1" apply false
 }
 
-object Constants {
-    const val NAME: String = "samlang"
-}
-
 allprojects {
     apply<JavaPlugin>()
     plugins.withId("org.jetbrains.kotlin.jvm") {
@@ -78,7 +74,7 @@ dependencies {
 tasks {
     shadowJar {
         minimize()
-        archiveBaseName.set(Constants.NAME)
+        archiveBaseName.set("samlang")
         manifest { attributes["Main-Class"] = "samlang.Main" }
         isZip64 = true
         artifacts { shadow(archiveFile) { builtBy(shadowJar) } }
