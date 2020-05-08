@@ -5,7 +5,6 @@ import samlang.ast.mir.MidIrLoweredExpressionVisitor
 
 /** The detector utility class for finding mem since they are dangerous. */
 internal object HasMemDetector {
-    @JvmStatic
     fun hasMem(expression: MidIrExpression): Boolean = expression.accept(visitor = Visitor, context = Unit)
 
     private object Visitor : MidIrLoweredExpressionVisitor<Unit, Boolean> {

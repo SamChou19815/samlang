@@ -17,6 +17,7 @@ import samlang.ast.mir.MidIrStatement
  * if the given instruction is the conditional jump (fall-through) instruction.
  * @param I the type of the instruction in the control flow graph.
  */
+@ExperimentalStdlibApi
 class ControlFlowGraph<I> private constructor(
     functionInstructions: List<I>,
     getLabel: (I) -> String?,
@@ -41,7 +42,7 @@ class ControlFlowGraph<I> private constructor(
                 labelIdMap[label] = id
             }
         }
-        childrenMap = sortedMapOf()
+        childrenMap = mutableMapOf()
         // second pass: construct childrenMap
         for (id in 0 until len) {
             val statement = functionInstructions[id]
@@ -66,10 +67,15 @@ class ControlFlowGraph<I> private constructor(
             }
         }
         // third pass: construct parentMap
-        parentMap = sortedMapOf()
+        parentMap = mutableMapOf()
         for ((parentId, value) in childrenMap) {
             for (childId in value) {
-                parentMap.computeIfAbsent(childId) { hashSetOf() }.add(parentId)
+                val children = parentMap[childId]
+                if (children == null) {
+                    parentMap[childId] = mutableSetOf(parentId)
+                } else {
+                    children.add(parentId)
+                }
             }
         }
     }
@@ -152,7 +158,6 @@ class ControlFlowGraph<I> private constructor(
          * The statements must be in lowered form.
          * @return the built graph.
          */
-        @JvmStatic
         fun fromIr(functionStatements: List<MidIrStatement>): ControlFlowGraph<MidIrStatement> =
             ControlFlowGraph(
                 functionInstructions = functionStatements,
@@ -168,7 +173,6 @@ class ControlFlowGraph<I> private constructor(
          * @param functionInstructions the function instructions as the basis of the control flow graph.
          * @return the built graph.
          */
-        @JvmStatic
         fun fromAsm(
             functionInstructions: List<AssemblyInstruction>
         ): ControlFlowGraph<AssemblyInstruction> {

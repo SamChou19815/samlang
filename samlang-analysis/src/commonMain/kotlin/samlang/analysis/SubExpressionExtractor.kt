@@ -25,7 +25,6 @@ internal object SubExpressionExtractor {
      * @param statement the statement to extract all subexpressions.
      * @return the extracted set of sub-expressions.
      */
-    @JvmStatic
     fun get(statement: MidIrStatement): Set<MidIrExpression> = StatementVisitor(statement).expressions
 
     private class StatementVisitor(statement: MidIrStatement) : MidIrLoweredStatementVisitor<Unit, Unit> {

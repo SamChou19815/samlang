@@ -25,25 +25,8 @@ class ModuleInterpreter {
     fun eval(module: Module, context: InterpretationContext = InterpretationContext.EMPTY): Value {
         try {
             return unsafeEval(module = module, context = context)
-        } catch (e: StackOverflowError) {
-            throw PanicException(reason = e.message?.let { "StackOverflowException: $it" } ?: "StackOverflowException")
-        } catch (e: IllegalArgumentException) {
-            throw PanicException(
-                reason = e.message?.let { "IllegalArgumentException: $it" } ?: "IllegalArgumentException"
-            )
-        } catch (e: ArithmeticException) {
-            throw PanicException(reason = e.message?.let { "ArithmeticException: $it" } ?: "ArithmeticException")
-        } catch (e: UnsupportedOperationException) {
-            throw PanicException(
-                reason = e.message?.let { "UnsupportedOperationException: $it" } ?: "UnsupportedOperationException"
-            )
-        } catch (e: IllegalAccessException) {
-            throw PanicException(reason = e.message?.let { "IllegalAccessException: $it" } ?: "IllegalAccessException")
-        } catch (e: ThreadDeath) {
-            throw PanicException(reason = "My thread is dead.")
         } catch (e: Throwable) {
-            e.printStackTrace()
-            throw PanicException(reason = "Internal Interpreter Error ${e.message}. We will investigate.")
+            throw PanicException(reason = "Interpreter Error.")
         }
     }
 

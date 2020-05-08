@@ -14,6 +14,7 @@ import samlang.ast.mir.MidIrStatement.MoveTemp
 /**
  * The class that provides the live variable analysis result, for IR code.
  */
+@ExperimentalStdlibApi
 class LiveTempAnalysis(statements: List<MidIrStatement>) {
     /** The mapping from a node id to different variable sets. */
     private val defs: Array<MutableSet<String>>

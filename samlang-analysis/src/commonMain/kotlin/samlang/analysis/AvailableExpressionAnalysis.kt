@@ -16,6 +16,7 @@ import samlang.ast.mir.MidIrStatement.Return
  *
  * @param statements the statements to obtain available expression analysis result.
  */
+@ExperimentalStdlibApi
 class AvailableExpressionAnalysis(private val statements: List<MidIrStatement>) {
     /** The control flow graph.  */
     private val graph: ControlFlowGraph<MidIrStatement> = ControlFlowGraph.fromIr(functionStatements = statements)
@@ -86,18 +87,29 @@ class AvailableExpressionAnalysis(private val statements: List<MidIrStatement>) 
     private object KillVisitor : MidIrLoweredStatementVisitor<MutableSet<ExprInfo>, Unit> {
         override fun visit(node: MoveTemp, context: MutableSet<ExprInfo>) {
             val tempName = node.tempId
-            context.removeIf { info -> ContainsTempDetector.check(info.expression, Temporary(tempName)) }
+            context.removeAllOf { info -> ContainsTempDetector.check(info.expression, Temporary(tempName)) }
         }
 
         override fun visit(node: MoveMem, context: MutableSet<ExprInfo>) {
             // for safety, remove all mem expressions
-            context.removeIf { info -> HasMemDetector.hasMem(info.expression) }
+            context.removeAllOf { info -> HasMemDetector.hasMem(info.expression) }
         }
 
         override fun visit(node: MidIrStatement.CallFunction, context: MutableSet<ExprInfo>) {
-            node.returnCollector?.let { context.removeIf { info -> ContainsTempDetector.check(info.expression, it) } }
+            node.returnCollector?.let {
+                context.removeAllOf { info -> ContainsTempDetector.check(info.expression, it) }
+            }
             // for safety, remove all mem expressions
-            context.removeIf { info -> HasMemDetector.hasMem(info.expression) }
+            context.removeAllOf { info -> HasMemDetector.hasMem(info.expression) }
+        }
+
+        private inline fun <T> MutableSet<T>.removeAllOf(crossinline predicate: (item: T) -> Boolean) {
+            val iterator = this.iterator()
+            while (iterator.hasNext()) {
+                if (predicate(iterator.next())) {
+                    iterator.remove()
+                }
+            }
         }
 
         override fun visit(node: MidIrStatement.Jump, context: MutableSet<ExprInfo>): Unit = Unit

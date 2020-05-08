@@ -39,6 +39,7 @@ import samlang.ast.asm.AssemblyProgram
 import samlang.ast.asm.RegOrMem
 import samlang.ast.mir.MidIrNameEncoder
 
+@ExperimentalStdlibApi
 class AssemblyInterpreter(program: AssemblyProgram) {
     /** The list of all instructions. */
     private val instructions: List<AssemblyInstruction> = program.instructions
@@ -49,7 +50,7 @@ class AssemblyInterpreter(program: AssemblyProgram) {
     /** Current register values. It will only be lazily provisioned. */
     private val registers: MutableMap<String, Long> = hashMapOf()
     /** Current memory content. It will only be lazily provisioned. */
-    private val memory: MutableMap<Long, Long> = sortedMapOf()
+    private val memory: MutableMap<Long, Long> = mutableMapOf()
     /**
      * Current flags.
      * The flags are not exactly the same as the x86 ones.
@@ -117,7 +118,14 @@ class AssemblyInterpreter(program: AssemblyProgram) {
      * @param id the id of the register.
      * @return the value inside the given register, 0 if it's first used.
      */
-    private fun getReg(id: String): Long = registers.putIfAbsent(id, 0L) ?: 0L
+    private fun getReg(id: String): Long {
+        val value = registers[id]
+        if (value != null) {
+            return value
+        }
+        registers[id] = 0L
+        return 0L
+    }
 
     /**
      * @param id the id of the register.
@@ -142,7 +150,12 @@ class AssemblyInterpreter(program: AssemblyProgram) {
      */
     private fun getMem(location: Long): Long {
         checkMemLocation(location = location)
-        return memory.putIfAbsent(location, 0L) ?: 0L
+        val value = memory[location]
+        if (value != null) {
+            return value
+        }
+        memory[location] = 0L
+        return 0L
     }
 
     /**
@@ -331,7 +344,7 @@ class AssemblyInterpreter(program: AssemblyProgram) {
                         }
                         MidIrNameEncoder.nameOfIntToString -> {
                             val argument = getValue(arg = RDI)
-                            val resultArray = argument.toString().chars().asLongStream().toArray()
+                            val resultArray = argument.toString().toCharArray().map { it.toLong() }.toLongArray()
                             val memStartingPointer = calloc(resultArray.size * 8 + 8.toLong())
                             val unparsedStringStartingPointer = memStartingPointer + 8
                             setMem(memStartingPointer, resultArray.size.toLong())
@@ -376,7 +389,7 @@ class AssemblyInterpreter(program: AssemblyProgram) {
                     }
                 }
             }
-            instructionPointer = Math.toIntExact(getValue(functionExpr))
+            instructionPointer = getValue(functionExpr).toInt()
             stepUntilReturn()
             instructionPointer = savedInstructionPointer
         }

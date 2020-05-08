@@ -9,8 +9,8 @@ import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrStatement
 
 /** Find all actually called functions to help perform dead function elimination. */
+@ExperimentalStdlibApi
 object UsedNameAnalysis {
-    @JvmStatic
     fun getUsedNames(irCompilationUnit: MidIrCompilationUnit): Set<String> {
         val used = mutableSetOf<String>()
         val (_, functions) = irCompilationUnit

@@ -28,7 +28,7 @@ class WebDemoControllerTest : StringSpec() {
                 """.trimIndent()
             )
             resp.type shouldBe WebDemoController.Type.GOOD_PROGRAM
-            (resp.detail as WebDemoController.SuccessResponseDetail).result shouldBe "Panic: StackOverflowException"
+            (resp.detail as WebDemoController.SuccessResponseDetail).result shouldBe "Panic: Interpreter Error."
         }
         "slow-program-gets-tle-error" {
             val resp = WebDemoController.interpret(

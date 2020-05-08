@@ -20,6 +20,7 @@ import samlang.ast.mir.MidIrStatement.Return
  *
  * @param statements the statements to obtain constant propagation analysis result.
  */
+@ExperimentalStdlibApi
 class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
     /** The control flow graph. */
     private val graph: ControlFlowGraph<MidIrStatement> = ControlFlowGraph.fromIr(functionStatements = statements)
@@ -50,7 +51,12 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
             val newInMap = hashMapOf<String, ConstantStatus>()
             for (parentId in graph.getParentIds(nodeId)) {
                 for ((key, value) in out[parentId]) {
-                    newInMap.merge(key, value) { obj, other -> obj.meet(other) }
+                    val existingValue = newInMap[key]
+                    if (existingValue == null) {
+                        newInMap[key] = value
+                    } else {
+                        newInMap[key] = existingValue.meet(other = value)
+                    }
                 }
             }
             `in`[nodeId] = newInMap

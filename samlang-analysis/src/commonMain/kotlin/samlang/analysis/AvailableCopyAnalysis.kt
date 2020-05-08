@@ -16,6 +16,7 @@ import samlang.ast.mir.MidIrStatement.Return
  * The class that provides the available copy analysis result.
  * Avoid giving it IR statements that contains machine registers.
  */
+@ExperimentalStdlibApi
 class AvailableCopyAnalysis(private val statements: List<MidIrStatement>) {
     /** The control flow graph. */
     private val graph: ControlFlowGraph<MidIrStatement> = ControlFlowGraph.fromIr(statements)
@@ -93,7 +94,7 @@ class AvailableCopyAnalysis(private val statements: List<MidIrStatement>) {
         override fun visit(node: MoveMem, context: Int): PersistentSet<Copy> = copiesIn[context]
 
         override fun visit(node: MidIrStatement.CallFunction, context: Int): PersistentSet<Copy> {
-            val destIds = HashSet<String>()
+            val destIds = mutableSetOf<String>()
             node.returnCollector?.let { destIds.add(element = it.id) }
             var newOutSet = persistentSetOf<Copy>()
             // destroy all copies related to return value collectors

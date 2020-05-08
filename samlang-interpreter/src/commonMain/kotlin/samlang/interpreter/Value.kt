@@ -1,6 +1,5 @@
 package samlang.interpreter
 
-import org.apache.commons.text.StringEscapeUtils
 import samlang.ast.lang.Expression
 
 sealed class Value {
@@ -20,7 +19,7 @@ sealed class Value {
     }
 
     data class StringValue(val value: String) : Value() {
-        override fun toString(): String = "\"${StringEscapeUtils.escapeJava(value)}\""
+        override fun toString(): String = "\"${value.replace(oldValue = "\"", newValue = "\\\"")}\""
     }
 
     data class BoolValue(val value: Boolean) : Value() {

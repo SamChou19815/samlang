@@ -23,6 +23,7 @@ import samlang.ast.mir.MidIrStatement.MoveTemp
  *
  * @param statements the statements to obtain local value numbering analysis result.
  */
+@ExperimentalStdlibApi
 class LocalValueNumberingAnalysis(statements: List<MidIrStatement>) {
     private val graph: ControlFlowGraph<MidIrStatement> = ControlFlowGraph.fromIr(functionStatements = statements)
     val numberingInfoListIn: Array<NumberingInfo?>

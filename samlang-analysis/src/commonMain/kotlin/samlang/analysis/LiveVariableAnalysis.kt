@@ -45,6 +45,7 @@ import samlang.ast.asm.FunctionContext
  * @param context the mutable context of a function.
  * @param instructions the assembly instructions to perform live variable analysis.
  */
+@ExperimentalStdlibApi
 class LiveVariableAnalysis(
     private val context: FunctionContext,
     instructions: List<AssemblyInstruction>
