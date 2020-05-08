@@ -6,7 +6,7 @@ kotlin {
     jvm()
     js()
     sourceSets {
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib-common")
                 implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3")
@@ -14,28 +14,24 @@ kotlin {
                 implementation(project(":samlang-analysis"))
             }
         }
-        commonTest {
+        val commonTest by getting {
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-common")
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-annotations-common")
                 implementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.4.2")
             }
         }
-        jvm().compilations["main"].defaultSourceSet {
+        val jvmMain by getting {
+            dependsOn(commonMain)
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib")
             }
         }
-        jvm().compilations["test"].defaultSourceSet {
-            dependencies {}
-        }
-        js().compilations["main"].defaultSourceSet {
+        val jsMain by getting {
+            dependsOn(commonMain)
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib-js")
             }
-        }
-        js().compilations["test"].defaultSourceSet {
-            dependencies {}
         }
     }
 }

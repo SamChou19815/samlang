@@ -6,28 +6,24 @@ kotlin {
     jvm()
     js()
     sourceSets {
-        commonMain {
+        val commonMain by getting {
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib-common")
                 implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3")
                 implementation(project(":samlang-ast"))
             }
         }
-        jvm().compilations["main"].defaultSourceSet {
+        val jvmMain by getting {
+            dependsOn(commonMain)
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib")
             }
         }
-        jvm().compilations["test"].defaultSourceSet {
-            dependencies {}
-        }
-        js().compilations["main"].defaultSourceSet {
+        val jsMain by getting {
+            dependsOn(commonMain)
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib-js")
             }
-        }
-        js().compilations["test"].defaultSourceSet {
-            dependencies {}
         }
     }
 }
