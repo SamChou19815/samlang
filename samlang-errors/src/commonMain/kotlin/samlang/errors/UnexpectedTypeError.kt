@@ -8,6 +8,7 @@ class UnexpectedTypeError(
     actual: Type,
     range: Range
 ) : CompileTimeError.WithRange(
+    errorType = "UnexpectedType",
     reason = "Expected: `${expected.prettyPrint()}`, actual: `${actual.prettyPrint()}`.",
     range = range
 )
