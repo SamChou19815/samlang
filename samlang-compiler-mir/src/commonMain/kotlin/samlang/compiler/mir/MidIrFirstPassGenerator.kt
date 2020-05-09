@@ -544,10 +544,10 @@ internal class MidIrFirstPassGenerator(
                 ONE // A dummy value that is not zero
             }
             val lambdaContextTemp = allocator.allocateTemp(variableName = "_context")
-            val lambdaArguments = arrayListOf(lambdaContextTemp).apply {
+            val lambdaArguments = mutableListOf(lambdaContextTemp).apply {
                 addAll(elements = expression.parameters.map { allocator.allocateTemp(variableName = it.first) })
             }
-            val lambdaStatements = arrayListOf<MidIrStatement>()
+            val lambdaStatements = mutableListOf<MidIrStatement>()
             capturedVariables.forEachIndexed { index, variable ->
                 lambdaStatements += MOVE(
                     destination = allocator.allocateTemp(variableName = variable),

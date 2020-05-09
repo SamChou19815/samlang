@@ -14,6 +14,7 @@ import samlang.ast.mir.MidIrStatement.Return
  *
  * @param blocksInOriginalOrder a list of blocks in their original order.
  */
+@ExperimentalStdlibApi
 internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: List<BasicBlock>) {
     private val emptyTrackStack: SizedImmutableStack<String> = SizedImmutableStack { label -> getStackSize(label) }
     /** The mapping from label to block id. */

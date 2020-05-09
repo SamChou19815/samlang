@@ -16,6 +16,7 @@ import samlang.ast.mir.MidIrStatement.Return
 import samlang.optimization.SimpleOptimizations
 import samlang.optimization.TailRecursionOptimizer
 
+@ExperimentalStdlibApi
 class MidIrGenerator private constructor(
     private val globalResourceAllocator: MidIrGlobalResourceAllocator,
     private val moduleReference: ModuleReference,

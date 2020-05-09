@@ -7,6 +7,7 @@ package samlang.compiler.mir
  *
  * @param T type of the element in the stack.
  */
+@ExperimentalStdlibApi
 internal class SizedImmutableStack<T> {
     private val getSizeFunction: (T) -> Int
     private val node: Node<T>?
