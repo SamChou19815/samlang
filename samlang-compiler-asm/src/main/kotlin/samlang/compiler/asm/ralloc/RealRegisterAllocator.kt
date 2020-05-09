@@ -287,8 +287,8 @@ class RealRegisterAllocator(
                     // live := live / use(I)
                     liveSet.removeAll(useSet)
                     // moveList[n] := moveList[n] union {I}
-                    moveMap.computeIfAbsent(dest) { mutableSetOf() }.add(move)
-                    moveMap.computeIfAbsent(src) { mutableSetOf() }.add(move)
+                    moveMap.getOrPut(dest) { mutableSetOf() }.add(move)
+                    moveMap.getOrPut(src) { mutableSetOf() }.add(move)
                     // workListMoves := workListMoves union {I}
                     workListMoves.add(move)
                 }
@@ -312,12 +312,12 @@ class RealRegisterAllocator(
         val useCount = mutableMapOf<String, Int>()
         for (set in liveVariableAnalysisResult.uses) {
             for (name in set) {
-                useCount.merge(name, 1) { a: Int?, b: Int? -> Integer.sum(a!!, b!!) }
+                useCount[name] = (useCount[name] ?: 0) + 1
             }
         }
         for (set in liveVariableAnalysisResult.defs) {
             for (name in set) {
-                useCount.merge(name, 1) { a: Int?, b: Int? -> Integer.sum(a!!, b!!) }
+                useCount[name] = (useCount[name] ?: 0) + 1
             }
         }
         return useCount
@@ -490,7 +490,7 @@ class RealRegisterAllocator(
         // alias[v] := u
         alias[v] = u
         // moveList[u] := moveList[u] union moveList[v]
-        moveMap.computeIfAbsent(u) { mutableSetOf() }.addAll(moveMap.getOrDefault(v, emptySet()))
+        moveMap.getOrPut(u) { mutableSetOf() }.addAll(moveMap.getOrDefault(v, emptySet()))
         enableMoves(listOf(v))
         for (t in adjacentSet(v)) {
             interferenceGraph.addEdge(t, u)

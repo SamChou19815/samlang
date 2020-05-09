@@ -50,20 +50,20 @@ internal class InterferenceGraph {
         if (u == v) {
             return
         }
-        val existingSetOfU = adjacentSet.computeIfAbsent(u) { mutableSetOf() }
+        val existingSetOfU = adjacentSet.getOrPut(u) { mutableSetOf() }
         if (existingSetOfU.contains(v)) { // already there. Do nothing
             return
         }
         // add to adjacent set
         existingSetOfU.add(v)
-        adjacentSet.computeIfAbsent(v) { mutableSetOf() }.add(u)
+        adjacentSet.getOrPut(v) { mutableSetOf() }.add(u)
         if (!PRE_COLORED_REGS.contains(u)) {
-            adjacentList.computeIfAbsent(u) { mutableSetOf() }.add(v)
-            degrees.merge(u, 1) { a, b -> a + b }
+            adjacentList.getOrPut(u) { mutableSetOf() }.add(v)
+            degrees[u] = (degrees[u] ?: 0) + 1
         }
         if (!PRE_COLORED_REGS.contains(v)) {
-            adjacentList.computeIfAbsent(v) { mutableSetOf() }.add(u)
-            degrees.merge(v, 1) { a, b -> a + b }
+            adjacentList.getOrPut(v) { mutableSetOf() }.add(u)
+            degrees[v] = (degrees[v] ?: 0) + 1
         }
     }
 
