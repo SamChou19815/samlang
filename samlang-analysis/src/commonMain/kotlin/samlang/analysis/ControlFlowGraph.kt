@@ -128,7 +128,7 @@ class ControlFlowGraph<I> private constructor(
 
     fun dfs(visitor: (Node<I>) -> Unit) {
         val stack = ArrayDeque<Node<I>>()
-        val visited = hashSetOf<Int>()
+        val visited = mutableSetOf<Int>()
         val firstNode = nodeMap[0] ?: return
         stack.add(firstNode)
         while (!stack.isEmpty()) {

@@ -21,8 +21,8 @@ private class CyclicDependencyChecker(sources: Sources<Module>, private val erro
      */
     private val dependencyGraph: MutableMap<ModuleReference, MutableList<ModuleMembersImport>> =
         LinkedHashMap()
-    private val hasDependentsSet: MutableSet<ModuleReference> = hashSetOf()
-    private val visitedSet: MutableSet<ModuleReference> = hashSetOf()
+    private val hasDependentsSet: MutableSet<ModuleReference> = mutableSetOf()
+    private val visitedSet: MutableSet<ModuleReference> = mutableSetOf()
     private val visitingList: MutableList<ModuleReference> = mutableListOf()
 
     init {
@@ -112,7 +112,7 @@ private class CyclicDependencyChecker(sources: Sources<Module>, private val erro
         if (dependencyGraph.isEmpty()) {
             return emptyList()
         }
-        val allVisited = hashSetOf<ModuleReference>()
+        val allVisited = mutableSetOf<ModuleReference>()
         // Start with modules with zero dependents.
         for (moduleReference in dependencyGraph.keys) {
             if (moduleReference !in hasDependentsSet) {

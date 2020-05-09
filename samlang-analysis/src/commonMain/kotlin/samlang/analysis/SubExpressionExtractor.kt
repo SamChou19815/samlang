@@ -28,7 +28,7 @@ internal object SubExpressionExtractor {
     fun get(statement: MidIrStatement): Set<MidIrExpression> = StatementVisitor(statement).expressions
 
     private class StatementVisitor(statement: MidIrStatement) : MidIrLoweredStatementVisitor<Unit, Unit> {
-        val expressions: MutableSet<MidIrExpression> = hashSetOf()
+        val expressions: MutableSet<MidIrExpression> = mutableSetOf()
 
         init {
             statement.accept(this, Unit)
@@ -58,7 +58,7 @@ internal object SubExpressionExtractor {
     }
 
     private class ExprVisitor(irExpression: MidIrExpression) : MidIrLoweredExpressionVisitor<Unit, Unit> {
-        val expressions: MutableSet<MidIrExpression> = hashSetOf()
+        val expressions: MutableSet<MidIrExpression> = mutableSetOf()
 
         init {
             irExpression.accept(visitor = this, context = Unit)

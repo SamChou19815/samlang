@@ -65,7 +65,7 @@ object SimpleOptimizations {
         instructions: List<T>,
         cfgConstructor: (List<T>) -> ControlFlowGraph<T>
     ): List<T> {
-        val reachableSet = hashSetOf<Int>()
+        val reachableSet = mutableSetOf<Int>()
         cfgConstructor(instructions).dfs { reachableSet.add(it.id) }
         // only add reachable instructions
         val reachableInstructions = mutableListOf<T>()
@@ -79,7 +79,7 @@ object SimpleOptimizations {
     }
 
     private fun withoutUnusedLabelInIr(statements: List<MidIrStatement>): List<MidIrStatement> {
-        val usedLabels = statements.mapNotNullTo(hashSetOf(), { statement ->
+        val usedLabels = statements.mapNotNullTo(mutableSetOf(), { statement ->
             when (statement) {
                 is Jump -> statement.label
                 is ConditionalJumpFallThrough -> statement.label1
@@ -96,7 +96,7 @@ object SimpleOptimizations {
     }
 
     private fun withoutUnusedLabelInAsm(instructions: List<AssemblyInstruction>): List<AssemblyInstruction> {
-        val usedLabels = instructions.mapNotNullTo(hashSetOf(), { (it as? JumpLabel)?.label })
+        val usedLabels = instructions.mapNotNullTo(mutableSetOf(), { (it as? JumpLabel)?.label })
         return instructions.filter { instruction ->
             if (instruction is AssemblyInstruction.Label) {
                 usedLabels.contains(instruction.label)

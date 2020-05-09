@@ -46,7 +46,7 @@ internal class CopyPropagationOptimizer private constructor(
             // You cannot have one key mapped to two possible locations at a given point,
             // however, we may never remove those impossible mappings at the end, so they
             // appear here, we simply ignore them by storing them in invalidKeys.
-            val invalidKeys = hashSetOf<String>()
+            val invalidKeys = mutableSetOf<String>()
             for ((dest, src) in availableCopies) {
                 if (tempMapping.containsKey(dest)) {
                     invalidKeys.add(dest)

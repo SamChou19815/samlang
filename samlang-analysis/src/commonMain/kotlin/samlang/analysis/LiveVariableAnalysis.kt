@@ -62,10 +62,10 @@ class LiveVariableAnalysis(
         val findDefUseVisitor = FindDefUseVisitor()
         // setup defs, uses, empty in and out
         val len = instructions.size
-        defs = Array(size = len) { hashSetOf<String>() }
-        uses = Array(size = len) { hashSetOf<String>() }
-        val inSet: Array<MutableSet<String>> = Array(size = len) { hashSetOf<String>() }
-        liveVariablesOut = Array(size = len) { hashSetOf<String>() }
+        defs = Array(size = len) { mutableSetOf<String>() }
+        uses = Array(size = len) { mutableSetOf<String>() }
+        val inSet: Array<MutableSet<String>> = Array(size = len) { mutableSetOf<String>() }
+        liveVariablesOut = Array(size = len) { mutableSetOf<String>() }
         for (i in 0 until len) {
             val instruction = instructions[i]
             findDefUseVisitor.id = i
@@ -282,7 +282,7 @@ class LiveVariableAnalysis(
             while (!nodes.isEmpty()) {
                 val nodeId = nodes.removeFirst()
                 // compute out[n] = union of all { in[n’] | n' in children[n] }
-                val newOutSet = hashSetOf<String>()
+                val newOutSet = mutableSetOf<String>()
                 for (childNodeId in graph.getChildrenIds(nodeId)) {
                     newOutSet.addAll(inSet[childNodeId])
                 }

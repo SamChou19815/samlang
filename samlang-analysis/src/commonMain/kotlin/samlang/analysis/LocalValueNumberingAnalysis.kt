@@ -27,7 +27,7 @@ import samlang.ast.mir.MidIrStatement.MoveTemp
 class LocalValueNumberingAnalysis(statements: List<MidIrStatement>) {
     private val graph: ControlFlowGraph<MidIrStatement> = ControlFlowGraph.fromIr(functionStatements = statements)
     val numberingInfoListIn: Array<NumberingInfo?>
-    private val visited: MutableSet<Int> = hashSetOf()
+    private val visited: MutableSet<Int> = mutableSetOf()
     /** The visitor that extracts all the information of numbering. */
     private val infoCollectorVisitor: NumberingInfoCollectorVisitor
     /** The next number to use as number identifier. */

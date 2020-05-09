@@ -22,7 +22,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
     /** The mapping that tells the potential places to go after the block. */
     private val targets: MutableMap<String, List<String>> = mutableMapOf()
     /** A set of currently unused blocks. */
-    private val unusedBlocks: MutableSet<String?> = hashSetOf()
+    private val unusedBlocks: MutableSet<String?> = mutableSetOf()
     /** The original trace order. */
     private val originalTrace: ArrayDeque<String> = ArrayDeque()
     /** The new trace to be built. */

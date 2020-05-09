@@ -85,15 +85,15 @@ class RealRegisterAllocator(
      */
 
     /** Moves that have been coalesced. */
-    private val coalescedMoves: MutableSet<RegMove> = hashSetOf()
+    private val coalescedMoves: MutableSet<RegMove> = mutableSetOf()
     /** Moves whose source and target interfere. */
-    private val constrainedMoves: MutableSet<RegMove> = hashSetOf()
+    private val constrainedMoves: MutableSet<RegMove> = mutableSetOf()
     /** Moves that will no longer be considered for coalescing. */
-    private val frozenMoves: MutableSet<RegMove> = hashSetOf()
+    private val frozenMoves: MutableSet<RegMove> = mutableSetOf()
     /** Moves enabled for possible coalescing. */
-    private val workListMoves: MutableSet<RegMove> = hashSetOf()
+    private val workListMoves: MutableSet<RegMove> = mutableSetOf()
     /** Moves not yet ready for coalescing. */
-    private val activeMoves: MutableSet<RegMove> = hashSetOf()
+    private val activeMoves: MutableSet<RegMove> = mutableSetOf()
     /*
      * ================================================================================
      * Part 4: Other data structures
@@ -287,8 +287,8 @@ class RealRegisterAllocator(
                     // live := live / use(I)
                     liveSet.removeAll(useSet)
                     // moveList[n] := moveList[n] union {I}
-                    moveMap.computeIfAbsent(dest) { hashSetOf() }.add(move)
-                    moveMap.computeIfAbsent(src) { hashSetOf() }.add(move)
+                    moveMap.computeIfAbsent(dest) { mutableSetOf() }.add(move)
+                    moveMap.computeIfAbsent(src) { mutableSetOf() }.add(move)
                     // workListMoves := workListMoves union {I}
                     workListMoves.add(move)
                 }
@@ -490,7 +490,7 @@ class RealRegisterAllocator(
         // alias[v] := u
         alias[v] = u
         // moveList[u] := moveList[u] union moveList[v]
-        moveMap.computeIfAbsent(u) { hashSetOf() }.addAll(moveMap.getOrDefault(v, emptySet()))
+        moveMap.computeIfAbsent(u) { mutableSetOf() }.addAll(moveMap.getOrDefault(v, emptySet()))
         enableMoves(listOf(v))
         for (t in adjacentSet(v)) {
             interferenceGraph.addEdge(t, u)

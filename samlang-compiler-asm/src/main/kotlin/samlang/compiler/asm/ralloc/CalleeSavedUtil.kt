@@ -59,8 +59,8 @@ internal object CalleeSavedUtil {
         spilledVarMappings: MutableMap<String, AssemblyArgs.Mem>,
         unusedCalleeSavedRegisters: Set<String>
     ): Map<AssemblyArgs.Mem, AssemblyArgs.Mem> {
-        val usedNames = hashSetOf<String>()
-        val unusedNames = hashSetOf<String>()
+        val usedNames = mutableSetOf<String>()
+        val unusedNames = mutableSetOf<String>()
         for ((name, mem) in spilledVarMappings) {
             if (unusedCalleeSavedRegisters.contains(name)) {
                 unusedNames.add(name)

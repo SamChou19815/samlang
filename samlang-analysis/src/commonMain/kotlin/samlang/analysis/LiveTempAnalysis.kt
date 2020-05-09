@@ -27,10 +27,10 @@ class LiveTempAnalysis(statements: List<MidIrStatement>) {
         val findDefUseVisitor = FindDefUseVisitor()
         // setup defs, uses, empty in and out
         val len = statements.size
-        defs = Array(size = len) { hashSetOf<String>() }
-        uses = Array(size = len) { hashSetOf<String>() }
-        val inSet: Array<MutableSet<String>> = Array(size = len) { hashSetOf<String>() }
-        liveTempOut = Array(size = len) { hashSetOf<String>() }
+        defs = Array(size = len) { mutableSetOf<String>() }
+        uses = Array(size = len) { mutableSetOf<String>() }
+        val inSet: Array<MutableSet<String>> = Array(size = len) { mutableSetOf<String>() }
+        liveTempOut = Array(size = len) { mutableSetOf<String>() }
         for (i in 0 until len) {
             val statement = statements[i]
             statement.accept(visitor = findDefUseVisitor, context = i)

@@ -103,7 +103,7 @@ internal class LanguageServerState(configuration: Configuration) {
     }
 
     private fun reportChanges(moduleReference: ModuleReference, module: Module?): List<ModuleReference> {
-        val affected = hashSetOf(moduleReference)
+        val affected = mutableSetOf(moduleReference)
         affected.addAll(elements = dependencyTracker.getReverseDependencies(moduleReference = moduleReference))
         if (module == null) {
             dependencyTracker.update(moduleReference = moduleReference, importedModules = null)

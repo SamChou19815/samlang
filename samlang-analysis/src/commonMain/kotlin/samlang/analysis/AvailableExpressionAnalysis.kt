@@ -30,8 +30,8 @@ class AvailableExpressionAnalysis(private val statements: List<MidIrStatement>) 
     init {
         val len = statements.size
         expressionMapping = Array(size = len) { i -> SubExpressionExtractor.get(statements[i]) }
-        expressionsIn = Array(size = len) { hashSetOf<ExprInfo>() }
-        expressionOut = Array(size = len) { hashSetOf<ExprInfo>() }
+        expressionsIn = Array(size = len) { mutableSetOf<ExprInfo>() }
+        expressionOut = Array(size = len) { mutableSetOf<ExprInfo>() }
         computeInOutSets()
     }
 
@@ -43,7 +43,7 @@ class AvailableExpressionAnalysis(private val statements: List<MidIrStatement>) 
         while (!nodes.isEmpty()) {
             val nodeId = nodes.removeFirst()
             val newInMap = mutableMapOf<MidIrExpression, Int>()
-            val expressionsToRemove = hashSetOf<MidIrExpression>()
+            val expressionsToRemove = mutableSetOf<MidIrExpression>()
             graph.getParentIds(nodeId).asSequence().map { prevNodeId -> expressionOut[prevNodeId] }.forEach { set ->
                 for (info in set) {
                     val expr = info.expression

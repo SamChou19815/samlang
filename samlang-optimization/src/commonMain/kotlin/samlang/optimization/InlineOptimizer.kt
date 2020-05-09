@@ -31,8 +31,8 @@ object InlineOptimizer {
     fun optimize(compilationUnit: MidIrCompilationUnit): MidIrCompilationUnit {
         var tempUnit = compilationUnit
         for (i in 0..4) {
-            val functionsToInline = hashSetOf<String>()
-            val functionThatCanPerformInlining = hashSetOf<String>()
+            val functionsToInline = mutableSetOf<String>()
+            val functionThatCanPerformInlining = mutableSetOf<String>()
             val statementInlineCostVisitor = StatementInlineCostVisitor()
             for (function in tempUnit.functions) {
                 val functionName = function.functionName
@@ -121,7 +121,7 @@ object InlineOptimizer {
     }
 
     private class StatementInlineCostVisitor : MidIrLoweredStatementVisitor<Unit, Int> {
-        val mentionedFunctionNames: MutableSet<String> = hashSetOf()
+        val mentionedFunctionNames: MutableSet<String> = mutableSetOf()
 
         override fun visit(node: MoveTemp, context: Unit): Int =
             1 + node.source.accept(ExpressionInlineCostVisitor, Unit)

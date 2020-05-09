@@ -624,7 +624,7 @@ private class ExpressionTypeCheckerVisitor(
     override fun visit(expression: Lambda, context: Type): Expression {
         val (range, functionType, arguments, _, body) = expression
         // check duplicated name among themselves first
-        val names = hashSetOf<String>()
+        val names = mutableSetOf<String>()
         for ((name, _) in arguments) {
             if (!names.add(name)) {
                 errorCollector.reportCollisionError(name = name, range = range)

@@ -52,7 +52,7 @@ internal object RegisterCollector {
     private class RegisterCollectorVisitor(
         private val excludeMachineRegisters: Boolean
     ) : AssemblyInstructionVisitor {
-        val collector: MutableSet<String> = hashSetOf()
+        val collector: MutableSet<String> = mutableSetOf()
 
         private fun f(arg: AssemblyArg) {
             arg.match(constF = { }, regF = { reg -> f(reg) }) { mem -> f(mem) }
