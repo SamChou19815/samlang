@@ -104,7 +104,7 @@ class LanguageServer(private val configuration: Configuration) : Lsp4jLanguageSe
             .toAbsolutePath()
             .relativize(Paths.get(URI(uri).path))
             .toFile()
-        val parts = ArrayList(relativeFile.parent.split(File.separator))
+        val parts = relativeFile.parent.split(File.separator).toMutableList()
         parts.add(element = relativeFile.nameWithoutExtension)
         return ModuleReference(parts = parts)
     }

@@ -40,8 +40,7 @@ internal class CopyPropagationOptimizer private constructor(
 
         fun setId(id: Int) {
             replacements.clear()
-            val tempMapping =
-                HashMap<String, String?>()
+            val tempMapping = mutableMapOf<String, String?>()
             val availableCopies = `in`[id]
             // You cannot have one key mapped to two possible locations at a given point,
             // however, we may never remove those impossible mappings at the end, so they

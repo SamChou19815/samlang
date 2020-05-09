@@ -20,7 +20,7 @@ object SourceCollector {
             if (excludeGlobMatchers.any { it.matches(relativeFile.toPath()) }) {
                 return@mapNotNull null
             }
-            val parts = ArrayList(relativeFile.parent.split(File.separator))
+            val parts = relativeFile.parent.split(File.separator).toMutableList()
             parts.add(element = relativeFile.nameWithoutExtension)
             ModuleReference(parts = parts) to file
         }.toList()

@@ -275,7 +275,7 @@ class RealRegisterAllocator(
         // iterating over the instructions in reverse order.
         for (i in instructions.indices.reversed()) {
             val instruction = instructions[i]
-            val liveSet = HashSet(liveMap[i])
+            val liveSet = liveMap[i].toMutableSet()
             val useSet = useMap[i]
             // if isMoveInstruction(instruction) then
             if (instruction is MoveToReg) {
@@ -309,7 +309,7 @@ class RealRegisterAllocator(
      * @return the use count for each variable.
      */
     private fun buildUseCount(liveVariableAnalysisResult: LiveVariableAnalysis): Map<String, Int> {
-        val useCount = HashMap<String, Int>()
+        val useCount = mutableMapOf<String, Int>()
         for (set in liveVariableAnalysisResult.uses) {
             for (name in set) {
                 useCount.merge(name, 1) { a: Int?, b: Int? -> Integer.sum(a!!, b!!) }
@@ -337,7 +337,7 @@ class RealRegisterAllocator(
     private fun adjacentSet(variable: String): MutableSet<String> {
         val adjList = interferenceGraph.getAdjacentList(variable)
         // resultSet = adjList[n] - (selectStack union coalescedNodes)
-        val resultSet = HashSet<String>()
+        val resultSet = mutableSetOf<String>()
         for (v in adjList) {
             if (selectStack.contains(v) || coalescedVars.contains(v)) {
                 continue
@@ -349,7 +349,7 @@ class RealRegisterAllocator(
 
     private fun nodeMoves(variable: String): Set<RegMove> {
         val moveList = moveMap[variable] ?: return emptySet()
-        val resultSet = HashSet<RegMove>()
+        val resultSet = mutableSetOf<RegMove>()
         // resultSet = moveList[n] intersect (activeMoves union workListMoves)
         for (move in moveList) {
             if (activeMoves.contains(move) || workListMoves.contains(move)) {
@@ -429,7 +429,7 @@ class RealRegisterAllocator(
     private fun union(
         sets: Collection<Collection<String>>
     ): Set<String> {
-        val s = HashSet<String>()
+        val s = mutableSetOf<String>()
         for (set in sets) {
             s.addAll(set)
         }

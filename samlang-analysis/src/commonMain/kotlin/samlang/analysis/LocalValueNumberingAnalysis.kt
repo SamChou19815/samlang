@@ -211,7 +211,7 @@ class LocalValueNumberingAnalysis(statements: List<MidIrStatement>) {
          * @return the new immutable info with all expressions containing given temp removed.
          */
         fun withAllExprContainingGivenTempRemoved(name: String): NumberingInfo {
-            val numbersToRemove = HashSet<Int>()
+            val numbersToRemove = mutableSetOf<Int>()
             for ((key, value) in info) {
                 if (ContainsTempDetector.check(key, Temporary(name))) {
                     numbersToRemove.add(value)
@@ -222,7 +222,7 @@ class LocalValueNumberingAnalysis(statements: List<MidIrStatement>) {
 
         /** @return the new immutable info with all expressions containing mem removed. */
         fun withAllMemRemoved(): NumberingInfo {
-            val numbersToRemove = HashSet<Int>()
+            val numbersToRemove = mutableSetOf<Int>()
             for ((key, value) in info) {
                 if (HasMemDetector.hasMem(key)) {
                     numbersToRemove.add(value)

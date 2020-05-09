@@ -34,7 +34,7 @@ internal class SizedImmutableStack<T> {
     /** @return a collection that puts the first element in the stack first. */
     fun toReversedOrderedCollection(): Collection<T> {
         var currentNode = node
-        val tempList = ArrayList<T>()
+        val tempList = mutableListOf<T>()
         while (currentNode != null) {
             tempList.add(currentNode.item)
             currentNode = currentNode.prev
