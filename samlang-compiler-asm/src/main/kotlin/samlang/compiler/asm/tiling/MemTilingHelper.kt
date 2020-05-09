@@ -314,7 +314,6 @@ internal object MemTilingHelper {
      * @param dpTiling the tiling class.
      * @return the optimally tiled mem node.
      */
-    @JvmStatic
     fun tileExprForMem(expr: MidIrExpression, dpTiling: DpTiling): MemTilingResult? =
             expr.accept(visitor = MemExprTilingVisitor, context = dpTiling)
 
@@ -323,7 +322,6 @@ internal object MemTilingHelper {
      * @param dpTiling the tiling class.
      * @return the optimally tiled mem node.
      */
-    @JvmStatic
     fun tileMem(mem: MidIrExpression.Mem, dpTiling: DpTiling): MemTilingResult {
         val expr = mem.expression
         if (expr is Name) {

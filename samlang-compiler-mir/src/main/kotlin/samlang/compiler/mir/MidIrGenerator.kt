@@ -96,11 +96,9 @@ class MidIrGenerator private constructor(
     }
 
     companion object {
-        @JvmStatic
         fun generate(sources: Sources<HighIrModule>, entryModuleReference: ModuleReference): MidIrCompilationUnit =
             generateWithoutEntry(sources = sources).addMain(entryModuleReference = entryModuleReference)
 
-        @JvmStatic
         fun generateWithMultipleEntries(sources: Sources<HighIrModule>): Sources<MidIrCompilationUnit> {
             val withoutEntry = generateWithoutEntry(sources = sources)
             val irMappings = sources.moduleMappings.mapValues { (moduleReference, _) ->

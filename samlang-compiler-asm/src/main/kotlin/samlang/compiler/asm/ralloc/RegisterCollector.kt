@@ -38,7 +38,6 @@ internal object RegisterCollector {
      * @param excludeMachineRegisters whether to exclude machine registers.
      * @return collected non-machine registers.
      */
-    @JvmStatic
     fun collect(
         abstractAssemblyInstruction: List<AssemblyInstruction>,
         excludeMachineRegisters: Boolean

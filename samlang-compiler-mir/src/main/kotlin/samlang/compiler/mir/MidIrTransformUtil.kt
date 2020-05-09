@@ -21,7 +21,6 @@ object MidIrTransformUtil {
      * @param expression the condition expression to invert.
      * @return the inverted condition expression.
      */
-    @JvmStatic
     fun invertCondition(expression: MidIrExpression): MidIrExpression {
         return expression.accept(IrExprInverterVisitor, Unit)
     }

@@ -24,7 +24,6 @@ internal class MemoizedFunction<T, R> private constructor(private val function: 
          * @param R the type of the output.
          * @return the memoized version of the given function.
          */
-        @JvmStatic
         fun <T, R> memo(function: (T) -> R): (T) -> R = MemoizedFunction(function)
     }
 }

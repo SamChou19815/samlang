@@ -43,7 +43,6 @@ internal object WebDemoController {
      * program.
      * Otherwise, return appropriate error responses.
      */
-    @JvmStatic
     fun interpret(programString: String): Response {
         val moduleReference = ModuleReference(moduleName = "Demo")
         val (rawModule, parseErrors) = buildModuleFromText(

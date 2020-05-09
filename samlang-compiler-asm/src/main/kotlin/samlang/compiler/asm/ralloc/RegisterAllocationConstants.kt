@@ -30,14 +30,12 @@ internal object RegisterAllocationConstants {
      */
     const val K = 14
     /** The set of registers that is OK to use for coloring temporary registers. */
-    @JvmField
     val OK_REGS: Set<String> = setOf(
             RAX.id, RBX.id, RCX.id, RDX.id, RSI.id, RDI.id,
             R8.id, R9.id, R10.id, R11.id, R12.id, R13.id, R14.id, R15.id
     )
 
     /** Machine registers, preassigned a color. The color is the same as the register name. */
-    @JvmField
     val PRE_COLORED_REGS: Set<String> = setOf(
             RIP.id,
             RAX.id, RBX.id, RCX.id, RDX.id,
@@ -47,6 +45,5 @@ internal object RegisterAllocationConstants {
     )
 
     /** A set of callee-saved registers, available for use. */
-    @JvmField
     val CALLEE_SAVED_REGS: Set<String> = setOf(RBX.id, R12.id, R13.id, R14.id, R15.id)
 }

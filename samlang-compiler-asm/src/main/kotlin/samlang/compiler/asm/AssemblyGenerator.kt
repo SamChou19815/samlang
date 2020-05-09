@@ -86,7 +86,6 @@ class AssemblyGenerator private constructor(
          * @param removeComments whether to remove comments.
          * @return the generated assembly instructions.
          */
-        @JvmStatic
         fun generate(
             compilationUnit: MidIrCompilationUnit,
             enableRealRegisterAllocation: Boolean = true,

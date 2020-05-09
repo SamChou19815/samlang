@@ -33,7 +33,6 @@ internal object CalleeSavedUtil {
      * @param instructions the instruction to perform the transformation.
      * @return the transformed instructions.
      */
-    @JvmStatic
     fun addCalleeSavedRegsMoves(
         instructions: List<AssemblyInstruction>
     ): List<AssemblyInstruction> {
@@ -56,7 +55,6 @@ internal object CalleeSavedUtil {
      * @param unusedCalleeSavedRegisters a set of unused callee saved registers as a reference.
      * @return new mappings from the old mem to new mem.
      */
-    @JvmStatic
     fun reorganizeSpilledVarMappings(
         spilledVarMappings: MutableMap<String, AssemblyArgs.Mem>,
         unusedCalleeSavedRegisters: Set<String>

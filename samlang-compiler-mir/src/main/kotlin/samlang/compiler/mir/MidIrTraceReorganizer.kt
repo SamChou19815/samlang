@@ -326,7 +326,6 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
          * @param originalStatements original list of statements.
          * @return the reordered and fixed statements.
          */
-        @JvmStatic
         fun reorder(allocator: MidIrResourceAllocator, originalStatements: List<MidIrStatement>): List<MidIrStatement> {
             val basicBlocks = BasicBlock.from(allocator = allocator, statements = originalStatements)
             return MidIrTraceReorganizer(blocksInOriginalOrder = basicBlocks)
