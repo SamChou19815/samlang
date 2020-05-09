@@ -12,7 +12,7 @@ import samlang.checker.GlobalTypingContext
 import samlang.checker.typeCheckSources
 import samlang.checker.typeCheckSourcesIncrementally
 import samlang.errors.CompileTimeError
-import samlang.parser.ModuleBuilder
+import samlang.parser.buildModuleFromText
 import samlang.service.LocationLookup
 import samlang.service.LocationLookupBuilder
 import samlang.service.ReadOnlyLocationLookup
@@ -90,7 +90,7 @@ internal class LanguageServerState(configuration: Configuration) {
         sourceCode: String
     ): Pair<Module, List<CompileTimeError>> {
         rawSources[moduleReference] = sourceCode
-        val result = ModuleBuilder.buildModuleFromText(
+        val result = buildModuleFromText(
             moduleReference = moduleReference,
             text = sourceCode
         )

@@ -8,7 +8,7 @@ import samlang.checker.typeCheckSingleModuleSource
 import samlang.errors.CompilationFailedException
 import samlang.interpreter.ModuleInterpreter
 import samlang.interpreter.PanicException
-import samlang.parser.ModuleBuilder
+import samlang.parser.buildModuleFromText
 import samlang.printer.prettyPrint
 
 /**
@@ -46,7 +46,7 @@ internal object WebDemoController {
     @JvmStatic
     fun interpret(programString: String): Response {
         val moduleReference = ModuleReference(moduleName = "Demo")
-        val (rawModule, parseErrors) = ModuleBuilder.buildModuleFromText(
+        val (rawModule, parseErrors) = buildModuleFromText(
             moduleReference = moduleReference,
             text = programString
         )

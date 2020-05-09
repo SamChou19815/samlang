@@ -6,7 +6,7 @@ import samlang.ast.common.Sources
 import samlang.ast.lang.Module
 import samlang.checker.ErrorCollector
 import samlang.checker.typeCheckSources
-import samlang.parser.ModuleBuilder
+import samlang.parser.buildModuleFromText
 import samlang.util.createOrFail
 
 object SourceChecker {
@@ -14,9 +14,8 @@ object SourceChecker {
         val errorCollector = ErrorCollector()
         val moduleMappings = hashMapOf<ModuleReference, Module>()
         for ((moduleReference, file) in sourceHandles) {
-            val (module, parseErrors) = file.inputStream().use { stream ->
-                ModuleBuilder.buildModule(moduleReference = moduleReference, inputStream = stream)
-            }
+            val text = file.readText()
+            val (module, parseErrors) = buildModuleFromText(moduleReference = moduleReference, text = text)
             parseErrors.forEach { errorCollector.add(compileTimeError = it) }
             moduleMappings[moduleReference] = module
         }

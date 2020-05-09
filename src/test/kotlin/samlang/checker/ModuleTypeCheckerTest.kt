@@ -5,7 +5,7 @@ import io.kotlintest.specs.StringSpec
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.errors.CompilationFailedException
-import samlang.parser.ModuleBuilder
+import samlang.parser.buildModuleFromText
 import samlang.programs.badTestPrograms
 import samlang.programs.wellTypedTestPrograms
 import samlang.util.createOrFail
@@ -26,7 +26,7 @@ class ModuleTypeCheckerTest : StringSpec() {
         return try {
             val moduleReference = ModuleReference(moduleName = id)
             val errorCollector = ErrorCollector()
-            val (module, parseErrors) = ModuleBuilder.buildModuleFromText(
+            val (module, parseErrors) = buildModuleFromText(
                 moduleReference = moduleReference,
                 text = code
             )

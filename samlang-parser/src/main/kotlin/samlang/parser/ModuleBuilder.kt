@@ -1,6 +1,5 @@
 package samlang.parser
 
-import java.io.InputStream
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.common.ModuleMembersImport
@@ -11,42 +10,37 @@ import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer
 import samlang.parser.generated.PLParser
 
-object ModuleBuilder {
-    fun buildModule(moduleReference: ModuleReference, inputStream: InputStream): Pair<Module, List<CompileTimeError>> {
-        val parser = PLParser(CommonTokenStream(PLLexer(CharStreams.fromStream(inputStream))))
-        val errorListener = SyntaxErrorListener(moduleReference = moduleReference)
-        parser.removeErrorListeners()
-        parser.addErrorListener(errorListener)
-        val sourceVisitor = Visitor(syntaxErrorListener = errorListener)
-        val moduleContext = parser.module()
-        val errors = errorListener.syntaxErrors
-        val module = moduleContext.accept(sourceVisitor)
-            ?: Module(imports = emptyList(), classDefinitions = emptyList())
-        return module to errors
-    }
+fun buildModuleFromText(moduleReference: ModuleReference, text: String): Pair<Module, List<CompileTimeError>> {
+    val parser = PLParser(CommonTokenStream(PLLexer(CharStreams.fromString(text))))
+    val errorListener = SyntaxErrorListener(moduleReference = moduleReference)
+    parser.removeErrorListeners()
+    parser.addErrorListener(errorListener)
+    val sourceVisitor = Visitor(syntaxErrorListener = errorListener)
+    val moduleContext = parser.module()
+    val errors = errorListener.syntaxErrors
+    val module = moduleContext.accept(sourceVisitor)
+        ?: Module(imports = emptyList(), classDefinitions = emptyList())
+    return module to errors
+}
 
-    fun buildModuleFromText(moduleReference: ModuleReference, text: String): Pair<Module, List<CompileTimeError>> =
-        buildModule(moduleReference = moduleReference, inputStream = text.byteInputStream())
+private class Visitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module?>() {
 
-    private class Visitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module?>() {
+    private val classBuilder: ClassBuilder = ClassBuilder(syntaxErrorListener = syntaxErrorListener)
 
-        private val classBuilder: ClassBuilder = ClassBuilder(syntaxErrorListener = syntaxErrorListener)
+    private fun buildModuleMembersImport(ctx: PLParser.ImportModuleMembersContext): ModuleMembersImport =
+        ModuleMembersImport(
+            range = ctx.range,
+            importedMembers = ctx.UpperId().map { node ->
+                val symbol = node.symbol
+                symbol.text to symbol.range
+            },
+            importedModule = ModuleReference(parts = ctx.moduleReference().UpperId().map { it.text }),
+            importedModuleRange = ctx.moduleReference().range
+        )
 
-        private fun buildModuleMembersImport(ctx: PLParser.ImportModuleMembersContext): ModuleMembersImport =
-            ModuleMembersImport(
-                range = ctx.range,
-                importedMembers = ctx.UpperId().map { node ->
-                    val symbol = node.symbol
-                    symbol.text to symbol.range
-                },
-                importedModule = ModuleReference(parts = ctx.moduleReference().UpperId().map { it.text }),
-                importedModuleRange = ctx.moduleReference().range
-            )
-
-        override fun visitModule(ctx: PLParser.ModuleContext): Module =
-            Module(
-                imports = ctx.importModuleMembers().map(transform = ::buildModuleMembersImport),
-                classDefinitions = ctx.clazz().mapNotNull { it.accept(classBuilder) }
-            )
-    }
+    override fun visitModule(ctx: PLParser.ModuleContext): Module =
+        Module(
+            imports = ctx.importModuleMembers().map(transform = ::buildModuleMembersImport),
+            classDefinitions = ctx.clazz().mapNotNull { it.accept(classBuilder) }
+        )
 }
