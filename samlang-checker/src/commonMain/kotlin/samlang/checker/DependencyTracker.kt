@@ -35,7 +35,12 @@ class DependencyTracker {
         val newImportedModules = importedModules.toSet()
         forwardDependency[moduleReference] = newImportedModules
         for (newImportedModule in newImportedModules) {
-            reverseDependency.computeIfAbsent(newImportedModule) { hashSetOf() }.add(element = moduleReference)
+            val reverseDependencies = reverseDependency[newImportedModule]
+            if (reverseDependencies == null) {
+                reverseDependency[newImportedModule] = mutableSetOf(moduleReference)
+            } else {
+                reverseDependencies.add(element = moduleReference)
+            }
         }
     }
 }

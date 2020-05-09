@@ -139,7 +139,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
     }
 
     private fun Collection<String>.checkNameCollision(range: Range) {
-        val nameSet = hashSetOf<String>()
+        val nameSet = mutableSetOf<String>()
         forEach { name ->
             if (!nameSet.add(element = name)) {
                 errorCollector.reportCollisionError(name = name, range = range)
@@ -148,7 +148,7 @@ internal class ModuleTypeChecker(private val errorCollector: ErrorCollector) {
     }
 
     private fun checkNameCollision(namesWithRange: Collection<Pair<String, Range>>) {
-        val nameSet = hashSetOf<String>()
+        val nameSet = mutableSetOf<String>()
         namesWithRange.forEach { (name, range) ->
             if (!nameSet.add(element = name)) {
                 errorCollector.reportCollisionError(name = name, range = range)

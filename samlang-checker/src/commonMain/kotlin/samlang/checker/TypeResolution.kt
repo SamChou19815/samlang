@@ -27,10 +27,11 @@ internal class TypeResolution : ReadOnlyTypeResolution {
      * Need to be called after each update in the knownResolutions or aliasing relation.
      */
     private fun refreshKnownMappings() {
-        val keyCorrectMappings = knownResolutions.mapKeys { (key, _) -> indexAliasingUnionFind.find(index = key) }
+        val keyCorrectMappings = knownResolutions
+                .mapKeys { (key, _) -> indexAliasingUnionFind.find(index = key) }
+                .mapValues { (_, currentValue) -> resolveType(unresolvedType = currentValue) }
         knownResolutions.clear()
         knownResolutions.putAll(from = keyCorrectMappings)
-        knownResolutions.replaceAll { _, currentValue -> resolveType(unresolvedType = currentValue) }
     }
 
     override fun getPartiallyResolvedType(undecidedType: UndecidedType): Type {

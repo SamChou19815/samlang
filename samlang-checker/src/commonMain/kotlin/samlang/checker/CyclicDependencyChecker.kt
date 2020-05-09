@@ -27,7 +27,14 @@ private class CyclicDependencyChecker(sources: Sources<Module>, private val erro
 
     init {
         sources.moduleMappings.forEach { (moduleReference, module) ->
-            val dependencyList = dependencyGraph.computeIfAbsent(moduleReference) { arrayListOf() }
+            val existingDependencyList = dependencyGraph[moduleReference]
+            val dependencyList = if (existingDependencyList == null) {
+                val list = mutableListOf<ModuleMembersImport>()
+                dependencyGraph[moduleReference] = list
+                list
+            } else {
+                existingDependencyList
+            }
             for (oneImport in module.imports) {
                 dependencyList.add(element = oneImport)
                 hasDependentsSet.add(element = oneImport.importedModule)
