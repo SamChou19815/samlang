@@ -27,7 +27,7 @@ private fun File.toTestProgram(): TestProgram {
 }
 
 private fun loadPrograms(type: String): List<TestProgram> {
-    val programFiles: Array<File> = Paths.get("test", type).toFile().listFiles()
+    val programFiles: Array<File> = Paths.get("..", "test", type).toFile().listFiles()
         ?: error(message = "Test program folder not found.")
     return programFiles.mapNotNull { file -> file.takeIf { it.extension == "sam" }?.toTestProgram() }.sortedBy { it.id }
 }

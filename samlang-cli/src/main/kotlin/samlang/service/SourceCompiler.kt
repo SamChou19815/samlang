@@ -13,6 +13,7 @@ import samlang.optimization.Optimizer
 import samlang.printer.AssemblyPrinter
 import samlang.printer.OsTarget
 
+@ExperimentalStdlibApi
 object SourceCompiler {
     private val osTarget: OsTarget = OsTarget.getOsFromString(osNameString = System.getProperty("os.name"))
 

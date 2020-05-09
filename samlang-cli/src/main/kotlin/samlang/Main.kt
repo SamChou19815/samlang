@@ -18,11 +18,13 @@ import samlang.service.SourceChecker
 import samlang.service.SourceCollector
 import samlang.service.SourceCompiler
 
+@ExperimentalStdlibApi
 fun main(args: Array<String>): Unit =
     RootCommand().subcommands(CompileCommand(), LspCommand()).main(args)
 
 private class RootCommand : NoRunCliktCommand(name = "samlang")
 
+@ExperimentalStdlibApi
 private class CompileCommand : CliktCommand(name = "compile") {
     override fun run() {
         val configuration = try {

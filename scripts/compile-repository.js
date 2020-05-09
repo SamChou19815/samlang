@@ -10,7 +10,7 @@ const { spawnSync } = require('child_process');
  * @param {string} filename
  * @returns {string}
  */
-const read = filename => fs.readFileSync(filename).toString();
+const read = (filename) => fs.readFileSync(filename).toString();
 
 /**
  * @param {string} command
@@ -30,7 +30,7 @@ const basePath = './out/x86';
 const getX86Programs = () => {
   /** @type {string[]} */
   const programs = [];
-  fs.readdirSync(basePath).forEach(filename => {
+  fs.readdirSync(basePath).forEach((filename) => {
     if (filename === 'program.s') {
       return;
     }
@@ -53,8 +53,8 @@ const getX86Programs = () => {
  * @param {string[]} programs
  * @returns {string}
  */
-const interpretPrograms = programs =>
-  programs.map(program => `#${program}\n${runWithErrorCheck(program)}`).join('\n');
+const interpretPrograms = (programs) =>
+  programs.map((program) => `#${program}\n${runWithErrorCheck(program)}`).join('\n');
 
 /**
  * @param {string} expected

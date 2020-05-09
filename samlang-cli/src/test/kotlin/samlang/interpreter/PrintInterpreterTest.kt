@@ -19,6 +19,7 @@ import samlang.optimization.Optimizer
 import samlang.optimization.VN_OPT
 import samlang.programs.runnableTestPrograms
 
+@ExperimentalStdlibApi
 class PrintInterpreterTest : FreeSpec() {
     private data class TestCase<M>(val id: String, val module: M, val expected: String)
 
