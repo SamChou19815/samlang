@@ -14,13 +14,12 @@ import samlang.errors.CompilationFailedException
 import samlang.lsp.LanguageServer
 import samlang.optimization.IrCompilationUnitOptimizer
 import samlang.optimization.MidIrStatementOptimizer
-import samlang.server.startServer
 import samlang.service.SourceChecker
 import samlang.service.SourceCollector
 import samlang.service.SourceCompiler
 
 fun main(args: Array<String>): Unit =
-    RootCommand().subcommands(CompileCommand(), ServerCommand(), LspCommand()).main(args)
+    RootCommand().subcommands(CompileCommand(), LspCommand()).main(args)
 
 private class RootCommand : NoRunCliktCommand(name = "samlang")
 
@@ -74,10 +73,6 @@ private class CompileCommand : CliktCommand(name = "compile") {
             exitProcess(status = 1)
         }
     }
-}
-
-private class ServerCommand : CliktCommand(name = "server") {
-    override fun run(): Unit = startServer()
 }
 
 private class LspCommand : CliktCommand(name = "lsp") {
