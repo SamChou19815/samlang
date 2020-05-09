@@ -1,6 +1,5 @@
 plugins {
     antlr
-    kotlin(module = "jvm")
 }
 
 dependencies {
