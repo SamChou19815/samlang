@@ -61,20 +61,17 @@ class RealRegisterAllocator(
     private val spillWorkList: SetQueue<String> = SetQueue()
     /**
      * Variables marked for spilling during this round; initially empty.
-     * We use tree set to maintain a relative clean order of variables.
      */
-    private val spilledVars: MutableSet<String> = sortedSetOf()
+    private val spilledVars: MutableSet<String> = mutableSetOf()
     /**
      * Registers that have been coalesced; when u <- v is coalesced, v is added to
      * this set and u put back on some work list (or vice versa).
-     * We use tree set to maintain a relative clean order of variables.
      */
-    private val coalescedVars: MutableSet<String> = sortedSetOf()
+    private val coalescedVars: MutableSet<String> = mutableSetOf()
     /**
      * Variables successfully colored.
-     * We use tree set to maintain a relative clean order of variables.
      */
-    private val coloredVars: MutableSet<String> = sortedSetOf()
+    private val coloredVars: MutableSet<String> = mutableSetOf()
     /** Stack containing temporaries removed from the graph. */
     private val selectStack: ArrayDeque<String> = ArrayDeque()
 
@@ -571,7 +568,7 @@ class RealRegisterAllocator(
     private fun assignColors() {
         while (!selectStack.isEmpty()) {
             val variable = selectStack.removeFirst()
-            val okRegs = sortedSetOf(*OK_REGS.toTypedArray())
+            val okRegs = mutableSetOf(*OK_REGS.toTypedArray())
             val adjacentVars =
                 interferenceGraph.getAdjacentList(variable)
             for (conflictingVar in adjacentVars) {
@@ -580,10 +577,11 @@ class RealRegisterAllocator(
                     okRegs.remove(colors[alias])
                 }
             }
-            val color = okRegs.pollFirst()
+            val color = okRegs.firstOrNull()
             if (color == null) {
                 spilledVars.add(variable)
             } else {
+                okRegs.remove(color)
                 coloredVars.add(variable)
                 colors[variable] = color
             }

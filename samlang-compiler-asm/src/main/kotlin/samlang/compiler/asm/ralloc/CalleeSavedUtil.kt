@@ -19,13 +19,13 @@ import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
  * A set of utility functions related to dealing with callee saved registers.
  */
 internal object CalleeSavedUtil {
-    private val REGS: Map<Reg, Reg> = sortedMapOf<Reg, Reg>().apply {
-        this[REG(id = "RBX_CALLEE_SAVED_STORAGE")] = RBX
-        this[REG(id = "R12_CALLEE_SAVED_STORAGE")] = R12
-        this[REG(id = "R13_CALLEE_SAVED_STORAGE")] = R13
-        this[REG(id = "R14_CALLEE_SAVED_STORAGE")] = R14
-        this[REG(id = "R15_CALLEE_SAVED_STORAGE")] = R15
-    }
+    private val REGS: Map<Reg, Reg> = mapOf(
+        REG(id = "RBX_CALLEE_SAVED_STORAGE") to RBX,
+        REG(id = "R12_CALLEE_SAVED_STORAGE") to R12,
+        REG(id = "R13_CALLEE_SAVED_STORAGE") to R13,
+        REG(id = "R14_CALLEE_SAVED_STORAGE") to R14,
+        REG(id = "R15_CALLEE_SAVED_STORAGE") to R15
+    )
 
     /**
      * Prepend and append moving callee saved registers to fresh temps.
