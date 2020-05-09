@@ -39,7 +39,7 @@ hs_err_pid*
 **/.gradle/
 
 # Generated Parser
-samlang-parser-generated/src/main/java
+samlang-parser-generated/src/main/java/samlang
 *.tokens
 
 # Node
