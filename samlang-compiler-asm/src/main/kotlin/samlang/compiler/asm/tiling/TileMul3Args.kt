@@ -29,29 +29,25 @@ internal object TileMul3Args {
             return null
         }
         if (e1 is Constant) {
-            try {
-                val intValue = Math.toIntExact(e1.value)
+            if (e1.value <= Int.MAX_VALUE || e1.value >= Int.MIN_VALUE) {
+                val intValue = e1.value.toInt()
                 val tilingResult = dpTiling.tileRegOrMem(e2)
                 return Result(
                         instructions = tilingResult.instructions,
                         op1 = tilingResult.regOrMem,
                         op2 = CONST(value = intValue)
                 )
-            } catch (_: ArithmeticException) {
-                // do nothing
             }
         }
         if (e2 is Constant) {
-            try {
-                val intValue = Math.toIntExact(e2.value)
+            if (e2.value <= Int.MAX_VALUE || e2.value >= Int.MIN_VALUE) {
+                val intValue = e2.value.toInt()
                 val tilingResult = dpTiling.tileRegOrMem(e1)
                 return Result(
                         instructions = tilingResult.instructions,
                         op1 = tilingResult.regOrMem,
                         op2 = CONST(value = intValue)
                 )
-            } catch (_: ArithmeticException) {
-                // do nothing
             }
         }
         return null

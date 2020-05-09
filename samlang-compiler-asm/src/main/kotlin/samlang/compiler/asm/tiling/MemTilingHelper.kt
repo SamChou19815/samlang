@@ -47,10 +47,10 @@ internal object MemTilingHelper {
         if (expression !is Constant) {
             return null
         }
-        val value = try {
-            Math.toIntExact(expression.value)
-        } catch (e: ArithmeticException) {
+        val value = if (expression.value > Int.MAX_VALUE || expression.value < Int.MIN_VALUE) {
             return null
+        } else {
+            expression.value.toInt()
         }
         return when (value) {
             1 -> MultipliedConstant.ONE
@@ -134,15 +134,15 @@ internal object MemTilingHelper {
             MidIrOperator.SUB -> if (e2 is Constant) {
                 // e2 must ne a constant, not label!
                 val e2LongValue = -e2.value
-                try {
-                    val lowerBits = Math.toIntExact(e2LongValue)
+                if (e2LongValue > Int.MAX_VALUE || e2LongValue < Int.MIN_VALUE) {
+                    null
+                } else {
+                    val lowerBits = e2LongValue.toInt()
                     val (instructions, reg) = dpTiling.tile(e1)
                     MemTilingResult(
                             instructions,
                             MEM(reg, CONST(lowerBits))
                     )
-                } catch (_: ArithmeticException) {
-                    null
                 }
             } else {
                 null
