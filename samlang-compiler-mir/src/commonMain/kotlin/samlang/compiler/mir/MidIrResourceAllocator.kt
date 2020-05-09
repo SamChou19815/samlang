@@ -10,7 +10,7 @@ internal class MidIrResourceAllocator(
 ) {
     private var nextLabelId: Int = 0
     private var nextTempId: Int = 0
-    private val tempMap: MutableMap<String, Temporary> = hashMapOf()
+    private val tempMap: MutableMap<String, Temporary> = mutableMapOf()
 
     /**
      * Allocate a label for IR usage.

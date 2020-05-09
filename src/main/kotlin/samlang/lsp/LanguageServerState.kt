@@ -20,11 +20,11 @@ import samlang.service.SourceCollector
 
 internal class LanguageServerState(configuration: Configuration) {
     private val dependencyTracker: DependencyTracker = DependencyTracker()
-    private val rawSources: MutableMap<ModuleReference, String> = hashMapOf()
-    private val rawModules: MutableMap<ModuleReference, Module> = hashMapOf()
+    private val rawSources: MutableMap<ModuleReference, String> = mutableMapOf()
+    private val rawModules: MutableMap<ModuleReference, Module> = mutableMapOf()
     private val checkedModules: MutableMap<ModuleReference, Module>
 
-    private val errors: MutableMap<ModuleReference, List<CompileTimeError>> = hashMapOf()
+    private val errors: MutableMap<ModuleReference, List<CompileTimeError>> = mutableMapOf()
     private var _globalTypingContext: GlobalTypingContext
     val globalTypingContext: GlobalTypingContext get() = _globalTypingContext
     private var _expressionLocationLookup: LocationLookup<Expression> = LocationLookup()

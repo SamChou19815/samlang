@@ -5,8 +5,8 @@ package samlang.util
  */
 class UnionFind {
 
-    private val parent: MutableMap<Int, Int> = hashMapOf()
-    private val treeSize: MutableMap<Int, Int> = hashMapOf()
+    private val parent: MutableMap<Int, Int> = mutableMapOf()
+    private val treeSize: MutableMap<Int, Int> = mutableMapOf()
 
     override fun toString(): String = "[parent: $parent, treeSize: $treeSize]"
 

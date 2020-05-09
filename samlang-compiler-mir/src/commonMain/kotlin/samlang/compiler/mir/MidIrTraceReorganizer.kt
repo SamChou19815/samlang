@@ -18,9 +18,9 @@ import samlang.ast.mir.MidIrStatement.Return
 internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: List<BasicBlock>) {
     private val emptyTrackStack: SizedImmutableStack<String> = SizedImmutableStack { label -> getStackSize(label) }
     /** The mapping from label to block id. */
-    private val labelBlockMap: MutableMap<String, BasicBlock> = hashMapOf()
+    private val labelBlockMap: MutableMap<String, BasicBlock> = mutableMapOf()
     /** The mapping that tells the potential places to go after the block. */
-    private val targets: MutableMap<String, List<String>> = hashMapOf()
+    private val targets: MutableMap<String, List<String>> = mutableMapOf()
     /** A set of currently unused blocks. */
     private val unusedBlocks: MutableSet<String?> = hashSetOf()
     /** The original trace order. */
@@ -189,7 +189,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
      * @param labelToStart starting block label.
      */
     private fun buildTrace(labelToStart: String) {
-        val stack = buildTrace(id = labelToStart, visited = persistentSetOf(), memoizedResult = hashMapOf())
+        val stack = buildTrace(id = labelToStart, visited = persistentSetOf(), memoizedResult = mutableMapOf())
             ?: error(message = "Impossible!")
         val tempList = stack.toReversedOrderedCollection()
         unusedBlocks.removeAll(tempList)

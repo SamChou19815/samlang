@@ -44,18 +44,18 @@ class AssemblyInterpreter(program: AssemblyProgram) {
     /** The list of all instructions. */
     private val instructions: List<AssemblyInstruction> = program.instructions
     /** The mapping between label and instruction number. Useful for jump. */
-    private val labelInstructionNumberMapping: MutableMap<String, Int> = hashMapOf()
+    private val labelInstructionNumberMapping: MutableMap<String, Int> = mutableMapOf()
     /** The mapping from names to actual memory address. */
-    private val nameToMemoryAddress: MutableMap<String, Long> = hashMapOf()
+    private val nameToMemoryAddress: MutableMap<String, Long> = mutableMapOf()
     /** Current register values. It will only be lazily provisioned. */
-    private val registers: MutableMap<String, Long> = hashMapOf()
+    private val registers: MutableMap<String, Long> = mutableMapOf()
     /** Current memory content. It will only be lazily provisioned. */
     private val memory: MutableMap<Long, Long> = mutableMapOf()
     /**
      * Current flags.
      * The flags are not exactly the same as the x86 ones.
      */
-    private val flags: MutableMap<String, Boolean> = hashMapOf()
+    private val flags: MutableMap<String, Boolean> = mutableMapOf()
     /** The current instruction pointer. */
     private var instructionPointer: Int
     /** The current heap end pointer. */

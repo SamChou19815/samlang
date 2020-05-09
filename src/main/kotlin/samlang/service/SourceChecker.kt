@@ -12,7 +12,7 @@ import samlang.util.createOrFail
 object SourceChecker {
     fun typeCheck(sourceHandles: List<Pair<ModuleReference, File>>): Sources<Module> {
         val errorCollector = ErrorCollector()
-        val moduleMappings = hashMapOf<ModuleReference, Module>()
+        val moduleMappings = mutableMapOf<ModuleReference, Module>()
         for ((moduleReference, file) in sourceHandles) {
             val text = file.readText()
             val (module, parseErrors) = buildModuleFromText(moduleReference = moduleReference, text = text)

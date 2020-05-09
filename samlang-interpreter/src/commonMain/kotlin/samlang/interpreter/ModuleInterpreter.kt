@@ -46,8 +46,8 @@ class ModuleInterpreter {
     }
 
     private fun eval(classDefinition: ClassDefinition, context: InterpretationContext): InterpretationContext {
-        val functions = hashMapOf<String, Value.FunctionValue>()
-        val methods = hashMapOf<String, Value.FunctionValue>()
+        val functions = mutableMapOf<String, Value.FunctionValue>()
+        val methods = mutableMapOf<String, Value.FunctionValue>()
         classDefinition.members.forEach { member ->
             val lambda = Expression.Lambda(
                 range = member.range,

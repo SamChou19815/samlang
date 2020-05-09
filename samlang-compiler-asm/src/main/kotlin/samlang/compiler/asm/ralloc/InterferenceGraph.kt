@@ -11,11 +11,11 @@ import samlang.compiler.asm.ralloc.RegisterAllocationConstants.PRE_COLORED_REGS
  */
 internal class InterferenceGraph {
     /** The adjacentSet representation. */
-    private val adjacentSet: MutableMap<String, MutableSet<String>> = hashMapOf()
+    private val adjacentSet: MutableMap<String, MutableSet<String>> = mutableMapOf()
     /** The adjacentList representation. */
-    private val adjacentList: MutableMap<String, MutableSet<String>> = hashMapOf()
+    private val adjacentList: MutableMap<String, MutableSet<String>> = mutableMapOf()
     /** All the degrees information for the graph. */
-    private val degrees: MutableMap<String, Int> = hashMapOf()
+    private val degrees: MutableMap<String, Int> = mutableMapOf()
 
     /**
      * @param u the u variable node. It must be a valid vertex in the graph.

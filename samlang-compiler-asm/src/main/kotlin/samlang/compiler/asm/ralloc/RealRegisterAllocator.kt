@@ -38,7 +38,7 @@ class RealRegisterAllocator(
     /** The assembly instructions to perform register allocation. */
     private var instructions: List<AssemblyInstruction>
     /** A the mappings for all spilled vars. */
-    private val spilledVarMappings: MutableMap<String, Mem> = hashMapOf()
+    private val spilledVarMappings: MutableMap<String, Mem> = mutableMapOf()
     /** The generated new instructions. */
     val realInstructions: List<AssemblyInstruction>
 
@@ -105,14 +105,14 @@ class RealRegisterAllocator(
     /** The interference graph. */
     private val interferenceGraph: InterferenceGraph
     /** A mapping from a node to the list of moves it is associated with. */
-    private val moveMap: MutableMap<String, MutableSet<RegMove>> = hashMapOf()
+    private val moveMap: MutableMap<String, MutableSet<RegMove>> = mutableMapOf()
     /** When a move (u, v) has been coalesced, and v put in coalescedVars, then alias(v) = u. */
-    private val alias: MutableMap<String, String> = hashMapOf()
+    private val alias: MutableMap<String, String> = mutableMapOf()
     /**
      * The color chosen by the algorithm for a node; for pre-colored nodes this is
      * initialized to the given color.
      */
-    private val colors: MutableMap<String, String> = hashMapOf()
+    private val colors: MutableMap<String, String> = mutableMapOf()
 
     init {
         instructions = addCalleeSavedRegsMoves(tiledInstructions)

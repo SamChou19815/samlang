@@ -220,7 +220,7 @@ private class ExpressionTypeCheckerVisitor(
                 is Either.Left -> result.v
                 is Either.Right -> return expression.errorWith(expectedType = context, error = result.v)
             }
-        val checkedMappings = hashMapOf<String, Type>()
+        val checkedMappings = mutableMapOf<String, Type>()
         // used to quickly get the range where one declaration goes wrong
         val nameRangeMap = fieldDeclarations.asSequence().map { it.name to it.range }.toMap()
         val locallyInferredType = kotlin.run {

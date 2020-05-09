@@ -33,9 +33,9 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
 
     init {
         val len = statements.size
-        `in` = Array(size = len) { hashMapOf<String, ConstantStatus>() }
-        out = Array(size = len) { hashMapOf<String, ConstantStatus>() }
-        constantsIn = Array(size = len) { hashMapOf<String, Long>() }
+        `in` = Array(size = len) { mutableMapOf<String, ConstantStatus>() }
+        out = Array(size = len) { mutableMapOf<String, ConstantStatus>() }
+        constantsIn = Array(size = len) { mutableMapOf<String, Long>() }
         computeInOutSet()
         computeConstantsIn()
     }
@@ -48,7 +48,7 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
         while (!nodes.isEmpty()) {
             val nodeId = nodes.removeFirst()
             val statement = originalStatements[nodeId]
-            val newInMap = hashMapOf<String, ConstantStatus>()
+            val newInMap = mutableMapOf<String, ConstantStatus>()
             for (parentId in graph.getParentIds(nodeId)) {
                 for ((key, value) in out[parentId]) {
                     val existingValue = newInMap[key]

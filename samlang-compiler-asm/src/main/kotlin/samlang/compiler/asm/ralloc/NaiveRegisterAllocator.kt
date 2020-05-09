@@ -58,7 +58,7 @@ class NaiveRegisterAllocator(
     abstractInstructions: List<AssemblyInstruction>
 ) {
     /** The register mapping. */
-    private val mapping: MutableMap<String, Mem> = hashMapOf()
+    private val mapping: MutableMap<String, Mem> = mutableMapOf()
     /** Number of temporaries to put on the stack. */
     val numberOfTemporariesOnStack: Int
     /** The collector of real instructions.*/

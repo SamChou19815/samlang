@@ -23,8 +23,8 @@ fun interpretCompilationUnit(compilationUnit: MidIrCompilationUnit): String {
 
 private fun setupEnvironment(compilationUnit: MidIrCompilationUnit): GlobalEnvironment {
     val functions = compilationUnit.functions.map { it.functionName to it }.toMap()
-    val globalVariables = hashMapOf<String, Long>()
-    val strings = hashMapOf<Long, String>()
+    val globalVariables = mutableMapOf<String, Long>()
+    val strings = mutableMapOf<Long, String>()
     var heapPointer = 10000L
     compilationUnit.globalVariables.forEach { (name, content) ->
         val location = heapPointer
@@ -32,7 +32,7 @@ private fun setupEnvironment(compilationUnit: MidIrCompilationUnit): GlobalEnvir
         strings[location + 8] = content
         heapPointer += 8
     }
-    val functionsGlobals = hashMapOf<Long, String>()
+    val functionsGlobals = mutableMapOf<Long, String>()
     compilationUnit.functions.forEach { function ->
         val location = heapPointer
         val name = function.functionName
@@ -45,7 +45,7 @@ private fun setupEnvironment(compilationUnit: MidIrCompilationUnit): GlobalEnvir
         globalVariables = globalVariables,
         strings = strings,
         functionsGlobals = functionsGlobals,
-        heap = hashMapOf(),
+        heap = mutableMapOf(),
         heapPointer = heapPointer,
         printed = StringBuilder()
     )
@@ -83,7 +83,7 @@ private class MidIrStatementInterpreter(
     val programCounter: Int get() = _programCounter
 
     init {
-        labelMapping = hashMapOf<String, Int>().apply {
+        labelMapping = mutableMapOf<String, Int>().apply {
             statements.forEachIndexed { index, statement ->
                 if (statement is MidIrStatement.Label) {
                     this[statement.name] = index
@@ -257,7 +257,7 @@ private class GlobalEnvironment(
 )
 
 private class StackFrame {
-    private val variables: MutableMap<String, Long> = hashMapOf()
+    private val variables: MutableMap<String, Long> = mutableMapOf()
     private var _returnedValue: Long? = null
 
     val returnValue: Long? get() = _returnedValue

@@ -81,7 +81,7 @@ internal object CalleeSavedUtil {
             }
             usedNames.add(name)
         }
-        val newMappings = hashMapOf<AssemblyArgs.Mem, AssemblyArgs.Mem>()
+        val newMappings = mutableMapOf<AssemblyArgs.Mem, AssemblyArgs.Mem>()
         var memId = 1
         for (usedName in usedNames) {
             val oldMem = spilledVarMappings[usedName]!!

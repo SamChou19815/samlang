@@ -40,7 +40,7 @@ class AvailableCopyAnalysis(private val statements: List<MidIrStatement>) {
         while (!nodes.isEmpty()) {
             val nodeId = nodes.removeFirst()
             // for all copy: dest -> src
-            val newInSetCopyMap = hashMapOf<String, String>()
+            val newInSetCopyMap = mutableMapOf<String, String>()
             val conflictingDestSet = hashSetOf<String>()
             for (prevNodeId in graph.getParentIds(nodeId)) {
                 for (copy in out[prevNodeId]) {

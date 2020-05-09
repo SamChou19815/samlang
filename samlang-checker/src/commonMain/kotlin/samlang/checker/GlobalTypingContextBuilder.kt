@@ -13,7 +13,7 @@ import samlang.checker.GlobalTypingContext.TypeInfo
 /** Responsible for building the global typing environment as part of pre-processing phase. */
 internal object GlobalTypingContextBuilder {
     fun buildGlobalTypingContext(sources: Sources<Module>): GlobalTypingContext {
-        val phase1Modules = hashMapOf<ModuleReference, ModuleTypingContext>()
+        val phase1Modules = mutableMapOf<ModuleReference, ModuleTypingContext>()
         for ((moduleReference, module) in sources.moduleMappings) {
             phase1Modules[moduleReference] = buildModuleTypingContextPhase1(module = module)
         }

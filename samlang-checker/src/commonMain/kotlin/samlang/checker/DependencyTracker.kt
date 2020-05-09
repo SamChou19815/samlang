@@ -7,8 +7,8 @@ import samlang.ast.common.ModuleReference
  * It is particularly useful for incremental type checking.
  */
 class DependencyTracker {
-    private val forwardDependency: MutableMap<ModuleReference, Set<ModuleReference>> = hashMapOf()
-    private val reverseDependency: MutableMap<ModuleReference, MutableSet<ModuleReference>> = hashMapOf()
+    private val forwardDependency: MutableMap<ModuleReference, Set<ModuleReference>> = mutableMapOf()
+    private val reverseDependency: MutableMap<ModuleReference, MutableSet<ModuleReference>> = mutableMapOf()
 
     fun getForwardDependencies(moduleReference: ModuleReference): Set<ModuleReference> =
         forwardDependency[moduleReference] ?: emptySet()

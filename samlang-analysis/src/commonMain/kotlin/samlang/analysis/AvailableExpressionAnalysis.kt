@@ -42,7 +42,7 @@ class AvailableExpressionAnalysis(private val statements: List<MidIrStatement>) 
         }
         while (!nodes.isEmpty()) {
             val nodeId = nodes.removeFirst()
-            val newInMap = hashMapOf<MidIrExpression, Int>()
+            val newInMap = mutableMapOf<MidIrExpression, Int>()
             val expressionsToRemove = hashSetOf<MidIrExpression>()
             graph.getParentIds(nodeId).asSequence().map { prevNodeId -> expressionOut[prevNodeId] }.forEach { set ->
                 for (info in set) {

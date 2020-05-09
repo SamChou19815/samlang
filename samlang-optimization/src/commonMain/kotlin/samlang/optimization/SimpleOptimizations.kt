@@ -133,7 +133,7 @@ object SimpleOptimizations {
     }
 
     private fun coalesceConsecutiveLabelsForIr(statements: List<MidIrStatement>): List<MidIrStatement> {
-        val nextEquivalentLabelMap = hashMapOf<String, String>()
+        val nextEquivalentLabelMap = mutableMapOf<String, String>()
         val len = statements.size
         for (i in 0 until len) {
             if (i >= len - 1) {
@@ -178,7 +178,7 @@ object SimpleOptimizations {
     }
 
     private fun withoutConsecutiveJumpsInIr(statements: List<MidIrStatement>): List<MidIrStatement> {
-        val singleJumpLabelMap = hashMapOf<String, String>() // label -> jump target
+        val singleJumpLabelMap = mutableMapOf<String, String>() // label -> jump target
         val len = statements.size
         for (i in 0 until len) {
             if (i >= len - 1) {
@@ -213,7 +213,7 @@ object SimpleOptimizations {
     }
 
     private fun coalesceConsecutiveLabelsForAsm(instructions: List<AssemblyInstruction>): List<AssemblyInstruction> {
-        val nextEquivalentLabelMap = hashMapOf<String, String>()
+        val nextEquivalentLabelMap = mutableMapOf<String, String>()
         val len = instructions.size
         for (i in 0 until len) {
             if (i >= len - 1) {

@@ -25,7 +25,7 @@ class LocationLookup<E : Any> : ReadOnlyLocationLookup<E> {
         val (sourcePath, range) = location
         val localMap = locationTable[sourcePath]
         if (localMap == null) {
-            locationTable[sourcePath] = hashMapOf(range to entity)
+            locationTable[sourcePath] = mutableMapOf(range to entity)
         } else {
             localMap[range] = entity
         }

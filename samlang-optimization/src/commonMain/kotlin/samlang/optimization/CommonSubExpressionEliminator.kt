@@ -38,8 +38,8 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
     init {
         val len = statements.size
         // first pass: initialize all arrays.
-        usageMaps = Array(size = len) { hashMapOf<MidIrExpression, MutableSet<Int>>() }
-        val replacementMaps = Array(size = len) { hashMapOf<MidIrExpression, Temporary>() }
+        usageMaps = Array(size = len) { mutableMapOf<MidIrExpression, MutableSet<Int>>() }
+        val replacementMaps = Array(size = len) { mutableMapOf<MidIrExpression, Temporary>() }
         // second pass: collector all expression usage info into usageMaps
         for (i in 0 until len) {
             statements[i].accept(ExprUsageCollector(i), Unit)
@@ -47,7 +47,7 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
         // third pass: construct the hoisting and replacement map.
         val hoistingLists = (0 until len).map { i ->
             val usageMap = usageMaps[i]
-            val hoistingMap = hashMapOf<Temporary, MidIrExpression>()
+            val hoistingMap = mutableMapOf<Temporary, MidIrExpression>()
             for ((exprToReplace, usageSet) in usageMap) {
                 if (usageSet.size <= 1) { // less than one use ==> do not optimize
                     continue

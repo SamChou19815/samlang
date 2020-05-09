@@ -35,7 +35,7 @@ internal class CopyPropagationOptimizer private constructor(
     }
 
     private inner class StatementRewriterVisitor : MidIrLoweredStatementVisitor<Unit, Unit> {
-        private val replacements: MutableMap<String, String> = hashMapOf()
+        private val replacements: MutableMap<String, String> = mutableMapOf()
         private val expressionRewriter: ExpressionRewriter = ExpressionRewriter()
 
         fun setId(id: Int) {
