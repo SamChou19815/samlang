@@ -10,7 +10,7 @@ import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer
 import samlang.parser.generated.PLParser
 
-fun buildModuleFromText(moduleReference: ModuleReference, text: String): Pair<Module, List<CompileTimeError>> {
+actual fun buildModuleFromText(moduleReference: ModuleReference, text: String): Pair<Module, List<CompileTimeError>> {
     val parser = PLParser(CommonTokenStream(PLLexer(CharStreams.fromString(text))))
     val errorListener = SyntaxErrorListener(moduleReference = moduleReference)
     parser.removeErrorListeners()
