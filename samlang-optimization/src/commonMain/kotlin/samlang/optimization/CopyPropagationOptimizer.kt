@@ -24,7 +24,7 @@ internal class CopyPropagationOptimizer private constructor(
 ) {
     /** The in set of the analysis. */
     private val `in`: Array<PersistentSet<AvailableCopyAnalysis.Copy>> = analysisResult.copiesIn
-    private val newStatements: MutableList<MidIrStatement> = arrayListOf()
+    private val newStatements: MutableList<MidIrStatement> = mutableListOf()
 
     init {
         val visitor = StatementRewriterVisitor()

@@ -10,7 +10,7 @@ internal object TileGenericMoveMem : IrStatementTile<MoveMem> {
     override fun getTilingResult(node: MoveMem, dpTiling: DpTiling): StatementTilingResult {
         val irMem = MEM(node.memLocation)
         val (memLocInstructions, memLoc) = MemTilingHelper.tileMem(irMem, dpTiling)
-        val instructions = arrayListOf<AssemblyInstruction>()
+        val instructions = mutableListOf<AssemblyInstruction>()
         // first add mem loc instructions
         instructions += COMMENT(comment = "GenericMoveMem: $node")
         instructions += memLocInstructions

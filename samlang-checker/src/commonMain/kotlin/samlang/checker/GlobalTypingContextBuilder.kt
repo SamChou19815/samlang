@@ -97,8 +97,8 @@ internal object GlobalTypingContextBuilder {
      * @return a class type with only typing information, built from [classDefinition].
      */
     private fun buildClassType(classDefinition: ClassDefinition): ClassType {
-        val functions = arrayListOf<Pair<String, TypeInfo>>()
-        val methods = arrayListOf<Pair<String, TypeInfo>>()
+        val functions = mutableListOf<Pair<String, TypeInfo>>()
+        val methods = mutableListOf<Pair<String, TypeInfo>>()
         for (member in classDefinition.members) {
             val name = member.name
             val typeInfo = TypeInfo(

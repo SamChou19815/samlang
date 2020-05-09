@@ -15,7 +15,7 @@ internal object DeadCodeEliminator {
     fun optimizeIr(statements: List<MidIrStatement>): List<MidIrStatement> {
         val liveTempOut = LiveTempAnalysis(statements = statements).liveTempOut
         val len = statements.size
-        val newStatements = arrayListOf<MidIrStatement>()
+        val newStatements = mutableListOf<MidIrStatement>()
         for (i in 0 until len) {
             val statement = statements[i]
             if (statement is MidIrStatement.MoveTemp) {

@@ -36,7 +36,7 @@ internal object CalleeSavedUtil {
     fun addCalleeSavedRegsMoves(
         instructions: List<AssemblyInstruction>
     ): List<AssemblyInstruction> {
-        val newInstructions = arrayListOf<AssemblyInstruction>()
+        val newInstructions = mutableListOf<AssemblyInstruction>()
         for ((key, value) in REGS) {
             newInstructions += MOVE(key, value)
         }

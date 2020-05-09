@@ -26,7 +26,7 @@ internal class ConstantPropagationOptimizer private constructor(
     /** The in set of the analysis. */
     private val `in`: Array<MutableMap<String, Long>> = analysisResult.constantsIn
     /** A sequence of new statements. */
-    private val newStatements: MutableList<MidIrStatement> = arrayListOf()
+    private val newStatements: MutableList<MidIrStatement> = mutableListOf()
 
     init {
         val visitor = StatementRewriterVisitor()

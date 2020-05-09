@@ -33,7 +33,7 @@ internal object TileCallingConvention {
     object CallTiler : IrStatementTile<CallFunction> {
         override fun getTilingResult(node: CallFunction, dpTiling: DpTiling): StatementTilingResult {
             val functionExpr = node.functionExpr
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(node)
             // preparation: we till the function.
             val irFunctionExpr = node.functionExpr
@@ -46,7 +46,7 @@ internal object TileCallingConvention {
                 functionExprTilingResult.arg
             }
             // preparation: we till all the arguments.
-            val args = arrayListOf<AssemblyArg>()
+            val args = mutableListOf<AssemblyArg>()
             for (irArg in node.arguments) {
                 val tilingResult = dpTiling.tileArg(irArg)
                 instructions += tilingResult.instructions
@@ -92,7 +92,7 @@ internal object TileCallingConvention {
 
     object ReturnTiler : IrStatementTile<Return> {
         override fun getTilingResult(node: Return, dpTiling: DpTiling): StatementTilingResult {
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(node)
             val returnedExpression = node.returnedExpression
             val context = dpTiling.context

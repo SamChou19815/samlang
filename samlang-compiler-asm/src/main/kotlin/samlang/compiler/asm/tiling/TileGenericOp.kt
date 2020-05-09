@@ -22,7 +22,7 @@ import samlang.ast.mir.MidIrOperator
  */
 internal object TileGenericOp : IrExpressionTile<Op> {
     override fun getTilingResult(node: Op, dpTiling: DpTiling): ExpressionTilingResult {
-        val instructions = arrayListOf<AssemblyInstruction>()
+        val instructions = mutableListOf<AssemblyInstruction>()
         val resultReg = dpTiling.context.nextReg()
         val (instructions1, e1Reg) = dpTiling.tile(node.e1)
         val e2Result = when (node.operator) {

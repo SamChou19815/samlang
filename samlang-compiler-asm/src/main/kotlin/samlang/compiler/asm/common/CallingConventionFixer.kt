@@ -30,7 +30,7 @@ class CallingConventionFixer(
     private val removeComments: Boolean
 ) {
     /** The fixed instructions to be returned to the caller. */
-    private val fixedInstructions: MutableList<AssemblyInstruction> = arrayListOf()
+    private val fixedInstructions: MutableList<AssemblyInstruction> = mutableListOf()
     /** Whether the function is not a leaf function. */
     private val isLeafFunction: Boolean = mainFunctionBody.none { it is CallAddress }
 

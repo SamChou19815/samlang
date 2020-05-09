@@ -26,7 +26,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
     /** The original trace order. */
     private val originalTrace: ArrayDeque<String> = ArrayDeque()
     /** The new trace to be built. */
-    private val newTrace: MutableList<String> = arrayListOf()
+    private val newTrace: MutableList<String> = mutableListOf()
 
     init {
         // build the blocks and targets map for later traversal.
@@ -76,8 +76,8 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
                 allocator: MidIrResourceAllocator,
                 statements: List<MidIrStatement>
             ): List<BasicBlock> {
-                val basicBlocks = arrayListOf<BasicBlock>()
-                var tempBlockList = arrayListOf<MidIrStatement>()
+                val basicBlocks = mutableListOf<BasicBlock>()
+                var tempBlockList = mutableListOf<MidIrStatement>()
                 for (statement in statements) {
                     if (statement is Jump ||
                         statement is ConditionalJump ||
@@ -89,14 +89,14 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
                             basicBlocks = basicBlocks,
                             statements = tempBlockList
                         )
-                        tempBlockList = arrayListOf()
+                        tempBlockList = mutableListOf()
                     } else if (statement is Label) {
                         addBasicBlock(
                             allocator = allocator,
                             basicBlocks = basicBlocks,
                             statements = tempBlockList
                         )
-                        tempBlockList = arrayListOf()
+                        tempBlockList = mutableListOf()
                         tempBlockList.add(statement)
                     } else {
                         tempBlockList.add(statement)
@@ -128,7 +128,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
         }
         for (i in 0 until len) {
             val block = blocksInOriginalOrder[i]
-            val targetList = arrayListOf<String>()
+            val targetList = mutableListOf<String>()
             val lastStatement = block.lastStatement
             when {
                 lastStatement is Jump -> {
@@ -239,7 +239,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
      */
     private fun fixBlocks(): List<BasicBlock> {
         val reorderedBlocks = newTrace.map { key -> labelBlockMap[key] }
-        val fixedBlocks = arrayListOf<BasicBlock>()
+        val fixedBlocks = mutableListOf<BasicBlock>()
         val len = reorderedBlocks.size
         // remove redundant jumps, added needed jump
         for (i in 0 until len) {

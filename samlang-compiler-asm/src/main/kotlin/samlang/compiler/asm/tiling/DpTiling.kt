@@ -49,7 +49,7 @@ class DpTiling(val context: FunctionContext) {
      * @return the tiled assembly instructions.
      */
     fun tile(statements: List<MidIrStatement>): List<AssemblyInstruction> {
-        val instructions = arrayListOf<AssemblyInstruction>()
+        val instructions = mutableListOf<AssemblyInstruction>()
         for (statement in statements) {
             instructions += tile(statement).instructions
         }
@@ -185,7 +185,7 @@ class DpTiling(val context: FunctionContext) {
         override fun visit(node: ConditionalJumpFallThrough, context: Unit): StatementTilingResult {
             // note: the trace reorganizer is supposed to flip condition for us.
             val condition = node.condition
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(node)
             if (condition is MidIrExpression.Op) {
                 val (operator, e1, e2) = condition
@@ -256,7 +256,7 @@ class DpTiling(val context: FunctionContext) {
 
         override fun visit(node: MidIrExpression.Mem, context: Unit): ExpressionTilingResult {
             val (instructions1, mem) = tileMem(mem = node, dpTiling = this@DpTiling)
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(node)
             instructions += instructions1
             val resultReg = this@DpTiling.context.nextReg()

@@ -7,7 +7,7 @@ import samlang.errors.CompileTimeError
 
 class ErrorCollector {
 
-    private val _collectedErrors: MutableList<CompileTimeError> = arrayListOf()
+    private val _collectedErrors: MutableList<CompileTimeError> = mutableListOf()
     val collectedErrors: List<CompileTimeError> get() = _collectedErrors
 
     internal fun addErrorsWithModules(errorCollector: ErrorCollector, moduleReference: ModuleReference) {

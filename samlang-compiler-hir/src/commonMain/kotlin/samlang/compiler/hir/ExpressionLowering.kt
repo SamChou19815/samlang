@@ -91,7 +91,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         ).asLoweringResult()
 
     override fun visit(expression: Expression.TupleConstructor, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<HighIrStatement>()
+        val loweredStatements = mutableListOf<HighIrStatement>()
         val loweredExpressionList = expression.expressionList.map {
             it.getLoweredAndAddStatements(statements = loweredStatements) ?: UnitExpression
         }
@@ -167,7 +167,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.Panic, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<HighIrStatement>()
+        val loweredStatements = mutableListOf<HighIrStatement>()
         val result = expression.expression.lower()
         loweredStatements += result.statements
         loweredStatements += Throw(
@@ -177,7 +177,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.BuiltInFunctionCall, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<HighIrStatement>()
+        val loweredStatements = mutableListOf<HighIrStatement>()
         val (statements, argument) = expression.argumentExpression.lower()
         loweredStatements += statements
         if (argument == null) {
@@ -200,7 +200,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.FunctionApplication, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<HighIrStatement>()
+        val loweredStatements = mutableListOf<HighIrStatement>()
         val loweredFunctionExpression = expression.functionExpression
             .getLoweredAndAddStatements(statements = loweredStatements)
             ?: error(message = "Function expression must be lowered!")
@@ -241,7 +241,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.Binary, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<HighIrStatement>()
+        val loweredStatements = mutableListOf<HighIrStatement>()
         val e1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements) ?: UnitExpression
         val e2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements) ?: UnitExpression
         return Binary(
@@ -253,7 +253,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.IfElse, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<HighIrStatement>()
+        val loweredStatements = mutableListOf<HighIrStatement>()
         val boolExpression = expression.boolExpression
             .getLoweredAndAddStatements(statements = loweredStatements)
             ?: error(message = "Bool expression in if-else guard should be lowered!")
@@ -305,7 +305,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.Match, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<HighIrStatement>()
+        val loweredStatements = mutableListOf<HighIrStatement>()
         val matchedExpression = expression.matchedExpression
             .getLoweredAndAddStatements(statements = loweredStatements)
             ?: error(message = "Matched expression in match expression should be lowered!")
@@ -377,7 +377,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 ?.accept(visitor = this, context = Unit)
                 ?: LoweringResult(statements = emptyList(), expression = null)
         }
-        val loweredScopedStatements = arrayListOf<HighIrStatement>()
+        val loweredScopedStatements = mutableListOf<HighIrStatement>()
         for (statement in block.statements) {
             when (statement) {
                 is Statement.Val -> {

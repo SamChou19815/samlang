@@ -48,7 +48,7 @@ internal class LanguageServerServices(private val state: LanguageServerState) {
             else -> return emptyList()
         }
         val relevantClassType = moduleContext.getAnyClassType(className = type.identifier) ?: return emptyList()
-        val completionResults = arrayListOf<CompletionItem>()
+        val completionResults = mutableListOf<CompletionItem>()
         val isInsideClass = classOfExpression == type.identifier
         if (isInsideClass && relevantClassType.typeDefinition.type == TypeDefinitionType.OBJECT) {
             relevantClassType.typeDefinition.mappings.forEach { (name, type) ->

@@ -62,7 +62,7 @@ class NaiveRegisterAllocator(
     /** Number of temporaries to put on the stack. */
     val numberOfTemporariesOnStack: Int
     /** The collector of real instructions.*/
-    private val realInstructions: MutableList<AssemblyInstruction> = arrayListOf()
+    private val realInstructions: MutableList<AssemblyInstruction> = mutableListOf()
 
     init {
         val nonMachineRegisters = RegisterCollector.collect(

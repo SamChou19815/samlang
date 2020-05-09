@@ -91,7 +91,7 @@ internal object MemTilingHelper {
         if (operator !== MidIrOperator.MUL) {
             return null
         }
-        val instructions = arrayListOf<AssemblyInstruction>()
+        val instructions = mutableListOf<AssemblyInstruction>()
         instructions += COMMENT(comment = "multipleOf: $expression")
         val e2Const = getMulConst(e2)
         if (e2Const != null) {
@@ -188,7 +188,7 @@ internal object MemTilingHelper {
         val e2 = op.e2
         val multipleOfE1 = getMultipleOf(e1, dpTiling)
         val e2ConstOpt = getConstOpt(e2)
-        val instructions = arrayListOf<AssemblyInstruction>()
+        val instructions = mutableListOf<AssemblyInstruction>()
         instructions += COMMENT(comment = "multiple of with displacement: $op")
         if (multipleOfE1 != null && e2ConstOpt != null) {
             val forSub: Boolean = when (op.operator) {
@@ -263,7 +263,7 @@ internal object MemTilingHelper {
             }
         }
         if (potentialOpWithMultipleOf != null) {
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "multipleOf + (temp + constant): $op")
             instructions += potentialMultipleOf!!.instructions
             val regWithDisplacement = getRegWithDisplacement(potentialOpWithMultipleOf, dpTiling)
@@ -293,7 +293,7 @@ internal object MemTilingHelper {
             }
         }
         if (potentialReg != null) {
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "reg + (multipleOf + constant): $op")
             instructions += potentialMultipleOfWithDist!!.instructions
             val (instructions1, reg) = dpTiling.tile(potentialReg)

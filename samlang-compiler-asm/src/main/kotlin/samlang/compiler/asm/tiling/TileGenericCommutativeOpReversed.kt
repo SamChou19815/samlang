@@ -15,7 +15,7 @@ import samlang.ast.mir.MidIrOperator
  */
 internal object TileGenericCommutativeOpReversed : IrExpressionTile<Op> {
     override fun getTilingResult(node: Op, dpTiling: DpTiling): ExpressionTilingResult? {
-        val instructions = arrayListOf<AssemblyInstruction>()
+        val instructions = mutableListOf<AssemblyInstruction>()
         val resultReg = dpTiling.context.nextReg()
         val (instructions1, e2Reg) = dpTiling.tile(node.e2)
         val e1Result: RegOrMemTilingResult = when (node.operator) {

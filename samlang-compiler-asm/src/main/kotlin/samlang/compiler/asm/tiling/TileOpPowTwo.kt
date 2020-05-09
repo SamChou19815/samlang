@@ -113,7 +113,7 @@ internal object TileOpPowTwo {
         resultPlace: RegOrMem,
         dpTiling: DpTiling
     ): List<AssemblyInstruction>? {
-        val instructions = arrayListOf<AssemblyInstruction>()
+        val instructions = mutableListOf<AssemblyInstruction>()
         val e1 = node.e1
         val e2 = node.e2
         return when (node.operator) {

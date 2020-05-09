@@ -175,7 +175,7 @@ private class ExpressionTypeCheckerVisitor(
         fieldDeclarations: List<FieldConstructor>
     ): Either<Pair<Map<String, Type>, List<FieldConstructor>>, DuplicateFieldDeclarationError> {
         val declaredFieldTypes = mutableMapOf<String, Type>()
-        val checkedDeclarations = arrayListOf<FieldConstructor>()
+        val checkedDeclarations = mutableListOf<FieldConstructor>()
         for (fieldDeclaration in fieldDeclarations) {
             when (fieldDeclaration) {
                 is FieldConstructor.Field -> {

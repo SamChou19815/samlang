@@ -33,7 +33,7 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
     /** The usage maps. firstAppeared ==> (expr, a set of all usage places).  */
     private val usageMaps: Array<MutableMap<MidIrExpression, MutableSet<Int>>>
     /** The new statements produced after optimization.  */
-    private val newStatements: MutableList<MidIrStatement> = arrayListOf()
+    private val newStatements: MutableList<MidIrStatement> = mutableListOf()
 
     init {
         val len = statements.size

@@ -76,7 +76,7 @@ internal class MidIrFirstPassGenerator(
     private val expressionGenerator: ExpressionGenerator = ExpressionGenerator()
 
     private val stringGlobalVariableCollector: MutableSet<GlobalVariable> = LinkedHashSet()
-    private val lambdaFunctionsCollector: MutableList<MidIrFunction> = arrayListOf()
+    private val lambdaFunctionsCollector: MutableList<MidIrFunction> = mutableListOf()
 
     val stringGlobalVariables: Set<GlobalVariable> get() = stringGlobalVariableCollector
     val emittedLambdaFunctions: List<MidIrFunction> get() = lambdaFunctionsCollector
@@ -149,7 +149,7 @@ internal class MidIrFirstPassGenerator(
         )
 
         override fun visit(statement: IfElse): MidIrStatement {
-            val sequence = arrayListOf<MidIrStatement>()
+            val sequence = mutableListOf<MidIrStatement>()
             val ifBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "TRUE_BRANCH")
             val elseBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "FALSE_BRANCH")
             val endLabel = allocator.allocateLabelWithAnnotation(annotation = "IF_ELSE_END")
@@ -173,7 +173,7 @@ internal class MidIrFirstPassGenerator(
             val matchedTemp = allocator.getTemporaryByVariable(variableName = statement.variableForMatchedExpression)
             val finalAssignedVariable = statement.assignedTemporaryVariable
             val tagTemp = allocator.allocateTemp()
-            val statements = arrayListOf<MidIrStatement>()
+            val statements = mutableListOf<MidIrStatement>()
             statements += MOVE(destination = tagTemp, source = matchedTemp)
             if (finalAssignedVariable != null) {
                 statements += MOVE(
@@ -235,7 +235,7 @@ internal class MidIrFirstPassGenerator(
             return when (val pattern = statement.pattern) {
                 is HighIrPattern.ObjectPattern -> {
                     val temporary = allocator.allocateTemp()
-                    val statements = arrayListOf<MidIrStatement>()
+                    val statements = mutableListOf<MidIrStatement>()
                     statements += MOVE(destination = temporary, source = assignedExpression)
                     pattern.destructedNames.forEach { (original, order, alias) ->
                         val assignedTemporary = allocator.allocateTemp(variableName = alias ?: original)
@@ -250,7 +250,7 @@ internal class MidIrFirstPassGenerator(
                 }
                 is HighIrPattern.TuplePattern -> {
                     val temporary = allocator.allocateTemp()
-                    val statements = arrayListOf<MidIrStatement>()
+                    val statements = mutableListOf<MidIrStatement>()
                     statements += MOVE(destination = temporary, source = assignedExpression)
                     pattern.destructedNames.forEachIndexed { index, name ->
                         if (name == null) {
@@ -323,7 +323,7 @@ internal class MidIrFirstPassGenerator(
 
         override fun visit(expression: TupleConstructor): MidIrExpression {
             val tupleTemporary = allocator.allocateTemp()
-            val statements = arrayListOf<MidIrStatement>()
+            val statements = mutableListOf<MidIrStatement>()
             statements += MOVE(tupleTemporary, MALLOC(CONST(value = expression.expressionList.size * 8L)))
             expression.expressionList.forEachIndexed { index, argument ->
                 statements += MOVE(
@@ -336,7 +336,7 @@ internal class MidIrFirstPassGenerator(
 
         override fun visit(expression: ObjectConstructor): MidIrExpression {
             val objectTemporary = allocator.allocateTemp()
-            val statements = arrayListOf<MidIrStatement>()
+            val statements = mutableListOf<MidIrStatement>()
             statements += MOVE(objectTemporary, MALLOC(CONST(value = expression.fieldDeclaration.size * 8L)))
             expression.fieldDeclaration.forEachIndexed { index, (_, fieldExpression) ->
                 statements += MOVE(
@@ -416,7 +416,7 @@ internal class MidIrFirstPassGenerator(
 
         override fun visit(expression: MethodApplication): MidIrExpression {
             val name = getFunctionName(className = expression.className, functionName = expression.methodName)
-            val arguments = arrayListOf(translate(expression = expression.objectExpression))
+            val arguments = mutableListOf(translate(expression = expression.objectExpression))
             expression.arguments.forEach { arguments += translate(expression = it) }
             return CALL(functionExpr = NAME(name = name), args = arguments)
         }
@@ -443,7 +443,7 @@ internal class MidIrFirstPassGenerator(
                 Label(name = complexCaseLabel),
                 CALL_FUNCTION(
                     expression = MEM(expression = closure),
-                    arguments = arrayListOf<MidIrExpression>(contextTemp).apply { addAll(arguments) },
+                    arguments = mutableListOf<MidIrExpression>(contextTemp).apply { addAll(arguments) },
                     returnCollector = collectorTemp
                 ),
                 Label(name = endLabel)
@@ -469,7 +469,7 @@ internal class MidIrFirstPassGenerator(
                     val expr2Label = allocator.allocateLabel()
                     val valueTemp = allocator.allocateTemp()
                     val finalLabel = allocator.allocateLabel()
-                    val sequence = arrayListOf<MidIrStatement>()
+                    val sequence = mutableListOf<MidIrStatement>()
                     sequence += MOVE(valueTemp, ZERO)
                     cJumpTranslate(expression.e1, expr1Label, finalLabel, sequence)
                     sequence += Label(name = expr1Label)
@@ -484,7 +484,7 @@ internal class MidIrFirstPassGenerator(
                     val expr2Label = allocator.allocateLabel()
                     val valueTemp = allocator.allocateTemp()
                     val finalLabel = allocator.allocateLabel()
-                    val sequence = arrayListOf<MidIrStatement>()
+                    val sequence = mutableListOf<MidIrStatement>()
                     sequence += MOVE(valueTemp, ONE)
                     cJumpTranslate(expression.e1, finalLabel, expr1Label, sequence)
                     sequence += Label(name = expr1Label)
@@ -508,7 +508,7 @@ internal class MidIrFirstPassGenerator(
 
         override fun visit(expression: Ternary): MidIrExpression {
             val temporaryForTernary = allocator.allocateTemp()
-            val sequence = arrayListOf<MidIrStatement>()
+            val sequence = mutableListOf<MidIrStatement>()
             val ifBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "TRUE_BRANCH")
             val elseBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "FALSE_BRANCH")
             val endLabel = allocator.allocateLabelWithAnnotation(annotation = "IF_ELSE_END")
@@ -529,7 +529,7 @@ internal class MidIrFirstPassGenerator(
 
         override fun visit(expression: Lambda): MidIrExpression {
             val capturedVariables = expression.captured.keys.toList()
-            val statements = arrayListOf<MidIrStatement>()
+            val statements = mutableListOf<MidIrStatement>()
             val contextValue = if (capturedVariables.isNotEmpty()) {
                 val contextTemp = allocator.allocateTemp()
                 statements += MOVE(contextTemp, MALLOC(sizeExpr = CONST(value = capturedVariables.size * 8L)))

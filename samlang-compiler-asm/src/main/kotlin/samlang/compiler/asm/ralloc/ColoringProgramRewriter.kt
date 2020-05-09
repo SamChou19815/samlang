@@ -58,7 +58,7 @@ internal class ColoringProgramRewriter(
     oldInstructions: List<AssemblyInstruction>
 ) {
     /** The collector for new instructions. */
-    private val newInstructions: MutableList<AssemblyInstruction> = arrayListOf()
+    private val newInstructions: MutableList<AssemblyInstruction> = mutableListOf()
 
     init {
         val visitor = Visitor()

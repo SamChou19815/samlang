@@ -48,7 +48,7 @@ object TailRecursionOptimizer {
             return function // No need to optimize.
         }
         val startLabel = OptimizationResourceAllocator.nextLabel()
-        val newStatements = arrayListOf<MidIrStatement>()
+        val newStatements = mutableListOf<MidIrStatement>()
         newStatements += MidIrStatement.Label(name = startLabel)
         oldStatements.forEachIndexed { index, statement ->
             if (index !in selfCallIds) {

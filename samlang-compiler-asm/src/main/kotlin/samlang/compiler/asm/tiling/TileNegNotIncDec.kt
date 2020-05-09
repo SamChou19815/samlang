@@ -74,7 +74,7 @@ internal object TileNegNotIncDec {
             val destIrMem = MidIrExpression.Mem(node.memLocation)
             if (opIsForInc(source, destIrMem)) {
                 val (instructions1, memToChange) = MemTilingHelper.tileMem(destIrMem, dpTiling)
-                val instructions = arrayListOf<AssemblyInstruction>()
+                val instructions = mutableListOf<AssemblyInstruction>()
                 instructions += COMMENT(node)
                 instructions += instructions1
                 instructions += UN_OP(AlUnaryOpType.INC, memToChange)
@@ -107,7 +107,7 @@ internal object TileNegNotIncDec {
             val destIrMem = MidIrExpression.Mem(node.memLocation)
             if (opIsForDec(source, destIrMem)) {
                 val (instructions1, mem) = MemTilingHelper.tileMem(destIrMem, dpTiling)
-                val instructions = arrayListOf<AssemblyInstruction>()
+                val instructions = mutableListOf<AssemblyInstruction>()
                 instructions += COMMENT(node)
                 instructions += instructions1
                 instructions += UN_OP(AlUnaryOpType.DEC, mem)
@@ -138,7 +138,7 @@ internal object TileNegNotIncDec {
             val destIrMem = MidIrExpression.Mem(node.memLocation)
             if (opIsForNeg(source, destIrMem)) {
                 val (instructions1, mem) = MemTilingHelper.tileMem(destIrMem, dpTiling)
-                val instructions = arrayListOf<AssemblyInstruction>()
+                val instructions = mutableListOf<AssemblyInstruction>()
                 instructions += COMMENT(node)
                 instructions += instructions1
                 instructions += UN_OP(AlUnaryOpType.NEG, mem)

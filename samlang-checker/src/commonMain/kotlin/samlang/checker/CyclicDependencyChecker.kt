@@ -23,7 +23,7 @@ private class CyclicDependencyChecker(sources: Sources<Module>, private val erro
         LinkedHashMap()
     private val hasDependentsSet: MutableSet<ModuleReference> = hashSetOf()
     private val visitedSet: MutableSet<ModuleReference> = hashSetOf()
-    private val visitingList: MutableList<ModuleReference> = arrayListOf()
+    private val visitingList: MutableList<ModuleReference> = mutableListOf()
 
     init {
         sources.moduleMappings.forEach { (moduleReference, module) ->

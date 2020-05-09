@@ -63,9 +63,9 @@ internal class SpillingProgramRewriter(
     /** The generated mappings for spilled vars. */
     private val spilledVarMappings: MutableMap<String, Mem> = hashMapOf()
     /** The collector of new temps. */
-    private val newTemps: MutableList<String> = arrayListOf()
+    private val newTemps: MutableList<String> = mutableListOf()
     /** The collector for new instructions. */
-    private val newInstructions: MutableList<AssemblyInstruction> = arrayListOf()
+    private val newInstructions: MutableList<AssemblyInstruction> = mutableListOf()
 
     init {
         var memId = 1 + numberOfSpilledVarsSoFar

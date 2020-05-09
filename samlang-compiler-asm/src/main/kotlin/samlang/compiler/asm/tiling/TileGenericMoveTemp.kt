@@ -11,7 +11,7 @@ internal object TileGenericMoveTemp : IrStatementTile<MoveTemp> {
         val irSource = node.source
         val resultReg = REG(node.tempId)
         val srcTilingResult = dpTiling.tileArg(irSource)
-        val instructions = arrayListOf<AssemblyInstruction>()
+        val instructions = mutableListOf<AssemblyInstruction>()
         instructions += COMMENT(comment = "GenericMoveTemp: $node")
         instructions += srcTilingResult.instructions
         instructions += MOVE(resultReg, srcTilingResult.arg)

@@ -66,7 +66,7 @@ internal object TileMul3Args {
     object ForMoveTemp : IrStatementTile<MoveTemp> {
         override fun getTilingResult(node: MoveTemp, dpTiling: DpTiling): StatementTilingResult? {
             val result = tryToTile(dpTiling, node.source) ?: return null
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "TileMul3ArgsForMove: $node")
             instructions += result.instructions
             instructions += IMUL(REG(node.tempId), result.op1, result.op2)
@@ -77,7 +77,7 @@ internal object TileMul3Args {
     object ForMoveMem : IrStatementTile<MoveMem> {
         override fun getTilingResult(node: MoveMem, dpTiling: DpTiling): StatementTilingResult? {
             val result = tryToTile(dpTiling, node.source) ?: return null
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "TileMul3ArgsForMove: $node")
             instructions += result.instructions
             val (instructions1, mem) = MemTilingHelper.tileMem(MidIrExpression.Mem(node.memLocation), dpTiling)
@@ -93,7 +93,7 @@ internal object TileMul3Args {
         override fun getTilingResult(node: Op, dpTiling: DpTiling): ExpressionTilingResult? {
             val result = tryToTile(dpTiling, node) ?: return null
             val resultReg = dpTiling.context.nextReg()
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "TileMul3ArgsForOp: $node")
             instructions += result.instructions
             instructions += IMUL(resultReg, result.op1, result.op2)

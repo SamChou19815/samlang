@@ -30,8 +30,8 @@ class AssemblyGenerator private constructor(
     private val enableRealRegisterAllocation: Boolean,
     private val removeComments: Boolean
 ) {
-    private val publicFunctions: MutableList<String> = arrayListOf()
-    private val instructions: MutableList<AssemblyInstruction> = arrayListOf()
+    private val publicFunctions: MutableList<String> = mutableListOf()
+    private val instructions: MutableList<AssemblyInstruction> = mutableListOf()
 
     init {
         for (function in compilationUnit.functions) {
@@ -135,7 +135,7 @@ class AssemblyGenerator private constructor(
          * @return the statements to tile for the function.
          */
         private fun getStatementsToTile(f: MidIrFunction): List<MidIrStatement> {
-            val statementsToTile = arrayListOf<MidIrStatement>()
+            val statementsToTile = mutableListOf<MidIrStatement>()
             val argsTemp = f.argumentTemps
             for (i in argsTemp.indices) {
                 val argPlaceInIR = getArgPlaceInsideFunction(i)

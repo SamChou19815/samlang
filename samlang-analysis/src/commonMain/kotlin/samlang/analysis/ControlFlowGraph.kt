@@ -54,7 +54,7 @@ class ControlFlowGraph<I> private constructor(
             }
             val conditionJumpLabel = getConditionalJumpLabel(statement)
             if (conditionJumpLabel != null) {
-                val nextList = arrayListOf<Int>()
+                val nextList = mutableListOf<Int>()
                 nextList.add(labelIdMap[conditionJumpLabel]!!)
                 if (id != len - 1) {
                     nextList.add(id + 1)
@@ -90,7 +90,7 @@ class ControlFlowGraph<I> private constructor(
     /** @return a list of nodes with no children and reachable from start node. */
     val reachableEndNodes: List<Node<I>>
         get() {
-            val collector = arrayListOf<Node<I>>()
+            val collector = mutableListOf<Node<I>>()
             dfs { node ->
                 if (getChildrenIds(node.id).isEmpty()) {
                     collector += node

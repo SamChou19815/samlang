@@ -26,7 +26,7 @@ internal object TileMoveOp {
             // try to use LEA if we can
             val (instructions1, mem) = MemTilingHelper.tileExprForMem(node.source, dpTiling)
                     ?: return null
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "TileMoveOpByLEA: $node")
             instructions += instructions1
             instructions += LEA(REG(node.tempId), mem)
@@ -57,7 +57,7 @@ internal object TileMoveOp {
             if (argResult == null) {
                 return null // neither e1 or e2 match dest
             }
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "TileMoveCommutativeOp: $node")
             instructions += argResult.instructions
             val arg = argResult.arg
@@ -90,7 +90,7 @@ internal object TileMoveOp {
                 return null
             }
             val argResult = dpTiling.tileArg(e2)
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "TileMoveSub: $node")
             instructions += argResult.instructions
             instructions += BIN_OP(AlBinaryOpType.SUB, REG(node.tempId), argResult.arg)
@@ -121,7 +121,7 @@ internal object TileMoveOp {
             if (argResult == null) { // neither e1 or e2 match dest
                 return null
             }
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "TileMoveCommutativeOp: $node")
             instructions += argResult.instructions
             val (instructions1, changedMem) = MemTilingHelper.tileMem(destMem, dpTiling)
@@ -143,7 +143,7 @@ internal object TileMoveOp {
                 return null
             }
             val argResult = dpTiling.tileConstOrReg(e2)
-            val instructions = arrayListOf<AssemblyInstruction>()
+            val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "TileMoveSub: $node")
             instructions += argResult.instructions
             val (instructions1, mem) = MemTilingHelper.tileMem(destMem, dpTiling)

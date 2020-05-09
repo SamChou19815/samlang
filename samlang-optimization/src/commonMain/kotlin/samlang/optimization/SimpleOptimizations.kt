@@ -68,7 +68,7 @@ object SimpleOptimizations {
         val reachableSet = hashSetOf<Int>()
         cfgConstructor(instructions).dfs { reachableSet.add(it.id) }
         // only add reachable instructions
-        val reachableInstructions = arrayListOf<T>()
+        val reachableInstructions = mutableListOf<T>()
         val len = instructions.size
         for (i in 0 until len) {
             if (reachableSet.contains(i)) {
@@ -107,7 +107,7 @@ object SimpleOptimizations {
     }
 
     private fun withoutImmediateJumpInIr(statements: List<MidIrStatement>): List<MidIrStatement> {
-        val newStatements = arrayListOf<MidIrStatement>()
+        val newStatements = mutableListOf<MidIrStatement>()
         val len = statements.size
         for (i in 0 until len) {
             val s = statements[i]
@@ -257,7 +257,7 @@ object SimpleOptimizations {
     private fun withoutImmediateJumpInAsm(
         instructions: List<AssemblyInstruction>
     ): List<AssemblyInstruction> {
-        val newInstructions = arrayListOf<AssemblyInstruction>()
+        val newInstructions = mutableListOf<AssemblyInstruction>()
         val len = instructions.size
         for (i in 0 until len) {
             val instruction = instructions[i]

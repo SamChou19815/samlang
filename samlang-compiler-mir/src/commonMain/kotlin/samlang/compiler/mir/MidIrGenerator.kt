@@ -23,7 +23,7 @@ class MidIrGenerator private constructor(
     private val module: HighIrModule
 ) {
     private val globalVariables: MutableSet<GlobalVariable> = LinkedHashSet()
-    private val functions: MutableList<MidIrFunction> = arrayListOf()
+    private val functions: MutableList<MidIrFunction> = mutableListOf()
 
     init {
         module.classDefinitions.forEach { classDefinition ->
@@ -50,7 +50,7 @@ class MidIrGenerator private constructor(
             module = module
         )
         val generator2ndPass = MidIrSecondPassGenerator(allocator = allocator)
-        val allocatedArgs = arrayListOf<Temporary>()
+        val allocatedArgs = mutableListOf<Temporary>()
         if (function.isMethod) {
             // 'this' is the first argument for methods.
             allocatedArgs += allocator.allocateTemp(variableName = "this")
@@ -111,7 +111,7 @@ class MidIrGenerator private constructor(
         private fun generateWithoutEntry(sources: Sources<HighIrModule>): MidIrCompilationUnit {
             val globalResourceAllocator = MidIrGlobalResourceAllocator()
             val globalVariables = LinkedHashSet<GlobalVariable>()
-            val functions = arrayListOf<MidIrFunction>()
+            val functions = mutableListOf<MidIrFunction>()
             sources.moduleMappings.forEach { (moduleReference, module) ->
                 val generator = MidIrGenerator(
                     globalResourceAllocator = globalResourceAllocator,

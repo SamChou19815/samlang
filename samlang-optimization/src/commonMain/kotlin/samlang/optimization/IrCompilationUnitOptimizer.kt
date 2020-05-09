@@ -29,7 +29,7 @@ class IrCompilationUnitOptimizer(
     }
 
     private fun optimizeAtStatementLevel(compilationUnit: MidIrCompilationUnit): MidIrCompilationUnit {
-        val newFunctions = arrayListOf<MidIrFunction>()
+        val newFunctions = mutableListOf<MidIrFunction>()
         for (oldFunction in compilationUnit.functions) {
             var statements = oldFunction.mainBodyStatements
             for (i in 0..4) {

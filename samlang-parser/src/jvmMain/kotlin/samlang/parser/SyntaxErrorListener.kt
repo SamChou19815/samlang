@@ -12,7 +12,7 @@ import samlang.errors.SyntaxError
 
 internal class SyntaxErrorListener(val moduleReference: ModuleReference) : BaseErrorListener() {
 
-    private val _syntaxErrors: MutableList<SyntaxError> = arrayListOf()
+    private val _syntaxErrors: MutableList<SyntaxError> = mutableListOf()
 
     val syntaxErrors: List<CompileTimeError> get() = _syntaxErrors
 

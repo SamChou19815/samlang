@@ -59,11 +59,11 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
         expressionList: List<MidIrExpression>
     ): Pair<MutableList<MidIrStatement>, List<MidIrExpression>> {
         if (allCanonical(expressions = expressionList)) {
-            return arrayListOf<MidIrStatement>() to expressionList.map { MidIrOpReorderingUtil.reorder(it) }
+            return mutableListOf<MidIrStatement>() to expressionList.map { MidIrOpReorderingUtil.reorder(it) }
         }
         val argsLoweringResult = expressionList.map { this.lower(it) }
-        val argsTempList = arrayListOf<MidIrExpression>()
-        val sequence = arrayListOf<MidIrStatement>()
+        val argsTempList = mutableListOf<MidIrExpression>()
+        val sequence = mutableListOf<MidIrStatement>()
         for (loweringResult in argsLoweringResult) {
             val statements = loweringResult.statements
             val expr = loweringResult.expression

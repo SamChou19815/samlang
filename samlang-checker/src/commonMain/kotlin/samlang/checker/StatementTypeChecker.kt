@@ -34,7 +34,7 @@ internal class StatementTypeChecker(
         expectedType: Type,
         localContext: LocalTypingContext
     ): StatementBlock {
-        val checkedStatements = arrayListOf<Statement>()
+        val checkedStatements = mutableListOf<Statement>()
         for (statement in statementBlock.statements) {
             checkedStatements += typeCheck(
                 statement = statement,

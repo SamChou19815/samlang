@@ -79,7 +79,7 @@ object InlineOptimizer {
         functionsToInline: Set<String>,
         functions: Map<String, MidIrFunction>
     ): MidIrFunction {
-        val newMainBodyStatements = arrayListOf<MidIrStatement>()
+        val newMainBodyStatements = mutableListOf<MidIrStatement>()
         for (oldMainBodyStatement in irFunction.mainBodyStatements) {
             if (oldMainBodyStatement !is CallFunction) {
                 newMainBodyStatements += oldMainBodyStatement
