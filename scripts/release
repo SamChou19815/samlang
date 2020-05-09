@@ -1,11 +1,12 @@
 #!/bin/bash
 
+set -e
+
 # Build all programs.
 cd runtime && make && cd ../
 ./gradlew build
 
 # Create release folder
-mkdir build
 rm -rf build/release
 mkdir build/release
 mkdir build/release/build
