@@ -31,14 +31,13 @@ internal class InterferenceGraph {
      * @param variable the variable of interest.
      * @return the adjacent set of the variable, excluding the pre-colored nodes.
      */
-    fun getAdjacentList(variable: String): Set<String> =
-            adjacentList.getOrDefault(variable, emptySet())
+    fun getAdjacentList(variable: String): Set<String> = adjacentList[variable] ?: emptySet()
 
     /**
      * @param variable variable to measure degree.
      * @return the degree of the variable.
      */
-    fun degree(variable: String): Int = degrees.getOrDefault(variable, 0)
+    fun degree(variable: String): Int = degrees[variable] ?: 0
 
     /**
      * Add an edge between two variable nodes.

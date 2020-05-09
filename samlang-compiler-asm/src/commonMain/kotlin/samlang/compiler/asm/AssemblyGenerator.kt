@@ -25,6 +25,7 @@ import samlang.compiler.asm.tiling.DpTiling
 import samlang.optimization.SimpleOptimizations
 
 /** The assembly generator. */
+@ExperimentalStdlibApi
 class AssemblyGenerator private constructor(
     compilationUnit: MidIrCompilationUnit,
     private val enableRealRegisterAllocation: Boolean,

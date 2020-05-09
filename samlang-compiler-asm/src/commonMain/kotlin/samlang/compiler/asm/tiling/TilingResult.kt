@@ -13,7 +13,6 @@ interface TilingResult {
     val instructions: List<AssemblyInstruction>
 
     /** @return cost of this tiling. */
-    @JvmDefault
     val cost: Int
         get() {
             var cost = 0

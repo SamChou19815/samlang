@@ -22,6 +22,7 @@ import samlang.compiler.asm.ralloc.RegisterCollector.collect
  * @param functionContext the mutable context of a function.
  * @param tiledInstructions the assembly instructions to perform live variable analysis.
  */
+@ExperimentalStdlibApi
 class RealRegisterAllocator(
     private val functionContext: FunctionContext,
     tiledInstructions: List<AssemblyInstruction>
@@ -165,13 +166,13 @@ class RealRegisterAllocator(
             val useCount = buildUseCount(liveVariableAnalysisResult)
             makeWorkList()
             while (true) {
-                if (!simplifyWorkList.isEmpty()) {
+                if (simplifyWorkList.isNotEmpty()) {
                     simplify()
                 } else if (workListMoves.isNotEmpty()) {
                     coalesce()
-                } else if (!freezeWorkList.isEmpty()) {
+                } else if (freezeWorkList.isNotEmpty()) {
                     freeze()
-                } else if (!spillWorkList.isEmpty()) {
+                } else if (spillWorkList.isNotEmpty()) {
                     selectSpill(useCount)
                 } else {
                     break
@@ -209,10 +210,10 @@ class RealRegisterAllocator(
             }
         }
         // simplifyWorkList invariant
-        for (u in simplifyWorkList) {
+        simplifyWorkList.forEach { u ->
             val degree = interferenceGraph.degree(u)
             if (degree >= K) { // selected for spilling
-                continue
+                return@forEach
             }
             val moveList: Set<RegMove>? = moveMap[u]
             if (moveList != null) {
@@ -228,7 +229,7 @@ class RealRegisterAllocator(
             }
         }
         // freeWorkList invariant
-        for (u in freezeWorkList) {
+        freezeWorkList.forEach { u ->
             val degree = interferenceGraph.degree(u)
             if (degree >= K) {
                 val errorMessage = ("freezeWorkList invariant is broken" +
@@ -254,7 +255,7 @@ class RealRegisterAllocator(
             }
         }
         // spillWorkList invariant
-        for (u in spillWorkList) {
+        spillWorkList.forEach { u ->
             val degree = interferenceGraph.degree(u)
             if (degree < K) {
                 val errorMessage = ("spillWorkList invariant is broken" +
@@ -463,8 +464,7 @@ class RealRegisterAllocator(
             addToWorkList(u)
             addToWorkList(v)
         } else {
-            var condition = (PRE_COLORED_REGS.contains(u) &&
-                    adjacentSet(v).stream().allMatch { t: String -> ok(t, u) })
+            var condition = (PRE_COLORED_REGS.contains(u) && adjacentSet(v).all { t: String -> ok(t, u) })
             if (!condition) {
                 condition = (!PRE_COLORED_REGS.contains(u) &&
                         conservative(union(listOf(adjacentSet(u), adjacentSet(v)))))
@@ -490,7 +490,7 @@ class RealRegisterAllocator(
         // alias[v] := u
         alias[v] = u
         // moveList[u] := moveList[u] union moveList[v]
-        moveMap.getOrPut(u) { mutableSetOf() }.addAll(moveMap.getOrDefault(v, emptySet()))
+        moveMap.getOrPut(u) { mutableSetOf() }.addAll(moveMap[v] ?: emptySet())
         enableMoves(listOf(v))
         for (t in adjacentSet(v)) {
             interferenceGraph.addEdge(t, u)
@@ -543,7 +543,7 @@ class RealRegisterAllocator(
     private fun selectSpill(useCount: Map<String, Int>) {
         var lowestScore = Int.MAX_VALUE.toDouble()
         var bestVariableToSpill: String? = null
-        for (variable in spillWorkList) {
+        spillWorkList.forEach { variable ->
             val uses = useCount[variable] ?: 0
             val degree = interferenceGraph.degree(variable)
             val score: Double
@@ -557,12 +557,13 @@ class RealRegisterAllocator(
                 lowestScore = score
             }
         }
-        if (bestVariableToSpill == null) {
+        val immutableBestVariableToSpill = bestVariableToSpill
+        if (immutableBestVariableToSpill == null) {
             throw Error()
         }
-        spillWorkList.remove(bestVariableToSpill)
-        simplifyWorkList.add(bestVariableToSpill)
-        freezeMoves(bestVariableToSpill)
+        spillWorkList.remove(immutableBestVariableToSpill)
+        simplifyWorkList.add(immutableBestVariableToSpill)
+        freezeMoves(immutableBestVariableToSpill)
     }
 
     private fun assignColors() {
