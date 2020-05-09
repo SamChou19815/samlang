@@ -1,17 +1,17 @@
 package samlang.compiler.asm.tiling
 
 /** The utility class used to memoize function application. */
-internal class MemoizedFunction<T, R> private constructor(private val function: (T) -> R) : (T) -> R {
+internal class MemoizedFunction<T, R> private constructor(private val function: (T) -> R) {
     /** The memoized results.  */
-    private val memoizedIO: MutableMap<T, R> = hashMapOf()
+    private val memoizedIO: MutableMap<T, R> = mutableMapOf()
 
-    override fun invoke(p1: T): R {
-        val output = memoizedIO[p1]
+    operator fun invoke(parameter: T): R {
+        val output = memoizedIO[parameter]
         if (output != null) {
             return output
         }
-        val freshOutput = function(p1)
-        memoizedIO[p1] = freshOutput
+        val freshOutput = function(parameter)
+        memoizedIO[parameter] = freshOutput
         return freshOutput
     }
 
@@ -24,6 +24,6 @@ internal class MemoizedFunction<T, R> private constructor(private val function: 
          * @param R the type of the output.
          * @return the memoized version of the given function.
          */
-        fun <T, R> memo(function: (T) -> R): (T) -> R = MemoizedFunction(function)
+        fun <T, R> memo(function: (T) -> R): MemoizedFunction<T, R> = MemoizedFunction(function)
     }
 }

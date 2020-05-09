@@ -38,10 +38,10 @@ class DpTiling(val context: FunctionContext) {
     /** The expression tiling visitor.  */
     private val expressionTilingVisitor = ExpressionTilingVisitor()
     /** The memoized statement tiling function.  */
-    private val statementTilingFunction: (MidIrStatement) -> StatementTilingResult =
+    private val statementTilingFunction: MemoizedFunction<MidIrStatement, StatementTilingResult> =
         MemoizedFunction.memo { statement -> statement.accept(statementTilingVisitor, Unit) }
     /** The memoized expression tiling function.  */
-    private val expressionTilingFunction: (MidIrExpression) -> ExpressionTilingResult =
+    private val expressionTilingFunction: MemoizedFunction<MidIrExpression, ExpressionTilingResult> =
         MemoizedFunction.memo { expression -> expression.accept(expressionTilingVisitor, Unit) }
 
     /**
