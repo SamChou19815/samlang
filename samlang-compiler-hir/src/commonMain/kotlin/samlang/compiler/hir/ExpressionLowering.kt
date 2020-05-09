@@ -102,7 +102,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     }
 
     override fun visit(expression: Expression.ObjectConstructor, context: Unit): LoweringResult {
-        val loweredStatements = arrayListOf<HighIrStatement>()
+        val loweredStatements = mutableListOf<HighIrStatement>()
         val loweredFields = expression.fieldDeclarations.map { fieldConstructor ->
             when (fieldConstructor) {
                 is Expression.ObjectConstructor.FieldConstructor.Field -> {
