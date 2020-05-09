@@ -19,19 +19,8 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
-      - name: Use Gradle Cache
-        uses: actions/cache@v1
-        with:
-          path: ~/.gradle/caches
-          key: gradle-${{ hashFiles('**/*.gradle.kts') }}
-          restore-keys: gradle-
       - name: Build
         run: ./scripts/release
-      - name: Upload Release
-        uses: actions/upload-artifact@master
-        with:
-          name: release-${{ matrix.os }}
-          path: build/release
       - name: Verify that Release Program Works
         run: ./build/release/samlang
       - name: Compile samlang Programs
