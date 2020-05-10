@@ -32,6 +32,7 @@ tasks {
     shadowJar {
         minimize()
         archiveBaseName.set("samlang")
+        destinationDirectory.set(file("../build/libs"))
         manifest { attributes["Main-Class"] = "samlang.Main" }
         isZip64 = true
         artifacts { shadow(archiveFile) { builtBy(shadowJar) } }

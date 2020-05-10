@@ -51,12 +51,7 @@ tasks {
         // Include the results from the `test` task in all subprojects
         reportOn(subprojects.map { it.tasks["test"] } + this@tasks["test"])
     }
-    register<Copy>("copyFarJar") {
-        from(file("samlang-cli/build/libs/samlang-all.jar"))
-        into(file("$buildDir/libs"))
-    }
     "build" {
-        dependsOn("copyFarJar")
         dependsOn("testReport")
     }
 }
