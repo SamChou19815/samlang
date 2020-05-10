@@ -4,7 +4,7 @@ plugins {
 
 kotlin {
     jvm()
-    js()
+    js { useCommonJs() }
     sourceSets {
         val commonMain by getting {
             dependencies {
