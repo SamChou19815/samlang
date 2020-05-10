@@ -3,7 +3,9 @@
 set -e
 
 # Build all programs.
-cd runtime && make && cd ../
+cd runtime
+make > /dev/null
+cd ../
 ./gradlew build
 
 # Create release folder
