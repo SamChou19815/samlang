@@ -10,7 +10,7 @@ dependencies {
 tasks {
     withType<AntlrTask> {
         outputDirectory = file(
-            path = "${project.rootDir}/samlang-parser-generated/src/main/java/samlang/parser/generated"
+            path = "${project.rootDir}/samlang-parser-generated-java/src/main/java/samlang/parser/generated"
         )
         arguments.addAll(listOf("-package", "samlang.parser.generated", "-no-listener", "-visitor"))
     }
