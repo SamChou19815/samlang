@@ -16,7 +16,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib")
+                implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib-jdk8")
                 implementation(dependencyNotation = "org.antlr:antlr4:4.8")
                 implementation(dependencyNotation = "org.apache.commons:commons-text:1.6")
                 implementation(project(":samlang-parser-generated"))

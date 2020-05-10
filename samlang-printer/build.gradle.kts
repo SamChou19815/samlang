@@ -15,7 +15,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib")
+                implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-stdlib-jdk8")
             }
         }
         val jsMain by getting {
