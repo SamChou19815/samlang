@@ -3,7 +3,11 @@ plugins {
 }
 
 kotlin {
-    jvm()
+    jvm {
+        tasks.named<Test>("jvmTest") {
+            useJUnitPlatform()
+        }
+    }
     js { useCommonJs() }
     sourceSets {
         val commonMain by getting {
