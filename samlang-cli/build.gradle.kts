@@ -38,4 +38,12 @@ tasks {
         artifacts { shadow(archiveFile) { builtBy(shadowJar) } }
     }
     "assemble" { dependsOn(shadowJar) }
+
+    withType<Test> {
+        maxParallelForks = 4
+        reports.junitXml.isEnabled = false
+    }
+    named<Test>(name = "test") {
+        useJUnitPlatform()
+    }
 }

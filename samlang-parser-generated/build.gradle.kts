@@ -14,4 +14,12 @@ tasks {
         arguments.addAll(listOf("-package", "samlang.parser.generated", "-no-listener", "-visitor"))
     }
     "compileJava" { dependsOn("generateGrammarSource") }
+
+    withType<Test> {
+        maxParallelForks = 4
+        reports.junitXml.isEnabled = false
+    }
+    named<Test>(name = "test") {
+        useJUnitPlatform()
+    }
 }
