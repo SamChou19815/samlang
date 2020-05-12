@@ -29,6 +29,7 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
+                implementation(project(":samlang-parser-generated-js"))
             }
         }
     }
