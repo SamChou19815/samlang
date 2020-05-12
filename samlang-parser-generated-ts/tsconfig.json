@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "commonjs",
+    "declaration": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "outDir": "lib",
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src"]
+}

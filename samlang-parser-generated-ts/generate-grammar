@@ -1,0 +1,12 @@
+#!/bin/bash
+
+set -e
+set -x
+
+cp ../samlang-parser-generated-java/src/main/antlr/PL.g4 .
+cp ../samlang-parser-generated-java/src/main/antlr/PLLexerPart.g4 .
+mkdir src
+yarn antlr4ts -o src/ -visitor PL.g4
+rm PL*.g4
+yarn tsc
+rm -rf src

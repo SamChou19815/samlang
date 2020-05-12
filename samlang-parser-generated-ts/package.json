@@ -1,0 +1,23 @@
+{
+  "name": "@dev-sam/samlang-parser-generated-ts",
+  "version": "0.0.1",
+  "description": "Internal package used by samlang project. It is meant to be consumed by Kotlin multiplatform compiler, not by ordinary end users.",
+  "main": "index.js",
+  "repository": "https://github.com/SamChou19815/samlang",
+  "author": "Developer Sam",
+  "license": "AGPL-3.0",
+  "private": false,
+  "files": [
+    "lib"
+  ],
+  "scripts": {
+    "postinstall": "./generate-grammar"
+  },
+  "dependencies": {
+    "antlr4ts": "^0.5.0-alpha.3"
+  },
+  "devDependencies": {
+    "antlr4ts-cli": "^0.5.0-alpha.3",
+    "typescript": "^3.8.3"
+  }
+}
