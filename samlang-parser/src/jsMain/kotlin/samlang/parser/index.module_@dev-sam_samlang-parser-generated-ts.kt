@@ -4,5 +4,6 @@
 
 import kotlin.js.*
 
-@JsName("default")
 external var buildTsModuleFromText: (text: String) -> TsModule
+
+external var buildTsExpressionFromText: (text: String) -> TsExpression

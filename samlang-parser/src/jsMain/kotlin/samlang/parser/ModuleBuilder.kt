@@ -6,6 +6,7 @@ import samlang.ast.lang.Module
 import samlang.errors.CompileTimeError
 import samlang.errors.SyntaxError
 
+import buildTsExpressionFromText
 import buildTsModuleFromText
 import samlang.ast.lang.Expression
 
@@ -26,6 +27,14 @@ actual fun buildModuleFromText(moduleReference: ModuleReference, text: String): 
 actual fun buildExpressionFromText(
     moduleReference: ModuleReference,
     source: String
-): Pair<Expression?, List<CompileTimeError>> {
-    TODO(reason = "Not implemented!")
-}
+): Pair<Expression?, List<CompileTimeError>> =
+    try {
+        buildTsExpressionFromText(source).accept(TsExpressionTransformVisitor) to emptyList()
+    } catch (error: Throwable) {
+        val compileTimeError = SyntaxError(
+            moduleReference = moduleReference,
+            range = Range.DUMMY,
+            reason = error.message ?: ""
+        )
+        null to listOf(compileTimeError)
+    }

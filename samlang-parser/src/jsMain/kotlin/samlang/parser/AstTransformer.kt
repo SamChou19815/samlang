@@ -100,7 +100,7 @@ private object TsPatternTransformVisitor : TsPatternVisitor<Pattern> {
         Pattern.WildCardPattern(range = pattern.range.toRange())
 }
 
-private object TsExpressionTransformVisitor : TsExpressionVisitor<Expression> {
+internal object TsExpressionTransformVisitor : TsExpressionVisitor<Expression> {
     override fun visitLiteral(expression: TsLiteralExpression): Expression {
         val literal = expression.literal
         val range = expression.range.toRange()
