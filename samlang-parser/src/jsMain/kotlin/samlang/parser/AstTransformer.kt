@@ -16,6 +16,7 @@ import TsMatchExpression
 import TsMemberDefinition
 import TsMethodAccessExpression
 import TsModule
+import TsModuleReference
 import TsObjectConstructorExpression
 import TsObjectPattern
 import TsPanicExpression
@@ -31,6 +32,7 @@ import TsTuplePattern
 import TsTupleType
 import TsType
 import TsTypeDefinition
+import TsTypeVisitor
 import TsUnaryExpression
 import TsUndecidedType
 import TsVariableExpression
@@ -39,8 +41,6 @@ import TsVariantConstructorExpression
 import TsWildCardPattern
 import samlang.ast.common.*
 import samlang.ast.lang.*
-import ModuleReference as TsModuleReference
-import TypeVisitor as TsTypeVisitor
 
 private fun <V> TsStringMap<V>.toMap(): Map<String, V> = this.map { it.key to it.value }.toMap()
 

@@ -9,7 +9,7 @@ external open class TsLiteral(type: String /* 'int' | 'string' | 'bool' */, valu
 
 external interface TsModuleMembersImport : TsNode {
     var importedMembers: Array<TsImportedMember>
-    var importedModule: ModuleReference
+    var importedModule: TsModuleReference
     var importedModuleRange: TsRange
 }
 
@@ -18,7 +18,7 @@ external interface TsImportedMember {
     var range: TsRange
 }
 
-external interface ModuleReference {
+external interface TsModuleReference {
     var parts: Array<String>
 }
 
@@ -44,10 +44,10 @@ external interface TsStringMapElement<V> {
 typealias TsStringMap<V> = Array<TsStringMapElement<V>>
 
 external interface TsType {
-    fun <T> accept(visitor: TypeVisitor<T>): T
+    fun <T> accept(visitor: TsTypeVisitor<T>): T
 }
 
-external interface TypeVisitor<T> {
+external interface TsTypeVisitor<T> {
     fun visitPrimitive(type: TsPrimitiveType): T
     fun visitIdentifier(type: TsIdentifierType): T
     fun visitTuple(type: TsTupleType): T
@@ -57,28 +57,28 @@ external interface TypeVisitor<T> {
 
 external open class TsPrimitiveType(name: String /* 'unit' | 'bool' | 'int' | 'string' */) : TsType {
     open var name: String /* 'unit' | 'bool' | 'int' | 'string' */
-    override fun <T> accept(visitor: TypeVisitor<T>): T
+    override fun <T> accept(visitor: TsTypeVisitor<T>): T
 }
 
 external open class TsIdentifierType(identifier: String, typeArguments: Array<TsType>) : TsType {
     open var identifier: String
     open var typeArguments: Array<TsType>
-    override fun <T> accept(visitor: TypeVisitor<T>): T
+    override fun <T> accept(visitor: TsTypeVisitor<T>): T
 }
 
 external open class TsTupleType(mappings: Array<TsType>) : TsType {
     open var mappings: Array<TsType>
-    override fun <T> accept(visitor: TypeVisitor<T>): T
+    override fun <T> accept(visitor: TsTypeVisitor<T>): T
 }
 
 external open class TsFunctionType(argumentTypes: Array<TsType>, returnType: TsType) : TsType {
     open var argumentTypes: Array<TsType>
     open var returnType: TsType
-    override fun <T> accept(visitor: TypeVisitor<T>): T
+    override fun <T> accept(visitor: TsTypeVisitor<T>): T
 }
 
 external open class TsUndecidedType : TsType {
-    override fun <T> accept(visitor: TypeVisitor<T>): T
+    override fun <T> accept(visitor: TsTypeVisitor<T>): T
 }
 
 external interface TsTypeDefinition : TsNode {
