@@ -2,6 +2,9 @@ plugins {
     kotlin(module = "multiplatform")
 }
 
+// Bug in Kotlin. See https://youtrack.jetbrains.com/issue/KT-34389
+plugins.apply(type = org.jetbrains.kotlin.gradle.targets.js.npm.NpmResolverPlugin::class)
+
 kotlin {
     jvm {
         tasks.named<Test>("jvmTest") {
@@ -29,8 +32,21 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
-                implementation(project(":samlang-parser-generated-js"))
+                implementation(npm("@dev-sam/samlang-parser-generated-ts", "0.0.3"))
             }
         }
+    }
+}
+
+ktlint {
+    disabledRules.set(
+        setOf(
+            "no-wildcard-imports", "import-ordering", "no-unused-imports", "modifier-order", "final-newline"
+        )
+    )
+    filter {
+        exclude("**/build/**")
+        exclude("**/lib.es*")
+        exclude("**/*.module_@dev-sam_*")
     }
 }
