@@ -8,7 +8,16 @@ kotlin {
             useJUnitPlatform()
         }
     }
-    js { useCommonJs() }
+    js {
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "30000"
+                }
+            }
+        }
+        useCommonJs()
+    }
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -23,7 +32,6 @@ kotlin {
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-common")
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-annotations-common")
-                implementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.4.2")
                 implementation(project(":samlang-parser"))
             }
         }
