@@ -895,7 +895,8 @@ class ExpressionTypeCheckerTest {
                 moduleReference = dummyModuleReference,
                 source = source
             )
-            parsedExpression ?: error(message = "Parsed expression should not be null!")
+            val errorsString = actualParserErrors.joinToString(separator = ", ") { it.errorMessage }
+            parsedExpression ?: error(message = "Parsed expression should not be null! Errors: $errorsString")
             assertEquals(expected = emptyList(), actual = actualParserErrors)
             val errorCollector = ErrorCollector()
             val actualExpression = typeCheckExpression(

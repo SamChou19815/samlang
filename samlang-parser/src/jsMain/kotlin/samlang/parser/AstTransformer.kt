@@ -107,7 +107,7 @@ internal object TsExpressionTransformVisitor : TsExpressionVisitor<Expression> {
         return when (literal.type) {
             "int" -> Expression.Literal.ofInt(
                 range = range,
-                value = literal.type.toLongOrNull() ?: error(message = "SyntaxError: Bad integer literal.")
+                value = literal.value.toLongOrNull() ?: error(message = "SyntaxError: Bad integer literal.")
             )
             "bool" -> if (literal.value == "true") {
                 Expression.Literal.ofTrue(range = range)
