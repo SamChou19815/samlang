@@ -8,7 +8,10 @@ kotlin {
             useJUnitPlatform()
         }
     }
-    js { useCommonJs() }
+    js {
+        nodejs()
+        useCommonJs()
+    }
     sourceSets {
         val commonMain by getting {
             dependencies {

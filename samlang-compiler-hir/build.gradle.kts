@@ -8,7 +8,16 @@ kotlin {
             useJUnitPlatform()
         }
     }
-    js { useCommonJs() }
+    js {
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "30000"
+                }
+            }
+        }
+        useCommonJs()
+    }
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -17,10 +26,10 @@ kotlin {
             }
         }
         val commonTest by getting {
+            dependsOn(commonMain)
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-common")
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-annotations-common")
-                implementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.4.2")
             }
         }
         val jvmMain by getting {
@@ -28,9 +37,20 @@ kotlin {
                 implementation(kotlin("stdlib-jdk8"))
             }
         }
+        val jvmTest by getting {
+            dependencies {
+                implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-junit")
+                implementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.4.2")
+            }
+        }
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
+            }
+        }
+        val jsTest by getting {
+            dependencies {
+                implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-js")
             }
         }
     }
