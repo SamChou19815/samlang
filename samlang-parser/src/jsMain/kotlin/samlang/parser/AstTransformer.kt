@@ -4,6 +4,7 @@ import samlang.ast.common.*
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Module
+import TsMap
 import ClassDefinition as TsClassDefinition
 import FunctionType as TsFunctionType
 import Module as TsModule
@@ -36,14 +37,7 @@ import StatementBlockExpression as TsStatementBlockExpression
 import ExpressionVisitor as TsExpressionVisitor
 import UndecidedType as TsUndecidedType
 
-// Hack introduced in https://discuss.kotlinlang.org/t/how-to-access-native-js-object-as-a-map-string-any/509/2
-fun <K, V> tsstdlib.Map<K, V>.toMap(): Map<K, V> {
-    val m = HashMap<K, Any>().asDynamic()
-    m.map = this
-    val keys = js("Object.keys")
-    m.`$size` = keys(this).length
-    return m as Map<K, V>
-}
+fun <K, V> TsMap<K, V>.toMap(): Map<K, V> = this.map { it.key to it.value }.toMap()
 
 fun TsPosition.toPosition(): Position = Position(line = line.toInt(), column = column.toInt())
 fun TsRange.toRange(): Range = Range(start = start.toPosition(), end = end.toPosition())

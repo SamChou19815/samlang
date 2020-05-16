@@ -1,7 +1,6 @@
 @file:Suppress("INTERFACE_WITH_SUPERCLASS", "OVERRIDING_FINAL_MEMBER", "RETURN_TYPE_MISMATCH_ON_OVERRIDE", "CONFLICTING_OVERLOADS", "EXTERNAL_DELEGATION")
 
 import kotlin.js.*
-import tsstdlib.Map
 
 external interface Literal
 
@@ -33,6 +32,13 @@ external interface Range {
     var start: Position
     var end: Position
 }
+
+external interface TsMapElement<K, V> {
+    var key: K
+    var value: V
+}
+
+typealias TsMap<K, V> = Array<TsMapElement<K, V>>
 
 external interface Type {
     fun <T> accept(visitor: TypeVisitor<T>): T
@@ -76,7 +82,7 @@ external interface TypeDefinition : Node {
     var type: String /* 'object' | 'variant' */
     var typeParameters: Array<String>
     var names: Array<String>
-    var mappings: Map<String, FieldType>
+    var mappings: TsMap<String, FieldType>
 }
 
 external interface FieldType {
@@ -111,7 +117,7 @@ external interface MemberDefinitionParameter {
 }
 
 external interface Expression : Node {
-    val type: Type
+    var type: Type
     fun <T> accept(visitor: ExpressionVisitor<T>): T
 }
 
@@ -138,27 +144,27 @@ external interface ExpressionVisitor<T> {
 
 external open class LiteralExpression(range: Range, type: Type, literal: Literal) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var literal: Literal
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
 }
 
 external open class ThisExpression(range: Range, type: Type) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
 }
 
 external open class VariableExpression(range: Range, type: Type, name: String) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var name: String
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
 }
 
 external open class ClassMemberExpression(range: Range, type: Type, typeArguments: Array<Type>, className: String, classNameRange: Range, memberName: String) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var typeArguments: Array<Type>
     open var className: String
     open var classNameRange: Range
@@ -166,16 +172,16 @@ external open class ClassMemberExpression(range: Range, type: Type, typeArgument
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
 }
 
-external open class TupleConstructorExpression(range: Range, type: TupleType, expressionList: Array<Expression>) : Expression {
+external open class TupleConstructorExpression(range: Range, type: Type, expressionList: Array<Expression>) : Expression {
     override var range: Range
-    override val type: TupleType
+    override var type: Type
     open var expressionList: Array<Expression>
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
 }
 
 external open class ObjectConstructorExpression(range: Range, type: Type, fieldDeclarations: Array<FieldConstructor>) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var fieldDeclarations: Array<FieldConstructor>
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
 }
@@ -188,7 +194,7 @@ external interface FieldConstructor {
 
 external open class VariantConstructorExpression(range: Range, type: Type, tag: String, tagOrder: Number, data: Expression) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var tag: String
     open var tagOrder: Number
     open var data: Expression
@@ -197,7 +203,7 @@ external open class VariantConstructorExpression(range: Range, type: Type, tag: 
 
 external open class FieldAccessExpression(range: Range, type: Type, expression: Expression, fieldName: String, fieldOrder: Number) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var expression: Expression
     open var fieldName: String
     open var fieldOrder: Number
@@ -206,7 +212,7 @@ external open class FieldAccessExpression(range: Range, type: Type, expression: 
 
 external open class MethodAccessExpression(range: Range, type: Type, expression: Expression, methodName: String) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var expression: Expression
     open var methodName: String
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
@@ -214,7 +220,7 @@ external open class MethodAccessExpression(range: Range, type: Type, expression:
 
 external open class UnaryExpression(range: Range, type: Type, operator: String /* '!' | '-' */, expression: Expression) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var operator: String /* '!' | '-' */
     open var expression: Expression
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
@@ -222,14 +228,14 @@ external open class UnaryExpression(range: Range, type: Type, operator: String /
 
 external open class PanicExpression(range: Range, type: Type, expression: Expression) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var expression: Expression
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
 }
 
 external open class BuiltInFunctionCallExpression(range: Range, type: Type, functionName: String /* 'stringToInt' | 'intToString' | 'println' */, argumentExpression: Expression) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var functionName: String /* 'stringToInt' | 'intToString' | 'println' */
     open var argumentExpression: Expression
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
@@ -237,7 +243,7 @@ external open class BuiltInFunctionCallExpression(range: Range, type: Type, func
 
 external open class FunctionApplicationExpression(range: Range, type: Type, functionExpression: Expression, functionArguments: Array<Expression>) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var functionExpression: Expression
     open var functionArguments: Array<Expression>
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
@@ -245,7 +251,7 @@ external open class FunctionApplicationExpression(range: Range, type: Type, func
 
 external open class BinaryExpression(range: Range, type: Type, e1: Expression, operator: String /* '*' | '/' | '%' | '+' | '-' | '<' | '<=' | '>' | '>=' | '==' | '!=' | '&&' | '||' | '::' */, e2: Expression) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var e1: Expression
     open var operator: String /* '*' | '/' | '%' | '+' | '-' | '<' | '<=' | '>' | '>=' | '==' | '!=' | '&&' | '||' | '::' */
     open var e2: Expression
@@ -254,7 +260,7 @@ external open class BinaryExpression(range: Range, type: Type, e1: Expression, o
 
 external open class IfElseExpression(range: Range, type: Type, boolExpression: Expression, e1: Expression, e2: Expression) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var boolExpression: Expression
     open var e1: Expression
     open var e2: Expression
@@ -263,7 +269,7 @@ external open class IfElseExpression(range: Range, type: Type, boolExpression: E
 
 external open class MatchExpression(range: Range, type: Type, matchedExpression: Expression, matchingList: Array<VariantPatternToExpr>) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var matchedExpression: Expression
     open var matchingList: Array<VariantPatternToExpr>
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
@@ -279,11 +285,11 @@ external interface VariantPatternToExpr {
     var expression: Expression
 }
 
-external open class LambdaExpression(range: Range, type: FunctionType, parameters: Array<NameType>, captured: Map<String, Type>, body: Expression) : Expression {
+external open class LambdaExpression(range: Range, type: Type, parameters: Array<NameType>, captured: TsMap<String, Type>, body: Expression) : Expression {
     override var range: Range
-    override val type: FunctionType
+    override var type: Type
     open var parameters: Array<NameType>
-    open var captured: Map<String, Type>
+    open var captured: TsMap<String, Type>
     open var body: Expression
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
 }
@@ -295,7 +301,7 @@ external interface NameType {
 
 external open class StatementBlockExpression(range: Range, type: Type, block: StatementBlock) : Expression {
     override var range: Range
-    override val type: Type
+    override var type: Type
     open var block: StatementBlock
     override fun <T> accept(visitor: ExpressionVisitor<T>): T
 }
