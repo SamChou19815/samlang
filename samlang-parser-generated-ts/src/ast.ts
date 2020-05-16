@@ -69,26 +69,36 @@ export interface TypeVisitor<T> {
 
 export class PrimitiveType implements Type {
   constructor(public readonly name: 'unit' | 'bool' | 'int' | 'string') {}
-  accept = <T>(visitor: TypeVisitor<T>): T => visitor.visitPrimitive(this);
+  accept<T>(visitor: TypeVisitor<T>): T {
+    return visitor.visitPrimitive(this);
+  }
 }
 
 export class IdentifierType implements Type {
   constructor(public readonly identifier: string, public readonly typeArguments: Type[]) {}
-  accept = <T>(visitor: TypeVisitor<T>): T => visitor.visitIdentifier(this);
+  accept<T>(visitor: TypeVisitor<T>): T {
+    return visitor.visitIdentifier(this);
+  }
 }
 
 export class TupleType implements Type {
   constructor(public readonly mappings: Type[]) {}
-  accept = <T>(visitor: TypeVisitor<T>): T => visitor.visitTuple(this);
+  accept<T>(visitor: TypeVisitor<T>): T {
+    return visitor.visitTuple(this);
+  }
 }
 
 export class FunctionType implements Type {
   constructor(public readonly argumentTypes: Type[], public readonly returnType: Type) {}
-  accept = <T>(visitor: TypeVisitor<T>): T => visitor.visitFunction(this);
+  accept<T>(visitor: TypeVisitor<T>): T {
+    return visitor.visitFunction(this);
+  }
 }
 
 export class UndecidedType implements Type {
-  accept = <T>(visitor: TypeVisitor<T>): T => visitor.visitUndecided(this);
+  accept<T>(visitor: TypeVisitor<T>): T {
+    return visitor.visitUndecided(this);
+  }
 }
 
 export interface TypeDefinition extends Node {
@@ -163,13 +173,17 @@ export class LiteralExpression implements Expression {
     public readonly literal: Literal
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitLiteral(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitLiteral(this);
+  }
 }
 
 export class ThisExpression implements Expression {
   constructor(public readonly range: Range, public readonly type: Type) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitThis(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitThis(this);
+  }
 }
 
 export class VariableExpression implements Expression {
@@ -179,7 +193,9 @@ export class VariableExpression implements Expression {
     public readonly name: string
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitVariable(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitVariable(this);
+  }
 }
 
 export class ClassMemberExpression implements Expression {
@@ -192,7 +208,9 @@ export class ClassMemberExpression implements Expression {
     public readonly memberName: string
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitClassMember(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitClassMember(this);
+  }
 }
 
 export class TupleConstructorExpression implements Expression {
@@ -202,7 +220,9 @@ export class TupleConstructorExpression implements Expression {
     public readonly expressionList: Expression[]
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitTupleConstructor(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitTupleConstructor(this);
+  }
 }
 
 export class ObjectConstructorExpression implements Expression {
@@ -212,7 +232,9 @@ export class ObjectConstructorExpression implements Expression {
     public readonly fieldDeclarations: FieldConstructor[]
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitObjectConstructor(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitObjectConstructor(this);
+  }
 }
 
 export interface FieldConstructor {
@@ -247,7 +269,9 @@ export class VariantConstructorExpression implements Expression {
     public readonly data: Expression
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitVariantConstructor(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitVariantConstructor(this);
+  }
 }
 
 export class FieldAccessExpression implements Expression {
@@ -259,7 +283,9 @@ export class FieldAccessExpression implements Expression {
     public readonly fieldOrder: number
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitFieldAccess(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitFieldAccess(this);
+  }
 }
 
 export class MethodAccessExpression implements Expression {
@@ -270,7 +296,9 @@ export class MethodAccessExpression implements Expression {
     public readonly methodName: string
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitMethodAccess(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitMethodAccess(this);
+  }
 }
 
 export class UnaryExpression implements Expression {
@@ -281,7 +309,9 @@ export class UnaryExpression implements Expression {
     public readonly expression: Expression
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitUnary(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitUnary(this);
+  }
 }
 
 export class PanicExpression implements Expression {
@@ -291,7 +321,9 @@ export class PanicExpression implements Expression {
     public readonly expression: Expression
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitPanic(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitPanic(this);
+  }
 }
 
 export class BuiltInFunctionCallExpression implements Expression {
@@ -302,7 +334,9 @@ export class BuiltInFunctionCallExpression implements Expression {
     public readonly argumentExpression: Expression
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitBuiltInFunctionCall(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitBuiltInFunctionCall(this);
+  }
 }
 
 export class FunctionApplicationExpression implements Expression {
@@ -313,7 +347,9 @@ export class FunctionApplicationExpression implements Expression {
     public readonly functionArguments: Expression[]
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitFunctionApplication(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitFunctionApplication(this);
+  }
 }
 
 export class BinaryExpression implements Expression {
@@ -325,7 +361,9 @@ export class BinaryExpression implements Expression {
     public readonly e2: Expression
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitBinary(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitBinary(this);
+  }
 }
 
 export class IfElseExpression implements Expression {
@@ -337,7 +375,9 @@ export class IfElseExpression implements Expression {
     public readonly e2: Expression
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitIfElse(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitIfElse(this);
+  }
 }
 
 export class MatchExpression implements Expression {
@@ -348,7 +388,9 @@ export class MatchExpression implements Expression {
     public readonly matchingList: VariantPatternToExpr[]
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitMatch(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitMatch(this);
+  }
 }
 
 export type VariantPatternToExpr = {
@@ -368,7 +410,9 @@ export class LambdaExpression implements Expression {
     public readonly body: Expression
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitLambda(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitLambda(this);
+  }
 }
 
 export type NameType = { readonly name: string; readonly type: Type };
@@ -380,7 +424,9 @@ export class StatementBlockExpression implements Expression {
     public readonly block: StatementBlock
   ) {}
 
-  accept = <T>(visitor: ExpressionVisitor<T>): T => visitor.visitStatementBlock(this);
+  accept<T>(visitor: ExpressionVisitor<T>): T {
+    return visitor.visitStatementBlock(this);
+  }
 }
 
 export type Module = {
