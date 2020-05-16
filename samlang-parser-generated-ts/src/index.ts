@@ -4,7 +4,7 @@ import { PLLexer } from './generated/PLLexer';
 import { PLParser } from './generated/PLParser';
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 import { ModuleContext, ImportModuleMembersContext } from './generated/PLParser';
-import { TsModule, TsModuleMembersImport, ModuleReference } from './ast';
+import { TsModule, TsModuleMembersImport, TsModuleReference } from './ast';
 import { tokenRange, contextRange, throwParserError } from './parser-util';
 import classBuilder from './class-builder';
 
@@ -34,9 +34,9 @@ class Visitor extends AbstractParseTreeVisitor<TsModule> implements PLVisitor<Ts
 
 const visitor = new Visitor();
 
-const buildModuleFromText = (text: string): TsModule =>
+const buildTsModuleFromText = (text: string): TsModule =>
   new PLParser(new CommonTokenStream(new PLLexer(new ANTLRInputStream(text))))
     .module()
     .accept(visitor);
 
-export default buildModuleFromText;
+export default buildTsModuleFromText;

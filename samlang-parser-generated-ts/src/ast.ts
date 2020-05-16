@@ -25,17 +25,17 @@ export class TsLiteral {
   constructor(public readonly type: 'int' | 'string' | 'bool', public readonly value: string) {}
 }
 
-export type TsLocation = { readonly moduleReference: ModuleReference; readonly range: TsRange };
+export type TsLocation = { readonly moduleReference: TsModuleReference; readonly range: TsRange };
 
 export interface TsModuleMembersImport extends TsNode {
   readonly importedMembers: TsImportedMember[];
-  readonly importedModule: ModuleReference;
+  readonly importedModule: TsModuleReference;
   readonly importedModuleRange: TsRange;
 }
 
 export type TsImportedMember = { readonly name: string; readonly range: TsRange };
 
-export type ModuleReference = { readonly parts: string[] };
+export type TsModuleReference = { readonly parts: string[] };
 
 export interface TsNode {
   readonly range: TsRange;
@@ -49,10 +49,10 @@ export type TsStringMapElement<V> = { readonly key: string; readonly value: V };
 export type TsStringMap<V> = TsStringMapElement<V>[];
 
 export interface TsType {
-  accept<T>(visitor: TypeVisitor<T>): T;
+  accept<T>(visitor: TsTypeVisitor<T>): T;
 }
 
-export interface TypeVisitor<T> {
+export interface TsTypeVisitor<T> {
   visitPrimitive(type: TsPrimitiveType): T;
   visitIdentifier(type: TsIdentifierType): T;
   visitTuple(type: TsTupleType): T;
@@ -62,34 +62,34 @@ export interface TypeVisitor<T> {
 
 export class TsPrimitiveType implements TsType {
   constructor(public readonly name: 'unit' | 'bool' | 'int' | 'string') {}
-  accept<T>(visitor: TypeVisitor<T>): T {
+  accept<T>(visitor: TsTypeVisitor<T>): T {
     return visitor.visitPrimitive(this);
   }
 }
 
 export class TsIdentifierType implements TsType {
   constructor(public readonly identifier: string, public readonly typeArguments: TsType[]) {}
-  accept<T>(visitor: TypeVisitor<T>): T {
+  accept<T>(visitor: TsTypeVisitor<T>): T {
     return visitor.visitIdentifier(this);
   }
 }
 
 export class TsTupleType implements TsType {
   constructor(public readonly mappings: TsType[]) {}
-  accept<T>(visitor: TypeVisitor<T>): T {
+  accept<T>(visitor: TsTypeVisitor<T>): T {
     return visitor.visitTuple(this);
   }
 }
 
 export class TsFunctionType implements TsType {
   constructor(public readonly argumentTypes: TsType[], public readonly returnType: TsType) {}
-  accept<T>(visitor: TypeVisitor<T>): T {
+  accept<T>(visitor: TsTypeVisitor<T>): T {
     return visitor.visitFunction(this);
   }
 }
 
 export class TsUndecidedType implements TsType {
-  accept<T>(visitor: TypeVisitor<T>): T {
+  accept<T>(visitor: TsTypeVisitor<T>): T {
     return visitor.visitUndecided(this);
   }
 }
