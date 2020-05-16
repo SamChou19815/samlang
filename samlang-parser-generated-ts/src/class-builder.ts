@@ -66,7 +66,7 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition>
       type: 'object',
       typeParameters: this.typeParameters,
       names,
-      mappings: new Map(mappings),
+      mappings: mappings.map(([key, value]) => ({ key, value })),
     };
   }
 
@@ -82,7 +82,7 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition>
       type: 'variant',
       typeParameters: this.typeParameters,
       names,
-      mappings: new Map(mappings),
+      mappings: mappings.map(([key, value]) => ({ key, value })),
     };
   }
 }
@@ -107,7 +107,7 @@ class ModuleTypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinitio
     type: 'object',
     typeParameters: [],
     names: [],
-    mappings: new Map(),
+    mappings: [],
   });
 }
 

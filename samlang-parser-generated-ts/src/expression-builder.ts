@@ -334,7 +334,7 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<Expression>
         new UndecidedType()
       ),
       functionArguments,
-      new Map(),
+      [],
       ctx.expression().accept(this)
     );
   };

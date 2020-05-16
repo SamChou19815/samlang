@@ -55,6 +55,9 @@ export type Position = { readonly line: number; readonly column: number };
 
 export type Range = { readonly start: Position; readonly end: Position };
 
+export type TsMapElement<K, V> = { readonly key: K, readonly value: V };
+export type TsMap<K, V> = TsMapElement<K, V>[];
+
 export interface Type {
   accept<T>(visitor: TypeVisitor<T>): T;
 }
@@ -105,7 +108,7 @@ export interface TypeDefinition extends Node {
   readonly type: 'object' | 'variant';
   readonly typeParameters: string[];
   readonly names: string[];
-  readonly mappings: Map<string, FieldType>;
+  readonly mappings: TsMap<string, FieldType>;
 }
 
 export type FieldType = { readonly type: Type; readonly isPublic: boolean };
@@ -216,7 +219,7 @@ export class ClassMemberExpression implements Expression {
 export class TupleConstructorExpression implements Expression {
   constructor(
     public readonly range: Range,
-    public readonly type: TupleType,
+    public readonly type: Type,
     public readonly expressionList: Expression[]
   ) {}
 
@@ -404,9 +407,9 @@ export type VariantPatternToExpr = {
 export class LambdaExpression implements Expression {
   constructor(
     public readonly range: Range,
-    public readonly type: FunctionType,
+    public readonly type: Type,
     public readonly parameters: NameType[],
-    public readonly captured: Map<string, Type>,
+    public readonly captured: TsMap<string, Type>,
     public readonly body: Expression
   ) {}
 
