@@ -32,35 +32,31 @@ import {
   StatementBlockExprContext,
 } from './generated/PLParser';
 import {
-  PrimitiveType,
-  TupleType,
-  FunctionType,
-  UndecidedType,
-  IntLiteral,
-  BoolLiteral,
-  StringLiteral,
-  Expression,
-  LiteralExpression,
-  ThisExpression,
-  VariableExpression,
-  ClassMemberExpression,
-  TupleConstructorExpression,
-  FieldConstructor,
-  FieldAsFieldConstructor,
-  FieldShorthandAsFieldConstructor,
-  ObjectConstructorExpression,
-  VariantConstructorExpression,
-  FieldAccessExpression,
-  UnaryExpression,
-  PanicExpression,
-  BuiltInFunctionCallExpression,
-  FunctionApplicationExpression,
-  BinaryExpression,
+  TsPrimitiveType,
+  TsTupleType,
+  TsFunctionType,
+  TsUndecidedType,
+  TsLiteral,
+  TsExpression,
+  TsLiteralExpression,
+  TsThisExpression,
+  TsVariableExpression,
+  TsClassMemberExpression,
+  TsTupleConstructorExpression,
+  TsFieldConstructor,
+  TsObjectConstructorExpression,
+  TsVariantConstructorExpression,
+  TsFieldAccessExpression,
+  TsUnaryExpression,
+  TsPanicExpression,
+  TsBuiltInFunctionCallExpression,
+  TsFunctionApplicationExpression,
+  TsBinaryExpression,
   BinaryOperator,
-  IfElseExpression,
-  MatchExpression,
-  LambdaExpression,
-  StatementBlockExpression,
+  TsIfElseExpression,
+  TsMatchExpression,
+  TsLambdaExpression,
+  TsStatementBlockExpression,
 } from './ast';
 import StatementBlockBuilder from './statement-block-builder';
 import { tokenRange, contextRange, throwParserError } from './parser-util';
@@ -68,39 +64,39 @@ import typeBuilder from './type-builder';
 
 const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');
 
-class ObjectFieldDeclarationBuilder extends AbstractParseTreeVisitor<FieldConstructor>
-  implements PLVisitor<FieldConstructor> {
-  constructor(private readonly toExpression: (context: ExpressionContext) => Expression) {
+class ObjectFieldDeclarationBuilder extends AbstractParseTreeVisitor<TsFieldConstructor>
+  implements PLVisitor<TsFieldConstructor> {
+  constructor(private readonly toExpression: (context: ExpressionContext) => TsExpression) {
     super();
   }
 
-  defaultResult = (): FieldConstructor => throwParserError();
+  defaultResult = (): TsFieldConstructor => throwParserError();
 
-  visitNormalObjFieldDeclaration = (ctx: NormalObjFieldDeclarationContext): FieldConstructor => {
+  visitNormalObjFieldDeclaration = (ctx: NormalObjFieldDeclarationContext): TsFieldConstructor => {
     const nameNode = ctx.LowerId().symbol;
-    return new FieldAsFieldConstructor(
-      tokenRange(nameNode),
-      new UndecidedType(),
-      nameNode.text ?? throwParserError(),
-      this.toExpression(ctx.expression())
-    );
+    return {
+      range: tokenRange(nameNode),
+      type: new TsUndecidedType(),
+      name: nameNode.text ?? throwParserError(),
+      expression: this.toExpression(ctx.expression())
+    };
   };
 
   visitShorthandObjFieldDeclaration = (
     ctx: ShorthandObjFieldDeclarationContext
-  ): FieldConstructor => {
+  ): TsFieldConstructor => {
     const nameNode = ctx.LowerId().symbol;
-    return new FieldShorthandAsFieldConstructor(
-      tokenRange(nameNode),
-      new UndecidedType(),
-      nameNode.text ?? throwParserError()
-    );
+    return {
+      range: tokenRange(nameNode),
+      type: new TsUndecidedType(),
+      name: nameNode.text ?? throwParserError()
+    };
   };
 }
 
-class ExpressionBuilder extends AbstractParseTreeVisitor<Expression>
-  implements PLVisitor<Expression> {
-  private toExpression = (context: ExpressionContext): Expression => context.accept(this);
+class ExpressionBuilder extends AbstractParseTreeVisitor<TsExpression>
+  implements PLVisitor<TsExpression> {
+  private toExpression = (context: ExpressionContext): TsExpression => context.accept(this);
   private statementBlockBuilder: StatementBlockBuilder = new StatementBlockBuilder(
     this.toExpression
   );
@@ -108,79 +104,78 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<Expression>
     this.toExpression
   );
 
-  defaultResult = (): Expression => throwParserError();
+  defaultResult = (): TsExpression => throwParserError();
 
-  visitNestedExpr = (ctx: NestedExprContext): Expression => ctx.expression().accept(this);
+  visitNestedExpr = (ctx: NestedExprContext): TsExpression => ctx.expression().accept(this);
 
-  visitLiteralExpr(ctx: LiteralExprContext): Expression {
+  visitLiteralExpr(ctx: LiteralExprContext): TsExpression {
     const literalNode = ctx.literal();
     const range = contextRange(literalNode);
     if (literalNode.TRUE() != null) {
-      return new LiteralExpression(range, new PrimitiveType('bool'), new BoolLiteral(true));
+      return new TsLiteralExpression(range, new TsPrimitiveType('bool'), new TsLiteral('bool', 'true'));
     }
     if (literalNode.FALSE() != null) {
-      return new LiteralExpression(range, new PrimitiveType('bool'), new BoolLiteral(false));
+      return new TsLiteralExpression(range, new TsPrimitiveType('bool'), new TsLiteral('bool', 'false'));
     }
     if (literalNode.MinInt() != null) {
-      return new LiteralExpression(
+      return new TsLiteralExpression(
         range,
-        new PrimitiveType('int'),
-        new IntLiteral('9223372036854775808')
+        new TsPrimitiveType('int'),
+        new TsLiteral('int', '9223372036854775808')
       );
     }
     const intLiteralNode = literalNode.IntLiteral();
     if (intLiteralNode != null) {
-      const token = intLiteralNode.symbol;
       const text = intLiteralNode.text ?? throwParserError();
-      return new LiteralExpression(range, new PrimitiveType('int'), new IntLiteral(text));
+      return new TsLiteralExpression(range, new TsPrimitiveType('int'), new TsLiteral('int', text));
     }
     const stringLiteralNode = literalNode.StrLiteral();
     if (stringLiteralNode != null) {
       const literalText = stringLiteralNode.text;
       const unescaped = unescapeQuotes(literalText.substring(1, literalText.length - 1));
-      return new LiteralExpression(
+      return new TsLiteralExpression(
         range,
-        new PrimitiveType('string'),
-        new StringLiteral(unescaped)
+        new TsPrimitiveType('string'),
+        new TsLiteral('string', unescaped)
       );
     }
     throw new Error('SyntaxError: Bad literal!');
   }
 
-  visitThisExpr = (ctx: ThisExprContext): Expression =>
-    new ThisExpression(tokenRange(ctx.THIS().symbol), new UndecidedType());
+  visitThisExpr = (ctx: ThisExprContext): TsExpression =>
+    new TsThisExpression(tokenRange(ctx.THIS().symbol), new TsUndecidedType());
 
-  visitVariableExpr = (ctx: VariableExprContext): Expression =>
-    new VariableExpression(
+  visitVariableExpr = (ctx: VariableExprContext): TsExpression =>
+    new TsVariableExpression(
       contextRange(ctx),
-      new UndecidedType(),
+      new TsUndecidedType(),
       ctx.LowerId().symbol.text ?? throwParserError()
     );
 
-  visitClassMemberExpr = (ctx: ClassMemberExprContext): Expression =>
-    new ClassMemberExpression(
+  visitClassMemberExpr = (ctx: ClassMemberExprContext): TsExpression =>
+    new TsClassMemberExpression(
       contextRange(ctx),
-      new UndecidedType(),
+      new TsUndecidedType(),
       [],
       ctx.UpperId().symbol.text ?? throwParserError(),
       tokenRange(ctx.UpperId().symbol),
       ctx.LowerId().symbol.text ?? throwParserError()
     );
 
-  visitTupleConstructor(ctx: TupleConstructorContext): Expression {
+  visitTupleConstructor(ctx: TupleConstructorContext): TsExpression {
     const range = contextRange(ctx);
     const expressionList = ctx.expression().map(this.toExpression);
     if (expressionList.length > 22) {
       throwParserError();
     }
-    const type = new TupleType(expressionList.map((it) => it.type));
-    return new TupleConstructorExpression(range, type, expressionList);
+    const type = new TsTupleType(expressionList.map((it) => it.type));
+    return new TsTupleConstructorExpression(range, type, expressionList);
   }
 
-  visitObjConstructor(ctx: ObjConstructorContext): Expression {
-    return new ObjectConstructorExpression(
+  visitObjConstructor(ctx: ObjConstructorContext): TsExpression {
+    return new TsObjectConstructorExpression(
       contextRange(ctx),
-      new UndecidedType(),
+      new TsUndecidedType(),
       ctx
         .objectFieldDeclarations()
         .objectFieldDeclaration()
@@ -188,125 +183,125 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<Expression>
     );
   }
 
-  visitVariantConstructor = (ctx: VariantConstructorContext): Expression =>
-    new VariantConstructorExpression(
+  visitVariantConstructor = (ctx: VariantConstructorContext): TsExpression =>
+    new TsVariantConstructorExpression(
       contextRange(ctx),
-      new UndecidedType(),
+      new TsUndecidedType(),
       ctx.UpperId().symbol.text ?? throwParserError(),
       -1,
       ctx.expression().accept(this)
     );
 
-  visitFieldAccessExpr = (ctx: FieldAccessExprContext): Expression =>
-    new FieldAccessExpression(
+  visitFieldAccessExpr = (ctx: FieldAccessExprContext): TsExpression =>
+    new TsFieldAccessExpression(
       contextRange(ctx),
-      new UndecidedType(),
+      new TsUndecidedType(),
       ctx.expression().accept(this),
       ctx.LowerId().symbol.text ?? throwParserError(),
       -1
     );
 
-  visitNotExpr = (ctx: NotExprContext): Expression =>
-    new UnaryExpression(
+  visitNotExpr = (ctx: NotExprContext): TsExpression =>
+    new TsUnaryExpression(
       contextRange(ctx),
-      new PrimitiveType('bool'),
+      new TsPrimitiveType('bool'),
       '!',
       ctx.expression().accept(this)
     );
 
-  visitNegExpr = (ctx: NegExprContext): Expression =>
-    new UnaryExpression(
+  visitNegExpr = (ctx: NegExprContext): TsExpression =>
+    new TsUnaryExpression(
       contextRange(ctx),
-      new PrimitiveType('int'),
+      new TsPrimitiveType('int'),
       '-',
       ctx.expression().accept(this)
     );
 
-  visitPanicExpr = (ctx: PanicExprContext): Expression =>
-    new PanicExpression(contextRange(ctx), new UndecidedType(), ctx.expression().accept(this));
+  visitPanicExpr = (ctx: PanicExprContext): TsExpression =>
+    new TsPanicExpression(contextRange(ctx), new TsUndecidedType(), ctx.expression().accept(this));
 
-  visitStringToIntExpr = (ctx: StringToIntExprContext): Expression =>
-    new BuiltInFunctionCallExpression(
+  visitStringToIntExpr = (ctx: StringToIntExprContext): TsExpression =>
+    new TsBuiltInFunctionCallExpression(
       contextRange(ctx),
-      new PrimitiveType('int'),
+      new TsPrimitiveType('int'),
       'stringToInt',
       ctx.expression().accept(this)
     );
 
-  visitIntToStringExpr = (ctx: IntToStringExprContext): Expression =>
-    new BuiltInFunctionCallExpression(
+  visitIntToStringExpr = (ctx: IntToStringExprContext): TsExpression =>
+    new TsBuiltInFunctionCallExpression(
       contextRange(ctx),
-      new PrimitiveType('string'),
+      new TsPrimitiveType('string'),
       'intToString',
       ctx.expression().accept(this)
     );
 
-  visitPrintLineExpr = (ctx: PrintLineExprContext): Expression =>
-    new BuiltInFunctionCallExpression(
+  visitPrintLineExpr = (ctx: PrintLineExprContext): TsExpression =>
+    new TsBuiltInFunctionCallExpression(
       contextRange(ctx),
-      new PrimitiveType('unit'),
+      new TsPrimitiveType('unit'),
       'println',
       ctx.expression().accept(this)
     );
 
-  visitFunctionApplicationExpr = (ctx: FunctionApplicationExprContext): Expression =>
-    new FunctionApplicationExpression(
+  visitFunctionApplicationExpr = (ctx: FunctionApplicationExprContext): TsExpression =>
+    new TsFunctionApplicationExpression(
       contextRange(ctx),
-      new UndecidedType(),
+      new TsUndecidedType(),
       ctx.expression().accept(this),
       ctx.functionArguments().expression().map(this.toExpression)
     );
 
-  visitFactorExpr = (ctx: FactorExprContext): Expression => {
+  visitFactorExpr = (ctx: FactorExprContext): TsExpression => {
     const operator = ctx.factorOperator().text as BinaryOperator;
     const e1 = ctx.expression(0).accept(this);
     const e2 = ctx.expression(1).accept(this);
-    return new BinaryExpression(contextRange(ctx), new PrimitiveType('int'), e1, operator, e2);
+    return new TsBinaryExpression(contextRange(ctx), new TsPrimitiveType('int'), e1, operator, e2);
   };
 
-  visitTermExpr = (ctx: TermExprContext): Expression => {
+  visitTermExpr = (ctx: TermExprContext): TsExpression => {
     const operator = ctx.termOperator().text as BinaryOperator;
     const e1 = ctx.expression(0).accept(this);
     const e2 = ctx.expression(1).accept(this);
-    return new BinaryExpression(contextRange(ctx), new PrimitiveType('int'), e1, operator, e2);
+    return new TsBinaryExpression(contextRange(ctx), new TsPrimitiveType('int'), e1, operator, e2);
   };
 
-  visitComparisonExpr = (ctx: ComparisonExprContext): Expression => {
+  visitComparisonExpr = (ctx: ComparisonExprContext): TsExpression => {
     const operator = ctx.comparisonOperator().text as BinaryOperator;
     const e1 = ctx.expression(0).accept(this);
     const e2 = ctx.expression(1).accept(this);
-    return new BinaryExpression(contextRange(ctx), new PrimitiveType('bool'), e1, operator, e2);
+    return new TsBinaryExpression(contextRange(ctx), new TsPrimitiveType('bool'), e1, operator, e2);
   };
 
-  visitConjunctionExpr = (ctx: ConjunctionExprContext): Expression => {
+  visitConjunctionExpr = (ctx: ConjunctionExprContext): TsExpression => {
     const e1 = ctx.expression(0).accept(this);
     const e2 = ctx.expression(1).accept(this);
-    return new BinaryExpression(contextRange(ctx), new PrimitiveType('bool'), e1, '&&', e2);
+    return new TsBinaryExpression(contextRange(ctx), new TsPrimitiveType('bool'), e1, '&&', e2);
   };
 
-  visitConcatExpr = (ctx: ConcatExprContext): Expression => {
+  visitConcatExpr = (ctx: ConcatExprContext): TsExpression => {
     const e1 = ctx.expression(0).accept(this);
     const e2 = ctx.expression(1).accept(this);
-    return new BinaryExpression(contextRange(ctx), new PrimitiveType('string'), e1, '::', e2);
+    return new TsBinaryExpression(contextRange(ctx), new TsPrimitiveType('string'), e1, '::', e2);
   };
 
-  visitDisjunctionExpr = (ctx: DisjunctionExprContext): Expression => {
+  visitDisjunctionExpr = (ctx: DisjunctionExprContext): TsExpression => {
     const e1 = ctx.expression(0).accept(this);
     const e2 = ctx.expression(1).accept(this);
-    return new BinaryExpression(contextRange(ctx), new PrimitiveType('bool'), e1, '||', e2);
+    return new TsBinaryExpression(contextRange(ctx), new TsPrimitiveType('bool'), e1, '||', e2);
   };
 
-  visitIfElseExpr = (ctx: IfElseExprContext): Expression => {
+  visitIfElseExpr = (ctx: IfElseExprContext): TsExpression => {
     const boolExpression = ctx.expression(0).accept(this);
     const e1 = ctx.expression(1).accept(this);
     const e2 = ctx.expression(2).accept(this);
-    return new IfElseExpression(contextRange(ctx), new UndecidedType(), boolExpression, e1, e2);
+    return new TsIfElseExpression(contextRange(ctx), new TsUndecidedType(), boolExpression, e1, e2);
   };
 
-  visitMatchExpr = (ctx: MatchExprContext): Expression =>
-    new MatchExpression(
+  visitMatchExpr = (ctx: MatchExprContext): TsExpression =>
+    new TsMatchExpression(
       contextRange(ctx),
-      new UndecidedType(),
+      new TsUndecidedType(),
       ctx.expression().accept(this),
       ctx.patternToExpr().map((pattern2Expr) => ({
         range: contextRange(pattern2Expr),
@@ -317,32 +312,31 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<Expression>
       }))
     );
 
-  visitFunExpr = (ctx: FunExprContext): Expression => {
+  visitFunExpr = (ctx: FunExprContext): TsExpression => {
     const functionArguments = ctx.optionallyAnnotatedParameter().map((oneArg) => {
       const nameNode = oneArg.LowerId().symbol;
       const name = nameNode.text ?? throwParserError();
-      const type = oneArg.typeAnnotation()?.typeExpr()?.accept(typeBuilder) ?? new UndecidedType();
+      const type = oneArg.typeAnnotation()?.typeExpr()?.accept(typeBuilder) ?? new TsUndecidedType();
       return { name, type };
     });
     if (functionArguments.length > 22) {
       throwParserError();
     }
-    return new LambdaExpression(
+    return new TsLambdaExpression(
       contextRange(ctx),
-      new FunctionType(
+      new TsFunctionType(
         functionArguments.map((it) => it.type),
-        new UndecidedType()
+        new TsUndecidedType()
       ),
       functionArguments,
-      [],
       ctx.expression().accept(this)
     );
   };
 
-  visitStatementBlockExpr = (ctx: StatementBlockExprContext): Expression =>
-    new StatementBlockExpression(
+  visitStatementBlockExpr = (ctx: StatementBlockExprContext): TsExpression =>
+    new TsStatementBlockExpression(
       contextRange(ctx),
-      new UndecidedType(),
+      new TsUndecidedType(),
       ctx.statementBlock().accept(this.statementBlockBuilder)
     );
 }

@@ -5,46 +5,52 @@ import {
   StatementBlockContext,
   ValStatementContext,
 } from './generated/PLParser';
-import { UndecidedType, Expression, StatementBlock, ValStatement, WildCardPattern } from './ast';
+import {
+  TsUndecidedType,
+  TsExpression,
+  TsStatementBlock,
+  TsValStatement,
+  TsWildCardPattern,
+} from './ast';
 import { contextRange, throwParserError } from './parser-util';
 import typeBuilder from './type-builder';
 import patternBuilder from './pattern-builder';
 
-class StatementBuilder extends AbstractParseTreeVisitor<ValStatement>
-  implements PLVisitor<ValStatement> {
-  constructor(private readonly expressionBuilder: (context: ExpressionContext) => Expression) {
+class StatementBuilder extends AbstractParseTreeVisitor<TsValStatement>
+  implements PLVisitor<TsValStatement> {
+  constructor(private readonly expressionBuilder: (context: ExpressionContext) => TsExpression) {
     super();
   }
 
-  defaultResult = (): ValStatement => throwParserError();
+  defaultResult = (): TsValStatement => throwParserError();
 
-  visitValStatement = (ctx: ValStatementContext): ValStatement => {
+  visitValStatement = (ctx: ValStatementContext): TsValStatement => {
     const patternContext = ctx.pattern() ?? throwParserError();
     const pattern =
-      patternContext.accept(patternBuilder) ?? new WildCardPattern(contextRange(patternContext));
+      patternContext.accept(patternBuilder) ?? new TsWildCardPattern(contextRange(patternContext));
     const typeAnnotation =
-      ctx.typeAnnotation()?.typeExpr()?.accept(typeBuilder) ?? new UndecidedType();
+      ctx.typeAnnotation()?.typeExpr()?.accept(typeBuilder) ?? new TsUndecidedType();
     const expressionContext = ctx.expression() ?? throwParserError();
     const expression = this.expressionBuilder(expressionContext) ?? throwParserError();
-    return new ValStatement(contextRange(ctx), pattern, typeAnnotation, expression);
+    return new TsValStatement(contextRange(ctx), pattern, typeAnnotation, expression);
   };
 }
 
-export default class StatementBlockBuilder extends AbstractParseTreeVisitor<StatementBlock>
-  implements PLVisitor<StatementBlock> {
+export default class StatementBlockBuilder extends AbstractParseTreeVisitor<TsStatementBlock>
+  implements PLVisitor<TsStatementBlock> {
   private readonly statementBuilder: StatementBuilder;
 
-  constructor(private readonly expressionBuilder: (context: ExpressionContext) => Expression) {
+  constructor(private readonly expressionBuilder: (context: ExpressionContext) => TsExpression) {
     super();
     this.statementBuilder = new StatementBuilder(expressionBuilder);
   }
 
-  defaultResult = (): StatementBlock => throwParserError();
+  defaultResult = (): TsStatementBlock => throwParserError();
 
-  visitStatementBlock = (ctx: StatementBlockContext): StatementBlock => {
+  visitStatementBlock = (ctx: StatementBlockContext): TsStatementBlock => {
     const expressionContext = ctx.expression() ?? throwParserError();
     const expression = this.expressionBuilder(expressionContext) ?? throwParserError();
-    return new StatementBlock(
+    return new TsStatementBlock(
       contextRange(ctx),
       ctx.statement().map((it) => it.accept(this.statementBuilder)),
       expression

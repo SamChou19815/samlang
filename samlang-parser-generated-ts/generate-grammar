@@ -10,3 +10,4 @@ mkdir src/generated
 yarn antlr4ts -o src/generated -visitor PL.g4
 rm PL*.g4
 yarn tsc
+yarn dukat -d ../samlang-parser/src/jsMain/kotlin/samlang/parser/ lib/index.d.ts

@@ -4,14 +4,14 @@ import { PLLexer } from './generated/PLLexer';
 import { PLParser } from './generated/PLParser';
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 import { ModuleContext, ImportModuleMembersContext } from './generated/PLParser';
-import { Module, ModuleMembersImport, ModuleReference } from './ast';
+import { TsModule, TsModuleMembersImport, ModuleReference } from './ast';
 import { tokenRange, contextRange, throwParserError } from './parser-util';
 import classBuilder from './class-builder';
 
-class Visitor extends AbstractParseTreeVisitor<Module> implements PLVisitor<Module> {
-  defaultResult = (): Module => throwParserError();
+class Visitor extends AbstractParseTreeVisitor<TsModule> implements PLVisitor<TsModule> {
+  defaultResult = (): TsModule => throwParserError();
 
-  private buildModuleMembersImport = (ctx: ImportModuleMembersContext): ModuleMembersImport => ({
+  private buildModuleMembersImport = (ctx: ImportModuleMembersContext): TsModuleMembersImport => ({
     range: contextRange(ctx),
     importedMembers: ctx.UpperId().map((node) => {
       const symbol = node.symbol;
@@ -26,7 +26,7 @@ class Visitor extends AbstractParseTreeVisitor<Module> implements PLVisitor<Modu
     importedModuleRange: contextRange(ctx.moduleReference()),
   });
 
-  visitModule = (ctx: ModuleContext): Module => ({
+  visitModule = (ctx: ModuleContext): TsModule => ({
     imports: ctx.importModuleMembers().map(this.buildModuleMembersImport),
     classDefinitions: ctx.clazz().map((it) => it.accept(classBuilder)),
   });
@@ -34,7 +34,7 @@ class Visitor extends AbstractParseTreeVisitor<Module> implements PLVisitor<Modu
 
 const visitor = new Visitor();
 
-const buildModuleFromText = (text: string): Module =>
+const buildModuleFromText = (text: string): TsModule =>
   new PLParser(new CommonTokenStream(new PLLexer(new ANTLRInputStream(text))))
     .module()
     .accept(visitor);

@@ -11,28 +11,28 @@ import {
   ExpressionContext,
 } from './generated/PLParser';
 import {
-  Range,
-  FunctionType,
-  TypeDefinition,
-  MemberDefinition,
-  ClassDefinition,
-  Expression,
+  TsRange,
+  TsFunctionType,
+  TsTypeDefinition,
+  TsMemberDefinition,
+  TsClassDefinition,
+  TsExpression,
 } from './ast';
 import expressionBuilder from './expression-builder';
 import { tokenRange, contextRange, rangeUnion, throwParserError } from './parser-util';
 import typeBuilder from './type-builder';
 
-class ModuleNameBuilder extends AbstractParseTreeVisitor<[boolean, string, Range]>
-  implements PLVisitor<[boolean, string, Range]> {
-  defaultResult = (): [boolean, string, Range] => throwParserError();
+class ModuleNameBuilder extends AbstractParseTreeVisitor<[boolean, string, TsRange]>
+  implements PLVisitor<[boolean, string, TsRange]> {
+  defaultResult = (): [boolean, string, TsRange] => throwParserError();
 
-  visitClassHeader = (ctx: ClassHeaderContext): [boolean, string, Range] => {
+  visitClassHeader = (ctx: ClassHeaderContext): [boolean, string, TsRange] => {
     const isPublic = ctx.PRIVATE() == null;
     const symbol = ctx.UpperId().symbol;
     return [isPublic, symbol.text ?? throwParserError(), tokenRange(symbol)];
   };
 
-  visitUtilClassHeader = (ctx: UtilClassHeaderContext): [boolean, string, Range] => {
+  visitUtilClassHeader = (ctx: UtilClassHeaderContext): [boolean, string, TsRange] => {
     const isPublic = ctx.PRIVATE() == null;
     const symbol = ctx.UpperId().symbol;
     return [isPublic, symbol.text ?? throwParserError(), tokenRange(symbol)];
@@ -44,15 +44,15 @@ const moduleNameBuilder = new ModuleNameBuilder();
 const getTypeParameters = (context: TypeParametersDeclarationContext): string[] =>
   context.UpperId().map((it) => it.symbol.text ?? throwParserError());
 
-class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition>
-  implements PLVisitor<TypeDefinition> {
-  constructor(private readonly range: Range, private readonly typeParameters: string[]) {
+class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TsTypeDefinition>
+  implements PLVisitor<TsTypeDefinition> {
+  constructor(private readonly range: TsRange, private readonly typeParameters: string[]) {
     super();
   }
 
-  defaultResult = (): TypeDefinition => throwParserError();
+  defaultResult = (): TsTypeDefinition => throwParserError();
 
-  visitObjType(ctx: ObjTypeContext): TypeDefinition {
+  visitObjType(ctx: ObjTypeContext): TsTypeDefinition {
     const rawDeclarations = ctx.objectTypeFieldDeclaration();
     const mappings = rawDeclarations.map((c) => {
       const name = c.LowerId().symbol.text ?? throwParserError();
@@ -70,7 +70,7 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition>
     };
   }
 
-  visitVariantType(ctx: VariantTypeContext): TypeDefinition {
+  visitVariantType(ctx: VariantTypeContext): TsTypeDefinition {
     const mappings = ctx.variantTypeConstructorDeclaration().map((c) => {
       const name = c.UpperId().symbol.text ?? throwParserError();
       const type = c.typeExpr().accept(typeBuilder);
@@ -87,11 +87,11 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition>
   }
 }
 
-class ModuleTypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition>
-  implements PLVisitor<TypeDefinition> {
-  defaultResult = (): TypeDefinition => throwParserError();
+class ModuleTypeDefinitionBuilder extends AbstractParseTreeVisitor<TsTypeDefinition>
+  implements PLVisitor<TsTypeDefinition> {
+  defaultResult = (): TsTypeDefinition => throwParserError();
 
-  visitClassHeader = (ctx: ClassHeaderContext): TypeDefinition => {
+  visitClassHeader = (ctx: ClassHeaderContext): TsTypeDefinition => {
     const rawTypeParams = ctx.typeParametersDeclaration();
     const rawTypeDeclaration = ctx.typeDeclaration();
     const typeParameters = rawTypeParams != null ? getTypeParameters(rawTypeParams) : [];
@@ -102,7 +102,7 @@ class ModuleTypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinitio
     return rawTypeDeclaration.accept(new TypeDefinitionBuilder(range, typeParameters));
   };
 
-  visitUtilClassHeader = (ctx: UtilClassHeaderContext): TypeDefinition => ({
+  visitUtilClassHeader = (ctx: UtilClassHeaderContext): TsTypeDefinition => ({
     range: contextRange(ctx),
     type: 'object',
     typeParameters: [],
@@ -113,14 +113,14 @@ class ModuleTypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinitio
 
 const moduleTypeDefinitionBuilder = new ModuleTypeDefinitionBuilder();
 
-class ClassBuilder extends AbstractParseTreeVisitor<ClassDefinition>
-  implements PLVisitor<ClassDefinition> {
-  defaultResult = (): ClassDefinition => throwParserError();
+class ClassBuilder extends AbstractParseTreeVisitor<TsClassDefinition>
+  implements PLVisitor<TsClassDefinition> {
+  defaultResult = (): TsClassDefinition => throwParserError();
 
-  private buildExpression = (expressionContext: ExpressionContext): Expression =>
+  private buildExpression = (expressionContext: ExpressionContext): TsExpression =>
     expressionContext.accept(expressionBuilder);
 
-  private buildClassMemberDefinition = (ctx: ClassMemberDefinitionContext): MemberDefinition => {
+  private buildClassMemberDefinition = (ctx: ClassMemberDefinitionContext): TsMemberDefinition => {
     const nameSymbol = ctx.LowerId().symbol;
     const parameters = ctx.annotatedVariable().map((annotatedVariable) => {
       const parameterNameSymbol = annotatedVariable.LowerId().symbol;
@@ -132,7 +132,7 @@ class ClassBuilder extends AbstractParseTreeVisitor<ClassDefinition>
         typeRange: contextRange(typeExpression),
       };
     });
-    const type = new FunctionType(
+    const type = new TsFunctionType(
       parameters.map((it) => it.type),
       ctx.typeExpr()?.accept(typeBuilder) ?? throwParserError()
     );
@@ -152,7 +152,7 @@ class ClassBuilder extends AbstractParseTreeVisitor<ClassDefinition>
     };
   };
 
-  visitClazz = (ctx: ClazzContext): ClassDefinition => {
+  visitClazz = (ctx: ClazzContext): TsClassDefinition => {
     const [isPublic, name, nameRange] = ctx.classHeaderDeclaration().accept(moduleNameBuilder);
     return {
       range: contextRange(ctx),

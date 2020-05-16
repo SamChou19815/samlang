@@ -1,22 +1,22 @@
 import { Token, ParserRuleContext } from 'antlr4ts';
-import { Position, Range } from './ast';
+import { TsPosition, TsRange } from './ast';
 
-export const tokenStartPosition = (token: Token): Position => ({
+export const tokenStartPosition = (token: Token): TsPosition => ({
   line: token.line - 1,
   column: token.charPositionInLine,
 });
 
-export const tokenEndPosition = (token: Token): Position => ({
+export const tokenEndPosition = (token: Token): TsPosition => ({
   line: token.line - 1,
   column: token.charPositionInLine + (token.text?.length ?? 0),
 });
 
-export const tokenRange = (token: Token): Range => ({
+export const tokenRange = (token: Token): TsRange => ({
   start: tokenStartPosition(token),
   end: tokenEndPosition(token),
 });
 
-export const contextRange = (context: ParserRuleContext): Range => {
+export const contextRange = (context: ParserRuleContext): TsRange => {
   const start = tokenStartPosition(context.start);
   const stop = context.stop;
   if (stop == null) {
@@ -25,11 +25,11 @@ export const contextRange = (context: ParserRuleContext): Range => {
   return { start, end: tokenEndPosition(stop) };
 };
 
-const positionCompare = (p1: Position, p2: Position): number => {
+const positionCompare = (p1: TsPosition, p2: TsPosition): number => {
   const c = p1.line - p2.line;
   return c != 0 ? c : p1.column - p2.column;
 };
-export const rangeUnion = (r1: Range, r2: Range): Range => {
+export const rangeUnion = (r1: TsRange, r2: TsRange): TsRange => {
   const startSorted = [r1.start, r2.start].sort(positionCompare);
   const endSorted = [r1.end, r2.end].sort(positionCompare);
   return { start: startSorted[0], end: endSorted[1] };
