@@ -9,7 +9,13 @@ kotlin {
         }
     }
     js {
-        nodejs()
+        nodejs {
+            testTask {
+                useMocha {
+                    timeout = "30000"
+                }
+            }
+        }
         useCommonJs()
     }
     sourceSets {
@@ -19,6 +25,7 @@ kotlin {
             }
         }
         val commonTest by getting {
+            dependsOn(commonMain)
             dependencies {
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-common")
                 implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-annotations-common")
@@ -38,6 +45,11 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
+            }
+        }
+        val jsTest by getting {
+            dependencies {
+                implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-js")
             }
         }
     }
