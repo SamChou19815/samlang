@@ -1,45 +1,48 @@
 package samlang.parser
 
+import TsBinaryExpression
+import TsBuiltInFunctionCallExpression
+import TsClassDefinition
+import TsClassMemberExpression
+import TsExpressionVisitor
+import TsFieldAccessExpression
+import TsFunctionApplicationExpression
+import TsFunctionType
+import TsIdentifierType
+import TsIfElseExpression
+import TsLambdaExpression
+import TsLiteralExpression
+import TsMatchExpression
+import TsMemberDefinition
+import TsMethodAccessExpression
+import TsModule
+import TsObjectConstructorExpression
+import TsObjectPattern
+import TsPanicExpression
+import TsPatternVisitor
+import TsPosition
+import TsPrimitiveType
+import TsRange
+import TsStatementBlockExpression
+import TsStringMap
+import TsThisExpression
+import TsTupleConstructorExpression
+import TsTuplePattern
+import TsTupleType
+import TsType
+import TsTypeDefinition
+import TsUnaryExpression
+import TsUndecidedType
+import TsVariableExpression
+import TsVariablePattern
+import TsVariantConstructorExpression
+import TsWildCardPattern
 import samlang.ast.common.*
-import samlang.ast.lang.ClassDefinition
-import samlang.ast.lang.Expression
-import samlang.ast.lang.Module
-import TsMap
-import ClassDefinition as TsClassDefinition
-import FunctionType as TsFunctionType
-import Module as TsModule
+import samlang.ast.lang.*
 import ModuleReference as TsModuleReference
-import Position as TsPosition
-import Range as TsRange
-import PrimitiveType as TsPrimitiveType
-import IdentifierType as TsIdentifierType
-import TupleType as TsTupleType
-import Type as TsType
 import TypeVisitor as TsTypeVisitor
-import TypeDefinition as TsTypeDefinition
-import MemberDefinition as TsMemberDefinition
-import LiteralExpression as TsLiteralExpression
-import ThisExpression as TsThisExpression
-import VariableExpression as TsVariableExpression
-import ClassMemberExpression as TsClassMemberExpression
-import TupleConstructorExpression as TsTupleConstructorExpression
-import ObjectConstructorExpression as TsObjectConstructorExpression
-import VariantConstructorExpression as TsVariantConstructorExpression
-import FieldAccessExpression as TsFieldAccessExpression
-import MethodAccessExpression as TsMethodAccessExpression
-import UnaryExpression as TsUnaryExpression
-import PanicExpression as TsPanicExpression
-import BuiltInFunctionCallExpression as TsBuiltInFunctionCallExpression
-import FunctionApplicationExpression as TsFunctionApplicationExpression
-import BinaryExpression as TsBinaryExpression
-import IfElseExpression as TsIfElseExpression
-import MatchExpression as TsMatchExpression
-import LambdaExpression as TsLambdaExpression
-import StatementBlockExpression as TsStatementBlockExpression
-import ExpressionVisitor as TsExpressionVisitor
-import UndecidedType as TsUndecidedType
 
-private fun <K, V> TsMap<K, V>.toMap(): Map<K, V> = this.map { it.key to it.value }.toMap()
+private fun <V> TsStringMap<V>.toMap(): Map<String, V> = this.map { it.key to it.value }.toMap()
 
 private fun TsPosition.toPosition(): Position = Position(line = line.toInt(), column = column.toInt())
 private fun TsRange.toRange(): Range = Range(start = start.toPosition(), end = end.toPosition())
@@ -70,10 +73,49 @@ private object TsTypeTransformVisitor : TsTypeVisitor<Type> {
 
 private fun TsType.toType(): Type = accept(TsTypeTransformVisitor)
 
+private object TsPatternTransformVisitor : TsPatternVisitor<Pattern> {
+    override fun visitTuple(pattern: TsTuplePattern): Pattern =
+        Pattern.TuplePattern(
+            range = pattern.range.toRange(),
+            destructedNames = pattern.destructedNames.map { it.name to it.range.toRange() }
+        )
+
+    override fun visitObject(pattern: TsObjectPattern): Pattern =
+        Pattern.ObjectPattern(
+            range = pattern.range.toRange(),
+            destructedNames = pattern.destructedNames.map { tsObjectDestructedName ->
+                Pattern.ObjectPattern.DestructedName(
+                    fieldName = tsObjectDestructedName.fieldName,
+                    fieldOrder = tsObjectDestructedName.fieldOrder.toInt(),
+                    alias = tsObjectDestructedName.alias,
+                    range = tsObjectDestructedName.range.toRange()
+                )
+            }
+        )
+
+    override fun visitVariable(pattern: TsVariablePattern): Pattern =
+        Pattern.VariablePattern(range = pattern.range.toRange(), name = pattern.name)
+
+    override fun visitWildcard(pattern: TsWildCardPattern): Pattern =
+        Pattern.WildCardPattern(range = pattern.range.toRange())
+}
+
 private object TsExpressionTransformVisitor : TsExpressionVisitor<Expression> {
     override fun visitLiteral(expression: TsLiteralExpression): Expression {
-        when (val literal = expression.literal) {
-            else -> TODO(reason = "NOT_IMPLEMENTED")
+        val literal = expression.literal
+        val range = expression.range.toRange()
+        return when (literal.type) {
+            "int" -> Expression.Literal.ofInt(
+                range = range,
+                value = literal.type.toLongOrNull() ?: error(message = "SyntaxError: Bad integer literal.")
+            )
+            "bool" -> if (literal.value == "true") {
+                Expression.Literal.ofTrue(range = range)
+            } else {
+                Expression.Literal.ofFalse(range = range)
+            }
+            "string" -> Expression.Literal.ofString(range = range, value = literal.value)
+            else -> error(message = "Bad literal!")
         }
     }
 
@@ -104,7 +146,26 @@ private object TsExpressionTransformVisitor : TsExpressionVisitor<Expression> {
         Expression.ObjectConstructor(
             range = expression.range.toRange(),
             type = expression.type.toType(),
-            fieldDeclarations = expression.fieldDeclarations.map { TODO(reason = "NOT_IMPLEMENTED") }
+            fieldDeclarations = expression.fieldDeclarations.map { tsFieldConstructor ->
+                val range = tsFieldConstructor.range.toRange()
+                val type = tsFieldConstructor.type.toType()
+                val name = tsFieldConstructor.name
+                val fieldExpression = tsFieldConstructor.expression
+                if (fieldExpression != null) {
+                    Expression.ObjectConstructor.FieldConstructor.Field(
+                        range = range,
+                        type = type,
+                        name = name,
+                        expression = fieldExpression.accept(TsExpressionTransformVisitor)
+                    )
+                } else {
+                    Expression.ObjectConstructor.FieldConstructor.FieldShorthand(
+                        range = range,
+                        type = type,
+                        name = name
+                    )
+                }
+            }
         )
 
     override fun visitVariantConstructor(expression: TsVariantConstructorExpression): Expression =
@@ -212,13 +273,27 @@ private object TsExpressionTransformVisitor : TsExpressionVisitor<Expression> {
             range = expression.range.toRange(),
             type = expression.type.toType() as Type.FunctionType,
             parameters = expression.parameters.map { it.name to it.type.toType() },
-            captured = expression.captured.toMap().mapValues { (_, type) -> type.toType() },
+            captured = emptyMap(),
             body = expression.body.accept(TsExpressionTransformVisitor)
         )
 
-    override fun visitStatementBlock(expression: TsStatementBlockExpression): Expression {
-        TODO("NOT_IMPLEMENTED")
-    }
+    override fun visitStatementBlock(expression: TsStatementBlockExpression): Expression =
+        Expression.StatementBlockExpression(
+            range = expression.range.toRange(),
+            type = expression.type.toType(),
+            block = StatementBlock(
+                range = expression.block.range.toRange(),
+                statements = expression.block.statements.map { tsValStatement ->
+                    Statement.Val(
+                        range = tsValStatement.range.toRange(),
+                        pattern = tsValStatement.pattern.accept(TsPatternTransformVisitor),
+                        typeAnnotation = tsValStatement.typeAnnotation.toType(),
+                        assignedExpression = tsValStatement.assignedExpression.accept(TsExpressionTransformVisitor)
+                    )
+                },
+                expression = expression.block.expression?.accept(TsExpressionTransformVisitor)
+            )
+        )
 }
 
 private fun transformMemberDefinition(tsMemberDefinition: TsMemberDefinition): ClassDefinition.MemberDefinition =

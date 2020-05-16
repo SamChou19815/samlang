@@ -5,4 +5,4 @@
 import kotlin.js.*
 
 @JsName("default")
-external var buildModuleFromText: (text: String) -> Module
+external var buildModuleFromText: (text: String) -> TsModule
