@@ -24,6 +24,12 @@ kotlin {
                 implementation(project(":samlang-utils"))
             }
         }
+        val commonTest by getting {
+            dependencies {
+                implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-common")
+                implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-annotations-common")
+            }
+        }
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
@@ -32,10 +38,23 @@ kotlin {
                 implementation(project(":samlang-parser-generated-java"))
             }
         }
+        val jvmTest by getting {
+            dependsOn(jvmMain)
+            dependencies {
+                implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-junit")
+                implementation(dependencyNotation = "io.kotlintest:kotlintest-runner-junit5:3.4.2")
+            }
+        }
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
                 implementation(npm("@dev-sam/samlang-parser-generated-ts", "0.0.7"))
+            }
+        }
+        val jsTest by getting {
+            dependsOn(jsMain)
+            dependencies {
+                implementation(dependencyNotation = "org.jetbrains.kotlin:kotlin-test-js")
             }
         }
     }
