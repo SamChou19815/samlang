@@ -16,8 +16,9 @@ class ParserSmokeTest {
                 }
             """.trimIndent()
         )
+        val readableErrors = errors.map { it.errorMessage }
+        assertEquals(expected = emptyList(), actual = readableErrors)
         assertEquals(expected = 1, actual = module.classDefinitions.size)
-        assertEquals(expected = 0, actual = errors.size)
     }
 
     @Test

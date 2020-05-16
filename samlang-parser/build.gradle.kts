@@ -48,7 +48,7 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-js"))
-                implementation(npm("@dev-sam/samlang-parser-generated-ts", "0.0.8"))
+                implementation(npm("@dev-sam/samlang-parser-generated-ts", "0.0.9"))
             }
         }
         val jsTest by getting {

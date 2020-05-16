@@ -25,12 +25,13 @@ class StatementBuilder extends AbstractParseTreeVisitor<TsValStatement>
   defaultResult = (): TsValStatement => throwParserError();
 
   visitValStatement = (ctx: ValStatementContext): TsValStatement => {
-    const patternContext = ctx.pattern() ?? throwParserError();
+    const patternContext = ctx.pattern() ?? throwParserError('Missing pattern in val statement.');
     const pattern =
       patternContext.accept(patternBuilder) ?? new TsWildCardPattern(contextRange(patternContext));
     const typeAnnotation =
       ctx.typeAnnotation()?.typeExpr()?.accept(typeBuilder) ?? new TsUndecidedType();
-    const expressionContext = ctx.expression() ?? throwParserError();
+    const expressionContext =
+      ctx.expression() ?? throwParserError('Missing expression in val statement.');
     const expression = this.expressionBuilder(expressionContext) ?? throwParserError();
     return new TsValStatement(contextRange(ctx), pattern, typeAnnotation, expression);
   };
@@ -48,8 +49,9 @@ export default class StatementBlockBuilder extends AbstractParseTreeVisitor<TsSt
   defaultResult = (): TsStatementBlock => throwParserError();
 
   visitStatementBlock = (ctx: StatementBlockContext): TsStatementBlock => {
-    const expressionContext = ctx.expression() ?? throwParserError();
-    const expression = this.expressionBuilder(expressionContext) ?? throwParserError();
+    const expressionContext = ctx.expression();
+    const expression =
+      expressionContext != null ? this.expressionBuilder(expressionContext) : undefined;
     return new TsStatementBlock(
       contextRange(ctx),
       ctx.statement().map((it) => it.accept(this.statementBuilder)),

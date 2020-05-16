@@ -77,8 +77,8 @@ class ObjectFieldDeclarationBuilder extends AbstractParseTreeVisitor<TsFieldCons
     return {
       range: tokenRange(nameNode),
       type: new TsUndecidedType(),
-      name: nameNode.text ?? throwParserError(),
-      expression: this.toExpression(ctx.expression())
+      name: nameNode.text ?? throwParserError('Missing field name in object construtor.'),
+      expression: this.toExpression(ctx.expression()),
     };
   };
 
@@ -89,7 +89,7 @@ class ObjectFieldDeclarationBuilder extends AbstractParseTreeVisitor<TsFieldCons
     return {
       range: tokenRange(nameNode),
       type: new TsUndecidedType(),
-      name: nameNode.text ?? throwParserError()
+      name: nameNode.text ?? throwParserError('Missing field name in object constructor.'),
     };
   };
 }
@@ -112,10 +112,18 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<TsExpression>
     const literalNode = ctx.literal();
     const range = contextRange(literalNode);
     if (literalNode.TRUE() != null) {
-      return new TsLiteralExpression(range, new TsPrimitiveType('bool'), new TsLiteral('bool', 'true'));
+      return new TsLiteralExpression(
+        range,
+        new TsPrimitiveType('bool'),
+        new TsLiteral('bool', 'true')
+      );
     }
     if (literalNode.FALSE() != null) {
-      return new TsLiteralExpression(range, new TsPrimitiveType('bool'), new TsLiteral('bool', 'false'));
+      return new TsLiteralExpression(
+        range,
+        new TsPrimitiveType('bool'),
+        new TsLiteral('bool', 'false')
+      );
     }
     if (literalNode.MinInt() != null) {
       return new TsLiteralExpression(
@@ -126,7 +134,7 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<TsExpression>
     }
     const intLiteralNode = literalNode.IntLiteral();
     if (intLiteralNode != null) {
-      const text = intLiteralNode.text ?? throwParserError();
+      const text = intLiteralNode.text ?? throwParserError('Missing int literal value.');
       return new TsLiteralExpression(range, new TsPrimitiveType('int'), new TsLiteral('int', text));
     }
     const stringLiteralNode = literalNode.StrLiteral();
@@ -149,7 +157,7 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<TsExpression>
     new TsVariableExpression(
       contextRange(ctx),
       new TsUndecidedType(),
-      ctx.LowerId().symbol.text ?? throwParserError()
+      ctx.LowerId().symbol.text ?? throwParserError('Missing variable name in variable.')
     );
 
   visitClassMemberExpr = (ctx: ClassMemberExprContext): TsExpression =>
@@ -157,16 +165,16 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<TsExpression>
       contextRange(ctx),
       new TsUndecidedType(),
       [],
-      ctx.UpperId().symbol.text ?? throwParserError(),
+      ctx.UpperId().symbol.text ?? throwParserError('Missing class name in class member.'),
       tokenRange(ctx.UpperId().symbol),
-      ctx.LowerId().symbol.text ?? throwParserError()
+      ctx.LowerId().symbol.text ?? throwParserError('Missing member name in class member.')
     );
 
   visitTupleConstructor(ctx: TupleConstructorContext): TsExpression {
     const range = contextRange(ctx);
     const expressionList = ctx.expression().map(this.toExpression);
     if (expressionList.length > 22) {
-      throwParserError();
+      throwParserError('Tuple is too long.');
     }
     const type = new TsTupleType(expressionList.map((it) => it.type));
     return new TsTupleConstructorExpression(range, type, expressionList);
@@ -187,7 +195,7 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<TsExpression>
     new TsVariantConstructorExpression(
       contextRange(ctx),
       new TsUndecidedType(),
-      ctx.UpperId().symbol.text ?? throwParserError(),
+      ctx.UpperId().symbol.text ?? throwParserError('Missing tag name in variant constructor.'),
       -1,
       ctx.expression().accept(this)
     );
@@ -197,7 +205,7 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<TsExpression>
       contextRange(ctx),
       new TsUndecidedType(),
       ctx.expression().accept(this),
-      ctx.LowerId().symbol.text ?? throwParserError(),
+      ctx.LowerId().symbol.text ?? throwParserError('Missing field name in field access.'),
       -1
     );
 
@@ -305,7 +313,9 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<TsExpression>
       ctx.expression().accept(this),
       ctx.patternToExpr().map((pattern2Expr) => ({
         range: contextRange(pattern2Expr),
-        tag: pattern2Expr.UpperId()?.symbol?.text ?? throwParserError(),
+        tag:
+          pattern2Expr.UpperId()?.symbol?.text ??
+          throwParserError('Missing tag name in pattern matching'),
         tagOrder: -1,
         dataVariable: pattern2Expr.varOrWildCard()?.LowerId()?.symbol?.text,
         expression: pattern2Expr.expression().accept(this),
@@ -315,12 +325,14 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<TsExpression>
   visitFunExpr = (ctx: FunExprContext): TsExpression => {
     const functionArguments = ctx.optionallyAnnotatedParameter().map((oneArg) => {
       const nameNode = oneArg.LowerId().symbol;
-      const name = nameNode.text ?? throwParserError();
-      const type = oneArg.typeAnnotation()?.typeExpr()?.accept(typeBuilder) ?? new TsUndecidedType();
+      const name =
+        nameNode.text ?? throwParserError('Missing name in function arguments in lambda.');
+      const type =
+        oneArg.typeAnnotation()?.typeExpr()?.accept(typeBuilder) ?? new TsUndecidedType();
       return { name, type };
     });
     if (functionArguments.length > 22) {
-      throwParserError();
+      throwParserError('Too many arguments in lambda.');
     }
     return new TsLambdaExpression(
       contextRange(ctx),

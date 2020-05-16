@@ -1,6 +1,6 @@
 {
   "name": "@dev-sam/samlang-parser-generated-ts",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Internal package used by samlang project. It is meant to be consumed by Kotlin multiplatform compiler, not by ordinary end users.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",

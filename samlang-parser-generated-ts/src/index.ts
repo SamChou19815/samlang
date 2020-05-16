@@ -16,13 +16,16 @@ class Visitor extends AbstractParseTreeVisitor<TsModule> implements PLVisitor<Ts
     range: contextRange(ctx),
     importedMembers: ctx.UpperId().map((node) => {
       const symbol = node.symbol;
-      return { name: symbol.text ?? throwParserError(), range: tokenRange(symbol) };
+      return {
+        name: symbol.text ?? throwParserError('Missing imported name'),
+        range: tokenRange(symbol),
+      };
     }),
     importedModule: {
       parts: ctx
         .moduleReference()
         .UpperId()
-        .map((it) => it.text ?? throwParserError()),
+        .map((it) => it.text ?? throwParserError('Missing some parts in imports.')),
     },
     importedModuleRange: contextRange(ctx.moduleReference()),
   });

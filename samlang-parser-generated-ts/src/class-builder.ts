@@ -55,7 +55,8 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TsTypeDefinition>
   visitObjType(ctx: ObjTypeContext): TsTypeDefinition {
     const rawDeclarations = ctx.objectTypeFieldDeclaration();
     const mappings = rawDeclarations.map((c) => {
-      const name = c.LowerId().symbol.text ?? throwParserError();
+      const name =
+        c.LowerId().symbol.text ?? throwParserError('Missing field name in object type.');
       const isPublic = c.PRIVATE() == null;
       const type = c.typeAnnotation().typeExpr().accept(typeBuilder);
       return [name, { type, isPublic }] as const;
@@ -72,7 +73,7 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TsTypeDefinition>
 
   visitVariantType(ctx: VariantTypeContext): TsTypeDefinition {
     const mappings = ctx.variantTypeConstructorDeclaration().map((c) => {
-      const name = c.UpperId().symbol.text ?? throwParserError();
+      const name = c.UpperId().symbol.text ?? throwParserError('Missing tag name in variant type');
       const type = c.typeExpr().accept(typeBuilder);
       return [name, { type, isPublic: false }] as const;
     });
@@ -126,7 +127,8 @@ class ClassBuilder extends AbstractParseTreeVisitor<TsClassDefinition>
       const parameterNameSymbol = annotatedVariable.LowerId().symbol;
       const typeExpression = annotatedVariable.typeAnnotation().typeExpr();
       return {
-        name: parameterNameSymbol.text ?? throwParserError(),
+        name:
+          parameterNameSymbol.text ?? throwParserError('Missing name in type parameter of class'),
         nameRange: tokenRange(parameterNameSymbol),
         type: typeExpression.accept(typeBuilder),
         typeRange: contextRange(typeExpression),
@@ -134,7 +136,8 @@ class ClassBuilder extends AbstractParseTreeVisitor<TsClassDefinition>
     });
     const type = new TsFunctionType(
       parameters.map((it) => it.type),
-      ctx.typeExpr()?.accept(typeBuilder) ?? throwParserError()
+      ctx.typeExpr()?.accept(typeBuilder) ??
+        throwParserError('Missing return type in class member.')
     );
     const body = this.buildExpression(ctx.expression());
     const typeParametersDeclaration = ctx.typeParametersDeclaration();
@@ -143,7 +146,7 @@ class ClassBuilder extends AbstractParseTreeVisitor<TsClassDefinition>
       isPublic: ctx.PRIVATE() == null,
       isMethod: ctx.METHOD() != null,
       nameRange: tokenRange(nameSymbol),
-      name: nameSymbol.text ?? throwParserError(),
+      name: nameSymbol.text ?? throwParserError('Missing name of a function in class.'),
       typeParameters:
         typeParametersDeclaration != null ? getTypeParameters(typeParametersDeclaration) : [],
       type: type,

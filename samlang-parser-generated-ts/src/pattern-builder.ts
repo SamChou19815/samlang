@@ -24,14 +24,15 @@ class FieldNameBuilder extends AbstractParseTreeVisitor<TsObjectDestructedName>
 
   visitRawVar = (ctx: RawVarContext): TsObjectDestructedName => {
     const symbol = ctx.LowerId().symbol;
-    const fieldName = symbol.text ?? throwParserError();
+    const fieldName = symbol.text ?? throwParserError('Missing field name in object pattern.');
     return { fieldName, fieldOrder: -1, range: tokenRange(symbol) };
   };
 
   visitRenamedVar = (ctx: RenamedVarContext): TsObjectDestructedName => {
     const idList = ctx.LowerId();
-    const fieldName = idList[0].symbol.text ?? throwParserError();
-    const alias = idList[1].symbol.text ?? throwParserError();
+    const fieldName =
+      idList[0].symbol.text ?? throwParserError('Missing field name in object pattern.');
+    const alias = idList[1].symbol.text ?? throwParserError('Missing alias in object pattern.');
     return {
       fieldName,
       fieldOrder: -1,

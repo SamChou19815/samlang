@@ -35,6 +35,6 @@ export const rangeUnion = (r1: TsRange, r2: TsRange): TsRange => {
   return { start: startSorted[0], end: endSorted[1] };
 };
 
-export const throwParserError = (): never => {
-  throw new Error('The program has syntax errors.');
+export const throwParserError = (detail?: string): never => {
+  throw new Error(detail ?? 'The program has syntax errors.');
 };
