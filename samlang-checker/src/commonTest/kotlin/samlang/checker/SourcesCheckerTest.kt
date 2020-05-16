@@ -1,13 +1,14 @@
 package samlang.checker
 
-import io.kotlintest.specs.StringSpec
+import kotlin.test.Test
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.parser.buildModuleFromText
 import samlang.util.createOrFail
 
-class SourcesCheckerTest : StringSpec({
-    "Several sources integration test" {
+class SourcesCheckerTest {
+    @Test
+    fun typeCheckWithSeveralSourcesIntegrationTest() {
         val sourceA = """
             class A {
                 function a(): int = 42
@@ -72,4 +73,4 @@ class SourcesCheckerTest : StringSpec({
         val checkedSources = typeCheckSources(sources = sources, errorCollector = errorCollector)
         createOrFail(item = checkedSources, errors = errorCollector.collectedErrors)
     }
-})
+}
