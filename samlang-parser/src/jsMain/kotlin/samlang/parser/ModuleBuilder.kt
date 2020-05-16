@@ -7,6 +7,7 @@ import samlang.errors.CompileTimeError
 import samlang.errors.SyntaxError
 
 import buildTsModuleFromText
+import samlang.ast.lang.Expression
 
 actual fun buildModuleFromText(moduleReference: ModuleReference, text: String): Pair<Module, List<CompileTimeError>> =
     try {
@@ -21,3 +22,10 @@ actual fun buildModuleFromText(moduleReference: ModuleReference, text: String): 
         )
         dummyModule to listOf(compileTimeError)
     }
+
+actual fun buildExpressionFromText(
+    moduleReference: ModuleReference,
+    source: String
+): Pair<Expression?, List<CompileTimeError>> {
+    TODO(reason = "Not implemented!")
+}

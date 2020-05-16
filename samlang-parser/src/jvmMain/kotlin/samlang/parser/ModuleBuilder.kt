@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
+import samlang.ast.lang.Expression
 import samlang.ast.lang.Module
 import samlang.errors.CompileTimeError
 import samlang.parser.generated.PLBaseVisitor
@@ -22,6 +23,11 @@ actual fun buildModuleFromText(moduleReference: ModuleReference, text: String): 
         ?: Module(imports = emptyList(), classDefinitions = emptyList())
     return module to errors
 }
+
+actual fun buildExpressionFromText(
+    moduleReference: ModuleReference,
+    source: String
+): Pair<Expression?, List<CompileTimeError>> = ExpressionBuilder.build(source, moduleReference)
 
 private class Visitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module?>() {
 

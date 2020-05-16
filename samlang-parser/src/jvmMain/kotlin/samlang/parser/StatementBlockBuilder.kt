@@ -8,7 +8,7 @@ import samlang.ast.lang.StatementBlock
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLParser
 
-class StatementBlockBuilder(
+internal class StatementBlockBuilder(
     private val expressionBuilder: (PLParser.ExpressionContext) -> Expression
 ) : PLBaseVisitor<StatementBlock?>() {
     private val statementBuilder: StatementBuilder = StatementBuilder()

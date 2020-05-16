@@ -27,7 +27,7 @@ import samlang.ast.lang.Expression.Variable
 import samlang.ast.lang.Pattern
 import samlang.ast.lang.Statement
 import samlang.ast.lang.StatementBlock
-import samlang.parser.ExpressionBuilder
+import samlang.parser.buildExpressionFromText
 
 class ExpressionTypeCheckerTest : StringSpec() {
     init {
@@ -830,9 +830,9 @@ class ExpressionTypeCheckerTest : StringSpec() {
             expectedExpression: Expression? = null,
             expectedErrors: List<String> = emptyList()
         ) {
-            val (parsedExpression, actualParserErrors) = ExpressionBuilder.build(
-                source = source,
-                moduleReference = dummyModuleReference
+            val (parsedExpression, actualParserErrors) = buildExpressionFromText(
+                moduleReference = dummyModuleReference,
+                source = source
             )
             parsedExpression ?: error(message = "Parsed expression should not be null!")
             actualParserErrors shouldBe emptyList()

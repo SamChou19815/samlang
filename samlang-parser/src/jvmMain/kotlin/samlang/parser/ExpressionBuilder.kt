@@ -18,7 +18,7 @@ import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer
 import samlang.parser.generated.PLParser
 
-class ExpressionBuilder internal constructor(
+internal class ExpressionBuilder internal constructor(
     private val syntaxErrorListener: SyntaxErrorListener
 ) : PLBaseVisitor<Expression?>() {
     private val statementBlockBuilder: StatementBlockBuilder = StatementBlockBuilder { it.toExpression() }
