@@ -11,8 +11,8 @@ kotlin {
     js {
         nodejs {
             testTask {
-                useMocha {
-                    timeout = "30000"
+                useKarma {
+                    useChromeHeadless()
                 }
             }
         }
