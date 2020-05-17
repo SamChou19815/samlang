@@ -53,10 +53,7 @@ fun compileToX86Assembly(
         .printProgram(program = assemblyProgram)
     outputDirectory.mkdirs()
     val outputFile = Paths.get(outputDirectory.toString(), "program.s").toFile()
-    outputFile.writer().use {
-        it.write(printedAssemblyProgram)
-        it.flush()
-    }
+    outputFile.writeText(text = printedAssemblyProgram)
 }
 
 @ExperimentalStdlibApi
@@ -67,46 +64,58 @@ fun compileToX86Executable(
 ): Boolean {
     val highIrSources = compileSources(sources = source)
     val unoptimizedCompilationUnits = MidIrGenerator.generateWithMultipleEntries(sources = highIrSources)
-    val runtime = Runtime.getRuntime()
     var withoutLinkError = true
     val jarPath = Paths.get(System.getProperty("java.class.path")).toAbsolutePath().toString()
     for ((moduleReference, unoptimizedCompilationUnit) in unoptimizedCompilationUnits.moduleMappings) {
         val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
         val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
+        val printedAssemblyProgram = AssemblyPrinter(includeComments = false, osTarget = osTarget)
+            .printProgram(program = assemblyProgram)
         val outputAssemblyFile = Paths.get(outputDirectory.toString(), "$moduleReference.s").toFile()
         outputAssemblyFile.parentFile.mkdirs()
-        outputAssemblyFile.writer().use {
-            it.write(
-                AssemblyPrinter(includeComments = false, osTarget = osTarget)
-                .printProgram(program = assemblyProgram))
-            it.flush()
-        }
+        outputAssemblyFile.writeText(text = printedAssemblyProgram)
         val outputProgramFile = Paths.get(outputDirectory.toString(), moduleReference.toString()).toString()
-        val runtimePath = Paths.get(File(jarPath).parentFile.parentFile.parentFile.toString(), "runtime").toString()
-        val linkCommand = "gcc -o $outputProgramFile $outputAssemblyFile -L$runtimePath -lsam -lpthread"
-        val gccProcess = runtime.exec(linkCommand)
-        if (gccProcess.waitFor() != 0) {
-            withoutLinkError = false
-            System.err.println("Failed to link $moduleReference. Linker errors are printed below:")
-            gccProcess.inputStream.use {
-                val reader = it.bufferedReader()
-                while (true) {
-                    val line = reader.readLine() ?: break
-                    System.err.println(line)
-                }
-            }
-            gccProcess.errorStream.use {
-                val reader = it.bufferedReader()
-                while (true) {
-                    val line = reader.readLine() ?: break
-                    System.err.println(line)
-                }
-            }
-        } else {
-            gccProcess.inputStream.close()
-            gccProcess.errorStream.close()
-        }
-        gccProcess.outputStream.close()
+        withoutLinkError = withoutLinkError && linkWithGcc(
+            moduleReference = moduleReference,
+            jarPath = jarPath,
+            outputProgramFile = outputProgramFile,
+            outputAssemblyFile = outputAssemblyFile
+        )
     }
+    return withoutLinkError
+}
+
+private fun linkWithGcc(
+    moduleReference: ModuleReference,
+    jarPath: String,
+    outputProgramFile: String,
+    outputAssemblyFile: File
+): Boolean {
+    val runtimePath = Paths.get(File(jarPath).parentFile.parentFile.parentFile.toString(), "runtime").toString()
+    val linkCommand = "gcc -o $outputProgramFile $outputAssemblyFile -L$runtimePath -lsam -lpthread"
+    val gccProcess = Runtime.getRuntime().exec(linkCommand)
+    var withoutLinkError = true
+    if (gccProcess.waitFor() != 0) {
+        withoutLinkError = false
+        System.err.println("Failed to link $moduleReference. Linker errors are printed below:")
+        gccProcess.inputStream.use {
+            val reader = it.bufferedReader()
+            while (true) {
+                val line = reader.readLine() ?: break
+                System.err.println(line)
+            }
+        }
+        gccProcess.errorStream.use {
+            val reader = it.bufferedReader()
+            while (true) {
+                val line = reader.readLine() ?: break
+                System.err.println(line)
+            }
+        }
+    } else {
+        gccProcess.inputStream.close()
+        gccProcess.errorStream.close()
+    }
+    gccProcess.outputStream.close()
     return withoutLinkError
 }
