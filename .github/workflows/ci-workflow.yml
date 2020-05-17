@@ -25,3 +25,9 @@ jobs:
         run: ./build/release/samlang
       - name: Compile samlang Programs
         run: ./scripts/compile-repository.js
+      - name: Validate JS distribution
+        run: |
+          cd samlang-demo-distribution-ts
+          yarn
+          yarn generate
+          yarn test
