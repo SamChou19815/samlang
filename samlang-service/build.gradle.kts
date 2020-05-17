@@ -23,6 +23,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-common"))
                 implementation(project(":samlang-ast"))
+                implementation(project(":samlang-utils"))
                 implementation(project(":samlang-checker"))
                 implementation(project(":samlang-errors"))
                 implementation(project(":samlang-parser"))

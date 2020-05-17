@@ -7,7 +7,7 @@ import samlang.Configuration
 import samlang.ast.common.ModuleReference
 
 object SourceCollector {
-    fun collectHandles(configuration: Configuration): List<Pair<ModuleReference, File>> {
+    fun collectHandles(configuration: Configuration): List<Pair<ModuleReference, String>> {
         val sourcePath = Paths.get(configuration.sourceDirectory).toAbsolutePath()
         val excludeGlobMatchers = configuration.excludes.map { glob ->
             FileSystems.getDefault().getPathMatcher("glob:$glob")
@@ -22,7 +22,7 @@ object SourceCollector {
             }
             val parts = relativeFile.parent.split(File.separator).toMutableList()
             parts.add(element = relativeFile.nameWithoutExtension)
-            ModuleReference(parts = parts) to file
+            ModuleReference(parts = parts) to file.readText()
         }.toList()
     }
 }

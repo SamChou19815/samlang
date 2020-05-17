@@ -10,13 +10,12 @@ import java.nio.file.Paths
 import kotlin.system.exitProcess
 import org.eclipse.lsp4j.launch.LSPLauncher
 import samlang.ast.common.ModuleReference
-import samlang.errors.CompilationFailedException
 import samlang.lsp.LanguageServer
 import samlang.optimization.IrCompilationUnitOptimizer
 import samlang.optimization.MidIrStatementOptimizer
-import samlang.service.SourceChecker
 import samlang.service.SourceCollector
 import samlang.service.SourceCompiler
+import samlang.service.checkSources
 
 @ExperimentalStdlibApi
 fun main(args: Array<String>): Unit =
@@ -45,12 +44,10 @@ private class CompileCommand : CliktCommand(name = "compile") {
         }
         echo(message = "Compiling sources in `${configuration.sourceDirectory}` ...", err = true)
         val sourceHandles = SourceCollector.collectHandles(configuration = configuration)
-        val checkedSources = try {
-            SourceChecker.typeCheck(sourceHandles = sourceHandles)
-        } catch (compilationFailedException: CompilationFailedException) {
-            val errors = compilationFailedException.errors
-            echo(message = "Found ${errors.size} error(s).", err = true)
-            errors.forEach { echo(message = it.errorMessage) }
+        val (checkedSources, compileTimeErrors) = checkSources(sourceHandles = sourceHandles)
+        if (compileTimeErrors.isNotEmpty()) {
+            echo(message = "Found ${compileTimeErrors.size} error(s).", err = true)
+            compileTimeErrors.forEach { echo(message = it.errorMessage) }
             return
         }
         SourceCompiler.compileToX86Assembly(

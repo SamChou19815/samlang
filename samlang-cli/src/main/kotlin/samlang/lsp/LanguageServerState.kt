@@ -34,8 +34,7 @@ internal class LanguageServerState(configuration: Configuration) {
 
     init {
         val errorCollector = ErrorCollector()
-        for ((moduleReference, inputStream) in SourceCollector.collectHandles(configuration = configuration)) {
-            val sourceCode = inputStream.bufferedReader().use { it.readText() }
+        for ((moduleReference, sourceCode) in SourceCollector.collectHandles(configuration = configuration)) {
             val (rawModule, parseErrors) = updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
             parseErrors.forEach { errorCollector.add(compileTimeError = it) }
             dependencyTracker.update(
