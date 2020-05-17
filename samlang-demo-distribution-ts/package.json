@@ -14,14 +14,10 @@
     "index.d.ts"
   ],
   "scripts": {
-    "compile": "ncc build ../build/js/packages/samlang-samlang-demo/kotlin/samlang-samlang-demo.js -o dist/ -m",
-    "move": "mv dist/index.js samlang-demo.js && rm -rf dist/",
-    "generate": "yarn compile && yarn move",
     "test": "jest"
   },
   "devDependencies": {
     "@types/jest": "^25.2.2",
-    "@zeit/ncc": "^0.22.1",
     "jest": "^26.0.1"
   }
 }
