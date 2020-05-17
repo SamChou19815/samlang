@@ -11,12 +11,12 @@ import samlang.checker.ErrorCollector
 import samlang.checker.GlobalTypingContext
 import samlang.checker.typeCheckSources
 import samlang.checker.typeCheckSourcesIncrementally
+import samlang.collectSources
 import samlang.errors.CompileTimeError
 import samlang.parser.buildModuleFromText
 import samlang.service.LocationLookup
 import samlang.service.LocationLookupBuilder
 import samlang.service.ReadOnlyLocationLookup
-import samlang.service.SourceCollector
 
 internal class LanguageServerState(configuration: Configuration) {
     private val dependencyTracker: DependencyTracker = DependencyTracker()
@@ -34,7 +34,7 @@ internal class LanguageServerState(configuration: Configuration) {
 
     init {
         val errorCollector = ErrorCollector()
-        for ((moduleReference, sourceCode) in SourceCollector.collectHandles(configuration = configuration)) {
+        for ((moduleReference, sourceCode) in collectSources(configuration = configuration)) {
             val (rawModule, parseErrors) = updateRawModule(moduleReference = moduleReference, sourceCode = sourceCode)
             parseErrors.forEach { errorCollector.add(compileTimeError = it) }
             dependencyTracker.update(

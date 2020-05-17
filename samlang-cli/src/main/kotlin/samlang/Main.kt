@@ -13,8 +13,6 @@ import samlang.ast.common.ModuleReference
 import samlang.lsp.LanguageServer
 import samlang.optimization.IrCompilationUnitOptimizer
 import samlang.optimization.MidIrStatementOptimizer
-import samlang.service.SourceCollector
-import samlang.service.SourceCompiler
 import samlang.service.checkSources
 
 @ExperimentalStdlibApi
@@ -43,14 +41,14 @@ private class CompileCommand : CliktCommand(name = "compile") {
             exitProcess(status = 1)
         }
         echo(message = "Compiling sources in `${configuration.sourceDirectory}` ...", err = true)
-        val sourceHandles = SourceCollector.collectHandles(configuration = configuration)
+        val sourceHandles = collectSources(configuration = configuration)
         val (checkedSources, compileTimeErrors) = checkSources(sourceHandles = sourceHandles)
         if (compileTimeErrors.isNotEmpty()) {
             echo(message = "Found ${compileTimeErrors.size} error(s).", err = true)
             compileTimeErrors.forEach { echo(message = it.errorMessage) }
             return
         }
-        SourceCompiler.compileToX86Assembly(
+        compileToX86Assembly(
             source = checkedSources,
             entryModuleReference = ModuleReference.ROOT, // TODO
             optimizer = IrCompilationUnitOptimizer(
@@ -59,7 +57,7 @@ private class CompileCommand : CliktCommand(name = "compile") {
             ),
             outputDirectory = Paths.get(outputDirectory.toString(), "x86").toFile()
         )
-        val noLinkError = SourceCompiler.compileToX86Executable(
+        val noLinkError = compileToX86Executable(
             source = checkedSources,
             optimizer = IrCompilationUnitOptimizer(
                 statementOptimizer = MidIrStatementOptimizer.allEnabled,
