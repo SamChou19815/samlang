@@ -89,11 +89,11 @@ private fun linkWithGcc(
 ): Boolean {
     val runtimePath = Paths.get(File(jarPath).parentFile.parentFile.parentFile.toString(), "runtime").toString()
     val processBuilder = ProcessBuilder(
-        "gcc", "-o", outputProgramFile, outputAssemblyFile, "-L$runtimePath", "-lsam", "lpthread"
+        "gcc", "-o", outputProgramFile, outputAssemblyFile, "-L$runtimePath", "-lsam", "-lpthread"
     )
     processBuilder.inheritIO()
     val gccProcess = processBuilder.start()
-    val withoutLinkError = gccProcess.waitFor() != 0
+    val withoutLinkError = gccProcess.waitFor() == 0
     gccProcess.inputStream.close()
     gccProcess.errorStream.close()
     gccProcess.outputStream.close()
