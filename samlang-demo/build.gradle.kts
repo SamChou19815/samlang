@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.targets.js.webpack.KotlinWebpackOutput
+
 plugins {
     kotlin(module = "multiplatform")
 }
@@ -9,6 +11,16 @@ kotlin {
         }
     }
     js {
+        browser {
+            webpackTask {
+                output.library = "samlang-demo"
+                output.libraryTarget = KotlinWebpackOutput.Target.COMMONJS_MODULE
+            }
+            @Suppress("EXPERIMENTAL_API_USAGE")
+            dceTask {
+                keep("samlang-demo.samlang.demo.runDemo", "samlang-samlang-demo.samlang.demo.runDemo")
+            }
+        }
         nodejs {
             testTask {
                 useKarma {
@@ -17,6 +29,9 @@ kotlin {
             }
         }
         useCommonJs()
+        compilations.all {
+            compileKotlinTask.kotlinOptions.sourceMap = false
+        }
     }
     sourceSets {
         val commonMain by getting {
