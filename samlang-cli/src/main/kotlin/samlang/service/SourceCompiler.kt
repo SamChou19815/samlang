@@ -39,7 +39,7 @@ object SourceCompiler {
         }
     }
 
-    fun compileToX86Assembly(
+    fun compileToX86Executable(
         source: Sources<Module>,
         optimizer: Optimizer<MidIrCompilationUnit>,
         outputDirectory: File

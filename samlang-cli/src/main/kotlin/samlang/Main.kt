@@ -59,7 +59,7 @@ private class CompileCommand : CliktCommand(name = "compile") {
             ),
             outputDirectory = Paths.get(outputDirectory.toString(), "x86").toFile()
         )
-        val noLinkError = SourceCompiler.compileToX86Assembly(
+        val noLinkError = SourceCompiler.compileToX86Executable(
             source = checkedSources,
             optimizer = IrCompilationUnitOptimizer(
                 statementOptimizer = MidIrStatementOptimizer.allEnabled,
