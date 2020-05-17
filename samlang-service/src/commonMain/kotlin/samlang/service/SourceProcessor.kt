@@ -36,7 +36,7 @@ fun lowerToAssemblyString(
     source: Sources<Module>,
     entryModuleReference: ModuleReference,
     osTarget: OsTarget,
-    optimizer: Optimizer<MidIrCompilationUnit> = IrCompilationUnitOptimizer.allEnabled
+    optimizer: Optimizer<MidIrCompilationUnit>
 ): String {
     val highIrSources = compileSources(sources = source)
     val unoptimizedCompilationUnit = MidIrGenerator.generate(
@@ -47,3 +47,10 @@ fun lowerToAssemblyString(
     val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
     return AssemblyPrinter(includeComments = false, osTarget = osTarget).printProgram(program = assemblyProgram)
 }
+
+@ExperimentalStdlibApi
+fun lowerToOptimizedAssemblyString(
+    source: Sources<Module>,
+    entryModuleReference: ModuleReference,
+    osTarget: OsTarget
+): String = lowerToAssemblyString(source, entryModuleReference, osTarget, IrCompilationUnitOptimizer.allEnabled)

@@ -23,16 +23,10 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-common"))
                 implementation(project(":samlang-ast"))
-                implementation(project(":samlang-utils"))
-                implementation(project(":samlang-checker"))
                 implementation(project(":samlang-errors"))
-                implementation(project(":samlang-parser"))
-                implementation(project(":samlang-analysis"))
-                implementation(project(":samlang-optimization"))
-                implementation(project(":samlang-compiler-hir"))
-                implementation(project(":samlang-compiler-mir"))
-                implementation(project(":samlang-compiler-asm"))
+                implementation(project(":samlang-interpreter"))
                 implementation(project(":samlang-printer"))
+                implementation(project(":samlang-service"))
             }
         }
         val commonTest by getting {

@@ -9,6 +9,8 @@ import samlang.ast.lang.Module
 class ModuleInterpreter {
     private val expressionInterpreter: ExpressionInterpreter = ExpressionInterpreter()
 
+    val printed: String get() = expressionInterpreter.printed
+
     /**
      * Run the [module] under some interpretation [context] (default to empty)
      * to get all printed strings or a [PanicException].
