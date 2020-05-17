@@ -39,4 +39,11 @@ class IrCompilationUnitOptimizer(
         }
         return compilationUnit.copy(functions = newFunctions)
     }
+
+    companion object {
+        val allEnabled: IrCompilationUnitOptimizer = IrCompilationUnitOptimizer(
+            statementOptimizer = MidIrStatementOptimizer.allEnabled,
+            doesPerformInlining = true
+        )
+    }
 }

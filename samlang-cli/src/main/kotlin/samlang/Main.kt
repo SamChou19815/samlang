@@ -11,8 +11,6 @@ import kotlin.system.exitProcess
 import org.eclipse.lsp4j.launch.LSPLauncher
 import samlang.ast.common.ModuleReference
 import samlang.lsp.LanguageServer
-import samlang.optimization.IrCompilationUnitOptimizer
-import samlang.optimization.MidIrStatementOptimizer
 import samlang.service.checkSources
 
 @ExperimentalStdlibApi
@@ -48,23 +46,13 @@ private class CompileCommand : CliktCommand(name = "compile") {
             compileTimeErrors.forEach { echo(message = it.errorMessage) }
             return
         }
+        val assemblyOutputDirectory = Paths.get(outputDirectory.toString(), "x86").toFile()
         compileToX86Assembly(
             source = checkedSources,
             entryModuleReference = ModuleReference.ROOT, // TODO
-            optimizer = IrCompilationUnitOptimizer(
-                statementOptimizer = MidIrStatementOptimizer.allEnabled,
-                doesPerformInlining = true
-            ),
-            outputDirectory = Paths.get(outputDirectory.toString(), "x86").toFile()
+            outputDirectory = assemblyOutputDirectory
         )
-        val noLinkError = compileToX86Executable(
-            source = checkedSources,
-            optimizer = IrCompilationUnitOptimizer(
-                statementOptimizer = MidIrStatementOptimizer.allEnabled,
-                doesPerformInlining = true
-            ),
-            outputDirectory = Paths.get(outputDirectory.toString(), "x86").toFile()
-        )
+        val noLinkError = compileToX86Executable(source = checkedSources, outputDirectory = assemblyOutputDirectory)
         if (!noLinkError) {
             echo(message = "Compiled output has link errors.", err = true)
             exitProcess(status = 1)

@@ -10,9 +10,11 @@ import samlang.ast.mir.MidIrCompilationUnit
 import samlang.compiler.asm.AssemblyGenerator
 import samlang.compiler.hir.compileSources
 import samlang.compiler.mir.MidIrGenerator
+import samlang.optimization.IrCompilationUnitOptimizer
 import samlang.optimization.Optimizer
 import samlang.printer.AssemblyPrinter
 import samlang.printer.OsTarget
+import samlang.service.lowerToAssemblyString
 
 private val osTarget: OsTarget = OsTarget.getOsFromString(osNameString = System.getProperty("os.name"))
 
@@ -39,18 +41,15 @@ fun collectSources(configuration: Configuration): List<Pair<ModuleReference, Str
 fun compileToX86Assembly(
     source: Sources<Module>,
     entryModuleReference: ModuleReference,
-    optimizer: Optimizer<MidIrCompilationUnit>,
+    optimizer: Optimizer<MidIrCompilationUnit> = IrCompilationUnitOptimizer.allEnabled,
     outputDirectory: File
 ) {
-    val highIrSources = compileSources(sources = source)
-    val unoptimizedCompilationUnit = MidIrGenerator.generate(
-        sources = highIrSources,
-        entryModuleReference = entryModuleReference
+    val printedAssemblyProgram = lowerToAssemblyString(
+        source = source,
+        entryModuleReference = entryModuleReference,
+        osTarget = osTarget,
+        optimizer = optimizer
     )
-    val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
-    val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
-    val printedAssemblyProgram = AssemblyPrinter(includeComments = false, osTarget = osTarget)
-        .printProgram(program = assemblyProgram)
     outputDirectory.mkdirs()
     val outputFile = Paths.get(outputDirectory.toString(), "program.s").toFile()
     outputFile.writeText(text = printedAssemblyProgram)
@@ -59,7 +58,7 @@ fun compileToX86Assembly(
 @ExperimentalStdlibApi
 fun compileToX86Executable(
     source: Sources<Module>,
-    optimizer: Optimizer<MidIrCompilationUnit>,
+    optimizer: Optimizer<MidIrCompilationUnit> = IrCompilationUnitOptimizer.allEnabled,
     outputDirectory: File
 ): Boolean {
     val highIrSources = compileSources(sources = source)
