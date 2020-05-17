@@ -26,14 +26,9 @@ jobs:
         run: ./build/release/samlang
       - name: Compile samlang Programs
         run: ./scripts/compile-repository.js
-  test-demo-distribution:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-      - name: Set up Node
-        uses: actions/setup-node@v1
       - name: Validate TS distribution
         run: |
+          ./scripts/copy-demo-distribution-ts
           cd samlang-demo-distribution-ts
           yarn
           yarn test
