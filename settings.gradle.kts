@@ -1,16 +1,19 @@
-include("samlang-ast")
-include("samlang-checker")
-include("samlang-errors")
-include("samlang-utils")
-include("samlang-parser-generated-java")
-include("samlang-parser")
-include("samlang-interpreter")
-include("samlang-analysis")
-include("samlang-optimization")
-include("samlang-compiler-hir")
-include("samlang-compiler-mir")
-include("samlang-compiler-asm")
-include("samlang-printer")
-include("samlang-service")
-include("samlang-demo")
-include("samlang-cli")
+rootProject.name = "samlang"
+include(
+    "samlang-ast",
+    "samlang-checker",
+    "samlang-errors",
+    "samlang-utils",
+    "samlang-parser-generated-java",
+    "samlang-parser",
+    "samlang-interpreter",
+    "samlang-analysis",
+    "samlang-optimization",
+    "samlang-compiler-hir",
+    "samlang-compiler-mir",
+    "samlang-compiler-asm",
+    "samlang-printer",
+    "samlang-service",
+    "samlang-demo",
+    "samlang-cli"
+)

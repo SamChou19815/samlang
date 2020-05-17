@@ -17,18 +17,6 @@ kotlin {
             }
         }
         useCommonJs()
-        compilations {
-            getByName("main") {
-                packageJson {
-                    name = moduleName
-                }
-            }
-            getByName("test") {
-                packageJson {
-                    name = "$moduleName-test"
-                }
-            }
-        }
     }
     sourceSets {
         val commonMain by getting {
