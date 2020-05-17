@@ -9,10 +9,7 @@ kotlin {
         }
     }
     js {
-        browser {
-            webpackTask {
-                this.output.libraryTarget = "commonjs"
-            }
+        nodejs {
             testTask {
                 useMocha {
                     timeout = "30000"
