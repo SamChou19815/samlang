@@ -22,7 +22,7 @@ class StatementBuilder extends AbstractParseTreeVisitor<TsValStatement>
     super();
   }
 
-  defaultResult = (): TsValStatement => throwParserError();
+  defaultResult = (): TsValStatement => null!;
 
   visitValStatement = (ctx: ValStatementContext): TsValStatement => {
     const patternContext = ctx.pattern() ?? throwParserError('Missing pattern in val statement.');
@@ -46,7 +46,7 @@ export default class StatementBlockBuilder extends AbstractParseTreeVisitor<TsSt
     this.statementBuilder = new StatementBuilder(expressionBuilder);
   }
 
-  defaultResult = (): TsStatementBlock => throwParserError();
+  defaultResult = (): TsStatementBlock => null!;
 
   visitStatementBlock = (ctx: StatementBlockContext): TsStatementBlock => {
     const expressionContext = ctx.expression();

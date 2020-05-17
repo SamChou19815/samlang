@@ -9,7 +9,7 @@ import { TsType, TsPrimitiveType, TsIdentifierType, TsTupleType, TsFunctionType 
 import { throwParserError } from './parser-util';
 
 class TypeBuilder extends AbstractParseTreeVisitor<TsType> implements PLVisitor<TsType> {
-  defaultResult = (): TsType => throwParserError();
+  defaultResult = (): TsType => null!;
 
   visitUnitType = (): TsType => new TsPrimitiveType('unit');
   visitBoolType = (): TsType => new TsPrimitiveType('bool');

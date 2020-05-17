@@ -24,7 +24,7 @@ import typeBuilder from './type-builder';
 
 class ModuleNameBuilder extends AbstractParseTreeVisitor<[boolean, string, TsRange]>
   implements PLVisitor<[boolean, string, TsRange]> {
-  defaultResult = (): [boolean, string, TsRange] => throwParserError();
+  defaultResult = (): [boolean, string, TsRange] => null!;
 
   visitClassHeader = (ctx: ClassHeaderContext): [boolean, string, TsRange] => {
     const isPublic = ctx.PRIVATE() == null;
@@ -50,7 +50,7 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TsTypeDefinition>
     super();
   }
 
-  defaultResult = (): TsTypeDefinition => throwParserError();
+  defaultResult = (): TsTypeDefinition => null!;
 
   visitObjType(ctx: ObjTypeContext): TsTypeDefinition {
     const rawDeclarations = ctx.objectTypeFieldDeclaration();
@@ -90,7 +90,7 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TsTypeDefinition>
 
 class ModuleTypeDefinitionBuilder extends AbstractParseTreeVisitor<TsTypeDefinition>
   implements PLVisitor<TsTypeDefinition> {
-  defaultResult = (): TsTypeDefinition => throwParserError();
+  defaultResult = (): TsTypeDefinition => null!;
 
   visitClassHeader = (ctx: ClassHeaderContext): TsTypeDefinition => {
     const rawTypeParams = ctx.typeParametersDeclaration();
@@ -116,7 +116,7 @@ const moduleTypeDefinitionBuilder = new ModuleTypeDefinitionBuilder();
 
 class ClassBuilder extends AbstractParseTreeVisitor<TsClassDefinition>
   implements PLVisitor<TsClassDefinition> {
-  defaultResult = (): TsClassDefinition => throwParserError();
+  defaultResult = (): TsClassDefinition => null!;
 
   private buildExpression = (expressionContext: ExpressionContext): TsExpression =>
     expressionContext.accept(expressionBuilder);

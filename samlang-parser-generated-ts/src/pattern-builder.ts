@@ -20,7 +20,7 @@ import { tokenRange, contextRange, throwParserError } from './parser-util';
 
 class FieldNameBuilder extends AbstractParseTreeVisitor<TsObjectDestructedName>
   implements PLVisitor<TsObjectDestructedName> {
-  defaultResult = (): TsObjectDestructedName => throwParserError();
+  defaultResult = (): TsObjectDestructedName => null!;
 
   visitRawVar = (ctx: RawVarContext): TsObjectDestructedName => {
     const symbol = ctx.LowerId().symbol;
@@ -45,7 +45,7 @@ class FieldNameBuilder extends AbstractParseTreeVisitor<TsObjectDestructedName>
 const fieldNameBuilder = new FieldNameBuilder();
 
 class PatternBuilder extends AbstractParseTreeVisitor<TsPattern> implements PLVisitor<TsPattern> {
-  defaultResult = (): TsPattern => throwParserError();
+  defaultResult = (): TsPattern => null!;
 
   visitTuplePattern = (ctx: TuplePatternContext): TsPattern =>
     new TsTuplePattern(

@@ -70,7 +70,7 @@ class ObjectFieldDeclarationBuilder extends AbstractParseTreeVisitor<TsFieldCons
     super();
   }
 
-  defaultResult = (): TsFieldConstructor => throwParserError();
+  defaultResult = (): TsFieldConstructor => null!;
 
   visitNormalObjFieldDeclaration = (ctx: NormalObjFieldDeclarationContext): TsFieldConstructor => {
     const nameNode = ctx.LowerId().symbol;
@@ -104,7 +104,7 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<TsExpression>
     this.toExpression
   );
 
-  defaultResult = (): TsExpression => throwParserError();
+  defaultResult = (): TsExpression => null!;
 
   visitNestedExpr = (ctx: NestedExprContext): TsExpression => ctx.expression().accept(this);
 

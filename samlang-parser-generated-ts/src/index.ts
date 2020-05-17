@@ -1,4 +1,6 @@
-import { ANTLRInputStream, CommonTokenStream } from 'antlr4ts';
+import { ANTLRInputStream, CommonTokenStream, ANTLRErrorListener } from 'antlr4ts';
+import { Recognizer } from 'antlr4ts/Recognizer';
+import { RecognitionException } from 'antlr4ts/RecognitionException';
 import { PLVisitor } from './generated/PLVisitor';
 import { PLLexer } from './generated/PLLexer';
 import { PLParser } from './generated/PLParser';
@@ -10,7 +12,7 @@ import classBuilder from './class-builder';
 import expressionBuilder from './expression-builder';
 
 class Visitor extends AbstractParseTreeVisitor<TsModule> implements PLVisitor<TsModule> {
-  defaultResult = (): TsModule => throwParserError();
+  defaultResult = (): TsModule => null!;
 
   private buildModuleMembersImport = (ctx: ImportModuleMembersContext): TsModuleMembersImport => ({
     range: contextRange(ctx),
@@ -38,12 +40,41 @@ class Visitor extends AbstractParseTreeVisitor<TsModule> implements PLVisitor<Ts
 
 const visitor = new Visitor();
 
-export const buildTsModuleFromText = (text: string): TsModule =>
-  new PLParser(new CommonTokenStream(new PLLexer(new ANTLRInputStream(text))))
-    .module()
-    .accept(visitor);
+class ErrorListener implements ANTLRErrorListener<any> {
+  public errors: string[] = [];
 
-export const buildTsExpressionFromText = (text: string): TsExpression =>
-  new PLParser(new CommonTokenStream(new PLLexer(new ANTLRInputStream(text))))
-    .expression()
-    .accept(expressionBuilder);
+  syntaxError(
+    recognizer: Recognizer<any, any>,
+    offendingSymbol: any | undefined,
+    line: number,
+    charPositionInLine: number,
+    msg: string,
+    e: RecognitionException | undefined
+  ) {
+    this.errors.push(`${line - 1}:${charPositionInLine}###${msg}`);
+  }
+}
+
+export const buildTsModuleFromText = (text: string): TsModule => {
+  const parser = new PLParser(new CommonTokenStream(new PLLexer(new ANTLRInputStream(text))));
+  const errorListener = new ErrorListener();
+  parser.removeErrorListeners();
+  parser.addErrorListener(errorListener);
+  const parsed = parser.module().accept(visitor);
+  if (errorListener.errors.length > 0) {
+    throw new Error(errorListener.errors.join('$$$'));
+  }
+  return parsed;
+};
+
+export const buildTsExpressionFromText = (text: string): TsExpression => {
+  const parser = new PLParser(new CommonTokenStream(new PLLexer(new ANTLRInputStream(text))));
+  const errorListener = new ErrorListener();
+  parser.removeErrorListeners();
+  parser.addErrorListener(errorListener);
+  const parsed = parser.expression().accept(expressionBuilder);
+  if (errorListener.errors.length > 0) {
+    throw new Error(errorListener.errors.join('$$$'));
+  }
+  return parsed;
+};
