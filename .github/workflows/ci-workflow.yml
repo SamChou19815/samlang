@@ -30,5 +30,4 @@ jobs:
         run: |
           cd samlang-demo-distribution-ts
           yarn
-          yarn generate
           yarn test
