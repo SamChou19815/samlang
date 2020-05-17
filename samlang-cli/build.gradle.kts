@@ -18,6 +18,7 @@ dependencies {
     implementation(project(":samlang-compiler-mir"))
     implementation(project(":samlang-compiler-asm"))
     implementation(project(":samlang-printer"))
+    implementation(project(":samlang-service"))
     implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3")
     implementation(dependencyNotation = "com.google.code.gson:gson:2.8.6")
     implementation(dependencyNotation = "com.sparkjava:spark-core:2.9.1")
