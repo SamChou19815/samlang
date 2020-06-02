@@ -59,6 +59,7 @@ LET : 'let';
 VAR : 'var';
 TYPE : 'type';
 INTERFACE : 'interface';
+FUNCTOR : 'functor';
 EXTENDS : 'extends';
 IMPLEMENTS : 'implements';
 EXPORT : 'export';
