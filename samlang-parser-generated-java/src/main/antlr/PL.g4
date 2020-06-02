@@ -7,7 +7,12 @@ module : importModuleMembers* clazz* EOF;
 importModuleMembers : IMPORT LBRACE UpperId (COMMA UpperId)* RBRACE FROM moduleReference;
 moduleReference : UpperId (DOT UpperId)*;
 
+moduleMember
+    : clazz # ClassAsModuleMember
+    | interfaze # InterfaceAsModuleMember
+    ;
 clazz : classHeaderDeclaration LBRACE classMemberDefinition* RBRACE;
+interfaze : PRIVATE? INTERFACE UpperId typeParametersDeclaration? LBRACE classMemberDeclaration* RBRACE;
 
 // Module Level Declarations
 classHeaderDeclaration
@@ -18,6 +23,11 @@ classMemberDefinition
     : PRIVATE? (FUNCTION | METHOD) typeParametersDeclaration? LowerId
         LPAREN (annotatedVariable (COMMA annotatedVariable)* COMMA?)? RPAREN (COLON typeExpr)?
       ASSIGN expression
+    ;
+classMemberDeclaration
+    : PRIVATE? (FUNCTION | METHOD) typeParametersDeclaration? LowerId LPAREN
+        (annotatedVariable (COMMA annotatedVariable)* COMMA?)?
+      RPAREN (COLON typeExpr)?
     ;
 typeParametersDeclaration : LT UpperId (COMMA UpperId)* GT;
 
