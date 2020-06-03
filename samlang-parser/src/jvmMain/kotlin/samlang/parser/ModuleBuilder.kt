@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
+import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Module
 import samlang.errors.CompileTimeError
@@ -30,8 +31,8 @@ actual fun buildExpressionFromText(
 ): Pair<Expression?, List<CompileTimeError>> = ExpressionBuilder.build(source, moduleReference)
 
 private class Visitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<Module?>() {
-
-    private val classBuilder: ClassBuilder = ClassBuilder(syntaxErrorListener = syntaxErrorListener)
+    private val moduleMemberVisitor: ModuleMemberVisitor =
+        ModuleMemberVisitor(syntaxErrorListener = syntaxErrorListener)
 
     private fun buildModuleMembersImport(ctx: PLParser.ImportModuleMembersContext): ModuleMembersImport =
         ModuleMembersImport(
@@ -47,6 +48,13 @@ private class Visitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<
     override fun visitModule(ctx: PLParser.ModuleContext): Module =
         Module(
             imports = ctx.importModuleMembers().map(transform = ::buildModuleMembersImport),
-            classDefinitions = ctx.clazz().mapNotNull { it.accept(classBuilder) }
+            classDefinitions = ctx.moduleMember().mapNotNull { it.accept(moduleMemberVisitor) }
         )
+}
+
+private class ModuleMemberVisitor(syntaxErrorListener: SyntaxErrorListener) : PLBaseVisitor<ClassDefinition?>() {
+    private val classBuilder: ClassBuilder = ClassBuilder(syntaxErrorListener = syntaxErrorListener)
+
+    override fun visitClassAsModuleMember(ctx: PLParser.ClassAsModuleMemberContext): ClassDefinition? =
+        ctx.clazz()?.accept(classBuilder)
 }
