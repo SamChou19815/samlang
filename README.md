@@ -1,4 +1,4 @@
-# SAMLANG
+# samlang
 
 [![Build Status](https://github.com/SamChou19815/samlang/workflows/CI/badge.svg)](https://github.com/SamChou19815/samlang/actions)
 ![GitHub](https://img.shields.io/github/license/SamChou19815/samlang.svg)
@@ -6,7 +6,7 @@
 
 Sam's Programming Language
 
-<img alt="SAMLANG" src="https://raw.githubusercontent.com/SamChou19815/design/master/samlang.png" width=300 height=300/>
+<img alt="samlang" src="https://raw.githubusercontent.com/SamChou19815/design/master/samlang.png" width=300 height=300/>
 
 Read the docs at [the official documentation site](https://samlang.developersam.com).
 
