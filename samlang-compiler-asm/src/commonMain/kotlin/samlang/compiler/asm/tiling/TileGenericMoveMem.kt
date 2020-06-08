@@ -8,7 +8,7 @@ import samlang.ast.mir.MidIrStatement.MoveMem
 
 internal object TileGenericMoveMem : IrStatementTile<MoveMem> {
     override fun getTilingResult(node: MoveMem, dpTiling: DpTiling): StatementTilingResult {
-        val irMem = MEM(node.memLocation)
+        val irMem = MEM(expression = node.memLocation, immutable = false)
         val (memLocInstructions, memLoc) = MemTilingHelper.tileMem(irMem, dpTiling)
         val instructions = mutableListOf<AssemblyInstruction>()
         // first add mem loc instructions

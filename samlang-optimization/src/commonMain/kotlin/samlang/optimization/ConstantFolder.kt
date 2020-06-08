@@ -2,7 +2,6 @@ package samlang.optimization
 
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.CONST
-import samlang.ast.mir.MidIrExpression.Companion.MEM
 import samlang.ast.mir.MidIrExpression.Companion.OP
 import samlang.ast.mir.MidIrExpression.Constant
 import samlang.ast.mir.MidIrExpression.Mem
@@ -140,6 +139,7 @@ internal object ConstantFolder {
             return OP(op = op, e1 = e1, e2 = e2)
         }
 
-        override fun visit(node: Mem, context: Unit): MidIrExpression = MEM(fold(node.expression))
+        override fun visit(node: Mem, context: Unit): MidIrExpression =
+            node.copy(expression = fold(node.expression))
     }
 }

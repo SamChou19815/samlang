@@ -22,6 +22,6 @@ internal object MidIrOpReorderingUtil {
             )
 
         override fun visit(node: MidIrExpression.Mem, context: Unit): MidIrExpression =
-            MidIrExpression.Mem(expression = node.expression.accept(visitor = this, context = Unit))
+            node.copy(expression = node.expression.accept(visitor = this, context = Unit))
     }
 }

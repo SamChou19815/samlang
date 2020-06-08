@@ -124,7 +124,7 @@ class LocalValueNumberingAnalysis(statements: List<MidIrStatement>) {
             val newInfoWithoutMem = newInfo.withAllMemRemoved()
             return plusFromAllSubExpressions(
                 info = newInfoWithoutMem,
-                expr = Mem(expression = node.memLocation)
+                expr = Mem(expression = node.memLocation, immutable = false)
             )
         }
 

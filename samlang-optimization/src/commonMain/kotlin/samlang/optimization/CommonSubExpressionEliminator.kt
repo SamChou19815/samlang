@@ -102,7 +102,7 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
 
         override fun visit(node: MoveMem, context: Unit) {
             fullSearchAndRecord(expr = node.source)
-            fullSearchAndRecord(expr = Mem(node.memLocation))
+            fullSearchAndRecord(expr = Mem(node.memLocation, immutable = false))
         }
 
         override fun visit(node: CallFunction, context: Unit): Unit = node.arguments.forEach { fullSearchAndRecord(it) }
@@ -217,7 +217,7 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
             )
 
         override fun visit(node: Mem, context: Map<MidIrExpression, Temporary>): MidIrExpression =
-            context[node] ?: Mem(node.expression.accept(visitor = this, context = context))
+            context[node] ?: node.copy(expression = node.expression.accept(visitor = this, context = context))
     }
 
     companion object {

@@ -120,7 +120,8 @@ internal class CopyPropagationOptimizer private constructor(
             override fun visit(node: Op, context: Unit): MidIrExpression =
                 Op(node.operator, rewrite(node.e1), rewrite(node.e2))
 
-            override fun visit(node: Mem, context: Unit): MidIrExpression = Mem(rewrite(node.expression))
+            override fun visit(node: Mem, context: Unit): MidIrExpression =
+                node.copy(expression = rewrite(node.expression))
         }
     }
 

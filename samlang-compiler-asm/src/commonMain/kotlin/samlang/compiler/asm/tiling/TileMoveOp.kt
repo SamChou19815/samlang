@@ -111,7 +111,7 @@ internal object TileMoveOp {
                 else -> // not commutative, die
                     return null
             }
-            val destMem = MidIrExpression.Mem(node.memLocation)
+            val destMem = MidIrExpression.Mem(expression = node.memLocation, immutable = false)
             var argResult: ConstOrRegTilingResult? = null // set if it can be tiled
             if (e1 == destMem) {
                 argResult = dpTiling.tileConstOrReg(e2)
@@ -138,7 +138,7 @@ internal object TileMoveOp {
             if (operator !== MidIrOperator.SUB) {
                 return null
             }
-            val destMem = MidIrExpression.Mem(node.memLocation)
+            val destMem = MidIrExpression.Mem(expression = node.memLocation, immutable = false)
             if (e1 != destMem) {
                 return null
             }

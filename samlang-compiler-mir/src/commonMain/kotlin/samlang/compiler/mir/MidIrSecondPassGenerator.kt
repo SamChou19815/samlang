@@ -102,7 +102,7 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
             val newSequence = loweringResultOfDest.statements.toMutableList()
             newSequence += MOVE(destTemp, loweringResultOfDest.expression)
             newSequence += loweringResultOfSrc.statements
-            newSequence += MOVE(MEM(destTemp), loweringResultOfSrc.expression)
+            newSequence += MOVE(MEM(expression = destTemp, immutable = false), loweringResultOfSrc.expression)
             return newSequence
         }
 
@@ -174,7 +174,7 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
 
         override fun visit(node: Mem, context: Unit): ExprSequence {
             val (sequence, expr) = lower(node.expression)
-            return ESEQ(sequence, MEM(expr))
+            return ESEQ(sequence, MEM(expression = expr, immutable = false))
         }
 
         override fun visit(node: Call, context: Unit): ExprSequence {

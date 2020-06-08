@@ -1,7 +1,6 @@
 package samlang.optimization
 
 import samlang.ast.mir.MidIrExpression
-import samlang.ast.mir.MidIrExpression.Companion.MEM
 import samlang.ast.mir.MidIrExpression.Companion.ONE
 import samlang.ast.mir.MidIrExpression.Companion.OP
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
@@ -99,6 +98,7 @@ internal object AlgebraicOptimizer {
             }
         }
 
-        override fun visit(node: Mem, context: Unit): MidIrExpression = MEM(optimize(expression = node.expression))
+        override fun visit(node: Mem, context: Unit): MidIrExpression =
+            node.copy(expression = optimize(expression = node.expression))
     }
 }

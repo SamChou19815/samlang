@@ -76,7 +76,10 @@ internal object TileMul3Args {
             val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "TileMul3ArgsForMove: $node")
             instructions += result.instructions
-            val (instructions1, mem) = MemTilingHelper.tileMem(MidIrExpression.Mem(node.memLocation), dpTiling)
+            val (instructions1, mem) = MemTilingHelper.tileMem(
+                mem = MidIrExpression.Mem(expression = node.memLocation, immutable = false),
+                dpTiling = dpTiling
+            )
             instructions += instructions1
             val tempRegForMulResult = dpTiling.context.nextReg()
             instructions += IMUL(tempRegForMulResult, result.op1, result.op2)

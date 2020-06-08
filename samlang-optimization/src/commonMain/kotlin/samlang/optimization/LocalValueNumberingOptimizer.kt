@@ -73,6 +73,7 @@ object LocalValueNumberingOptimizer {
             return Op(node.operator, rewrite(node.e1, context), rewrite(node.e2, context))
         }
 
-        override fun visit(node: Mem, context: NumberingInfo): Mem = Mem(rewrite(node.expression, context))
+        override fun visit(node: Mem, context: NumberingInfo): Mem =
+            node.copy(expression = rewrite(node.expression, context))
     }
 }

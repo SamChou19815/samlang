@@ -239,7 +239,8 @@ object InlineOptimizer {
             override fun visit(node: Op, context: Unit): MidIrExpression =
                 Op(node.operator, transform(node.e1), transform(node.e2))
 
-            override fun visit(node: Mem, context: Unit): MidIrExpression = Mem(transform(node.expression))
+            override fun visit(node: Mem, context: Unit): MidIrExpression =
+                node.copy(expression = transform(node.expression))
         }
     }
 }

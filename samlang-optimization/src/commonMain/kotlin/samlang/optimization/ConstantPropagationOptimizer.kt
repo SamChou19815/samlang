@@ -107,7 +107,7 @@ internal class ConstantPropagationOptimizer private constructor(
             )
 
             override fun visit(node: Mem, context: Int): MidIrExpression =
-                Mem(expression = rewrite(node.expression, context))
+                node.copy(expression = rewrite(node.expression, context))
         }
     }
 

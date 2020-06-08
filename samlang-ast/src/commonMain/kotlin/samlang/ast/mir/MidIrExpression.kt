@@ -98,7 +98,7 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
     }
 
     @Canonical
-    data class Mem(val expression: MidIrExpression) : MidIrExpression(classOrder = 3) {
+    data class Mem(val expression: MidIrExpression, val immutable: Boolean) : MidIrExpression(classOrder = 3) {
         override fun toString(): String = "mem[$expression]"
 
         override fun <C, T> accept(visitor: MidIrExpressionVisitor<C, T>, context: C): T =
@@ -209,9 +209,10 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
         fun NE(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(MidIrOperator.NE, e1, e2)
 
-        fun MEM(expression: MidIrExpression): Mem = Mem(expression = expression)
+        fun MEM(expression: MidIrExpression, immutable: Boolean): Mem =
+            Mem(expression = expression, immutable = immutable)
 
-        fun NAMED_MEM(name: String): Mem = Mem(expression = Name(name = name))
+        fun IMMUTABLE_MEM(expression: MidIrExpression): Mem = Mem(expression = expression, immutable = true)
 
         fun ESEQ(statement: MidIrStatement.Sequence, expression: MidIrExpression): ExprSequence =
             ExprSequence(sequence = statement, expression = expression)
