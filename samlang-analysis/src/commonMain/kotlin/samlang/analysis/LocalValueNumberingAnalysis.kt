@@ -4,6 +4,7 @@ import kotlinx.collections.immutable.PersistentMap
 import kotlinx.collections.immutable.persistentMapOf
 import samlang.ast.mir.ContainsTempDetector
 import samlang.ast.mir.MidIrExpression
+import samlang.ast.mir.MidIrExpression.Companion.IMMUTABLE_MEM
 import samlang.ast.mir.MidIrExpression.Constant
 import samlang.ast.mir.MidIrExpression.Mem
 import samlang.ast.mir.MidIrExpression.Name
@@ -124,7 +125,7 @@ class LocalValueNumberingAnalysis(statements: List<MidIrStatement>) {
             val newInfoWithoutMem = newInfo.withAllMemRemoved()
             return plusFromAllSubExpressions(
                 info = newInfoWithoutMem,
-                expr = Mem(expression = node.memLocation, immutable = false)
+                expr = IMMUTABLE_MEM(expression = node.memLocation)
             )
         }
 

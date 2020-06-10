@@ -4,6 +4,7 @@ import samlang.analysis.AvailableExpressionAnalysis
 import samlang.analysis.AvailableExpressionAnalysis.ExprInfo
 import samlang.ast.mir.ContainsTempDetector
 import samlang.ast.mir.MidIrExpression
+import samlang.ast.mir.MidIrExpression.Companion.IMMUTABLE_MEM
 import samlang.ast.mir.MidIrExpression.Constant
 import samlang.ast.mir.MidIrExpression.Mem
 import samlang.ast.mir.MidIrExpression.Name
@@ -102,7 +103,7 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
 
         override fun visit(node: MoveMem, context: Unit) {
             fullSearchAndRecord(expr = node.source)
-            fullSearchAndRecord(expr = Mem(node.memLocation, immutable = false))
+            fullSearchAndRecord(expr = IMMUTABLE_MEM(expression = node.memLocation))
         }
 
         override fun visit(node: CallFunction, context: Unit): Unit = node.arguments.forEach { fullSearchAndRecord(it) }

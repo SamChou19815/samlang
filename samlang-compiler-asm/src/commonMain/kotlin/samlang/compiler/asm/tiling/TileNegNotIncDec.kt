@@ -71,7 +71,7 @@ internal object TileNegNotIncDec {
     object IncForMoveMem : IrStatementTile<MoveMem> {
         override fun getTilingResult(node: MoveMem, dpTiling: DpTiling): StatementTilingResult? {
             val source = node.source as? MidIrExpression.Op ?: return null
-            val destIrMem = MidIrExpression.Mem(expression = node.memLocation, immutable = false)
+            val destIrMem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)
             if (opIsForInc(source, destIrMem)) {
                 val (instructions1, memToChange) = MemTilingHelper.tileMem(destIrMem, dpTiling)
                 val instructions = mutableListOf<AssemblyInstruction>()
@@ -104,7 +104,7 @@ internal object TileNegNotIncDec {
     object DecForMoveMem : IrStatementTile<MoveMem> {
         override fun getTilingResult(node: MoveMem, dpTiling: DpTiling): StatementTilingResult? {
             val source = node.source as? MidIrExpression.Op ?: return null
-            val destIrMem = MidIrExpression.Mem(expression = node.memLocation, immutable = false)
+            val destIrMem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)
             if (opIsForDec(source, destIrMem)) {
                 val (instructions1, mem) = MemTilingHelper.tileMem(destIrMem, dpTiling)
                 val instructions = mutableListOf<AssemblyInstruction>()
@@ -135,7 +135,7 @@ internal object TileNegNotIncDec {
     object NegForMoveMem : IrStatementTile<MoveMem> {
         override fun getTilingResult(node: MoveMem, dpTiling: DpTiling): StatementTilingResult? {
             val source = node.source as? MidIrExpression.Op ?: return null
-            val destIrMem = MidIrExpression.Mem(expression = node.memLocation, immutable = false)
+            val destIrMem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)
             if (opIsForNeg(source, destIrMem)) {
                 val (instructions1, mem) = MemTilingHelper.tileMem(destIrMem, dpTiling)
                 val instructions = mutableListOf<AssemblyInstruction>()

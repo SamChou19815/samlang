@@ -77,7 +77,7 @@ internal object TileMul3Args {
             instructions += COMMENT(comment = "TileMul3ArgsForMove: $node")
             instructions += result.instructions
             val (instructions1, mem) = MemTilingHelper.tileMem(
-                mem = MidIrExpression.Mem(expression = node.memLocation, immutable = false),
+                mem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation),
                 dpTiling = dpTiling
             )
             instructions += instructions1

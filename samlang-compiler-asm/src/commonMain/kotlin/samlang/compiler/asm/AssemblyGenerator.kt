@@ -124,7 +124,7 @@ class AssemblyGenerator private constructor(
                         e1 = Temporary(RBP.id),
                         e2 = MidIrExpression.Constant((8 * offsetUnit).toLong())
                     )
-                    MidIrExpression.Mem(expression = memExpr, immutable = false)
+                    MidIrExpression.IMMUTABLE_MEM(expression = memExpr)
                 }
             }
 
