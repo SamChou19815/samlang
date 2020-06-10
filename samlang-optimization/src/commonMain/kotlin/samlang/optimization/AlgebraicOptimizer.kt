@@ -34,29 +34,29 @@ internal object AlgebraicOptimizer {
 
     private object StatementOptimizer : MidIrLoweredStatementVisitor<Unit, MidIrStatement> {
         override fun visit(node: MoveTemp, context: Unit): MidIrStatement =
-            MoveTemp(node.tempId, optimize(node.source))
+            node.copy(node.tempId, optimize(node.source))
 
         override fun visit(node: MoveMem, context: Unit): MidIrStatement =
-            MoveMem(optimize(node.memLocation), optimize(node.source))
+            node.copy(optimize(node.memLocation), optimize(node.source))
 
         override fun visit(node: CallFunction, context: Unit): MidIrStatement =
-            CallFunction(
+            node.copy(
                 functionExpr = optimize(expression = node.functionExpr),
                 arguments = node.arguments.map { optimize(expression = it) },
                 returnCollector = node.returnCollector
             )
 
         override fun visit(node: Sequence, context: Unit): MidIrStatement =
-            Sequence(statements = node.statements.map { optimize(statement = it) })
+            node.copy(statements = node.statements.map { optimize(statement = it) })
 
         override fun visit(node: Jump, context: Unit): MidIrStatement = node
 
         override fun visit(node: ConditionalJumpFallThrough, context: Unit): MidIrStatement =
-            ConditionalJumpFallThrough(condition = optimize(expression = node.condition), label1 = node.label1)
+            node.copy(condition = optimize(expression = node.condition), label1 = node.label1)
 
         override fun visit(node: Label, context: Unit): MidIrStatement = node
 
-        override fun visit(node: Return, context: Unit): MidIrStatement = Return(
+        override fun visit(node: Return, context: Unit): MidIrStatement = node.copy(
             returnedExpression = node.returnedExpression?.let { optimize(it) }
         )
     }

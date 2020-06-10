@@ -32,20 +32,20 @@ internal object ConstantFolder {
 
     private object StatementFolder : MidIrLoweredStatementVisitor<Unit, MidIrStatement?> {
         override fun visit(node: MoveTemp, context: Unit): MidIrStatement =
-            MoveTemp(tempId = node.tempId, source = fold(node.source))
+            node.copy(tempId = node.tempId, source = fold(node.source))
 
         override fun visit(node: MoveMem, context: Unit): MidIrStatement =
-            MoveMem(memLocation = fold(node.memLocation), source = fold(node.source))
+            node.copy(memLocation = fold(node.memLocation), source = fold(node.source))
 
         override fun visit(node: CallFunction, context: Unit): MidIrStatement =
-            CallFunction(
+            node.copy(
                 functionExpr = fold(node.functionExpr),
                 arguments = node.arguments.map { fold(it) },
                 returnCollector = node.returnCollector
             )
 
         override fun visit(node: Sequence, context: Unit): MidIrStatement =
-            Sequence(node.statements.mapNotNull { fold(it) })
+            node.copy(node.statements.mapNotNull { fold(it) })
 
         override fun visit(node: Jump, context: Unit): MidIrStatement = node
 

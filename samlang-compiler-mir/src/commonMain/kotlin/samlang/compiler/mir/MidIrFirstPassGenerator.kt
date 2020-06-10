@@ -62,6 +62,7 @@ import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
 import samlang.ast.mir.MidIrStatement.Companion.CJUMP
 import samlang.ast.mir.MidIrStatement.Companion.EXPR
 import samlang.ast.mir.MidIrStatement.Companion.MOVE
+import samlang.ast.mir.MidIrStatement.Companion.MOVE_IMMUTABLE_MEM
 import samlang.ast.mir.MidIrStatement.Companion.SEQ
 import samlang.ast.mir.MidIrStatement.Jump
 import samlang.ast.mir.MidIrStatement.Label
@@ -312,8 +313,8 @@ internal class MidIrFirstPassGenerator(
             val closureTemporary = allocator.allocateTemp()
             val statements = listOf(
                 MOVE(closureTemporary, MALLOC(CONST(value = 16L))),
-                MOVE(destination = IMMUTABLE_MEM(expression = closureTemporary), source = NAME(name = name)),
-                MOVE(
+                MOVE_IMMUTABLE_MEM(destination = IMMUTABLE_MEM(expression = closureTemporary), source = NAME(name = name)),
+                MOVE_IMMUTABLE_MEM(
                     destination = IMMUTABLE_MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),
                     source = CONST(value = 0L)
                 )
@@ -326,7 +327,7 @@ internal class MidIrFirstPassGenerator(
             val statements = mutableListOf<MidIrStatement>()
             statements += MOVE(tupleTemporary, MALLOC(CONST(value = expression.expressionList.size * 8L)))
             expression.expressionList.forEachIndexed { index, argument ->
-                statements += MOVE(
+                statements += MOVE_IMMUTABLE_MEM(
                     destination = IMMUTABLE_MEM(expression = ADD(e1 = tupleTemporary, e2 = CONST(value = index * 8L))),
                     source = translate(expression = argument)
                 )
@@ -339,7 +340,7 @@ internal class MidIrFirstPassGenerator(
             val statements = mutableListOf<MidIrStatement>()
             statements += MOVE(objectTemporary, MALLOC(CONST(value = expression.fieldDeclaration.size * 8L)))
             expression.fieldDeclaration.forEachIndexed { index, (_, fieldExpression) ->
-                statements += MOVE(
+                statements += MOVE_IMMUTABLE_MEM(
                     destination = IMMUTABLE_MEM(expression = ADD(e1 = objectTemporary, e2 = CONST(value = index * 8L))),
                     source = translate(expression = fieldExpression)
                 )
@@ -351,11 +352,11 @@ internal class MidIrFirstPassGenerator(
             val variantTemporary = allocator.allocateTemp()
             val statements = listOf(
                 MOVE(variantTemporary, MALLOC(CONST(value = 16L))),
-                MOVE(
+                MOVE_IMMUTABLE_MEM(
                     destination = IMMUTABLE_MEM(expression = variantTemporary),
                     source = CONST(value = expression.tagOrder.toLong())
                 ),
-                MOVE(
+                MOVE_IMMUTABLE_MEM(
                     destination = IMMUTABLE_MEM(expression = ADD(e1 = variantTemporary, e2 = CONST(value = 8L))),
                     source = translate(expression = expression.data)
                 )
@@ -376,8 +377,8 @@ internal class MidIrFirstPassGenerator(
             val closureTemporary = allocator.allocateTemp()
             val statements = listOf(
                 MOVE(closureTemporary, MALLOC(CONST(value = 16L))),
-                MOVE(destination = IMMUTABLE_MEM(expression = closureTemporary), source = NAME(name = name)),
-                MOVE(
+                MOVE_IMMUTABLE_MEM(destination = IMMUTABLE_MEM(expression = closureTemporary), source = NAME(name = name)),
+                MOVE_IMMUTABLE_MEM(
                     destination = IMMUTABLE_MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),
                     source = translate(expression = expression.expression)
                 )
@@ -534,7 +535,7 @@ internal class MidIrFirstPassGenerator(
                 val contextTemp = allocator.allocateTemp()
                 statements += MOVE(contextTemp, MALLOC(sizeExpr = CONST(value = capturedVariables.size * 8L)))
                 capturedVariables.forEachIndexed { index, variable ->
-                    statements += MOVE(
+                    statements += MOVE_IMMUTABLE_MEM(
                         destination = IMMUTABLE_MEM(expression = ADD(e1 = contextTemp, e2 = CONST(value = index * 8L))),
                         source = allocator.getTemporaryByVariable(variableName = variable)
                     )
@@ -567,11 +568,11 @@ internal class MidIrFirstPassGenerator(
             lambdaFunctionsCollector += lambdaFunction
             val closureTemporary = allocator.allocateTemp()
             statements += MOVE(closureTemporary, MALLOC(CONST(value = 16L)))
-            statements += MOVE(
+            statements += MOVE_IMMUTABLE_MEM(
                 destination = IMMUTABLE_MEM(expression = closureTemporary),
                 source = NAME(name = lambdaName)
             )
-            statements += MOVE(
+            statements += MOVE_IMMUTABLE_MEM(
                 destination = IMMUTABLE_MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),
                 source = contextValue
             )

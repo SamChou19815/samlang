@@ -209,9 +209,6 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
         fun NE(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(MidIrOperator.NE, e1, e2)
 
-        fun MEM(expression: MidIrExpression, immutable: Boolean): Mem =
-            Mem(expression = expression, immutable = immutable)
-
         fun IMMUTABLE_MEM(expression: MidIrExpression): Mem = Mem(expression = expression, immutable = true)
 
         fun ESEQ(statement: MidIrStatement.Sequence, expression: MidIrExpression): ExprSequence =

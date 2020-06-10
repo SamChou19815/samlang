@@ -46,11 +46,11 @@ internal class ConstantPropagationOptimizer private constructor(
                 // mov a, a is new optimized away.
                 return
             }
-            newStatements += MoveTemp(tempId = dest, source = newSource)
+            newStatements += node.copy(tempId = dest, source = newSource)
         }
 
         override fun visit(node: MoveMem, context: Int) {
-            newStatements += MoveMem(
+            newStatements += node.copy(
                 memLocation = rewrite(expression = node.memLocation, id = context),
                 source = rewrite(expression = node.source, id = context)
             )

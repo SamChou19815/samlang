@@ -192,7 +192,7 @@ object InlineOptimizer {
         }
 
         override fun visit(node: MoveMem, context: Unit) {
-            newMainBodyStatements += MoveMem(transform(node.memLocation), transform(node.source))
+            newMainBodyStatements += node.copy(transform(node.memLocation), transform(node.source))
         }
 
         override fun visit(node: CallFunction, context: Unit) {

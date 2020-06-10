@@ -3,7 +3,7 @@ package samlang.compiler.mir
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Call
 import samlang.ast.mir.MidIrExpression.Companion.ESEQ
-import samlang.ast.mir.MidIrExpression.Companion.MEM
+import samlang.ast.mir.MidIrExpression.Companion.IMMUTABLE_MEM
 import samlang.ast.mir.MidIrExpression.Companion.OP
 import samlang.ast.mir.MidIrExpression.Companion.TEMP
 import samlang.ast.mir.MidIrExpression.Constant
@@ -18,6 +18,7 @@ import samlang.ast.mir.MidIrStatement.CallFunction
 import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
 import samlang.ast.mir.MidIrStatement.Companion.CJUMP
 import samlang.ast.mir.MidIrStatement.Companion.MOVE
+import samlang.ast.mir.MidIrStatement.Companion.MOVE_IMMUTABLE_MEM
 import samlang.ast.mir.MidIrStatement.Companion.SEQ
 import samlang.ast.mir.MidIrStatement.ConditionalJump
 import samlang.ast.mir.MidIrStatement.ConditionalJumpFallThrough
@@ -90,8 +91,8 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
             if (bothCanonical(dest, src)) {
                 // if both dest and src are canonical, then we don't need to change anything.
                 return listOf(
-                    MoveMem(
-                        memLocation = MidIrOpReorderingUtil.reorder(dest),
+                    MOVE_IMMUTABLE_MEM(
+                        destination = IMMUTABLE_MEM(expression = MidIrOpReorderingUtil.reorder(dest)),
                         source = MidIrOpReorderingUtil.reorder(src)
                     )
                 )
@@ -102,7 +103,7 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
             val newSequence = loweringResultOfDest.statements.toMutableList()
             newSequence += MOVE(destTemp, loweringResultOfDest.expression)
             newSequence += loweringResultOfSrc.statements
-            newSequence += MOVE(MEM(expression = destTemp, immutable = false), loweringResultOfSrc.expression)
+            newSequence += MOVE_IMMUTABLE_MEM(IMMUTABLE_MEM(expression = destTemp), loweringResultOfSrc.expression)
             return newSequence
         }
 
@@ -174,7 +175,7 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
 
         override fun visit(node: Mem, context: Unit): ExprSequence {
             val (sequence, expr) = lower(node.expression)
-            return ESEQ(sequence, MEM(expression = expr, immutable = false))
+            return ESEQ(sequence, IMMUTABLE_MEM(expression = expr))
         }
 
         override fun visit(node: Call, context: Unit): ExprSequence {

@@ -81,7 +81,7 @@ internal class CopyPropagationOptimizer private constructor(
         }
 
         override fun visit(node: MoveMem, context: Unit) {
-            newStatements += MoveMem(rewrite(node.memLocation), rewrite(node.source))
+            newStatements += node.copy(rewrite(node.memLocation), rewrite(node.source))
         }
 
         override fun visit(node: CallFunction, context: Unit) {

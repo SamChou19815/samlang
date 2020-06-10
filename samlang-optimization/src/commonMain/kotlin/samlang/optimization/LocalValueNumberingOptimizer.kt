@@ -37,7 +37,7 @@ object LocalValueNumberingOptimizer {
         override fun visit(node: MoveTemp, context: NumberingInfo): MidIrStatement =
             MoveTemp(node.tempId, rewrite(node.source, context))
 
-        override fun visit(node: MoveMem, context: NumberingInfo): MidIrStatement = MoveMem(
+        override fun visit(node: MoveMem, context: NumberingInfo): MidIrStatement = node.copy(
             memLocation = rewrite(node.memLocation, context),
             source = rewrite(node.source, context)
         )

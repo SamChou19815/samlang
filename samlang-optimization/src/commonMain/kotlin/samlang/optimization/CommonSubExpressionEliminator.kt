@@ -156,15 +156,15 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
     private object StatementReplacementVisitor :
         MidIrLoweredStatementVisitor<Map<MidIrExpression, Temporary>, MidIrStatement> {
         override fun visit(node: MoveTemp, context: Map<MidIrExpression, Temporary>): MidIrStatement =
-            MoveTemp(node.tempId, replace(node.source, context))
+            node.copy(node.tempId, replace(node.source, context))
 
         override fun visit(node: MoveMem, context: Map<MidIrExpression, Temporary>): MidIrStatement {
             val src = replace(node.source, context)
             val destMemLocation = replace(node.memLocation, context)
-            return MoveMem(destMemLocation, src)
+            return node.copy(destMemLocation, src)
         }
 
-        override fun visit(node: CallFunction, context: Map<MidIrExpression, Temporary>): MidIrStatement = CallFunction(
+        override fun visit(node: CallFunction, context: Map<MidIrExpression, Temporary>): MidIrStatement = node.copy(
             functionExpr = replace(node.functionExpr, context),
             arguments = node.arguments.map { replace(it, context) },
             returnCollector = node.returnCollector

@@ -103,7 +103,7 @@ sealed class MidIrStatement {
         fun MOVE(destination: Temporary, source: MidIrExpression): MoveTemp =
             MoveTemp(tempId = destination.id, source = source)
 
-        fun MOVE(destination: Mem, source: MidIrExpression): MoveMem =
+        fun MOVE_IMMUTABLE_MEM(destination: Mem, source: MidIrExpression): MoveMem =
             MoveMem(memLocation = destination.expression, source = source)
 
         fun EXPR(expression: MidIrExpression): IgnoreExpression =
