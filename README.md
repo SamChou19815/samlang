@@ -18,3 +18,8 @@ Install the VSCode Extension at [Visual Studio Marketplace](https://marketplace.
 - First Class Functions
 - Pattern Matching
 - Produce Native X86 Machine Code
+
+## Planned Features
+
+- Interfaces
+- Functors
