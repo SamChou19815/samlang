@@ -90,17 +90,12 @@ class AvailableExpressionAnalysis(private val statements: List<MidIrStatement>) 
             context.removeAllOf { info -> ContainsTempDetector.check(info.expression, Temporary(tempName)) }
         }
 
-        override fun visit(node: MoveMem, context: MutableSet<ExprInfo>) {
-            // for safety, remove all mem expressions
-            context.removeAllOf { info -> HasMemDetector.hasMem(info.expression) }
-        }
+        override fun visit(node: MoveMem, context: MutableSet<ExprInfo>): Unit = Unit
 
         override fun visit(node: MidIrStatement.CallFunction, context: MutableSet<ExprInfo>) {
             node.returnCollector?.let {
                 context.removeAllOf { info -> ContainsTempDetector.check(info.expression, it) }
             }
-            // for safety, remove all mem expressions
-            context.removeAllOf { info -> HasMemDetector.hasMem(info.expression) }
         }
 
         private inline fun <T> MutableSet<T>.removeAllOf(crossinline predicate: (item: T) -> Boolean) {
