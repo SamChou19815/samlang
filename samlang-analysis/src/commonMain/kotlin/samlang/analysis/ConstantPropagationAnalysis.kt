@@ -26,15 +26,15 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
     private val graph: ControlFlowGraph<MidIrStatement> = ControlFlowGraph.fromIr(functionStatements = statements)
     /** A list of original statements. */
     private val originalStatements: List<MidIrStatement> = statements
-    private val `in`: Array<MutableMap<String, ConstantStatus>>
-    private val out: Array<MutableMap<String, ConstantStatus>>
+    private val inData: Array<MutableMap<String, ConstantStatus>>
+    private val outData: Array<MutableMap<String, ConstantStatus>>
     /** Constants into the node. */
     val constantsIn: Array<MutableMap<String, Long>>
 
     init {
         val len = statements.size
-        `in` = Array(size = len) { mutableMapOf<String, ConstantStatus>() }
-        out = Array(size = len) { mutableMapOf<String, ConstantStatus>() }
+        inData = Array(size = len) { mutableMapOf<String, ConstantStatus>() }
+        outData = Array(size = len) { mutableMapOf<String, ConstantStatus>() }
         constantsIn = Array(size = len) { mutableMapOf<String, Long>() }
         computeInOutSet()
         computeConstantsIn()
@@ -42,7 +42,7 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
 
     private fun computeInOutSet() {
         val nodes = ArrayDeque<Int>()
-        for (i in out.indices) {
+        for (i in outData.indices) {
             nodes += i
         }
         while (!nodes.isEmpty()) {
@@ -50,7 +50,7 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
             val statement = originalStatements[nodeId]
             val newInMap = mutableMapOf<String, ConstantStatus>()
             for (parentId in graph.getParentIds(nodeId)) {
-                for ((key, value) in out[parentId]) {
+                for ((key, value) in outData[parentId]) {
                     val existingValue = newInMap[key]
                     if (existingValue == null) {
                         newInMap[key] = value
@@ -59,12 +59,12 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
                     }
                 }
             }
-            `in`[nodeId] = newInMap
-            val oldOutMap = out[nodeId]
+            inData[nodeId] = newInMap
+            val oldOutMap = outData[nodeId]
             val transferFunctionVisitor = TransferFunctionVisitor(newInMap)
             statement.accept(transferFunctionVisitor, Unit)
             val newOutMap = transferFunctionVisitor.newOutMap
-            out[nodeId] = newOutMap
+            outData[nodeId] = newOutMap
             if (oldOutMap != newOutMap) {
                 nodes += graph.getChildrenIds(nodeId)
             }
@@ -72,10 +72,10 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
     }
 
     private fun computeConstantsIn() {
-        val len = `in`.size
+        val len = inData.size
         for (i in 0 until len) {
             val constantsInMap = constantsIn[i]
-            for ((name, status) in `in`[i]) {
+            for ((name, status) in inData[i]) {
                 if (status is KnownConstant) {
                     constantsInMap[name] = status.value
                 }
