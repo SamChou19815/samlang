@@ -21,7 +21,6 @@ dependencies {
     implementation(project(":samlang-service"))
     implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3")
     implementation(dependencyNotation = "com.google.code.gson:gson:2.8.6")
-    implementation(dependencyNotation = "com.sparkjava:spark-core:2.9.1")
     implementation(dependencyNotation = "com.github.ajalt:clikt:2.1.0")
     implementation(dependencyNotation = "org.eclipse.lsp4j:org.eclipse.lsp4j:0.8.1")
 
