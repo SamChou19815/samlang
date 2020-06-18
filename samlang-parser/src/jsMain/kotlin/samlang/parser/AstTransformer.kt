@@ -306,7 +306,7 @@ private fun transformMemberDefinition(tsMemberDefinition: TsMemberDefinition): C
         typeParameters = tsMemberDefinition.typeParameters.toList(),
         type = tsMemberDefinition.type.toType() as Type.FunctionType,
         parameters = tsMemberDefinition.parameters.map {
-            ClassDefinition.MemberDefinition.Parameter(
+            AnnotatedParameter(
                 name = it.name,
                 nameRange = it.nameRange.toRange(),
                 type = it.type.toType(),

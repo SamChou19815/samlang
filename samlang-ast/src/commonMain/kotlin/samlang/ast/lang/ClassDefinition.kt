@@ -1,31 +1,27 @@
 package samlang.ast.lang
 
-import samlang.ast.common.Node
 import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 
 data class ClassDefinition(
     override val range: Range,
-    val nameRange: Range,
-    val name: String,
-    val isPublic: Boolean,
-    val typeDefinition: TypeDefinition,
-    val members: List<MemberDefinition>
-) : Node {
+    override val nameRange: Range,
+    override val name: String,
+    override val isPublic: Boolean,
+    override val typeDefinition: TypeDefinition,
+    override val members: List<MemberDefinition>
+) : ClassInterface<ClassDefinition.MemberDefinition> {
 
     data class MemberDefinition(
         override val range: Range,
-        val isPublic: Boolean,
-        val isMethod: Boolean,
-        val nameRange: Range,
-        val name: String,
-        val typeParameters: List<String>,
-        val type: Type.FunctionType,
-        val parameters: List<Parameter>,
+        override val isPublic: Boolean,
+        override val isMethod: Boolean,
+        override val nameRange: Range,
+        override val name: String,
+        override val typeParameters: List<String>,
+        override val type: Type.FunctionType,
+        override val parameters: List<AnnotatedParameter>,
         val body: Expression
-    ) : Node {
-
-        data class Parameter(val name: String, val nameRange: Range, val type: Type, val typeRange: Range)
-    }
+    ) : ClassMemberInterface
 }

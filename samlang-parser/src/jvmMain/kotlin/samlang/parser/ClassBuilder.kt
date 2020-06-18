@@ -4,6 +4,7 @@ import samlang.ast.common.Range
 import samlang.ast.common.Type
 import samlang.ast.common.TypeDefinition
 import samlang.ast.common.TypeDefinitionType
+import samlang.ast.lang.AnnotatedParameter
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Expression
 import samlang.parser.generated.PLBaseVisitor
@@ -95,7 +96,7 @@ internal class ClassBuilder(syntaxErrorListener: SyntaxErrorListener) : PLBaseVi
         val parameters = ctx.annotatedVariable().map { annotatedVariable ->
             val parameterNameSymbol = annotatedVariable.LowerId().symbol
             val typeExpression = annotatedVariable.typeAnnotation()?.typeExpr()
-            ClassDefinition.MemberDefinition.Parameter(
+            AnnotatedParameter(
                 name = parameterNameSymbol.text,
                 nameRange = parameterNameSymbol.range,
                 type = typeExpression?.accept(TypeBuilder) ?: return null,
