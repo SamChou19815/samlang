@@ -19,7 +19,11 @@ Install the VSCode Extension at [Visual Studio Marketplace](https://marketplace.
 - Pattern Matching
 - Produce Native X86 Machine Code
 
-## Planned Features
+## Planned Language Features
 
 - Interfaces
 - Functors
+
+## Planned Optimizations
+
+- Loop invariant code motion
