@@ -9,7 +9,7 @@ data class ClassDefinition(
     override val nameRange: Range,
     override val name: String,
     override val isPublic: Boolean,
-    override val typeDefinition: TypeDefinition,
+    val typeDefinition: TypeDefinition,
     override val members: List<MemberDefinition>
 ) : ClassInterface<ClassDefinition.MemberDefinition> {
 
