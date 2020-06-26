@@ -19,7 +19,6 @@ data class ClassDeclaration(
         override val name: String,
         override val typeParameters: List<String>,
         override val type: Type.FunctionType,
-        override val parameters: List<AnnotatedParameter>,
-        val body: Expression
+        override val parameters: List<AnnotatedParameter>
     ) : ClassMemberInterface
 }

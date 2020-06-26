@@ -4,9 +4,8 @@ import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 import samlang.ast.common.ModuleMembersImport
 import samlang.ast.common.ModuleReference
-import samlang.ast.lang.ClassDefinition
-import samlang.ast.lang.Expression
-import samlang.ast.lang.Module
+import samlang.ast.common.Type
+import samlang.ast.lang.*
 import samlang.errors.CompileTimeError
 import samlang.parser.generated.PLBaseVisitor
 import samlang.parser.generated.PLLexer
@@ -57,4 +56,44 @@ private class ModuleMemberVisitor(syntaxErrorListener: SyntaxErrorListener) : PL
 
     override fun visitClassAsModuleMember(ctx: PLParser.ClassAsModuleMemberContext): ClassDefinition? =
         ctx.clazz()?.accept(classBuilder)
+
+    private val PLParser.TypeParametersDeclarationContext.typeParameters: List<String> get() =
+        UpperId().map { it.symbol.text }
+
+    private fun parseInterface(ctx: PLParser): ClassDeclaration? =
+        ctx.interfaze()?.let { interfaceNode ->
+            val nameSymbol = interfaceNode.UpperId().symbol
+            ClassDeclaration(
+                range = interfaceNode.range,
+                nameRange = nameSymbol.range,
+                name = nameSymbol.text,
+                isPublic = interfaceNode.PRIVATE() == null,
+                members = interfaceNode.classMemberDeclaration().map { memberDeclaration ->
+                    val memberNameSymbol = memberDeclaration.LowerId().symbol
+                    val parameters = memberDeclaration.annotatedVariable().map { annotatedVariable ->
+                        val parameterNameSymbol = annotatedVariable.LowerId().symbol
+                        val typeExpression = annotatedVariable.typeAnnotation()?.typeExpr()
+                        AnnotatedParameter(
+                            name = parameterNameSymbol.text,
+                            nameRange = parameterNameSymbol.range,
+                            type = typeExpression?.accept(TypeBuilder) ?: return null,
+                            typeRange = typeExpression.range
+                        )
+                    }
+                    ClassDeclaration.MemberDeclaration(
+                        range = memberDeclaration.range,
+                        isPublic = memberDeclaration.PRIVATE() != null,
+                        isMethod = memberDeclaration.METHOD() != null,
+                        nameRange = memberNameSymbol.range,
+                        name = memberNameSymbol.text,
+                        typeParameters = ctx.typeParametersDeclaration()?.typeParameters ?: emptyList(),
+                        type = Type.FunctionType(
+                            argumentTypes = parameters.map { it.type },
+                            returnType = ctx.typeExpr()?.accept(TypeBuilder) ?: return null
+                        ),
+                        parameters = parameters
+                    )
+                }
+            )
+        }
 }
