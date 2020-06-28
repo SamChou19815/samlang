@@ -1,0 +1,45 @@
+{
+  "private": true,
+  "workspaces": [
+    "samlang-cli",
+    "samlang-core"
+  ],
+  "scripts": {
+    "lint": "eslint . --cache",
+    "format": "prettier --write '**/*.{ts,js}'",
+    "format:check": "prettier --check '**/*.{ts,js}'",
+    "build": "yarn workspaces foreach -t run build"
+  },
+  "devDependencies": {
+    "@dev-sam/eslint-config-common": "0.14.0",
+    "@typescript-eslint/eslint-plugin": "^3.4.0",
+    "@typescript-eslint/parser": "^3.4.0",
+    "eslint": "^7.3.1",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-import-resolver-node": "^0.3.4",
+    "eslint-plugin-import": "^2.22.0",
+    "husky": "^4.2.5",
+    "lint-staged": "^10.2.11",
+    "prettier": "^2.0.5",
+    "typescript": "3.9.5"
+  },
+  "eslintConfig": {
+    "extends": "@dev-sam/common"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "endOfLine": "lf"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "NODE_NO_WARNINGS=1 lint-staged"
+    }
+  },
+  "lint-staged": {
+    "**/*.{ts,js}": [
+      "yarn prettier --write"
+    ]
+  }
+}

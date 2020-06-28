@@ -1,0 +1,16 @@
+{
+  "name": "@dev-sam/samlang-cli",
+  "version": "0.0.1",
+  "license": "AGPLv3",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc --incremental"
+  },
+  "dependencies": {
+    "@dev-sam/samlang-core": "workspace:0.0.1"
+  },
+  "devDependencies": {
+    "typescript": "3.9.5"
+  }
+}

@@ -32,3 +32,27 @@ jobs:
           cd samlang-demo-distribution-ts
           yarn
           yarn test
+  typescript-rewrite-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: typescript-rewrite
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-node@v1
+      - uses: actions/cache@v2
+        with:
+          path: |
+            typescript-rewrite/.yarn/cache
+            typescript-rewrite/.pnp.js
+          key: yarn-berry-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-berry-
+      - name: Yarn Install
+        run: yarn
+      - name: Check Format
+        run: yarn format:check
+      - name: Lint
+        run: yarn lint
+      - name: Build
+        run: yarn build
