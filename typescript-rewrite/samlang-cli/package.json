@@ -8,7 +8,8 @@
     "build": "tsc --incremental"
   },
   "dependencies": {
-    "@dev-sam/samlang-core": "workspace:0.0.1"
+    "@dev-sam/samlang-core": "workspace:0.0.1",
+    "@types/jest": "^26.0.3"
   },
   "devDependencies": {
     "typescript": "3.9.5"
