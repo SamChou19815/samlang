@@ -50,9 +50,9 @@ jobs:
             yarn-berry-
       - name: Yarn Install
         run: yarn
-      - name: Check Format
-        run: yarn format:check
-      - name: Lint
-        run: yarn lint
       - name: Build
         run: yarn build
+      - name: Lint
+        run: yarn lint
+      - name: Check Format
+        run: yarn format:check
