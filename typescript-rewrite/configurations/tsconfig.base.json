@@ -6,11 +6,11 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": false,
     "lib": ["dom", "dom.iterable", "esnext"],
-    "module": "esnext",
+    "module": "CommonJS",
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
-    "target": "es6"
+    "target": "ESNext"
   }
 }

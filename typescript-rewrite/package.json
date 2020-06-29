@@ -32,7 +32,20 @@
     "typescript": "3.9.5"
   },
   "eslintConfig": {
-    "extends": "@dev-sam/common"
+    "extends": "@dev-sam/common",
+    "overrides": [
+      {
+        "files": [
+          "*.ts"
+        ],
+        "rules": {
+          "consistent-return": "off",
+          "default-case": "off",
+          "no-empty-function": "off",
+          "no-useless-constructor": "off"
+        }
+      }
+    ]
   },
   "prettier": {
     "printWidth": 100,
