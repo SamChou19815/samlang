@@ -5,7 +5,8 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
-    "build": "tsc --incremental"
+    "build": "tsc --incremental",
+    "codegen": "./scripts/generate-grammar"
   },
   "devDependencies": {
     "@types/jest": "^26.0.3",

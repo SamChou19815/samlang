@@ -13,6 +13,38 @@ on:
       - '**.js'
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: typescript-rewrite
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-node@v2-beta
+      - uses: actions/setup-node@v2-beta
+        with:
+          node-version: '12'
+      - uses: actions/cache@v2
+        with:
+          path: |
+            typescript-rewrite/.yarn/cache
+            typescript-rewrite/.pnp.js
+          key: yarn-berry-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-berry-
+      - name: Yarn Install
+        run: yarn
+      - name: Codegen
+        run: yarn codegen
+      - name: Check changed
+        run: |
+          git status --porcelain
+          if [[ `git status --porcelain` ]]; then
+            echo "Generated files are not in sync!"
+            exit 1
+          else
+            echo "Generated files are in sync. Good to go!"
+          fi
   build:
     runs-on: ubuntu-latest
     defaults:

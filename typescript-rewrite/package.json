@@ -9,6 +9,7 @@
     "format": "prettier --write '**/*.{ts,js}'",
     "format:check": "prettier --check '**/*.{ts,js}'",
     "build": "yarn workspaces foreach -t run build",
+    "codegen": "yarn workspaces foreach -t run codegen",
     "test": "jest --coverage"
   },
   "devDependencies": {
