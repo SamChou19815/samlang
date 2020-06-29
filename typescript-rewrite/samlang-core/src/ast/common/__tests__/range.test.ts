@@ -1,4 +1,4 @@
-import Position from '../Position';
+import Position from '../position';
 import Range from '../range';
 
 it('toString() works as expected', () => {

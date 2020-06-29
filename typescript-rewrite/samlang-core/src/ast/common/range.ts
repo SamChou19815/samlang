@@ -1,4 +1,4 @@
-import Position from './Position';
+import Position from './position';
 
 export default class Range {
   static readonly DUMMY: Range = new Range(Position.DUMMY, Position.DUMMY);

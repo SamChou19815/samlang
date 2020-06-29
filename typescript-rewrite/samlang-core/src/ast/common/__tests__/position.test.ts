@@ -1,4 +1,4 @@
-import Position from '../Position';
+import Position from '../position';
 
 it('Correct toString() for display', () => {
   expect(Position.DUMMY.toString()).toBe('0:0');
