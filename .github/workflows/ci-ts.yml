@@ -8,8 +8,8 @@ on:
       - '**.samlang'
       - 'scripts/**'
       - 'test/**'
-      - 'package.json'
-      - 'yarn.lock'
+      - '**/package.json'
+      - '**/yarn.lock'
       - '**.js'
 
 jobs:
