@@ -8,9 +8,11 @@
     "build": "tsc --incremental"
   },
   "devDependencies": {
+    "@types/jest": "^26.0.3",
+    "antlr4ts-cli": "0.5.0-alpha.3",
     "typescript": "3.9.5"
   },
   "dependencies": {
-    "@types/jest": "^26.0.3"
+    "antlr4ts": "0.5.0-alpha.3"
   }
 }

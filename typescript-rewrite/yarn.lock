@@ -1213,6 +1213,8 @@ __metadata:
   resolution: "@dev-sam/samlang-core@workspace:samlang-core"
   dependencies:
     "@types/jest": ^26.0.3
+    antlr4ts: 0.5.0-alpha.3
+    antlr4ts-cli: 0.5.0-alpha.3
     typescript: 3.9.5
   languageName: unknown
   linkType: soft
@@ -1819,6 +1821,22 @@ __metadata:
     "@types/color-name": ^1.1.1
     color-convert: ^2.0.1
   checksum: c8c007d5dab7b4fea064c9ea318114e1f6fc714bb382d061ac09e66bc83c8f3ce12bb6354be01598722c14a5d710af280b7614d269354f80d2535946aefa82f4
+  languageName: node
+  linkType: hard
+
+"antlr4ts-cli@npm:0.5.0-alpha.3":
+  version: 0.5.0-alpha.3
+  resolution: "antlr4ts-cli@npm:0.5.0-alpha.3"
+  bin:
+    antlr4ts: ./antlr4ts
+  checksum: 3a75b30edff807d7109659f0013310e707408dc890c63c3464c84a3fc6e6e30b605de2a419e3799f8a22252abe3205625b99a2cb7a155bdbd73edcd0d3474cf9
+  languageName: node
+  linkType: hard
+
+"antlr4ts@npm:0.5.0-alpha.3":
+  version: 0.5.0-alpha.3
+  resolution: "antlr4ts@npm:0.5.0-alpha.3"
+  checksum: 52356945505993efa3f4f6649f1de0229b839fcef1249352015225ff58f7932745b538b5c2d38e69d9c4bd3745312e87de659fadf0d2d6d7d785808eba849a99
   languageName: node
   linkType: hard
 
