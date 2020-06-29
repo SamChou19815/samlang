@@ -4,7 +4,7 @@ import type Range from './Range';
 import type { Type } from './types';
 
 /** A common interface for all AST nodes. */
-interface Node {
+export interface Node {
   /** The range of the entire node. */
   readonly range: Range;
 }
@@ -29,6 +29,13 @@ export interface StringGlobalVariable {
   readonly referenceVariable: GlobalVariable;
   readonly contentVariable: GlobalVariable;
   readonly content: string;
+}
+
+export interface AnnotatedParameter {
+  readonly name: string;
+  readonly nameRange: Range;
+  readonly type: Type;
+  readonly typeRange: Range;
 }
 
 export interface FieldType {
