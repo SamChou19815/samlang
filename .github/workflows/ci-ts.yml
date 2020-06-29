@@ -8,9 +8,7 @@ on:
       - '**.samlang'
       - 'scripts/**'
       - 'test/**'
-      - '**/package.json'
-      - '**/yarn.lock'
-      - '**.js'
+      - 'typescript-rewrite/**'
 
 jobs:
   validate:
