@@ -1,6 +1,6 @@
-import type { AnnotatedParameter, TypeDefinition } from '../common/structs';
+import type { AnnotatedParameter, ModuleMembersImport, TypeDefinition } from '../common/structs';
 import type { FunctionType } from '../common/types';
-import type { SamlangExpression } from './expressions';
+import type { SamlangExpression } from './samlang-expressions';
 
 export interface ClassMemberDeclaration extends Node {
   readonly isPublic: boolean;
@@ -26,4 +26,9 @@ export interface ClassInterface<M extends ClassMemberDeclaration = ClassMemberDe
 
 export interface ClassDefinition extends ClassInterface<ClassMemberDefinition> {
   readonly typeDefinition: TypeDefinition;
+}
+
+export interface SamlangModule {
+  readonly imports: readonly ModuleMembersImport[];
+  readonly classes: readonly ClassDefinition[];
 }
