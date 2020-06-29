@@ -46,15 +46,28 @@ it('containsRange() works as expected', () => {
   ).toBeFalsy();
 });
 
-it('range() works as expected', () => {
+it('union() works as expected', () => {
   expect(
     new Range(new Position(1, 3), new Position(3, 1))
       .union(new Range(new Position(2, 3), new Position(4, 1)))
       .toString()
   ).toBe(new Range(new Position(1, 3), new Position(4, 1)).toString());
+
   expect(
     new Range(new Position(2, 3), new Position(4, 1))
       .union(new Range(new Position(1, 3), new Position(3, 1)))
+      .toString()
+  ).toBe(new Range(new Position(1, 3), new Position(4, 1)).toString());
+
+  expect(
+    new Range(new Position(1, 3), new Position(2, 3))
+      .union(new Range(new Position(3, 1), new Position(4, 1)))
+      .toString()
+  ).toBe(new Range(new Position(1, 3), new Position(4, 1)).toString());
+
+  expect(
+    new Range(new Position(3, 1), new Position(4, 1))
+      .union(new Range(new Position(1, 3), new Position(2, 3)))
       .toString()
   ).toBe(new Range(new Position(1, 3), new Position(4, 1)).toString());
 });

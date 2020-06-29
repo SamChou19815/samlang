@@ -48,8 +48,6 @@ export const functionType = (argumentTypes: readonly Type[], returnType: Type): 
 export class UndecidedTypes {
   private static nextUndecidedTypeIndex = 0;
 
-  private constructor() {}
-
   static next(): UndecidedType {
     const type = { type: 'UndecidedType', index: UndecidedTypes.nextUndecidedTypeIndex } as const;
     UndecidedTypes.nextUndecidedTypeIndex += 1;
