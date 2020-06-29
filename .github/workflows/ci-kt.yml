@@ -1,5 +1,15 @@
-name: CI
-on: [push]
+name: CI for Kotlin Code
+on:
+  push:
+    paths:
+      - '.github/workflows/ci-kt.yml'
+      - 'runtime/**'
+      - 'sconfig.json'
+      - '**.samlang'
+      - 'scripts/**'
+      - 'test/**'
+      - '**.kt'
+      - '**.kts'
 
 jobs:
   validate:
@@ -32,31 +42,3 @@ jobs:
           cd samlang-demo-distribution-ts
           yarn
           yarn test
-  typescript-rewrite-build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: typescript-rewrite
-    steps:
-      - uses: actions/checkout@master
-      - uses: actions/setup-node@v2-beta
-        with:
-          node-version: '12'
-      - uses: actions/cache@v2
-        with:
-          path: |
-            typescript-rewrite/.yarn/cache
-            typescript-rewrite/.pnp.js
-          key: yarn-berry-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            yarn-berry-
-      - name: Yarn Install
-        run: yarn
-      - name: Build
-        run: yarn build
-      - name: Test
-        run: yarn test
-      - name: Lint
-        run: yarn lint
-      - name: Check Format
-        run: yarn format:check
