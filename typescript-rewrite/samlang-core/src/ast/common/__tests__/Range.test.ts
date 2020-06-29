@@ -1,5 +1,5 @@
 import Position from '../Position';
-import Range from '../Range';
+import Range from '../range';
 
 it('toString() works as expected', () => {
   expect(Range.DUMMY.toString()).toBe('0:0-0:0');

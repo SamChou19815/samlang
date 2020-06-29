@@ -1,4 +1,4 @@
-import { prettyPrintLiteral, TRUE, FALSE, intLiteralOf, stringLiteralOf } from '../Literal';
+import { prettyPrintLiteral, TRUE, FALSE, intLiteralOf, stringLiteralOf } from '../literals';
 
 it('Literals have expected pretty printed values', () => {
   expect(prettyPrintLiteral(TRUE)).toBe('true');

@@ -1,4 +1,4 @@
-import { binaryOperatorValues, binaryOperatorSymbolTable } from '../BinaryOperator';
+import { binaryOperatorValues, binaryOperatorSymbolTable } from '../binary-operators';
 
 it(`BinaryOperator's symbol table is self consistent.`, () => {
   binaryOperatorValues.forEach((symbol) =>

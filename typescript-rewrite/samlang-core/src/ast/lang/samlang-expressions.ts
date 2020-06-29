@@ -1,7 +1,7 @@
-import type { BinaryOperator } from '../common/BinaryOperator';
-import { Literal, TRUE, FALSE, intLiteralOf, stringLiteralOf } from '../common/Literal';
-import type Range from '../common/Range';
+import type { BinaryOperator } from '../common/binary-operators';
 import type { BuiltInFunctionName, UnaryOperator } from '../common/enums';
+import { Literal, TRUE, FALSE, intLiteralOf, stringLiteralOf } from '../common/literals';
+import type Range from '../common/range';
 import type { Node } from '../common/structs';
 import { Type, boolType, intType, stringType, TupleType, FunctionType } from '../common/types';
 import type { Pattern } from './samlang-pattern';

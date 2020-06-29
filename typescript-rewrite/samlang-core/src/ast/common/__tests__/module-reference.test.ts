@@ -1,4 +1,4 @@
-import ModuleReference from '../ModuleReference';
+import ModuleReference from '../module-reference';
 
 it('ModuleReference.toString()', () => {
   expect(ModuleReference.ROOT.toString()).toBe('');
