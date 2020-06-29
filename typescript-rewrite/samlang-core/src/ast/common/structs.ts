@@ -1,3 +1,4 @@
+import type { ReadonlyHashMap } from '../../util/collections';
 import type ModuleReference from './ModuleReference';
 import type Range from './Range';
 import type { Type } from './types';
@@ -42,3 +43,5 @@ export interface TypeDefinition extends Node {
   readonly names: readonly string[];
   readonly mappings: Readonly<Record<string, FieldType | undefined>>;
 }
+
+export type Sources<M> = ReadonlyHashMap<ModuleReference, M>;

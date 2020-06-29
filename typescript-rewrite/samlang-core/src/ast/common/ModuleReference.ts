@@ -1,9 +1,11 @@
+import { Hashable } from '../../util/collections';
+
 /**
  * Reference to a samlang module.
  * This class, instead of a filename string, should be used to point to a module during type checking
  * and code generation.
  */
-export default class ModuleReference {
+export default class ModuleReference implements Hashable {
   /**
    * The root module that can never be referenced in the source code.
    * It can be used as a starting point for cyclic dependency analysis,
@@ -16,4 +18,6 @@ export default class ModuleReference {
   readonly toString = (): string => this.parts.join('.');
 
   readonly toFilename = (): string => `${this.parts.join('/')}.sam`;
+
+  readonly uniqueHash = (): string => this.toString();
 }

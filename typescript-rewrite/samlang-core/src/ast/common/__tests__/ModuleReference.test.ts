@@ -11,3 +11,9 @@ it('ModuleReference.toFilename', () => {
   expect(new ModuleReference(['Foo']).toFilename()).toBe('Foo.sam');
   expect(new ModuleReference(['Foo', 'Bar']).toFilename()).toBe('Foo/Bar.sam');
 });
+
+it('ModuleReference.uniqueHash is ModuleReference.toString', () => {
+  expect(new ModuleReference(['Foo', 'Bar']).toString()).toBe(
+    new ModuleReference(['Foo', 'Bar']).uniqueHash()
+  );
+});
