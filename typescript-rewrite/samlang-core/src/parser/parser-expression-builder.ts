@@ -1,6 +1,7 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
 import { binaryOperatorSymbolTable, AND, OR, CONCAT } from '../ast/common/binary-operators';
+import Range from '../ast/common/range';
 import {
   UndecidedTypes,
   unitType,
@@ -119,18 +120,22 @@ class ObjectFieldDeclarationBuilder
 
 class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangExpression | null>
   implements PLVisitor<SamlangExpression | null> {
-  private toExpression = (context: ExpressionContext): SamlangExpression => {
+  private static DUMMY_EXPRESSION = EXPRESSION_PANIC({
+    range: Range.DUMMY,
+    type: UndecidedTypes.next(),
+    expression: EXPRESSION_STRING(range, 'dummy'),
+  });
+
+  private toExpression = (context?: ExpressionContext): SamlangExpression => {
+    if (context == null) {
+      return ExpressionBuilder.DUMMY_EXPRESSION;
+    }
     const parsed = context.accept(this);
     if (parsed != null) {
       return parsed;
     }
-    const range = contextRange(context);
     // TODO FIXME add error
-    return EXPRESSION_PANIC({
-      range,
-      type: UndecidedTypes.next(),
-      expression: EXPRESSION_STRING(range, 'dummy'),
-    });
+    return ExpressionBuilder.DUMMY_EXPRESSION;
   };
 
   private statementBlockBuilder = new StatementBlockBuilder(this.toExpression);
