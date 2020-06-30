@@ -15,7 +15,7 @@ export interface Location {
 }
 
 export interface ModuleMembersImport extends Node {
-  readonly importedMembers: readonly [readonly [string, Range]][];
+  readonly importedMembers: readonly (readonly [string, Range])[];
   readonly importedModule: ModuleReference;
   readonly importedModuleRange: Range;
 }
