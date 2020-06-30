@@ -123,7 +123,7 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangExpression | nul
   private static DUMMY_EXPRESSION = EXPRESSION_PANIC({
     range: Range.DUMMY,
     type: UndecidedTypes.next(),
-    expression: EXPRESSION_STRING(range, 'dummy'),
+    expression: EXPRESSION_STRING(Range.DUMMY, 'dummy'),
   });
 
   private toExpression = (context?: ExpressionContext): SamlangExpression => {
