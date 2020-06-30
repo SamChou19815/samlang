@@ -45,6 +45,7 @@
           "max-classes-per-file": "off",
           "no-empty-function": "off",
           "no-useless-constructor": "off",
+          "no-undef": "off",
           "prefer-destructuring": "off"
         }
       }

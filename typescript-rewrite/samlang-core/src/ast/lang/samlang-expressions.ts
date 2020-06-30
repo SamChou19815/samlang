@@ -20,11 +20,6 @@ type ExpressionConstructorArgumentObject<E extends BaseExpression> = Omit<
   '__type__' | 'precedence'
 >;
 
-type TypelessExpressionConstructorArgumentObject<E extends BaseExpression> = Omit<
-  E,
-  '__type__' | 'type' | 'precedence'
->;
-
 export interface LiteralExpression extends BaseExpression {
   readonly __type__: 'LiteralExpression';
   readonly literal: Literal;
@@ -122,7 +117,7 @@ export interface IfElseExpression extends BaseExpression {
   readonly e2: SamlangExpression;
 }
 
-interface VariantPatternToExpression {
+export interface VariantPatternToExpression {
   readonly range: Range;
   readonly tag: string;
   readonly tagOrder: number;
@@ -166,6 +161,7 @@ export type SamlangExpression =
   | VariableExpression
   | ClassMemberExpression
   | TupleConstructorExpression
+  | ObjectConstructorExpression
   | VariantConstructorExpression
   | FieldAccessExpression
   | MethodAccessExpression
@@ -176,7 +172,8 @@ export type SamlangExpression =
   | BinaryExpression
   | IfElseExpression
   | MatchExpression
-  | LambdaExpression;
+  | LambdaExpression
+  | StatementBlockExpression;
 
 export const EXPRESSION_TRUE = (range: Range): LiteralExpression => ({
   __type__: 'LiteralExpression',
@@ -266,7 +263,7 @@ export const EXPRESSION_TUPLE_CONSTRUCTOR = ({
   expressions,
 });
 
-export const EXPRESION_OBJECT_CONSTRUCTOR = ({
+export const EXPRESSION_OBJECT_CONSTRUCTOR = ({
   range,
   type,
   fieldDeclarations,
