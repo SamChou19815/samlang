@@ -1,4 +1,10 @@
-import type { AnnotatedParameter, ModuleMembersImport, TypeDefinition } from '../common/structs';
+import type Range from '../common/range';
+import type {
+  AnnotatedParameter,
+  ModuleMembersImport,
+  TypeDefinition,
+  Node,
+} from '../common/structs';
 import type { FunctionType } from '../common/types';
 import type { SamlangExpression } from './samlang-expressions';
 
