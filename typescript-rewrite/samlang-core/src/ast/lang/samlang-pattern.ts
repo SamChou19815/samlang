@@ -6,7 +6,7 @@ export interface TuplePattern extends Node {
   readonly destructedNames: readonly (readonly [string | null, Range])[];
 }
 
-interface ObjectPatternDestucturedName {
+export interface ObjectPatternDestucturedName {
   readonly fieldName: string;
   readonly fieldOrder: number;
   readonly alias?: string;

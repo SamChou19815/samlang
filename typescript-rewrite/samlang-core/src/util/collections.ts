@@ -1,5 +1,3 @@
-/* eslint-disable max-classes-per-file */
-
 export interface Hashable {
   readonly uniqueHash: () => string | number;
 }

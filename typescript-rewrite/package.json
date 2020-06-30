@@ -42,8 +42,10 @@
         "rules": {
           "consistent-return": "off",
           "default-case": "off",
+          "max-classes-per-file": "off",
           "no-empty-function": "off",
-          "no-useless-constructor": "off"
+          "no-useless-constructor": "off",
+          "prefer-destructuring": "off"
         }
       }
     ]
