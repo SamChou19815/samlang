@@ -4,29 +4,42 @@ import ModuleReference from '../ast/common/module-reference';
 import type Range from '../ast/common/range';
 import { ModuleMembersImport } from '../ast/common/structs';
 import type { ClassDefinition, SamlangModule } from '../ast/lang/samlang-classes';
+import type { ModuleErrorCollector } from '../errors/error-collector';
 import {
   ModuleContext,
   ImportModuleMembersContext,
   ClassAsModuleMemberContext,
 } from './generated/PLParser';
 import { PLVisitor } from './generated/PLVisitor';
-import classBuilder from './parser-class-builder';
+import ClassBuilder from './parser-class-builder';
 import { tokenRange, contextRange } from './parser-util';
 
 class ModuleMemberVisitor extends AbstractParseTreeVisitor<ClassDefinition | null>
   implements PLVisitor<ClassDefinition | null> {
   defaultResult = (): ClassDefinition | null => null;
 
+  private readonly classBuilder: ClassBuilder;
+
+  constructor(errorCollector: ModuleErrorCollector) {
+    super();
+    this.classBuilder = new ClassBuilder(errorCollector);
+  }
+
   visitClassAsModuleMember = (ctx: ClassAsModuleMemberContext): ClassDefinition | null =>
-    ctx.clazz().accept(classBuilder);
+    ctx.clazz().accept(this.classBuilder);
 
   // TODO: parseInterface
 }
 
-const moduleMemberVisitor = new ModuleMemberVisitor();
-
-class ModuleVisitor extends AbstractParseTreeVisitor<SamlangModule>
+export default class ModuleVisitor extends AbstractParseTreeVisitor<SamlangModule>
   implements PLVisitor<SamlangModule> {
+  private readonly moduleMemberVisitor: ModuleMemberVisitor;
+
+  constructor(errorCollector: ModuleErrorCollector) {
+    super();
+    this.moduleMemberVisitor = new ModuleMemberVisitor(errorCollector);
+  }
+
   defaultResult = (): SamlangModule => ({ imports: [], classes: [] });
 
   private buildModuleMembersImport = (ctx: ImportModuleMembersContext): ModuleMembersImport => ({
@@ -56,10 +69,7 @@ class ModuleVisitor extends AbstractParseTreeVisitor<SamlangModule>
     imports: ctx.importModuleMembers().map(this.buildModuleMembersImport),
     classes: ctx
       .moduleMember()
-      .map((it) => it.accept(moduleMemberVisitor))
+      .map((it) => it.accept(this.moduleMemberVisitor))
       .filter((it): it is ClassDefinition => Boolean(it)),
   });
 }
-
-const moduleBuilder = new ModuleVisitor();
-export default moduleBuilder;

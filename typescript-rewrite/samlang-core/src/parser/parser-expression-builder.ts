@@ -37,6 +37,7 @@ import {
   EXPRESSION_LAMBDA,
   EXPRESSION_STATEMENT_BLOCK,
 } from '../ast/lang/samlang-expressions';
+import type { ModuleErrorCollector } from '../errors/error-collector';
 import {
   ExpressionContext,
   NestedExprContext,
@@ -118,13 +119,17 @@ class ObjectFieldDeclarationBuilder
   };
 }
 
-class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangExpression | null>
+export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangExpression | null>
   implements PLVisitor<SamlangExpression | null> {
   private static DUMMY_EXPRESSION = EXPRESSION_PANIC({
     range: Range.DUMMY,
     type: UndecidedTypes.next(),
     expression: EXPRESSION_STRING(Range.DUMMY, 'dummy'),
   });
+
+  constructor(private readonly errorCollector: ModuleErrorCollector) {
+    super();
+  }
 
   private toExpression = (context?: ExpressionContext): SamlangExpression => {
     if (context == null) {
@@ -134,7 +139,6 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangExpression | nul
     if (parsed != null) {
       return parsed;
     }
-    // TODO FIXME add error
     return ExpressionBuilder.DUMMY_EXPRESSION;
   };
 
@@ -167,8 +171,7 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangExpression | nul
       }
       const parsedBigInt = BigInt(text);
       if (parsedBigInt > 9223372036854775807n || parsedBigInt < -9223372036854775808n) {
-        // TODO FIXME
-        throw new Error('Not a 64-bit integer.');
+        this.errorCollector.reportSyntaxError(range, 'Not a 64-bit integer.');
       }
       return EXPRESSION_INT(range, parsedBigInt);
     }
@@ -433,6 +436,3 @@ class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangExpression | nul
     });
   };
 }
-
-const expressionBuilder = new ExpressionBuilder();
-export default expressionBuilder;

@@ -5,6 +5,7 @@ import { TypeDefinition, AnnotatedParameter } from '../ast/common/structs';
 import { Type, functionType } from '../ast/common/types';
 import { ClassDefinition, ClassMemberDefinition } from '../ast/lang/samlang-classes';
 import { SamlangExpression } from '../ast/lang/samlang-expressions';
+import type { ModuleErrorCollector } from '../errors/error-collector';
 import {
   ClassHeaderContext,
   UtilClassHeaderContext,
@@ -16,7 +17,7 @@ import {
   ExpressionContext,
 } from './generated/PLParser';
 import { PLVisitor } from './generated/PLVisitor';
-import expressionBuilder from './parser-expression-builder';
+import ExpressionBuilder from './parser-expression-builder';
 import typeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';
 
@@ -139,12 +140,19 @@ class ModuleTypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinitio
 
 const moduleTypeDefinitionBuilder = new ModuleTypeDefinitionBuilder();
 
-class ClassBuilder extends AbstractParseTreeVisitor<ClassDefinition | null>
+export default class ClassBuilder extends AbstractParseTreeVisitor<ClassDefinition | null>
   implements PLVisitor<ClassDefinition | null> {
+  private readonly expressionBuilder: ExpressionBuilder;
+
+  constructor(errorCollector: ModuleErrorCollector) {
+    super();
+    this.expressionBuilder = new ExpressionBuilder(errorCollector);
+  }
+
   defaultResult = (): ClassDefinition | null => null;
 
   private buildExpression = (expressionContext: ExpressionContext): SamlangExpression | null =>
-    expressionContext.accept(expressionBuilder);
+    expressionContext.accept(this.expressionBuilder);
 
   private buildClassMemberDefinition = (
     ctx: ClassMemberDefinitionContext
@@ -213,6 +221,3 @@ class ClassBuilder extends AbstractParseTreeVisitor<ClassDefinition | null>
     };
   };
 }
-
-const classBuilder = new ClassBuilder();
-export default classBuilder;

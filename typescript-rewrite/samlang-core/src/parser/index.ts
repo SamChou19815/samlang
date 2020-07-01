@@ -9,8 +9,8 @@ import type { SamlangExpression } from '../ast/lang/samlang-expressions';
 import type { ModuleErrorCollector } from '../errors/error-collector';
 import { PLLexer } from './generated/PLLexer';
 import { PLParser } from './generated/PLParser';
-import expressionBuilder from './parser-expression-builder';
-import moduleBuilder from './parser-module-builder';
+import ExpressionBuilder from './parser-expression-builder';
+import ModuleBuilder from './parser-module-builder';
 
 class ErrorListener implements ANTLRErrorListener<unknown> {
   constructor(public readonly moduleErrorCollector: ModuleErrorCollector) {}
@@ -43,7 +43,7 @@ export const parseSamlangModuleFromText = (
   const errorListener = new ErrorListener(moduleErrorCollector);
   parser.removeErrorListeners();
   parser.addErrorListener(errorListener);
-  return parser.module().accept(moduleBuilder);
+  return parser.module().accept(new ModuleBuilder(moduleErrorCollector));
 };
 
 export const parseSamlangExpressionFromText = (
@@ -54,5 +54,5 @@ export const parseSamlangExpressionFromText = (
   const errorListener = new ErrorListener(moduleErrorCollector);
   parser.removeErrorListeners();
   parser.addErrorListener(errorListener);
-  return parser.expression().accept(expressionBuilder);
+  return parser.expression().accept(new ExpressionBuilder(moduleErrorCollector));
 };
