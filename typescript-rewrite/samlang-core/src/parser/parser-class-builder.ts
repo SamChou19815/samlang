@@ -31,9 +31,8 @@ class ModuleNameBuilder extends AbstractParseTreeVisitor<ModuleName | null>
     const isPublic = ctx.PRIVATE() == null;
     const symbol = ctx.UpperId().symbol;
     const name = symbol.text;
-    if (name == null) {
-      return null;
-    }
+    // istanbul ignore next
+    if (name == null) return null;
     return [isPublic, name, tokenRange(symbol)];
   };
 
@@ -41,9 +40,8 @@ class ModuleNameBuilder extends AbstractParseTreeVisitor<ModuleName | null>
     const isPublic = ctx.PRIVATE() == null;
     const symbol = ctx.UpperId().symbol;
     const name = symbol.text;
-    if (name == null) {
-      return null;
-    }
+    // istanbul ignore next
+    if (name == null) return null;
     return [isPublic, name, tokenRange(symbol)];
   };
 }
@@ -62,6 +60,7 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition | nu
     super();
   }
 
+  // istanbul ignore next
   defaultResult = (): TypeDefinition | null => null;
 
   visitObjType(ctx: ObjTypeContext): TypeDefinition {
@@ -70,9 +69,7 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition | nu
       .map((c) => {
         const name = c.LowerId().symbol.text;
         const type = c.typeAnnotation().typeExpr().accept(typeBuilder);
-        if (name == null || type == null) {
-          return null;
-        }
+        if (name == null || type == null) return null;
         const isPublic = c.PRIVATE() == null;
         return [name, { type, isPublic }] as const;
       })
@@ -95,9 +92,7 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition | nu
       .map((c) => {
         const name = c.UpperId().symbol.text;
         const type = c.typeExpr().accept(typeBuilder);
-        if (name == null || type == null) {
-          return null;
-        }
+        if (name == null || type == null) return null;
         return [name, { type, isPublic: false }] as const;
       })
       .filter((it): it is readonly [string, { readonly type: Type; readonly isPublic: false }] =>
@@ -149,6 +144,7 @@ export default class ClassBuilder extends AbstractParseTreeVisitor<ClassDefiniti
     this.expressionBuilder = new ExpressionBuilder(errorCollector);
   }
 
+  // istanbul ignore next
   defaultResult = (): ClassDefinition | null => null;
 
   private buildExpression = (expressionContext: ExpressionContext): SamlangExpression | null =>
@@ -161,9 +157,7 @@ export default class ClassBuilder extends AbstractParseTreeVisitor<ClassDefiniti
     const name = nameSymbol.text;
     const returnType = ctx.typeExpr()?.accept(typeBuilder);
     const body = this.buildExpression(ctx.expression());
-    if (name == null || returnType == null || body == null) {
-      return null;
-    }
+    if (name == null || returnType == null || body == null) return null;
     const parameters = ctx
       .annotatedVariable()
       .map((annotatedVariable) => {
@@ -171,9 +165,8 @@ export default class ClassBuilder extends AbstractParseTreeVisitor<ClassDefiniti
         const variablename = parameterNameSymbol.text;
         const typeExpression = annotatedVariable.typeAnnotation().typeExpr();
         const type = typeExpression.accept(typeBuilder);
-        if (variablename == null || type == null) {
-          return null;
-        }
+        // istanbul ignore next
+        if (variablename == null || type == null) return null;
         return {
           name: variablename,
           nameRange: tokenRange(parameterNameSymbol),

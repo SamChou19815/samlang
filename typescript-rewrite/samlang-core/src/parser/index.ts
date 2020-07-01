@@ -43,7 +43,12 @@ export const parseSamlangModuleFromText = (
   const errorListener = new ErrorListener(moduleErrorCollector);
   parser.removeErrorListeners();
   parser.addErrorListener(errorListener);
-  return parser.module().accept(new ModuleBuilder(moduleErrorCollector));
+  try {
+    return parser.module().accept(new ModuleBuilder(moduleErrorCollector));
+  } catch {
+    moduleErrorCollector.reportSyntaxError(Range.DUMMY, 'Encountered unrecoverable syntax error');
+    return { imports: [], classes: [] };
+  }
 };
 
 export const parseSamlangExpressionFromText = (
@@ -54,5 +59,10 @@ export const parseSamlangExpressionFromText = (
   const errorListener = new ErrorListener(moduleErrorCollector);
   parser.removeErrorListeners();
   parser.addErrorListener(errorListener);
-  return parser.expression().accept(new ExpressionBuilder(moduleErrorCollector));
+  try {
+    return parser.expression().accept(new ExpressionBuilder(moduleErrorCollector));
+  } catch {
+    moduleErrorCollector.reportSyntaxError(Range.DUMMY, 'Encountered unrecoverable syntax error');
+    return null;
+  }
 };

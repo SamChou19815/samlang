@@ -79,12 +79,11 @@ const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');
 class ObjectFieldDeclarationBuilder
   extends AbstractParseTreeVisitor<ObjectConstructorExpressionFieldConstructor | null>
   implements PLVisitor<ObjectConstructorExpressionFieldConstructor | null> {
-  constructor(
-    private readonly toExpression: (context: ExpressionContext) => SamlangExpression | null
-  ) {
+  constructor(private readonly toExpression: (context: ExpressionContext) => SamlangExpression) {
     super();
   }
 
+  // istanbul ignore next
   defaultResult = (): ObjectConstructorExpressionFieldConstructor | null => null;
 
   visitNormalObjFieldDeclaration = (
@@ -92,14 +91,16 @@ class ObjectFieldDeclarationBuilder
   ): ObjectConstructorExpressionFieldConstructor | null => {
     const nameNode = ctx.LowerId().symbol;
     const name = nameNode.text;
+    // istanbul ignore next
     if (name == null) {
+      // istanbul ignore next
       return null;
     }
     return {
       range: tokenRange(nameNode),
       type: UndecidedTypes.next(),
       name,
-      expression: this.toExpression(ctx.expression()) ?? undefined,
+      expression: this.toExpression(ctx.expression()),
     };
   };
 
@@ -108,7 +109,9 @@ class ObjectFieldDeclarationBuilder
   ): ObjectConstructorExpressionFieldConstructor | null => {
     const nameNode = ctx.LowerId().symbol;
     const name = nameNode.text;
+    // istanbul ignore next
     if (name == null) {
+      // istanbul ignore next
       return null;
     }
     return {
@@ -132,7 +135,9 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
   }
 
   private toExpression = (context?: ExpressionContext): SamlangExpression => {
+    // istanbul ignore next
     if (context == null) {
+      // istanbul ignore next
       return ExpressionBuilder.DUMMY_EXPRESSION;
     }
     const parsed = context.accept(this);
@@ -166,21 +171,25 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
     const intLiteralNode = literalNode.IntLiteral();
     if (intLiteralNode != null) {
       const text = intLiteralNode.text;
+      // istanbul ignore next
       if (text == null) {
+        // istanbul ignore next
         return null;
       }
       const parsedBigInt = BigInt(text);
-      if (parsedBigInt > 9223372036854775807n || parsedBigInt < -9223372036854775808n) {
+      if (parsedBigInt > 9223372036854775807n) {
         this.errorCollector.reportSyntaxError(range, 'Not a 64-bit integer.');
       }
       return EXPRESSION_INT(range, parsedBigInt);
     }
     const stringLiteralNode = literalNode.StrLiteral();
+    // istanbul ignore next
     if (stringLiteralNode != null) {
       const literalText = stringLiteralNode.text;
       const unescaped = unescapeQuotes(literalText.substring(1, literalText.length - 1));
       return EXPRESSION_STRING(range, unescaped);
     }
+    // istanbul ignore next
     throw new Error(`Bad literal! ${ctx}`);
   };
 
@@ -189,7 +198,9 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
 
   visitVariableExpr = (ctx: VariableExprContext): SamlangExpression | null => {
     const name = ctx.LowerId().symbol.text;
+    // istanbul ignore next
     if (name == null) {
+      // istanbul ignore next
       return null;
     }
     return EXPRESSION_VARIABLE({ range: contextRange(ctx), type: UndecidedTypes.next(), name });
@@ -200,9 +211,8 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
     const memberNameNode = ctx.LowerId().symbol;
     const className = classNameNode.text;
     const memberName = memberNameNode.text;
-    if (className == null || memberName == null) {
-      return null;
-    }
+    // istanbul ignore next
+    if (className == null || memberName == null) return null;
     return EXPRESSION_CLASS_MEMBER({
       range: contextRange(ctx),
       type: UndecidedTypes.next(),
@@ -234,6 +244,7 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
 
   visitVariantConstructor = (ctx: VariantConstructorContext): SamlangExpression | null => {
     const tag = ctx.UpperId().symbol.text;
+    // istanbul ignore next
     if (tag == null) return null;
     return EXPRESSION_VARIANT_CONSTRUCTOR({
       range: contextRange(ctx),
@@ -246,9 +257,8 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
 
   visitFieldAccessExpr = (ctx: FieldAccessExprContext): SamlangExpression | null => {
     const fieldName = ctx.LowerId().symbol.text;
-    if (fieldName == null) {
-      return null;
-    }
+    // istanbul ignore next
+    if (fieldName == null) return null;
     return EXPRESSION_FIELD_ACCESS({
       range: contextRange(ctx),
       type: UndecidedTypes.next(),
@@ -315,9 +325,8 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
 
   visitFactorExpr = (ctx: FactorExprContext): SamlangExpression | null => {
     const operator = binaryOperatorSymbolTable[ctx.factorOperator().text];
-    if (operator == null) {
-      return null;
-    }
+    // istanbul ignore next
+    if (operator == null) return null;
     const range = contextRange(ctx);
     const e1 = this.toExpression(ctx.expression(0));
     const e2 = this.toExpression(ctx.expression(1));
@@ -326,9 +335,8 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
 
   visitTermExpr = (ctx: TermExprContext): SamlangExpression | null => {
     const operator = binaryOperatorSymbolTable[ctx.termOperator().text];
-    if (operator == null) {
-      return null;
-    }
+    // istanbul ignore next
+    if (operator == null) return null;
     const range = contextRange(ctx);
     const e1 = this.toExpression(ctx.expression(0));
     const e2 = this.toExpression(ctx.expression(1));
@@ -337,9 +345,8 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
 
   visitComparisonExpr = (ctx: ComparisonExprContext): SamlangExpression | null => {
     const operator = binaryOperatorSymbolTable[ctx.comparisonOperator().text];
-    if (operator == null) {
-      return null;
-    }
+    // istanbul ignore next
+    if (operator == null) return null;
     const range = contextRange(ctx);
     const e1 = this.toExpression(ctx.expression(0));
     const e2 = this.toExpression(ctx.expression(1));
@@ -404,7 +411,9 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
       .map((oneArg) => {
         const nameNode = oneArg.LowerId().symbol;
         const name = nameNode.text;
+        // istanbul ignore next
         if (name == null) {
+          // istanbul ignore next
           return null;
         }
         const type =
@@ -426,7 +435,9 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
 
   visitStatementBlockExpr = (ctx: StatementBlockExprContext): SamlangExpression | null => {
     const block = ctx.statementBlock().accept(this.statementBlockBuilder);
+    // istanbul ignore next
     if (block == null) {
+      // istanbul ignore next
       return null;
     }
     return EXPRESSION_STATEMENT_BLOCK({

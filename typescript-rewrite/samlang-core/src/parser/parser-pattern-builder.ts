@@ -21,12 +21,15 @@ import { tokenRange, contextRange } from './parser-util';
 
 class FieldNameBuilder extends AbstractParseTreeVisitor<ObjectPatternDestucturedName | null>
   implements PLVisitor<ObjectPatternDestucturedName | null> {
+  // istanbul ignore next
   defaultResult = (): ObjectPatternDestucturedName | null => null;
 
   visitRawVar = (ctx: RawVarContext): ObjectPatternDestucturedName | null => {
     const symbol = ctx.LowerId().symbol;
     const fieldName = symbol.text;
+    // istanbul ignore next
     if (fieldName == null) {
+      // istanbul ignore next
       return null;
     }
     return { fieldName, fieldOrder: -1, range: tokenRange(symbol) };
@@ -35,11 +38,15 @@ class FieldNameBuilder extends AbstractParseTreeVisitor<ObjectPatternDestuctured
   visitRenamedVar = (ctx: RenamedVarContext): ObjectPatternDestucturedName | null => {
     const idList = ctx.LowerId();
     const fieldName = idList[0].symbol.text;
+    // istanbul ignore next
     if (fieldName == null) {
+      // istanbul ignore next
       return null;
     }
     const alias = idList[1].symbol.text;
+    // istanbul ignore next
     if (alias == null) {
+      // istanbul ignore next
       return null;
     }
     return {

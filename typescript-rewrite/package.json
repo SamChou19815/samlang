@@ -59,6 +59,9 @@
   "jest": {
     "clearMocks": true,
     "coverageDirectory": "coverage",
+    "coveragePathIgnorePatterns": [
+      "/generated/"
+    ],
     "testEnvironment": "node",
     "testPathIgnorePatterns": [
       "/lib/"

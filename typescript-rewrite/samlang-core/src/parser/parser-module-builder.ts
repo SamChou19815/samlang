@@ -16,6 +16,7 @@ import { tokenRange, contextRange } from './parser-util';
 
 class ModuleMemberVisitor extends AbstractParseTreeVisitor<ClassDefinition | null>
   implements PLVisitor<ClassDefinition | null> {
+  // istanbul ignore next
   defaultResult = (): ClassDefinition | null => null;
 
   private readonly classBuilder: ClassBuilder;
@@ -40,6 +41,7 @@ export default class ModuleVisitor extends AbstractParseTreeVisitor<SamlangModul
     this.moduleMemberVisitor = new ModuleMemberVisitor(errorCollector);
   }
 
+  // istanbul ignore next
   defaultResult = (): SamlangModule => ({ imports: [], classes: [] });
 
   private buildModuleMembersImport = (ctx: ImportModuleMembersContext): ModuleMembersImport => ({
@@ -49,9 +51,8 @@ export default class ModuleVisitor extends AbstractParseTreeVisitor<SamlangModul
       .map((node) => {
         const symbol = node.symbol;
         const name = symbol.text;
-        if (name == null) {
-          return null;
-        }
+        // istanbul ignore next
+        if (name == null) return null;
         return [name, tokenRange(symbol)] as const;
       })
       .filter((it): it is readonly [string, Range] => Boolean(it)),

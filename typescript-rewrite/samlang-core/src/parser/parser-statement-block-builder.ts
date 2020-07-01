@@ -24,12 +24,15 @@ class StatementBuilder extends AbstractParseTreeVisitor<SamlangValStatement | nu
     super();
   }
 
+  // istanbul ignore next
   defaultResult = (): SamlangValStatement | null => null;
 
   visitValStatement = (ctx: ValStatementContext): SamlangValStatement | null => {
     const expressionContext = ctx.expression();
     const assignedExpression = this.expressionBuilder(expressionContext);
+    // istanbul ignore next
     if (assignedExpression == null) {
+      // istanbul ignore next
       return null;
     }
 
@@ -56,13 +59,15 @@ export default class StatementBlockBuilder extends AbstractParseTreeVisitor<Stat
     this.statementBuilder = new StatementBuilder(expressionBuilder);
   }
 
+  // istanbul ignore next
   defaultResult = (): StatementBlock | null => null;
 
   visitStatementBlock = (ctx: StatementBlockContext): StatementBlock => {
     const expressionContext = ctx.expression();
     const expression =
       expressionContext != null
-        ? this.expressionBuilder(expressionContext) ?? undefined
+        ? // istanbul ignore next
+          this.expressionBuilder(expressionContext) ?? undefined
         : undefined;
     return {
       range: contextRange(ctx),

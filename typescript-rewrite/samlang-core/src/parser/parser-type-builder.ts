@@ -33,7 +33,9 @@ class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVis
 
   visitSingleIdentifierType = (ctx: SingleIdentifierTypeContext): IdentifierType | null => {
     const identifier = ctx.UpperId().symbol.text;
+    // istanbul ignore next
     if (identifier == null) {
+      // istanbul ignore next
       return null;
     }
     const typeParametersContext = ctx.typeParameters();
