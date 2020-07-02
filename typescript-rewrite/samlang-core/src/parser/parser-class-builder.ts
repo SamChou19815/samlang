@@ -1,11 +1,12 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
 import Range from '../ast/common/range';
-import { TypeDefinition, AnnotatedParameter } from '../ast/common/structs';
-import { Type, functionType } from '../ast/common/types';
+import type { TypeDefinition } from '../ast/common/structs';
+import { functionType } from '../ast/common/types';
 import { ClassDefinition, ClassMemberDefinition } from '../ast/lang/samlang-classes';
 import { SamlangExpression } from '../ast/lang/samlang-expressions';
 import type { ModuleErrorCollector } from '../errors/error-collector';
+import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {
   ClassHeaderContext,
   UtilClassHeaderContext,
@@ -31,8 +32,7 @@ class ModuleNameBuilder extends AbstractParseTreeVisitor<ModuleName | null>
     const isPublic = ctx.PRIVATE() == null;
     const symbol = ctx.UpperId().symbol;
     const name = symbol.text;
-    // istanbul ignore next
-    if (name == null) return null;
+    assertNotNull(name);
     return [isPublic, name, tokenRange(symbol)];
   };
 
@@ -40,8 +40,7 @@ class ModuleNameBuilder extends AbstractParseTreeVisitor<ModuleName | null>
     const isPublic = ctx.PRIVATE() == null;
     const symbol = ctx.UpperId().symbol;
     const name = symbol.text;
-    // istanbul ignore next
-    if (name == null) return null;
+    assertNotNull(name);
     return [isPublic, name, tokenRange(symbol)];
   };
 }
@@ -52,7 +51,7 @@ const getTypeParameters = (context: TypeParametersDeclarationContext): readonly 
   context
     .UpperId()
     .map((it) => it.symbol.text)
-    .filter((it): it is string => Boolean(it));
+    .filter(isNotNull);
 
 class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition | null>
   implements PLVisitor<TypeDefinition | null> {
@@ -73,9 +72,7 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition | nu
         const isPublic = c.PRIVATE() == null;
         return [name, { type, isPublic }] as const;
       })
-      .filter((it): it is readonly [string, { readonly type: Type; readonly isPublic: boolean }] =>
-        Boolean(it)
-      );
+      .filter(isNotNull);
     const names = mappings.map(([name]) => name);
     return {
       range: this.range,
@@ -95,9 +92,7 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition | nu
         if (name == null || type == null) return null;
         return [name, { type, isPublic: false }] as const;
       })
-      .filter((it): it is readonly [string, { readonly type: Type; readonly isPublic: false }] =>
-        Boolean(it)
-      );
+      .filter(isNotNull);
     const names = mappings.map(([name]) => name);
     return {
       range: this.range,
@@ -165,8 +160,8 @@ export default class ClassBuilder extends AbstractParseTreeVisitor<ClassDefiniti
         const variablename = parameterNameSymbol.text;
         const typeExpression = annotatedVariable.typeAnnotation().typeExpr();
         const type = typeExpression.accept(typeBuilder);
-        // istanbul ignore next
-        if (variablename == null || type == null) return null;
+        assertNotNull(variablename);
+        assertNotNull(type);
         return {
           name: variablename,
           nameRange: tokenRange(parameterNameSymbol),
@@ -174,7 +169,7 @@ export default class ClassBuilder extends AbstractParseTreeVisitor<ClassDefiniti
           typeRange: contextRange(typeExpression),
         };
       })
-      .filter((it): it is AnnotatedParameter => Boolean(it));
+      .filter(isNotNull);
     const type = functionType(
       parameters.map((it) => it.type),
       returnType
@@ -207,10 +202,7 @@ export default class ClassBuilder extends AbstractParseTreeVisitor<ClassDefiniti
       name,
       isPublic,
       typeDefinition,
-      members: ctx
-        .classMemberDefinition()
-        .map(this.buildClassMemberDefinition)
-        .filter((it): it is ClassMemberDefinition => Boolean(it)),
+      members: ctx.classMemberDefinition().map(this.buildClassMemberDefinition).filter(isNotNull),
     };
   };
 }

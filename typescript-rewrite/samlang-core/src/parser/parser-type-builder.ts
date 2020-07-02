@@ -13,6 +13,7 @@ import {
   tupleType,
   functionType,
 } from '../ast/common/types';
+import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {
   SingleIdentifierTypeContext,
   TupleTypeContext,
@@ -33,11 +34,7 @@ class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVis
 
   visitSingleIdentifierType = (ctx: SingleIdentifierTypeContext): IdentifierType | null => {
     const identifier = ctx.UpperId().symbol.text;
-    // istanbul ignore next
-    if (identifier == null) {
-      // istanbul ignore next
-      return null;
-    }
+    assertNotNull(identifier);
     const typeParametersContext = ctx.typeParameters();
     if (typeParametersContext == null) {
       return identifierType(identifier);
@@ -45,7 +42,7 @@ class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVis
     const typeArguments = typeParametersContext
       .typeExpr()
       .map((it) => it.accept(this))
-      .filter((it): it is Type => Boolean(it));
+      .filter(isNotNull);
     return identifierType(identifier, typeArguments);
   };
 
@@ -54,7 +51,7 @@ class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVis
       ctx
         .typeExpr()
         .map((it) => it.accept(this))
-        .filter((it): it is Type => Boolean(it))
+        .filter(isNotNull)
     );
 
   visitFunctionType = (ctx: FunctionTypeContext): FunctionType | null => {
@@ -66,7 +63,7 @@ class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVis
     const argumentTypes = types
       .slice(0, types.length - 1)
       .map((it) => it.accept(this))
-      .filter((it): it is Type => Boolean(it));
+      .filter(isNotNull);
     return functionType(argumentTypes, returnType);
   };
 }

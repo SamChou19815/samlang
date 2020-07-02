@@ -6,6 +6,7 @@ import {
   StatementBlock,
   SamlangExpression,
 } from '../ast/lang/samlang-expressions';
+import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {
   ExpressionContext,
   StatementBlockContext,
@@ -30,11 +31,7 @@ class StatementBuilder extends AbstractParseTreeVisitor<SamlangValStatement | nu
   visitValStatement = (ctx: ValStatementContext): SamlangValStatement | null => {
     const expressionContext = ctx.expression();
     const assignedExpression = this.expressionBuilder(expressionContext);
-    // istanbul ignore next
-    if (assignedExpression == null) {
-      // istanbul ignore next
-      return null;
-    }
+    assertNotNull(assignedExpression);
 
     const patternContext = ctx.pattern();
     const pattern = patternContext.accept(patternBuilder) ?? {
@@ -53,7 +50,7 @@ export default class StatementBlockBuilder extends AbstractParseTreeVisitor<Stat
   private readonly statementBuilder: StatementBuilder;
 
   constructor(
-    private readonly expressionBuilder: (context: ExpressionContext) => SamlangExpression | null
+    private readonly expressionBuilder: (context: ExpressionContext) => SamlangExpression
   ) {
     super();
     this.statementBuilder = new StatementBuilder(expressionBuilder);
@@ -65,16 +62,13 @@ export default class StatementBlockBuilder extends AbstractParseTreeVisitor<Stat
   visitStatementBlock = (ctx: StatementBlockContext): StatementBlock => {
     const expressionContext = ctx.expression();
     const expression =
-      expressionContext != null
-        ? // istanbul ignore next
-          this.expressionBuilder(expressionContext) ?? undefined
-        : undefined;
+      expressionContext != null ? this.expressionBuilder(expressionContext) : undefined;
     return {
       range: contextRange(ctx),
       statements: ctx
         .statement()
         .map((it) => it.accept(this.statementBuilder))
-        .filter((it): it is SamlangValStatement => Boolean(it)),
+        .filter(isNotNull),
       expression,
     };
   };

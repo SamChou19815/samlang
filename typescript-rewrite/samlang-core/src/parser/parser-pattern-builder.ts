@@ -8,6 +8,7 @@ import type {
   VariablePattern,
   WildCardPattern,
 } from '../ast/lang/samlang-pattern';
+import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {
   TuplePatternContext,
   ObjectPatternContext,
@@ -27,28 +28,16 @@ class FieldNameBuilder extends AbstractParseTreeVisitor<ObjectPatternDestuctured
   visitRawVar = (ctx: RawVarContext): ObjectPatternDestucturedName | null => {
     const symbol = ctx.LowerId().symbol;
     const fieldName = symbol.text;
-    // istanbul ignore next
-    if (fieldName == null) {
-      // istanbul ignore next
-      return null;
-    }
+    assertNotNull(fieldName);
     return { fieldName, fieldOrder: -1, range: tokenRange(symbol) };
   };
 
   visitRenamedVar = (ctx: RenamedVarContext): ObjectPatternDestucturedName | null => {
     const idList = ctx.LowerId();
     const fieldName = idList[0].symbol.text;
-    // istanbul ignore next
-    if (fieldName == null) {
-      // istanbul ignore next
-      return null;
-    }
+    assertNotNull(fieldName);
     const alias = idList[1].symbol.text;
-    // istanbul ignore next
-    if (alias == null) {
-      // istanbul ignore next
-      return null;
-    }
+    assertNotNull(alias);
     return {
       fieldName,
       fieldOrder: -1,
@@ -78,7 +67,7 @@ class PatternBuilder extends AbstractParseTreeVisitor<Pattern | null>
     destructedNames: ctx
       .varOrRenamedVar()
       .map((it) => it.accept(fieldNameBuilder))
-      .filter((it): it is ObjectPatternDestucturedName => Boolean(it)),
+      .filter(isNotNull),
   });
 
   visitVariablePattern = (ctx: VariablePatternContext): VariablePattern => ({

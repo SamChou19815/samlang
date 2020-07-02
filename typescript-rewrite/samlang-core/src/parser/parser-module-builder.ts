@@ -1,10 +1,10 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
 import ModuleReference from '../ast/common/module-reference';
-import type Range from '../ast/common/range';
 import { ModuleMembersImport } from '../ast/common/structs';
 import type { ClassDefinition, SamlangModule } from '../ast/lang/samlang-classes';
 import type { ModuleErrorCollector } from '../errors/error-collector';
+import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {
   ModuleContext,
   ImportModuleMembersContext,
@@ -51,17 +51,16 @@ export default class ModuleVisitor extends AbstractParseTreeVisitor<SamlangModul
       .map((node) => {
         const symbol = node.symbol;
         const name = symbol.text;
-        // istanbul ignore next
-        if (name == null) return null;
+        assertNotNull(name);
         return [name, tokenRange(symbol)] as const;
       })
-      .filter((it): it is readonly [string, Range] => Boolean(it)),
+      .filter(isNotNull),
     importedModule: new ModuleReference(
       ctx
         .moduleReference()
         .UpperId()
         .map((it) => it.text)
-        .filter((it): it is string => Boolean(it))
+        .filter(isNotNull)
     ),
     importedModuleRange: contextRange(ctx.moduleReference()),
   });
@@ -71,6 +70,6 @@ export default class ModuleVisitor extends AbstractParseTreeVisitor<SamlangModul
     classes: ctx
       .moduleMember()
       .map((it) => it.accept(this.moduleMemberVisitor))
-      .filter((it): it is ClassDefinition => Boolean(it)),
+      .filter(isNotNull),
   });
 }
