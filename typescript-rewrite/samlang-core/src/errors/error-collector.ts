@@ -1,6 +1,6 @@
 import type ModuleReference from '../ast/common/module-reference';
 import type Range from '../ast/common/range';
-import type { CompileTimeError, SyntaxError } from './error-definitions';
+import { CompileTimeError, SyntaxError } from './error-definitions';
 
 interface ReadonlyGlobalErrorCollector {
   getErrors(): readonly CompileTimeError[];
@@ -19,14 +19,7 @@ export class ModuleErrorCollector {
   ) {}
 
   reportSyntaxError(range: Range, reason: string): void {
-    const syntaxError: SyntaxError = {
-      errorType: 'SyntaxError',
-      errorCode: 1,
-      moduleReference: this.moduleReference,
-      range,
-      reason,
-    };
-    this.collectorDelegate.reportError(syntaxError);
+    this.collectorDelegate.reportError(new SyntaxError(this.moduleReference, range, reason));
   }
 }
 
