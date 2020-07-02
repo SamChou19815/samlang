@@ -47,6 +47,7 @@
           "no-empty-function": "off",
           "no-useless-constructor": "off",
           "no-undef": "off",
+          "no-unused-vars": "off",
           "prefer-destructuring": "off"
         }
       }
