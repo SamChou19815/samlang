@@ -15,3 +15,6 @@ coverage
 
 ## Compiled output
 lib
+
+# Generated
+samlang-core/src/parser/generated
