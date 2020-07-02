@@ -5,5 +5,5 @@ set -x
 
 cp ../../samlang-parser-generated-java/src/main/antlr/PL.g4 .
 cp ../../samlang-parser-generated-java/src/main/antlr/PLLexerPart.g4 .
-yarn antlr4ts -o src/parser/generated -visitor PL.g4
+yarn antlr4ts -o src/parser/generated -visitor -no-listener PL.g4
 rm PL*.g4

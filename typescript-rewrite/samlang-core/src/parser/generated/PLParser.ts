@@ -23,7 +23,6 @@ import { VocabularyImpl } from "antlr4ts/VocabularyImpl";
 
 import * as Utils from "antlr4ts/misc/Utils";
 
-import { PLListener } from "./PLListener";
 import { PLVisitor } from "./PLVisitor";
 
 
@@ -2849,18 +2848,6 @@ export class ModuleContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_module; }
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterModule) {
-			listener.enterModule(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitModule) {
-			listener.exitModule(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitModule) {
 			return visitor.visitModule(this);
@@ -2903,18 +2890,6 @@ export class ImportModuleMembersContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_importModuleMembers; }
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterImportModuleMembers) {
-			listener.enterImportModuleMembers(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitImportModuleMembers) {
-			listener.exitImportModuleMembers(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitImportModuleMembers) {
 			return visitor.visitImportModuleMembers(this);
@@ -2950,18 +2925,6 @@ export class ModuleReferenceContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_moduleReference; }
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterModuleReference) {
-			listener.enterModuleReference(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitModuleReference) {
-			listener.exitModuleReference(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitModuleReference) {
 			return visitor.visitModuleReference(this);
@@ -2991,18 +2954,6 @@ export class ClassAsModuleMemberContext extends ModuleMemberContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterClassAsModuleMember) {
-			listener.enterClassAsModuleMember(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitClassAsModuleMember) {
-			listener.exitClassAsModuleMember(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitClassAsModuleMember) {
 			return visitor.visitClassAsModuleMember(this);
@@ -3018,18 +2969,6 @@ export class InterfaceAsModuleMemberContext extends ModuleMemberContext {
 	constructor(ctx: ModuleMemberContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterInterfaceAsModuleMember) {
-			listener.enterInterfaceAsModuleMember(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitInterfaceAsModuleMember) {
-			listener.exitInterfaceAsModuleMember(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -3062,18 +3001,6 @@ export class ClazzContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_clazz; }
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterClazz) {
-			listener.enterClazz(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitClazz) {
-			listener.exitClazz(this);
-		}
-	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitClazz) {
@@ -3108,18 +3035,6 @@ export class InterfazeContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_interfaze; }
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterInterfaze) {
-			listener.enterInterfaze(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitInterfaze) {
-			listener.exitInterfaze(this);
-		}
-	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitInterfaze) {
@@ -3158,18 +3073,6 @@ export class ClassHeaderContext extends ClassHeaderDeclarationContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterClassHeader) {
-			listener.enterClassHeader(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitClassHeader) {
-			listener.exitClassHeader(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitClassHeader) {
 			return visitor.visitClassHeader(this);
@@ -3185,18 +3088,6 @@ export class UtilClassHeaderContext extends ClassHeaderDeclarationContext {
 	constructor(ctx: ClassHeaderDeclarationContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterUtilClassHeader) {
-			listener.enterUtilClassHeader(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitUtilClassHeader) {
-			listener.exitUtilClassHeader(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -3251,18 +3142,6 @@ export class ClassMemberDefinitionContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_classMemberDefinition; }
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterClassMemberDefinition) {
-			listener.enterClassMemberDefinition(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitClassMemberDefinition) {
-			listener.exitClassMemberDefinition(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitClassMemberDefinition) {
 			return visitor.visitClassMemberDefinition(this);
@@ -3311,18 +3190,6 @@ export class ClassMemberDeclarationContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_classMemberDeclaration; }
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterClassMemberDeclaration) {
-			listener.enterClassMemberDeclaration(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitClassMemberDeclaration) {
-			listener.exitClassMemberDeclaration(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitClassMemberDeclaration) {
 			return visitor.visitClassMemberDeclaration(this);
@@ -3359,18 +3226,6 @@ export class TypeParametersDeclarationContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_typeParametersDeclaration; }
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterTypeParametersDeclaration) {
-			listener.enterTypeParametersDeclaration(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitTypeParametersDeclaration) {
-			listener.exitTypeParametersDeclaration(this);
-		}
-	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitTypeParametersDeclaration) {
@@ -3416,18 +3271,6 @@ export class ObjTypeContext extends TypeDeclarationContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterObjType) {
-			listener.enterObjType(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitObjType) {
-			listener.exitObjType(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitObjType) {
 			return visitor.visitObjType(this);
@@ -3460,18 +3303,6 @@ export class VariantTypeContext extends TypeDeclarationContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterVariantType) {
-			listener.enterVariantType(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitVariantType) {
-			listener.exitVariantType(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitVariantType) {
 			return visitor.visitVariantType(this);
@@ -3495,18 +3326,6 @@ export class ObjectTypeFieldDeclarationContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_objectTypeFieldDeclaration; }
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterObjectTypeFieldDeclaration) {
-			listener.enterObjectTypeFieldDeclaration(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitObjectTypeFieldDeclaration) {
-			listener.exitObjectTypeFieldDeclaration(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitObjectTypeFieldDeclaration) {
 			return visitor.visitObjectTypeFieldDeclaration(this);
@@ -3529,18 +3348,6 @@ export class VariantTypeConstructorDeclarationContext extends ParserRuleContext 
 	}
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_variantTypeConstructorDeclaration; }
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterVariantTypeConstructorDeclaration) {
-			listener.enterVariantTypeConstructorDeclaration(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitVariantTypeConstructorDeclaration) {
-			listener.exitVariantTypeConstructorDeclaration(this);
-		}
-	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitVariantTypeConstructorDeclaration) {
@@ -3569,18 +3376,6 @@ export class UnitTypeContext extends TypeExprContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterUnitType) {
-			listener.enterUnitType(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitUnitType) {
-			listener.exitUnitType(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitUnitType) {
 			return visitor.visitUnitType(this);
@@ -3594,18 +3389,6 @@ export class IntTypeContext extends TypeExprContext {
 	constructor(ctx: TypeExprContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterIntType) {
-			listener.enterIntType(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitIntType) {
-			listener.exitIntType(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -3623,18 +3406,6 @@ export class StrTypeContext extends TypeExprContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterStrType) {
-			listener.enterStrType(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitStrType) {
-			listener.exitStrType(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitStrType) {
 			return visitor.visitStrType(this);
@@ -3648,18 +3419,6 @@ export class BoolTypeContext extends TypeExprContext {
 	constructor(ctx: TypeExprContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterBoolType) {
-			listener.enterBoolType(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitBoolType) {
-			listener.exitBoolType(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -3678,18 +3437,6 @@ export class SingleIdentifierTypeContext extends TypeExprContext {
 	constructor(ctx: TypeExprContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterSingleIdentifierType) {
-			listener.enterSingleIdentifierType(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitSingleIdentifierType) {
-			listener.exitSingleIdentifierType(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -3726,18 +3473,6 @@ export class TupleTypeContext extends TypeExprContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterTupleType) {
-			listener.enterTupleType(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitTupleType) {
-			listener.exitTupleType(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitTupleType) {
 			return visitor.visitTupleType(this);
@@ -3771,18 +3506,6 @@ export class FunctionTypeContext extends TypeExprContext {
 	constructor(ctx: TypeExprContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterFunctionType) {
-			listener.enterFunctionType(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitFunctionType) {
-			listener.exitFunctionType(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -3822,18 +3545,6 @@ export class TypeParametersContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_typeParameters; }
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterTypeParameters) {
-			listener.enterTypeParameters(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitTypeParameters) {
-			listener.exitTypeParameters(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitTypeParameters) {
 			return visitor.visitTypeParameters(this);
@@ -3854,18 +3565,6 @@ export class AnnotatedVariableContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_annotatedVariable; }
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterAnnotatedVariable) {
-			listener.enterAnnotatedVariable(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitAnnotatedVariable) {
-			listener.exitAnnotatedVariable(this);
-		}
-	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitAnnotatedVariable) {
@@ -3888,18 +3587,6 @@ export class OptionallyAnnotatedParameterContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_optionallyAnnotatedParameter; }
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterOptionallyAnnotatedParameter) {
-			listener.enterOptionallyAnnotatedParameter(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitOptionallyAnnotatedParameter) {
-			listener.exitOptionallyAnnotatedParameter(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitOptionallyAnnotatedParameter) {
 			return visitor.visitOptionallyAnnotatedParameter(this);
@@ -3920,18 +3607,6 @@ export class TypeAnnotationContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_typeAnnotation; }
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterTypeAnnotation) {
-			listener.enterTypeAnnotation(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitTypeAnnotation) {
-			listener.exitTypeAnnotation(this);
-		}
-	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitTypeAnnotation) {
@@ -3958,18 +3633,6 @@ export class PatternToExprContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_patternToExpr; }
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterPatternToExpr) {
-			listener.enterPatternToExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitPatternToExpr) {
-			listener.exitPatternToExpr(this);
-		}
-	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitPatternToExpr) {
@@ -4001,18 +3664,6 @@ export class StatementBlockContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_statementBlock; }
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterStatementBlock) {
-			listener.enterStatementBlock(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitStatementBlock) {
-			listener.exitStatementBlock(this);
-		}
-	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitStatementBlock) {
@@ -4052,18 +3703,6 @@ export class ValStatementContext extends StatementContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterValStatement) {
-			listener.enterValStatement(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitValStatement) {
-			listener.exitValStatement(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitValStatement) {
 			return visitor.visitValStatement(this);
@@ -4095,18 +3734,6 @@ export class NestedExprContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterNestedExpr) {
-			listener.enterNestedExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitNestedExpr) {
-			listener.exitNestedExpr(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitNestedExpr) {
 			return visitor.visitNestedExpr(this);
@@ -4124,18 +3751,6 @@ export class LiteralExprContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterLiteralExpr) {
-			listener.enterLiteralExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitLiteralExpr) {
-			listener.exitLiteralExpr(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitLiteralExpr) {
 			return visitor.visitLiteralExpr(this);
@@ -4149,18 +3764,6 @@ export class ThisExprContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterThisExpr) {
-			listener.enterThisExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitThisExpr) {
-			listener.exitThisExpr(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4178,18 +3781,6 @@ export class VariableExprContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterVariableExpr) {
-			listener.enterVariableExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitVariableExpr) {
-			listener.exitVariableExpr(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitVariableExpr) {
 			return visitor.visitVariableExpr(this);
@@ -4205,18 +3796,6 @@ export class ClassMemberExprContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterClassMemberExpr) {
-			listener.enterClassMemberExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitClassMemberExpr) {
-			listener.exitClassMemberExpr(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4253,18 +3832,6 @@ export class TupleConstructorContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterTupleConstructor) {
-			listener.enterTupleConstructor(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitTupleConstructor) {
-			listener.exitTupleConstructor(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitTupleConstructor) {
 			return visitor.visitTupleConstructor(this);
@@ -4282,18 +3849,6 @@ export class ObjConstructorContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterObjConstructor) {
-			listener.enterObjConstructor(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitObjConstructor) {
-			listener.exitObjConstructor(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4316,18 +3871,6 @@ export class VariantConstructorContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterVariantConstructor) {
-			listener.enterVariantConstructor(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitVariantConstructor) {
-			listener.exitVariantConstructor(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitVariantConstructor) {
 			return visitor.visitVariantConstructor(this);
@@ -4345,18 +3888,6 @@ export class FieldAccessExprContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterFieldAccessExpr) {
-			listener.enterFieldAccessExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitFieldAccessExpr) {
-			listener.exitFieldAccessExpr(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4377,18 +3908,6 @@ export class NegExprContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterNegExpr) {
-			listener.enterNegExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitNegExpr) {
-			listener.exitNegExpr(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitNegExpr) {
 			return visitor.visitNegExpr(this);
@@ -4405,18 +3924,6 @@ export class NotExprContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterNotExpr) {
-			listener.enterNotExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitNotExpr) {
-			listener.exitNotExpr(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4439,18 +3946,6 @@ export class PanicExprContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterPanicExpr) {
-			listener.enterPanicExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitPanicExpr) {
-			listener.exitPanicExpr(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitPanicExpr) {
 			return visitor.visitPanicExpr(this);
@@ -4469,18 +3964,6 @@ export class StringToIntExprContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterStringToIntExpr) {
-			listener.enterStringToIntExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitStringToIntExpr) {
-			listener.exitStringToIntExpr(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4503,18 +3986,6 @@ export class IntToStringExprContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterIntToStringExpr) {
-			listener.enterIntToStringExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitIntToStringExpr) {
-			listener.exitIntToStringExpr(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitIntToStringExpr) {
 			return visitor.visitIntToStringExpr(this);
@@ -4535,18 +4006,6 @@ export class PrintLineExprContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterPrintLineExpr) {
-			listener.enterPrintLineExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitPrintLineExpr) {
-			listener.exitPrintLineExpr(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitPrintLineExpr) {
 			return visitor.visitPrintLineExpr(this);
@@ -4565,18 +4024,6 @@ export class FunctionApplicationExprContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterFunctionApplicationExpr) {
-			listener.enterFunctionApplicationExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitFunctionApplicationExpr) {
-			listener.exitFunctionApplicationExpr(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4605,18 +4052,6 @@ export class FactorExprContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterFactorExpr) {
-			listener.enterFactorExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitFactorExpr) {
-			listener.exitFactorExpr(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitFactorExpr) {
 			return visitor.visitFactorExpr(this);
@@ -4641,18 +4076,6 @@ export class TermExprContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterTermExpr) {
-			listener.enterTermExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitTermExpr) {
-			listener.exitTermExpr(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4681,18 +4104,6 @@ export class ComparisonExprContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterComparisonExpr) {
-			listener.enterComparisonExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitComparisonExpr) {
-			listener.exitComparisonExpr(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitComparisonExpr) {
 			return visitor.visitComparisonExpr(this);
@@ -4715,18 +4126,6 @@ export class ConjunctionExprContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterConjunctionExpr) {
-			listener.enterConjunctionExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitConjunctionExpr) {
-			listener.exitConjunctionExpr(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4753,18 +4152,6 @@ export class DisjunctionExprContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterDisjunctionExpr) {
-			listener.enterDisjunctionExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitDisjunctionExpr) {
-			listener.exitDisjunctionExpr(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitDisjunctionExpr) {
 			return visitor.visitDisjunctionExpr(this);
@@ -4787,18 +4174,6 @@ export class ConcatExprContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterConcatExpr) {
-			listener.enterConcatExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitConcatExpr) {
-			listener.exitConcatExpr(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4825,18 +4200,6 @@ export class IfElseExprContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterIfElseExpr) {
-			listener.enterIfElseExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitIfElseExpr) {
-			listener.exitIfElseExpr(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4868,18 +4231,6 @@ export class MatchExprContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterMatchExpr) {
-			listener.enterMatchExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitMatchExpr) {
-			listener.exitMatchExpr(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4920,18 +4271,6 @@ export class FunExprContext extends ExpressionContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterFunExpr) {
-			listener.enterFunExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitFunExpr) {
-			listener.exitFunExpr(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitFunExpr) {
 			return visitor.visitFunExpr(this);
@@ -4947,18 +4286,6 @@ export class StatementBlockExprContext extends ExpressionContext {
 	constructor(ctx: ExpressionContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterStatementBlockExpr) {
-			listener.enterStatementBlockExpr(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitStatementBlockExpr) {
-			listener.exitStatementBlockExpr(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -4996,18 +4323,6 @@ export class ObjectFieldDeclarationsContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_objectFieldDeclarations; }
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterObjectFieldDeclarations) {
-			listener.enterObjectFieldDeclarations(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitObjectFieldDeclarations) {
-			listener.exitObjectFieldDeclarations(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitObjectFieldDeclarations) {
 			return visitor.visitObjectFieldDeclarations(this);
@@ -5039,18 +4354,6 @@ export class NormalObjFieldDeclarationContext extends ObjectFieldDeclarationCont
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterNormalObjFieldDeclaration) {
-			listener.enterNormalObjFieldDeclaration(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitNormalObjFieldDeclaration) {
-			listener.exitNormalObjFieldDeclaration(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitNormalObjFieldDeclaration) {
 			return visitor.visitNormalObjFieldDeclaration(this);
@@ -5064,18 +4367,6 @@ export class ShorthandObjFieldDeclarationContext extends ObjectFieldDeclarationC
 	constructor(ctx: ObjectFieldDeclarationContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterShorthandObjFieldDeclaration) {
-			listener.enterShorthandObjFieldDeclaration(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitShorthandObjFieldDeclaration) {
-			listener.exitShorthandObjFieldDeclaration(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -5114,18 +4405,6 @@ export class FunctionArgumentsContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_functionArguments; }
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterFunctionArguments) {
-			listener.enterFunctionArguments(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitFunctionArguments) {
-			listener.exitFunctionArguments(this);
-		}
-	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitFunctionArguments) {
@@ -5173,18 +4452,6 @@ export class TuplePatternContext extends PatternContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterTuplePattern) {
-			listener.enterTuplePattern(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitTuplePattern) {
-			listener.exitTuplePattern(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitTuplePattern) {
 			return visitor.visitTuplePattern(this);
@@ -5219,18 +4486,6 @@ export class ObjectPatternContext extends PatternContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterObjectPattern) {
-			listener.enterObjectPattern(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitObjectPattern) {
-			listener.exitObjectPattern(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitObjectPattern) {
 			return visitor.visitObjectPattern(this);
@@ -5246,18 +4501,6 @@ export class VariablePatternContext extends PatternContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterVariablePattern) {
-			listener.enterVariablePattern(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitVariablePattern) {
-			listener.exitVariablePattern(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitVariablePattern) {
 			return visitor.visitVariablePattern(this);
@@ -5271,18 +4514,6 @@ export class WildcardPatternContext extends PatternContext {
 	constructor(ctx: PatternContext) {
 		super(ctx.parent, ctx.invokingState);
 		this.copyFrom(ctx);
-	}
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterWildcardPattern) {
-			listener.enterWildcardPattern(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitWildcardPattern) {
-			listener.exitWildcardPattern(this);
-		}
 	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
@@ -5303,18 +4534,6 @@ export class VarOrWildCardContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_varOrWildCard; }
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterVarOrWildCard) {
-			listener.enterVarOrWildCard(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitVarOrWildCard) {
-			listener.exitVarOrWildCard(this);
-		}
-	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitVarOrWildCard) {
@@ -5343,18 +4562,6 @@ export class RawVarContext extends VarOrRenamedVarContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterRawVar) {
-			listener.enterRawVar(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitRawVar) {
-			listener.exitRawVar(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitRawVar) {
 			return visitor.visitRawVar(this);
@@ -5379,18 +4586,6 @@ export class RenamedVarContext extends VarOrRenamedVarContext {
 		this.copyFrom(ctx);
 	}
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterRenamedVar) {
-			listener.enterRenamedVar(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitRenamedVar) {
-			listener.exitRenamedVar(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitRenamedVar) {
 			return visitor.visitRenamedVar(this);
@@ -5411,18 +4606,6 @@ export class FactorOperatorContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_factorOperator; }
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterFactorOperator) {
-			listener.enterFactorOperator(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitFactorOperator) {
-			listener.exitFactorOperator(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitFactorOperator) {
 			return visitor.visitFactorOperator(this);
@@ -5441,18 +4624,6 @@ export class TermOperatorContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_termOperator; }
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterTermOperator) {
-			listener.enterTermOperator(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitTermOperator) {
-			listener.exitTermOperator(this);
-		}
-	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitTermOperator) {
@@ -5477,18 +4648,6 @@ export class ComparisonOperatorContext extends ParserRuleContext {
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_comparisonOperator; }
 	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterComparisonOperator) {
-			listener.enterComparisonOperator(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitComparisonOperator) {
-			listener.exitComparisonOperator(this);
-		}
-	}
-	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitComparisonOperator) {
 			return visitor.visitComparisonOperator(this);
@@ -5510,18 +4669,6 @@ export class LiteralContext extends ParserRuleContext {
 	}
 	// @Override
 	public get ruleIndex(): number { return PLParser.RULE_literal; }
-	// @Override
-	public enterRule(listener: PLListener): void {
-		if (listener.enterLiteral) {
-			listener.enterLiteral(this);
-		}
-	}
-	// @Override
-	public exitRule(listener: PLListener): void {
-		if (listener.exitLiteral) {
-			listener.exitLiteral(this);
-		}
-	}
 	// @Override
 	public accept<Result>(visitor: PLVisitor<Result>): Result {
 		if (visitor.visitLiteral) {
