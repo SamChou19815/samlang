@@ -1,5 +1,5 @@
 import type ModuleReference from '../ast/common/module-reference';
-import type { TypeDefinition } from '../ast/common/structs';
+import type { TypeDefinition, FieldType } from '../ast/common/structs';
 import { IdentifierType, FunctionType, Type, identifierType } from '../ast/common/types';
 import { HashMap, ReadonlyHashMap } from '../util/collections';
 import { assertNotNull } from '../util/type-assertions';
@@ -163,6 +163,74 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     const definition = this.classes[this.currentClass]?.typeDefinition;
     assertNotNull(definition);
     return definition;
+  }
+
+  /**
+   * Resolve the type definition for an identifier within the current enclosing class.
+   * This method will refuse to resolve variant identifier types outside of its enclosing class
+   * according to type checking rules.
+   */
+  resolveTypeDefinition(
+    { identifier, typeArguments }: IdentifierType,
+    typeDefinitionType: 'object' | 'variant'
+  ):
+    | {
+        readonly type: 'Resolved';
+        readonly names: readonly string[];
+        readonly mappings: Readonly<Record<string, FieldType | undefined>>;
+      }
+    | { readonly type: 'IllegalOtherClassMatch' }
+    | { readonly type: 'UnsupportedClassTypeDefinition' }
+    | {
+        readonly type: 'TypeParamSizeMismatch';
+        readonly expected: number;
+        readonly actual: number;
+      } {
+    if (identifier !== this.currentClass && typeDefinitionType === 'variant') {
+      return { type: 'IllegalOtherClassMatch' };
+    }
+    const relaventClass = this.classes[identifier];
+    if (
+      relaventClass == null ||
+      relaventClass.typeDefinition == null ||
+      relaventClass.typeDefinition.type !== typeDefinitionType
+    ) {
+      return { type: 'UnsupportedClassTypeDefinition' };
+    }
+    const {
+      typeParameters,
+      typeDefinition: { names, mappings: nameMappings },
+    } = relaventClass;
+    if (typeParameters.length !== typeArguments.length) {
+      return {
+        type: 'TypeParamSizeMismatch',
+        expected: typeParameters.length,
+        actual: typeArguments.length,
+      };
+    }
+    return {
+      type: 'Resolved',
+      names,
+      mappings: Object.fromEntries(
+        Object.entries(nameMappings).map(([name, fieldType]) => {
+          assertNotNull(fieldType);
+          return [
+            name,
+            {
+              isPublic: fieldType.isPublic,
+              type: replaceTypeIdentifier(
+                fieldType.type,
+                Object.fromEntries(
+                  typeParameters.map(
+                    (parameter, index) => [parameter, typeArguments[index]] as const
+                  )
+                )
+              ),
+            },
+          ];
+        })
+      ),
+    };
   }
 
   get thisType(): IdentifierType {

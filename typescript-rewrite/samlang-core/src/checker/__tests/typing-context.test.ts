@@ -53,9 +53,12 @@ it('AccessibleGlobalTypingContext tests', () => {
         typeParameters: ['A', 'B'],
         typeDefinition: {
           range: Range.DUMMY,
-          type: 'object',
-          names: [],
-          mappings: {},
+          type: 'variant',
+          names: ['a', 'b'],
+          mappings: {
+            a: { isPublic: true, type: identifierType('A') },
+            b: { isPublic: false, type: identifierType('B') },
+          },
         },
         functions: {
           f1: {
@@ -151,6 +154,28 @@ it('AccessibleGlobalTypingContext tests', () => {
   expect(context.getClassMethodType('C', 'm3', []).type).toBe('UnresolvedName');
 
   context.getCurrentClassTypeDefinition();
+
+  expect(
+    context.resolveTypeDefinition(identifierType('A', [intType, intType]), 'object').type
+  ).toBe('UnsupportedClassTypeDefinition');
+  expect(context.resolveTypeDefinition(identifierType('B', [intType, intType]), 'object')).toEqual({
+    type: 'Resolved',
+    names: [],
+    mappings: {},
+  });
+  expect(
+    context.resolveTypeDefinition(identifierType('B', [intType, intType]), 'variant').type
+  ).toBe('IllegalOtherClassMatch');
+  expect(context.resolveTypeDefinition(identifierType('A', [intType]), 'variant').type).toBe(
+    'TypeParamSizeMismatch'
+  );
+  expect(context.resolveTypeDefinition(identifierType('A', [intType, intType]), 'variant')).toEqual(
+    {
+      type: 'Resolved',
+      names: ['a', 'b'],
+      mappings: { a: { isPublic: true, type: intType }, b: { isPublic: false, type: intType } },
+    }
+  );
 
   expect(context.thisType).toEqual(identifierType('A', [identifierType('A'), identifierType('B')]));
 
