@@ -15,13 +15,14 @@ export interface HashMap<K extends Hashable, V> extends ReadonlyHashMap<K, V> {
   readonly set: (key: K, value: V) => this;
 }
 
-interface ReadonlyHashSet<T extends Hashable> {
+export interface ReadonlyHashSet<T extends Hashable> {
   readonly forEach: (callbackFunction: (value: T) => void) => void;
+  readonly toArray: () => T[];
   readonly has: (value: T) => boolean;
   readonly size: number;
 }
 
-interface HashSet<T extends Hashable> extends ReadonlyHashSet<T> {
+export interface HashSet<T extends Hashable> extends ReadonlyHashSet<T> {
   readonly add: (value: T) => this;
   readonly clear: () => void;
   readonly delete: (value: T) => boolean;
@@ -86,6 +87,12 @@ class HashSetImpl<T extends Hashable> implements HashSet<T> {
 
   forEach(callbackFunction: (value: T) => void): void {
     this.backingMap.forEach(callbackFunction);
+  }
+
+  toArray(): T[] {
+    const array: T[] = [];
+    this.forEach((element) => array.push(element));
+    return array;
   }
 
   has(value: T): boolean {
