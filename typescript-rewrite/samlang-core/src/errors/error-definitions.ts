@@ -54,3 +54,20 @@ export class UnexpectedTypeError extends CompileTimeError<'UnexpectedType', 2> {
     this.reason = `Expected: \`${expectedType}\`, actual: \`${actualType}\`.`;
   }
 }
+
+export class NotWellDefinedIdentifierError extends CompileTimeError<'NotWellDefinedIdentifier', 3> {
+  readonly errorType = 'NotWellDefinedIdentifier';
+
+  readonly errorCode = 3;
+
+  readonly reason: string;
+
+  constructor(
+    public readonly moduleReference: ModuleReference,
+    public readonly range: Range,
+    public readonly badIdentifier: string
+  ) {
+    super();
+    this.reason = `${badIdentifier} is not well defined.`;
+  }
+}
