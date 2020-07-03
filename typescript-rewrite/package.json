@@ -48,7 +48,19 @@
           "no-useless-constructor": "off",
           "no-undef": "off",
           "no-unused-vars": "off",
-          "prefer-destructuring": "off"
+          "prefer-destructuring": "off",
+          "import/no-internal-modules": [
+            "error",
+            {
+              "allow": [
+                "antlr4ts/**",
+                "**/samlang-core/src/ast/**",
+                "**/samlang-core/src/errors/*",
+                "**/samlang-core/src/parser/generated/*",
+                "**/samlang-core/src/util/*"
+              ]
+            }
+          ]
         }
       }
     ]
