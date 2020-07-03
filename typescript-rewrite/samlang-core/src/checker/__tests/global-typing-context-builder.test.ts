@@ -1,0 +1,193 @@
+import ModuleReference from '../../ast/common/module-reference';
+import Range from '../../ast/common/range';
+import { functionType, intType } from '../../ast/common/types';
+import type { ClassDefinition, SamlangModule } from '../../ast/lang/samlang-classes';
+import { EXPRESSION_FALSE } from '../../ast/lang/samlang-expressions';
+import { mapOf } from '../../util/collections';
+import {
+  buildGlobalTypingContext,
+  updateGlobalTypingContext,
+} from '../global-typing-context-builder';
+
+const module0Reference = new ModuleReference(['Module0']);
+const module1Reference = new ModuleReference(['Module1']);
+
+const typeDefinition = {
+  range: Range.DUMMY,
+  type: 'object',
+  typeParameters: [],
+  names: [],
+  mappings: {},
+} as const;
+
+const class0: ClassDefinition = {
+  range: Range.DUMMY,
+  name: 'Class0',
+  nameRange: Range.DUMMY,
+  isPublic: true,
+  typeDefinition,
+  members: [],
+};
+const class1: ClassDefinition = {
+  range: Range.DUMMY,
+  name: 'Class1',
+  nameRange: Range.DUMMY,
+  isPublic: true,
+  typeDefinition,
+  members: [
+    {
+      range: Range.DUMMY,
+      isPublic: true,
+      isMethod: true,
+      nameRange: Range.DUMMY,
+      name: 'm1',
+      typeParameters: [],
+      type: functionType([], intType),
+      parameters: [],
+      body: EXPRESSION_FALSE(Range.DUMMY),
+    },
+    {
+      range: Range.DUMMY,
+      isPublic: false,
+      isMethod: false,
+      nameRange: Range.DUMMY,
+      name: 'f1',
+      typeParameters: [],
+      type: functionType([], intType),
+      parameters: [],
+      body: EXPRESSION_FALSE(Range.DUMMY),
+    },
+  ],
+};
+const class2: ClassDefinition = {
+  range: Range.DUMMY,
+  name: 'Class2',
+  nameRange: Range.DUMMY,
+  isPublic: false,
+  typeDefinition,
+  members: [],
+};
+const publicClass2: ClassDefinition = { ...class2, isPublic: true };
+
+const module0: SamlangModule = { imports: [], classes: [class0] };
+const module1: SamlangModule = {
+  imports: [
+    {
+      range: Range.DUMMY,
+      importedModule: module0Reference,
+      importedModuleRange: Range.DUMMY,
+      importedMembers: [
+        ['Class0', Range.DUMMY],
+        ['BAD_CLASS_THAT_DOESNT_EXIST', Range.DUMMY],
+      ],
+    },
+  ],
+  classes: [class1, class2],
+};
+
+const testSources = mapOf([module0Reference, module0], [module1Reference, module1]);
+
+it('can handle imports and definitions', () => {
+  const actualGlobalTypingContext = buildGlobalTypingContext(testSources);
+  expect(actualGlobalTypingContext.size).toBe(2);
+
+  expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
+    definedClasses: {
+      Class0: { typeDefinition, functions: {}, methods: {} },
+    },
+    importedClasses: {},
+  });
+  expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
+    definedClasses: {
+      Class1: {
+        typeDefinition,
+        functions: {
+          f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
+        },
+        methods: {
+          m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
+        },
+      },
+    },
+    importedClasses: {
+      Class0: { typeDefinition, functions: {}, methods: {} },
+    },
+  });
+});
+
+it('can handle incremental add', () => {
+  const actualGlobalTypingContext = buildGlobalTypingContext(testSources);
+  updateGlobalTypingContext(
+    actualGlobalTypingContext,
+    mapOf(
+      [module0Reference, module0],
+      [module1Reference, { ...module1, classes: [class1, publicClass2] }]
+    ),
+    [module0Reference, module1Reference]
+  );
+
+  expect(actualGlobalTypingContext.size).toBe(2);
+
+  expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
+    definedClasses: {
+      Class0: { typeDefinition, functions: {}, methods: {} },
+    },
+    importedClasses: {},
+  });
+  expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
+    definedClasses: {
+      Class1: {
+        typeDefinition,
+        functions: {
+          f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
+        },
+        methods: {
+          m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
+        },
+      },
+      Class2: { typeDefinition, functions: {}, methods: {} },
+    },
+    importedClasses: {
+      Class0: { typeDefinition, functions: {}, methods: {} },
+    },
+  });
+});
+
+it('can handle incremental update', () => {
+  const actualGlobalTypingContext = buildGlobalTypingContext(testSources);
+  updateGlobalTypingContext(
+    actualGlobalTypingContext,
+    mapOf([module0Reference, { imports: [], classes: [] }], [module1Reference, module1]),
+    [module0Reference, module1Reference]
+  );
+
+  expect(actualGlobalTypingContext.size).toBe(2);
+
+  expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
+    definedClasses: {},
+    importedClasses: {},
+  });
+  expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
+    definedClasses: {
+      Class1: {
+        typeDefinition,
+        functions: {
+          f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
+        },
+        methods: {
+          m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
+        },
+      },
+    },
+    importedClasses: {},
+  });
+});
+
+it('can handle incremental removal', () => {
+  const actualGlobalTypingContext = buildGlobalTypingContext(testSources);
+  updateGlobalTypingContext(actualGlobalTypingContext, mapOf([module1Reference, module1]), [
+    module0Reference,
+    module1Reference,
+  ]);
+  expect(actualGlobalTypingContext.size).toBe(1);
+});

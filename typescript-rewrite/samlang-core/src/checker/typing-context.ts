@@ -1,7 +1,7 @@
 import type ModuleReference from '../ast/common/module-reference';
 import type { TypeDefinition } from '../ast/common/structs';
 import type { FunctionType, Type } from '../ast/common/types';
-import { ReadonlyHashMap } from '../util/collections';
+import { HashMap, ReadonlyHashMap } from '../util/collections';
 import { assertNotNull } from '../util/type-assertions';
 
 /** One layer of the typing context. We should stack a new layer when encounter a new nested scope. */
@@ -91,14 +91,15 @@ export interface MemberTypeInformation {
 }
 
 export interface ClassTypingContext {
-  readonly typeDefinition: TypeDefinition;
-  readonly functions: Readonly<Record<string, MemberTypeInformation>>;
-  readonly methods: Readonly<Record<string, MemberTypeInformation>>;
+  readonly typeDefinition?: TypeDefinition;
+  readonly functions: Readonly<Record<string, MemberTypeInformation | undefined>>;
+  readonly methods: Readonly<Record<string, MemberTypeInformation | undefined>>;
 }
 
 export interface ModuleTypingContext {
-  readonly importedClasses: Record<string, ClassTypingContext>;
-  readonly definedClasses: Record<string, ClassTypingContext>;
+  readonly importedClasses: Record<string, ClassTypingContext | undefined>;
+  readonly definedClasses: Record<string, ClassTypingContext | undefined>;
 }
 
-export type GlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;
+export type GlobalTypingContext = HashMap<ModuleReference, ModuleTypingContext>;
+export type ReadonlyGlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;

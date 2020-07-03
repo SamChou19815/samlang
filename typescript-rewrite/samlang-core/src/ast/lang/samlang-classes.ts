@@ -28,6 +28,7 @@ export interface ClassInterface<M extends ClassMemberDeclaration = ClassMemberDe
   readonly name: string;
   readonly isPublic: boolean;
   readonly members: readonly M[];
+  readonly typeDefinition?: TypeDefinition;
 }
 
 export interface ClassDefinition extends ClassInterface<ClassMemberDefinition> {
