@@ -27,6 +27,7 @@ export interface ClassInterface<M extends ClassMemberDeclaration = ClassMemberDe
   readonly nameRange: Range;
   readonly name: string;
   readonly isPublic: boolean;
+  readonly typeParameters: readonly string[];
   readonly members: readonly M[];
   readonly typeDefinition?: TypeDefinition;
 }

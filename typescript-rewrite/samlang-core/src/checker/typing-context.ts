@@ -94,6 +94,7 @@ export interface MemberTypeInformation {
 }
 
 export interface ClassTypingContext {
+  readonly typeParameters: readonly string[];
   readonly typeDefinition?: TypeDefinition;
   readonly functions: Readonly<Record<string, MemberTypeInformation | undefined>>;
   readonly methods: Readonly<Record<string, MemberTypeInformation | undefined>>;
@@ -138,9 +139,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
       return { type: 'UnresolvedName', unresolvedName: methodName };
     }
     const partiallyFixedType = undecideTypeParameters(typeInfo.type, typeInfo.typeParameters)[0];
-    // TODO: type definition should be included everywhere.
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const classTypeParameters = relaventClass.typeDefinition!.typeParameters;
+    const classTypeParameters = relaventClass.typeParameters;
     if (classTypeArguments.length !== classTypeParameters.length) {
       // TODO: add error.
       return {
@@ -171,9 +170,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     assertNotNull(currentClassTypingContext);
     return identifierType(
       this.currentClass,
-      // TODO: type definition should be included everywhere.
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      currentClassTypingContext.typeDefinition!.typeParameters.map((it) => identifierType(it))
+      currentClassTypingContext.typeParameters.map((it) => identifierType(it))
     );
   }
 
@@ -181,10 +178,9 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     if (this.typeParameters.has(name)) {
       return typeArgumentLength === 0;
     }
-    // TODO: type definition should be included everywhere.
-    const typeDefinition = this.classes[this.currentClass]?.typeDefinition;
-    assertNotNull(typeDefinition);
-    return typeDefinition.typeParameters.length === typeArgumentLength;
+    const typeParameters = this.classes[this.currentClass]?.typeParameters;
+    assertNotNull(typeParameters);
+    return typeParameters.length === typeArgumentLength;
   }
 
   withAdditionalTypeParameters(typeParameters: Iterable<string>): AccessibleGlobalTypingContext {

@@ -14,21 +14,21 @@ import type {
 } from './typing-context';
 
 const buildClassTypingContext = ({
+  typeParameters,
   typeDefinition,
   members,
 }: ClassInterface): ClassTypingContext => {
   const functions: Record<string, MemberTypeInformation> = {};
   const methods: Record<string, MemberTypeInformation> = {};
-  members.forEach(({ name, isPublic, isMethod, type, typeParameters }) => {
-    const typeInformation = { isPublic, typeParameters, type };
+  members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {
+    const typeInformation = { isPublic, typeParameters: memberTypeParameters, type };
     if (isMethod) {
       methods[name] = typeInformation;
     } else {
       functions[name] = typeInformation;
     }
   });
-
-  return { typeDefinition, functions, methods };
+  return { typeParameters, typeDefinition, functions, methods };
 };
 
 /**

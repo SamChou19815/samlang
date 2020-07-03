@@ -15,7 +15,6 @@ const module1Reference = new ModuleReference(['Module1']);
 const typeDefinition = {
   range: Range.DUMMY,
   type: 'object',
-  typeParameters: [],
   names: [],
   mappings: {},
 } as const;
@@ -25,6 +24,7 @@ const class0: ClassDefinition = {
   name: 'Class0',
   nameRange: Range.DUMMY,
   isPublic: true,
+  typeParameters: [],
   typeDefinition,
   members: [],
 };
@@ -33,6 +33,7 @@ const class1: ClassDefinition = {
   name: 'Class1',
   nameRange: Range.DUMMY,
   isPublic: true,
+  typeParameters: [],
   typeDefinition,
   members: [
     {
@@ -64,6 +65,7 @@ const class2: ClassDefinition = {
   name: 'Class2',
   nameRange: Range.DUMMY,
   isPublic: false,
+  typeParameters: [],
   typeDefinition,
   members: [],
 };
@@ -93,13 +95,14 @@ it('can handle imports and definitions', () => {
 
   expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
     definedClasses: {
-      Class0: { typeDefinition, functions: {}, methods: {} },
+      Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
     },
     importedClasses: {},
   });
   expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
     definedClasses: {
       Class1: {
+        typeParameters: [],
         typeDefinition,
         functions: {
           f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
@@ -110,7 +113,7 @@ it('can handle imports and definitions', () => {
       },
     },
     importedClasses: {
-      Class0: { typeDefinition, functions: {}, methods: {} },
+      Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
     },
   });
 });
@@ -130,13 +133,14 @@ it('can handle incremental add', () => {
 
   expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
     definedClasses: {
-      Class0: { typeDefinition, functions: {}, methods: {} },
+      Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
     },
     importedClasses: {},
   });
   expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
     definedClasses: {
       Class1: {
+        typeParameters: [],
         typeDefinition,
         functions: {
           f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
@@ -145,10 +149,10 @@ it('can handle incremental add', () => {
           m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
         },
       },
-      Class2: { typeDefinition, functions: {}, methods: {} },
+      Class2: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
     },
     importedClasses: {
-      Class0: { typeDefinition, functions: {}, methods: {} },
+      Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
     },
   });
 });
@@ -170,6 +174,7 @@ it('can handle incremental update', () => {
   expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
     definedClasses: {
       Class1: {
+        typeParameters: [],
         typeDefinition,
         functions: {
           f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },

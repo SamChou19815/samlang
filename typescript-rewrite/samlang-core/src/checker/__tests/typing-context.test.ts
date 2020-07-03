@@ -50,10 +50,10 @@ it('AccessibleGlobalTypingContext tests', () => {
   const context = new AccessibleGlobalTypingContext(
     {
       A: {
+        typeParameters: ['A', 'B'],
         typeDefinition: {
           range: Range.DUMMY,
           type: 'object',
-          typeParameters: ['A', 'B'],
           names: [],
           mappings: {},
         },
@@ -83,10 +83,10 @@ it('AccessibleGlobalTypingContext tests', () => {
         },
       },
       B: {
+        typeParameters: ['E', 'F'],
         typeDefinition: {
           range: Range.DUMMY,
           type: 'object',
-          typeParameters: ['E', 'F'],
           names: [],
           mappings: {},
         },

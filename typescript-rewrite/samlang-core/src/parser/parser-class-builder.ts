@@ -53,16 +53,21 @@ const getTypeParameters = (context: TypeParametersDeclarationContext): readonly 
     .map((it) => it.symbol.text)
     .filter(isNotNull);
 
-class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition | null>
-  implements PLVisitor<TypeDefinition | null> {
+type TypeDefinitionWithTypeParameters = TypeDefinition & {
+  readonly typeParameters: readonly string[];
+};
+
+class TypeDefinitionBuilder
+  extends AbstractParseTreeVisitor<TypeDefinitionWithTypeParameters | null>
+  implements PLVisitor<TypeDefinitionWithTypeParameters | null> {
   constructor(private readonly range: Range, private readonly typeParameters: readonly string[]) {
     super();
   }
 
   // istanbul ignore next
-  defaultResult = (): TypeDefinition | null => null;
+  defaultResult = (): TypeDefinitionWithTypeParameters | null => null;
 
-  visitObjType(ctx: ObjTypeContext): TypeDefinition {
+  visitObjType(ctx: ObjTypeContext): TypeDefinitionWithTypeParameters {
     const rawDeclarations = ctx.objectTypeFieldDeclaration();
     const mappings = rawDeclarations
       .map((c) => {
@@ -83,7 +88,7 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition | nu
     };
   }
 
-  visitVariantType(ctx: VariantTypeContext): TypeDefinition {
+  visitVariantType(ctx: VariantTypeContext): TypeDefinitionWithTypeParameters {
     const mappings = ctx
       .variantTypeConstructorDeclaration()
       .map((c) => {
@@ -104,11 +109,12 @@ class TypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition | nu
   }
 }
 
-class ModuleTypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinition | null>
+class ModuleTypeDefinitionBuilder
+  extends AbstractParseTreeVisitor<TypeDefinitionWithTypeParameters | null>
   implements PLVisitor<TypeDefinition | null> {
-  defaultResult = (): TypeDefinition | null => null;
+  defaultResult = (): TypeDefinitionWithTypeParameters | null => null;
 
-  visitClassHeader = (ctx: ClassHeaderContext): TypeDefinition | null => {
+  visitClassHeader = (ctx: ClassHeaderContext): TypeDefinitionWithTypeParameters | null => {
     const rawTypeParams = ctx.typeParametersDeclaration();
     const rawTypeDeclaration = ctx.typeDeclaration();
     const typeParameters = rawTypeParams != null ? getTypeParameters(rawTypeParams) : [];
@@ -119,7 +125,7 @@ class ModuleTypeDefinitionBuilder extends AbstractParseTreeVisitor<TypeDefinitio
     return rawTypeDeclaration.accept(new TypeDefinitionBuilder(range, typeParameters));
   };
 
-  visitUtilClassHeader = (ctx: UtilClassHeaderContext): TypeDefinition => ({
+  visitUtilClassHeader = (ctx: UtilClassHeaderContext): TypeDefinitionWithTypeParameters => ({
     range: contextRange(ctx),
     type: 'object',
     typeParameters: [],
@@ -191,16 +197,20 @@ export default class ClassBuilder extends AbstractParseTreeVisitor<ClassDefiniti
 
   visitClazz = (ctx: ClazzContext): ClassDefinition | null => {
     const moduleName = ctx.classHeaderDeclaration().accept(moduleNameBuilder);
-    const typeDefinition = ctx.classHeaderDeclaration().accept(moduleTypeDefinitionBuilder);
-    if (moduleName == null || typeDefinition == null) {
+    const typeDefinitionWithTypeParameters = ctx
+      .classHeaderDeclaration()
+      .accept(moduleTypeDefinitionBuilder);
+    if (moduleName == null || typeDefinitionWithTypeParameters == null) {
       return null;
     }
     const [isPublic, name, nameRange] = moduleName;
+    const { typeParameters, ...typeDefinition } = typeDefinitionWithTypeParameters;
     return {
       range: contextRange(ctx),
       nameRange,
       name,
       isPublic,
+      typeParameters,
       typeDefinition,
       members: ctx.classMemberDefinition().map(this.buildClassMemberDefinition).filter(isNotNull),
     };
