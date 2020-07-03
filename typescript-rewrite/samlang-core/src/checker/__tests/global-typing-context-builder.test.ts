@@ -1,8 +1,8 @@
 import ModuleReference from '../../ast/common/module-reference';
 import Range from '../../ast/common/range';
 import { functionType, intType } from '../../ast/common/types';
-import type { ClassDefinition, SamlangModule } from '../../ast/lang/samlang-classes';
 import { EXPRESSION_FALSE } from '../../ast/lang/samlang-expressions';
+import type { ClassDefinition, SamlangModule } from '../../ast/lang/samlang-toplevel';
 import { mapOf } from '../../util/collections';
 import {
   buildGlobalTypingContext,

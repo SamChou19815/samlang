@@ -4,8 +4,8 @@ import type { Recognizer } from 'antlr4ts/Recognizer';
 
 import Position from '../ast/common/position';
 import Range from '../ast/common/range';
-import type { SamlangModule } from '../ast/lang/samlang-classes';
 import type { SamlangExpression } from '../ast/lang/samlang-expressions';
+import type { SamlangModule } from '../ast/lang/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors/error-collector';
 import { PLLexer } from './generated/PLLexer';
 import { PLParser } from './generated/PLParser';
