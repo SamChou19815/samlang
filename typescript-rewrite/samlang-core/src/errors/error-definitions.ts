@@ -2,6 +2,7 @@
 
 import type ModuleReference from '../ast/common/module-reference';
 import type Range from '../ast/common/range';
+import { Type, prettyPrintType } from '../ast/common/types';
 
 export abstract class CompileTimeError<T = string, C = number> {
   abstract readonly errorType: T;
@@ -31,5 +32,25 @@ export class SyntaxError extends CompileTimeError<'SyntaxError', 1> {
     public readonly reason: string
   ) {
     super();
+  }
+}
+
+export class UnexpectedTypeError extends CompileTimeError<'UnexpectedType', 2> {
+  readonly errorType = 'UnexpectedType';
+
+  readonly errorCode = 2;
+
+  readonly reason: string;
+
+  constructor(
+    public readonly moduleReference: ModuleReference,
+    public readonly range: Range,
+    public readonly expected: Type,
+    public readonly actual: Type
+  ) {
+    super();
+    const expectedType = prettyPrintType(expected);
+    const actualType = prettyPrintType(actual);
+    this.reason = `Expected: \`${expectedType}\`, actual: \`${actualType}\`.`;
   }
 }

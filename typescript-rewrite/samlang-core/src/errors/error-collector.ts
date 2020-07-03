@@ -1,6 +1,7 @@
 import type ModuleReference from '../ast/common/module-reference';
 import type Range from '../ast/common/range';
-import { CompileTimeError, SyntaxError } from './error-definitions';
+import type { Type } from '../ast/common/types';
+import { CompileTimeError, SyntaxError, UnexpectedTypeError } from './error-definitions';
 
 interface ReadonlyGlobalErrorCollector {
   getErrors(): readonly CompileTimeError[];
@@ -20,6 +21,12 @@ export class ModuleErrorCollector {
 
   reportSyntaxError(range: Range, reason: string): void {
     this.collectorDelegate.reportError(new SyntaxError(this.moduleReference, range, reason));
+  }
+
+  reportUnexpectedTypeError(range: Range, expected: Type, actual: Type): void {
+    this.collectorDelegate.reportError(
+      new UnexpectedTypeError(this.moduleReference, range, expected, actual)
+    );
   }
 }
 
