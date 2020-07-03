@@ -68,6 +68,23 @@ export class NotWellDefinedIdentifierError extends CompileTimeError<'NotWellDefi
     public readonly badIdentifier: string
   ) {
     super();
-    this.reason = `${badIdentifier} is not well defined.`;
+    this.reason = `\`${badIdentifier}\` is not well defined.`;
+  }
+}
+
+export class UnresolvedNameError extends CompileTimeError<'UnresolvedName', 4> {
+  readonly errorType = 'UnresolvedName';
+
+  readonly errorCode = 4;
+
+  readonly reason: string;
+
+  constructor(
+    public readonly moduleReference: ModuleReference,
+    public readonly range: Range,
+    public readonly unresolvedName: string
+  ) {
+    super();
+    this.reason = `Name \`${unresolvedName}\` is not resolved.`;
   }
 }

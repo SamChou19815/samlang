@@ -6,6 +6,7 @@ import {
   SyntaxError,
   UnexpectedTypeError,
   NotWellDefinedIdentifierError,
+  UnresolvedNameError,
 } from './error-definitions';
 
 interface ReadonlyGlobalErrorCollector {
@@ -37,6 +38,12 @@ export class ModuleErrorCollector {
   reportNotWellDefinedIdentifierError(range: Range, badIdentifier: string): void {
     this.collectorDelegate.reportError(
       new NotWellDefinedIdentifierError(this.moduleReference, range, badIdentifier)
+    );
+  }
+
+  reportUnresolvedNameError(range: Range, unresolvedName: string): void {
+    this.collectorDelegate.reportError(
+      new UnresolvedNameError(this.moduleReference, range, unresolvedName)
     );
   }
 }

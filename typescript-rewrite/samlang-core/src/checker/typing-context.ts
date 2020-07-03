@@ -1,8 +1,11 @@
 import type ModuleReference from '../ast/common/module-reference';
 import type { TypeDefinition } from '../ast/common/structs';
-import type { FunctionType, Type } from '../ast/common/types';
+import { IdentifierType, FunctionType, Type, identifierType } from '../ast/common/types';
 import { HashMap, ReadonlyHashMap } from '../util/collections';
 import { assertNotNull } from '../util/type-assertions';
+import replaceTypeIdentifier from './type-identifier-replacer';
+import { undecideTypeParameters } from './type-undecider';
+import type { IdentifierTypeValidator } from './type-validator';
 
 /** One layer of the typing context. We should stack a new layer when encounter a new nested scope. */
 class ContextLayer {
@@ -103,3 +106,92 @@ export interface ModuleTypingContext {
 
 export type GlobalTypingContext = HashMap<ModuleReference, ModuleTypingContext>;
 export type ReadonlyGlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;
+
+export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
+  constructor(
+    private readonly classes: Record<string, ClassTypingContext | undefined>,
+    public readonly typeParameters: ReadonlySet<string>,
+    public readonly currentClass: string
+  ) {}
+
+  getClassFunctionType(className: string, member: string): readonly [Type, readonly Type[]] | null {
+    const typeInfo = this.classes[className]?.functions?.[member];
+    if (typeInfo == null) return null;
+    if (!typeInfo.isPublic && className !== this.currentClass) return null;
+    return undecideTypeParameters(typeInfo.type, typeInfo.typeParameters);
+  }
+
+  getClassMethodType(
+    className: string,
+    methodName: string,
+    classTypeArguments: readonly Type[]
+  ):
+    | FunctionType
+    | Readonly<{ type: 'UnresolvedName'; unresolvedName: string }>
+    | Readonly<{ type: 'TypeParameterSizeMismatch'; expected: number; actual: number }> {
+    const relaventClass = this.classes[className];
+    if (relaventClass == null) {
+      return { type: 'UnresolvedName', unresolvedName: className };
+    }
+    const typeInfo = relaventClass.methods?.[methodName];
+    if (typeInfo == null || (!typeInfo.isPublic && className !== this.currentClass)) {
+      return { type: 'UnresolvedName', unresolvedName: methodName };
+    }
+    const partiallyFixedType = undecideTypeParameters(typeInfo.type, typeInfo.typeParameters)[0];
+    // TODO: type definition should be included everywhere.
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const classTypeParameters = relaventClass.typeDefinition!.typeParameters;
+    if (classTypeArguments.length !== classTypeParameters.length) {
+      // TODO: add error.
+      return {
+        type: 'TypeParameterSizeMismatch',
+        expected: classTypeParameters.length,
+        actual: classTypeArguments.length,
+      };
+    }
+    const fullyFixedType = replaceTypeIdentifier(
+      partiallyFixedType,
+      Object.fromEntries(
+        classTypeParameters.map(
+          (parameter, index) => [parameter, classTypeArguments[index]] as const
+        )
+      )
+    );
+    return fullyFixedType as FunctionType;
+  }
+
+  getCurrentClassTypeDefinition(): TypeDefinition {
+    const definition = this.classes[this.currentClass]?.typeDefinition;
+    assertNotNull(definition);
+    return definition;
+  }
+
+  get thisType(): IdentifierType {
+    const currentClassTypingContext = this.classes[this.currentClass];
+    assertNotNull(currentClassTypingContext);
+    return identifierType(
+      this.currentClass,
+      // TODO: type definition should be included everywhere.
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      currentClassTypingContext.typeDefinition!.typeParameters.map((it) => identifierType(it))
+    );
+  }
+
+  identifierTypeIsWellDefined(name: string, typeArgumentLength: number): boolean {
+    if (this.typeParameters.has(name)) {
+      return typeArgumentLength === 0;
+    }
+    // TODO: type definition should be included everywhere.
+    const typeDefinition = this.classes[this.currentClass]?.typeDefinition;
+    assertNotNull(typeDefinition);
+    return typeDefinition.typeParameters.length === typeArgumentLength;
+  }
+
+  withAdditionalTypeParameters(typeParameters: Iterable<string>): AccessibleGlobalTypingContext {
+    return new AccessibleGlobalTypingContext(
+      this.classes,
+      new Set([...this.typeParameters, ...typeParameters]),
+      this.currentClass
+    );
+  }
+}

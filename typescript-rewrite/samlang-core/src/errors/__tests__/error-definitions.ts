@@ -1,7 +1,12 @@
 import ModuleReference from '../../ast/common/module-reference';
 import Range from '../../ast/common/range';
 import { intType, boolType } from '../../ast/common/types';
-import { SyntaxError, UnexpectedTypeError } from '../error-definitions';
+import {
+  SyntaxError,
+  UnexpectedTypeError,
+  NotWellDefinedIdentifierError,
+  UnresolvedNameError,
+} from '../error-definitions';
 
 it('error toString() test', () => {
   expect(
@@ -15,4 +20,18 @@ it('error toString() test', () => {
       boolType
     ).toString()
   ).toBe('Foo/Bar.sam:0:0-0:0: [UnexpectedType]: Expected: `int`, actual: `bool`.');
+  expect(
+    new NotWellDefinedIdentifierError(
+      new ModuleReference(['Foo', 'Bar']),
+      Range.DUMMY,
+      'BadType'
+    ).toString()
+  ).toBe('Foo/Bar.sam:0:0-0:0: [NotWellDefinedIdentifier]: `BadType` is not well defined.');
+  expect(
+    new UnresolvedNameError(
+      new ModuleReference(['Foo', 'Bar']),
+      Range.DUMMY,
+      'unresolvedName'
+    ).toString()
+  ).toBe('Foo/Bar.sam:0:0-0:0: [UnresolvedName]: Name `unresolvedName` is not resolved.');
 });
