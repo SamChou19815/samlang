@@ -14,6 +14,9 @@ import {
   InsufficientTypeInferenceContextError,
   CollisionError,
   IllegalOtherClassMatch,
+  IllegalThisError,
+  InconsistentFieldsInObjectError,
+  DuplicateFieldDeclarationError,
 } from './error-definitions';
 
 interface ReadonlyGlobalErrorCollector {
@@ -99,6 +102,26 @@ export class ModuleErrorCollector {
 
   reportIllegalOtherClassMatch(range: Range): void {
     this.collectorDelegate.reportError(new IllegalOtherClassMatch(this.moduleReference, range));
+  }
+
+  reportIllegalThisError(range: Range): void {
+    this.collectorDelegate.reportError(new IllegalThisError(this.moduleReference, range));
+  }
+
+  reportInconsistentFieldsInObjectError(
+    range: Range,
+    expectedFields: Iterable<string>,
+    actualFields: Iterable<string>
+  ): void {
+    this.collectorDelegate.reportError(
+      new InconsistentFieldsInObjectError(this.moduleReference, range, expectedFields, actualFields)
+    );
+  }
+
+  reportDuplicateFieldDeclarationError(range: Range, fieldName: string): void {
+    this.collectorDelegate.reportError(
+      new DuplicateFieldDeclarationError(this.moduleReference, range, fieldName)
+    );
   }
 }
 

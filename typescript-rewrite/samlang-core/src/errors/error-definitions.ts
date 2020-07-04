@@ -178,3 +178,52 @@ export class IllegalOtherClassMatch extends CompileTimeError<'IllegalOtherClassM
     );
   }
 }
+
+export class IllegalThisError extends CompileTimeError<'IllegalThis', 12> {
+  constructor(moduleReference: ModuleReference, range: Range) {
+    super(
+      'IllegalThis',
+      12,
+      moduleReference,
+      range,
+      'Keyword `this` cannot be used in this context.'
+    );
+  }
+}
+
+export class InconsistentFieldsInObjectError extends CompileTimeError<
+  'InconsistentFieldsInObject',
+  13
+> {
+  constructor(
+    moduleReference: ModuleReference,
+    range: Range,
+    expectedFields: Iterable<string>,
+    actualFields: Iterable<string>
+  ) {
+    super(
+      'InconsistentFieldsInObject',
+      13,
+      moduleReference,
+      range,
+      `Inconsistent fields. Expected: \`${[...expectedFields].join(', ')}\`, actual: \`${[
+        ...actualFields,
+      ].join(', ')}\`.`
+    );
+  }
+}
+
+export class DuplicateFieldDeclarationError extends CompileTimeError<
+  'DuplicateFieldDeclaration',
+  14
+> {
+  constructor(moduleReference: ModuleReference, range: Range, fieldName: string) {
+    super(
+      'DuplicateFieldDeclaration',
+      14,
+      moduleReference,
+      range,
+      `Field name \`${fieldName}\` is declared twice.`
+    );
+  }
+}

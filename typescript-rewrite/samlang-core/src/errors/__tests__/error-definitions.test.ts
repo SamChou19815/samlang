@@ -14,6 +14,9 @@ import {
   InsufficientTypeInferenceContextError,
   CollisionError,
   IllegalOtherClassMatch,
+  IllegalThisError,
+  InconsistentFieldsInObjectError,
+  DuplicateFieldDeclarationError,
 } from '../error-definitions';
 
 const testCases: readonly (readonly [CompileTimeError, string])[] = [
@@ -73,6 +76,23 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
   [
     new IllegalOtherClassMatch(new ModuleReference(['Foo', 'Bar']), Range.DUMMY),
     "Foo/Bar.sam:0:0-0:0: [IllegalOtherClassMatch]: It is illegal to match on a value of other class's type.",
+  ],
+  [
+    new IllegalThisError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY),
+    'Foo/Bar.sam:0:0-0:0: [IllegalThis]: Keyword `this` cannot be used in this context.',
+  ],
+  [
+    new InconsistentFieldsInObjectError(
+      new ModuleReference(['Foo', 'Bar']),
+      Range.DUMMY,
+      ['a'],
+      ['b']
+    ),
+    'Foo/Bar.sam:0:0-0:0: [InconsistentFieldsInObject]: Inconsistent fields. Expected: `a`, actual: `b`.',
+  ],
+  [
+    new DuplicateFieldDeclarationError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 'a'),
+    'Foo/Bar.sam:0:0-0:0: [DuplicateFieldDeclaration]: Field name `a` is declared twice.',
   ],
 ];
 

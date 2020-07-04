@@ -31,4 +31,11 @@ it('can add errors', () => {
   );
   assertCanAddErrors((collector) => collector.reportCollisionError(Range.DUMMY, 'a'));
   assertCanAddErrors((collector) => collector.reportIllegalOtherClassMatch(Range.DUMMY));
+  assertCanAddErrors((collector) => collector.reportIllegalThisError(Range.DUMMY));
+  assertCanAddErrors((collector) =>
+    collector.reportInconsistentFieldsInObjectError(Range.DUMMY, [], [])
+  );
+  assertCanAddErrors((collector) =>
+    collector.reportDuplicateFieldDeclarationError(Range.DUMMY, 's')
+  );
 });
