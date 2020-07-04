@@ -30,4 +30,5 @@ it('can add errors', () => {
     collector.reportInsufficientTypeInferenceContextError(Range.DUMMY)
   );
   assertCanAddErrors((collector) => collector.reportCollisionError(Range.DUMMY, 'a'));
+  assertCanAddErrors((collector) => collector.reportIllegalOtherClassMatch(Range.DUMMY));
 });

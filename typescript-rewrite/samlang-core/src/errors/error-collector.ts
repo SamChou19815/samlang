@@ -13,6 +13,7 @@ import {
   TupleSizeMismatchError,
   InsufficientTypeInferenceContextError,
   CollisionError,
+  IllegalOtherClassMatch,
 } from './error-definitions';
 
 interface ReadonlyGlobalErrorCollector {
@@ -94,6 +95,10 @@ export class ModuleErrorCollector {
     this.collectorDelegate.reportError(
       new CollisionError(this.moduleReference, range, collidedName)
     );
+  }
+
+  reportIllegalOtherClassMatch(range: Range): void {
+    this.collectorDelegate.reportError(new IllegalOtherClassMatch(this.moduleReference, range));
   }
 }
 

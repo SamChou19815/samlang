@@ -166,3 +166,15 @@ export class CollisionError extends CompileTimeError<'Collision', 10> {
     );
   }
 }
+
+export class IllegalOtherClassMatch extends CompileTimeError<'IllegalOtherClassMatch', 11> {
+  constructor(moduleReference: ModuleReference, range: Range) {
+    super(
+      'IllegalOtherClassMatch',
+      11,
+      moduleReference,
+      range,
+      "It is illegal to match on a value of other class's type."
+    );
+  }
+}

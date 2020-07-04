@@ -13,6 +13,7 @@ import {
   TupleSizeMismatchError,
   InsufficientTypeInferenceContextError,
   CollisionError,
+  IllegalOtherClassMatch,
 } from '../error-definitions';
 
 const testCases: readonly (readonly [CompileTimeError, string])[] = [
@@ -68,6 +69,10 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
   [
     new CollisionError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 'a'),
     'Foo/Bar.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.',
+  ],
+  [
+    new IllegalOtherClassMatch(new ModuleReference(['Foo', 'Bar']), Range.DUMMY),
+    "Foo/Bar.sam:0:0-0:0: [IllegalOtherClassMatch]: It is illegal to match on a value of other class's type.",
   ],
 ];
 
