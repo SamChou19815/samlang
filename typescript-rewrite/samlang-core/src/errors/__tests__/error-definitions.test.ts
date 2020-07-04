@@ -12,6 +12,7 @@ import {
   TypeParameterSizeMismatchError,
   TupleSizeMismatchError,
   InsufficientTypeInferenceContextError,
+  CollisionError,
 } from '../error-definitions';
 
 const testCases: readonly (readonly [CompileTimeError, string])[] = [
@@ -63,6 +64,10 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
   [
     new InsufficientTypeInferenceContextError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY),
     'Foo/Bar.sam:0:0-0:0: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
+  ],
+  [
+    new CollisionError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 'a'),
+    'Foo/Bar.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.',
   ],
 ];
 

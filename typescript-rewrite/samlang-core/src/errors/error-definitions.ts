@@ -154,3 +154,15 @@ export class InsufficientTypeInferenceContextError extends CompileTimeError<
     );
   }
 }
+
+export class CollisionError extends CompileTimeError<'Collision', 10> {
+  constructor(moduleReference: ModuleReference, range: Range, collidedName: string) {
+    super(
+      'Collision',
+      10,
+      moduleReference,
+      range,
+      `Name \`${collidedName}\` collides with a previously defined name.`
+    );
+  }
+}

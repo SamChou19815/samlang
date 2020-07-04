@@ -12,6 +12,7 @@ import {
   TypeParameterSizeMismatchError,
   TupleSizeMismatchError,
   InsufficientTypeInferenceContextError,
+  CollisionError,
 } from './error-definitions';
 
 interface ReadonlyGlobalErrorCollector {
@@ -86,6 +87,12 @@ export class ModuleErrorCollector {
   reportInsufficientTypeInferenceContextError(range: Range): void {
     this.collectorDelegate.reportError(
       new InsufficientTypeInferenceContextError(this.moduleReference, range)
+    );
+  }
+
+  reportCollisionError(range: Range, collidedName: string): void {
+    this.collectorDelegate.reportError(
+      new CollisionError(this.moduleReference, range, collidedName)
     );
   }
 }
