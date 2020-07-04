@@ -7,6 +7,7 @@ import {
   UnexpectedTypeError,
   NotWellDefinedIdentifierError,
   UnresolvedNameError,
+  UnsupportedClassTypeDefinitionError,
 } from './error-definitions';
 
 interface ReadonlyGlobalErrorCollector {
@@ -44,6 +45,15 @@ export class ModuleErrorCollector {
   reportUnresolvedNameError(range: Range, unresolvedName: string): void {
     this.collectorDelegate.reportError(
       new UnresolvedNameError(this.moduleReference, range, unresolvedName)
+    );
+  }
+
+  reportUnsupportedClassTypeDefinitionError(
+    range: Range,
+    typeDefinitionType: 'object' | 'variant'
+  ): void {
+    this.collectorDelegate.reportError(
+      new UnsupportedClassTypeDefinitionError(this.moduleReference, range, typeDefinitionType)
     );
   }
 }

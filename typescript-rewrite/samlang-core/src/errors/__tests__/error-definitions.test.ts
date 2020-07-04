@@ -6,6 +6,7 @@ import {
   UnexpectedTypeError,
   NotWellDefinedIdentifierError,
   UnresolvedNameError,
+  UnsupportedClassTypeDefinitionError,
 } from '../error-definitions';
 
 it('error toString() test', () => {
@@ -34,4 +35,13 @@ it('error toString() test', () => {
       'unresolvedName'
     ).toString()
   ).toBe('Foo/Bar.sam:0:0-0:0: [UnresolvedName]: Name `unresolvedName` is not resolved.');
+  expect(
+    new UnsupportedClassTypeDefinitionError(
+      new ModuleReference(['Foo', 'Bar']),
+      Range.DUMMY,
+      'object'
+    ).toString()
+  ).toBe(
+    "Foo/Bar.sam:0:0-0:0: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't."
+  );
 });

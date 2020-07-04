@@ -81,3 +81,22 @@ export class UnresolvedNameError extends CompileTimeError<'UnresolvedName', 4> {
     );
   }
 }
+
+export class UnsupportedClassTypeDefinitionError extends CompileTimeError<
+  'UnsupportedClassTypeDefinition',
+  5
+> {
+  constructor(
+    public readonly moduleReference: ModuleReference,
+    public readonly range: Range,
+    public readonly typeDefinitionType: 'object' | 'variant'
+  ) {
+    super(
+      'UnsupportedClassTypeDefinition',
+      5,
+      moduleReference,
+      range,
+      `Expect the current class to have \`${typeDefinitionType}\` type definition, but it doesn't.`
+    );
+  }
+}

@@ -16,4 +16,7 @@ it('can add errors', () => {
   );
   assertCanAddErrors((collector) => collector.reportNotWellDefinedIdentifierError(Range.DUMMY, ''));
   assertCanAddErrors((collector) => collector.reportUnresolvedNameError(Range.DUMMY, ''));
+  assertCanAddErrors((collector) =>
+    collector.reportUnsupportedClassTypeDefinitionError(Range.DUMMY, 'object')
+  );
 });
