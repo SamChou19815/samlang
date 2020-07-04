@@ -87,3 +87,36 @@ export const prettyPrintType = (type: Type): string => {
       return '__UNDECIDED__';
   }
 };
+
+export const isTheSameType = (t1: Type, t2: Type): boolean => {
+  switch (t1.type) {
+    case 'PrimitiveType':
+      return t2.type === 'PrimitiveType' && t1.name === t2.name;
+    case 'IdentifierType':
+      return (
+        t2.type === 'IdentifierType' &&
+        t1.identifier === t2.identifier &&
+        t1.typeArguments.length === t2.typeArguments.length &&
+        t1.typeArguments.every((t1Argument, index) =>
+          isTheSameType(t1Argument, t2.typeArguments[index])
+        )
+      );
+    case 'TupleType':
+      return (
+        t2.type === 'TupleType' &&
+        t1.mappings.length === t2.mappings.length &&
+        t1.mappings.every((t1Element, index) => isTheSameType(t1Element, t2.mappings[index]))
+      );
+    case 'FunctionType':
+      return (
+        t2.type === 'FunctionType' &&
+        isTheSameType(t1.returnType, t2.returnType) &&
+        t1.argumentTypes.length === t2.argumentTypes.length &&
+        t1.argumentTypes.every((t1Argument, index) =>
+          isTheSameType(t1Argument, t2.argumentTypes[index])
+        )
+      );
+    case 'UndecidedType':
+      return t2.type === 'UndecidedType' && t1.index === t2.index;
+  }
+};
