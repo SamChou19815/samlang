@@ -20,22 +20,13 @@ export abstract class CompileTimeError<T = string, C = number> {
 }
 
 export class SyntaxError extends CompileTimeError<'SyntaxError', 1> {
-  constructor(
-    public readonly moduleReference: ModuleReference,
-    public readonly range: Range,
-    public readonly reason: string
-  ) {
+  constructor(moduleReference: ModuleReference, range: Range, reason: string) {
     super('SyntaxError', 1, moduleReference, range, reason);
   }
 }
 
 export class UnexpectedTypeError extends CompileTimeError<'UnexpectedType', 2> {
-  constructor(
-    public readonly moduleReference: ModuleReference,
-    public readonly range: Range,
-    public readonly expected: Type,
-    public readonly actual: Type
-  ) {
+  constructor(moduleReference: ModuleReference, range: Range, expected: Type, actual: Type) {
     super(
       'UnexpectedType',
       2,
@@ -51,11 +42,7 @@ export class UnexpectedTypeError extends CompileTimeError<'UnexpectedType', 2> {
 }
 
 export class NotWellDefinedIdentifierError extends CompileTimeError<'NotWellDefinedIdentifier', 3> {
-  constructor(
-    public readonly moduleReference: ModuleReference,
-    public readonly range: Range,
-    public readonly badIdentifier: string
-  ) {
+  constructor(moduleReference: ModuleReference, range: Range, badIdentifier: string) {
     super(
       'NotWellDefinedIdentifier',
       3,
@@ -67,11 +54,7 @@ export class NotWellDefinedIdentifierError extends CompileTimeError<'NotWellDefi
 }
 
 export class UnresolvedNameError extends CompileTimeError<'UnresolvedName', 4> {
-  constructor(
-    public readonly moduleReference: ModuleReference,
-    public readonly range: Range,
-    public readonly unresolvedName: string
-  ) {
+  constructor(moduleReference: ModuleReference, range: Range, unresolvedName: string) {
     super(
       'UnresolvedName',
       4,
@@ -87,9 +70,9 @@ export class UnsupportedClassTypeDefinitionError extends CompileTimeError<
   5
 > {
   constructor(
-    public readonly moduleReference: ModuleReference,
-    public readonly range: Range,
-    public readonly typeDefinitionType: 'object' | 'variant'
+    moduleReference: ModuleReference,
+    range: Range,
+    typeDefinitionType: 'object' | 'variant'
   ) {
     super(
       'UnsupportedClassTypeDefinition',
