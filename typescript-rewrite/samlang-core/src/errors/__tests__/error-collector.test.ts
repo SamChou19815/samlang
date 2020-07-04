@@ -5,8 +5,10 @@ import { ModuleErrorCollector, createGlobalErrorCollector } from '../error-colle
 
 const assertCanAddErrors = (adder: (collector: ModuleErrorCollector) => void): void => {
   const globalCollector = createGlobalErrorCollector();
-  adder(globalCollector.getModuleErrorCollector(ModuleReference.ROOT));
+  const moduleErrorCollector = globalCollector.getModuleErrorCollector(ModuleReference.ROOT);
+  adder(moduleErrorCollector);
   expect(globalCollector.getErrors().length).toBe(1);
+  expect(moduleErrorCollector.hasErrors).toBeTruthy();
 };
 
 it('can add errors', () => {
