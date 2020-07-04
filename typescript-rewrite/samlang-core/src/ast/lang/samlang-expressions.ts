@@ -57,7 +57,7 @@ export interface ObjectConstructorExpressionFieldConstructor extends Node {
 
 export interface ObjectConstructorExpression extends BaseExpression {
   readonly __type__: 'ObjectConstructorExpression';
-  readonly fieldDeclarations?: readonly ObjectConstructorExpressionFieldConstructor[];
+  readonly fieldDeclarations: readonly ObjectConstructorExpressionFieldConstructor[];
 }
 
 export interface VariantConstructorExpression extends BaseExpression {
