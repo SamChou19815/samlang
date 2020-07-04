@@ -108,17 +108,18 @@ export const checkAndInfer = (
   }
 };
 
-export const checkAndInferWithErrorRecording = (
-  expectedType: Type,
-  actualType: Type,
-  resolution: TypeResolution,
-  errorRange: Range,
-  errorCollector: ModuleErrorCollector
-): Type => {
-  const result = checkAndInfer(expectedType, actualType, resolution);
-  if (result.type === 'FAILED_MEET') {
-    errorCollector.reportUnexpectedTypeError(errorRange, result.expected, result.actual);
-    return result.expected;
-  }
-  return result;
-};
+export class ConstraintAwareChecker {
+  constructor(
+    public readonly resolution: TypeResolution,
+    private readonly errorCollector: ModuleErrorCollector
+  ) {}
+
+  readonly checkAndInfer = (expectedType: Type, actualType: Type, errorRange: Range): Type => {
+    const result = checkAndInfer(expectedType, actualType, this.resolution);
+    if (result.type === 'FAILED_MEET') {
+      this.errorCollector.reportUnexpectedTypeError(errorRange, result.expected, result.actual);
+      return result.expected;
+    }
+    return result;
+  };
+}

@@ -7,7 +7,7 @@ import {
   tupleType,
   functionType,
 } from '../../ast/common/types';
-import { checkAndInfer, checkAndInferWithErrorRecording } from '../constraint-aware-checker';
+import { checkAndInfer, ConstraintAwareChecker } from '../constraint-aware-checker';
 import TypeResolution from '../type-resolution';
 import { createGlobalErrorCollector } from '../../errors/error-collector';
 import ModuleReference from '../../ast/common/module-reference';
@@ -197,9 +197,17 @@ it('checkAndInferWithErrorRecording type', () => {
   const moduleCollector = globalCollector.getModuleErrorCollector(ModuleReference.ROOT);
 
   expect(
-    checkAndInferWithErrorRecording(unitType, unitType, resolution, Range.DUMMY, moduleCollector)
+    new ConstraintAwareChecker(resolution, moduleCollector).checkAndInfer(
+      unitType,
+      unitType,
+      Range.DUMMY
+    )
   ).toEqual(unitType);
   expect(globalCollector.getErrors()).toEqual([]);
-  checkAndInferWithErrorRecording(unitType, boolType, resolution, Range.DUMMY, moduleCollector);
+  new ConstraintAwareChecker(resolution, moduleCollector).checkAndInfer(
+    unitType,
+    boolType,
+    Range.DUMMY
+  );
   expect(globalCollector.getErrors().map((it) => it.errorType)).toEqual(['UnexpectedType']);
 });
