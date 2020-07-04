@@ -8,6 +8,10 @@ import {
   NotWellDefinedIdentifierError,
   UnresolvedNameError,
   UnsupportedClassTypeDefinitionError,
+  UnexpectedTypeKindError,
+  TypeParameterSizeMismatchError,
+  TupleSizeMismatchError,
+  InsufficientTypeInferenceContextError,
 } from './error-definitions';
 
 interface ReadonlyGlobalErrorCollector {
@@ -54,6 +58,34 @@ export class ModuleErrorCollector {
   ): void {
     this.collectorDelegate.reportError(
       new UnsupportedClassTypeDefinitionError(this.moduleReference, range, typeDefinitionType)
+    );
+  }
+
+  reportUnexpectedTypeKindError(range: Range, expected: string, actual: string | Type): void {
+    this.collectorDelegate.reportError(
+      new UnexpectedTypeKindError(this.moduleReference, range, expected, actual)
+    );
+  }
+
+  reportTypeParameterSizeMismatchError(
+    range: Range,
+    expectedSize: number,
+    actualSize: number
+  ): void {
+    this.collectorDelegate.reportError(
+      new TypeParameterSizeMismatchError(this.moduleReference, range, expectedSize, actualSize)
+    );
+  }
+
+  reportTupleSizeMismatchError(range: Range, expectedSize: number, actualSize: number): void {
+    this.collectorDelegate.reportError(
+      new TupleSizeMismatchError(this.moduleReference, range, expectedSize, actualSize)
+    );
+  }
+
+  reportInsufficientTypeInferenceContextError(range: Range): void {
+    this.collectorDelegate.reportError(
+      new InsufficientTypeInferenceContextError(this.moduleReference, range)
     );
   }
 }

@@ -83,3 +83,74 @@ export class UnsupportedClassTypeDefinitionError extends CompileTimeError<
     );
   }
 }
+
+export class UnexpectedTypeKindError extends CompileTimeError<'UnexpectedTypeKind', 6> {
+  constructor(
+    moduleReference: ModuleReference,
+    range: Range,
+    expectedTypeKind: string,
+    actualType: string | Type
+  ) {
+    super(
+      'UnexpectedTypeKind',
+      6,
+      moduleReference,
+      range,
+      `Expected kind: \`${expectedTypeKind}\`, actual: \`${
+        typeof actualType === 'string' ? actualType : prettyPrintType(actualType)
+      }\`.`
+    );
+  }
+}
+
+export class TypeParameterSizeMismatchError extends CompileTimeError<
+  'TypeParameterSizeMismatch',
+  7
+> {
+  constructor(
+    moduleReference: ModuleReference,
+    range: Range,
+    expectedSize: number,
+    actualSize: number
+  ) {
+    super(
+      'TypeParameterSizeMismatch',
+      7,
+      moduleReference,
+      range,
+      `Incorrect number of type arguments. Expected: ${expectedSize}, actual: ${actualSize}.`
+    );
+  }
+}
+
+export class TupleSizeMismatchError extends CompileTimeError<'TupleSizeMismatch', 8> {
+  constructor(
+    moduleReference: ModuleReference,
+    range: Range,
+    expectedSize: number,
+    actualSize: number
+  ) {
+    super(
+      'TupleSizeMismatch',
+      8,
+      moduleReference,
+      range,
+      `Incorrect tuple size. Expected: ${expectedSize}, actual: ${actualSize}.`
+    );
+  }
+}
+
+export class InsufficientTypeInferenceContextError extends CompileTimeError<
+  'InsufficientTypeInferenceContext',
+  9
+> {
+  constructor(moduleReference: ModuleReference, range: Range) {
+    super(
+      'InsufficientTypeInferenceContext',
+      9,
+      moduleReference,
+      range,
+      'There is not enough context information to decide the type of this expression.'
+    );
+  }
+}

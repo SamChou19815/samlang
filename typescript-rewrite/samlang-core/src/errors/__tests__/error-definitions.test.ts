@@ -8,6 +8,10 @@ import {
   NotWellDefinedIdentifierError,
   UnresolvedNameError,
   UnsupportedClassTypeDefinitionError,
+  UnexpectedTypeKindError,
+  TypeParameterSizeMismatchError,
+  TupleSizeMismatchError,
+  InsufficientTypeInferenceContextError,
 } from '../error-definitions';
 
 const testCases: readonly (readonly [CompileTimeError, string])[] = [
@@ -34,6 +38,31 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
       'object'
     ),
     "Foo/Bar.sam:0:0-0:0: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
+  ],
+  [
+    new UnexpectedTypeKindError(
+      new ModuleReference(['Foo', 'Bar']),
+      Range.DUMMY,
+      'array',
+      'object'
+    ),
+    'Foo/Bar.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `array`, actual: `object`.',
+  ],
+  [
+    new UnexpectedTypeKindError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 'array', intType),
+    'Foo/Bar.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `array`, actual: `int`.',
+  ],
+  [
+    new TypeParameterSizeMismatchError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 1, 2),
+    'Foo/Bar.sam:0:0-0:0: [TypeParameterSizeMismatch]: Incorrect number of type arguments. Expected: 1, actual: 2.',
+  ],
+  [
+    new TupleSizeMismatchError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 1, 2),
+    'Foo/Bar.sam:0:0-0:0: [TupleSizeMismatch]: Incorrect tuple size. Expected: 1, actual: 2.',
+  ],
+  [
+    new InsufficientTypeInferenceContextError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY),
+    'Foo/Bar.sam:0:0-0:0: [InsufficientTypeInferenceContext]: There is not enough context information to decide the type of this expression.',
   ],
 ];
 

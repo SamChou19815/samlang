@@ -19,4 +19,14 @@ it('can add errors', () => {
   assertCanAddErrors((collector) =>
     collector.reportUnsupportedClassTypeDefinitionError(Range.DUMMY, 'object')
   );
+  assertCanAddErrors((collector) =>
+    collector.reportUnexpectedTypeKindError(Range.DUMMY, 'object', 'array')
+  );
+  assertCanAddErrors((collector) =>
+    collector.reportTypeParameterSizeMismatchError(Range.DUMMY, 1, 2)
+  );
+  assertCanAddErrors((collector) => collector.reportTupleSizeMismatchError(Range.DUMMY, 1, 2));
+  assertCanAddErrors((collector) =>
+    collector.reportInsufficientTypeInferenceContextError(Range.DUMMY)
+  );
 });
