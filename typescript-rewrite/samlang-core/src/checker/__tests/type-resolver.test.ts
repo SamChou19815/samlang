@@ -11,7 +11,8 @@ import {
 } from '../../ast/common/types';
 import typeResolver from '../type-resolver';
 
-const undecidedTypeResolver = ({ index }: UndecidedType): Type => {
+// eslint-disable-next-line import/prefer-default-export
+export const undecidedTypeResolver = ({ index }: UndecidedType): Type => {
   switch (index % 4) {
     case 0:
       return unitType;
