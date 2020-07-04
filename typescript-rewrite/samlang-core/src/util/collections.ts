@@ -117,3 +117,16 @@ export const hashSetOf = <T extends Hashable>(...values: readonly T[]): HashSet<
 
 export const setOf = <T extends Hashable>(...values: readonly T[]): ReadonlyHashSet<T> =>
   new HashSetImpl(values);
+
+export const listShallowEquals = <T>(list1: readonly T[], list2: readonly T[]): boolean => {
+  const length = list1.length;
+  if (length !== list2.length) {
+    return false;
+  }
+  for (let i = 0; i < length; i += 1) {
+    if (list1[i] !== list2[i]) {
+      return false;
+    }
+  }
+  return true;
+};

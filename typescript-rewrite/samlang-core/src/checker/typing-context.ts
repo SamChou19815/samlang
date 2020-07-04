@@ -159,10 +159,14 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     return fullyFixedType as FunctionType;
   }
 
-  getCurrentClassTypeDefinition(): TypeDefinition {
-    const definition = this.classes[this.currentClass]?.typeDefinition;
+  getCurrentClassTypeDefinition(): TypeDefinition & {
+    readonly classTypeParameters: readonly string[];
+  } {
+    const classTypingContext = this.classes[this.currentClass];
+    assertNotNull(classTypingContext);
+    const definition = classTypingContext.typeDefinition;
     assertNotNull(definition);
-    return definition;
+    return { ...definition, classTypeParameters: classTypingContext.typeParameters };
   }
 
   /**
