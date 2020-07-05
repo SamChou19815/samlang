@@ -200,8 +200,10 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
       typeParameters,
       typeDefinition: { names, mappings: nameMappings },
     } = relaventClass;
-    // istanbul ignore next
-    if (typeParameters.length !== typeArguments.length) throw new Error('Impossible');
+    let classTypeParameters = typeParameters;
+    if (typeParameters.length > typeArguments.length) {
+      classTypeParameters = classTypeParameters.slice(0, typeArguments.length);
+    }
     return {
       type: 'Resolved',
       names,
@@ -215,7 +217,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
               type: replaceTypeIdentifier(
                 fieldType.type,
                 Object.fromEntries(
-                  typeParameters.map(
+                  classTypeParameters.map(
                     (parameter, index) => [parameter, typeArguments[index]] as const
                   )
                 )

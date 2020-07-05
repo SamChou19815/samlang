@@ -141,9 +141,10 @@ class ExpressionTypeChecker {
       this.errorCollector.reportIllegalThisError(expression.range);
       return { ...expression, type: expectedType };
     }
-    // Don't need the return value because the type must be exact.
-    this.constraintAwareTypeChecker.checkAndInfer(expectedType, type, expression.range);
-    return { ...expression, type: expectedType };
+    return {
+      ...expression,
+      type: this.constraintAwareTypeChecker.checkAndInfer(expectedType, type, expression.range),
+    };
   }
 
   private typeCheckVariable(expression: VariableExpression, expectedType: Type): SamlangExpression {

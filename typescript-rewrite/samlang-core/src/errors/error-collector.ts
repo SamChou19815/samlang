@@ -19,7 +19,7 @@ import {
   DuplicateFieldDeclarationError,
 } from './error-definitions';
 
-interface ReadonlyGlobalErrorCollector {
+export interface ReadonlyGlobalErrorCollector {
   getErrors(): readonly CompileTimeError[];
 
   getModuleErrorCollector(moduleReference: ModuleReference): ModuleErrorCollector;
