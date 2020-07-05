@@ -1204,7 +1204,10 @@ __metadata:
   dependencies:
     "@dev-sam/samlang-core": "workspace:0.0.1"
     "@types/jest": ^26.0.3
+    "@types/node": ^14.0.14
     typescript: 3.9.5
+  bin:
+    samlang: ./lib/index.js
   languageName: unknown
   linkType: soft
 
@@ -1573,7 +1576,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*":
+"@types/node@npm:*, @types/node@npm:^14.0.14":
   version: 14.0.14
   resolution: "@types/node@npm:14.0.14"
   checksum: 0a2072aa7de32e6535ce6bc7383965fc0a4b7bbf6d76f69027db72e86381921c820a8a2173f75fa210d9fb3286c707079d3804ef33c76a065bcb890858e50ee9

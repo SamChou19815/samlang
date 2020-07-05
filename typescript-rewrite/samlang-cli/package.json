@@ -7,11 +7,15 @@
   "scripts": {
     "build": "tsc --incremental"
   },
+  "bin": {
+    "samlang": "./lib/index.js"
+  },
   "dependencies": {
     "@dev-sam/samlang-core": "workspace:0.0.1"
   },
   "devDependencies": {
     "@types/jest": "^26.0.3",
+    "@types/node": "^14.0.14",
     "typescript": "3.9.5"
   }
 }
