@@ -51,18 +51,6 @@ import { undecideFieldTypeParameters, undecideTypeParameters } from './type-unde
 import { validateType } from './type-validator';
 import type { LocalTypingContext, AccessibleGlobalTypingContext } from './typing-context';
 
-type TryTypeCheckMethodAccessReturns =
-  | Readonly<{ type: 'Success'; checkedExpression: SamlangExpression; methodType: FunctionType }>
-  | Readonly<{
-      type: 'UnexpectedTypeKind';
-      range: Range;
-      expected: 'identifier';
-      actual: Type;
-    }>
-  | Readonly<{ type: 'InsufficientTypeInferenceContext' }>
-  | Readonly<{ type: 'UnresolvedName'; unresolvedName: string }>
-  | Readonly<{ type: 'TypeParameterSizeMismatch'; expected: number; actual: number }>;
-
 class ExpressionTypeChecker {
   private readonly constraintAwareTypeChecker: ConstraintAwareChecker;
 
@@ -370,16 +358,11 @@ class ExpressionTypeChecker {
 
   private tryTypeCheckMethodAccess(
     expression: MethodAccessExpression
-  ): TryTypeCheckMethodAccessReturns {
+  ): Readonly<{ checkedExpression: SamlangExpression; methodType: FunctionType }> | null {
     const checkedExpression = this.basicTypeCheck(expression.expression);
     const checkedExpressionType = checkedExpression.type;
     if (checkedExpressionType.type !== 'IdentifierType') {
-      return {
-        type: 'UnexpectedTypeKind',
-        expected: 'identifier',
-        actual: checkedExpressionType,
-        range: expression.expression.range,
-      };
+      return null;
     }
     const {
       identifier: checkedExprTypeIdentifier,
@@ -391,9 +374,9 @@ class ExpressionTypeChecker {
       checkedExprTypeArguments
     );
     if (methodTypeOrError.type !== 'FunctionType') {
-      return methodTypeOrError;
+      return null;
     }
-    return { type: 'Success', checkedExpression, methodType: methodTypeOrError };
+    return { checkedExpression, methodType: methodTypeOrError };
   }
 
   private typeCheckFieldAccess(
@@ -408,7 +391,7 @@ class ExpressionTypeChecker {
         methodName: expression.fieldName,
       })
     );
-    if (tryTypeCheckMethodAccessResult.type === 'Success') {
+    if (tryTypeCheckMethodAccessResult != null) {
       const { checkedExpression, methodType } = tryTypeCheckMethodAccessResult;
       const constraintInferredType = this.constraintAwareTypeChecker.checkAndInfer(
         expectedType,
