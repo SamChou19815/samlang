@@ -9,7 +9,6 @@ import {
   UnresolvedNameError,
   UnsupportedClassTypeDefinitionError,
   UnexpectedTypeKindError,
-  TypeParameterSizeMismatchError,
   TupleSizeMismatchError,
   InsufficientTypeInferenceContextError,
   CollisionError,
@@ -56,10 +55,6 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
   [
     new UnexpectedTypeKindError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 'array', intType),
     'Foo/Bar.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `array`, actual: `int`.',
-  ],
-  [
-    new TypeParameterSizeMismatchError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 1, 2),
-    'Foo/Bar.sam:0:0-0:0: [TypeParameterSizeMismatch]: Incorrect number of type arguments. Expected: 1, actual: 2.',
   ],
   [
     new TupleSizeMismatchError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 1, 2),

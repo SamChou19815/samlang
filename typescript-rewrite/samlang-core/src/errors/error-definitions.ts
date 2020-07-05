@@ -103,26 +103,6 @@ export class UnexpectedTypeKindError extends CompileTimeError<'UnexpectedTypeKin
   }
 }
 
-export class TypeParameterSizeMismatchError extends CompileTimeError<
-  'TypeParameterSizeMismatch',
-  7
-> {
-  constructor(
-    moduleReference: ModuleReference,
-    range: Range,
-    expectedSize: number,
-    actualSize: number
-  ) {
-    super(
-      'TypeParameterSizeMismatch',
-      7,
-      moduleReference,
-      range,
-      `Incorrect number of type arguments. Expected: ${expectedSize}, actual: ${actualSize}.`
-    );
-  }
-}
-
 export class TupleSizeMismatchError extends CompileTimeError<'TupleSizeMismatch', 8> {
   constructor(
     moduleReference: ModuleReference,
