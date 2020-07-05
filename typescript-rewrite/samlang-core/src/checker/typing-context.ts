@@ -184,12 +184,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
         readonly mappings: Readonly<Record<string, FieldType | undefined>>;
       }
     | { readonly type: 'IllegalOtherClassMatch' }
-    | { readonly type: 'UnsupportedClassTypeDefinition' }
-    | {
-        readonly type: 'TypeParamSizeMismatch';
-        readonly expected: number;
-        readonly actual: number;
-      } {
+    | { readonly type: 'UnsupportedClassTypeDefinition' } {
     if (identifier !== this.currentClass && typeDefinitionType === 'variant') {
       return { type: 'IllegalOtherClassMatch' };
     }
@@ -205,13 +200,8 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
       typeParameters,
       typeDefinition: { names, mappings: nameMappings },
     } = relaventClass;
-    if (typeParameters.length !== typeArguments.length) {
-      return {
-        type: 'TypeParamSizeMismatch',
-        expected: typeParameters.length,
-        actual: typeArguments.length,
-      };
-    }
+    // istanbul ignore next
+    if (typeParameters.length !== typeArguments.length) throw new Error('Impossible');
     return {
       type: 'Resolved',
       names,
@@ -250,9 +240,8 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     if (this.typeParameters.has(name)) {
       return typeArgumentLength === 0;
     }
-    const typeParameters = this.classes[this.currentClass]?.typeParameters;
-    assertNotNull(typeParameters);
-    return typeParameters.length === typeArgumentLength;
+    const typeParameters = this.classes[name]?.typeParameters;
+    return typeParameters != null && typeParameters.length === typeArgumentLength;
   }
 
   withAdditionalTypeParameters(typeParameters: Iterable<string>): AccessibleGlobalTypingContext {

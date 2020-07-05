@@ -483,31 +483,6 @@ const failingTypeCheckerTestCases: readonly (readonly [
     unitType,
     ['.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
   ],
-  [
-    'object destructuring 7',
-    BLOCK([
-      STATEMENT(
-        {
-          range: Range.DUMMY,
-          type: 'ObjectPattern',
-          destructedNames: [
-            { range: Range.DUMMY, fieldName: 'a', fieldOrder: 0 },
-            { range: Range.DUMMY, fieldName: 'b', fieldOrder: 1, alias: 'c' },
-          ],
-        },
-        { type: 'UndecidedType', index: 0 },
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: identifierType('A', [intType]),
-          name: 'foo',
-        })
-      ),
-    ]),
-    unitType,
-    [
-      '.sam:0:0-0:0: [TypeParameterSizeMismatch]: Incorrect number of type arguments. Expected: 0, actual: 1.',
-    ],
-  ],
 
   [
     'variable pattern 4',

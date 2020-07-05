@@ -31,18 +31,16 @@ export default class StatementTypeChecker {
       const checkedStatements = statements.map((statement) =>
         this.typeCheckValStatement(statement, localContext)
       );
-      let checkedExpression: SamlangExpression | undefined;
       if (expression != null) {
-        checkedExpression = this.typeCheckExpression(expression, expectedType);
-      } else {
-        // Force the type checker to resolve expected type to unit.
-        this.typeCheckExpression(
-          EXPRESSION_PANIC({ range, type: unitType, expression: EXPRESSION_STRING(range, '') }),
-          expectedType
-        );
-        checkedExpression = undefined;
+        const checkedExpression = this.typeCheckExpression(expression, expectedType);
+        return { range, statements: checkedStatements, expression: checkedExpression };
       }
-      return { range, statements: checkedStatements, expression: checkedExpression };
+      // Force the type checker to resolve expected type to unit.
+      this.typeCheckExpression(
+        EXPRESSION_PANIC({ range, type: unitType, expression: EXPRESSION_STRING(range, '') }),
+        expectedType
+      );
+      return { range, statements: checkedStatements };
     });
 
   private typeCheckValStatement(
@@ -128,17 +126,6 @@ export default class StatementTypeChecker {
             this.errorCollector.reportUnsupportedClassTypeDefinitionError(
               assignedExpression.range,
               'object'
-            );
-            return {
-              ...statement,
-              typeAnnotation: assignedExpression.type,
-              assignedExpression: checkedAssignedExpression,
-            };
-          case 'TypeParamSizeMismatch':
-            this.errorCollector.reportTypeParameterSizeMismatchError(
-              assignedExpression.range,
-              fieldMappingsOrError.expected,
-              fieldMappingsOrError.actual
             );
             return {
               ...statement,

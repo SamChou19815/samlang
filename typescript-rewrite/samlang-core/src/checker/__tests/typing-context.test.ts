@@ -166,9 +166,6 @@ it('AccessibleGlobalTypingContext tests', () => {
   expect(
     context.resolveTypeDefinition(identifierType('B', [intType, intType]), 'variant').type
   ).toBe('IllegalOtherClassMatch');
-  expect(context.resolveTypeDefinition(identifierType('A', [intType]), 'variant').type).toBe(
-    'TypeParamSizeMismatch'
-  );
   expect(context.resolveTypeDefinition(identifierType('A', [intType, intType]), 'variant')).toEqual(
     {
       type: 'Resolved',
