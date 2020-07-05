@@ -36,7 +36,7 @@ import {
   EXPRESSION_LAMBDA,
   EXPRESSION_STATEMENT_BLOCK,
 } from '../ast/lang/samlang-expressions';
-import type { ModuleErrorCollector } from '../errors/error-collector';
+import type { ModuleErrorCollector } from '../errors';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {
   ExpressionContext,

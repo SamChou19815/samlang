@@ -19,7 +19,7 @@ import {
   EXPRESSION_STATEMENT_BLOCK,
 } from '../../ast/lang/samlang-expressions';
 import type { Pattern } from '../../ast/lang/samlang-pattern';
-import { createGlobalErrorCollector } from '../../errors/error-collector';
+import { createGlobalErrorCollector } from '../../errors';
 import StatementTypeChecker from '../statement-type-checker';
 import { AccessibleGlobalTypingContext, LocalTypingContext } from '../typing-context';
 

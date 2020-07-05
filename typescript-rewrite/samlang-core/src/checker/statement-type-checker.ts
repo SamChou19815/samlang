@@ -8,7 +8,7 @@ import {
   EXPRESSION_STRING,
 } from '../ast/lang/samlang-expressions';
 import type { Pattern, ObjectPatternDestucturedName } from '../ast/lang/samlang-pattern';
-import type { ModuleErrorCollector } from '../errors/error-collector';
+import type { ModuleErrorCollector } from '../errors';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
 import type { AccessibleGlobalTypingContext, LocalTypingContext } from './typing-context';
 

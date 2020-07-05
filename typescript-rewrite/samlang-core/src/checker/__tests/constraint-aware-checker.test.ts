@@ -9,7 +9,7 @@ import {
   tupleType,
   functionType,
 } from '../../ast/common/types';
-import { createGlobalErrorCollector } from '../../errors/error-collector';
+import { createGlobalErrorCollector } from '../../errors';
 import { checkAndInfer, ConstraintAwareChecker } from '../constraint-aware-checker';
 import TypeResolution from '../type-resolution';
 

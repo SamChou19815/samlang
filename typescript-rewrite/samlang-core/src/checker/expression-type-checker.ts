@@ -39,7 +39,7 @@ import {
   EXPRESSION_MATCH,
   EXPRESSION_LAMBDA,
 } from '../ast/lang/samlang-expressions';
-import type { ModuleErrorCollector } from '../errors/error-collector';
+import type { ModuleErrorCollector } from '../errors';
 import { listShallowEquals } from '../util/collections';
 import { assertNotNull, isNotNull } from '../util/type-assertions';
 import { ConstraintAwareChecker } from './constraint-aware-checker';

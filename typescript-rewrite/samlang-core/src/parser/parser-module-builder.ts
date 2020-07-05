@@ -3,7 +3,7 @@ import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor
 import ModuleReference from '../ast/common/module-reference';
 import { ModuleMembersImport } from '../ast/common/structs';
 import type { ClassDefinition, SamlangModule } from '../ast/lang/samlang-toplevel';
-import type { ModuleErrorCollector } from '../errors/error-collector';
+import type { ModuleErrorCollector } from '../errors';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {
   ModuleContext,

@@ -1,6 +1,6 @@
 import type Range from '../ast/common/range';
 import type { Type } from '../ast/common/types';
-import type { ModuleErrorCollector } from '../errors/error-collector';
+import type { ModuleErrorCollector } from '../errors';
 
 export interface IdentifierTypeValidator {
   /**

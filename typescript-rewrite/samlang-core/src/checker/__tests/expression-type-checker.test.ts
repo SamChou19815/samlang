@@ -22,7 +22,7 @@ import {
   EXPRESSION_STATEMENT_BLOCK,
   EXPRESSION_LAMBDA,
 } from '../../ast/lang/samlang-expressions';
-import { createGlobalErrorCollector } from '../../errors/error-collector';
+import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
 import { assertNotNull } from '../../util/type-assertions';
 import typeCheckExpression from '../expression-type-checker';

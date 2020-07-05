@@ -1,6 +1,3 @@
-import ModuleReference from '../../ast/common/module-reference';
-import Range from '../../ast/common/range';
-import { intType, boolType } from '../../ast/common/types';
 import {
   CompileTimeError,
   SyntaxError,
@@ -16,7 +13,10 @@ import {
   IllegalThisError,
   InconsistentFieldsInObjectError,
   DuplicateFieldDeclarationError,
-} from '../error-definitions';
+} from '..';
+import ModuleReference from '../../ast/common/module-reference';
+import Range from '../../ast/common/range';
+import { intType, boolType } from '../../ast/common/types';
 
 const testCases: readonly (readonly [CompileTimeError, string])[] = [
   [

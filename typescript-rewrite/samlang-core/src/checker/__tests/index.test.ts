@@ -5,7 +5,7 @@ import {
   typeCheckSingleModuleSource_EXPOSED_FOR_TESTING,
 } from '..';
 import ModuleReference from '../../ast/common/module-reference';
-import { createGlobalErrorCollector } from '../../errors/error-collector';
+import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangModuleFromText } from '../../parser';
 import { mapOf, hashMapOf } from '../../util/collections';
 

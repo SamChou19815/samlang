@@ -1,6 +1,6 @@
 import type { Sources, ModuleMembersImport } from '../ast/common/structs';
 import type { SamlangModule } from '../ast/lang/samlang-toplevel';
-import type { ModuleErrorCollector } from '../errors/error-collector';
+import type { ModuleErrorCollector } from '../errors';
 import { isNotNull } from '../util/type-assertions';
 
 class UndefinedImportChecker {

@@ -6,7 +6,7 @@ import Position from '../ast/common/position';
 import Range from '../ast/common/range';
 import type { SamlangExpression } from '../ast/lang/samlang-expressions';
 import type { SamlangModule } from '../ast/lang/samlang-toplevel';
-import type { ModuleErrorCollector } from '../errors/error-collector';
+import type { ModuleErrorCollector } from '../errors';
 import { PLLexer } from './generated/PLLexer';
 import { PLParser } from './generated/PLParser';
 import ExpressionBuilder from './parser-expression-builder';
