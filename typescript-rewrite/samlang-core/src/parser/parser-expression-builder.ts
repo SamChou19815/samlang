@@ -154,14 +154,14 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
       return EXPRESSION_FALSE(range);
     }
     if (literalNode.MinInt() != null) {
-      return EXPRESSION_INT(range, -9223372036854775808n);
+      return EXPRESSION_INT(range, BigInt('-9223372036854775808'));
     }
     const intLiteralNode = literalNode.IntLiteral();
     if (intLiteralNode != null) {
       const text = intLiteralNode.text;
       assertNotNull(text);
       const parsedBigInt = BigInt(text);
-      if (parsedBigInt > 9223372036854775807n) {
+      if (parsedBigInt > BigInt('9223372036854775807')) {
         this.errorCollector.reportSyntaxError(range, 'Not a 64-bit integer.');
       }
       return EXPRESSION_INT(range, parsedBigInt);

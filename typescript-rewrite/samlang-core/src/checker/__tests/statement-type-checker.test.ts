@@ -203,7 +203,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1n)
+        EXPRESSION_INT(Range.DUMMY, BigInt(1))
       ),
     ]),
     unitType,
@@ -211,7 +211,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1n)
+        EXPRESSION_INT(Range.DUMMY, BigInt(1))
       ),
     ]),
   ],
@@ -221,7 +221,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1n)
+        EXPRESSION_INT(Range.DUMMY, BigInt(1))
       ),
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'b' },
@@ -234,7 +234,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1n)
+        EXPRESSION_INT(Range.DUMMY, BigInt(1))
       ),
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'b' },
@@ -250,7 +250,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
         STATEMENT(
           { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
           intType,
-          EXPRESSION_INT(Range.DUMMY, 1n)
+          EXPRESSION_INT(Range.DUMMY, BigInt(1))
         ),
       ],
       EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: 'a' })
@@ -261,7 +261,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
         STATEMENT(
           { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
           intType,
-          EXPRESSION_INT(Range.DUMMY, 1n)
+          EXPRESSION_INT(Range.DUMMY, BigInt(1))
         ),
       ],
       EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: 'a' })
@@ -274,7 +274,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'WildCardPattern' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1n)
+        EXPRESSION_INT(Range.DUMMY, BigInt(1))
       ),
     ]),
     unitType,
@@ -282,7 +282,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'WildCardPattern' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1n)
+        EXPRESSION_INT(Range.DUMMY, BigInt(1))
       ),
     ]),
   ],
@@ -490,7 +490,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1n)
+        EXPRESSION_INT(Range.DUMMY, BigInt(1))
       ),
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
@@ -508,7 +508,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         STATEMENT(
           { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
           intType,
-          EXPRESSION_INT(Range.DUMMY, 1n)
+          EXPRESSION_INT(Range.DUMMY, BigInt(1))
         ),
       ],
       EXPRESSION_VARIABLE({
