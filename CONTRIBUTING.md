@@ -1,6 +1,7 @@
 # Contributing
 
-The repository is current migrating the codebase to TypeScript.
+The repository is current migrating the codebase to TypeScript. You can see the source code in
+[`typescript-rewrite`](./typescript-rewrite) directory.
 
 You can contribute by migrating part of the code to TypeScript, following existing coding
 conventions already in the repo.
