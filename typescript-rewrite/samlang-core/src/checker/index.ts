@@ -79,3 +79,5 @@ export const typeCheckSingleModuleSource_EXPOSED_FOR_TESTING = (
   assertNotNull(checkedModule);
   return checkedModule;
 };
+
+export type { GlobalTypingContext };
