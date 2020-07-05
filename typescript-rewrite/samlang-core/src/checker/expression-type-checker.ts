@@ -1,4 +1,3 @@
-import type Range from '../ast/common/range';
 import type { FieldType } from '../ast/common/structs';
 import {
   Type,

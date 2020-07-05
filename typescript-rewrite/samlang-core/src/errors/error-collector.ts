@@ -9,7 +9,6 @@ import {
   UnresolvedNameError,
   UnsupportedClassTypeDefinitionError,
   UnexpectedTypeKindError,
-  TypeParameterSizeMismatchError,
   TupleSizeMismatchError,
   InsufficientTypeInferenceContextError,
   CollisionError,
@@ -81,17 +80,6 @@ export class ModuleErrorCollector {
     this._hasErrors = true;
     this.collectorDelegate.reportError(
       new UnexpectedTypeKindError(this.moduleReference, range, expected, actual)
-    );
-  }
-
-  reportTypeParameterSizeMismatchError(
-    range: Range,
-    expectedSize: number,
-    actualSize: number
-  ): void {
-    this._hasErrors = true;
-    this.collectorDelegate.reportError(
-      new TypeParameterSizeMismatchError(this.moduleReference, range, expectedSize, actualSize)
     );
   }
 
