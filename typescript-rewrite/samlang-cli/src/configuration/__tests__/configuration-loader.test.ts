@@ -71,6 +71,16 @@ it('Real filesystem bad configuration file integration test.', () => {
   ).toBe('UNREADABLE_CONFIGURATION_FILE');
 });
 
+it('Real filesystem bad start path integration test.', () => {
+  expect(
+    loadSamlangProjectConfiguration({
+      // eslint-disable-next-line camelcase
+      ...fileSystemLoader_EXPOSED_FOR_TESTING,
+      startPath: '/',
+    })
+  ).toBe('NO_CONFIGURATION');
+});
+
 it('Real filesystem integration test.', () => {
   expect(loadSamlangProjectConfiguration()).toEqual({
     sourceDirectory: '.',
