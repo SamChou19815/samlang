@@ -9,6 +9,15 @@ on:
       - 'scripts/**'
       - 'test/**'
       - 'typescript-rewrite/**'
+  pull_request:
+    paths:
+      - '.github/workflows/ci-ts.yml'
+      - 'runtime/**'
+      - 'sconfig.json'
+      - '**.samlang'
+      - 'scripts/**'
+      - 'test/**'
+      - 'typescript-rewrite/**'
 
 jobs:
   validate:

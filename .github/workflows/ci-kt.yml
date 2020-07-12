@@ -10,6 +10,16 @@ on:
       - 'test/**'
       - '**.kt'
       - '**.kts'
+  pull_request:
+    paths:
+      - '.github/workflows/ci-kt.yml'
+      - 'runtime/**'
+      - 'sconfig.json'
+      - '**.samlang'
+      - 'scripts/**'
+      - 'test/**'
+      - '**.kt'
+      - '**.kts'
 
 jobs:
   validate:
