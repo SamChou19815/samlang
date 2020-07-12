@@ -1,6 +1,8 @@
 name: CI for TypeScript Code
 on:
   push:
+    branches:
+      - master
     paths:
       - '.github/workflows/ci-ts.yml'
       - 'runtime/**'

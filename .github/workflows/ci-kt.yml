@@ -1,6 +1,8 @@
 name: CI for Kotlin Code
 on:
   push:
+    branches:
+      - master
     paths:
       - '.github/workflows/ci-kt.yml'
       - 'runtime/**'
