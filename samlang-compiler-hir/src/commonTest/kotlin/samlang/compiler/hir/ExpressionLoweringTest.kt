@@ -270,9 +270,8 @@ class ExpressionLoweringTest {
                 arguments = listOf(THIS, THIS)
             ),
             expectedStatements = listOf(
-                HighIrStatement.ConstantDefinition(
-                    pattern = HighIrPattern.WildCardPattern,
-                    assignedExpression = HighIrExpression.ClosureApplication(
+                HighIrStatement.ExpressionAsStatement(
+                    expressionWithPotentialSideEffect = HighIrExpression.ClosureApplication(
                         functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
                     )
                 )
@@ -323,18 +322,8 @@ class ExpressionLoweringTest {
             expectedStatements = listOf(
                 HighIrStatement.IfElse(
                     booleanExpression = IR_THIS,
-                    s1 = listOf(
-                        HighIrStatement.ConstantDefinition(
-                            pattern = HighIrPattern.WildCardPattern,
-                            assignedExpression = IR_THIS
-                        )
-                    ),
-                    s2 = listOf(
-                        HighIrStatement.ConstantDefinition(
-                            pattern = HighIrPattern.WildCardPattern,
-                            assignedExpression = IR_THIS
-                        )
-                    )
+                    s1 = listOf(HighIrStatement.ExpressionAsStatement(expressionWithPotentialSideEffect = IR_THIS)),
+                    s2 = listOf(HighIrStatement.ExpressionAsStatement(expressionWithPotentialSideEffect = IR_THIS))
                 )
             )
         )
@@ -372,12 +361,7 @@ class ExpressionLoweringTest {
             expectedStatements = listOf(
                 HighIrStatement.IfElse(
                     booleanExpression = IR_THIS,
-                    s1 = listOf(
-                        HighIrStatement.ConstantDefinition(
-                            pattern = HighIrPattern.WildCardPattern,
-                            assignedExpression = IR_THIS
-                        )
-                    ),
+                    s1 = listOf(HighIrStatement.ExpressionAsStatement(expressionWithPotentialSideEffect = IR_THIS)),
                     s2 = emptyList()
                 )
             )
@@ -413,12 +397,7 @@ class ExpressionLoweringTest {
                 HighIrStatement.IfElse(
                     booleanExpression = IR_THIS,
                     s1 = listOf(HighIrStatement.Throw(expression = IR_THIS)),
-                    s2 = listOf(
-                        HighIrStatement.ConstantDefinition(
-                            pattern = HighIrPattern.WildCardPattern,
-                            assignedExpression = IR_THIS
-                        )
-                    )
+                    s2 = listOf(HighIrStatement.ExpressionAsStatement(expressionWithPotentialSideEffect = IR_THIS))
                 )
             )
         )

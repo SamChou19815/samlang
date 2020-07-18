@@ -24,6 +24,7 @@ import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.Block
 import samlang.ast.hir.HighIrStatement.ConstantDefinition
+import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDeclaration
 import samlang.ast.hir.HighIrStatement.Match
@@ -178,9 +179,8 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         if (expression.type != Type.unit) {
             return functionApplication.asLoweringResult(statements = loweredStatements)
         }
-        loweredStatements += ConstantDefinition(
-            pattern = HighIrPattern.WildCardPattern,
-            assignedExpression = functionApplication
+        loweredStatements += ExpressionAsStatement(
+            expressionWithPotentialSideEffect = functionApplication
         )
         return loweredStatements.asLoweringResult()
     }
@@ -214,10 +214,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         if (type != Type.unit) {
             return functionApplication.asLoweringResult(statements = loweredStatements)
         }
-        loweredStatements += ConstantDefinition(
-            pattern = HighIrPattern.WildCardPattern,
-            assignedExpression = functionApplication
-        )
+        loweredStatements += ExpressionAsStatement(expressionWithPotentialSideEffect = functionApplication)
         return loweredStatements.asLoweringResult()
     }
 
@@ -399,9 +396,8 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                             )
                         }
                         is Pattern.WildCardPattern -> {
-                            loweredScopedStatements += ConstantDefinition(
-                                pattern = HighIrPattern.WildCardPattern,
-                                assignedExpression = loweredAssignedExpression
+                            loweredScopedStatements += ExpressionAsStatement(
+                                expressionWithPotentialSideEffect = loweredAssignedExpression
                             )
                         }
                     }
@@ -413,9 +409,8 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val loweredFinalExpression = finalExpression.getLoweredAndAddStatements(statements = loweredScopedStatements)
             ?: return listOf(Block(statements = loweredScopedStatements)).asLoweringResult()
         if (finalExpression.type == Type.unit && loweredFinalExpression is FunctionApplication) {
-            loweredScopedStatements += ConstantDefinition(
-                pattern = HighIrPattern.WildCardPattern,
-                assignedExpression = loweredFinalExpression
+            loweredScopedStatements += ExpressionAsStatement(
+                expressionWithPotentialSideEffect = loweredFinalExpression
             )
             return listOf(Block(statements = loweredScopedStatements)).asLoweringResult()
         }

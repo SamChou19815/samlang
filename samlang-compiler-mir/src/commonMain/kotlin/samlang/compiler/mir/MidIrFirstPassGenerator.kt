@@ -30,6 +30,7 @@ import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.Block
 import samlang.ast.hir.HighIrStatement.ConstantDefinition
+import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDeclaration
 import samlang.ast.hir.HighIrStatement.Match
@@ -236,9 +237,11 @@ internal class MidIrFirstPassGenerator(
                     destination = allocator.allocateTemp(variableName = pattern.name),
                     source = assignedExpression
                 )
-                is HighIrPattern.WildCardPattern -> EXPR(expression = assignedExpression)
             }
         }
+
+        override fun visit(statement: ExpressionAsStatement): MidIrStatement =
+            EXPR(expression = translate(expression = statement.expressionWithPotentialSideEffect))
 
         override fun visit(statement: Return): MidIrStatement =
             MidIrStatement.Return(returnedExpression = statement.expression?.let { translate(expression = it) })

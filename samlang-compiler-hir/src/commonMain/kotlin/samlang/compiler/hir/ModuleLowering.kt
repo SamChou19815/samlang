@@ -6,7 +6,6 @@ import samlang.ast.hir.HighIrClassDefinition
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrModule
-import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Module
@@ -34,10 +33,7 @@ internal fun compileFunction(classMember: ClassDefinition.MemberDefinition): Hig
         val additionStatementForFinalExpression =
             if (classMember.body.type == Type.unit &&
                 bodyLoweringResult.expression is HighIrExpression.FunctionApplication) {
-                HighIrStatement.ConstantDefinition(
-                    pattern = HighIrPattern.WildCardPattern,
-                    assignedExpression = bodyLoweringResult.expression
-                )
+                HighIrStatement.ExpressionAsStatement(expressionWithPotentialSideEffect = bodyLoweringResult.expression)
             } else {
                 HighIrStatement.Return(expression = bodyLoweringResult.expression)
             }

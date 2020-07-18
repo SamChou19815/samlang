@@ -6,9 +6,4 @@ sealed class HighIrPattern {
     data class VariablePattern(val name: String) : HighIrPattern() {
         override fun toString(): String = name
     }
-
-    /** A wildcard pattern `_` that matches everything. */
-    object WildCardPattern : HighIrPattern() {
-        override fun toString(): String = "_"
-    }
 }
