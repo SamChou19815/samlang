@@ -49,7 +49,7 @@ export interface HighIRUnaryExpression extends BaseHighIRExpression {
 export interface HighIRBuiltInFunctionApplicationExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRBuiltInFunctionApplicationExpression';
   readonly functionName: BuiltInFunctionName;
-  readonly argument: HighIRExpression;
+  readonly functionArgument: HighIRExpression;
 }
 
 export interface HighIRFunctionApplicationExpression extends BaseHighIRExpression {
