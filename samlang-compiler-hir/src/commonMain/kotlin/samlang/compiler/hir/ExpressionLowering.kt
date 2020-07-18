@@ -12,9 +12,8 @@ import samlang.ast.hir.HighIrExpression.Lambda
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
 import samlang.ast.hir.HighIrExpression.MethodApplication
-import samlang.ast.hir.HighIrExpression.ObjectConstructor
+import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Ternary
-import samlang.ast.hir.HighIrExpression.TupleConstructor
 import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
@@ -79,7 +78,8 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val loweredExpressionList = expression.expressionList.map {
             it.getLoweredAndAddStatements(statements = loweredStatements) ?: UnitExpression
         }
-        return TupleConstructor(expressionList = loweredExpressionList).asLoweringResult(statements = loweredStatements)
+        return StructConstructor(expressionList = loweredExpressionList)
+            .asLoweringResult(statements = loweredStatements)
     }
 
     override fun visit(expression: Expression.ObjectConstructor, context: Unit): LoweringResult {
@@ -90,7 +90,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                     val result = fieldConstructor.expression.lower()
                     loweredStatements.addAll(elements = result.statements)
                     val loweredFieldExpression = result.expression ?: UnitExpression
-                    fieldConstructor.name to loweredFieldExpression
+                    loweredFieldExpression
                 }
                 is Expression.ObjectConstructor.FieldConstructor.FieldShorthand -> {
                     val result = Expression.Variable(
@@ -100,11 +100,11 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                     ).lower()
                     loweredStatements.addAll(elements = result.statements)
                     val loweredFieldExpression = result.expression ?: UnitExpression
-                    fieldConstructor.name to loweredFieldExpression
+                    loweredFieldExpression
                 }
             }
         }
-        return ObjectConstructor(fieldDeclaration = loweredFields)
+        return StructConstructor(expressionList = loweredFields)
             .asLoweringResult(statements = loweredStatements)
     }
 

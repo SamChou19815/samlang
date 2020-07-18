@@ -30,14 +30,8 @@ sealed class HighIrExpression {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
-    data class TupleConstructor(
+    data class StructConstructor(
         val expressionList: List<HighIrExpression>
-    ) : HighIrExpression() {
-        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
-    }
-
-    data class ObjectConstructor(
-        val fieldDeclaration: List<Pair<String, HighIrExpression>>
     ) : HighIrExpression() {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }

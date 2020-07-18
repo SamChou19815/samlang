@@ -16,9 +16,8 @@ import samlang.ast.hir.HighIrExpression.Lambda
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
 import samlang.ast.hir.HighIrExpression.MethodApplication
-import samlang.ast.hir.HighIrExpression.ObjectConstructor
+import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Ternary
-import samlang.ast.hir.HighIrExpression.TupleConstructor
 import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
@@ -273,30 +272,17 @@ internal class MidIrFirstPassGenerator(
             return ESEQ(SEQ(statements), closureTemporary)
         }
 
-        override fun visit(expression: TupleConstructor): MidIrExpression {
-            val tupleTemporary = allocator.allocateTemp()
+        override fun visit(expression: StructConstructor): MidIrExpression {
+            val structTemporary = allocator.allocateTemp()
             val statements = mutableListOf<MidIrStatement>()
-            statements += MOVE(tupleTemporary, MALLOC(CONST(value = expression.expressionList.size * 8L)))
-            expression.expressionList.forEachIndexed { index, argument ->
+            statements += MOVE(structTemporary, MALLOC(CONST(value = expression.expressionList.size * 8L)))
+            expression.expressionList.forEachIndexed { index, subExpression ->
                 statements += MOVE_IMMUTABLE_MEM(
-                    destination = IMMUTABLE_MEM(expression = ADD(e1 = tupleTemporary, e2 = CONST(value = index * 8L))),
-                    source = translate(expression = argument)
+                    destination = IMMUTABLE_MEM(expression = ADD(e1 = structTemporary, e2 = CONST(value = index * 8L))),
+                    source = translate(expression = subExpression)
                 )
             }
-            return ESEQ(SEQ(statements), tupleTemporary)
-        }
-
-        override fun visit(expression: ObjectConstructor): MidIrExpression {
-            val objectTemporary = allocator.allocateTemp()
-            val statements = mutableListOf<MidIrStatement>()
-            statements += MOVE(objectTemporary, MALLOC(CONST(value = expression.fieldDeclaration.size * 8L)))
-            expression.fieldDeclaration.forEachIndexed { index, (_, fieldExpression) ->
-                statements += MOVE_IMMUTABLE_MEM(
-                    destination = IMMUTABLE_MEM(expression = ADD(e1 = objectTemporary, e2 = CONST(value = index * 8L))),
-                    source = translate(expression = fieldExpression)
-                )
-            }
-            return ESEQ(SEQ(statements), objectTemporary)
+            return ESEQ(SEQ(statements), structTemporary)
         }
 
         override fun visit(expression: VariantConstructor): MidIrExpression {

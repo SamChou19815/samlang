@@ -78,7 +78,7 @@ class ExpressionLoweringTest {
                 type = Type.TupleType(mappings = listOf()),
                 expressionList = listOf(THIS)
             ),
-            expectedExpression = HighIrExpression.TupleConstructor(expressionList = listOf(IR_THIS))
+            expectedExpression = HighIrExpression.StructConstructor(expressionList = listOf(IR_THIS))
         )
     }
 
@@ -97,11 +97,8 @@ class ExpressionLoweringTest {
                     )
                 )
             ),
-            expectedExpression = HighIrExpression.ObjectConstructor(
-                fieldDeclaration = listOf(
-                    "foo" to IR_THIS,
-                    "bar" to HighIrExpression.Variable(name = "bar")
-                )
+            expectedExpression = HighIrExpression.StructConstructor(
+                expressionList = listOf(IR_THIS, HighIrExpression.Variable(name = "bar"))
             )
         )
     }
