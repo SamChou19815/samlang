@@ -2,7 +2,6 @@ package samlang.ast.hir
 
 import samlang.ast.common.BinaryOperator
 import samlang.ast.common.BuiltInFunctionName
-import samlang.ast.common.Type
 import samlang.ast.common.UnaryOperator
 
 /** A collection of expressions for common IR. */
@@ -30,7 +29,6 @@ sealed class HighIrExpression {
     }
 
     data class ClassMember(
-        val typeArguments: List<Type>,
         val className: String,
         val memberName: String
     ) : HighIrExpression() {
@@ -90,7 +88,6 @@ sealed class HighIrExpression {
     data class FunctionApplication(
         val className: String,
         val functionName: String,
-        val typeArguments: List<Type>,
         val arguments: List<HighIrExpression>
     ) : HighIrExpression() {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
@@ -130,8 +127,8 @@ sealed class HighIrExpression {
 
     data class Lambda(
         val hasReturn: Boolean,
-        val parameters: List<Pair<String, Type>>,
-        val captured: Map<String, Type>,
+        val parameters: List<String>,
+        val captured: List<String>,
         val body: List<HighIrStatement>
     ) : HighIrExpression() {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)

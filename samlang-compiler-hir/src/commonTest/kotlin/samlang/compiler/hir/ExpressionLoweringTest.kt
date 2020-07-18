@@ -65,7 +65,6 @@ class ExpressionLoweringTest {
                 memberName = "b"
             ),
             expectedExpression = HighIrExpression.ClassMember(
-                typeArguments = emptyList(),
                 className = "A",
                 memberName = "b"
             )
@@ -173,7 +172,6 @@ class ExpressionLoweringTest {
             expectedExpression = HighIrExpression.FunctionApplication(
                 className = "Foo",
                 functionName = "bar",
-                typeArguments = listOf(int),
                 arguments = listOf(IR_THIS, IR_THIS)
             )
         )
@@ -248,7 +246,7 @@ class ExpressionLoweringTest {
             expectedExpression = HighIrExpression.Lambda(
                 parameters = emptyList(),
                 hasReturn = false,
-                captured = emptyMap(),
+                captured = emptyList(),
                 body = listOf(HighIrStatement.Return(expression = IR_THIS))
             )
         )

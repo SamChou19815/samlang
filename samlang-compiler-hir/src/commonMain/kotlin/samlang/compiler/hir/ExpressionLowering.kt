@@ -83,11 +83,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         Variable(name = expression.name).asLoweringResult()
 
     override fun visit(expression: Expression.ClassMember, context: Unit): LoweringResult =
-        ClassMember(
-            typeArguments = expression.typeArguments,
-            className = expression.className,
-            memberName = expression.memberName
-        ).asLoweringResult()
+        ClassMember(className = expression.className, memberName = expression.memberName).asLoweringResult()
 
     override fun visit(expression: Expression.TupleConstructor, context: Unit): LoweringResult {
         val loweredStatements = mutableListOf<HighIrStatement>()
@@ -203,7 +199,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             is ClassMember -> FunctionApplication(
                 className = loweredFunctionExpression.className,
                 functionName = loweredFunctionExpression.memberName,
-                typeArguments = loweredFunctionExpression.typeArguments,
                 arguments = loweredArguments
             )
             is MethodAccess -> MethodApplication(
@@ -341,15 +336,15 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         return if (loweredExpression == null) {
             Lambda(
                 hasReturn = expression.type.returnType != Type.unit,
-                parameters = expression.parameters,
-                captured = expression.captured,
+                parameters = expression.parameters.map { it.first },
+                captured = expression.captured.keys.toList(),
                 body = loweredStatements
             ).asLoweringResult()
         } else {
             Lambda(
                 hasReturn = expression.type.returnType != Type.unit,
-                parameters = expression.parameters,
-                captured = expression.captured,
+                parameters = expression.parameters.map { it.first },
+                captured = expression.captured.keys.toList(),
                 body = loweredStatements.plus(element = Return(expression = loweredExpression))
             ).asLoweringResult()
         }

@@ -528,7 +528,7 @@ internal class MidIrFirstPassGenerator(
         }
 
         override fun visit(expression: Lambda): MidIrExpression {
-            val capturedVariables = expression.captured.keys.toList()
+            val capturedVariables = expression.captured
             val statements = mutableListOf<MidIrStatement>()
             val contextValue = if (capturedVariables.isNotEmpty()) {
                 val contextTemp = allocator.allocateTemp()
@@ -545,7 +545,7 @@ internal class MidIrFirstPassGenerator(
             }
             val lambdaContextTemp = allocator.allocateTemp(variableName = "_context")
             val lambdaArguments = mutableListOf(lambdaContextTemp).apply {
-                addAll(elements = expression.parameters.map { allocator.allocateTemp(variableName = it.first) })
+                addAll(elements = expression.parameters.map { allocator.allocateTemp(variableName = it) })
             }
             val lambdaStatements = mutableListOf<MidIrStatement>()
             capturedVariables.forEachIndexed { index, variable ->
