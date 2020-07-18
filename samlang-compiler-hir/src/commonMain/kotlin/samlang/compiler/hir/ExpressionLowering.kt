@@ -325,7 +325,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 finalExpression = result.expression
             )
         }
-        val matchedExpressionType = matchedExpression.type as Type.IdentifierType
+        val matchedExpressionType = expression.matchedExpression.type as Type.IdentifierType
         return if (loweredMatchingList.all { it.finalExpression == null }) {
             loweredStatements += Match(
                 type = expression.type,
@@ -408,7 +408,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             ?: return listOf(Block(statements = loweredScopedStatements)).asLoweringResult()
         val loweredFinalExpression = finalExpression.getLoweredAndAddStatements(statements = loweredScopedStatements)
             ?: return listOf(Block(statements = loweredScopedStatements)).asLoweringResult()
-        if (loweredFinalExpression.type == Type.unit && loweredFinalExpression is FunctionApplication) {
+        if (finalExpression.type == Type.unit && loweredFinalExpression is FunctionApplication) {
             loweredScopedStatements += ConstantDefinition(
                 pattern = HighIrPattern.WildCardPattern,
                 typeAnnotation = Type.unit,
@@ -417,7 +417,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             return listOf(Block(statements = loweredScopedStatements)).asLoweringResult()
         }
         val scopedFinalVariable = allocateTemporaryVariable()
-        val scopedFinalVariableType = loweredFinalExpression.type
+        val scopedFinalVariableType = finalExpression.type
         loweredScopedStatements += VariableAssignment(
             name = scopedFinalVariable,
             assignedExpression = loweredFinalExpression
