@@ -31,13 +31,6 @@ export interface HighIRStructConstructorExpression extends BaseHighIRExpression 
   readonly expressionList: readonly HighIRExpression[];
 }
 
-export interface HighIRVariantConstructorExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRVariantConstructorExpression';
-  readonly tag: string;
-  readonly tagOrder: number;
-  readonly data: HighIRExpression;
-}
-
 export interface HighIRIndexAccessExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRIndexAccessExpression';
   readonly expression: HighIRExpression;
@@ -105,7 +98,6 @@ export type HighIRExpression =
   | HighIRVariableExpression
   | HighIRClassMemberExpression
   | HighIRStructConstructorExpression
-  | HighIRVariantConstructorExpression
   | HighIRIndexAccessExpression
   | HighIRMethodAccessExpression
   | HighIRUnaryExpression

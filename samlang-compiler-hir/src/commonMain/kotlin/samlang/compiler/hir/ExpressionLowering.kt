@@ -15,7 +15,6 @@ import samlang.ast.hir.HighIrExpression.MethodApplication
 import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.Variable
-import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.ConstantDefinition
 import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
@@ -108,10 +107,11 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.VariantConstructor, context: Unit): LoweringResult {
         val result = expression.data.lower()
-        return VariantConstructor(
-            tag = expression.tag,
-            tagOrder = expression.tagOrder,
-            data = result.expression ?: HighIrExpression.FALSE
+        return StructConstructor(
+            expressionList = listOf(
+                HighIrExpression.literal(value = expression.tagOrder.toLong()),
+                result.expression ?: HighIrExpression.FALSE
+            )
         ).asLoweringResult(statements = result.statements)
     }
 

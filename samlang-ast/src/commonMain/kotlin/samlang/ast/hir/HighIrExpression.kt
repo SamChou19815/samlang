@@ -31,14 +31,6 @@ sealed class HighIrExpression {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
-    data class VariantConstructor(
-        val tag: String,
-        val tagOrder: Int,
-        val data: HighIrExpression
-    ) : HighIrExpression() {
-        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
-    }
-
     data class IndexAccess(
         val expression: HighIrExpression,
         val index: Int

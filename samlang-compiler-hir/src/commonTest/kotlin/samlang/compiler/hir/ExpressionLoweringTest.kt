@@ -113,7 +113,9 @@ class ExpressionLoweringTest {
                 tagOrder = 1,
                 data = THIS
             ),
-            expectedExpression = HighIrExpression.VariantConstructor(tag = "Foo", tagOrder = 1, data = IR_THIS)
+            expectedExpression = HighIrExpression.StructConstructor(
+                expressionList = listOf(HighIrExpression.literal(value = 1L), IR_THIS)
+            )
         )
     }
 

@@ -19,7 +19,6 @@ import samlang.ast.hir.HighIrExpression.MethodApplication
 import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.Variable
-import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrExpressionVisitor
 import samlang.ast.hir.HighIrModule
 import samlang.ast.hir.HighIrStatement
@@ -279,22 +278,6 @@ internal class MidIrFirstPassGenerator(
                 )
             }
             return ESEQ(SEQ(statements), structTemporary)
-        }
-
-        override fun visit(expression: VariantConstructor): MidIrExpression {
-            val variantTemporary = allocator.allocateTemp()
-            val statements = listOf(
-                MOVE(variantTemporary, MALLOC(CONST(value = 16L))),
-                MOVE_IMMUTABLE_MEM(
-                    destination = IMMUTABLE_MEM(expression = variantTemporary),
-                    source = CONST(value = expression.tagOrder.toLong())
-                ),
-                MOVE_IMMUTABLE_MEM(
-                    destination = IMMUTABLE_MEM(expression = ADD(e1 = variantTemporary, e2 = CONST(value = 8L))),
-                    source = translate(expression = expression.data)
-                )
-            )
-            return ESEQ(SEQ(statements), variantTemporary)
         }
 
         override fun visit(expression: IndexAccess): MidIrExpression =
