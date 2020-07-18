@@ -20,7 +20,6 @@ fun compileModule(module: Module): HighIrModule =
 private fun compileClassDefinition(classDefinition: ClassDefinition): HighIrClassDefinition =
     HighIrClassDefinition(
         className = classDefinition.name,
-        typeDefinition = classDefinition.typeDefinition,
         members = classDefinition.members.map(transform = ::compileFunction)
     )
 
