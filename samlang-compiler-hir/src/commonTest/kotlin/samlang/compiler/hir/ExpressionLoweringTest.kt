@@ -473,10 +473,8 @@ class ExpressionLoweringTest {
                         assignedExpression = IR_THIS
                     ),
                     HighIrStatement.Match(
-                        type = DUMMY_IDENTIFIER_TYPE,
                         assignedTemporaryVariable = "_LOWERING_1",
                         variableForMatchedExpression = "_LOWERING_0",
-                        variableForMatchedExpressionType = DUMMY_IDENTIFIER_TYPE,
                         matchingList = listOf(
                             HighIrStatement.Match.VariantPatternToStatement(
                                 tag = "Foo",
@@ -523,10 +521,8 @@ class ExpressionLoweringTest {
                         assignedExpression = IR_THIS
                     ),
                     HighIrStatement.Match(
-                        type = int,
                         assignedTemporaryVariable = "_LOWERING_1",
                         variableForMatchedExpression = "_LOWERING_0",
-                        variableForMatchedExpressionType = DUMMY_IDENTIFIER_TYPE,
                         matchingList = listOf(
                             HighIrStatement.Match.VariantPatternToStatement(
                                 tag = "Foo",

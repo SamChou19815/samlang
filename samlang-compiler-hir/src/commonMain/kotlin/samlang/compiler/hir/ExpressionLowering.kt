@@ -302,23 +302,18 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 finalExpression = result.expression
             )
         }
-        val matchedExpressionType = expression.matchedExpression.type as Type.IdentifierType
         return if (loweredMatchingList.all { it.finalExpression == null }) {
             loweredStatements += Match(
-                type = expression.type,
                 assignedTemporaryVariable = null,
                 variableForMatchedExpression = variableForMatchedExpression,
-                variableForMatchedExpressionType = matchedExpressionType,
                 matchingList = loweredMatchingList
             )
             loweredStatements.asLoweringResult()
         } else {
             val temporaryVariable = allocateTemporaryVariable()
             loweredStatements += Match(
-                type = expression.type,
                 assignedTemporaryVariable = temporaryVariable,
                 variableForMatchedExpression = variableForMatchedExpression,
-                variableForMatchedExpressionType = matchedExpressionType,
                 matchingList = loweredMatchingList
             )
             Variable(name = temporaryVariable).asLoweringResult(statements = loweredStatements)

@@ -1,7 +1,5 @@
 package samlang.ast.hir
 
-import samlang.ast.common.Type
-
 /**
  * A collection of statements for common IR.
  */
@@ -22,10 +20,8 @@ sealed class HighIrStatement {
     }
 
     data class Match(
-        val type: Type,
         val assignedTemporaryVariable: String?,
         val variableForMatchedExpression: String,
-        val variableForMatchedExpressionType: Type.IdentifierType,
         val matchingList: List<VariantPatternToStatement>
     ) : HighIrStatement() {
 
