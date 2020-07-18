@@ -15,5 +15,4 @@ interface HighIrStatementVisitor<T> {
     fun visit(statement: HighIrStatement.ConstantDefinition): T
     fun visit(statement: HighIrStatement.ExpressionAsStatement): T
     fun visit(statement: HighIrStatement.Return): T
-    fun visit(statement: HighIrStatement.Block): T
 }

@@ -55,8 +55,4 @@ sealed class HighIrStatement {
     data class Return(val expression: HighIrExpression?) : HighIrStatement() {
         override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
     }
-
-    data class Block(val statements: List<HighIrStatement>) : HighIrStatement() {
-        override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
-    }
 }

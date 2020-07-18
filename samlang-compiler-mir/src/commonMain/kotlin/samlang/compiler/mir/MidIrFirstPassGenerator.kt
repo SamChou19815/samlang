@@ -26,7 +26,6 @@ import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrExpressionVisitor
 import samlang.ast.hir.HighIrModule
 import samlang.ast.hir.HighIrStatement
-import samlang.ast.hir.HighIrStatement.Block
 import samlang.ast.hir.HighIrStatement.ConstantDefinition
 import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
 import samlang.ast.hir.HighIrStatement.IfElse
@@ -158,10 +157,10 @@ internal class MidIrFirstPassGenerator(
                 statementCollector = sequence
             )
             sequence += Label(name = ifBranchLabel)
-            sequence += translate(statement = Block(statements = statement.s1))
+            sequence += statement.s1.map { translate(statement = it) }
             sequence += Jump(label = endLabel)
             sequence += Label(name = elseBranchLabel)
-            sequence += translate(statement = Block(statements = statement.s2))
+            sequence += statement.s2.map { translate(statement = it) }
             sequence += Label(name = endLabel)
             return SEQ(statements = sequence)
         }
@@ -238,13 +237,6 @@ internal class MidIrFirstPassGenerator(
 
         override fun visit(statement: Return): MidIrStatement =
             MidIrStatement.Return(returnedExpression = statement.expression?.let { translate(expression = it) })
-
-        override fun visit(statement: Block): MidIrStatement =
-            try {
-                SEQ(statements = statement.statements.map { translate(statement = it) })
-            } catch (e: IllegalStateException) {
-                error(message = "AHHH! BLOCK\n $statement.\n\n ${e.message}")
-            }
     }
 
     private inner class ExpressionGenerator : HighIrExpressionVisitor<MidIrExpression> {

@@ -20,7 +20,6 @@ import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrStatement
-import samlang.ast.hir.HighIrStatement.Block
 import samlang.ast.hir.HighIrStatement.ConstantDefinition
 import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
 import samlang.ast.hir.HighIrStatement.IfElse
@@ -37,16 +36,7 @@ import samlang.ast.lang.Statement
 internal fun lowerExpression(expression: Expression): LoweringResult =
     expression.accept(visitor = ExpressionLoweringVisitor(), context = Unit)
 
-internal data class LoweringResult(val statements: List<HighIrStatement>, val expression: HighIrExpression?) {
-    val unwrappedStatements: List<HighIrStatement>
-        get() {
-            if (statements.size != 1) {
-                return statements
-            }
-            val statement = statements[0] as? Block ?: return statements
-            return statement.statements
-        }
-}
+internal data class LoweringResult(val statements: List<HighIrStatement>, val expression: HighIrExpression?)
 
 private fun HighIrExpression.asLoweringResult(statements: List<HighIrStatement> = emptyList()): LoweringResult =
     LoweringResult(statements = statements, expression = this)
@@ -234,9 +224,9 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val e1LoweringResult = expression.e1.lower()
         val e2LoweringResult = expression.e2.lower()
         val e1LoweredExpression = e1LoweringResult.expression
-        val e1LoweringStatements = e1LoweringResult.unwrappedStatements
+        val e1LoweringStatements = e1LoweringResult.statements
         val e2LoweredExpression = e2LoweringResult.expression
-        val e2LoweringStatements = e2LoweringResult.unwrappedStatements
+        val e2LoweringStatements = e2LoweringResult.statements
         if (e1LoweredExpression == null && e2LoweredExpression == null) {
             loweredStatements += IfElse(
                 booleanExpression = boolExpression,
@@ -317,7 +307,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.Lambda, context: Unit): LoweringResult {
         val loweringResult = expression.body.lower()
-        val loweredStatements = loweringResult.unwrappedStatements
+        val loweredStatements = loweringResult.statements
         val loweredExpression = loweringResult.expression
         return if (loweredExpression == null) {
             Lambda(
@@ -401,14 +391,14 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             }
         }
         val finalExpression = block.expression
-            ?: return listOf(Block(statements = loweredScopedStatements)).asLoweringResult()
+            ?: return loweredScopedStatements.asLoweringResult()
         val loweredFinalExpression = finalExpression.getLoweredAndAddStatements(statements = loweredScopedStatements)
-            ?: return listOf(Block(statements = loweredScopedStatements)).asLoweringResult()
+            ?: return loweredScopedStatements.asLoweringResult()
         if (finalExpression.type == Type.unit && loweredFinalExpression is FunctionApplication) {
             loweredScopedStatements += ExpressionAsStatement(
                 expressionWithPotentialSideEffect = loweredFinalExpression
             )
-            return listOf(Block(statements = loweredScopedStatements)).asLoweringResult()
+            return loweredScopedStatements.asLoweringResult()
         }
         val scopedFinalVariable = allocateTemporaryVariable()
         loweredScopedStatements += VariableAssignment(
@@ -418,7 +408,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         return LoweringResult(
             statements = listOf(
                 LetDeclaration(name = scopedFinalVariable),
-                Block(statements = loweredScopedStatements)
+                *loweredScopedStatements.toTypedArray()
             ),
             expression = Variable(name = scopedFinalVariable)
         )
