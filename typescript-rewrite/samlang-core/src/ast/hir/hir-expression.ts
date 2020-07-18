@@ -2,12 +2,8 @@ import { BinaryOperator } from '../common/binary-operators';
 import { UnaryOperator, BuiltInFunctionName } from '../common/enums';
 import { Literal } from '../common/literals';
 
-export interface BaseHighIRExpression {
+interface BaseHighIRExpression {
   readonly __type__: string;
-}
-
-export interface HighIRUnitExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRUnitExpression';
 }
 
 export interface HighIRLiteralExpression extends BaseHighIRExpression {
@@ -93,7 +89,6 @@ export interface HighIRLambdaExpression extends BaseHighIRExpression {
 }
 
 export type HighIRExpression =
-  | HighIRUnitExpression
   | HighIRLiteralExpression
   | HighIRVariableExpression
   | HighIRClassMemberExpression
@@ -108,4 +103,69 @@ export type HighIRExpression =
   | HighIRBinaryExpression
   | HighIRLambdaExpression;
 
-export type HighIRStatement = void;
+interface BaseHighIRStatement {
+  readonly __type__: string;
+}
+
+export interface HighIRThrowStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRThrowStatement';
+  readonly expression: HighIRExpression;
+}
+
+export interface HighIRIfElseStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRIfElseStatement';
+  readonly booleanExpression: HighIRExpression;
+  readonly s1: readonly HighIRStatement[];
+  readonly s2: readonly HighIRStatement[];
+}
+
+export interface HighIRVariantPatternToStatement {
+  readonly tagOrder: number;
+  readonly dataVariable?: string;
+  readonly statements: readonly HighIRStatement[];
+  readonly finalExpression?: HighIRExpression;
+}
+
+export interface HighIRMatchStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRMatchStatement';
+  readonly assignedTemporaryVariable?: string;
+  readonly variableForMatchedExpression: string;
+  readonly matchingList: readonly HighIRVariantPatternToStatement[];
+}
+
+export interface HighIRLetDeclarationStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRLetDeclarationStatement';
+  readonly name: string;
+}
+
+export interface HighIRVariableAssignmentStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRVariableAssignmentStatement';
+  readonly name: string;
+  readonly assignedExpression: HighIRExpression;
+}
+
+export interface HighIRConstantDefinitionStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRConstantDefinitionStatement';
+  readonly name: string;
+  readonly assignedExpression: HighIRExpression;
+}
+
+export interface HighIRExpressionAsStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRExpressionAsStatement';
+  readonly expressionWithPotentialSideEffect: HighIRExpression;
+}
+
+export interface HighIRReturnStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRReturnStatement';
+  readonly expression?: HighIRExpression;
+}
+
+export type HighIRStatement =
+  | HighIRThrowStatement
+  | HighIRIfElseStatement
+  | HighIRMatchStatement
+  | HighIRLetDeclarationStatement
+  | HighIRVariableAssignmentStatement
+  | HighIRConstantDefinitionStatement
+  | HighIRExpressionAsStatement
+  | HighIRReturnStatement;
