@@ -441,14 +441,12 @@ class ExpressionLoweringTest {
                         variableForMatchedExpression = "_LOWERING_0",
                         matchingList = listOf(
                             HighIrStatement.Match.VariantPatternToStatement(
-                                tag = "Foo",
                                 tagOrder = 0,
                                 dataVariable = "bar",
                                 statements = emptyList(),
                                 finalExpression = IR_THIS
                             ),
                             HighIrStatement.Match.VariantPatternToStatement(
-                                tag = "Bar",
                                 tagOrder = 1,
                                 dataVariable = null,
                                 statements = emptyList(),
@@ -486,14 +484,12 @@ class ExpressionLoweringTest {
                         variableForMatchedExpression = "_LOWERING_0",
                         matchingList = listOf(
                             HighIrStatement.Match.VariantPatternToStatement(
-                                tag = "Foo",
                                 tagOrder = 0,
                                 dataVariable = "bar",
                                 statements = emptyList(),
                                 finalExpression = IR_THIS
                             ),
                             HighIrStatement.Match.VariantPatternToStatement(
-                                tag = "Bar",
                                 tagOrder = 1,
                                 dataVariable = null,
                                 statements = emptyList(),

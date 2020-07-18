@@ -269,7 +269,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val loweredMatchingList = expression.matchingList.map { patternToExpression ->
             val result = patternToExpression.expression.lower()
             Match.VariantPatternToStatement(
-                tag = patternToExpression.tag,
                 tagOrder = patternToExpression.tagOrder,
                 dataVariable = patternToExpression.dataVariable,
                 statements = result.statements,
