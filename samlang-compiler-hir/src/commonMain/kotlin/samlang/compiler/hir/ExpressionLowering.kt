@@ -8,6 +8,7 @@ import samlang.ast.hir.HighIrExpression.ClassMember
 import samlang.ast.hir.HighIrExpression.ClosureApplication
 import samlang.ast.hir.HighIrExpression.FieldAccess
 import samlang.ast.hir.HighIrExpression.FunctionApplication
+import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Lambda
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
@@ -357,12 +358,22 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                         ?: UnitExpression
                     when (val pattern = statement.pattern) {
                         is Pattern.TuplePattern -> {
+                            val variableForDestructedExpression = allocateTemporaryVariable()
                             loweredScopedStatements += ConstantDefinition(
-                                pattern = HighIrPattern.TuplePattern(
-                                    destructedNames = pattern.destructedNames.map { it.first }
-                                ),
+                                pattern = HighIrPattern.VariablePattern(name = variableForDestructedExpression),
                                 assignedExpression = loweredAssignedExpression
                             )
+                            pattern.destructedNames.forEachIndexed { index, (name) ->
+                                if (name != null) {
+                                    loweredScopedStatements += ConstantDefinition(
+                                        pattern = HighIrPattern.VariablePattern(name = name),
+                                        assignedExpression = IndexAccess(
+                                            expression = Variable(name = variableForDestructedExpression),
+                                            index = index
+                                        )
+                                    )
+                                }
+                            }
                         }
                         is Pattern.ObjectPattern -> {
                             val variableForDestructedExpression = allocateTemporaryVariable()
