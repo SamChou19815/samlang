@@ -18,7 +18,6 @@ import samlang.ast.hir.HighIrExpression.MethodAccess
 import samlang.ast.hir.HighIrExpression.MethodApplication
 import samlang.ast.hir.HighIrExpression.ObjectConstructor
 import samlang.ast.hir.HighIrExpression.Ternary
-import samlang.ast.hir.HighIrExpression.This
 import samlang.ast.hir.HighIrExpression.TupleConstructor
 import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.UnitExpression
@@ -50,7 +49,6 @@ import samlang.ast.mir.MidIrExpression.Companion.NAME
 import samlang.ast.mir.MidIrExpression.Companion.ONE
 import samlang.ast.mir.MidIrExpression.Companion.OP
 import samlang.ast.mir.MidIrExpression.Companion.SUB
-import samlang.ast.mir.MidIrExpression.Companion.TEMP
 import samlang.ast.mir.MidIrExpression.Companion.XOR
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
 import samlang.ast.mir.MidIrFunction
@@ -304,8 +302,6 @@ internal class MidIrFirstPassGenerator(
 
         override fun visit(expression: Variable): MidIrExpression =
             allocator.getTemporaryByVariable(variableName = expression.name)
-
-        override fun visit(expression: This): MidIrExpression = TEMP(id = "_this")
 
         override fun visit(expression: ClassMember): MidIrExpression {
             val name = getFunctionName(className = expression.className, functionName = expression.memberName)

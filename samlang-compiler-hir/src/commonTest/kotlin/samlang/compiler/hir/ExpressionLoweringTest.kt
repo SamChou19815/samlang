@@ -622,6 +622,6 @@ class ExpressionLoweringTest {
     companion object {
         private val DUMMY_IDENTIFIER_TYPE: Type.IdentifierType = id(identifier = "Dummy")
         private val THIS: Expression = Expression.This(range = dummyRange, type = DUMMY_IDENTIFIER_TYPE)
-        private val IR_THIS: HighIrExpression = HighIrExpression.This
+        private val IR_THIS: HighIrExpression = HighIrExpression.Variable(name = "this")
     }
 }

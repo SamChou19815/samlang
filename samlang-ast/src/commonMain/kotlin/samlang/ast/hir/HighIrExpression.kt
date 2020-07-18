@@ -23,11 +23,6 @@ sealed class HighIrExpression {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
-    object This : HighIrExpression() {
-        override fun toString(): String = "this"
-        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
-    }
-
     data class ClassMember(
         val className: String,
         val memberName: String
