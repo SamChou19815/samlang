@@ -14,7 +14,6 @@ import samlang.ast.hir.HighIrExpression.MethodAccess
 import samlang.ast.hir.HighIrExpression.MethodApplication
 import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Unary
-import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrStatement
@@ -75,7 +74,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     override fun visit(expression: Expression.TupleConstructor, context: Unit): LoweringResult {
         val loweredStatements = mutableListOf<HighIrStatement>()
         val loweredExpressionList = expression.expressionList.map {
-            it.getLoweredAndAddStatements(statements = loweredStatements) ?: UnitExpression
+            it.getLoweredAndAddStatements(statements = loweredStatements) ?: HighIrExpression.FALSE
         }
         return StructConstructor(expressionList = loweredExpressionList)
             .asLoweringResult(statements = loweredStatements)
@@ -88,7 +87,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 is Expression.ObjectConstructor.FieldConstructor.Field -> {
                     val result = fieldConstructor.expression.lower()
                     loweredStatements.addAll(elements = result.statements)
-                    val loweredFieldExpression = result.expression ?: UnitExpression
+                    val loweredFieldExpression = result.expression ?: HighIrExpression.FALSE
                     loweredFieldExpression
                 }
                 is Expression.ObjectConstructor.FieldConstructor.FieldShorthand -> {
@@ -98,7 +97,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                         name = fieldConstructor.name
                     ).lower()
                     loweredStatements.addAll(elements = result.statements)
-                    val loweredFieldExpression = result.expression ?: UnitExpression
+                    val loweredFieldExpression = result.expression ?: HighIrExpression.FALSE
                     loweredFieldExpression
                 }
             }
@@ -112,7 +111,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         return VariantConstructor(
             tag = expression.tag,
             tagOrder = expression.tagOrder,
-            data = result.expression ?: UnitExpression
+            data = result.expression ?: HighIrExpression.FALSE
         ).asLoweringResult(statements = result.statements)
     }
 
@@ -177,7 +176,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             .getLoweredAndAddStatements(statements = loweredStatements)
             ?: error(message = "Function expression must be lowered!")
         val loweredArguments = expression.arguments.map { argument ->
-            argument.getLoweredAndAddStatements(statements = loweredStatements) ?: UnitExpression
+            argument.getLoweredAndAddStatements(statements = loweredStatements) ?: HighIrExpression.FALSE
         }
         val type = expression.type
         val functionApplication = when (loweredFunctionExpression) {
@@ -206,8 +205,8 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.Binary, context: Unit): LoweringResult {
         val loweredStatements = mutableListOf<HighIrStatement>()
-        val e1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements) ?: UnitExpression
-        val e2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements) ?: UnitExpression
+        val e1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements) ?: HighIrExpression.FALSE
+        val e2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements) ?: HighIrExpression.FALSE
         return Binary(
             operator = expression.operator,
             e1 = e1,
@@ -329,7 +328,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 is Statement.Val -> {
                     val loweredAssignedExpression = statement.assignedExpression
                         .getLoweredAndAddStatements(statements = loweredScopedStatements)
-                        ?: UnitExpression
+                        ?: HighIrExpression.FALSE
                     when (val pattern = statement.pattern) {
                         is Pattern.TuplePattern -> {
                             val variableForDestructedExpression = allocateTemporaryVariable()

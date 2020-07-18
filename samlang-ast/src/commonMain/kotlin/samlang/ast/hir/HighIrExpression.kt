@@ -8,11 +8,6 @@ import samlang.ast.common.UnaryOperator
 sealed class HighIrExpression {
     abstract fun <T> accept(visitor: HighIrExpressionVisitor<T>): T
 
-    object UnitExpression : HighIrExpression() {
-        override fun toString(): String = "unit"
-        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
-    }
-
     data class Literal(
         val literal: samlang.ast.common.Literal
     ) : HighIrExpression() {

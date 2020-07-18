@@ -18,7 +18,6 @@ import samlang.ast.hir.HighIrExpression.MethodAccess
 import samlang.ast.hir.HighIrExpression.MethodApplication
 import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Unary
-import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrExpressionVisitor
@@ -238,8 +237,6 @@ internal class MidIrFirstPassGenerator(
     }
 
     private inner class ExpressionGenerator : HighIrExpressionVisitor<MidIrExpression> {
-        override fun visit(expression: UnitExpression): MidIrExpression = CONST(value = 0)
-
         override fun visit(expression: Literal): MidIrExpression =
             when (val literal = expression.literal) {
                 is samlang.ast.common.Literal.BoolLiteral -> CONST(value = if (literal.value) 1 else 0)
