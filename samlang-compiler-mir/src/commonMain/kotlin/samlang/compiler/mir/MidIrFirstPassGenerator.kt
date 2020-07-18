@@ -10,7 +10,6 @@ import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.BuiltInFunctionApplication
 import samlang.ast.hir.HighIrExpression.ClassMember
 import samlang.ast.hir.HighIrExpression.ClosureApplication
-import samlang.ast.hir.HighIrExpression.FieldAccess
 import samlang.ast.hir.HighIrExpression.FunctionApplication
 import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Lambda
@@ -329,14 +328,6 @@ internal class MidIrFirstPassGenerator(
                 expression = ADD(
                     e1 = translate(expression = expression.expression),
                     e2 = CONST(value = expression.index * 8L)
-                )
-            )
-
-        override fun visit(expression: FieldAccess): MidIrExpression =
-            IMMUTABLE_MEM(
-                expression = ADD(
-                    e1 = translate(expression = expression.expression),
-                    e2 = CONST(value = expression.fieldOrder * 8L)
                 )
             )
 

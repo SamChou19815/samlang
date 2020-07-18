@@ -126,7 +126,7 @@ class ExpressionLoweringTest {
             expression = Expression.FieldAccess(
                 range = dummyRange, type = unit, expression = THIS, fieldName = "foo", fieldOrder = 0
             ),
-            expectedExpression = HighIrExpression.FieldAccess(expression = IR_THIS, fieldName = "foo", fieldOrder = 0)
+            expectedExpression = HighIrExpression.IndexAccess(expression = IR_THIS, index = 0)
         )
     }
 

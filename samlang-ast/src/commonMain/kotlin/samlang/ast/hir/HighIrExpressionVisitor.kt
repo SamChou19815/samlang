@@ -15,7 +15,6 @@ interface HighIrExpressionVisitor<T> {
     fun visit(expression: HighIrExpression.ObjectConstructor): T
     fun visit(expression: HighIrExpression.VariantConstructor): T
     fun visit(expression: HighIrExpression.IndexAccess): T
-    fun visit(expression: HighIrExpression.FieldAccess): T
     fun visit(expression: HighIrExpression.MethodAccess): T
     fun visit(expression: HighIrExpression.Unary): T
     fun visit(expression: HighIrExpression.BuiltInFunctionApplication): T

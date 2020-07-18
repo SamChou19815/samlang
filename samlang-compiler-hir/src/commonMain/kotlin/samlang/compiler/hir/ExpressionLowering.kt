@@ -6,7 +6,6 @@ import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.BuiltInFunctionApplication
 import samlang.ast.hir.HighIrExpression.ClassMember
 import samlang.ast.hir.HighIrExpression.ClosureApplication
-import samlang.ast.hir.HighIrExpression.FieldAccess
 import samlang.ast.hir.HighIrExpression.FunctionApplication
 import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Lambda
@@ -130,10 +129,9 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.FieldAccess, context: Unit): LoweringResult {
         val result = expression.expression.lower()
-        return FieldAccess(
+        return IndexAccess(
             expression = result.expression ?: error(message = "Object expression must be lowered!"),
-            fieldName = expression.fieldName,
-            fieldOrder = expression.fieldOrder
+            index = expression.fieldOrder
         ).asLoweringResult(statements = result.statements)
     }
 
@@ -380,10 +378,9 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                             pattern.destructedNames.forEach { (name, order, renamed, _) ->
                                 loweredScopedStatements += ConstantDefinition(
                                     name = renamed ?: name,
-                                    assignedExpression = FieldAccess(
+                                    assignedExpression = IndexAccess(
                                         expression = Variable(name = variableForDestructedExpression),
-                                        fieldName = name,
-                                        fieldOrder = order
+                                        index = order
                                     )
                                 )
                             }
