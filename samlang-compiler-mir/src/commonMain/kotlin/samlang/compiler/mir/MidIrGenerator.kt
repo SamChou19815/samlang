@@ -3,7 +3,6 @@ package samlang.compiler.mir
 import samlang.ast.common.GlobalVariable
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
-import samlang.ast.common.Type
 import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrModule
 import samlang.ast.mir.MidIrCompilationUnit
@@ -55,8 +54,7 @@ class MidIrGenerator private constructor(
             // 'this' is the first argument for methods.
             allocatedArgs += allocator.allocateTemp(variableName = "this")
         }
-        val args = function.parameters
-        args.forEach { (name, _) -> allocatedArgs += allocator.allocateTemp(variableName = name) }
+        function.parameters.forEach { allocatedArgs += allocator.allocateTemp(variableName = it) }
         val mainBodyStatements = cleanupAfterFirstPass(
             statements = function.body.map { generator1stPass.translate(statement = it) },
             generator2ndPass = generator2ndPass,
@@ -67,7 +65,7 @@ class MidIrGenerator private constructor(
             argumentTemps = allocatedArgs,
             mainBodyStatements = mainBodyStatements,
             numberOfArguments = allocatedArgs.size,
-            hasReturn = function.returnType != Type.unit,
+            hasReturn = function.hasReturn,
             isPublic = function.isPublic
         )
         functions += generator1stPass.emittedLambdaFunctions.map { emittedLambdaFunction ->

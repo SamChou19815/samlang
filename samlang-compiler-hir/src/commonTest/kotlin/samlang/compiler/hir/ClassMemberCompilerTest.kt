@@ -35,9 +35,8 @@ class ClassMemberCompilerTest {
                 isPublic = true,
                 isMethod = false,
                 name = "foo",
-                typeParameters = emptyList(),
                 parameters = emptyList(),
-                returnType = Type.unit,
+                hasReturn = false,
                 body = listOf(HighIrStatement.Return(expression = IR_THIS))
             )
         )
@@ -61,9 +60,8 @@ class ClassMemberCompilerTest {
                 isPublic = false,
                 isMethod = false,
                 name = "bar",
-                typeParameters = emptyList(),
                 parameters = emptyList(),
-                returnType = Type.unit,
+                hasReturn = false,
                 body = listOf(HighIrStatement.Return(expression = IR_THIS))
             )
         )
@@ -91,9 +89,8 @@ class ClassMemberCompilerTest {
                 isPublic = false,
                 isMethod = false,
                 name = "bar",
-                typeParameters = emptyList(),
                 parameters = emptyList(),
-                returnType = Type.unit,
+                hasReturn = false,
                 body = listOf()
             )
         )

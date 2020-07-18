@@ -48,9 +48,8 @@ internal fun compileFunction(classMember: ClassDefinition.MemberDefinition): Hig
         isPublic = classMember.isPublic,
         isMethod = classMember.isMethod,
         name = classMember.name,
-        typeParameters = classMember.typeParameters,
-        parameters = classMember.parameters.map { it.name to it.type },
-        returnType = classMember.type.returnType,
+        parameters = classMember.parameters.map { it.name },
+        hasReturn = classMember.type.returnType != Type.unit,
         body = body
     )
 }
