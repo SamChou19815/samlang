@@ -7,34 +7,29 @@ import samlang.ast.common.UnaryOperator
 
 /** A collection of expressions for common IR. */
 sealed class HighIrExpression {
-
-    abstract val type: Type
-
     abstract fun <T> accept(visitor: HighIrExpressionVisitor<T>): T
 
     object UnitExpression : HighIrExpression() {
-        override val type: Type get() = Type.unit
         override fun toString(): String = "unit"
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
     data class Literal(
-        override val type: Type,
         val literal: samlang.ast.common.Literal
     ) : HighIrExpression() {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
-    data class Variable(override val type: Type, val name: String) : HighIrExpression() {
+    data class Variable(val name: String) : HighIrExpression() {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
-    data class This(override val type: Type) : HighIrExpression() {
+    object This : HighIrExpression() {
+        override fun toString(): String = "this"
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
     data class ClassMember(
-        override val type: Type,
         val typeArguments: List<Type>,
         val className: String,
         val memberName: String
@@ -43,21 +38,18 @@ sealed class HighIrExpression {
     }
 
     data class TupleConstructor(
-        override val type: Type,
         val expressionList: List<HighIrExpression>
     ) : HighIrExpression() {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
     data class ObjectConstructor(
-        override val type: Type.IdentifierType,
         val fieldDeclaration: List<Pair<String, HighIrExpression>>
     ) : HighIrExpression() {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
     data class VariantConstructor(
-        override val type: Type.IdentifierType,
         val tag: String,
         val tagOrder: Int,
         val data: HighIrExpression
@@ -66,7 +58,6 @@ sealed class HighIrExpression {
     }
 
     data class FieldAccess(
-        override val type: Type,
         val expression: HighIrExpression,
         val fieldName: String,
         val fieldOrder: Int
@@ -75,7 +66,6 @@ sealed class HighIrExpression {
     }
 
     data class MethodAccess(
-        override val type: Type,
         val expression: HighIrExpression,
         val className: String,
         val methodName: String
@@ -84,7 +74,6 @@ sealed class HighIrExpression {
     }
 
     data class Unary(
-        override val type: Type,
         val operator: UnaryOperator,
         val expression: HighIrExpression
     ) : HighIrExpression() {
@@ -92,7 +81,6 @@ sealed class HighIrExpression {
     }
 
     data class BuiltInFunctionApplication(
-        override val type: Type,
         val functionName: BuiltInFunctionName,
         val argument: HighIrExpression
     ) : HighIrExpression() {
@@ -100,7 +88,6 @@ sealed class HighIrExpression {
     }
 
     data class FunctionApplication(
-        override val type: Type,
         val className: String,
         val functionName: String,
         val typeArguments: List<Type>,
@@ -110,7 +97,6 @@ sealed class HighIrExpression {
     }
 
     data class MethodApplication(
-        override val type: Type,
         val objectExpression: HighIrExpression,
         val className: String,
         val methodName: String,
@@ -120,7 +106,6 @@ sealed class HighIrExpression {
     }
 
     data class ClosureApplication(
-        override val type: Type,
         val functionExpression: HighIrExpression,
         val arguments: List<HighIrExpression>
     ) : HighIrExpression() {
@@ -128,7 +113,6 @@ sealed class HighIrExpression {
     }
 
     data class Binary(
-        override val type: Type,
         val e1: HighIrExpression,
         val operator: BinaryOperator,
         val e2: HighIrExpression
@@ -137,7 +121,6 @@ sealed class HighIrExpression {
     }
 
     data class Ternary(
-        override val type: Type,
         val boolExpression: HighIrExpression,
         val e1: HighIrExpression,
         val e2: HighIrExpression
@@ -146,7 +129,6 @@ sealed class HighIrExpression {
     }
 
     data class Lambda(
-        override val type: Type.FunctionType,
         val hasReturn: Boolean,
         val parameters: List<Pair<String, Type>>,
         val captured: Map<String, Type>,
@@ -156,13 +138,13 @@ sealed class HighIrExpression {
     }
 
     companion object {
-        val TRUE: Literal = Literal(type = Type.bool, literal = samlang.ast.common.Literal.TRUE)
-        val FALSE: Literal = Literal(type = Type.bool, literal = samlang.ast.common.Literal.FALSE)
+        val TRUE: Literal = Literal(literal = samlang.ast.common.Literal.TRUE)
+        val FALSE: Literal = Literal(literal = samlang.ast.common.Literal.FALSE)
 
         fun literal(value: Long): Literal =
-            Literal(type = Type.int, literal = samlang.ast.common.Literal.of(value = value))
+            Literal(literal = samlang.ast.common.Literal.of(value = value))
 
         fun literal(value: String): Literal =
-            Literal(type = Type.string, literal = samlang.ast.common.Literal.of(value = value))
+            Literal(literal = samlang.ast.common.Literal.of(value = value))
     }
 }

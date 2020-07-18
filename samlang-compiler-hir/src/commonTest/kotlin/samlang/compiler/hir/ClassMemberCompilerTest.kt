@@ -101,6 +101,6 @@ class ClassMemberCompilerTest {
 
     companion object {
         private val THIS: Expression = Expression.This(range = dummyRange, type = Type.unit)
-        private val IR_THIS: HighIrExpression = HighIrExpression.This(type = Type.unit)
+        private val IR_THIS: HighIrExpression = HighIrExpression.This
     }
 }

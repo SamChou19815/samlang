@@ -116,7 +116,7 @@ internal class MidIrFirstPassGenerator(
             return
         }
         if (expression is Binary) {
-            val (_, e1, op, e2) = expression
+            val (e1, op, e2) = expression
             val freshLabel = allocator.allocateLabel()
             when (op) {
                 BinaryOperator.AND -> {

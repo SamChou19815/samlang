@@ -41,7 +41,7 @@ class ExpressionLoweringTest {
     fun expressionOnlyLoweringWorks01() {
         assertCorrectlyLowered(
             expression = Expression.Variable(range = dummyRange, type = unit, name = "foo"),
-            expectedExpression = HighIrExpression.Variable(type = unit, name = "foo")
+            expectedExpression = HighIrExpression.Variable(name = "foo")
         )
     }
 
@@ -65,7 +65,6 @@ class ExpressionLoweringTest {
                 memberName = "b"
             ),
             expectedExpression = HighIrExpression.ClassMember(
-                type = unit,
                 typeArguments = emptyList(),
                 className = "A",
                 memberName = "b"
@@ -81,10 +80,7 @@ class ExpressionLoweringTest {
                 type = Type.TupleType(mappings = listOf()),
                 expressionList = listOf(THIS)
             ),
-            expectedExpression = HighIrExpression.TupleConstructor(
-                type = Type.TupleType(mappings = listOf()),
-                expressionList = listOf(IR_THIS)
-            )
+            expectedExpression = HighIrExpression.TupleConstructor(expressionList = listOf(IR_THIS))
         )
     }
 
@@ -104,10 +100,9 @@ class ExpressionLoweringTest {
                 )
             ),
             expectedExpression = HighIrExpression.ObjectConstructor(
-                type = id(identifier = "Foo"),
                 fieldDeclaration = listOf(
                     "foo" to IR_THIS,
-                    "bar" to HighIrExpression.Variable(type = unit, name = "bar")
+                    "bar" to HighIrExpression.Variable(name = "bar")
                 )
             )
         )
@@ -123,12 +118,7 @@ class ExpressionLoweringTest {
                 tagOrder = 1,
                 data = THIS
             ),
-            expectedExpression = HighIrExpression.VariantConstructor(
-                type = id(identifier = "Foo"),
-                tag = "Foo",
-                tagOrder = 1,
-                data = IR_THIS
-            )
+            expectedExpression = HighIrExpression.VariantConstructor(tag = "Foo", tagOrder = 1, data = IR_THIS)
         )
     }
 
@@ -138,9 +128,7 @@ class ExpressionLoweringTest {
             expression = Expression.FieldAccess(
                 range = dummyRange, type = unit, expression = THIS, fieldName = "foo", fieldOrder = 0
             ),
-            expectedExpression = HighIrExpression.FieldAccess(
-                type = unit, expression = IR_THIS, fieldName = "foo", fieldOrder = 0
-            )
+            expectedExpression = HighIrExpression.FieldAccess(expression = IR_THIS, fieldName = "foo", fieldOrder = 0)
         )
     }
 
@@ -151,7 +139,6 @@ class ExpressionLoweringTest {
                 range = dummyRange, type = unit, expression = THIS, methodName = "foo"
             ),
             expectedExpression = HighIrExpression.MethodAccess(
-                type = unit,
                 expression = IR_THIS,
                 className = DUMMY_IDENTIFIER_TYPE.identifier,
                 methodName = "foo"
@@ -163,7 +150,7 @@ class ExpressionLoweringTest {
     fun expressionOnlyLoweringWorks09() {
         assertCorrectlyLowered(
             expression = Unary(range = dummyRange, type = unit, operator = NOT, expression = THIS),
-            expectedExpression = HighIrExpression.Unary(type = unit, operator = NOT, expression = IR_THIS)
+            expectedExpression = HighIrExpression.Unary(operator = NOT, expression = IR_THIS)
         )
     }
 
@@ -184,7 +171,6 @@ class ExpressionLoweringTest {
                 arguments = listOf(THIS, THIS)
             ),
             expectedExpression = HighIrExpression.FunctionApplication(
-                type = int,
                 className = "Foo",
                 functionName = "bar",
                 typeArguments = listOf(int),
@@ -208,7 +194,6 @@ class ExpressionLoweringTest {
                 arguments = listOf(THIS, THIS)
             ),
             expectedExpression = HighIrExpression.MethodApplication(
-                type = int,
                 objectExpression = IR_THIS,
                 className = DUMMY_IDENTIFIER_TYPE.identifier,
                 methodName = "fooBar",
@@ -227,7 +212,7 @@ class ExpressionLoweringTest {
                 arguments = listOf(THIS, THIS)
             ),
             expectedExpression = HighIrExpression.ClosureApplication(
-                type = int, functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
+                functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
             )
         )
     }
@@ -236,7 +221,7 @@ class ExpressionLoweringTest {
     fun expressionOnlyLoweringWorks13() {
         assertCorrectlyLowered(
             expression = Expression.Binary(range = dummyRange, type = unit, operator = PLUS, e1 = THIS, e2 = THIS),
-            expectedExpression = HighIrExpression.Binary(type = unit, operator = PLUS, e1 = IR_THIS, e2 = IR_THIS)
+            expectedExpression = HighIrExpression.Binary(operator = PLUS, e1 = IR_THIS, e2 = IR_THIS)
         )
     }
 
@@ -246,9 +231,7 @@ class ExpressionLoweringTest {
             expression = Expression.IfElse(
                 range = dummyRange, type = unit, boolExpression = THIS, e1 = THIS, e2 = THIS
             ),
-            expectedExpression = HighIrExpression.Ternary(
-                type = unit, boolExpression = IR_THIS, e1 = IR_THIS, e2 = IR_THIS
-            )
+            expectedExpression = HighIrExpression.Ternary(boolExpression = IR_THIS, e1 = IR_THIS, e2 = IR_THIS)
         )
     }
 
@@ -265,7 +248,6 @@ class ExpressionLoweringTest {
             expectedExpression = HighIrExpression.Lambda(
                 parameters = emptyList(),
                 hasReturn = false,
-                type = Type.FunctionType(argumentTypes = emptyList(), returnType = unit),
                 captured = emptyMap(),
                 body = listOf(HighIrStatement.Return(expression = IR_THIS))
             )
@@ -294,7 +276,7 @@ class ExpressionLoweringTest {
                     pattern = HighIrPattern.WildCardPattern,
                     typeAnnotation = unit,
                     assignedExpression = HighIrExpression.ClosureApplication(
-                        type = unit, functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
+                        functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
                     )
                 )
             )
@@ -470,7 +452,7 @@ class ExpressionLoweringTest {
                         )
                     )
                 ),
-                expression = HighIrExpression.Variable(type = unit, name = "_LOWERING_0")
+                expression = HighIrExpression.Variable(name = "_LOWERING_0")
             )
         )
     }
@@ -521,7 +503,7 @@ class ExpressionLoweringTest {
                         )
                     )
                 ),
-                expression = HighIrExpression.Variable(type = DUMMY_IDENTIFIER_TYPE, name = "_LOWERING_1")
+                expression = HighIrExpression.Variable(name = "_LOWERING_1")
             )
         )
     }
@@ -572,7 +554,7 @@ class ExpressionLoweringTest {
                         )
                     )
                 ),
-                expression = HighIrExpression.Variable(type = int, name = "_LOWERING_1")
+                expression = HighIrExpression.Variable(name = "_LOWERING_1")
             )
         )
     }
@@ -624,18 +606,14 @@ class ExpressionLoweringTest {
                                 ),
                                 HighIrStatement.VariableAssignment(
                                     name = "_LOWERING_0",
-                                    assignedExpression = HighIrExpression.Variable(
-                                        type = unit, name = "a"
-                                    )
+                                    assignedExpression = HighIrExpression.Variable(name = "a")
                                 )
                             )
                         ),
                         HighIrStatement.ConstantDefinition(
                             pattern = HighIrPattern.VariablePattern(name = "a"),
                             typeAnnotation = unit,
-                            assignedExpression = HighIrExpression.Variable(
-                                type = unit, name = "_LOWERING_0"
-                            )
+                            assignedExpression = HighIrExpression.Variable(name = "_LOWERING_0")
                         )
                     )
                 )
@@ -646,6 +624,6 @@ class ExpressionLoweringTest {
     companion object {
         private val DUMMY_IDENTIFIER_TYPE: Type.IdentifierType = id(identifier = "Dummy")
         private val THIS: Expression = Expression.This(range = dummyRange, type = DUMMY_IDENTIFIER_TYPE)
-        private val IR_THIS: HighIrExpression = HighIrExpression.This(type = DUMMY_IDENTIFIER_TYPE)
+        private val IR_THIS: HighIrExpression = HighIrExpression.This
     }
 }
