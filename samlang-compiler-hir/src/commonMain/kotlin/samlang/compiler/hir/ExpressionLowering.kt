@@ -20,7 +20,6 @@ import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpression.VariantConstructor
-import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.Block
 import samlang.ast.hir.HighIrStatement.ConstantDefinition
@@ -287,7 +286,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             ?: error(message = "Matched expression in match expression should be lowered!")
         val variableForMatchedExpression = allocateTemporaryVariable()
         loweredStatements += ConstantDefinition(
-            pattern = HighIrPattern.VariablePattern(name = variableForMatchedExpression),
+            name = variableForMatchedExpression,
             assignedExpression = matchedExpression
         )
         val loweredMatchingList = expression.matchingList.map { patternToExpression ->
@@ -357,13 +356,13 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                         is Pattern.TuplePattern -> {
                             val variableForDestructedExpression = allocateTemporaryVariable()
                             loweredScopedStatements += ConstantDefinition(
-                                pattern = HighIrPattern.VariablePattern(name = variableForDestructedExpression),
+                                name = variableForDestructedExpression,
                                 assignedExpression = loweredAssignedExpression
                             )
                             pattern.destructedNames.forEachIndexed { index, (name) ->
                                 if (name != null) {
                                     loweredScopedStatements += ConstantDefinition(
-                                        pattern = HighIrPattern.VariablePattern(name = name),
+                                        name = name,
                                         assignedExpression = IndexAccess(
                                             expression = Variable(name = variableForDestructedExpression),
                                             index = index
@@ -375,12 +374,12 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                         is Pattern.ObjectPattern -> {
                             val variableForDestructedExpression = allocateTemporaryVariable()
                             loweredScopedStatements += ConstantDefinition(
-                                pattern = HighIrPattern.VariablePattern(name = variableForDestructedExpression),
+                                name = variableForDestructedExpression,
                                 assignedExpression = loweredAssignedExpression
                             )
                             pattern.destructedNames.forEach { (name, order, renamed, _) ->
                                 loweredScopedStatements += ConstantDefinition(
-                                    pattern = HighIrPattern.VariablePattern(name = renamed ?: name),
+                                    name = renamed ?: name,
                                     assignedExpression = FieldAccess(
                                         expression = Variable(name = variableForDestructedExpression),
                                         fieldName = name,
@@ -391,7 +390,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                         }
                         is Pattern.VariablePattern -> {
                             loweredScopedStatements += ConstantDefinition(
-                                pattern = HighIrPattern.VariablePattern(name = pattern.name),
+                                name = pattern.name,
                                 assignedExpression = loweredAssignedExpression
                             )
                         }

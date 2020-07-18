@@ -26,7 +26,6 @@ import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpression.VariantConstructor
 import samlang.ast.hir.HighIrExpressionVisitor
 import samlang.ast.hir.HighIrModule
-import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.Block
 import samlang.ast.hir.HighIrStatement.ConstantDefinition
@@ -230,15 +229,10 @@ internal class MidIrFirstPassGenerator(
                 error("AHHH! $statement. BAD ${e.message}")
             }
 
-        override fun visit(statement: ConstantDefinition): MidIrStatement {
-            val assignedExpression = translate(expression = statement.assignedExpression)
-            return when (val pattern = statement.pattern) {
-                is HighIrPattern.VariablePattern -> MOVE(
-                    destination = allocator.allocateTemp(variableName = pattern.name),
-                    source = assignedExpression
-                )
-            }
-        }
+        override fun visit(statement: ConstantDefinition): MidIrStatement = MOVE(
+            destination = allocator.allocateTemp(variableName = statement.name),
+            source = translate(expression = statement.assignedExpression)
+        )
 
         override fun visit(statement: ExpressionAsStatement): MidIrStatement =
             EXPR(expression = translate(expression = statement.expressionWithPotentialSideEffect))

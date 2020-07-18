@@ -10,7 +10,6 @@ import samlang.ast.common.Type.Companion.int
 import samlang.ast.common.Type.Companion.unit
 import samlang.ast.common.UnaryOperator.NOT
 import samlang.ast.hir.HighIrExpression
-import samlang.ast.hir.HighIrPattern
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Unary
@@ -447,10 +446,7 @@ class ExpressionLoweringTest {
             ),
             expected = LoweringResult(
                 statements = listOf(
-                    HighIrStatement.ConstantDefinition(
-                        pattern = HighIrPattern.VariablePattern(name = "_LOWERING_0"),
-                        assignedExpression = IR_THIS
-                    ),
+                    HighIrStatement.ConstantDefinition(name = "_LOWERING_0", assignedExpression = IR_THIS),
                     HighIrStatement.Match(
                         assignedTemporaryVariable = "_LOWERING_1",
                         variableForMatchedExpression = "_LOWERING_0",
@@ -495,10 +491,7 @@ class ExpressionLoweringTest {
             ),
             expected = LoweringResult(
                 statements = listOf(
-                    HighIrStatement.ConstantDefinition(
-                        pattern = HighIrPattern.VariablePattern(name = "_LOWERING_0"),
-                        assignedExpression = IR_THIS
-                    ),
+                    HighIrStatement.ConstantDefinition(name = "_LOWERING_0", assignedExpression = IR_THIS),
                     HighIrStatement.Match(
                         assignedTemporaryVariable = "_LOWERING_1",
                         variableForMatchedExpression = "_LOWERING_0",
@@ -565,10 +558,7 @@ class ExpressionLoweringTest {
                         HighIrStatement.LetDeclaration(name = "_LOWERING_0"),
                         HighIrStatement.Block(
                             statements = listOf(
-                                HighIrStatement.ConstantDefinition(
-                                    pattern = HighIrPattern.VariablePattern(name = "a"),
-                                    assignedExpression = IR_THIS
-                                ),
+                                HighIrStatement.ConstantDefinition(name = "a", assignedExpression = IR_THIS),
                                 HighIrStatement.VariableAssignment(
                                     name = "_LOWERING_0",
                                     assignedExpression = HighIrExpression.Variable(name = "a")
@@ -576,7 +566,7 @@ class ExpressionLoweringTest {
                             )
                         ),
                         HighIrStatement.ConstantDefinition(
-                            pattern = HighIrPattern.VariablePattern(name = "a"),
+                            name = "a",
                             assignedExpression = HighIrExpression.Variable(name = "_LOWERING_0")
                         )
                     )
