@@ -356,6 +356,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         return if (loweredExpression == null) {
             Lambda(
                 type = expression.type,
+                hasReturn = expression.type.returnType != Type.unit,
                 parameters = expression.parameters,
                 captured = expression.captured,
                 body = loweredStatements
@@ -363,6 +364,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         } else {
             Lambda(
                 type = expression.type,
+                hasReturn = expression.type.returnType != Type.unit,
                 parameters = expression.parameters,
                 captured = expression.captured,
                 body = loweredStatements.plus(element = Return(expression = loweredExpression))

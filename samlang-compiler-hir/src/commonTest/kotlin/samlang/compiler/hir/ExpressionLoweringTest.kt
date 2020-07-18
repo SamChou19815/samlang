@@ -264,6 +264,7 @@ class ExpressionLoweringTest {
             ),
             expectedExpression = HighIrExpression.Lambda(
                 parameters = emptyList(),
+                hasReturn = false,
                 type = Type.FunctionType(argumentTypes = emptyList(), returnType = unit),
                 captured = emptyMap(),
                 body = listOf(HighIrStatement.Return(expression = IR_THIS))

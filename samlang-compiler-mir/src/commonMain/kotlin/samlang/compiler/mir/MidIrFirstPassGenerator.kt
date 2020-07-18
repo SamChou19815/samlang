@@ -4,7 +4,6 @@ import samlang.ast.common.BinaryOperator
 import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.GlobalVariable
 import samlang.ast.common.ModuleReference
-import samlang.ast.common.Type
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
@@ -562,7 +561,7 @@ internal class MidIrFirstPassGenerator(
                 argumentTemps = lambdaArguments,
                 mainBodyStatements = lambdaStatements,
                 numberOfArguments = lambdaArguments.size,
-                hasReturn = expression.type.returnType != Type.unit,
+                hasReturn = expression.hasReturn,
                 isPublic = false
             )
             lambdaFunctionsCollector += lambdaFunction

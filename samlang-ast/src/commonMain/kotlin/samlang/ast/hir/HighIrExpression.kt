@@ -147,6 +147,7 @@ sealed class HighIrExpression {
 
     data class Lambda(
         override val type: Type.FunctionType,
+        val hasReturn: Boolean,
         val parameters: List<Pair<String, Type>>,
         val captured: Map<String, Type>,
         val body: List<HighIrStatement>
