@@ -231,21 +231,6 @@ internal class MidIrFirstPassGenerator(
         override fun visit(statement: ConstantDefinition): MidIrStatement {
             val assignedExpression = translate(expression = statement.assignedExpression)
             return when (val pattern = statement.pattern) {
-                is HighIrPattern.ObjectPattern -> {
-                    val temporary = allocator.allocateTemp()
-                    val statements = mutableListOf<MidIrStatement>()
-                    statements += MOVE(destination = temporary, source = assignedExpression)
-                    pattern.destructedNames.forEach { (original, order, alias) ->
-                        val assignedTemporary = allocator.allocateTemp(variableName = alias ?: original)
-                        statements += MOVE(
-                            destination = assignedTemporary,
-                            source = IMMUTABLE_MEM(
-                                expression = ADD(e1 = temporary, e2 = CONST(value = order * 8L))
-                            )
-                        )
-                    }
-                    SEQ(statements = statements)
-                }
                 is HighIrPattern.TuplePattern -> {
                     val temporary = allocator.allocateTemp()
                     val statements = mutableListOf<MidIrStatement>()

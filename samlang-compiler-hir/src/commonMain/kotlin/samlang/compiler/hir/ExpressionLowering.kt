@@ -355,22 +355,45 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                     val loweredAssignedExpression = statement.assignedExpression
                         .getLoweredAndAddStatements(statements = loweredScopedStatements)
                         ?: UnitExpression
-                    val loweredPattern = when (val pattern = statement.pattern) {
-                        is Pattern.TuplePattern -> HighIrPattern.TuplePattern(
-                            destructedNames = pattern.destructedNames.map { it.first }
-                        )
-                        is Pattern.ObjectPattern -> HighIrPattern.ObjectPattern(
-                            destructedNames = pattern.destructedNames.map { (name, order, renamed, _) ->
-                                Triple(first = name, second = order, third = renamed)
+                    when (val pattern = statement.pattern) {
+                        is Pattern.TuplePattern -> {
+                            loweredScopedStatements += ConstantDefinition(
+                                pattern = HighIrPattern.TuplePattern(
+                                    destructedNames = pattern.destructedNames.map { it.first }
+                                ),
+                                assignedExpression = loweredAssignedExpression
+                            )
+                        }
+                        is Pattern.ObjectPattern -> {
+                            val variableForDestructedExpression = allocateTemporaryVariable()
+                            loweredScopedStatements += ConstantDefinition(
+                                pattern = HighIrPattern.VariablePattern(name = variableForDestructedExpression),
+                                assignedExpression = loweredAssignedExpression
+                            )
+                            pattern.destructedNames.forEach { (name, order, renamed, _) ->
+                                loweredScopedStatements += ConstantDefinition(
+                                    pattern = HighIrPattern.VariablePattern(name = renamed ?: name),
+                                    assignedExpression = FieldAccess(
+                                        expression = Variable(name = variableForDestructedExpression),
+                                        fieldName = name,
+                                        fieldOrder = order
+                                    )
+                                )
                             }
-                        )
-                        is Pattern.VariablePattern -> HighIrPattern.VariablePattern(name = pattern.name)
-                        is Pattern.WildCardPattern -> HighIrPattern.WildCardPattern
+                        }
+                        is Pattern.VariablePattern -> {
+                            loweredScopedStatements += ConstantDefinition(
+                                pattern = HighIrPattern.VariablePattern(name = pattern.name),
+                                assignedExpression = loweredAssignedExpression
+                            )
+                        }
+                        is Pattern.WildCardPattern -> {
+                            loweredScopedStatements += ConstantDefinition(
+                                pattern = HighIrPattern.WildCardPattern,
+                                assignedExpression = loweredAssignedExpression
+                            )
+                        }
                     }
-                    loweredScopedStatements += ConstantDefinition(
-                        pattern = loweredPattern,
-                        assignedExpression = loweredAssignedExpression
-                    )
                 }
             }
         }

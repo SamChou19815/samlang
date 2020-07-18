@@ -12,14 +12,6 @@ sealed class HighIrPattern {
             destructedNames.joinToString(separator = ", ", prefix = "[", postfix = "]") { it ?: "" }
     }
 
-    /** An object pattern like `{ foo, bar }`. */
-    data class ObjectPattern(val destructedNames: List<Triple<String, Int, String?>>) : HighIrPattern() {
-        override fun prettyPrint(): String =
-            destructedNames.joinToString(separator = ", ", prefix = "{ ", postfix = " }") { (name, _, alias) ->
-                if (alias == null) name else "$name: $alias"
-            }
-    }
-
     /** A simple variable pattern like `var1`.  */
     data class VariablePattern(val name: String) : HighIrPattern() {
         override fun prettyPrint(): String = name
