@@ -26,14 +26,9 @@ export interface HighIRClassMemberExpression extends BaseHighIRExpression {
   readonly memberName: string;
 }
 
-export interface HighIRTupleConstructorExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRTupleConstructorExpression';
+export interface HighIRStructConstructorExpression extends BaseHighIRExpression {
+  readonly __type__: 'HighIRStructConstructorExpression';
   readonly expressionList: readonly HighIRExpression[];
-}
-
-export interface HighIRObjectConstructorExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRObjectConstructorExpression';
-  readonly fieldDeclaration: readonly (readonly [string, HighIRExpression])[];
 }
 
 export interface HighIRVariantConstructorExpression extends BaseHighIRExpression {
@@ -96,13 +91,6 @@ export interface HighIRBinaryExpression extends BaseHighIRExpression {
   readonly e2: HighIRExpression;
 }
 
-export interface HighIRTernaryExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRTernaryExpression';
-  readonly boolExpression: HighIRExpression;
-  readonly e1: HighIRExpression;
-  readonly e2: HighIRExpression;
-}
-
 export interface HighIRLambdaExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRLambdaExpression';
   readonly hasReturn: boolean;
@@ -116,8 +104,7 @@ export type HighIRExpression =
   | HighIRLiteralExpression
   | HighIRVariableExpression
   | HighIRClassMemberExpression
-  | HighIRTupleConstructorExpression
-  | HighIRObjectConstructorExpression
+  | HighIRStructConstructorExpression
   | HighIRVariantConstructorExpression
   | HighIRIndexAccessExpression
   | HighIRMethodAccessExpression
@@ -127,7 +114,6 @@ export type HighIRExpression =
   | HighIRMethodApplicationExpression
   | HighIRClosureApplicationExpression
   | HighIRBinaryExpression
-  | HighIRTernaryExpression
   | HighIRLambdaExpression;
 
 export type HighIRStatement = void;

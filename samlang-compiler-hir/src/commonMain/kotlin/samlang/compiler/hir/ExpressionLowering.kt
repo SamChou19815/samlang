@@ -13,7 +13,6 @@ import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
 import samlang.ast.hir.HighIrExpression.MethodApplication
 import samlang.ast.hir.HighIrExpression.StructConstructor
-import samlang.ast.hir.HighIrExpression.Ternary
 import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
@@ -234,15 +233,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 s2 = e2LoweringStatements
             )
             return loweredStatements.asLoweringResult()
-        }
-        if (e1LoweredExpression != null && e2LoweredExpression != null) {
-            if (e1LoweringStatements.isEmpty() && e2LoweringStatements.isEmpty()) {
-                return Ternary(
-                    boolExpression = boolExpression,
-                    e1 = e1LoweredExpression,
-                    e2 = e2LoweredExpression
-                ).asLoweringResult(statements = loweredStatements)
-            }
         }
         val variableForIfElseAssign = allocateTemporaryVariable()
         loweredStatements += LetDeclaration(name = variableForIfElseAssign)

@@ -105,14 +105,6 @@ sealed class HighIrExpression {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
-    data class Ternary(
-        val boolExpression: HighIrExpression,
-        val e1: HighIrExpression,
-        val e2: HighIrExpression
-    ) : HighIrExpression() {
-        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
-    }
-
     data class Lambda(
         val hasReturn: Boolean,
         val parameters: List<String>,

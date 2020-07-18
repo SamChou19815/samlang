@@ -17,7 +17,6 @@ import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
 import samlang.ast.hir.HighIrExpression.MethodApplication
 import samlang.ast.hir.HighIrExpression.StructConstructor
-import samlang.ast.hir.HighIrExpression.Ternary
 import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.UnitExpression
 import samlang.ast.hir.HighIrExpression.Variable
@@ -442,27 +441,6 @@ internal class MidIrFirstPassGenerator(
             val e1 = translate(expression = expression.e1)
             val e2 = translate(expression = expression.e2)
             return OP(op = operator, e1 = e1, e2 = e2)
-        }
-
-        override fun visit(expression: Ternary): MidIrExpression {
-            val temporaryForTernary = allocator.allocateTemp()
-            val sequence = mutableListOf<MidIrStatement>()
-            val ifBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "TRUE_BRANCH")
-            val elseBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "FALSE_BRANCH")
-            val endLabel = allocator.allocateLabelWithAnnotation(annotation = "IF_ELSE_END")
-            cJumpTranslate(
-                expression = expression.boolExpression,
-                trueLabel = ifBranchLabel,
-                falseLabel = elseBranchLabel,
-                statementCollector = sequence
-            )
-            sequence += Label(name = ifBranchLabel)
-            sequence += MOVE(destination = temporaryForTernary, source = translate(expression = expression.e1))
-            sequence += Jump(label = endLabel)
-            sequence += Label(name = elseBranchLabel)
-            sequence += MOVE(destination = temporaryForTernary, source = translate(expression = expression.e2))
-            sequence += Label(name = endLabel)
-            return ESEQ(statement = SEQ(statements = sequence), expression = temporaryForTernary)
         }
 
         override fun visit(expression: Lambda): MidIrExpression {

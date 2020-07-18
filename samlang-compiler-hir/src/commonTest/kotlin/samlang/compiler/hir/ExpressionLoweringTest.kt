@@ -222,16 +222,6 @@ class ExpressionLoweringTest {
     @Test
     fun expressionOnlyLoweringWorks14() {
         assertCorrectlyLowered(
-            expression = Expression.IfElse(
-                range = dummyRange, type = unit, boolExpression = THIS, e1 = THIS, e2 = THIS
-            ),
-            expectedExpression = HighIrExpression.Ternary(boolExpression = IR_THIS, e1 = IR_THIS, e2 = IR_THIS)
-        )
-    }
-
-    @Test
-    fun expressionOnlyLoweringWorks15() {
-        assertCorrectlyLowered(
             expression = Expression.Lambda(
                 range = dummyRange,
                 type = Type.FunctionType(argumentTypes = emptyList(), returnType = unit),
