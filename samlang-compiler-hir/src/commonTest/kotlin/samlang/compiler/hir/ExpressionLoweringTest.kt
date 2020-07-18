@@ -272,7 +272,6 @@ class ExpressionLoweringTest {
             expectedStatements = listOf(
                 HighIrStatement.ConstantDefinition(
                     pattern = HighIrPattern.WildCardPattern,
-                    typeAnnotation = unit,
                     assignedExpression = HighIrExpression.ClosureApplication(
                         functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
                     )
@@ -327,14 +326,12 @@ class ExpressionLoweringTest {
                     s1 = listOf(
                         HighIrStatement.ConstantDefinition(
                             pattern = HighIrPattern.WildCardPattern,
-                            typeAnnotation = unit,
                             assignedExpression = IR_THIS
                         )
                     ),
                     s2 = listOf(
                         HighIrStatement.ConstantDefinition(
                             pattern = HighIrPattern.WildCardPattern,
-                            typeAnnotation = unit,
                             assignedExpression = IR_THIS
                         )
                     )
@@ -378,7 +375,6 @@ class ExpressionLoweringTest {
                     s1 = listOf(
                         HighIrStatement.ConstantDefinition(
                             pattern = HighIrPattern.WildCardPattern,
-                            typeAnnotation = unit,
                             assignedExpression = IR_THIS
                         )
                     ),
@@ -420,7 +416,6 @@ class ExpressionLoweringTest {
                     s2 = listOf(
                         HighIrStatement.ConstantDefinition(
                             pattern = HighIrPattern.WildCardPattern,
-                            typeAnnotation = unit,
                             assignedExpression = IR_THIS
                         )
                     )
@@ -441,7 +436,7 @@ class ExpressionLoweringTest {
             ),
             expected = LoweringResult(
                 statements = listOf(
-                    HighIrStatement.LetDeclaration(name = "_LOWERING_0", typeAnnotation = unit),
+                    HighIrStatement.LetDeclaration(name = "_LOWERING_0"),
                     HighIrStatement.IfElse(
                         booleanExpression = IR_THIS,
                         s1 = listOf(HighIrStatement.Throw(expression = IR_THIS)),
@@ -475,7 +470,6 @@ class ExpressionLoweringTest {
                 statements = listOf(
                     HighIrStatement.ConstantDefinition(
                         pattern = HighIrPattern.VariablePattern(name = "_LOWERING_0"),
-                        typeAnnotation = DUMMY_IDENTIFIER_TYPE,
                         assignedExpression = IR_THIS
                     ),
                     HighIrStatement.Match(
@@ -526,7 +520,6 @@ class ExpressionLoweringTest {
                 statements = listOf(
                     HighIrStatement.ConstantDefinition(
                         pattern = HighIrPattern.VariablePattern(name = "_LOWERING_0"),
-                        typeAnnotation = DUMMY_IDENTIFIER_TYPE,
                         assignedExpression = IR_THIS
                     ),
                     HighIrStatement.Match(
@@ -594,12 +587,11 @@ class ExpressionLoweringTest {
             expectedStatements = listOf(
                 HighIrStatement.Block(
                     statements = listOf(
-                        HighIrStatement.LetDeclaration(name = "_LOWERING_0", typeAnnotation = unit),
+                        HighIrStatement.LetDeclaration(name = "_LOWERING_0"),
                         HighIrStatement.Block(
                             statements = listOf(
                                 HighIrStatement.ConstantDefinition(
                                     pattern = HighIrPattern.VariablePattern(name = "a"),
-                                    typeAnnotation = unit,
                                     assignedExpression = IR_THIS
                                 ),
                                 HighIrStatement.VariableAssignment(
@@ -610,7 +602,6 @@ class ExpressionLoweringTest {
                         ),
                         HighIrStatement.ConstantDefinition(
                             pattern = HighIrPattern.VariablePattern(name = "a"),
-                            typeAnnotation = unit,
                             assignedExpression = HighIrExpression.Variable(name = "_LOWERING_0")
                         )
                     )

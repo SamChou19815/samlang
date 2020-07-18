@@ -37,7 +37,6 @@ internal fun compileFunction(classMember: ClassDefinition.MemberDefinition): Hig
                 bodyLoweringResult.expression is HighIrExpression.FunctionApplication) {
                 HighIrStatement.ConstantDefinition(
                     pattern = HighIrPattern.WildCardPattern,
-                    typeAnnotation = Type.unit,
                     assignedExpression = bodyLoweringResult.expression
                 )
             } else {

@@ -40,7 +40,7 @@ sealed class HighIrStatement {
         override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
     }
 
-    data class LetDeclaration(val name: String, val typeAnnotation: Type) : HighIrStatement() {
+    data class LetDeclaration(val name: String) : HighIrStatement() {
         override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
     }
 
@@ -50,7 +50,6 @@ sealed class HighIrStatement {
 
     data class ConstantDefinition(
         val pattern: HighIrPattern,
-        val typeAnnotation: Type,
         val assignedExpression: HighIrExpression
     ) : HighIrStatement() {
         override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)

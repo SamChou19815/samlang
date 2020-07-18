@@ -179,7 +179,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         }
         loweredStatements += ConstantDefinition(
             pattern = HighIrPattern.WildCardPattern,
-            typeAnnotation = Type.unit,
             assignedExpression = functionApplication
         )
         return loweredStatements.asLoweringResult()
@@ -216,7 +215,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         }
         loweredStatements += ConstantDefinition(
             pattern = HighIrPattern.WildCardPattern,
-            typeAnnotation = Type.unit,
             assignedExpression = functionApplication
         )
         return loweredStatements.asLoweringResult()
@@ -262,7 +260,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             }
         }
         val variableForIfElseAssign = allocateTemporaryVariable()
-        loweredStatements += LetDeclaration(name = variableForIfElseAssign, typeAnnotation = expression.type)
+        loweredStatements += LetDeclaration(name = variableForIfElseAssign)
         val loweredS1 = if (e1LoweredExpression == null) {
             e1LoweringStatements
         } else {
@@ -292,7 +290,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val variableForMatchedExpression = allocateTemporaryVariable()
         loweredStatements += ConstantDefinition(
             pattern = HighIrPattern.VariablePattern(name = variableForMatchedExpression),
-            typeAnnotation = expression.matchedExpression.type,
             assignedExpression = matchedExpression
         )
         val loweredMatchingList = expression.matchingList.map { patternToExpression ->
@@ -377,7 +374,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                     }
                     loweredScopedStatements += ConstantDefinition(
                         pattern = loweredPattern,
-                        typeAnnotation = statement.typeAnnotation,
                         assignedExpression = loweredAssignedExpression
                     )
                 }
@@ -390,20 +386,18 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         if (finalExpression.type == Type.unit && loweredFinalExpression is FunctionApplication) {
             loweredScopedStatements += ConstantDefinition(
                 pattern = HighIrPattern.WildCardPattern,
-                typeAnnotation = Type.unit,
                 assignedExpression = loweredFinalExpression
             )
             return listOf(Block(statements = loweredScopedStatements)).asLoweringResult()
         }
         val scopedFinalVariable = allocateTemporaryVariable()
-        val scopedFinalVariableType = finalExpression.type
         loweredScopedStatements += VariableAssignment(
             name = scopedFinalVariable,
             assignedExpression = loweredFinalExpression
         )
         return LoweringResult(
             statements = listOf(
-                LetDeclaration(name = scopedFinalVariable, typeAnnotation = scopedFinalVariableType),
+                LetDeclaration(name = scopedFinalVariable),
                 Block(statements = loweredScopedStatements)
             ),
             expression = Variable(name = scopedFinalVariable)
