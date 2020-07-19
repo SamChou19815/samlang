@@ -54,7 +54,7 @@ export interface MidIRBinaryExpression<E = MidIRExpression> extends BaseMidIRExp
 }
 
 export interface MidIRExpressionSequenceExpression extends BaseMidIRExpression {
-  readonly __type__: 'MidIRCallExpression';
+  readonly __type__: 'MidIRExpressionSequenceExpression';
   readonly statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[];
   readonly expression: MidIRExpression_DANGEROUSLY_NON_CANONICAL;
 }
@@ -175,7 +175,6 @@ export interface MidIRFunction {
   readonly functionName: string;
   readonly argumentNames: readonly string[];
   readonly mainBodyStatements: readonly MidIRStatement[];
-  readonly numberOfArguments: number;
   readonly hasReturn: boolean;
   readonly isPublic: boolean;
 }
@@ -242,7 +241,7 @@ export const MIR_ESEQ_NON_CANONICAL = (
   statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[],
   expression: MidIRExpression_DANGEROUSLY_NON_CANONICAL
 ): MidIRExpressionSequenceExpression => ({
-  __type__: 'MidIRCallExpression',
+  __type__: 'MidIRExpressionSequenceExpression',
   statements,
   expression,
 });
@@ -266,20 +265,20 @@ export const MIR_MOVE_TEMP = (
 });
 
 export const MIR_MOVE_IMMUTABLE_MEM_NON_CANONICAL = (
-  memoryIndexExpression: MidIRExpression_DANGEROUSLY_NON_CANONICAL,
+  memory: MidIRImmutableMemoryExpression<MidIRExpression_DANGEROUSLY_NON_CANONICAL>,
   source: MidIRExpression_DANGEROUSLY_NON_CANONICAL
 ): MidIRMoveMemStatement<MidIRExpression_DANGEROUSLY_NON_CANONICAL> => ({
   __type__: 'MidIRMoveMemStatement',
-  memoryIndexExpression,
+  memoryIndexExpression: memory.indexExpression,
   source,
 });
 
 export const MIR_MOVE_IMMUTABLE_MEM = (
-  memoryIndexExpression: MidIRExpression,
+  memory: MidIRImmutableMemoryExpression,
   source: MidIRExpression
 ): MidIRMoveMemStatement<MidIRExpression> => ({
   __type__: 'MidIRMoveMemStatement',
-  memoryIndexExpression,
+  memoryIndexExpression: memory.indexExpression,
   source,
 });
 
@@ -364,13 +363,126 @@ export const MIR_CJUMP_FALLTHROUGH = (
   label1,
 });
 
-export const MIR_SEQ_IGNORE_EXPRESSION = (
+export const MIR_SEQ_NON_CANONICAL = (
+  statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[]
+): MidIRSequenceStatement => ({ __type__: 'MidIRSequenceStatement', statements });
+
+export const MIR_IGNORE_EXPRESSION_NON_CANONICAL = (
   ignoredExpression: MidIRExpression_DANGEROUSLY_NON_CANONICAL
 ): MidIRIgnoreExpressionStatement => ({
   __type__: 'MidIRIgnoreExpressionStatement',
   ignoredExpression,
 });
 
-export const MIR_SEQ_NON_CANONICAL = (
-  statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[]
-): MidIRSequenceStatement => ({ __type__: 'MidIRSequenceStatement', statements });
+/** Part 6: toString functions */
+
+type MidIRExpressionLoose = MidIRExpression | MidIRExpression_DANGEROUSLY_NON_CANONICAL;
+type MidIRStatementLoose =
+  | MidIRStatement
+  | MidIRStatement_DANGEROUSLY_NON_CANONICAL
+  | MidIRStatementLessDangerouslyNonCanonical;
+
+export const midIRExpressionToString = (expression: MidIRExpressionLoose): string => {
+  switch (expression.__type__) {
+    case 'MidIRConstantExpression':
+      return expression.value.toString();
+
+    case 'MidIRNameExpression':
+      return expression.name;
+
+    case 'MidIRTemporaryExpression':
+      return expression.temporaryID;
+
+    case 'MidIRImmutableMemoryExpression':
+      return `MEM[${midIRExpressionToString(expression.indexExpression)}]`;
+
+    case 'MidIRBinaryExpression': {
+      const e1 = midIRExpressionToString(expression.e1);
+      const e2 = midIRExpressionToString(expression.e2);
+      return `(${e1} ${expression.operator} ${e2})`;
+    }
+
+    case 'MidIRExpressionSequenceExpression': {
+      const statementsString = expression.statements.map(midIRStatementToString).join(', ');
+      const expressionString = midIRExpressionToString(expression.expression);
+      return `ESEQ([${statementsString}], ${expressionString})`;
+    }
+  }
+};
+
+export const midIRStatementToString = (statement: MidIRStatementLoose): string => {
+  switch (statement.__type__) {
+    case 'MidIRMoveTempStatement':
+      return `${statement.temporaryID} = ${midIRExpressionToString(statement.source)};`;
+
+    case 'MidIRMoveMemStatement': {
+      const destination = midIRExpressionToString(statement.memoryIndexExpression);
+      const source = midIRExpressionToString(statement.source);
+      return `MEM[${destination}] = ${source};`;
+    }
+
+    case 'MidIRJumpStatement':
+      return `goto ${statement.label};`;
+
+    case 'MidIRLabelStatement':
+      return `${statement.name}:`;
+
+    case 'MidIRCallFunctionStatement': {
+      const { functionExpression, functionArguments, returnCollectorTemporaryID } = statement;
+      const functionExpressionString = midIRExpressionToString(functionExpression);
+      const argumentsString = (functionArguments as MidIRExpressionLoose[])
+        .map((it) => midIRExpressionToString(it))
+        .join(', ');
+      const functionCallString = `${functionExpressionString}(${argumentsString});`;
+      if (returnCollectorTemporaryID == null) {
+        return functionCallString;
+      }
+      return `${returnCollectorTemporaryID} = ${functionCallString}`;
+    }
+
+    case 'MidIRReturnStatement':
+      return statement.returnedExpression == null
+        ? 'return;'
+        : `return ${midIRExpressionToString(statement.returnedExpression)};`;
+
+    case 'MidIRConditionalJumpFallThrough': {
+      const guard = midIRExpressionToString(statement.conditionExpression);
+      return `if (${guard}) goto ${statement.label1};`;
+    }
+
+    case 'MidIRConditionalJumpNoFallThrough': {
+      const guard = midIRExpressionToString(statement.conditionExpression);
+      return `if (${guard}) goto ${statement.label1}; else goto ${statement.label2};`;
+    }
+
+    case 'MidIRSequenceStatement': {
+      const joined = statement.statements.map((it) => `  ${midIRStatementToString(it)}`).join('\n');
+      return `[\n${joined}\n];`;
+    }
+
+    case 'MidIRIgnoreExpressionStatement':
+      return `IGNORE(${midIRExpressionToString(statement.ignoredExpression)});`;
+  }
+};
+
+export const midIRFunctionToString = (midIRFunction: MidIRFunction): string => {
+  const movingArgumentsString = midIRFunction.argumentNames
+    .map((name, index) => `  let ${name} = _ARG${index};\n`)
+    .join('');
+  const mainBodyString = midIRFunction.mainBodyStatements
+    .map((statement) => `  ${midIRStatementToString(statement)}\n`)
+    .join('');
+  const bodyString = `${movingArgumentsString}\n${mainBodyString}`;
+  return `function ${midIRFunction.functionName} {\n${bodyString}}\n`;
+};
+
+export const midIRCompilationUnitToString = ({
+  globalVariables,
+  functions,
+}: MidIRCompilationUnit): string => {
+  const globalVariablesCode = globalVariables
+    .map(({ name, content }) => `const ${name} = "${content}";\n`)
+    .join('');
+  const functionsCode = functions.map((it) => `${midIRFunctionToString(it)}`).join('\n');
+  return `${globalVariablesCode}\n${functionsCode}`;
+};
