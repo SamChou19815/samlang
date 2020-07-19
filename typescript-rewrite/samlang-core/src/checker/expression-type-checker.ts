@@ -675,7 +675,10 @@ class ExpressionTypeChecker {
         return { range, tag, tagOrder, dataVariable, expression: checkedExpression };
       })
       .filter(isNotNull);
-    // TODO: FIXME exhausitiveness check
+    const unusedTags = Object.keys(unusedMappings);
+    if (unusedTags.length > 0) {
+      this.errorCollector.reportNonExhausiveMatchError(expression.range, unusedTags);
+    }
     const finalType = checkedMatchingList
       .map((it) => it.expression.type)
       .reduce((expected, actual) =>

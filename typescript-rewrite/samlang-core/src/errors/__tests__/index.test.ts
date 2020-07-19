@@ -13,6 +13,7 @@ import {
   IllegalThisError,
   InconsistentFieldsInObjectError,
   DuplicateFieldDeclarationError,
+  NonExhausiveMatchError,
 } from '..';
 import ModuleReference from '../../ast/common/module-reference';
 import Range from '../../ast/common/range';
@@ -88,6 +89,10 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
   [
     new DuplicateFieldDeclarationError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, 'a'),
     'Foo/Bar.sam:0:0-0:0: [DuplicateFieldDeclaration]: Field name `a` is declared twice.',
+  ],
+  [
+    new NonExhausiveMatchError(new ModuleReference(['Foo', 'Bar']), Range.DUMMY, ['A', 'B']),
+    'Foo/Bar.sam:0:0-0:0: [NonExhausiveMatch]: The following tags are not considered in the match: [A, B].',
   ],
 ];
 

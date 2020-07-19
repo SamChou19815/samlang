@@ -599,7 +599,10 @@ it('Match', () => {
   assertTypeErrors(
     '{ val _ = (t: Test2) -> match (t) { | Foo _ -> 1 | Baz s -> 2 }; }',
     unit,
-    ['Test.sam:1:50-1:62: [UnresolvedName]: Name `Baz` is not resolved.'],
+    [
+      'Test.sam:1:25-1:64: [NonExhausiveMatch]: The following tags are not considered in the match: [Bar].',
+      'Test.sam:1:50-1:62: [UnresolvedName]: Name `Baz` is not resolved.',
+    ],
     undefined,
     'Test2'
   );

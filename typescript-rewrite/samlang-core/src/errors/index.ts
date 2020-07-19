@@ -179,6 +179,17 @@ export class DuplicateFieldDeclarationError extends CompileTimeError<'DuplicateF
   }
 }
 
+export class NonExhausiveMatchError extends CompileTimeError<'NonExhausiveMatch'> {
+  constructor(moduleReference: ModuleReference, range: Range, missingTags: readonly string[]) {
+    super(
+      'NonExhausiveMatch',
+      moduleReference,
+      range,
+      `The following tags are not considered in the match: [${missingTags.join(', ')}].`
+    );
+  }
+}
+
 export interface ReadonlyGlobalErrorCollector {
   getErrors(): readonly CompileTimeError[];
 
@@ -290,6 +301,13 @@ export class ModuleErrorCollector {
     this._hasErrors = true;
     this.collectorDelegate.reportError(
       new DuplicateFieldDeclarationError(this.moduleReference, range, fieldName)
+    );
+  }
+
+  reportNonExhausiveMatchError(range: Range, missingTags: readonly string[]): void {
+    this._hasErrors = true;
+    this.collectorDelegate.reportError(
+      new NonExhausiveMatchError(this.moduleReference, range, missingTags)
     );
   }
 }
