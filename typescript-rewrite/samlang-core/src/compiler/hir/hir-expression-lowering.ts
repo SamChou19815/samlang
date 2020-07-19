@@ -206,6 +206,8 @@ class HighIRExpressionLoweringManager {
       functionArgument: loweredArgument,
     });
     if (expression.type.type !== 'PrimitiveType' || expression.type.name !== 'unit') {
+      // Since we control these builtin functions,
+      // we know that only functions with unit return type has side effects.
       return {
         statements: loweredStatements,
         expression: functionCall,
@@ -250,15 +252,17 @@ class HighIRExpressionLoweringManager {
         });
         break;
     }
-    if (expression.type.type !== 'PrimitiveType' || expression.type.name !== 'unit') {
-      return {
-        statements: loweredStatements,
-        expression: functionCall,
-      };
-    }
+    // This indirection is necessary.
+    // We want to force a function call to fall into a statement.
+    // In this way, the final expression can be safely ignored,
+    // while side effect of function still preserved.
+    const temporary = this.allocateTemporaryVariable();
     return {
-      statements: [...loweredStatements, HIR_EXPRESSION_AS_STATEMENT(functionCall)],
-      expression: HIR_FALSE,
+      statements: [
+        ...loweredStatements,
+        HIR_LET({ name: temporary, assignedExpression: functionCall }),
+      ],
+      expression: HIR_VARIABLE(temporary),
     };
   }
 

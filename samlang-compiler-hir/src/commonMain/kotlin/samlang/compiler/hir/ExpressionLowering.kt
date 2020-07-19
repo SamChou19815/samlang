@@ -153,6 +153,8 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
             argument = argument
         )
         if (expression.type != Type.unit) {
+            // Since we control these builtin functions,
+            // we know that only functions with unit return type has side effects.
             return functionApplication.asLoweringResult(statements = loweredStatements)
         }
         loweredStatements += ExpressionAsStatement(
@@ -168,7 +170,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val loweredArguments = expression.arguments.map { argument ->
             argument.getLoweredAndAddStatements(statements = loweredStatements)
         }
-        val type = expression.type
         val functionApplication = when (loweredFunctionExpression) {
             is ClassMember -> FunctionApplication(
                 className = loweredFunctionExpression.className,
@@ -186,11 +187,12 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 arguments = loweredArguments
             )
         }
-        if (type != Type.unit) {
-            return functionApplication.asLoweringResult(statements = loweredStatements)
-        }
-        loweredStatements += ExpressionAsStatement(expressionWithPotentialSideEffect = functionApplication)
-        return loweredStatements.asLoweringResult()
+        // This indirection is necessary.
+        // We want to force a function call to fall into a statement.
+        // In this way, the final expression can be safely ignored and side effect of function still preserved.
+        val temporary = allocateTemporaryVariable()
+        loweredStatements += LetDefinition(name = temporary, assignedExpression = functionApplication)
+        return LoweringResult(statements = loweredStatements, expression = Variable(name = temporary))
     }
 
     override fun visit(expression: Expression.Binary, context: Unit): LoweringResult {

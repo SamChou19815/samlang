@@ -245,11 +245,17 @@ it('FunctionCall family lowering works.', () => {
       functionArguments: [THIS, THIS],
     }),
     {
-      expression: HIR_FUNCTION_CALL({
-        className: 'Foo',
-        functionName: 'bar',
-        functionArguments: [IR_THIS, IR_THIS],
-      }),
+      statements: [
+        HIR_LET({
+          name: '_LOWERING_0',
+          assignedExpression: HIR_FUNCTION_CALL({
+            className: 'Foo',
+            functionName: 'bar',
+            functionArguments: [IR_THIS, IR_THIS],
+          }),
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
 
@@ -266,12 +272,18 @@ it('FunctionCall family lowering works.', () => {
       functionArguments: [THIS, THIS],
     }),
     {
-      expression: HIR_METHOD_CALL({
-        objectExpression: IR_THIS,
-        className: DUMMY_IDENTIFIER_TYPE.identifier,
-        methodName: 'fooBar',
-        methodArguments: [IR_THIS, IR_THIS],
-      }),
+      statements: [
+        HIR_LET({
+          name: '_LOWERING_0',
+          assignedExpression: HIR_METHOD_CALL({
+            objectExpression: IR_THIS,
+            className: DUMMY_IDENTIFIER_TYPE.identifier,
+            methodName: 'fooBar',
+            methodArguments: [IR_THIS, IR_THIS],
+          }),
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
 
@@ -283,10 +295,16 @@ it('FunctionCall family lowering works.', () => {
       functionArguments: [THIS, THIS],
     }),
     {
-      expression: HIR_CLOSURE_CALL({
-        functionExpression: IR_THIS,
-        closureArguments: [IR_THIS, IR_THIS],
-      }),
+      statements: [
+        HIR_LET({
+          name: '_LOWERING_0',
+          assignedExpression: HIR_CLOSURE_CALL({
+            functionExpression: IR_THIS,
+            closureArguments: [IR_THIS, IR_THIS],
+          }),
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
 
@@ -299,14 +317,15 @@ it('FunctionCall family lowering works.', () => {
     }),
     {
       statements: [
-        HIR_EXPRESSION_AS_STATEMENT(
-          HIR_CLOSURE_CALL({
+        HIR_LET({
+          name: '_LOWERING_0',
+          assignedExpression: HIR_CLOSURE_CALL({
             functionExpression: IR_THIS,
             closureArguments: [IR_THIS, IR_THIS],
-          })
-        ),
+          }),
+        }),
       ],
-      expression: HIR_FALSE,
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
 });

@@ -154,75 +154,13 @@ class ExpressionLoweringTest {
     @Test
     fun expressionOnlyLoweringWorks10() {
         assertCorrectlyLowered(
-            expression = Expression.FunctionApplication(
-                range = dummyRange,
-                type = int,
-                functionExpression = Expression.ClassMember(
-                    range = dummyRange,
-                    type = int,
-                    typeArguments = listOf(int),
-                    className = "Foo",
-                    classNameRange = dummyRange,
-                    memberName = "bar"
-                ),
-                arguments = listOf(THIS, THIS)
-            ),
-            expectedExpression = HighIrExpression.FunctionApplication(
-                className = "Foo",
-                functionName = "bar",
-                arguments = listOf(IR_THIS, IR_THIS)
-            )
-        )
-    }
-
-    @Test
-    fun expressionOnlyLoweringWorks11() {
-        assertCorrectlyLowered(
-            expression = Expression.FunctionApplication(
-                range = dummyRange,
-                type = int,
-                functionExpression = Expression.MethodAccess(
-                    range = dummyRange,
-                    type = int,
-                    expression = THIS,
-                    methodName = "fooBar"
-                ),
-                arguments = listOf(THIS, THIS)
-            ),
-            expectedExpression = HighIrExpression.MethodApplication(
-                objectExpression = IR_THIS,
-                className = DUMMY_IDENTIFIER_TYPE.identifier,
-                methodName = "fooBar",
-                arguments = listOf(IR_THIS, IR_THIS)
-            )
-        )
-    }
-
-    @Test
-    fun expressionOnlyLoweringWorks12() {
-        assertCorrectlyLowered(
-            expression = Expression.FunctionApplication(
-                range = dummyRange,
-                type = int,
-                functionExpression = THIS,
-                arguments = listOf(THIS, THIS)
-            ),
-            expectedExpression = HighIrExpression.ClosureApplication(
-                functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
-            )
-        )
-    }
-
-    @Test
-    fun expressionOnlyLoweringWorks13() {
-        assertCorrectlyLowered(
             expression = Expression.Binary(range = dummyRange, type = unit, operator = PLUS, e1 = THIS, e2 = THIS),
             expectedExpression = HighIrExpression.Binary(operator = PLUS, e1 = IR_THIS, e2 = IR_THIS)
         )
     }
 
     @Test
-    fun expressionOnlyLoweringWorks14() {
+    fun expressionOnlyLoweringWorks11() {
         assertCorrectlyLowered(
             expression = Expression.Lambda(
                 range = dummyRange,
@@ -245,25 +183,6 @@ class ExpressionLoweringTest {
         assertCorrectlyLowered(
             expression = Expression.Panic(range = dummyRange, type = unit, expression = THIS),
             expectedStatements = listOf(HighIrStatement.Throw(expression = IR_THIS))
-        )
-    }
-
-    @Test
-    fun statementOnlyLoweringWorks2() {
-        assertCorrectlyLowered(
-            expression = Expression.FunctionApplication(
-                range = dummyRange,
-                type = unit,
-                functionExpression = THIS,
-                arguments = listOf(THIS, THIS)
-            ),
-            expectedStatements = listOf(
-                HighIrStatement.ExpressionAsStatement(
-                    expressionWithPotentialSideEffect = HighIrExpression.ClosureApplication(
-                        functionExpression = IR_THIS, arguments = listOf(IR_THIS, IR_THIS)
-                    )
-                )
-            )
         )
     }
 
