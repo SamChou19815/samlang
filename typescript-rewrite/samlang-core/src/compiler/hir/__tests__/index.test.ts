@@ -44,7 +44,7 @@ it('HIR compiler integration test', () => {
           {
             range: Range.DUMMY,
             isPublic: true,
-            isMethod: false,
+            isMethod: true,
             nameRange: Range.DUMMY,
             name: 'foo',
             typeParameters: [],
@@ -67,7 +67,6 @@ it('HIR compiler integration test', () => {
         members: [
           {
             isPublic: true,
-            isMethod: false,
             name: 'foo',
             hasReturn: true,
             parameters: ['a'],
@@ -75,10 +74,9 @@ it('HIR compiler integration test', () => {
           },
           {
             isPublic: true,
-            isMethod: false,
             name: 'foo',
             hasReturn: false,
-            parameters: ['a'],
+            parameters: ['this', 'a'],
             body: [],
           },
         ],

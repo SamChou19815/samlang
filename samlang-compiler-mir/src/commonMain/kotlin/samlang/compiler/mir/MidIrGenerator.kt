@@ -50,10 +50,6 @@ class MidIrGenerator private constructor(
         )
         val generator2ndPass = MidIrSecondPassGenerator(allocator = allocator)
         val allocatedArgs = mutableListOf<Temporary>()
-        if (function.isMethod) {
-            // 'this' is the first argument for methods.
-            allocatedArgs += allocator.allocateTemp(variableName = "this")
-        }
         function.parameters.forEach { allocatedArgs += allocator.allocateTemp(variableName = it) }
         val mainBodyStatements = cleanupAfterFirstPass(
             statements = function.body.map { generator1stPass.translate(statement = it) },

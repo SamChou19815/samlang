@@ -38,6 +38,7 @@ internal fun compileFunction(
     classMember: ClassDefinition.MemberDefinition
 ): HighIrFunction {
     val bodyLoweringResult = lowerExpression(moduleReference = moduleReference, expression = classMember.body)
+    val parameters = classMember.parameters.map { it.name }
     val statements = bodyLoweringResult.statements
     val body = if (classMember.body.type == Type.unit) {
         statements
@@ -46,9 +47,8 @@ internal fun compileFunction(
     }
     return HighIrFunction(
         isPublic = classMember.isPublic,
-        isMethod = classMember.isMethod,
         name = classMember.name,
-        parameters = classMember.parameters.map { it.name },
+        parameters = if (classMember.isMethod) listOf("this", *parameters.toTypedArray()) else parameters,
         hasReturn = classMember.type.returnType != Type.unit,
         body = body
     )

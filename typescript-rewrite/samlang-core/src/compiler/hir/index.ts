@@ -11,15 +11,15 @@ const compileFunction = (
   classMember: ClassMemberDefinition
 ): HighIRFunction => {
   const bodyLoweringResult = lowerSamlangExpression(moduleReference, classMember.body);
+  const parameters = classMember.parameters.map(({ name }) => name);
   const statements = bodyLoweringResult.statements;
   const returnType = classMember.type.returnType;
   const hasReturn = returnType.type !== 'PrimitiveType' || returnType.name !== 'unit';
   const body = hasReturn ? [...statements, HIR_RETURN(bodyLoweringResult.expression)] : statements;
   return {
     isPublic: classMember.isPublic,
-    isMethod: classMember.isMethod,
     name: classMember.name,
-    parameters: classMember.parameters.map(({ name }) => name),
+    parameters: classMember.isMethod ? ['this', ...parameters] : parameters,
     hasReturn,
     body,
   };
