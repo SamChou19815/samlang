@@ -1,10 +1,19 @@
-import { HighIRStatement, HighIRExpression } from '../../ast/hir/hir-expressions';
+import type { IdentifierType } from '../../ast/common/types';
+import {
+  HighIRStatement,
+  HighIRExpression,
+  HIR_LITERAL,
+  HIR_VARIABLE,
+  HIR_CLASS_MEMBER,
+  HIR_FALSE,
+  HIR_STRUCT_CONSTRUCTOR,
+  HIR_INT,
+  HIR_INDEX_ACCESS,
+  HIR_METHOD_ACCESS,
+  HIR_UNARY,
+} from '../../ast/hir/hir-expressions';
 import type {
   SamlangExpression,
-  LiteralExpression,
-  ThisExpression,
-  VariableExpression,
-  ClassMemberExpression,
   TupleConstructorExpression,
   ObjectConstructorExpression,
   VariantConstructorExpression,
@@ -35,16 +44,31 @@ class HighIRExpressionLoweringManager {
     return variableName;
   }
 
+  private loweredAndAddStatements(
+    expression: SamlangExpression,
+    statements: HighIRStatement[]
+  ): HighIRExpression | undefined {
+    const result = this.lower(expression);
+    statements.push(...result.statements);
+    return result.expression;
+  }
+
   readonly lower = (expression: SamlangExpression): HighIRExpressionLoweringResult => {
     switch (expression.__type__) {
       case 'LiteralExpression':
-        return this.lowerLiteral(expression);
+        return { statements: [], expression: HIR_LITERAL(expression.literal) };
       case 'ThisExpression':
-        return this.lowerThis(expression);
+        return { statements: [], expression: HIR_VARIABLE('this') };
       case 'VariableExpression':
-        return this.lowerVariable(expression);
+        return { statements: [], expression: HIR_VARIABLE(expression.name) };
       case 'ClassMemberExpression':
-        return this.lowerClassMember(expression);
+        return {
+          statements: [],
+          expression: HIR_CLASS_MEMBER({
+            className: expression.className,
+            memberName: expression.memberName,
+          }),
+        };
       case 'TupleConstructorExpression':
         return this.lowerTupleConstructor(expression);
       case 'ObjectConstructorExpression':
@@ -76,50 +100,90 @@ class HighIRExpressionLoweringManager {
     }
   };
 
-  private lowerLiteral(expression: LiteralExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
-  }
-
-  private lowerThis(expression: ThisExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
-  }
-
-  private lowerVariable(expression: VariableExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
-  }
-
-  private lowerClassMember(expression: ClassMemberExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
-  }
-
   private lowerTupleConstructor(
     expression: TupleConstructorExpression
   ): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const loweredStatements: HighIRStatement[] = [];
+    const loweredExpressions = expression.expressions.map(
+      (subExpression) => this.loweredAndAddStatements(subExpression, loweredStatements) ?? HIR_FALSE
+    );
+    return {
+      statements: loweredStatements,
+      expression: HIR_STRUCT_CONSTRUCTOR(loweredExpressions),
+    };
   }
 
   private lowerObjectConstructor(
     expression: ObjectConstructorExpression
   ): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const loweredStatements: HighIRStatement[] = [];
+    const loweredFields = expression.fieldDeclarations.map(
+      (fieldDeclaration) =>
+        this.loweredAndAddStatements(
+          fieldDeclaration.expression ?? {
+            __type__: 'VariableExpression',
+            range: fieldDeclaration.range,
+            precedence: 1,
+            type: fieldDeclaration.type,
+            name: fieldDeclaration.name,
+          },
+          loweredStatements
+        ) ?? HIR_FALSE
+    );
+    return {
+      statements: loweredStatements,
+      expression: HIR_STRUCT_CONSTRUCTOR(loweredFields),
+    };
   }
 
   private lowerVariantConstructor(
     expression: VariantConstructorExpression
   ): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const result = this.lower(expression.data);
+    return {
+      statements: result.statements,
+      expression: HIR_STRUCT_CONSTRUCTOR([
+        HIR_INT(BigInt(expression.tagOrder)),
+        result.expression ?? HIR_FALSE,
+      ]),
+    };
   }
 
   private lowerFieldAccess(expression: FieldAccessExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const result = this.lower(expression.expression);
+    const loweredExpression = result.expression;
+    // istanbul ignore next
+    if (loweredExpression == null) throw new Error();
+    return {
+      statements: result.statements,
+      expression: HIR_INDEX_ACCESS({ expression: loweredExpression, index: expression.fieldOrder }),
+    };
   }
 
   private lowerMethodAccess(expression: MethodAccessExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const result = this.lower(expression.expression);
+    const loweredExpression = result.expression;
+    // istanbul ignore next
+    if (loweredExpression == null) throw new Error();
+    return {
+      statements: result.statements,
+      expression: HIR_METHOD_ACCESS({
+        expression: loweredExpression,
+        className: (expression.expression.type as IdentifierType).identifier,
+        methodName: expression.methodName,
+      }),
+    };
   }
 
   private lowerUnary(expression: UnaryExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const result = this.lower(expression.expression);
+    const loweredExpression = result.expression;
+    // istanbul ignore next
+    if (loweredExpression == null) throw new Error();
+    return {
+      statements: result.statements,
+      expression: HIR_UNARY({ operator: expression.operator, expression: loweredExpression }),
+    };
   }
 
   private lowerPanic(expression: PanicExpression): HighIRExpressionLoweringResult {
