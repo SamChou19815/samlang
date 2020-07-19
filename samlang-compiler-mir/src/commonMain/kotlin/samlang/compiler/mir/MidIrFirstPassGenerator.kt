@@ -351,36 +351,8 @@ internal class MidIrFirstPassGenerator(
                 BinaryOperator.GE -> MidIrOperator.GE
                 BinaryOperator.EQ -> MidIrOperator.EQ
                 BinaryOperator.NE -> MidIrOperator.NE
-                BinaryOperator.AND -> {
-                    val expr1Label = allocator.allocateLabel()
-                    val expr2Label = allocator.allocateLabel()
-                    val valueTemp = allocator.allocateTemp()
-                    val finalLabel = allocator.allocateLabel()
-                    val sequence = mutableListOf<MidIrStatement>()
-                    sequence += MOVE(valueTemp, ZERO)
-                    cJumpTranslate(expression.e1, expr1Label, finalLabel, sequence)
-                    sequence += Label(name = expr1Label)
-                    cJumpTranslate(expression.e2, expr2Label, finalLabel, sequence)
-                    sequence += Label(name = expr2Label)
-                    sequence += MOVE(valueTemp, ONE)
-                    sequence += Label(name = finalLabel)
-                    return ESEQ(statement = SEQ(sequence), expression = valueTemp)
-                }
-                BinaryOperator.OR -> {
-                    val expr1Label = allocator.allocateLabel()
-                    val expr2Label = allocator.allocateLabel()
-                    val valueTemp = allocator.allocateTemp()
-                    val finalLabel = allocator.allocateLabel()
-                    val sequence = mutableListOf<MidIrStatement>()
-                    sequence += MOVE(valueTemp, ONE)
-                    cJumpTranslate(expression.e1, finalLabel, expr1Label, sequence)
-                    sequence += Label(name = expr1Label)
-                    cJumpTranslate(expression.e2, finalLabel, expr2Label, sequence)
-                    sequence += Label(name = expr2Label)
-                    sequence += MOVE(valueTemp, ZERO)
-                    sequence += Label(name = finalLabel)
-                    return ESEQ(statement = SEQ(sequence), expression = valueTemp)
-                }
+                BinaryOperator.AND -> MidIrOperator.AND
+                BinaryOperator.OR -> MidIrOperator.OR
                 BinaryOperator.CONCAT -> {
                     return CALL(
                         functionExpr = NAME(MidIrNameEncoder.nameOfStringConcat),
