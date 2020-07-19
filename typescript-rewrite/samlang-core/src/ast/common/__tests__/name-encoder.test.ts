@@ -1,0 +1,14 @@
+import ModuleReference from '../module-reference';
+import { encodeMainFunctionName, ENCODED_FUNCTION_NAME_THROW } from '../name-encoder';
+
+it('Has correct names', () => {
+  expect(encodeMainFunctionName(new ModuleReference(['Foo', 'Bar']))).toBe(
+    '_module_Foo__Bar_class_Main_function_main'
+  );
+
+  expect(encodeMainFunctionName(new ModuleReference(['Foo-Bar-Derp', 'Baz']))).toBe(
+    '_module_Foo_Bar_Derp__Baz_class_Main_function_main'
+  );
+
+  expect(ENCODED_FUNCTION_NAME_THROW).toBe('_builtin_throw');
+});
