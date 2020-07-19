@@ -35,15 +35,7 @@ sealed class HighIrStatement {
         override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
     }
 
-    data class LetDeclaration(val name: String) : HighIrStatement() {
-        override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
-    }
-
-    data class VariableAssignment(val name: String, val assignedExpression: HighIrExpression) : HighIrStatement() {
-        override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
-    }
-
-    data class ConstantDefinition(val name: String, val assignedExpression: HighIrExpression) : HighIrStatement() {
+    data class LetDefinition(val name: String, val assignedExpression: HighIrExpression) : HighIrStatement() {
         override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
     }
 

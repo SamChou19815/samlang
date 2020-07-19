@@ -20,9 +20,7 @@ import {
   HIR_THROW,
   HIR_MATCH,
   HIR_IF_ELSE,
-  HIR_ASSIGN,
   HIR_LET,
-  HIR_CONST_DEF,
   HIR_EXPRESSION_AS_STATEMENT,
   HIR_RETURN,
 } from '../../ast/hir/hir-expressions';
@@ -284,19 +282,19 @@ class HighIRExpressionLoweringManager {
     const e2LoweringResult = this.lower(expression.e2);
     const variableForIfElseAssign = this.allocateTemporaryVariable();
     loweredStatements.push(
-      HIR_LET(variableForIfElseAssign),
+      HIR_LET({ name: variableForIfElseAssign, assignedExpression: HIR_FALSE }),
       HIR_IF_ELSE({
         booleanExpression: loweredBoolExpression,
         s1: [
           ...e1LoweringResult.statements,
-          HIR_ASSIGN({
+          HIR_LET({
             name: variableForIfElseAssign,
             assignedExpression: e1LoweringResult.expression,
           }),
         ],
         s2: [
           ...e2LoweringResult.statements,
-          HIR_ASSIGN({
+          HIR_LET({
             name: variableForIfElseAssign,
             assignedExpression: e2LoweringResult.expression,
           }),
@@ -317,7 +315,7 @@ class HighIRExpressionLoweringManager {
     );
     const variableForMatchedExpression = this.allocateTemporaryVariable();
     loweredStatements.push(
-      HIR_CONST_DEF({ name: variableForMatchedExpression, assignedExpression: matchedExpression })
+      HIR_LET({ name: variableForMatchedExpression, assignedExpression: matchedExpression })
     );
     const loweredMatchingList = expression.matchingList.map((patternToExpression) => {
       const result = this.lower(patternToExpression.expression);
@@ -369,7 +367,7 @@ class HighIRExpressionLoweringManager {
         case 'TuplePattern': {
           const variableForDestructedExpression = this.allocateTemporaryVariable();
           loweredStatements.push(
-            HIR_CONST_DEF({
+            HIR_LET({
               name: variableForDestructedExpression,
               assignedExpression: loweredAssignedExpression,
             })
@@ -379,7 +377,7 @@ class HighIRExpressionLoweringManager {
               return;
             }
             loweredStatements.push(
-              HIR_CONST_DEF({
+              HIR_LET({
                 name,
                 assignedExpression: HIR_INDEX_ACCESS({
                   expression: HIR_VARIABLE(variableForDestructedExpression),
@@ -393,14 +391,14 @@ class HighIRExpressionLoweringManager {
         case 'ObjectPattern': {
           const variableForDestructedExpression = this.allocateTemporaryVariable();
           loweredStatements.push(
-            HIR_CONST_DEF({
+            HIR_LET({
               name: variableForDestructedExpression,
               assignedExpression: loweredAssignedExpression,
             })
           );
           pattern.destructedNames.forEach(({ fieldName, fieldOrder, alias }) => {
             loweredStatements.push(
-              HIR_CONST_DEF({
+              HIR_LET({
                 name: alias ?? fieldName,
                 assignedExpression: HIR_INDEX_ACCESS({
                   expression: HIR_VARIABLE(variableForDestructedExpression),
@@ -413,7 +411,7 @@ class HighIRExpressionLoweringManager {
         }
         case 'VariablePattern':
           loweredStatements.push(
-            HIR_CONST_DEF({ name: pattern.name, assignedExpression: loweredAssignedExpression })
+            HIR_LET({ name: pattern.name, assignedExpression: loweredAssignedExpression })
           );
           break;
         case 'WildCardPattern':

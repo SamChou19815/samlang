@@ -133,19 +133,8 @@ export interface HighIRMatchStatement extends BaseHighIRStatement {
   readonly matchingList: readonly HighIRVariantPatternToStatement[];
 }
 
-export interface HighIRLetDeclarationStatement extends BaseHighIRStatement {
-  readonly __type__: 'HighIRLetDeclarationStatement';
-  readonly name: string;
-}
-
-export interface HighIRVariableAssignmentStatement extends BaseHighIRStatement {
-  readonly __type__: 'HighIRVariableAssignmentStatement';
-  readonly name: string;
-  readonly assignedExpression: HighIRExpression;
-}
-
-export interface HighIRConstantDefinitionStatement extends BaseHighIRStatement {
-  readonly __type__: 'HighIRConstantDefinitionStatement';
+export interface HighIRLetDefinitionStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRLetDefinitionStatement';
   readonly name: string;
   readonly assignedExpression: HighIRExpression;
 }
@@ -164,9 +153,7 @@ export type HighIRStatement =
   | HighIRThrowStatement
   | HighIRIfElseStatement
   | HighIRMatchStatement
-  | HighIRLetDeclarationStatement
-  | HighIRVariableAssignmentStatement
-  | HighIRConstantDefinitionStatement
+  | HighIRLetDefinitionStatement
   | HighIRExpressionAsStatement
   | HighIRReturnStatement;
 
@@ -335,29 +322,11 @@ export const HIR_MATCH = ({
   matchingList,
 });
 
-export const HIR_LET = (name: string): HighIRLetDeclarationStatement => ({
-  __type__: 'HighIRLetDeclarationStatement',
-  name,
-});
-
-export const HIR_ASSIGN = ({
+export const HIR_LET = ({
   name,
   assignedExpression,
-}: ConstructorArgumentObject<
-  HighIRVariableAssignmentStatement
->): HighIRVariableAssignmentStatement => ({
-  __type__: 'HighIRVariableAssignmentStatement',
-  name,
-  assignedExpression,
-});
-
-export const HIR_CONST_DEF = ({
-  name,
-  assignedExpression,
-}: ConstructorArgumentObject<
-  HighIRConstantDefinitionStatement
->): HighIRConstantDefinitionStatement => ({
-  __type__: 'HighIRConstantDefinitionStatement',
+}: ConstructorArgumentObject<HighIRLetDefinitionStatement>): HighIRLetDefinitionStatement => ({
+  __type__: 'HighIRLetDefinitionStatement',
   name,
   assignedExpression,
 });

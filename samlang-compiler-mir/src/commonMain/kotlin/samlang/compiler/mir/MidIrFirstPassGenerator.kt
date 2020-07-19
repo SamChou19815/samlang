@@ -22,14 +22,12 @@ import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpressionVisitor
 import samlang.ast.hir.HighIrModule
 import samlang.ast.hir.HighIrStatement
-import samlang.ast.hir.HighIrStatement.ConstantDefinition
 import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
 import samlang.ast.hir.HighIrStatement.IfElse
-import samlang.ast.hir.HighIrStatement.LetDeclaration
+import samlang.ast.hir.HighIrStatement.LetDefinition
 import samlang.ast.hir.HighIrStatement.Match
 import samlang.ast.hir.HighIrStatement.Return
 import samlang.ast.hir.HighIrStatement.Throw
-import samlang.ast.hir.HighIrStatement.VariableAssignment
 import samlang.ast.hir.HighIrStatementVisitor
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.ADD
@@ -204,20 +202,7 @@ internal class MidIrFirstPassGenerator(
             return SEQ(statements = statements)
         }
 
-        override fun visit(statement: LetDeclaration): MidIrStatement =
-            MOVE(destination = allocator.allocateTemp(variableName = statement.name), source = ZERO)
-
-        override fun visit(statement: VariableAssignment): MidIrStatement =
-            try {
-                MOVE(
-                    destination = allocator.getTemporaryByVariable(variableName = statement.name),
-                    source = translate(expression = statement.assignedExpression)
-                )
-            } catch (e: IllegalStateException) {
-                error("AHHH! $statement. BAD ${e.message}")
-            }
-
-        override fun visit(statement: ConstantDefinition): MidIrStatement = MOVE(
+        override fun visit(statement: LetDefinition): MidIrStatement = MOVE(
             destination = allocator.allocateTemp(variableName = statement.name),
             source = translate(expression = statement.assignedExpression)
         )

@@ -27,8 +27,6 @@ import {
   HIR_MATCH,
   HIR_IF_ELSE,
   HIR_LET,
-  HIR_ASSIGN,
-  HIR_CONST_DEF,
   HIR_EXPRESSION_AS_STATEMENT,
   HIR_RETURN,
 } from '../../../ast/hir/hir-expressions';
@@ -394,14 +392,11 @@ it('IfElse lowering works.', () => {
     }),
     {
       statements: [
-        HIR_LET('_LOWERING_0'),
+        HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_FALSE }),
         HIR_IF_ELSE({
           booleanExpression: IR_THIS,
-          s1: [
-            HIR_THROW(IR_THIS),
-            HIR_ASSIGN({ name: '_LOWERING_0', assignedExpression: HIR_FALSE }),
-          ],
-          s2: [HIR_ASSIGN({ name: '_LOWERING_0', assignedExpression: IR_THIS })],
+          s1: [HIR_THROW(IR_THIS), HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_FALSE })],
+          s2: [HIR_LET({ name: '_LOWERING_0', assignedExpression: IR_THIS })],
         }),
       ],
       expression: HIR_VARIABLE('_LOWERING_0'),
@@ -427,7 +422,7 @@ it('Match lowering works.', () => {
     }),
     {
       statements: [
-        HIR_CONST_DEF({ name: '_LOWERING_0', assignedExpression: IR_THIS }),
+        HIR_LET({ name: '_LOWERING_0', assignedExpression: IR_THIS }),
         HIR_MATCH({
           variableForMatchedExpression: '_LOWERING_0',
           assignedTemporaryVariable: '_LOWERING_1',
@@ -502,23 +497,23 @@ it('StatementBlockExpression lowering works.', () => {
     }),
     {
       statements: [
-        HIR_CONST_DEF({ name: '_LOWERING_0', assignedExpression: IR_THIS }),
-        HIR_CONST_DEF({
+        HIR_LET({ name: '_LOWERING_0', assignedExpression: IR_THIS }),
+        HIR_LET({
           name: 'a',
           assignedExpression: HIR_INDEX_ACCESS({
             expression: HIR_VARIABLE('_LOWERING_0'),
             index: 0,
           }),
         }),
-        HIR_CONST_DEF({ name: '_LOWERING_1', assignedExpression: IR_THIS }),
-        HIR_CONST_DEF({
+        HIR_LET({ name: '_LOWERING_1', assignedExpression: IR_THIS }),
+        HIR_LET({
           name: 'a',
           assignedExpression: HIR_INDEX_ACCESS({
             expression: HIR_VARIABLE('_LOWERING_1'),
             index: 0,
           }),
         }),
-        HIR_CONST_DEF({
+        HIR_LET({
           name: 'c',
           assignedExpression: HIR_INDEX_ACCESS({
             expression: HIR_VARIABLE('_LOWERING_1'),
@@ -526,7 +521,7 @@ it('StatementBlockExpression lowering works.', () => {
           }),
         }),
         HIR_EXPRESSION_AS_STATEMENT(IR_THIS),
-        HIR_CONST_DEF({ name: 'a', assignedExpression: HIR_VARIABLE('a') }),
+        HIR_LET({ name: 'a', assignedExpression: HIR_VARIABLE('a') }),
       ],
     }
   );

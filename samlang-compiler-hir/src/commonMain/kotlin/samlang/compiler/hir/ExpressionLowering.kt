@@ -16,14 +16,12 @@ import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrStatement
-import samlang.ast.hir.HighIrStatement.ConstantDefinition
 import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
 import samlang.ast.hir.HighIrStatement.IfElse
-import samlang.ast.hir.HighIrStatement.LetDeclaration
+import samlang.ast.hir.HighIrStatement.LetDefinition
 import samlang.ast.hir.HighIrStatement.Match
 import samlang.ast.hir.HighIrStatement.Return
 import samlang.ast.hir.HighIrStatement.Throw
-import samlang.ast.hir.HighIrStatement.VariableAssignment
 import samlang.ast.lang.Expression
 import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Pattern
@@ -213,15 +211,15 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val e1LoweringResult = expression.e1.lower()
         val e2LoweringResult = expression.e2.lower()
         val variableForIfElseAssign = allocateTemporaryVariable()
-        loweredStatements += LetDeclaration(name = variableForIfElseAssign)
+        loweredStatements += LetDefinition(name = variableForIfElseAssign, assignedExpression = HighIrExpression.FALSE)
         val loweredS1 = e1LoweringResult.statements.plus(
-            element = VariableAssignment(
+            element = LetDefinition(
                 name = variableForIfElseAssign,
                 assignedExpression = e1LoweringResult.expression
             )
         )
         val loweredS2 = e2LoweringResult.statements.plus(
-            element = VariableAssignment(
+            element = LetDefinition(
                 name = variableForIfElseAssign,
                 assignedExpression = e2LoweringResult.expression
             )
@@ -238,7 +236,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val matchedExpression = expression.matchedExpression
             .getLoweredAndAddStatements(statements = loweredStatements)
         val variableForMatchedExpression = allocateTemporaryVariable()
-        loweredStatements += ConstantDefinition(
+        loweredStatements += LetDefinition(
             name = variableForMatchedExpression,
             assignedExpression = matchedExpression
         )
@@ -281,13 +279,13 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                     when (val pattern = statement.pattern) {
                         is Pattern.TuplePattern -> {
                             val variableForDestructedExpression = allocateTemporaryVariable()
-                            loweredScopedStatements += ConstantDefinition(
+                            loweredScopedStatements += LetDefinition(
                                 name = variableForDestructedExpression,
                                 assignedExpression = loweredAssignedExpression
                             )
                             pattern.destructedNames.forEachIndexed { index, (name) ->
                                 if (name != null) {
-                                    loweredScopedStatements += ConstantDefinition(
+                                    loweredScopedStatements += LetDefinition(
                                         name = name,
                                         assignedExpression = IndexAccess(
                                             expression = Variable(name = variableForDestructedExpression),
@@ -299,12 +297,12 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                         }
                         is Pattern.ObjectPattern -> {
                             val variableForDestructedExpression = allocateTemporaryVariable()
-                            loweredScopedStatements += ConstantDefinition(
+                            loweredScopedStatements += LetDefinition(
                                 name = variableForDestructedExpression,
                                 assignedExpression = loweredAssignedExpression
                             )
                             pattern.destructedNames.forEach { (name, order, renamed, _) ->
-                                loweredScopedStatements += ConstantDefinition(
+                                loweredScopedStatements += LetDefinition(
                                     name = renamed ?: name,
                                     assignedExpression = IndexAccess(
                                         expression = Variable(name = variableForDestructedExpression),
@@ -314,7 +312,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                             }
                         }
                         is Pattern.VariablePattern -> {
-                            loweredScopedStatements += ConstantDefinition(
+                            loweredScopedStatements += LetDefinition(
                                 name = pattern.name,
                                 assignedExpression = loweredAssignedExpression
                             )
