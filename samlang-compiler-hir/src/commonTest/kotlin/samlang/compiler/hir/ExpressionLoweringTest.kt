@@ -419,17 +419,15 @@ class ExpressionLoweringTest {
                     expression = null
                 )
             ),
-            expectedStatements = listOf(
-                HighIrStatement.LetDeclaration(name = "_LOWERING_0"),
-                HighIrStatement.ConstantDefinition(name = "a", assignedExpression = IR_THIS),
-                HighIrStatement.VariableAssignment(
-                    name = "_LOWERING_0",
-                    assignedExpression = HighIrExpression.Variable(name = "a")
+            expected = LoweringResult(
+                statements = listOf(
+                    HighIrStatement.ConstantDefinition(name = "a", assignedExpression = IR_THIS),
+                    HighIrStatement.ConstantDefinition(
+                        name = "a",
+                        assignedExpression = HighIrExpression.Variable(name = "a")
+                    )
                 ),
-                HighIrStatement.ConstantDefinition(
-                    name = "a",
-                    assignedExpression = HighIrExpression.Variable(name = "_LOWERING_0")
-                )
+                expression = HighIrExpression.FALSE
             )
         )
     }

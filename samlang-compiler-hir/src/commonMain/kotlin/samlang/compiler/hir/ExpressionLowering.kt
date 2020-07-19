@@ -272,11 +272,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.StatementBlockExpression, context: Unit): LoweringResult {
         val block = expression.block
-        if (block.statements.isEmpty()) {
-            return block.expression
-                ?.accept(visitor = this, context = Unit)
-                ?: LoweringResult(statements = emptyList(), expression = HighIrExpression.FALSE)
-        }
         val loweredScopedStatements = mutableListOf<HighIrStatement>()
         for (statement in block.statements) {
             when (statement) {
@@ -336,23 +331,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val finalExpression = block.expression
             ?: return loweredScopedStatements.asLoweringResult()
         val loweredFinalExpression = finalExpression.getLoweredAndAddStatements(statements = loweredScopedStatements)
-        if (finalExpression.type == Type.unit && loweredFinalExpression is FunctionApplication) {
-            loweredScopedStatements += ExpressionAsStatement(
-                expressionWithPotentialSideEffect = loweredFinalExpression
-            )
-            return loweredScopedStatements.asLoweringResult()
-        }
-        val scopedFinalVariable = allocateTemporaryVariable()
-        loweredScopedStatements += VariableAssignment(
-            name = scopedFinalVariable,
-            assignedExpression = loweredFinalExpression
-        )
-        return LoweringResult(
-            statements = listOf(
-                LetDeclaration(name = scopedFinalVariable),
-                *loweredScopedStatements.toTypedArray()
-            ),
-            expression = Variable(name = scopedFinalVariable)
-        )
+        return LoweringResult(statements = loweredScopedStatements, expression = loweredFinalExpression)
     }
 }

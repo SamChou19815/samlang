@@ -343,10 +343,76 @@ class HighIRExpressionLoweringManager {
     };
   }
 
-  private lowerStatementBlock(
-    expression: StatementBlockExpression
-  ): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+  private lowerStatementBlock({
+    block: { statements: blockStatements, expression: finalExpression },
+  }: StatementBlockExpression): HighIRExpressionLoweringResult {
+    const loweredStatements: HighIRStatement[] = [];
+    blockStatements.forEach(({ pattern, assignedExpression }) => {
+      const loweredAssignedExpression = this.loweredAndAddStatements(
+        assignedExpression,
+        loweredStatements
+      );
+      switch (pattern.type) {
+        case 'TuplePattern': {
+          const variableForDestructedExpression = this.allocateTemporaryVariable();
+          loweredStatements.push(
+            HIR_CONST_DEF({
+              name: variableForDestructedExpression,
+              assignedExpression: loweredAssignedExpression,
+            })
+          );
+          pattern.destructedNames.forEach(([name], index) => {
+            if (name == null) {
+              return;
+            }
+            loweredStatements.push(
+              HIR_CONST_DEF({
+                name,
+                assignedExpression: HIR_INDEX_ACCESS({
+                  expression: HIR_VARIABLE(variableForDestructedExpression),
+                  index,
+                }),
+              })
+            );
+          });
+          break;
+        }
+        case 'ObjectPattern': {
+          const variableForDestructedExpression = this.allocateTemporaryVariable();
+          loweredStatements.push(
+            HIR_CONST_DEF({
+              name: variableForDestructedExpression,
+              assignedExpression: loweredAssignedExpression,
+            })
+          );
+          pattern.destructedNames.forEach(({ fieldName, fieldOrder, alias }) => {
+            loweredStatements.push(
+              HIR_CONST_DEF({
+                name: alias ?? fieldName,
+                assignedExpression: HIR_INDEX_ACCESS({
+                  expression: HIR_VARIABLE(variableForDestructedExpression),
+                  index: fieldOrder,
+                }),
+              })
+            );
+          });
+          break;
+        }
+        case 'VariablePattern':
+          loweredStatements.push(
+            HIR_CONST_DEF({ name: pattern.name, assignedExpression: loweredAssignedExpression })
+          );
+          break;
+        case 'WildCardPattern':
+          loweredStatements.push(HIR_EXPRESSION_AS_STATEMENT(loweredAssignedExpression));
+          break;
+      }
+    });
+    if (finalExpression == null) {
+      return { statements: [], expression: HIR_FALSE };
+    }
+    const loweredFinalExpression = this.loweredAndAddStatements(finalExpression, loweredStatements);
+    return { statements: loweredStatements, expression: loweredFinalExpression };
   }
 }
 
