@@ -392,7 +392,6 @@ it('IfElse lowering works.', () => {
     }),
     {
       statements: [
-        HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_FALSE }),
         HIR_IF_ELSE({
           booleanExpression: IR_THIS,
           s1: [HIR_THROW(IR_THIS), HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_FALSE })],

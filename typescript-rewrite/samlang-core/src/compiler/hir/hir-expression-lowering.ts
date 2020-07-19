@@ -282,7 +282,6 @@ class HighIRExpressionLoweringManager {
     const e2LoweringResult = this.lower(expression.e2);
     const variableForIfElseAssign = this.allocateTemporaryVariable();
     loweredStatements.push(
-      HIR_LET({ name: variableForIfElseAssign, assignedExpression: HIR_FALSE }),
       HIR_IF_ELSE({
         booleanExpression: loweredBoolExpression,
         s1: [

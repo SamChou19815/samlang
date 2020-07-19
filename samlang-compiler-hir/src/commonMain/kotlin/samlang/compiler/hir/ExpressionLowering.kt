@@ -211,7 +211,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val e1LoweringResult = expression.e1.lower()
         val e2LoweringResult = expression.e2.lower()
         val variableForIfElseAssign = allocateTemporaryVariable()
-        loweredStatements += LetDefinition(name = variableForIfElseAssign, assignedExpression = HighIrExpression.FALSE)
         val loweredS1 = e1LoweringResult.statements.plus(
             element = LetDefinition(
                 name = variableForIfElseAssign,

@@ -279,7 +279,6 @@ class ExpressionLoweringTest {
             ),
             expected = LoweringResult(
                 statements = listOf(
-                    HighIrStatement.LetDefinition(name = "_LOWERING_0", assignedExpression = HighIrExpression.FALSE),
                     HighIrStatement.IfElse(
                         booleanExpression = IR_THIS,
                         s1 = listOf(
