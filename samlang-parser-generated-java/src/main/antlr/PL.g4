@@ -89,6 +89,7 @@ expression
     | IF expression THEN expression ELSE expression # IfElseExpr
     | MATCH LPAREN expression RPAREN LBRACE patternToExpr+ RBRACE # MatchExpr
     | LPAREN optionallyAnnotatedParameter (COMMA optionallyAnnotatedParameter)* COMMA? RPAREN ARROW expression # FunExpr
+    | LPAREN RPAREN ARROW expression # NoArgFunExpr
     | statementBlock # StatementBlockExpr
     ;
 

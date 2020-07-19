@@ -55,6 +55,7 @@ it('Can parse good expressions.', () => {
   expectASTWithTheSameKind('if (true) then 3 else bar', 'IfElseExpression');
   expectASTWithTheSameKind('match (this) { | None _ -> 0 | Some d -> d }', 'MatchExpression');
   expectASTWithTheSameKind('(a, b: int, c: Type) -> 3', 'LambdaExpression');
+  expectASTWithTheSameKind('() -> 3', 'LambdaExpression');
   expectASTWithTheSameKind('(foo) -> 3', 'LambdaExpression');
   expectASTWithTheSameKind('(foo: bool) -> 3', 'LambdaExpression');
   expectASTWithTheSameKind('{ val a = 3; }', 'StatementBlockExpression');
@@ -108,7 +109,6 @@ it('Can report bad expressions.', () => {
   expectBadAST('match (this) { | None _  }');
   expectBadAST('match (this) { |  _ -> }');
   expectBadAST('match (this) { |  -> }');
-  expectBadAST('() -> 3');
   expectBadAST('(: int) -> 3');
   expectBadAST('(:) -> 3');
   expectBadAST('(a:) -> 3');

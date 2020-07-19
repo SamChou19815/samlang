@@ -67,6 +67,7 @@ import {
   IfElseExprContext,
   MatchExprContext,
   FunExprContext,
+  NoArgFunExprContext,
   StatementBlockExprContext,
 } from './generated/PLParser';
 import { PLVisitor } from './generated/PLVisitor';
@@ -395,6 +396,16 @@ export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangE
         UndecidedTypes.next()
       ),
       parameters,
+      captured: {},
+      body: this.toExpression(ctx.expression()),
+    });
+  };
+
+  visitNoArgFunExpr = (ctx: NoArgFunExprContext): SamlangExpression | null => {
+    return EXPRESSION_LAMBDA({
+      range: contextRange(ctx),
+      type: functionType([], UndecidedTypes.next()),
+      parameters: [],
       captured: {},
       body: this.toExpression(ctx.expression()),
     });

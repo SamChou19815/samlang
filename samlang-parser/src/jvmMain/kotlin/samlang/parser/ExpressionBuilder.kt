@@ -295,16 +295,6 @@ internal class ExpressionBuilder internal constructor(
             val type = oneArg.typeAnnotation()?.typeExpr()?.accept(TypeBuilder) ?: Type.undecided()
             name to type
         }
-        val range = ctx.range
-        if (arguments.size > 22) {
-            syntaxErrorListener.addSyntaxError(
-                syntaxError = SyntaxError(
-                    moduleReference = syntaxErrorListener.moduleReference,
-                    range = range,
-                    reason = "Lambda argument size exceeds 22."
-                )
-            )
-        }
         return Expression.Lambda(
             range = ctx.range,
             type = FunctionType(
@@ -312,6 +302,19 @@ internal class ExpressionBuilder internal constructor(
                 returnType = Type.undecided()
             ),
             parameters = arguments,
+            captured = emptyMap(), // Dummy value. Can only be resolved after type checking.
+            body = ctx.expression().toExpression()
+        )
+    }
+
+    override fun visitNoArgFunExpr(ctx: PLParser.NoArgFunExprContext): Expression? {
+        return Expression.Lambda(
+            range = ctx.range,
+            type = FunctionType(
+                argumentTypes = emptyList(),
+                returnType = Type.undecided()
+            ),
+            parameters = emptyList(),
             captured = emptyMap(), // Dummy value. Can only be resolved after type checking.
             body = ctx.expression().toExpression()
         )
