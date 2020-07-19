@@ -18,9 +18,12 @@ import {
   HIR_BINARY,
   HIR_LAMBDA,
   HIR_THROW,
+  HIR_MATCH,
   HIR_IF_ELSE,
   HIR_ASSIGN,
   HIR_LET,
+  HIR_CONST_DEF,
+  HIR_EXPRESSION_AS_STATEMENT,
   HIR_RETURN,
 } from '../../ast/hir/hir-expressions';
 import type {
@@ -294,7 +297,33 @@ class HighIRExpressionLoweringManager {
   }
 
   private lowerMatch(expression: MatchExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const loweredStatements: HighIRStatement[] = [];
+    const matchedExpression = this.loweredAndAddStatements(
+      expression.matchedExpression,
+      loweredStatements
+    );
+    const variableForMatchedExpression = this.allocateTemporaryVariable();
+    loweredStatements.push(
+      HIR_CONST_DEF({ name: variableForMatchedExpression, assignedExpression: matchedExpression })
+    );
+    const loweredMatchingList = expression.matchingList.map((patternToExpression) => {
+      const result = this.lower(patternToExpression.expression);
+      return {
+        tagOrder: patternToExpression.tagOrder,
+        dataVariable: patternToExpression.dataVariable,
+        statements: result.statements,
+        finalExpression: result.expression,
+      };
+    });
+    const temporaryVariable = this.allocateTemporaryVariable();
+    loweredStatements.push(
+      HIR_MATCH({
+        assignedTemporaryVariable: temporaryVariable,
+        variableForMatchedExpression,
+        matchingList: loweredMatchingList,
+      })
+    );
+    return { statements: loweredStatements, expression: HIR_VARIABLE(temporaryVariable) };
   }
 
   private lowerLambda(expression: LambdaExpression): HighIRExpressionLoweringResult {

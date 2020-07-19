@@ -20,7 +20,7 @@ sealed class HighIrStatement {
     }
 
     data class Match(
-        val assignedTemporaryVariable: String?,
+        val assignedTemporaryVariable: String,
         val variableForMatchedExpression: String,
         val matchingList: List<VariantPatternToStatement>
     ) : HighIrStatement() {
@@ -29,7 +29,7 @@ sealed class HighIrStatement {
             val tagOrder: Int,
             val dataVariable: String?,
             val statements: List<HighIrStatement>,
-            val finalExpression: HighIrExpression?
+            val finalExpression: HighIrExpression
         )
 
         override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)

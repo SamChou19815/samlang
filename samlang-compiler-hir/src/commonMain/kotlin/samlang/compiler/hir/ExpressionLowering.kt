@@ -251,22 +251,13 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 finalExpression = result.expression
             )
         }
-        return if (loweredMatchingList.all { it.finalExpression == null }) {
-            loweredStatements += Match(
-                assignedTemporaryVariable = null,
-                variableForMatchedExpression = variableForMatchedExpression,
-                matchingList = loweredMatchingList
-            )
-            loweredStatements.asLoweringResult()
-        } else {
-            val temporaryVariable = allocateTemporaryVariable()
-            loweredStatements += Match(
-                assignedTemporaryVariable = temporaryVariable,
-                variableForMatchedExpression = variableForMatchedExpression,
-                matchingList = loweredMatchingList
-            )
-            Variable(name = temporaryVariable).asLoweringResult(statements = loweredStatements)
-        }
+        val temporaryVariable = allocateTemporaryVariable()
+        loweredStatements += Match(
+            assignedTemporaryVariable = temporaryVariable,
+            variableForMatchedExpression = variableForMatchedExpression,
+            matchingList = loweredMatchingList
+        )
+        return Variable(name = temporaryVariable).asLoweringResult(statements = loweredStatements)
     }
 
     override fun visit(expression: Expression.Lambda, context: Unit): LoweringResult {

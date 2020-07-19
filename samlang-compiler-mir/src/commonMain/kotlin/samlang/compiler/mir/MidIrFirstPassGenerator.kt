@@ -168,12 +168,10 @@ internal class MidIrFirstPassGenerator(
             val tagTemp = allocator.allocateTemp()
             val statements = mutableListOf<MidIrStatement>()
             statements += MOVE(destination = tagTemp, source = matchedTemp)
-            if (finalAssignedVariable != null) {
-                statements += MOVE(
-                    destination = allocator.allocateTemp(variableName = finalAssignedVariable),
-                    source = ZERO
-                )
-            }
+            statements += MOVE(
+                destination = allocator.allocateTemp(variableName = finalAssignedVariable),
+                source = ZERO
+            )
             val matchingList = statement.matchingList
             val matchBranchLabels = matchingList.map {
                 allocator.allocateLabelWithAnnotation(annotation = "MATCH_BRANCH_${it.tagOrder}")
@@ -196,14 +194,10 @@ internal class MidIrFirstPassGenerator(
                 }
                 variantPatternToStatement.statements.forEach { statements += translate(statement = it) }
                 val finalAssignedExpression = variantPatternToStatement.finalExpression
-                if (finalAssignedVariable == null) {
-                    require(value = finalAssignedExpression == null)
-                } else if (finalAssignedExpression != null) {
-                    statements += MOVE(
-                        destination = allocator.getTemporaryByVariable(variableName = finalAssignedVariable),
-                        source = translate(expression = finalAssignedExpression)
-                    )
-                }
+                statements += MOVE(
+                    destination = allocator.getTemporaryByVariable(variableName = finalAssignedVariable),
+                    source = translate(expression = finalAssignedExpression)
+                )
                 statements += Jump(label = endLabel)
             }
             statements += Label(name = endLabel)

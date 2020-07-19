@@ -123,12 +123,12 @@ export interface HighIRVariantPatternToStatement {
   readonly tagOrder: number;
   readonly dataVariable?: string;
   readonly statements: readonly HighIRStatement[];
-  readonly finalExpression?: HighIRExpression;
+  readonly finalExpression: HighIRExpression;
 }
 
 export interface HighIRMatchStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRMatchStatement';
-  readonly assignedTemporaryVariable?: string;
+  readonly assignedTemporaryVariable: string;
   readonly variableForMatchedExpression: string;
   readonly matchingList: readonly HighIRVariantPatternToStatement[];
 }
