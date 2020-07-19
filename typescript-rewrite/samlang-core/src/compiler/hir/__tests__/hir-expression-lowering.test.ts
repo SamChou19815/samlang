@@ -1,4 +1,4 @@
-import { PLUS } from '../../../ast/common/binary-operators';
+import { PLUS, AND, OR } from '../../../ast/common/binary-operators';
 import Range from '../../../ast/common/range';
 import {
   unitType,
@@ -11,6 +11,7 @@ import {
 import {
   HIR_VARIABLE,
   HIR_FALSE,
+  HIR_TRUE,
   HIR_CLASS_MEMBER,
   HIR_STRUCT_CONSTRUCTOR,
   HIR_INT,
@@ -33,6 +34,7 @@ import {
 import {
   SamlangExpression,
   EXPRESSION_FALSE,
+  EXPRESSION_TRUE,
   EXPRESSION_THIS,
   EXPRESSION_VARIABLE,
   EXPRESSION_CLASS_MEMBER,
@@ -334,6 +336,48 @@ it('Binary lowering works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_BINARY({ range: Range.DUMMY, type: unitType, operator: PLUS, e1: THIS, e2: THIS }),
     { expression: HIR_BINARY({ operator: PLUS, e1: IR_THIS, e2: IR_THIS }) }
+  );
+});
+
+it('Short circuiting binary lowering works.', () => {
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: unitType,
+      operator: AND,
+      e1: EXPRESSION_TRUE(Range.DUMMY),
+      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: unitType, name: 'foo' }),
+    }),
+    {
+      statements: [
+        HIR_IF_ELSE({
+          booleanExpression: HIR_TRUE,
+          s1: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_VARIABLE('foo') })],
+          s2: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_FALSE })],
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
+    }
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: unitType,
+      operator: OR,
+      e1: EXPRESSION_TRUE(Range.DUMMY),
+      e2: EXPRESSION_FALSE(Range.DUMMY),
+    }),
+    {
+      statements: [
+        HIR_IF_ELSE({
+          booleanExpression: HIR_TRUE,
+          s1: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_TRUE })],
+          s2: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_FALSE })],
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
+    }
   );
 });
 

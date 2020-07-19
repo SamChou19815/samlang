@@ -1,6 +1,6 @@
 import { BinaryOperator } from '../common/binary-operators';
 import { UnaryOperator, BuiltInFunctionName } from '../common/enums';
-import { Literal, FALSE, intLiteralOf } from '../common/literals';
+import { Literal, FALSE, TRUE, intLiteralOf } from '../common/literals';
 
 interface BaseHighIRExpression {
   readonly __type__: string;
@@ -165,6 +165,11 @@ type ConstructorArgumentObject<E extends BaseHighIRExpression | BaseHighIRStatem
 export const HIR_FALSE: HighIRLiteralExpression = {
   __type__: 'HighIRLiteralExpression',
   literal: FALSE,
+};
+
+export const HIR_TRUE: HighIRLiteralExpression = {
+  __type__: 'HighIRLiteralExpression',
+  literal: TRUE,
 };
 
 export const HIR_INT = (value: bigint): HighIRLiteralExpression => ({

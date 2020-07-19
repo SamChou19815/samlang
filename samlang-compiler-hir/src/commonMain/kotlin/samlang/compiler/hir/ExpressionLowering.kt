@@ -1,5 +1,6 @@
 package samlang.compiler.hir
 
+import samlang.ast.common.BinaryOperator
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
@@ -195,16 +196,70 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         return LoweringResult(statements = loweredStatements, expression = Variable(name = temporary))
     }
 
-    override fun visit(expression: Expression.Binary, context: Unit): LoweringResult {
-        val loweredStatements = mutableListOf<HighIrStatement>()
-        val e1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements)
-        val e2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements)
-        return Binary(
-            operator = expression.operator,
-            e1 = e1,
-            e2 = e2
-        ).asLoweringResult(statements = loweredStatements)
+    private fun shortCircuitBehaviorPreservingBoolExpressionLowering(expression: Expression): LoweringResult {
+        if (expression is Expression.Literal) {
+            val literal = expression.literal
+            if (literal is samlang.ast.common.Literal.BoolLiteral) {
+                return if (literal.value) HighIrExpression.TRUE.asLoweringResult() else HighIrExpression.FALSE.asLoweringResult()
+            }
+        }
+        if (expression !is Expression.Binary) {
+            return expression.lower()
+        }
+        val operator = expression.operator
+        val e1 = expression.e1
+        val e2 = expression.e2
+        return when (operator) {
+            BinaryOperator.AND -> {
+                val temp = allocateTemporaryVariable()
+                val e1Result = shortCircuitBehaviorPreservingBoolExpressionLowering(expression = e1)
+                val e2Result = shortCircuitBehaviorPreservingBoolExpressionLowering(expression = e2)
+                LoweringResult(
+                    statements = listOf(
+                        *e1Result.statements.toTypedArray(),
+                        IfElse(
+                            booleanExpression = e1Result.expression,
+                            s1 = listOf(
+                                *e2Result.statements.toTypedArray(),
+                                LetDefinition(name = temp, assignedExpression = e2Result.expression)
+                            ),
+                            s2 = listOf(LetDefinition(name = temp, assignedExpression = HighIrExpression.FALSE))
+                        )
+                    ),
+                    expression = Variable(name = temp)
+                )
+            }
+            BinaryOperator.OR -> {
+                val temp = allocateTemporaryVariable()
+                val e1Result = shortCircuitBehaviorPreservingBoolExpressionLowering(expression = e1)
+                val e2Result = shortCircuitBehaviorPreservingBoolExpressionLowering(expression = e2)
+                LoweringResult(
+                    statements = listOf(
+                        *e1Result.statements.toTypedArray(),
+                        IfElse(
+                            booleanExpression = e1Result.expression,
+                            s1 = listOf(LetDefinition(name = temp, assignedExpression = HighIrExpression.TRUE)),
+                            s2 = listOf(
+                                *e2Result.statements.toTypedArray(),
+                                LetDefinition(name = temp, assignedExpression = e2Result.expression)
+                            )
+                        )
+                    ),
+                    expression = Variable(name = temp)
+                )
+            }
+            else -> {
+                val loweredStatements = mutableListOf<HighIrStatement>()
+                val loweredE1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements)
+                val loweredE2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements)
+                Binary(operator = expression.operator, e1 = loweredE1, e2 = loweredE2)
+                    .asLoweringResult(statements = loweredStatements)
+            }
+        }
     }
+
+    override fun visit(expression: Expression.Binary, context: Unit): LoweringResult =
+        shortCircuitBehaviorPreservingBoolExpressionLowering(expression)
 
     override fun visit(expression: Expression.IfElse, context: Unit): LoweringResult {
         val loweredStatements = mutableListOf<HighIrStatement>()

@@ -6,6 +6,7 @@ import {
   HIR_VARIABLE,
   HIR_CLASS_MEMBER,
   HIR_FALSE,
+  HIR_TRUE,
   HIR_STRUCT_CONSTRUCTOR,
   HIR_INT,
   HIR_INDEX_ACCESS,
@@ -266,14 +267,72 @@ class HighIRExpressionLoweringManager {
     };
   }
 
+  private shortCircuitBehaviorPreservingBoolExpressionLowering(
+    expression: SamlangExpression
+  ): HighIRExpressionLoweringResult {
+    if (expression.__type__ === 'LiteralExpression' && expression.literal.type === 'BoolLiteral') {
+      return {
+        statements: [],
+        expression: expression.literal.value ? HIR_TRUE : HIR_FALSE,
+      };
+    }
+    if (expression.__type__ !== 'BinaryExpression') {
+      return this.lower(expression);
+    }
+    const { operator, e1, e2 } = expression;
+    switch (operator.symbol) {
+      case '&&': {
+        const temp = this.allocateTemporaryVariable();
+        const e1Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e1);
+        const e2Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e2);
+        return {
+          statements: [
+            ...e1Result.statements,
+            HIR_IF_ELSE({
+              booleanExpression: e1Result.expression,
+              s1: [
+                ...e2Result.statements,
+                HIR_LET({ name: temp, assignedExpression: e2Result.expression }),
+              ],
+              s2: [HIR_LET({ name: temp, assignedExpression: HIR_FALSE })],
+            }),
+          ],
+          expression: HIR_VARIABLE(temp),
+        };
+      }
+      case '||': {
+        const temp = this.allocateTemporaryVariable();
+        const e1Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e1);
+        const e2Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e2);
+        return {
+          statements: [
+            ...e1Result.statements,
+            HIR_IF_ELSE({
+              booleanExpression: e1Result.expression,
+              s1: [HIR_LET({ name: temp, assignedExpression: HIR_TRUE })],
+              s2: [
+                ...e2Result.statements,
+                HIR_LET({ name: temp, assignedExpression: e2Result.expression }),
+              ],
+            }),
+          ],
+          expression: HIR_VARIABLE(temp),
+        };
+      }
+      default: {
+        const loweredStatements: HighIRStatement[] = [];
+        const loweredE1 = this.loweredAndAddStatements(expression.e1, loweredStatements);
+        const loweredE2 = this.loweredAndAddStatements(expression.e2, loweredStatements);
+        return {
+          statements: loweredStatements,
+          expression: HIR_BINARY({ operator: expression.operator, e1: loweredE1, e2: loweredE2 }),
+        };
+      }
+    }
+  }
+
   private lowerBinary(expression: BinaryExpression): HighIRExpressionLoweringResult {
-    const loweredStatements: HighIRStatement[] = [];
-    const e1 = this.loweredAndAddStatements(expression.e1, loweredStatements);
-    const e2 = this.loweredAndAddStatements(expression.e2, loweredStatements);
-    return {
-      statements: loweredStatements,
-      expression: HIR_BINARY({ operator: expression.operator, e1, e2 }),
-    };
+    return this.shortCircuitBehaviorPreservingBoolExpressionLowering(expression);
   }
 
   private lowerIfElse(expression: IfElseExpression): HighIRExpressionLoweringResult {
