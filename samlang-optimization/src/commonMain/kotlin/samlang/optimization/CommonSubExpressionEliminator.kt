@@ -2,7 +2,7 @@ package samlang.optimization
 
 import samlang.analysis.AvailableExpressionAnalysis
 import samlang.analysis.AvailableExpressionAnalysis.ExprInfo
-import samlang.ast.mir.ContainsTempDetector
+import samlang.analysis.ContainsTempDetector
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.IMMUTABLE_MEM
 import samlang.ast.mir.MidIrExpression.Constant

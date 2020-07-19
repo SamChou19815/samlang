@@ -1,6 +1,5 @@
 package samlang.analysis
 
-import samlang.ast.mir.ContainsTempDetector
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrLoweredStatementVisitor
