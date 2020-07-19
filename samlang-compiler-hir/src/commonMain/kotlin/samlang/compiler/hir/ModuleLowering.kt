@@ -4,7 +4,6 @@ import samlang.ast.common.IrNameEncoder
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
-import samlang.ast.hir.HighIrClassDefinition
 import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrModule
 import samlang.ast.hir.HighIrStatement
@@ -22,17 +21,11 @@ fun compileSources(sources: Sources<Module>): Sources<HighIrModule> =
 fun compileModule(moduleReference: ModuleReference, module: Module): HighIrModule =
     HighIrModule(
         imports = module.imports,
-        classDefinitions = module.classDefinitions.map { compileClassDefinition(moduleReference, it) })
-
-private fun compileClassDefinition(
-    moduleReference: ModuleReference,
-    classDefinition: ClassDefinition
-): HighIrClassDefinition =
-    HighIrClassDefinition(
-        className = classDefinition.name,
-        members = classDefinition.members.map {
-            compileFunction(moduleReference = moduleReference, className = classDefinition.name, classMember = it)
-        }
+        functions = module.classDefinitions.map { classDefinition ->
+            classDefinition.members.map {
+                compileFunction(moduleReference = moduleReference, className = classDefinition.name, classMember = it)
+            }
+        }.flatten()
     )
 
 /** Exposed for testing. */

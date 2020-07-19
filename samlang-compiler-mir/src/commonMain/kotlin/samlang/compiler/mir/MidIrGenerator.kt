@@ -25,11 +25,7 @@ class MidIrGenerator private constructor(
     private val functions: MutableList<MidIrFunction> = mutableListOf()
 
     init {
-        module.classDefinitions.forEach { classDefinition ->
-            classDefinition.members.forEach { member ->
-                translateAndAdd(encodedFunctionName = member.name, function = member)
-            }
-        }
+        module.functions.forEach { translateAndAdd(encodedFunctionName = it.name, function = it) }
     }
 
     private fun translateAndAdd(encodedFunctionName: String, function: HighIrFunction) {

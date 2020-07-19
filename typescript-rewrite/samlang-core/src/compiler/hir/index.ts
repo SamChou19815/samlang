@@ -28,10 +28,11 @@ const compileSamlangModule = (
   { imports, classes }: SamlangModule
 ): HighIRModule => ({
   imports,
-  classDefinitions: classes.map(({ name: className, members }) => ({
-    className,
-    members: members.map((it) => compileFunction(moduleReference, className, it)),
-  })),
+  functions: classes
+    .map(({ name: className, members }) =>
+      members.map((it) => compileFunction(moduleReference, className, it))
+    )
+    .flat(),
 });
 
 const compileSamlangSourcesToHighIRSources = (

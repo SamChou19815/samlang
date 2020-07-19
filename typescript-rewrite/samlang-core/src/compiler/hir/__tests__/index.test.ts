@@ -61,23 +61,18 @@ it('HIR compiler integration test', () => {
 
   const expectedCompiledModule: HighIRModule = {
     imports: [],
-    classDefinitions: [
+    functions: [
       {
-        className: 'Class1',
-        members: [
-          {
-            name: '_module__class_Class1_function_foo',
-            hasReturn: true,
-            parameters: ['a'],
-            body: [HIR_RETURN(IR_THIS)],
-          },
-          {
-            name: '_module__class_Class1_function_foo',
-            hasReturn: false,
-            parameters: ['this', 'a'],
-            body: [],
-          },
-        ],
+        name: '_module__class_Class1_function_foo',
+        hasReturn: true,
+        parameters: ['a'],
+        body: [HIR_RETURN(IR_THIS)],
+      },
+      {
+        name: '_module__class_Class1_function_foo',
+        hasReturn: false,
+        parameters: ['this', 'a'],
+        body: [],
       },
     ],
   };
