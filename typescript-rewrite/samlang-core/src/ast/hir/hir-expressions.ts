@@ -90,7 +90,6 @@ export interface HighIRThrowStatement extends BaseHighIRStatement {
 
 export interface HighIRFunctionCallStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRFunctionCallStatement';
-  readonly className: string;
   readonly functionName: string;
   readonly functionArguments: readonly HighIRExpression[];
   readonly returnCollector: string;
@@ -266,13 +265,11 @@ export const HIR_THROW = (expression: HighIRExpression): HighIRThrowStatement =>
 });
 
 export const HIR_FUNCTION_CALL = ({
-  className,
   functionName,
   functionArguments,
   returnCollector,
 }: ConstructorArgumentObject<HighIRFunctionCallStatement>): HighIRFunctionCallStatement => ({
   __type__: 'HighIRFunctionCallStatement',
-  className,
   functionName,
   functionArguments,
   returnCollector,

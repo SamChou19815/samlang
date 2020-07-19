@@ -26,14 +26,8 @@ class MidIrGenerator private constructor(
 
     init {
         module.classDefinitions.forEach { classDefinition ->
-            val className = classDefinition.className
             classDefinition.members.forEach { member ->
-                val encodedFunctionName = IrNameEncoder.encodeFunctionName(
-                    moduleReference = moduleReference,
-                    className = className,
-                    functionName = member.name
-                )
-                translateAndAdd(encodedFunctionName = encodedFunctionName, function = member)
+                translateAndAdd(encodedFunctionName = member.name, function = member)
             }
         }
     }

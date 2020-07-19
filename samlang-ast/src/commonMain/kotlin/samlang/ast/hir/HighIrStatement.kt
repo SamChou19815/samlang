@@ -12,7 +12,6 @@ sealed class HighIrStatement {
     }
 
     data class FunctionApplication(
-        val className: String,
         val functionName: String,
         val arguments: List<HighIrExpression>,
         val resultCollector: String

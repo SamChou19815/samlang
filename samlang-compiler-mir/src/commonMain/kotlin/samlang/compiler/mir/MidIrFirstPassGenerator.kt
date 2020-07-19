@@ -140,7 +140,7 @@ internal class MidIrFirstPassGenerator(
 
         override fun visit(statement: FunctionApplication): MidIrStatement =
             CALL_FUNCTION(
-                functionName = getFunctionName(className = statement.className, functionName = statement.functionName),
+                functionName = statement.functionName,
                 arguments = statement.arguments.map { translate(expression = it) },
                 returnCollector = allocator.allocateTemp(variableName = statement.resultCollector)
             )

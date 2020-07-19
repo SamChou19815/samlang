@@ -253,8 +253,7 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          className: 'Foo',
-          functionName: 'bar',
+          functionName: '_module__class_Foo_function_bar',
           functionArguments: [IR_THIS, IR_THIS],
           returnCollector: '_LOWERING_0',
         }),
@@ -278,8 +277,7 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          className: DUMMY_IDENTIFIER_TYPE.identifier,
-          functionName: 'fooBar',
+          functionName: '_module__class_Dummy_function_fooBar',
           functionArguments: [IR_THIS, IR_THIS, IR_THIS],
           returnCollector: '_LOWERING_0',
         }),

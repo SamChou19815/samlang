@@ -1,6 +1,7 @@
 package samlang.compiler.hir
 
 import samlang.ast.common.BinaryOperator
+import samlang.ast.common.IrNameEncoder
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrExpression
@@ -178,14 +179,20 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
         val temporary = allocateTemporaryVariable()
         loweredStatements += when (loweredFunctionExpression) {
             is ClassMember -> FunctionApplication(
-                className = loweredFunctionExpression.className,
-                functionName = loweredFunctionExpression.memberName,
+                functionName = IrNameEncoder.encodeFunctionName(
+                    moduleReference = moduleReference,
+                    className = loweredFunctionExpression.className,
+                    functionName = loweredFunctionExpression.memberName
+                ),
                 arguments = loweredArguments,
                 resultCollector = temporary
             )
             is MethodAccess -> FunctionApplication(
-                className = loweredFunctionExpression.className,
-                functionName = loweredFunctionExpression.methodName,
+                functionName = IrNameEncoder.encodeFunctionName(
+                    moduleReference = moduleReference,
+                    className = loweredFunctionExpression.className,
+                    functionName = loweredFunctionExpression.methodName
+                ),
                 arguments = listOf(loweredFunctionExpression.expression, *loweredArguments.toTypedArray()),
                 resultCollector = temporary
             )

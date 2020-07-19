@@ -1,4 +1,5 @@
 import type ModuleReference from '../../ast/common/module-reference';
+import { encodeFunctionNameGlobally } from '../../ast/common/name-encoder';
 import type { Sources } from '../../ast/common/structs';
 import { HIR_RETURN } from '../../ast/hir/hir-expressions';
 import type { HighIRFunction, HighIRModule } from '../../ast/hir/hir-toplevel';
@@ -8,8 +9,10 @@ import lowerSamlangExpression from './hir-expression-lowering';
 
 const compileFunction = (
   moduleReference: ModuleReference,
+  className: string,
   classMember: ClassMemberDefinition
 ): HighIRFunction => {
+  const encodedName = encodeFunctionNameGlobally(moduleReference, className, classMember.name);
   const bodyLoweringResult = lowerSamlangExpression(moduleReference, classMember.body);
   const parameters = classMember.parameters.map(({ name }) => name);
   const parametersWithThis = classMember.isMethod ? ['this', ...parameters] : parameters;
@@ -17,7 +20,7 @@ const compileFunction = (
   const returnType = classMember.type.returnType;
   const hasReturn = returnType.type !== 'PrimitiveType' || returnType.name !== 'unit';
   const body = hasReturn ? [...statements, HIR_RETURN(bodyLoweringResult.expression)] : statements;
-  return { name: classMember.name, parameters: parametersWithThis, hasReturn, body };
+  return { name: encodedName, parameters: parametersWithThis, hasReturn, body };
 };
 
 const compileSamlangModule = (
@@ -27,7 +30,7 @@ const compileSamlangModule = (
   imports,
   classDefinitions: classes.map(({ name: className, members }) => ({
     className,
-    members: members.map((it) => compileFunction(moduleReference, it)),
+    members: members.map((it) => compileFunction(moduleReference, className, it)),
   })),
 });
 

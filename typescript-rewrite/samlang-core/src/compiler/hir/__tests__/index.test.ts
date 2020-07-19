@@ -66,13 +66,13 @@ it('HIR compiler integration test', () => {
         className: 'Class1',
         members: [
           {
-            name: 'foo',
+            name: '_module__class_Class1_function_foo',
             hasReturn: true,
             parameters: ['a'],
             body: [HIR_RETURN(IR_THIS)],
           },
           {
-            name: 'foo',
+            name: '_module__class_Class1_function_foo',
             hasReturn: false,
             parameters: ['this', 'a'],
             body: [],

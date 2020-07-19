@@ -1,5 +1,6 @@
 package samlang.compiler.hir
 
+import samlang.ast.common.IrNameEncoder
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
@@ -29,12 +30,15 @@ private fun compileClassDefinition(
 ): HighIrClassDefinition =
     HighIrClassDefinition(
         className = classDefinition.name,
-        members = classDefinition.members.map { compileFunction(moduleReference = moduleReference, classMember = it) }
+        members = classDefinition.members.map {
+            compileFunction(moduleReference = moduleReference, className = classDefinition.name, classMember = it)
+        }
     )
 
 /** Exposed for testing. */
 internal fun compileFunction(
     moduleReference: ModuleReference,
+    className: String,
     classMember: ClassDefinition.MemberDefinition
 ): HighIrFunction {
     val bodyLoweringResult = lowerExpression(moduleReference = moduleReference, expression = classMember.body)
@@ -46,7 +50,7 @@ internal fun compileFunction(
         statements.plus(element = HighIrStatement.Return(expression = bodyLoweringResult.expression))
     }
     return HighIrFunction(
-        name = classMember.name,
+        name = IrNameEncoder.encodeFunctionName(moduleReference, className, classMember.name),
         parameters = if (classMember.isMethod) listOf("this", *parameters.toTypedArray()) else parameters,
         hasReturn = classMember.type.returnType != Type.unit,
         body = body

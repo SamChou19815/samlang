@@ -1,4 +1,5 @@
 import ModuleReference from '../../ast/common/module-reference';
+import { encodeFunctionNameGlobally } from '../../ast/common/name-encoder';
 import type { IdentifierType } from '../../ast/common/types';
 import {
   HighIRStatement,
@@ -240,16 +241,22 @@ class HighIRExpressionLoweringManager {
     switch (loweredFunctionExpression.__type__) {
       case 'HighIRClassMemberExpression':
         functionCall = HIR_FUNCTION_CALL({
-          className: loweredFunctionExpression.className,
-          functionName: loweredFunctionExpression.memberName,
+          functionName: encodeFunctionNameGlobally(
+            this.moduleReference,
+            loweredFunctionExpression.className,
+            loweredFunctionExpression.memberName
+          ),
           functionArguments: loweredArguments,
           returnCollector,
         });
         break;
       case 'HighIRMethodAccessExpression':
         functionCall = HIR_FUNCTION_CALL({
-          className: loweredFunctionExpression.className,
-          functionName: loweredFunctionExpression.methodName,
+          functionName: encodeFunctionNameGlobally(
+            this.moduleReference,
+            loweredFunctionExpression.className,
+            loweredFunctionExpression.methodName
+          ),
           functionArguments: [loweredFunctionExpression.expression, ...loweredArguments],
           returnCollector,
         });
