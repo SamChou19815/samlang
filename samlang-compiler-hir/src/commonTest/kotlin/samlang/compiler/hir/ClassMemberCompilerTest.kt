@@ -27,7 +27,7 @@ class ClassMemberCompilerTest {
                 nameRange = Range.DUMMY,
                 name = "foo",
                 typeParameters = emptyList(),
-                type = Type.FunctionType(argumentTypes = emptyList(), returnType = Type.unit),
+                type = Type.FunctionType(argumentTypes = emptyList(), returnType = Type.int),
                 parameters = emptyList(),
                 body = THIS
             ),
@@ -36,7 +36,7 @@ class ClassMemberCompilerTest {
                 isMethod = false,
                 name = "foo",
                 parameters = emptyList(),
-                hasReturn = false,
+                hasReturn = true,
                 body = listOf(HighIrStatement.Return(expression = IR_THIS))
             )
         )
@@ -52,7 +52,7 @@ class ClassMemberCompilerTest {
                 nameRange = Range.DUMMY,
                 name = "bar",
                 typeParameters = emptyList(),
-                type = Type.FunctionType(argumentTypes = emptyList(), returnType = Type.unit),
+                type = Type.FunctionType(argumentTypes = emptyList(), returnType = Type.int),
                 parameters = emptyList(),
                 body = THIS
             ),
@@ -61,7 +61,7 @@ class ClassMemberCompilerTest {
                 isMethod = false,
                 name = "bar",
                 parameters = emptyList(),
-                hasReturn = false,
+                hasReturn = true,
                 body = listOf(HighIrStatement.Return(expression = IR_THIS))
             )
         )
@@ -97,7 +97,7 @@ class ClassMemberCompilerTest {
     }
 
     companion object {
-        private val THIS: Expression = Expression.This(range = dummyRange, type = Type.unit)
+        private val THIS: Expression = Expression.This(range = dummyRange, type = Type.int)
         private val IR_THIS: HighIrExpression = HighIrExpression.Variable(name = "this")
     }
 }

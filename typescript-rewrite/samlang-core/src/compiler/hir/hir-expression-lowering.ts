@@ -32,7 +32,7 @@ import type {
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
-  readonly expression?: HighIRExpression;
+  readonly expression: HighIRExpression;
 };
 
 class HighIRExpressionLoweringManager {
@@ -47,7 +47,7 @@ class HighIRExpressionLoweringManager {
   private loweredAndAddStatements(
     expression: SamlangExpression,
     statements: HighIRStatement[]
-  ): HighIRExpression | undefined {
+  ): HighIRExpression {
     const result = this.lower(expression);
     statements.push(...result.statements);
     return result.expression;
@@ -104,8 +104,8 @@ class HighIRExpressionLoweringManager {
     expression: TupleConstructorExpression
   ): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
-    const loweredExpressions = expression.expressions.map(
-      (subExpression) => this.loweredAndAddStatements(subExpression, loweredStatements) ?? HIR_FALSE
+    const loweredExpressions = expression.expressions.map((subExpression) =>
+      this.loweredAndAddStatements(subExpression, loweredStatements)
     );
     return {
       statements: loweredStatements,
@@ -117,18 +117,17 @@ class HighIRExpressionLoweringManager {
     expression: ObjectConstructorExpression
   ): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
-    const loweredFields = expression.fieldDeclarations.map(
-      (fieldDeclaration) =>
-        this.loweredAndAddStatements(
-          fieldDeclaration.expression ?? {
-            __type__: 'VariableExpression',
-            range: fieldDeclaration.range,
-            precedence: 1,
-            type: fieldDeclaration.type,
-            name: fieldDeclaration.name,
-          },
-          loweredStatements
-        ) ?? HIR_FALSE
+    const loweredFields = expression.fieldDeclarations.map((fieldDeclaration) =>
+      this.loweredAndAddStatements(
+        fieldDeclaration.expression ?? {
+          __type__: 'VariableExpression',
+          range: fieldDeclaration.range,
+          precedence: 1,
+          type: fieldDeclaration.type,
+          name: fieldDeclaration.name,
+        },
+        loweredStatements
+      )
     );
     return {
       statements: loweredStatements,
@@ -142,33 +141,24 @@ class HighIRExpressionLoweringManager {
     const result = this.lower(expression.data);
     return {
       statements: result.statements,
-      expression: HIR_STRUCT_CONSTRUCTOR([
-        HIR_INT(BigInt(expression.tagOrder)),
-        result.expression ?? HIR_FALSE,
-      ]),
+      expression: HIR_STRUCT_CONSTRUCTOR([HIR_INT(BigInt(expression.tagOrder)), result.expression]),
     };
   }
 
   private lowerFieldAccess(expression: FieldAccessExpression): HighIRExpressionLoweringResult {
     const result = this.lower(expression.expression);
-    const loweredExpression = result.expression;
-    // istanbul ignore next
-    if (loweredExpression == null) throw new Error();
     return {
       statements: result.statements,
-      expression: HIR_INDEX_ACCESS({ expression: loweredExpression, index: expression.fieldOrder }),
+      expression: HIR_INDEX_ACCESS({ expression: result.expression, index: expression.fieldOrder }),
     };
   }
 
   private lowerMethodAccess(expression: MethodAccessExpression): HighIRExpressionLoweringResult {
     const result = this.lower(expression.expression);
-    const loweredExpression = result.expression;
-    // istanbul ignore next
-    if (loweredExpression == null) throw new Error();
     return {
       statements: result.statements,
       expression: HIR_METHOD_ACCESS({
-        expression: loweredExpression,
+        expression: result.expression,
         className: (expression.expression.type as IdentifierType).identifier,
         methodName: expression.methodName,
       }),
@@ -177,12 +167,9 @@ class HighIRExpressionLoweringManager {
 
   private lowerUnary(expression: UnaryExpression): HighIRExpressionLoweringResult {
     const result = this.lower(expression.expression);
-    const loweredExpression = result.expression;
-    // istanbul ignore next
-    if (loweredExpression == null) throw new Error();
     return {
       statements: result.statements,
-      expression: HIR_UNARY({ operator: expression.operator, expression: loweredExpression }),
+      expression: HIR_UNARY({ operator: expression.operator, expression: result.expression }),
     };
   }
 

@@ -31,7 +31,7 @@ class ExpressionLoweringTest {
 
     private fun assertCorrectlyLowered(expression: Expression, expectedStatements: List<HighIrStatement>) {
         assertEquals(
-            expected = LoweringResult(statements = expectedStatements, expression = null),
+            expected = LoweringResult(statements = expectedStatements, expression = HighIrExpression.FALSE),
             actual = lowerExpression(expression = expression)
         )
     }
@@ -268,131 +268,7 @@ class ExpressionLoweringTest {
     }
 
     @Test
-    fun ifElseLoweringWorks1() {
-        assertCorrectlyLowered(
-            expression = Expression.IfElse(
-                range = dummyRange,
-                type = unit,
-                boolExpression = THIS,
-                e1 = Expression.StatementBlockExpression(
-                    range = dummyRange,
-                    type = unit,
-                    block = StatementBlock(
-                        range = dummyRange,
-                        statements = listOf(
-                            Statement.Val(
-                                range = dummyRange,
-                                pattern = Pattern.WildCardPattern(range = dummyRange),
-                                typeAnnotation = unit,
-                                assignedExpression = THIS
-                            )
-                        ),
-                        expression = null
-                    )
-                ),
-                e2 = Expression.StatementBlockExpression(
-                    range = dummyRange,
-                    type = unit,
-                    block = StatementBlock(
-                        range = dummyRange,
-                        statements = listOf(
-                            Statement.Val(
-                                range = dummyRange,
-                                pattern = Pattern.WildCardPattern(range = dummyRange),
-                                typeAnnotation = unit,
-                                assignedExpression = THIS
-                            )
-                        ),
-                        expression = null
-                    )
-                )
-            ),
-            expectedStatements = listOf(
-                HighIrStatement.IfElse(
-                    booleanExpression = IR_THIS,
-                    s1 = listOf(HighIrStatement.ExpressionAsStatement(expressionWithPotentialSideEffect = IR_THIS)),
-                    s2 = listOf(HighIrStatement.ExpressionAsStatement(expressionWithPotentialSideEffect = IR_THIS))
-                )
-            )
-        )
-    }
-
-    @Test
-    fun ifElseLoweringWorks2() {
-        assertCorrectlyLowered(
-            expression = Expression.IfElse(
-                range = dummyRange,
-                type = unit,
-                boolExpression = THIS,
-                e1 = Expression.StatementBlockExpression(
-                    range = dummyRange,
-                    type = unit,
-                    block = StatementBlock(
-                        range = dummyRange,
-                        statements = listOf(
-                            Statement.Val(
-                                range = dummyRange,
-                                pattern = Pattern.WildCardPattern(range = dummyRange),
-                                typeAnnotation = unit,
-                                assignedExpression = THIS
-                            )
-                        ),
-                        expression = null
-                    )
-                ),
-                e2 = Expression.StatementBlockExpression(
-                    range = dummyRange,
-                    type = unit,
-                    block = StatementBlock(range = dummyRange, statements = emptyList(), expression = null)
-                )
-            ),
-            expectedStatements = listOf(
-                HighIrStatement.IfElse(
-                    booleanExpression = IR_THIS,
-                    s1 = listOf(HighIrStatement.ExpressionAsStatement(expressionWithPotentialSideEffect = IR_THIS)),
-                    s2 = emptyList()
-                )
-            )
-        )
-    }
-
-    @Test
-    fun ifElseLoweringWorks3() {
-        assertCorrectlyLowered(
-            expression = Expression.IfElse(
-                range = dummyRange,
-                type = unit,
-                boolExpression = THIS,
-                e1 = Expression.Panic(range = dummyRange, type = unit, expression = THIS),
-                e2 = Expression.StatementBlockExpression(
-                    range = dummyRange,
-                    type = unit,
-                    block = StatementBlock(
-                        range = dummyRange,
-                        statements = listOf(
-                            Statement.Val(
-                                range = dummyRange,
-                                pattern = Pattern.WildCardPattern(range = dummyRange),
-                                typeAnnotation = unit,
-                                assignedExpression = THIS
-                            )
-                        ),
-                        expression = null
-                    )
-                )
-            ),
-            expectedStatements = listOf(
-                HighIrStatement.IfElse(
-                    booleanExpression = IR_THIS,
-                    s1 = listOf(HighIrStatement.Throw(expression = IR_THIS)),
-                    s2 = listOf(HighIrStatement.ExpressionAsStatement(expressionWithPotentialSideEffect = IR_THIS))
-                )
-            )
-        )
-    }
-
-    @Test
-    fun ifElseLoweringWorks4() {
+    fun ifElseLoweringWorks() {
         assertCorrectlyLowered(
             expression = Expression.IfElse(
                 range = dummyRange,
@@ -406,7 +282,13 @@ class ExpressionLoweringTest {
                     HighIrStatement.LetDeclaration(name = "_LOWERING_0"),
                     HighIrStatement.IfElse(
                         booleanExpression = IR_THIS,
-                        s1 = listOf(HighIrStatement.Throw(expression = IR_THIS)),
+                        s1 = listOf(
+                            HighIrStatement.Throw(expression = IR_THIS),
+                            HighIrStatement.VariableAssignment(
+                                name = "_LOWERING_0",
+                                assignedExpression = HighIrExpression.FALSE
+                            )
+                        ),
                         s2 = listOf(
                             HighIrStatement.VariableAssignment(name = "_LOWERING_0", assignedExpression = IR_THIS)
                         )

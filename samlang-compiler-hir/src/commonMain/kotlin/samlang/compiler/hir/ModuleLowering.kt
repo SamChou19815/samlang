@@ -26,8 +26,7 @@ private fun compileClassDefinition(classDefinition: ClassDefinition): HighIrClas
 internal fun compileFunction(classMember: ClassDefinition.MemberDefinition): HighIrFunction {
     val bodyLoweringResult = lowerExpression(expression = classMember.body)
     val statements = bodyLoweringResult.statements
-    val finalExpression = bodyLoweringResult.expression
-    val body = if (finalExpression == null) {
+    val body = if (classMember.body.type == Type.unit) {
         statements
     } else {
         val additionStatementForFinalExpression =
