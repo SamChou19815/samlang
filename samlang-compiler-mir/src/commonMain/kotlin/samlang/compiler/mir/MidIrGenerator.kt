@@ -61,8 +61,7 @@ class MidIrGenerator private constructor(
             argumentTemps = allocatedArgs,
             mainBodyStatements = mainBodyStatements,
             numberOfArguments = allocatedArgs.size,
-            hasReturn = function.hasReturn,
-            isPublic = function.isPublic
+            hasReturn = function.hasReturn
         )
         functions += generator1stPass.emittedLambdaFunctions.map { emittedLambdaFunction ->
             val processedLambdaBody: List<MidIrStatement> = cleanupAfterFirstPass(
@@ -139,8 +138,7 @@ class MidIrGenerator private constructor(
                     Return(returnedExpression = null)
                 ),
                 numberOfArguments = 0,
-                hasReturn = false,
-                isPublic = true
+                hasReturn = false
             )
     }
 }

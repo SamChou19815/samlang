@@ -42,9 +42,7 @@ class AssemblyGenerator private constructor(
 
     private fun generateInstructionsForFunction(function: MidIrFunction) {
         val functionName = function.functionName
-        if (function.isPublic) {
-            publicFunctions += functionName
-        }
+        publicFunctions += functionName
         val statementsToTile = getStatementsToTile(function)
         instructions.add(LABEL(functionName))
         val context = FunctionContext(

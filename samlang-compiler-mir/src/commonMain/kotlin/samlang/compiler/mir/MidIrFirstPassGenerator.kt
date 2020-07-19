@@ -399,8 +399,7 @@ internal class MidIrFirstPassGenerator(
                 argumentTemps = lambdaArguments,
                 mainBodyStatements = lambdaStatements,
                 numberOfArguments = lambdaArguments.size,
-                hasReturn = expression.hasReturn,
-                isPublic = false
+                hasReturn = expression.hasReturn
             )
             lambdaFunctionsCollector += lambdaFunction
             val closureTemporary = allocator.allocateTemp()

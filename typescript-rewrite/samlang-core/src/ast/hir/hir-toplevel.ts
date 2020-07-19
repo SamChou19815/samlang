@@ -2,7 +2,6 @@ import type { ModuleMembersImport } from '../common/structs';
 import type { HighIRStatement } from './hir-expressions';
 
 export interface HighIRFunction {
-  readonly isPublic: boolean;
   readonly name: string;
   readonly parameters: readonly string[];
   readonly hasReturn: boolean;

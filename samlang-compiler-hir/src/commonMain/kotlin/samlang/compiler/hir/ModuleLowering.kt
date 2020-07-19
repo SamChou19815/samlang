@@ -46,7 +46,6 @@ internal fun compileFunction(
         statements.plus(element = HighIrStatement.Return(expression = bodyLoweringResult.expression))
     }
     return HighIrFunction(
-        isPublic = classMember.isPublic,
         name = classMember.name,
         parameters = if (classMember.isMethod) listOf("this", *parameters.toTypedArray()) else parameters,
         hasReturn = classMember.type.returnType != Type.unit,

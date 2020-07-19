@@ -66,14 +66,12 @@ it('HIR compiler integration test', () => {
         className: 'Class1',
         members: [
           {
-            isPublic: true,
             name: 'foo',
             hasReturn: true,
             parameters: ['a'],
             body: [HIR_RETURN(IR_THIS)],
           },
           {
-            isPublic: true,
             name: 'foo',
             hasReturn: false,
             parameters: ['this', 'a'],

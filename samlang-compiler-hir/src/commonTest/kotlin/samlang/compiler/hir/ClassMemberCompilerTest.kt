@@ -36,7 +36,6 @@ class ClassMemberCompilerTest {
                 body = THIS
             ),
             highIrFunction = HighIrFunction(
-                isPublic = true,
                 name = "foo",
                 parameters = emptyList(),
                 hasReturn = true,
@@ -60,7 +59,6 @@ class ClassMemberCompilerTest {
                 body = THIS
             ),
             highIrFunction = HighIrFunction(
-                isPublic = false,
                 name = "bar",
                 parameters = emptyList(),
                 hasReturn = true,
@@ -88,7 +86,6 @@ class ClassMemberCompilerTest {
                 )
             ),
             highIrFunction = HighIrFunction(
-                isPublic = false,
                 name = "bar",
                 parameters = emptyList(),
                 hasReturn = false,

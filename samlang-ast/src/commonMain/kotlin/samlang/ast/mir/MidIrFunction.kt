@@ -7,8 +7,7 @@ data class MidIrFunction(
     val argumentTemps: List<Temporary>,
     val mainBodyStatements: List<MidIrStatement>,
     val numberOfArguments: Int,
-    val hasReturn: Boolean,
-    val isPublic: Boolean
+    val hasReturn: Boolean
 ) {
     override fun toString(): String {
         val bodyBuilder = StringBuilder()
