@@ -91,46 +91,6 @@ internal class MidIrFirstPassGenerator(
         .firstOrNull()
         ?: this.moduleReference
 
-    private fun cJumpTranslate(
-        expression: HighIrExpression,
-        trueLabel: String,
-        falseLabel: String,
-        statementCollector: MutableList<MidIrStatement>
-    ) {
-        if (expression is Literal) {
-            if ((expression.literal as samlang.ast.common.Literal.BoolLiteral).value) {
-                statementCollector.add(Jump(trueLabel))
-            } else {
-                statementCollector.add(Jump(falseLabel))
-            }
-            return
-        }
-        if (expression is Binary) {
-            val (e1, op, e2) = expression
-            val freshLabel = allocator.allocateLabel()
-            when (op) {
-                BinaryOperator.AND -> {
-                    cJumpTranslate(e1, freshLabel, falseLabel, statementCollector)
-                    statementCollector.add(Label(freshLabel))
-                    cJumpTranslate(e2, trueLabel, falseLabel, statementCollector)
-                    return
-                }
-                BinaryOperator.OR -> {
-                    cJumpTranslate(e1, trueLabel, freshLabel, statementCollector)
-                    statementCollector.add(Label(freshLabel))
-                    cJumpTranslate(e2, trueLabel, falseLabel, statementCollector)
-                    return
-                }
-                else -> Unit
-            }
-        }
-        statementCollector += CJUMP(
-            condition = translate(expression = expression),
-            label1 = trueLabel,
-            label2 = falseLabel
-        )
-    }
-
     private inner class StatementGenerator : HighIrStatementVisitor<MidIrStatement> {
         override fun visit(statement: Throw): MidIrStatement = CALL_FUNCTION(
             functionName = IrNameEncoder.nameOfThrow,
@@ -180,11 +140,10 @@ internal class MidIrFirstPassGenerator(
             val ifBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "TRUE_BRANCH")
             val elseBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "FALSE_BRANCH")
             val endLabel = allocator.allocateLabelWithAnnotation(annotation = "IF_ELSE_END")
-            cJumpTranslate(
-                expression = statement.booleanExpression,
-                trueLabel = ifBranchLabel,
-                falseLabel = elseBranchLabel,
-                statementCollector = sequence
+            sequence += CJUMP(
+                condition = translate(expression = statement.booleanExpression),
+                label1 = ifBranchLabel,
+                label2 = elseBranchLabel
             )
             sequence += Label(name = ifBranchLabel)
             sequence += statement.s1.map { translate(statement = it) }
