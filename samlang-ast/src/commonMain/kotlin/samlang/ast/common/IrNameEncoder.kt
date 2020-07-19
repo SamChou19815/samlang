@@ -1,8 +1,6 @@
-package samlang.ast.mir
+package samlang.ast.common
 
-import samlang.ast.common.ModuleReference
-
-object MidIrNameEncoder {
+object IrNameEncoder {
     val nameOfThrow: String = encodeBuiltinName(name = "throw")
     val nameOfMalloc: String = encodeBuiltinName(name = "malloc")
     val nameOfStringConcat: String = encodeBuiltinName(name = "stringConcat")

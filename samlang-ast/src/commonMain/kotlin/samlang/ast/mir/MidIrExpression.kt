@@ -1,5 +1,7 @@
 package samlang.ast.mir
 
+import samlang.ast.common.IrNameEncoder
+
 /**
  * A collection of all IR expressions.
  *
@@ -220,6 +222,6 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
             Call(functionExpr = functionExpr, arguments = args)
 
         fun MALLOC(sizeExpr: MidIrExpression): Call =
-            Call(functionExpr = Name(name = MidIrNameEncoder.nameOfMalloc), arguments = listOf(sizeExpr))
+            Call(functionExpr = Name(name = IrNameEncoder.nameOfMalloc), arguments = listOf(sizeExpr))
     }
 }

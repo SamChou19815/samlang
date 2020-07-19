@@ -4,8 +4,8 @@ import samlang.analysis.ControlFlowGraph
 import samlang.analysis.UsedNameAnalysis
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.JumpLabel
+import samlang.ast.common.IrNameEncoder
 import samlang.ast.mir.MidIrCompilationUnit
-import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.ConditionalJumpFallThrough
 import samlang.ast.mir.MidIrStatement.Jump
@@ -19,7 +19,7 @@ object SimpleOptimizations {
         val usedGlobals = irCompilationUnit.globalVariables.filter { it.name in usedNames }
         val usedFunctions = irCompilationUnit.functions.filter { function ->
             val name = function.functionName
-            name == MidIrNameEncoder.compiledProgramMain || name in usedNames
+            name == IrNameEncoder.compiledProgramMain || name in usedNames
         }
         return MidIrCompilationUnit(globalVariables = usedGlobals, functions = usedFunctions)
     }

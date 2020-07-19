@@ -1,11 +1,11 @@
 package samlang.interpreter
 
+import samlang.ast.common.IrNameEncoder
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
-import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 
@@ -16,7 +16,7 @@ import samlang.ast.mir.MidIrStatement
  */
 fun interpretCompilationUnit(compilationUnit: MidIrCompilationUnit): String {
     val environment = setupEnvironment(compilationUnit = compilationUnit)
-    val function = environment.functions[MidIrNameEncoder.compiledProgramMain] ?: error(message = "Bad function.")
+    val function = environment.functions[IrNameEncoder.compiledProgramMain] ?: error(message = "Bad function.")
     interpretFunction(irFunction = function, environment = environment, arguments = emptyList())
     return environment.printed.toString()
 }
@@ -109,26 +109,26 @@ private class MidIrStatementInterpreter(
         val functionName = if (functionExpression is MidIrExpression.Name) {
             val functionName = functionExpression.name
             val result = when (functionName) {
-                MidIrNameEncoder.nameOfMalloc -> {
+                IrNameEncoder.nameOfMalloc -> {
                     require(value = arguments.size == 1)
                     val size = arguments[0]
                     val start = environment.heapPointer
                     environment.heapPointer += size
                     start
                 }
-                MidIrNameEncoder.nameOfThrow -> {
+                IrNameEncoder.nameOfThrow -> {
                     require(value = arguments.size == 1)
                     val argument = arguments[0]
                     val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
                     throw PanicException(reason = string)
                 }
-                MidIrNameEncoder.nameOfStringToInt -> {
+                IrNameEncoder.nameOfStringToInt -> {
                     require(value = arguments.size == 1)
                     val argument = arguments[0]
                     val string = environment.strings[argument] ?: error(message = "Bad string at $argument")
                     string.toLongOrNull() ?: throw PanicException(reason = "Bad string: $string")
                 }
-                MidIrNameEncoder.nameOfIntToString -> {
+                IrNameEncoder.nameOfIntToString -> {
                     require(value = arguments.size == 1)
                     val stringForm = arguments[0].toString()
                     val location = environment.heapPointer
@@ -136,7 +136,7 @@ private class MidIrStatementInterpreter(
                     environment.strings[location] = stringForm
                     location
                 }
-                MidIrNameEncoder.nameOfStringConcat -> {
+                IrNameEncoder.nameOfStringConcat -> {
                     require(value = arguments.size == 2)
                     val string1 = environment.strings[arguments[0]] ?: error(message = "Bad string at ${arguments[0]}")
                     val string2 = environment.strings[arguments[1]] ?: error(message = "Bad string at ${arguments[1]}")
@@ -145,7 +145,7 @@ private class MidIrStatementInterpreter(
                     environment.strings[location] = string1 + string2
                     location
                 }
-                MidIrNameEncoder.nameOfPrintln -> {
+                IrNameEncoder.nameOfPrintln -> {
                     require(value = arguments.size == 1)
                     val argument = arguments[0]
                     val string = environment.strings[argument] ?: error(message = "Bad string at $argument")

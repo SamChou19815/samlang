@@ -3,6 +3,7 @@ package samlang.compiler.mir
 import samlang.ast.common.BinaryOperator
 import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.GlobalVariable
+import samlang.ast.common.IrNameEncoder
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
@@ -44,7 +45,6 @@ import samlang.ast.mir.MidIrExpression.Companion.SUB
 import samlang.ast.mir.MidIrExpression.Companion.XOR
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
 import samlang.ast.mir.MidIrFunction
-import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
@@ -77,7 +77,7 @@ internal class MidIrFirstPassGenerator(
         expression.accept(visitor = expressionGenerator)
 
     private fun getFunctionName(className: String, functionName: String): String =
-        MidIrNameEncoder.encodeFunctionName(
+        IrNameEncoder.encodeFunctionName(
             moduleReference = getModuleOfClass(className = className),
             className = className,
             functionName = functionName
@@ -133,7 +133,7 @@ internal class MidIrFirstPassGenerator(
 
     private inner class StatementGenerator : HighIrStatementVisitor<MidIrStatement> {
         override fun visit(statement: Throw): MidIrStatement = CALL_FUNCTION(
-            functionName = MidIrNameEncoder.nameOfThrow,
+            functionName = IrNameEncoder.nameOfThrow,
             arguments = listOf(translate(expression = statement.expression)),
             returnCollector = null
         )
@@ -330,9 +330,9 @@ internal class MidIrFirstPassGenerator(
         override fun visit(expression: BuiltInFunctionApplication): MidIrExpression = CALL(
             functionExpr = NAME(
                 name = when (expression.functionName) {
-                    BuiltInFunctionName.STRING_TO_INT -> MidIrNameEncoder.nameOfStringToInt
-                    BuiltInFunctionName.INT_TO_STRING -> MidIrNameEncoder.nameOfIntToString
-                    BuiltInFunctionName.PRINTLN -> MidIrNameEncoder.nameOfPrintln
+                    BuiltInFunctionName.STRING_TO_INT -> IrNameEncoder.nameOfStringToInt
+                    BuiltInFunctionName.INT_TO_STRING -> IrNameEncoder.nameOfIntToString
+                    BuiltInFunctionName.PRINTLN -> IrNameEncoder.nameOfPrintln
                 }
             ),
             args = listOf(translate(expression = expression.argument))
@@ -355,7 +355,7 @@ internal class MidIrFirstPassGenerator(
                 BinaryOperator.OR -> MidIrOperator.OR
                 BinaryOperator.CONCAT -> {
                     return CALL(
-                        functionExpr = NAME(MidIrNameEncoder.nameOfStringConcat),
+                        functionExpr = NAME(IrNameEncoder.nameOfStringConcat),
                         args = listOf(translate(expression.e1), translate(expression.e2))
                     )
                 }

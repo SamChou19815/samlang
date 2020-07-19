@@ -1,6 +1,7 @@
 package samlang.compiler.mir
 
 import samlang.ast.common.GlobalVariable
+import samlang.ast.common.IrNameEncoder
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.ast.hir.HighIrFunction
@@ -8,7 +9,6 @@ import samlang.ast.hir.HighIrModule
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrFunction
-import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
 import samlang.ast.mir.MidIrStatement.Return
@@ -28,7 +28,7 @@ class MidIrGenerator private constructor(
         module.classDefinitions.forEach { classDefinition ->
             val className = classDefinition.className
             classDefinition.members.forEach { member ->
-                val encodedFunctionName = MidIrNameEncoder.encodeFunctionName(
+                val encodedFunctionName = IrNameEncoder.encodeFunctionName(
                     moduleReference = moduleReference,
                     className = className,
                     functionName = member.name
@@ -132,11 +132,11 @@ class MidIrGenerator private constructor(
 
         private fun getCompiledProgramMainFunction(entryModuleReference: ModuleReference): MidIrFunction =
             MidIrFunction(
-                functionName = MidIrNameEncoder.compiledProgramMain,
+                functionName = IrNameEncoder.compiledProgramMain,
                 argumentTemps = emptyList(),
                 mainBodyStatements = listOf(
                     CALL_FUNCTION(
-                        functionName = MidIrNameEncoder.encodeMainFunctionName(moduleReference = entryModuleReference),
+                        functionName = IrNameEncoder.encodeMainFunctionName(moduleReference = entryModuleReference),
                         arguments = emptyList(),
                         returnCollector = null
                     ),

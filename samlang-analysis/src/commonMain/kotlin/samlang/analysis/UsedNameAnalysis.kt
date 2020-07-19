@@ -1,11 +1,11 @@
 package samlang.analysis
 
+import samlang.ast.common.IrNameEncoder
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
-import samlang.ast.mir.MidIrNameEncoder
 import samlang.ast.mir.MidIrStatement
 
 /** Find all actually called functions to help perform dead function elimination. */
@@ -16,7 +16,7 @@ object UsedNameAnalysis {
         val (_, functions) = irCompilationUnit
         val usedFunctionMap = functions.map { it.functionName to getOtherFunctionsUsedBy(function = it) }.toMap()
         val queue = ArrayDeque<String>()
-        queue += MidIrNameEncoder.compiledProgramMain
+        queue += IrNameEncoder.compiledProgramMain
         while (queue.isNotEmpty()) {
             val functionName = queue.removeFirst()
             val usedByThisFunction = usedFunctionMap[functionName] ?: continue

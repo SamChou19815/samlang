@@ -37,7 +37,7 @@ import samlang.ast.asm.AssemblyInstruction.ShiftType
 import samlang.ast.asm.AssemblyInstructionVisitor
 import samlang.ast.asm.AssemblyProgram
 import samlang.ast.asm.RegOrMem
-import samlang.ast.mir.MidIrNameEncoder
+import samlang.ast.common.IrNameEncoder
 
 @ExperimentalStdlibApi
 class AssemblyInterpreter(program: AssemblyProgram) {
@@ -89,7 +89,7 @@ class AssemblyInterpreter(program: AssemblyProgram) {
             }
         }
         registers[RSP.id] = 0x780000000L // set stack pointer
-        instructionPointer = labelInstructionNumberMapping[MidIrNameEncoder.compiledProgramMain]!!
+        instructionPointer = labelInstructionNumberMapping[IrNameEncoder.compiledProgramMain]!!
         currentHeapEndPointer = globalVarsTotalSize.toInt()
         printCollector = StringBuilder()
         visitor = InterpreterVisitor()
@@ -337,12 +337,12 @@ class AssemblyInterpreter(program: AssemblyProgram) {
                 val (_, functionName) = functionExpr
                 if (functionName != null) {
                     when (functionName) {
-                        MidIrNameEncoder.nameOfPrintln -> {
+                        IrNameEncoder.nameOfPrintln -> {
                             val argument = getValue(arg = RDI)
                             printCollector.append(readArray(argument)).append('\n')
                             return
                         }
-                        MidIrNameEncoder.nameOfIntToString -> {
+                        IrNameEncoder.nameOfIntToString -> {
                             val argument = getValue(arg = RDI)
                             val resultArray = argument.toString().toCharArray().map { it.toLong() }.toLongArray()
                             val memStartingPointer = calloc(resultArray.size * 8 + 8.toLong())
@@ -359,13 +359,13 @@ class AssemblyInterpreter(program: AssemblyProgram) {
                             setValue(RAX, unparsedStringStartingPointer)
                             return
                         }
-                        MidIrNameEncoder.nameOfStringToInt -> {
+                        IrNameEncoder.nameOfStringToInt -> {
                             val strToParse = readArray(getValue(RDI))
                             val value = strToParse.toLongOrNull() ?: throw PanicException("Bad string: $strToParse")
                             setValue(RAX, value)
                             return
                         }
-                        MidIrNameEncoder.nameOfStringConcat -> {
+                        IrNameEncoder.nameOfStringConcat -> {
                             val concatString = (readArray(getValue(RDI)) + readArray(getValue(RSI))).toCharArray()
                             val memStartingPointer = calloc(concatString.size * 8 + 8.toLong())
                             setMem(memStartingPointer, concatString.size.toLong())
@@ -376,7 +376,7 @@ class AssemblyInterpreter(program: AssemblyProgram) {
                             setValue(RAX, stringStartPointer)
                             return
                         }
-                        MidIrNameEncoder.nameOfMalloc -> {
+                        IrNameEncoder.nameOfMalloc -> {
                             setValue(RAX, calloc(getValue(RDI)))
                             return
                         }
