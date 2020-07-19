@@ -203,12 +203,19 @@ class HighIRExpressionLoweringManager {
       expression.argumentExpression,
       loweredStatements
     );
+    const functionCall = HIR_BUILTIN_FUNCTION_CALL({
+      functionName: expression.functionName,
+      functionArgument: loweredArgument,
+    });
+    if (expression.type.type !== 'PrimitiveType' || expression.type.name !== 'unit') {
+      return {
+        statements: loweredStatements,
+        expression: functionCall,
+      };
+    }
     return {
-      statements: loweredStatements,
-      expression: HIR_BUILTIN_FUNCTION_CALL({
-        functionName: expression.functionName,
-        functionArgument: loweredArgument,
-      }),
+      statements: [...loweredStatements, HIR_EXPRESSION_AS_STATEMENT(functionCall)],
+      expression: HIR_FALSE,
     };
   }
 
@@ -245,9 +252,15 @@ class HighIRExpressionLoweringManager {
         });
         break;
     }
+    if (expression.type.type !== 'PrimitiveType' || expression.type.name !== 'unit') {
+      return {
+        statements: loweredStatements,
+        expression: functionCall,
+      };
+    }
     return {
-      statements: loweredStatements,
-      expression: functionCall,
+      statements: [...loweredStatements, HIR_EXPRESSION_AS_STATEMENT(functionCall)],
+      expression: HIR_FALSE,
     };
   }
 
@@ -409,7 +422,7 @@ class HighIRExpressionLoweringManager {
       }
     });
     if (finalExpression == null) {
-      return { statements: [], expression: HIR_FALSE };
+      return { statements: loweredStatements, expression: HIR_FALSE };
     }
     const loweredFinalExpression = this.loweredAndAddStatements(finalExpression, loweredStatements);
     return { statements: loweredStatements, expression: loweredFinalExpression };
