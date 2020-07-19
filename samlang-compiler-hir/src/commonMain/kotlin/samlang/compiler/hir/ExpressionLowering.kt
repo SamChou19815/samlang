@@ -52,7 +52,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     private fun Expression.lower(): LoweringResult = accept(visitor = this@ExpressionLoweringVisitor, context = Unit)
 
-    private fun Expression.getLoweredAndAddStatements(statements: MutableList<HighIrStatement>): HighIrExpression? {
+    private fun Expression.getLoweredAndAddStatements(statements: MutableList<HighIrStatement>): HighIrExpression {
         val result = this.lower()
         statements.addAll(elements = result.statements)
         return result.expression
@@ -73,7 +73,7 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
     override fun visit(expression: Expression.TupleConstructor, context: Unit): LoweringResult {
         val loweredStatements = mutableListOf<HighIrStatement>()
         val loweredExpressionList = expression.expressionList.map {
-            it.getLoweredAndAddStatements(statements = loweredStatements) ?: HighIrExpression.FALSE
+            it.getLoweredAndAddStatements(statements = loweredStatements)
         }
         return StructConstructor(expressionList = loweredExpressionList)
             .asLoweringResult(statements = loweredStatements)
@@ -167,9 +167,8 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val loweredStatements = mutableListOf<HighIrStatement>()
         val loweredFunctionExpression = expression.functionExpression
             .getLoweredAndAddStatements(statements = loweredStatements)
-            ?: error(message = "Function expression must be lowered!")
         val loweredArguments = expression.arguments.map { argument ->
-            argument.getLoweredAndAddStatements(statements = loweredStatements) ?: HighIrExpression.FALSE
+            argument.getLoweredAndAddStatements(statements = loweredStatements)
         }
         val type = expression.type
         val functionApplication = when (loweredFunctionExpression) {
@@ -198,8 +197,8 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.Binary, context: Unit): LoweringResult {
         val loweredStatements = mutableListOf<HighIrStatement>()
-        val e1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements) ?: HighIrExpression.FALSE
-        val e2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements) ?: HighIrExpression.FALSE
+        val e1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements)
+        val e2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements)
         return Binary(
             operator = expression.operator,
             e1 = e1,
@@ -211,7 +210,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val loweredStatements = mutableListOf<HighIrStatement>()
         val boolExpression = expression.boolExpression
             .getLoweredAndAddStatements(statements = loweredStatements)
-            ?: error(message = "Bool expression in if-else guard should be lowered!")
         val e1LoweringResult = expression.e1.lower()
         val e2LoweringResult = expression.e2.lower()
         val variableForIfElseAssign = allocateTemporaryVariable()
@@ -239,7 +237,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val loweredStatements = mutableListOf<HighIrStatement>()
         val matchedExpression = expression.matchedExpression
             .getLoweredAndAddStatements(statements = loweredStatements)
-            ?: error(message = "Matched expression in match expression should be lowered!")
         val variableForMatchedExpression = allocateTemporaryVariable()
         loweredStatements += ConstantDefinition(
             name = variableForMatchedExpression,
@@ -274,13 +271,11 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
 
     override fun visit(expression: Expression.Lambda, context: Unit): LoweringResult {
         val loweringResult = expression.body.lower()
-        val loweredStatements = loweringResult.statements
-        val loweredExpression = loweringResult.expression
         return Lambda(
             hasReturn = expression.type.returnType != Type.unit,
             parameters = expression.parameters.map { it.first },
             captured = expression.captured.keys.toList(),
-            body = loweredStatements.plus(element = Return(expression = loweredExpression))
+            body = loweringResult.statements.plus(element = Return(expression = loweringResult.expression))
         ).asLoweringResult()
     }
 
@@ -297,7 +292,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
                 is Statement.Val -> {
                     val loweredAssignedExpression = statement.assignedExpression
                         .getLoweredAndAddStatements(statements = loweredScopedStatements)
-                        ?: HighIrExpression.FALSE
                     when (val pattern = statement.pattern) {
                         is Pattern.TuplePattern -> {
                             val variableForDestructedExpression = allocateTemporaryVariable()
@@ -351,7 +345,6 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val finalExpression = block.expression
             ?: return loweredScopedStatements.asLoweringResult()
         val loweredFinalExpression = finalExpression.getLoweredAndAddStatements(statements = loweredScopedStatements)
-            ?: return loweredScopedStatements.asLoweringResult()
         if (finalExpression.type == Type.unit && loweredFinalExpression is FunctionApplication) {
             loweredScopedStatements += ExpressionAsStatement(
                 expressionWithPotentialSideEffect = loweredFinalExpression

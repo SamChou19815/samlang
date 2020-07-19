@@ -11,6 +11,17 @@ import {
   HIR_INDEX_ACCESS,
   HIR_METHOD_ACCESS,
   HIR_UNARY,
+  HIR_BUILTIN_FUNCTION_CALL,
+  HIR_FUNCTION_CALL,
+  HIR_METHOD_CALL,
+  HIR_CLOSURE_CALL,
+  HIR_BINARY,
+  HIR_LAMBDA,
+  HIR_THROW,
+  HIR_IF_ELSE,
+  HIR_ASSIGN,
+  HIR_LET,
+  HIR_RETURN,
 } from '../../ast/hir/hir-expressions';
 import type {
   SamlangExpression,
@@ -174,25 +185,112 @@ class HighIRExpressionLoweringManager {
   }
 
   private lowerPanic(expression: PanicExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const result = this.lower(expression.expression);
+    return {
+      statements: [...result.statements, HIR_THROW(result.expression)],
+      expression: HIR_FALSE,
+    };
   }
 
   private lowerBuiltinFunctionCall(
     expression: BuiltInFunctionCallExpression
   ): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const loweredStatements: HighIRStatement[] = [];
+    const loweredArgument = this.loweredAndAddStatements(
+      expression.argumentExpression,
+      loweredStatements
+    );
+    return {
+      statements: loweredStatements,
+      expression: HIR_BUILTIN_FUNCTION_CALL({
+        functionName: expression.functionName,
+        functionArgument: loweredArgument,
+      }),
+    };
   }
 
   private lowerFunctionCall(expression: FunctionCallExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const loweredStatements: HighIRStatement[] = [];
+    const loweredFunctionExpression = this.loweredAndAddStatements(
+      expression.functionExpression,
+      loweredStatements
+    );
+    const loweredArguments = expression.functionArguments.map((oneArgument) =>
+      this.loweredAndAddStatements(oneArgument, loweredStatements)
+    );
+    let functionCall: HighIRExpression;
+    switch (loweredFunctionExpression.__type__) {
+      case 'HighIRClassMemberExpression':
+        functionCall = HIR_FUNCTION_CALL({
+          className: loweredFunctionExpression.className,
+          functionName: loweredFunctionExpression.memberName,
+          functionArguments: loweredArguments,
+        });
+        break;
+      case 'HighIRMethodAccessExpression':
+        functionCall = HIR_METHOD_CALL({
+          objectExpression: loweredFunctionExpression.expression,
+          className: loweredFunctionExpression.className,
+          methodName: loweredFunctionExpression.methodName,
+          methodArguments: loweredArguments,
+        });
+        break;
+      default:
+        functionCall = HIR_CLOSURE_CALL({
+          functionExpression: loweredFunctionExpression,
+          closureArguments: loweredArguments,
+        });
+        break;
+    }
+    return {
+      statements: loweredStatements,
+      expression: functionCall,
+    };
   }
 
   private lowerBinary(expression: BinaryExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const loweredStatements: HighIRStatement[] = [];
+    const e1 = this.loweredAndAddStatements(expression.e1, loweredStatements);
+    const e2 = this.loweredAndAddStatements(expression.e2, loweredStatements);
+    return {
+      statements: loweredStatements,
+      expression: HIR_BINARY({ operator: expression.operator, e1, e2 }),
+    };
   }
 
   private lowerIfElse(expression: IfElseExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const loweredStatements: HighIRStatement[] = [];
+    const loweredBoolExpression = this.loweredAndAddStatements(
+      expression.boolExpression,
+      loweredStatements
+    );
+    const e1LoweringResult = this.lower(expression.e1);
+    const e2LoweringResult = this.lower(expression.e2);
+    const variableForIfElseAssign = this.allocateTemporaryVariable();
+    loweredStatements.push(
+      HIR_LET(variableForIfElseAssign),
+      HIR_IF_ELSE({
+        booleanExpression: loweredBoolExpression,
+        s1: [
+          ...e1LoweringResult.statements,
+          HIR_ASSIGN({
+            name: variableForIfElseAssign,
+            assignedExpression: e1LoweringResult.expression,
+          }),
+        ],
+        s2: [
+          ...e2LoweringResult.statements,
+          HIR_ASSIGN({
+            name: variableForIfElseAssign,
+            assignedExpression: e2LoweringResult.expression,
+          }),
+        ],
+      })
+    );
+    return {
+      statements: loweredStatements,
+      expression: HIR_VARIABLE(variableForIfElseAssign),
+    };
   }
 
   private lowerMatch(expression: MatchExpression): HighIRExpressionLoweringResult {
@@ -200,7 +298,20 @@ class HighIRExpressionLoweringManager {
   }
 
   private lowerLambda(expression: LambdaExpression): HighIRExpressionLoweringResult {
-    throw new Error(`${this} ${expression}`);
+    const loweringResult = this.lower(expression.body);
+    const returnType = expression.type.returnType;
+    const hasReturn = returnType.type !== 'PrimitiveType' || returnType.name !== 'unit';
+    return {
+      statements: [],
+      expression: HIR_LAMBDA({
+        hasReturn,
+        parameters: expression.parameters.map(([name]) => name),
+        captured: Object.keys(expression.captured),
+        body: hasReturn
+          ? [...loweringResult.statements, HIR_RETURN(loweringResult.expression)]
+          : loweringResult.statements,
+      }),
+    };
   }
 
   private lowerStatementBlock(
