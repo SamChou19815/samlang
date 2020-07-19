@@ -52,27 +52,6 @@ export interface HighIRBuiltInFunctionCallExpression extends BaseHighIRExpressio
   readonly functionArgument: HighIRExpression;
 }
 
-export interface HighIRFunctionCallExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRFunctionCallExpression';
-  readonly className: string;
-  readonly functionName: string;
-  readonly functionArguments: readonly HighIRExpression[];
-}
-
-export interface HighIRMethodCallExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRMethodCallExpression';
-  readonly objectExpression: HighIRExpression;
-  readonly className: string;
-  readonly methodName: string;
-  readonly methodArguments: readonly HighIRExpression[];
-}
-
-export interface HighIRClosureCallExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRClosureCallExpression';
-  readonly functionExpression: HighIRExpression;
-  readonly closureArguments: readonly HighIRExpression[];
-}
-
 export interface HighIRBinaryExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRBinaryExpression';
   readonly e1: HighIRExpression;
@@ -97,9 +76,6 @@ export type HighIRExpression =
   | HighIRMethodAccessExpression
   | HighIRUnaryExpression
   | HighIRBuiltInFunctionCallExpression
-  | HighIRFunctionCallExpression
-  | HighIRMethodCallExpression
-  | HighIRClosureCallExpression
   | HighIRBinaryExpression
   | HighIRLambdaExpression;
 
@@ -110,6 +86,21 @@ interface BaseHighIRStatement {
 export interface HighIRThrowStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRThrowStatement';
   readonly expression: HighIRExpression;
+}
+
+export interface HighIRFunctionCallStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRFunctionCallStatement';
+  readonly className: string;
+  readonly functionName: string;
+  readonly functionArguments: readonly HighIRExpression[];
+  readonly returnCollector: string;
+}
+
+export interface HighIRClosureCallStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRClosureCallStatement';
+  readonly functionExpression: HighIRExpression;
+  readonly closureArguments: readonly HighIRExpression[];
+  readonly returnCollector: string;
 }
 
 export interface HighIRIfElseStatement extends BaseHighIRStatement {
@@ -151,6 +142,8 @@ export interface HighIRReturnStatement extends BaseHighIRStatement {
 
 export type HighIRStatement =
   | HighIRThrowStatement
+  | HighIRFunctionCallStatement
+  | HighIRClosureCallStatement
   | HighIRIfElseStatement
   | HighIRMatchStatement
   | HighIRLetDefinitionStatement
@@ -243,39 +236,6 @@ export const HIR_BUILTIN_FUNCTION_CALL = ({
   functionArgument,
 });
 
-export const HIR_FUNCTION_CALL = ({
-  className,
-  functionName,
-  functionArguments,
-}: ConstructorArgumentObject<HighIRFunctionCallExpression>): HighIRFunctionCallExpression => ({
-  __type__: 'HighIRFunctionCallExpression',
-  className,
-  functionName,
-  functionArguments,
-});
-
-export const HIR_METHOD_CALL = ({
-  objectExpression,
-  className,
-  methodName,
-  methodArguments,
-}: ConstructorArgumentObject<HighIRMethodCallExpression>): HighIRMethodCallExpression => ({
-  __type__: 'HighIRMethodCallExpression',
-  objectExpression,
-  className,
-  methodName,
-  methodArguments,
-});
-
-export const HIR_CLOSURE_CALL = ({
-  functionExpression,
-  closureArguments,
-}: ConstructorArgumentObject<HighIRClosureCallExpression>): HighIRClosureCallExpression => ({
-  __type__: 'HighIRClosureCallExpression',
-  functionExpression,
-  closureArguments,
-});
-
 export const HIR_BINARY = ({
   operator,
   e1,
@@ -303,6 +263,30 @@ export const HIR_LAMBDA = ({
 export const HIR_THROW = (expression: HighIRExpression): HighIRThrowStatement => ({
   __type__: 'HighIRThrowStatement',
   expression,
+});
+
+export const HIR_FUNCTION_CALL = ({
+  className,
+  functionName,
+  functionArguments,
+  returnCollector,
+}: ConstructorArgumentObject<HighIRFunctionCallStatement>): HighIRFunctionCallStatement => ({
+  __type__: 'HighIRFunctionCallStatement',
+  className,
+  functionName,
+  functionArguments,
+  returnCollector,
+});
+
+export const HIR_CLOSURE_CALL = ({
+  functionExpression,
+  closureArguments,
+  returnCollector,
+}: ConstructorArgumentObject<HighIRClosureCallStatement>): HighIRClosureCallStatement => ({
+  __type__: 'HighIRClosureCallStatement',
+  functionExpression,
+  closureArguments,
+  returnCollector,
 });
 
 export const HIR_IF_ELSE = ({

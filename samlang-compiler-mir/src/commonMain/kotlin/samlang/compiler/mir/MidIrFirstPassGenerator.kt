@@ -9,20 +9,19 @@ import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.BuiltInFunctionApplication
 import samlang.ast.hir.HighIrExpression.ClassMember
-import samlang.ast.hir.HighIrExpression.ClosureApplication
-import samlang.ast.hir.HighIrExpression.FunctionApplication
 import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Lambda
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
-import samlang.ast.hir.HighIrExpression.MethodApplication
 import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpressionVisitor
 import samlang.ast.hir.HighIrModule
 import samlang.ast.hir.HighIrStatement
+import samlang.ast.hir.HighIrStatement.ClosureApplication
 import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
+import samlang.ast.hir.HighIrStatement.FunctionApplication
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDefinition
 import samlang.ast.hir.HighIrStatement.Match
@@ -138,6 +137,43 @@ internal class MidIrFirstPassGenerator(
             arguments = listOf(translate(expression = statement.expression)),
             returnCollector = null
         )
+
+        override fun visit(statement: FunctionApplication): MidIrStatement =
+            CALL_FUNCTION(
+                functionName = getFunctionName(className = statement.className, functionName = statement.functionName),
+                arguments = statement.arguments.map { translate(expression = it) },
+                returnCollector = allocator.allocateTemp(variableName = statement.resultCollector)
+            )
+
+        override fun visit(statement: ClosureApplication): MidIrStatement {
+            val closure = translate(expression = statement.functionExpression)
+            val arguments = statement.arguments.map { translate(expression = it) }
+            val contextTemp = allocator.allocateTemp()
+            val collectorTemp = allocator.allocateTemp(variableName = statement.resultCollector)
+            val simpleCaseLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_SIMPLE")
+            val complexCaseLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_COMPLEX")
+            val endLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_APP_END")
+            val statements = listOf(
+                MOVE(destination = contextTemp, source = IMMUTABLE_MEM(ADD(e1 = closure, e2 = CONST(value = 8)))),
+                CJUMP(condition = EQ(e1 = contextTemp, e2 = ZERO), label1 = simpleCaseLabel, label2 = complexCaseLabel),
+                Label(name = simpleCaseLabel),
+                // No context (context is null)
+                CALL_FUNCTION(
+                    expression = IMMUTABLE_MEM(expression = closure),
+                    arguments = arguments,
+                    returnCollector = collectorTemp
+                ),
+                Jump(label = endLabel),
+                Label(name = complexCaseLabel),
+                CALL_FUNCTION(
+                    expression = IMMUTABLE_MEM(expression = closure),
+                    arguments = mutableListOf<MidIrExpression>(contextTemp).apply { addAll(arguments) },
+                    returnCollector = collectorTemp
+                ),
+                Label(name = endLabel)
+            )
+            return SEQ(statements = statements)
+        }
 
         override fun visit(statement: IfElse): MidIrStatement {
             val sequence = mutableListOf<MidIrStatement>()
@@ -301,51 +337,6 @@ internal class MidIrFirstPassGenerator(
             ),
             args = listOf(translate(expression = expression.argument))
         )
-
-        override fun visit(expression: FunctionApplication): MidIrExpression =
-            CALL(
-                functionExpr = NAME(
-                    name = getFunctionName(className = expression.className, functionName = expression.functionName)
-                ),
-                args = expression.arguments.map { translate(expression = it) }
-            )
-
-        override fun visit(expression: MethodApplication): MidIrExpression {
-            val name = getFunctionName(className = expression.className, functionName = expression.methodName)
-            val arguments = mutableListOf(translate(expression = expression.objectExpression))
-            expression.arguments.forEach { arguments += translate(expression = it) }
-            return CALL(functionExpr = NAME(name = name), args = arguments)
-        }
-
-        override fun visit(expression: ClosureApplication): MidIrExpression {
-            val closure = translate(expression = expression.functionExpression)
-            val arguments = expression.arguments.map { translate(expression = it) }
-            val contextTemp = allocator.allocateTemp()
-            val collectorTemp = allocator.allocateTemp()
-            val simpleCaseLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_SIMPLE")
-            val complexCaseLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_COMPLEX")
-            val endLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_APP_END")
-            val statements = listOf(
-                MOVE(destination = contextTemp, source = IMMUTABLE_MEM(ADD(e1 = closure, e2 = CONST(value = 8)))),
-                CJUMP(condition = EQ(e1 = contextTemp, e2 = ZERO), label1 = simpleCaseLabel, label2 = complexCaseLabel),
-                Label(name = simpleCaseLabel),
-                // No context (context is null)
-                CALL_FUNCTION(
-                    expression = IMMUTABLE_MEM(expression = closure),
-                    arguments = arguments,
-                    returnCollector = collectorTemp
-                ),
-                Jump(label = endLabel),
-                Label(name = complexCaseLabel),
-                CALL_FUNCTION(
-                    expression = IMMUTABLE_MEM(expression = closure),
-                    arguments = mutableListOf<MidIrExpression>(contextTemp).apply { addAll(arguments) },
-                    returnCollector = collectorTemp
-                ),
-                Label(name = endLabel)
-            )
-            return ESEQ(statement = SEQ(statements = statements), expression = collectorTemp)
-        }
 
         override fun visit(expression: Binary): MidIrExpression {
             val operator = when (expression.operator) {

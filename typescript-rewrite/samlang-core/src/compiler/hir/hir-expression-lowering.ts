@@ -14,7 +14,6 @@ import {
   HIR_UNARY,
   HIR_BUILTIN_FUNCTION_CALL,
   HIR_FUNCTION_CALL,
-  HIR_METHOD_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
   HIR_LAMBDA,
@@ -229,41 +228,41 @@ class HighIRExpressionLoweringManager {
     const loweredArguments = expression.functionArguments.map((oneArgument) =>
       this.loweredAndAddStatements(oneArgument, loweredStatements)
     );
-    let functionCall: HighIRExpression;
+    // This indirection is necessary.
+    // We want to force a function call to fall into a statement.
+    // In this way, the final expression can be safely ignored,
+    // while side effect of function still preserved.
+    const returnCollector = this.allocateTemporaryVariable();
+    let functionCall: HighIRStatement;
     switch (loweredFunctionExpression.__type__) {
       case 'HighIRClassMemberExpression':
         functionCall = HIR_FUNCTION_CALL({
           className: loweredFunctionExpression.className,
           functionName: loweredFunctionExpression.memberName,
           functionArguments: loweredArguments,
+          returnCollector,
         });
         break;
       case 'HighIRMethodAccessExpression':
-        functionCall = HIR_METHOD_CALL({
-          objectExpression: loweredFunctionExpression.expression,
+        functionCall = HIR_FUNCTION_CALL({
           className: loweredFunctionExpression.className,
-          methodName: loweredFunctionExpression.methodName,
-          methodArguments: loweredArguments,
+          functionName: loweredFunctionExpression.methodName,
+          functionArguments: [loweredFunctionExpression.expression, ...loweredArguments],
+          returnCollector,
         });
         break;
       default:
         functionCall = HIR_CLOSURE_CALL({
           functionExpression: loweredFunctionExpression,
           closureArguments: loweredArguments,
+          returnCollector,
         });
         break;
     }
-    // This indirection is necessary.
-    // We want to force a function call to fall into a statement.
-    // In this way, the final expression can be safely ignored,
-    // while side effect of function still preserved.
-    const temporary = this.allocateTemporaryVariable();
+    loweredStatements.push(functionCall);
     return {
-      statements: [
-        ...loweredStatements,
-        HIR_LET({ name: temporary, assignedExpression: functionCall }),
-      ],
-      expression: HIR_VARIABLE(temporary),
+      statements: loweredStatements,
+      expression: HIR_VARIABLE(returnCollector),
     };
   }
 

@@ -60,30 +60,6 @@ sealed class HighIrExpression {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
-    data class FunctionApplication(
-        val className: String,
-        val functionName: String,
-        val arguments: List<HighIrExpression>
-    ) : HighIrExpression() {
-        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
-    }
-
-    data class MethodApplication(
-        val objectExpression: HighIrExpression,
-        val className: String,
-        val methodName: String,
-        val arguments: List<HighIrExpression>
-    ) : HighIrExpression() {
-        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
-    }
-
-    data class ClosureApplication(
-        val functionExpression: HighIrExpression,
-        val arguments: List<HighIrExpression>
-    ) : HighIrExpression() {
-        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
-    }
-
     data class Binary(
         val e1: HighIrExpression,
         val operator: BinaryOperator,

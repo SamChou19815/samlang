@@ -20,7 +20,6 @@ import {
   HIR_UNARY,
   HIR_BUILTIN_FUNCTION_CALL,
   HIR_FUNCTION_CALL,
-  HIR_METHOD_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
   HIR_LAMBDA,
@@ -248,13 +247,11 @@ it('FunctionCall family lowering works.', () => {
     }),
     {
       statements: [
-        HIR_LET({
-          name: '_LOWERING_0',
-          assignedExpression: HIR_FUNCTION_CALL({
-            className: 'Foo',
-            functionName: 'bar',
-            functionArguments: [IR_THIS, IR_THIS],
-          }),
+        HIR_FUNCTION_CALL({
+          className: 'Foo',
+          functionName: 'bar',
+          functionArguments: [IR_THIS, IR_THIS],
+          returnCollector: '_LOWERING_0',
         }),
       ],
       expression: HIR_VARIABLE('_LOWERING_0'),
@@ -275,14 +272,11 @@ it('FunctionCall family lowering works.', () => {
     }),
     {
       statements: [
-        HIR_LET({
-          name: '_LOWERING_0',
-          assignedExpression: HIR_METHOD_CALL({
-            objectExpression: IR_THIS,
-            className: DUMMY_IDENTIFIER_TYPE.identifier,
-            methodName: 'fooBar',
-            methodArguments: [IR_THIS, IR_THIS],
-          }),
+        HIR_FUNCTION_CALL({
+          className: DUMMY_IDENTIFIER_TYPE.identifier,
+          functionName: 'fooBar',
+          functionArguments: [IR_THIS, IR_THIS, IR_THIS],
+          returnCollector: '_LOWERING_0',
         }),
       ],
       expression: HIR_VARIABLE('_LOWERING_0'),
@@ -298,12 +292,10 @@ it('FunctionCall family lowering works.', () => {
     }),
     {
       statements: [
-        HIR_LET({
-          name: '_LOWERING_0',
-          assignedExpression: HIR_CLOSURE_CALL({
-            functionExpression: IR_THIS,
-            closureArguments: [IR_THIS, IR_THIS],
-          }),
+        HIR_CLOSURE_CALL({
+          functionExpression: IR_THIS,
+          closureArguments: [IR_THIS, IR_THIS],
+          returnCollector: '_LOWERING_0',
         }),
       ],
       expression: HIR_VARIABLE('_LOWERING_0'),
@@ -319,12 +311,10 @@ it('FunctionCall family lowering works.', () => {
     }),
     {
       statements: [
-        HIR_LET({
-          name: '_LOWERING_0',
-          assignedExpression: HIR_CLOSURE_CALL({
-            functionExpression: IR_THIS,
-            closureArguments: [IR_THIS, IR_THIS],
-          }),
+        HIR_CLOSURE_CALL({
+          functionExpression: IR_THIS,
+          closureArguments: [IR_THIS, IR_THIS],
+          returnCollector: '_LOWERING_0',
         }),
       ],
       expression: HIR_VARIABLE('_LOWERING_0'),

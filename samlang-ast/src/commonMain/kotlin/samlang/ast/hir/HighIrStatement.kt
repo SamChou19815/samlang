@@ -11,6 +11,23 @@ sealed class HighIrStatement {
         override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
     }
 
+    data class FunctionApplication(
+        val className: String,
+        val functionName: String,
+        val arguments: List<HighIrExpression>,
+        val resultCollector: String
+    ) : HighIrStatement() {
+        override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
+    }
+
+    data class ClosureApplication(
+        val functionExpression: HighIrExpression,
+        val arguments: List<HighIrExpression>,
+        val resultCollector: String
+    ) : HighIrStatement() {
+        override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
+    }
+
     data class IfElse(
         val booleanExpression: HighIrExpression,
         val s1: List<HighIrStatement>,

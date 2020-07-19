@@ -6,18 +6,17 @@ import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.BuiltInFunctionApplication
 import samlang.ast.hir.HighIrExpression.ClassMember
-import samlang.ast.hir.HighIrExpression.ClosureApplication
-import samlang.ast.hir.HighIrExpression.FunctionApplication
 import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Lambda
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
-import samlang.ast.hir.HighIrExpression.MethodApplication
 import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrStatement
+import samlang.ast.hir.HighIrStatement.ClosureApplication
 import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
+import samlang.ast.hir.HighIrStatement.FunctionApplication
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDefinition
 import samlang.ast.hir.HighIrStatement.Match
@@ -171,28 +170,29 @@ private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult
         val loweredArguments = expression.arguments.map { argument ->
             argument.getLoweredAndAddStatements(statements = loweredStatements)
         }
-        val functionApplication = when (loweredFunctionExpression) {
-            is ClassMember -> FunctionApplication(
-                className = loweredFunctionExpression.className,
-                functionName = loweredFunctionExpression.memberName,
-                arguments = loweredArguments
-            )
-            is MethodAccess -> MethodApplication(
-                objectExpression = loweredFunctionExpression.expression,
-                className = loweredFunctionExpression.className,
-                methodName = loweredFunctionExpression.methodName,
-                arguments = loweredArguments
-            )
-            else -> ClosureApplication(
-                functionExpression = loweredFunctionExpression,
-                arguments = loweredArguments
-            )
-        }
         // This indirection is necessary.
         // We want to force a function call to fall into a statement.
         // In this way, the final expression can be safely ignored and side effect of function still preserved.
         val temporary = allocateTemporaryVariable()
-        loweredStatements += LetDefinition(name = temporary, assignedExpression = functionApplication)
+        loweredStatements += when (loweredFunctionExpression) {
+            is ClassMember -> FunctionApplication(
+                className = loweredFunctionExpression.className,
+                functionName = loweredFunctionExpression.memberName,
+                arguments = loweredArguments,
+                resultCollector = temporary
+            )
+            is MethodAccess -> FunctionApplication(
+                className = loweredFunctionExpression.className,
+                functionName = loweredFunctionExpression.methodName,
+                arguments = listOf(loweredFunctionExpression.expression, *loweredArguments.toTypedArray()),
+                resultCollector = temporary
+            )
+            else -> ClosureApplication(
+                functionExpression = loweredFunctionExpression,
+                arguments = loweredArguments,
+                resultCollector = temporary
+            )
+        }
         return LoweringResult(statements = loweredStatements, expression = Variable(name = temporary))
     }
 

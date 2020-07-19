@@ -3,7 +3,6 @@ package samlang.compiler.hir
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrClassDefinition
-import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrModule
 import samlang.ast.hir.HighIrStatement
@@ -29,14 +28,7 @@ internal fun compileFunction(classMember: ClassDefinition.MemberDefinition): Hig
     val body = if (classMember.body.type == Type.unit) {
         statements
     } else {
-        val additionStatementForFinalExpression =
-            if (classMember.body.type == Type.unit &&
-                bodyLoweringResult.expression is HighIrExpression.FunctionApplication) {
-                HighIrStatement.ExpressionAsStatement(expressionWithPotentialSideEffect = bodyLoweringResult.expression)
-            } else {
-                HighIrStatement.Return(expression = bodyLoweringResult.expression)
-            }
-        statements.plus(element = additionStatementForFinalExpression)
+        statements.plus(element = HighIrStatement.Return(expression = bodyLoweringResult.expression))
     }
     return HighIrFunction(
         isPublic = classMember.isPublic,
