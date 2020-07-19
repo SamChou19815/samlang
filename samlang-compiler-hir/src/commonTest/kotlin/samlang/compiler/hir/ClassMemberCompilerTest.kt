@@ -2,6 +2,7 @@ package samlang.compiler.hir
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range
 import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 import samlang.ast.common.Type
@@ -14,7 +15,10 @@ import samlang.ast.lang.StatementBlock
 
 class ClassMemberCompilerTest {
     private fun assertCorrectlyCompiled(classMember: MemberDefinition, highIrFunction: HighIrFunction) {
-        assertEquals(expected = highIrFunction, actual = compileFunction(classMember = classMember))
+        assertEquals(
+            expected = highIrFunction,
+            actual = compileFunction(moduleReference = ModuleReference.ROOT, classMember = classMember)
+        )
     }
 
     @Test

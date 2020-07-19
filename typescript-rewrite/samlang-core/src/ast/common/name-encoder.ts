@@ -1,8 +1,5 @@
 import type ModuleReference from './module-reference';
 
-export const encodeFunctionNameLocally = (className: string, functionName: string): string =>
-  `class_${className}_function_${functionName}`;
-
 export const encodeFunctionNameGlobally = (
   moduleReference: ModuleReference,
   className: string,
@@ -11,7 +8,7 @@ export const encodeFunctionNameGlobally = (
   const encodedModuleReference = moduleReference.parts
     .map((it) => it.replace(/-/g, '_'))
     .join('__');
-  return `_module_${encodedModuleReference}_${encodeFunctionNameLocally(className, functionName)}`;
+  return `_module_${encodedModuleReference}_class_${className}_function_${functionName}`;
 };
 
 export const encodeBuiltinName = (name: string): string => `_builtin_${name}`;

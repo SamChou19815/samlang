@@ -6,8 +6,11 @@ import type { ClassMemberDefinition, SamlangModule } from '../../ast/lang/samlan
 import { HashMap, hashMapOf } from '../../util/collections';
 import lowerSamlangExpression from './hir-expression-lowering';
 
-const compileFunction = (classMember: ClassMemberDefinition): HighIRFunction => {
-  const bodyLoweringResult = lowerSamlangExpression(classMember.body);
+const compileFunction = (
+  moduleReference: ModuleReference,
+  classMember: ClassMemberDefinition
+): HighIRFunction => {
+  const bodyLoweringResult = lowerSamlangExpression(moduleReference, classMember.body);
   const statements = bodyLoweringResult.statements;
   const returnType = classMember.type.returnType;
   const hasReturn = returnType.type !== 'PrimitiveType' || returnType.name !== 'unit';
@@ -22,11 +25,14 @@ const compileFunction = (classMember: ClassMemberDefinition): HighIRFunction => 
   };
 };
 
-const compileSamlangModule = ({ imports, classes }: SamlangModule): HighIRModule => ({
+const compileSamlangModule = (
+  moduleReference: ModuleReference,
+  { imports, classes }: SamlangModule
+): HighIRModule => ({
   imports,
   classDefinitions: classes.map(({ name: className, members }) => ({
     className,
-    members: members.map(compileFunction),
+    members: members.map((it) => compileFunction(moduleReference, it)),
   })),
 });
 
@@ -35,7 +41,7 @@ const compileSamlangSourcesToHighIRSources = (
 ): Sources<HighIRModule> => {
   const irSources: HashMap<ModuleReference, HighIRModule> = hashMapOf();
   sources.forEach((samlangModule, reference) =>
-    irSources.set(reference, compileSamlangModule(samlangModule))
+    irSources.set(reference, compileSamlangModule(reference, samlangModule))
   );
   return irSources;
 };

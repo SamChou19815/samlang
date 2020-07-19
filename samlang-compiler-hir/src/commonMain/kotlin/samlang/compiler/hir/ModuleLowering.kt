@@ -1,5 +1,6 @@
 package samlang.compiler.hir
 
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrClassDefinition
@@ -10,20 +11,33 @@ import samlang.ast.lang.ClassDefinition
 import samlang.ast.lang.Module
 
 fun compileSources(sources: Sources<Module>): Sources<HighIrModule> =
-    Sources(moduleMappings = sources.moduleMappings.mapValues { (_, module) -> compileModule(module = module) })
+    Sources(moduleMappings = sources.moduleMappings.mapValues { (moduleReference, module) ->
+        compileModule(
+            moduleReference = moduleReference,
+            module = module
+        )
+    })
 
-fun compileModule(module: Module): HighIrModule =
-    HighIrModule(imports = module.imports, classDefinitions = module.classDefinitions.map(::compileClassDefinition))
+fun compileModule(moduleReference: ModuleReference, module: Module): HighIrModule =
+    HighIrModule(
+        imports = module.imports,
+        classDefinitions = module.classDefinitions.map { compileClassDefinition(moduleReference, it) })
 
-private fun compileClassDefinition(classDefinition: ClassDefinition): HighIrClassDefinition =
+private fun compileClassDefinition(
+    moduleReference: ModuleReference,
+    classDefinition: ClassDefinition
+): HighIrClassDefinition =
     HighIrClassDefinition(
         className = classDefinition.name,
-        members = classDefinition.members.map(transform = ::compileFunction)
+        members = classDefinition.members.map { compileFunction(moduleReference = moduleReference, classMember = it) }
     )
 
 /** Exposed for testing. */
-internal fun compileFunction(classMember: ClassDefinition.MemberDefinition): HighIrFunction {
-    val bodyLoweringResult = lowerExpression(expression = classMember.body)
+internal fun compileFunction(
+    moduleReference: ModuleReference,
+    classMember: ClassDefinition.MemberDefinition
+): HighIrFunction {
+    val bodyLoweringResult = lowerExpression(moduleReference = moduleReference, expression = classMember.body)
     val statements = bodyLoweringResult.statements
     val body = if (classMember.body.type == Type.unit) {
         statements

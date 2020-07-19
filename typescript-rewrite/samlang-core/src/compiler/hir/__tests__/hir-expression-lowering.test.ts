@@ -1,4 +1,5 @@
 import { PLUS, AND, OR } from '../../../ast/common/binary-operators';
+import ModuleReference from '../../../ast/common/module-reference';
 import Range from '../../../ast/common/range';
 import {
   unitType,
@@ -61,7 +62,11 @@ const IR_THIS = HIR_VARIABLE('this');
 const expectCorrectlyLowered = (
   samlangExpression: SamlangExpression,
   { statements = [], expression = HIR_FALSE }: Partial<ReturnType<typeof lowerSamlangExpression>>
-): void => expect(lowerSamlangExpression(samlangExpression)).toEqual({ statements, expression });
+): void =>
+  expect(lowerSamlangExpression(ModuleReference.ROOT, samlangExpression)).toEqual({
+    statements,
+    expression,
+  });
 
 it('Literal lowering works.', () => {
   expectCorrectlyLowered(EXPRESSION_FALSE(Range.DUMMY), { expression: HIR_FALSE });

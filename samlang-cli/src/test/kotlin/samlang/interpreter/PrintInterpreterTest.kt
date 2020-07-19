@@ -31,7 +31,10 @@ class PrintInterpreterTest : FreeSpec() {
         val irSources = MidIrGenerator.generateWithMultipleEntries(
             sources = Sources(
                 moduleMappings = programTestCases.asSequence().map { (id, module, _) ->
-                    ModuleReference(moduleName = id) to compileModule(module = module)
+                    ModuleReference(moduleName = id) to compileModule(
+                        moduleReference = ModuleReference(moduleName = id),
+                        module = module
+                    )
                 }.toMap()
             )
         ).moduleMappings

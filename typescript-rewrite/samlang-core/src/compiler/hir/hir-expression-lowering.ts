@@ -1,3 +1,4 @@
+import ModuleReference from '../../ast/common/module-reference';
 import type { IdentifierType } from '../../ast/common/types';
 import {
   HighIRStatement,
@@ -49,6 +50,8 @@ type HighIRExpressionLoweringResult = {
 
 class HighIRExpressionLoweringManager {
   private nextTemporaryVariableId = 0;
+
+  constructor(private readonly moduleReference: ModuleReference) {}
 
   private allocateTemporaryVariable(): string {
     const variableName = `_LOWERING_${this.nextTemporaryVariableId}`;
@@ -488,7 +491,10 @@ class HighIRExpressionLoweringManager {
   }
 }
 
-const lowerSamlangExpression = (expression: SamlangExpression): HighIRExpressionLoweringResult =>
-  new HighIRExpressionLoweringManager().lower(expression);
+const lowerSamlangExpression = (
+  moduleReference: ModuleReference,
+  expression: SamlangExpression
+): HighIRExpressionLoweringResult =>
+  new HighIRExpressionLoweringManager(moduleReference).lower(expression);
 
 export default lowerSamlangExpression;

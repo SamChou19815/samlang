@@ -1,6 +1,7 @@
 package samlang.compiler.hir
 
 import samlang.ast.common.BinaryOperator
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
@@ -27,8 +28,8 @@ import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Pattern
 import samlang.ast.lang.Statement
 
-internal fun lowerExpression(expression: Expression): LoweringResult =
-    expression.accept(visitor = ExpressionLoweringVisitor(), context = Unit)
+internal fun lowerExpression(moduleReference: ModuleReference, expression: Expression): LoweringResult =
+    expression.accept(visitor = ExpressionLoweringVisitor(moduleReference), context = Unit)
 
 internal data class LoweringResult(val statements: List<HighIrStatement>, val expression: HighIrExpression)
 
@@ -38,7 +39,8 @@ private fun HighIrExpression.asLoweringResult(statements: List<HighIrStatement> 
 private fun List<HighIrStatement>.asLoweringResult(): LoweringResult =
     LoweringResult(statements = this, expression = HighIrExpression.FALSE)
 
-private class ExpressionLoweringVisitor : ExpressionVisitor<Unit, LoweringResult> {
+private class ExpressionLoweringVisitor(private val moduleReference: ModuleReference) :
+    ExpressionVisitor<Unit, LoweringResult> {
 
     private var nextTemporaryVariableId: Int = 0
 

@@ -3,6 +3,7 @@ package samlang.compiler.hir
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import samlang.ast.common.BinaryOperator.PLUS
+import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 import samlang.ast.common.Type
 import samlang.ast.common.Type.Companion.id
@@ -19,20 +20,23 @@ import samlang.ast.lang.StatementBlock
 
 class ExpressionLoweringTest {
     private fun assertCorrectlyLowered(expression: Expression, expected: LoweringResult) {
-        assertEquals(expected = expected, actual = lowerExpression(expression = expression))
+        assertEquals(
+            expected = expected,
+            actual = lowerExpression(moduleReference = ModuleReference.ROOT, expression = expression)
+        )
     }
 
     private fun assertCorrectlyLowered(expression: Expression, expectedExpression: HighIrExpression) {
         assertEquals(
             expected = LoweringResult(statements = emptyList(), expression = expectedExpression),
-            actual = lowerExpression(expression = expression)
+            actual = lowerExpression(moduleReference = ModuleReference.ROOT, expression = expression)
         )
     }
 
     private fun assertCorrectlyLowered(expression: Expression, expectedStatements: List<HighIrStatement>) {
         assertEquals(
             expected = LoweringResult(statements = expectedStatements, expression = HighIrExpression.FALSE),
-            actual = lowerExpression(expression = expression)
+            actual = lowerExpression(moduleReference = ModuleReference.ROOT, expression = expression)
         )
     }
 

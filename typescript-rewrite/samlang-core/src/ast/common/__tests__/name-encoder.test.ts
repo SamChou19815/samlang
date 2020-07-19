@@ -2,6 +2,8 @@ import ModuleReference from '../module-reference';
 import { encodeMainFunctionName, ENCODED_FUNCTION_NAME_THROW } from '../name-encoder';
 
 it('Has correct names', () => {
+  expect(encodeMainFunctionName(ModuleReference.ROOT)).toBe('_module__class_Main_function_main');
+
   expect(encodeMainFunctionName(new ModuleReference(['Foo', 'Bar']))).toBe(
     '_module_Foo__Bar_class_Main_function_main'
   );
