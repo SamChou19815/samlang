@@ -26,11 +26,12 @@ import samlang.ast.hir.HighIrStatement.Return
 import samlang.ast.hir.HighIrStatement.Throw
 import samlang.ast.lang.Expression
 import samlang.ast.lang.ExpressionVisitor
+import samlang.ast.lang.Module
 import samlang.ast.lang.Pattern
 import samlang.ast.lang.Statement
 
-internal fun lowerExpression(moduleReference: ModuleReference, expression: Expression): LoweringResult =
-    expression.accept(visitor = ExpressionLoweringVisitor(moduleReference), context = Unit)
+internal fun lowerExpression(moduleReference: ModuleReference, module: Module, expression: Expression): LoweringResult =
+    expression.accept(visitor = ExpressionLoweringVisitor(moduleReference, module), context = Unit)
 
 internal data class LoweringResult(val statements: List<HighIrStatement>, val expression: HighIrExpression)
 
@@ -40,7 +41,7 @@ private fun HighIrExpression.asLoweringResult(statements: List<HighIrStatement> 
 private fun List<HighIrStatement>.asLoweringResult(): LoweringResult =
     LoweringResult(statements = this, expression = HighIrExpression.FALSE)
 
-private class ExpressionLoweringVisitor(private val moduleReference: ModuleReference) :
+private class ExpressionLoweringVisitor(private val moduleReference: ModuleReference, private val module: Module) :
     ExpressionVisitor<Unit, LoweringResult> {
 
     private var nextTemporaryVariableId: Int = 0
@@ -58,6 +59,21 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
         statements.addAll(elements = result.statements)
         return result.expression
     }
+
+    private fun getFunctionName(className: String, functionName: String): String =
+        IrNameEncoder.encodeFunctionName(
+            moduleReference = getModuleOfClass(className = className),
+            className = className,
+            functionName = functionName
+        )
+
+    private fun getModuleOfClass(className: String): ModuleReference = module
+        .imports
+        .mapNotNull { oneImport ->
+            if (oneImport.importedMembers.any { it.first == className }) oneImport.importedModule else null
+        }
+        .firstOrNull()
+        ?: this.moduleReference
 
     override fun visit(expression: Expression.Literal, context: Unit): LoweringResult =
         Literal(literal = expression.literal).asLoweringResult()
@@ -179,8 +195,7 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
         val temporary = allocateTemporaryVariable()
         loweredStatements += when (loweredFunctionExpression) {
             is ClassMember -> FunctionApplication(
-                functionName = IrNameEncoder.encodeFunctionName(
-                    moduleReference = moduleReference,
+                functionName = getFunctionName(
                     className = loweredFunctionExpression.className,
                     functionName = loweredFunctionExpression.memberName
                 ),
@@ -188,8 +203,7 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
                 resultCollector = temporary
             )
             is MethodAccess -> FunctionApplication(
-                functionName = IrNameEncoder.encodeFunctionName(
-                    moduleReference = moduleReference,
+                functionName = getFunctionName(
                     className = loweredFunctionExpression.className,
                     functionName = loweredFunctionExpression.methodName
                 ),

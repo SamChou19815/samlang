@@ -14,6 +14,7 @@ import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.lang.Expression
 import samlang.ast.lang.Expression.Unary
+import samlang.ast.lang.Module
 import samlang.ast.lang.Pattern
 import samlang.ast.lang.Statement
 import samlang.ast.lang.StatementBlock
@@ -22,21 +23,33 @@ class ExpressionLoweringTest {
     private fun assertCorrectlyLowered(expression: Expression, expected: LoweringResult) {
         assertEquals(
             expected = expected,
-            actual = lowerExpression(moduleReference = ModuleReference.ROOT, expression = expression)
+            actual = lowerExpression(
+                moduleReference = ModuleReference.ROOT,
+                module = Module(imports = emptyList(), classDefinitions = emptyList()),
+                expression = expression
+            )
         )
     }
 
     private fun assertCorrectlyLowered(expression: Expression, expectedExpression: HighIrExpression) {
         assertEquals(
             expected = LoweringResult(statements = emptyList(), expression = expectedExpression),
-            actual = lowerExpression(moduleReference = ModuleReference.ROOT, expression = expression)
+            actual = lowerExpression(
+                moduleReference = ModuleReference.ROOT,
+                module = Module(imports = emptyList(), classDefinitions = emptyList()),
+                expression = expression
+            )
         )
     }
 
     private fun assertCorrectlyLowered(expression: Expression, expectedStatements: List<HighIrStatement>) {
         assertEquals(
             expected = LoweringResult(statements = expectedStatements, expression = HighIrExpression.FALSE),
-            actual = lowerExpression(moduleReference = ModuleReference.ROOT, expression = expression)
+            actual = lowerExpression(
+                moduleReference = ModuleReference.ROOT,
+                module = Module(imports = emptyList(), classDefinitions = emptyList()),
+                expression = expression
+            )
         )
     }
 

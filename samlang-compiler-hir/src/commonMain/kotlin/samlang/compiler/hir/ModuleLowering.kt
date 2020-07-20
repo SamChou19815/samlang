@@ -23,7 +23,12 @@ fun compileModule(moduleReference: ModuleReference, module: Module): HighIrModul
         imports = module.imports,
         functions = module.classDefinitions.map { classDefinition ->
             classDefinition.members.map {
-                compileFunction(moduleReference = moduleReference, className = classDefinition.name, classMember = it)
+                compileFunction(
+                    moduleReference = moduleReference,
+                    module = module,
+                    className = classDefinition.name,
+                    classMember = it
+                )
             }
         }.flatten()
     )
@@ -31,10 +36,15 @@ fun compileModule(moduleReference: ModuleReference, module: Module): HighIrModul
 /** Exposed for testing. */
 internal fun compileFunction(
     moduleReference: ModuleReference,
+    module: Module,
     className: String,
     classMember: ClassDefinition.MemberDefinition
 ): HighIrFunction {
-    val bodyLoweringResult = lowerExpression(moduleReference = moduleReference, expression = classMember.body)
+    val bodyLoweringResult = lowerExpression(
+        moduleReference = moduleReference,
+        module = module,
+        expression = classMember.body
+    )
     val parameters = classMember.parameters.map { it.name }
     val statements = bodyLoweringResult.statements
     val body = if (classMember.body.type == Type.unit) {

@@ -53,17 +53,30 @@ import {
   EXPRESSION_MATCH,
   EXPRESSION_STATEMENT_BLOCK,
 } from '../../../ast/lang/samlang-expressions';
+import type { SamlangModule } from '../../../ast/lang/samlang-toplevel';
 import lowerSamlangExpression from '../hir-expression-lowering';
 
 const DUMMY_IDENTIFIER_TYPE = identifierType('Dummy');
 const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE });
 const IR_THIS = HIR_VARIABLE('this');
 
+const testModule: SamlangModule = {
+  imports: [
+    {
+      range: Range.DUMMY,
+      importedMembers: [['ImportedClass', Range.DUMMY]],
+      importedModule: new ModuleReference(['ModuleModule']),
+      importedModuleRange: Range.DUMMY,
+    },
+  ],
+  classes: [],
+};
+
 const expectCorrectlyLowered = (
   samlangExpression: SamlangExpression,
   { statements = [], expression = HIR_FALSE }: Partial<ReturnType<typeof lowerSamlangExpression>>
 ): void =>
-  expect(lowerSamlangExpression(ModuleReference.ROOT, samlangExpression)).toEqual({
+  expect(lowerSamlangExpression(ModuleReference.ROOT, testModule, samlangExpression)).toEqual({
     statements,
     expression,
   });
@@ -243,7 +256,7 @@ it('FunctionCall family lowering works.', () => {
         range: Range.DUMMY,
         type: intType,
         typeArguments: [],
-        className: 'Foo',
+        className: 'ImportedClass',
         classNameRange: Range.DUMMY,
         memberName: 'bar',
         memberNameRange: Range.DUMMY,
@@ -253,7 +266,7 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionName: '_module__class_Foo_function_bar',
+          functionName: '_module_ModuleModule_class_ImportedClass_function_bar',
           functionArguments: [IR_THIS, IR_THIS],
           returnCollector: '_LOWERING_0',
         }),

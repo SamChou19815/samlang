@@ -9,11 +9,16 @@ import lowerSamlangExpression from './hir-expression-lowering';
 
 const compileFunction = (
   moduleReference: ModuleReference,
+  samlangModule: SamlangModule,
   className: string,
   classMember: ClassMemberDefinition
 ): HighIRFunction => {
   const encodedName = encodeFunctionNameGlobally(moduleReference, className, classMember.name);
-  const bodyLoweringResult = lowerSamlangExpression(moduleReference, classMember.body);
+  const bodyLoweringResult = lowerSamlangExpression(
+    moduleReference,
+    samlangModule,
+    classMember.body
+  );
   const parameters = classMember.parameters.map(({ name }) => name);
   const parametersWithThis = classMember.isMethod ? ['this', ...parameters] : parameters;
   const statements = bodyLoweringResult.statements;
@@ -25,12 +30,12 @@ const compileFunction = (
 
 const compileSamlangModule = (
   moduleReference: ModuleReference,
-  { imports, classes }: SamlangModule
+  samlangModule: SamlangModule
 ): HighIRModule => ({
-  imports,
-  functions: classes
+  imports: samlangModule.imports,
+  functions: samlangModule.classes
     .map(({ name: className, members }) =>
-      members.map((it) => compileFunction(moduleReference, className, it))
+      members.map((it) => compileFunction(moduleReference, samlangModule, className, it))
     )
     .flat(),
 });
