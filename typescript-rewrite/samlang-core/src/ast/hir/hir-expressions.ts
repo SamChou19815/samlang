@@ -1,5 +1,5 @@
 import { BinaryOperator } from '../common/binary-operators';
-import { UnaryOperator, BuiltInFunctionName } from '../common/enums';
+import type { UnaryOperator } from '../common/enums';
 import { Literal, FALSE, TRUE, intLiteralOf } from '../common/literals';
 
 interface BaseHighIRExpression {
@@ -44,12 +44,6 @@ export interface HighIRUnaryExpression extends BaseHighIRExpression {
   readonly expression: HighIRExpression;
 }
 
-export interface HighIRBuiltInFunctionCallExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRBuiltInFunctionCallExpression';
-  readonly functionName: BuiltInFunctionName;
-  readonly functionArgument: HighIRExpression;
-}
-
 export interface HighIRBinaryExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRBinaryExpression';
   readonly e1: HighIRExpression;
@@ -73,7 +67,6 @@ export type HighIRExpression =
   | HighIRIndexAccessExpression
   | HighIRMethodAccessExpression
   | HighIRUnaryExpression
-  | HighIRBuiltInFunctionCallExpression
   | HighIRBinaryExpression
   | HighIRLambdaExpression;
 
@@ -214,17 +207,6 @@ export const HIR_UNARY = ({
   __type__: 'HighIRUnaryExpression',
   expression,
   operator,
-});
-
-export const HIR_BUILTIN_FUNCTION_CALL = ({
-  functionName,
-  functionArgument,
-}: ConstructorArgumentObject<
-  HighIRBuiltInFunctionCallExpression
->): HighIRBuiltInFunctionCallExpression => ({
-  __type__: 'HighIRBuiltInFunctionCallExpression',
-  functionName,
-  functionArgument,
 });
 
 export const HIR_BINARY = ({

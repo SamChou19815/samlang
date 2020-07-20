@@ -1,12 +1,12 @@
 package samlang.compiler.hir
 
 import samlang.ast.common.BinaryOperator
+import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.IrNameEncoder
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
-import samlang.ast.hir.HighIrExpression.BuiltInFunctionApplication
 import samlang.ast.hir.HighIrExpression.ClassMember
 import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Lambda
@@ -169,19 +169,17 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
         val loweredStatements = mutableListOf<HighIrStatement>()
         val (statements, argument) = expression.argumentExpression.lower()
         loweredStatements += statements
-        val functionApplication = BuiltInFunctionApplication(
-            functionName = expression.functionName,
-            argument = argument
+        val returnCollector = allocateTemporaryVariable()
+        loweredStatements += FunctionApplication(
+            functionName = when (expression.functionName) {
+                BuiltInFunctionName.INT_TO_STRING -> IrNameEncoder.nameOfIntToString
+                BuiltInFunctionName.STRING_TO_INT -> IrNameEncoder.nameOfStringToInt
+                BuiltInFunctionName.PRINTLN -> IrNameEncoder.nameOfPrintln
+            },
+            arguments = listOf(argument),
+            resultCollector = returnCollector
         )
-        if (expression.type != Type.unit) {
-            // Since we control these builtin functions,
-            // we know that only functions with unit return type has side effects.
-            return functionApplication.asLoweringResult(statements = loweredStatements)
-        }
-        loweredStatements += ExpressionAsStatement(
-            expressionWithPotentialSideEffect = functionApplication
-        )
-        return loweredStatements.asLoweringResult()
+        return LoweringResult(statements = loweredStatements, expression = Variable(name = returnCollector))
     }
 
     override fun visit(expression: Expression.FunctionApplication, context: Unit): LoweringResult {

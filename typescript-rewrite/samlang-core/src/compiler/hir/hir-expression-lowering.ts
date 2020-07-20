@@ -1,5 +1,10 @@
 import ModuleReference from '../../ast/common/module-reference';
-import { encodeFunctionNameGlobally } from '../../ast/common/name-encoder';
+import {
+  encodeFunctionNameGlobally,
+  ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
+  ENCODED_FUNCTION_NAME_PRINTLN,
+} from '../../ast/common/name-encoder';
 import type { IdentifierType } from '../../ast/common/types';
 import {
   HighIRStatement,
@@ -14,7 +19,6 @@ import {
   HIR_INDEX_ACCESS,
   HIR_METHOD_ACCESS,
   HIR_UNARY,
-  HIR_BUILTIN_FUNCTION_CALL,
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
@@ -225,21 +229,25 @@ class HighIRExpressionLoweringManager {
       expression.argumentExpression,
       loweredStatements
     );
-    const functionCall = HIR_BUILTIN_FUNCTION_CALL({
-      functionName: expression.functionName,
-      functionArgument: loweredArgument,
-    });
-    if (expression.type.type !== 'PrimitiveType' || expression.type.name !== 'unit') {
-      // Since we control these builtin functions,
-      // we know that only functions with unit return type has side effects.
-      return {
-        statements: loweredStatements,
-        expression: functionCall,
-      };
+    const returnCollector = this.allocateTemporaryVariable();
+    let functionName: string;
+    switch (expression.functionName) {
+      case 'intToString':
+        functionName = ENCODED_FUNCTION_NAME_INT_TO_STRING;
+        break;
+      case 'stringToInt':
+        functionName = ENCODED_FUNCTION_NAME_STRING_TO_INT;
+        break;
+      case 'println':
+        functionName = ENCODED_FUNCTION_NAME_PRINTLN;
+        break;
     }
+    loweredStatements.push(
+      HIR_FUNCTION_CALL({ functionName, functionArguments: [loweredArgument], returnCollector })
+    );
     return {
-      statements: [...loweredStatements, HIR_EXPRESSION_AS_STATEMENT(functionCall)],
-      expression: HIR_FALSE,
+      statements: loweredStatements,
+      expression: HIR_VARIABLE(returnCollector),
     };
   }
 

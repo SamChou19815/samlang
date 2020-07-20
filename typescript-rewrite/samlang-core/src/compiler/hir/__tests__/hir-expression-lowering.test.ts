@@ -19,7 +19,6 @@ import {
   HIR_INDEX_ACCESS,
   HIR_METHOD_ACCESS,
   HIR_UNARY,
-  HIR_BUILTIN_FUNCTION_CALL,
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
@@ -207,10 +206,14 @@ it('FunctionCall family lowering works.', () => {
       argumentExpression: THIS,
     }),
     {
-      expression: HIR_BUILTIN_FUNCTION_CALL({
-        functionName: 'intToString',
-        functionArgument: IR_THIS,
-      }),
+      statements: [
+        HIR_FUNCTION_CALL({
+          functionName: '_builtin_intToString',
+          functionArguments: [IR_THIS],
+          returnCollector: '_LOWERING_0',
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
   expectCorrectlyLowered(
@@ -221,10 +224,14 @@ it('FunctionCall family lowering works.', () => {
       argumentExpression: THIS,
     }),
     {
-      expression: HIR_BUILTIN_FUNCTION_CALL({
-        functionName: 'stringToInt',
-        functionArgument: IR_THIS,
-      }),
+      statements: [
+        HIR_FUNCTION_CALL({
+          functionName: '_builtin_stringToInt',
+          functionArguments: [IR_THIS],
+          returnCollector: '_LOWERING_0',
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
   expectCorrectlyLowered(
@@ -236,14 +243,13 @@ it('FunctionCall family lowering works.', () => {
     }),
     {
       statements: [
-        HIR_EXPRESSION_AS_STATEMENT(
-          HIR_BUILTIN_FUNCTION_CALL({
-            functionName: 'println',
-            functionArgument: IR_THIS,
-          })
-        ),
+        HIR_FUNCTION_CALL({
+          functionName: '_builtin_println',
+          functionArguments: [IR_THIS],
+          returnCollector: '_LOWERING_0',
+        }),
       ],
-      expression: HIR_FALSE,
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
 

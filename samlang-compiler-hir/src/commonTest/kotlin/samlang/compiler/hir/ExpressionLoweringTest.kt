@@ -70,7 +70,7 @@ class ExpressionLoweringTest {
     }
 
     @Test
-    fun expressionOnlyLoweringWorks04() {
+    fun expressionOnlyLoweringWorks03() {
         assertCorrectlyLowered(
             expression = Expression.TupleConstructor(
                 range = dummyRange,
@@ -82,7 +82,7 @@ class ExpressionLoweringTest {
     }
 
     @Test
-    fun expressionOnlyLoweringWorks05() {
+    fun expressionOnlyLoweringWorks04() {
         assertCorrectlyLowered(
             expression = Expression.ObjectConstructor(
                 range = dummyRange,
@@ -103,7 +103,7 @@ class ExpressionLoweringTest {
     }
 
     @Test
-    fun expressionOnlyLoweringWorks06() {
+    fun expressionOnlyLoweringWorks05() {
         assertCorrectlyLowered(
             expression = Expression.VariantConstructor(
                 range = dummyRange,
@@ -119,7 +119,7 @@ class ExpressionLoweringTest {
     }
 
     @Test
-    fun expressionOnlyLoweringWorks07() {
+    fun expressionOnlyLoweringWorks06() {
         assertCorrectlyLowered(
             expression = Expression.FieldAccess(
                 range = dummyRange, type = unit, expression = THIS, fieldName = "foo", fieldOrder = 0
@@ -129,7 +129,7 @@ class ExpressionLoweringTest {
     }
 
     @Test
-    fun expressionOnlyLoweringWorks09() {
+    fun expressionOnlyLoweringWorks07() {
         assertCorrectlyLowered(
             expression = Unary(range = dummyRange, type = unit, operator = NOT, expression = THIS),
             expectedExpression = HighIrExpression.Unary(operator = NOT, expression = IR_THIS)
@@ -137,7 +137,7 @@ class ExpressionLoweringTest {
     }
 
     @Test
-    fun expressionOnlyLoweringWorks10() {
+    fun expressionOnlyLoweringWorks08() {
         assertCorrectlyLowered(
             expression = Expression.Binary(range = dummyRange, type = unit, operator = PLUS, e1 = THIS, e2 = THIS),
             expectedExpression = HighIrExpression.Binary(operator = PLUS, e1 = IR_THIS, e2 = IR_THIS)
@@ -145,7 +145,7 @@ class ExpressionLoweringTest {
     }
 
     @Test
-    fun expressionOnlyLoweringWorks11() {
+    fun expressionOnlyLoweringWorks09() {
         assertCorrectlyLowered(
             expression = Expression.Lambda(
                 range = dummyRange,

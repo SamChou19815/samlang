@@ -1,14 +1,12 @@
 package samlang.compiler.mir
 
 import samlang.ast.common.BinaryOperator
-import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.GlobalVariable
 import samlang.ast.common.IrNameEncoder
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
-import samlang.ast.hir.HighIrExpression.BuiltInFunctionApplication
 import samlang.ast.hir.HighIrExpression.ClassMember
 import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Lambda
@@ -270,17 +268,6 @@ internal class MidIrFirstPassGenerator(
                 UnaryOperator.NEG -> SUB(e1 = ZERO, e2 = child)
             }
         }
-
-        override fun visit(expression: BuiltInFunctionApplication): MidIrExpression = CALL(
-            functionExpr = NAME(
-                name = when (expression.functionName) {
-                    BuiltInFunctionName.STRING_TO_INT -> IrNameEncoder.nameOfStringToInt
-                    BuiltInFunctionName.INT_TO_STRING -> IrNameEncoder.nameOfIntToString
-                    BuiltInFunctionName.PRINTLN -> IrNameEncoder.nameOfPrintln
-                }
-            ),
-            args = listOf(translate(expression = expression.argument))
-        )
 
         override fun visit(expression: Binary): MidIrExpression {
             val operator = when (expression.operator) {
