@@ -12,11 +12,12 @@ const compileFunction = (
   samlangModule: SamlangModule,
   className: string,
   classMember: ClassMemberDefinition
-): HighIRFunction => {
+): readonly HighIRFunction[] => {
   const encodedName = encodeFunctionNameGlobally(moduleReference, className, classMember.name);
   const bodyLoweringResult = lowerSamlangExpression(
     moduleReference,
     samlangModule,
+    encodedName,
     classMember.body
   );
   const parameters = classMember.parameters.map(({ name }) => name);
@@ -25,7 +26,10 @@ const compileFunction = (
   const returnType = classMember.type.returnType;
   const hasReturn = returnType.type !== 'PrimitiveType' || returnType.name !== 'unit';
   const body = hasReturn ? [...statements, HIR_RETURN(bodyLoweringResult.expression)] : statements;
-  return { name: encodedName, parameters: parametersWithThis, hasReturn, body };
+  return [
+    ...bodyLoweringResult.syntheticFunctions,
+    { name: encodedName, parameters: parametersWithThis, hasReturn, body },
+  ];
 };
 
 const compileSamlangModule = (
@@ -35,7 +39,7 @@ const compileSamlangModule = (
   imports: samlangModule.imports,
   functions: samlangModule.classes
     .map(({ name: className, members }) =>
-      members.map((it) => compileFunction(moduleReference, samlangModule, className, it))
+      members.map((it) => compileFunction(moduleReference, samlangModule, className, it)).flat()
     )
     .flat(),
 });

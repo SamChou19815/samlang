@@ -44,14 +44,6 @@ export interface HighIRBinaryExpression extends BaseHighIRExpression {
   readonly e2: HighIRExpression;
 }
 
-export interface HighIRLambdaExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRLambdaExpression';
-  readonly hasReturn: boolean;
-  readonly parameters: readonly string[];
-  readonly captured: readonly string[];
-  readonly body: readonly HighIRStatement[];
-}
-
 export type HighIRExpression =
   | HighIRLiteralExpression
   | HighIRVariableExpression
@@ -59,8 +51,7 @@ export type HighIRExpression =
   | HighIRStructConstructorExpression
   | HighIRIndexAccessExpression
   | HighIRMethodAccessExpression
-  | HighIRBinaryExpression
-  | HighIRLambdaExpression;
+  | HighIRBinaryExpression;
 
 interface BaseHighIRStatement {
   readonly __type__: string;
@@ -195,19 +186,6 @@ export const HIR_BINARY = ({
   operator,
   e1,
   e2,
-});
-
-export const HIR_LAMBDA = ({
-  hasReturn,
-  parameters,
-  captured,
-  body,
-}: ConstructorArgumentObject<HighIRLambdaExpression>): HighIRLambdaExpression => ({
-  __type__: 'HighIRLambdaExpression',
-  hasReturn,
-  parameters,
-  captured,
-  body,
 });
 
 export const HIR_FUNCTION_CALL = ({

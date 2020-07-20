@@ -21,7 +21,6 @@ import {
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
-  HIR_LAMBDA,
   HIR_MATCH,
   HIR_IF_ELSE,
   HIR_LET,
@@ -71,9 +70,21 @@ const testModule: SamlangModule = {
 
 const expectCorrectlyLowered = (
   samlangExpression: SamlangExpression,
-  { statements = [], expression = HIR_FALSE }: Partial<ReturnType<typeof lowerSamlangExpression>>
+  {
+    syntheticFunctions = [],
+    statements = [],
+    expression = HIR_FALSE,
+  }: Partial<ReturnType<typeof lowerSamlangExpression>>
 ): void =>
-  expect(lowerSamlangExpression(ModuleReference.ROOT, testModule, samlangExpression)).toEqual({
+  expect(
+    lowerSamlangExpression(
+      ModuleReference.ROOT,
+      testModule,
+      'ENCODED_FUNCTION_NAME',
+      samlangExpression
+    )
+  ).toEqual({
+    syntheticFunctions,
     statements,
     expression,
   });
@@ -428,11 +439,26 @@ it('Lambda lowering works.', () => {
       body: THIS,
     }),
     {
-      expression: HIR_LAMBDA({
-        hasReturn: false,
-        parameters: ['a'],
-        captured: ['a'],
-        body: [],
+      syntheticFunctions: [
+        {
+          name: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+          hasReturn: false,
+          parameters: ['_context', 'a'],
+          body: [
+            HIR_LET({
+              name: 'a',
+              assignedExpression: HIR_INDEX_ACCESS({
+                expression: HIR_VARIABLE('_context'),
+                index: 0,
+              }),
+            }),
+          ],
+        },
+      ],
+      statements: [],
+      expression: HIR_METHOD_ACCESS({
+        expression: HIR_STRUCT_CONSTRUCTOR([HIR_VARIABLE('a')]),
+        encodedMethodName: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
       }),
     }
   );
@@ -446,11 +472,27 @@ it('Lambda lowering works.', () => {
       body: THIS,
     }),
     {
-      expression: HIR_LAMBDA({
-        hasReturn: true,
-        parameters: ['a'],
-        captured: ['a'],
-        body: [HIR_RETURN(IR_THIS)],
+      syntheticFunctions: [
+        {
+          name: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+          hasReturn: true,
+          parameters: ['_context', 'a'],
+          body: [
+            HIR_LET({
+              name: 'a',
+              assignedExpression: HIR_INDEX_ACCESS({
+                expression: HIR_VARIABLE('_context'),
+                index: 0,
+              }),
+            }),
+            HIR_RETURN(IR_THIS),
+          ],
+        },
+      ],
+      statements: [],
+      expression: HIR_METHOD_ACCESS({
+        expression: HIR_STRUCT_CONSTRUCTOR([HIR_VARIABLE('a')]),
+        encodedMethodName: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
       }),
     }
   );
@@ -464,11 +506,52 @@ it('Lambda lowering works.', () => {
       body: THIS,
     }),
     {
-      expression: HIR_LAMBDA({
-        hasReturn: true,
-        parameters: ['a'],
-        captured: ['a'],
-        body: [HIR_RETURN(IR_THIS)],
+      syntheticFunctions: [
+        {
+          name: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+          hasReturn: true,
+          parameters: ['_context', 'a'],
+          body: [
+            HIR_LET({
+              name: 'a',
+              assignedExpression: HIR_INDEX_ACCESS({
+                expression: HIR_VARIABLE('_context'),
+                index: 0,
+              }),
+            }),
+            HIR_RETURN(IR_THIS),
+          ],
+        },
+      ],
+      statements: [],
+      expression: HIR_METHOD_ACCESS({
+        expression: HIR_STRUCT_CONSTRUCTOR([HIR_VARIABLE('a')]),
+        encodedMethodName: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+      }),
+    }
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_LAMBDA({
+      range: Range.DUMMY,
+      type: functionType([], DUMMY_IDENTIFIER_TYPE),
+      parameters: [['a', unitType]],
+      captured: {},
+      body: THIS,
+    }),
+    {
+      syntheticFunctions: [
+        {
+          name: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+          hasReturn: true,
+          parameters: ['_context', 'a'],
+          body: [HIR_RETURN(IR_THIS)],
+        },
+      ],
+      statements: [],
+      expression: HIR_METHOD_ACCESS({
+        expression: HIR_INT(BigInt(1)),
+        encodedMethodName: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
       }),
     }
   );

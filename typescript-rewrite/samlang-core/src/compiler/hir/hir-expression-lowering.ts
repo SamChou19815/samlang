@@ -23,13 +23,13 @@ import {
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
-  HIR_LAMBDA,
   HIR_MATCH,
   HIR_IF_ELSE,
   HIR_LET,
   HIR_EXPRESSION_AS_STATEMENT,
   HIR_RETURN,
 } from '../../ast/hir/hir-expressions';
+import type { HighIRFunction } from '../../ast/hir/hir-toplevel';
 import type {
   SamlangExpression,
   TupleConstructorExpression,
@@ -55,18 +55,38 @@ type HighIRExpressionLoweringResult = {
   readonly expression: HighIRExpression;
 };
 
+type HighIRExpressionLoweringResultWithSyntheticFunctions = {
+  readonly syntheticFunctions: readonly HighIRFunction[];
+  readonly statements: readonly HighIRStatement[];
+  readonly expression: HighIRExpression;
+};
+
 class HighIRExpressionLoweringManager {
   private nextTemporaryVariableId = 0;
 
+  private nextSyntheticFunctionId = 0;
+
+  readonly syntheticFunctions: HighIRFunction[] = [];
+
   constructor(
     private readonly moduleReference: ModuleReference,
-    private readonly samlangModule: SamlangModule
+    private readonly samlangModule: SamlangModule,
+    private readonly encodedFunctionName: string
   ) {}
 
   private allocateTemporaryVariable(): string {
     const variableName = `_LOWERING_${this.nextTemporaryVariableId}`;
     this.nextTemporaryVariableId += 1;
     return variableName;
+  }
+
+  private allocateSyntheticFunctionName(): string {
+    const functionName = this.getFunctionName(
+      this.encodedFunctionName,
+      `_SYNTHETIC_${this.nextSyntheticFunctionId}`
+    );
+    this.nextSyntheticFunctionId += 1;
+    return functionName;
   }
 
   private loweredAndAddStatements(
@@ -471,19 +491,45 @@ class HighIRExpressionLoweringManager {
   }
 
   private lowerLambda(expression: LambdaExpression): HighIRExpressionLoweringResult {
-    const loweringResult = this.lower(expression.body);
-    const returnType = expression.type.returnType;
-    const hasReturn = returnType.type !== 'PrimitiveType' || returnType.name !== 'unit';
+    const syntheticLambda = this.createSyntheticLambdaFunction(expression);
+    this.syntheticFunctions.push(syntheticLambda);
+
+    const captured = Object.keys(expression.captured);
     return {
       statements: [],
-      expression: HIR_LAMBDA({
-        hasReturn,
-        parameters: expression.parameters.map(([name]) => name),
-        captured: Object.keys(expression.captured),
-        body: hasReturn
-          ? [...loweringResult.statements, HIR_RETURN(loweringResult.expression)]
-          : loweringResult.statements,
+      expression: HIR_METHOD_ACCESS({
+        // 1: A dummy value that is not zero, used to indicate nonnull context
+        expression:
+          captured.length === 0
+            ? HIR_INT(BigInt(1))
+            : HIR_STRUCT_CONSTRUCTOR(captured.map(HIR_VARIABLE)),
+        encodedMethodName: syntheticLambda.name,
       }),
+    };
+  }
+
+  private createSyntheticLambdaFunction(expression: LambdaExpression): HighIRFunction {
+    const loweringResult = this.lower(expression.body);
+    const lambdaStatements: HighIRStatement[] = [];
+    Object.keys(expression.captured).forEach((variable, index) => {
+      lambdaStatements.push(
+        HIR_LET({
+          name: variable,
+          assignedExpression: HIR_INDEX_ACCESS({ expression: HIR_VARIABLE('_context'), index }),
+        })
+      );
+    });
+    lambdaStatements.push(...loweringResult.statements);
+    const returnType = expression.type.returnType;
+    const hasReturn = returnType.type !== 'PrimitiveType' || returnType.name !== 'unit';
+    if (hasReturn) {
+      lambdaStatements.push(HIR_RETURN(loweringResult.expression));
+    }
+    return {
+      name: this.allocateSyntheticFunctionName(),
+      parameters: ['_context', ...expression.parameters.map(([name]) => name)],
+      hasReturn,
+      body: lambdaStatements,
     };
   }
 
@@ -563,8 +609,16 @@ class HighIRExpressionLoweringManager {
 const lowerSamlangExpression = (
   moduleReference: ModuleReference,
   samlangModule: SamlangModule,
+  encodedFunctionName: string,
   expression: SamlangExpression
-): HighIRExpressionLoweringResult =>
-  new HighIRExpressionLoweringManager(moduleReference, samlangModule).lower(expression);
+): HighIRExpressionLoweringResultWithSyntheticFunctions => {
+  const manager = new HighIRExpressionLoweringManager(
+    moduleReference,
+    samlangModule,
+    encodedFunctionName
+  );
+  const result = manager.lower(expression);
+  return { ...result, syntheticFunctions: manager.syntheticFunctions };
+};
 
 export default lowerSamlangExpression;
