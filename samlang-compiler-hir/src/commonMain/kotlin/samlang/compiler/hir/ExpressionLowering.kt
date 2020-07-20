@@ -391,22 +391,26 @@ private class ExpressionLoweringVisitor(
         val matchedExpression = expression.matchedExpression
             .getLoweredAndAddStatements(statements = loweredStatements)
         val variableForMatchedExpression = allocateTemporaryVariable()
+        val temporaryVariable = allocateTemporaryVariable()
         loweredStatements += LetDefinition(
             name = variableForMatchedExpression,
             assignedExpression = matchedExpression
         )
         val loweredMatchingList = expression.matchingList.map { patternToExpression ->
+            val localStatements = mutableListOf<HighIrStatement>()
+            val dataVariable = patternToExpression.dataVariable
+            if (dataVariable != null) {
+                localStatements += LetDefinition(
+                    name = dataVariable,
+                    assignedExpression = IndexAccess(expression = Variable(variableForMatchedExpression), index = 1)
+                )
+            }
             val result = patternToExpression.expression.lower()
-            Match.VariantPatternToStatement(
-                tagOrder = patternToExpression.tagOrder,
-                dataVariable = patternToExpression.dataVariable,
-                statements = result.statements,
-                finalExpression = result.expression
-            )
+            localStatements += result.statements
+            localStatements += LetDefinition(name = temporaryVariable, assignedExpression = result.expression)
+            Match.VariantPatternToStatement(tagOrder = patternToExpression.tagOrder, statements = localStatements)
         }
-        val temporaryVariable = allocateTemporaryVariable()
         loweredStatements += Match(
-            assignedTemporaryVariable = temporaryVariable,
             variableForMatchedExpression = variableForMatchedExpression,
             matchingList = loweredMatchingList
         )

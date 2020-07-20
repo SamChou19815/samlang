@@ -145,21 +145,15 @@ internal class MidIrFirstPassGenerator(
         override fun visit(statement: Match): List<MidIrStatement> {
             statement.matchingList
             val matchedTemp = allocator.getTemporaryByVariable(variableName = statement.variableForMatchedExpression)
-            val finalAssignedVariable = statement.assignedTemporaryVariable
             val tagTemp = allocator.allocateTemp()
             val statements = mutableListOf<MidIrStatement>()
             statements += MOVE(destination = tagTemp, source = matchedTemp)
-            statements += MOVE(
-                destination = allocator.allocateTemp(variableName = finalAssignedVariable),
-                source = ZERO
-            )
             val matchingList = statement.matchingList
             val matchBranchLabels = matchingList.map {
                 allocator.allocateLabelWithAnnotation(annotation = "MATCH_BRANCH_${it.tagOrder}")
             }
             val endLabel = allocator.allocateLabelWithAnnotation(annotation = "MATCH_END")
             matchingList.forEachIndexed { index, variantPatternToStatement ->
-                val dataVariable = variantPatternToStatement.dataVariable
                 val currentLabel = matchBranchLabels[index]
                 statements += CJUMP(
                     condition = EQ(tagTemp, CONST(variantPatternToStatement.tagOrder.toLong())),
@@ -167,19 +161,7 @@ internal class MidIrFirstPassGenerator(
                     label2 = if (index < matchBranchLabels.size - 1) matchBranchLabels[index + 1] else endLabel
                 )
                 statements += Label(name = currentLabel)
-                if (dataVariable != null) {
-                    statements += MOVE(
-                        destination = allocator.allocateTemp(variableName = dataVariable),
-                        source = IMMUTABLE_MEM(expression = ADD(e1 = matchedTemp, e2 = CONST(value = 8)))
-                    )
-                }
                 variantPatternToStatement.statements.forEach { statements += translate(statement = it) }
-                val finalAssignedExpressionResult = translate(variantPatternToStatement.finalExpression)
-                statements += finalAssignedExpressionResult.statements
-                statements += MOVE(
-                    destination = allocator.getTemporaryByVariable(variableName = finalAssignedVariable),
-                    source = finalAssignedExpressionResult.expression
-                )
                 statements += Jump(label = endLabel)
             }
             statements += Label(name = endLabel)

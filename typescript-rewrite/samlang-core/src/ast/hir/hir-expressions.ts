@@ -74,14 +74,11 @@ export interface HighIRIfElseStatement extends BaseHighIRStatement {
 
 export interface HighIRVariantPatternToStatement {
   readonly tagOrder: number;
-  readonly dataVariable?: string;
   readonly statements: readonly HighIRStatement[];
-  readonly finalExpression: HighIRExpression;
 }
 
 export interface HighIRMatchStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRMatchStatement';
-  readonly assignedTemporaryVariable: string;
   readonly variableForMatchedExpression: string;
   readonly matchingList: readonly HighIRVariantPatternToStatement[];
 }
@@ -207,12 +204,10 @@ export const HIR_IF_ELSE = ({
 });
 
 export const HIR_MATCH = ({
-  assignedTemporaryVariable,
   variableForMatchedExpression,
   matchingList,
 }: ConstructorArgumentObject<HighIRMatchStatement>): HighIRMatchStatement => ({
   __type__: 'HighIRMatchStatement',
-  assignedTemporaryVariable,
   variableForMatchedExpression,
   matchingList,
 });

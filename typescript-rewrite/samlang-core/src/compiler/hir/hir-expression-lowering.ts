@@ -466,22 +466,34 @@ class HighIRExpressionLoweringManager {
       loweredStatements
     );
     const variableForMatchedExpression = this.allocateTemporaryVariable();
+    const temporaryVariable = this.allocateTemporaryVariable();
     loweredStatements.push(
       HIR_LET({ name: variableForMatchedExpression, assignedExpression: matchedExpression })
     );
-    const loweredMatchingList = expression.matchingList.map((patternToExpression) => {
-      const result = this.lower(patternToExpression.expression);
-      return {
-        tagOrder: patternToExpression.tagOrder,
-        dataVariable: patternToExpression.dataVariable,
-        statements: result.statements,
-        finalExpression: result.expression,
-      };
-    });
-    const temporaryVariable = this.allocateTemporaryVariable();
+    const loweredMatchingList = expression.matchingList.map(
+      ({ tagOrder, dataVariable, expression: patternExpression }) => {
+        const localStatements: HighIRStatement[] = [];
+        if (dataVariable != null) {
+          localStatements.push(
+            HIR_LET({
+              name: dataVariable,
+              assignedExpression: HIR_INDEX_ACCESS({
+                expression: HIR_VARIABLE(variableForMatchedExpression),
+                index: 1,
+              }),
+            })
+          );
+        }
+        const result = this.lower(patternExpression);
+        localStatements.push(...result.statements);
+        localStatements.push(
+          HIR_LET({ name: temporaryVariable, assignedExpression: result.expression })
+        );
+        return { tagOrder, statements: localStatements };
+      }
+    );
     loweredStatements.push(
       HIR_MATCH({
-        assignedTemporaryVariable: temporaryVariable,
         variableForMatchedExpression,
         matchingList: loweredMatchingList,
       })

@@ -625,24 +625,41 @@ it('Match lowering works.', () => {
         HIR_LET({ name: '_LOWERING_0', assignedExpression: IR_THIS }),
         HIR_MATCH({
           variableForMatchedExpression: '_LOWERING_0',
-          assignedTemporaryVariable: '_LOWERING_2',
           matchingList: [
-            { tagOrder: 0, dataVariable: 'bar', statements: [], finalExpression: IR_THIS },
+            {
+              tagOrder: 0,
+              statements: [
+                HIR_LET({
+                  name: 'bar',
+                  assignedExpression: HIR_INDEX_ACCESS({
+                    expression: HIR_VARIABLE('_LOWERING_0'),
+                    index: 1,
+                  }),
+                }),
+                HIR_LET({
+                  name: '_LOWERING_1',
+                  assignedExpression: IR_THIS,
+                }),
+              ],
+            },
             {
               tagOrder: 1,
               statements: [
                 HIR_FUNCTION_CALL({
                   functionName: '_builtin_throw',
                   functionArguments: [IR_THIS],
-                  returnCollector: '_LOWERING_1',
+                  returnCollector: '_LOWERING_2',
+                }),
+                HIR_LET({
+                  name: '_LOWERING_1',
+                  assignedExpression: HIR_FALSE,
                 }),
               ],
-              finalExpression: HIR_FALSE,
             },
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_2'),
+      expression: HIR_VARIABLE('_LOWERING_1'),
     }
   );
 });
