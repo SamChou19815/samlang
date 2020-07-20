@@ -4,7 +4,6 @@ import samlang.ast.common.GlobalVariable
 
 internal class MidIrGlobalResourceAllocator {
     private var nextGlobalVariableId: Int = 0
-    private var nextLambdaFunctionId: Int = 0
     private val globalVariableReferenceMap: MutableMap<String, GlobalVariable> = LinkedHashMap()
 
     fun allocateStringArrayGlobalVariable(string: String): GlobalVariable {
@@ -16,11 +15,5 @@ internal class MidIrGlobalResourceAllocator {
         nextGlobalVariableId++
         globalVariableReferenceMap["STRING_CONTENT_$string"] = variable
         return variable
-    }
-
-    fun allocateLambdaFunctionName(): String {
-        val id = nextLambdaFunctionId
-        nextLambdaFunctionId++
-        return "function_lambda_$id"
     }
 }

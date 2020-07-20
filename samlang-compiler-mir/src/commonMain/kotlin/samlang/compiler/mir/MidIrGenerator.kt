@@ -48,14 +48,6 @@ class MidIrGenerator private constructor(
             numberOfArguments = allocatedArgs.size,
             hasReturn = function.hasReturn
         )
-        functions += generator1stPass.emittedLambdaFunctions.map { emittedLambdaFunction ->
-            val processedLambdaBody: List<MidIrStatement> = cleanupAfterFirstPass(
-                statements = emittedLambdaFunction.mainBodyStatements,
-                generator2ndPass = generator2ndPass,
-                allocator = allocator
-            )
-            emittedLambdaFunction.copy(mainBodyStatements = processedLambdaBody)
-        }
         globalVariables += generator1stPass.stringGlobalVariables
     }
 

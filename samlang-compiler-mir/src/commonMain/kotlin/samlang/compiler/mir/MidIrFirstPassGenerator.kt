@@ -30,7 +30,6 @@ import samlang.ast.mir.MidIrExpression.Companion.MALLOC
 import samlang.ast.mir.MidIrExpression.Companion.NAME
 import samlang.ast.mir.MidIrExpression.Companion.OP
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
-import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
 import samlang.ast.mir.MidIrStatement.Companion.CJUMP
@@ -49,10 +48,8 @@ internal class MidIrFirstPassGenerator(
     private val expressionGenerator: ExpressionGenerator = ExpressionGenerator()
 
     private val stringGlobalVariableCollector: MutableSet<GlobalVariable> = LinkedHashSet()
-    private val lambdaFunctionsCollector: MutableList<MidIrFunction> = mutableListOf()
 
     val stringGlobalVariables: Set<GlobalVariable> get() = stringGlobalVariableCollector
-    val emittedLambdaFunctions: List<MidIrFunction> get() = lambdaFunctionsCollector
 
     fun translate(statement: HighIrStatement): MidIrStatement = statement.accept(visitor = statementGenerator)
 
