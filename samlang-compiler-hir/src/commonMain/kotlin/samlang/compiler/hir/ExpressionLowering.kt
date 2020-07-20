@@ -24,7 +24,6 @@ import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDefinition
 import samlang.ast.hir.HighIrStatement.Match
 import samlang.ast.hir.HighIrStatement.Return
-import samlang.ast.hir.HighIrStatement.Throw
 import samlang.ast.lang.Expression
 import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Module
@@ -162,7 +161,11 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
         val loweredStatements = mutableListOf<HighIrStatement>()
         val result = expression.expression.lower()
         loweredStatements += result.statements
-        loweredStatements += Throw(expression = result.expression)
+        loweredStatements += FunctionApplication(
+            functionName = IrNameEncoder.nameOfThrow,
+            arguments = listOf(result.expression),
+            resultCollector = allocateTemporaryVariable()
+        )
         return LoweringResult(statements = loweredStatements, expression = HighIrExpression.FALSE)
     }
 

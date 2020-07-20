@@ -41,17 +41,6 @@ class ExpressionLoweringTest {
         )
     }
 
-    private fun assertCorrectlyLowered(expression: Expression, expectedStatements: List<HighIrStatement>) {
-        assertEquals(
-            expected = LoweringResult(statements = expectedStatements, expression = HighIrExpression.FALSE),
-            actual = lowerExpression(
-                moduleReference = ModuleReference.ROOT,
-                module = Module(imports = emptyList(), classDefinitions = emptyList()),
-                expression = expression
-            )
-        )
-    }
-
     @Test
     fun expressionOnlyLoweringWorks01() {
         assertCorrectlyLowered(
@@ -151,14 +140,6 @@ class ExpressionLoweringTest {
                 captured = emptyList(),
                 body = listOf(HighIrStatement.Return(expression = IR_THIS))
             )
-        )
-    }
-
-    @Test
-    fun statementOnlyLoweringWorks1() {
-        assertCorrectlyLowered(
-            expression = Expression.Panic(range = dummyRange, type = unit, expression = THIS),
-            expectedStatements = listOf(HighIrStatement.Throw(expression = IR_THIS))
         )
     }
 

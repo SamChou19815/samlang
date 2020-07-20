@@ -73,11 +73,6 @@ interface BaseHighIRStatement {
   readonly __type__: string;
 }
 
-export interface HighIRThrowStatement extends BaseHighIRStatement {
-  readonly __type__: 'HighIRThrowStatement';
-  readonly expression: HighIRExpression;
-}
-
 export interface HighIRFunctionCallStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRFunctionCallStatement';
   readonly functionName: string;
@@ -130,7 +125,6 @@ export interface HighIRReturnStatement extends BaseHighIRStatement {
 }
 
 export type HighIRStatement =
-  | HighIRThrowStatement
   | HighIRFunctionCallStatement
   | HighIRClosureCallStatement
   | HighIRIfElseStatement
@@ -230,11 +224,6 @@ export const HIR_LAMBDA = ({
   parameters,
   captured,
   body,
-});
-
-export const HIR_THROW = (expression: HighIRExpression): HighIRThrowStatement => ({
-  __type__: 'HighIRThrowStatement',
-  expression,
 });
 
 export const HIR_FUNCTION_CALL = ({

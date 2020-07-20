@@ -23,7 +23,6 @@ import {
   HIR_CLOSURE_CALL,
   HIR_BINARY,
   HIR_LAMBDA,
-  HIR_THROW,
   HIR_MATCH,
   HIR_IF_ELSE,
   HIR_LET,
@@ -178,7 +177,13 @@ it('Unary lowering works.', () => {
       expression: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
     }),
     {
-      statements: [HIR_THROW(IR_THIS)],
+      statements: [
+        HIR_FUNCTION_CALL({
+          functionName: '_builtin_throw',
+          functionArguments: [IR_THIS],
+          returnCollector: '_LOWERING_0',
+        }),
+      ],
       expression: HIR_UNARY({ operator: '!', expression: HIR_FALSE }),
     }
   );
@@ -191,7 +196,13 @@ it('Unary lowering works.', () => {
       expression: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
     }),
     {
-      statements: [HIR_THROW(IR_THIS)],
+      statements: [
+        HIR_FUNCTION_CALL({
+          functionName: '_builtin_throw',
+          functionArguments: [IR_THIS],
+          returnCollector: '_LOWERING_0',
+        }),
+      ],
       expression: HIR_UNARY({ operator: '-', expression: HIR_FALSE }),
     }
   );
@@ -467,7 +478,15 @@ it('Lambda lowering works.', () => {
 it('Panic lowering works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
-    { statements: [HIR_THROW(IR_THIS)] }
+    {
+      statements: [
+        HIR_FUNCTION_CALL({
+          functionName: '_builtin_throw',
+          functionArguments: [IR_THIS],
+          returnCollector: '_LOWERING_0',
+        }),
+      ],
+    }
   );
 });
 
@@ -484,11 +503,18 @@ it('IfElse lowering works.', () => {
       statements: [
         HIR_IF_ELSE({
           booleanExpression: IR_THIS,
-          s1: [HIR_THROW(IR_THIS), HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_FALSE })],
-          s2: [HIR_LET({ name: '_LOWERING_0', assignedExpression: IR_THIS })],
+          s1: [
+            HIR_FUNCTION_CALL({
+              functionName: '_builtin_throw',
+              functionArguments: [IR_THIS],
+              returnCollector: '_LOWERING_0',
+            }),
+            HIR_LET({ name: '_LOWERING_1', assignedExpression: HIR_FALSE }),
+          ],
+          s2: [HIR_LET({ name: '_LOWERING_1', assignedExpression: IR_THIS })],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_LOWERING_1'),
     }
   );
 });
@@ -514,14 +540,24 @@ it('Match lowering works.', () => {
         HIR_LET({ name: '_LOWERING_0', assignedExpression: IR_THIS }),
         HIR_MATCH({
           variableForMatchedExpression: '_LOWERING_0',
-          assignedTemporaryVariable: '_LOWERING_1',
+          assignedTemporaryVariable: '_LOWERING_2',
           matchingList: [
             { tagOrder: 0, dataVariable: 'bar', statements: [], finalExpression: IR_THIS },
-            { tagOrder: 1, statements: [HIR_THROW(IR_THIS)], finalExpression: HIR_FALSE },
+            {
+              tagOrder: 1,
+              statements: [
+                HIR_FUNCTION_CALL({
+                  functionName: '_builtin_throw',
+                  functionArguments: [IR_THIS],
+                  returnCollector: '_LOWERING_1',
+                }),
+              ],
+              finalExpression: HIR_FALSE,
+            },
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_1'),
+      expression: HIR_VARIABLE('_LOWERING_2'),
     }
   );
 });

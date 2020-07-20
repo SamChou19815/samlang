@@ -1,6 +1,7 @@
 import ModuleReference from '../../ast/common/module-reference';
 import {
   encodeFunctionNameGlobally,
+  ENCODED_FUNCTION_NAME_THROW,
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_PRINTLN,
@@ -24,7 +25,6 @@ import {
   HIR_CLOSURE_CALL,
   HIR_BINARY,
   HIR_LAMBDA,
-  HIR_THROW,
   HIR_MATCH,
   HIR_IF_ELSE,
   HIR_LET,
@@ -217,7 +217,14 @@ class HighIRExpressionLoweringManager {
   private lowerPanic(expression: PanicExpression): HighIRExpressionLoweringResult {
     const result = this.lower(expression.expression);
     return {
-      statements: [...result.statements, HIR_THROW(result.expression)],
+      statements: [
+        ...result.statements,
+        HIR_FUNCTION_CALL({
+          functionName: ENCODED_FUNCTION_NAME_THROW,
+          functionArguments: [result.expression],
+          returnCollector: this.allocateTemporaryVariable(),
+        }),
+      ],
       expression: HIR_FALSE,
     };
   }
