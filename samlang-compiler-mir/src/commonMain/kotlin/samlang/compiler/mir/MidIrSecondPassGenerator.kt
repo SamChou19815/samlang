@@ -25,7 +25,6 @@ import samlang.ast.mir.MidIrStatement.Label
 import samlang.ast.mir.MidIrStatement.MoveMem
 import samlang.ast.mir.MidIrStatement.MoveTemp
 import samlang.ast.mir.MidIrStatement.Return
-import samlang.ast.mir.MidIrStatement.Sequence
 import samlang.ast.mir.MidIrStatementVisitor
 
 /** Generate canonical mid IR in the second pass. */
@@ -116,9 +115,6 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
             )
             return sequence
         }
-
-        override fun visit(node: Sequence, context: Unit): List<MidIrStatement> =
-            node.statements.map { lower(statement = it) }.flatten()
 
         override fun visit(node: Jump, context: Unit): List<MidIrStatement> = listOf(node)
 

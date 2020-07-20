@@ -113,11 +113,6 @@ export interface MidIRConditionalJumpNoFallThrough<E = MidIRExpression> extends 
   readonly label2: string;
 }
 
-export interface MidIRSequenceStatement extends BaseMidIRStatement {
-  readonly __type__: 'MidIRSequenceStatement';
-  readonly statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[];
-}
-
 export type MidIRStatement =
   | MidIRMoveTempStatement
   | MidIRMoveMemStatement
@@ -145,8 +140,7 @@ export type MidIRStatement_DANGEROUSLY_NON_CANONICAL =
   | MidIRLabelStatement
   | MidIRCallFunctionStatement<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
   | MidIRReturnStatement<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
-  | MidIRConditionalJumpNoFallThrough<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
-  | MidIRSequenceStatement;
+  | MidIRConditionalJumpNoFallThrough<MidIRExpression_DANGEROUSLY_NON_CANONICAL>;
 
 /** Part 4: Top Levels */
 
@@ -342,10 +336,6 @@ export const MIR_CJUMP_FALLTHROUGH = (
   label1,
 });
 
-export const MIR_SEQ_NON_CANONICAL = (
-  statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[]
-): MidIRSequenceStatement => ({ __type__: 'MidIRSequenceStatement', statements });
-
 /** Part 6: toString functions */
 
 type MidIRExpressionLoose = MidIRExpression | MidIRExpression_DANGEROUSLY_NON_CANONICAL;
@@ -425,11 +415,6 @@ export const midIRStatementToString = (statement: MidIRStatementLoose): string =
     case 'MidIRConditionalJumpNoFallThrough': {
       const guard = midIRExpressionToString(statement.conditionExpression);
       return `if (${guard}) goto ${statement.label1}; else goto ${statement.label2};`;
-    }
-
-    case 'MidIRSequenceStatement': {
-      const joined = statement.statements.map((it) => `  ${midIRStatementToString(it)}`).join('\n');
-      return `[\n${joined}\n];`;
     }
   }
 };

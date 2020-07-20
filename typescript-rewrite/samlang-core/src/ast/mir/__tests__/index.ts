@@ -24,7 +24,6 @@ import {
   MIR_CJUMP_FALLTHROUGH,
   MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
   MIR_CJUMP_NON_FALLTHROUGH_LESS_NON_CANONICAL,
-  MIR_SEQ_NON_CANONICAL,
   midIRExpressionToString,
   midIRStatementToString,
   midIRCompilationUnitToString,
@@ -103,8 +102,6 @@ it('midIRStatementToString tests', () => {
   expect(
     midIRStatementToString(MIR_CJUMP_NON_FALLTHROUGH_LESS_NON_CANONICAL(MIR_ZERO, 'l1', 'l2'))
   ).toBe('if (0) goto l1; else goto l2;');
-
-  expect(midIRStatementToString(MIR_SEQ_NON_CANONICAL([MIR_RETURN()]))).toBe('[\n  return;\n];');
 });
 
 it('midIRCompilationUnitToString test', () => {

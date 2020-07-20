@@ -20,7 +20,6 @@ import samlang.ast.mir.MidIrStatement.Label
 import samlang.ast.mir.MidIrStatement.MoveMem
 import samlang.ast.mir.MidIrStatement.MoveTemp
 import samlang.ast.mir.MidIrStatement.Return
-import samlang.ast.mir.MidIrStatement.Sequence
 
 internal object AlgebraicOptimizer {
     fun optimize(statements: List<MidIrStatement>): List<MidIrStatement> =
@@ -45,9 +44,6 @@ internal object AlgebraicOptimizer {
                 arguments = node.arguments.map { optimize(expression = it) },
                 returnCollector = node.returnCollector
             )
-
-        override fun visit(node: Sequence, context: Unit): MidIrStatement =
-            node.copy(statements = node.statements.map { optimize(statement = it) })
 
         override fun visit(node: Jump, context: Unit): MidIrStatement = node
 

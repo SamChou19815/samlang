@@ -38,13 +38,6 @@ sealed class MidIrStatement {
             visitor.visit(node = this, context = context)
     }
 
-    data class Sequence(val statements: List<MidIrStatement>) : MidIrStatement() {
-        override fun toString(): String = "SEQ($statements);"
-
-        override fun <C, T> accept(visitor: MidIrStatementVisitor<C, T>, context: C): T =
-            visitor.visit(node = this, context = context)
-    }
-
     @Canonical
     data class Jump(val label: String) : MidIrStatement() {
         override fun toString(): String = "jump $label;"
