@@ -1,7 +1,6 @@
 package samlang.compiler.mir
 
 import samlang.ast.common.GlobalVariable
-import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.ClassMember
@@ -10,7 +9,6 @@ import samlang.ast.hir.HighIrExpression.Lambda
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
 import samlang.ast.hir.HighIrExpression.StructConstructor
-import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpressionVisitor
 import samlang.ast.hir.HighIrStatement
@@ -33,8 +31,6 @@ import samlang.ast.mir.MidIrExpression.Companion.MALLOC
 import samlang.ast.mir.MidIrExpression.Companion.NAME
 import samlang.ast.mir.MidIrExpression.Companion.ONE
 import samlang.ast.mir.MidIrExpression.Companion.OP
-import samlang.ast.mir.MidIrExpression.Companion.SUB
-import samlang.ast.mir.MidIrExpression.Companion.XOR
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
 import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrStatement
@@ -253,16 +249,6 @@ internal class MidIrFirstPassGenerator(
                 )
             )
             return ESEQ(SEQ(statements), closureTemporary)
-        }
-
-        override fun visit(expression: Unary): MidIrExpression {
-            val child = translate(expression = expression.expression)
-            return when (expression.operator) {
-                // xor(0, 1) = 1 ==> false -> true
-                // xor(1, 1) = 0 ==> true -> false
-                UnaryOperator.NOT -> XOR(e1 = child, e2 = ONE)
-                UnaryOperator.NEG -> SUB(e1 = ZERO, e2 = child)
-            }
         }
 
         override fun visit(expression: Binary): MidIrExpression {

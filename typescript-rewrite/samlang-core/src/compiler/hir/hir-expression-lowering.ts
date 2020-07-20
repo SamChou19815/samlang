@@ -20,7 +20,6 @@ import {
   HIR_INT,
   HIR_INDEX_ACCESS,
   HIR_METHOD_ACCESS,
-  HIR_UNARY,
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
@@ -208,10 +207,18 @@ class HighIRExpressionLoweringManager {
 
   private lowerUnary(expression: UnaryExpression): HighIRExpressionLoweringResult {
     const result = this.lower(expression.expression);
-    return {
-      statements: result.statements,
-      expression: HIR_UNARY({ operator: expression.operator, expression: result.expression }),
-    };
+    switch (expression.operator) {
+      case '!':
+        return {
+          statements: result.statements,
+          expression: HIR_BINARY({ operator: '^', e1: result.expression, e2: HIR_INT(BigInt(1)) }),
+        };
+      case '-':
+        return {
+          statements: result.statements,
+          expression: HIR_BINARY({ operator: '-', e1: HIR_INT(BigInt(0)), e2: result.expression }),
+        };
+    }
   }
 
   private lowerPanic(expression: PanicExpression): HighIRExpressionLoweringResult {

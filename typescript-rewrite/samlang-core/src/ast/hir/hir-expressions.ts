@@ -1,4 +1,4 @@
-import type { UnaryOperator, IROperator } from '../common/enums';
+import type { IROperator } from '../common/enums';
 import { Literal, FALSE, TRUE, intLiteralOf } from '../common/literals';
 
 interface BaseHighIRExpression {
@@ -37,12 +37,6 @@ export interface HighIRMethodAccessExpression extends BaseHighIRExpression {
   readonly encodedMethodName: string;
 }
 
-export interface HighIRUnaryExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRUnaryExpression';
-  readonly operator: UnaryOperator;
-  readonly expression: HighIRExpression;
-}
-
 export interface HighIRBinaryExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRBinaryExpression';
   readonly e1: HighIRExpression;
@@ -65,7 +59,6 @@ export type HighIRExpression =
   | HighIRStructConstructorExpression
   | HighIRIndexAccessExpression
   | HighIRMethodAccessExpression
-  | HighIRUnaryExpression
   | HighIRBinaryExpression
   | HighIRLambdaExpression;
 
@@ -191,15 +184,6 @@ export const HIR_METHOD_ACCESS = ({
   __type__: 'HighIRMethodAccessExpression',
   expression,
   encodedMethodName,
-});
-
-export const HIR_UNARY = ({
-  expression,
-  operator,
-}: ConstructorArgumentObject<HighIRUnaryExpression>): HighIRUnaryExpression => ({
-  __type__: 'HighIRUnaryExpression',
-  expression,
-  operator,
 });
 
 export const HIR_BINARY = ({

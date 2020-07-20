@@ -6,6 +6,7 @@ import samlang.ast.common.IrNameEncoder
 import samlang.ast.common.IrOperator
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Type
+import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.ClassMember
@@ -14,7 +15,6 @@ import samlang.ast.hir.HighIrExpression.Lambda
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
 import samlang.ast.hir.HighIrExpression.StructConstructor
-import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.ClosureApplication
@@ -153,8 +153,18 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
 
     override fun visit(expression: Expression.Unary, context: Unit): LoweringResult {
         val result = expression.expression.lower()
-        return Unary(operator = expression.operator, expression = result.expression)
-            .asLoweringResult(statements = result.statements)
+        return when (expression.operator) {
+            UnaryOperator.NOT -> Binary(
+                operator = IrOperator.XOR,
+                e1 = result.expression,
+                e2 = HighIrExpression.literal(value = 1L)
+            ).asLoweringResult(statements = result.statements)
+            UnaryOperator.NEG -> Binary(
+                operator = IrOperator.SUB,
+                e1 = HighIrExpression.literal(value = 0L),
+                e2 = result.expression
+            ).asLoweringResult(statements = result.statements)
+        }
     }
 
     override fun visit(expression: Expression.Panic, context: Unit): LoweringResult {

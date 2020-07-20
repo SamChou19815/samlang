@@ -8,11 +8,9 @@ import samlang.ast.common.Type
 import samlang.ast.common.Type.Companion.id
 import samlang.ast.common.Type.Companion.int
 import samlang.ast.common.Type.Companion.unit
-import samlang.ast.common.UnaryOperator.NOT
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.lang.Expression
-import samlang.ast.lang.Expression.Unary
 import samlang.ast.lang.Module
 import samlang.ast.lang.Pattern
 import samlang.ast.lang.Statement
@@ -118,14 +116,6 @@ class ExpressionLoweringTest {
 
     @Test
     fun expressionOnlyLoweringWorks07() {
-        assertCorrectlyLowered(
-            expression = Unary(range = dummyRange, type = unit, operator = NOT, expression = THIS),
-            expectedExpression = HighIrExpression.Unary(operator = NOT, expression = IR_THIS)
-        )
-    }
-
-    @Test
-    fun expressionOnlyLoweringWorks08() {
         assertCorrectlyLowered(
             expression = Expression.Lambda(
                 range = dummyRange,

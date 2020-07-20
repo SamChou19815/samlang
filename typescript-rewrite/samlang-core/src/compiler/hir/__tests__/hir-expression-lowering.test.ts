@@ -18,7 +18,6 @@ import {
   HIR_INT,
   HIR_INDEX_ACCESS,
   HIR_METHOD_ACCESS,
-  HIR_UNARY,
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
@@ -184,7 +183,7 @@ it('Unary lowering works.', () => {
           returnCollector: '_LOWERING_0',
         }),
       ],
-      expression: HIR_UNARY({ operator: '!', expression: HIR_FALSE }),
+      expression: HIR_BINARY({ operator: '^', e1: HIR_FALSE, e2: HIR_INT(BigInt(1)) }),
     }
   );
 
@@ -203,7 +202,7 @@ it('Unary lowering works.', () => {
           returnCollector: '_LOWERING_0',
         }),
       ],
-      expression: HIR_UNARY({ operator: '-', expression: HIR_FALSE }),
+      expression: HIR_BINARY({ operator: '-', e1: HIR_INT(BigInt(0)), e2: HIR_FALSE }),
     }
   );
 });
