@@ -14,8 +14,8 @@ import samlang.ast.asm.AssemblyInstruction.Companion.IMUL
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
 import samlang.ast.asm.AssemblyInstruction.Companion.SET
 import samlang.ast.asm.AssemblyInstruction.JumpType
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression.Op
-import samlang.ast.mir.MidIrOperator
 
 /**
  * A generic tiling of op expression.
@@ -26,8 +26,8 @@ internal object TileGenericOp : IrExpressionTile<Op> {
         val resultReg = dpTiling.context.nextReg()
         val (instructions1, e1Reg) = dpTiling.tile(node.e1)
         val e2Result = when (node.operator) {
-            MidIrOperator.LT, MidIrOperator.LE, MidIrOperator.GT,
-            MidIrOperator.GE, MidIrOperator.EQ, MidIrOperator.NE -> dpTiling.tile(node.e2)
+            IrOperator.LT, IrOperator.LE, IrOperator.GT,
+            IrOperator.GE, IrOperator.EQ, IrOperator.NE -> dpTiling.tile(node.e2)
             else -> dpTiling.tileRegOrMem(node.e2)
         }
         instructions += COMMENT("TileGenericOp: $node")
@@ -35,69 +35,69 @@ internal object TileGenericOp : IrExpressionTile<Op> {
         instructions.addAll(e2Result.instructions)
         val e2RegOrMem = e2Result.regOrMem
         when (node.operator) {
-            MidIrOperator.ADD -> {
+            IrOperator.ADD -> {
                 instructions += MOVE(resultReg, e1Reg)
                 instructions += BIN_OP(AlBinaryOpType.ADD, resultReg, e2RegOrMem)
             }
-            MidIrOperator.SUB -> {
+            IrOperator.SUB -> {
                 instructions += MOVE(resultReg, e1Reg)
                 instructions += BIN_OP(AlBinaryOpType.SUB, resultReg, e2RegOrMem)
             }
-            MidIrOperator.MUL -> {
+            IrOperator.MUL -> {
                 instructions += MOVE(resultReg, e1Reg)
                 instructions += IMUL(resultReg, e2RegOrMem)
             }
-            MidIrOperator.DIV -> {
+            IrOperator.DIV -> {
                 instructions += MOVE(RAX, e1Reg)
                 instructions += CQO()
                 instructions += IDIV(e2RegOrMem)
                 instructions += MOVE(resultReg, RAX)
             }
-            MidIrOperator.MOD -> {
+            IrOperator.MOD -> {
                 instructions += MOVE(RAX, e1Reg)
                 instructions += CQO()
                 instructions += IDIV(e2RegOrMem)
                 instructions += MOVE(resultReg, RDX)
             }
-            MidIrOperator.LT -> {
+            IrOperator.LT -> {
                 instructions += CMP(e1Reg, e2RegOrMem as Reg)
                 instructions += SET(JumpType.JL, RAX)
                 instructions += MOVE(resultReg, RAX)
             }
-            MidIrOperator.LE -> {
+            IrOperator.LE -> {
                 instructions += CMP(e1Reg, e2RegOrMem as Reg)
                 instructions += SET(JumpType.JLE, RAX)
                 instructions += MOVE(resultReg, RAX)
             }
-            MidIrOperator.GT -> {
+            IrOperator.GT -> {
                 instructions += CMP(e1Reg, e2RegOrMem as Reg)
                 instructions += SET(JumpType.JG, RAX)
                 instructions += MOVE(resultReg, RAX)
             }
-            MidIrOperator.GE -> {
+            IrOperator.GE -> {
                 instructions += CMP(e1Reg, e2RegOrMem as Reg)
                 instructions += SET(JumpType.JGE, RAX)
                 instructions += MOVE(resultReg, RAX)
             }
-            MidIrOperator.EQ -> {
+            IrOperator.EQ -> {
                 instructions += CMP(e1Reg, e2RegOrMem as Reg)
                 instructions += SET(JumpType.JE, RAX)
                 instructions += MOVE(resultReg, RAX)
             }
-            MidIrOperator.NE -> {
+            IrOperator.NE -> {
                 instructions += CMP(e1Reg, e2RegOrMem as Reg)
                 instructions += SET(JumpType.JNE, RAX)
                 instructions += MOVE(resultReg, RAX)
             }
-            MidIrOperator.OR -> {
+            IrOperator.OR -> {
                 instructions += MOVE(resultReg, e1Reg)
                 instructions += BIN_OP(AlBinaryOpType.OR, resultReg, e2RegOrMem)
             }
-            MidIrOperator.AND -> {
+            IrOperator.AND -> {
                 instructions += MOVE(resultReg, e1Reg)
                 instructions += BIN_OP(AlBinaryOpType.AND, resultReg, e2RegOrMem)
             }
-            MidIrOperator.XOR -> {
+            IrOperator.XOR -> {
                 instructions += MOVE(resultReg, e1Reg)
                 instructions += BIN_OP(AlBinaryOpType.XOR, resultReg, e2RegOrMem)
             }

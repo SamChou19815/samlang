@@ -10,9 +10,9 @@ import samlang.ast.asm.AssemblyInstruction.Companion.IMUL
 import samlang.ast.asm.AssemblyInstruction.Companion.LEA
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
 import samlang.ast.asm.RegOrMem
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.TEMP
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement.MoveMem
 import samlang.ast.mir.MidIrStatement.MoveTemp
 
@@ -40,11 +40,11 @@ internal object TileMoveOp {
             val (operator, e1, e2) = source
             val opType: AlBinaryOpType?
             opType = when (operator) {
-                MidIrOperator.ADD -> AlBinaryOpType.ADD
-                MidIrOperator.MUL -> null
-                MidIrOperator.AND -> AlBinaryOpType.AND
-                MidIrOperator.OR -> AlBinaryOpType.OR
-                MidIrOperator.XOR -> AlBinaryOpType.XOR
+                IrOperator.ADD -> AlBinaryOpType.ADD
+                IrOperator.MUL -> null
+                IrOperator.AND -> AlBinaryOpType.AND
+                IrOperator.OR -> AlBinaryOpType.OR
+                IrOperator.XOR -> AlBinaryOpType.XOR
                 else -> return null
             }
             val destTemp = TEMP(node.tempId)
@@ -82,7 +82,7 @@ internal object TileMoveOp {
         override fun getTilingResult(node: MoveTemp, dpTiling: DpTiling): StatementTilingResult? {
             val source = node.source as? MidIrExpression.Op ?: return null
             val (operator, e1, e2) = source
-            if (operator !== MidIrOperator.SUB) {
+            if (operator !== IrOperator.SUB) {
                 return null
             }
             val destTemp = TEMP(node.tempId)
@@ -104,10 +104,10 @@ internal object TileMoveOp {
             val (operator, e1, e2) = source
             val opType: AlBinaryOpType
             opType = when (operator) {
-                MidIrOperator.ADD -> AlBinaryOpType.ADD
-                MidIrOperator.AND -> AlBinaryOpType.AND
-                MidIrOperator.OR -> AlBinaryOpType.OR
-                MidIrOperator.XOR -> AlBinaryOpType.XOR
+                IrOperator.ADD -> AlBinaryOpType.ADD
+                IrOperator.AND -> AlBinaryOpType.AND
+                IrOperator.OR -> AlBinaryOpType.OR
+                IrOperator.XOR -> AlBinaryOpType.XOR
                 else -> // not commutative, die
                     return null
             }
@@ -135,7 +135,7 @@ internal object TileMoveOp {
         override fun getTilingResult(node: MoveMem, dpTiling: DpTiling): StatementTilingResult? {
             val source = node.source as? MidIrExpression.Op ?: return null
             val (operator, e1, e2) = source
-            if (operator !== MidIrOperator.SUB) {
+            if (operator !== IrOperator.SUB) {
                 return null
             }
             val destMem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)

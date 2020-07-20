@@ -1,5 +1,6 @@
 package samlang.compiler.mir
 
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.EQ
 import samlang.ast.mir.MidIrExpression.Companion.GE
@@ -12,7 +13,6 @@ import samlang.ast.mir.MidIrExpression.Companion.XOR
 import samlang.ast.mir.MidIrExpression.Name
 import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
-import samlang.ast.mir.MidIrOperator
 
 object MidIrTransformUtil {
     /**
@@ -46,9 +46,9 @@ object MidIrTransformUtil {
             val e1 = node.e1
             val e2 = node.e2
             return when (node.operator) {
-                MidIrOperator.MUL, MidIrOperator.DIV, MidIrOperator.MOD,
-                MidIrOperator.ADD, MidIrOperator.SUB -> error(message = "Node $node cannot be inverted")
-                MidIrOperator.XOR -> {
+                IrOperator.MUL, IrOperator.DIV, IrOperator.MOD,
+                IrOperator.ADD, IrOperator.SUB -> error(message = "Node $node cannot be inverted")
+                IrOperator.XOR -> {
                     if (e1 is MidIrExpression.Constant && e1.value == ONE.value) {
                         return e2
                     }
@@ -58,13 +58,13 @@ object MidIrTransformUtil {
                         XOR(e1 = node, e2 = ONE)
                     }
                 }
-                MidIrOperator.OR, MidIrOperator.AND -> XOR(e1 = node, e2 = ONE)
-                MidIrOperator.LT -> GE(e1 = e1, e2 = e2)
-                MidIrOperator.LE -> GT(e1 = e1, e2 = e2)
-                MidIrOperator.GT -> LE(e1 = e1, e2 = e2)
-                MidIrOperator.GE -> LT(e1 = e1, e2 = e2)
-                MidIrOperator.EQ -> NE(e1 = e1, e2 = e2)
-                MidIrOperator.NE -> EQ(e1 = e1, e2 = e2)
+                IrOperator.OR, IrOperator.AND -> XOR(e1 = node, e2 = ONE)
+                IrOperator.LT -> GE(e1 = e1, e2 = e2)
+                IrOperator.LE -> GT(e1 = e1, e2 = e2)
+                IrOperator.GT -> LE(e1 = e1, e2 = e2)
+                IrOperator.GE -> LT(e1 = e1, e2 = e2)
+                IrOperator.EQ -> NE(e1 = e1, e2 = e2)
+                IrOperator.NE -> EQ(e1 = e1, e2 = e2)
             }
         }
 

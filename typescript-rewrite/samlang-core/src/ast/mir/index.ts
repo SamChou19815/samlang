@@ -1,24 +1,9 @@
 /* eslint-disable camelcase */
 
-import { GlobalVariable } from '../common/structs';
+/** Part 1: Type Imports */
 
-/** Part 1: Operators */
-
-export type MidIRBinaryOperator =
-  | '+'
-  | '-'
-  | '*'
-  | '/'
-  | '%'
-  | '&'
-  | '|'
-  | '^'
-  | '<'
-  | '>'
-  | '<='
-  | '>='
-  | '=='
-  | '!=';
+import type { IROperator } from '../common/enums';
+import type { GlobalVariable } from '../common/structs';
 
 /** Part 2: Expressions */
 
@@ -48,7 +33,7 @@ export interface MidIRImmutableMemoryExpression<E = MidIRExpression> extends Bas
 
 export interface MidIRBinaryExpression<E = MidIRExpression> extends BaseMidIRExpression {
   readonly __type__: 'MidIRBinaryExpression';
-  readonly operator: MidIRBinaryOperator;
+  readonly operator: IROperator;
   readonly e1: E;
   readonly e2: E;
 }
@@ -221,7 +206,7 @@ export const MIR_IMMUTABLE_MEM = (
 });
 
 export const MIR_OP_NON_CANONICAL = (
-  operator: MidIRBinaryOperator,
+  operator: IROperator,
   e1: MidIRExpression_DANGEROUSLY_NON_CANONICAL,
   e2: MidIRExpression_DANGEROUSLY_NON_CANONICAL
 ): MidIRBinaryExpression<MidIRExpression_DANGEROUSLY_NON_CANONICAL> => ({
@@ -232,7 +217,7 @@ export const MIR_OP_NON_CANONICAL = (
 });
 
 export const MIR_OP = (
-  operator: MidIRBinaryOperator,
+  operator: IROperator,
   e1: MidIRExpression,
   e2: MidIRExpression
 ): MidIRBinaryExpression => ({ __type__: 'MidIRBinaryExpression', operator, e1, e2 });

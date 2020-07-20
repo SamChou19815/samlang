@@ -3,6 +3,7 @@ package samlang.optimization
 import samlang.analysis.AvailableExpressionAnalysis
 import samlang.analysis.AvailableExpressionAnalysis.ExprInfo
 import samlang.analysis.ContainsTempDetector
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.IMMUTABLE_MEM
 import samlang.ast.mir.MidIrExpression.Constant
@@ -12,7 +13,6 @@ import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
 import samlang.ast.mir.MidIrStatement.Companion.MOVE
@@ -245,8 +245,8 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
             }
             val (operator, e1, e2) = expression
             when (operator) {
-                MidIrOperator.ADD, MidIrOperator.SUB,
-                MidIrOperator.AND, MidIrOperator.OR, MidIrOperator.XOR -> Unit
+                IrOperator.ADD, IrOperator.SUB,
+                IrOperator.AND, IrOperator.OR, IrOperator.XOR -> Unit
                 else -> return false
             }
             return isPrimitive(e1) && isPrimitive(e2)

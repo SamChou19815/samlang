@@ -11,13 +11,13 @@ import samlang.ast.asm.AssemblyArgs.REG
 import samlang.ast.asm.AssemblyArgs.RIP
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.Companion.COMMENT
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Constant
 import samlang.ast.mir.MidIrExpression.Name
 import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
-import samlang.ast.mir.MidIrOperator
 
 /**
  * The helper class for tiling a mem expression node.
@@ -78,7 +78,7 @@ internal object MemTilingHelper {
         }
         val (operator, e1, e2) = expression
         // first let's deal with an unconventional case: x = e1 = e2, op = + ==> x * 2
-        if (operator === MidIrOperator.ADD && e1 is Temporary && e2 is Temporary && e1.id == e2.id) {
+        if (operator === IrOperator.ADD && e1 is Temporary && e2 is Temporary && e1.id == e2.id) {
             return Result(
                     item = MultipleOf(
                             baseReg = REG(e1.id),
@@ -88,7 +88,7 @@ internal object MemTilingHelper {
             )
         }
         // from this point, op must be mul!
-        if (operator !== MidIrOperator.MUL) {
+        if (operator !== IrOperator.MUL) {
             return null
         }
         val instructions = mutableListOf<AssemblyInstruction>()
@@ -112,7 +112,7 @@ internal object MemTilingHelper {
         val e1 = op.e1
         val e2 = op.e2
         return when (op.operator) {
-            MidIrOperator.ADD -> {
+            IrOperator.ADD -> {
                 val e2ConstOpt = getConstOpt(e2)
                 if (e2ConstOpt != null) {
                     val (instructions, reg) = dpTiling.tile(e1)
@@ -131,7 +131,7 @@ internal object MemTilingHelper {
                 }
                 null
             }
-            MidIrOperator.SUB -> if (e2 is Constant) {
+            IrOperator.SUB -> if (e2 is Constant) {
                 // e2 must ne a constant, not label!
                 val e2LongValue = -e2.value
                 if (e2LongValue > Int.MAX_VALUE || e2LongValue < Int.MIN_VALUE) {
@@ -152,7 +152,7 @@ internal object MemTilingHelper {
     }
 
     private fun getRegWithMultipleOf(op: Op, dpTiling: DpTiling): MemTilingResult? {
-        if (op.operator !== MidIrOperator.ADD) {
+        if (op.operator !== IrOperator.ADD) {
             return null
         }
         val e1 = op.e1
@@ -192,8 +192,8 @@ internal object MemTilingHelper {
         instructions += COMMENT(comment = "multiple of with displacement: $op")
         if (multipleOfE1 != null && e2ConstOpt != null) {
             val forSub: Boolean = when (op.operator) {
-                MidIrOperator.ADD -> false
-                MidIrOperator.SUB -> true
+                IrOperator.ADD -> false
+                IrOperator.SUB -> true
                 else -> return null
             }
             var constValue: Int = e2ConstOpt
@@ -209,7 +209,7 @@ internal object MemTilingHelper {
         val multipleOfE2 = getMultipleOf(e2, dpTiling)
         val e1ConstOpt = getConstOpt(e1)
         if (multipleOfE2 != null && e1ConstOpt != null) {
-            if (op.operator !== MidIrOperator.ADD) {
+            if (op.operator !== IrOperator.ADD) {
                 return null
             }
             instructions += multipleOfE2.instructions
@@ -225,8 +225,8 @@ internal object MemTilingHelper {
         val e1 = op.e1
         val e2 = op.e2
         val isAdd: Boolean = when (op.operator) {
-            MidIrOperator.ADD -> true
-            MidIrOperator.SUB -> false
+            IrOperator.ADD -> true
+            IrOperator.SUB -> false
             else -> return null
         }
         // case 1: one side is constant

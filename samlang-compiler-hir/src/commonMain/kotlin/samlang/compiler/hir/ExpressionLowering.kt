@@ -271,6 +271,18 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
                     expression = Variable(name = temp)
                 )
             }
+            BinaryOperator.CONCAT -> {
+                val loweredStatements = mutableListOf<HighIrStatement>()
+                val loweredE1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements)
+                val loweredE2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements)
+                val collector = allocateTemporaryVariable()
+                loweredStatements += FunctionApplication(
+                    functionName = IrNameEncoder.nameOfStringConcat,
+                    arguments = listOf(loweredE1, loweredE2),
+                    resultCollector = collector
+                )
+                LoweringResult(statements = loweredStatements, expression = Variable(collector))
+            }
             else -> {
                 val loweredStatements = mutableListOf<HighIrStatement>()
                 val loweredE1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements)

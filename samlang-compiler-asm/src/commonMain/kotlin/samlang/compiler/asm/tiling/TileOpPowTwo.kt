@@ -7,10 +7,10 @@ import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
 import samlang.ast.asm.AssemblyInstruction.Companion.SHIFT
 import samlang.ast.asm.AssemblyInstruction.ShiftType
 import samlang.ast.asm.RegOrMem
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Constant
 import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement.MoveMem
 import samlang.ast.mir.MidIrStatement.MoveTemp
 import samlang.compiler.asm.common.MiscUtil
@@ -117,7 +117,7 @@ internal object TileOpPowTwo {
         val e1 = node.e1
         val e2 = node.e2
         return when (node.operator) {
-            MidIrOperator.MUL -> {
+            IrOperator.MUL -> {
                 val shiftCount = trySetupAndFindShiftAmount(
                         instructions, e1, e2, destExpr, resultPlace, dpTiling
                 ) ?: return null

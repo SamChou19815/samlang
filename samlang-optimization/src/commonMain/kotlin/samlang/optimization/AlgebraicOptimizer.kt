@@ -1,5 +1,6 @@
 package samlang.optimization
 
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.ONE
 import samlang.ast.mir.MidIrExpression.Companion.OP
@@ -11,7 +12,6 @@ import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
 import samlang.ast.mir.MidIrStatement.ConditionalJumpFallThrough
@@ -73,24 +73,24 @@ internal object AlgebraicOptimizer {
                 e1 is Constant -> {
                     if (e1 == ZERO) {
                         return when (node.operator) {
-                            MidIrOperator.ADD, MidIrOperator.OR, MidIrOperator.XOR -> e2
+                            IrOperator.ADD, IrOperator.OR, IrOperator.XOR -> e2
                             else -> OP(node.operator, e1, e2)
                         }
                     }
                     if (e1 == ONE) {
-                        return if (node.operator === MidIrOperator.MUL) e2 else OP(node.operator, e1, e2)
+                        return if (node.operator === IrOperator.MUL) e2 else OP(node.operator, e1, e2)
                     }
                     OP(node.operator, e1, e2)
                 }
                 e2 is Constant -> {
                     if (e2 == ZERO) {
                         return when (node.operator) {
-                            MidIrOperator.ADD, MidIrOperator.SUB, MidIrOperator.OR, MidIrOperator.XOR -> e1
+                            IrOperator.ADD, IrOperator.SUB, IrOperator.OR, IrOperator.XOR -> e1
                             else -> OP(node.operator, e1, e2)
                         }
                     }
                     if (e2 == ONE) {
-                        return if (node.operator === MidIrOperator.MUL) e1 else OP(node.operator, e1, e2)
+                        return if (node.operator === IrOperator.MUL) e1 else OP(node.operator, e1, e2)
                     }
                     OP(node.operator, e1, e2)
                 }

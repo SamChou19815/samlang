@@ -1,6 +1,7 @@
 package samlang.ast.mir
 
 import samlang.ast.common.IrNameEncoder
+import samlang.ast.common.IrOperator
 
 /**
  * A collection of all IR expressions.
@@ -66,7 +67,7 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
 
     @Canonical
     data class Op(
-        val operator: MidIrOperator,
+        val operator: IrOperator,
         val e1: MidIrExpression,
         val e2: MidIrExpression
     ) : MidIrExpression(classOrder = 4) {
@@ -152,14 +153,14 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
 
         fun TEMP(id: String): Temporary = Temporary(id = id)
 
-        fun OP(op: MidIrOperator, e1: MidIrExpression, e2: MidIrExpression): Op =
+        fun OP(op: IrOperator, e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = op, e1 = e1, e2 = e2)
 
-        fun OP_FLEX_ORDER(op: MidIrOperator, e1: MidIrExpression, e2: MidIrExpression): Op {
+        fun OP_FLEX_ORDER(op: IrOperator, e1: MidIrExpression, e2: MidIrExpression): Op {
             when (op) {
-                MidIrOperator.ADD, MidIrOperator.MUL,
-                MidIrOperator.AND, MidIrOperator.OR,
-                MidIrOperator.EQ, MidIrOperator.NE -> Unit
+                IrOperator.ADD, IrOperator.MUL,
+                IrOperator.AND, IrOperator.OR,
+                IrOperator.EQ, IrOperator.NE -> Unit
                 else -> return Op(operator = op, e1 = e1, e2 = e2)
             }
             return if (e1 >= e2) {
@@ -170,46 +171,46 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
         }
 
         fun ADD(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.ADD, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.ADD, e1 = e1, e2 = e2)
 
         fun SUB(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.SUB, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.SUB, e1 = e1, e2 = e2)
 
         fun MUL(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.MUL, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.MUL, e1 = e1, e2 = e2)
 
         fun DIV(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.DIV, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.DIV, e1 = e1, e2 = e2)
 
         fun MOD(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.MOD, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.MOD, e1 = e1, e2 = e2)
 
         fun AND(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.AND, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.AND, e1 = e1, e2 = e2)
 
         fun OR(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.OR, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.OR, e1 = e1, e2 = e2)
 
         fun XOR(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.XOR, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.XOR, e1 = e1, e2 = e2)
 
         fun LT(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.LT, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.LT, e1 = e1, e2 = e2)
 
         fun GT(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.GT, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.GT, e1 = e1, e2 = e2)
 
         fun LE(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.LE, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.LE, e1 = e1, e2 = e2)
 
         fun GE(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.GE, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.GE, e1 = e1, e2 = e2)
 
         fun EQ(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = MidIrOperator.EQ, e1 = e1, e2 = e2)
+            Op(operator = IrOperator.EQ, e1 = e1, e2 = e2)
 
         fun NE(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(MidIrOperator.NE, e1, e2)
+            Op(IrOperator.NE, e1, e2)
 
         fun IMMUTABLE_MEM(expression: MidIrExpression): Mem = Mem(expression = expression, immutable = true)
 

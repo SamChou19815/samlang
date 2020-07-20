@@ -1,12 +1,12 @@
 package samlang.interpreter
 
 import samlang.ast.common.IrNameEncoder
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 
 /**
@@ -213,30 +213,30 @@ private class MidIrExpressionInterpreter(
         val value1 = node.e1.accept(visitor = this, context = context)
         val value2 = node.e2.accept(visitor = this, context = context)
         return when (node.operator) {
-            MidIrOperator.MUL -> value1 * value2
-            MidIrOperator.DIV -> {
+            IrOperator.MUL -> value1 * value2
+            IrOperator.DIV -> {
                 if (value2 == 0L) {
                     throw PanicException(reason = "Division by zero!")
                 }
                 value1 / value2
             }
-            MidIrOperator.MOD -> {
+            IrOperator.MOD -> {
                 if (value2 == 0L) {
                     throw PanicException(reason = "Division by zero!")
                 }
                 value1 % value2
             }
-            MidIrOperator.ADD -> value1 + value2
-            MidIrOperator.SUB -> value1 - value2
-            MidIrOperator.XOR -> value1 xor value2
-            MidIrOperator.LT -> toInt(boolean = value1 < value2)
-            MidIrOperator.LE -> toInt(boolean = value1 <= value2)
-            MidIrOperator.GT -> toInt(boolean = value1 > value2)
-            MidIrOperator.GE -> toInt(boolean = value1 >= value2)
-            MidIrOperator.EQ -> toInt(boolean = value1 == value2)
-            MidIrOperator.NE -> toInt(boolean = value1 != value2)
-            MidIrOperator.AND -> if (value1 == 0L) 0L else if (value2 == 0L) 0L else 1L
-            MidIrOperator.OR -> if (value1 != 0L) 1L else if (value2 != 0L) 1L else 0L
+            IrOperator.ADD -> value1 + value2
+            IrOperator.SUB -> value1 - value2
+            IrOperator.XOR -> value1 xor value2
+            IrOperator.LT -> toInt(boolean = value1 < value2)
+            IrOperator.LE -> toInt(boolean = value1 <= value2)
+            IrOperator.GT -> toInt(boolean = value1 > value2)
+            IrOperator.GE -> toInt(boolean = value1 >= value2)
+            IrOperator.EQ -> toInt(boolean = value1 == value2)
+            IrOperator.NE -> toInt(boolean = value1 != value2)
+            IrOperator.AND -> if (value1 == 0L) 0L else if (value2 == 0L) 0L else 1L
+            IrOperator.OR -> if (value1 != 0L) 1L else if (value2 != 0L) 1L else 0L
         }
     }
 

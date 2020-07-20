@@ -8,10 +8,10 @@ import samlang.ast.asm.AssemblyInstruction.Companion.COMMENT
 import samlang.ast.asm.AssemblyInstruction.Companion.IMUL
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
 import samlang.ast.asm.RegOrMem
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Constant
 import samlang.ast.mir.MidIrExpression.Op
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement.MoveMem
 import samlang.ast.mir.MidIrStatement.MoveTemp
 
@@ -25,7 +25,7 @@ internal object TileMul3Args {
             return null
         }
         val (operator, e1, e2) = src
-        if (operator !== MidIrOperator.MUL) {
+        if (operator !== IrOperator.MUL) {
             return null
         }
         if (e1 is Constant) {

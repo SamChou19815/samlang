@@ -14,11 +14,11 @@ import samlang.ast.asm.AssemblyInstruction.Companion.LEA
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
 import samlang.ast.asm.AssemblyInstruction.JumpType
 import samlang.ast.asm.FunctionContext
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
 import samlang.ast.mir.MidIrStatement.ConditionalJumpFallThrough
@@ -190,12 +190,12 @@ class DpTiling(val context: FunctionContext) {
             if (condition is MidIrExpression.Op) {
                 val (operator, e1, e2) = condition
                 val jumpType = when (operator) {
-                    MidIrOperator.LT -> JumpType.JL
-                    MidIrOperator.GT -> JumpType.JG
-                    MidIrOperator.LE -> JumpType.JLE
-                    MidIrOperator.GE -> JumpType.JGE
-                    MidIrOperator.EQ -> JumpType.JE
-                    MidIrOperator.NE -> JumpType.JNE
+                    IrOperator.LT -> JumpType.JL
+                    IrOperator.GT -> JumpType.JG
+                    IrOperator.LE -> JumpType.JLE
+                    IrOperator.GE -> JumpType.JGE
+                    IrOperator.EQ -> JumpType.JE
+                    IrOperator.NE -> JumpType.JNE
                     else -> null
                 }
                 if (jumpType != null) {

@@ -1,4 +1,4 @@
-import { PLUS, AND, OR } from '../../../ast/common/binary-operators';
+import { PLUS, AND, OR, CONCAT } from '../../../ast/common/binary-operators';
 import ModuleReference from '../../../ast/common/module-reference';
 import Range from '../../../ast/common/range';
 import {
@@ -343,10 +343,26 @@ it('FunctionCall family lowering works.', () => {
   );
 });
 
-it('Binary lowering works.', () => {
+it('Normal binary lowering works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_BINARY({ range: Range.DUMMY, type: unitType, operator: PLUS, e1: THIS, e2: THIS }),
     { expression: HIR_BINARY({ operator: PLUS, e1: IR_THIS, e2: IR_THIS }) }
+  );
+});
+
+it('String concat binary lowering works.', () => {
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({ range: Range.DUMMY, type: unitType, operator: CONCAT, e1: THIS, e2: THIS }),
+    {
+      statements: [
+        HIR_FUNCTION_CALL({
+          functionName: '_builtin_stringConcat',
+          functionArguments: [IR_THIS, IR_THIS],
+          returnCollector: '_LOWERING_0',
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
+    }
   );
 });
 

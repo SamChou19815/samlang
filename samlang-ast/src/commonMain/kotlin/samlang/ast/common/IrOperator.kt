@@ -1,6 +1,6 @@
-package samlang.ast.mir
+package samlang.ast.common
 
-enum class MidIrOperator(val displayName: String) {
+enum class IrOperator(val displayName: String) {
     ADD(displayName = "+"),
     SUB(displayName = "-"),
     MUL(displayName = "*"),

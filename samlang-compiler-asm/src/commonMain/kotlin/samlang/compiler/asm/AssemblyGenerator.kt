@@ -11,11 +11,11 @@ import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.Companion.LABEL
 import samlang.ast.asm.AssemblyProgram
 import samlang.ast.asm.FunctionContext
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrFunction
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.MoveTemp
 import samlang.compiler.asm.common.CallingConventionFixer
@@ -118,7 +118,7 @@ class AssemblyGenerator private constructor(
                     // -5 because -6 for reg arg place and +2 for the RIP and saved RBP.
                     val offsetUnit = argId - 4
                     val memExpr = MidIrExpression.Op(
-                        operator = MidIrOperator.ADD,
+                        operator = IrOperator.ADD,
                         e1 = Temporary(RBP.id),
                         e2 = MidIrExpression.Constant((8 * offsetUnit).toLong())
                     )

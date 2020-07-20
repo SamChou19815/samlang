@@ -1,9 +1,9 @@
 package samlang.optimization
 
 import samlang.analysis.LiveTempAnalysis
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 
 @ExperimentalStdlibApi
@@ -37,7 +37,7 @@ internal object DeadCodeEliminator {
 
         override fun visit(node: MidIrExpression.Op, context: Unit): Boolean {
             when (node.operator) {
-                MidIrOperator.DIV, MidIrOperator.MOD -> return false // they might cause exception
+                IrOperator.DIV, IrOperator.MOD -> return false // they might cause exception
                 else -> Unit
             }
             return node.e1.accept(visitor = this, context = Unit) && node.e2.accept(visitor = this, context = Unit)

@@ -5,12 +5,12 @@ import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.AlUnaryOpType
 import samlang.ast.asm.AssemblyInstruction.Companion.COMMENT
 import samlang.ast.asm.AssemblyInstruction.Companion.UN_OP
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.MINUS_ONE
 import samlang.ast.mir.MidIrExpression.Companion.ONE
 import samlang.ast.mir.MidIrExpression.Companion.TEMP
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement.MoveMem
 import samlang.ast.mir.MidIrStatement.MoveTemp
 
@@ -19,7 +19,7 @@ import samlang.ast.mir.MidIrStatement.MoveTemp
  */
 internal object TileNegNotIncDec {
     private fun opIsForInc(source: MidIrExpression.Op, dest: MidIrExpression): Boolean {
-        if (source.operator !== MidIrOperator.ADD) {
+        if (source.operator !== IrOperator.ADD) {
             return false
         }
         val opE1 = source.e1
@@ -29,21 +29,21 @@ internal object TileNegNotIncDec {
 
     private fun opIsForDec(source: MidIrExpression.Op, dest: MidIrExpression): Boolean {
         val op = source.operator
-        return if (op === MidIrOperator.ADD) {
+        return if (op === IrOperator.ADD) {
             source.e2 == dest && source.e1 == MINUS_ONE ||
                     source.e1 == dest && source.e2 == MINUS_ONE
         } else {
-            op === MidIrOperator.SUB && source.e1 == dest && source.e2 == ONE
+            op === IrOperator.SUB && source.e1 == dest && source.e2 == ONE
         }
     }
 
     private fun opIsForNeg(source: MidIrExpression.Op, dest: MidIrExpression): Boolean {
         // the case for 0 - x
-        if (source.operator === MidIrOperator.SUB && source.e1 == ZERO && source.e2 == dest) {
+        if (source.operator === IrOperator.SUB && source.e1 == ZERO && source.e2 == dest) {
             return true
         }
         // the case for (-1) * x or x * (-1)
-        return if (source.operator !== MidIrOperator.MUL) {
+        return if (source.operator !== IrOperator.MUL) {
             false
         } else {
             source.e1 == dest && source.e2 == MINUS_ONE ||

@@ -4,6 +4,7 @@ import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_FUNCTION_NAME_STRING_CONCAT,
 } from '../../ast/common/name-encoder';
 import type { IdentifierType } from '../../ast/common/types';
 import {
@@ -356,6 +357,20 @@ class HighIRExpressionLoweringManager {
           ],
           expression: HIR_VARIABLE(temp),
         };
+      }
+      case '::': {
+        const loweredStatements: HighIRStatement[] = [];
+        const loweredE1 = this.loweredAndAddStatements(expression.e1, loweredStatements);
+        const loweredE2 = this.loweredAndAddStatements(expression.e2, loweredStatements);
+        const returnCollector = this.allocateTemporaryVariable();
+        loweredStatements.push(
+          HIR_FUNCTION_CALL({
+            functionName: ENCODED_FUNCTION_NAME_STRING_CONCAT,
+            functionArguments: [loweredE1, loweredE2],
+            returnCollector,
+          })
+        );
+        return { statements: loweredStatements, expression: HIR_VARIABLE(returnCollector) };
       }
       default: {
         const loweredStatements: HighIRStatement[] = [];

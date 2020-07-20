@@ -1,5 +1,6 @@
 package samlang.optimization
 
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.CONST
 import samlang.ast.mir.MidIrExpression.Companion.OP
@@ -10,7 +11,6 @@ import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
 import samlang.ast.mir.MidIrStatement.Companion.CJUMP_FALLTHROUGH
@@ -73,28 +73,28 @@ internal object ConstantFolder {
         override fun visit(node: Name, context: Unit): MidIrExpression = node
         override fun visit(node: Temporary, context: Unit): MidIrExpression = node
 
-        private fun foldOp(v1: Long, v2: Long, op: MidIrOperator): Constant? {
-            return if ((op === MidIrOperator.DIV || op === MidIrOperator.MOD) && v2 == 0L) {
+        private fun foldOp(v1: Long, v2: Long, op: IrOperator): Constant? {
+            return if ((op === IrOperator.DIV || op === IrOperator.MOD) && v2 == 0L) {
                 null
             } else when (op) {
-                MidIrOperator.ADD -> CONST(value = v1 + v2)
-                MidIrOperator.SUB -> CONST(value = v1 - v2)
-                MidIrOperator.MUL -> CONST(value = v1 * v2)
-                MidIrOperator.DIV -> CONST(value = v1 / v2)
-                MidIrOperator.MOD -> CONST(value = v1 % v2)
-                MidIrOperator.EQ -> if (v1 == v2) CONST(value = 1) else CONST(value = 0)
-                MidIrOperator.NE -> if (v1 != v2) CONST(value = 1) else CONST(value = 0)
-                MidIrOperator.GE -> if (v1 >= v2) CONST(value = 1) else CONST(value = 0)
-                MidIrOperator.GT -> if (v1 > v2) CONST(value = 1) else CONST(value = 0)
-                MidIrOperator.LE -> if (v1 <= v2) CONST(value = 1) else CONST(value = 0)
-                MidIrOperator.LT -> if (v1 < v2) CONST(value = 1) else CONST(value = 0)
-                MidIrOperator.AND -> CONST(value = v1 and v2)
-                MidIrOperator.OR -> CONST(value = v1 or v2)
-                MidIrOperator.XOR -> CONST(value = v1 xor v2)
+                IrOperator.ADD -> CONST(value = v1 + v2)
+                IrOperator.SUB -> CONST(value = v1 - v2)
+                IrOperator.MUL -> CONST(value = v1 * v2)
+                IrOperator.DIV -> CONST(value = v1 / v2)
+                IrOperator.MOD -> CONST(value = v1 % v2)
+                IrOperator.EQ -> if (v1 == v2) CONST(value = 1) else CONST(value = 0)
+                IrOperator.NE -> if (v1 != v2) CONST(value = 1) else CONST(value = 0)
+                IrOperator.GE -> if (v1 >= v2) CONST(value = 1) else CONST(value = 0)
+                IrOperator.GT -> if (v1 > v2) CONST(value = 1) else CONST(value = 0)
+                IrOperator.LE -> if (v1 <= v2) CONST(value = 1) else CONST(value = 0)
+                IrOperator.LT -> if (v1 < v2) CONST(value = 1) else CONST(value = 0)
+                IrOperator.AND -> CONST(value = v1 and v2)
+                IrOperator.OR -> CONST(value = v1 or v2)
+                IrOperator.XOR -> CONST(value = v1 xor v2)
             }
         }
 
-        private fun rearrangeAndFold(constant: Constant, opExpr: Op, op: MidIrOperator): MidIrExpression? {
+        private fun rearrangeAndFold(constant: Constant, opExpr: Op, op: IrOperator): MidIrExpression? {
             val e1 = opExpr.e1
             val e2 = opExpr.e2
             if (opExpr.operator === op) {
@@ -119,7 +119,7 @@ internal object ConstantFolder {
                 }
             }
             val canPotentiallyRearrangeAndOptimize = when (op) {
-                MidIrOperator.ADD, MidIrOperator.MUL, MidIrOperator.AND, MidIrOperator.OR -> true
+                IrOperator.ADD, IrOperator.MUL, IrOperator.AND, IrOperator.OR -> true
                 else -> false
             }
             if (canPotentiallyRearrangeAndOptimize) {

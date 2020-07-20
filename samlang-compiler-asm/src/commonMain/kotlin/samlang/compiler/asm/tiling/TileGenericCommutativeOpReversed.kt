@@ -6,8 +6,8 @@ import samlang.ast.asm.AssemblyInstruction.Companion.BIN_OP
 import samlang.ast.asm.AssemblyInstruction.Companion.COMMENT
 import samlang.ast.asm.AssemblyInstruction.Companion.IMUL
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression.Op
-import samlang.ast.mir.MidIrOperator
 
 /**
  * A generic tiling of commutative op expression, but in reverse order.
@@ -19,9 +19,9 @@ internal object TileGenericCommutativeOpReversed : IrExpressionTile<Op> {
         val resultReg = dpTiling.context.nextReg()
         val (instructions1, e2Reg) = dpTiling.tile(node.e2)
         val e1Result: RegOrMemTilingResult = when (node.operator) {
-            MidIrOperator.SUB, MidIrOperator.DIV, MidIrOperator.MOD,
-            MidIrOperator.LT, MidIrOperator.LE, MidIrOperator.GT,
-            MidIrOperator.GE, MidIrOperator.EQ, MidIrOperator.NE -> return null
+            IrOperator.SUB, IrOperator.DIV, IrOperator.MOD,
+            IrOperator.LT, IrOperator.LE, IrOperator.GT,
+            IrOperator.GE, IrOperator.EQ, IrOperator.NE -> return null
             else -> dpTiling.tileRegOrMem(node.e1)
         }
         instructions += COMMENT(comment = "TileGenericOp: $node")
@@ -29,23 +29,23 @@ internal object TileGenericCommutativeOpReversed : IrExpressionTile<Op> {
         instructions += instructions1
         val e1RegOrMem = e1Result.regOrMem
         when (node.operator) {
-            MidIrOperator.ADD -> {
+            IrOperator.ADD -> {
                 instructions += MOVE(resultReg, e2Reg)
                 instructions += BIN_OP(AlBinaryOpType.ADD, resultReg, e1RegOrMem)
             }
-            MidIrOperator.MUL -> {
+            IrOperator.MUL -> {
                 instructions += MOVE(resultReg, e2Reg)
                 instructions += IMUL(resultReg, e1RegOrMem)
             }
-            MidIrOperator.OR -> {
+            IrOperator.OR -> {
                 instructions += MOVE(resultReg, e2Reg)
                 instructions += BIN_OP(AlBinaryOpType.OR, resultReg, e1RegOrMem)
             }
-            MidIrOperator.AND -> {
+            IrOperator.AND -> {
                 instructions += MOVE(resultReg, e2Reg)
                 instructions += BIN_OP(AlBinaryOpType.AND, resultReg, e1RegOrMem)
             }
-            MidIrOperator.XOR -> {
+            IrOperator.XOR -> {
                 instructions += MOVE(resultReg, e2Reg)
                 instructions += BIN_OP(AlBinaryOpType.XOR, resultReg, e1RegOrMem)
             }

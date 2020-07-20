@@ -3,6 +3,7 @@ package samlang.compiler.mir
 import samlang.ast.common.BinaryOperator
 import samlang.ast.common.GlobalVariable
 import samlang.ast.common.IrNameEncoder
+import samlang.ast.common.IrOperator
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
@@ -41,7 +42,6 @@ import samlang.ast.mir.MidIrExpression.Companion.SUB
 import samlang.ast.mir.MidIrExpression.Companion.XOR
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
 import samlang.ast.mir.MidIrFunction
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
 import samlang.ast.mir.MidIrStatement.Companion.CJUMP
@@ -278,19 +278,19 @@ internal class MidIrFirstPassGenerator(
 
         override fun visit(expression: Binary): MidIrExpression {
             val operator = when (expression.operator) {
-                BinaryOperator.MUL -> MidIrOperator.MUL
-                BinaryOperator.DIV -> MidIrOperator.DIV
-                BinaryOperator.MOD -> MidIrOperator.MOD
-                BinaryOperator.PLUS -> MidIrOperator.ADD
-                BinaryOperator.MINUS -> MidIrOperator.SUB
-                BinaryOperator.LT -> MidIrOperator.LT
-                BinaryOperator.LE -> MidIrOperator.LE
-                BinaryOperator.GT -> MidIrOperator.GT
-                BinaryOperator.GE -> MidIrOperator.GE
-                BinaryOperator.EQ -> MidIrOperator.EQ
-                BinaryOperator.NE -> MidIrOperator.NE
-                BinaryOperator.AND -> MidIrOperator.AND
-                BinaryOperator.OR -> MidIrOperator.OR
+                BinaryOperator.MUL -> IrOperator.MUL
+                BinaryOperator.DIV -> IrOperator.DIV
+                BinaryOperator.MOD -> IrOperator.MOD
+                BinaryOperator.PLUS -> IrOperator.ADD
+                BinaryOperator.MINUS -> IrOperator.SUB
+                BinaryOperator.LT -> IrOperator.LT
+                BinaryOperator.LE -> IrOperator.LE
+                BinaryOperator.GT -> IrOperator.GT
+                BinaryOperator.GE -> IrOperator.GE
+                BinaryOperator.EQ -> IrOperator.EQ
+                BinaryOperator.NE -> IrOperator.NE
+                BinaryOperator.AND -> IrOperator.AND
+                BinaryOperator.OR -> IrOperator.OR
                 BinaryOperator.CONCAT -> {
                     return CALL(
                         functionExpr = NAME(IrNameEncoder.nameOfStringConcat),

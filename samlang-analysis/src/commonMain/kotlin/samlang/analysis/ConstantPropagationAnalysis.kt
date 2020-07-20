@@ -2,10 +2,10 @@ package samlang.analysis
 
 import samlang.analysis.ConstantPropagationAnalysis.ConstantStatus.KnownConstant
 import samlang.analysis.ConstantPropagationAnalysis.ConstantStatus.Unknown
+import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
-import samlang.ast.mir.MidIrOperator
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
 import samlang.ast.mir.MidIrStatement.ConditionalJumpFallThrough
@@ -121,16 +121,16 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
                 val status1 = node.e1.accept(visitor = this, context = Unit)
                 val status2 = node.e2.accept(visitor = this, context = Unit)
                 return when (node.operator) {
-                    MidIrOperator.ADD -> status1.map { known ->
+                    IrOperator.ADD -> status1.map { known ->
                         status2.map { KnownConstant(value = known.value + it.value) }
                     }
-                    MidIrOperator.SUB -> status1.map { known ->
+                    IrOperator.SUB -> status1.map { known ->
                         status2.map { KnownConstant(value = known.value - it.value) }
                     }
-                    MidIrOperator.MUL -> status1.map { known ->
+                    IrOperator.MUL -> status1.map { known ->
                         status2.map { KnownConstant(value = known.value * it.value) }
                     }
-                    MidIrOperator.DIV -> status1.map { known ->
+                    IrOperator.DIV -> status1.map { known ->
                         status2.map { c ->
                             val v2 = c.value
                             if (v2 == 0L) {
@@ -140,7 +140,7 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
                             }
                         }
                     }
-                    MidIrOperator.MOD -> status1.map { known ->
+                    IrOperator.MOD -> status1.map { known ->
                         status2.map { c ->
                             val v2 = c.value
                             if (v2 == 0L) {
@@ -150,32 +150,32 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
                             }
                         }
                     }
-                    MidIrOperator.AND -> status1.map { known ->
+                    IrOperator.AND -> status1.map { known ->
                         val v = known.value
                         status2.map { c -> KnownConstant(value = v and c.value) }
                     }
-                    MidIrOperator.OR -> status1.map { known ->
+                    IrOperator.OR -> status1.map { known ->
                         status2.map { c -> KnownConstant(value = known.value or c.value) }
                     }
-                    MidIrOperator.XOR -> status1.map { known ->
+                    IrOperator.XOR -> status1.map { known ->
                         status2.map { c -> KnownConstant(value = known.value xor c.value) }
                     }
-                    MidIrOperator.LT -> status1.map { known ->
+                    IrOperator.LT -> status1.map { known ->
                         status2.map { c -> KnownConstant(if (known.value < c.value) 1 else 0) }
                     }
-                    MidIrOperator.LE -> status1.map { known ->
+                    IrOperator.LE -> status1.map { known ->
                         status2.map { c -> KnownConstant(if (known.value <= c.value) 1 else 0) }
                     }
-                    MidIrOperator.GT -> status1.map { known ->
+                    IrOperator.GT -> status1.map { known ->
                         status2.map { c -> KnownConstant(if (known.value > c.value) 1 else 0) }
                     }
-                    MidIrOperator.GE -> status1.map { known ->
+                    IrOperator.GE -> status1.map { known ->
                         status2.map { c -> KnownConstant(if (known.value >= c.value) 1 else 0) }
                     }
-                    MidIrOperator.EQ -> status1.map { known ->
+                    IrOperator.EQ -> status1.map { known ->
                         status2.map { c -> KnownConstant(if (known.value == c.value) 1 else 0) }
                     }
-                    MidIrOperator.NE -> status1.map { known ->
+                    IrOperator.NE -> status1.map { known ->
                         status2.map { c -> KnownConstant(if (known.value != c.value) 1 else 0) }
                     }
                 }
