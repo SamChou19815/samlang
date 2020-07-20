@@ -251,15 +251,15 @@ internal class MidIrFirstPassGenerator(
             return ESEQ(SEQ(statements), closureTemporary)
         }
 
-        override fun visit(expression: Binary): MidIrExpression {
-            val e1 = translate(expression = expression.e1)
-            val e2 = translate(expression = expression.e2)
-            return OP(op = expression.operator, e1 = e1, e2 = e2)
-        }
+        override fun visit(expression: Binary): MidIrExpression =
+            OP(op = expression.operator, e1 = translate(expression = expression.e1), e2 = translate(expression = expression.e2))
 
         override fun visit(expression: Lambda): MidIrExpression {
-            val capturedVariables = expression.captured
+            val lambdaFunction = createSyntheticLambdaFunction(lambdaExpression = expression)
+            lambdaFunctionsCollector += lambdaFunction
+
             val statements = mutableListOf<MidIrStatement>()
+            val capturedVariables = expression.captured
             val contextValue = if (capturedVariables.isNotEmpty()) {
                 val contextTemp = allocator.allocateTemp()
                 statements += MOVE(contextTemp, MALLOC(sizeExpr = CONST(value = capturedVariables.size * 8L)))
@@ -273,38 +273,39 @@ internal class MidIrFirstPassGenerator(
             } else {
                 ONE // A dummy value that is not zero
             }
-            val lambdaContextTemp = allocator.allocateTemp(variableName = "_context")
-            val lambdaArguments = mutableListOf(lambdaContextTemp).apply {
-                addAll(elements = expression.parameters.map { allocator.allocateTemp(variableName = it) })
-            }
-            val lambdaStatements = mutableListOf<MidIrStatement>()
-            capturedVariables.forEachIndexed { index, variable ->
-                lambdaStatements += MOVE(
-                    destination = allocator.allocateTemp(variableName = variable),
-                    source = IMMUTABLE_MEM(expression = ADD(e1 = lambdaContextTemp, e2 = CONST(value = index * 8L)))
-                )
-            }
-            expression.body.forEach { lambdaStatements += translate(statement = it) }
-            val lambdaName = allocator.globalResourceAllocator.allocateLambdaFunctionName()
-            val lambdaFunction = MidIrFunction(
-                functionName = lambdaName,
-                argumentTemps = lambdaArguments,
-                mainBodyStatements = lambdaStatements,
-                numberOfArguments = lambdaArguments.size,
-                hasReturn = expression.hasReturn
-            )
-            lambdaFunctionsCollector += lambdaFunction
             val closureTemporary = allocator.allocateTemp()
             statements += MOVE(closureTemporary, MALLOC(CONST(value = 16L)))
             statements += MOVE_IMMUTABLE_MEM(
                 destination = IMMUTABLE_MEM(expression = closureTemporary),
-                source = NAME(name = lambdaName)
+                source = NAME(name = lambdaFunction.functionName)
             )
             statements += MOVE_IMMUTABLE_MEM(
                 destination = IMMUTABLE_MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),
                 source = contextValue
             )
             return ESEQ(SEQ(statements), closureTemporary)
+        }
+
+        private fun createSyntheticLambdaFunction(lambdaExpression: Lambda): MidIrFunction {
+            val lambdaContextTemp = allocator.allocateTemp(variableName = "_context")
+            val lambdaArguments = mutableListOf(lambdaContextTemp).apply {
+                addAll(elements = lambdaExpression.parameters.map { allocator.allocateTemp(variableName = it) })
+            }
+            val lambdaStatements = mutableListOf<MidIrStatement>()
+            lambdaExpression.captured.forEachIndexed { index, variable ->
+                lambdaStatements += MOVE(
+                    destination = allocator.allocateTemp(variableName = variable),
+                    source = IMMUTABLE_MEM(expression = ADD(e1 = lambdaContextTemp, e2 = CONST(value = index * 8L)))
+                )
+            }
+            lambdaExpression.body.forEach { lambdaStatements += translate(statement = it) }
+            return MidIrFunction(
+                functionName = allocator.globalResourceAllocator.allocateLambdaFunctionName(),
+                argumentTemps = lambdaArguments,
+                mainBodyStatements = lambdaStatements,
+                numberOfArguments = lambdaArguments.size,
+                hasReturn = lambdaExpression.hasReturn
+            )
         }
     }
 }
