@@ -144,37 +144,6 @@ class ExpressionLoweringTest {
     }
 
     @Test
-    fun ifElseLoweringWorks() {
-        assertCorrectlyLowered(
-            expression = Expression.IfElse(
-                range = dummyRange,
-                type = unit,
-                boolExpression = THIS,
-                e1 = Expression.Panic(range = dummyRange, type = unit, expression = THIS),
-                e2 = THIS
-            ),
-            expected = LoweringResult(
-                statements = listOf(
-                    HighIrStatement.IfElse(
-                        booleanExpression = IR_THIS,
-                        s1 = listOf(
-                            HighIrStatement.Throw(expression = IR_THIS),
-                            HighIrStatement.LetDefinition(
-                                name = "_LOWERING_0",
-                                assignedExpression = HighIrExpression.FALSE
-                            )
-                        ),
-                        s2 = listOf(
-                            HighIrStatement.LetDefinition(name = "_LOWERING_0", assignedExpression = IR_THIS)
-                        )
-                    )
-                ),
-                expression = HighIrExpression.Variable(name = "_LOWERING_0")
-            )
-        )
-    }
-
-    @Test
     fun matchLoweringWorks1() {
         assertCorrectlyLowered(
             expression = Expression.Match(

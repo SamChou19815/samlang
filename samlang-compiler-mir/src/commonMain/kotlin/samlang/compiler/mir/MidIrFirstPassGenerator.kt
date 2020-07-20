@@ -1,7 +1,6 @@
 package samlang.compiler.mir
 
 import samlang.ast.common.GlobalVariable
-import samlang.ast.common.IrNameEncoder
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
@@ -22,7 +21,6 @@ import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDefinition
 import samlang.ast.hir.HighIrStatement.Match
 import samlang.ast.hir.HighIrStatement.Return
-import samlang.ast.hir.HighIrStatement.Throw
 import samlang.ast.hir.HighIrStatementVisitor
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.ADD
@@ -68,12 +66,6 @@ internal class MidIrFirstPassGenerator(
         expression.accept(visitor = expressionGenerator)
 
     private inner class StatementGenerator : HighIrStatementVisitor<MidIrStatement> {
-        override fun visit(statement: Throw): MidIrStatement = CALL_FUNCTION(
-            functionName = IrNameEncoder.nameOfThrow,
-            arguments = listOf(translate(expression = statement.expression)),
-            returnCollector = null
-        )
-
         override fun visit(statement: FunctionApplication): MidIrStatement =
             CALL_FUNCTION(
                 functionName = statement.functionName,
