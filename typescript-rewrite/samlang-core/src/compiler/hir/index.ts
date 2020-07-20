@@ -36,7 +36,6 @@ const compileSamlangModule = (
   moduleReference: ModuleReference,
   samlangModule: SamlangModule
 ): HighIRModule => ({
-  imports: samlangModule.imports,
   functions: samlangModule.classes
     .map(({ name: className, members }) =>
       members.map((it) => compileFunction(moduleReference, samlangModule, className, it)).flat()

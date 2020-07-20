@@ -1,4 +1,3 @@
-import type { ModuleMembersImport } from '../common/structs';
 import type { HighIRStatement } from './hir-expressions';
 
 export interface HighIRFunction {
@@ -9,6 +8,5 @@ export interface HighIRFunction {
 }
 
 export interface HighIRModule {
-  readonly imports: readonly ModuleMembersImport[];
   readonly functions: readonly HighIRFunction[];
 }

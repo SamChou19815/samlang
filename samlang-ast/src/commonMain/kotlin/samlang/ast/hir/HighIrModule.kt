@@ -1,5 +1,3 @@
 package samlang.ast.hir
 
-import samlang.ast.common.ModuleMembersImport
-
-data class HighIrModule(val imports: List<ModuleMembersImport>, val functions: List<HighIrFunction>)
+data class HighIrModule(val functions: List<HighIrFunction>)

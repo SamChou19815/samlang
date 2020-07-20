@@ -20,7 +20,6 @@ fun compileSources(sources: Sources<Module>): Sources<HighIrModule> =
 
 fun compileModule(moduleReference: ModuleReference, module: Module): HighIrModule =
     HighIrModule(
-        imports = module.imports,
         functions = module.classDefinitions.map { classDefinition ->
             classDefinition.members.map {
                 compileFunction(

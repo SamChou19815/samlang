@@ -60,7 +60,6 @@ it('HIR compiler integration test', () => {
   };
 
   const expectedCompiledModule: HighIRModule = {
-    imports: [],
     functions: [
       {
         name: '_module__class_Class1_function_foo',
