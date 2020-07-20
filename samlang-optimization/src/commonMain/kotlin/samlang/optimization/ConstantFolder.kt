@@ -88,8 +88,6 @@ internal object ConstantFolder {
                 IrOperator.GT -> if (v1 > v2) CONST(value = 1) else CONST(value = 0)
                 IrOperator.LE -> if (v1 <= v2) CONST(value = 1) else CONST(value = 0)
                 IrOperator.LT -> if (v1 < v2) CONST(value = 1) else CONST(value = 0)
-                IrOperator.AND -> CONST(value = v1 and v2)
-                IrOperator.OR -> CONST(value = v1 or v2)
                 IrOperator.XOR -> CONST(value = v1 xor v2)
             }
         }
@@ -119,7 +117,7 @@ internal object ConstantFolder {
                 }
             }
             val canPotentiallyRearrangeAndOptimize = when (op) {
-                IrOperator.ADD, IrOperator.MUL, IrOperator.AND, IrOperator.OR -> true
+                IrOperator.ADD, IrOperator.MUL -> true
                 else -> false
             }
             if (canPotentiallyRearrangeAndOptimize) {

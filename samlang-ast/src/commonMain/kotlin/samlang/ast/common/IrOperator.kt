@@ -6,8 +6,6 @@ enum class IrOperator(val displayName: String) {
     MUL(displayName = "*"),
     DIV(displayName = "/"),
     MOD(displayName = "%"),
-    AND(displayName = "&"),
-    OR(displayName = "|"),
     XOR(displayName = "^"),
     LT(displayName = "<"),
     GT(displayName = ">"),

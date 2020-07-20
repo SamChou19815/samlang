@@ -159,7 +159,6 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
         fun OP_FLEX_ORDER(op: IrOperator, e1: MidIrExpression, e2: MidIrExpression): Op {
             when (op) {
                 IrOperator.ADD, IrOperator.MUL,
-                IrOperator.AND, IrOperator.OR,
                 IrOperator.EQ, IrOperator.NE -> Unit
                 else -> return Op(operator = op, e1 = e1, e2 = e2)
             }
@@ -184,12 +183,6 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
 
         fun MOD(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = IrOperator.MOD, e1 = e1, e2 = e2)
-
-        fun AND(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = IrOperator.AND, e1 = e1, e2 = e2)
-
-        fun OR(e1: MidIrExpression, e2: MidIrExpression): Op =
-            Op(operator = IrOperator.OR, e1 = e1, e2 = e2)
 
         fun XOR(e1: MidIrExpression, e2: MidIrExpression): Op =
             Op(operator = IrOperator.XOR, e1 = e1, e2 = e2)

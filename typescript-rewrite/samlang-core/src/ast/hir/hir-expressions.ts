@@ -1,5 +1,4 @@
-import { BinaryOperator } from '../common/binary-operators';
-import type { UnaryOperator } from '../common/enums';
+import type { UnaryOperator, IROperator } from '../common/enums';
 import { Literal, FALSE, TRUE, intLiteralOf } from '../common/literals';
 
 interface BaseHighIRExpression {
@@ -47,7 +46,7 @@ export interface HighIRUnaryExpression extends BaseHighIRExpression {
 export interface HighIRBinaryExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRBinaryExpression';
   readonly e1: HighIRExpression;
-  readonly operator: BinaryOperator;
+  readonly operator: IROperator;
   readonly e2: HighIRExpression;
 }
 

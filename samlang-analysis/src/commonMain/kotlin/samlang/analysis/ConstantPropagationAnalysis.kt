@@ -150,13 +150,6 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
                             }
                         }
                     }
-                    IrOperator.AND -> status1.map { known ->
-                        val v = known.value
-                        status2.map { c -> KnownConstant(value = v and c.value) }
-                    }
-                    IrOperator.OR -> status1.map { known ->
-                        status2.map { c -> KnownConstant(value = known.value or c.value) }
-                    }
                     IrOperator.XOR -> status1.map { known ->
                         status2.map { c -> KnownConstant(value = known.value xor c.value) }
                     }

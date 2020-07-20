@@ -346,7 +346,7 @@ it('FunctionCall family lowering works.', () => {
 it('Normal binary lowering works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_BINARY({ range: Range.DUMMY, type: unitType, operator: PLUS, e1: THIS, e2: THIS }),
-    { expression: HIR_BINARY({ operator: PLUS, e1: IR_THIS, e2: IR_THIS }) }
+    { expression: HIR_BINARY({ operator: '+', e1: IR_THIS, e2: IR_THIS }) }
   );
 });
 

@@ -73,7 +73,7 @@ internal object AlgebraicOptimizer {
                 e1 is Constant -> {
                     if (e1 == ZERO) {
                         return when (node.operator) {
-                            IrOperator.ADD, IrOperator.OR, IrOperator.XOR -> e2
+                            IrOperator.ADD, IrOperator.XOR -> e2
                             else -> OP(node.operator, e1, e2)
                         }
                     }
@@ -85,7 +85,7 @@ internal object AlgebraicOptimizer {
                 e2 is Constant -> {
                     if (e2 == ZERO) {
                         return when (node.operator) {
-                            IrOperator.ADD, IrOperator.SUB, IrOperator.OR, IrOperator.XOR -> e1
+                            IrOperator.ADD, IrOperator.SUB, IrOperator.XOR -> e1
                             else -> OP(node.operator, e1, e2)
                         }
                     }

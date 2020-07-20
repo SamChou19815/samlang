@@ -245,8 +245,7 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
             }
             val (operator, e1, e2) = expression
             when (operator) {
-                IrOperator.ADD, IrOperator.SUB,
-                IrOperator.AND, IrOperator.OR, IrOperator.XOR -> Unit
+                IrOperator.ADD, IrOperator.SUB, IrOperator.XOR -> Unit
                 else -> return false
             }
             return isPrimitive(e1) && isPrimitive(e2)

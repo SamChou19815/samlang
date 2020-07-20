@@ -58,7 +58,6 @@ object MidIrTransformUtil {
                         XOR(e1 = node, e2 = ONE)
                     }
                 }
-                IrOperator.OR, IrOperator.AND -> XOR(e1 = node, e2 = ONE)
                 IrOperator.LT -> GE(e1 = e1, e2 = e2)
                 IrOperator.LE -> GT(e1 = e1, e2 = e2)
                 IrOperator.GT -> LE(e1 = e1, e2 = e2)

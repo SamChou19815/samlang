@@ -37,14 +37,6 @@ internal object TileGenericCommutativeOpReversed : IrExpressionTile<Op> {
                 instructions += MOVE(resultReg, e2Reg)
                 instructions += IMUL(resultReg, e1RegOrMem)
             }
-            IrOperator.OR -> {
-                instructions += MOVE(resultReg, e2Reg)
-                instructions += BIN_OP(AlBinaryOpType.OR, resultReg, e1RegOrMem)
-            }
-            IrOperator.AND -> {
-                instructions += MOVE(resultReg, e2Reg)
-                instructions += BIN_OP(AlBinaryOpType.AND, resultReg, e1RegOrMem)
-            }
             IrOperator.XOR -> {
                 instructions += MOVE(resultReg, e2Reg)
                 instructions += BIN_OP(AlBinaryOpType.XOR, resultReg, e1RegOrMem)

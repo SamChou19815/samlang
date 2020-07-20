@@ -3,6 +3,7 @@ package samlang.compiler.hir
 import samlang.ast.common.BinaryOperator
 import samlang.ast.common.BuiltInFunctionName
 import samlang.ast.common.IrNameEncoder
+import samlang.ast.common.IrOperator
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Type
 import samlang.ast.hir.HighIrExpression
@@ -287,7 +288,23 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
                 val loweredStatements = mutableListOf<HighIrStatement>()
                 val loweredE1 = expression.e1.getLoweredAndAddStatements(statements = loweredStatements)
                 val loweredE2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements)
-                Binary(operator = expression.operator, e1 = loweredE1, e2 = loweredE2)
+                val irOperator = when (expression.operator) {
+                    BinaryOperator.MUL -> IrOperator.MUL
+                    BinaryOperator.DIV -> IrOperator.DIV
+                    BinaryOperator.MOD -> IrOperator.MOD
+                    BinaryOperator.PLUS -> IrOperator.ADD
+                    BinaryOperator.MINUS -> IrOperator.SUB
+                    BinaryOperator.LT -> IrOperator.LT
+                    BinaryOperator.LE -> IrOperator.LE
+                    BinaryOperator.GT -> IrOperator.GT
+                    BinaryOperator.GE -> IrOperator.GE
+                    BinaryOperator.EQ -> IrOperator.EQ
+                    BinaryOperator.NE -> IrOperator.NE
+                    BinaryOperator.AND -> error(message = "AND SHOULD BE GONE!")
+                    BinaryOperator.OR -> error(message = "OR SHOULD BE GONE!")
+                    BinaryOperator.CONCAT -> error(message = "CONCAT SHOULD BE GONE!")
+                }
+                Binary(operator = irOperator, e1 = loweredE1, e2 = loweredE2)
                     .asLoweringResult(statements = loweredStatements)
             }
         }

@@ -9,11 +9,6 @@ import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 
-/**
- * Interpret [compilationUnit] using [entryModule]'s main function as the main function.
- *
- * @return the printed string.
- */
 fun interpretCompilationUnit(compilationUnit: MidIrCompilationUnit): String {
     val environment = setupEnvironment(compilationUnit = compilationUnit)
     val function = environment.functions[IrNameEncoder.compiledProgramMain] ?: error(message = "Bad function.")
@@ -235,8 +230,6 @@ private class MidIrExpressionInterpreter(
             IrOperator.GE -> toInt(boolean = value1 >= value2)
             IrOperator.EQ -> toInt(boolean = value1 == value2)
             IrOperator.NE -> toInt(boolean = value1 != value2)
-            IrOperator.AND -> if (value1 == 0L) 0L else if (value2 == 0L) 0L else 1L
-            IrOperator.OR -> if (value1 != 0L) 1L else if (value2 != 0L) 1L else 0L
         }
     }
 

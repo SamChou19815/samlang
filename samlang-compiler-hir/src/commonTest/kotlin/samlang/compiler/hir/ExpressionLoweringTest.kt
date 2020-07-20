@@ -2,7 +2,6 @@ package samlang.compiler.hir
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import samlang.ast.common.BinaryOperator.PLUS
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Range.Companion.DUMMY as dummyRange
 import samlang.ast.common.Type
@@ -138,14 +137,6 @@ class ExpressionLoweringTest {
 
     @Test
     fun expressionOnlyLoweringWorks08() {
-        assertCorrectlyLowered(
-            expression = Expression.Binary(range = dummyRange, type = unit, operator = PLUS, e1 = THIS, e2 = THIS),
-            expectedExpression = HighIrExpression.Binary(operator = PLUS, e1 = IR_THIS, e2 = IR_THIS)
-        )
-    }
-
-    @Test
-    fun expressionOnlyLoweringWorks09() {
         assertCorrectlyLowered(
             expression = Expression.Lambda(
                 range = dummyRange,

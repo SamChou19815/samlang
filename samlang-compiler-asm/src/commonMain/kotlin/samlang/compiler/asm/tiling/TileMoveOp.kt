@@ -42,8 +42,6 @@ internal object TileMoveOp {
             opType = when (operator) {
                 IrOperator.ADD -> AlBinaryOpType.ADD
                 IrOperator.MUL -> null
-                IrOperator.AND -> AlBinaryOpType.AND
-                IrOperator.OR -> AlBinaryOpType.OR
                 IrOperator.XOR -> AlBinaryOpType.XOR
                 else -> return null
             }
@@ -105,11 +103,8 @@ internal object TileMoveOp {
             val opType: AlBinaryOpType
             opType = when (operator) {
                 IrOperator.ADD -> AlBinaryOpType.ADD
-                IrOperator.AND -> AlBinaryOpType.AND
-                IrOperator.OR -> AlBinaryOpType.OR
                 IrOperator.XOR -> AlBinaryOpType.XOR
-                else -> // not commutative, die
-                    return null
+                else -> return null // not commutative, die
             }
             val destMem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)
             var argResult: ConstOrRegTilingResult? = null // set if it can be tiled

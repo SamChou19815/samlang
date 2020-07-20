@@ -1,9 +1,7 @@
 package samlang.compiler.mir
 
-import samlang.ast.common.BinaryOperator
 import samlang.ast.common.GlobalVariable
 import samlang.ast.common.IrNameEncoder
-import samlang.ast.common.IrOperator
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
@@ -28,7 +26,6 @@ import samlang.ast.hir.HighIrStatement.Throw
 import samlang.ast.hir.HighIrStatementVisitor
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.ADD
-import samlang.ast.mir.MidIrExpression.Companion.CALL
 import samlang.ast.mir.MidIrExpression.Companion.CONST
 import samlang.ast.mir.MidIrExpression.Companion.EIGHT
 import samlang.ast.mir.MidIrExpression.Companion.EQ
@@ -277,30 +274,9 @@ internal class MidIrFirstPassGenerator(
         }
 
         override fun visit(expression: Binary): MidIrExpression {
-            val operator = when (expression.operator) {
-                BinaryOperator.MUL -> IrOperator.MUL
-                BinaryOperator.DIV -> IrOperator.DIV
-                BinaryOperator.MOD -> IrOperator.MOD
-                BinaryOperator.PLUS -> IrOperator.ADD
-                BinaryOperator.MINUS -> IrOperator.SUB
-                BinaryOperator.LT -> IrOperator.LT
-                BinaryOperator.LE -> IrOperator.LE
-                BinaryOperator.GT -> IrOperator.GT
-                BinaryOperator.GE -> IrOperator.GE
-                BinaryOperator.EQ -> IrOperator.EQ
-                BinaryOperator.NE -> IrOperator.NE
-                BinaryOperator.AND -> IrOperator.AND
-                BinaryOperator.OR -> IrOperator.OR
-                BinaryOperator.CONCAT -> {
-                    return CALL(
-                        functionExpr = NAME(IrNameEncoder.nameOfStringConcat),
-                        args = listOf(translate(expression.e1), translate(expression.e2))
-                    )
-                }
-            }
             val e1 = translate(expression = expression.e1)
             val e2 = translate(expression = expression.e2)
-            return OP(op = operator, e1 = e1, e2 = e2)
+            return OP(op = expression.operator, e1 = e1, e2 = e2)
         }
 
         override fun visit(expression: Lambda): MidIrExpression {

@@ -318,8 +318,12 @@ class HighIRExpressionLoweringManager {
     if (expression.__type__ !== 'BinaryExpression') {
       return this.lower(expression);
     }
-    const { operator, e1, e2 } = expression;
-    switch (operator.symbol) {
+    const {
+      operator: { symbol: operatorSymbol },
+      e1,
+      e2,
+    } = expression;
+    switch (operatorSymbol) {
       case '&&': {
         const temp = this.allocateTemporaryVariable();
         const e1Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e1);
@@ -378,7 +382,7 @@ class HighIRExpressionLoweringManager {
         const loweredE2 = this.loweredAndAddStatements(expression.e2, loweredStatements);
         return {
           statements: loweredStatements,
-          expression: HIR_BINARY({ operator: expression.operator, e1: loweredE1, e2: loweredE2 }),
+          expression: HIR_BINARY({ operator: operatorSymbol, e1: loweredE1, e2: loweredE2 }),
         };
       }
     }

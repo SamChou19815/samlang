@@ -89,14 +89,6 @@ internal object TileGenericOp : IrExpressionTile<Op> {
                 instructions += SET(JumpType.JNE, RAX)
                 instructions += MOVE(resultReg, RAX)
             }
-            IrOperator.OR -> {
-                instructions += MOVE(resultReg, e1Reg)
-                instructions += BIN_OP(AlBinaryOpType.OR, resultReg, e2RegOrMem)
-            }
-            IrOperator.AND -> {
-                instructions += MOVE(resultReg, e1Reg)
-                instructions += BIN_OP(AlBinaryOpType.AND, resultReg, e2RegOrMem)
-            }
             IrOperator.XOR -> {
                 instructions += MOVE(resultReg, e1Reg)
                 instructions += BIN_OP(AlBinaryOpType.XOR, resultReg, e2RegOrMem)
