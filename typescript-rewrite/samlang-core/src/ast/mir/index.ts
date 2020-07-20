@@ -26,16 +26,16 @@ export interface MidIRTemporaryExpression extends BaseMidIRExpression {
   readonly temporaryID: string;
 }
 
-export interface MidIRImmutableMemoryExpression<E = MidIRExpression> extends BaseMidIRExpression {
+export interface MidIRImmutableMemoryExpression extends BaseMidIRExpression {
   readonly __type__: 'MidIRImmutableMemoryExpression';
-  readonly indexExpression: E;
+  readonly indexExpression: MidIRExpression;
 }
 
-export interface MidIRBinaryExpression<E = MidIRExpression> extends BaseMidIRExpression {
+export interface MidIRBinaryExpression extends BaseMidIRExpression {
   readonly __type__: 'MidIRBinaryExpression';
   readonly operator: IROperator;
-  readonly e1: E;
-  readonly e2: E;
+  readonly e1: MidIRExpression;
+  readonly e2: MidIRExpression;
 }
 
 export type MidIRExpression =
@@ -45,30 +45,22 @@ export type MidIRExpression =
   | MidIRImmutableMemoryExpression
   | MidIRBinaryExpression;
 
-/** Give it a scary name so we don't construct it after the first lowering of first pass. */
-export type MidIRExpression_DANGEROUSLY_NON_CANONICAL =
-  | MidIRConstantExpression
-  | MidIRNameExpression
-  | MidIRTemporaryExpression
-  | MidIRImmutableMemoryExpression<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
-  | MidIRBinaryExpression<MidIRExpression_DANGEROUSLY_NON_CANONICAL>;
-
 /** Part 3: Statements */
 
 interface BaseMidIRStatement {
   readonly __type__: string;
 }
 
-export interface MidIRMoveTempStatement<E = MidIRExpression> extends BaseMidIRStatement {
+export interface MidIRMoveTempStatement extends BaseMidIRStatement {
   readonly __type__: 'MidIRMoveTempStatement';
   readonly temporaryID: string;
-  readonly source: E;
+  readonly source: MidIRExpression;
 }
 
-export interface MidIRMoveMemStatement<E = MidIRExpression> extends BaseMidIRStatement {
+export interface MidIRMoveMemStatement extends BaseMidIRStatement {
   readonly __type__: 'MidIRMoveMemStatement';
-  readonly memoryIndexExpression: E;
-  readonly source: E;
+  readonly memoryIndexExpression: MidIRExpression;
+  readonly source: MidIRExpression;
 }
 
 export interface MidIRJumpStatement extends BaseMidIRStatement {
@@ -115,8 +107,8 @@ export type MidIRStatement =
   | MidIRReturnStatement
   | MidIRConditionalJumpFallThrough;
 
-/** Give it a (less) scary name so we don't construct it after the second lowering of second pass. */
-export type MidIRStatementLessDangerouslyNonCanonical =
+/** Give it a scary name so we don't construct it after the first lowering of first pass. */
+export type MidIRStatement_DANGEROUSLY_NON_CANONICAL =
   | MidIRMoveTempStatement
   | MidIRMoveMemStatement
   | MidIRJumpStatement
@@ -124,16 +116,6 @@ export type MidIRStatementLessDangerouslyNonCanonical =
   | MidIRCallFunctionStatement
   | MidIRReturnStatement
   | MidIRConditionalJumpNoFallThrough;
-
-/** Give it a scary name so we don't construct it after the first lowering of first pass. */
-export type MidIRStatement_DANGEROUSLY_NON_CANONICAL =
-  | MidIRMoveTempStatement<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
-  | MidIRMoveMemStatement<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
-  | MidIRJumpStatement
-  | MidIRLabelStatement
-  | MidIRCallFunctionStatement<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
-  | MidIRReturnStatement<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
-  | MidIRConditionalJumpNoFallThrough<MidIRExpression_DANGEROUSLY_NON_CANONICAL>;
 
 /** Part 4: Top Levels */
 
@@ -172,13 +154,6 @@ export const MIR_TEMP = (temporaryID: string): MidIRTemporaryExpression => ({
   temporaryID,
 });
 
-export const MIR_IMMUTABLE_MEM_NON_CANONICAL = (
-  indexExpression: MidIRExpression_DANGEROUSLY_NON_CANONICAL
-): MidIRImmutableMemoryExpression<MidIRExpression_DANGEROUSLY_NON_CANONICAL> => ({
-  __type__: 'MidIRImmutableMemoryExpression',
-  indexExpression,
-});
-
 export const MIR_IMMUTABLE_MEM = (
   indexExpression: MidIRExpression
 ): MidIRImmutableMemoryExpression => ({
@@ -186,31 +161,11 @@ export const MIR_IMMUTABLE_MEM = (
   indexExpression,
 });
 
-export const MIR_OP_NON_CANONICAL = (
-  operator: IROperator,
-  e1: MidIRExpression_DANGEROUSLY_NON_CANONICAL,
-  e2: MidIRExpression_DANGEROUSLY_NON_CANONICAL
-): MidIRBinaryExpression<MidIRExpression_DANGEROUSLY_NON_CANONICAL> => ({
-  __type__: 'MidIRBinaryExpression',
-  operator,
-  e1,
-  e2,
-});
-
 export const MIR_OP = (
   operator: IROperator,
   e1: MidIRExpression,
   e2: MidIRExpression
 ): MidIRBinaryExpression => ({ __type__: 'MidIRBinaryExpression', operator, e1, e2 });
-
-export const MIR_MOVE_TEMP_NON_CANONICAL = (
-  temporary: MidIRTemporaryExpression,
-  source: MidIRExpression_DANGEROUSLY_NON_CANONICAL
-): MidIRMoveTempStatement<MidIRExpression_DANGEROUSLY_NON_CANONICAL> => ({
-  __type__: 'MidIRMoveTempStatement',
-  temporaryID: temporary.temporaryID,
-  source,
-});
 
 export const MIR_MOVE_TEMP = (
   temporary: MidIRTemporaryExpression,
@@ -221,19 +176,10 @@ export const MIR_MOVE_TEMP = (
   source,
 });
 
-export const MIR_MOVE_IMMUTABLE_MEM_NON_CANONICAL = (
-  memory: MidIRImmutableMemoryExpression<MidIRExpression_DANGEROUSLY_NON_CANONICAL>,
-  source: MidIRExpression_DANGEROUSLY_NON_CANONICAL
-): MidIRMoveMemStatement<MidIRExpression_DANGEROUSLY_NON_CANONICAL> => ({
-  __type__: 'MidIRMoveMemStatement',
-  memoryIndexExpression: memory.indexExpression,
-  source,
-});
-
 export const MIR_MOVE_IMMUTABLE_MEM = (
   memory: MidIRImmutableMemoryExpression,
   source: MidIRExpression
-): MidIRMoveMemStatement<MidIRExpression> => ({
+): MidIRMoveMemStatement => ({
   __type__: 'MidIRMoveMemStatement',
   memoryIndexExpression: memory.indexExpression,
   source,
@@ -247,20 +193,6 @@ export const MIR_JUMP = (label: string): MidIRJumpStatement => ({
 export const MIR_LABEL = (name: string): MidIRLabelStatement => ({
   __type__: 'MidIRLabelStatement',
   name,
-});
-
-export const MIR_CALL_FUNCTION_NON_CANONICAL = (
-  functionNameOrExpression: string | MidIRExpression_DANGEROUSLY_NON_CANONICAL,
-  functionArguments: readonly MidIRExpression_DANGEROUSLY_NON_CANONICAL[],
-  returnCollectorTemporaryID?: string
-): MidIRCallFunctionStatement<MidIRExpression_DANGEROUSLY_NON_CANONICAL> => ({
-  __type__: 'MidIRCallFunctionStatement',
-  functionExpression:
-    typeof functionNameOrExpression === 'string'
-      ? MIR_NAME(functionNameOrExpression)
-      : functionNameOrExpression,
-  functionArguments,
-  returnCollectorTemporaryID,
 });
 
 export const MIR_CALL_FUNCTION = (
@@ -290,17 +222,6 @@ export const MIR_RETURN = (returnedExpression?: MidIRExpression): MidIRReturnSta
 });
 
 export const MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL = (
-  conditionExpression: MidIRExpression_DANGEROUSLY_NON_CANONICAL,
-  label1: string,
-  label2: string
-): MidIRConditionalJumpNoFallThrough<MidIRExpression_DANGEROUSLY_NON_CANONICAL> => ({
-  __type__: 'MidIRConditionalJumpNoFallThrough',
-  conditionExpression,
-  label1,
-  label2,
-});
-
-export const MIR_CJUMP_NON_FALLTHROUGH_LESS_NON_CANONICAL = (
   conditionExpression: MidIRExpression,
   label1: string,
   label2: string
@@ -322,13 +243,9 @@ export const MIR_CJUMP_FALLTHROUGH = (
 
 /** Part 6: toString functions */
 
-type MidIRExpressionLoose = MidIRExpression | MidIRExpression_DANGEROUSLY_NON_CANONICAL;
-type MidIRStatementLoose =
-  | MidIRStatement
-  | MidIRStatement_DANGEROUSLY_NON_CANONICAL
-  | MidIRStatementLessDangerouslyNonCanonical;
+type MidIRStatementLoose = MidIRStatement | MidIRStatement_DANGEROUSLY_NON_CANONICAL;
 
-export const midIRExpressionToString = (expression: MidIRExpressionLoose): string => {
+export const midIRExpressionToString = (expression: MidIRExpression): string => {
   switch (expression.__type__) {
     case 'MidIRConstantExpression':
       return expression.value.toString();
@@ -370,9 +287,7 @@ export const midIRStatementToString = (statement: MidIRStatementLoose): string =
     case 'MidIRCallFunctionStatement': {
       const { functionExpression, functionArguments, returnCollectorTemporaryID } = statement;
       const functionExpressionString = midIRExpressionToString(functionExpression);
-      const argumentsString = (functionArguments as MidIRExpressionLoose[])
-        .map((it) => midIRExpressionToString(it))
-        .join(', ');
+      const argumentsString = functionArguments.map((it) => midIRExpressionToString(it)).join(', ');
       const functionCallString = `${functionExpressionString}(${argumentsString});`;
       if (returnCollectorTemporaryID == null) {
         return functionCallString;
