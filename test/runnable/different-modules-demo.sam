@@ -68,7 +68,7 @@ class Main {
     if (!condition) then {} else panic(message)
 
   private function assertEquals(e1: int, e2: int, message: string): unit =
-    if (e1 == e2) then {} else panic(intToString(e1))
+    if (e1 == e2) then {} else panic(intToString(e1)::" "::intToString(e2)::" "::message)
 
   private function consistencyTest(): unit = {
     val _ = Main.assertEquals(Option.getSome(3).map((i) -> i + 1).forceValue(), 4, "Ah1");

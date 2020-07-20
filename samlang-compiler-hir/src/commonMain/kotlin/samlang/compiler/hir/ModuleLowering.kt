@@ -29,20 +29,22 @@ fun compileModule(moduleReference: ModuleReference, module: Module): HighIrModul
                     className = classDefinition.name,
                     classMember = it
                 )
-            }
+            }.flatten()
         }.flatten()
     )
 
 /** Exposed for testing. */
-internal fun compileFunction(
+private fun compileFunction(
     moduleReference: ModuleReference,
     module: Module,
     className: String,
     classMember: ClassDefinition.MemberDefinition
-): HighIrFunction {
+): List<HighIrFunction> {
+    val functionName = IrNameEncoder.encodeFunctionName(moduleReference, className, classMember.name)
     val bodyLoweringResult = lowerExpression(
         moduleReference = moduleReference,
         module = module,
+        encodedFunctionName = functionName,
         expression = classMember.body
     )
     val parameters = classMember.parameters.map { it.name }
@@ -52,10 +54,12 @@ internal fun compileFunction(
     } else {
         statements.plus(element = HighIrStatement.Return(expression = bodyLoweringResult.expression))
     }
-    return HighIrFunction(
-        name = IrNameEncoder.encodeFunctionName(moduleReference, className, classMember.name),
+    val functions = bodyLoweringResult.syntheticFunctions
+    val userDefinedFunction = HighIrFunction(
+        name = functionName,
         parameters = if (classMember.isMethod) listOf("this", *parameters.toTypedArray()) else parameters,
         hasReturn = classMember.type.returnType != Type.unit,
         body = body
     )
+    return functions + userDefinedFunction
 }

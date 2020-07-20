@@ -11,11 +11,11 @@ import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.ClassMember
 import samlang.ast.hir.HighIrExpression.IndexAccess
-import samlang.ast.hir.HighIrExpression.Lambda
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.MethodAccess
 import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Variable
+import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.ClosureApplication
 import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
@@ -30,10 +30,28 @@ import samlang.ast.lang.Module
 import samlang.ast.lang.Pattern
 import samlang.ast.lang.Statement
 
-internal fun lowerExpression(moduleReference: ModuleReference, module: Module, expression: Expression): LoweringResult =
-    expression.accept(visitor = ExpressionLoweringVisitor(moduleReference, module), context = Unit)
+internal fun lowerExpression(
+    moduleReference: ModuleReference,
+    module: Module,
+    encodedFunctionName: String,
+    expression: Expression
+): LoweringResultWithCollectedLambdas {
+    val visitor = ExpressionLoweringVisitor(moduleReference, encodedFunctionName, module)
+    val result = expression.accept(visitor = visitor, context = Unit)
+    return LoweringResultWithCollectedLambdas(
+        syntheticFunctions = visitor.syntheticFunctions,
+        statements = result.statements,
+        expression = result.expression
+    )
+}
 
 internal data class LoweringResult(val statements: List<HighIrStatement>, val expression: HighIrExpression)
+
+internal data class LoweringResultWithCollectedLambdas(
+    val syntheticFunctions: List<HighIrFunction>,
+    val statements: List<HighIrStatement>,
+    val expression: HighIrExpression
+)
 
 private fun HighIrExpression.asLoweringResult(statements: List<HighIrStatement> = emptyList()): LoweringResult =
     LoweringResult(statements = statements, expression = this)
@@ -41,15 +59,30 @@ private fun HighIrExpression.asLoweringResult(statements: List<HighIrStatement> 
 private fun List<HighIrStatement>.asLoweringResult(): LoweringResult =
     LoweringResult(statements = this, expression = HighIrExpression.FALSE)
 
-private class ExpressionLoweringVisitor(private val moduleReference: ModuleReference, private val module: Module) :
-    ExpressionVisitor<Unit, LoweringResult> {
+private class ExpressionLoweringVisitor(
+    private val moduleReference: ModuleReference,
+    private val encodedFunctionName: String,
+    private val module: Module
+) : ExpressionVisitor<Unit, LoweringResult> {
+
+    val syntheticFunctions: MutableList<HighIrFunction> = mutableListOf()
 
     private var nextTemporaryVariableId: Int = 0
+    private var nextSyntheticFunctionId: Int = 0
 
     private fun allocateTemporaryVariable(): String {
         val variableName = "_LOWERING_$nextTemporaryVariableId"
         nextTemporaryVariableId++
         return variableName
+    }
+
+    private fun allocateSyntheticFunctionName(): String {
+        val functionName = getFunctionName(
+            className = encodedFunctionName,
+            functionName = "_SYNTHETIC_$nextSyntheticFunctionId"
+        )
+        nextSyntheticFunctionId++
+        return functionName
     }
 
     private fun Expression.lower(): LoweringResult = accept(visitor = this@ExpressionLoweringVisitor, context = Unit)
@@ -380,13 +413,39 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
     }
 
     override fun visit(expression: Expression.Lambda, context: Unit): LoweringResult {
-        val loweringResult = expression.body.lower()
-        return Lambda(
-            hasReturn = expression.type.returnType != Type.unit,
-            parameters = expression.parameters.map { it.first },
-            captured = expression.captured.keys.toList(),
-            body = loweringResult.statements.plus(element = Return(expression = loweringResult.expression))
+        val syntheticLambda = createSyntheticLambdaFunction(expression)
+        syntheticFunctions += syntheticLambda
+
+        return MethodAccess(
+            expression = if (expression.captured.isNotEmpty()) {
+                StructConstructor(expressionList = expression.captured.keys.map { Variable(it) })
+            } else {
+                HighIrExpression.literal(value = 1L) // A dummy value that is not zero
+            },
+            encodedMethodName = syntheticLambda.name
         ).asLoweringResult()
+    }
+
+    private fun createSyntheticLambdaFunction(expression: Expression.Lambda): HighIrFunction {
+        val loweringResult = expression.body.lower()
+        val lambdaStatements = mutableListOf<HighIrStatement>()
+        expression.captured.keys.forEachIndexed { index, variable ->
+            lambdaStatements += LetDefinition(
+                name = variable,
+                assignedExpression = IndexAccess(expression = Variable(name = "_context"), index = index)
+            )
+        }
+        lambdaStatements.addAll(elements = loweringResult.statements)
+        val hasReturn = expression.type.returnType != Type.unit
+        if (hasReturn) {
+            lambdaStatements += Return(expression = loweringResult.expression)
+        }
+        return HighIrFunction(
+            name = allocateSyntheticFunctionName(),
+            parameters = listOf("_context", *expression.parameters.map { it.first }.toTypedArray()),
+            hasReturn = hasReturn,
+            body = lambdaStatements
+        )
     }
 
     override fun visit(expression: Expression.StatementBlockExpression, context: Unit): LoweringResult {

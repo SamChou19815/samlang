@@ -19,10 +19,15 @@ import samlang.ast.lang.StatementBlock
 class ExpressionLoweringTest {
     private fun assertCorrectlyLowered(expression: Expression, expected: LoweringResult) {
         assertEquals(
-            expected = expected,
+            expected = LoweringResultWithCollectedLambdas(
+                syntheticFunctions = emptyList(),
+                statements = expected.statements,
+                expression = expected.expression
+            ),
             actual = lowerExpression(
                 moduleReference = ModuleReference.ROOT,
                 module = Module(imports = emptyList(), classDefinitions = emptyList()),
+                encodedFunctionName = "",
                 expression = expression
             )
         )
@@ -30,10 +35,15 @@ class ExpressionLoweringTest {
 
     private fun assertCorrectlyLowered(expression: Expression, expectedExpression: HighIrExpression) {
         assertEquals(
-            expected = LoweringResult(statements = emptyList(), expression = expectedExpression),
+            expected = LoweringResultWithCollectedLambdas(
+                syntheticFunctions = emptyList(),
+                statements = emptyList(),
+                expression = expectedExpression
+            ),
             actual = lowerExpression(
                 moduleReference = ModuleReference.ROOT,
                 module = Module(imports = emptyList(), classDefinitions = emptyList()),
+                encodedFunctionName = "",
                 expression = expression
             )
         )
@@ -111,25 +121,6 @@ class ExpressionLoweringTest {
                 range = dummyRange, type = unit, expression = THIS, fieldName = "foo", fieldOrder = 0
             ),
             expectedExpression = HighIrExpression.IndexAccess(expression = IR_THIS, index = 0)
-        )
-    }
-
-    @Test
-    fun expressionOnlyLoweringWorks07() {
-        assertCorrectlyLowered(
-            expression = Expression.Lambda(
-                range = dummyRange,
-                type = Type.FunctionType(argumentTypes = emptyList(), returnType = unit),
-                parameters = emptyList(),
-                captured = emptyMap(),
-                body = THIS
-            ),
-            expectedExpression = HighIrExpression.Lambda(
-                parameters = emptyList(),
-                hasReturn = false,
-                captured = emptyList(),
-                body = listOf(HighIrStatement.Return(expression = IR_THIS))
-            )
         )
     }
 
