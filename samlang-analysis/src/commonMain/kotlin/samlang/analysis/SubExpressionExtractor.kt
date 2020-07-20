@@ -6,7 +6,7 @@ import samlang.ast.mir.MidIrExpression.Mem
 import samlang.ast.mir.MidIrExpression.Name
 import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.ConditionalJumpFallThrough
@@ -57,7 +57,7 @@ internal object SubExpressionExtractor {
         }
     }
 
-    private class ExprVisitor(irExpression: MidIrExpression) : MidIrLoweredExpressionVisitor<Unit, Unit> {
+    private class ExprVisitor(irExpression: MidIrExpression) : MidIrExpressionVisitor<Unit, Unit> {
         val expressions: MutableSet<MidIrExpression> = mutableSetOf()
 
         init {

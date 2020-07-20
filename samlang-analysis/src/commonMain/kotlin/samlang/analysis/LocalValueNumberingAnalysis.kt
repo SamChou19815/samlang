@@ -9,7 +9,7 @@ import samlang.ast.mir.MidIrExpression.Mem
 import samlang.ast.mir.MidIrExpression.Name
 import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
@@ -150,7 +150,7 @@ class LocalValueNumberingAnalysis(statements: List<MidIrStatement>) {
         override fun visit(node: MidIrStatement.Return, context: NumberingInfo): NumberingInfo =
             node.returnedExpression?.let { returnedExpression -> plus(context, returnedExpression) } ?: context
 
-        private inner class ExprVisitor : MidIrLoweredExpressionVisitor<NumberingInfo, NumberingInfo> {
+        private inner class ExprVisitor : MidIrExpressionVisitor<NumberingInfo, NumberingInfo> {
             override fun visit(node: Constant, context: NumberingInfo): NumberingInfo = context
             override fun visit(node: Name, context: NumberingInfo): NumberingInfo = context
             override fun visit(node: Temporary, context: NumberingInfo): NumberingInfo = plus(context, node)

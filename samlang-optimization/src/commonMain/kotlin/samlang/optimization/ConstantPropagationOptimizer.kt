@@ -7,7 +7,7 @@ import samlang.ast.mir.MidIrExpression.Mem
 import samlang.ast.mir.MidIrExpression.Name
 import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
@@ -91,7 +91,7 @@ internal class ConstantPropagationOptimizer private constructor(
             newStatements += Return(returnedExpression = node.returnedExpression?.let { rewrite(it, context) })
         }
 
-        private inner class ExpressionRewriter : MidIrLoweredExpressionVisitor<Int, MidIrExpression> {
+        private inner class ExpressionRewriter : MidIrExpressionVisitor<Int, MidIrExpression> {
             override fun visit(node: Constant, context: Int): MidIrExpression = node
             override fun visit(node: Name, context: Int): MidIrExpression = node
 

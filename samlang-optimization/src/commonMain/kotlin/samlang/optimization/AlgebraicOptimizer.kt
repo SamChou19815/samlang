@@ -10,7 +10,7 @@ import samlang.ast.mir.MidIrExpression.Mem
 import samlang.ast.mir.MidIrExpression.Name
 import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
@@ -57,7 +57,7 @@ internal object AlgebraicOptimizer {
         )
     }
 
-    private object ExpressionOptimizer : MidIrLoweredExpressionVisitor<Unit, MidIrExpression> {
+    private object ExpressionOptimizer : MidIrExpressionVisitor<Unit, MidIrExpression> {
         override fun visit(node: Constant, context: Unit): MidIrExpression = node
         override fun visit(node: Name, context: Unit): MidIrExpression = node
         override fun visit(node: Temporary, context: Unit): MidIrExpression = node

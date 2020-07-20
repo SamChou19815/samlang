@@ -12,7 +12,7 @@ import samlang.ast.mir.MidIrExpression.Companion.ONE
 import samlang.ast.mir.MidIrExpression.Companion.XOR
 import samlang.ast.mir.MidIrExpression.Name
 import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 
 object MidIrTransformUtil {
     /**
@@ -25,7 +25,7 @@ object MidIrTransformUtil {
         return expression.accept(IrExprInverterVisitor, Unit)
     }
 
-    private object IrExprInverterVisitor : MidIrLoweredExpressionVisitor<Unit, MidIrExpression> {
+    private object IrExprInverterVisitor : MidIrExpressionVisitor<Unit, MidIrExpression> {
         override fun visit(node: MidIrExpression.Constant, context: Unit): MidIrExpression {
             val value = node.value
             if (value == 0L) {

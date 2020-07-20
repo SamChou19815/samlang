@@ -3,8 +3,8 @@ package samlang.analysis
 import samlang.ast.common.IrNameEncoder
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrFunction
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 
@@ -72,7 +72,7 @@ object UsedNameAnalysis {
             node.returnedExpression?.let { addExpression(expression = it) }
         }
 
-        private inner class ExpressionVisitor : MidIrLoweredExpressionVisitor<Unit, Unit> {
+        private inner class ExpressionVisitor : MidIrExpressionVisitor<Unit, Unit> {
             override fun visit(node: MidIrExpression.Constant, context: Unit): Unit = Unit
             override fun visit(node: MidIrExpression.Name, context: Unit): Unit = add(name = node.name)
             override fun visit(node: MidIrExpression.Temporary, context: Unit): Unit = Unit

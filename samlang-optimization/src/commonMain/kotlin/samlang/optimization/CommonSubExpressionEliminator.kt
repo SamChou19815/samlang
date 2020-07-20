@@ -11,7 +11,7 @@ import samlang.ast.mir.MidIrExpression.Mem
 import samlang.ast.mir.MidIrExpression.Name
 import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
@@ -118,7 +118,7 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
             node.returnedExpression?.let { fullSearchAndRecord(it) }
         }
 
-        private inner class ExprVisitor : MidIrLoweredExpressionVisitor<Unit, Unit> {
+        private inner class ExprVisitor : MidIrExpressionVisitor<Unit, Unit> {
             private fun searchAndRecord(exprToSearch: MidIrExpression) {
                 for ((appearId, expr) in availableExpressionsOut) {
                     if (isSimple(expr)) {
@@ -188,7 +188,7 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
     }
 
     private object ExprReplacementVisitor :
-        MidIrLoweredExpressionVisitor<Map<MidIrExpression, Temporary>, MidIrExpression> {
+        MidIrExpressionVisitor<Map<MidIrExpression, Temporary>, MidIrExpression> {
         override fun visit(node: Constant, context: Map<MidIrExpression, Temporary>): MidIrExpression {
             if (context.containsKey(node)) {
                 throw Error()

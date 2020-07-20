@@ -6,7 +6,7 @@ import samlang.ast.mir.MidIrExpression.Mem
 import samlang.ast.mir.MidIrExpression.Name
 import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 
 /** Checker for whether the given expression contains the temporary. */
 object ContainsTempDetector {
@@ -20,7 +20,7 @@ object ContainsTempDetector {
     fun check(expression: MidIrExpression, temporary: Temporary): Boolean = expression.accept(
         Visitor, temporary)
 
-    private object Visitor : MidIrLoweredExpressionVisitor<Temporary, Boolean> {
+    private object Visitor : MidIrExpressionVisitor<Temporary, Boolean> {
         override fun visit(node: Constant, context: Temporary): Boolean = false
         override fun visit(node: Name, context: Temporary): Boolean = false
         override fun visit(node: Temporary, context: Temporary): Boolean = node == context

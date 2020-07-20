@@ -8,7 +8,7 @@ import samlang.ast.mir.MidIrExpression.Mem
 import samlang.ast.mir.MidIrExpression.Name
 import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
@@ -64,7 +64,7 @@ object LocalValueNumberingOptimizer {
     }
 
     /** The visitor is only called when the given node cannot find a direct replacement. */
-    private object ExpressionRewriterVisitor : MidIrLoweredExpressionVisitor<NumberingInfo, MidIrExpression> {
+    private object ExpressionRewriterVisitor : MidIrExpressionVisitor<NumberingInfo, MidIrExpression> {
         override fun visit(node: Constant, context: NumberingInfo): Constant = node
         override fun visit(node: Name, context: NumberingInfo): Name = node
         override fun visit(node: Temporary, context: NumberingInfo): Temporary = node

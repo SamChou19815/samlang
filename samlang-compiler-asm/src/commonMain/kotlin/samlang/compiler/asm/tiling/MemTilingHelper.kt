@@ -17,7 +17,7 @@ import samlang.ast.mir.MidIrExpression.Constant
 import samlang.ast.mir.MidIrExpression.Name
 import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 
 /**
  * The helper class for tiling a mem expression node.
@@ -340,7 +340,7 @@ internal object MemTilingHelper {
     /**
      * The visitor that checks we covers every case for mem tiling.
      */
-    private object MemExprTilingVisitor : MidIrLoweredExpressionVisitor<DpTiling, MemTilingResult?> {
+    private object MemExprTilingVisitor : MidIrExpressionVisitor<DpTiling, MemTilingResult?> {
         override fun visit(node: Constant, context: DpTiling): MemTilingResult? {
             // good case 1: only displacement
             val intValue = node.intValue ?: return null

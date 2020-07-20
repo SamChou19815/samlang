@@ -4,7 +4,7 @@ import samlang.analysis.ConstantPropagationAnalysis.ConstantStatus.KnownConstant
 import samlang.analysis.ConstantPropagationAnalysis.ConstantStatus.Unknown
 import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
@@ -107,7 +107,7 @@ class ConstantPropagationAnalysis(statements: List<MidIrStatement>) {
         override fun visit(node: Return, context: Unit): Unit = Unit
 
         private inner class ContextAwareConstantFolder :
-            MidIrLoweredExpressionVisitor<Unit, ConstantStatus> {
+            MidIrExpressionVisitor<Unit, ConstantStatus> {
             override fun visit(node: MidIrExpression.Constant, context: Unit): ConstantStatus =
                 KnownConstant(node.value)
 

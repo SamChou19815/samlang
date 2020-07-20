@@ -8,8 +8,8 @@ import samlang.ast.mir.MidIrExpression.Mem
 import samlang.ast.mir.MidIrExpression.Name
 import samlang.ast.mir.MidIrExpression.Op
 import samlang.ast.mir.MidIrExpression.Temporary
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrFunction
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
@@ -157,7 +157,7 @@ object InlineOptimizer {
             1 + (node.returnedExpression?.accept(ExpressionInlineCostVisitor, Unit) ?: 0)
     }
 
-    private object ExpressionInlineCostVisitor : MidIrLoweredExpressionVisitor<Unit, Int> {
+    private object ExpressionInlineCostVisitor : MidIrExpressionVisitor<Unit, Int> {
         override fun visit(node: Constant, context: Unit): Int = 0
         override fun visit(node: Temporary, context: Unit): Int = 0
         override fun visit(node: Name, context: Unit): Int = 0
@@ -231,7 +231,7 @@ object InlineOptimizer {
             newMainBodyStatements += Jump(endLabel)
         }
 
-        private inner class ExpressionRewriterVisitor : MidIrLoweredExpressionVisitor<Unit, MidIrExpression> {
+        private inner class ExpressionRewriterVisitor : MidIrExpressionVisitor<Unit, MidIrExpression> {
             override fun visit(node: Constant, context: Unit): MidIrExpression = node
             override fun visit(node: Name, context: Unit): MidIrExpression = node
             override fun visit(node: Temporary, context: Unit): MidIrExpression = TEMP(transformedTempName(node.id))

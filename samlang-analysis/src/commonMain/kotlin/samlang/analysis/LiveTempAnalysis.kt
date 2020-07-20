@@ -2,7 +2,7 @@ package samlang.analysis
 
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
@@ -76,7 +76,7 @@ class LiveTempAnalysis(statements: List<MidIrStatement>) {
             node.returnedExpression?.let { findUse(expression = it, id = context) }
         }
 
-        private inner class ExprVisitor : MidIrLoweredExpressionVisitor<Int, Unit> {
+        private inner class ExprVisitor : MidIrExpressionVisitor<Int, Unit> {
             override fun visit(node: MidIrExpression.Constant, context: Int): Unit = Unit
             override fun visit(node: MidIrExpression.Name, context: Int): Unit = Unit
 

@@ -1,13 +1,13 @@
 package samlang.analysis
 
 import samlang.ast.mir.MidIrExpression
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 
 /** The detector utility class for finding mem since they are dangerous. */
 internal object HasMemDetector {
     fun hasMem(expression: MidIrExpression): Boolean = expression.accept(visitor = Visitor, context = Unit)
 
-    private object Visitor : MidIrLoweredExpressionVisitor<Unit, Boolean> {
+    private object Visitor : MidIrExpressionVisitor<Unit, Boolean> {
         override fun visit(node: MidIrExpression.Constant, context: Unit): Boolean = false
         override fun visit(node: MidIrExpression.Name, context: Unit): Boolean = false
         override fun visit(node: MidIrExpression.Temporary, context: Unit): Boolean = false

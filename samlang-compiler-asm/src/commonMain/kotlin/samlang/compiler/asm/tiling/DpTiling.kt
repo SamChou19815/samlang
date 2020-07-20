@@ -17,7 +17,7 @@ import samlang.ast.asm.FunctionContext
 import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.CallFunction
@@ -223,7 +223,7 @@ class DpTiling(val context: FunctionContext) {
             getTilingResult(node = node, dpTiling = this@DpTiling)
     }
 
-    private inner class ExpressionTilingVisitor : MidIrLoweredExpressionVisitor<Unit, ExpressionTilingResult> {
+    private inner class ExpressionTilingVisitor : MidIrExpressionVisitor<Unit, ExpressionTilingResult> {
         private val opTiles: List<IrExpressionTile<MidIrExpression.Op>> = listOf(
             TileGenericCommutativeOpReversed,
             TileGenericOp,

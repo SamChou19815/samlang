@@ -3,7 +3,7 @@ package samlang.optimization
 import samlang.analysis.LiveTempAnalysis
 import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrStatement
 
 @ExperimentalStdlibApi
@@ -30,7 +30,7 @@ internal object DeadCodeEliminator {
         return newStatements
     }
 
-    private object SafeRemovalVisitor : MidIrLoweredExpressionVisitor<Unit, Boolean> {
+    private object SafeRemovalVisitor : MidIrExpressionVisitor<Unit, Boolean> {
         override fun visit(node: MidIrExpression.Constant, context: Unit): Boolean = true
         override fun visit(node: MidIrExpression.Name, context: Unit): Boolean = true
         override fun visit(node: MidIrExpression.Temporary, context: Unit): Boolean = true

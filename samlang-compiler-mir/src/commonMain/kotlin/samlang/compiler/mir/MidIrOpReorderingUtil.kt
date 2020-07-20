@@ -2,14 +2,14 @@ package samlang.compiler.mir
 
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.OP_FLEX_ORDER
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
+import samlang.ast.mir.MidIrExpressionVisitor
 
 /** Safely reordering IR op nodes so that equivalent op also has same syntactic form. */
 internal object MidIrOpReorderingUtil {
     fun reorder(expression: MidIrExpression): MidIrExpression =
         expression.accept(visitor = ReorderVisitor, context = Unit)
 
-    private object ReorderVisitor : MidIrLoweredExpressionVisitor<Unit, MidIrExpression> {
+    private object ReorderVisitor : MidIrExpressionVisitor<Unit, MidIrExpression> {
         override fun visit(node: MidIrExpression.Constant, context: Unit): MidIrExpression = node
         override fun visit(node: MidIrExpression.Name, context: Unit): MidIrExpression = node
         override fun visit(node: MidIrExpression.Temporary, context: Unit): MidIrExpression = node

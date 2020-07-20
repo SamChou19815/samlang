@@ -4,8 +4,8 @@ import samlang.ast.common.IrNameEncoder
 import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression
+import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrFunction
-import samlang.ast.mir.MidIrLoweredExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 
@@ -196,7 +196,7 @@ private class MidIrStatementInterpreter(
 
 private class MidIrExpressionInterpreter(
     private val environment: GlobalEnvironment
-) : MidIrLoweredExpressionVisitor<StackFrame, Long> {
+) : MidIrExpressionVisitor<StackFrame, Long> {
     override fun visit(node: MidIrExpression.Constant, context: StackFrame): Long = node.value
 
     override fun visit(node: MidIrExpression.Name, context: StackFrame): Long =
