@@ -33,11 +33,7 @@ class MidIrGenerator private constructor(
             functionName = encodedFunctionName,
             globalResourceAllocator = globalResourceAllocator
         )
-        val generator1stPass = MidIrFirstPassGenerator(
-            allocator = allocator,
-            moduleReference = moduleReference,
-            module = module
-        )
+        val generator1stPass = MidIrFirstPassGenerator(allocator = allocator)
         val generator2ndPass = MidIrSecondPassGenerator(allocator = allocator)
         val allocatedArgs = mutableListOf<Temporary>()
         function.parameters.forEach { allocatedArgs += allocator.allocateTemp(variableName = it) }

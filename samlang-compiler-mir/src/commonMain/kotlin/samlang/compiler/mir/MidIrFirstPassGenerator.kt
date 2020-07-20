@@ -3,7 +3,6 @@ package samlang.compiler.mir
 import samlang.ast.common.BinaryOperator
 import samlang.ast.common.GlobalVariable
 import samlang.ast.common.IrNameEncoder
-import samlang.ast.common.ModuleReference
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
@@ -16,7 +15,6 @@ import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Unary
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpressionVisitor
-import samlang.ast.hir.HighIrModule
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.ClosureApplication
 import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
@@ -56,9 +54,7 @@ import samlang.ast.mir.MidIrStatement.Label
 
 /** Generate non-canonical mid IR in the first pass. */
 internal class MidIrFirstPassGenerator(
-    private val allocator: MidIrResourceAllocator,
-    private val moduleReference: ModuleReference,
-    private val module: HighIrModule
+    private val allocator: MidIrResourceAllocator
 ) {
     private val statementGenerator: StatementGenerator = StatementGenerator()
     private val expressionGenerator: ExpressionGenerator = ExpressionGenerator()
