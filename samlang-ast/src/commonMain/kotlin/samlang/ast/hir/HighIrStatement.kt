@@ -29,16 +29,6 @@ sealed class HighIrStatement {
         override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
     }
 
-    data class Match(
-        val variableForMatchedExpression: String,
-        val matchingList: List<VariantPatternToStatement>
-    ) : HighIrStatement() {
-
-        data class VariantPatternToStatement(val tagOrder: Int, val statements: List<HighIrStatement>)
-
-        override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
-    }
-
     data class LetDefinition(val name: String, val assignedExpression: HighIrExpression) : HighIrStatement() {
         override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
     }

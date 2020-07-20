@@ -22,7 +22,6 @@ import {
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
-  HIR_MATCH,
   HIR_IF_ELSE,
   HIR_LET,
   HIR_RETURN,
@@ -466,9 +465,19 @@ class HighIRExpressionLoweringManager {
       loweredStatements
     );
     const variableForMatchedExpression = this.allocateTemporaryVariable();
+    const variableForTag = this.allocateTemporaryVariable();
     const temporaryVariable = this.allocateTemporaryVariable();
     loweredStatements.push(
       HIR_LET({ name: variableForMatchedExpression, assignedExpression: matchedExpression })
+    );
+    loweredStatements.push(
+      HIR_LET({
+        name: variableForTag,
+        assignedExpression: HIR_INDEX_ACCESS({
+          expression: HIR_VARIABLE(variableForMatchedExpression),
+          index: 0,
+        }),
+      })
     );
     const loweredMatchingList = expression.matchingList.map(
       ({ tagOrder, dataVariable, expression: patternExpression }) => {
@@ -492,12 +501,30 @@ class HighIRExpressionLoweringManager {
         return { tagOrder, statements: localStatements };
       }
     );
-    loweredStatements.push(
-      HIR_MATCH({
-        variableForMatchedExpression,
-        matchingList: loweredMatchingList,
-      })
-    );
+    // istanbul ignore next
+    if (loweredMatchingList.length < 1) throw new Error();
+    let ifElse = HIR_IF_ELSE({
+      booleanExpression: HIR_BINARY({
+        operator: '==',
+        e1: HIR_VARIABLE(variableForTag),
+        e2: HIR_INT(BigInt(loweredMatchingList[loweredMatchingList.length - 1].tagOrder)),
+      }),
+      s1: loweredMatchingList[loweredMatchingList.length - 1].statements,
+      s2: [],
+    });
+    for (let i = loweredMatchingList.length - 2; i >= 0; i -= 1) {
+      const { tagOrder, statements: localStatements } = loweredMatchingList[i];
+      ifElse = HIR_IF_ELSE({
+        booleanExpression: HIR_BINARY({
+          operator: '==',
+          e1: HIR_VARIABLE(variableForTag),
+          e2: HIR_INT(BigInt(tagOrder)),
+        }),
+        s1: localStatements,
+        s2: [ifElse],
+      });
+    }
+    loweredStatements.push(ifElse);
     return { statements: loweredStatements, expression: HIR_VARIABLE(temporaryVariable) };
   }
 

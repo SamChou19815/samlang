@@ -20,7 +20,6 @@ import samlang.ast.hir.HighIrStatement.ClosureApplication
 import samlang.ast.hir.HighIrStatement.FunctionApplication
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDefinition
-import samlang.ast.hir.HighIrStatement.Match
 import samlang.ast.hir.HighIrStatement.Return
 import samlang.ast.lang.Expression
 import samlang.ast.lang.ExpressionVisitor
@@ -391,10 +390,15 @@ private class ExpressionLoweringVisitor(
         val matchedExpression = expression.matchedExpression
             .getLoweredAndAddStatements(statements = loweredStatements)
         val variableForMatchedExpression = allocateTemporaryVariable()
+        val variableForTag = allocateTemporaryVariable()
         val temporaryVariable = allocateTemporaryVariable()
         loweredStatements += LetDefinition(
             name = variableForMatchedExpression,
             assignedExpression = matchedExpression
+        )
+        loweredStatements += LetDefinition(
+            name = variableForTag,
+            assignedExpression = IndexAccess(expression = Variable(variableForMatchedExpression), index = 0)
         )
         val loweredMatchingList = expression.matchingList.map { patternToExpression ->
             val localStatements = mutableListOf<HighIrStatement>()
@@ -408,12 +412,30 @@ private class ExpressionLoweringVisitor(
             val result = patternToExpression.expression.lower()
             localStatements += result.statements
             localStatements += LetDefinition(name = temporaryVariable, assignedExpression = result.expression)
-            Match.VariantPatternToStatement(tagOrder = patternToExpression.tagOrder, statements = localStatements)
+            patternToExpression.tagOrder to localStatements
         }
-        loweredStatements += Match(
-            variableForMatchedExpression = variableForMatchedExpression,
-            matchingList = loweredMatchingList
+        var ifElse = IfElse(
+            booleanExpression = Binary(
+                operator = IrOperator.EQ,
+                e1 = Variable(variableForTag),
+                e2 = HighIrExpression.literal(value = loweredMatchingList.last().first.toLong())
+            ),
+            s1 = loweredMatchingList.last().second,
+            s2 = emptyList()
         )
+        for (i in (loweredMatchingList.size - 1) downTo 0) {
+            val (tagOrder, localStatements) = loweredMatchingList[i]
+            ifElse = IfElse(
+                booleanExpression = Binary(
+                    operator = IrOperator.EQ,
+                    e1 = Variable(variableForTag),
+                    e2 = HighIrExpression.literal(value = tagOrder.toLong())
+                ),
+                s1 = localStatements,
+                s2 = listOf(ifElse)
+            )
+        }
+        loweredStatements += ifElse
         return Variable(name = temporaryVariable).asLoweringResult(statements = loweredStatements)
     }
 

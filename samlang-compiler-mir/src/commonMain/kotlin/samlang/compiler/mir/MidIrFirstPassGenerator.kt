@@ -15,7 +15,6 @@ import samlang.ast.hir.HighIrStatement.ClosureApplication
 import samlang.ast.hir.HighIrStatement.FunctionApplication
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDefinition
-import samlang.ast.hir.HighIrStatement.Match
 import samlang.ast.hir.HighIrStatement.Return
 import samlang.ast.hir.HighIrStatementVisitor
 import samlang.ast.mir.MidIrExpression
@@ -140,32 +139,6 @@ internal class MidIrFirstPassGenerator(
             sequence += statement.s2.map { translate(statement = it) }.flatten()
             sequence += Label(name = endLabel)
             return sequence
-        }
-
-        override fun visit(statement: Match): List<MidIrStatement> {
-            statement.matchingList
-            val matchedTemp = allocator.getTemporaryByVariable(variableName = statement.variableForMatchedExpression)
-            val tagTemp = allocator.allocateTemp()
-            val statements = mutableListOf<MidIrStatement>()
-            statements += MOVE(destination = tagTemp, source = matchedTemp)
-            val matchingList = statement.matchingList
-            val matchBranchLabels = matchingList.map {
-                allocator.allocateLabelWithAnnotation(annotation = "MATCH_BRANCH_${it.tagOrder}")
-            }
-            val endLabel = allocator.allocateLabelWithAnnotation(annotation = "MATCH_END")
-            matchingList.forEachIndexed { index, variantPatternToStatement ->
-                val currentLabel = matchBranchLabels[index]
-                statements += CJUMP(
-                    condition = EQ(tagTemp, CONST(variantPatternToStatement.tagOrder.toLong())),
-                    label1 = currentLabel,
-                    label2 = if (index < matchBranchLabels.size - 1) matchBranchLabels[index + 1] else endLabel
-                )
-                statements += Label(name = currentLabel)
-                variantPatternToStatement.statements.forEach { statements += translate(statement = it) }
-                statements += Jump(label = endLabel)
-            }
-            statements += Label(name = endLabel)
-            return statements
         }
 
         override fun visit(statement: LetDefinition): List<MidIrStatement> {

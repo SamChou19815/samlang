@@ -20,7 +20,6 @@ import {
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
-  HIR_MATCH,
   HIR_IF_ELSE,
   HIR_LET,
   HIR_RETURN,
@@ -623,43 +622,56 @@ it('Match lowering works.', () => {
     {
       statements: [
         HIR_LET({ name: '_LOWERING_0', assignedExpression: IR_THIS }),
-        HIR_MATCH({
-          variableForMatchedExpression: '_LOWERING_0',
-          matchingList: [
-            {
-              tagOrder: 0,
-              statements: [
-                HIR_LET({
-                  name: 'bar',
-                  assignedExpression: HIR_INDEX_ACCESS({
-                    expression: HIR_VARIABLE('_LOWERING_0'),
-                    index: 1,
-                  }),
-                }),
-                HIR_LET({
-                  name: '_LOWERING_1',
-                  assignedExpression: IR_THIS,
-                }),
-              ],
-            },
-            {
-              tagOrder: 1,
-              statements: [
+        HIR_LET({
+          name: '_LOWERING_1',
+          assignedExpression: HIR_INDEX_ACCESS({
+            expression: HIR_VARIABLE('_LOWERING_0'),
+            index: 0,
+          }),
+        }),
+        HIR_IF_ELSE({
+          booleanExpression: HIR_BINARY({
+            operator: '==',
+            e1: HIR_VARIABLE('_LOWERING_1'),
+            e2: HIR_INT(BigInt(0)),
+          }),
+          s1: [
+            HIR_LET({
+              name: 'bar',
+              assignedExpression: HIR_INDEX_ACCESS({
+                expression: HIR_VARIABLE('_LOWERING_0'),
+                index: 1,
+              }),
+            }),
+            HIR_LET({
+              name: '_LOWERING_2',
+              assignedExpression: IR_THIS,
+            }),
+          ],
+          s2: [
+            HIR_IF_ELSE({
+              booleanExpression: HIR_BINARY({
+                operator: '==',
+                e1: HIR_VARIABLE('_LOWERING_1'),
+                e2: HIR_INT(BigInt(1)),
+              }),
+              s1: [
                 HIR_FUNCTION_CALL({
                   functionName: '_builtin_throw',
                   functionArguments: [IR_THIS],
-                  returnCollector: '_LOWERING_2',
+                  returnCollector: '_LOWERING_3',
                 }),
                 HIR_LET({
-                  name: '_LOWERING_1',
+                  name: '_LOWERING_2',
                   assignedExpression: HIR_FALSE,
                 }),
               ],
-            },
+              s2: [],
+            }),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_1'),
+      expression: HIR_VARIABLE('_LOWERING_2'),
     }
   );
 });

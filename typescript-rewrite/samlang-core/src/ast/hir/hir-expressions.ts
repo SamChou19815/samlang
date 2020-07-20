@@ -77,12 +77,6 @@ export interface HighIRVariantPatternToStatement {
   readonly statements: readonly HighIRStatement[];
 }
 
-export interface HighIRMatchStatement extends BaseHighIRStatement {
-  readonly __type__: 'HighIRMatchStatement';
-  readonly variableForMatchedExpression: string;
-  readonly matchingList: readonly HighIRVariantPatternToStatement[];
-}
-
 export interface HighIRLetDefinitionStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRLetDefinitionStatement';
   readonly name: string;
@@ -98,7 +92,6 @@ export type HighIRStatement =
   | HighIRFunctionCallStatement
   | HighIRClosureCallStatement
   | HighIRIfElseStatement
-  | HighIRMatchStatement
   | HighIRLetDefinitionStatement
   | HighIRReturnStatement;
 
@@ -201,15 +194,6 @@ export const HIR_IF_ELSE = ({
   booleanExpression,
   s1,
   s2,
-});
-
-export const HIR_MATCH = ({
-  variableForMatchedExpression,
-  matchingList,
-}: ConstructorArgumentObject<HighIRMatchStatement>): HighIRMatchStatement => ({
-  __type__: 'HighIRMatchStatement',
-  variableForMatchedExpression,
-  matchingList,
 });
 
 export const HIR_LET = ({
