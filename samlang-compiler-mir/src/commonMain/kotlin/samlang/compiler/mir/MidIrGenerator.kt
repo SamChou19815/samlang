@@ -37,7 +37,7 @@ class MidIrGenerator private constructor(
         val allocatedArgs = mutableListOf<Temporary>()
         function.parameters.forEach { allocatedArgs += allocator.allocateTemp(variableName = it) }
         val mainBodyStatements = cleanupAfterFirstPass(
-            statements = function.body.map { generator1stPass.translate(statement = it) },
+            statements = function.body.map { generator1stPass.translate(statement = it) }.flatten(),
             generator2ndPass = generator2ndPass,
             allocator = allocator
         )

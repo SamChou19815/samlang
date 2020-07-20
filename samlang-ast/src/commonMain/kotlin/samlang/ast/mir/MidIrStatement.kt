@@ -119,11 +119,6 @@ sealed class MidIrStatement {
             returnCollector = returnCollector
         )
 
-        fun SEQ(statements: List<MidIrStatement>): Sequence = Sequence(statements = statements)
-
-        fun SEQ(vararg statements: MidIrStatement): Sequence =
-            Sequence(statements = listOf(*statements))
-
         fun CJUMP(condition: MidIrExpression, label1: String, label2: String): ConditionalJump =
             ConditionalJump(condition = condition, label1 = label1, label2 = label2)
 

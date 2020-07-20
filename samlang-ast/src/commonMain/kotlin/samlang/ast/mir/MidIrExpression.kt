@@ -116,12 +116,10 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
     }
 
     data class ExprSequence(
-        val sequence: MidIrStatement.Sequence,
+        val statements: List<MidIrStatement>,
         val expression: MidIrExpression
     ) : MidIrExpression(classOrder = 6) {
-        val statements: List<MidIrStatement> get() = sequence.statements
-
-        override fun toString(): String = "ESEQ($sequence, $expression)"
+        override fun toString(): String = "ESEQ($statements, $expression)"
 
         override fun <C, T> accept(visitor: MidIrExpressionVisitor<C, T>, context: C): T =
             visitor.visit(node = this, context = context)
@@ -194,8 +192,8 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
 
         fun IMMUTABLE_MEM(expression: MidIrExpression): Mem = Mem(expression = expression, immutable = true)
 
-        fun ESEQ(statement: MidIrStatement.Sequence, expression: MidIrExpression): ExprSequence =
-            ExprSequence(sequence = statement, expression = expression)
+        fun ESEQ(statements: List<MidIrStatement>, expression: MidIrExpression): ExprSequence =
+            ExprSequence(statements = statements, expression = expression)
 
         fun NAME(name: String): Name = Name(name = name)
     }

@@ -18,7 +18,6 @@ import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
 import samlang.ast.mir.MidIrStatement.Companion.CJUMP
 import samlang.ast.mir.MidIrStatement.Companion.MOVE
 import samlang.ast.mir.MidIrStatement.Companion.MOVE_IMMUTABLE_MEM
-import samlang.ast.mir.MidIrStatement.Companion.SEQ
 import samlang.ast.mir.MidIrStatement.ConditionalJump
 import samlang.ast.mir.MidIrStatement.ConditionalJumpFallThrough
 import samlang.ast.mir.MidIrStatement.Jump
@@ -141,14 +140,14 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
             require(value = isCanonical(loweredReturnExpression)) {
                 "Bad. original $returnedExpression new: $loweredReturnExpression"
             }
-            return newSequence.statements + Return(returnedExpression = loweredReturnExpression)
+            return newSequence + Return(returnedExpression = loweredReturnExpression)
         }
     }
 
     private inner class ExpressionGenerator : MidIrExpressionVisitor<Unit, ExprSequence> {
-        override fun visit(node: Constant, context: Unit): ExprSequence = ESEQ(statement = SEQ(), expression = node)
-        override fun visit(node: Name, context: Unit): ExprSequence = ESEQ(statement = SEQ(), expression = node)
-        override fun visit(node: Temporary, context: Unit): ExprSequence = ESEQ(statement = SEQ(), expression = node)
+        override fun visit(node: Constant, context: Unit): ExprSequence = ESEQ(statements = emptyList(), expression = node)
+        override fun visit(node: Name, context: Unit): ExprSequence = ESEQ(statements = emptyList(), expression = node)
+        override fun visit(node: Temporary, context: Unit): ExprSequence = ESEQ(statements = emptyList(), expression = node)
 
         override fun visit(node: Op, context: Unit): ExprSequence {
             val e1 = node.e1
@@ -157,7 +156,7 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
             val loweringResultOfE2 = lower(e2)
             if (bothCanonical(e1, e2)) {
                 // if both e1 and e2 are canonical, then we don't need to change anything.
-                return ESEQ(SEQ(), MidIrOpReorderingUtil.reorder(node))
+                return ESEQ(listOf(), MidIrOpReorderingUtil.reorder(node))
             }
             val e1Temp = allocator.allocateTemp()
             val newSequence = loweringResultOfE1.statements.toMutableList()
@@ -165,7 +164,7 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
             newSequence.addAll(loweringResultOfE2.statements)
             val e2Expr = loweringResultOfE2.expression
             val newExpr = MidIrOpReorderingUtil.reorder(OP(node.operator, e1Temp, e2Expr))
-            return ESEQ(SEQ(newSequence), newExpr)
+            return ESEQ(newSequence, newExpr)
         }
 
         override fun visit(node: Mem, context: Unit): ExprSequence {
@@ -174,10 +173,10 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
         }
 
         override fun visit(node: ExprSequence, context: Unit): ExprSequence {
-            val newSequence = lower(node.sequence).toMutableList()
+            val newSequence = node.statements.map { lower(it) }.flatten().toMutableList()
             val exprLoweringResult = lower(node.expression)
             newSequence += exprLoweringResult.statements
-            return ESEQ(SEQ(newSequence), exprLoweringResult.expression)
+            return ESEQ(newSequence, exprLoweringResult.expression)
         }
     }
 
