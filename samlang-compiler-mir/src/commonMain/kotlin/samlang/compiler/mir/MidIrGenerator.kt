@@ -18,7 +18,6 @@ import samlang.optimization.TailRecursionOptimizer
 @ExperimentalStdlibApi
 class MidIrGenerator private constructor(
     private val globalResourceAllocator: MidIrGlobalResourceAllocator,
-    private val moduleReference: ModuleReference,
     private val module: HighIrModule
 ) {
     private val globalVariables: MutableSet<GlobalVariable> = LinkedHashSet()
@@ -91,10 +90,9 @@ class MidIrGenerator private constructor(
             val globalResourceAllocator = MidIrGlobalResourceAllocator()
             val globalVariables = LinkedHashSet<GlobalVariable>()
             val functions = mutableListOf<MidIrFunction>()
-            sources.moduleMappings.forEach { (moduleReference, module) ->
+            sources.moduleMappings.forEach { (_, module) ->
                 val generator = MidIrGenerator(
                     globalResourceAllocator = globalResourceAllocator,
-                    moduleReference = moduleReference,
                     module = module
                 )
                 globalVariables += generator.globalVariables
