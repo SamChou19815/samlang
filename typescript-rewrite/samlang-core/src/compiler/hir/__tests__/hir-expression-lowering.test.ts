@@ -13,11 +13,10 @@ import {
   HIR_VARIABLE,
   HIR_FALSE,
   HIR_TRUE,
-  HIR_CLASS_MEMBER,
   HIR_STRUCT_CONSTRUCTOR,
   HIR_INT,
   HIR_INDEX_ACCESS,
-  HIR_METHOD_ACCESS,
+  HIR_FUNCTION_CLOSURE,
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
@@ -114,7 +113,12 @@ it('ClassMember lowering works.', () => {
       memberName: 'b',
       memberNameRange: Range.DUMMY,
     }),
-    { expression: HIR_CLASS_MEMBER('_module__class_A_function_b') }
+    {
+      expression: HIR_FUNCTION_CLOSURE({
+        encodedFunctionName: '_module__class_A_function_b',
+        closureContextExpression: HIR_FALSE,
+      }),
+    }
   );
 });
 
@@ -170,9 +174,9 @@ it('MethodAccess lowering works.', () => {
       methodName: 'foo',
     }),
     {
-      expression: HIR_METHOD_ACCESS({
-        expression: IR_THIS,
-        encodedMethodName: '_module__class_Dummy_function_foo',
+      expression: HIR_FUNCTION_CLOSURE({
+        closureContextExpression: IR_THIS,
+        encodedFunctionName: '_module__class_Dummy_function_foo',
       }),
     }
   );
@@ -456,9 +460,9 @@ it('Lambda lowering works.', () => {
         },
       ],
       statements: [],
-      expression: HIR_METHOD_ACCESS({
-        expression: HIR_STRUCT_CONSTRUCTOR([HIR_VARIABLE('a')]),
-        encodedMethodName: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+      expression: HIR_FUNCTION_CLOSURE({
+        closureContextExpression: HIR_STRUCT_CONSTRUCTOR([HIR_VARIABLE('a')]),
+        encodedFunctionName: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
       }),
     }
   );
@@ -490,9 +494,9 @@ it('Lambda lowering works.', () => {
         },
       ],
       statements: [],
-      expression: HIR_METHOD_ACCESS({
-        expression: HIR_STRUCT_CONSTRUCTOR([HIR_VARIABLE('a')]),
-        encodedMethodName: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+      expression: HIR_FUNCTION_CLOSURE({
+        closureContextExpression: HIR_STRUCT_CONSTRUCTOR([HIR_VARIABLE('a')]),
+        encodedFunctionName: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
       }),
     }
   );
@@ -524,9 +528,9 @@ it('Lambda lowering works.', () => {
         },
       ],
       statements: [],
-      expression: HIR_METHOD_ACCESS({
-        expression: HIR_STRUCT_CONSTRUCTOR([HIR_VARIABLE('a')]),
-        encodedMethodName: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+      expression: HIR_FUNCTION_CLOSURE({
+        closureContextExpression: HIR_STRUCT_CONSTRUCTOR([HIR_VARIABLE('a')]),
+        encodedFunctionName: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
       }),
     }
   );
@@ -549,9 +553,9 @@ it('Lambda lowering works.', () => {
         },
       ],
       statements: [],
-      expression: HIR_METHOD_ACCESS({
-        expression: HIR_INT(BigInt(1)),
-        encodedMethodName: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+      expression: HIR_FUNCTION_CLOSURE({
+        closureContextExpression: HIR_INT(BigInt(1)),
+        encodedFunctionName: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
       }),
     }
   );

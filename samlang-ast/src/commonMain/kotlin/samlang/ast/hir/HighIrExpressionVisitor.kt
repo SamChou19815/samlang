@@ -9,9 +9,8 @@ package samlang.ast.hir
 interface HighIrExpressionVisitor<T> {
     fun visit(expression: HighIrExpression.Literal): T
     fun visit(expression: HighIrExpression.Variable): T
-    fun visit(expression: HighIrExpression.ClassMember): T
     fun visit(expression: HighIrExpression.StructConstructor): T
     fun visit(expression: HighIrExpression.IndexAccess): T
-    fun visit(expression: HighIrExpression.MethodAccess): T
+    fun visit(expression: HighIrExpression.FunctionClosure): T
     fun visit(expression: HighIrExpression.Binary): T
 }

@@ -3,10 +3,9 @@ package samlang.compiler.mir
 import samlang.ast.common.GlobalVariable
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
-import samlang.ast.hir.HighIrExpression.ClassMember
+import samlang.ast.hir.HighIrExpression.FunctionClosure
 import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Literal
-import samlang.ast.hir.HighIrExpression.MethodAccess
 import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpressionVisitor
@@ -197,20 +196,6 @@ internal class MidIrFirstPassGenerator(
         override fun visit(expression: Variable): MidIrExpression =
             allocator.getTemporaryByVariable(variableName = expression.name)
 
-        override fun visit(expression: ClassMember): MidIrExpression {
-            val name = expression.encodedFunctionName
-            val closureTemporary = allocator.allocateTemp()
-            val statements = listOf(
-                MOVE(closureTemporary, MALLOC(CONST(value = 16L))),
-                MOVE_IMMUTABLE_MEM(destination = IMMUTABLE_MEM(expression = closureTemporary), source = NAME(name = name)),
-                MOVE_IMMUTABLE_MEM(
-                    destination = IMMUTABLE_MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),
-                    source = CONST(value = 0L)
-                )
-            )
-            return ESEQ(SEQ(statements), closureTemporary)
-        }
-
         override fun visit(expression: StructConstructor): MidIrExpression {
             val structTemporary = allocator.allocateTemp()
             val statements = mutableListOf<MidIrStatement>()
@@ -232,15 +217,15 @@ internal class MidIrFirstPassGenerator(
                 )
             )
 
-        override fun visit(expression: MethodAccess): MidIrExpression {
-            val name = expression.encodedMethodName
+        override fun visit(expression: FunctionClosure): MidIrExpression {
+            val name = expression.encodedFunctionName
             val closureTemporary = allocator.allocateTemp()
             val statements = listOf(
                 MOVE(closureTemporary, MALLOC(CONST(value = 16L))),
                 MOVE_IMMUTABLE_MEM(destination = IMMUTABLE_MEM(expression = closureTemporary), source = NAME(name = name)),
                 MOVE_IMMUTABLE_MEM(
                     destination = IMMUTABLE_MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),
-                    source = translate(expression = expression.expression)
+                    source = translate(expression = expression.closureContextExpression)
                 )
             )
             return ESEQ(SEQ(statements), closureTemporary)

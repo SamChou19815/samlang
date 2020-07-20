@@ -13,13 +13,12 @@ import {
   HighIRExpression,
   HIR_LITERAL,
   HIR_VARIABLE,
-  HIR_CLASS_MEMBER,
   HIR_FALSE,
   HIR_TRUE,
   HIR_STRUCT_CONSTRUCTOR,
   HIR_INT,
   HIR_INDEX_ACCESS,
-  HIR_METHOD_ACCESS,
+  HIR_FUNCTION_CLOSURE,
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
@@ -123,9 +122,10 @@ class HighIRExpressionLoweringManager {
       case 'ClassMemberExpression':
         return {
           statements: [],
-          expression: HIR_CLASS_MEMBER(
-            this.getFunctionName(expression.className, expression.memberName)
-          ),
+          expression: HIR_FUNCTION_CLOSURE({
+            closureContextExpression: HIR_FALSE,
+            encodedFunctionName: this.getFunctionName(expression.className, expression.memberName),
+          }),
         };
       case 'TupleConstructorExpression':
         return this.lowerTupleConstructor(expression);
@@ -215,9 +215,9 @@ class HighIRExpressionLoweringManager {
     const result = this.lower(expression.expression);
     return {
       statements: result.statements,
-      expression: HIR_METHOD_ACCESS({
-        expression: result.expression,
-        encodedMethodName: this.getFunctionName(
+      expression: HIR_FUNCTION_CLOSURE({
+        closureContextExpression: result.expression,
+        encodedFunctionName: this.getFunctionName(
           (expression.expression.type as IdentifierType).identifier,
           expression.methodName
         ),
@@ -497,13 +497,13 @@ class HighIRExpressionLoweringManager {
     const captured = Object.keys(expression.captured);
     return {
       statements: [],
-      expression: HIR_METHOD_ACCESS({
+      expression: HIR_FUNCTION_CLOSURE({
         // 1: A dummy value that is not zero, used to indicate nonnull context
-        expression:
+        closureContextExpression:
           captured.length === 0
             ? HIR_INT(BigInt(1))
             : HIR_STRUCT_CONSTRUCTOR(captured.map(HIR_VARIABLE)),
-        encodedMethodName: syntheticLambda.name,
+        encodedFunctionName: syntheticLambda.name,
       }),
     };
   }
