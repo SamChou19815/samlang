@@ -70,24 +70,6 @@ class ExpressionLoweringTest {
     }
 
     @Test
-    fun expressionOnlyLoweringWorks03() {
-        assertCorrectlyLowered(
-            expression = Expression.ClassMember(
-                range = dummyRange,
-                type = unit,
-                typeArguments = emptyList(),
-                className = "A",
-                classNameRange = dummyRange,
-                memberName = "b"
-            ),
-            expectedExpression = HighIrExpression.ClassMember(
-                className = "A",
-                memberName = "b"
-            )
-        )
-    }
-
-    @Test
     fun expressionOnlyLoweringWorks04() {
         assertCorrectlyLowered(
             expression = Expression.TupleConstructor(
@@ -143,20 +125,6 @@ class ExpressionLoweringTest {
                 range = dummyRange, type = unit, expression = THIS, fieldName = "foo", fieldOrder = 0
             ),
             expectedExpression = HighIrExpression.IndexAccess(expression = IR_THIS, index = 0)
-        )
-    }
-
-    @Test
-    fun expressionOnlyLoweringWorks08() {
-        assertCorrectlyLowered(
-            expression = Expression.MethodAccess(
-                range = dummyRange, type = unit, expression = THIS, methodName = "foo"
-            ),
-            expectedExpression = HighIrExpression.MethodAccess(
-                expression = IR_THIS,
-                className = DUMMY_IDENTIFIER_TYPE.identifier,
-                methodName = "foo"
-            )
         )
     }
 

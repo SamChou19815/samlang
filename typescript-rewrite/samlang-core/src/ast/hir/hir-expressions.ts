@@ -18,8 +18,7 @@ export interface HighIRVariableExpression extends BaseHighIRExpression {
 
 export interface HighIRClassMemberExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRClassMemberExpression';
-  readonly className: string;
-  readonly memberName: string;
+  readonly encodedFunctionName: string;
 }
 
 export interface HighIRStructConstructorExpression extends BaseHighIRExpression {
@@ -36,8 +35,7 @@ export interface HighIRIndexAccessExpression extends BaseHighIRExpression {
 export interface HighIRMethodAccessExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRMethodAccessExpression';
   readonly expression: HighIRExpression;
-  readonly className: string;
-  readonly methodName: string;
+  readonly encodedMethodName: string;
 }
 
 export interface HighIRUnaryExpression extends BaseHighIRExpression {
@@ -179,13 +177,9 @@ export const HIR_VARIABLE = (name: string): HighIRVariableExpression => ({
   name,
 });
 
-export const HIR_CLASS_MEMBER = ({
-  className,
-  memberName,
-}: ConstructorArgumentObject<HighIRClassMemberExpression>): HighIRClassMemberExpression => ({
+export const HIR_CLASS_MEMBER = (encodedFunctionName: string): HighIRClassMemberExpression => ({
   __type__: 'HighIRClassMemberExpression',
-  className,
-  memberName,
+  encodedFunctionName,
 });
 
 export const HIR_STRUCT_CONSTRUCTOR = (
@@ -206,13 +200,11 @@ export const HIR_INDEX_ACCESS = ({
 
 export const HIR_METHOD_ACCESS = ({
   expression,
-  className,
-  methodName,
+  encodedMethodName,
 }: ConstructorArgumentObject<HighIRMethodAccessExpression>): HighIRMethodAccessExpression => ({
   __type__: 'HighIRMethodAccessExpression',
   expression,
-  className,
-  methodName,
+  encodedMethodName,
 });
 
 export const HIR_UNARY = ({

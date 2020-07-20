@@ -76,21 +76,6 @@ internal class MidIrFirstPassGenerator(
     private fun translate(expression: HighIrExpression): MidIrExpression =
         expression.accept(visitor = expressionGenerator)
 
-    private fun getFunctionName(className: String, functionName: String): String =
-        IrNameEncoder.encodeFunctionName(
-            moduleReference = getModuleOfClass(className = className),
-            className = className,
-            functionName = functionName
-        )
-
-    private fun getModuleOfClass(className: String): ModuleReference = module
-        .imports
-        .mapNotNull { oneImport ->
-            if (oneImport.importedMembers.any { it.first == className }) oneImport.importedModule else null
-        }
-        .firstOrNull()
-        ?: this.moduleReference
-
     private inner class StatementGenerator : HighIrStatementVisitor<MidIrStatement> {
         override fun visit(statement: Throw): MidIrStatement = CALL_FUNCTION(
             functionName = IrNameEncoder.nameOfThrow,
@@ -228,7 +213,7 @@ internal class MidIrFirstPassGenerator(
             allocator.getTemporaryByVariable(variableName = expression.name)
 
         override fun visit(expression: ClassMember): MidIrExpression {
-            val name = getFunctionName(className = expression.className, functionName = expression.memberName)
+            val name = expression.encodedFunctionName
             val closureTemporary = allocator.allocateTemp()
             val statements = listOf(
                 MOVE(closureTemporary, MALLOC(CONST(value = 16L))),
@@ -263,7 +248,7 @@ internal class MidIrFirstPassGenerator(
             )
 
         override fun visit(expression: MethodAccess): MidIrExpression {
-            val name = getFunctionName(className = expression.className, functionName = expression.methodName)
+            val name = expression.encodedMethodName
             val closureTemporary = allocator.allocateTemp()
             val statements = listOf(
                 MOVE(closureTemporary, MALLOC(CONST(value = 16L))),

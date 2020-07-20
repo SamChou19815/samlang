@@ -106,7 +106,7 @@ it('ClassMember lowering works.', () => {
       memberName: 'b',
       memberNameRange: Range.DUMMY,
     }),
-    { expression: HIR_CLASS_MEMBER({ className: 'A', memberName: 'b' }) }
+    { expression: HIR_CLASS_MEMBER('_module__class_A_function_b') }
   );
 });
 
@@ -164,8 +164,7 @@ it('MethodAccess lowering works.', () => {
     {
       expression: HIR_METHOD_ACCESS({
         expression: IR_THIS,
-        className: DUMMY_IDENTIFIER_TYPE.identifier,
-        methodName: 'foo',
+        encodedMethodName: '_module__class_Dummy_function_foo',
       }),
     }
   );

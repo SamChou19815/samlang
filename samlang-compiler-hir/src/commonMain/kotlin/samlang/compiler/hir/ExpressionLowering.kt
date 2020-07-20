@@ -85,7 +85,7 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
         Variable(name = expression.name).asLoweringResult()
 
     override fun visit(expression: Expression.ClassMember, context: Unit): LoweringResult =
-        ClassMember(className = expression.className, memberName = expression.memberName).asLoweringResult()
+        ClassMember(this.getFunctionName(expression.className, expression.memberName)).asLoweringResult()
 
     override fun visit(expression: Expression.TupleConstructor, context: Unit): LoweringResult {
         val loweredStatements = mutableListOf<HighIrStatement>()
@@ -144,8 +144,10 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
         val result = expression.expression.lower()
         return MethodAccess(
             expression = result.expression,
-            className = (expression.expression.type as Type.IdentifierType).identifier,
-            methodName = expression.methodName
+            encodedMethodName = this.getFunctionName(
+                className = (expression.expression.type as Type.IdentifierType).identifier,
+                functionName = expression.methodName
+            )
         ).asLoweringResult(statements = result.statements)
     }
 
@@ -195,18 +197,12 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
         val temporary = allocateTemporaryVariable()
         loweredStatements += when (loweredFunctionExpression) {
             is ClassMember -> FunctionApplication(
-                functionName = getFunctionName(
-                    className = loweredFunctionExpression.className,
-                    functionName = loweredFunctionExpression.memberName
-                ),
+                functionName = loweredFunctionExpression.encodedFunctionName,
                 arguments = loweredArguments,
                 resultCollector = temporary
             )
             is MethodAccess -> FunctionApplication(
-                functionName = getFunctionName(
-                    className = loweredFunctionExpression.className,
-                    functionName = loweredFunctionExpression.methodName
-                ),
+                functionName = loweredFunctionExpression.encodedMethodName,
                 arguments = listOf(loweredFunctionExpression.expression, *loweredArguments.toTypedArray()),
                 resultCollector = temporary
             )

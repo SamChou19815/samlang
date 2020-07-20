@@ -99,10 +99,9 @@ class HighIRExpressionLoweringManager {
       case 'ClassMemberExpression':
         return {
           statements: [],
-          expression: HIR_CLASS_MEMBER({
-            className: expression.className,
-            memberName: expression.memberName,
-          }),
+          expression: HIR_CLASS_MEMBER(
+            this.getFunctionName(expression.className, expression.memberName)
+          ),
         };
       case 'TupleConstructorExpression':
         return this.lowerTupleConstructor(expression);
@@ -194,8 +193,10 @@ class HighIRExpressionLoweringManager {
       statements: result.statements,
       expression: HIR_METHOD_ACCESS({
         expression: result.expression,
-        className: (expression.expression.type as IdentifierType).identifier,
-        methodName: expression.methodName,
+        encodedMethodName: this.getFunctionName(
+          (expression.expression.type as IdentifierType).identifier,
+          expression.methodName
+        ),
       }),
     };
   }
@@ -260,20 +261,14 @@ class HighIRExpressionLoweringManager {
     switch (loweredFunctionExpression.__type__) {
       case 'HighIRClassMemberExpression':
         functionCall = HIR_FUNCTION_CALL({
-          functionName: this.getFunctionName(
-            loweredFunctionExpression.className,
-            loweredFunctionExpression.memberName
-          ),
+          functionName: loweredFunctionExpression.encodedFunctionName,
           functionArguments: loweredArguments,
           returnCollector,
         });
         break;
       case 'HighIRMethodAccessExpression':
         functionCall = HIR_FUNCTION_CALL({
-          functionName: this.getFunctionName(
-            loweredFunctionExpression.className,
-            loweredFunctionExpression.methodName
-          ),
+          functionName: loweredFunctionExpression.encodedMethodName,
           functionArguments: [loweredFunctionExpression.expression, ...loweredArguments],
           returnCollector,
         });

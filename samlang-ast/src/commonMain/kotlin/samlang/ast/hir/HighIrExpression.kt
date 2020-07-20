@@ -18,10 +18,7 @@ sealed class HighIrExpression {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
-    data class ClassMember(
-        val className: String,
-        val memberName: String
-    ) : HighIrExpression() {
+    data class ClassMember(val encodedFunctionName: String) : HighIrExpression() {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
@@ -40,8 +37,7 @@ sealed class HighIrExpression {
 
     data class MethodAccess(
         val expression: HighIrExpression,
-        val className: String,
-        val methodName: String
+        val encodedMethodName: String
     ) : HighIrExpression() {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
