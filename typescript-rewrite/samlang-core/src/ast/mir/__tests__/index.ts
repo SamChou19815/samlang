@@ -10,7 +10,6 @@ import {
   MIR_IMMUTABLE_MEM,
   MIR_OP_NON_CANONICAL,
   MIR_OP,
-  MIR_ESEQ_NON_CANONICAL,
   MIR_MOVE_TEMP,
   MIR_MOVE_TEMP_NON_CANONICAL,
   MIR_MOVE_IMMUTABLE_MEM_NON_CANONICAL,
@@ -43,12 +42,6 @@ it('midIRExpressionToString tests', () => {
 
   expect(midIRExpressionToString(MIR_OP_NON_CANONICAL('+', MIR_EIGHT, MIR_ONE))).toBe('(8 + 1)');
   expect(midIRExpressionToString(MIR_OP('+', MIR_EIGHT, MIR_ONE))).toBe('(8 + 1)');
-
-  expect(
-    midIRExpressionToString(
-      MIR_ESEQ_NON_CANONICAL([MIR_MOVE_TEMP(MIR_TEMP('foo'), MIR_TEMP('bar'))], MIR_ZERO)
-    )
-  ).toBe('ESEQ([foo = bar;], 0)');
 });
 
 it('midIRStatementToString tests', () => {

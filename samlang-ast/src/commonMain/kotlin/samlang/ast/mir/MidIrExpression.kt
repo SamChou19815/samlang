@@ -115,18 +115,6 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
         }
     }
 
-    data class ExprSequence(
-        val statements: List<MidIrStatement>,
-        val expression: MidIrExpression
-    ) : MidIrExpression(classOrder = 6) {
-        override fun toString(): String = "ESEQ($statements, $expression)"
-
-        override fun <C, T> accept(visitor: MidIrExpressionVisitor<C, T>, context: C): T =
-            visitor.visit(node = this, context = context)
-
-        override fun compareTo(other: MidIrExpression): Int = throw UnsupportedOperationException()
-    }
-
     @Suppress(names = ["FunctionName"])
     companion object {
         val ZERO: Constant = Constant(value = 0)
@@ -191,9 +179,6 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
             Op(IrOperator.NE, e1, e2)
 
         fun IMMUTABLE_MEM(expression: MidIrExpression): Mem = Mem(expression = expression, immutable = true)
-
-        fun ESEQ(statements: List<MidIrStatement>, expression: MidIrExpression): ExprSequence =
-            ExprSequence(statements = statements, expression = expression)
 
         fun NAME(name: String): Name = Name(name = name)
     }

@@ -6,5 +6,4 @@ interface MidIrExpressionVisitor<C, T> {
     fun visit(node: MidIrExpression.Temporary, context: C): T
     fun visit(node: MidIrExpression.Op, context: C): T
     fun visit(node: MidIrExpression.Mem, context: C): T
-    fun visit(node: MidIrExpression.ExprSequence, context: C): T
 }

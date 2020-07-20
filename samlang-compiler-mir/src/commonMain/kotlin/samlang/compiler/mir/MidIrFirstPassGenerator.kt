@@ -23,7 +23,6 @@ import samlang.ast.mir.MidIrExpression.Companion.ADD
 import samlang.ast.mir.MidIrExpression.Companion.CONST
 import samlang.ast.mir.MidIrExpression.Companion.EIGHT
 import samlang.ast.mir.MidIrExpression.Companion.EQ
-import samlang.ast.mir.MidIrExpression.Companion.ESEQ
 import samlang.ast.mir.MidIrExpression.Companion.IMMUTABLE_MEM
 import samlang.ast.mir.MidIrExpression.Companion.NAME
 import samlang.ast.mir.MidIrExpression.Companion.OP
@@ -49,7 +48,7 @@ internal class MidIrFirstPassGenerator(
 
     fun translate(statement: HighIrStatement): List<MidIrStatement> = statement.accept(visitor = statementGenerator)
 
-    private fun translate(expression: HighIrExpression): MidIrExpression =
+    private fun translate(expression: HighIrExpression): ExprSequence =
         expression.accept(visitor = expressionGenerator)
 
     private fun MALLOC(collector: MidIrExpression.Temporary, sizeExpr: MidIrExpression): MidIrStatement.CallFunction =
@@ -60,14 +59,20 @@ internal class MidIrFirstPassGenerator(
         )
 
     private inner class StatementGenerator : HighIrStatementVisitor<List<MidIrStatement>> {
-        override fun visit(statement: FunctionApplication): List<MidIrStatement> =
-            listOf(
-                CALL_FUNCTION(
+        override fun visit(statement: FunctionApplication): List<MidIrStatement> {
+            val statements = mutableListOf<MidIrStatement>()
+            val functionArguments = statement.arguments.map {
+                val result = translate(expression = it)
+                statements.addAll(elements = result.statements)
+                result.expression
+            }
+            statements += CALL_FUNCTION(
                     functionName = statement.functionName,
-                    arguments = statement.arguments.map { translate(expression = it) },
+                    arguments = functionArguments,
                     returnCollector = allocator.allocateTemp(variableName = statement.resultCollector)
                 )
-            )
+            return statements
+        }
 
         override fun visit(statement: ClosureApplication): List<MidIrStatement> {
             /**
@@ -81,41 +86,50 @@ internal class MidIrFirstPassGenerator(
              * If context is NULL (0), then it will directly call the function like functionExpr(...restArguments).
              * If context is NONNULL, then it will call functionExpr(context, ...restArguments);
              */
-            val closure = translate(expression = statement.functionExpression)
-            val arguments = statement.arguments.map { translate(expression = it) }
+            val statements = mutableListOf<MidIrStatement>()
+            val closureResult = translate(expression = statement.functionExpression)
+            val closure = closureResult.expression
+            statements.addAll(elements = closureResult.statements)
+            val arguments = statement.arguments.map {
+                val result = translate(expression = it)
+                statements.addAll(elements = result.statements)
+                result.expression
+            }
             val contextTemp = allocator.allocateTemp()
             val collectorTemp = allocator.allocateTemp(variableName = statement.resultCollector)
             val simpleCaseLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_SIMPLE")
             val complexCaseLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_COMPLEX")
             val endLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_APP_END")
-            return listOf(
-                MOVE(destination = contextTemp, source = IMMUTABLE_MEM(ADD(e1 = closure, e2 = CONST(value = 8)))),
-                CJUMP(condition = EQ(e1 = contextTemp, e2 = ZERO), label1 = simpleCaseLabel, label2 = complexCaseLabel),
-                Label(name = simpleCaseLabel),
+
+                statements += MOVE(destination = contextTemp, source = IMMUTABLE_MEM(ADD(e1 = closure, e2 = CONST(value = 8))))
+                statements += CJUMP(condition = EQ(e1 = contextTemp, e2 = ZERO), label1 = simpleCaseLabel, label2 = complexCaseLabel)
+                statements += Label(name = simpleCaseLabel)
                 // No context (context is null)
-                CALL_FUNCTION(
+                statements += CALL_FUNCTION(
                     expression = IMMUTABLE_MEM(expression = closure),
                     arguments = arguments,
                     returnCollector = collectorTemp
-                ),
-                Jump(label = endLabel),
-                Label(name = complexCaseLabel),
-                CALL_FUNCTION(
+                )
+                statements += Jump(label = endLabel)
+                statements += Label(name = complexCaseLabel)
+                statements += CALL_FUNCTION(
                     expression = IMMUTABLE_MEM(expression = closure),
                     arguments = mutableListOf<MidIrExpression>(contextTemp).apply { addAll(arguments) },
                     returnCollector = collectorTemp
-                ),
-                Label(name = endLabel)
-            )
+                )
+                statements += Label(name = endLabel)
+            return statements
         }
 
         override fun visit(statement: IfElse): List<MidIrStatement> {
             val sequence = mutableListOf<MidIrStatement>()
+            val conditionResult = translate(expression = statement.booleanExpression)
+            sequence.addAll(conditionResult.statements)
             val ifBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "TRUE_BRANCH")
             val elseBranchLabel = allocator.allocateLabelWithAnnotation(annotation = "FALSE_BRANCH")
             val endLabel = allocator.allocateLabelWithAnnotation(annotation = "IF_ELSE_END")
             sequence += CJUMP(
-                condition = translate(expression = statement.booleanExpression),
+                condition = conditionResult.expression,
                 label1 = ifBranchLabel,
                 label2 = elseBranchLabel
             )
@@ -160,10 +174,11 @@ internal class MidIrFirstPassGenerator(
                     )
                 }
                 variantPatternToStatement.statements.forEach { statements += translate(statement = it) }
-                val finalAssignedExpression = variantPatternToStatement.finalExpression
+                val finalAssignedExpressionResult = translate(variantPatternToStatement.finalExpression)
+                statements += finalAssignedExpressionResult.statements
                 statements += MOVE(
                     destination = allocator.getTemporaryByVariable(variableName = finalAssignedVariable),
-                    source = translate(expression = finalAssignedExpression)
+                    source = finalAssignedExpressionResult.expression
                 )
                 statements += Jump(label = endLabel)
             }
@@ -171,20 +186,26 @@ internal class MidIrFirstPassGenerator(
             return statements
         }
 
-        override fun visit(statement: LetDefinition): List<MidIrStatement> = listOf(
-            MOVE(
-                destination = allocator.allocateTemp(variableName = statement.name),
-                source = translate(expression = statement.assignedExpression)
-            )
-        )
+        override fun visit(statement: LetDefinition): List<MidIrStatement> {
+            val result = translate(expression = statement.assignedExpression)
+            return result.statements +
+                MOVE(
+                    destination = allocator.allocateTemp(variableName = statement.name),
+                    source = result.expression
+                )
+        }
 
-        override fun visit(statement: Return): List<MidIrStatement> =
-            listOf(MidIrStatement.Return(returnedExpression = statement.expression?.let { translate(expression = it) }))
+        override fun visit(statement: Return): List<MidIrStatement> {
+            val returnedExpression = statement.expression ?: return listOf(MidIrStatement.Return())
+            val result = translate(returnedExpression)
+            return result.statements + MidIrStatement.Return(returnedExpression = result.expression)
+        }
     }
 
-    private inner class ExpressionGenerator : HighIrExpressionVisitor<MidIrExpression> {
-        override fun visit(expression: Literal): MidIrExpression =
-            when (val literal = expression.literal) {
+    private inner class ExpressionGenerator : HighIrExpressionVisitor<ExprSequence> {
+        override fun visit(expression: Literal): ExprSequence = ExprSequence(
+            statements = emptyList(),
+            expression = when (val literal = expression.literal) {
                 is samlang.ast.common.Literal.BoolLiteral -> CONST(value = if (literal.value) 1 else 0)
                 is samlang.ast.common.Literal.IntLiteral -> CONST(value = literal.value)
                 is samlang.ast.common.Literal.StringLiteral -> {
@@ -196,46 +217,65 @@ internal class MidIrFirstPassGenerator(
                     ADD(e1 = NAME(name = contentVariable.name), e2 = EIGHT)
                 }
             }
+        )
 
-        override fun visit(expression: Variable): MidIrExpression =
-            allocator.getTemporaryByVariable(variableName = expression.name)
+        override fun visit(expression: Variable): ExprSequence = ExprSequence(
+            statements = emptyList(),
+            expression = allocator.getTemporaryByVariable(variableName = expression.name)
+        )
 
-        override fun visit(expression: StructConstructor): MidIrExpression {
+        override fun visit(expression: StructConstructor): ExprSequence {
             val structTemporary = allocator.allocateTemp()
             val statements = mutableListOf<MidIrStatement>()
             statements += MALLOC(structTemporary, CONST(value = expression.expressionList.size * 8L))
             expression.expressionList.forEachIndexed { index, subExpression ->
+                val sourceResult = translate(expression = subExpression)
+                statements += sourceResult.statements
                 statements += MOVE_IMMUTABLE_MEM(
                     destination = IMMUTABLE_MEM(expression = ADD(e1 = structTemporary, e2 = CONST(value = index * 8L))),
-                    source = translate(expression = subExpression)
+                    source = sourceResult.expression
                 )
             }
-            return ESEQ(statements, structTemporary)
+            return ExprSequence(statements = statements, expression = structTemporary)
         }
 
-        override fun visit(expression: IndexAccess): MidIrExpression =
-            IMMUTABLE_MEM(
-                expression = ADD(
-                    e1 = translate(expression = expression.expression),
-                    e2 = CONST(value = expression.index * 8L)
+        override fun visit(expression: IndexAccess): ExprSequence {
+            val result = translate(expression = expression.expression)
+            return ExprSequence(
+                statements = result.statements,
+                expression = IMMUTABLE_MEM(
+                    expression = ADD(
+                        e1 = result.expression,
+                        e2 = CONST(value = expression.index * 8L)
+                    )
                 )
             )
+        }
 
-        override fun visit(expression: FunctionClosure): MidIrExpression {
+        override fun visit(expression: FunctionClosure): ExprSequence {
             val name = expression.encodedFunctionName
             val closureTemporary = allocator.allocateTemp()
-            val statements = listOf(
-                MALLOC(closureTemporary, CONST(value = 16L)),
-                MOVE_IMMUTABLE_MEM(destination = IMMUTABLE_MEM(expression = closureTemporary), source = NAME(name = name)),
-                MOVE_IMMUTABLE_MEM(
+            val result = translate(expression = expression.closureContextExpression)
+            val statements = result.statements.toMutableList()
+
+            statements += MALLOC(closureTemporary, CONST(value = 16L))
+            statements += MOVE_IMMUTABLE_MEM(destination = IMMUTABLE_MEM(expression = closureTemporary), source = NAME(name = name))
+            statements += MOVE_IMMUTABLE_MEM(
                     destination = IMMUTABLE_MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),
-                    source = translate(expression = expression.closureContextExpression)
+                    source = result.expression
                 )
-            )
-            return ESEQ(statements, closureTemporary)
+            return ExprSequence(statements, closureTemporary)
         }
 
-        override fun visit(expression: Binary): MidIrExpression =
-            OP(op = expression.operator, e1 = translate(expression = expression.e1), e2 = translate(expression = expression.e2))
+        override fun visit(expression: Binary): ExprSequence {
+            val e1Result = translate(expression = expression.e1)
+            val e2Result = translate(expression = expression.e2)
+            return ExprSequence(
+                statements = e1Result.statements + e2Result.statements,
+                expression = OP(op = expression.operator, e1 = e1Result.expression, e2 = e2Result.expression)
+            )
+        }
     }
+
+    private data class ExprSequence(val statements: List<MidIrStatement>, val expression: MidIrExpression)
 }

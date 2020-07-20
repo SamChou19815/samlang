@@ -38,12 +38,6 @@ export interface MidIRBinaryExpression<E = MidIRExpression> extends BaseMidIRExp
   readonly e2: E;
 }
 
-export interface MidIRExpressionSequenceExpression extends BaseMidIRExpression {
-  readonly __type__: 'MidIRExpressionSequenceExpression';
-  readonly statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[];
-  readonly expression: MidIRExpression_DANGEROUSLY_NON_CANONICAL;
-}
-
 export type MidIRExpression =
   | MidIRConstantExpression
   | MidIRNameExpression
@@ -57,8 +51,7 @@ export type MidIRExpression_DANGEROUSLY_NON_CANONICAL =
   | MidIRNameExpression
   | MidIRTemporaryExpression
   | MidIRImmutableMemoryExpression<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
-  | MidIRBinaryExpression<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
-  | MidIRExpressionSequenceExpression;
+  | MidIRBinaryExpression<MidIRExpression_DANGEROUSLY_NON_CANONICAL>;
 
 /** Part 3: Statements */
 
@@ -210,15 +203,6 @@ export const MIR_OP = (
   e2: MidIRExpression
 ): MidIRBinaryExpression => ({ __type__: 'MidIRBinaryExpression', operator, e1, e2 });
 
-export const MIR_ESEQ_NON_CANONICAL = (
-  statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[],
-  expression: MidIRExpression_DANGEROUSLY_NON_CANONICAL
-): MidIRExpressionSequenceExpression => ({
-  __type__: 'MidIRExpressionSequenceExpression',
-  statements,
-  expression,
-});
-
 export const MIR_MOVE_TEMP_NON_CANONICAL = (
   temporary: MidIRTemporaryExpression,
   source: MidIRExpression_DANGEROUSLY_NON_CANONICAL
@@ -362,12 +346,6 @@ export const midIRExpressionToString = (expression: MidIRExpressionLoose): strin
       const e1 = midIRExpressionToString(expression.e1);
       const e2 = midIRExpressionToString(expression.e2);
       return `(${e1} ${expression.operator} ${e2})`;
-    }
-
-    case 'MidIRExpressionSequenceExpression': {
-      const statementsString = expression.statements.map(midIRStatementToString).join(', ');
-      const expressionString = midIRExpressionToString(expression.expression);
-      return `ESEQ([${statementsString}], ${expressionString})`;
     }
   }
 };
