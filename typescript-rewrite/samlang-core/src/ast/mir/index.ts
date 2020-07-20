@@ -113,11 +113,6 @@ export interface MidIRConditionalJumpNoFallThrough<E = MidIRExpression> extends 
   readonly label2: string;
 }
 
-export interface MidIRIgnoreExpressionStatement extends BaseMidIRStatement {
-  readonly __type__: 'MidIRIgnoreExpressionStatement';
-  readonly ignoredExpression: MidIRExpression_DANGEROUSLY_NON_CANONICAL;
-}
-
 export interface MidIRSequenceStatement extends BaseMidIRStatement {
   readonly __type__: 'MidIRSequenceStatement';
   readonly statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[];
@@ -151,7 +146,6 @@ export type MidIRStatement_DANGEROUSLY_NON_CANONICAL =
   | MidIRCallFunctionStatement<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
   | MidIRReturnStatement<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
   | MidIRConditionalJumpNoFallThrough<MidIRExpression_DANGEROUSLY_NON_CANONICAL>
-  | MidIRIgnoreExpressionStatement
   | MidIRSequenceStatement;
 
 /** Part 4: Top Levels */
@@ -352,13 +346,6 @@ export const MIR_SEQ_NON_CANONICAL = (
   statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[]
 ): MidIRSequenceStatement => ({ __type__: 'MidIRSequenceStatement', statements });
 
-export const MIR_IGNORE_EXPRESSION_NON_CANONICAL = (
-  ignoredExpression: MidIRExpression_DANGEROUSLY_NON_CANONICAL
-): MidIRIgnoreExpressionStatement => ({
-  __type__: 'MidIRIgnoreExpressionStatement',
-  ignoredExpression,
-});
-
 /** Part 6: toString functions */
 
 type MidIRExpressionLoose = MidIRExpression | MidIRExpression_DANGEROUSLY_NON_CANONICAL;
@@ -444,9 +431,6 @@ export const midIRStatementToString = (statement: MidIRStatementLoose): string =
       const joined = statement.statements.map((it) => `  ${midIRStatementToString(it)}`).join('\n');
       return `[\n${joined}\n];`;
     }
-
-    case 'MidIRIgnoreExpressionStatement':
-      return `IGNORE(${midIRExpressionToString(statement.ignoredExpression)});`;
   }
 };
 

@@ -1,6 +1,5 @@
 package samlang.ast.mir
 
-import samlang.ast.common.IrNameEncoder
 import samlang.ast.common.IrOperator
 
 /**
@@ -116,18 +115,6 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
         }
     }
 
-    data class Call(
-        val functionExpr: MidIrExpression,
-        val arguments: List<MidIrExpression>
-    ) : MidIrExpression(classOrder = 5) {
-        override fun toString(): String = "$functionExpr($arguments)"
-
-        override fun <C, T> accept(visitor: MidIrExpressionVisitor<C, T>, context: C): T =
-            visitor.visit(node = this, context = context)
-
-        override fun compareTo(other: MidIrExpression): Int = throw UnsupportedOperationException()
-    }
-
     data class ExprSequence(
         val sequence: MidIrStatement.Sequence,
         val expression: MidIrExpression
@@ -211,11 +198,5 @@ sealed class MidIrExpression(val classOrder: Int) : Comparable<MidIrExpression> 
             ExprSequence(sequence = statement, expression = expression)
 
         fun NAME(name: String): Name = Name(name = name)
-
-        fun CALL(functionExpr: MidIrExpression, args: List<MidIrExpression>): Call =
-            Call(functionExpr = functionExpr, arguments = args)
-
-        fun MALLOC(sizeExpr: MidIrExpression): Call =
-            Call(functionExpr = Name(name = IrNameEncoder.nameOfMalloc), arguments = listOf(sizeExpr))
     }
 }

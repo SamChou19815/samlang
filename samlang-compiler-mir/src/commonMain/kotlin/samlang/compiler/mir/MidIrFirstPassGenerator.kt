@@ -1,6 +1,7 @@
 package samlang.compiler.mir
 
 import samlang.ast.common.GlobalVariable
+import samlang.ast.common.IrNameEncoder
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.FunctionClosure
@@ -24,7 +25,6 @@ import samlang.ast.mir.MidIrExpression.Companion.EIGHT
 import samlang.ast.mir.MidIrExpression.Companion.EQ
 import samlang.ast.mir.MidIrExpression.Companion.ESEQ
 import samlang.ast.mir.MidIrExpression.Companion.IMMUTABLE_MEM
-import samlang.ast.mir.MidIrExpression.Companion.MALLOC
 import samlang.ast.mir.MidIrExpression.Companion.NAME
 import samlang.ast.mir.MidIrExpression.Companion.OP
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
@@ -52,6 +52,13 @@ internal class MidIrFirstPassGenerator(
 
     private fun translate(expression: HighIrExpression): MidIrExpression =
         expression.accept(visitor = expressionGenerator)
+
+    private fun MALLOC(collector: MidIrExpression.Temporary, sizeExpr: MidIrExpression): MidIrStatement.CallFunction =
+        CALL_FUNCTION(
+            functionName = IrNameEncoder.nameOfMalloc,
+            arguments = listOf(sizeExpr),
+            returnCollector = collector
+        )
 
     private inner class StatementGenerator : HighIrStatementVisitor<MidIrStatement> {
         override fun visit(statement: FunctionApplication): MidIrStatement =
@@ -194,7 +201,7 @@ internal class MidIrFirstPassGenerator(
         override fun visit(expression: StructConstructor): MidIrExpression {
             val structTemporary = allocator.allocateTemp()
             val statements = mutableListOf<MidIrStatement>()
-            statements += MOVE(structTemporary, MALLOC(CONST(value = expression.expressionList.size * 8L)))
+            statements += MALLOC(structTemporary, CONST(value = expression.expressionList.size * 8L))
             expression.expressionList.forEachIndexed { index, subExpression ->
                 statements += MOVE_IMMUTABLE_MEM(
                     destination = IMMUTABLE_MEM(expression = ADD(e1 = structTemporary, e2 = CONST(value = index * 8L))),
@@ -216,7 +223,7 @@ internal class MidIrFirstPassGenerator(
             val name = expression.encodedFunctionName
             val closureTemporary = allocator.allocateTemp()
             val statements = listOf(
-                MOVE(closureTemporary, MALLOC(CONST(value = 16L))),
+                MALLOC(closureTemporary, CONST(value = 16L)),
                 MOVE_IMMUTABLE_MEM(destination = IMMUTABLE_MEM(expression = closureTemporary), source = NAME(name = name)),
                 MOVE_IMMUTABLE_MEM(
                     destination = IMMUTABLE_MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),

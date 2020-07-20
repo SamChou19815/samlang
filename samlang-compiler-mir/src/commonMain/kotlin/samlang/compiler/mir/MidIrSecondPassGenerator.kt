@@ -1,7 +1,6 @@
 package samlang.compiler.mir
 
 import samlang.ast.mir.MidIrExpression
-import samlang.ast.mir.MidIrExpression.Call
 import samlang.ast.mir.MidIrExpression.Companion.ESEQ
 import samlang.ast.mir.MidIrExpression.Companion.IMMUTABLE_MEM
 import samlang.ast.mir.MidIrExpression.Companion.OP
@@ -174,20 +173,6 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
             return ESEQ(sequence, IMMUTABLE_MEM(expression = expr))
         }
 
-        override fun visit(node: Call, context: Unit): ExprSequence {
-            val funExprLoweringResult = lower(node.functionExpr)
-            val sequence = funExprLoweringResult.statements.toMutableList()
-            val (first, argsTempList) = lowerExprList(node.arguments)
-            sequence += first
-            val argResultTemp = allocator.allocateTemp()
-            sequence += CALL_FUNCTION(
-                expression = funExprLoweringResult.expression,
-                arguments = argsTempList,
-                returnCollector = argResultTemp
-            )
-            return ESEQ(SEQ(sequence), argResultTemp)
-        }
-
         override fun visit(node: ExprSequence, context: Unit): ExprSequence {
             val newSequence = lower(node.sequence).toMutableList()
             val exprLoweringResult = lower(node.expression)
@@ -207,7 +192,6 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
         override fun visit(node: Mem, context: Unit): Boolean =
             node.expression.accept(visitor = this, context = Unit)
 
-        override fun visit(node: Call, context: Unit): Boolean = false
         override fun visit(node: ExprSequence, context: Unit): Boolean = false
     }
 
