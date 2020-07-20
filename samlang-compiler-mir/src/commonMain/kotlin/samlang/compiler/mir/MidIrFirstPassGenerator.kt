@@ -85,6 +85,17 @@ internal class MidIrFirstPassGenerator(
             )
 
         override fun visit(statement: ClosureApplication): MidIrStatement {
+            /**
+             * Closure ABI:
+             * {
+             *    __length__: 2
+             *    [0]: reference to the function
+             *    [1]: context
+             * }
+             *
+             * If context is NULL (0), then it will directly call the function like functionExpr(...restArguments).
+             * If context is NONNULL, then it will call functionExpr(context, ...restArguments);
+             */
             val closure = translate(expression = statement.functionExpression)
             val arguments = statement.arguments.map { translate(expression = it) }
             val contextTemp = allocator.allocateTemp()
