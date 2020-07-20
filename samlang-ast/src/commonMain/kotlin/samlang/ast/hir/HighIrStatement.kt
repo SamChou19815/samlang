@@ -1,8 +1,6 @@
 package samlang.ast.hir
 
-/**
- * A collection of statements for common IR.
- */
+/** A collection of statements for common IR. */
 sealed class HighIrStatement {
 
     abstract fun <T> accept(visitor: HighIrStatementVisitor<T>): T
@@ -48,10 +46,6 @@ sealed class HighIrStatement {
     }
 
     data class LetDefinition(val name: String, val assignedExpression: HighIrExpression) : HighIrStatement() {
-        override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
-    }
-
-    data class ExpressionAsStatement(val expressionWithPotentialSideEffect: HighIrExpression) : HighIrStatement() {
         override fun <T> accept(visitor: HighIrStatementVisitor<T>): T = visitor.visit(statement = this)
     }
 

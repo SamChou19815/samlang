@@ -92,11 +92,6 @@ export interface HighIRLetDefinitionStatement extends BaseHighIRStatement {
   readonly assignedExpression: HighIRExpression;
 }
 
-export interface HighIRExpressionAsStatement extends BaseHighIRStatement {
-  readonly __type__: 'HighIRExpressionAsStatement';
-  readonly expressionWithPotentialSideEffect: HighIRExpression;
-}
-
 export interface HighIRReturnStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRReturnStatement';
   readonly expression?: HighIRExpression;
@@ -108,7 +103,6 @@ export type HighIRStatement =
   | HighIRIfElseStatement
   | HighIRMatchStatement
   | HighIRLetDefinitionStatement
-  | HighIRExpressionAsStatement
   | HighIRReturnStatement;
 
 type ConstructorArgumentObject<E extends BaseHighIRExpression | BaseHighIRStatement> = Omit<
@@ -230,13 +224,6 @@ export const HIR_LET = ({
   __type__: 'HighIRLetDefinitionStatement',
   name,
   assignedExpression,
-});
-
-export const HIR_EXPRESSION_AS_STATEMENT = (
-  expressionWithPotentialSideEffect: HighIRExpression
-): HighIRExpressionAsStatement => ({
-  __type__: 'HighIRExpressionAsStatement',
-  expressionWithPotentialSideEffect,
 });
 
 export const HIR_RETURN = (expression?: HighIRExpression): HighIRReturnStatement => ({

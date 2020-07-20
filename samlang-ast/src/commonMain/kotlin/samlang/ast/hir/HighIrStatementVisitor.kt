@@ -12,6 +12,5 @@ interface HighIrStatementVisitor<T> {
     fun visit(statement: HighIrStatement.IfElse): T
     fun visit(statement: HighIrStatement.Match): T
     fun visit(statement: HighIrStatement.LetDefinition): T
-    fun visit(statement: HighIrStatement.ExpressionAsStatement): T
     fun visit(statement: HighIrStatement.Return): T
 }

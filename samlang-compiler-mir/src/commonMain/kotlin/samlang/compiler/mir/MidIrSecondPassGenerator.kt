@@ -22,7 +22,6 @@ import samlang.ast.mir.MidIrStatement.Companion.MOVE_IMMUTABLE_MEM
 import samlang.ast.mir.MidIrStatement.Companion.SEQ
 import samlang.ast.mir.MidIrStatement.ConditionalJump
 import samlang.ast.mir.MidIrStatement.ConditionalJumpFallThrough
-import samlang.ast.mir.MidIrStatement.IgnoreExpression
 import samlang.ast.mir.MidIrStatement.Jump
 import samlang.ast.mir.MidIrStatement.Label
 import samlang.ast.mir.MidIrStatement.MoveMem
@@ -106,9 +105,6 @@ internal class MidIrSecondPassGenerator(private val allocator: MidIrResourceAllo
             newSequence += MOVE_IMMUTABLE_MEM(IMMUTABLE_MEM(expression = destTemp), loweringResultOfSrc.expression)
             return newSequence
         }
-
-        override fun visit(node: IgnoreExpression, context: Unit): List<MidIrStatement> =
-            lower(node.expression).statements
 
         override fun visit(node: CallFunction, context: Unit): List<MidIrStatement> {
             val funExprLoweringResult = lower(node.functionExpr)

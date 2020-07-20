@@ -17,7 +17,6 @@ import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.ClosureApplication
-import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
 import samlang.ast.hir.HighIrStatement.FunctionApplication
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDefinition
@@ -500,8 +499,9 @@ private class ExpressionLoweringVisitor(
                             )
                         }
                         is Pattern.WildCardPattern -> {
-                            loweredScopedStatements += ExpressionAsStatement(
-                                expressionWithPotentialSideEffect = loweredAssignedExpression
+                            loweredScopedStatements += LetDefinition(
+                                name = allocateTemporaryVariable(),
+                                assignedExpression = loweredAssignedExpression
                             )
                         }
                     }

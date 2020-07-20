@@ -11,7 +11,6 @@ import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpressionVisitor
 import samlang.ast.hir.HighIrStatement
 import samlang.ast.hir.HighIrStatement.ClosureApplication
-import samlang.ast.hir.HighIrStatement.ExpressionAsStatement
 import samlang.ast.hir.HighIrStatement.FunctionApplication
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDefinition
@@ -32,7 +31,6 @@ import samlang.ast.mir.MidIrExpression.Companion.ZERO
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
 import samlang.ast.mir.MidIrStatement.Companion.CJUMP
-import samlang.ast.mir.MidIrStatement.Companion.EXPR
 import samlang.ast.mir.MidIrStatement.Companion.MOVE
 import samlang.ast.mir.MidIrStatement.Companion.MOVE_IMMUTABLE_MEM
 import samlang.ast.mir.MidIrStatement.Companion.SEQ
@@ -170,9 +168,6 @@ internal class MidIrFirstPassGenerator(
             destination = allocator.allocateTemp(variableName = statement.name),
             source = translate(expression = statement.assignedExpression)
         )
-
-        override fun visit(statement: ExpressionAsStatement): MidIrStatement =
-            EXPR(expression = translate(expression = statement.expressionWithPotentialSideEffect))
 
         override fun visit(statement: Return): MidIrStatement =
             MidIrStatement.Return(returnedExpression = statement.expression?.let { translate(expression = it) })

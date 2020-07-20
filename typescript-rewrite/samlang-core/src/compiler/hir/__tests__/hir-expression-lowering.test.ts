@@ -23,7 +23,6 @@ import {
   HIR_MATCH,
   HIR_IF_ELSE,
   HIR_LET,
-  HIR_EXPRESSION_AS_STATEMENT,
   HIR_RETURN,
 } from '../../../ast/hir/hir-expressions';
 import {
@@ -731,7 +730,7 @@ it('StatementBlockExpression lowering works.', () => {
             index: 1,
           }),
         }),
-        HIR_EXPRESSION_AS_STATEMENT(IR_THIS),
+        HIR_LET({ name: '_LOWERING_2', assignedExpression: IR_THIS }),
         HIR_LET({ name: 'a', assignedExpression: HIR_VARIABLE('a') }),
       ],
     }

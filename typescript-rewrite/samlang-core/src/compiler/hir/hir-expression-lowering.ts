@@ -25,7 +25,6 @@ import {
   HIR_MATCH,
   HIR_IF_ELSE,
   HIR_LET,
-  HIR_EXPRESSION_AS_STATEMENT,
   HIR_RETURN,
 } from '../../ast/hir/hir-expressions';
 import type { HighIRFunction } from '../../ast/hir/hir-toplevel';
@@ -594,7 +593,12 @@ class HighIRExpressionLoweringManager {
           );
           break;
         case 'WildCardPattern':
-          loweredStatements.push(HIR_EXPRESSION_AS_STATEMENT(loweredAssignedExpression));
+          loweredStatements.push(
+            HIR_LET({
+              name: this.allocateTemporaryVariable(),
+              assignedExpression: loweredAssignedExpression,
+            })
+          );
           break;
       }
     });

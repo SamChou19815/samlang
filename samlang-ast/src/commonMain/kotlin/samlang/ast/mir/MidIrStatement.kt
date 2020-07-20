@@ -22,13 +22,6 @@ sealed class MidIrStatement {
             visitor.visit(node = this, context = context)
     }
 
-    data class IgnoreExpression(val expression: MidIrExpression) : MidIrStatement() {
-        override fun toString(): String = "EXPR($expression);"
-
-        override fun <C, T> accept(visitor: MidIrStatementVisitor<C, T>, context: C): T =
-            visitor.visit(node = this, context = context)
-    }
-
     @Canonical
     data class CallFunction(
         val functionExpr: MidIrExpression,
@@ -105,9 +98,6 @@ sealed class MidIrStatement {
 
         fun MOVE_IMMUTABLE_MEM(destination: Mem, source: MidIrExpression): MoveMem =
             MoveMem(memLocation = destination.expression, source = source)
-
-        fun EXPR(expression: MidIrExpression): IgnoreExpression =
-            IgnoreExpression(expression = expression)
 
         fun CALL_FUNCTION(
             functionName: String,
