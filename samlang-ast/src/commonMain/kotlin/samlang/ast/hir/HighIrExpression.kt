@@ -48,15 +48,6 @@ sealed class HighIrExpression {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
-    data class Lambda(
-        val hasReturn: Boolean,
-        val parameters: List<String>,
-        val captured: List<String>,
-        val body: List<HighIrStatement>
-    ) : HighIrExpression() {
-        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
-    }
-
     companion object {
         val TRUE: Literal = Literal(literal = samlang.ast.common.Literal.TRUE)
         val FALSE: Literal = Literal(literal = samlang.ast.common.Literal.FALSE)
