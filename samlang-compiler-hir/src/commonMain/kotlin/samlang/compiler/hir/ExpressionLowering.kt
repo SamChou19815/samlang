@@ -184,29 +184,35 @@ private class ExpressionLoweringVisitor(private val moduleReference: ModuleRefer
 
     override fun visit(expression: Expression.FunctionApplication, context: Unit): LoweringResult {
         val loweredStatements = mutableListOf<HighIrStatement>()
-        val loweredFunctionExpression = expression.functionExpression
-            .getLoweredAndAddStatements(statements = loweredStatements)
-        val loweredArguments = expression.arguments.map { argument ->
-            argument.getLoweredAndAddStatements(statements = loweredStatements)
-        }
+        val functionExpression = expression.functionExpression
         // This indirection is necessary.
         // We want to force a function call to fall into a statement.
         // In this way, the final expression can be safely ignored and side effect of function still preserved.
         val temporary = allocateTemporaryVariable()
-        loweredStatements += when (loweredFunctionExpression) {
-            is ClassMember -> FunctionApplication(
-                functionName = loweredFunctionExpression.encodedFunctionName,
-                arguments = loweredArguments,
+        loweredStatements += when (functionExpression) {
+            is Expression.ClassMember -> FunctionApplication(
+                functionName = this.getFunctionName(functionExpression.className, functionExpression.memberName),
+                arguments = expression.arguments.map { argument ->
+                    argument.getLoweredAndAddStatements(statements = loweredStatements)
+                },
                 resultCollector = temporary
             )
-            is MethodAccess -> FunctionApplication(
-                functionName = loweredFunctionExpression.encodedMethodName,
-                arguments = listOf(loweredFunctionExpression.expression, *loweredArguments.toTypedArray()),
+            is Expression.MethodAccess -> FunctionApplication(
+                functionName = this.getFunctionName(
+                    className = (functionExpression.expression.type as Type.IdentifierType).identifier,
+                    functionName = functionExpression.methodName
+                ),
+                arguments = listOf(
+                    functionExpression.expression.getLoweredAndAddStatements(statements = loweredStatements),
+                    *expression.arguments
+                        .map { it.getLoweredAndAddStatements(statements = loweredStatements) }
+                        .toTypedArray()
+                ),
                 resultCollector = temporary
             )
             else -> ClosureApplication(
-                functionExpression = loweredFunctionExpression,
-                arguments = loweredArguments,
+                functionExpression = functionExpression.getLoweredAndAddStatements(statements = loweredStatements),
+                arguments = expression.arguments.map { it.getLoweredAndAddStatements(statements = loweredStatements) },
                 resultCollector = temporary
             )
         }

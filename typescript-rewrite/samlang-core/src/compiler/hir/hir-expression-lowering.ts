@@ -253,38 +253,47 @@ class HighIRExpressionLoweringManager {
 
   private lowerFunctionCall(expression: FunctionCallExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
-    const loweredFunctionExpression = this.loweredAndAddStatements(
-      expression.functionExpression,
-      loweredStatements
-    );
-    const loweredArguments = expression.functionArguments.map((oneArgument) =>
-      this.loweredAndAddStatements(oneArgument, loweredStatements)
-    );
+    const functionExpression = expression.functionExpression;
     // This indirection is necessary.
     // We want to force a function call to fall into a statement.
     // In this way, the final expression can be safely ignored,
     // while side effect of function still preserved.
     const returnCollector = this.allocateTemporaryVariable();
     let functionCall: HighIRStatement;
-    switch (loweredFunctionExpression.__type__) {
-      case 'HighIRClassMemberExpression':
+    switch (functionExpression.__type__) {
+      case 'ClassMemberExpression':
         functionCall = HIR_FUNCTION_CALL({
-          functionName: loweredFunctionExpression.encodedFunctionName,
-          functionArguments: loweredArguments,
+          functionName: this.getFunctionName(
+            functionExpression.className,
+            functionExpression.memberName
+          ),
+          functionArguments: expression.functionArguments.map((oneArgument) =>
+            this.loweredAndAddStatements(oneArgument, loweredStatements)
+          ),
           returnCollector,
         });
         break;
-      case 'HighIRMethodAccessExpression':
+      case 'MethodAccessExpression':
         functionCall = HIR_FUNCTION_CALL({
-          functionName: loweredFunctionExpression.encodedMethodName,
-          functionArguments: [loweredFunctionExpression.expression, ...loweredArguments],
+          functionName: this.getFunctionName(
+            (functionExpression.expression.type as IdentifierType).identifier,
+            functionExpression.methodName
+          ),
+          functionArguments: [
+            this.loweredAndAddStatements(functionExpression.expression, loweredStatements),
+            ...expression.functionArguments.map((oneArgument) =>
+              this.loweredAndAddStatements(oneArgument, loweredStatements)
+            ),
+          ],
           returnCollector,
         });
         break;
       default:
         functionCall = HIR_CLOSURE_CALL({
-          functionExpression: loweredFunctionExpression,
-          closureArguments: loweredArguments,
+          functionExpression: this.loweredAndAddStatements(functionExpression, loweredStatements),
+          closureArguments: expression.functionArguments.map((oneArgument) =>
+            this.loweredAndAddStatements(oneArgument, loweredStatements)
+          ),
           returnCollector,
         });
         break;
