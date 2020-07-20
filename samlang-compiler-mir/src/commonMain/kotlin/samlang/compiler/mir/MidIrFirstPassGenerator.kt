@@ -272,7 +272,9 @@ internal class MidIrFirstPassGenerator(
             val e2Result = translate(expression = expression.e2)
             return ExprSequence(
                 statements = e1Result.statements + e2Result.statements,
-                expression = OP(op = expression.operator, e1 = e1Result.expression, e2 = e2Result.expression)
+                expression = MidIrOpReorderingUtil.reorder(
+                    OP(op = expression.operator, e1 = e1Result.expression, e2 = e2Result.expression)
+                )
             )
         }
     }

@@ -33,12 +33,10 @@ class MidIrGenerator private constructor(
             globalResourceAllocator = globalResourceAllocator
         )
         val generator1stPass = MidIrFirstPassGenerator(allocator = allocator)
-        val generator2ndPass = MidIrSecondPassGenerator(allocator = allocator)
         val allocatedArgs = mutableListOf<Temporary>()
         function.parameters.forEach { allocatedArgs += allocator.allocateTemp(variableName = it) }
         val mainBodyStatements = cleanupAfterFirstPass(
             statements = function.body.map { generator1stPass.translate(statement = it) }.flatten(),
-            generator2ndPass = generator2ndPass,
             allocator = allocator
         )
         functions += MidIrFunction(
@@ -53,14 +51,9 @@ class MidIrGenerator private constructor(
 
     private fun cleanupAfterFirstPass(
         statements: List<MidIrStatement>,
-        generator2ndPass: MidIrSecondPassGenerator,
         allocator: MidIrResourceAllocator
     ): List<MidIrStatement> {
-        var processed: List<MidIrStatement> = statements
-            .map { generator2ndPass.lower(statement = it) }
-            .flatten()
-            .toMutableList()
-            .apply { add(Return()) }
+        var processed: List<MidIrStatement> = statements.toMutableList().apply { add(Return()) }
         processed = MidIrTraceReorganizer.reorder(allocator = allocator, originalStatements = processed)
         processed = SimpleOptimizations.optimizeIr(statements = processed)
         return processed
