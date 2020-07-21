@@ -8,10 +8,6 @@ kotlin {
             useJUnitPlatform()
         }
     }
-    js {
-        nodejs()
-        useCommonJs()
-    }
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -23,11 +19,6 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(kotlin("stdlib-jdk8"))
-            }
-        }
-        val jsMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-js"))
             }
         }
     }
