@@ -48,24 +48,15 @@ internal class MidIrFirstPassGenerator(
     private fun translate(expression: HighIrExpression): MidIrExpression =
         expression.accept(visitor = expressionGenerator)
 
-    private fun MALLOC(collector: MidIrExpression.Temporary, sizeExpr: MidIrExpression): MidIrStatement.CallFunction =
-        CALL_FUNCTION(
-            functionName = IrNameEncoder.nameOfMalloc,
-            arguments = listOf(sizeExpr),
-            returnCollector = collector
-        )
-
     private inner class StatementGenerator : HighIrStatementVisitor<List<MidIrStatement>> {
-        override fun visit(statement: FunctionApplication): List<MidIrStatement> {
-            val statements = mutableListOf<MidIrStatement>()
-            val functionArguments = statement.arguments.map { translate(expression = it) }
-            statements += CALL_FUNCTION(
+        override fun visit(statement: FunctionApplication): List<MidIrStatement> =
+            listOf(
+                CALL_FUNCTION(
                     functionName = statement.functionName,
-                    arguments = functionArguments,
+                    arguments = statement.arguments.map { translate(expression = it) },
                     returnCollector = allocator.allocateTemp(variableName = statement.resultCollector)
                 )
-            return statements
-        }
+            )
 
         override fun visit(statement: ClosureApplication): List<MidIrStatement> {
             /**
@@ -138,7 +129,11 @@ internal class MidIrFirstPassGenerator(
         override fun visit(statement: StructInitialization): List<MidIrStatement> {
             val structTemporary = allocator.allocateTemp(variableName = statement.structVariableName)
             val statements = mutableListOf<MidIrStatement>()
-            statements += MALLOC(structTemporary, CONST(value = statement.expressionList.size * 8L))
+            statements += CALL_FUNCTION(
+                functionName = IrNameEncoder.nameOfMalloc,
+                arguments = listOf(CONST(value = statement.expressionList.size * 8L)),
+                returnCollector = structTemporary
+            )
             statement.expressionList.forEachIndexed { index, subExpression ->
                 statements += MOVE_IMMUTABLE_MEM(
                     destination = IMMUTABLE_MEM(expression = ADD(e1 = structTemporary, e2 = CONST(value = index * 8L))),
@@ -155,20 +150,17 @@ internal class MidIrFirstPassGenerator(
     }
 
     private inner class ExpressionGenerator : HighIrExpressionVisitor<MidIrExpression> {
-        override fun visit(expression: HighIrExpression.IntLiteral): MidIrExpression =
-            CONST(value = expression.value)
+        override fun visit(expression: HighIrExpression.IntLiteral): MidIrExpression = CONST(value = expression.value)
 
         override fun visit(expression: HighIrExpression.StringLiteral): MidIrExpression {
-            val value = expression.value
             val contentVariable = allocator
                 .globalResourceAllocator
-                .allocateStringArrayGlobalVariable(string = value)
+                .allocateStringArrayGlobalVariable(string = expression.value)
             stringGlobalVariableCollector += contentVariable
             return ADD(e1 = NAME(name = contentVariable.name), e2 = EIGHT)
         }
 
-        override fun visit(expression: HighIrExpression.Name): MidIrExpression =
-            NAME(name = expression.name)
+        override fun visit(expression: HighIrExpression.Name): MidIrExpression = NAME(name = expression.name)
 
         override fun visit(expression: Variable): MidIrExpression =
             allocator.getTemporaryByVariable(variableName = expression.name)
@@ -183,11 +175,7 @@ internal class MidIrFirstPassGenerator(
 
         override fun visit(expression: Binary): MidIrExpression =
             MidIrOpReorderingUtil.reorder(
-                OP(
-                    op = expression.operator,
-                    e1 = translate(expression = expression.e1),
-                    e2 = translate(expression = expression.e2)
-                )
+                OP(op = expression.operator, e1 = translate(expression.e1), e2 = translate(expression.e2))
             )
     }
 }
