@@ -119,11 +119,11 @@ it('ClassMember lowering works.', () => {
     {
       statements: [
         HIR_STRUCT_INITIALIZATION({
-          structVariableName: '_LOWERING_0',
+          structVariableName: '_t0',
           expressionList: [HIR_NAME('_module__class_A_function_b'), HIR_ZERO],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 });
@@ -133,9 +133,9 @@ it('Lowering to StructConstructor works.', () => {
     EXPRESSION_TUPLE_CONSTRUCTOR({ range: Range.DUMMY, type: tupleType([]), expressions: [THIS] }),
     {
       statements: [
-        HIR_STRUCT_INITIALIZATION({ structVariableName: '_LOWERING_0', expressionList: [IR_THIS] }),
+        HIR_STRUCT_INITIALIZATION({ structVariableName: '_t0', expressionList: [IR_THIS] }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 
@@ -151,11 +151,11 @@ it('Lowering to StructConstructor works.', () => {
     {
       statements: [
         HIR_STRUCT_INITIALIZATION({
-          structVariableName: '_LOWERING_0',
+          structVariableName: '_t0',
           expressionList: [IR_THIS, HIR_VARIABLE('bar')],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 
@@ -170,11 +170,11 @@ it('Lowering to StructConstructor works.', () => {
     {
       statements: [
         HIR_STRUCT_INITIALIZATION({
-          structVariableName: '_LOWERING_0',
+          structVariableName: '_t0',
           expressionList: [HIR_INT(BigInt(1)), IR_THIS],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 });
@@ -203,11 +203,11 @@ it('MethodAccess lowering works.', () => {
     {
       statements: [
         HIR_STRUCT_INITIALIZATION({
-          structVariableName: '_LOWERING_0',
+          structVariableName: '_t0',
           expressionList: [HIR_NAME('_module__class_Dummy_function_foo'), IR_THIS],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 });
@@ -225,7 +225,7 @@ it('Unary lowering works.', () => {
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME('_builtin_throw'),
           functionArguments: [IR_THIS],
-          returnCollector: '_LOWERING_0',
+          returnCollector: '_t0',
         }),
       ],
       expression: HIR_BINARY({ operator: '^', e1: HIR_ZERO, e2: HIR_INT(BigInt(1)) }),
@@ -244,7 +244,7 @@ it('Unary lowering works.', () => {
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME('_builtin_throw'),
           functionArguments: [IR_THIS],
-          returnCollector: '_LOWERING_0',
+          returnCollector: '_t0',
         }),
       ],
       expression: HIR_BINARY({ operator: '-', e1: HIR_INT(BigInt(0)), e2: HIR_ZERO }),
@@ -265,10 +265,10 @@ it('FunctionCall family lowering works.', () => {
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME('_builtin_intToString'),
           functionArguments: [IR_THIS],
-          returnCollector: '_LOWERING_0',
+          returnCollector: '_t0',
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
   expectCorrectlyLowered(
@@ -283,10 +283,10 @@ it('FunctionCall family lowering works.', () => {
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME('_builtin_stringToInt'),
           functionArguments: [IR_THIS],
-          returnCollector: '_LOWERING_0',
+          returnCollector: '_t0',
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
   expectCorrectlyLowered(
@@ -301,10 +301,10 @@ it('FunctionCall family lowering works.', () => {
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME('_builtin_println'),
           functionArguments: [IR_THIS],
-          returnCollector: '_LOWERING_0',
+          returnCollector: '_t0',
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 
@@ -328,10 +328,10 @@ it('FunctionCall family lowering works.', () => {
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME('_module_ModuleModule_class_ImportedClass_function_bar'),
           functionArguments: [IR_THIS, IR_THIS],
-          returnCollector: '_LOWERING_0',
+          returnCollector: '_t0',
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 
@@ -352,10 +352,10 @@ it('FunctionCall family lowering works.', () => {
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME('_module__class_Dummy_function_fooBar'),
           functionArguments: [IR_THIS, IR_THIS, IR_THIS],
-          returnCollector: '_LOWERING_0',
+          returnCollector: '_t0',
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 
@@ -368,43 +368,43 @@ it('FunctionCall family lowering works.', () => {
     }),
     {
       statements: [
-        HIR_LET({ name: '_LOWERING_1', assignedExpression: IR_THIS }),
+        HIR_LET({ name: '_t1', assignedExpression: IR_THIS }),
         HIR_LET({
-          name: '_LOWERING_2',
+          name: '_t2',
           assignedExpression: HIR_INDEX_ACCESS({
-            expression: HIR_VARIABLE('_LOWERING_1'),
+            expression: HIR_VARIABLE('_t1'),
             index: 1,
           }),
         }),
         HIR_IF_ELSE({
           booleanExpression: HIR_BINARY({
             operator: '==',
-            e1: HIR_VARIABLE('_LOWERING_2'),
+            e1: HIR_VARIABLE('_t2'),
             e2: HIR_ZERO,
           }),
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_LOWERING_1'),
+                expression: HIR_VARIABLE('_t1'),
                 index: 0,
               }),
               functionArguments: [IR_THIS, IR_THIS],
-              returnCollector: '_LOWERING_0',
+              returnCollector: '_t0',
             }),
           ],
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_LOWERING_1'),
+                expression: HIR_VARIABLE('_t1'),
                 index: 0,
               }),
-              functionArguments: [HIR_VARIABLE('_LOWERING_2'), IR_THIS, IR_THIS],
-              returnCollector: '_LOWERING_0',
+              functionArguments: [HIR_VARIABLE('_t2'), IR_THIS, IR_THIS],
+              returnCollector: '_t0',
             }),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 
@@ -417,43 +417,43 @@ it('FunctionCall family lowering works.', () => {
     }),
     {
       statements: [
-        HIR_LET({ name: '_LOWERING_1', assignedExpression: IR_THIS }),
+        HIR_LET({ name: '_t1', assignedExpression: IR_THIS }),
         HIR_LET({
-          name: '_LOWERING_2',
+          name: '_t2',
           assignedExpression: HIR_INDEX_ACCESS({
-            expression: HIR_VARIABLE('_LOWERING_1'),
+            expression: HIR_VARIABLE('_t1'),
             index: 1,
           }),
         }),
         HIR_IF_ELSE({
           booleanExpression: HIR_BINARY({
             operator: '==',
-            e1: HIR_VARIABLE('_LOWERING_2'),
+            e1: HIR_VARIABLE('_t2'),
             e2: HIR_ZERO,
           }),
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_LOWERING_1'),
+                expression: HIR_VARIABLE('_t1'),
                 index: 0,
               }),
               functionArguments: [IR_THIS, IR_THIS],
-              returnCollector: '_LOWERING_0',
+              returnCollector: '_t0',
             }),
           ],
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_LOWERING_1'),
+                expression: HIR_VARIABLE('_t1'),
                 index: 0,
               }),
-              functionArguments: [HIR_VARIABLE('_LOWERING_2'), IR_THIS, IR_THIS],
-              returnCollector: '_LOWERING_0',
+              functionArguments: [HIR_VARIABLE('_t2'), IR_THIS, IR_THIS],
+              returnCollector: '_t0',
             }),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 });
@@ -473,10 +473,10 @@ it('String concat binary lowering works.', () => {
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME('_builtin_stringConcat'),
           functionArguments: [IR_THIS, IR_THIS],
-          returnCollector: '_LOWERING_0',
+          returnCollector: '_t0',
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 });
@@ -494,11 +494,11 @@ it('Short circuiting binary lowering works.', () => {
       statements: [
         HIR_IF_ELSE({
           booleanExpression: HIR_ONE,
-          s1: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_VARIABLE('foo') })],
-          s2: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_ZERO })],
+          s1: [HIR_LET({ name: '_t0', assignedExpression: HIR_VARIABLE('foo') })],
+          s2: [HIR_LET({ name: '_t0', assignedExpression: HIR_ZERO })],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 
@@ -514,11 +514,11 @@ it('Short circuiting binary lowering works.', () => {
       statements: [
         HIR_IF_ELSE({
           booleanExpression: HIR_ONE,
-          s1: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_ONE })],
-          s2: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_ZERO })],
+          s1: [HIR_LET({ name: '_t0', assignedExpression: HIR_ONE })],
+          s2: [HIR_LET({ name: '_t0', assignedExpression: HIR_ZERO })],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 });
@@ -551,18 +551,18 @@ it('Lambda lowering works.', () => {
       ],
       statements: [
         HIR_STRUCT_INITIALIZATION({
-          structVariableName: '_LOWERING_1',
+          structVariableName: '_t1',
           expressionList: [HIR_VARIABLE('a')],
         }),
         HIR_STRUCT_INITIALIZATION({
-          structVariableName: '_LOWERING_0',
+          structVariableName: '_t0',
           expressionList: [
             HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
-            HIR_VARIABLE('_LOWERING_1'),
+            HIR_VARIABLE('_t1'),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 
@@ -594,18 +594,18 @@ it('Lambda lowering works.', () => {
       ],
       statements: [
         HIR_STRUCT_INITIALIZATION({
-          structVariableName: '_LOWERING_1',
+          structVariableName: '_t1',
           expressionList: [HIR_VARIABLE('a')],
         }),
         HIR_STRUCT_INITIALIZATION({
-          structVariableName: '_LOWERING_0',
+          structVariableName: '_t0',
           expressionList: [
             HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
-            HIR_VARIABLE('_LOWERING_1'),
+            HIR_VARIABLE('_t1'),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 
@@ -637,18 +637,18 @@ it('Lambda lowering works.', () => {
       ],
       statements: [
         HIR_STRUCT_INITIALIZATION({
-          structVariableName: '_LOWERING_1',
+          structVariableName: '_t1',
           expressionList: [HIR_VARIABLE('a')],
         }),
         HIR_STRUCT_INITIALIZATION({
-          structVariableName: '_LOWERING_0',
+          structVariableName: '_t0',
           expressionList: [
             HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
-            HIR_VARIABLE('_LOWERING_1'),
+            HIR_VARIABLE('_t1'),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 
@@ -671,14 +671,14 @@ it('Lambda lowering works.', () => {
       ],
       statements: [
         HIR_STRUCT_INITIALIZATION({
-          structVariableName: '_LOWERING_0',
+          structVariableName: '_t0',
           expressionList: [
             HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
             HIR_INT(BigInt(1)),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_0'),
+      expression: HIR_VARIABLE('_t0'),
     }
   );
 });
@@ -691,7 +691,7 @@ it('Panic lowering works.', () => {
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME('_builtin_throw'),
           functionArguments: [IR_THIS],
-          returnCollector: '_LOWERING_0',
+          returnCollector: '_t0',
         }),
       ],
     }
@@ -715,14 +715,14 @@ it('IfElse lowering works.', () => {
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('_builtin_throw'),
               functionArguments: [IR_THIS],
-              returnCollector: '_LOWERING_0',
+              returnCollector: '_t0',
             }),
-            HIR_LET({ name: '_LOWERING_1', assignedExpression: HIR_ZERO }),
+            HIR_LET({ name: '_t1', assignedExpression: HIR_ZERO }),
           ],
-          s2: [HIR_LET({ name: '_LOWERING_1', assignedExpression: IR_THIS })],
+          s2: [HIR_LET({ name: '_t1', assignedExpression: IR_THIS })],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_1'),
+      expression: HIR_VARIABLE('_t1'),
     }
   );
 });
@@ -745,30 +745,30 @@ it('Match lowering works.', () => {
     }),
     {
       statements: [
-        HIR_LET({ name: '_LOWERING_0', assignedExpression: IR_THIS }),
+        HIR_LET({ name: '_t0', assignedExpression: IR_THIS }),
         HIR_LET({
-          name: '_LOWERING_1',
+          name: '_t1',
           assignedExpression: HIR_INDEX_ACCESS({
-            expression: HIR_VARIABLE('_LOWERING_0'),
+            expression: HIR_VARIABLE('_t0'),
             index: 0,
           }),
         }),
         HIR_IF_ELSE({
           booleanExpression: HIR_BINARY({
             operator: '==',
-            e1: HIR_VARIABLE('_LOWERING_1'),
+            e1: HIR_VARIABLE('_t1'),
             e2: HIR_INT(BigInt(0)),
           }),
           s1: [
             HIR_LET({
               name: 'bar',
               assignedExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_LOWERING_0'),
+                expression: HIR_VARIABLE('_t0'),
                 index: 1,
               }),
             }),
             HIR_LET({
-              name: '_LOWERING_2',
+              name: '_t2',
               assignedExpression: IR_THIS,
             }),
           ],
@@ -776,17 +776,17 @@ it('Match lowering works.', () => {
             HIR_IF_ELSE({
               booleanExpression: HIR_BINARY({
                 operator: '==',
-                e1: HIR_VARIABLE('_LOWERING_1'),
+                e1: HIR_VARIABLE('_t1'),
                 e2: HIR_INT(BigInt(1)),
               }),
               s1: [
                 HIR_FUNCTION_CALL({
                   functionExpression: HIR_NAME('_builtin_throw'),
                   functionArguments: [IR_THIS],
-                  returnCollector: '_LOWERING_3',
+                  returnCollector: '_t3',
                 }),
                 HIR_LET({
-                  name: '_LOWERING_2',
+                  name: '_t2',
                   assignedExpression: HIR_ZERO,
                 }),
               ],
@@ -795,7 +795,7 @@ it('Match lowering works.', () => {
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_LOWERING_2'),
+      expression: HIR_VARIABLE('_t2'),
     }
   );
 });
@@ -860,30 +860,30 @@ it('StatementBlockExpression lowering works.', () => {
     }),
     {
       statements: [
-        HIR_LET({ name: '_LOWERING_0', assignedExpression: IR_THIS }),
+        HIR_LET({ name: '_t0', assignedExpression: IR_THIS }),
         HIR_LET({
           name: 'a',
           assignedExpression: HIR_INDEX_ACCESS({
-            expression: HIR_VARIABLE('_LOWERING_0'),
+            expression: HIR_VARIABLE('_t0'),
             index: 0,
           }),
         }),
-        HIR_LET({ name: '_LOWERING_1', assignedExpression: IR_THIS }),
+        HIR_LET({ name: '_t1', assignedExpression: IR_THIS }),
         HIR_LET({
           name: 'a',
           assignedExpression: HIR_INDEX_ACCESS({
-            expression: HIR_VARIABLE('_LOWERING_1'),
+            expression: HIR_VARIABLE('_t1'),
             index: 0,
           }),
         }),
         HIR_LET({
           name: 'c',
           assignedExpression: HIR_INDEX_ACCESS({
-            expression: HIR_VARIABLE('_LOWERING_1'),
+            expression: HIR_VARIABLE('_t1'),
             index: 1,
           }),
         }),
-        HIR_LET({ name: '_LOWERING_2', assignedExpression: IR_THIS }),
+        HIR_LET({ name: '_t2', assignedExpression: IR_THIS }),
         HIR_LET({ name: 'a', assignedExpression: HIR_VARIABLE('a') }),
       ],
     }

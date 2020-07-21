@@ -65,7 +65,7 @@ private class ExpressionLoweringVisitor(
     private var nextSyntheticFunctionId: Int = 0
 
     private fun allocateTemporaryVariable(): String {
-        val variableName = "_LOWERING_$nextTemporaryVariableId"
+        val variableName = "_t$nextTemporaryVariableId"
         nextTemporaryVariableId++
         return variableName
     }

@@ -72,7 +72,7 @@ class HighIRExpressionLoweringManager {
   ) {}
 
   private allocateTemporaryVariable(): string {
-    const variableName = `_LOWERING_${this.nextTemporaryVariableId}`;
+    const variableName = `_t${this.nextTemporaryVariableId}`;
     this.nextTemporaryVariableId += 1;
     return variableName;
   }

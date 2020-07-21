@@ -36,17 +36,6 @@ internal class MidIrResourceAllocator(
     }
 
     /**
-     * Allocate and return an anonymous temporary for IR usage.
-     *
-     * @return a temp object expression. You should not inspect the values of the temporary.
-     */
-    fun allocateTemp(): Temporary {
-        val temp = TEMP(id = "_t$nextTempId")
-        nextTempId++
-        return temp
-    }
-
-    /**
      * Allocate and return a temporary for a given variable.
      *
      * @param variableName a variable name without function name prefix.
