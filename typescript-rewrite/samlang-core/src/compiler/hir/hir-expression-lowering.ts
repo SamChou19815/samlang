@@ -12,13 +12,13 @@ import {
   HighIRStatement,
   HighIRExpression,
   HIR_LITERAL,
+  HIR_NAME,
   HIR_VARIABLE,
   HIR_FALSE,
   HIR_TRUE,
   HIR_STRUCT_CONSTRUCTOR,
   HIR_INT,
   HIR_INDEX_ACCESS,
-  HIR_FUNCTION_CLOSURE,
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
   HIR_BINARY,
@@ -120,10 +120,10 @@ class HighIRExpressionLoweringManager {
       case 'ClassMemberExpression':
         return {
           statements: [],
-          expression: HIR_FUNCTION_CLOSURE({
-            closureContextExpression: HIR_FALSE,
-            encodedFunctionName: this.getFunctionName(expression.className, expression.memberName),
-          }),
+          expression: HIR_STRUCT_CONSTRUCTOR([
+            HIR_NAME(this.getFunctionName(expression.className, expression.memberName)),
+            HIR_FALSE,
+          ]),
         };
       case 'TupleConstructorExpression':
         return this.lowerTupleConstructor(expression);
@@ -213,13 +213,15 @@ class HighIRExpressionLoweringManager {
     const result = this.lower(expression.expression);
     return {
       statements: result.statements,
-      expression: HIR_FUNCTION_CLOSURE({
-        closureContextExpression: result.expression,
-        encodedFunctionName: this.getFunctionName(
-          (expression.expression.type as IdentifierType).identifier,
-          expression.methodName
+      expression: HIR_STRUCT_CONSTRUCTOR([
+        HIR_NAME(
+          this.getFunctionName(
+            (expression.expression.type as IdentifierType).identifier,
+            expression.methodName
+          )
         ),
-      }),
+        result.expression,
+      ]),
     };
   }
 
@@ -535,14 +537,13 @@ class HighIRExpressionLoweringManager {
     const captured = Object.keys(expression.captured);
     return {
       statements: [],
-      expression: HIR_FUNCTION_CLOSURE({
-        // 1: A dummy value that is not zero, used to indicate nonnull context
-        closureContextExpression:
-          captured.length === 0
-            ? HIR_INT(BigInt(1))
-            : HIR_STRUCT_CONSTRUCTOR(captured.map(HIR_VARIABLE)),
-        encodedFunctionName: syntheticLambda.name,
-      }),
+      expression: HIR_STRUCT_CONSTRUCTOR([
+        HIR_NAME(syntheticLambda.name),
+        captured.length === 0
+          ? // 1: A dummy value that is not zero, used to indicate nonnull context
+            HIR_INT(BigInt(1))
+          : HIR_STRUCT_CONSTRUCTOR(captured.map(HIR_VARIABLE)),
+      ]),
     };
   }
 

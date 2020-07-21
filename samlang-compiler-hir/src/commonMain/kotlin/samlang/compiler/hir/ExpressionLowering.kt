@@ -9,7 +9,6 @@ import samlang.ast.common.Type
 import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
-import samlang.ast.hir.HighIrExpression.FunctionClosure
 import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.StructConstructor
@@ -115,9 +114,11 @@ private class ExpressionLoweringVisitor(
         Variable(name = expression.name).asLoweringResult()
 
     override fun visit(expression: Expression.ClassMember, context: Unit): LoweringResult =
-        FunctionClosure(
-            closureContextExpression = HighIrExpression.FALSE,
-            encodedFunctionName = this.getFunctionName(expression.className, expression.memberName)
+        StructConstructor(
+            expressionList = listOf(
+                HighIrExpression.Name(this.getFunctionName(expression.className, expression.memberName)),
+                HighIrExpression.FALSE
+            )
         ).asLoweringResult()
 
     override fun visit(expression: Expression.TupleConstructor, context: Unit): LoweringResult {
@@ -175,11 +176,15 @@ private class ExpressionLoweringVisitor(
 
     override fun visit(expression: Expression.MethodAccess, context: Unit): LoweringResult {
         val result = expression.expression.lower()
-        return FunctionClosure(
-            closureContextExpression = result.expression,
-            encodedFunctionName = this.getFunctionName(
-                className = (expression.expression.type as Type.IdentifierType).identifier,
-                functionName = expression.methodName
+        return StructConstructor(
+            expressionList = listOf(
+                HighIrExpression.Name(
+                    name = this.getFunctionName(
+                        className = (expression.expression.type as Type.IdentifierType).identifier,
+                        functionName = expression.methodName
+                    )
+                ),
+                result.expression
             )
         ).asLoweringResult(statements = result.statements)
     }
@@ -443,13 +448,15 @@ private class ExpressionLoweringVisitor(
         val syntheticLambda = createSyntheticLambdaFunction(expression)
         syntheticFunctions += syntheticLambda
 
-        return FunctionClosure(
-            closureContextExpression = if (expression.captured.isNotEmpty()) {
-                StructConstructor(expressionList = expression.captured.keys.map { Variable(it) })
-            } else {
-                HighIrExpression.literal(value = 1L) // A dummy value that is not zero
-            },
-            encodedFunctionName = syntheticLambda.name
+        return StructConstructor(
+            expressionList = listOf(
+                HighIrExpression.Name(syntheticLambda.name),
+                if (expression.captured.isNotEmpty()) {
+                    StructConstructor(expressionList = expression.captured.keys.map { Variable(it) })
+                } else {
+                    HighIrExpression.literal(value = 1L) // A dummy value that is not zero
+                }
+            )
         ).asLoweringResult()
     }
 

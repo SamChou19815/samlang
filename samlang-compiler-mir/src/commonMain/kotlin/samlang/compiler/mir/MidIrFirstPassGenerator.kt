@@ -4,7 +4,6 @@ import samlang.ast.common.GlobalVariable
 import samlang.ast.common.IrNameEncoder
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
-import samlang.ast.hir.HighIrExpression.FunctionClosure
 import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.StructConstructor
@@ -174,6 +173,11 @@ internal class MidIrFirstPassGenerator(
             }
         )
 
+        override fun visit(expression: HighIrExpression.Name): ExprSequence = ExprSequence(
+            statements = emptyList(),
+            expression = NAME(name = expression.name)
+        )
+
         override fun visit(expression: Variable): ExprSequence = ExprSequence(
             statements = emptyList(),
             expression = allocator.getTemporaryByVariable(variableName = expression.name)
@@ -205,21 +209,6 @@ internal class MidIrFirstPassGenerator(
                     )
                 )
             )
-        }
-
-        override fun visit(expression: FunctionClosure): ExprSequence {
-            val name = expression.encodedFunctionName
-            val closureTemporary = allocator.allocateTemp()
-            val result = translate(expression = expression.closureContextExpression)
-            val statements = result.statements.toMutableList()
-
-            statements += MALLOC(closureTemporary, CONST(value = 16L))
-            statements += MOVE_IMMUTABLE_MEM(destination = IMMUTABLE_MEM(expression = closureTemporary), source = NAME(name = name))
-            statements += MOVE_IMMUTABLE_MEM(
-                    destination = IMMUTABLE_MEM(expression = ADD(e1 = closureTemporary, e2 = CONST(value = 8L))),
-                    source = result.expression
-                )
-            return ExprSequence(statements, closureTemporary)
         }
 
         override fun visit(expression: Binary): ExprSequence {

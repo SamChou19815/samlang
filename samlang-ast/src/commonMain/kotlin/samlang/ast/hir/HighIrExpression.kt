@@ -12,6 +12,10 @@ sealed class HighIrExpression {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
+    data class Name(val name: String) : HighIrExpression() {
+        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
+    }
+
     data class Variable(val name: String) : HighIrExpression() {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
@@ -25,13 +29,6 @@ sealed class HighIrExpression {
     data class IndexAccess(
         val expression: HighIrExpression,
         val index: Int
-    ) : HighIrExpression() {
-        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
-    }
-
-    data class FunctionClosure(
-        val closureContextExpression: HighIrExpression,
-        val encodedFunctionName: String
     ) : HighIrExpression() {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }

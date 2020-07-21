@@ -10,6 +10,11 @@ export interface HighIRLiteralExpression extends BaseHighIRExpression {
   readonly literal: Literal;
 }
 
+export interface HighIRNameExpression extends BaseHighIRExpression {
+  readonly __type__: 'HighIRNameExpression';
+  readonly name: string;
+}
+
 export interface HighIRVariableExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRVariableExpression';
   readonly name: string;
@@ -26,12 +31,6 @@ export interface HighIRIndexAccessExpression extends BaseHighIRExpression {
   readonly index: number;
 }
 
-export interface HighIRFunctionClosureExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRFunctionClosureExpression';
-  readonly closureContextExpression: HighIRExpression;
-  readonly encodedFunctionName: string;
-}
-
 export interface HighIRBinaryExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRBinaryExpression';
   readonly e1: HighIRExpression;
@@ -41,10 +40,10 @@ export interface HighIRBinaryExpression extends BaseHighIRExpression {
 
 export type HighIRExpression =
   | HighIRLiteralExpression
+  | HighIRNameExpression
   | HighIRVariableExpression
   | HighIRStructConstructorExpression
   | HighIRIndexAccessExpression
-  | HighIRFunctionClosureExpression
   | HighIRBinaryExpression;
 
 interface BaseHighIRStatement {
@@ -120,6 +119,11 @@ export const HIR_LITERAL = (literal: Literal): HighIRLiteralExpression => ({
   literal,
 });
 
+export const HIR_NAME = (name: string): HighIRNameExpression => ({
+  __type__: 'HighIRNameExpression',
+  name,
+});
+
 export const HIR_VARIABLE = (name: string): HighIRVariableExpression => ({
   __type__: 'HighIRVariableExpression',
   name,
@@ -139,17 +143,6 @@ export const HIR_INDEX_ACCESS = ({
   __type__: 'HighIRIndexAccessExpression',
   expression,
   index,
-});
-
-export const HIR_FUNCTION_CLOSURE = ({
-  closureContextExpression,
-  encodedFunctionName,
-}: ConstructorArgumentObject<
-  HighIRFunctionClosureExpression
->): HighIRFunctionClosureExpression => ({
-  __type__: 'HighIRFunctionClosureExpression',
-  closureContextExpression,
-  encodedFunctionName,
 });
 
 export const HIR_BINARY = ({
