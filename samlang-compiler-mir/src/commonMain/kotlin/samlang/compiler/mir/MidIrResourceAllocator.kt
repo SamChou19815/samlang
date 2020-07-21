@@ -9,7 +9,6 @@ internal class MidIrResourceAllocator(
     val globalResourceAllocator: MidIrGlobalResourceAllocator
 ) {
     private var nextLabelId: Int = 0
-    private var nextTempId: Int = 0
     private val tempMap: MutableMap<String, Temporary> = mutableMapOf()
 
     /**
