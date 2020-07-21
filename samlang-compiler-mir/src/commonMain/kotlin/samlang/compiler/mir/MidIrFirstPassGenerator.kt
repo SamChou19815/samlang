@@ -30,7 +30,7 @@ import samlang.ast.mir.MidIrStatement.Jump
 import samlang.ast.mir.MidIrStatement.Label
 
 /** Generate non-canonical mid IR in the first pass. */
-internal class MidIrFirstPassGenerator(
+internal class MidIrFirstPassGenerator private constructor(
     private val allocator: MidIrResourceAllocator
 ) {
     private val statementGenerator: StatementGenerator = StatementGenerator()
@@ -38,9 +38,8 @@ internal class MidIrFirstPassGenerator(
 
     private val stringGlobalVariableCollector: MutableSet<GlobalVariable> = LinkedHashSet()
 
-    val stringGlobalVariables: Set<GlobalVariable> get() = stringGlobalVariableCollector
-
-    fun translate(statement: HighIrStatement): List<MidIrStatement> = statement.accept(visitor = statementGenerator)
+    private fun translate(statement: HighIrStatement): List<MidIrStatement> =
+        statement.accept(visitor = statementGenerator)
 
     private fun translate(expression: HighIrExpression): MidIrExpression =
         expression.accept(visitor = expressionGenerator)
@@ -133,5 +132,16 @@ internal class MidIrFirstPassGenerator(
             MidIrOpReorderingUtil.reorder(
                 OP(op = expression.operator, e1 = translate(expression.e1), e2 = translate(expression.e2))
             )
+    }
+
+    companion object {
+        fun translate(
+            allocator: MidIrResourceAllocator,
+            statements: List<HighIrStatement>
+        ): Pair<List<MidIrStatement>, Set<GlobalVariable>> {
+            val generator = MidIrFirstPassGenerator(allocator)
+            val lowered = statements.map { generator.translate(it) }.flatten()
+            return lowered to generator.stringGlobalVariableCollector
+        }
     }
 }

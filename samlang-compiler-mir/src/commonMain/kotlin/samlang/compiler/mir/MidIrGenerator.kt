@@ -32,21 +32,17 @@ class MidIrGenerator private constructor(
             functionName = encodedFunctionName,
             globalResourceAllocator = globalResourceAllocator
         )
-        val generator1stPass = MidIrFirstPassGenerator(allocator = allocator)
         val allocatedArgs = mutableListOf<Temporary>()
         function.parameters.forEach { allocatedArgs += allocator.allocateTemp(variableName = it) }
-        val mainBodyStatements = cleanupAfterFirstPass(
-            statements = function.body.map { generator1stPass.translate(statement = it) }.flatten(),
-            allocator = allocator
-        )
+        val (loweredStatements, stringGlobalVariables) = MidIrFirstPassGenerator.translate(allocator, function.body)
+        globalVariables += stringGlobalVariables
         functions += MidIrFunction(
             functionName = encodedFunctionName,
             argumentTemps = allocatedArgs,
-            mainBodyStatements = mainBodyStatements,
+            mainBodyStatements = cleanupAfterFirstPass(statements = loweredStatements, allocator = allocator),
             numberOfArguments = allocatedArgs.size,
             hasReturn = function.hasReturn
         )
-        globalVariables += generator1stPass.stringGlobalVariables
     }
 
     private fun cleanupAfterFirstPass(
