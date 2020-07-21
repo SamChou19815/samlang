@@ -18,7 +18,6 @@ import {
   HIR_STRING,
   HIR_INDEX_ACCESS,
   HIR_FUNCTION_CALL,
-  HIR_CLOSURE_CALL,
   HIR_BINARY,
   HIR_IF_ELSE,
   HIR_LET,
@@ -224,7 +223,7 @@ it('Unary lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionName: '_builtin_throw',
+          functionExpression: HIR_NAME('_builtin_throw'),
           functionArguments: [IR_THIS],
           returnCollector: '_LOWERING_0',
         }),
@@ -243,7 +242,7 @@ it('Unary lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionName: '_builtin_throw',
+          functionExpression: HIR_NAME('_builtin_throw'),
           functionArguments: [IR_THIS],
           returnCollector: '_LOWERING_0',
         }),
@@ -264,7 +263,7 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionName: '_builtin_intToString',
+          functionExpression: HIR_NAME('_builtin_intToString'),
           functionArguments: [IR_THIS],
           returnCollector: '_LOWERING_0',
         }),
@@ -282,7 +281,7 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionName: '_builtin_stringToInt',
+          functionExpression: HIR_NAME('_builtin_stringToInt'),
           functionArguments: [IR_THIS],
           returnCollector: '_LOWERING_0',
         }),
@@ -300,7 +299,7 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionName: '_builtin_println',
+          functionExpression: HIR_NAME('_builtin_println'),
           functionArguments: [IR_THIS],
           returnCollector: '_LOWERING_0',
         }),
@@ -327,7 +326,7 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionName: '_module_ModuleModule_class_ImportedClass_function_bar',
+          functionExpression: HIR_NAME('_module_ModuleModule_class_ImportedClass_function_bar'),
           functionArguments: [IR_THIS, IR_THIS],
           returnCollector: '_LOWERING_0',
         }),
@@ -351,7 +350,7 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionName: '_module__class_Dummy_function_fooBar',
+          functionExpression: HIR_NAME('_module__class_Dummy_function_fooBar'),
           functionArguments: [IR_THIS, IR_THIS, IR_THIS],
           returnCollector: '_LOWERING_0',
         }),
@@ -369,10 +368,40 @@ it('FunctionCall family lowering works.', () => {
     }),
     {
       statements: [
-        HIR_CLOSURE_CALL({
-          functionExpression: IR_THIS,
-          closureArguments: [IR_THIS, IR_THIS],
-          returnCollector: '_LOWERING_0',
+        HIR_LET({ name: '_LOWERING_1', assignedExpression: IR_THIS }),
+        HIR_LET({
+          name: '_LOWERING_2',
+          assignedExpression: HIR_INDEX_ACCESS({
+            expression: HIR_VARIABLE('_LOWERING_1'),
+            index: 1,
+          }),
+        }),
+        HIR_IF_ELSE({
+          booleanExpression: HIR_BINARY({
+            operator: '==',
+            e1: HIR_VARIABLE('_LOWERING_2'),
+            e2: HIR_ZERO,
+          }),
+          s1: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_INDEX_ACCESS({
+                expression: HIR_VARIABLE('_LOWERING_1'),
+                index: 0,
+              }),
+              functionArguments: [IR_THIS, IR_THIS],
+              returnCollector: '_LOWERING_0',
+            }),
+          ],
+          s2: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_INDEX_ACCESS({
+                expression: HIR_VARIABLE('_LOWERING_1'),
+                index: 0,
+              }),
+              functionArguments: [HIR_VARIABLE('_LOWERING_2'), IR_THIS, IR_THIS],
+              returnCollector: '_LOWERING_0',
+            }),
+          ],
         }),
       ],
       expression: HIR_VARIABLE('_LOWERING_0'),
@@ -388,10 +417,40 @@ it('FunctionCall family lowering works.', () => {
     }),
     {
       statements: [
-        HIR_CLOSURE_CALL({
-          functionExpression: IR_THIS,
-          closureArguments: [IR_THIS, IR_THIS],
-          returnCollector: '_LOWERING_0',
+        HIR_LET({ name: '_LOWERING_1', assignedExpression: IR_THIS }),
+        HIR_LET({
+          name: '_LOWERING_2',
+          assignedExpression: HIR_INDEX_ACCESS({
+            expression: HIR_VARIABLE('_LOWERING_1'),
+            index: 1,
+          }),
+        }),
+        HIR_IF_ELSE({
+          booleanExpression: HIR_BINARY({
+            operator: '==',
+            e1: HIR_VARIABLE('_LOWERING_2'),
+            e2: HIR_ZERO,
+          }),
+          s1: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_INDEX_ACCESS({
+                expression: HIR_VARIABLE('_LOWERING_1'),
+                index: 0,
+              }),
+              functionArguments: [IR_THIS, IR_THIS],
+              returnCollector: '_LOWERING_0',
+            }),
+          ],
+          s2: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_INDEX_ACCESS({
+                expression: HIR_VARIABLE('_LOWERING_1'),
+                index: 0,
+              }),
+              functionArguments: [HIR_VARIABLE('_LOWERING_2'), IR_THIS, IR_THIS],
+              returnCollector: '_LOWERING_0',
+            }),
+          ],
         }),
       ],
       expression: HIR_VARIABLE('_LOWERING_0'),
@@ -412,7 +471,7 @@ it('String concat binary lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionName: '_builtin_stringConcat',
+          functionExpression: HIR_NAME('_builtin_stringConcat'),
           functionArguments: [IR_THIS, IR_THIS],
           returnCollector: '_LOWERING_0',
         }),
@@ -630,7 +689,7 @@ it('Panic lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionName: '_builtin_throw',
+          functionExpression: HIR_NAME('_builtin_throw'),
           functionArguments: [IR_THIS],
           returnCollector: '_LOWERING_0',
         }),
@@ -654,7 +713,7 @@ it('IfElse lowering works.', () => {
           booleanExpression: IR_THIS,
           s1: [
             HIR_FUNCTION_CALL({
-              functionName: '_builtin_throw',
+              functionExpression: HIR_NAME('_builtin_throw'),
               functionArguments: [IR_THIS],
               returnCollector: '_LOWERING_0',
             }),
@@ -722,7 +781,7 @@ it('Match lowering works.', () => {
               }),
               s1: [
                 HIR_FUNCTION_CALL({
-                  functionName: '_builtin_throw',
+                  functionExpression: HIR_NAME('_builtin_throw'),
                   functionArguments: [IR_THIS],
                   returnCollector: '_LOWERING_3',
                 }),

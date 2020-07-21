@@ -51,15 +51,8 @@ interface BaseHighIRStatement {
 
 export interface HighIRFunctionCallStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRFunctionCallStatement';
-  readonly functionName: string;
-  readonly functionArguments: readonly HighIRExpression[];
-  readonly returnCollector: string;
-}
-
-export interface HighIRClosureCallStatement extends BaseHighIRStatement {
-  readonly __type__: 'HighIRClosureCallStatement';
   readonly functionExpression: HighIRExpression;
-  readonly closureArguments: readonly HighIRExpression[];
+  readonly functionArguments: readonly HighIRExpression[];
   readonly returnCollector: string;
 }
 
@@ -94,7 +87,6 @@ export interface HighIRReturnStatement extends BaseHighIRStatement {
 
 export type HighIRStatement =
   | HighIRFunctionCallStatement
-  | HighIRClosureCallStatement
   | HighIRIfElseStatement
   | HighIRLetDefinitionStatement
   | HighIRStructInitializationStatement
@@ -149,24 +141,13 @@ export const HIR_BINARY = ({
 });
 
 export const HIR_FUNCTION_CALL = ({
-  functionName,
+  functionExpression,
   functionArguments,
   returnCollector,
 }: ConstructorArgumentObject<HighIRFunctionCallStatement>): HighIRFunctionCallStatement => ({
   __type__: 'HighIRFunctionCallStatement',
-  functionName,
+  functionExpression,
   functionArguments,
-  returnCollector,
-});
-
-export const HIR_CLOSURE_CALL = ({
-  functionExpression,
-  closureArguments,
-  returnCollector,
-}: ConstructorArgumentObject<HighIRClosureCallStatement>): HighIRClosureCallStatement => ({
-  __type__: 'HighIRClosureCallStatement',
-  functionExpression,
-  closureArguments,
   returnCollector,
 });
 

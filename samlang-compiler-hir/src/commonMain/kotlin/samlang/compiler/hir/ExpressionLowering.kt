@@ -13,7 +13,6 @@ import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrStatement
-import samlang.ast.hir.HighIrStatement.ClosureApplication
 import samlang.ast.hir.HighIrStatement.FunctionApplication
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDefinition
@@ -237,7 +236,7 @@ private class ExpressionLoweringVisitor(
         val result = expression.expression.lower()
         loweredStatements += result.statements
         loweredStatements += FunctionApplication(
-            functionName = IrNameEncoder.nameOfThrow,
+            functionExpression = HighIrExpression.Name(IrNameEncoder.nameOfThrow),
             arguments = listOf(result.expression),
             resultCollector = allocateTemporaryVariable()
         )
@@ -249,12 +248,13 @@ private class ExpressionLoweringVisitor(
         val (statements, argument) = expression.argumentExpression.lower()
         loweredStatements += statements
         val returnCollector = allocateTemporaryVariable()
+        val name = when (expression.functionName) {
+            BuiltInFunctionName.INT_TO_STRING -> IrNameEncoder.nameOfIntToString
+            BuiltInFunctionName.STRING_TO_INT -> IrNameEncoder.nameOfStringToInt
+            BuiltInFunctionName.PRINTLN -> IrNameEncoder.nameOfPrintln
+        }
         loweredStatements += FunctionApplication(
-            functionName = when (expression.functionName) {
-                BuiltInFunctionName.INT_TO_STRING -> IrNameEncoder.nameOfIntToString
-                BuiltInFunctionName.STRING_TO_INT -> IrNameEncoder.nameOfStringToInt
-                BuiltInFunctionName.PRINTLN -> IrNameEncoder.nameOfPrintln
-            },
+            functionExpression = HighIrExpression.Name(name),
             arguments = listOf(argument),
             resultCollector = returnCollector
         )
@@ -270,16 +270,20 @@ private class ExpressionLoweringVisitor(
         val temporary = allocateTemporaryVariable()
         loweredStatements += when (functionExpression) {
             is Expression.ClassMember -> FunctionApplication(
-                functionName = this.getFunctionName(functionExpression.className, functionExpression.memberName),
+                functionExpression = HighIrExpression.Name(
+                    this.getFunctionName(functionExpression.className, functionExpression.memberName)
+                ),
                 arguments = expression.arguments.map { argument ->
                     argument.getLoweredAndAddStatements(statements = loweredStatements)
                 },
                 resultCollector = temporary
             )
             is Expression.MethodAccess -> FunctionApplication(
-                functionName = this.getFunctionName(
-                    className = (functionExpression.expression.type as Type.IdentifierType).identifier,
-                    functionName = functionExpression.methodName
+                functionExpression = HighIrExpression.Name(
+                    this.getFunctionName(
+                        className = (functionExpression.expression.type as Type.IdentifierType).identifier,
+                        functionName = functionExpression.methodName
+                    )
                 ),
                 arguments = listOf(
                     functionExpression.expression.getLoweredAndAddStatements(statements = loweredStatements),
@@ -289,11 +293,47 @@ private class ExpressionLoweringVisitor(
                 ),
                 resultCollector = temporary
             )
-            else -> ClosureApplication(
-                functionExpression = functionExpression.getLoweredAndAddStatements(statements = loweredStatements),
-                arguments = expression.arguments.map { it.getLoweredAndAddStatements(statements = loweredStatements) },
-                resultCollector = temporary
-            )
+            else -> {
+                /**
+                 * Closure ABI:
+                 * {
+                 *    __length__: 2
+                 *    [0]: reference to the function
+                 *    [1]: context
+                 * }
+                 *
+                 * If context is NULL (0), then it will directly call the function like functionExpr(...restArguments).
+                 * If context is NONNULL, then it will call functionExpr(context, ...restArguments);
+                 */
+                val loweredFunctionExpression = functionExpression.getLoweredAndAddStatements(statements = loweredStatements)
+                val functionArguments = expression.arguments.map { it.getLoweredAndAddStatements(statements = loweredStatements) }
+
+                val closureTemporary = allocateTemporaryVariable()
+                val contextTemporary = allocateTemporaryVariable()
+                loweredStatements += LetDefinition(closureTemporary, loweredFunctionExpression)
+                loweredStatements += LetDefinition(contextTemporary, IndexAccess(expression = Variable(closureTemporary), index = 1))
+                IfElse(
+                    booleanExpression = Binary(
+                        operator = IrOperator.EQ,
+                        e1 = Variable(contextTemporary),
+                        e2 = HighIrExpression.ZERO
+                    ),
+                    s1 = listOf(
+                        FunctionApplication(
+                            functionExpression = IndexAccess(expression = Variable(closureTemporary), index = 0),
+                            arguments = functionArguments,
+                            resultCollector = temporary
+                        )
+                    ),
+                    s2 = listOf(
+                        FunctionApplication(
+                            functionExpression = IndexAccess(expression = Variable(closureTemporary), index = 0),
+                            arguments = listOf(Variable(contextTemporary), *functionArguments.toTypedArray()),
+                            resultCollector = temporary
+                        )
+                    )
+                )
+            }
         }
         return LoweringResult(statements = loweredStatements, expression = Variable(name = temporary))
     }
@@ -362,7 +402,7 @@ private class ExpressionLoweringVisitor(
                 val loweredE2 = expression.e2.getLoweredAndAddStatements(statements = loweredStatements)
                 val collector = allocateTemporaryVariable()
                 loweredStatements += FunctionApplication(
-                    functionName = IrNameEncoder.nameOfStringConcat,
+                    functionExpression = HighIrExpression.Name(IrNameEncoder.nameOfStringConcat),
                     arguments = listOf(loweredE1, loweredE2),
                     resultCollector = collector
                 )

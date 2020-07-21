@@ -19,7 +19,6 @@ import {
   HIR_STRING,
   HIR_INDEX_ACCESS,
   HIR_FUNCTION_CALL,
-  HIR_CLOSURE_CALL,
   HIR_BINARY,
   HIR_IF_ELSE,
   HIR_LET,
@@ -293,7 +292,7 @@ class HighIRExpressionLoweringManager {
       statements: [
         ...result.statements,
         HIR_FUNCTION_CALL({
-          functionName: ENCODED_FUNCTION_NAME_THROW,
+          functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_THROW),
           functionArguments: [result.expression],
           returnCollector: this.allocateTemporaryVariable(),
         }),
@@ -324,7 +323,11 @@ class HighIRExpressionLoweringManager {
         break;
     }
     loweredStatements.push(
-      HIR_FUNCTION_CALL({ functionName, functionArguments: [loweredArgument], returnCollector })
+      HIR_FUNCTION_CALL({
+        functionExpression: HIR_NAME(functionName),
+        functionArguments: [loweredArgument],
+        returnCollector,
+      })
     );
     return {
       statements: loweredStatements,
@@ -344,9 +347,8 @@ class HighIRExpressionLoweringManager {
     switch (functionExpression.__type__) {
       case 'ClassMemberExpression':
         functionCall = HIR_FUNCTION_CALL({
-          functionName: this.getFunctionName(
-            functionExpression.className,
-            functionExpression.memberName
+          functionExpression: HIR_NAME(
+            this.getFunctionName(functionExpression.className, functionExpression.memberName)
           ),
           functionArguments: expression.functionArguments.map((oneArgument) =>
             this.loweredAndAddStatements(oneArgument, loweredStatements)
@@ -356,9 +358,11 @@ class HighIRExpressionLoweringManager {
         break;
       case 'MethodAccessExpression':
         functionCall = HIR_FUNCTION_CALL({
-          functionName: this.getFunctionName(
-            (functionExpression.expression.type as IdentifierType).identifier,
-            functionExpression.methodName
+          functionExpression: HIR_NAME(
+            this.getFunctionName(
+              (functionExpression.expression.type as IdentifierType).identifier,
+              functionExpression.methodName
+            )
           ),
           functionArguments: [
             this.loweredAndAddStatements(functionExpression.expression, loweredStatements),
@@ -369,15 +373,69 @@ class HighIRExpressionLoweringManager {
           returnCollector,
         });
         break;
-      default:
-        functionCall = HIR_CLOSURE_CALL({
-          functionExpression: this.loweredAndAddStatements(functionExpression, loweredStatements),
-          closureArguments: expression.functionArguments.map((oneArgument) =>
-            this.loweredAndAddStatements(oneArgument, loweredStatements)
-          ),
-          returnCollector,
+      default: {
+        /**
+         * Closure ABI:
+         * {
+         *    __length__: 2
+         *    [0]: reference to the function
+         *    [1]: context
+         * }
+         *
+         * If context is NULL (0), then it will directly call the function like functionExpr(...restArguments).
+         * If context is NONNULL, then it will call functionExpr(context, ...restArguments);
+         */
+        const loweredFunctionExpression = this.loweredAndAddStatements(
+          functionExpression,
+          loweredStatements
+        );
+        const loweredFunctionArguments = expression.functionArguments.map((oneArgument) =>
+          this.loweredAndAddStatements(oneArgument, loweredStatements)
+        );
+        const closureTemp = this.allocateTemporaryVariable();
+        const contextTemp = this.allocateTemporaryVariable();
+        loweredStatements.push(
+          HIR_LET({ name: closureTemp, assignedExpression: loweredFunctionExpression })
+        );
+        loweredStatements.push(
+          HIR_LET({
+            name: contextTemp,
+            assignedExpression: HIR_INDEX_ACCESS({
+              expression: HIR_VARIABLE(closureTemp),
+              index: 1,
+            }),
+          })
+        );
+
+        functionCall = HIR_IF_ELSE({
+          booleanExpression: HIR_BINARY({
+            operator: '==',
+            e1: HIR_VARIABLE(contextTemp),
+            e2: HIR_ZERO,
+          }),
+          s1: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_INDEX_ACCESS({
+                expression: HIR_VARIABLE(closureTemp),
+                index: 0,
+              }),
+              functionArguments: loweredFunctionArguments,
+              returnCollector,
+            }),
+          ],
+          s2: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_INDEX_ACCESS({
+                expression: HIR_VARIABLE(closureTemp),
+                index: 0,
+              }),
+              functionArguments: [HIR_VARIABLE(contextTemp), ...loweredFunctionArguments],
+              returnCollector,
+            }),
+          ],
         });
         break;
+      }
     }
     loweredStatements.push(functionCall);
     return {
@@ -449,7 +507,7 @@ class HighIRExpressionLoweringManager {
         const returnCollector = this.allocateTemporaryVariable();
         loweredStatements.push(
           HIR_FUNCTION_CALL({
-            functionName: ENCODED_FUNCTION_NAME_STRING_CONCAT,
+            functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_CONCAT),
             functionArguments: [loweredE1, loweredE2],
             returnCollector,
           })

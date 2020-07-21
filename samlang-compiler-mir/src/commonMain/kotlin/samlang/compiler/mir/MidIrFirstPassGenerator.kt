@@ -8,7 +8,6 @@ import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpressionVisitor
 import samlang.ast.hir.HighIrStatement
-import samlang.ast.hir.HighIrStatement.ClosureApplication
 import samlang.ast.hir.HighIrStatement.FunctionApplication
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDefinition
@@ -19,11 +18,9 @@ import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.ADD
 import samlang.ast.mir.MidIrExpression.Companion.CONST
 import samlang.ast.mir.MidIrExpression.Companion.EIGHT
-import samlang.ast.mir.MidIrExpression.Companion.EQ
 import samlang.ast.mir.MidIrExpression.Companion.IMMUTABLE_MEM
 import samlang.ast.mir.MidIrExpression.Companion.NAME
 import samlang.ast.mir.MidIrExpression.Companion.OP
-import samlang.ast.mir.MidIrExpression.Companion.ZERO
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
 import samlang.ast.mir.MidIrStatement.Companion.CJUMP
@@ -52,52 +49,11 @@ internal class MidIrFirstPassGenerator(
         override fun visit(statement: FunctionApplication): List<MidIrStatement> =
             listOf(
                 CALL_FUNCTION(
-                    functionName = statement.functionName,
+                    expression = translate(expression = statement.functionExpression),
                     arguments = statement.arguments.map { translate(expression = it) },
                     returnCollector = allocator.allocateTemp(variableName = statement.resultCollector)
                 )
             )
-
-        override fun visit(statement: ClosureApplication): List<MidIrStatement> {
-            /**
-             * Closure ABI:
-             * {
-             *    __length__: 2
-             *    [0]: reference to the function
-             *    [1]: context
-             * }
-             *
-             * If context is NULL (0), then it will directly call the function like functionExpr(...restArguments).
-             * If context is NONNULL, then it will call functionExpr(context, ...restArguments);
-             */
-            val statements = mutableListOf<MidIrStatement>()
-            val arguments = statement.arguments.map { translate(expression = it) }
-            val closureTemp = allocator.allocateTemp()
-            val contextTemp = allocator.allocateTemp()
-            val collectorTemp = allocator.allocateTemp(variableName = statement.resultCollector)
-            val simpleCaseLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_SIMPLE")
-            val complexCaseLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_COMPLEX")
-            val endLabel = allocator.allocateLabelWithAnnotation(annotation = "CLOSURE_APP_END")
-            statements += MOVE(destination = closureTemp, source = translate(expression = statement.functionExpression))
-            statements += MOVE(destination = contextTemp, source = IMMUTABLE_MEM(ADD(e1 = closureTemp, e2 = CONST(value = 8))))
-            statements += CJUMP(condition = EQ(e1 = contextTemp, e2 = ZERO), label1 = simpleCaseLabel, label2 = complexCaseLabel)
-            statements += Label(name = simpleCaseLabel)
-            // No context (context is null)
-            statements += CALL_FUNCTION(
-                expression = IMMUTABLE_MEM(expression = closureTemp),
-                arguments = arguments,
-                returnCollector = collectorTemp
-            )
-            statements += Jump(label = endLabel)
-            statements += Label(name = complexCaseLabel)
-            statements += CALL_FUNCTION(
-                expression = IMMUTABLE_MEM(expression = closureTemp),
-                arguments = mutableListOf<MidIrExpression>(contextTemp).apply { addAll(arguments) },
-                returnCollector = collectorTemp
-            )
-            statements += Label(name = endLabel)
-            return statements
-        }
 
         override fun visit(statement: IfElse): List<MidIrStatement> {
             val sequence = mutableListOf<MidIrStatement>()
