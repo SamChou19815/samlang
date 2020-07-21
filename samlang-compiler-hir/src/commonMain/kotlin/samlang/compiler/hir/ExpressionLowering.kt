@@ -11,7 +11,6 @@ import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Literal
-import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrStatement
@@ -20,6 +19,7 @@ import samlang.ast.hir.HighIrStatement.FunctionApplication
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDefinition
 import samlang.ast.hir.HighIrStatement.Return
+import samlang.ast.hir.HighIrStatement.StructInitialization
 import samlang.ast.lang.Expression
 import samlang.ast.lang.ExpressionVisitor
 import samlang.ast.lang.Module
@@ -113,21 +113,33 @@ private class ExpressionLoweringVisitor(
     override fun visit(expression: Expression.Variable, context: Unit): LoweringResult =
         Variable(name = expression.name).asLoweringResult()
 
-    override fun visit(expression: Expression.ClassMember, context: Unit): LoweringResult =
-        StructConstructor(
-            expressionList = listOf(
-                HighIrExpression.Name(this.getFunctionName(expression.className, expression.memberName)),
-                HighIrExpression.FALSE
-            )
-        ).asLoweringResult()
+    override fun visit(expression: Expression.ClassMember, context: Unit): LoweringResult {
+        val structVariableName = allocateTemporaryVariable()
+        return LoweringResult(
+            statements = listOf(
+                StructInitialization(
+                    structVariableName = structVariableName,
+                    expressionList = listOf(
+                        HighIrExpression.Name(this.getFunctionName(expression.className, expression.memberName)),
+                        HighIrExpression.FALSE
+                    )
+                )
+            ),
+            expression = Variable(structVariableName)
+        )
+    }
 
     override fun visit(expression: Expression.TupleConstructor, context: Unit): LoweringResult {
         val loweredStatements = mutableListOf<HighIrStatement>()
         val loweredExpressionList = expression.expressionList.map {
             it.getLoweredAndAddStatements(statements = loweredStatements)
         }
-        return StructConstructor(expressionList = loweredExpressionList)
-            .asLoweringResult(statements = loweredStatements)
+        val tupleVariableName = allocateTemporaryVariable()
+        loweredStatements += StructInitialization(
+            structVariableName = tupleVariableName,
+            expressionList = loweredExpressionList
+        )
+        return LoweringResult(statements = loweredStatements, expression = Variable(tupleVariableName))
     }
 
     override fun visit(expression: Expression.ObjectConstructor, context: Unit): LoweringResult {
@@ -152,18 +164,25 @@ private class ExpressionLoweringVisitor(
                 }
             }
         }
-        return StructConstructor(expressionList = loweredFields)
-            .asLoweringResult(statements = loweredStatements)
+        val objectName = allocateTemporaryVariable()
+        loweredStatements += StructInitialization(
+            structVariableName = objectName,
+            expressionList = loweredFields
+        )
+        return LoweringResult(statements = loweredStatements, expression = Variable(objectName))
     }
 
     override fun visit(expression: Expression.VariantConstructor, context: Unit): LoweringResult {
         val result = expression.data.lower()
-        return StructConstructor(
+        val variantName = allocateTemporaryVariable()
+        val loweredStatements = result.statements + StructInitialization(
+            structVariableName = variantName,
             expressionList = listOf(
                 HighIrExpression.literal(value = expression.tagOrder.toLong()),
                 result.expression
             )
-        ).asLoweringResult(statements = result.statements)
+        )
+        return LoweringResult(statements = loweredStatements, expression = Variable(variantName))
     }
 
     override fun visit(expression: Expression.FieldAccess, context: Unit): LoweringResult {
@@ -176,7 +195,9 @@ private class ExpressionLoweringVisitor(
 
     override fun visit(expression: Expression.MethodAccess, context: Unit): LoweringResult {
         val result = expression.expression.lower()
-        return StructConstructor(
+        val closureName = allocateTemporaryVariable()
+        val loweredStatements = result.statements + StructInitialization(
+            structVariableName = closureName,
             expressionList = listOf(
                 HighIrExpression.Name(
                     name = this.getFunctionName(
@@ -186,7 +207,8 @@ private class ExpressionLoweringVisitor(
                 ),
                 result.expression
             )
-        ).asLoweringResult(statements = result.statements)
+        )
+        return LoweringResult(statements = loweredStatements, expression = Variable(closureName))
     }
 
     override fun visit(expression: Expression.Unary, context: Unit): LoweringResult {
@@ -448,16 +470,23 @@ private class ExpressionLoweringVisitor(
         val syntheticLambda = createSyntheticLambdaFunction(expression)
         syntheticFunctions += syntheticLambda
 
-        return StructConstructor(
-            expressionList = listOf(
-                HighIrExpression.Name(syntheticLambda.name),
-                if (expression.captured.isNotEmpty()) {
-                    StructConstructor(expressionList = expression.captured.keys.map { Variable(it) })
-                } else {
-                    HighIrExpression.literal(value = 1L) // A dummy value that is not zero
-                }
+        val closureName = allocateTemporaryVariable()
+        val loweredStatements = mutableListOf<HighIrStatement>()
+        val closureContext = if (expression.captured.isNotEmpty()) {
+            val contextName = allocateTemporaryVariable()
+            loweredStatements += StructInitialization(
+                structVariableName = contextName,
+                expressionList = expression.captured.keys.map { Variable(it) }
             )
-        ).asLoweringResult()
+            Variable(contextName)
+        } else {
+            HighIrExpression.literal(value = 1L) // A dummy value that is not zero
+        }
+        loweredStatements += StructInitialization(
+            structVariableName = closureName,
+            expressionList = listOf(HighIrExpression.Name(syntheticLambda.name), closureContext)
+        )
+        return LoweringResult(statements = loweredStatements, expression = Variable(closureName))
     }
 
     private fun createSyntheticLambdaFunction(expression: Expression.Lambda): HighIrFunction {

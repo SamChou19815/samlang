@@ -6,7 +6,6 @@ import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.IndexAccess
 import samlang.ast.hir.HighIrExpression.Literal
-import samlang.ast.hir.HighIrExpression.StructConstructor
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpressionVisitor
 import samlang.ast.hir.HighIrStatement
@@ -15,6 +14,7 @@ import samlang.ast.hir.HighIrStatement.FunctionApplication
 import samlang.ast.hir.HighIrStatement.IfElse
 import samlang.ast.hir.HighIrStatement.LetDefinition
 import samlang.ast.hir.HighIrStatement.Return
+import samlang.ast.hir.HighIrStatement.StructInitialization
 import samlang.ast.hir.HighIrStatementVisitor
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.ADD
@@ -149,6 +149,21 @@ internal class MidIrFirstPassGenerator(
                 )
         }
 
+        override fun visit(statement: StructInitialization): List<MidIrStatement> {
+            val structTemporary = allocator.allocateTemp(variableName = statement.structVariableName)
+            val statements = mutableListOf<MidIrStatement>()
+            statements += MALLOC(structTemporary, CONST(value = statement.expressionList.size * 8L))
+            statement.expressionList.forEachIndexed { index, subExpression ->
+                val sourceResult = translate(expression = subExpression)
+                statements += sourceResult.statements
+                statements += MOVE_IMMUTABLE_MEM(
+                    destination = IMMUTABLE_MEM(expression = ADD(e1 = structTemporary, e2 = CONST(value = index * 8L))),
+                    source = sourceResult.expression
+                )
+            }
+            return statements
+        }
+
         override fun visit(statement: Return): List<MidIrStatement> {
             val returnedExpression = statement.expression ?: return listOf(MidIrStatement.Return())
             val result = translate(returnedExpression)
@@ -182,21 +197,6 @@ internal class MidIrFirstPassGenerator(
             statements = emptyList(),
             expression = allocator.getTemporaryByVariable(variableName = expression.name)
         )
-
-        override fun visit(expression: StructConstructor): ExprSequence {
-            val structTemporary = allocator.allocateTemp()
-            val statements = mutableListOf<MidIrStatement>()
-            statements += MALLOC(structTemporary, CONST(value = expression.expressionList.size * 8L))
-            expression.expressionList.forEachIndexed { index, subExpression ->
-                val sourceResult = translate(expression = subExpression)
-                statements += sourceResult.statements
-                statements += MOVE_IMMUTABLE_MEM(
-                    destination = IMMUTABLE_MEM(expression = ADD(e1 = structTemporary, e2 = CONST(value = index * 8L))),
-                    source = sourceResult.expression
-                )
-            }
-            return ExprSequence(statements = statements, expression = structTemporary)
-        }
 
         override fun visit(expression: IndexAccess): ExprSequence {
             val result = translate(expression = expression.expression)

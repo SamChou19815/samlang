@@ -14,7 +14,6 @@ import {
   HIR_VARIABLE,
   HIR_FALSE,
   HIR_TRUE,
-  HIR_STRUCT_CONSTRUCTOR,
   HIR_INT,
   HIR_INDEX_ACCESS,
   HIR_FUNCTION_CALL,
@@ -22,6 +21,7 @@ import {
   HIR_BINARY,
   HIR_IF_ELSE,
   HIR_LET,
+  HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
 } from '../../../ast/hir/hir-expressions';
 import {
@@ -112,7 +112,13 @@ it('ClassMember lowering works.', () => {
       memberNameRange: Range.DUMMY,
     }),
     {
-      expression: HIR_STRUCT_CONSTRUCTOR([HIR_NAME('_module__class_A_function_b'), HIR_FALSE]),
+      statements: [
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: '_LOWERING_0',
+          expressionList: [HIR_NAME('_module__class_A_function_b'), HIR_FALSE],
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
 });
@@ -120,7 +126,12 @@ it('ClassMember lowering works.', () => {
 it('Lowering to StructConstructor works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_TUPLE_CONSTRUCTOR({ range: Range.DUMMY, type: tupleType([]), expressions: [THIS] }),
-    { expression: HIR_STRUCT_CONSTRUCTOR([IR_THIS]) }
+    {
+      statements: [
+        HIR_STRUCT_INITIALIZATION({ structVariableName: '_LOWERING_0', expressionList: [IR_THIS] }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
+    }
   );
 
   expectCorrectlyLowered(
@@ -132,7 +143,15 @@ it('Lowering to StructConstructor works.', () => {
         { range: Range.DUMMY, type: unitType, name: 'bar' },
       ],
     }),
-    { expression: HIR_STRUCT_CONSTRUCTOR([IR_THIS, HIR_VARIABLE('bar')]) }
+    {
+      statements: [
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: '_LOWERING_0',
+          expressionList: [IR_THIS, HIR_VARIABLE('bar')],
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
+    }
   );
 
   expectCorrectlyLowered(
@@ -143,7 +162,15 @@ it('Lowering to StructConstructor works.', () => {
       tagOrder: 1,
       data: THIS,
     }),
-    { expression: HIR_STRUCT_CONSTRUCTOR([HIR_INT(BigInt(1)), IR_THIS]) }
+    {
+      statements: [
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: '_LOWERING_0',
+          expressionList: [HIR_INT(BigInt(1)), IR_THIS],
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
+    }
   );
 });
 
@@ -169,7 +196,13 @@ it('MethodAccess lowering works.', () => {
       methodName: 'foo',
     }),
     {
-      expression: HIR_STRUCT_CONSTRUCTOR([HIR_NAME('_module__class_Dummy_function_foo'), IR_THIS]),
+      statements: [
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: '_LOWERING_0',
+          expressionList: [HIR_NAME('_module__class_Dummy_function_foo'), IR_THIS],
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
 });
@@ -451,11 +484,20 @@ it('Lambda lowering works.', () => {
           ],
         },
       ],
-      statements: [],
-      expression: HIR_STRUCT_CONSTRUCTOR([
-        HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
-        HIR_STRUCT_CONSTRUCTOR([HIR_VARIABLE('a')]),
-      ]),
+      statements: [
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: '_LOWERING_1',
+          expressionList: [HIR_VARIABLE('a')],
+        }),
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: '_LOWERING_0',
+          expressionList: [
+            HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
+            HIR_VARIABLE('_LOWERING_1'),
+          ],
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
 
@@ -485,11 +527,20 @@ it('Lambda lowering works.', () => {
           ],
         },
       ],
-      statements: [],
-      expression: HIR_STRUCT_CONSTRUCTOR([
-        HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
-        HIR_STRUCT_CONSTRUCTOR([HIR_VARIABLE('a')]),
-      ]),
+      statements: [
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: '_LOWERING_1',
+          expressionList: [HIR_VARIABLE('a')],
+        }),
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: '_LOWERING_0',
+          expressionList: [
+            HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
+            HIR_VARIABLE('_LOWERING_1'),
+          ],
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
 
@@ -519,11 +570,20 @@ it('Lambda lowering works.', () => {
           ],
         },
       ],
-      statements: [],
-      expression: HIR_STRUCT_CONSTRUCTOR([
-        HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
-        HIR_STRUCT_CONSTRUCTOR([HIR_VARIABLE('a')]),
-      ]),
+      statements: [
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: '_LOWERING_1',
+          expressionList: [HIR_VARIABLE('a')],
+        }),
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: '_LOWERING_0',
+          expressionList: [
+            HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
+            HIR_VARIABLE('_LOWERING_1'),
+          ],
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
 
@@ -544,11 +604,16 @@ it('Lambda lowering works.', () => {
           body: [HIR_RETURN(IR_THIS)],
         },
       ],
-      statements: [],
-      expression: HIR_STRUCT_CONSTRUCTOR([
-        HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
-        HIR_INT(BigInt(1)),
-      ]),
+      statements: [
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: '_LOWERING_0',
+          expressionList: [
+            HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
+            HIR_INT(BigInt(1)),
+          ],
+        }),
+      ],
+      expression: HIR_VARIABLE('_LOWERING_0'),
     }
   );
 });

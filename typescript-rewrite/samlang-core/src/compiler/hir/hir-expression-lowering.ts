@@ -16,7 +16,6 @@ import {
   HIR_VARIABLE,
   HIR_FALSE,
   HIR_TRUE,
-  HIR_STRUCT_CONSTRUCTOR,
   HIR_INT,
   HIR_INDEX_ACCESS,
   HIR_FUNCTION_CALL,
@@ -24,11 +23,13 @@ import {
   HIR_BINARY,
   HIR_IF_ELSE,
   HIR_LET,
+  HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
 } from '../../ast/hir/hir-expressions';
 import type { HighIRFunction } from '../../ast/hir/hir-toplevel';
 import type {
   SamlangExpression,
+  ClassMemberExpression,
   TupleConstructorExpression,
   ObjectConstructorExpression,
   VariantConstructorExpression,
@@ -118,13 +119,7 @@ class HighIRExpressionLoweringManager {
       case 'VariableExpression':
         return { statements: [], expression: HIR_VARIABLE(expression.name) };
       case 'ClassMemberExpression':
-        return {
-          statements: [],
-          expression: HIR_STRUCT_CONSTRUCTOR([
-            HIR_NAME(this.getFunctionName(expression.className, expression.memberName)),
-            HIR_FALSE,
-          ]),
-        };
+        return this.lowerClassMember(expression);
       case 'TupleConstructorExpression':
         return this.lowerTupleConstructor(expression);
       case 'ObjectConstructorExpression':
@@ -156,16 +151,38 @@ class HighIRExpressionLoweringManager {
     }
   };
 
+  private lowerClassMember(expression: ClassMemberExpression): HighIRExpressionLoweringResult {
+    const structVariableName = this.allocateTemporaryVariable();
+    return {
+      statements: [
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName,
+          expressionList: [
+            HIR_NAME(this.getFunctionName(expression.className, expression.memberName)),
+            HIR_FALSE,
+          ],
+        }),
+      ],
+      expression: HIR_VARIABLE(structVariableName),
+    };
+  }
+
   private lowerTupleConstructor(
     expression: TupleConstructorExpression
   ): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
+    const tupleVariableName = this.allocateTemporaryVariable();
     const loweredExpressions = expression.expressions.map((subExpression) =>
       this.loweredAndAddStatements(subExpression, loweredStatements)
     );
     return {
-      statements: loweredStatements,
-      expression: HIR_STRUCT_CONSTRUCTOR(loweredExpressions),
+      statements: [
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: tupleVariableName,
+          expressionList: loweredExpressions,
+        }),
+      ],
+      expression: HIR_VARIABLE(tupleVariableName),
     };
   }
 
@@ -185,19 +202,33 @@ class HighIRExpressionLoweringManager {
         loweredStatements
       )
     );
+    const structVariableName = this.allocateTemporaryVariable();
+    loweredStatements.push(
+      HIR_STRUCT_INITIALIZATION({
+        structVariableName,
+        expressionList: loweredFields,
+      })
+    );
     return {
       statements: loweredStatements,
-      expression: HIR_STRUCT_CONSTRUCTOR(loweredFields),
+      expression: HIR_VARIABLE(structVariableName),
     };
   }
 
   private lowerVariantConstructor(
     expression: VariantConstructorExpression
   ): HighIRExpressionLoweringResult {
+    const structVariableName = this.allocateTemporaryVariable();
     const result = this.lower(expression.data);
     return {
-      statements: result.statements,
-      expression: HIR_STRUCT_CONSTRUCTOR([HIR_INT(BigInt(expression.tagOrder)), result.expression]),
+      statements: [
+        ...result.statements,
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName,
+          expressionList: [HIR_INT(BigInt(expression.tagOrder)), result.expression],
+        }),
+      ],
+      expression: HIR_VARIABLE(structVariableName),
     };
   }
 
@@ -210,18 +241,25 @@ class HighIRExpressionLoweringManager {
   }
 
   private lowerMethodAccess(expression: MethodAccessExpression): HighIRExpressionLoweringResult {
+    const structVariableName = this.allocateTemporaryVariable();
     const result = this.lower(expression.expression);
     return {
-      statements: result.statements,
-      expression: HIR_STRUCT_CONSTRUCTOR([
-        HIR_NAME(
-          this.getFunctionName(
-            (expression.expression.type as IdentifierType).identifier,
-            expression.methodName
-          )
-        ),
-        result.expression,
-      ]),
+      statements: [
+        ...result.statements,
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName,
+          expressionList: [
+            HIR_NAME(
+              this.getFunctionName(
+                (expression.expression.type as IdentifierType).identifier,
+                expression.methodName
+              )
+            ),
+            result.expression,
+          ],
+        }),
+      ],
+      expression: HIR_VARIABLE(structVariableName),
     };
   }
 
@@ -535,15 +573,31 @@ class HighIRExpressionLoweringManager {
     this.syntheticFunctions.push(syntheticLambda);
 
     const captured = Object.keys(expression.captured);
+    const loweredStatements: HighIRStatement[] = [];
+    const structVariableName = this.allocateTemporaryVariable();
+    let context: HighIRExpression;
+    if (captured.length === 0) {
+      // 1: A dummy value that is not zero, used to indicate nonnull context
+      context = HIR_INT(BigInt(1));
+    } else {
+      const contextName = this.allocateTemporaryVariable();
+      loweredStatements.push(
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: contextName,
+          expressionList: captured.map(HIR_VARIABLE),
+        })
+      );
+      context = HIR_VARIABLE(contextName);
+    }
+    loweredStatements.push(
+      HIR_STRUCT_INITIALIZATION({
+        structVariableName,
+        expressionList: [HIR_NAME(syntheticLambda.name), context],
+      })
+    );
     return {
-      statements: [],
-      expression: HIR_STRUCT_CONSTRUCTOR([
-        HIR_NAME(syntheticLambda.name),
-        captured.length === 0
-          ? // 1: A dummy value that is not zero, used to indicate nonnull context
-            HIR_INT(BigInt(1))
-          : HIR_STRUCT_CONSTRUCTOR(captured.map(HIR_VARIABLE)),
-      ]),
+      statements: loweredStatements,
+      expression: HIR_VARIABLE(structVariableName),
     };
   }
 

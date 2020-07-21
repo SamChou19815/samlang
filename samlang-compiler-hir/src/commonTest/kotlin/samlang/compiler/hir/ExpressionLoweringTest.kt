@@ -47,55 +47,6 @@ class ExpressionLoweringTest {
     @Test
     fun expressionOnlyLoweringWorks03() {
         assertCorrectlyLowered(
-            expression = Expression.TupleConstructor(
-                range = dummyRange,
-                type = Type.TupleType(mappings = listOf()),
-                expressionList = listOf(THIS)
-            ),
-            expectedExpression = HighIrExpression.StructConstructor(expressionList = listOf(IR_THIS))
-        )
-    }
-
-    @Test
-    fun expressionOnlyLoweringWorks04() {
-        assertCorrectlyLowered(
-            expression = Expression.ObjectConstructor(
-                range = dummyRange,
-                type = id(identifier = "Foo"),
-                fieldDeclarations = listOf(
-                    Expression.ObjectConstructor.FieldConstructor.Field(
-                        range = dummyRange, type = unit, name = "foo", expression = THIS
-                    ),
-                    Expression.ObjectConstructor.FieldConstructor.FieldShorthand(
-                        range = dummyRange, type = unit, name = "bar"
-                    )
-                )
-            ),
-            expectedExpression = HighIrExpression.StructConstructor(
-                expressionList = listOf(IR_THIS, HighIrExpression.Variable(name = "bar"))
-            )
-        )
-    }
-
-    @Test
-    fun expressionOnlyLoweringWorks05() {
-        assertCorrectlyLowered(
-            expression = Expression.VariantConstructor(
-                range = dummyRange,
-                type = id(identifier = "Foo"),
-                tag = "Foo",
-                tagOrder = 1,
-                data = THIS
-            ),
-            expectedExpression = HighIrExpression.StructConstructor(
-                expressionList = listOf(HighIrExpression.literal(value = 1L), IR_THIS)
-            )
-        )
-    }
-
-    @Test
-    fun expressionOnlyLoweringWorks06() {
-        assertCorrectlyLowered(
             expression = Expression.FieldAccess(
                 range = dummyRange, type = unit, expression = THIS, fieldName = "foo", fieldOrder = 0
             ),

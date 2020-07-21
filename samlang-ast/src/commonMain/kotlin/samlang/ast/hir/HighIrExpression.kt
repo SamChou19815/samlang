@@ -20,12 +20,6 @@ sealed class HighIrExpression {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
-    data class StructConstructor(
-        val expressionList: List<HighIrExpression>
-    ) : HighIrExpression() {
-        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
-    }
-
     data class IndexAccess(
         val expression: HighIrExpression,
         val index: Int

@@ -20,11 +20,6 @@ export interface HighIRVariableExpression extends BaseHighIRExpression {
   readonly name: string;
 }
 
-export interface HighIRStructConstructorExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRStructConstructorExpression';
-  readonly expressionList: readonly HighIRExpression[];
-}
-
 export interface HighIRIndexAccessExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRIndexAccessExpression';
   readonly expression: HighIRExpression;
@@ -42,7 +37,6 @@ export type HighIRExpression =
   | HighIRLiteralExpression
   | HighIRNameExpression
   | HighIRVariableExpression
-  | HighIRStructConstructorExpression
   | HighIRIndexAccessExpression
   | HighIRBinaryExpression;
 
@@ -82,6 +76,12 @@ export interface HighIRLetDefinitionStatement extends BaseHighIRStatement {
   readonly assignedExpression: HighIRExpression;
 }
 
+export interface HighIRStructInitializationStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRStructInitializationStatement';
+  readonly structVariableName: string;
+  readonly expressionList: readonly HighIRExpression[];
+}
+
 export interface HighIRReturnStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRReturnStatement';
   readonly expression?: HighIRExpression;
@@ -92,6 +92,7 @@ export type HighIRStatement =
   | HighIRClosureCallStatement
   | HighIRIfElseStatement
   | HighIRLetDefinitionStatement
+  | HighIRStructInitializationStatement
   | HighIRReturnStatement;
 
 type ConstructorArgumentObject<E extends BaseHighIRExpression | BaseHighIRStatement> = Omit<
@@ -127,13 +128,6 @@ export const HIR_NAME = (name: string): HighIRNameExpression => ({
 export const HIR_VARIABLE = (name: string): HighIRVariableExpression => ({
   __type__: 'HighIRVariableExpression',
   name,
-});
-
-export const HIR_STRUCT_CONSTRUCTOR = (
-  expressionList: readonly HighIRExpression[]
-): HighIRStructConstructorExpression => ({
-  __type__: 'HighIRStructConstructorExpression',
-  expressionList,
 });
 
 export const HIR_INDEX_ACCESS = ({
@@ -196,6 +190,17 @@ export const HIR_LET = ({
   __type__: 'HighIRLetDefinitionStatement',
   name,
   assignedExpression,
+});
+
+export const HIR_STRUCT_INITIALIZATION = ({
+  structVariableName,
+  expressionList,
+}: ConstructorArgumentObject<
+  HighIRStructInitializationStatement
+>): HighIRStructInitializationStatement => ({
+  __type__: 'HighIRStructInitializationStatement',
+  structVariableName,
+  expressionList,
 });
 
 export const HIR_RETURN = (expression?: HighIRExpression): HighIRReturnStatement => ({

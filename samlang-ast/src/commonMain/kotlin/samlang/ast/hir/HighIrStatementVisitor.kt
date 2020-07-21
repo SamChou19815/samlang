@@ -11,5 +11,6 @@ interface HighIrStatementVisitor<T> {
     fun visit(statement: HighIrStatement.ClosureApplication): T
     fun visit(statement: HighIrStatement.IfElse): T
     fun visit(statement: HighIrStatement.LetDefinition): T
+    fun visit(statement: HighIrStatement.StructInitialization): T
     fun visit(statement: HighIrStatement.Return): T
 }
