@@ -34,7 +34,7 @@ class MidIrGenerator private constructor(
         )
         val allocatedArgs = mutableListOf<Temporary>()
         function.parameters.forEach { allocatedArgs += allocator.allocateTemp(variableName = it) }
-        val (loweredStatements, stringGlobalVariables) = MidIrFirstPassGenerator.translate(allocator, function.body)
+        val (loweredStatements, stringGlobalVariables) = MidIrLoweringTranslator.translate(allocator, function.body)
         globalVariables += stringGlobalVariables
         functions += MidIrFunction(
             functionName = encodedFunctionName,
