@@ -43,16 +43,3 @@ kotlin {
         }
     }
 }
-
-ktlint {
-    disabledRules.set(
-        setOf(
-            "no-wildcard-imports", "import-ordering", "no-unused-imports", "modifier-order", "final-newline"
-        )
-    )
-    filter {
-        exclude("**/build/**")
-        exclude("**/lib.es*")
-        exclude("**/*.module_@dev-sam_*")
-    }
-}
