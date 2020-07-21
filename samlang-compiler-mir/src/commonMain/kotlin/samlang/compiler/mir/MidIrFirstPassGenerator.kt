@@ -5,7 +5,6 @@ import samlang.ast.common.IrNameEncoder
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.IndexAccess
-import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrExpressionVisitor
 import samlang.ast.hir.HighIrStatement
@@ -156,19 +155,17 @@ internal class MidIrFirstPassGenerator(
     }
 
     private inner class ExpressionGenerator : HighIrExpressionVisitor<MidIrExpression> {
-        override fun visit(expression: Literal): MidIrExpression =
-            when (val literal = expression.literal) {
-                is samlang.ast.common.Literal.BoolLiteral -> CONST(value = if (literal.value) 1 else 0)
-                is samlang.ast.common.Literal.IntLiteral -> CONST(value = literal.value)
-                is samlang.ast.common.Literal.StringLiteral -> {
-                    val value = literal.value
-                    val contentVariable = allocator
-                        .globalResourceAllocator
-                        .allocateStringArrayGlobalVariable(string = value)
-                    stringGlobalVariableCollector += contentVariable
-                    ADD(e1 = NAME(name = contentVariable.name), e2 = EIGHT)
-                }
-            }
+        override fun visit(expression: HighIrExpression.IntLiteral): MidIrExpression =
+            CONST(value = expression.value)
+
+        override fun visit(expression: HighIrExpression.StringLiteral): MidIrExpression {
+            val value = expression.value
+            val contentVariable = allocator
+                .globalResourceAllocator
+                .allocateStringArrayGlobalVariable(string = value)
+            stringGlobalVariableCollector += contentVariable
+            return ADD(e1 = NAME(name = contentVariable.name), e2 = EIGHT)
+        }
 
         override fun visit(expression: HighIrExpression.Name): MidIrExpression =
             NAME(name = expression.name)

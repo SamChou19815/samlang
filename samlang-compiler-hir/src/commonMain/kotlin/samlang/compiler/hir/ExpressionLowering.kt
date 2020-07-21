@@ -10,7 +10,6 @@ import samlang.ast.common.UnaryOperator
 import samlang.ast.hir.HighIrExpression
 import samlang.ast.hir.HighIrExpression.Binary
 import samlang.ast.hir.HighIrExpression.IndexAccess
-import samlang.ast.hir.HighIrExpression.Literal
 import samlang.ast.hir.HighIrExpression.Variable
 import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrStatement
@@ -53,7 +52,7 @@ private fun HighIrExpression.asLoweringResult(statements: List<HighIrStatement> 
     LoweringResult(statements = statements, expression = this)
 
 private fun List<HighIrStatement>.asLoweringResult(): LoweringResult =
-    LoweringResult(statements = this, expression = HighIrExpression.FALSE)
+    LoweringResult(statements = this, expression = HighIrExpression.ZERO)
 
 private class ExpressionLoweringVisitor(
     private val moduleReference: ModuleReference,
@@ -104,8 +103,14 @@ private class ExpressionLoweringVisitor(
         .firstOrNull()
         ?: this.moduleReference
 
-    override fun visit(expression: Expression.Literal, context: Unit): LoweringResult =
-        Literal(literal = expression.literal).asLoweringResult()
+    override fun visit(expression: Expression.Literal, context: Unit): LoweringResult {
+        val loweredLiteral = when (val literal = expression.literal) {
+            is samlang.ast.common.Literal.BoolLiteral -> HighIrExpression.IntLiteral(value = if (literal.value) 1 else 0)
+            is samlang.ast.common.Literal.IntLiteral -> HighIrExpression.IntLiteral(value = literal.value)
+            is samlang.ast.common.Literal.StringLiteral -> HighIrExpression.StringLiteral(value = literal.value)
+        }
+        return loweredLiteral.asLoweringResult()
+    }
 
     override fun visit(expression: Expression.This, context: Unit): LoweringResult =
         Variable(name = "this").asLoweringResult()
@@ -121,7 +126,7 @@ private class ExpressionLoweringVisitor(
                     structVariableName = structVariableName,
                     expressionList = listOf(
                         HighIrExpression.Name(this.getFunctionName(expression.className, expression.memberName)),
-                        HighIrExpression.FALSE
+                        HighIrExpression.ZERO
                     )
                 )
             ),
@@ -178,7 +183,7 @@ private class ExpressionLoweringVisitor(
         val loweredStatements = result.statements + StructInitialization(
             structVariableName = variantName,
             expressionList = listOf(
-                HighIrExpression.literal(value = expression.tagOrder.toLong()),
+                HighIrExpression.IntLiteral(value = expression.tagOrder.toLong()),
                 result.expression
             )
         )
@@ -217,11 +222,11 @@ private class ExpressionLoweringVisitor(
             UnaryOperator.NOT -> Binary(
                 operator = IrOperator.XOR,
                 e1 = result.expression,
-                e2 = HighIrExpression.literal(value = 1L)
+                e2 = HighIrExpression.IntLiteral(value = 1L)
             ).asLoweringResult(statements = result.statements)
             UnaryOperator.NEG -> Binary(
                 operator = IrOperator.SUB,
-                e1 = HighIrExpression.literal(value = 0L),
+                e1 = HighIrExpression.ZERO,
                 e2 = result.expression
             ).asLoweringResult(statements = result.statements)
         }
@@ -236,7 +241,7 @@ private class ExpressionLoweringVisitor(
             arguments = listOf(result.expression),
             resultCollector = allocateTemporaryVariable()
         )
-        return LoweringResult(statements = loweredStatements, expression = HighIrExpression.FALSE)
+        return LoweringResult(statements = loweredStatements, expression = HighIrExpression.ZERO)
     }
 
     override fun visit(expression: Expression.BuiltInFunctionCall, context: Unit): LoweringResult {
@@ -297,7 +302,11 @@ private class ExpressionLoweringVisitor(
         if (expression is Expression.Literal) {
             val literal = expression.literal
             if (literal is samlang.ast.common.Literal.BoolLiteral) {
-                return if (literal.value) HighIrExpression.TRUE.asLoweringResult() else HighIrExpression.FALSE.asLoweringResult()
+                return if (literal.value) {
+                    HighIrExpression.IntLiteral(value = 1L).asLoweringResult()
+                } else {
+                    HighIrExpression.ZERO.asLoweringResult()
+                }
             }
         }
         if (expression !is Expression.Binary) {
@@ -320,7 +329,7 @@ private class ExpressionLoweringVisitor(
                                 *e2Result.statements.toTypedArray(),
                                 LetDefinition(name = temp, assignedExpression = e2Result.expression)
                             ),
-                            s2 = listOf(LetDefinition(name = temp, assignedExpression = HighIrExpression.FALSE))
+                            s2 = listOf(LetDefinition(name = temp, assignedExpression = HighIrExpression.ZERO))
                         )
                     ),
                     expression = Variable(name = temp)
@@ -335,7 +344,9 @@ private class ExpressionLoweringVisitor(
                         *e1Result.statements.toTypedArray(),
                         IfElse(
                             booleanExpression = e1Result.expression,
-                            s1 = listOf(LetDefinition(name = temp, assignedExpression = HighIrExpression.TRUE)),
+                            s1 = listOf(
+                                LetDefinition(name = temp, assignedExpression = HighIrExpression.IntLiteral(value = 1L))
+                            ),
                             s2 = listOf(
                                 *e2Result.statements.toTypedArray(),
                                 LetDefinition(name = temp, assignedExpression = e2Result.expression)
@@ -445,7 +456,7 @@ private class ExpressionLoweringVisitor(
             booleanExpression = Binary(
                 operator = IrOperator.EQ,
                 e1 = Variable(variableForTag),
-                e2 = HighIrExpression.literal(value = loweredMatchingList.last().first.toLong())
+                e2 = HighIrExpression.IntLiteral(value = loweredMatchingList.last().first.toLong())
             ),
             s1 = loweredMatchingList.last().second,
             s2 = emptyList()
@@ -456,7 +467,7 @@ private class ExpressionLoweringVisitor(
                 booleanExpression = Binary(
                     operator = IrOperator.EQ,
                     e1 = Variable(variableForTag),
-                    e2 = HighIrExpression.literal(value = tagOrder.toLong())
+                    e2 = HighIrExpression.IntLiteral(value = tagOrder.toLong())
                 ),
                 s1 = localStatements,
                 s2 = listOf(ifElse)
@@ -480,7 +491,7 @@ private class ExpressionLoweringVisitor(
             )
             Variable(contextName)
         } else {
-            HighIrExpression.literal(value = 1L) // A dummy value that is not zero
+            HighIrExpression.IntLiteral(value = 1L) // A dummy value that is not zero
         }
         loweredStatements += StructInitialization(
             structVariableName = closureName,

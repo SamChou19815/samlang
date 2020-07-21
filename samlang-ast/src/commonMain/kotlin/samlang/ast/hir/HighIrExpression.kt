@@ -6,9 +6,11 @@ import samlang.ast.common.IrOperator
 sealed class HighIrExpression {
     abstract fun <T> accept(visitor: HighIrExpressionVisitor<T>): T
 
-    data class Literal(
-        val literal: samlang.ast.common.Literal
-    ) : HighIrExpression() {
+    data class IntLiteral(val value: Long) : HighIrExpression() {
+        override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
+    }
+
+    data class StringLiteral(val value: String) : HighIrExpression() {
         override fun <T> accept(visitor: HighIrExpressionVisitor<T>): T = visitor.visit(expression = this)
     }
 
@@ -36,13 +38,6 @@ sealed class HighIrExpression {
     }
 
     companion object {
-        val TRUE: Literal = Literal(literal = samlang.ast.common.Literal.TRUE)
-        val FALSE: Literal = Literal(literal = samlang.ast.common.Literal.FALSE)
-
-        fun literal(value: Long): Literal =
-            Literal(literal = samlang.ast.common.Literal.of(value = value))
-
-        fun literal(value: String): Literal =
-            Literal(literal = samlang.ast.common.Literal.of(value = value))
+        val ZERO: IntLiteral = IntLiteral(value = 0)
     }
 }

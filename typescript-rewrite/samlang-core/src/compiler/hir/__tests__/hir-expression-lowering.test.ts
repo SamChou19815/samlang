@@ -12,9 +12,10 @@ import {
 import {
   HIR_NAME,
   HIR_VARIABLE,
-  HIR_FALSE,
-  HIR_TRUE,
+  HIR_ZERO,
+  HIR_ONE,
   HIR_INT,
+  HIR_STRING,
   HIR_INDEX_ACCESS,
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
@@ -28,6 +29,8 @@ import {
   SamlangExpression,
   EXPRESSION_FALSE,
   EXPRESSION_TRUE,
+  EXPRESSION_INT,
+  EXPRESSION_STRING,
   EXPRESSION_THIS,
   EXPRESSION_VARIABLE,
   EXPRESSION_CLASS_MEMBER,
@@ -70,7 +73,7 @@ const expectCorrectlyLowered = (
   {
     syntheticFunctions = [],
     statements = [],
-    expression = HIR_FALSE,
+    expression = HIR_ZERO,
   }: Partial<ReturnType<typeof lowerSamlangExpression>>
 ): void =>
   expect(
@@ -87,7 +90,10 @@ const expectCorrectlyLowered = (
   });
 
 it('Literal lowering works.', () => {
-  expectCorrectlyLowered(EXPRESSION_FALSE(Range.DUMMY), { expression: HIR_FALSE });
+  expectCorrectlyLowered(EXPRESSION_FALSE(Range.DUMMY), { expression: HIR_ZERO });
+  expectCorrectlyLowered(EXPRESSION_TRUE(Range.DUMMY), { expression: HIR_ONE });
+  expectCorrectlyLowered(EXPRESSION_INT(Range.DUMMY, BigInt(0)), { expression: HIR_ZERO });
+  expectCorrectlyLowered(EXPRESSION_STRING(Range.DUMMY, 'foo'), { expression: HIR_STRING('foo') });
 });
 
 it('This lowering works.', () => {
@@ -115,7 +121,7 @@ it('ClassMember lowering works.', () => {
       statements: [
         HIR_STRUCT_INITIALIZATION({
           structVariableName: '_LOWERING_0',
-          expressionList: [HIR_NAME('_module__class_A_function_b'), HIR_FALSE],
+          expressionList: [HIR_NAME('_module__class_A_function_b'), HIR_ZERO],
         }),
       ],
       expression: HIR_VARIABLE('_LOWERING_0'),
@@ -223,7 +229,7 @@ it('Unary lowering works.', () => {
           returnCollector: '_LOWERING_0',
         }),
       ],
-      expression: HIR_BINARY({ operator: '^', e1: HIR_FALSE, e2: HIR_INT(BigInt(1)) }),
+      expression: HIR_BINARY({ operator: '^', e1: HIR_ZERO, e2: HIR_INT(BigInt(1)) }),
     }
   );
 
@@ -242,7 +248,7 @@ it('Unary lowering works.', () => {
           returnCollector: '_LOWERING_0',
         }),
       ],
-      expression: HIR_BINARY({ operator: '-', e1: HIR_INT(BigInt(0)), e2: HIR_FALSE }),
+      expression: HIR_BINARY({ operator: '-', e1: HIR_INT(BigInt(0)), e2: HIR_ZERO }),
     }
   );
 });
@@ -428,9 +434,9 @@ it('Short circuiting binary lowering works.', () => {
     {
       statements: [
         HIR_IF_ELSE({
-          booleanExpression: HIR_TRUE,
+          booleanExpression: HIR_ONE,
           s1: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_VARIABLE('foo') })],
-          s2: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_FALSE })],
+          s2: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_ZERO })],
         }),
       ],
       expression: HIR_VARIABLE('_LOWERING_0'),
@@ -448,9 +454,9 @@ it('Short circuiting binary lowering works.', () => {
     {
       statements: [
         HIR_IF_ELSE({
-          booleanExpression: HIR_TRUE,
-          s1: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_TRUE })],
-          s2: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_FALSE })],
+          booleanExpression: HIR_ONE,
+          s1: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_ONE })],
+          s2: [HIR_LET({ name: '_LOWERING_0', assignedExpression: HIR_ZERO })],
         }),
       ],
       expression: HIR_VARIABLE('_LOWERING_0'),
@@ -652,7 +658,7 @@ it('IfElse lowering works.', () => {
               functionArguments: [IR_THIS],
               returnCollector: '_LOWERING_0',
             }),
-            HIR_LET({ name: '_LOWERING_1', assignedExpression: HIR_FALSE }),
+            HIR_LET({ name: '_LOWERING_1', assignedExpression: HIR_ZERO }),
           ],
           s2: [HIR_LET({ name: '_LOWERING_1', assignedExpression: IR_THIS })],
         }),
@@ -722,7 +728,7 @@ it('Match lowering works.', () => {
                 }),
                 HIR_LET({
                   name: '_LOWERING_2',
-                  assignedExpression: HIR_FALSE,
+                  assignedExpression: HIR_ZERO,
                 }),
               ],
               s2: [],

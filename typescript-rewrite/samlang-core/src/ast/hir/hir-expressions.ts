@@ -1,13 +1,17 @@
 import type { IROperator } from '../common/enums';
-import { Literal, FALSE, TRUE, intLiteralOf } from '../common/literals';
 
 interface BaseHighIRExpression {
   readonly __type__: string;
 }
 
-export interface HighIRLiteralExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRLiteralExpression';
-  readonly literal: Literal;
+export interface HighIRIntLiteralExpression extends BaseHighIRExpression {
+  readonly __type__: 'HighIRIntLiteralExpression';
+  readonly value: bigint;
+}
+
+export interface HighIRStringLiteralExpression extends BaseHighIRExpression {
+  readonly __type__: 'HighIRStringLiteralExpression';
+  readonly value: string;
 }
 
 export interface HighIRNameExpression extends BaseHighIRExpression {
@@ -34,7 +38,8 @@ export interface HighIRBinaryExpression extends BaseHighIRExpression {
 }
 
 export type HighIRExpression =
-  | HighIRLiteralExpression
+  | HighIRIntLiteralExpression
+  | HighIRStringLiteralExpression
   | HighIRNameExpression
   | HighIRVariableExpression
   | HighIRIndexAccessExpression
@@ -100,25 +105,18 @@ type ConstructorArgumentObject<E extends BaseHighIRExpression | BaseHighIRStatem
   '__type__' | 'precedence'
 >;
 
-export const HIR_FALSE: HighIRLiteralExpression = {
-  __type__: 'HighIRLiteralExpression',
-  literal: FALSE,
-};
-
-export const HIR_TRUE: HighIRLiteralExpression = {
-  __type__: 'HighIRLiteralExpression',
-  literal: TRUE,
-};
-
-export const HIR_INT = (value: bigint): HighIRLiteralExpression => ({
-  __type__: 'HighIRLiteralExpression',
-  literal: intLiteralOf(value),
+export const HIR_INT = (value: bigint): HighIRIntLiteralExpression => ({
+  __type__: 'HighIRIntLiteralExpression',
+  value,
 });
 
-export const HIR_LITERAL = (literal: Literal): HighIRLiteralExpression => ({
-  __type__: 'HighIRLiteralExpression',
-  literal,
+export const HIR_STRING = (value: string): HighIRStringLiteralExpression => ({
+  __type__: 'HighIRStringLiteralExpression',
+  value,
 });
+
+export const HIR_ZERO: HighIRIntLiteralExpression = HIR_INT(BigInt(0));
+export const HIR_ONE: HighIRIntLiteralExpression = HIR_INT(BigInt(1));
 
 export const HIR_NAME = (name: string): HighIRNameExpression => ({
   __type__: 'HighIRNameExpression',

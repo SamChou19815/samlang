@@ -11,12 +11,12 @@ import type { IdentifierType } from '../../ast/common/types';
 import {
   HighIRStatement,
   HighIRExpression,
-  HIR_LITERAL,
   HIR_NAME,
   HIR_VARIABLE,
-  HIR_FALSE,
-  HIR_TRUE,
+  HIR_ZERO,
+  HIR_ONE,
   HIR_INT,
+  HIR_STRING,
   HIR_INDEX_ACCESS,
   HIR_FUNCTION_CALL,
   HIR_CLOSURE_CALL,
@@ -113,7 +113,15 @@ class HighIRExpressionLoweringManager {
   readonly lower = (expression: SamlangExpression): HighIRExpressionLoweringResult => {
     switch (expression.__type__) {
       case 'LiteralExpression':
-        return { statements: [], expression: HIR_LITERAL(expression.literal) };
+        switch (expression.literal.type) {
+          case 'BoolLiteral':
+            return { statements: [], expression: expression.literal.value ? HIR_ONE : HIR_ZERO };
+          case 'IntLiteral':
+            return { statements: [], expression: HIR_INT(expression.literal.value) };
+          case 'StringLiteral':
+            return { statements: [], expression: HIR_STRING(expression.literal.value) };
+        }
+      // eslint-disable-next-line no-fallthrough
       case 'ThisExpression':
         return { statements: [], expression: HIR_VARIABLE('this') };
       case 'VariableExpression':
@@ -159,7 +167,7 @@ class HighIRExpressionLoweringManager {
           structVariableName,
           expressionList: [
             HIR_NAME(this.getFunctionName(expression.className, expression.memberName)),
-            HIR_FALSE,
+            HIR_ZERO,
           ],
         }),
       ],
@@ -290,7 +298,7 @@ class HighIRExpressionLoweringManager {
           returnCollector: this.allocateTemporaryVariable(),
         }),
       ],
-      expression: HIR_FALSE,
+      expression: HIR_ZERO,
     };
   }
 
@@ -384,7 +392,7 @@ class HighIRExpressionLoweringManager {
     if (expression.__type__ === 'LiteralExpression' && expression.literal.type === 'BoolLiteral') {
       return {
         statements: [],
-        expression: expression.literal.value ? HIR_TRUE : HIR_FALSE,
+        expression: expression.literal.value ? HIR_ONE : HIR_ZERO,
       };
     }
     if (expression.__type__ !== 'BinaryExpression') {
@@ -409,7 +417,7 @@ class HighIRExpressionLoweringManager {
                 ...e2Result.statements,
                 HIR_LET({ name: temp, assignedExpression: e2Result.expression }),
               ],
-              s2: [HIR_LET({ name: temp, assignedExpression: HIR_FALSE })],
+              s2: [HIR_LET({ name: temp, assignedExpression: HIR_ZERO })],
             }),
           ],
           expression: HIR_VARIABLE(temp),
@@ -424,7 +432,7 @@ class HighIRExpressionLoweringManager {
             ...e1Result.statements,
             HIR_IF_ELSE({
               booleanExpression: e1Result.expression,
-              s1: [HIR_LET({ name: temp, assignedExpression: HIR_TRUE })],
+              s1: [HIR_LET({ name: temp, assignedExpression: HIR_ONE })],
               s2: [
                 ...e2Result.statements,
                 HIR_LET({ name: temp, assignedExpression: e2Result.expression }),
@@ -697,7 +705,7 @@ class HighIRExpressionLoweringManager {
       }
     });
     if (finalExpression == null) {
-      return { statements: loweredStatements, expression: HIR_FALSE };
+      return { statements: loweredStatements, expression: HIR_ZERO };
     }
     const loweredFinalExpression = this.loweredAndAddStatements(finalExpression, loweredStatements);
     return { statements: loweredStatements, expression: loweredFinalExpression };
