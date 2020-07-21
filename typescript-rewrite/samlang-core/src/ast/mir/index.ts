@@ -73,27 +73,27 @@ export interface MidIRLabelStatement extends BaseMidIRStatement {
   readonly name: string;
 }
 
-export interface MidIRCallFunctionStatement<E = MidIRExpression> extends BaseMidIRStatement {
+export interface MidIRCallFunctionStatement extends BaseMidIRStatement {
   readonly __type__: 'MidIRCallFunctionStatement';
-  readonly functionExpression: E;
-  readonly functionArguments: readonly E[];
+  readonly functionExpression: MidIRExpression;
+  readonly functionArguments: readonly MidIRExpression[];
   readonly returnCollectorTemporaryID?: string;
 }
 
-export interface MidIRReturnStatement<E = MidIRExpression> extends BaseMidIRStatement {
+export interface MidIRReturnStatement extends BaseMidIRStatement {
   readonly __type__: 'MidIRReturnStatement';
-  readonly returnedExpression?: E;
+  readonly returnedExpression?: MidIRExpression;
 }
 
-export interface MidIRConditionalJumpFallThrough<E = MidIRExpression> extends BaseMidIRStatement {
+export interface MidIRConditionalJumpFallThrough extends BaseMidIRStatement {
   readonly __type__: 'MidIRConditionalJumpFallThrough';
-  readonly conditionExpression: E;
+  readonly conditionExpression: MidIRExpression;
   readonly label1: string;
 }
 
-export interface MidIRConditionalJumpNoFallThrough<E = MidIRExpression> extends BaseMidIRStatement {
+export interface MidIRConditionalJumpNoFallThrough extends BaseMidIRStatement {
   readonly __type__: 'MidIRConditionalJumpNoFallThrough';
-  readonly conditionExpression: E;
+  readonly conditionExpression: MidIRExpression;
   readonly label1: string;
   readonly label2: string;
 }
@@ -207,13 +207,6 @@ export const MIR_CALL_FUNCTION = (
       : functionNameOrExpression,
   functionArguments,
   returnCollectorTemporaryID,
-});
-
-export const MIR_RETURN_NON_CANONICAL = (
-  returnedExpression?: MidIRExpression
-): MidIRReturnStatement<MidIRExpression> => ({
-  __type__: 'MidIRReturnStatement',
-  returnedExpression,
 });
 
 export const MIR_RETURN = (returnedExpression?: MidIRExpression): MidIRReturnStatement => ({

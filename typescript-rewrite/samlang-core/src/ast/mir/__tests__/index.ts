@@ -13,7 +13,6 @@ import {
   MIR_JUMP,
   MIR_LABEL,
   MIR_CALL_FUNCTION,
-  MIR_RETURN_NON_CANONICAL,
   MIR_RETURN,
   MIR_CJUMP_FALLTHROUGH,
   MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
@@ -54,9 +53,7 @@ it('midIRStatementToString tests', () => {
     midIRStatementToString(MIR_CALL_FUNCTION(MIR_TEMP('foo'), [MIR_ZERO, MIR_ONE], 'bar'))
   ).toBe('bar = foo(0, 1);');
 
-  expect(midIRStatementToString(MIR_RETURN_NON_CANONICAL())).toBe('return;');
   expect(midIRStatementToString(MIR_RETURN())).toBe('return;');
-  expect(midIRStatementToString(MIR_RETURN_NON_CANONICAL(MIR_ZERO))).toBe('return 0;');
   expect(midIRStatementToString(MIR_RETURN(MIR_ZERO))).toBe('return 0;');
 
   expect(midIRStatementToString(MIR_CJUMP_FALLTHROUGH(MIR_ZERO, 'l1'))).toBe('if (0) goto l1;');
