@@ -19,6 +19,7 @@ import {
   MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
   MIR_RETURN,
 } from '../../ast/mir';
+import createMidIRFlexibleOrderOperatorNode from './mir-flexible-op';
 import MidIRResourceAllocator from './mir-resource-allocator';
 
 const mangleVariableForMIR = (variable: string): string => `_${variable}`;
@@ -53,7 +54,7 @@ class MidIRLoweringManager {
           )
         );
       case 'HighIRBinaryExpression':
-        return MIR_OP(
+        return createMidIRFlexibleOrderOperatorNode(
           expression.operator,
           this.lowerHIRExpressionToMIRExpression(expression.e1),
           this.lowerHIRExpressionToMIRExpression(expression.e2)
