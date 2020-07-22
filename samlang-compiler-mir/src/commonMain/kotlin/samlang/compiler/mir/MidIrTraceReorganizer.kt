@@ -20,7 +20,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
     private val labelBlockMap: MutableMap<String, BasicBlock> = mutableMapOf()
     /** The mapping that tells the potential places to go after the block. */
     private val targets: MutableMap<String, List<String>> = mutableMapOf()
-    /** The new trace to be built. */
+    /** The new trace to be built. The list contains the order of the starting labels. */
     private val newTrace: MutableList<String> = mutableListOf()
 
     init {
@@ -168,15 +168,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
         }
     }
 
-    /**
-     * The size function for SizedImmutableStack.
-     *
-     * @param label the label to find size.
-     * @return the size.
-     */
-    private fun getStackSize(label: String): Int {
-        return labelBlockMap[label]!!.instructions.size
-    }
+    private fun getStackSize(label: String): Int = labelBlockMap[label]!!.instructions.size
 
     /**
      * Build a trace starting at the block with the given id.
@@ -239,6 +231,11 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
 
     /**
      * Fix the block control flow graph inconsistencies caused by reordering.
+     *
+     * Potential things to fix:
+     * - Jump is no longer necessary due to reordering
+     * - Jump is missing due to reordering
+     * - Canonicalize CJUMP to CJUMP_FALLTHROUGH
      *
      * @return a list of fixed blocks.
      */
