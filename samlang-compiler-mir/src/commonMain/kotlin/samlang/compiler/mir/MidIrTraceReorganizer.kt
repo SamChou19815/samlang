@@ -22,15 +22,11 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
     private val targets: MutableMap<String, List<String>> = mutableMapOf()
     /** A set of currently unused blocks. */
     private val unusedBlocks: MutableSet<String?> = mutableSetOf()
-    /** The original trace order. */
-    private val originalTrace: ArrayDeque<String> = ArrayDeque()
     /** The new trace to be built. */
     private val newTrace: MutableList<String> = mutableListOf()
 
     init {
-        // build the blocks and targets map for later traversal.
-        initialize(blocksInOriginalOrder)
-        buildTrace()
+        buildTrace(initialize(blocksInOriginalOrder))
     }
 
     /**
@@ -117,8 +113,9 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
      *
      * @param blocksInOriginalOrder a list of blocks in their original order.
      */
-    private fun initialize(blocksInOriginalOrder: List<BasicBlock>) {
+    private fun initialize(blocksInOriginalOrder: List<BasicBlock>): ArrayDeque<String> {
         val len = blocksInOriginalOrder.size
+        val originalTrace = ArrayDeque<String>()
         for (block in blocksInOriginalOrder) {
             val label = block.label
             labelBlockMap[label] = block
@@ -149,12 +146,12 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
             }
             targets[block.label] = targetList
         }
+        return originalTrace
     }
 
-    /**
-     * Build the entire trace.
-     */
-    private fun buildTrace() { // start building the trace at 0 because that's where function starts.
+    /** Build the entire trace. */
+    private fun buildTrace(originalTrace: ArrayDeque<String>) {
+        // start building the trace at 0 because that's where function starts.
         while (true) {
             var labelToStart: String? = null
             while (!originalTrace.isEmpty()) {
