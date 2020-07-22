@@ -16,7 +16,6 @@ import samlang.ast.mir.MidIrStatement.Return
  */
 @ExperimentalStdlibApi
 internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: List<BasicBlock>) {
-    private val emptyTrackStack: SizedImmutableStack<String> = SizedImmutableStack { label -> getStackSize(label) }
     /** The mapping from label to block id. */
     private val labelBlockMap: MutableMap<String, BasicBlock> = mutableMapOf()
     /** The mapping that tells the potential places to go after the block. */
@@ -217,7 +216,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
             return optimal
         }
         val newVisited = visited.add(element = id)
-        var bestTrace = emptyTrackStack
+        var bestTrace = SizedImmutableStack<String> { label -> getStackSize(label) }
         val targetIds = targets[id]!!
         for (nextId in targetIds) {
             val fullTrace = buildTrace(id = nextId, visited = newVisited, memoizedResult = memoizedResult)
