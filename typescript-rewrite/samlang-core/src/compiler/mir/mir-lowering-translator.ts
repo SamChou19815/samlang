@@ -5,6 +5,7 @@ import {
   MidIRExpression,
   // eslint-disable-next-line camelcase
   MidIRStatement_DANGEROUSLY_NON_CANONICAL,
+  MIR_EIGHT,
   MIR_CONST,
   MIR_NAME,
   MIR_TEMP,
@@ -13,20 +14,32 @@ import {
   MIR_CALL_FUNCTION,
   MIR_MOVE_TEMP,
   MIR_MOVE_IMMUTABLE_MEM,
+  MIR_JUMP,
+  MIR_LABEL,
+  MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
   MIR_RETURN,
 } from '../../ast/mir';
+import MidIRResourceAllocator from './mir-resource-allocator';
 
 const mangleVariableForMIR = (variable: string): string => `_${variable}`;
 
 class MidIRLoweringManager {
   readonly stringGlobalVariableCollectors: GlobalVariable[] = [];
 
+  constructor(
+    private readonly allocator: MidIRResourceAllocator,
+    private readonly functionName: string
+  ) {}
+
   lowerHIRExpressionToMIRExpression = (expression: HighIRExpression): MidIRExpression => {
     switch (expression.__type__) {
       case 'HighIRIntLiteralExpression':
         return MIR_CONST(expression.value);
-      case 'HighIRStringLiteralExpression':
-        throw new Error();
+      case 'HighIRStringLiteralExpression': {
+        const contentVariable = this.allocator.allocateStringArrayGlobalVariable(expression.value);
+        this.stringGlobalVariableCollectors.push(contentVariable);
+        return MIR_OP('+', MIR_NAME(contentVariable.name), MIR_EIGHT);
+      }
       case 'HighIRNameExpression':
         return MIR_NAME(expression.name);
       case 'HighIRVariableExpression':
@@ -61,8 +74,33 @@ class MidIRLoweringManager {
             mangleVariableForMIR(statement.returnCollector)
           ),
         ];
-      case 'HighIRIfElseStatement':
-        throw new Error();
+      case 'HighIRIfElseStatement': {
+        const ifBranchLabel = this.allocator.allocateLabelWithAnnotation(
+          this.functionName,
+          'TRUE_BRANCH'
+        );
+        const elseBranchLabel = this.allocator.allocateLabelWithAnnotation(
+          this.functionName,
+          'FALSE_BRANCH'
+        );
+        const endLabel = this.allocator.allocateLabelWithAnnotation(
+          this.functionName,
+          'IF_ELSE_END'
+        );
+        return [
+          MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL(
+            this.lowerHIRExpressionToMIRExpression(statement.booleanExpression),
+            ifBranchLabel,
+            elseBranchLabel
+          ),
+          MIR_LABEL(ifBranchLabel),
+          ...statement.s1.map(this.lowerHIRStatementToMIRNonCanonicalStatements).flat(),
+          MIR_JUMP(endLabel),
+          MIR_LABEL(elseBranchLabel),
+          ...statement.s2.map(this.lowerHIRStatementToMIRNonCanonicalStatements).flat(),
+          MIR_LABEL(endLabel),
+        ];
+      }
       case 'HighIRLetDefinitionStatement':
         return [
           MIR_MOVE_TEMP(
@@ -105,13 +143,15 @@ class MidIRLoweringManager {
 }
 
 const midIRTranslateStatementsAndCollectGlobalStrings = (
+  allocator: MidIRResourceAllocator,
+  functionName: string,
   statements: readonly HighIRStatement[]
 ): {
   // eslint-disable-next-line camelcase
   readonly loweredStatements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[];
   readonly stringGlobalVariables: GlobalVariable[];
 } => {
-  const manager = new MidIRLoweringManager();
+  const manager = new MidIRLoweringManager(allocator, functionName);
   const loweredStatements = statements
     .map(manager.lowerHIRStatementToMIRNonCanonicalStatements)
     .flat();
