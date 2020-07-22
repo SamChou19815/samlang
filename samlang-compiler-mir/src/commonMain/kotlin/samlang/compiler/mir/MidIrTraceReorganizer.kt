@@ -20,8 +20,6 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
     private val labelBlockMap: MutableMap<String, BasicBlock> = mutableMapOf()
     /** The mapping that tells the potential places to go after the block. */
     private val targets: MutableMap<String, List<String>> = mutableMapOf()
-    /** A set of currently unused blocks. */
-    private val unusedBlocks: MutableSet<String?> = mutableSetOf()
     /** The new trace to be built. */
     private val newTrace: MutableList<String> = mutableListOf()
 
@@ -119,7 +117,6 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
         for (block in blocksInOriginalOrder) {
             val label = block.label
             labelBlockMap[label] = block
-            unusedBlocks += label
             originalTrace.addLast(label)
         }
         for (i in 0 until len) {
@@ -151,6 +148,8 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
 
     /** Build the entire trace. */
     private fun buildTrace(originalTrace: ArrayDeque<String>) {
+        val unusedBlocks: MutableSet<String?> = mutableSetOf()
+        unusedBlocks += labelBlockMap.keys
         // start building the trace at 0 because that's where function starts.
         while (true) {
             var labelToStart: String? = null
@@ -165,7 +164,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
             if (labelToStart == null) { // used all the blocks!
                 break
             }
-            buildTrace(labelToStart = labelToStart)
+            buildTrace(labelToStart = labelToStart, unusedBlocks = unusedBlocks)
         }
     }
 
@@ -184,9 +183,13 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
      *
      * @param labelToStart starting block label.
      */
-    private fun buildTrace(labelToStart: String) {
-        val stack = buildTrace(id = labelToStart, visited = persistentSetOf(), memoizedResult = mutableMapOf())
-            ?: error(message = "Impossible!")
+    private fun buildTrace(labelToStart: String, unusedBlocks: MutableSet<String?>) {
+        val stack = buildTrace(
+            id = labelToStart,
+            unusedBlocks = unusedBlocks,
+            visited = persistentSetOf(),
+            memoizedResult = mutableMapOf()
+        ) ?: error(message = "Impossible!")
         val tempList = stack.toReversedOrderedCollection()
         unusedBlocks.removeAll(tempList)
         newTrace.addAll(tempList)
@@ -202,6 +205,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
      */
     private fun buildTrace(
         id: String,
+        unusedBlocks: MutableSet<String?>,
         visited: PersistentSet<String>,
         memoizedResult: MutableMap<String, SizedImmutableStack<String>>
     ): SizedImmutableStack<String>? {
@@ -216,7 +220,12 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
         var bestTrace = SizedImmutableStack<String> { label -> getStackSize(label) }
         val targetIds = targets[id]!!
         for (nextId in targetIds) {
-            val fullTrace = buildTrace(id = nextId, visited = newVisited, memoizedResult = memoizedResult)
+            val fullTrace = buildTrace(
+                id = nextId,
+                unusedBlocks = unusedBlocks,
+                visited = newVisited,
+                memoizedResult = memoizedResult
+            )
             if (fullTrace != null) {
                 if (fullTrace.size > bestTrace.size) {
                     bestTrace = fullTrace
