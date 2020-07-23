@@ -149,7 +149,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
                 visited = persistentSetOf(),
                 memoizedResult = mutableMapOf()
             ) ?: error(message = "Impossible!")
-            val tempList = stack.toReversedOrderedCollection()
+            val tempList = stack.toReversedOrderedCollection().map { it.label }
             unusedBlocks.removeAll(tempList)
             newTrace += tempList
         }
@@ -168,8 +168,8 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
         id: String,
         unusedBlocks: MutableSet<String?>,
         visited: PersistentSet<String>,
-        memoizedResult: MutableMap<String, SizedImmutableStack<String>>
-    ): SizedImmutableStack<String>? {
+        memoizedResult: MutableMap<String, SizedImmutableStack<BasicBlock>>
+    ): SizedImmutableStack<BasicBlock>? {
         if (!unusedBlocks.contains(id) || visited.contains(id)) {
             return null
         }
@@ -178,8 +178,9 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
             return optimal
         }
         val newVisited = visited.add(element = id)
-        var bestTrace = SizedImmutableStack<String> { label -> labelBlockMap[label]!!.instructions.size }
-        val targetIds = labelBlockMap[id]!!.targets
+        var bestTrace = SizedImmutableStack<BasicBlock> { block -> block.instructions.size }
+        val blockForId = labelBlockMap[id]!!
+        val targetIds = blockForId.targets
         for (nextId in targetIds) {
             val fullTrace = buildTrace(
                 id = nextId,
@@ -193,7 +194,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
                 }
             }
         }
-        val knownOptimal = bestTrace.plus(id)
+        val knownOptimal = bestTrace.plus(blockForId)
         memoizedResult[id] = knownOptimal
         return knownOptimal
     }
