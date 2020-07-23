@@ -13,23 +13,13 @@ import samlang.ast.mir.MidIrStatement.Return
 internal object MidIrTraceReorganizer {
     /** @return list contains the optimized order of the starting labels. */
     private fun buildTrace(basicBlocks: List<BasicBlock>): List<BasicBlock> {
-        val originalTrace= ArrayDeque(basicBlocks)
         val unusedBlocks: MutableSet<String?> = mutableSetOf()
         unusedBlocks += basicBlocks.map { it.label }
         val newTrace = mutableListOf<BasicBlock>()
         // start building the trace at 0 because that's where function starts.
-        while (true) {
-            var blockToStart: BasicBlock? = null
-            while (!originalTrace.isEmpty()) {
-                blockToStart = originalTrace.removeFirst()
-                blockToStart = if (blockToStart.label in unusedBlocks) {
-                    break
-                } else {
-                    null
-                }
-            }
-            if (blockToStart == null) { // used all the blocks!
-                break
+        basicBlocks.forEach { blockToStart ->
+            if (blockToStart.label !in unusedBlocks) {
+                return@forEach
             }
             val stack = buildTrace(
                 block = blockToStart,
