@@ -2,11 +2,11 @@ package samlang.compiler.mir
 
 import samlang.ast.mir.MidIrStatement
 
-internal class BasicBlock private constructor(val instructions: List<MidIrStatement>) {
+internal class BasicBlock private constructor(val instructions: MutableList<MidIrStatement>) {
     /** Label of the block. */
     val label: String = (instructions[0] as MidIrStatement.Label).name
     /** The last statement. It always exists. It is used to tell where to jump. */
-    val lastStatement: MidIrStatement = instructions[instructions.size - 1]
+    val lastStatement: MidIrStatement get() = instructions[instructions.size - 1]
     /** Potential labels to go after the block. */
     val targets: MutableList<BasicBlock> = mutableListOf()
 
@@ -95,7 +95,11 @@ internal class BasicBlock private constructor(val instructions: List<MidIrStatem
                     }
                     // jump to nowhere!
                     lastStatement is MidIrStatement.Return -> block.targets.clear()
-                    i < len - 1 -> block.targets += blocksInOriginalOrder[i + 1]
+                    i < len - 1 -> {
+                        val target = blocksInOriginalOrder[i + 1]
+                        block.targets += target
+                        block.instructions += MidIrStatement.Jump(target.label)
+                    }
                 }
             }
         }

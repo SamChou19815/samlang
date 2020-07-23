@@ -136,36 +136,7 @@ internal object MidIrTraceReorganizer {
                     fixedStatements += newInstructions
                 }
                 is Return -> fixedStatements += currentBlock.instructions // no problem
-                else -> {
-                    val actualNextTargets = currentBlock.targets
-                    var actualNextTarget: String?
-                    actualNextTarget = when {
-                        actualNextTargets.isEmpty() -> null
-                        actualNextTargets.size == 1 -> actualNextTargets[0].label
-                        else -> error(message = "Impossible!")
-                    }
-                    fixedStatements += if (traceImmediateNext != null) {
-                        if (traceImmediateNext != actualNextTarget && actualNextTarget != null) {
-                            // the immediate next is not equal to the original next
-                            // need to jump to actualNextTarget!
-                            val instructions = currentBlock.instructions.toMutableList()
-                            instructions += Jump(actualNextTarget)
-                            instructions
-                        } else {
-                            // original block is OK!
-                            currentBlock.instructions
-                        }
-                    } else {
-                        if (actualNextTarget == null) {
-                            // originally nothing, current nothing. Fine
-                            currentBlock.instructions
-                        } else {
-                            val instructions = currentBlock.instructions.toMutableList()
-                            instructions += Jump(actualNextTarget)
-                            instructions
-                        }
-                    }
-                }
+                else -> error(message = "Bad instruction type: ${lastStatement::class}")
             }
         }
         return fixedStatements
