@@ -14,8 +14,6 @@ import samlang.ast.mir.MidIrStatement.Return
 internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: List<BasicBlock>) {
     /** The mapping from label to block id. */
     private val labelBlockMap: Map<String, BasicBlock>
-    /** The mapping that tells the potential places to go after the block. */
-    private val targets: Map<String, List<String>>
 
     /**
      * A basic block of instructions.
@@ -27,6 +25,8 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
         val label: String = (instructions[0] as Label).name
         /** The last statement. It always exists. It is used to tell where to jump. */
         val lastStatement: MidIrStatement = instructions[instructions.size - 1]
+        /** Potential labels to go after the block. */
+        val targets: MutableList<String> = mutableListOf()
 
         override fun toString(): String = "BasicBlock $label"
 
@@ -102,30 +102,26 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
     init {
         val len = blocksInOriginalOrder.size
         val labelBlockMap: MutableMap<String, BasicBlock> = mutableMapOf()
-        val targets: MutableMap<String, List<String>> = mutableMapOf()
         for (block in blocksInOriginalOrder) {
             val label = block.label
             labelBlockMap[label] = block
         }
         for (i in 0 until len) {
             val block = blocksInOriginalOrder[i]
-            val targetList = mutableListOf<String>()
             val lastStatement = block.lastStatement
             when {
-                lastStatement is Jump -> targetList += lastStatement.label
+                lastStatement is Jump -> block.targets += lastStatement.label
                 lastStatement is ConditionalJump -> {
                     // make to reach false branch first
-                    targetList += lastStatement.label2
-                    targetList += lastStatement.label1
+                    block.targets += lastStatement.label2
+                    block.targets += lastStatement.label1
                 }
                 // jump to nowhere!
-                lastStatement is Return -> targetList.clear()
-                i < len - 1 -> targetList += blocksInOriginalOrder[i + 1].label
+                lastStatement is Return -> block.targets.clear()
+                i < len - 1 -> block.targets += blocksInOriginalOrder[i + 1].label
             }
-            targets[block.label] = targetList
         }
         this.labelBlockMap = labelBlockMap
-        this.targets = targets
     }
 
     /** @return list contains the optimized order of the starting labels. */
@@ -183,7 +179,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
         }
         val newVisited = visited.add(element = id)
         var bestTrace = SizedImmutableStack<String> { label -> labelBlockMap[label]!!.instructions.size }
-        val targetIds = targets[id]!!
+        val targetIds = labelBlockMap[id]!!.targets
         for (nextId in targetIds) {
             val fullTrace = buildTrace(
                 id = nextId,
@@ -259,7 +255,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
                 }
                 is Return -> fixedBlock = currentBlock // no problem
                 else -> {
-                    val actualNextTargets = targets[currentBlockLabel]!!
+                    val actualNextTargets = labelBlockMap[currentBlockLabel]!!.targets
                     var actualNextTarget: String?
                     actualNextTarget = when {
                         actualNextTargets.isEmpty() -> null
