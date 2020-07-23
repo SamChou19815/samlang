@@ -9,11 +9,26 @@ import {
 } from '../../ast/mir';
 import MidIRResourceAllocator from './mir-resource-allocator';
 
-export default class MidIRBasicBlock {
+export interface ReadonlyMidIRBasicBlock {
+  readonly label: string;
+
+  readonly allStatements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[];
+
   readonly lastStatement:
     | MidIRJumpStatement
     | MidIRConditionalJumpNoFallThrough
     | MidIRReturnStatement;
+
+  readonly targets: readonly ReadonlyMidIRBasicBlock[];
+}
+
+export class MidIRBasicBlock implements ReadonlyMidIRBasicBlock {
+  readonly lastStatement:
+    | MidIRJumpStatement
+    | MidIRConditionalJumpNoFallThrough
+    | MidIRReturnStatement;
+
+  readonly targets: MidIRBasicBlock[] = [];
 
   constructor(
     readonly label: string,
@@ -30,12 +45,6 @@ export default class MidIRBasicBlock {
         throw new Error();
     }
   }
-
-  public static fromStatements = (
-    allocator: MidIRResourceAllocator,
-    functionName: string,
-    statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[]
-  ): readonly MidIRBasicBlock[] => createBasicBlocks(allocator, functionName, statements);
 }
 
 const createBasicBlock = (
@@ -57,11 +66,11 @@ const createBasicBlock = (
   return new MidIRBasicBlock(syntheticLabel, [MIR_LABEL(syntheticLabel), ...statements]);
 };
 
-const createBasicBlocks = (
+export const createMidIRBasicBlocks = (
   allocator: MidIRResourceAllocator,
   functionName: string,
   statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[]
-): readonly MidIRBasicBlock[] => {
+): readonly ReadonlyMidIRBasicBlock[] => {
   const basicBlocks: MidIRBasicBlock[] = [];
   let tempBlockList: MidIRStatement_DANGEROUSLY_NON_CANONICAL[] = [];
 
@@ -94,5 +103,25 @@ const createBasicBlocks = (
   // in this case, BasicBlock construction will fail anyways.
   if (tempBlockList.length > 0) throw new Error();
 
+  const labelBlockMap = Object.fromEntries(basicBlocks.map((it) => [it.label, it]));
+  basicBlocks.forEach((block) => {
+    const lastStatement = block.lastStatement;
+    switch (lastStatement.__type__) {
+      case 'MidIRJumpStatement':
+        block.targets.push(labelBlockMap[lastStatement.label]);
+        break;
+      case 'MidIRConditionalJumpNoFallThrough':
+        block.targets.push(
+          labelBlockMap[lastStatement.label2],
+          labelBlockMap[lastStatement.label1]
+        );
+        break;
+      case 'MidIRReturnStatement':
+        break;
+    }
+  });
+
   return basicBlocks;
 };
+
+export default createMidIRBasicBlocks;
