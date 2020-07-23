@@ -12,9 +12,6 @@ import samlang.ast.mir.MidIrStatement.Return
 /** The utility class used to reorganize the traces. */
 @ExperimentalStdlibApi
 internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: List<BasicBlock>) {
-    /** The mapping from label to block id. */
-    private val labelBlockMap: Map<String, BasicBlock>
-
     /**
      * A basic block of instructions.
      *
@@ -121,30 +118,30 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
                 i < len - 1 -> block.targets += blocksInOriginalOrder[i + 1]
             }
         }
-        this.labelBlockMap = labelBlockMap
     }
 
     /** @return list contains the optimized order of the starting labels. */
-    private fun buildTrace(originalTrace: ArrayDeque<String>): List<BasicBlock> {
+    private fun buildTrace(basicBlocks: List<BasicBlock>): List<BasicBlock> {
+        val originalTrace= ArrayDeque(basicBlocks)
         val unusedBlocks: MutableSet<String?> = mutableSetOf()
-        unusedBlocks += labelBlockMap.keys
+        unusedBlocks += basicBlocks.map { it.label }
         val newTrace = mutableListOf<BasicBlock>()
         // start building the trace at 0 because that's where function starts.
         while (true) {
-            var labelToStart: String? = null
+            var blockToStart: BasicBlock? = null
             while (!originalTrace.isEmpty()) {
-                labelToStart = originalTrace.removeFirst()
-                labelToStart = if (labelToStart in unusedBlocks) {
+                blockToStart = originalTrace.removeFirst()
+                blockToStart = if (blockToStart.label in unusedBlocks) {
                     break
                 } else {
                     null
                 }
             }
-            if (labelToStart == null) { // used all the blocks!
+            if (blockToStart == null) { // used all the blocks!
                 break
             }
             val stack = buildTrace(
-                block = labelBlockMap[labelToStart]!!,
+                block = blockToStart,
                 unusedBlocks = unusedBlocks,
                 visited = persistentSetOf(),
                 memoizedResult = mutableMapOf()
@@ -299,7 +296,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
         fun reorder(allocator: MidIrResourceAllocator, originalStatements: List<MidIrStatement>): List<MidIrStatement> {
             val basicBlocks = BasicBlock.from(allocator = allocator, statements = originalStatements)
             return MidIrTraceReorganizer(blocksInOriginalOrder = basicBlocks)
-                .run { fixBlocks(buildTrace(ArrayDeque(basicBlocks.map { it.label }))) }
+                .run { fixBlocks(buildTrace(basicBlocks)) }
                 .asSequence()
                 .map { it.instructions }
                 .flatten()
