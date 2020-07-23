@@ -7,7 +7,6 @@ package samlang.compiler.mir
  *
  * @param T type of the element in the stack.
  */
-@ExperimentalStdlibApi
 internal class SizedImmutableStack<T> {
     private val getSizeFunction: (T) -> Int
     private val node: Node<T>?
@@ -43,13 +42,13 @@ internal class SizedImmutableStack<T> {
     }
 
     override fun toString(): String {
-        val list = ArrayDeque<T>()
+        val list = mutableListOf<T>()
         var n = node
         while (n != null) {
-            list.addFirst(n.item)
+            list.add(n.item)
             n = n.prev
         }
-        return list.toString()
+        return list.reverse().toString()
     }
 
     private data class Node<T>(val size: Int, val item: T, val prev: Node<T>?)

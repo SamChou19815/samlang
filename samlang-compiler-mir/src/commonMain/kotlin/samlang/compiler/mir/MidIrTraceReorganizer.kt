@@ -1,7 +1,7 @@
 package samlang.compiler.mir
 
 import kotlinx.collections.immutable.PersistentSet
-import kotlinx.collections.immutable.persistentSetOf
+import kotlinx.collections.immutable.toPersistentSet
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CJUMP_FALLTHROUGH
 import samlang.ast.mir.MidIrStatement.ConditionalJump
@@ -9,38 +9,34 @@ import samlang.ast.mir.MidIrStatement.Jump
 import samlang.ast.mir.MidIrStatement.Return
 
 /** The utility class used to reorganize the traces. */
-@ExperimentalStdlibApi
 internal object MidIrTraceReorganizer {
     /** @return list contains the optimized order of the starting labels. */
     private fun buildTrace(basicBlocks: List<BasicBlock>): List<BasicBlock> {
-        val unReorderedBlocks: MutableSet<String?> = mutableSetOf()
-        unReorderedBlocks += basicBlocks.map { it.label }
-        val newTrace = mutableListOf<BasicBlock>()
+        val reorderedBlockLabelSet = mutableSetOf<String>()
+        val reorderedBlocks = mutableListOf<BasicBlock>()
         // start building the trace at 0 because that's where function starts.
         basicBlocks.forEach { blockToStart ->
-            if (blockToStart.label !in unReorderedBlocks) {
+            if (blockToStart.label in reorderedBlockLabelSet) {
                 return@forEach
             }
             val stack = buildTrace(
                 block = blockToStart,
-                unReorderedBlocks = unReorderedBlocks,
-                visited = persistentSetOf(),
+                visited = reorderedBlockLabelSet.toPersistentSet(),
                 memoizedResult = mutableMapOf()
             ) ?: error(message = "Impossible!")
             val tempList = stack.toReversedOrderedCollection()
-            unReorderedBlocks.removeAll(tempList.map { it.label })
-            newTrace += tempList
+            reorderedBlockLabelSet.addAll(tempList.map { it.label })
+            reorderedBlocks += tempList
         }
-        return newTrace
+        return reorderedBlocks
     }
 
     private fun buildTrace(
         block: BasicBlock,
-        unReorderedBlocks: MutableSet<String?>,
         visited: PersistentSet<String>,
         memoizedResult: MutableMap<String, SizedImmutableStack<BasicBlock>>
     ): SizedImmutableStack<BasicBlock>? {
-        if (!unReorderedBlocks.contains(block.label) || visited.contains(block.label)) {
+        if (visited.contains(block.label)) {
             return null
         }
         val optimal = memoizedResult[block.label]
@@ -53,7 +49,6 @@ internal object MidIrTraceReorganizer {
         for (nextBlock in targetBlocks) {
             val fullTrace = buildTrace(
                 block = nextBlock,
-                unReorderedBlocks = unReorderedBlocks,
                 visited = newVisited,
                 memoizedResult = memoizedResult
             )
