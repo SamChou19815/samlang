@@ -17,7 +17,7 @@ internal object MidIrTraceReorganizer {
      *
      * @param instructions all the instructions, including the last one.
      */
-    private class BasicBlock(val instructions: List<MidIrStatement>) {
+    private class BasicBlock private constructor(val instructions: List<MidIrStatement>) {
         /** Label of the block. */
         val label: String = (instructions[0] as Label).name
         /** The last statement. It always exists. It is used to tell where to jump. */
@@ -199,29 +199,25 @@ internal object MidIrTraceReorganizer {
      * - Jump is no longer necessary due to reordering
      * - Jump is missing due to reordering
      * - Canonicalize CJUMP to CJUMP_FALLTHROUGH
-     *
-     * @return a list of fixed blocks.
      */
-    private fun fixBlocks(reorderedBlocks: List<BasicBlock>): List<BasicBlock> {
-        val fixedBlocks = mutableListOf<BasicBlock>()
+    private fun emitStatements(reorderedBlocks: List<BasicBlock>): List<MidIrStatement> {
+        val fixedStatements = mutableListOf<MidIrStatement>()
         val len = reorderedBlocks.size
         // remove redundant jumps, added needed jump
         for (i in 0 until len) {
             val currentBlock = reorderedBlocks[i]
             val lastStatement = currentBlock.lastStatement
             val traceImmediateNext = if (i < len - 1) reorderedBlocks[i + 1].label else null
-            var fixedBlock: BasicBlock
             when (lastStatement) {
                 is Jump -> {
                     val actualJumpTarget = lastStatement.label
-                    fixedBlock =
-                        if (actualJumpTarget != traceImmediateNext) {
-                            // jump is necessary, keep it
-                            currentBlock
-                        } else {
-                            // remove the jump
-                            BasicBlock(instructions = currentBlock.instructions.dropLast(n = 1))
-                        }
+                    fixedStatements += if (actualJumpTarget != traceImmediateNext) {
+                        // jump is necessary, keep it
+                        currentBlock.instructions
+                    } else {
+                        // remove the jump
+                        currentBlock.instructions.dropLast(n = 1)
+                    }
                 }
                 is ConditionalJump -> {
                     val (condition1, actualTrueTarget, actualFalseTarget) = lastStatement
@@ -243,9 +239,9 @@ internal object MidIrTraceReorganizer {
                             newInstructions += Jump(actualTrueTarget)
                         }
                     }
-                    fixedBlock = BasicBlock(newInstructions)
+                    fixedStatements += newInstructions
                 }
-                is Return -> fixedBlock = currentBlock // no problem
+                is Return -> fixedStatements += currentBlock.instructions // no problem
                 else -> {
                     val actualNextTargets = currentBlock.targets
                     var actualNextTarget: String?
@@ -254,32 +250,31 @@ internal object MidIrTraceReorganizer {
                         actualNextTargets.size == 1 -> actualNextTargets[0].label
                         else -> error(message = "Impossible!")
                     }
-                    fixedBlock = if (traceImmediateNext != null) {
+                    fixedStatements += if (traceImmediateNext != null) {
                         if (traceImmediateNext != actualNextTarget && actualNextTarget != null) {
                             // the immediate next is not equal to the original next
                             // need to jump to actualNextTarget!
                             val instructions = currentBlock.instructions.toMutableList()
                             instructions += Jump(actualNextTarget)
-                            BasicBlock(instructions = instructions)
+                            instructions
                         } else {
                             // original block is OK!
-                            currentBlock
+                            currentBlock.instructions
                         }
                     } else {
                         if (actualNextTarget == null) {
                             // originally nothing, current nothing. Fine
-                            currentBlock
+                            currentBlock.instructions
                         } else {
                             val instructions = currentBlock.instructions.toMutableList()
                             instructions += Jump(actualNextTarget)
-                            BasicBlock(instructions = instructions)
+                            instructions
                         }
                     }
                 }
             }
-            fixedBlocks += fixedBlock
         }
-        return fixedBlocks
+        return fixedStatements
     }
 
     /**
@@ -289,12 +284,6 @@ internal object MidIrTraceReorganizer {
      * @param originalStatements original list of statements.
      * @return the reordered and fixed statements.
      */
-     fun reorder(allocator: MidIrResourceAllocator, originalStatements: List<MidIrStatement>): List<MidIrStatement> {
-        val basicBlocks = BasicBlock.from(allocator = allocator, statements = originalStatements)
-        return fixBlocks(buildTrace(basicBlocks))
-            .asSequence()
-            .map { it.instructions }
-            .flatten()
-            .toList()
-    }
+     fun reorder(allocator: MidIrResourceAllocator, originalStatements: List<MidIrStatement>): List<MidIrStatement> =
+        emitStatements(buildTrace(BasicBlock.from(allocator = allocator, statements = originalStatements)))
 }
