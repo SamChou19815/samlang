@@ -26,7 +26,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
         /** The last statement. It always exists. It is used to tell where to jump. */
         val lastStatement: MidIrStatement = instructions[instructions.size - 1]
         /** Potential labels to go after the block. */
-        val targets: MutableList<String> = mutableListOf()
+        val targets: MutableList<BasicBlock> = mutableListOf()
 
         override fun toString(): String = "BasicBlock $label"
 
@@ -110,15 +110,15 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
             val block = blocksInOriginalOrder[i]
             val lastStatement = block.lastStatement
             when {
-                lastStatement is Jump -> block.targets += lastStatement.label
+                lastStatement is Jump -> block.targets += labelBlockMap[lastStatement.label]!!
                 lastStatement is ConditionalJump -> {
                     // make to reach false branch first
-                    block.targets += lastStatement.label2
-                    block.targets += lastStatement.label1
+                    block.targets += labelBlockMap[lastStatement.label2]!!
+                    block.targets += labelBlockMap[lastStatement.label1]!!
                 }
                 // jump to nowhere!
                 lastStatement is Return -> block.targets.clear()
-                i < len - 1 -> block.targets += blocksInOriginalOrder[i + 1].label
+                i < len - 1 -> block.targets += blocksInOriginalOrder[i + 1]
             }
         }
         this.labelBlockMap = labelBlockMap
@@ -144,7 +144,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
                 break
             }
             val stack = buildTrace(
-                id = labelToStart,
+                block = labelBlockMap[labelToStart]!!,
                 unusedBlocks = unusedBlocks,
                 visited = persistentSetOf(),
                 memoizedResult = mutableMapOf()
@@ -159,31 +159,30 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
     /**
      * Functionally build one segment of the trace.
      *
-     * @param id the starting label id.
+     * @param block the starting block.
      * @param visited visited elements in this build.
      * @param memoizedResult the memoized optimal result.
      * @return the built trace, or null if it's impossible to build one starting at id.
      */
     private fun buildTrace(
-        id: String,
+        block: BasicBlock,
         unusedBlocks: MutableSet<String?>,
         visited: PersistentSet<String>,
         memoizedResult: MutableMap<String, SizedImmutableStack<BasicBlock>>
     ): SizedImmutableStack<BasicBlock>? {
-        if (!unusedBlocks.contains(id) || visited.contains(id)) {
+        if (!unusedBlocks.contains(block.label) || visited.contains(block.label)) {
             return null
         }
-        val optimal = memoizedResult[id]
+        val optimal = memoizedResult[block.label]
         if (optimal != null) {
             return optimal
         }
-        val newVisited = visited.add(element = id)
-        var bestTrace = SizedImmutableStack<BasicBlock> { block -> block.instructions.size }
-        val blockForId = labelBlockMap[id]!!
-        val targetIds = blockForId.targets
-        for (nextId in targetIds) {
+        val newVisited = visited.add(element = block.label)
+        var bestTrace = SizedImmutableStack<BasicBlock> { it.instructions.size }
+        val targetBlocks = block.targets
+        for (nextBlock in targetBlocks) {
             val fullTrace = buildTrace(
-                id = nextId,
+                block = nextBlock,
                 unusedBlocks = unusedBlocks,
                 visited = newVisited,
                 memoizedResult = memoizedResult
@@ -194,8 +193,8 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
                 }
             }
         }
-        val knownOptimal = bestTrace.plus(blockForId)
-        memoizedResult[id] = knownOptimal
+        val knownOptimal = bestTrace.plus(block)
+        memoizedResult[block.label] = knownOptimal
         return knownOptimal
     }
 
@@ -260,7 +259,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
                     var actualNextTarget: String?
                     actualNextTarget = when {
                         actualNextTargets.isEmpty() -> null
-                        actualNextTargets.size == 1 -> actualNextTargets[0]
+                        actualNextTargets.size == 1 -> actualNextTargets[0].label
                         else -> error(message = "Impossible!")
                     }
                     fixedBlock = if (traceImmediateNext != null) {
