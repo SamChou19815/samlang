@@ -59,7 +59,6 @@ it('MidIRBasicBlock will correctly segment label blocks', () => {
   expectCorrectlyCreated(
     [
       MIR_LABEL('foo'),
-      MIR_RETURN(),
       MIR_LABEL('bar'),
       MIR_MOVE_TEMP(MIR_TEMP(''), MIR_TEMP('')),
       MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL(MIR_TEMP(''), 'baz', 'baz'),
@@ -68,7 +67,7 @@ it('MidIRBasicBlock will correctly segment label blocks', () => {
       MIR_RETURN(),
     ],
     [
-      { targets: [], statements: [MIR_LABEL('foo'), MIR_RETURN()] },
+      { targets: ['bar'], statements: [MIR_LABEL('foo'), MIR_JUMP('bar')] },
       {
         targets: ['baz', 'baz'],
         statements: [
