@@ -32,13 +32,13 @@ internal object MidIrTraceReorganizer {
     private fun buildTrace(
         block: BasicBlock,
         visited: MutableSet<String>,
-        memoizedResult: MutableMap<String, SizedImmutableStack<BasicBlock>>
-    ): SizedImmutableStack<BasicBlock>? {
+        memoizedResult: MutableMap<String, SizedImmutableStack>
+    ): SizedImmutableStack? {
         if (visited.contains(block.label)) return null
         val optimal = memoizedResult[block.label]
         if (optimal != null) return optimal
         visited.add(element = block.label)
-        var bestTrace = SizedImmutableStack<BasicBlock> { it.instructions.size }
+        var bestTrace = SizedImmutableStack()
         for (nextBlock in block.targets) {
             val fullTrace = buildTrace(block = nextBlock, visited = visited, memoizedResult = memoizedResult)
             if (fullTrace != null) {
@@ -74,16 +74,16 @@ internal object MidIrTraceReorganizer {
                     val actualJumpTarget = lastStatement.label
                     fixedStatements += if (actualJumpTarget != traceImmediateNext) {
                         // jump is necessary, keep it
-                        currentBlock.instructions
+                        currentBlock.statements
                     } else {
                         // remove the jump
-                        currentBlock.instructions.dropLast(n = 1)
+                        currentBlock.statements.dropLast(n = 1)
                     }
                 }
                 is ConditionalJump -> {
                     val (condition1, actualTrueTarget, actualFalseTarget) = lastStatement
                     // setup previous unchanged instructions
-                    val newInstructions = currentBlock.instructions.dropLast(n = 1).toMutableList()
+                    val newInstructions = currentBlock.statements.dropLast(n = 1).toMutableList()
                     when {
                         actualTrueTarget == traceImmediateNext -> {
                             // need to invert condition
@@ -102,7 +102,7 @@ internal object MidIrTraceReorganizer {
                     }
                     fixedStatements += newInstructions
                 }
-                is Return -> fixedStatements += currentBlock.instructions // no problem
+                is Return -> fixedStatements += currentBlock.statements // no problem
                 else -> error(message = "Bad instruction type: ${lastStatement::class}")
             }
         }

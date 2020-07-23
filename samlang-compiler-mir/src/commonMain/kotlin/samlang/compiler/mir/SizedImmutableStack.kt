@@ -7,12 +7,10 @@ package samlang.compiler.mir
  *
  * @param T type of the element in the stack.
  */
-internal class SizedImmutableStack<T> {
-    private val getSizeFunction: (T) -> Int
-    private val node: Node<T>?
+internal class SizedImmutableStack {
+    private val node: Node?
 
-    constructor(getSizeFunction: (T) -> Int) {
-        this.getSizeFunction = getSizeFunction
+    constructor() {
         this.node = null
     }
 
@@ -20,20 +18,19 @@ internal class SizedImmutableStack<T> {
      * @param element the element to add to the stack.
      * @param prev the previous element.
      */
-    private constructor(element: T, prev: SizedImmutableStack<T>) {
-        getSizeFunction = prev.getSizeFunction
-        val size = prev.size + getSizeFunction(element)
+    private constructor(element: BasicBlock, prev: SizedImmutableStack) {
+        val size = prev.size + element.statements.size
         node = Node(size, element, prev.node)
     }
 
     val size: Int get() = node?.size ?: 0
 
-    operator fun plus(element: T): SizedImmutableStack<T> = SizedImmutableStack(element, this)
+    operator fun plus(element: BasicBlock): SizedImmutableStack = SizedImmutableStack(element, this)
 
     /** @return a collection that puts the first element in the stack first. */
-    fun toReversedOrderedCollection(): Collection<T> {
+    fun toReversedOrderedCollection(): Collection<BasicBlock> {
         var currentNode = node
-        val tempList = mutableListOf<T>()
+        val tempList = mutableListOf<BasicBlock>()
         while (currentNode != null) {
             tempList.add(currentNode.item)
             currentNode = currentNode.prev
@@ -42,7 +39,7 @@ internal class SizedImmutableStack<T> {
     }
 
     override fun toString(): String {
-        val list = mutableListOf<T>()
+        val list = mutableListOf<BasicBlock>()
         var n = node
         while (n != null) {
             list.add(n.item)
@@ -51,5 +48,5 @@ internal class SizedImmutableStack<T> {
         return list.reverse().toString()
     }
 
-    private data class Node<T>(val size: Int, val item: T, val prev: Node<T>?)
+    private data class Node(val size: Int, val item: BasicBlock, val prev: Node?)
 }
