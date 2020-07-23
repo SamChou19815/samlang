@@ -125,10 +125,10 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
     }
 
     /** @return list contains the optimized order of the starting labels. */
-    private fun buildTrace(originalTrace: ArrayDeque<String>): List<String> {
+    private fun buildTrace(originalTrace: ArrayDeque<String>): List<BasicBlock> {
         val unusedBlocks: MutableSet<String?> = mutableSetOf()
         unusedBlocks += labelBlockMap.keys
-        val newTrace = mutableListOf<String>()
+        val newTrace = mutableListOf<BasicBlock>()
         // start building the trace at 0 because that's where function starts.
         while (true) {
             var labelToStart: String? = null
@@ -149,8 +149,8 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
                 visited = persistentSetOf(),
                 memoizedResult = mutableMapOf()
             ) ?: error(message = "Impossible!")
-            val tempList = stack.toReversedOrderedCollection().map { it.label }
-            unusedBlocks.removeAll(tempList)
+            val tempList = stack.toReversedOrderedCollection()
+            unusedBlocks.removeAll(tempList.map { it.label })
             newTrace += tempList
         }
         return newTrace
@@ -208,16 +208,14 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
      *
      * @return a list of fixed blocks.
      */
-    private fun fixBlocks(newTrace: List<String>): List<BasicBlock> {
-        val reorderedBlocks = newTrace.map { key -> labelBlockMap[key] }
+    private fun fixBlocks(reorderedBlocks: List<BasicBlock>): List<BasicBlock> {
         val fixedBlocks = mutableListOf<BasicBlock>()
         val len = reorderedBlocks.size
         // remove redundant jumps, added needed jump
         for (i in 0 until len) {
             val currentBlock = reorderedBlocks[i]
-            val currentBlockLabel = currentBlock!!.label
             val lastStatement = currentBlock.lastStatement
-            val traceImmediateNext = if (i < len - 1) newTrace[i + 1] else null
+            val traceImmediateNext = if (i < len - 1) reorderedBlocks[i + 1].label else null
             var fixedBlock: BasicBlock
             when (lastStatement) {
                 is Jump -> {
@@ -255,7 +253,7 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
                 }
                 is Return -> fixedBlock = currentBlock // no problem
                 else -> {
-                    val actualNextTargets = labelBlockMap[currentBlockLabel]!!.targets
+                    val actualNextTargets = currentBlock.targets
                     var actualNextTarget: String?
                     actualNextTarget = when {
                         actualNextTargets.isEmpty() -> null
