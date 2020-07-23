@@ -11,13 +11,13 @@ import samlang.ast.mir.MidIrStatement.Return
 
 /** The utility class used to reorganize the traces. */
 @ExperimentalStdlibApi
-internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: List<BasicBlock>) {
+internal object MidIrTraceReorganizer {
     /**
      * A basic block of instructions.
      *
      * @param instructions all the instructions, including the last one.
      */
-    private data class BasicBlock(val instructions: List<MidIrStatement>) {
+    private class BasicBlock(val instructions: List<MidIrStatement>) {
         /** Label of the block. */
         val label: String = (instructions[0] as Label).name
         /** The last statement. It always exists. It is used to tell where to jump. */
@@ -87,35 +87,32 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
                     basicBlocks = basicBlocks,
                     statements = tempBlockList
                 )
+                patchBasicBlocks(basicBlocks)
                 return basicBlocks
             }
-        }
-    }
 
-    /**
-     * Initialize various fields to create a initial state of unordered blocks.
-     * Once this is called. Traversal can begin.
-     */
-    init {
-        val len = blocksInOriginalOrder.size
-        val labelBlockMap: MutableMap<String, BasicBlock> = mutableMapOf()
-        for (block in blocksInOriginalOrder) {
-            val label = block.label
-            labelBlockMap[label] = block
-        }
-        for (i in 0 until len) {
-            val block = blocksInOriginalOrder[i]
-            val lastStatement = block.lastStatement
-            when {
-                lastStatement is Jump -> block.targets += labelBlockMap[lastStatement.label]!!
-                lastStatement is ConditionalJump -> {
-                    // make to reach false branch first
-                    block.targets += labelBlockMap[lastStatement.label2]!!
-                    block.targets += labelBlockMap[lastStatement.label1]!!
+            private fun patchBasicBlocks(blocksInOriginalOrder: List<BasicBlock>) {
+                val len = blocksInOriginalOrder.size
+                val labelBlockMap: MutableMap<String, BasicBlock> = mutableMapOf()
+                for (block in blocksInOriginalOrder) {
+                    val label = block.label
+                    labelBlockMap[label] = block
                 }
-                // jump to nowhere!
-                lastStatement is Return -> block.targets.clear()
-                i < len - 1 -> block.targets += blocksInOriginalOrder[i + 1]
+                for (i in 0 until len) {
+                    val block = blocksInOriginalOrder[i]
+                    val lastStatement = block.lastStatement
+                    when {
+                        lastStatement is Jump -> block.targets += labelBlockMap[lastStatement.label]!!
+                        lastStatement is ConditionalJump -> {
+                            // make to reach false branch first
+                            block.targets += labelBlockMap[lastStatement.label2]!!
+                            block.targets += labelBlockMap[lastStatement.label1]!!
+                        }
+                        // jump to nowhere!
+                        lastStatement is Return -> block.targets.clear()
+                        i < len - 1 -> block.targets += blocksInOriginalOrder[i + 1]
+                    }
+                }
             }
         }
     }
@@ -285,22 +282,19 @@ internal class MidIrTraceReorganizer private constructor(blocksInOriginalOrder: 
         return fixedBlocks
     }
 
-    companion object {
-        /**
-         * Reorder the statements to fix the control for LOW IR.
-         *
-         * @param allocator the allocator used to allocate new temp labels
-         * @param originalStatements original list of statements.
-         * @return the reordered and fixed statements.
-         */
-        fun reorder(allocator: MidIrResourceAllocator, originalStatements: List<MidIrStatement>): List<MidIrStatement> {
-            val basicBlocks = BasicBlock.from(allocator = allocator, statements = originalStatements)
-            return MidIrTraceReorganizer(blocksInOriginalOrder = basicBlocks)
-                .run { fixBlocks(buildTrace(basicBlocks)) }
-                .asSequence()
-                .map { it.instructions }
-                .flatten()
-                .toList()
-        }
+    /**
+     * Reorder the statements to fix the control for LOW IR.
+     *
+     * @param allocator the allocator used to allocate new temp labels
+     * @param originalStatements original list of statements.
+     * @return the reordered and fixed statements.
+     */
+     fun reorder(allocator: MidIrResourceAllocator, originalStatements: List<MidIrStatement>): List<MidIrStatement> {
+        val basicBlocks = BasicBlock.from(allocator = allocator, statements = originalStatements)
+        return fixBlocks(buildTrace(basicBlocks))
+            .asSequence()
+            .map { it.instructions }
+            .flatten()
+            .toList()
     }
 }
