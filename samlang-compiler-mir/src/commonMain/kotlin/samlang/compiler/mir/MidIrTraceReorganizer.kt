@@ -1,7 +1,5 @@
 package samlang.compiler.mir
 
-import kotlinx.collections.immutable.PersistentSet
-import kotlinx.collections.immutable.toPersistentSet
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CJUMP_FALLTHROUGH
 import samlang.ast.mir.MidIrStatement.ConditionalJump
@@ -21,7 +19,7 @@ internal object MidIrTraceReorganizer {
             }
             val stack = buildTrace(
                 block = blockToStart,
-                visited = reorderedBlockLabelSet.toPersistentSet(),
+                visited = reorderedBlockLabelSet,
                 memoizedResult = mutableMapOf()
             ) ?: error(message = "Impossible!")
             val tempList = stack.toReversedOrderedCollection()
@@ -33,31 +31,23 @@ internal object MidIrTraceReorganizer {
 
     private fun buildTrace(
         block: BasicBlock,
-        visited: PersistentSet<String>,
+        visited: MutableSet<String>,
         memoizedResult: MutableMap<String, SizedImmutableStack<BasicBlock>>
     ): SizedImmutableStack<BasicBlock>? {
-        if (visited.contains(block.label)) {
-            return null
-        }
+        if (visited.contains(block.label)) return null
         val optimal = memoizedResult[block.label]
-        if (optimal != null) {
-            return optimal
-        }
-        val newVisited = visited.add(element = block.label)
+        if (optimal != null) return optimal
+        visited.add(element = block.label)
         var bestTrace = SizedImmutableStack<BasicBlock> { it.instructions.size }
-        val targetBlocks = block.targets
-        for (nextBlock in targetBlocks) {
-            val fullTrace = buildTrace(
-                block = nextBlock,
-                visited = newVisited,
-                memoizedResult = memoizedResult
-            )
+        for (nextBlock in block.targets) {
+            val fullTrace = buildTrace(block = nextBlock, visited = visited, memoizedResult = memoizedResult)
             if (fullTrace != null) {
                 if (fullTrace.size > bestTrace.size) {
                     bestTrace = fullTrace
                 }
             }
         }
+        visited.remove(element = block.label)
         val knownOptimal = bestTrace.plus(block)
         memoizedResult[block.label] = knownOptimal
         return knownOptimal
