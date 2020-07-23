@@ -10,20 +10,16 @@ import samlang.ast.mir.MidIrStatement.Return
 internal object MidIrTraceReorganizer {
     /** @return list contains the optimized order of the starting labels. */
     private fun buildTrace(basicBlocks: List<BasicBlock>): List<BasicBlock> {
-        val reorderedBlockLabelSet = mutableSetOf<String>()
+        val reorderedBlockLabels = mutableSetOf<String>()
         val reorderedBlocks = mutableListOf<BasicBlock>()
         // start building the trace at 0 because that's where function starts.
         basicBlocks.forEach { blockToStart ->
-            if (blockToStart.label in reorderedBlockLabelSet) {
+            if (blockToStart.label in reorderedBlockLabels) {
                 return@forEach
             }
-            val stack = buildTrace(
-                block = blockToStart,
-                visited = reorderedBlockLabelSet,
-                memoizedResult = mutableMapOf()
-            ) ?: error(message = "Impossible!")
+            val stack = buildTrace(blockToStart, reorderedBlockLabels, mutableMapOf())
             val tempList = stack.toReversedOrderedCollection()
-            reorderedBlockLabelSet.addAll(tempList.map { it.label })
+            reorderedBlockLabels.addAll(tempList.map { it.label })
             reorderedBlocks += tempList
         }
         return reorderedBlocks
@@ -33,18 +29,16 @@ internal object MidIrTraceReorganizer {
         block: BasicBlock,
         visited: MutableSet<String>,
         memoizedResult: MutableMap<String, SizedImmutableStack>
-    ): SizedImmutableStack? {
-        if (visited.contains(block.label)) return null
+    ): SizedImmutableStack {
         val optimal = memoizedResult[block.label]
         if (optimal != null) return optimal
         visited.add(element = block.label)
         var bestTrace = SizedImmutableStack()
         for (nextBlock in block.targets) {
+            if (visited.contains(nextBlock.label)) continue
             val fullTrace = buildTrace(block = nextBlock, visited = visited, memoizedResult = memoizedResult)
-            if (fullTrace != null) {
-                if (fullTrace.size > bestTrace.size) {
-                    bestTrace = fullTrace
-                }
+            if (fullTrace.size > bestTrace.size) {
+                bestTrace = fullTrace
             }
         }
         visited.remove(element = block.label)
