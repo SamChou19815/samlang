@@ -72,14 +72,12 @@ it('midIRCompilationUnitToString test', () => {
       functions: [
         {
           functionName: 'fooBar',
-          isPublic: true,
           hasReturn: true,
           argumentNames: ['foo', 'bar'],
           mainBodyStatements: [MIR_RETURN()],
         },
         {
           functionName: 'barFoo',
-          isPublic: true,
           hasReturn: true,
           argumentNames: ['bar', 'foo'],
           mainBodyStatements: [MIR_RETURN()],
