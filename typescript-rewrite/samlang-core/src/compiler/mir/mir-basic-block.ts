@@ -10,7 +10,7 @@ import {
 } from '../../ast/mir';
 import MidIRResourceAllocator from './mir-resource-allocator';
 
-export interface ReadonlyMidIRBasicBlock {
+export interface ReadonlyMidIRBasicBlockWithoutPointers {
   readonly label: string;
 
   readonly allStatements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[];
@@ -19,7 +19,9 @@ export interface ReadonlyMidIRBasicBlock {
     | MidIRJumpStatement
     | MidIRConditionalJumpNoFallThrough
     | MidIRReturnStatement;
+}
 
+export interface ReadonlyMidIRBasicBlock extends ReadonlyMidIRBasicBlockWithoutPointers {
   readonly targets: readonly ReadonlyMidIRBasicBlock[];
 }
 
