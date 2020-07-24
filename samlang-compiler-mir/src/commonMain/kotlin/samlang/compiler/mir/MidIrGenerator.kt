@@ -20,29 +20,37 @@ class MidIrGenerator private constructor(
     private val globalResourceAllocator: MidIrGlobalResourceAllocator,
     private val module: HighIrModule
 ) {
-    private val globalVariables: MutableSet<GlobalVariable> = LinkedHashSet()
-    private val functions: MutableList<MidIrFunction> = mutableListOf()
+    private val functions: List<MidIrFunction>
+    private val globalVariables: Set<GlobalVariable>
 
     init {
-        module.functions.forEach { translateAndAdd(encodedFunctionName = it.name, function = it) }
+        val functions: MutableList<MidIrFunction> = mutableListOf()
+        val globalVariables: MutableSet<GlobalVariable> = LinkedHashSet()
+        module.functions.forEach {
+            val (oneFunction, someGlobalVariables) = translate(function = it)
+            functions += oneFunction
+            globalVariables += someGlobalVariables
+        }
+        this.functions = functions
+        this.globalVariables = globalVariables
     }
 
-    private fun translateAndAdd(encodedFunctionName: String, function: HighIrFunction) {
+    private fun translate(function: HighIrFunction): Pair<MidIrFunction, Set<GlobalVariable>> {
         val allocator = MidIrResourceAllocator(
-            functionName = encodedFunctionName,
+            functionName = function.name,
             globalResourceAllocator = globalResourceAllocator
         )
         val allocatedArgs = mutableListOf<Temporary>()
         function.parameters.forEach { allocatedArgs += allocator.allocateTemp(variableName = it) }
         val (loweredStatements, stringGlobalVariables) = MidIrLoweringTranslator.translate(allocator, function.body)
-        globalVariables += stringGlobalVariables
-        functions += MidIrFunction(
-            functionName = encodedFunctionName,
+        val mirIrFunction = MidIrFunction(
+            functionName = function.name,
             argumentTemps = allocatedArgs,
             mainBodyStatements = cleanupAfterFirstPass(statements = loweredStatements, allocator = allocator),
             numberOfArguments = allocatedArgs.size,
             hasReturn = function.hasReturn
         )
+        return mirIrFunction to stringGlobalVariables
     }
 
     private fun cleanupAfterFirstPass(
