@@ -4,12 +4,9 @@ import samlang.ast.common.GlobalVariable
 import samlang.ast.common.IrNameEncoder
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
-import samlang.ast.hir.HighIrFunction
 import samlang.ast.hir.HighIrModule
 import samlang.ast.mir.MidIrCompilationUnit
-import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrFunction
-import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.Companion.CALL_FUNCTION
 import samlang.ast.mir.MidIrStatement.Return
 import samlang.optimization.SimpleOptimizations
@@ -26,41 +23,30 @@ class MidIrGenerator private constructor(
     init {
         val functions: MutableList<MidIrFunction> = mutableListOf()
         val globalVariables: MutableSet<GlobalVariable> = LinkedHashSet()
-        module.functions.forEach {
-            val (oneFunction, someGlobalVariables) = translate(function = it)
-            functions += oneFunction
-            globalVariables += someGlobalVariables
+        module.functions.forEach { function ->
+            val allocator = MidIrResourceAllocator(
+                functionName = function.name,
+                globalResourceAllocator = globalResourceAllocator
+            )
+            val allocatedArgs = function.parameters.map { allocator.allocateTemp(variableName = it) }
+            val (loweredStatements, stringGlobalVariables) = MidIrLoweringTranslator.translate(allocator, function.body)
+            val mirIrFunction = MidIrFunction(
+                functionName = function.name,
+                argumentTemps = allocatedArgs,
+                mainBodyStatements = SimpleOptimizations.optimizeIr(
+                    statements = MidIrTraceReorganizer.reorder(
+                        allocator = allocator,
+                        originalStatements = loweredStatements + Return()
+                    )
+                ),
+                numberOfArguments = allocatedArgs.size,
+                hasReturn = function.hasReturn
+            )
+            functions += mirIrFunction
+            globalVariables += stringGlobalVariables
         }
         this.functions = functions
         this.globalVariables = globalVariables
-    }
-
-    private fun translate(function: HighIrFunction): Pair<MidIrFunction, Set<GlobalVariable>> {
-        val allocator = MidIrResourceAllocator(
-            functionName = function.name,
-            globalResourceAllocator = globalResourceAllocator
-        )
-        val allocatedArgs = mutableListOf<Temporary>()
-        function.parameters.forEach { allocatedArgs += allocator.allocateTemp(variableName = it) }
-        val (loweredStatements, stringGlobalVariables) = MidIrLoweringTranslator.translate(allocator, function.body)
-        val mirIrFunction = MidIrFunction(
-            functionName = function.name,
-            argumentTemps = allocatedArgs,
-            mainBodyStatements = cleanupAfterFirstPass(statements = loweredStatements, allocator = allocator),
-            numberOfArguments = allocatedArgs.size,
-            hasReturn = function.hasReturn
-        )
-        return mirIrFunction to stringGlobalVariables
-    }
-
-    private fun cleanupAfterFirstPass(
-        statements: List<MidIrStatement>,
-        allocator: MidIrResourceAllocator
-    ): List<MidIrStatement> {
-        var processed: List<MidIrStatement> = statements.toMutableList().apply { add(Return()) }
-        processed = MidIrTraceReorganizer.reorder(allocator = allocator, originalStatements = processed)
-        processed = SimpleOptimizations.optimizeIr(statements = processed)
-        return processed
     }
 
     companion object {
