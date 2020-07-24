@@ -64,16 +64,6 @@ internal object MidIrTraceReorganizer {
             val lastStatement = currentBlock.lastStatement
             val traceImmediateNext = if (i < len - 1) reorderedBlocks[i + 1].label else null
             when (lastStatement) {
-                is Jump -> {
-                    val actualJumpTarget = lastStatement.label
-                    fixedStatements += if (actualJumpTarget != traceImmediateNext) {
-                        // jump is necessary, keep it
-                        currentBlock.statements
-                    } else {
-                        // remove the jump
-                        currentBlock.statements.dropLast(n = 1)
-                    }
-                }
                 is ConditionalJump -> {
                     val (condition1, actualTrueTarget, actualFalseTarget) = lastStatement
                     // setup previous unchanged instructions
@@ -96,7 +86,7 @@ internal object MidIrTraceReorganizer {
                     }
                     fixedStatements += newInstructions
                 }
-                is Return -> fixedStatements += currentBlock.statements // no problem
+                is Jump, is Return -> fixedStatements += currentBlock.statements // no problem
                 else -> error(message = "Bad instruction type: ${lastStatement::class}")
             }
         }
