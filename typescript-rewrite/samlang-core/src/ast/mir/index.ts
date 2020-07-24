@@ -124,7 +124,6 @@ export interface MidIRFunction {
   readonly argumentNames: readonly string[];
   readonly mainBodyStatements: readonly MidIRStatement[];
   readonly hasReturn: boolean;
-  readonly isPublic: boolean;
 }
 
 export interface MidIRCompilationUnit {
