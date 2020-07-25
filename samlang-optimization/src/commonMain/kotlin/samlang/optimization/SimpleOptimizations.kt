@@ -17,10 +17,7 @@ object SimpleOptimizations {
     fun removeUnusedNames(irCompilationUnit: MidIrCompilationUnit): MidIrCompilationUnit {
         val usedNames = UsedNameAnalysis.getUsedNames(irCompilationUnit = irCompilationUnit)
         val usedGlobals = irCompilationUnit.globalVariables.filter { it.name in usedNames }
-        val usedFunctions = irCompilationUnit.functions.filter { function ->
-            val name = function.functionName
-            name == IrNameEncoder.compiledProgramMain || name in usedNames
-        }
+        val usedFunctions = irCompilationUnit.functions.filter { it.functionName in usedNames }
         return MidIrCompilationUnit(globalVariables = usedGlobals, functions = usedFunctions)
     }
 

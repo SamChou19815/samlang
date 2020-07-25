@@ -12,7 +12,7 @@ import samlang.ast.mir.MidIrStatement
 @ExperimentalStdlibApi
 object UsedNameAnalysis {
     fun getUsedNames(irCompilationUnit: MidIrCompilationUnit): Set<String> {
-        val used = mutableSetOf<String>()
+        val used = mutableSetOf(IrNameEncoder.compiledProgramMain)
         val (_, functions) = irCompilationUnit
         val usedFunctionMap = functions.map { it.functionName to getOtherFunctionsUsedBy(function = it) }.toMap()
         val queue = ArrayDeque<String>()
