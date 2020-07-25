@@ -52,6 +52,7 @@ export default class ControlFlowGraph<I> {
       const jumpLabel = getJumpLabel(instruction);
       if (jumpLabel != null) {
         const nextID = labelIdMap.get(jumpLabel);
+        // istanbul ignore next
         if (nextID == null) throw new Error(`Bad jump label: ${jumpLabel}`);
         this.childrenMap.set(id, [nextID]);
         return;
@@ -59,8 +60,10 @@ export default class ControlFlowGraph<I> {
       const conditionalJumpLabel = getConditionalJumpLabel(instruction);
       if (conditionalJumpLabel != null) {
         const jumpToId = labelIdMap.get(conditionalJumpLabel);
+        // istanbul ignore next
         if (jumpToId == null) throw new Error(`Bad cjump label: ${jumpLabel}`);
         const nextList = [jumpToId];
+        // istanbul ignore next
         if (id !== instructions.length - 1) {
           nextList.push(id + 1);
         }
@@ -90,7 +93,8 @@ export default class ControlFlowGraph<I> {
 
   get startNode(): ControlFlowGraphNode<I> {
     const node = this.nodeMap.get(0);
-    if (node == null) throw new Error('Empty instruction!');
+    // istanbul ignore next
+    if (node == null) throw new Error('Empty instructions!');
     return node;
   }
 
@@ -105,6 +109,7 @@ export default class ControlFlowGraph<I> {
   getChildren(id: number): readonly ControlFlowGraphNode<I>[] {
     return this.getChildrenIds(id).map((childId) => {
       const node = this.nodeMap.get(childId);
+      // istanbul ignore next
       if (node == null) throw new Error();
       return node;
     });
@@ -115,6 +120,7 @@ export default class ControlFlowGraph<I> {
     const visited = new Set<number>();
     while (stack.length > 0) {
       const node = stack.pop();
+      // istanbul ignore next
       if (node == null) throw new Error();
       if (!visited.has(node.id)) {
         visited.add(node.id);
