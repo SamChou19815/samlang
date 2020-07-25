@@ -8,10 +8,10 @@ import {
   MIR_RETURN,
   MIR_TEMP,
 } from '../../ast/mir';
-import { optimizeIr } from '../simple-optimizations';
+import { optimizeIrWithSimpleOptimization } from '../simple-optimizations';
 
 const optimizeAndConvertToString = (midIRStatements: readonly MidIRStatement[]): string =>
-  optimizeIr(midIRStatements).map(midIRStatementToString).join('\n');
+  optimizeIrWithSimpleOptimization(midIRStatements).map(midIRStatementToString).join('\n');
 
 it('optimizeIr test.', () => {
   expect(optimizeAndConvertToString([MIR_RETURN()])).toBe('return;');

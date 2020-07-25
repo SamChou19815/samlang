@@ -176,7 +176,9 @@ const withoutUnusedLabelInIr = (
  * @returns a list of all optimized statements.
  */
 // eslint-disable-next-line import/prefer-default-export
-export const optimizeIr = (statements: readonly MidIRStatement[]): readonly MidIRStatement[] =>
+export const optimizeIrWithSimpleOptimization = (
+  statements: readonly MidIRStatement[]
+): readonly MidIRStatement[] =>
   pipe(
     statements,
     coalesceConsecutiveLabelsForIr,

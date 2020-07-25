@@ -1,6 +1,7 @@
 import type { Sources, GlobalVariable } from '../../ast/common/structs';
 import type { HighIRModule } from '../../ast/hir/hir-toplevel';
 import type { MidIRCompilationUnit, MidIRFunction } from '../../ast/mir';
+import { optimizeIrWithSimpleOptimization } from '../../optimization/simple-optimizations';
 import createMidIRBasicBlocks from './mir-basic-block';
 import emitCanonicalMidIRStatementsFromReorderedBasicBlocks from './mir-basic-block-optimized-emitter';
 import reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath from './mir-basic-block-reorder';
@@ -28,9 +29,11 @@ export const compileHighIrSourcesToMidIRCompilationUnit = (
       functions.push({
         functionName: highIRFunction.name,
         argumentNames: highIRFunction.parameters.map((it) => `_${it}`),
-        mainBodyStatements: emitCanonicalMidIRStatementsFromReorderedBasicBlocks(
-          reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath(
-            createMidIRBasicBlocks(allocator, highIRFunction.name, loweredStatements)
+        mainBodyStatements: optimizeIrWithSimpleOptimization(
+          emitCanonicalMidIRStatementsFromReorderedBasicBlocks(
+            reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath(
+              createMidIRBasicBlocks(allocator, highIRFunction.name, loweredStatements)
+            )
           )
         ),
         hasReturn: highIRFunction.hasReturn,

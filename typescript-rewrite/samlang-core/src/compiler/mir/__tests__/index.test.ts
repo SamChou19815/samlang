@@ -44,7 +44,6 @@ function fooBar {
   let _bar = _ARG1;
   let _baz = _ARG2;
 
-  LABEL_fooBar_0_PURPOSE_BASIC_BLOCK_1ST_STMT:
   return (GLOBAL_STRING_0 + 8);
 }
 `);
