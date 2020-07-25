@@ -88,20 +88,6 @@ internal object ConstantFolder {
             }
         }
 
-        private fun rearrangeAndFold(constant: Constant, opExpr: Op, op: IrOperator): MidIrExpression? {
-            val e1 = opExpr.e1
-            val e2 = opExpr.e2
-            if (opExpr.operator === op) {
-                if (e1 is Constant) {
-                    return visit(OP(op, fold(OP(op, constant, e1)), e2), Unit)
-                }
-                if (e2 is Constant) {
-                    return visit(OP(op, fold(OP(op, constant, e2)), e1), Unit)
-                }
-            }
-            return null
-        }
-
         override fun visit(node: Op, context: Unit): MidIrExpression {
             val e1 = fold(node.e1)
             val e2 = fold(node.e2)
@@ -110,24 +96,6 @@ internal object ConstantFolder {
                 val c = foldOp(e1.value, e2.value, op)
                 if (c != null) {
                     return c
-                }
-            }
-            val canPotentiallyRearrangeAndOptimize = when (op) {
-                IrOperator.ADD, IrOperator.MUL -> true
-                else -> false
-            }
-            if (canPotentiallyRearrangeAndOptimize) {
-                if (e1 is Constant && e2 is Op && e2.operator === op) {
-                    val c = rearrangeAndFold(constant = e1, opExpr = e2, op = op)
-                    if (c != null) {
-                        return c
-                    }
-                }
-                if (e2 is Constant && e1 is Op && e1.operator === op) {
-                    val c = rearrangeAndFold(constant = e2, opExpr = e1, op = op)
-                    if (c != null) {
-                        return c
-                    }
                 }
             }
             return OP(op = op, e1 = e1, e2 = e2)
