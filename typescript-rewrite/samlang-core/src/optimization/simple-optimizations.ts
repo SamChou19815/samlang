@@ -1,5 +1,6 @@
 import ControlFlowGraph from '../analysis/control-flow-graph';
-import { MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from '../ast/mir';
+import analyzeUsedFunctionNames from '../analysis/used-name-analysis';
+import { MidIRCompilationUnit, MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from '../ast/mir';
 import { isNotNull } from '../util/type-assertions';
 
 const pipe = <E>(element: E, ...functions: readonly ((element: E) => E)[]): E =>
@@ -175,7 +176,6 @@ const withoutUnusedLabelInIr = (
  *
  * @returns a list of all optimized statements.
  */
-// eslint-disable-next-line import/prefer-default-export
 export const optimizeIrWithSimpleOptimization = (
   statements: readonly MidIRStatement[]
 ): readonly MidIRStatement[] =>
@@ -188,3 +188,13 @@ export const optimizeIrWithSimpleOptimization = (
     withoutImmediateJumpInIr,
     withoutUnusedLabelInIr
   );
+
+export const optimizeIRWithUnusedNameElimination = (
+  compilationUnit: MidIRCompilationUnit
+): MidIRCompilationUnit => {
+  const usedNames = analyzeUsedFunctionNames(compilationUnit);
+  return {
+    globalVariables: compilationUnit.globalVariables.filter((it) => usedNames.has(it.name)),
+    functions: compilationUnit.functions.filter((it) => usedNames.has(it.functionName)),
+  };
+};

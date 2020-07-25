@@ -8,12 +8,15 @@ import {
   MIR_RETURN,
   MIR_TEMP,
 } from '../../ast/mir';
-import { optimizeIrWithSimpleOptimization } from '../simple-optimizations';
+import {
+  optimizeIrWithSimpleOptimization,
+  optimizeIRWithUnusedNameElimination,
+} from '../simple-optimizations';
 
 const optimizeAndConvertToString = (midIRStatements: readonly MidIRStatement[]): string =>
   optimizeIrWithSimpleOptimization(midIRStatements).map(midIRStatementToString).join('\n');
 
-it('optimizeIr test.', () => {
+it('optimizeIrWithSimpleOptimization test.', () => {
   expect(optimizeAndConvertToString([MIR_RETURN()])).toBe('return;');
 
   expect(
@@ -114,4 +117,22 @@ c = d;`);
 a = b;
 c = d;
 goto C;`);
+});
+
+it('optimizeIRWithUnusedNameElimination test', () => {
+  expect(
+    optimizeIRWithUnusedNameElimination({
+      globalVariables: [
+        { name: 'v1', content: '' },
+        { name: 'v2', content: 'v2' },
+      ],
+      functions: [
+        { functionName: 'f1', argumentNames: [], hasReturn: false, mainBodyStatements: [] },
+        { functionName: 'f2', argumentNames: [], hasReturn: false, mainBodyStatements: [] },
+      ],
+    })
+  ).toEqual({
+    globalVariables: [],
+    functions: [],
+  });
 });
