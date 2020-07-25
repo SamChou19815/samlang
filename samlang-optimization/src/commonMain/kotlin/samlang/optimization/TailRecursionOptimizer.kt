@@ -41,6 +41,8 @@ object TailRecursionOptimizer {
                     }
                     selfCallIds += index
                     break
+                } else {
+                    return@forEachIndexed
                 }
             }
         }
