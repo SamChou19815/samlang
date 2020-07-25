@@ -2,6 +2,7 @@ import type { Sources, GlobalVariable } from '../../ast/common/structs';
 import type { HighIRModule } from '../../ast/hir/hir-toplevel';
 import type { MidIRCompilationUnit, MidIRFunction } from '../../ast/mir';
 import { optimizeIrWithSimpleOptimization } from '../../optimization/simple-optimizations';
+import optimizeIRWithTailRecursiveCallTransformation from '../../optimization/tail-recursion-optimization';
 import createMidIRBasicBlocks from './mir-basic-block';
 import emitCanonicalMidIRStatementsFromReorderedBasicBlocks from './mir-basic-block-optimized-emitter';
 import reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath from './mir-basic-block-reorder';
@@ -26,18 +27,20 @@ export const compileHighIrSourcesToMidIRCompilationUnit = (
         highIRFunction.body
       );
       stringGlobalVariables.forEach((it) => globalVariables.set(it.name, it));
-      functions.push({
-        functionName: highIRFunction.name,
-        argumentNames: highIRFunction.parameters.map((it) => `_${it}`),
-        mainBodyStatements: optimizeIrWithSimpleOptimization(
-          emitCanonicalMidIRStatementsFromReorderedBasicBlocks(
-            reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath(
-              createMidIRBasicBlocks(allocator, highIRFunction.name, loweredStatements)
+      functions.push(
+        optimizeIRWithTailRecursiveCallTransformation({
+          functionName: highIRFunction.name,
+          argumentNames: highIRFunction.parameters.map((it) => `_${it}`),
+          mainBodyStatements: optimizeIrWithSimpleOptimization(
+            emitCanonicalMidIRStatementsFromReorderedBasicBlocks(
+              reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath(
+                createMidIRBasicBlocks(allocator, highIRFunction.name, loweredStatements)
+              )
             )
-          )
-        ),
-        hasReturn: highIRFunction.hasReturn,
-      });
+          ),
+          hasReturn: highIRFunction.hasReturn,
+        })
+      );
     })
   );
   return { globalVariables: Array.from(globalVariables.values()), functions };
