@@ -3,7 +3,7 @@ import { Hashable, ReadonlyHashSet, hashSetOf, listShallowEquals } from '../util
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
 
-export class AvailableCopy implements Hashable {
+class AvailableCopy implements Hashable {
   constructor(readonly destination: string, readonly source: string) {}
 
   uniqueHash(): string {
@@ -93,7 +93,22 @@ const operator: DataflowAnalysisGraphOperator<MidIRStatement, ReadonlyHashSet<Av
 
 const analyzeAvailableCopies = (
   statements: readonly MidIRStatement[]
-): readonly ReadonlyHashSet<AvailableCopy>[] =>
-  runForwardDataflowAnalysis(statements, operator).inEdges;
+): readonly Readonly<Record<string, string | undefined>>[] =>
+  runForwardDataflowAnalysis(statements, operator).inEdges.map((copies) => {
+    const rootDestinationSourceMapping: Record<string, string | undefined> = {};
+    copies.forEach(({ destination, source }) => {
+      let rootSource = source;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const moreRootSource = rootDestinationSourceMapping[rootSource];
+        if (moreRootSource == null) {
+          break;
+        }
+        rootSource = moreRootSource;
+      }
+      rootDestinationSourceMapping[destination] = rootSource;
+    });
+    return rootDestinationSourceMapping;
+  });
 
 export default analyzeAvailableCopies;
