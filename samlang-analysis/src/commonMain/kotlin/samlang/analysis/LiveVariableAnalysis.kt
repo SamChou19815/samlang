@@ -276,7 +276,7 @@ class LiveVariableAnalysis(
             outSet: Array<MutableSet<String>>
         ) {
             val nodes = ArrayDeque<Int>()
-            nodes += inSet.indices
+            graph.dfs { nodes += it.id }
             while (!nodes.isEmpty()) {
                 val nodeId = nodes.removeLast()
                 // compute out[n] = union of all { in[n’] | n' in children[n] }
