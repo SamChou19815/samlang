@@ -16,7 +16,7 @@ import {
   MIR_CJUMP_FALLTHROUGH,
   MIR_CALL_FUNCTION,
 } from '../../ast/mir';
-import optimizeIRWithConstantFolding from '../constant-folding';
+import optimizeIRWithConstantFolding from '../constant-folding-optimization';
 
 const optimizeAndDumpToString = (statements: readonly MidIRStatement[]): string =>
   optimizeIRWithConstantFolding(statements).map(midIRStatementToString).join('\n');

@@ -16,7 +16,7 @@ import {
 } from '../ast/mir';
 import { isNotNull } from '../util/type-assertions';
 
-const constantFoldExpression = (expression: MidIRExpression): MidIRExpression => {
+export const constantFoldExpression = (expression: MidIRExpression): MidIRExpression => {
   switch (expression.__type__) {
     case 'MidIRConstantExpression':
     case 'MidIRNameExpression':
