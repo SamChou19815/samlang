@@ -130,3 +130,20 @@ export const listShallowEquals = <T>(list1: readonly T[], list2: readonly T[]): 
   }
   return true;
 };
+
+export const mapEquals = <K, V>(
+  map1: ReadonlyMap<K, V>,
+  map2: ReadonlyMap<K, V>,
+  valueEqualityTester: (v1: V, v2: V) => boolean = (v1, v2) => v1 === v2
+): boolean => {
+  if (map1.size !== map2.size) {
+    return false;
+  }
+  return Array.from(map1.entries()).every(([key, v1]) => {
+    const v2 = map2.get(key);
+    if (v2 == null) {
+      return false;
+    }
+    return valueEqualityTester(v1, v2);
+  });
+};

@@ -1,4 +1,12 @@
-import { Hashable, mapOf, setOf, hashMapOf, hashSetOf, listShallowEquals } from '../collections';
+import {
+  Hashable,
+  mapOf,
+  setOf,
+  hashMapOf,
+  hashSetOf,
+  listShallowEquals,
+  mapEquals,
+} from '../collections';
 
 it('ReadOnly map and set tests', () => {
   expect(mapOf().size).toBe(0);
@@ -103,4 +111,10 @@ it('listShallowEquals tests', () => {
   expect(listShallowEquals(['a', 3], ['a', 2])).toBeFalsy();
   expect(listShallowEquals(['a', 3], ['a'])).toBeFalsy();
   expect(listShallowEquals(['a', 3], [])).toBeFalsy();
+});
+
+it('mapEquals tests', () => {
+  expect(mapEquals(new Map(), new Map([['1', 1]]))).toBeFalsy();
+  expect(mapEquals(new Map([['2', 1]]), new Map([['1', 1]]))).toBeFalsy();
+  expect(mapEquals(new Map([['1', 1]]), new Map([['1', 1]]))).toBeTruthy();
 });
