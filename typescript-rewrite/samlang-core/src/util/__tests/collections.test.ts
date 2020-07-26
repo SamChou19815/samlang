@@ -6,6 +6,7 @@ import {
   hashSetOf,
   listShallowEquals,
   mapEquals,
+  setEquals,
 } from '../collections';
 
 it('ReadOnly map and set tests', () => {
@@ -117,4 +118,10 @@ it('mapEquals tests', () => {
   expect(mapEquals(new Map(), new Map([['1', 1]]))).toBeFalsy();
   expect(mapEquals(new Map([['2', 1]]), new Map([['1', 1]]))).toBeFalsy();
   expect(mapEquals(new Map([['1', 1]]), new Map([['1', 1]]))).toBeTruthy();
+});
+
+it('setEquals tests', () => {
+  expect(setEquals(new Set(), new Set([1]))).toBeFalsy();
+  expect(setEquals(new Set([2]), new Set([1]))).toBeFalsy();
+  expect(setEquals(new Set([1]), new Set([1]))).toBeTruthy();
 });

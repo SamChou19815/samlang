@@ -147,3 +147,10 @@ export const mapEquals = <K, V>(
     return valueEqualityTester(v1, v2);
   });
 };
+
+export const setEquals = <E>(set1: ReadonlySet<E>, set2: ReadonlySet<E>): boolean => {
+  if (set1.size !== set2.size) {
+    return false;
+  }
+  return Array.from(set1).every((value) => set2.has(value));
+};
