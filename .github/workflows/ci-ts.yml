@@ -77,7 +77,7 @@ jobs:
       - name: Build
         run: yarn build
       - name: Test
-        run: yarn test
+        run: yarn test --onlyChanged
       - name: Lint
         run: yarn lint
       - name: Check Format
