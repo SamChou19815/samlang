@@ -13,7 +13,11 @@ import {
   MIR_RETURN,
 } from '../../ast/mir';
 import ControlFlowGraph from '../control-flow-graph';
-import { DataflowAnalysisGraphOperator, runBackwardDataflowAnalysis } from '../dataflow-analysis';
+import {
+  DataflowAnalysisGraphOperator,
+  runBackwardDataflowAnalysis,
+  runForwarswardDataflowAnalysis,
+} from '../dataflow-analysis';
 
 const exampleProgram: readonly MidIRStatement[] = [
   /* 00 */ MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_ONE),
@@ -47,12 +51,55 @@ const commonOperator: DataflowAnalysisGraphOperator<MidIRStatement, boolean> = {
 
 it('backward analysis runner test.', () => {
   expect(runBackwardDataflowAnalysis(exampleProgram, commonOperator)).toEqual({
-    inEdges: Array.from(new Array(15).keys()).map(() => true),
+    inEdges: (() => {
+      const result = Array.from(new Array(15).keys()).map(() => true);
+      result[14] = false;
+      return result;
+    })(),
     outEdges: (() => {
       const result = Array.from(new Array(15).keys()).map(() => true);
       result[13] = false;
       result[14] = false;
       return result;
     })(),
+  });
+});
+
+it('forward analysis runner test.', () => {
+  expect(runForwarswardDataflowAnalysis(exampleProgram, commonOperator)).toEqual({
+    inEdges: [
+      /* 00 */ false,
+      /* 01 */ true,
+      /* 02 */ true,
+      /* 03 */ true,
+      /* 04 */ true,
+      /* 05 */ true,
+      /* 06 */ false,
+      /* 07 */ true,
+      /* 08 */ true,
+      /* 09 */ true,
+      /* 10 */ true,
+      /* 11 */ true,
+      /* 12 */ true,
+      /* 13 */ true,
+      /* 14 */ false,
+    ],
+    outEdges: [
+      /* 00 */ true,
+      /* 01 */ true,
+      /* 02 */ true,
+      /* 03 */ true,
+      /* 04 */ true,
+      /* 05 */ true,
+      /* 06 */ false,
+      /* 07 */ true,
+      /* 08 */ true,
+      /* 09 */ true,
+      /* 10 */ true,
+      /* 11 */ true,
+      /* 12 */ true,
+      /* 13 */ true,
+      /* 14 */ false,
+    ],
   });
 });

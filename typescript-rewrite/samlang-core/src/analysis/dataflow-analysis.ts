@@ -25,13 +25,15 @@ export const runBackwardDataflowAnalysis = <Instruction, DataEdge>(
   const len = instructions.length;
   const inEdges = new Array<DataEdge>(len);
   const outEdges = new Array<DataEdge>(len);
-  const nodesStack = new Array<number>(len);
+  const nodesStack: number[] = [];
   for (let i = 0; i < len; i += 1) {
     inEdges[i] = edgeInitializer(i);
     outEdges[i] = edgeInitializer(i);
-    nodesStack[i] = i;
   }
   const graph = graphConstructor(instructions);
+  graph.dfs((node) => {
+    nodesStack.push(node.id);
+  });
 
   while (nodesStack.length > 0) {
     const nodeId = nodesStack.pop();
@@ -43,6 +45,47 @@ export const runBackwardDataflowAnalysis = <Instruction, DataEdge>(
     inEdges[nodeId] = newInEdge;
     if (!edgeDataEquals(oldInEdge, newInEdge)) {
       nodesStack.push(...graph.getParentIds(nodeId));
+    }
+  }
+
+  return { inEdges, outEdges };
+};
+
+export const runForwarswardDataflowAnalysis = <Instruction, DataEdge>(
+  instructions: readonly Instruction[],
+  {
+    graphConstructor,
+    edgeInitializer,
+    joinEdges,
+    computeNewEdge,
+    edgeDataEquals,
+  }: DataflowAnalysisGraphOperator<Instruction, DataEdge>
+): { readonly inEdges: readonly DataEdge[]; readonly outEdges: readonly DataEdge[] } => {
+  const len = instructions.length;
+  const inEdges = new Array<DataEdge>(len);
+  const outEdges = new Array<DataEdge>(len);
+  const nodesQueue: number[] = [];
+  for (let i = 0; i < len; i += 1) {
+    inEdges[i] = edgeInitializer(i);
+    outEdges[i] = edgeInitializer(i);
+  }
+  const graph = graphConstructor(instructions);
+  graph.dfs((node) => {
+    nodesQueue.push(node.id);
+  });
+
+  while (nodesQueue.length > 0) {
+    const nodeId = nodesQueue.shift();
+    assertNotNull(nodeId);
+    const newInEdge = joinEdges(
+      Array.from(graph.getParentIds(nodeId)).map((parentId) => outEdges[parentId])
+    );
+    inEdges[nodeId] = newInEdge;
+    const oldOutEdge = inEdges[nodeId];
+    const newOutEdge = computeNewEdge(oldOutEdge, instructions[nodeId]);
+    outEdges[nodeId] = newOutEdge;
+    if (!edgeDataEquals(oldOutEdge, newOutEdge)) {
+      nodesQueue.push(...graph.getChildrenIds(nodeId));
     }
   }
 
