@@ -8,7 +8,7 @@ export interface DataflowAnalysisGraphOperator<Instruction, DataEdge> {
   graphConstructor: (instructions: readonly Instruction[]) => ControlFlowGraph<Instruction>;
   edgeInitializer: (index: number) => DataEdge;
   joinEdges: (edges: readonly DataEdge[]) => DataEdge;
-  computeNewEdge: (oldInEdge: DataEdge, instruction: Instruction) => DataEdge;
+  computeNewEdge: (newEdgeOnTheOtherSide: DataEdge, instruction: Instruction) => DataEdge;
   edgeDataEquals: (e1: DataEdge, e2: DataEdge) => boolean;
 }
 
@@ -41,7 +41,7 @@ export const runBackwardDataflowAnalysis = <Instruction, DataEdge>(
     const newOutEdge = joinEdges(graph.getChildrenIds(nodeId).map((childId) => inEdges[childId]));
     outEdges[nodeId] = newOutEdge;
     const oldInEdge = inEdges[nodeId];
-    const newInEdge = computeNewEdge(oldInEdge, instructions[nodeId]);
+    const newInEdge = computeNewEdge(newOutEdge, instructions[nodeId]);
     inEdges[nodeId] = newInEdge;
     if (!edgeDataEquals(oldInEdge, newInEdge)) {
       nodesStack.push(...graph.getParentIds(nodeId));
@@ -51,7 +51,7 @@ export const runBackwardDataflowAnalysis = <Instruction, DataEdge>(
   return { inEdges, outEdges };
 };
 
-export const runForwarswardDataflowAnalysis = <Instruction, DataEdge>(
+export const runForwardDataflowAnalysis = <Instruction, DataEdge>(
   instructions: readonly Instruction[],
   {
     graphConstructor,
@@ -81,8 +81,8 @@ export const runForwarswardDataflowAnalysis = <Instruction, DataEdge>(
       Array.from(graph.getParentIds(nodeId)).map((parentId) => outEdges[parentId])
     );
     inEdges[nodeId] = newInEdge;
-    const oldOutEdge = inEdges[nodeId];
-    const newOutEdge = computeNewEdge(oldOutEdge, instructions[nodeId]);
+    const oldOutEdge = outEdges[nodeId];
+    const newOutEdge = computeNewEdge(newInEdge, instructions[nodeId]);
     outEdges[nodeId] = newOutEdge;
     if (!edgeDataEquals(oldOutEdge, newOutEdge)) {
       nodesQueue.push(...graph.getChildrenIds(nodeId));

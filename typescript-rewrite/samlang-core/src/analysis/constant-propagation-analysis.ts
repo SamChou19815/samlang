@@ -1,7 +1,7 @@
 import { MidIRStatement, MidIRExpression } from '../ast/mir';
 import { mapEquals } from '../util/collections';
-import { assertNotNull } from '../util/type-assertions';
 import ControlFlowGraph from './control-flow-graph';
+import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
 
 type KnownConstant = { readonly __type__: 'known'; readonly value: bigint };
 type UnknownConstant = { readonly __type__: 'unknown' };
@@ -146,52 +146,43 @@ const propagatedConstantsOnStatement = (
   }
 };
 
-const analyzePropagatedConstants = (
-  statements: readonly MidIRStatement[]
-): readonly ReadonlyMap<string, bigint>[] => {
-  const graph = ControlFlowGraph.fromMidIRStatements(statements);
-  const len = statements.length;
-  const inData = new Array<Map<string, ConstantStatus>>(len);
-  const outData = new Array<Map<string, ConstantStatus>>(len);
-  const nodes = new Array<number>(len);
-  for (let i = 0; i < len; i += 1) {
-    inData[i] = new Map();
-    outData[i] = new Map();
-    nodes[i] = i;
-  }
-
-  while (nodes.length > 0) {
-    const nodeId = nodes.shift();
-    assertNotNull(nodeId);
-    const newInMap = new Map<string, ConstantStatus>();
-    graph.getParentIds(nodeId).forEach((parentId) => {
-      outData[parentId].forEach((status, variable) => {
-        const existingStatus = newInMap.get(variable);
+const operator: DataflowAnalysisGraphOperator<MidIRStatement, Map<string, ConstantStatus>> = {
+  graphConstructor: ControlFlowGraph.fromMidIRStatements,
+  edgeInitializer: () => new Map(),
+  joinEdges: (parentOutEdges) => {
+    const newInEdge = new Map<string, ConstantStatus>();
+    parentOutEdges.forEach((parentOutEdge) => {
+      parentOutEdge.forEach((status, variable) => {
+        const existingStatus = newInEdge.get(variable);
         if (existingStatus == null) {
-          newInMap.set(variable, status);
+          newInEdge.set(variable, status);
         } else {
-          newInMap.set(variable, constantStatusMeet(status, existingStatus));
+          newInEdge.set(variable, constantStatusMeet(status, existingStatus));
         }
       });
     });
-    inData[nodeId] = newInMap;
-
-    const oldOutMap = outData[nodeId];
-    const newOutMap = new Map(newInMap);
-    const update = propagatedConstantsOnStatement(newInMap, statements[nodeId]);
+    return newInEdge;
+  },
+  computeNewEdge: (newInEdge, statement) => {
+    const newOutEdge = new Map(newInEdge);
+    const update = propagatedConstantsOnStatement(newInEdge, statement);
     if (update != null) {
-      newOutMap.set(update[0], update[1]);
+      newOutEdge.set(update[0], update[1]);
     }
-    outData[nodeId] = newOutMap;
-    if (!mapEquals(oldOutMap, newOutMap, constantStatusEquals)) {
-      nodes.push(...graph.getChildrenIds(nodeId));
-    }
-  }
+    return newOutEdge;
+  },
+  edgeDataEquals: (a, b) => mapEquals(a, b, constantStatusEquals),
+};
 
-  const propagatedConstants = new Array<Map<string, bigint>>(len);
-  for (let i = 0; i < len; i += 1) {
+const analyzePropagatedConstants = (
+  statements: readonly MidIRStatement[]
+): readonly ReadonlyMap<string, bigint>[] => {
+  const { inEdges } = runForwardDataflowAnalysis(statements, operator);
+
+  const propagatedConstants = new Array<Map<string, bigint>>(statements.length);
+  for (let i = 0; i < statements.length; i += 1) {
     const map = new Map<string, bigint>();
-    Array.from(inData[i].entries()).forEach(([variable, status]) => {
+    Array.from(inEdges[i].entries()).forEach(([variable, status]) => {
       if (status.__type__ === 'known') {
         map.set(variable, status.value);
       }

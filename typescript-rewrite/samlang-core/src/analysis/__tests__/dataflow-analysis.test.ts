@@ -16,7 +16,7 @@ import ControlFlowGraph from '../control-flow-graph';
 import {
   DataflowAnalysisGraphOperator,
   runBackwardDataflowAnalysis,
-  runForwarswardDataflowAnalysis,
+  runForwardDataflowAnalysis,
 } from '../dataflow-analysis';
 
 const exampleProgram: readonly MidIRStatement[] = [
@@ -66,7 +66,7 @@ it('backward analysis runner test.', () => {
 });
 
 it('forward analysis runner test.', () => {
-  expect(runForwarswardDataflowAnalysis(exampleProgram, commonOperator)).toEqual({
+  expect(runForwardDataflowAnalysis(exampleProgram, commonOperator)).toEqual({
     inEdges: [
       /* 00 */ false,
       /* 01 */ true,
