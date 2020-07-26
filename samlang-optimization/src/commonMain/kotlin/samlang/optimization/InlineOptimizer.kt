@@ -44,7 +44,6 @@ object InlineOptimizer {
                     functionThatCanPerformInlining += functionName
                 }
             }
-            functionsToInline.retainAll(statementInlineCostVisitor.mentionedFunctionNames)
             if (functionsToInline.isEmpty()) {
                 return tempUnit
             }
@@ -121,8 +120,6 @@ object InlineOptimizer {
     }
 
     private class StatementInlineCostVisitor : MidIrLoweredStatementVisitor<Unit, Int> {
-        val mentionedFunctionNames: MutableSet<String> = mutableSetOf()
-
         override fun visit(node: MoveTemp, context: Unit): Int =
             1 + node.source.accept(ExpressionInlineCostVisitor, Unit)
 
@@ -133,9 +130,6 @@ object InlineOptimizer {
         override fun visit(node: CallFunction, context: Unit): Int {
             var sum = 5
             val functionExpr = node.functionExpr
-            if (functionExpr is Name) {
-                mentionedFunctionNames += functionExpr.name
-            }
             sum += functionExpr.accept(ExpressionInlineCostVisitor, Unit)
             for (arg in node.arguments) {
                 sum += arg.accept(ExpressionInlineCostVisitor, Unit)
