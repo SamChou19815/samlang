@@ -276,11 +276,9 @@ class LiveVariableAnalysis(
             outSet: Array<MutableSet<String>>
         ) {
             val nodes = ArrayDeque<Int>()
-            for (i in inSet.indices) {
-                nodes.addFirst(i)
-            }
+            nodes += inSet.indices
             while (!nodes.isEmpty()) {
-                val nodeId = nodes.removeFirst()
+                val nodeId = nodes.removeLast()
                 // compute out[n] = union of all { in[n’] | n' in children[n] }
                 val newOutSet = mutableSetOf<String>()
                 for (childNodeId in graph.getChildrenIds(nodeId)) {
