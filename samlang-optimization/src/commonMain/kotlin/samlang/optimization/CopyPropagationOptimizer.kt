@@ -40,20 +40,10 @@ internal class CopyPropagationOptimizer private constructor(
 
         fun setId(id: Int) {
             replacements.clear()
-            val tempMapping = mutableMapOf<String, String?>()
-            val availableCopies = `in`[id]
-            // You cannot have one key mapped to two possible locations at a given point,
-            // however, we may never remove those impossible mappings at the end, so they
-            // appear here, we simply ignore them by storing them in invalidKeys.
-            val invalidKeys = mutableSetOf<String>()
-            for ((dest, src) in availableCopies) {
-                if (tempMapping.containsKey(dest)) {
-                    invalidKeys.add(dest)
-                    continue
-                }
+            val tempMapping = mutableMapOf<String, String>()
+            for ((dest, src) in `in`[id]) {
                 tempMapping[dest] = src
             }
-            tempMapping.keys.removeAll(invalidKeys)
             for (key in tempMapping.keys) {
                 var v = key
                 while (true) {
