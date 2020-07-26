@@ -49,7 +49,7 @@ class AvailableCopyAnalysis(private val statements: List<MidIrStatement>) {
                     if (existingSrc == null) {
                         newInSetCopyMap[dest] = copy.src
                     }
-                    if (copy.src == existingSrc) {
+                    if (existingSrc != null && copy.src == existingSrc) {
                         continue
                     }
                     conflictingDestSet += dest
