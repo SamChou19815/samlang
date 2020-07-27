@@ -116,10 +116,8 @@ class LocalValueNumberingAnalysis(statements: List<MidIrStatement>) {
         }
 
         override fun visit(node: MoveMem, context: NumberingInfo): NumberingInfo {
-            val newInfo = plusFromAllSubExpressions(info = context, expr = node.source)
-            val newInfoWithoutMem = newInfo.withAllMemRemoved()
             return plusFromAllSubExpressions(
-                info = newInfoWithoutMem,
+                info = plusFromAllSubExpressions(info = context, expr = node.source),
                 expr = IMMUTABLE_MEM(expression = node.memLocation)
             )
         }
@@ -210,17 +208,6 @@ class LocalValueNumberingAnalysis(statements: List<MidIrStatement>) {
             val numbersToRemove = mutableSetOf<Int>()
             for ((key, value) in info) {
                 if (ContainsTempDetector.check(key, Temporary(name))) {
-                    numbersToRemove.add(value)
-                }
-            }
-            return withAllGivenNumbersRemoved(numbersToRemove)
-        }
-
-        /** @return the new immutable info with all expressions containing mem removed. */
-        fun withAllMemRemoved(): NumberingInfo {
-            val numbersToRemove = mutableSetOf<Int>()
-            for ((key, value) in info) {
-                if (HasMemDetector.hasMem(key)) {
                     numbersToRemove.add(value)
                 }
             }
