@@ -9,7 +9,7 @@ export default class ExpressionInterpreter {
     throw Error(message);
   };
 
-  readonly eval = (expression: SamlangExpression) => {
+  readonly eval = (expression: SamlangExpression, context) => {
     switch (expression.__type__) {
       case 'LiteralExpression':
         return expression.literal.value;
