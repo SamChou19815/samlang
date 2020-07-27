@@ -37,10 +37,6 @@ class LocalValueNumberingAnalysis(statements: List<MidIrStatement>) {
         val len = statements.size
         numberingInfoListIn = arrayOfNulls(len)
         infoCollectorVisitor = NumberingInfoCollectorVisitor()
-        computeLocalValueNumberingInfo()
-    }
-
-    private fun computeLocalValueNumberingInfo() {
         val workList = ArrayDeque<ControlFlowGraph.Node<MidIrStatement>>()
         workList.add(graph.startNode)
         while (!workList.isEmpty()) {
