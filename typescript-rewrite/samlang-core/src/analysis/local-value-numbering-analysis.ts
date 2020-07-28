@@ -18,7 +18,7 @@ class LocalNumberingAllocator {
   }
 }
 
-interface ReadonlyLocalNumberingInformation {
+export interface ReadonlyLocalNumberingInformation {
   getTemporaryReplacementForExpression(
     midIrExpression: MidIRExpression
   ): MidIRTemporaryExpression | null;
