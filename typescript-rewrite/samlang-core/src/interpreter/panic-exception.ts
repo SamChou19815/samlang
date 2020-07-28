@@ -5,7 +5,7 @@
  *
  * @param reason the reason of this exception.
  */
-export class PanicException extends Error {
+export default class PanicException extends Error {
   constructor(reason: string) {
     super(reason);
   }
