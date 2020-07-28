@@ -21,7 +21,7 @@ const midIRAdapter: Adapter<MidIRStatement> = {
   isReturn: (instruction) => instruction.__type__ === 'MidIRReturnStatement',
 };
 
-type ControlFlowGraphNode<I> = { readonly id: number; readonly instruction: I };
+export type ControlFlowGraphNode<I> = { readonly id: number; readonly instruction: I };
 
 export default class ControlFlowGraph<I> {
   private readonly nodeMap: Map<number, ControlFlowGraphNode<I>> = new Map();
