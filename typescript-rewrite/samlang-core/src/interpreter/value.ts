@@ -51,5 +51,5 @@ export type FunctionValue = {
   readonly type: 'functionValue';
   readonly arguments: string[];
   readonly body: SamlangExpression;
-  readonly context: InterpretationContext;
+  context: InterpretationContext;
 }
