@@ -1,14 +1,7 @@
 package samlang.analysis
 
 import samlang.ast.mir.MidIrExpression
-import samlang.ast.mir.MidIrExpression.Temporary
-import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
-import samlang.ast.mir.MidIrStatement.ConditionalJumpFallThrough
-import samlang.ast.mir.MidIrStatement.Label
-import samlang.ast.mir.MidIrStatement.MoveMem
-import samlang.ast.mir.MidIrStatement.MoveTemp
-import samlang.ast.mir.MidIrStatement.Return
 
 /**
  * The class that provides the available copy expression result.
@@ -74,42 +67,11 @@ class AvailableExpressionAnalysis(private val statements: List<MidIrStatement>) 
                     newOutSet += ExprInfo(appearId = nodeId, expression = exprHere)
                 }
             }
-            statements[nodeId].accept(visitor = KillVisitor, context = newOutSet)
             expressionOut[nodeId] = newOutSet
             if (newOutSet != oldOutSet) {
                 nodes += graph.getChildrenIds(nodeId)
             }
         }
-    }
-
-    /** The class that acts as the kill application. */
-    private object KillVisitor : MidIrLoweredStatementVisitor<MutableSet<ExprInfo>, Unit> {
-        override fun visit(node: MoveTemp, context: MutableSet<ExprInfo>) {
-            val tempName = node.tempId
-            context.removeAllOf { info -> ContainsTempDetector.check(info.expression, Temporary(tempName)) }
-        }
-
-        override fun visit(node: MoveMem, context: MutableSet<ExprInfo>): Unit = Unit
-
-        override fun visit(node: MidIrStatement.CallFunction, context: MutableSet<ExprInfo>) {
-            node.returnCollector?.let {
-                context.removeAllOf { info -> ContainsTempDetector.check(info.expression, it) }
-            }
-        }
-
-        private inline fun <T> MutableSet<T>.removeAllOf(crossinline predicate: (item: T) -> Boolean) {
-            val iterator = this.iterator()
-            while (iterator.hasNext()) {
-                if (predicate(iterator.next())) {
-                    iterator.remove()
-                }
-            }
-        }
-
-        override fun visit(node: MidIrStatement.Jump, context: MutableSet<ExprInfo>): Unit = Unit
-        override fun visit(node: ConditionalJumpFallThrough, context: MutableSet<ExprInfo>): Unit = Unit
-        override fun visit(node: Label, context: MutableSet<ExprInfo>): Unit = Unit
-        override fun visit(node: Return, context: MutableSet<ExprInfo>): Unit = context.clear()
     }
 
     /**
