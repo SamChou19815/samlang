@@ -76,7 +76,6 @@ export default class ExpressionInterpreter {
           this.blameTypeChecker();
         const newCtx = { ...context };
         newCtx.localValues = context.localValues.set('this', thisValue);
-        // should context not be readonly?
         methodValue.context = newCtx;
         return methodValue;
       }
@@ -100,7 +99,7 @@ export default class ExpressionInterpreter {
           case 'stringToInt': {
             const value = (argumentValue as StringValue).value;
             const parsedValue = parseInt(value, 10);
-            if (parsedValue) {
+            if (parsedValue !== null) {
               return { type: 'int', value: parsedValue };
             }
             throw new PanicException(`Cannot convert \`${value}\` to int.`);
@@ -235,7 +234,7 @@ export default class ExpressionInterpreter {
         };
       case 'StatementBlockExpression': {
         const { block } = expression;
-        const currentContext = context;
+        const currentContext = { ...context };
         block.statements.forEach((statement) => {
           const assignedValue = this.eval(statement.assignedExpression, currentContext);
           const p = statement.pattern;

@@ -1,4 +1,3 @@
-import { isTheSameType } from '../../ast/common/types';
 import PanicException from '../panic-exception';
 
 it('Throws Panic Exception', () => {

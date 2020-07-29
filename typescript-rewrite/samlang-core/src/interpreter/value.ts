@@ -57,7 +57,7 @@ const compareObjectContents = (m1: Map<string, Value>, m2: Map<string, Value>): 
   if (m1.size !== m2.size) {
     return false;
   }
-  for (let [key, val] of m1) {
+  for (const [key, val] of m1) {
     const val2 = m2.get(key);
     if ((val2 !== undefined && !isSameValue(val2, val)) || (val2 === undefined && !m2.has(key))) {
       return false;

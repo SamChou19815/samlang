@@ -1,6 +1,6 @@
-import { Value, isSameValue } from '../value';
-import { EXPRESSION_TRUE } from '../../ast/lang/samlang-expressions';
 import { Range, Position } from '../..';
+import { EXPRESSION_TRUE } from '../../ast/lang/samlang-expressions';
+import { Value, isSameValue } from '../value';
 
 it('value equality test', () => {
   expect(isSameValue({ type: 'unit' }, { type: 'unit' })).toBeTruthy();
