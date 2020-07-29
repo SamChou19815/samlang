@@ -125,7 +125,7 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
                         // simple expressions are not collected. They are cheap to recompute!
                         continue
                     }
-                    if (id >= appearId && expr == exprToSearch) {
+                    if (expr == exprToSearch) {
                         val usages = usageMaps[appearId]
                         val expressionUsages = usages[expr]
                         if (expressionUsages == null) {
