@@ -109,7 +109,7 @@ export default class ExpressionInterpreter {
             return { type: 'string', value: (argumentValue as IntValue).value.toString() };
           case 'println':
             this.printedCollector.concat(`${(argumentValue as StringValue).value}\n`);
-            return { type: 'unit', value: undefined };
+            return { type: 'unit' };
         }
         break;
       }
@@ -265,9 +265,7 @@ export default class ExpressionInterpreter {
           }
         });
         const finalExpression = block.expression;
-        return finalExpression === undefined
-          ? { type: 'unit', value: undefined }
-          : this.eval(finalExpression);
+        return finalExpression === undefined ? { type: 'unit' } : this.eval(finalExpression);
       }
     }
   };
