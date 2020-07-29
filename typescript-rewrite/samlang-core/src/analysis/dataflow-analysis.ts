@@ -3,12 +3,16 @@
 import { assertNotNull } from '../util/type-assertions';
 import type ControlFlowGraph from './control-flow-graph';
 
-/** Defines how to compute stuff on tha graph. */
+/** Defines how to compute stuff on the graph. */
 export interface DataflowAnalysisGraphOperator<Instruction, DataEdge> {
   graphConstructor: (instructions: readonly Instruction[]) => ControlFlowGraph<Instruction>;
   edgeInitializer: (index: number) => DataEdge;
   joinEdges: (edges: readonly DataEdge[]) => DataEdge;
-  computeNewEdge: (newEdgeOnTheOtherSide: DataEdge, instruction: Instruction) => DataEdge;
+  computeNewEdge: (
+    newEdgeOnTheOtherSide: DataEdge,
+    instruction: Instruction,
+    nodeID: number
+  ) => DataEdge;
   edgeDataEquals: (e1: DataEdge, e2: DataEdge) => boolean;
 }
 
@@ -41,7 +45,7 @@ export const runBackwardDataflowAnalysis = <Instruction, DataEdge>(
     const newOutEdge = joinEdges(graph.getChildrenIds(nodeId).map((childId) => inEdges[childId]));
     outEdges[nodeId] = newOutEdge;
     const oldInEdge = inEdges[nodeId];
-    const newInEdge = computeNewEdge(newOutEdge, instructions[nodeId]);
+    const newInEdge = computeNewEdge(newOutEdge, instructions[nodeId], nodeId);
     inEdges[nodeId] = newInEdge;
     if (!edgeDataEquals(oldInEdge, newInEdge)) {
       nodesStack.push(...graph.getParentIds(nodeId));
@@ -82,7 +86,7 @@ export const runForwardDataflowAnalysis = <Instruction, DataEdge>(
     );
     inEdges[nodeId] = newInEdge;
     const oldOutEdge = outEdges[nodeId];
-    const newOutEdge = computeNewEdge(newInEdge, instructions[nodeId]);
+    const newOutEdge = computeNewEdge(newInEdge, instructions[nodeId], nodeId);
     outEdges[nodeId] = newOutEdge;
     if (!edgeDataEquals(oldOutEdge, newOutEdge)) {
       nodesQueue.push(...graph.getChildrenIds(nodeId));

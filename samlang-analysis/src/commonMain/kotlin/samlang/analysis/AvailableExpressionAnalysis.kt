@@ -15,7 +15,7 @@ class AvailableExpressionAnalysis(private val statements: List<MidIrStatement>) 
     /** The mapping from a node id to expressions.  */
     private val expressionMapping: Array<Set<MidIrExpression>>
     /** The mapping from a node id to different sets  */
-    val expressionsIn: Array<MutableSet<ExprInfo>>
+    private val expressionsIn: Array<MutableSet<ExprInfo>>
     /** A map of instruction id to a set of expressions out of a node. */
     val expressionOut: Array<MutableSet<ExprInfo>>
 
