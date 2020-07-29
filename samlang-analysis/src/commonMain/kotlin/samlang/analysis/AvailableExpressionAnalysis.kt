@@ -34,24 +34,23 @@ class AvailableExpressionAnalysis(private val statements: List<MidIrStatement>) 
         }
         while (!nodes.isEmpty()) {
             val nodeId = nodes.removeFirst()
-            val newInMap = mutableMapOf<MidIrExpression, Int>()
-            val expressionsToRemove = mutableSetOf<MidIrExpression>()
-            graph.getParentIds(nodeId).asSequence().map { prevNodeId -> expressionOut[prevNodeId] }.forEach { set ->
-                for (info in set) {
-                    val expr = info.expression
-                    val appearId = info.appearId
-                    val existingAppearId = newInMap[expr]
-                    if (existingAppearId == null) {
-                        newInMap[expr] = appearId
-                    } else if (existingAppearId != appearId) {
-                        expressionsToRemove.add(expr)
+            val newInSet = mutableSetOf<ExprInfo>()
+            val parents = graph.getParentIds(nodeId).map { prevNodeId -> expressionOut[prevNodeId] }
+            if (parents.isNotEmpty()) {
+                val otherParents = parents.subList(fromIndex = 1, toIndex = parents.size)
+                parents[0].forEach { info ->
+                    val sameExpressionFromOtherParent = otherParents.map { set ->
+                        set.firstOrNull { it.expression == info.expression }
+                    }
+                    val sameExpressionFromOtherParentNoNulls = sameExpressionFromOtherParent.filterNotNull()
+                    if (sameExpressionFromOtherParentNoNulls.size == sameExpressionFromOtherParent.size) {
+                        newInSet += ExprInfo(
+                            appearId = sameExpressionFromOtherParentNoNulls.map { it.appearId }.min() ?: info.appearId,
+                            expression = info.expression
+                        )
                     }
                 }
             }
-            newInMap.keys.removeAll(expressionsToRemove)
-            val newInSet = newInMap.entries
-                .map { (key, value) -> ExprInfo(appearId = value, expression = key) }
-                .toMutableSet()
             expressionsIn[nodeId] = newInSet
             val oldOutSet = expressionOut[nodeId]
             val newOutSet = newInSet.toMutableSet()

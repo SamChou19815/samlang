@@ -49,28 +49,25 @@ class PrintInterpreterTest : FreeSpec() {
             "Program: $id" - { ModuleInterpreter().run(module = module).trim() shouldBe expected }
         }
         for ((id, ir, expected) in irTestCases) {
-            "IR[no-opt]: $id" - { testIr(ir = ir, expected = expected, optimizer = Optimizer.getNoOpOptimizer()) }
-            "IR[copy]: $id" - { testIr(ir = ir, expected = expected, optimizer = COPY_OPT) }
-            "IR[vn]: $id" - { testIr(ir = ir, expected = expected, optimizer = VN_OPT) }
-            "IR[cse]: $id" - { testIr(ir = ir, expected = expected, optimizer = CSE_OPT) }
-            "IR[dce]: $id" - { testIr(ir = ir, expected = expected, optimizer = DCE_OPT) }
-            "IR[inl]: $id" - { testIr(ir = ir, expected = expected, optimizer = INL_OPT) }
-            "IR[all-optimizations]: $id" - {
-                val fullyOptimizedIr = testIr(ir = ir, expected = expected, optimizer = ALL_OPT)
-                "ASM[no-ralloc]" - {
-                    testAsm(
-                        irCompilationUnit = fullyOptimizedIr,
-                        expected = expected,
-                        enableRegisterAllocation = false
-                    )
-                }
-                "ASM[with-ralloc]" - {
-                    testAsm(
-                        irCompilationUnit = fullyOptimizedIr,
-                        expected = expected,
-                        enableRegisterAllocation = true
-                    )
-                }
+            "IR[no-opt]: $id" { testIr(ir = ir, expected = expected, optimizer = Optimizer.getNoOpOptimizer()) }
+            "IR[copy]: $id" { testIr(ir = ir, expected = expected, optimizer = COPY_OPT) }
+            "IR[vn]: $id" { testIr(ir = ir, expected = expected, optimizer = VN_OPT) }
+            "IR[cse]: $id" { testIr(ir = ir, expected = expected, optimizer = CSE_OPT) }
+            "IR[dce]: $id" { testIr(ir = ir, expected = expected, optimizer = DCE_OPT) }
+            "IR[inl]: $id" { testIr(ir = ir, expected = expected, optimizer = INL_OPT) }
+            "ASM[no-ralloc]: $id" {
+                testAsm(
+                    irCompilationUnit = testIr(ir = ir, expected = expected, optimizer = ALL_OPT),
+                    expected = expected,
+                    enableRegisterAllocation = false
+                )
+            }
+            "ASM[with-ralloc]: $id" {
+                testAsm(
+                    irCompilationUnit = testIr(ir = ir, expected = expected, optimizer = ALL_OPT),
+                    expected = expected,
+                    enableRegisterAllocation = true
+                )
             }
         }
     }
@@ -81,7 +78,14 @@ class PrintInterpreterTest : FreeSpec() {
         optimizer: Optimizer<MidIrCompilationUnit>
     ): MidIrCompilationUnit {
         val optimized = optimizer.optimize(source = ir)
-        interpretCompilationUnit(compilationUnit = optimized).trim() shouldBe expected
+        try {
+            interpretCompilationUnit(compilationUnit = optimized).trim() shouldBe expected
+        } catch (e: PanicException) {
+            System.err.println(ir)
+            System.err.println()
+            System.err.println(optimized)
+            throw e
+        }
         return optimized
     }
 

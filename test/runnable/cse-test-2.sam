@@ -3,7 +3,10 @@
 class Main {
   function printInt(i: int): unit = println(intToString(i))
 
-  function check(actual: int, expected: int): unit = if (actual != expected) then panic("") else {}
+  function check(actual: int, expected: int): unit =
+    if (actual != expected) then
+      panic("actual: "::intToString(actual)::", expected "::intToString(expected))
+    else {}
 
   function test(first: bool, a: int, b: int, aTimesB: int): unit = {
     val t = if (first) then a * b else a * b;
