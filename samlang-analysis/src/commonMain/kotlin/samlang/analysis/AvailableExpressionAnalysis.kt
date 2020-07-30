@@ -15,15 +15,15 @@ class AvailableExpressionAnalysis(private val statements: List<MidIrStatement>) 
     /** The mapping from a node id to expressions.  */
     private val expressionMapping: Array<Set<MidIrExpression>>
     /** The mapping from a node id to different sets  */
-    private val expressionsIn: Array<MutableSet<ExprInfo>>
+    private val expressionsIn: Array<Map<MidIrExpression, Set<Int>>>
     /** A map of instruction id to a set of expressions out of a node. */
-    val expressionOut: Array<MutableSet<ExprInfo>>
+    val expressionOut: Array<Map<MidIrExpression, Set<Int>>>
 
     init {
         val len = statements.size
         expressionMapping = Array(size = len) { i -> SubExpressionExtractor.get(statements[i]) }
-        expressionsIn = Array(size = len) { mutableSetOf<ExprInfo>() }
-        expressionOut = Array(size = len) { mutableSetOf<ExprInfo>() }
+        expressionsIn = Array(size = len) { mutableMapOf<MidIrExpression, Set<Int>>() }
+        expressionOut = Array(size = len) { mutableMapOf<MidIrExpression, Set<Int>>() }
         computeInOutSets()
     }
 
@@ -34,50 +34,33 @@ class AvailableExpressionAnalysis(private val statements: List<MidIrStatement>) 
         }
         while (!nodes.isEmpty()) {
             val nodeId = nodes.removeFirst()
-            val newInSet = mutableSetOf<ExprInfo>()
+            val newInMap = mutableMapOf<MidIrExpression, Set<Int>>()
             val parents = graph.getParentIds(nodeId).map { prevNodeId -> expressionOut[prevNodeId] }
             if (parents.isNotEmpty()) {
                 val otherParents = parents.subList(fromIndex = 1, toIndex = parents.size)
                 parents[0].forEach { info ->
-                    val sameExpressionFromOtherParent = otherParents.map { set ->
-                        set.firstOrNull { it.expression == info.expression }
+                    val sameExpressionAppearSiteFromOtherParentsNullable = otherParents.map {
+                        if (it.containsKey(key = info.key)) info.value else null
                     }
-                    val sameExpressionFromOtherParentNoNulls = sameExpressionFromOtherParent.filterNotNull()
-                    if (sameExpressionFromOtherParentNoNulls.size == sameExpressionFromOtherParent.size) {
-                        newInSet += ExprInfo(
-                            appearId = sameExpressionFromOtherParentNoNulls.map { it.appearId }.min() ?: info.appearId,
-                            expression = info.expression
-                        )
+                    val sameExpressionAppearSiteFromOtherParents = sameExpressionAppearSiteFromOtherParentsNullable.filterNotNull()
+                    if (sameExpressionAppearSiteFromOtherParentsNullable.size == sameExpressionAppearSiteFromOtherParents.size) {
+                        newInMap[info.key] = (sameExpressionAppearSiteFromOtherParents.flatten() + info.value).toSet()
                     }
                 }
             }
-            expressionsIn[nodeId] = newInSet
-            val oldOutSet = expressionOut[nodeId]
-            val newOutSet = newInSet.toMutableSet()
+            expressionsIn[nodeId] = newInMap
+            val oldOutMap = expressionOut[nodeId]
+            val newOutMap = newInMap.toMutableMap()
             for (exprHere in expressionMapping[nodeId]) {
-                var alreadyThere = false
-                for (exprAlreadyThere in newOutSet) {
-                    if (exprHere == exprAlreadyThere.expression) {
-                        alreadyThere = true
-                        break
-                    }
+                if (!oldOutMap.containsKey(key = exprHere)) {
+                    newOutMap[exprHere] = setOf(nodeId)
                 }
-                if (!alreadyThere) {
-                    newOutSet += ExprInfo(appearId = nodeId, expression = exprHere)
-                }
+                // We do nothing if things are already there, because we want to keep the first appearance source.
             }
-            expressionOut[nodeId] = newOutSet
-            if (newOutSet != oldOutSet) {
+            expressionOut[nodeId] = newOutMap
+            if (oldOutMap != newOutMap) {
                 nodes += graph.getChildrenIds(nodeId)
             }
         }
-    }
-
-    /**
-     * @param appearId the id of the expression where the expression appears.
-     * @param expression the actual expression.
-     */
-    data class ExprInfo(val appearId: Int, val expression: MidIrExpression) {
-        override fun toString(): String = "{ id: $appearId, expr: \"$expression\" }"
     }
 }
