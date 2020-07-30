@@ -38,6 +38,9 @@ OK
 #./out/x86/test.runnable.cse-test-5
 150
 
+#./out/x86/test.runnable.cse-test-6
+OK
+
 #./out/x86/test.runnable.different-expr-demo
 42
 

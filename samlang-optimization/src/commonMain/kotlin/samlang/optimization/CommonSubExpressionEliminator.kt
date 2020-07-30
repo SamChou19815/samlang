@@ -1,27 +1,16 @@
 package samlang.optimization
 
 import samlang.analysis.AvailableExpressionAnalysis
-import samlang.analysis.AvailableExpressionAnalysis.ExprInfo
 import samlang.analysis.ContainsTempDetector
 import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
+import samlang.ast.mir.MidIrExpression.*
 import samlang.ast.mir.MidIrExpression.Companion.IMMUTABLE_MEM
-import samlang.ast.mir.MidIrExpression.Constant
-import samlang.ast.mir.MidIrExpression.Mem
-import samlang.ast.mir.MidIrExpression.Name
-import samlang.ast.mir.MidIrExpression.Op
-import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
-import samlang.ast.mir.MidIrStatement.CallFunction
+import samlang.ast.mir.MidIrStatement.*
 import samlang.ast.mir.MidIrStatement.Companion.MOVE
-import samlang.ast.mir.MidIrStatement.ConditionalJumpFallThrough
-import samlang.ast.mir.MidIrStatement.Jump
-import samlang.ast.mir.MidIrStatement.Label
-import samlang.ast.mir.MidIrStatement.MoveMem
-import samlang.ast.mir.MidIrStatement.MoveTemp
-import samlang.ast.mir.MidIrStatement.Return
 
 /**
  * The eliminator for common sub-expressions.
@@ -29,36 +18,35 @@ import samlang.ast.mir.MidIrStatement.Return
  */
 @ExperimentalStdlibApi
 internal class CommonSubExpressionEliminator private constructor(statements: List<MidIrStatement>) {
-    /** The available analysis into the nodes.  */
-    private val out: Array<MutableSet<ExprInfo>> = AvailableExpressionAnalysis(statements).expressionOut
-    /** The usage maps. firstAppeared ==> (expr, a set of all usage places).  */
-    private val usageMaps: Array<MutableMap<MidIrExpression, MutableSet<Int>>>
     /** The new statements produced after optimization.  */
     private val newStatements: MutableList<MidIrStatement> = mutableListOf()
 
     init {
         val len = statements.size
         // first pass: initialize all arrays.
-        usageMaps = Array(size = len) { mutableMapOf<MidIrExpression, MutableSet<Int>>() }
+        val usageMaps = computeUsageMap(statements = statements)
         val replacementMaps = Array(size = len) { mutableMapOf<MidIrExpression, Temporary>() }
-        // second pass: collector all expression usage info into usageMaps
-        for (i in 0 until len) {
-            statements[i].accept(ExprUsageCollector(i), Unit)
-        }
-        // third pass: construct the hoisting and replacement map.
-        val hoistingLists = (0 until len).map { i ->
-            val usageMap = usageMaps[i]
-            val hoistingMap = mutableMapOf<Temporary, MidIrExpression>()
-            for ((exprToReplace, usageSet) in usageMap) {
-                if (usageSet.size <= 1) { // less than one use ==> do not optimize
-                    continue
-                }
+        // second pass: construct the hoisting and replacement map.
+        val hoistingMaps = mutableMapOf<Int, MutableMap<Temporary, MidIrExpression>>()
+        usageMaps.forEach { (exprToReplace, usage) ->
+            if (usage.appearSites.size < usage.useSites.size) {
+                // Only hoist expressions when it's used more than it's defined.
                 val tempForHoistedExpr = OptimizationResourceAllocator.nextTemp()
-                hoistingMap[tempForHoistedExpr] = exprToReplace
-                for (usagePlace in usageSet) {
+                for (usagePlace in usage.useSites) {
                     replacementMaps[usagePlace][exprToReplace] = tempForHoistedExpr
                 }
+                usage.appearSites.forEach { appearId ->
+                    val hoistingMap = hoistingMaps[appearId]
+                    if (hoistingMap == null) {
+                        hoistingMaps[appearId] = mutableMapOf(tempForHoistedExpr to exprToReplace)
+                    } else {
+                        hoistingMap[tempForHoistedExpr] = exprToReplace
+                    }
+                }
             }
+        }
+        val hoistingLists = (0 until len).map { i ->
+            val hoistingMap = hoistingMaps[i] ?: mutableMapOf()
             // cleanup hoisting map to avoid repeated computation of sub expressions.
             val replacementMapForHoistingMap = hoistingMap.map { it.value to it.key }.toMap()
             hoistingMap.asSequence()
@@ -81,7 +69,7 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
                 })
                 .toList()
         }
-        // fourth pass: adding hoisting statements and rewrite statements
+        // third pass: adding hoisting statements and rewrite statements
         for (i in 0 until len) {
             val hoistingList = hoistingLists[i]
             for ((first, second) in hoistingList) {
@@ -91,45 +79,46 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
         }
     }
 
-    private inner class ExprUsageCollector(
-        private val id: Int
-    ) : MidIrLoweredStatementVisitor<Unit, Unit> {
+    private class ExprUsageCollector(
+        private val availableExpressionsOut: Set<MidIrExpression>
+    ) : MidIrLoweredStatementVisitor<Int, Unit> {
         private val exprVisitor = ExprVisitor()
-        private val availableExpressionsOut: Set<ExprInfo> = out[id]
+        val usageMap: MutableMap<MidIrExpression, MutableSet<Int>> = mutableMapOf()
 
-        private fun fullSearchAndRecord(expr: MidIrExpression): Unit = expr.accept(exprVisitor, Unit)
+        private fun fullSearchAndRecord(expr: MidIrExpression, id: Int): Unit = expr.accept(exprVisitor, id)
 
-        override fun visit(node: MoveTemp, context: Unit): Unit = fullSearchAndRecord(expr = node.source)
+        override fun visit(node: MoveTemp, context: Int): Unit = fullSearchAndRecord(expr = node.source, id = context)
 
-        override fun visit(node: MoveMem, context: Unit) {
-            fullSearchAndRecord(expr = node.source)
-            fullSearchAndRecord(expr = IMMUTABLE_MEM(expression = node.memLocation))
+        override fun visit(node: MoveMem, context: Int) {
+            fullSearchAndRecord(expr = node.source, id = context)
+            fullSearchAndRecord(expr = IMMUTABLE_MEM(expression = node.memLocation), id = context)
         }
 
-        override fun visit(node: CallFunction, context: Unit): Unit = node.arguments.forEach { fullSearchAndRecord(it) }
-        override fun visit(node: Jump, context: Unit): Unit = Unit
+        override fun visit(node: CallFunction, context: Int): Unit =
+            node.arguments.forEach { fullSearchAndRecord(it, context) }
 
-        override fun visit(node: ConditionalJumpFallThrough, context: Unit): Unit =
-            fullSearchAndRecord(node.condition)
+        override fun visit(node: Jump, context: Int): Unit = Unit
 
-        override fun visit(node: Label, context: Unit): Unit = Unit
+        override fun visit(node: ConditionalJumpFallThrough, context: Int): Unit =
+            fullSearchAndRecord(node.condition, context)
 
-        override fun visit(node: Return, context: Unit) {
-            node.returnedExpression?.let { fullSearchAndRecord(it) }
+        override fun visit(node: Label, context: Int): Unit = Unit
+
+        override fun visit(node: Return, context: Int) {
+            node.returnedExpression?.let { fullSearchAndRecord(it, context) }
         }
 
-        private inner class ExprVisitor : MidIrExpressionVisitor<Unit, Unit> {
-            private fun searchAndRecord(exprToSearch: MidIrExpression) {
-                for ((appearId, expr) in availableExpressionsOut) {
+        private inner class ExprVisitor : MidIrExpressionVisitor<Int, Unit> {
+            private fun searchAndRecord(exprToSearch: MidIrExpression, id: Int) {
+                for (expr in availableExpressionsOut) {
                     if (isSimple(expr)) {
                         // simple expressions are not collected. They are cheap to recompute!
                         continue
                     }
-                    if (id >= appearId && expr == exprToSearch) {
-                        val usages = usageMaps[appearId]
-                        val expressionUsages = usages[expr]
+                    if (expr == exprToSearch) {
+                        val expressionUsages = usageMap[expr]
                         if (expressionUsages == null) {
-                            usages[expr] = mutableSetOf(id)
+                            usageMap[expr] = mutableSetOf(id)
                         } else {
                             expressionUsages.add(id)
                         }
@@ -137,19 +126,19 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
                 }
             }
 
-            override fun visit(node: Constant, context: Unit): Unit = Unit
-            override fun visit(node: Name, context: Unit): Unit = Unit
-            override fun visit(node: Temporary, context: Unit): Unit = Unit
+            override fun visit(node: Constant, context: Int): Unit = Unit
+            override fun visit(node: Name, context: Int): Unit = Unit
+            override fun visit(node: Temporary, context: Int): Unit = Unit
 
-            override fun visit(node: Op, context: Unit) {
-                searchAndRecord(node)
-                node.e1.accept(visitor = this, context = Unit)
-                node.e2.accept(visitor = this, context = Unit)
+            override fun visit(node: Op, context: Int) {
+                searchAndRecord(node, context)
+                node.e1.accept(visitor = this, context = context)
+                node.e2.accept(visitor = this, context = context)
             }
 
-            override fun visit(node: Mem, context: Unit) {
-                searchAndRecord(node)
-                node.expression.accept(visitor = this, context = Unit)
+            override fun visit(node: Mem, context: Int) {
+                searchAndRecord(node, context)
+                node.expression.accept(visitor = this, context = context)
             }
         }
     }
@@ -221,6 +210,8 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
             context[node] ?: node.copy(expression = node.expression.accept(visitor = this, context = context))
     }
 
+    private data class ExpressionUsage(val appearSites: Set<Int>, val useSites: Set<Int>)
+
     companion object {
         fun optimize(statements: List<MidIrStatement>): List<MidIrStatement> =
             CommonSubExpressionEliminator(statements).newStatements
@@ -249,6 +240,36 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
                 else -> return false
             }
             return isPrimitive(e1) && isPrimitive(e2)
+        }
+
+        private fun computeUsageMap(statements: List<MidIrStatement>): Map<MidIrExpression, ExpressionUsage> {
+            val analysisResult = AvailableExpressionAnalysis(statements).expressionOut
+            val usageMap = mutableMapOf<MidIrExpression, Pair<MutableSet<Int>, MutableSet<Int>>>()
+            statements.forEachIndexed { i, statement ->
+                val analysisResultForStatement = analysisResult[i]
+                val collector = ExprUsageCollector(analysisResultForStatement.keys)
+                statement.accept(collector, i)
+                analysisResultForStatement.forEach { (expression, firstAppearSites) ->
+                    val appearsAndUses = usageMap[expression]
+                    if (appearsAndUses == null) {
+                        usageMap[expression] = firstAppearSites.toMutableSet() to mutableSetOf()
+                    } else {
+                        appearsAndUses.first.addAll(firstAppearSites)
+                    }
+                }
+                collector.usageMap.forEach { (expression, useSites) ->
+                    val appearsAndUses = usageMap[expression]
+                    if (appearsAndUses == null) {
+                        usageMap[expression] = mutableSetOf<Int>() to useSites.toMutableSet()
+                    } else {
+                        appearsAndUses.second.addAll(useSites)
+                    }
+                }
+            }
+            return usageMap.mapValues { (_, pair) ->
+                val (appearSites, usageSites) = pair
+                ExpressionUsage(appearSites = appearSites, useSites = usageSites)
+            }
         }
 
         private fun replace(

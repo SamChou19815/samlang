@@ -14,6 +14,7 @@ val printInterpreterExpectedResult: Map<String, String> = mapOf(
     "cse-test-3" to "2181",
     "cse-test-4" to "2700",
     "cse-test-5" to "150",
+    "cse-test-6" to "OK",
     "different-expr-demo" to "42",
     "different-modules-demo" to "OK",
     "empty" to "",
