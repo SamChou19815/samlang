@@ -1,4 +1,5 @@
-import { FunctionValue, Value } from './value';
+import { mapEquals } from '../util/collections';
+import { FunctionValue, Value, isSameValue } from './value';
 
 /**
  * Context for interpretation. It stores the previously computed values and references.
@@ -27,4 +28,18 @@ export type ClassValue = {
 export const EMPTY: InterpretationContext = {
   classes: new Map(),
   localValues: new Map(),
+};
+
+export const isSameClassValue = (c1: ClassValue, c2: ClassValue): boolean => {
+  return (
+    mapEquals(c1.functions, c2.functions, isSameValue) &&
+    mapEquals(c1.methods, c2.methods, isSameValue)
+  );
+};
+
+export const isSameContext = (c1: InterpretationContext, c2: InterpretationContext): boolean => {
+  return (
+    mapEquals(c1.classes, c2.classes, isSameClassValue) &&
+    mapEquals(c1.localValues, c2.localValues, isSameValue)
+  );
 };

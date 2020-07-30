@@ -11,6 +11,7 @@ import {
   FunctionValue,
   VariantValue,
   TupleValue,
+  isSameValue,
 } from './value';
 
 export default class ExpressionInterpreter {
@@ -34,14 +35,14 @@ export default class ExpressionInterpreter {
           case 'BoolLiteral':
             return { type: 'bool', value: expression.literal.value };
         }
-        break;
       }
+      // eslint-disable-next-line no-fallthrough
       case 'ThisExpression':
         return context.localValues.get('this') ?? this.blameTypeChecker('Missing `this`');
       case 'VariableExpression':
         return (
           context.localValues.get(expression.name) ??
-          this.blameTypeChecker(`Missing variable ${expression}`)
+          this.blameTypeChecker(`Missing variable ${expression.name}`)
         );
       case 'ClassMemberExpression':
         return (
@@ -66,10 +67,10 @@ export default class ExpressionInterpreter {
         return { type: 'variant', tag: expression.tag, data: this.eval(expression.data, context) };
       case 'FieldAccessExpression': {
         const thisValue = this.eval(expression.expression, context) as ObjectValue;
-        return thisValue.objectContent.get(expression.fieldName) ?? this.blameTypeChecker();
+        return thisValue.objectContent?.get(expression.fieldName) ?? this.blameTypeChecker();
       }
       case 'MethodAccessExpression': {
-        const { identifier } = expression.expression.type as IdentifierType;
+        const identifier = (expression.expression.type as IdentifierType).identifier;
         const thisValue = this.eval(expression.expression, context);
         const methodValue =
           context.classes.get(identifier)?.methods?.get(expression.methodName) ??
@@ -89,8 +90,8 @@ export default class ExpressionInterpreter {
             v = v as BoolValue;
             return { type: 'bool', value: !v.value };
         }
-        break;
       }
+      // eslint-disable-next-line no-fallthrough
       case 'PanicExpression':
         throw new PanicException((this.eval(expression.expression, context) as StringValue).value);
       case 'BuiltInFunctionCallExpression': {
@@ -99,7 +100,7 @@ export default class ExpressionInterpreter {
           case 'stringToInt': {
             const value = (argumentValue as StringValue).value;
             const parsedValue = parseInt(value, 10);
-            if (parsedValue !== null) {
+            if (!Number.isNaN(parsedValue)) {
               return { type: 'int', value: parsedValue };
             }
             throw new PanicException(`Cannot convert \`${value}\` to int.`);
@@ -110,8 +111,8 @@ export default class ExpressionInterpreter {
             this.printedCollector.concat(`${(argumentValue as StringValue).value}\n`);
             return { type: 'unit' };
         }
-        break;
       }
+      // eslint-disable-next-line no-fallthrough
       case 'FunctionCallExpression': {
         const functionVal = this.eval(expression.functionExpression) as FunctionValue;
         const args = functionVal.arguments;
@@ -124,7 +125,7 @@ export default class ExpressionInterpreter {
         });
         return this.eval(body, bodyContext);
       }
-      case 'BinaryExpression':
+      case 'BinaryExpression': {
         switch (expression.operator.symbol) {
           case '*': {
             const v1 = this.eval(expression.e1) as IntValue;
@@ -183,7 +184,7 @@ export default class ExpressionInterpreter {
             if (v1.type === 'functionValue' || v2.type === 'functionValue') {
               throw new PanicException('Cannot compare functions!');
             }
-            return { type: 'bool', value: v1 === v2 };
+            return { type: 'bool', value: isSameValue(v1, v2) };
           }
           case '!=': {
             const v1 = this.eval(expression.e1);
@@ -191,7 +192,7 @@ export default class ExpressionInterpreter {
             if (v1.type === 'functionValue' || v2.type === 'functionValue') {
               throw new PanicException('Cannot compare functions!');
             }
-            return { type: 'bool', value: v1 !== v2 };
+            return { type: 'bool', value: !isSameValue(v1, v2) };
           }
           case '&&': {
             const v1 = this.eval(expression.e1) as BoolValue;
@@ -207,12 +208,14 @@ export default class ExpressionInterpreter {
             return { type: 'string', value: v1.value + v2.value };
           }
         }
-        break;
-      case 'IfElseExpression':
+      }
+      // eslint-disable-next-line no-fallthrough
+      case 'IfElseExpression': {
         return this.eval(
-          (this.eval(expression.e1) as BoolValue).value ? expression.e1 : expression.e2,
+          (this.eval(expression.boolExpression) as BoolValue).value ? expression.e1 : expression.e2,
           context
         );
+      }
       case 'MatchExpression': {
         const matchedValue = this.eval(expression.matchedExpression, context) as VariantValue;
         const matchedPattern =
