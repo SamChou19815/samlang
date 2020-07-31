@@ -7,6 +7,7 @@ export interface ReadonlyHashMap<K extends Hashable, V> {
   readonly has: (key: K) => boolean;
   readonly size: number;
   readonly forEach: (callbackFunction: (value: V, key: K) => void) => void;
+  readonly entries: () => readonly (readonly [K, V])[];
 }
 
 export interface HashMap<K extends Hashable, V> extends ReadonlyHashMap<K, V> {
@@ -62,6 +63,12 @@ class HashMapImpl<K extends Hashable, V> implements HashMap<K, V> {
 
   forEach(callbackFunction: (value: V, key: K) => void): void {
     this.backingMap.forEach(([key, value]) => callbackFunction(value, key));
+  }
+
+  entries(): readonly (readonly [K, V])[] {
+    const entries: (readonly [K, V])[] = [];
+    this.backingMap.forEach((keyValue) => entries.push(keyValue));
+    return entries;
   }
 }
 
@@ -132,7 +139,7 @@ export const listShallowEquals = <T>(list1: readonly T[], list2: readonly T[]): 
 };
 
 export const mapEquals = <K, V>(
-  map1: ReadonlyMap<K, V>,
+  map1: ReadonlyMap<K, V> | ReadonlyMap<K, V>,
   map2: ReadonlyMap<K, V>,
   valueEqualityTester: (v1: V, v2: V) => boolean = (v1, v2) => v1 === v2
 ): boolean => {
@@ -140,6 +147,23 @@ export const mapEquals = <K, V>(
     return false;
   }
   return Array.from(map1.entries()).every(([key, v1]) => {
+    const v2 = map2.get(key);
+    if (v2 == null) {
+      return false;
+    }
+    return valueEqualityTester(v1, v2);
+  });
+};
+
+export const hashMapEquals = <K extends Hashable, V>(
+  map1: ReadonlyHashMap<K, V>,
+  map2: ReadonlyHashMap<K, V>,
+  valueEqualityTester: (v1: V, v2: V) => boolean = (v1, v2) => v1 === v2
+): boolean => {
+  if (map1.size !== map2.size) {
+    return false;
+  }
+  return map1.entries().every(([key, v1]) => {
     const v2 = map2.get(key);
     if (v2 == null) {
       return false;

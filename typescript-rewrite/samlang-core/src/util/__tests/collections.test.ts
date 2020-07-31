@@ -6,6 +6,7 @@ import {
   hashSetOf,
   listShallowEquals,
   mapEquals,
+  hashMapEquals,
   setEquals,
 } from '../collections';
 
@@ -118,6 +119,12 @@ it('mapEquals tests', () => {
   expect(mapEquals(new Map(), new Map([['1', 1]]))).toBeFalsy();
   expect(mapEquals(new Map([['2', 1]]), new Map([['1', 1]]))).toBeFalsy();
   expect(mapEquals(new Map([['1', 1]]), new Map([['1', 1]]))).toBeTruthy();
+});
+
+it('hashMapEquals tests', () => {
+  expect(hashMapEquals(hashMapOf<HashableClass, number>(), hashMapOf([N(1), 1]))).toBeFalsy();
+  expect(hashMapEquals(hashMapOf([N(2), 1]), hashMapOf([N(1), 1]))).toBeFalsy();
+  expect(hashMapEquals(hashMapOf([N(1), 1]), hashMapOf([N(1), 1]))).toBeTruthy();
 });
 
 it('setEquals tests', () => {
