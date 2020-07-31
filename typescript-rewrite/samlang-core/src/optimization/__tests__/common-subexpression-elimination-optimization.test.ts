@@ -1,5 +1,6 @@
 import {
   MidIRStatement,
+  MIR_ZERO,
   MIR_ONE,
   MIR_TEMP,
   MIR_OP,
@@ -11,9 +12,13 @@ import {
   MIR_LABEL,
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
+  midIRStatementToString,
 } from '../../ast/mir';
-// eslint-disable-next-line camelcase
-import { computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING } from '../common-subexpression-elimination-optimization';
+import optimizeIRWithCommonSubExpressionElimination, {
+  // eslint-disable-next-line camelcase
+  computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING,
+} from '../common-subexpression-elimination-optimization';
+import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 const statements: readonly MidIRStatement[] = [
   /* 00 */ MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_ONE),
@@ -85,4 +90,102 @@ it('computeGlobalExpressionUsageAndAppearMap test 1', () => {
 
 it('computeGlobalExpressionUsageAndAppearMap test 2', () => {
   expect(computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING([MIR_RETURN()]).size).toBe(0);
+});
+
+it('optimizeIRWithCommonSubExpressionElimination test 1', () => {
+  expect(
+    optimizeIRWithCommonSubExpressionElimination(statements, new OptimizationResourceAllocator())
+      .map(midIRStatementToString)
+      .join('\n')
+  ).toBe(`x = 1;
+if ((x < 1)) goto true;
+z2 = f(1);
+MEM[z2] = (1 + x);
+goto r;
+r:
+goto end;
+true:
+y = (1 + x);
+_CSE_HOISTING_1_ = MEM[1];
+_CSE_HOISTING_0_ = ((1 + x) * _CSE_HOISTING_1_);
+z1 = _CSE_HOISTING_0_;
+z2 = (_CSE_HOISTING_0_ / (1 + x));
+end:
+a = (y != z2);
+return a;`);
+});
+
+it('optimizeIRWithCommonSubExpressionElimination test 2', () => {
+  expect(
+    optimizeIRWithCommonSubExpressionElimination(
+      [MIR_RETURN()],
+      new OptimizationResourceAllocator()
+    )
+      .map(midIRStatementToString)
+      .join('\n')
+  ).toBe('return;');
+});
+
+it('optimizeIRWithCommonSubExpressionElimination test 3', () => {
+  expect(
+    optimizeIRWithCommonSubExpressionElimination(
+      [
+        MIR_MOVE_TEMP(
+          MIR_TEMP('x'),
+          MIR_OP(
+            '*',
+            MIR_OP(
+              '*',
+              MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE)),
+              MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE))
+            ),
+            MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE))
+          )
+        ),
+        MIR_MOVE_TEMP(
+          MIR_TEMP('y'),
+          MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE))
+        ),
+        MIR_RETURN(
+          MIR_OP(
+            '/',
+            MIR_OP(
+              '*',
+              MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE)),
+              MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE))
+            ),
+            MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE))
+          )
+        ),
+      ],
+      new OptimizationResourceAllocator()
+    )
+      .map(midIRStatementToString)
+      .join('\n')
+  ).toBe(`_CSE_HOISTING_2_ = MEM[1];
+_CSE_HOISTING_1_ = (_CSE_HOISTING_2_ + _CSE_HOISTING_2_);
+_CSE_HOISTING_0_ = (_CSE_HOISTING_1_ * _CSE_HOISTING_1_);
+x = (_CSE_HOISTING_0_ * _CSE_HOISTING_1_);
+y = _CSE_HOISTING_1_;
+return (_CSE_HOISTING_0_ / _CSE_HOISTING_1_);`);
+});
+
+it('optimizeIRWithCommonSubExpressionElimination test 4', () => {
+  expect(
+    optimizeIRWithCommonSubExpressionElimination(
+      [
+        MIR_MOVE_TEMP(
+          MIR_TEMP('x'),
+          MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ZERO), MIR_IMMUTABLE_MEM(MIR_ONE))
+        ),
+        MIR_RETURN(MIR_OP('-', MIR_IMMUTABLE_MEM(MIR_ZERO), MIR_IMMUTABLE_MEM(MIR_ONE))),
+      ],
+      new OptimizationResourceAllocator()
+    )
+      .map(midIRStatementToString)
+      .join('\n')
+  ).toBe(`_CSE_HOISTING_0_ = MEM[0];
+_CSE_HOISTING_1_ = MEM[1];
+x = (_CSE_HOISTING_0_ + _CSE_HOISTING_1_);
+return (_CSE_HOISTING_0_ - _CSE_HOISTING_1_);`);
 });
