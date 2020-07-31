@@ -14,6 +14,7 @@ import {
   MIR_CJUMP_FALLTHROUGH,
 } from '../ast/mir';
 import { assertNotNull } from '../util/type-assertions';
+import OptimizationResourceAllocator from './optimization-resource-allocator';
 import { optimizeIrWithSimpleOptimization } from './simple-optimizations';
 
 /** The threshold max tolerable cost of inlining.  */
@@ -104,22 +105,6 @@ const getFunctionsToInline = ({
   return { functionsThatCanPerformInlining, functionsThatCanBeInlined };
 };
 
-export class InliningResourceAllocator {
-  private id = 0;
-
-  allocateInliningTemporaryPrefix(): string {
-    const prefix = `_INLINING_${this.id}_`;
-    this.id += 1;
-    return prefix;
-  }
-
-  allocateInliningLabelPrefix(): string {
-    const prefix = `INLINING_${this.id}_`;
-    this.id += 1;
-    return prefix;
-  }
-}
-
 const inlineRewriteForMidIRExpression = (
   prefix: string,
   expression: MidIRExpression
@@ -204,7 +189,7 @@ const performInlineRewriteOnFunction = (
   midIRFunction: MidIRFunction,
   functionsThatCanBeInlined: ReadonlySet<string>,
   allFunctions: Record<string, MidIRFunction>,
-  allocator: InliningResourceAllocator
+  allocator: OptimizationResourceAllocator
 ): MidIRFunction => {
   const newMainBodyStatements: MidIRStatement[] = [];
 
@@ -263,7 +248,7 @@ const performInlineRewriteOnFunction = (
 
 const optimizeMidIRCompilationUnitByInlining = (
   compilationUnit: MidIRCompilationUnit,
-  allocator: InliningResourceAllocator
+  allocator: OptimizationResourceAllocator
 ): MidIRCompilationUnit => {
   let tempCompilationUnit = compilationUnit;
   for (let i = 0; i < 5; i += 1) {

@@ -14,10 +14,10 @@ import {
   MIR_ONE,
 } from '../../ast/mir';
 import optimizeMidIRCompilationUnitByInlining, {
-  InliningResourceAllocator,
   // eslint-disable-next-line camelcase
   estimateMidIRFunctionInlineCost_EXPOSED_FOR_TESTING,
 } from '../inline-optimization';
+import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 it('estimateMidIRFunctionInlineCost test', () => {
   expect(
@@ -100,7 +100,7 @@ it('optimizeMidIRCompilationUnitByInlining test 1', () => {
             },
           ],
         },
-        new InliningResourceAllocator()
+        new OptimizationResourceAllocator()
       )
     )
   ).toBe(`
@@ -166,7 +166,7 @@ it('optimizeMidIRCompilationUnitByInlining test 2', () => {
           globalVariables: [],
           functions: [],
         },
-        new InliningResourceAllocator()
+        new OptimizationResourceAllocator()
       )
     )
   ).toBe('\n');
@@ -198,7 +198,7 @@ it('optimizeMidIRCompilationUnitByInlining test 3', () => {
             },
           ],
         },
-        new InliningResourceAllocator()
+        new OptimizationResourceAllocator()
       )
     )
   ).toBe(`
