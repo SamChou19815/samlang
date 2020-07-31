@@ -42,7 +42,9 @@ it('analyzeLocalValueNumberingAssignment test 1', () => {
     /* 11 */ MIR_LABEL('end'),
     /* 12 */ MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_OP('!=', MIR_TEMP('y'), MIR_TEMP('z2'))),
     /* 13 */ MIR_RETURN(MIR_TEMP('a')),
-  ]).map((it) => Object.fromEntries(it.entries()));
+  ]).map((it) =>
+    Object.fromEntries(it.entries().map((entry) => [entry[0].uniqueHash(), entry[1]]))
+  );
   expect(localValueNumberingResults).toEqual([
     /* 00 */ {},
     /* 01 */ { '(x < 1)': [1] },

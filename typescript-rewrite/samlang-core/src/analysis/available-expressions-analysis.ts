@@ -1,24 +1,41 @@
 import { MidIRExpression, MidIRStatement, midIRExpressionToString } from '../ast/mir';
-import { mapEquals } from '../util/collections';
+import {
+  Hashable,
+  ReadonlyHashMap,
+  ReadonlyHashSet,
+  HashSet,
+  hashMapOf,
+  hashSetOf,
+  listShallowEquals,
+  hashMapEquals,
+} from '../util/collections';
 import { isNotNull } from '../util/type-assertions';
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
 
+class MidIRExpressionWrapper implements Hashable {
+  constructor(public readonly expression: MidIRExpression) {}
+
+  uniqueHash(): string {
+    return midIRExpressionToString(this.expression);
+  }
+}
+
 const collectSubExpressionsFromMidIRExpression = (
-  set: Set<string>,
+  set: HashSet<MidIRExpressionWrapper>,
   expression: MidIRExpression
-): Set<string> => {
+): HashSet<MidIRExpressionWrapper> => {
   switch (expression.__type__) {
     case 'MidIRConstantExpression':
     case 'MidIRNameExpression':
     case 'MidIRTemporaryExpression':
       return set;
     case 'MidIRImmutableMemoryExpression':
-      set.add(midIRExpressionToString(expression));
+      set.add(new MidIRExpressionWrapper(expression));
       collectSubExpressionsFromMidIRExpression(set, expression.indexExpression);
       return set;
     case 'MidIRBinaryExpression':
-      set.add(midIRExpressionToString(expression));
+      set.add(new MidIRExpressionWrapper(expression));
       collectSubExpressionsFromMidIRExpression(set, expression.e1);
       collectSubExpressionsFromMidIRExpression(set, expression.e2);
       return set;
@@ -27,8 +44,8 @@ const collectSubExpressionsFromMidIRExpression = (
 
 const collectSubExpressionsFromMidIRStatement = (
   statement: MidIRStatement
-): ReadonlySet<string> => {
-  const set = new Set<string>();
+): ReadonlyHashSet<MidIRExpressionWrapper> => {
+  const set = hashSetOf<MidIRExpressionWrapper>();
 
   switch (statement.__type__) {
     case 'MidIRMoveTempStatement':
@@ -57,19 +74,22 @@ const collectSubExpressionsFromMidIRStatement = (
 };
 
 /** String of expression => statement ids where the expression first appear. */
-type AvailableExpressionToSourceMapping = ReadonlyMap<string, readonly number[]>;
+type AvailableExpressionToSourceMapping = ReadonlyHashMap<
+  MidIRExpressionWrapper,
+  readonly number[]
+>;
 
 const operator: DataflowAnalysisGraphOperator<
   MidIRStatement,
   AvailableExpressionToSourceMapping
 > = {
   graphConstructor: ControlFlowGraph.fromMidIRStatements,
-  edgeInitializer: () => new Map(),
+  edgeInitializer: () => hashMapOf(),
   joinEdges: (parentOutEdges) => {
     if (parentOutEdges.length === 0) {
-      return new Map();
+      return hashMapOf();
     }
-    const newInEdgeMapping = new Map<string, number[]>();
+    const newInEdgeMapping = hashMapOf<MidIRExpressionWrapper, number[]>();
     const otherParents = parentOutEdges.slice(1);
     parentOutEdges[0].forEach((statementIds, availableExpression) => {
       const appearIdsFromOtherParentsWithNull = otherParents.map((map) =>
@@ -87,7 +107,7 @@ const operator: DataflowAnalysisGraphOperator<
     return newInEdgeMapping;
   },
   computeNewEdge: (newInEdge, statement, nodeID) => {
-    const newOutEdge = new Map(newInEdge);
+    const newOutEdge = hashMapOf(...newInEdge.entries());
     collectSubExpressionsFromMidIRStatement(statement).forEach((availableExpression) => {
       // We do nothing if things are already there, because we want to keep the first appearance source.
       // It is safe to do because all temps will only be assigned once.
@@ -97,7 +117,7 @@ const operator: DataflowAnalysisGraphOperator<
     });
     return newOutEdge;
   },
-  edgeDataEquals: (a, b) => mapEquals(a, b),
+  edgeDataEquals: (a, b) => hashMapEquals(a, b, listShallowEquals),
 };
 
 const analyzeAvailableExpressionsComingOutAtEachStatement = (

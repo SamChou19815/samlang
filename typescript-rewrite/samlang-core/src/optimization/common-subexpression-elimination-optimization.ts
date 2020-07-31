@@ -95,7 +95,8 @@ export const computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING = (
   statements.forEach((statement, index) => {
     const analysisResultForStatement = availableExpressionAnalysisResult[index];
 
-    analysisResultForStatement.forEach((apperances, expression) => {
+    analysisResultForStatement.forEach((apperances, expressionWrapper) => {
+      const expression = expressionWrapper.uniqueHash();
       const appearsAndUses = map[expression];
       if (appearsAndUses == null) {
         map[expression] = [new Set(apperances), new Set()];
@@ -104,19 +105,20 @@ export const computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING = (
       }
     });
 
-    collectExpressionUsages(statement, Array.from(analysisResultForStatement.keys())).forEach(
-      (expression) => {
-        const appearsAndUses = map[expression];
-        assertNotNull(appearsAndUses);
+    collectExpressionUsages(
+      statement,
+      analysisResultForStatement.entries().map((it) => it[0].uniqueHash())
+    ).forEach((expression) => {
+      const appearsAndUses = map[expression];
+      assertNotNull(appearsAndUses);
+      // istanbul ignore next
+      if (appearsAndUses == null) {
         // istanbul ignore next
-        if (appearsAndUses == null) {
-          // istanbul ignore next
-          map[expression] = [new Set(), new Set([index])];
-        } else {
-          appearsAndUses[1].add(index);
-        }
+        map[expression] = [new Set(), new Set([index])];
+      } else {
+        appearsAndUses[1].add(index);
       }
-    );
+    });
   });
 
   return new Map(
