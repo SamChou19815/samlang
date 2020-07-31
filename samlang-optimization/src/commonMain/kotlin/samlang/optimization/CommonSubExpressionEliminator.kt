@@ -83,61 +83,56 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
         private val availableExpressionsOut: Set<MidIrExpression>
     ) : MidIrLoweredStatementVisitor<Int, Unit> {
         private val exprVisitor = ExprVisitor()
-        val usageMap: MutableMap<MidIrExpression, MutableSet<Int>> = mutableMapOf()
+        val usageSet: MutableSet<MidIrExpression> = mutableSetOf()
 
-        private fun fullSearchAndRecord(expr: MidIrExpression, id: Int): Unit = expr.accept(exprVisitor, id)
+        private fun fullSearchAndRecord(expr: MidIrExpression): Unit = expr.accept(exprVisitor, Unit)
 
-        override fun visit(node: MoveTemp, context: Int): Unit = fullSearchAndRecord(expr = node.source, id = context)
+        override fun visit(node: MoveTemp, context: Int): Unit = fullSearchAndRecord(expr = node.source)
 
         override fun visit(node: MoveMem, context: Int) {
-            fullSearchAndRecord(expr = node.source, id = context)
-            fullSearchAndRecord(expr = IMMUTABLE_MEM(expression = node.memLocation), id = context)
+            fullSearchAndRecord(expr = node.source)
+            fullSearchAndRecord(expr = IMMUTABLE_MEM(expression = node.memLocation))
         }
 
         override fun visit(node: CallFunction, context: Int): Unit =
-            node.arguments.forEach { fullSearchAndRecord(it, context) }
+            node.arguments.forEach { fullSearchAndRecord(it) }
 
         override fun visit(node: Jump, context: Int): Unit = Unit
 
         override fun visit(node: ConditionalJumpFallThrough, context: Int): Unit =
-            fullSearchAndRecord(node.condition, context)
+            fullSearchAndRecord(node.condition)
 
         override fun visit(node: Label, context: Int): Unit = Unit
 
         override fun visit(node: Return, context: Int) {
-            node.returnedExpression?.let { fullSearchAndRecord(it, context) }
+            node.returnedExpression?.let { fullSearchAndRecord(it) }
         }
 
-        private inner class ExprVisitor : MidIrExpressionVisitor<Int, Unit> {
-            private fun searchAndRecord(exprToSearch: MidIrExpression, id: Int) {
+        private inner class ExprVisitor : MidIrExpressionVisitor<Unit, Unit> {
+            private fun searchAndRecord(exprToSearch: MidIrExpression) {
                 for (expr in availableExpressionsOut) {
                     if (isSimple(expr)) {
                         // simple expressions are not collected. They are cheap to recompute!
                         continue
                     }
                     if (expr == exprToSearch) {
-                        val expressionUsages = usageMap[expr]
-                        if (expressionUsages == null) {
-                            usageMap[expr] = mutableSetOf(id)
-                        } else {
-                            expressionUsages.add(id)
-                        }
+                        usageSet.add(expr)
                     }
                 }
             }
 
-            override fun visit(node: Constant, context: Int): Unit = Unit
-            override fun visit(node: Name, context: Int): Unit = Unit
-            override fun visit(node: Temporary, context: Int): Unit = Unit
+            override fun visit(node: Constant, context: Unit): Unit = Unit
+            override fun visit(node: Name, context: Unit): Unit = Unit
+            override fun visit(node: Temporary, context: Unit): Unit = Unit
 
-            override fun visit(node: Op, context: Int) {
-                searchAndRecord(node, context)
+            override fun visit(node: Op, context: Unit) {
+                searchAndRecord(node)
                 node.e1.accept(visitor = this, context = context)
                 node.e2.accept(visitor = this, context = context)
             }
 
-            override fun visit(node: Mem, context: Int) {
-                searchAndRecord(node, context)
+            override fun visit(node: Mem, context: Unit) {
+                searchAndRecord(node)
                 node.expression.accept(visitor = this, context = context)
             }
         }
@@ -257,12 +252,12 @@ internal class CommonSubExpressionEliminator private constructor(statements: Lis
                         appearsAndUses.first.addAll(firstAppearSites)
                     }
                 }
-                collector.usageMap.forEach { (expression, useSites) ->
+                collector.usageSet.forEach { expression ->
                     val appearsAndUses = usageMap[expression]
                     if (appearsAndUses == null) {
-                        usageMap[expression] = mutableSetOf<Int>() to useSites.toMutableSet()
+                        usageMap[expression] = mutableSetOf<Int>() to mutableSetOf(i)
                     } else {
-                        appearsAndUses.second.addAll(useSites)
+                        appearsAndUses.second.add(i)
                     }
                 }
             }
