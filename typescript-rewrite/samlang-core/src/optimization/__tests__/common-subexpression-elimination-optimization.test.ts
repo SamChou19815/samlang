@@ -51,7 +51,7 @@ it('computeGlobalExpressionUsageAndAppearMap test 1', () => {
       Array.from(
         computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING(statements).entries()
       ).map(([expression, { appears, usage }]) => [
-        expression,
+        expression.uniqueHash(),
         { appears: Array.from(appears), usage: Array.from(usage) },
       ])
     )

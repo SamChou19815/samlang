@@ -13,7 +13,7 @@ import { isNotNull } from '../util/type-assertions';
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
 
-class MidIRExpressionWrapper implements Hashable {
+export class MidIRExpressionWrapper implements Hashable {
   constructor(public readonly expression: MidIRExpression) {}
 
   uniqueHash(): string {

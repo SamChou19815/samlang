@@ -1,5 +1,8 @@
-import analyzeAvailableExpressionsComingOutAtEachStatement from '../analysis/available-expressions-analysis';
-import { MidIRExpression, MidIRStatement, midIRExpressionToString } from '../ast/mir';
+import analyzeAvailableExpressionsComingOutAtEachStatement, {
+  MidIRExpressionWrapper,
+} from '../analysis/available-expressions-analysis';
+import { MidIRExpression, MidIRStatement } from '../ast/mir';
+import { ReadonlyHashMap, ReadonlyHashSet, hashMapOf, hashSetOf } from '../util/collections';
 import { assertNotNull } from '../util/type-assertions';
 
 const expressionIsPrimitive = (expression: MidIRExpression): boolean =>
@@ -23,21 +26,15 @@ const expressionIsSimple = (expression: MidIRExpression): boolean => {
 };
 
 const collectExpressionUsages = (
-  statement: MidIRStatement,
-  availableExpressions: readonly string[]
-): ReadonlySet<string> => {
-  const collector = new Set<string>();
+  statement: MidIRStatement
+): ReadonlyHashSet<MidIRExpressionWrapper> => {
+  const collector = hashSetOf<MidIRExpressionWrapper>();
 
   const searchAndCollect = (expressionToSearch: MidIRExpression): void => {
-    if (expressionIsSimple(expressionToSearch) || availableExpressions.length === 0) {
+    if (expressionIsSimple(expressionToSearch)) {
       return;
     }
-    const expressionToSearchString = midIRExpressionToString(expressionToSearch);
-    availableExpressions.forEach((availableExpression) => {
-      if (expressionToSearchString === availableExpression) {
-        collector.add(expressionToSearchString);
-      }
-    });
+    collector.add(new MidIRExpressionWrapper(expressionToSearch));
 
     switch (expressionToSearch.__type__) {
       case 'MidIRImmutableMemoryExpression':
@@ -86,45 +83,36 @@ type ExpressionUsageAndFirstAppears = {
 // eslint-disable-next-line camelcase, import/prefer-default-export
 export const computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING = (
   statements: readonly MidIRStatement[]
-): ReadonlyMap<string, ExpressionUsageAndFirstAppears> => {
+): ReadonlyHashMap<MidIRExpressionWrapper, ExpressionUsageAndFirstAppears> => {
   const availableExpressionAnalysisResult = analyzeAvailableExpressionsComingOutAtEachStatement(
     statements
   );
 
-  const map: Record<string, [Set<number>, Set<number>]> = {};
+  const map = hashMapOf<MidIRExpressionWrapper, { appears: Set<number>; usage: Set<number> }>();
   statements.forEach((statement, index) => {
     const analysisResultForStatement = availableExpressionAnalysisResult[index];
 
     analysisResultForStatement.forEach((apperances, expressionWrapper) => {
-      const expression = expressionWrapper.uniqueHash();
-      const appearsAndUses = map[expression];
+      const appearsAndUses = map.get(expressionWrapper);
       if (appearsAndUses == null) {
-        map[expression] = [new Set(apperances), new Set()];
+        map.set(expressionWrapper, { appears: new Set(apperances), usage: new Set() });
       } else {
-        apperances.forEach((appearId) => appearsAndUses[0].add(appearId));
+        apperances.forEach((appearId) => appearsAndUses.appears.add(appearId));
       }
     });
 
-    collectExpressionUsages(
-      statement,
-      analysisResultForStatement.entries().map((it) => it[0].uniqueHash())
-    ).forEach((expression) => {
-      const appearsAndUses = map[expression];
+    collectExpressionUsages(statement).forEach((expressionWrapper) => {
+      const appearsAndUses = map.get(expressionWrapper);
       assertNotNull(appearsAndUses);
       // istanbul ignore next
       if (appearsAndUses == null) {
         // istanbul ignore next
-        map[expression] = [new Set(), new Set([index])];
+        map.set(expressionWrapper, { appears: new Set(), usage: new Set([index]) });
       } else {
-        appearsAndUses[1].add(index);
+        appearsAndUses.usage.add(index);
       }
     });
   });
 
-  return new Map(
-    Object.entries(map).map(([expression, pair]) => [
-      expression,
-      { appears: pair[0], usage: pair[1] },
-    ])
-  );
+  return map;
 };
