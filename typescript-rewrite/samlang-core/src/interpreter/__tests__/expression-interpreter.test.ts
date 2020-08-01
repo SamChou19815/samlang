@@ -61,14 +61,17 @@ import {
 } from '../../ast/lang/samlang-pattern';
 import ExpressionInterpreter from '../expression-interpreter';
 import { ClassValue, EMPTY, InterpretationContext } from '../interpretation-context';
-import { isSameValue, Value, FunctionValue } from '../value';
+import { Value, FunctionValue } from '../value';
 
 const interpreter = new ExpressionInterpreter();
 
 const exampleRange: Range = new Range(new Position(1, 2), new Position(3, 4));
 const intLiteralExpression: SamlangExpression = EXPRESSION_INT(exampleRange, BigInt(5));
+const intLiteralValue: Value = BigInt(5);
 const stringLiteralExpression: SamlangExpression = EXPRESSION_STRING(exampleRange, 'value');
+const stringLiteralValue: Value = 'value';
 const boolLiteralExpression: SamlangExpression = EXPRESSION_TRUE(exampleRange);
+const boolLiteralValue: Value = true;
 const classMemberFunction: Value = {
   type: 'functionValue',
   arguments: [],
@@ -96,23 +99,17 @@ const functionExpression = EXPRESSION_LAMBDA({
 });
 
 it('literal expressions evaluate correctly', () => {
-  expect(
-    isSameValue(interpreter.eval(intLiteralExpression), { type: 'int', value: 5 })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(stringLiteralExpression), { type: 'string', value: 'value' })
-  );
-  expect(isSameValue(interpreter.eval(boolLiteralExpression), { type: 'bool', value: true }));
+  expect(interpreter.eval(intLiteralExpression)).toEqual(intLiteralValue);
+  expect(interpreter.eval(stringLiteralExpression)).toEqual(stringLiteralValue);
+  expect(interpreter.eval(boolLiteralExpression)).toEqual(boolLiteralValue);
 });
 
 it('this expressions evaluate correctly', () => {
   const thisExpression = EXPRESSION_THIS({ range: exampleRange, type: boolType });
-  const thisLocalValues = new Map<string, Value>();
-  thisLocalValues.set('this', { type: 'bool', value: true });
-  const thisContext = { classes: new Map(), localValues: thisLocalValues };
-  expect(
-    isSameValue(interpreter.eval(thisExpression, thisContext), { type: 'bool', value: true })
-  ).toBeTruthy();
+  const thisLocalValues: Record<string, Value | undefined> = {};
+  thisLocalValues.this = true;
+  const thisContext = { classes: {}, localValues: thisLocalValues };
+  expect(interpreter.eval(thisExpression, thisContext)).toEqual(boolLiteralValue);
   expect(() => interpreter.eval(thisExpression)).toThrow('Missing `this`');
 });
 
@@ -122,15 +119,10 @@ it('variable expressions evaluate correctly', () => {
     type: boolType,
     name: 'test',
   });
-  const variableLocalValues = new Map<string, Value>();
-  variableLocalValues.set('test', { type: 'bool', value: true });
-  const variableContext = { classes: new Map(), localValues: variableLocalValues };
-  expect(
-    isSameValue(interpreter.eval(variableExpression, variableContext), {
-      type: 'bool',
-      value: true,
-    })
-  ).toBeTruthy();
+  const variableLocalValues: Record<string, Value | undefined> = {};
+  variableLocalValues.test = boolLiteralValue;
+  const variableContext = { classes: {}, localValues: variableLocalValues };
+  expect(interpreter.eval(variableExpression, variableContext)).toEqual(boolLiteralValue);
   expect(() => interpreter.eval(variableExpression)).toThrow(
     `Missing variable ${variableExpression.name}`
   );
@@ -146,15 +138,13 @@ it('class member expressions evaluate correctly', () => {
     memberName: 'func',
     memberNameRange: exampleRange,
   });
-  const classMemberClasses = new Map<string, ClassValue>();
-  const classMemberFunctions = new Map<string, FunctionValue>();
-  classMemberFunctions.set('func', classMemberFunction);
-  const classMemberClassValue = { functions: classMemberFunctions, methods: new Map() };
-  classMemberClasses.set('myClass', classMemberClassValue);
-  const classMemberContext = { classes: classMemberClasses, localValues: new Map() };
-  expect(
-    isSameValue(interpreter.eval(classMemberExpression, classMemberContext), classMemberFunction)
-  ).toBeTruthy();
+  const classMemberClasses: Record<string, ClassValue | undefined> = {};
+  const classMemberFunctions: Record<string, FunctionValue | undefined> = {};
+  classMemberFunctions.func = classMemberFunction;
+  const classMemberClassValue = { functions: classMemberFunctions, methods: {} };
+  classMemberClasses.myClass = classMemberClassValue;
+  const classMemberContext = { classes: classMemberClasses, localValues: {} };
+  expect(interpreter.eval(classMemberExpression, classMemberContext)).toEqual(classMemberFunction);
   expect(() => interpreter.eval(classMemberExpression)).toThrow('');
 });
 
@@ -169,43 +159,29 @@ it('tuple expression evaluates correctly', () => {
     type: { type: 'TupleType', mappings: [intType, boolType] },
     expressions: [intLiteralExpression, boolLiteralExpression],
   });
-  expect(
-    isSameValue(interpreter.eval(tupleExpression), {
-      type: 'tuple',
-      tupleContent: [{ type: 'int', value: 5 }],
-    })
-  );
-  expect(
-    isSameValue(interpreter.eval(tupleExpressionMultiple), {
-      type: 'tuple',
-      tupleContent: [
-        { type: 'int', value: 5 },
-        { type: 'bool', value: true },
-      ],
-    })
-  ).toBeTruthy();
+  expect(interpreter.eval(tupleExpression)).toEqual({
+    type: 'tuple',
+    tupleContent: [intLiteralValue],
+  });
+  expect(interpreter.eval(tupleExpressionMultiple)).toEqual({
+    type: 'tuple',
+    tupleContent: [intLiteralValue, boolLiteralValue],
+  });
 });
 
-it('object expression evaluates correctly', () => {
+it('object constructor expression evaluates correctly', () => {
   const objectConstructorExpressionEmpty = EXPRESSION_OBJECT_CONSTRUCTOR({
     range: exampleRange,
     type: intType,
     fieldDeclarations: [{ range: exampleRange, type: intType, name: 'test' }],
   });
   const objectContentNonEmpty = new Map();
-  objectContentNonEmpty.set('test', { type: 'int', value: 5 });
-  expect(
-    isSameValue(interpreter.eval(objectConstructorExpressionEmpty), {
-      type: 'object',
-      objectContent: new Map(),
-    })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(objectConstructorExpressionNonEmpty), {
-      type: 'object',
-      objectContent: objectContentNonEmpty,
-    })
-  ).toBeTruthy();
+  objectContentNonEmpty.set('test', intLiteralValue);
+  expect(() => interpreter.eval(objectConstructorExpressionEmpty)).toThrow('Missing variable test');
+  expect(interpreter.eval(objectConstructorExpressionNonEmpty)).toEqual({
+    type: 'object',
+    objectContent: objectContentNonEmpty,
+  });
 });
 
 it('variant expression evaluates correctly', () => {
@@ -216,13 +192,11 @@ it('variant expression evaluates correctly', () => {
     tagOrder: 0,
     data: intLiteralExpression,
   });
-  expect(
-    isSameValue(interpreter.eval(variantExpression), {
-      type: 'variant',
-      tag: 'tag',
-      data: { type: 'int', value: 5 },
-    })
-  ).toBeTruthy();
+  expect(interpreter.eval(variantExpression)).toEqual({
+    type: 'variant',
+    tag: 'tag',
+    data: BigInt(5),
+  });
 });
 
 it('field access expression evaluates correctly', () => {
@@ -240,9 +214,7 @@ it('field access expression evaluates correctly', () => {
     fieldName: 'test',
     fieldOrder: 0,
   });
-  expect(
-    isSameValue(interpreter.eval(fieldAccessExpression), { type: 'int', value: 5 })
-  ).toBeTruthy();
+  expect(interpreter.eval(fieldAccessExpression)).toEqual(intLiteralValue);
   expect(() => interpreter.eval(fieldAccessExpressionFail)).toThrow('');
 });
 
@@ -261,21 +233,21 @@ it('method access expression evaluates correctly', () => {
     expression: identifierExpression,
     methodName: 'method',
   });
-  const methodAccessMethods = new Map<string, FunctionValue>();
-  methodAccessMethods.set('method', classMemberFunction);
+  const methodAccessMethods: Record<string, FunctionValue | undefined> = {};
+  methodAccessMethods.method = classMemberFunction;
   const methodAccessClass = {
-    functions: new Map<string, FunctionValue>(),
+    functions: {},
     methods: methodAccessMethods,
   };
-  const methodAccessClasses = new Map<string, ClassValue>();
-  methodAccessClasses.set('method', methodAccessClass);
+  const methodAccessClasses: Record<string, ClassValue | undefined> = {};
+  methodAccessClasses.method = methodAccessClass;
   const methodAccessContext: InterpretationContext = {
     classes: methodAccessClasses,
-    localValues: new Map<string, Value>(),
+    localValues: {},
   };
-  expect(
-    isSameValue(interpreter.eval(methodAccessExpression, methodAccessContext), classMemberFunction)
-  ).toBeTruthy();
+  expect(interpreter.eval(methodAccessExpression, methodAccessContext)).toEqual(
+    classMemberFunction
+  );
   expect(() => interpreter.eval(methodAccessExpression)).toThrow('');
 });
 
@@ -292,12 +264,8 @@ it('unary expression evaluates correctly', () => {
     operator: '!',
     expression: boolLiteralExpression,
   });
-  expect(
-    isSameValue(interpreter.eval(unaryExpressionNeg), { type: 'int', value: -5 })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(unaryExpressionNot), { type: 'bool', value: false })
-  ).toBeTruthy();
+  expect(interpreter.eval(unaryExpressionNeg)).toEqual(BigInt(-5));
+  expect(interpreter.eval(unaryExpressionNot)).toEqual(false);
 });
 
 it('panic expression evaluates correctly', () => {
@@ -334,16 +302,12 @@ it('built in function call expression evaluates correctly', () => {
     functionName: 'println',
     argumentExpression: stringLiteralExpression,
   });
-  expect(
-    isSameValue(interpreter.eval(stringToIntFunctionCall), { type: 'int', value: 5 })
-  ).toBeTruthy();
+  expect(interpreter.eval(stringToIntFunctionCall)).toEqual(intLiteralValue);
   expect(() => interpreter.eval(stringToIntFunctionCallFail)).toThrow(
     `Cannot convert \`${stringLiteralExpression.literal.value}\` to int.`
   );
-  expect(
-    isSameValue(interpreter.eval(intToStringFunctionCall), { type: 'string', value: '5' })
-  ).toBeTruthy();
-  expect(isSameValue(interpreter.eval(printlnFunctionCall), { type: 'unit' })).toBeTruthy();
+  expect(interpreter.eval(intToStringFunctionCall)).toEqual('5');
+  expect(interpreter.eval(printlnFunctionCall)).toEqual({ type: 'unit' });
 });
 
 it('function expression evaluates correctly', () => {
@@ -366,15 +330,8 @@ it('function expression evaluates correctly', () => {
     functionExpression: functionExpressionWithArgs,
     functionArguments: [stringLiteralExpression],
   });
-  expect(
-    isSameValue(interpreter.eval(functionCallExpressionNoArgs), { type: 'string', value: 'value' })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(functionCallExpressionWithArgs), {
-      type: 'string',
-      value: 'value',
-    })
-  ).toBeTruthy();
+  expect(interpreter.eval(functionCallExpressionNoArgs)).toEqual(stringLiteralValue);
+  expect(interpreter.eval(functionCallExpressionWithArgs)).toEqual(stringLiteralValue);
 });
 
 it('binary expression evaluates correctly', () => {
@@ -518,48 +475,26 @@ it('binary expression evaluates correctly', () => {
     e1: stringLiteralExpression,
     e2: stringLiteralExpression,
   });
-  expect(isSameValue(interpreter.eval(binExpressionMul), { type: 'int', value: 25 })).toBeTruthy();
-  expect(isSameValue(interpreter.eval(binExpressionDiv), { type: 'int', value: 1 })).toBeTruthy();
+  expect(interpreter.eval(binExpressionMul)).toEqual(BigInt(25));
+  expect(interpreter.eval(binExpressionDiv)).toEqual(BigInt(1));
   expect(() => interpreter.eval(binExpressionDiv0)).toThrow('Division by zero!');
-  expect(isSameValue(interpreter.eval(binExpressionMod), { type: 'int', value: 0 })).toBeTruthy();
+  expect(interpreter.eval(binExpressionMod)).toEqual(BigInt(0));
   expect(() => interpreter.eval(binExpressionMod0)).toThrow('Mod by zero!');
-  expect(isSameValue(interpreter.eval(binExpressionAdd), { type: 'int', value: 10 })).toBeTruthy();
-  expect(isSameValue(interpreter.eval(binExpressionSub), { type: 'int', value: 0 })).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(binExpressionLt), { type: 'bool', value: false })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(binExpressionLe), { type: 'bool', value: true })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(binExpressionGt), { type: 'bool', value: false })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(binExpressionGe), { type: 'bool', value: true })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(binExpressionEq), { type: 'bool', value: true })
-  ).toBeTruthy();
+  expect(interpreter.eval(binExpressionAdd)).toEqual(BigInt(10));
+  expect(interpreter.eval(binExpressionSub)).toEqual(BigInt(0));
+  expect(interpreter.eval(binExpressionLt)).toEqual(false);
+  expect(interpreter.eval(binExpressionLe)).toEqual(true);
+  expect(interpreter.eval(binExpressionGt)).toEqual(false);
+  expect(interpreter.eval(binExpressionGe)).toEqual(true);
+  expect(interpreter.eval(binExpressionEq)).toEqual(true);
   expect(() => interpreter.eval(binExpressionEqfn)).toThrow('Cannot compare functions!');
-  expect(
-    isSameValue(interpreter.eval(binExpressionNe), { type: 'bool', value: false })
-  ).toBeTruthy();
+  expect(interpreter.eval(binExpressionNe)).toEqual(false);
   expect(() => interpreter.eval(binExpressionNefn)).toThrow('Cannot compare functions!');
-  expect(
-    isSameValue(interpreter.eval(binExpressionAnd), { type: 'bool', value: true })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(binExpressionAndFalse), { type: 'bool', value: false })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(binExpressionOr), { type: 'bool', value: true })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(binExpressionOrFalse), { type: 'bool', value: true })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(binExpressionConcat), { type: 'string', value: 'valuevalue' })
-  ).toBeTruthy();
+  expect(interpreter.eval(binExpressionAnd)).toEqual(true);
+  expect(interpreter.eval(binExpressionAndFalse)).toEqual(false);
+  expect(interpreter.eval(binExpressionOr)).toEqual(true);
+  expect(interpreter.eval(binExpressionOrFalse)).toEqual(true);
+  expect(interpreter.eval(binExpressionConcat)).toEqual('valuevalue');
 });
 
 it('if else expression evaluates correctly', () => {
@@ -577,12 +512,8 @@ it('if else expression evaluates correctly', () => {
     e1: EXPRESSION_STRING(exampleRange, 'true branch'),
     e2: EXPRESSION_STRING(exampleRange, 'false branch'),
   });
-  expect(
-    isSameValue(interpreter.eval(ifElseExpressionTrue), { type: 'string', value: 'true branch' })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(ifElseExpressionFalse), { type: 'string', value: 'false branch' })
-  ).toBeTruthy();
+  expect(interpreter.eval(ifElseExpressionTrue)).toEqual('true branch');
+  expect(interpreter.eval(ifElseExpressionFalse)).toEqual('false branch');
 });
 
 it('matching list evaluates correctly', () => {
@@ -623,12 +554,8 @@ it('matching list evaluates correctly', () => {
     matchedExpression,
     matchingList: [],
   });
-  expect(
-    isSameValue(interpreter.eval(matchExpression), { type: 'string', value: 'value' })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(matchExpressionNoData), { type: 'string', value: 'value' })
-  ).toBeTruthy();
+  expect(interpreter.eval(matchExpression)).toEqual(stringLiteralValue);
+  expect(interpreter.eval(matchExpressionNoData)).toEqual(stringLiteralValue);
   expect(() => interpreter.eval(matchExpressionFail)).toThrow('');
 });
 
@@ -645,7 +572,12 @@ it('lambda expression evaluates correctly', () => {
     captured: {},
     body: intLiteralExpression,
   });
-  expect(isSameValue(interpreter.eval(lambdaExpression), { type: 'int', value: 5 }));
+  expect(interpreter.eval(lambdaExpression)).toEqual({
+    type: 'functionValue',
+    arguments: [],
+    body: intLiteralExpression,
+    context: EMPTY,
+  });
 });
 
 it('statement block expression evalutes correctly', () => {
@@ -723,9 +655,9 @@ it('statement block expression evalutes correctly', () => {
     typeAnnotation: intType,
     assignedExpression: objectExpression,
   };
-  const variableLocalValues = new Map<string, Value>();
-  variableLocalValues.set('var', { type: 'bool', value: true });
-  const variableContext = { classes: new Map(), localValues: variableLocalValues };
+  const variableLocalValues: Record<string, Value | undefined> = {};
+  variableLocalValues.var = true;
+  const variableContext = { classes: {}, localValues: variableLocalValues };
   const variablePattern: VariablePattern = {
     range: exampleRange,
     type: 'VariablePattern',
@@ -783,14 +715,7 @@ it('statement block expression evalutes correctly', () => {
     type: intType,
     block: statementBlockFail,
   });
-  expect(
-    isSameValue(interpreter.eval(statementBlockExpression, variableContext), { type: 'unit' })
-  ).toBeTruthy();
-  expect(
-    isSameValue(interpreter.eval(statementBlockExpressionWithBlockExpression), {
-      type: 'int',
-      value: 5,
-    })
-  ).toBeTruthy();
+  expect(interpreter.eval(statementBlockExpression, variableContext)).toEqual({ type: 'unit' });
+  expect(interpreter.eval(statementBlockExpressionWithBlockExpression)).toEqual(BigInt(5));
   expect(() => interpreter.eval(statementBlockExpressionFail)).toThrow('');
 });

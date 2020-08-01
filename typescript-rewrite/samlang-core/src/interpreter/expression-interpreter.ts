@@ -1,18 +1,8 @@
 import { IdentifierType } from '../ast/common/types';
-import { SamlangExpression } from '../ast/lang/samlang-expressions';
+import { SamlangExpression, EXPRESSION_VARIABLE } from '../ast/lang/samlang-expressions';
 import { InterpretationContext, EMPTY } from './interpretation-context';
 import PanicException from './panic-exception';
-import {
-  Value,
-  ObjectValue,
-  IntValue,
-  BoolValue,
-  StringValue,
-  FunctionValue,
-  VariantValue,
-  TupleValue,
-  isSameValue,
-} from './value';
+import { Value, ObjectValue, FunctionValue, VariantValue, TupleValue } from './value';
 
 export default class ExpressionInterpreter {
   private printedCollector = '';
@@ -29,24 +19,23 @@ export default class ExpressionInterpreter {
       case 'LiteralExpression': {
         switch (expression.literal.type) {
           case 'IntLiteral':
-            return { type: 'int', value: Number(expression.literal.value) };
+            return BigInt(expression.literal.value);
           case 'StringLiteral':
-            return { type: 'string', value: expression.literal.value };
           case 'BoolLiteral':
-            return { type: 'bool', value: expression.literal.value };
+            return expression.literal.value;
         }
       }
       // eslint-disable-next-line no-fallthrough
       case 'ThisExpression':
-        return context.localValues.get('this') ?? this.blameTypeChecker('Missing `this`');
+        return context.localValues.this ?? this.blameTypeChecker('Missing `this`');
       case 'VariableExpression':
         return (
-          context.localValues.get(expression.name) ??
+          context.localValues[expression.name] ??
           this.blameTypeChecker(`Missing variable ${expression.name}`)
         );
       case 'ClassMemberExpression':
         return (
-          context.classes.get(expression.className)?.functions?.get(expression.memberName) ??
+          context.classes[expression.className]?.functions?.[expression.memberName] ||
           this.blameTypeChecker()
         );
       case 'TupleConstructorExpression':
@@ -59,6 +48,12 @@ export default class ExpressionInterpreter {
         expression.fieldDeclarations.forEach((declaration) => {
           if (declaration.expression) {
             objectContent.set(declaration.name, this.eval(declaration.expression, context));
+          } else {
+            const { range, type, name } = declaration;
+            objectContent.set(
+              declaration.name,
+              this.eval(EXPRESSION_VARIABLE({ range, type, name }), context)
+            );
           }
         });
         return { type: 'object', objectContent };
@@ -73,42 +68,40 @@ export default class ExpressionInterpreter {
         const identifier = (expression.expression.type as IdentifierType).identifier;
         const thisValue = this.eval(expression.expression, context);
         const methodValue =
-          context.classes.get(identifier)?.methods?.get(expression.methodName) ??
-          this.blameTypeChecker();
-        const newCtx = { ...context };
-        newCtx.localValues = context.localValues.set('this', thisValue);
-        methodValue.context = newCtx;
+          context.classes[identifier]?.methods?.[expression.methodName] ?? this.blameTypeChecker();
+        methodValue.context = {
+          classes: context.classes,
+          localValues: { ...context.localValues, this: thisValue },
+        };
         return methodValue;
       }
       case 'UnaryExpression': {
-        let v = this.eval(expression.expression);
+        const v = this.eval(expression.expression);
         switch (expression.operator) {
           case '-':
-            v = v as IntValue;
-            return { type: 'int', value: -v.value };
+            return -v;
           case '!':
-            v = v as BoolValue;
-            return { type: 'bool', value: !v.value };
+            return !v;
         }
       }
       // eslint-disable-next-line no-fallthrough
       case 'PanicExpression':
-        throw new PanicException((this.eval(expression.expression, context) as StringValue).value);
+        throw new PanicException(this.eval(expression.expression, context) as string);
       case 'BuiltInFunctionCallExpression': {
         const argumentValue = this.eval(expression.argumentExpression, context);
         switch (expression.functionName) {
           case 'stringToInt': {
-            const value = (argumentValue as StringValue).value;
+            const value = argumentValue as string;
             const parsedValue = parseInt(value, 10);
             if (!Number.isNaN(parsedValue)) {
-              return { type: 'int', value: parsedValue };
+              return BigInt(parsedValue);
             }
             throw new PanicException(`Cannot convert \`${value}\` to int.`);
           }
           case 'intToString':
-            return { type: 'string', value: (argumentValue as IntValue).value.toString() };
+            return (argumentValue as bigint).toString();
           case 'println':
-            this.printedCollector.concat(`${(argumentValue as StringValue).value}\n`);
+            this.printedCollector.concat(`${argumentValue as string}\n`);
             return { type: 'unit' };
         }
       }
@@ -119,100 +112,107 @@ export default class ExpressionInterpreter {
         const body = functionVal.body;
         const ctx = functionVal.context;
         const argValues = expression.functionArguments.map((arg) => this.eval(arg, context));
-        const bodyContext = { ...ctx };
+        const bodyLocalValues = { ...ctx.localValues };
         args.forEach((arg, i) => {
-          ctx.localValues.set(arg, argValues[i]);
+          bodyLocalValues[arg] = argValues[i];
         });
+        const bodyContext = { classes: ctx.classes, localValues: { ...bodyLocalValues } };
         return this.eval(body, bodyContext);
       }
       case 'BinaryExpression': {
         switch (expression.operator.symbol) {
           case '*': {
-            const v1 = this.eval(expression.e1) as IntValue;
-            const v2 = this.eval(expression.e2) as IntValue;
-            return { type: 'int', value: v1.value * v2.value };
+            const v1 = this.eval(expression.e1) as bigint;
+            const v2 = this.eval(expression.e2) as bigint;
+            return BigInt(v1 * v2);
           }
           case '/': {
-            const v1 = this.eval(expression.e1) as IntValue;
-            const v2 = this.eval(expression.e2) as IntValue;
-            if (v2.value === 0) {
+            const v1 = this.eval(expression.e1) as bigint;
+            const v2 = this.eval(expression.e2) as bigint;
+            if (v2 === BigInt(0)) {
               throw new PanicException('Division by zero!');
             }
-            return { type: 'int', value: v1.value / v2.value };
+            return BigInt(v1 / v2);
           }
           case '%': {
-            const v1 = this.eval(expression.e1) as IntValue;
-            const v2 = this.eval(expression.e2) as IntValue;
-            if (v2.value === 0) {
+            const v1 = this.eval(expression.e1) as bigint;
+            const v2 = this.eval(expression.e2) as bigint;
+            if (v2 === BigInt(0)) {
               throw new PanicException('Mod by zero!');
             }
-            return { type: 'int', value: v1.value % v2.value };
+            return BigInt(v1 % v2);
           }
           case '+': {
-            const v1 = this.eval(expression.e1) as IntValue;
-            const v2 = this.eval(expression.e2) as IntValue;
-            return { type: 'int', value: v1.value + v2.value };
+            const v1 = this.eval(expression.e1) as bigint;
+            const v2 = this.eval(expression.e2) as bigint;
+            return BigInt(v1 + v2);
           }
           case '-': {
-            const v1 = this.eval(expression.e1) as IntValue;
-            const v2 = this.eval(expression.e2) as IntValue;
-            return { type: 'int', value: v1.value - v2.value };
+            const v1 = this.eval(expression.e1) as bigint;
+            const v2 = this.eval(expression.e2) as bigint;
+            return BigInt(v1 - v2);
           }
           case '<': {
-            const v1 = this.eval(expression.e1) as IntValue;
-            const v2 = this.eval(expression.e2) as IntValue;
-            return { type: 'bool', value: v1.value < v2.value };
+            const v1 = this.eval(expression.e1) as bigint;
+            const v2 = this.eval(expression.e2) as bigint;
+            return v1 < v2;
           }
           case '<=': {
-            const v1 = this.eval(expression.e1) as IntValue;
-            const v2 = this.eval(expression.e2) as IntValue;
-            return { type: 'bool', value: v1.value <= v2.value };
+            const v1 = this.eval(expression.e1) as bigint;
+            const v2 = this.eval(expression.e2) as bigint;
+            return v1 <= v2;
           }
           case '>': {
-            const v1 = this.eval(expression.e1) as IntValue;
-            const v2 = this.eval(expression.e2) as IntValue;
-            return { type: 'bool', value: v1.value > v2.value };
+            const v1 = this.eval(expression.e1) as bigint;
+            const v2 = this.eval(expression.e2) as bigint;
+            return v1 > v2;
           }
           case '>=': {
-            const v1 = this.eval(expression.e1) as IntValue;
-            const v2 = this.eval(expression.e2) as IntValue;
-            return { type: 'bool', value: v1.value >= v2.value };
+            const v1 = this.eval(expression.e1) as bigint;
+            const v2 = this.eval(expression.e2) as bigint;
+            return v1 >= v2;
           }
           case '==': {
             const v1 = this.eval(expression.e1);
             const v2 = this.eval(expression.e2);
-            if (v1.type === 'functionValue' || v2.type === 'functionValue') {
+            if (
+              (v1 as FunctionValue).type === 'functionValue' ||
+              (v2 as FunctionValue).type === 'functionValue'
+            ) {
               throw new PanicException('Cannot compare functions!');
             }
-            return { type: 'bool', value: isSameValue(v1, v2) };
+            return v1 === v2;
           }
           case '!=': {
             const v1 = this.eval(expression.e1);
             const v2 = this.eval(expression.e2);
-            if (v1.type === 'functionValue' || v2.type === 'functionValue') {
+            if (
+              (v1 as FunctionValue).type === 'functionValue' ||
+              (v2 as FunctionValue).type === 'functionValue'
+            ) {
               throw new PanicException('Cannot compare functions!');
             }
-            return { type: 'bool', value: !isSameValue(v1, v2) };
+            return v1 !== v2;
           }
           case '&&': {
-            const v1 = this.eval(expression.e1) as BoolValue;
-            return !v1.value ? { type: 'bool', value: false } : this.eval(expression.e2, context);
+            const v1 = this.eval(expression.e1) as boolean;
+            return v1 && this.eval(expression.e2, context);
           }
           case '||': {
-            const v1 = this.eval(expression.e1) as BoolValue;
-            return v1.value ? { type: 'bool', value: true } : this.eval(expression.e2, context);
+            const v1 = this.eval(expression.e1) as boolean;
+            return v1 || this.eval(expression.e2, context);
           }
           case '::': {
-            const v1 = this.eval(expression.e1) as StringValue;
-            const v2 = this.eval(expression.e2) as StringValue;
-            return { type: 'string', value: v1.value + v2.value };
+            const v1 = this.eval(expression.e1) as string;
+            const v2 = this.eval(expression.e2) as string;
+            return v1 + v2;
           }
         }
       }
       // eslint-disable-next-line no-fallthrough
       case 'IfElseExpression': {
         return this.eval(
-          (this.eval(expression.boolExpression) as BoolValue).value ? expression.e1 : expression.e2,
+          (this.eval(expression.boolExpression) as boolean) ? expression.e1 : expression.e2,
           context
         );
       }
@@ -223,8 +223,10 @@ export default class ExpressionInterpreter {
           this.blameTypeChecker();
         let ctx = context;
         if (matchedPattern.dataVariable) {
-          ctx = { ...context };
-          ctx.localValues.set(matchedPattern.dataVariable, matchedValue.data);
+          ctx = {
+            classes: ctx.classes,
+            localValues: { ...ctx.localValues, [matchedPattern.dataVariable]: matchedValue.data },
+          };
         }
         return this.eval(matchedPattern.expression, ctx);
       }
@@ -237,16 +239,16 @@ export default class ExpressionInterpreter {
         };
       case 'StatementBlockExpression': {
         const { block } = expression;
-        const currentContext = { ...context };
+        const localValues = { ...context.localValues };
         block.statements.forEach((statement) => {
-          const assignedValue = this.eval(statement.assignedExpression, currentContext);
+          const assignedValue = this.eval(statement.assignedExpression, context);
           const p = statement.pattern;
           switch (p.type) {
             case 'TuplePattern': {
               const { tupleContent } = assignedValue as TupleValue;
               p.destructedNames.forEach((nameWithRange, i) => {
                 if (nameWithRange[0] !== null) {
-                  currentContext.localValues.set(nameWithRange[0], tupleContent[i]);
+                  localValues[nameWithRange[0]] = tupleContent[i];
                 }
               });
               break;
@@ -255,12 +257,12 @@ export default class ExpressionInterpreter {
               const { objectContent } = assignedValue as ObjectValue;
               p.destructedNames.forEach(({ fieldName, alias }) => {
                 const v = objectContent.get(fieldName) ?? this.blameTypeChecker();
-                currentContext.localValues.set(alias ?? fieldName, v);
+                localValues[alias ?? fieldName] = v;
               });
               break;
             }
             case 'VariablePattern':
-              currentContext.localValues.set(p.name, assignedValue);
+              localValues[p.name] = assignedValue;
               break;
             case 'WildCardPattern':
               break;
