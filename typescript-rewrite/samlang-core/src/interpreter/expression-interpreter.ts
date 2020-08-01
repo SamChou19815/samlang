@@ -239,16 +239,16 @@ export default class ExpressionInterpreter {
         };
       case 'StatementBlockExpression': {
         const { block } = expression;
-        const localValues = { ...context.localValues };
+        const contextForStatementBlock = { ...context, localValues: { ...context.localValues } };
         block.statements.forEach((statement) => {
-          const assignedValue = this.eval(statement.assignedExpression, context);
+          const assignedValue = this.eval(statement.assignedExpression, contextForStatementBlock);
           const p = statement.pattern;
           switch (p.type) {
             case 'TuplePattern': {
               const { tupleContent } = assignedValue as TupleValue;
               p.destructedNames.forEach((nameWithRange, i) => {
                 if (nameWithRange[0] !== null) {
-                  localValues[nameWithRange[0]] = tupleContent[i];
+                  contextForStatementBlock.localValues[nameWithRange[0]] = tupleContent[i];
                 }
               });
               break;
@@ -257,19 +257,21 @@ export default class ExpressionInterpreter {
               const { objectContent } = assignedValue as ObjectValue;
               p.destructedNames.forEach(({ fieldName, alias }) => {
                 const v = objectContent.get(fieldName) ?? this.blameTypeChecker();
-                localValues[alias ?? fieldName] = v;
+                contextForStatementBlock.localValues[alias ?? fieldName] = v;
               });
               break;
             }
             case 'VariablePattern':
-              localValues[p.name] = assignedValue;
+              contextForStatementBlock.localValues[p.name] = assignedValue;
               break;
             case 'WildCardPattern':
               break;
           }
         });
         const finalExpression = block.expression;
-        return finalExpression === undefined ? { type: 'unit' } : this.eval(finalExpression);
+        return finalExpression === undefined
+          ? { type: 'unit' }
+          : this.eval(finalExpression, contextForStatementBlock);
       }
     }
   };
