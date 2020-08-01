@@ -1,15 +1,20 @@
+import type ModuleReference from '../../ast/common/module-reference';
+import {
+  ENCODED_COMPILED_PROGRAM_MAIN,
+  encodeMainFunctionName,
+} from '../../ast/common/name-encoder';
 import type { Sources, GlobalVariable } from '../../ast/common/structs';
 import type { HighIRModule } from '../../ast/hir/hir-toplevel';
-import type { MidIRCompilationUnit, MidIRFunction } from '../../ast/mir';
+import { MidIRCompilationUnit, MidIRFunction, MIR_CALL_FUNCTION, MIR_RETURN } from '../../ast/mir';
 import { optimizeIrWithSimpleOptimization } from '../../optimization/simple-optimizations';
 import optimizeIRWithTailRecursiveCallTransformation from '../../optimization/tail-recursion-optimization';
+import { hashMapOf } from '../../util/collections';
 import createMidIRBasicBlocks from './mir-basic-block';
 import emitCanonicalMidIRStatementsFromReorderedBasicBlocks from './mir-basic-block-optimized-emitter';
 import reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath from './mir-basic-block-reorder';
 import midIRTranslateStatementsAndCollectGlobalStrings from './mir-lowering-translator';
 import MidIRResourceAllocator from './mir-resource-allocator';
 
-// eslint-disable-next-line import/prefer-default-export
 export const compileHighIrSourcesToMidIRCompilationUnit = (
   sources: Sources<HighIRModule>
 ): MidIRCompilationUnit => {
@@ -44,4 +49,42 @@ export const compileHighIrSourcesToMidIRCompilationUnit = (
     })
   );
   return { globalVariables: Array.from(globalVariables.values()), functions };
+};
+
+const getMidIRMainFunction = (entryModuleReference: ModuleReference): MidIRFunction => ({
+  functionName: ENCODED_COMPILED_PROGRAM_MAIN,
+  argumentNames: [],
+  hasReturn: false,
+  mainBodyStatements: [
+    MIR_CALL_FUNCTION(encodeMainFunctionName(entryModuleReference), []),
+    MIR_RETURN(),
+  ],
+});
+
+export const compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries = (
+  sources: Sources<HighIRModule>
+): Sources<MidIRCompilationUnit> => {
+  const compilationUnitWithoutMain = compileHighIrSourcesToMidIRCompilationUnit(sources);
+  const midIRCompilationUnitSources = hashMapOf<ModuleReference, MidIRCompilationUnit>();
+  sources.forEach((_, moduleReference) => {
+    midIRCompilationUnitSources.set(moduleReference, {
+      ...compilationUnitWithoutMain,
+      functions: [...compilationUnitWithoutMain.functions, getMidIRMainFunction(moduleReference)],
+    });
+  });
+  return midIRCompilationUnitSources;
+};
+
+export const compileHighIrSourcesToMidIRCompilationUnitWithSingleEntry = (
+  sources: Sources<HighIRModule>,
+  entryModuleReference: ModuleReference
+): MidIRCompilationUnit => {
+  const compilationUnitWithoutMain = compileHighIrSourcesToMidIRCompilationUnit(sources);
+  return {
+    ...compilationUnitWithoutMain,
+    functions: [
+      ...compilationUnitWithoutMain.functions,
+      getMidIRMainFunction(entryModuleReference),
+    ],
+  };
 };
