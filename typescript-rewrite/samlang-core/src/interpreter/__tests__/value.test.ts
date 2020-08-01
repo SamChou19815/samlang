@@ -48,7 +48,7 @@ it('value equality test', () => {
   const objectContent1 = new Map<string, Value>();
   objectContent1.set('field1', { type: 'unit' });
   const objectContent2 = new Map<string, Value>();
-  objectContent2.set('field1', { type: 'int', value: 1 });
+  objectContent2.set('field1', BigInt(1));
   expect({ type: 'object', objectContent: objectContent1 }).not.toEqual({
     type: 'object',
     objectContent: objectContent2,
