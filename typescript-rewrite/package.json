@@ -57,6 +57,7 @@
                 "**/samlang-core/src/analysis/*",
                 "**/samlang-core/src/ast/**",
                 "**/samlang-core/src/errors/*",
+                "**/samlang-core/src/interpreter/*",
                 "**/samlang-core/src/optimization/*",
                 "**/samlang-core/src/parser/generated/*",
                 "**/samlang-core/src/util/*"

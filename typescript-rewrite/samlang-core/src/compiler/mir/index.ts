@@ -39,7 +39,10 @@ export const compileHighIrSourcesToMidIRCompilationUnit = (
           mainBodyStatements: optimizeIrWithSimpleOptimization(
             emitCanonicalMidIRStatementsFromReorderedBasicBlocks(
               reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath(
-                createMidIRBasicBlocks(allocator, highIRFunction.name, loweredStatements)
+                createMidIRBasicBlocks(allocator, highIRFunction.name, [
+                  ...loweredStatements,
+                  MIR_RETURN(),
+                ])
               )
             )
           ),
