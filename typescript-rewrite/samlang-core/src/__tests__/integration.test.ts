@@ -1,4 +1,5 @@
 import ModuleReference from '../ast/common/module-reference';
+import { MidIRCompilationUnit, midIRCompilationUnitToString } from '../ast/mir';
 import { typeCheckSources } from '../checker';
 // eslint-disable-next-line import/no-internal-modules
 import compileSamlangSourcesToHighIRSources from '../compiler/hir';
@@ -1168,7 +1169,13 @@ class Main {
   */
 ];
 
-const mirBaseTestCases = (() => {
+type MidIRTestCase = {
+  readonly testCaseName: string;
+  readonly expectedStandardOut: string;
+  readonly compilationUnit: MidIRCompilationUnit;
+};
+
+const mirBaseTestCases: readonly MidIRTestCase[] = (() => {
   const errorCollector = createGlobalErrorCollector();
   const [checkedSources] = typeCheckSources(
     mapOf(
@@ -1203,6 +1210,23 @@ const mirBaseTestCases = (() => {
   });
 })();
 
+const testMidIROptimizerResult = (
+  testCase: MidIRTestCase,
+  optimizer: (compilationUnit: MidIRCompilationUnit) => MidIRCompilationUnit
+): void => {
+  const unoptimized = testCase.compilationUnit;
+  const optimized = optimizer(unoptimized);
+  const interpretationResult = interpretMidIRCompilationUnit(optimized);
+  if (interpretationResult !== testCase.expectedStandardOut) {
+    const expected = testCase.expectedStandardOut;
+    const unoptimizedString = midIRCompilationUnitToString(unoptimized);
+    const optimizedString = midIRCompilationUnitToString(optimized);
+    fail(
+      `Expected:\n${expected}\nActual:\n${interpretationResult}\nUnoptimized MIR:${unoptimizedString}\nOptimized MIR:${optimizedString}`
+    );
+  }
+};
+
 mirBaseTestCases.forEach((testCase) => {
   it(`IR[no-opt]: ${testCase.testCaseName}`, () =>
     expect(interpretMidIRCompilationUnit(testCase.compilationUnit)).toBe(
@@ -1210,61 +1234,35 @@ mirBaseTestCases.forEach((testCase) => {
     ));
 
   it(`IR[cp]: ${testCase.testCaseName}`, () =>
-    expect(
-      interpretMidIRCompilationUnit(
-        optimizeIRCompilationUnit(testCase.compilationUnit, {
-          doesPerformConstantPropagation: true,
-        })
-      )
-    ).toBe(testCase.expectedStandardOut));
+    testMidIROptimizerResult(testCase, (it) =>
+      optimizeIRCompilationUnit(it, { doesPerformConstantPropagation: true })
+    ));
 
   it(`IR[copy]: ${testCase.testCaseName}`, () =>
-    expect(
-      interpretMidIRCompilationUnit(
-        optimizeIRCompilationUnit(testCase.compilationUnit, {
-          doesPerformCopyPropagation: true,
-        })
-      )
-    ).toBe(testCase.expectedStandardOut));
+    testMidIROptimizerResult(testCase, (it) =>
+      optimizeIRCompilationUnit(it, { doesPerformCopyPropagation: true })
+    ));
 
   it(`IR[vn]: ${testCase.testCaseName}`, () =>
-    expect(
-      interpretMidIRCompilationUnit(
-        optimizeIRCompilationUnit(testCase.compilationUnit, {
-          doesPerformLocalValueNumbering: true,
-        })
-      )
-    ).toBe(testCase.expectedStandardOut));
+    testMidIROptimizerResult(testCase, (it) =>
+      optimizeIRCompilationUnit(it, { doesPerformLocalValueNumbering: true })
+    ));
 
   it(`IR[cse]: ${testCase.testCaseName}`, () =>
-    expect(
-      interpretMidIRCompilationUnit(
-        optimizeIRCompilationUnit(testCase.compilationUnit, {
-          doesPerformCommonSubExpressionElimination: true,
-        })
-      )
-    ).toBe(testCase.expectedStandardOut));
+    testMidIROptimizerResult(testCase, (it) =>
+      optimizeIRCompilationUnit(it, { doesPerformCommonSubExpressionElimination: true })
+    ));
 
   it(`IR[dse]: ${testCase.testCaseName}`, () =>
-    expect(
-      interpretMidIRCompilationUnit(
-        optimizeIRCompilationUnit(testCase.compilationUnit, {
-          doesPerformDeadCodeElimination: true,
-        })
-      )
-    ).toBe(testCase.expectedStandardOut));
+    testMidIROptimizerResult(testCase, (it) =>
+      optimizeIRCompilationUnit(it, { doesPerformDeadCodeElimination: true })
+    ));
 
   it(`IR[inl]: ${testCase.testCaseName}`, () =>
-    expect(
-      interpretMidIRCompilationUnit(
-        optimizeIRCompilationUnit(testCase.compilationUnit, {
-          doesPerformInlining: true,
-        })
-      )
-    ).toBe(testCase.expectedStandardOut));
+    testMidIROptimizerResult(testCase, (it) =>
+      optimizeIRCompilationUnit(it, { doesPerformInlining: true })
+    ));
 
   it(`IR[all]: ${testCase.testCaseName}`, () =>
-    expect(interpretMidIRCompilationUnit(optimizeIRCompilationUnit(testCase.compilationUnit))).toBe(
-      testCase.expectedStandardOut
-    ));
+    testMidIROptimizerResult(testCase, (it) => optimizeIRCompilationUnit(it)));
 });

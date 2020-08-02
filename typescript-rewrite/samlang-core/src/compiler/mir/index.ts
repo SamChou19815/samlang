@@ -6,7 +6,10 @@ import {
 import type { Sources, GlobalVariable } from '../../ast/common/structs';
 import type { HighIRModule } from '../../ast/hir/hir-toplevel';
 import { MidIRCompilationUnit, MidIRFunction, MIR_CALL_FUNCTION, MIR_RETURN } from '../../ast/mir';
-import { optimizeIrWithSimpleOptimization } from '../../optimization/simple-optimizations';
+import {
+  optimizeIrWithSimpleOptimization,
+  optimizeIRWithUnusedNameElimination,
+} from '../../optimization/simple-optimizations';
 import optimizeIRWithTailRecursiveCallTransformation from '../../optimization/tail-recursion-optimization';
 import { hashMapOf } from '../../util/collections';
 import createMidIRBasicBlocks from './mir-basic-block';
@@ -70,10 +73,13 @@ export const compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries = (
   const compilationUnitWithoutMain = compileHighIrSourcesToMidIRCompilationUnit(sources);
   const midIRCompilationUnitSources = hashMapOf<ModuleReference, MidIRCompilationUnit>();
   sources.forEach((_, moduleReference) => {
-    midIRCompilationUnitSources.set(moduleReference, {
-      ...compilationUnitWithoutMain,
-      functions: [...compilationUnitWithoutMain.functions, getMidIRMainFunction(moduleReference)],
-    });
+    midIRCompilationUnitSources.set(
+      moduleReference,
+      optimizeIRWithUnusedNameElimination({
+        ...compilationUnitWithoutMain,
+        functions: [...compilationUnitWithoutMain.functions, getMidIRMainFunction(moduleReference)],
+      })
+    );
   });
   return midIRCompilationUnitSources;
 };
@@ -83,11 +89,11 @@ export const compileHighIrSourcesToMidIRCompilationUnitWithSingleEntry = (
   entryModuleReference: ModuleReference
 ): MidIRCompilationUnit => {
   const compilationUnitWithoutMain = compileHighIrSourcesToMidIRCompilationUnit(sources);
-  return {
+  return optimizeIRWithUnusedNameElimination({
     ...compilationUnitWithoutMain,
     functions: [
       ...compilationUnitWithoutMain.functions,
       getMidIRMainFunction(entryModuleReference),
     ],
-  };
+  });
 };
