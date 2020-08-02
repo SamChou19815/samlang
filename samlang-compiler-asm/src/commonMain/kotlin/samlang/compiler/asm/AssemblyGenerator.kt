@@ -82,7 +82,6 @@ class AssemblyGenerator private constructor(
             val generator = AssemblyGenerator(compilationUnit = compilationUnit, removeComments = removeComments)
             return AssemblyProgram(
                 globalVariables = compilationUnit.globalVariables,
-                publicFunctions = generator.publicFunctions,
                 instructions = generator.instructions
             )
         }

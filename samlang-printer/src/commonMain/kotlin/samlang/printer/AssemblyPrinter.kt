@@ -4,6 +4,7 @@ import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.SetOnFlag
 import samlang.ast.asm.AssemblyProgram
 import samlang.ast.common.GlobalVariable
+import samlang.ast.common.IrNameEncoder
 import samlang.util.StringBuilderPrintDevice
 
 /**
@@ -21,9 +22,7 @@ class AssemblyPrinter(private val includeComments: Boolean, private val osTarget
         printlnInstruction(instructionLine = ".intel_syntax noprefix")
         printlnInstruction(instructionLine = ".p2align 4, 0x90")
         printlnInstruction(instructionLine = ".align 8")
-        for (publicFunction in program.publicFunctions) {
-            printlnInstruction(instructionLine = ".globl $publicFunction")
-        }
+        printlnInstruction(instructionLine = ".globl ${IrNameEncoder.compiledProgramMain}")
         program.instructions.forEach { printInstruction(instruction = it) }
         when (osTarget) {
             OsTarget.LINUX -> printlnInstruction(instructionLine = ".section .ctors")
@@ -57,6 +56,6 @@ class AssemblyPrinter(private val includeComments: Boolean, private val osTarget
     }
 
     private fun printlnInstruction(instructionLine: String) {
-        device.println("\t" + instructionLine)
+        device.println("    $instructionLine")
     }
 }
