@@ -5,7 +5,7 @@ import samlang.ast.asm.AssemblyArgs.Mem
 import samlang.ast.asm.AssemblyArgs.Reg
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.MoveToReg
-import samlang.ast.asm.FunctionContext
+import samlang.compiler.asm.common.FunctionContext
 import samlang.compiler.asm.ralloc.CalleeSavedUtil.addCalleeSavedRegsMoves
 import samlang.compiler.asm.ralloc.CalleeSavedUtil.reorganizeSpilledVarMappings
 import samlang.compiler.asm.ralloc.RegisterAllocationConstants.CALLEE_SAVED_REGS
@@ -161,7 +161,7 @@ class RealRegisterAllocator(
     /** The main function to run for register allocation. */
     private fun main() {
         while (true) {
-            val liveVariableAnalysisResult = LiveVariableAnalysis(functionContext, instructions)
+            val liveVariableAnalysisResult = LiveVariableAnalysis(functionContext.hasReturn, instructions)
             build(liveVariableAnalysisResult)
             val useCount = buildUseCount(liveVariableAnalysisResult)
             makeWorkList()

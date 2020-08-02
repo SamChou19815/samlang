@@ -22,7 +22,7 @@ import samlang.ast.asm.AssemblyInstruction.Companion.PUSH
 import samlang.ast.asm.AssemblyInstruction.Companion.SHL
 import samlang.ast.asm.AssemblyInstructionVisitor
 import samlang.ast.asm.ConstOrReg
-import samlang.ast.asm.FunctionContext
+import samlang.compiler.asm.common.FunctionContext
 import samlang.ast.asm.RegOrMem
 
 /**

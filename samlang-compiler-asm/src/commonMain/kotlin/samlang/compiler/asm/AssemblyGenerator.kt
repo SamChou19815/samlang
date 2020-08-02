@@ -10,7 +10,7 @@ import samlang.ast.asm.AssemblyArgs.RSI
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.Companion.LABEL
 import samlang.ast.asm.AssemblyProgram
-import samlang.ast.asm.FunctionContext
+import samlang.compiler.asm.common.FunctionContext
 import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression
@@ -45,7 +45,6 @@ class AssemblyGenerator private constructor(
         instructions.add(LABEL(functionName))
         val context = FunctionContext(
             functionName = functionName,
-            numberOfArguments = function.numberOfArguments,
             hasReturn = function.hasReturn
         )
         var tiledInstructions: List<AssemblyInstruction> = DpTiling(context).tile(statementsToTile)

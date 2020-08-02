@@ -17,17 +17,10 @@ import samlang.ast.asm.AssemblyArgs.Reg
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.*
 import samlang.ast.asm.AssemblyInstructionVisitor
-import samlang.ast.asm.FunctionContext
 
-/**
- * The class that provides the live variable analysis result.
- *
- * @param context the mutable context of a function.
- * @param instructions the assembly instructions to perform live variable analysis.
- */
 @ExperimentalStdlibApi
 class LiveVariableAnalysis(
-    private val context: FunctionContext,
+    private val hasReturn: Boolean,
     instructions: List<AssemblyInstruction>
 ) {
     /** The mapping from a node id to different variable sets. */
@@ -55,7 +48,7 @@ class LiveVariableAnalysis(
             // last instruction is the epilogue label. It can be seen as the exit node.
             val useSetOfLastInstruction = uses[len - 1]
             // we also want to use rax and rdx if they are return values.
-            if (context.hasReturn) {
+            if (hasReturn) {
                 useSetOfLastInstruction.add(RAX.id)
             }
         }
@@ -151,7 +144,7 @@ class LiveVariableAnalysis(
         }
 
         override fun visit(node: Return) {
-            if (context.hasReturn) {
+            if (hasReturn) {
                 findUseForReg(RAX)
             }
         }

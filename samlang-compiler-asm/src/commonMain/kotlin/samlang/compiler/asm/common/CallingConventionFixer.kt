@@ -12,7 +12,6 @@ import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
 import samlang.ast.asm.AssemblyInstruction.Companion.POP
 import samlang.ast.asm.AssemblyInstruction.Companion.PUSH
 import samlang.ast.asm.AssemblyInstruction.Companion.RET
-import samlang.ast.asm.FunctionContext
 
 /**
  * The class used to generate prologue and epilogue of functions according System-V calling
