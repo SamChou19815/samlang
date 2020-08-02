@@ -22,20 +22,17 @@ import samlang.ast.asm.AssemblyInstruction.Companion.CALL
 import samlang.ast.asm.AssemblyInstruction.Companion.CMP
 import samlang.ast.asm.AssemblyInstruction.Companion.IDIV
 import samlang.ast.asm.AssemblyInstruction.Companion.IMUL
-import samlang.ast.asm.AssemblyInstruction.Companion.JUMP
 import samlang.ast.asm.AssemblyInstruction.Companion.LEA
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
 import samlang.ast.asm.AssemblyInstruction.Companion.POP
 import samlang.ast.asm.AssemblyInstruction.Companion.PUSH
 import samlang.ast.asm.AssemblyInstruction.Companion.SET
-import samlang.ast.asm.AssemblyInstruction.Companion.SHIFT
+import samlang.ast.asm.AssemblyInstruction.Companion.SHL
 import samlang.ast.asm.AssemblyInstruction.Companion.UN_OP
 import samlang.ast.asm.AssemblyInstruction.Cqo
 import samlang.ast.asm.AssemblyInstruction.IDiv
-import samlang.ast.asm.AssemblyInstruction.IMulOneArg
 import samlang.ast.asm.AssemblyInstruction.IMulThreeArgs
 import samlang.ast.asm.AssemblyInstruction.IMulTwoArgs
-import samlang.ast.asm.AssemblyInstruction.JumpAddress
 import samlang.ast.asm.AssemblyInstruction.JumpLabel
 import samlang.ast.asm.AssemblyInstruction.LoadEffectiveAddress
 import samlang.ast.asm.AssemblyInstruction.MoveFromLong
@@ -44,7 +41,7 @@ import samlang.ast.asm.AssemblyInstruction.MoveToReg
 import samlang.ast.asm.AssemblyInstruction.Pop
 import samlang.ast.asm.AssemblyInstruction.Push
 import samlang.ast.asm.AssemblyInstruction.SetOnFlag
-import samlang.ast.asm.AssemblyInstruction.Shift
+import samlang.ast.asm.AssemblyInstruction.ShiftLeft
 import samlang.ast.asm.AssemblyInstructionVisitor
 import samlang.ast.asm.ConstOrReg
 import samlang.ast.asm.RegOrMem
@@ -208,10 +205,6 @@ class NaiveRegisterAllocator(
             realInstructions += node
         }
 
-        override fun visit(node: JumpAddress) {
-            realInstructions += JUMP(node.type, transformAssemblyArg(node.arg, R9, R10))
-        }
-
         override fun visit(node: CallAddress) {
             realInstructions += CALL(transformAssemblyArg(node.address, R9, R10))
         }
@@ -248,10 +241,6 @@ class NaiveRegisterAllocator(
                         }
                     }
             )
-        }
-
-        override fun visit(node: IMulOneArg) {
-            realInstructions += IMUL(transformRegOrMem(node.arg, R10, R11))
         }
 
         override fun visit(node: IMulTwoArgs) {
@@ -295,12 +284,8 @@ class NaiveRegisterAllocator(
             realInstructions += UN_OP(node.type, transformRegOrMem(node.dest, R9, R10))
         }
 
-        override fun visit(node: Shift) {
-            realInstructions += SHIFT(
-                    type = node.type,
-                    dest = transformRegOrMem(node.dest, R9, R10),
-                    count = node.count
-            )
+        override fun visit(node: ShiftLeft) {
+            realInstructions += SHL(dest = transformRegOrMem(node.dest, R9, R10), count = node.count)
         }
 
         override fun visit(node: Push) {

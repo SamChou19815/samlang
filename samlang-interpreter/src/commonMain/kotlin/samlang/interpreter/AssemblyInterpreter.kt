@@ -19,10 +19,8 @@ import samlang.ast.asm.AssemblyInstruction.CmpConstOrReg
 import samlang.ast.asm.AssemblyInstruction.CmpMem
 import samlang.ast.asm.AssemblyInstruction.Cqo
 import samlang.ast.asm.AssemblyInstruction.IDiv
-import samlang.ast.asm.AssemblyInstruction.IMulOneArg
 import samlang.ast.asm.AssemblyInstruction.IMulThreeArgs
 import samlang.ast.asm.AssemblyInstruction.IMulTwoArgs
-import samlang.ast.asm.AssemblyInstruction.JumpAddress
 import samlang.ast.asm.AssemblyInstruction.JumpLabel
 import samlang.ast.asm.AssemblyInstruction.JumpType
 import samlang.ast.asm.AssemblyInstruction.LoadEffectiveAddress
@@ -32,8 +30,7 @@ import samlang.ast.asm.AssemblyInstruction.MoveToReg
 import samlang.ast.asm.AssemblyInstruction.Pop
 import samlang.ast.asm.AssemblyInstruction.Push
 import samlang.ast.asm.AssemblyInstruction.SetOnFlag
-import samlang.ast.asm.AssemblyInstruction.Shift
-import samlang.ast.asm.AssemblyInstruction.ShiftType
+import samlang.ast.asm.AssemblyInstruction.ShiftLeft
 import samlang.ast.asm.AssemblyInstructionVisitor
 import samlang.ast.asm.AssemblyProgram
 import samlang.ast.asm.RegOrMem
@@ -313,10 +310,6 @@ class AssemblyInterpreter(program: AssemblyProgram) {
             }
         }
 
-        override fun visit(node: JumpAddress) {
-            throw Error("Unsupported in this interpreter")
-        }
-
         /**
          * @param arrayPointer the pointer to the array.
          * @return the string of the array.
@@ -423,13 +416,6 @@ class AssemblyInterpreter(program: AssemblyProgram) {
             interpretAlBinaryOpMemDest(dest = node.dest, src = node.src, type = node.type)
         }
 
-        override fun visit(node: IMulOneArg) {
-            val raxValue = getValue(RAX)
-            val argValue = getValue(node.arg)
-            setValue(regOrMem = RDX, value = 0L)
-            setValue(regOrMem = RAX, value = raxValue * argValue)
-        }
-
         override fun visit(node: IMulTwoArgs) {
             setValue(
                 regOrMem = node.dest,
@@ -475,14 +461,8 @@ class AssemblyInterpreter(program: AssemblyProgram) {
             setValue(node.dest, value)
         }
 
-        override fun visit(node: Shift) {
-            var value = getValue(node.dest)
-            value = when (node.type) {
-                ShiftType.SHL, ShiftType.SAL -> value shl node.count
-                ShiftType.SHR -> value ushr node.count
-                ShiftType.SAR -> value shr node.count
-            }
-            setValue(node.dest, value)
+        override fun visit(node: ShiftLeft) {
+            setValue(node.dest, getValue(node.dest) shl node.count)
         }
 
         override fun visit(node: Push) {

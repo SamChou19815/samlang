@@ -17,19 +17,16 @@ import samlang.ast.asm.AssemblyInstruction.Companion.CMP
 import samlang.ast.asm.AssemblyInstruction.Companion.COMMENT
 import samlang.ast.asm.AssemblyInstruction.Companion.IDIV
 import samlang.ast.asm.AssemblyInstruction.Companion.IMUL
-import samlang.ast.asm.AssemblyInstruction.Companion.JUMP
 import samlang.ast.asm.AssemblyInstruction.Companion.LEA
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
 import samlang.ast.asm.AssemblyInstruction.Companion.POP
 import samlang.ast.asm.AssemblyInstruction.Companion.PUSH
-import samlang.ast.asm.AssemblyInstruction.Companion.SHIFT
+import samlang.ast.asm.AssemblyInstruction.Companion.SHL
 import samlang.ast.asm.AssemblyInstruction.Companion.UN_OP
 import samlang.ast.asm.AssemblyInstruction.Cqo
 import samlang.ast.asm.AssemblyInstruction.IDiv
-import samlang.ast.asm.AssemblyInstruction.IMulOneArg
 import samlang.ast.asm.AssemblyInstruction.IMulThreeArgs
 import samlang.ast.asm.AssemblyInstruction.IMulTwoArgs
-import samlang.ast.asm.AssemblyInstruction.JumpAddress
 import samlang.ast.asm.AssemblyInstruction.JumpLabel
 import samlang.ast.asm.AssemblyInstruction.LoadEffectiveAddress
 import samlang.ast.asm.AssemblyInstruction.MoveFromLong
@@ -38,7 +35,7 @@ import samlang.ast.asm.AssemblyInstruction.MoveToReg
 import samlang.ast.asm.AssemblyInstruction.Pop
 import samlang.ast.asm.AssemblyInstruction.Push
 import samlang.ast.asm.AssemblyInstruction.SetOnFlag
-import samlang.ast.asm.AssemblyInstruction.Shift
+import samlang.ast.asm.AssemblyInstruction.ShiftLeft
 import samlang.ast.asm.AssemblyInstructionVisitor
 import samlang.ast.asm.ConstOrReg
 import samlang.ast.asm.RegOrMem
@@ -171,10 +168,6 @@ internal class ColoringProgramRewriter(
             newInstructions += node
         }
 
-        override fun visit(node: JumpAddress) {
-            newInstructions += JUMP(node.type, transformArg(node.arg))
-        }
-
         override fun visit(node: CallAddress) {
             newInstructions += CALL(transformArg(node.address))
         }
@@ -189,10 +182,6 @@ internal class ColoringProgramRewriter(
 
         override fun visit(node: AlBinaryOpRegDest) {
             newInstructions += BIN_OP(node.type, transform(node.dest), transformArg(node.src))
-        }
-
-        override fun visit(node: IMulOneArg) {
-            newInstructions += IMUL(transformRegOrMem(node.arg))
         }
 
         override fun visit(node: IMulTwoArgs) {
@@ -219,8 +208,8 @@ internal class ColoringProgramRewriter(
             newInstructions += UN_OP(node.type, transformRegOrMem(node.dest))
         }
 
-        override fun visit(node: Shift) {
-            newInstructions += SHIFT(node.type, transformRegOrMem(node.dest), node.count)
+        override fun visit(node: ShiftLeft) {
+            newInstructions += SHL(transformRegOrMem(node.dest), node.count)
         }
 
         override fun visit(node: Push) {

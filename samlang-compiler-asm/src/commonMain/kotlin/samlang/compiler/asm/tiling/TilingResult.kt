@@ -24,8 +24,7 @@ interface TilingResult {
                     // unary ops are cheap
                     continue
                 }
-                if (instruction is AssemblyInstruction.IMulOneArg ||
-                    instruction is AssemblyInstruction.IMulTwoArgs ||
+                if (instruction is AssemblyInstruction.IMulTwoArgs ||
                     instruction is AssemblyInstruction.IMulThreeArgs ||
                     instruction is IDiv
                 ) {

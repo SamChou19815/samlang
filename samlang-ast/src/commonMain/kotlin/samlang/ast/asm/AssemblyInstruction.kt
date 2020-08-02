@@ -16,7 +16,7 @@ sealed class AssemblyInstruction {
          * --------------------------------------------------------------------------------
          */
 
-        // / 1 - data transfer
+        /// 1 - data transfer
 
         fun MOVE(dest: Reg, value: Long): AssemblyInstruction {
             return if (value > Int.MAX_VALUE || value < Int.MIN_VALUE) {
@@ -33,7 +33,7 @@ sealed class AssemblyInstruction {
         fun LEA(dest: Reg, src: Mem): LoadEffectiveAddress =
             LoadEffectiveAddress(dest = dest, mem = src)
 
-        // / 2 - control flow
+        /// 2 - control flow
 
         fun CMP(minuend: RegOrMem, subtrahend: ConstOrReg): CmpConstOrReg =
             CmpConstOrReg(minuend = minuend, subtrahend = subtrahend)
@@ -45,21 +45,16 @@ sealed class AssemblyInstruction {
 
         fun JUMP(type: JumpType, label: String): JumpLabel = JumpLabel(type = type, label = label)
 
-        fun JUMP(type: JumpType, arg: AssemblyArg): JumpAddress =
-            JumpAddress(type = type, arg = arg)
-
         fun CALL(address: AssemblyArg): CallAddress = CallAddress(address = address)
 
         fun RET(): Return = Return
 
-        // / 3 - arithmetic
+        /// 3 - arithmetic
         fun BIN_OP(type: AlBinaryOpType, dest: Mem, src: ConstOrReg): AlBinaryOpMemDest =
             AlBinaryOpMemDest(type = type, dest = dest, src = src)
 
         fun BIN_OP(type: AlBinaryOpType, dest: Reg, src: AssemblyArg): AlBinaryOpRegDest =
             AlBinaryOpRegDest(type = type, dest = dest, src = src)
-
-        fun IMUL(arg: RegOrMem): IMulOneArg = IMulOneArg(arg = arg)
 
         fun IMUL(dest: Reg, src: RegOrMem): IMulTwoArgs = IMulTwoArgs(dest = dest, src = src)
 
@@ -73,10 +68,10 @@ sealed class AssemblyInstruction {
         fun UN_OP(type: AlUnaryOpType, arg: RegOrMem): AlUnaryOp =
             AlUnaryOp(type = type, dest = arg)
 
-        fun SHIFT(type: ShiftType, dest: RegOrMem, count: Int): Shift =
-            Shift(type = type, dest = dest, count = count)
+        fun SHL(dest: RegOrMem, count: Int): ShiftLeft =
+            ShiftLeft(dest = dest, count = count)
 
-        // / 4 - other
+        /// 4 - other
 
         fun PUSH(arg: AssemblyArg): Push = Push(arg = arg)
 
@@ -203,12 +198,6 @@ sealed class AssemblyInstruction {
         override fun toString(): String = "${type.displayName} $label"
     }
 
-    /** jmp instruction. */
-    data class JumpAddress(val type: JumpType, val arg: AssemblyArg) : AssemblyInstruction() {
-        override fun accept(visitor: AssemblyInstructionVisitor): Unit = visitor.visit(node = this)
-        override fun toString(): String = "${type.displayName} ${argToString(arg)}"
-    }
-
     /** call instruction. */
     data class CallAddress(val address: AssemblyArg) : AssemblyInstruction() {
         override fun accept(visitor: AssemblyInstructionVisitor): Unit = visitor.visit(node = this)
@@ -238,9 +227,7 @@ sealed class AssemblyInstruction {
      * --------------------------------------------------------------------------------
      */
 
-    /**
-     * Type of an AL instruction with dest and src as args.
-     */
+    /** Type of an AL instruction with dest and src as args. */
     enum class AlBinaryOpType(val displayName: String) {
         ADD(displayName = "add"), SUB(displayName = "sub"),
         AND(displayName = "and"), OR(displayName = "or"), XOR(displayName = "xor");
@@ -264,12 +251,6 @@ sealed class AssemblyInstruction {
     ) : AssemblyInstruction() {
         override fun accept(visitor: AssemblyInstructionVisitor): Unit = visitor.visit(node = this)
         override fun toString(): String = "${type.displayName} ${argToString(dest)}, ${argToString(src)}"
-    }
-
-    /** imul instruction */
-    data class IMulOneArg(val arg: RegOrMem) : AssemblyInstruction() {
-        override fun accept(visitor: AssemblyInstructionVisitor): Unit = visitor.visit(node = this)
-        override fun toString(): String = "imul ${argToString(arg)}"
     }
 
     /** imul instruction */
@@ -311,24 +292,13 @@ sealed class AssemblyInstruction {
         override fun toString(): String = "${type.displayName} ${argToString(dest)}"
     }
 
-    /**
-     * All supported shifting types.
-     */
-    enum class ShiftType(val displayName: String) {
-        SHL(displayName = "shl"),
-        SHR(displayName = "shr"),
-        SAL(displayName = "sal"),
-        SAR(displayName = "sar")
-    }
-
     /** shift instruction. */
-    data class Shift(
-        val type: ShiftType,
+    data class ShiftLeft(
         val dest: RegOrMem,
         val count: Int
     ) : AssemblyInstruction() {
         override fun accept(visitor: AssemblyInstructionVisitor): Unit = visitor.visit(node = this)
-        override fun toString(): String = "${type.displayName} ${argToString(dest)}, $count"
+        override fun toString(): String = "shl ${argToString(dest)}, $count"
     }
 
     /*
@@ -357,8 +327,6 @@ sealed class AssemblyInstruction {
         override fun accept(visitor: AssemblyInstructionVisitor): Unit = visitor.visit(node = this)
         override fun toString(): String = "pop ${argToString(arg)}"
     }
-
-    // other system control instructions are not useful to us.
 
     data class Label(val label: String) : AssemblyInstruction() {
         override fun accept(visitor: AssemblyInstructionVisitor): Unit = visitor.visit(node = this)

@@ -12,10 +12,8 @@ import samlang.ast.asm.AssemblyInstruction.CmpConstOrReg
 import samlang.ast.asm.AssemblyInstruction.CmpMem
 import samlang.ast.asm.AssemblyInstruction.Cqo
 import samlang.ast.asm.AssemblyInstruction.IDiv
-import samlang.ast.asm.AssemblyInstruction.IMulOneArg
 import samlang.ast.asm.AssemblyInstruction.IMulThreeArgs
 import samlang.ast.asm.AssemblyInstruction.IMulTwoArgs
-import samlang.ast.asm.AssemblyInstruction.JumpAddress
 import samlang.ast.asm.AssemblyInstruction.JumpLabel
 import samlang.ast.asm.AssemblyInstruction.LoadEffectiveAddress
 import samlang.ast.asm.AssemblyInstruction.MoveFromLong
@@ -24,7 +22,7 @@ import samlang.ast.asm.AssemblyInstruction.MoveToReg
 import samlang.ast.asm.AssemblyInstruction.Pop
 import samlang.ast.asm.AssemblyInstruction.Push
 import samlang.ast.asm.AssemblyInstruction.SetOnFlag
-import samlang.ast.asm.AssemblyInstruction.Shift
+import samlang.ast.asm.AssemblyInstruction.ShiftLeft
 import samlang.ast.asm.AssemblyInstructionVisitor
 import samlang.ast.asm.ConstOrReg
 import samlang.ast.asm.RegOrMem
@@ -112,7 +110,6 @@ internal object RegisterCollector {
 
         override fun visit(node: SetOnFlag): Unit = f(node.reg)
         override fun visit(node: JumpLabel): Unit = Unit
-        override fun visit(node: JumpAddress): Unit = f(node.arg)
         override fun visit(node: CallAddress): Unit = f(node.address)
         override fun visit(node: AssemblyInstruction.Return): Unit = Unit
 
@@ -125,8 +122,6 @@ internal object RegisterCollector {
             f(node.dest)
             f(node.src)
         }
-
-        override fun visit(node: IMulOneArg): Unit = f(node.arg)
 
         override fun visit(node: IMulTwoArgs) {
             f(node.dest)
@@ -141,7 +136,7 @@ internal object RegisterCollector {
         override fun visit(node: Cqo): Unit = Unit
         override fun visit(node: IDiv): Unit = f(node.divisor)
         override fun visit(node: AlUnaryOp): Unit = f(node.dest)
-        override fun visit(node: Shift): Unit = f(node.dest)
+        override fun visit(node: ShiftLeft): Unit = f(node.dest)
         override fun visit(node: Push): Unit = f(node.arg)
         override fun visit(node: Pop): Unit = f(node.arg)
         override fun visit(node: AssemblyInstruction.Label): Unit = Unit

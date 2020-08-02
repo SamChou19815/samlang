@@ -23,10 +23,8 @@ import samlang.ast.asm.AssemblyInstruction.CmpConstOrReg
 import samlang.ast.asm.AssemblyInstruction.CmpMem
 import samlang.ast.asm.AssemblyInstruction.Cqo
 import samlang.ast.asm.AssemblyInstruction.IDiv
-import samlang.ast.asm.AssemblyInstruction.IMulOneArg
 import samlang.ast.asm.AssemblyInstruction.IMulThreeArgs
 import samlang.ast.asm.AssemblyInstruction.IMulTwoArgs
-import samlang.ast.asm.AssemblyInstruction.JumpAddress
 import samlang.ast.asm.AssemblyInstruction.JumpLabel
 import samlang.ast.asm.AssemblyInstruction.LoadEffectiveAddress
 import samlang.ast.asm.AssemblyInstruction.MoveFromLong
@@ -35,7 +33,7 @@ import samlang.ast.asm.AssemblyInstruction.MoveToReg
 import samlang.ast.asm.AssemblyInstruction.Pop
 import samlang.ast.asm.AssemblyInstruction.Push
 import samlang.ast.asm.AssemblyInstruction.SetOnFlag
-import samlang.ast.asm.AssemblyInstruction.Shift
+import samlang.ast.asm.AssemblyInstruction.ShiftLeft
 import samlang.ast.asm.AssemblyInstructionVisitor
 import samlang.ast.asm.FunctionContext
 
@@ -145,9 +143,6 @@ class LiveVariableAnalysis(
         }
 
         override fun visit(node: JumpLabel) {}
-        override fun visit(node: JumpAddress) {
-            findUse(node.arg)
-        }
 
         private fun visitCall() {
             findUseForReg(RDI)
@@ -190,13 +185,6 @@ class LiveVariableAnalysis(
             findUse(node.src)
         }
 
-        override fun visit(node: IMulOneArg) {
-            findDef(RAX)
-            findDef(RDX)
-            findUse(RAX)
-            findUse(node.arg)
-        }
-
         override fun visit(node: IMulTwoArgs) {
             findDef(node.dest)
             findUse(node.dest)
@@ -231,7 +219,7 @@ class LiveVariableAnalysis(
             )
         }
 
-        override fun visit(node: Shift) {
+        override fun visit(node: ShiftLeft) {
             node.dest.matchRegOrMem(
                 regF = { reg ->
                     findDef(reg)
