@@ -210,8 +210,6 @@ sealed class AssemblyInstruction {
         override fun toString(): String = "ret"
     }
 
-    // we do not need other CPU control instructions.
-
     /*
      * --------------------------------------------------------------------------------
      * Section 3: Arithmetic & Logic Instructions
@@ -229,8 +227,7 @@ sealed class AssemblyInstruction {
 
     /** Type of an AL instruction with dest and src as args. */
     enum class AlBinaryOpType(val displayName: String) {
-        ADD(displayName = "add"), SUB(displayName = "sub"),
-        AND(displayName = "and"), OR(displayName = "or"), XOR(displayName = "xor");
+        ADD(displayName = "add"), SUB(displayName = "sub"), XOR(displayName = "xor");
     }
 
     /** binop instruction, see types above. */

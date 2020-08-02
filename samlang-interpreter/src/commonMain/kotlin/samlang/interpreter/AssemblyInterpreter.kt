@@ -401,8 +401,6 @@ class AssemblyInterpreter(program: AssemblyProgram) {
             val newValue = when (type) {
                 AlBinaryOpType.ADD -> destValue + srcValue
                 AlBinaryOpType.SUB -> destValue - srcValue
-                AlBinaryOpType.AND -> destValue and srcValue
-                AlBinaryOpType.OR -> destValue or srcValue
                 AlBinaryOpType.XOR -> destValue xor srcValue
             }
             setValue(regOrMem = dest, value = newValue)
