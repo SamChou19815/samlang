@@ -55,18 +55,16 @@ class PrintInterpreterTest : FreeSpec() {
             "IR[cse]: $id" { testIr(ir = ir, expected = expected, optimizer = CSE_OPT) }
             "IR[dce]: $id" { testIr(ir = ir, expected = expected, optimizer = DCE_OPT) }
             "IR[inl]: $id" { testIr(ir = ir, expected = expected, optimizer = INL_OPT) }
-            "ASM[no-ralloc]: $id" {
+            "ASM[ir-no-opt]: $id" {
                 testAsm(
-                    irCompilationUnit = testIr(ir = ir, expected = expected, optimizer = ALL_OPT),
-                    expected = expected,
-                    enableRegisterAllocation = false
+                    irCompilationUnit = testIr(ir = ir, expected = expected, optimizer = Optimizer.getNoOpOptimizer()),
+                    expected = expected
                 )
             }
-            "ASM[with-ralloc]: $id" {
+            "ASM[ir-all-opt]: $id" {
                 testAsm(
                     irCompilationUnit = testIr(ir = ir, expected = expected, optimizer = ALL_OPT),
-                    expected = expected,
-                    enableRegisterAllocation = true
+                    expected = expected
                 )
             }
         }
@@ -89,11 +87,8 @@ class PrintInterpreterTest : FreeSpec() {
         return optimized
     }
 
-    private fun testAsm(irCompilationUnit: MidIrCompilationUnit, expected: String, enableRegisterAllocation: Boolean) {
-        val program = AssemblyGenerator.generate(
-            compilationUnit = irCompilationUnit,
-            enableRealRegisterAllocation = enableRegisterAllocation
-        )
+    private fun testAsm(irCompilationUnit: MidIrCompilationUnit, expected: String) {
+        val program = AssemblyGenerator.generate(compilationUnit = irCompilationUnit)
         AssemblyInterpreter(program = program).interpretationResult.trim() shouldBe expected
     }
 }

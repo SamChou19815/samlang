@@ -232,10 +232,7 @@ class RealRegisterAllocator(
         freezeWorkList.forEach { u ->
             val degree = interferenceGraph.degree(u)
             if (degree >= K) {
-                val errorMessage = ("freezeWorkList invariant is broken" +
-                        ". degree = " + degree +
-                        ", variable = " + u)
-                throw Error(errorMessage)
+                throw Error("freezeWorkList invariant is broken. degree = $degree, variable = $u")
             }
             val moveList: Set<RegMove>? = moveMap[u]
             var intersectionIsEmpty = true
@@ -247,11 +244,9 @@ class RealRegisterAllocator(
                 }
             }
             if (intersectionIsEmpty) {
-                val errorMessage = ("freezeWorkList invariant is broken" +
-                        ". moveList = " + moveList +
-                        ", activeMoves = " + activeMoves +
-                        ", workListMoves = " + workListMoves)
-                throw Error(errorMessage)
+                throw Error(
+                    "freezeWorkList invariant is broken. moveList = $moveList, activeMoves = $activeMoves, workListMoves = $workListMoves"
+                )
             }
         }
         // spillWorkList invariant

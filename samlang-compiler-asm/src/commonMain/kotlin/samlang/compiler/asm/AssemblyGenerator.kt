@@ -19,7 +19,6 @@ import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.MoveTemp
 import samlang.compiler.asm.common.CallingConventionFixer
-import samlang.compiler.asm.ralloc.NaiveRegisterAllocator
 import samlang.compiler.asm.ralloc.RealRegisterAllocator
 import samlang.compiler.asm.tiling.DpTiling
 import samlang.optimization.SimpleOptimizations
@@ -28,7 +27,6 @@ import samlang.optimization.SimpleOptimizations
 @ExperimentalStdlibApi
 class AssemblyGenerator private constructor(
     compilationUnit: MidIrCompilationUnit,
-    private val enableRealRegisterAllocation: Boolean,
     private val removeComments: Boolean
 ) {
     private val publicFunctions: MutableList<String> = mutableListOf()
@@ -55,18 +53,12 @@ class AssemblyGenerator private constructor(
         tiledInstructions = SimpleOptimizations.optimizeAsm(tiledInstructions, removeComments)
         val registerAllocatedInstructions: List<AssemblyInstruction>
         val numberOfTemporariesOnStack: Int
-        if (enableRealRegisterAllocation) {
-            val allocator = RealRegisterAllocator(
-                functionContext = context,
-                tiledInstructions = tiledInstructions
-            )
-            registerAllocatedInstructions = allocator.realInstructions
-            numberOfTemporariesOnStack = allocator.numberOfTemporariesOnStack
-        } else {
-            val allocator = NaiveRegisterAllocator(tiledInstructions)
-            registerAllocatedInstructions = allocator.getRealInstructions()
-            numberOfTemporariesOnStack = allocator.numberOfTemporariesOnStack
-        }
+        val allocator = RealRegisterAllocator(
+            functionContext = context,
+            tiledInstructions = tiledInstructions
+        )
+        registerAllocatedInstructions = allocator.realInstructions
+        numberOfTemporariesOnStack = allocator.numberOfTemporariesOnStack
         val fixedInstructions = CallingConventionFixer(
             context = context,
             numberOfTemporariesOnStack = numberOfTemporariesOnStack,
@@ -81,20 +73,14 @@ class AssemblyGenerator private constructor(
          * Generate assembly instructions for a compilation unit.
          *
          * @param compilationUnit the compilation unit.
-         * @param enableRealRegisterAllocation whether to enable the real register allocation.
          * @param removeComments whether to remove comments.
          * @return the generated assembly instructions.
          */
         fun generate(
             compilationUnit: MidIrCompilationUnit,
-            enableRealRegisterAllocation: Boolean = true,
             removeComments: Boolean = true
         ): AssemblyProgram {
-            val generator = AssemblyGenerator(
-                compilationUnit = compilationUnit,
-                enableRealRegisterAllocation = enableRealRegisterAllocation,
-                removeComments = removeComments
-            )
+            val generator = AssemblyGenerator(compilationUnit = compilationUnit, removeComments = removeComments)
             return AssemblyProgram(
                 globalVariables = compilationUnit.globalVariables,
                 publicFunctions = generator.publicFunctions,
