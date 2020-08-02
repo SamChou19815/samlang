@@ -130,7 +130,7 @@ export const assemblyArgumentToString = (assemblyArgument: AssemblyArgument): st
           }
         }
       }
-      return `[${string}]`;
+      return `qword ptr [${string}]`;
     }
   }
 };
