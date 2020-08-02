@@ -67,10 +67,10 @@ const optimizeIRCompilationUnit = (
   const allocator = new OptimizationResourceAllocator();
 
   let intermediate = source;
-  for (let i = 0; i < 4; i += 1) {
+  for (let i = 0; i < 2; i += 1) {
     const newFunctions = intermediate.functions.map((midIRFunction) => {
       let statements = midIRFunction.mainBodyStatements;
-      for (let j = 0; j < 5; j += 1) {
+      for (let j = 0; j < 4; j += 1) {
         statements = optimizeMidIRStatementsForOneRound(
           statements,
           allocator,
