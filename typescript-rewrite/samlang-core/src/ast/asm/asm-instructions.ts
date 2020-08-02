@@ -1,10 +1,11 @@
 import {
+  AssemblyConst,
   AssemblyRegister,
   AssemblyMemory,
   AssemblyArgument,
   AssemblyConstOrRegister,
   AssemblyRegisterOrMemory,
-  AssemblyConst,
+  assemblyArgumentToString as argToString,
 } from './asm-arguments';
 
 /*
@@ -31,7 +32,7 @@ export type AssemblyMoveToMemory = {
 /** mov instruction. */
 export type AssemblyMoveToRegister = {
   readonly __type__: 'AssemblyMoveToRegister';
-  readonly destination: AssemblyMoveToRegister;
+  readonly destination: AssemblyRegister;
   readonly source: AssemblyArgument;
 };
 
@@ -41,7 +42,7 @@ export type AssemblyMoveToRegister = {
  */
 export type AssemblyLoadEffectiveAddress = {
   readonly __type__: 'AssemblyLoadEffectiveAddress';
-  readonly destination: AssemblyMoveToRegister;
+  readonly destination: AssemblyRegister;
   readonly source: AssemblyMemory;
 };
 
@@ -114,6 +115,7 @@ export type AssemblyArithmeticBinaryOpType = 'add' | 'sub' | 'xor';
 /** binop instruction, see types above. */
 export type AssemblyArithmeticBinaryMemoryDestination = {
   readonly __type__: 'AssemblyArithmeticBinaryMemoryDestination';
+  readonly type: AssemblyArithmeticBinaryOpType;
   readonly destination: AssemblyMemory;
   readonly source: AssemblyConstOrRegister;
 };
@@ -121,6 +123,7 @@ export type AssemblyArithmeticBinaryMemoryDestination = {
 /** binop instruction, see types above. */
 export type AssemblyArithmeticBinaryRegisterDestination = {
   readonly __type__: 'AssemblyArithmeticBinaryRegisterDestination';
+  readonly type: AssemblyArithmeticBinaryOpType;
   readonly destination: AssemblyRegister;
   readonly source: AssemblyArgument;
 };
@@ -222,3 +225,261 @@ export type AssemblyInstruction =
   | AssemblyPop
   | AssemblyLabel
   | AssemblyComment;
+
+const MIN_I32_VALUE = BigInt(-2147483648);
+const MAX_I32_VALUE = BigInt(2147483647);
+
+export const ASM_MOVE_CONST_TO_REG = (
+  destination: AssemblyRegister,
+  value: bigint
+): AssemblyMoveFromLong | AssemblyMoveToRegister => {
+  if (value > MAX_I32_VALUE || value < MIN_I32_VALUE) {
+    return { __type__: 'AssemblyMoveFromLong', destination, value };
+  }
+  return {
+    __type__: 'AssemblyMoveToRegister',
+    destination,
+    source: { __type__: 'AssemblyConst', value: Number(value) },
+  };
+};
+
+export const ASM_MOVE_MEM = (
+  destination: AssemblyMemory,
+  source: AssemblyConstOrRegister
+): AssemblyMoveToMemory => ({
+  __type__: 'AssemblyMoveToMemory',
+  destination,
+  source,
+});
+
+export const ASM_MOVE_REG = (
+  destination: AssemblyRegister,
+  source: AssemblyArgument
+): AssemblyMoveToRegister => ({
+  __type__: 'AssemblyMoveToRegister',
+  destination,
+  source,
+});
+
+export const ASM_LEA = (
+  destination: AssemblyRegister,
+  source: AssemblyMemory
+): AssemblyLoadEffectiveAddress => ({
+  __type__: 'AssemblyLoadEffectiveAddress',
+  destination,
+  source,
+});
+
+export const ASM_CMP_MEM = (
+  minuend: AssemblyRegister,
+  subtrahend: AssemblyMemory
+): AssemblyCompareMemory => ({
+  __type__: 'AssemblyCompareMemory',
+  minuend,
+  subtrahend,
+});
+
+export const ASM_CMP_CONST_OR_REG = (
+  minuend: AssemblyRegisterOrMemory,
+  subtrahend: AssemblyConstOrRegister
+): AssemblyCompareConstOrRegister => ({
+  __type__: 'AssemblyCompareConstOrRegister',
+  minuend,
+  subtrahend,
+});
+
+export const ASM_SET = (
+  type: AssemblyConditionalJumpType,
+  register: AssemblyRegister
+): AssemblySetOnFlag => ({
+  __type__: 'AssemblySetOnFlag',
+  type,
+  register,
+});
+
+export const ASM_JUMP = (type: AssemblyJumpType, label: string): AssemblyJump => ({
+  __type__: 'AssemblyJump',
+  type,
+  label,
+});
+
+export const ASM_CALL = (address: AssemblyArgument): AssemblyCall => ({
+  __type__: 'AssemblyCall',
+  address,
+});
+
+export const ASM_RET: AssemblyReturn = { __type__: 'AssemblyReturn' };
+
+export const ASM_BIN_OP_MEM_DEST = (
+  type: AssemblyArithmeticBinaryOpType,
+  destination: AssemblyMemory,
+  source: AssemblyConstOrRegister
+): AssemblyArithmeticBinaryMemoryDestination => ({
+  __type__: 'AssemblyArithmeticBinaryMemoryDestination',
+  type,
+  destination,
+  source,
+});
+
+export const ASM_BIN_OP_REG_DEST = (
+  type: AssemblyArithmeticBinaryOpType,
+  destination: AssemblyRegister,
+  source: AssemblyArgument
+): AssemblyArithmeticBinaryRegisterDestination => ({
+  __type__: 'AssemblyArithmeticBinaryRegisterDestination',
+  type,
+  destination,
+  source,
+});
+
+export const ASM_IMUL = (
+  destination: AssemblyRegister,
+  source: AssemblyRegisterOrMemory,
+  immediate?: AssemblyConst
+): AssemblyIMulTwoArgs | AssemblyIMulThreeArgs =>
+  immediate == null
+    ? { __type__: 'AssemblyIMulTwoArgs', destination, source }
+    : { __type__: 'AssemblyIMulThreeArgs', destination, source, immediate };
+
+export const ASM_CQO: AssemblyCqo = { __type__: 'AssemblyCqo' };
+
+export const ASM_IDIV = (divisor: AssemblyRegisterOrMemory): AssemblyIDiv => ({
+  __type__: 'AssemblyIDiv',
+  divisor,
+});
+
+export const ASM_NEG = (destination: AssemblyRegisterOrMemory): AssemblyNeg => ({
+  __type__: 'AssemblyNeg',
+  destination,
+});
+
+export const ASM_SHL = (
+  destination: AssemblyRegisterOrMemory,
+  count: number
+): AssemblyShiftLeft => ({
+  __type__: 'AssemblyShiftLeft',
+  destination,
+  count,
+});
+
+export const ASM_PUSH = (pushArgument: AssemblyArgument): AssemblyPush => ({
+  __type__: 'AssemblyPush',
+  pushArgument,
+});
+
+export const ASM_POP = (popArgument: AssemblyRegisterOrMemory): AssemblyPop => ({
+  __type__: 'AssemblyPop',
+  popArgument,
+});
+
+export const ASM_LABEL = (label: string): AssemblyLabel => ({ __type__: 'AssemblyLabel', label });
+
+export const ASM_COMMENT = (comment: string): AssemblyComment => ({
+  __type__: 'AssemblyComment',
+  comment,
+});
+
+export const assemblyInstructionToString = (instruction: AssemblyInstruction): string => {
+  switch (instruction.__type__) {
+    case 'AssemblyMoveFromLong':
+      return `movabs ${argToString(instruction.destination)}, ${instruction.value}`;
+    case 'AssemblyMoveToMemory':
+    case 'AssemblyMoveToRegister':
+      return `mov ${argToString(instruction.destination)}, ${argToString(instruction.source)}`;
+    case 'AssemblyLoadEffectiveAddress':
+      return `lea ${argToString(instruction.destination)}, ${argToString(instruction.source)}`;
+    case 'AssemblyCompareMemory':
+    case 'AssemblyCompareConstOrRegister':
+      return `cmp ${argToString(instruction.minuend)}, ${argToString(instruction.subtrahend)}`;
+    case 'AssemblySetOnFlag': {
+      const setType = `set${instruction.type.slice(1)}`;
+      let reg1Byte: string;
+      switch (instruction.register.id) {
+        case 'rax':
+          reg1Byte = 'al';
+          break;
+        case 'rbx':
+          reg1Byte = 'bl';
+          break;
+        case 'rcx':
+          reg1Byte = 'cl';
+          break;
+        case 'rdx':
+          reg1Byte = 'dl';
+          break;
+        case 'rsi':
+          reg1Byte = 'sil';
+          break;
+        case 'rdi':
+          reg1Byte = 'dil';
+          break;
+        case 'rsp':
+          reg1Byte = 'spl';
+          break;
+        case 'rbp':
+          reg1Byte = 'bpl';
+          break;
+        case 'r8':
+          reg1Byte = 'r8b';
+          break;
+        case 'r9':
+          reg1Byte = 'r9b';
+          break;
+        case 'r10':
+          reg1Byte = 'r10b';
+          break;
+        case 'r11':
+          reg1Byte = 'r11b';
+          break;
+        case 'r12':
+          reg1Byte = 'r12b';
+          break;
+        case 'r13':
+          reg1Byte = 'r13b';
+          break;
+        case 'r14':
+          reg1Byte = 'r14b';
+          break;
+        case 'r15':
+          reg1Byte = 'r15b';
+          break;
+        default:
+          throw new Error(`Impossible register value: ${instruction.register.id}`);
+      }
+      return `${setType} ${reg1Byte}\nmovzx ${argToString(instruction.register)}, ${reg1Byte}`;
+    }
+    case 'AssemblyJump':
+      return `${instruction.type} ${instruction.label}`;
+    case 'AssemblyCall':
+      return `call ${argToString(instruction.address)}`;
+    case 'AssemblyReturn':
+      return 'ret';
+    case 'AssemblyArithmeticBinaryMemoryDestination':
+    case 'AssemblyArithmeticBinaryRegisterDestination': {
+      const { type, destination, source } = instruction;
+      return `${type} ${argToString(destination)}, ${argToString(source)}`;
+    }
+    case 'AssemblyIMulTwoArgs':
+      return `imul ${argToString(instruction.destination)}, ${argToString(instruction.source)}`;
+    case 'AssemblyIMulThreeArgs': {
+      const { destination, source, immediate } = instruction;
+      return `imul ${argToString(destination)}, ${argToString(source)}, ${immediate.value}`;
+    }
+    case 'AssemblyCqo':
+      return 'cqo';
+    case 'AssemblyIDiv':
+      return `idiv ${argToString(instruction.divisor)}`;
+    case 'AssemblyNeg':
+      return `neg ${argToString(instruction.destination)}`;
+    case 'AssemblyShiftLeft':
+      return `shl ${argToString(instruction.destination)}, ${instruction.count}`;
+    case 'AssemblyPush':
+      return `push ${argToString(instruction.pushArgument)}`;
+    case 'AssemblyPop':
+      return `pop ${argToString(instruction.popArgument)}`;
+    case 'AssemblyLabel':
+      return `${instruction.label}:`;
+    case 'AssemblyComment':
+      return `## ${instruction.comment}`;
+  }
+};
