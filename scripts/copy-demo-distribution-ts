@@ -1,5 +1,0 @@
-#!/bin/bash
-
-set -e
-
-cp samlang-demo/build/distributions/samlang-demo.js samlang-demo-distribution-ts
