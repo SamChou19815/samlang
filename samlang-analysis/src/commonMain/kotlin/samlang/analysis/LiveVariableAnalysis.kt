@@ -15,25 +15,7 @@ import samlang.ast.asm.AssemblyArgs.RSI
 import samlang.ast.asm.AssemblyArgs.RSP
 import samlang.ast.asm.AssemblyArgs.Reg
 import samlang.ast.asm.AssemblyInstruction
-import samlang.ast.asm.AssemblyInstruction.AlBinaryOpMemDest
-import samlang.ast.asm.AssemblyInstruction.AlBinaryOpRegDest
-import samlang.ast.asm.AssemblyInstruction.AlUnaryOp
-import samlang.ast.asm.AssemblyInstruction.CallAddress
-import samlang.ast.asm.AssemblyInstruction.CmpConstOrReg
-import samlang.ast.asm.AssemblyInstruction.CmpMem
-import samlang.ast.asm.AssemblyInstruction.Cqo
-import samlang.ast.asm.AssemblyInstruction.IDiv
-import samlang.ast.asm.AssemblyInstruction.IMulThreeArgs
-import samlang.ast.asm.AssemblyInstruction.IMulTwoArgs
-import samlang.ast.asm.AssemblyInstruction.JumpLabel
-import samlang.ast.asm.AssemblyInstruction.LoadEffectiveAddress
-import samlang.ast.asm.AssemblyInstruction.MoveFromLong
-import samlang.ast.asm.AssemblyInstruction.MoveToMem
-import samlang.ast.asm.AssemblyInstruction.MoveToReg
-import samlang.ast.asm.AssemblyInstruction.Pop
-import samlang.ast.asm.AssemblyInstruction.Push
-import samlang.ast.asm.AssemblyInstruction.SetOnFlag
-import samlang.ast.asm.AssemblyInstruction.ShiftLeft
+import samlang.ast.asm.AssemblyInstruction.*
 import samlang.ast.asm.AssemblyInstructionVisitor
 import samlang.ast.asm.FunctionContext
 
@@ -168,7 +150,7 @@ class LiveVariableAnalysis(
             visitCall()
         }
 
-        override fun visit(node: AssemblyInstruction.Return) {
+        override fun visit(node: Return) {
             if (context.hasReturn) {
                 findUseForReg(RAX)
             }
@@ -209,7 +191,7 @@ class LiveVariableAnalysis(
             findUse(node.divisor)
         }
 
-        override fun visit(node: AlUnaryOp) {
+        override fun visit(node: Neg) {
             node.dest.matchRegOrMem(
                 regF = { reg ->
                     findDef(reg)
@@ -241,8 +223,8 @@ class LiveVariableAnalysis(
             node.arg.matchRegOrMem(regF = { findDef(reg = it) }, memF = { findUseForMem(mem = it) })
         }
 
-        override fun visit(node: AssemblyInstruction.Label): Unit = Unit
-        override fun visit(node: AssemblyInstruction.Comment): Unit = Unit
+        override fun visit(node: Label): Unit = Unit
+        override fun visit(node: Comment): Unit = Unit
     }
 
     companion object {

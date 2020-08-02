@@ -65,11 +65,9 @@ sealed class AssemblyInstruction {
 
         fun IDIV(arg: RegOrMem): IDiv = IDiv(divisor = arg)
 
-        fun UN_OP(type: AlUnaryOpType, arg: RegOrMem): AlUnaryOp =
-            AlUnaryOp(type = type, dest = arg)
+        fun NEG(arg: RegOrMem): Neg = Neg(dest = arg)
 
-        fun SHL(dest: RegOrMem, count: Int): ShiftLeft =
-            ShiftLeft(dest = dest, count = count)
+        fun SHL(dest: RegOrMem, count: Int): ShiftLeft = ShiftLeft(dest = dest, count = count)
 
         /// 4 - other
 
@@ -278,15 +276,10 @@ sealed class AssemblyInstruction {
         override fun toString(): String = "idiv ${argToString(divisor)}"
     }
 
-    /** Type of an AL instruction with only dest as args and does not have any implicit args. */
-    enum class AlUnaryOpType(val displayName: String) {
-        NEG(displayName = "neg")
-    }
-
     /** unop instruction, see types above. */
-    data class AlUnaryOp(val type: AlUnaryOpType, val dest: RegOrMem) : AssemblyInstruction() {
+    data class Neg(val dest: RegOrMem) : AssemblyInstruction() {
         override fun accept(visitor: AssemblyInstructionVisitor): Unit = visitor.visit(node = this)
-        override fun toString(): String = "${type.displayName} ${argToString(dest)}"
+        override fun toString(): String = "neg ${argToString(dest)}"
     }
 
     /** shift instruction. */

@@ -8,12 +8,7 @@ import samlang.ast.asm.AssemblyArgs.Mem.MultipleOf
 import samlang.ast.asm.AssemblyArgs.RBP
 import samlang.ast.asm.AssemblyArgs.Reg
 import samlang.ast.asm.AssemblyInstruction
-import samlang.ast.asm.AssemblyInstruction.AlBinaryOpMemDest
-import samlang.ast.asm.AssemblyInstruction.AlBinaryOpRegDest
-import samlang.ast.asm.AssemblyInstruction.AlUnaryOp
-import samlang.ast.asm.AssemblyInstruction.CallAddress
-import samlang.ast.asm.AssemblyInstruction.CmpConstOrReg
-import samlang.ast.asm.AssemblyInstruction.CmpMem
+import samlang.ast.asm.AssemblyInstruction.*
 import samlang.ast.asm.AssemblyInstruction.Companion.BIN_OP
 import samlang.ast.asm.AssemblyInstruction.Companion.CALL
 import samlang.ast.asm.AssemblyInstruction.Companion.CMP
@@ -21,23 +16,10 @@ import samlang.ast.asm.AssemblyInstruction.Companion.IDIV
 import samlang.ast.asm.AssemblyInstruction.Companion.IMUL
 import samlang.ast.asm.AssemblyInstruction.Companion.LEA
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
+import samlang.ast.asm.AssemblyInstruction.Companion.NEG
 import samlang.ast.asm.AssemblyInstruction.Companion.POP
 import samlang.ast.asm.AssemblyInstruction.Companion.PUSH
 import samlang.ast.asm.AssemblyInstruction.Companion.SHL
-import samlang.ast.asm.AssemblyInstruction.Companion.UN_OP
-import samlang.ast.asm.AssemblyInstruction.Cqo
-import samlang.ast.asm.AssemblyInstruction.IDiv
-import samlang.ast.asm.AssemblyInstruction.IMulThreeArgs
-import samlang.ast.asm.AssemblyInstruction.IMulTwoArgs
-import samlang.ast.asm.AssemblyInstruction.JumpLabel
-import samlang.ast.asm.AssemblyInstruction.LoadEffectiveAddress
-import samlang.ast.asm.AssemblyInstruction.MoveFromLong
-import samlang.ast.asm.AssemblyInstruction.MoveToMem
-import samlang.ast.asm.AssemblyInstruction.MoveToReg
-import samlang.ast.asm.AssemblyInstruction.Pop
-import samlang.ast.asm.AssemblyInstruction.Push
-import samlang.ast.asm.AssemblyInstruction.SetOnFlag
-import samlang.ast.asm.AssemblyInstruction.ShiftLeft
 import samlang.ast.asm.AssemblyInstructionVisitor
 import samlang.ast.asm.ConstOrReg
 import samlang.ast.asm.FunctionContext
@@ -211,7 +193,7 @@ internal class SpillingProgramRewriter(
             newInstructions += CALL(transformArg(node.address))
         }
 
-        override fun visit(node: AssemblyInstruction.Return) {
+        override fun visit(node: Return) {
             newInstructions += node
         }
 
@@ -276,15 +258,10 @@ internal class SpillingProgramRewriter(
             newInstructions += IDIV(transformRegOrMem(node.divisor))
         }
 
-        override fun visit(node: AlUnaryOp) {
-            val type = node.type
+        override fun visit(node: Neg) {
             node.dest.matchRegOrMem(
-                regF = { regDest ->
-                    newInstructions += UN_OP(type, getExpectedRegOrMem(regDest))
-                },
-                memF = { memDest ->
-                    newInstructions += UN_OP(type, transformMem(memDest))
-                }
+                regF = { regDest -> newInstructions += NEG(getExpectedRegOrMem(regDest)) },
+                memF = { memDest -> newInstructions += NEG(transformMem(memDest)) }
             )
         }
 

@@ -1,11 +1,7 @@
 package samlang.compiler.asm.tiling
 
 import samlang.ast.asm.AssemblyInstruction
-import samlang.ast.asm.AssemblyInstruction.AlUnaryOp
-import samlang.ast.asm.AssemblyInstruction.Comment
-import samlang.ast.asm.AssemblyInstruction.IDiv
-import samlang.ast.asm.AssemblyInstruction.Label
-import samlang.ast.asm.AssemblyInstruction.LoadEffectiveAddress
+import samlang.ast.asm.AssemblyInstruction.*
 
 /** The common tiling result interface. */
 interface TilingResult {
@@ -20,12 +16,12 @@ interface TilingResult {
                 if (instruction is Label || instruction is Comment) {
                     continue
                 }
-                if (instruction is AlUnaryOp) {
+                if (instruction is Neg) {
                     // unary ops are cheap
                     continue
                 }
-                if (instruction is AssemblyInstruction.IMulTwoArgs ||
-                    instruction is AssemblyInstruction.IMulThreeArgs ||
+                if (instruction is IMulTwoArgs ||
+                    instruction is IMulThreeArgs ||
                     instruction is IDiv
                 ) {
                     cost += 4

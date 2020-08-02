@@ -2,13 +2,11 @@ package samlang.compiler.asm.tiling
 
 import samlang.ast.asm.AssemblyArgs.REG
 import samlang.ast.asm.AssemblyInstruction
-import samlang.ast.asm.AssemblyInstruction.AlUnaryOpType
 import samlang.ast.asm.AssemblyInstruction.Companion.COMMENT
-import samlang.ast.asm.AssemblyInstruction.Companion.UN_OP
+import samlang.ast.asm.AssemblyInstruction.Companion.NEG
 import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Companion.MINUS_ONE
-import samlang.ast.mir.MidIrExpression.Companion.ONE
 import samlang.ast.mir.MidIrExpression.Companion.TEMP
 import samlang.ast.mir.MidIrExpression.Companion.ZERO
 import samlang.ast.mir.MidIrStatement.MoveMem
@@ -25,8 +23,7 @@ internal object TileNeg {
         return if (source.operator !== IrOperator.MUL) {
             false
         } else {
-            source.e1 == dest && source.e2 == MINUS_ONE ||
-                    source.e2 == dest && source.e1 == MINUS_ONE
+            source.e1 == dest && source.e2 == MINUS_ONE || source.e2 == dest && source.e1 == MINUS_ONE
         }
     }
 
@@ -38,7 +35,7 @@ internal object TileNeg {
                 StatementTilingResult(
                         listOf(
                                 COMMENT(node),
-                                UN_OP(AlUnaryOpType.NEG, REG(node.tempId))
+                                NEG(REG(node.tempId))
                         )
                 )
             } else null
@@ -54,7 +51,7 @@ internal object TileNeg {
                 val instructions = mutableListOf<AssemblyInstruction>()
                 instructions += COMMENT(node)
                 instructions += instructions1
-                instructions += UN_OP(AlUnaryOpType.NEG, mem)
+                instructions += NEG(mem)
                 return StatementTilingResult(instructions)
             }
             return null
