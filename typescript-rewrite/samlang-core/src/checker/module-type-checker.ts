@@ -37,12 +37,12 @@ export default class ModuleTypeChecker {
         classDefinition.members,
         accessibleGlobalTypingContext
       );
-      // Second pass: type check all members' function body
       this.partiallyCheckMembers(classDefinition.members, accessibleGlobalTypingContext);
+      // Second pass: type check all members' function body
       const checkedMembers = classDefinition.members
         .map((member) => this.typeCheckMemberDefinition(member, accessibleGlobalTypingContext))
         .filter(isNotNull);
-      return { ...classDefinition, member: checkedMembers };
+      return { ...classDefinition, members: checkedMembers };
     });
     return { ...samlangmodule, classes: checkedClasses };
   }
