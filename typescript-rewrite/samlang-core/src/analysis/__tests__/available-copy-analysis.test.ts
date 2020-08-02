@@ -71,3 +71,28 @@ it('analyzeAvailableCopies test 2', () => {
     /* 09 */ { y: 'x' },
   ]);
 });
+
+it('analyzeAvailableCopies test 3', () => {
+  // Previously, we don't have any special casing for loops that start at the first line.
+  // This is a tricky case since then it will trick the first statement to believe that it's only
+  // parent is a jump to the loop start, ignoring the fact that there is an implicit parent.
+  expect(
+    analyzeAvailableCopies([
+      /* 00 */ MIR_LABEL('loop_start'),
+      /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_ZERO, 'loop_end'),
+      /* 02 */ MIR_MOVE_TEMP(MIR_TEMP('t0'), MIR_TEMP('i')),
+      /* 03 */ MIR_MOVE_TEMP(MIR_TEMP('t1'), MIR_TEMP('j')),
+      /* 04 */ MIR_MOVE_TEMP(MIR_TEMP('i'), MIR_TEMP('t1')),
+      /* 05 */ MIR_JUMP('loop_start'),
+      /* 06 */ MIR_LABEL('loop_end'),
+    ])
+  ).toEqual([
+    /* 00 */ {},
+    /* 01 */ {},
+    /* 02 */ {},
+    /* 03 */ { t0: 'i' },
+    /* 04 */ { t0: 'i', t1: 'j' },
+    /* 05 */ { i: 'j', t1: 'j' },
+    /* 06 */ {},
+  ]);
+});

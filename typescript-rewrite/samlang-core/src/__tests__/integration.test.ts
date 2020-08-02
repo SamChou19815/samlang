@@ -88,8 +88,6 @@ class Main {
 }
 `,
   },
-  // TODO: disabled until we find out what's wrong with copy propagation optimization.
-  /*
   {
     testCaseName: 'cf-test-1',
     expectedStandardOut: '361200\n',
@@ -113,7 +111,6 @@ class Main {
 }
 `,
   },
-  */
   {
     testCaseName: 'cf-test-2',
     expectedStandardOut: '7000\n',
@@ -281,8 +278,6 @@ class Main {
 }
 `,
   },
-  // TODO: disabled until we find out what's wrong with copy propagation optimization.
-  /*
   {
     testCaseName: 'cse-test-3',
     expectedStandardOut: '2181\n',
@@ -314,7 +309,6 @@ class Main {
 }
 `,
   },
-  */
   {
     testCaseName: 'cse-test-4',
     expectedStandardOut: '2700\n',
@@ -784,8 +778,6 @@ class Main {
 }
 `,
   },
-  // TODO: disabled until we find out what's wrong with copy propagation optimization.
-  /*
   {
     testCaseName: 'mutually-exclusive',
     expectedStandardOut: 'OK\n',
@@ -799,7 +791,6 @@ class Main {
 }
 `,
   },
-  */
   {
     testCaseName: 'optional-semicolon',
     expectedStandardOut: '-7\n',
@@ -887,8 +878,6 @@ class Main {
 }
 `,
   },
-  // TODO: disabled until we find out what's wrong with copy propagation optimization.
-  /*
   {
     testCaseName: 'short-circuit-and-or',
     expectedStandardOut: `0
@@ -986,7 +975,6 @@ class Main {
 }
 `,
   },
-  */
   {
     testCaseName: 'string-global-constant',
     expectedStandardOut: 'OK\n',

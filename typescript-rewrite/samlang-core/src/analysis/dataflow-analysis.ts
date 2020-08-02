@@ -7,7 +7,7 @@ import type ControlFlowGraph from './control-flow-graph';
 export interface DataflowAnalysisGraphOperator<Instruction, DataEdge> {
   graphConstructor: (instructions: readonly Instruction[]) => ControlFlowGraph<Instruction>;
   edgeInitializer: (index: number) => DataEdge;
-  joinEdges: (edges: readonly DataEdge[]) => DataEdge;
+  joinEdges: (edges: readonly DataEdge[], currentNodeID: number) => DataEdge;
   computeNewEdge: (
     newEdgeOnTheOtherSide: DataEdge,
     instruction: Instruction,
@@ -42,7 +42,10 @@ export const runBackwardDataflowAnalysis = <Instruction, DataEdge>(
   while (nodesStack.length > 0) {
     const nodeId = nodesStack.pop();
     assertNotNull(nodeId);
-    const newOutEdge = joinEdges(graph.getChildrenIds(nodeId).map((childId) => inEdges[childId]));
+    const newOutEdge = joinEdges(
+      graph.getChildrenIds(nodeId).map((childId) => inEdges[childId]),
+      nodeId
+    );
     outEdges[nodeId] = newOutEdge;
     const oldInEdge = inEdges[nodeId];
     const newInEdge = computeNewEdge(newOutEdge, instructions[nodeId], nodeId);
@@ -82,7 +85,8 @@ export const runForwardDataflowAnalysis = <Instruction, DataEdge>(
     const nodeId = nodesQueue.shift();
     assertNotNull(nodeId);
     const newInEdge = joinEdges(
-      Array.from(graph.getParentIds(nodeId)).map((parentId) => outEdges[parentId])
+      Array.from(graph.getParentIds(nodeId)).map((parentId) => outEdges[parentId]),
+      nodeId
     );
     inEdges[nodeId] = newInEdge;
     const oldOutEdge = outEdges[nodeId];
