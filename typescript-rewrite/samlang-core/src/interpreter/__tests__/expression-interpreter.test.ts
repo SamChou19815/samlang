@@ -715,7 +715,60 @@ it('statement block expression evalutes correctly', () => {
     type: intType,
     block: statementBlockFail,
   });
+  const nestedBlockExpressionFail = EXPRESSION_STATEMENT_BLOCK({
+    range: exampleRange,
+    type: intType,
+    block: {
+      range: exampleRange,
+      statements: [
+        {
+          pattern: {
+            type: 'VariablePattern',
+            name: 'diffVar',
+            range: exampleRange,
+          },
+          typeAnnotation: intType,
+          assignedExpression: EXPRESSION_STATEMENT_BLOCK({
+            range: exampleRange,
+            type: intType,
+            block: {
+              range: exampleRange,
+              statements: [
+                {
+                  pattern: variablePattern,
+                  range: exampleRange,
+                  typeAnnotation: intType,
+                  assignedExpression: intLiteralExpression,
+                },
+              ],
+              expression: variableExpression,
+            },
+          }),
+          range: exampleRange,
+        },
+        variableStatement,
+      ],
+    },
+  });
+  const nestedBlockExpressionPass = EXPRESSION_STATEMENT_BLOCK({
+    range: exampleRange,
+    type: intType,
+    block: {
+      range: exampleRange,
+      statements: [
+        {
+          pattern: variablePattern,
+          typeAnnotation: intType,
+          assignedExpression: intLiteralExpression,
+          range: exampleRange,
+        },
+      ],
+      expression: variableExpression,
+    },
+  });
   expect(interpreter.eval(statementBlockExpression, variableContext)).toEqual({ type: 'unit' });
+  expect(() => interpreter.eval(nestedBlockExpressionFail)).toThrow('Missing variable var');
   expect(interpreter.eval(statementBlockExpressionWithBlockExpression)).toEqual(BigInt(5));
+  expect(interpreter.eval(nestedBlockExpressionPass)).toEqual(BigInt(5));
   expect(() => interpreter.eval(statementBlockExpressionFail)).toThrow('');
 });
