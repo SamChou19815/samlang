@@ -14,6 +14,5 @@ include(
     "samlang-compiler-asm",
     "samlang-printer",
     "samlang-service",
-    "samlang-demo",
     "samlang-cli"
 )
