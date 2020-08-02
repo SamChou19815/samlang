@@ -383,8 +383,6 @@ class Main {
 }
 `,
   },
-  // TODO: disable due to a lot of tests failing. Need some investigation.
-  /*
   {
     testCaseName: 'different-classes-demo',
     expectedStandardOut: 'OK\n',
@@ -478,9 +476,6 @@ class Main {
 }
 `,
   },
-  */
-  // TODO: disable due to a lot of tests failing. Need some investigation.
-  /*
   {
     testCaseName: 'different-expressions-demo',
     expectedStandardOut: '42\n',
@@ -545,7 +540,6 @@ class Main {
 }
 `,
   },
-  */
   {
     testCaseName: 'empty',
     expectedStandardOut: '',
@@ -555,8 +549,6 @@ class Main {
 }
 `,
   },
-  // TODO: disable due to a lot of tests failing. Need some investigation.
-  /*
   {
     testCaseName: 'evaluation-order',
     expectedStandardOut: `0
@@ -628,7 +620,6 @@ class Main {
 }
 `,
   },
-  */
   {
     testCaseName: 'function-call-never-ignored',
     expectedStandardOut: 'hi\n',
@@ -645,8 +636,6 @@ class Main {
 }
 `,
   },
-  // TODO: disable due to a lot of tests failing. Need some investigation.
-  /*
   {
     testCaseName: 'generic-object-test',
     expectedStandardOut: '2\n42\n',
@@ -669,7 +658,6 @@ class Main {
 }
 `,
   },
-  */
   {
     testCaseName: 'if-else-consistency',
     expectedStandardOut: '3\n3\nOK\n',
@@ -729,8 +717,6 @@ class Main {
 }
 `,
   },
-  // TODO: disable due to a lot of tests failing. Need some investigation.
-  /*
   {
     testCaseName: 'map-but-ignore',
     expectedStandardOut: '',
@@ -759,9 +745,6 @@ class Main {
 }
 `,
   },
-  */
-  // TODO: disable due to a lot of tests failing. Need some investigation.
-  /*
   {
     testCaseName: 'math-functions',
     expectedStandardOut: '24\n55\n',
@@ -783,9 +766,6 @@ class Main {
 }
 `,
   },
-  */
-  // TODO: disable due to a lot of tests failing. Need some investigation.
-  /*
   {
     testCaseName: 'mutually-recursive',
     expectedStandardOut: 'OK\n',
@@ -799,7 +779,6 @@ class Main {
 }
 `,
   },
-  */
   {
     testCaseName: 'optional-semicolon',
     expectedStandardOut: '-7\n',
@@ -1070,8 +1049,6 @@ class Main {
 }
 `,
   },
-  // TODO: disable due to a lot of tests failing. Need some investigation.
-  /*
   {
     testCaseName: 'various-syntax-forms',
     expectedStandardOut: '84\n',
@@ -1163,7 +1140,6 @@ class Main {
 }
 `,
   },
-  */
 ];
 
 type MidIRTestCase = {

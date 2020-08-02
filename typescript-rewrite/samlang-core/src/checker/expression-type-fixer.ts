@@ -207,7 +207,7 @@ const fixExpressionType = (
             );
           }
           e1 = tryFixExpressionType(expression.e1, t1);
-          e2 = tryFixExpressionType(expression.e1, t2);
+          e2 = tryFixExpressionType(expression.e2, t2);
           break;
         }
       }
