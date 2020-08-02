@@ -85,8 +85,8 @@ const operator: DataflowAnalysisGraphOperator<
 > = {
   graphConstructor: ControlFlowGraph.fromMidIRStatements,
   edgeInitializer: () => hashMapOf(),
-  joinEdges: (parentOutEdges) => {
-    if (parentOutEdges.length === 0) {
+  joinEdges: (parentOutEdges, nodeID) => {
+    if (parentOutEdges.length === 0 || nodeID === 0) {
       return hashMapOf();
     }
     const newInEdgeMapping = hashMapOf<MidIRExpressionWrapper, number[]>();

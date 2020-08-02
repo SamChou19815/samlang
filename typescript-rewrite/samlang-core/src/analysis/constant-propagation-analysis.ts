@@ -149,7 +149,8 @@ const propagatedConstantsOnStatement = (
 const operator: DataflowAnalysisGraphOperator<MidIRStatement, Map<string, ConstantStatus>> = {
   graphConstructor: ControlFlowGraph.fromMidIRStatements,
   edgeInitializer: () => new Map(),
-  joinEdges: (parentOutEdges) => {
+  joinEdges: (parentOutEdges, nodeID) => {
+    if (nodeID === 0) return new Map();
     const newInEdge = new Map<string, ConstantStatus>();
     parentOutEdges.forEach((parentOutEdge) => {
       parentOutEdge.forEach((status, variable) => {
