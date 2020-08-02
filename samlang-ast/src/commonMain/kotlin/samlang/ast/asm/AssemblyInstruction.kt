@@ -280,7 +280,7 @@ sealed class AssemblyInstruction {
 
     /** Type of an AL instruction with only dest as args and does not have any implicit args. */
     enum class AlUnaryOpType(val displayName: String) {
-        NEG(displayName = "neg"), INC(displayName = "inc"), DEC(displayName = "dec");
+        NEG(displayName = "neg")
     }
 
     /** unop instruction, see types above. */

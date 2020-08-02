@@ -429,8 +429,7 @@ class AssemblyInterpreter(program: AssemblyProgram) {
         }
 
         override fun visit(node: Cqo) {
-            val raxValue = getValue(RAX)
-            if (raxValue >= 0) {
+            if (getValue(RAX) >= 0) {
                 setValue(regOrMem = RDX, value = 0)
             } else {
                 setValue(regOrMem = RDX, value = -1)
@@ -450,13 +449,7 @@ class AssemblyInterpreter(program: AssemblyProgram) {
         }
 
         override fun visit(node: AlUnaryOp) {
-            var value = getValue(node.dest)
-            value = when (node.type) {
-                AlUnaryOpType.NEG -> -value
-                AlUnaryOpType.INC -> value + 1
-                AlUnaryOpType.DEC -> value - 1
-            }
-            setValue(node.dest, value)
+            setValue(node.dest, -getValue(node.dest))
         }
 
         override fun visit(node: ShiftLeft) {

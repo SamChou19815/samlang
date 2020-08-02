@@ -154,9 +154,7 @@ class DpTiling(val context: FunctionContext) {
             TileMoveOp.CommutativeOpForMoveTemp,
             TileMoveOp.SubForMoveTemp,
             TileMul3Args.ForMoveTemp,
-            TileNegNotIncDec.IncForMoveTemp,
-            TileNegNotIncDec.DecForMoveTemp,
-            TileNegNotIncDec.NegForMoveTemp,
+            TileNeg.NegForMoveTemp,
             TileOpPowTwo.ForMoveTemp
         )
         private val moveMemTiles: List<IrStatementTile<MoveMem>> = listOf(
@@ -164,9 +162,7 @@ class DpTiling(val context: FunctionContext) {
             TileMoveOp.CommutativeOpForMoveMem,
             TileMoveOp.SubForMoveMem,
             TileMul3Args.ForMoveMem,
-            TileNegNotIncDec.IncForMoveMem,
-            TileNegNotIncDec.DecForMoveMem,
-            TileNegNotIncDec.NegForMoveMem,
+            TileNeg.NegForMoveMem,
             TileOpPowTwo.ForMoveMem
         )
 
