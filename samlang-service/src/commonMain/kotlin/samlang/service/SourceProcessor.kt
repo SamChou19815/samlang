@@ -42,5 +42,5 @@ fun lowerToAssemblyString(
     )
     val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
     val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
-    return AssemblyPrinter(includeComments = false).printProgram(program = assemblyProgram)
+    return AssemblyPrinter().printProgram(program = assemblyProgram)
 }

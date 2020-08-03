@@ -9,46 +9,35 @@ import samlang.ast.common.IrNameEncoder
 /**
  * The printer utility for assembly instructions.
  * It is used to printed already compiled assembly.
- *
- * @param includeComments whether to include comments.
  */
 @ExperimentalStdlibApi
-class AssemblyPrinter(private val includeComments: Boolean) {
-    private val sb: StringBuilder = StringBuilder()
-
+class AssemblyPrinter {
     fun printProgram(program: AssemblyProgram): String {
-        printlnInstruction(instructionLine = ".text")
-        printlnInstruction(instructionLine = ".intel_syntax noprefix")
-        printlnInstruction(instructionLine = ".p2align 4, 0x90")
-        printlnInstruction(instructionLine = ".align 8")
-        printlnInstruction(instructionLine = ".globl ${IrNameEncoder.compiledProgramMain}")
-        program.instructions.forEach { printInstruction(instruction = it) }
+        val sb = StringBuilder()
+        sb.append("    .text\n")
+        sb.append("    .intel_syntax noprefix\n")
+        sb.append("    .p2align 4, 0x90\n")
+        sb.append("    .align 8\n")
+        sb.append("    .globl ${IrNameEncoder.compiledProgramMain}\n")
+        program.instructions.forEach { instruction ->
+            when (instruction) {
+                is AssemblyInstruction.Label -> sb.append(instruction).append("\n")
+                is SetOnFlag -> instruction.toString().split("\n").forEach {
+                    sb.append("    ").append(it).append("\n")
+                }
+                else -> sb.append("    ").append(instruction).append("\n")
+            }
+        }
         // global vars init
-        program.globalVariables.forEach { printGlobalVariable(globalVariable = it) }
+        program.globalVariables.forEach { globalVariable ->
+            val (name, content) = globalVariable
+            sb.append("    .data\n")
+            sb.append("    .align 8\n")
+            sb.append(name).append(":\n")
+            sb.append("    .quad ${content.length}\n")
+            content.toCharArray().forEach { character -> sb.append("    .quad ${character.toLong()} ## $character\n") }
+            sb.append("    .text\n")
+        }
         return sb.toString()
-    }
-
-    private fun printInstruction(instruction: AssemblyInstruction) {
-        when (instruction) {
-            is AssemblyInstruction.Label -> sb.append(instruction).append("\n")
-            is SetOnFlag -> instruction.toString().split("\n").forEach { printlnInstruction(it) }
-            else -> printlnInstruction(instruction.toString())
-        }
-    }
-
-    private fun printGlobalVariable(globalVariable: GlobalVariable) {
-        val (name, content) = globalVariable
-        printlnInstruction(instructionLine = ".data")
-        printlnInstruction(instructionLine = ".align 8")
-        sb.append(name).append(":\n")
-        printlnInstruction(instructionLine = ".quad ${content.length}")
-        content.toCharArray().forEach { character ->
-            printlnInstruction(instructionLine = ".quad ${character.toLong()} ## $character")
-        }
-        printlnInstruction(instructionLine = ".text")
-    }
-
-    private fun printlnInstruction(instructionLine: String) {
-        sb.append("    ").append(instructionLine).append("\n")
     }
 }

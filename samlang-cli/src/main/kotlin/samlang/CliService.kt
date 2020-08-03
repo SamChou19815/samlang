@@ -64,8 +64,7 @@ fun compileToX86Executable(
     for ((moduleReference, unoptimizedCompilationUnit) in unoptimizedCompilationUnits.moduleMappings) {
         val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
         val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
-        val printedAssemblyProgram = AssemblyPrinter(includeComments = false)
-            .printProgram(program = assemblyProgram)
+        val printedAssemblyProgram = AssemblyPrinter().printProgram(program = assemblyProgram)
         val outputAssemblyFile = Paths.get(outputDirectory.toString(), "$moduleReference.s").toFile()
         outputAssemblyFile.parentFile.mkdirs()
         outputAssemblyFile.writeText(text = printedAssemblyProgram)
