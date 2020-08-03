@@ -141,23 +141,8 @@ internal object TileOpPowTwo {
         }
     }
 
-    object ForMoveMem : IrStatementTile<MoveMem> {
-        override fun getTilingResult(node: MoveMem, dpTiling: DpTiling): StatementTilingResult? {
-            val src = node.source as? MidIrExpression.Op ?: return null
-            val dest = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)
-            val (instructions1, mem) = MemTilingHelper.tileMem(dest, dpTiling)
-            val instructions = instructions1.toMutableList()
-            val shiftInstructions = tileOp(src, dest, mem, dpTiling) ?: return null
-            instructions.addAll(shiftInstructions)
-            return StatementTilingResult(instructions)
-        }
-    }
-
     object ForOp : IrExpressionTile<MidIrExpression.Op> {
-        override fun getTilingResult(
-            node: MidIrExpression.Op,
-            dpTiling: DpTiling
-        ): ExpressionTilingResult? {
+        override fun getTilingResult(node: MidIrExpression.Op, dpTiling: DpTiling): ExpressionTilingResult? {
             val resultReg = dpTiling.context.nextReg()
             val instructions = tileOp(
                     node = node,
