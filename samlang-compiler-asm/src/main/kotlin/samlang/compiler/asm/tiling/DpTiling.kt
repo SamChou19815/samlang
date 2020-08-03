@@ -20,18 +20,14 @@ import samlang.ast.asm.AssemblyInstruction.Companion.LEA
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
 import samlang.ast.asm.AssemblyInstruction.JumpType
 import samlang.ast.asm.RegOrMem
-import samlang.compiler.asm.FunctionContext
 import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
-import samlang.ast.mir.MidIrStatement.CallFunction
-import samlang.ast.mir.MidIrStatement.ConditionalJumpFallThrough
-import samlang.ast.mir.MidIrStatement.Jump
-import samlang.ast.mir.MidIrStatement.MoveMem
-import samlang.ast.mir.MidIrStatement.MoveTemp
+import samlang.ast.mir.MidIrStatement.*
+import samlang.compiler.asm.FunctionContext
 import samlang.compiler.asm.tiling.MemTilingHelper.tileMem
 import kotlin.math.max
 
@@ -41,11 +37,14 @@ import kotlin.math.max
 internal class DpTiling(val context: FunctionContext, val functionName: String) {
     /** The statement tiling visitor.  */
     private val statementTilingVisitor = StatementTilingVisitor()
+
     /** The expression tiling visitor.  */
     private val expressionTilingVisitor = ExpressionTilingVisitor()
+
     /** The memoized statement tiling function.  */
     private val statementTilingFunction: MemoizedFunction<MidIrStatement, StatementTilingResult> =
         MemoizedFunction.memo { statement -> statement.accept(statementTilingVisitor, Unit) }
+
     /** The memoized expression tiling function.  */
     private val expressionTilingFunction: MemoizedFunction<MidIrExpression, ExpressionTilingResult> =
         MemoizedFunction.memo { expression -> expression.accept(expressionTilingVisitor, Unit) }
@@ -163,13 +162,22 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
             TileNegForMoveTemp,
             TileOpPowTwo.ForMoveTemp
         )
-        private val moveMemTiles: List<IrStatementTile<MoveMem>> = listOf(TileGenericMoveMem, TileMul3Args.ForMoveMem)
 
         override fun visit(node: MoveTemp, context: Unit): StatementTilingResult =
             tile(node, moveTempTiles)
 
-        override fun visit(node: MoveMem, context: Unit): StatementTilingResult =
-            tile(node, moveMemTiles)
+        override fun visit(node: MoveMem, context: Unit): StatementTilingResult {
+            val irMem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)
+            val (memLocInstructions, memLoc) = tileMem(mem = irMem, dpTiling = this@DpTiling)
+            val instructions = mutableListOf<AssemblyInstruction>()
+            // first add mem loc instructions
+            instructions += COMMENT(comment = "GenericMoveMem: $node")
+            instructions += memLocInstructions
+            val srcTilingResult = tileConstOrReg(node.source)
+            instructions += srcTilingResult.instructions
+            instructions += MOVE(memLoc, srcTilingResult.constOrReg)
+            return StatementTilingResult(instructions)
+        }
 
         override fun visit(node: CallFunction, context: Unit): StatementTilingResult {
             val functionExpr = node.functionExpr
@@ -274,10 +282,10 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
             return StatementTilingResult(instructions)
         }
 
-        override fun visit(node: MidIrStatement.Label, context: Unit): StatementTilingResult =
+        override fun visit(node: Label, context: Unit): StatementTilingResult =
             StatementTilingResult(listOf(LABEL(node.name)))
 
-        override fun visit(node: MidIrStatement.Return, context: Unit): StatementTilingResult {
+        override fun visit(node: Return, context: Unit): StatementTilingResult {
             val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(node)
             val returnedExpression = node.returnedExpression
@@ -367,21 +375,6 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
                 else -> throw Error()
             }
             return ExpressionTilingResult(instructions, resultReg)
-        }
-    }
-
-    private object TileGenericMoveMem : IrStatementTile<MoveMem> {
-        override fun getTilingResult(node: MoveMem, dpTiling: DpTiling): StatementTilingResult {
-            val irMem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)
-            val (memLocInstructions, memLoc) = tileMem(irMem, dpTiling)
-            val instructions = mutableListOf<AssemblyInstruction>()
-            // first add mem loc instructions
-            instructions += COMMENT(comment = "GenericMoveMem: $node")
-            instructions += memLocInstructions
-            val srcTilingResult = dpTiling.tileConstOrReg(node.source)
-            instructions += srcTilingResult.instructions
-            instructions += MOVE(memLoc, srcTilingResult.constOrReg)
-            return StatementTilingResult(instructions)
         }
     }
 
@@ -587,6 +580,183 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
                 false
             } else {
                 source.e1 == dest && source.e2 == MidIrExpression.MINUS_ONE || source.e2 == dest && source.e1 == MidIrExpression.MINUS_ONE
+            }
+        }
+    }
+
+    /** The tiles for 3-arg form of imul for ops and move. */
+    private object TileMul3Args {
+        private fun tryToTile(dpTiling: DpTiling, src: MidIrExpression): Triple<List<AssemblyInstruction>, RegOrMem, AssemblyArgs.Const>? {
+            if (src !is MidIrExpression.Op) return null
+            val (operator, e1, e2) = src
+            if (operator !== IrOperator.MUL) return null
+            if (e2 !is MidIrExpression.Constant) return null
+            if (e2.value <= Int.MAX_VALUE || e2.value >= Int.MIN_VALUE) {
+                val tilingResult = dpTiling.tileRegOrMem(e1)
+                return Triple(tilingResult.instructions, tilingResult.regOrMem, CONST(value = e2.value.toInt()))
+            }
+            return null
+        }
+
+        object ForMoveTemp : IrStatementTile<MoveTemp> {
+            override fun getTilingResult(node: MoveTemp, dpTiling: DpTiling): StatementTilingResult? {
+                val (tileInstructions, op1, op2) = tryToTile(dpTiling, node.source) ?: return null
+                val instructions = mutableListOf<AssemblyInstruction>()
+                instructions += COMMENT(comment = "TileMul3ArgsForMove: $node")
+                instructions += tileInstructions
+                instructions += IMUL(REG(node.tempId), op1, op2)
+                return StatementTilingResult(instructions)
+            }
+        }
+
+        object ForOp : IrExpressionTile<MidIrExpression.Op> {
+            override fun getTilingResult(node: MidIrExpression.Op, dpTiling: DpTiling): ExpressionTilingResult? {
+                val (tileInstructions, op1, op2) = tryToTile(dpTiling, node) ?: return null
+                val resultReg = dpTiling.context.nextReg()
+                val instructions = mutableListOf<AssemblyInstruction>()
+                instructions += COMMENT(comment = "TileMul3ArgsForOp: $node")
+                instructions += tileInstructions
+                instructions += IMUL(resultReg, op1, op2)
+                return ExpressionTilingResult(instructions, resultReg)
+            }
+        }
+    }
+
+    private object TileOpPowTwo {
+        private fun addMove(
+            dest: RegOrMem,
+            src: AssemblyArg,
+            dpTiling: DpTiling,
+            instructions: MutableList<AssemblyInstruction>
+        ) {
+            dest.matchRegOrMem(
+                regF = { regDest -> instructions.add(MOVE(regDest, src)) },
+                memF = { memDest ->
+                    src.matchConstVsRegOrMem<Unit>(
+                        constF = { constOrRegSrc -> instructions.add(MOVE(memDest, constOrRegSrc)) },
+                        regOrMemF = { memSrc ->
+                            val tempReg = dpTiling.context.nextReg()
+                            instructions.add(MOVE(tempReg, memSrc))
+                            instructions.add(MOVE(memDest, tempReg))
+                        }
+                    )
+                }
+            )
+        }
+
+        /**
+         * A function that tries to setup for the shift tiling.
+         *
+         * @param instructions the list of instructions to append additional instructions for shifting.
+         * @param e1 the first operand to inspect and potentially extract shift amount.
+         * @param e2 the second operand to inspect and potentially extract shift amount.
+         * @param destExpr the optional destination expression used to check whether src and dest are
+         * the same. If it is given, then the resultReg is used to check whether one of the operand is
+         * the same as the result register.
+         * @param resultPlace the optional place to put the result in.
+         * @param dpTiling the tiling class.
+         * @return the computed shift amount, or null if it cannot be tiled in this way.
+         */
+        private fun trySetupAndFindShiftAmount(
+            instructions: MutableList<AssemblyInstruction>,
+            e1: MidIrExpression,
+            e2: MidIrExpression,
+            destExpr: MidIrExpression?,
+            resultPlace: RegOrMem,
+            dpTiling: DpTiling
+        ): Int? {
+            return if (destExpr != null) {
+                if (e2 is MidIrExpression.Constant && isPowerOfTwo(e2.value)) {
+                    if (e1 == destExpr) {
+                        logTwo(e2.value)
+                    } else {
+                        null
+                    }
+                } else if (e1 is MidIrExpression.Constant && isPowerOfTwo(e1.value)) {
+                    if (e2 == destExpr) {
+                        logTwo(e1.value)
+                    } else {
+                        null
+                    }
+                } else {
+                    null
+                }
+            } else {
+                val shiftCount: Int
+                val argToShift: AssemblyArg
+                if (e2 is MidIrExpression.Constant && isPowerOfTwo(e2.value)) {
+                    val e1Result = dpTiling.tileArg(e1)
+                    argToShift = e1Result.arg
+                    shiftCount = logTwo(e2.value)
+                    instructions.addAll(e1Result.instructions)
+                } else if (e1 is MidIrExpression.Constant && isPowerOfTwo(e1.value)) {
+                    val e2Result = dpTiling.tileArg(e2)
+                    argToShift = e2Result.arg
+                    shiftCount = logTwo(e1.value)
+                    instructions.addAll(e2Result.instructions)
+                } else {
+                    return null
+                }
+                addMove(resultPlace, argToShift, dpTiling, instructions)
+                shiftCount
+            }
+        }
+
+        /**
+         * @param node the op node to tile.
+         * @param destExpr the optional destination expression used to check whether src and dest are
+         * the same. If it is given, then the resultReg is used to check whether one of the operand is
+         * the same as the result register.
+         * @param resultPlace the place used to put the result.
+         * @param dpTiling the tiling class.
+         * @return the instructions to run, or null if it cannot be tiled in this way.
+         */
+        private fun tileOp(
+            node: MidIrExpression.Op,
+            destExpr: MidIrExpression?,
+            resultPlace: RegOrMem,
+            dpTiling: DpTiling
+        ): List<AssemblyInstruction>? {
+            val instructions = mutableListOf<AssemblyInstruction>()
+            val e1 = node.e1
+            val e2 = node.e2
+            return when (node.operator) {
+                IrOperator.MUL -> {
+                    val shiftCount = trySetupAndFindShiftAmount(
+                        instructions, e1, e2, destExpr, resultPlace, dpTiling
+                    ) ?: return null
+                    instructions += AssemblyInstruction.SHL(resultPlace, shiftCount)
+                    instructions
+                }
+                else -> null
+            }
+        }
+
+        private fun logTwo(num: Long): Int = if (num == 1L) 0 else 1 + logTwo(num = num / 2)
+
+        private fun isPowerOfTwo(num: Long): Boolean = num > 0 && num and num - 1 == 0L
+
+        object ForMoveTemp : IrStatementTile<MoveTemp> {
+            override fun getTilingResult(node: MoveTemp, dpTiling: DpTiling): StatementTilingResult? {
+                val src = node.source as? MidIrExpression.Op ?: return null
+                val dest = Temporary(node.tempId)
+                val resultPlace = REG(node.tempId)
+                val instructions =
+                    tileOp(src, dest, resultPlace, dpTiling)
+                return instructions?.let { StatementTilingResult(it) }
+            }
+        }
+
+        object ForOp : IrExpressionTile<MidIrExpression.Op> {
+            override fun getTilingResult(node: MidIrExpression.Op, dpTiling: DpTiling): ExpressionTilingResult? {
+                val resultReg = dpTiling.context.nextReg()
+                val instructions = tileOp(
+                    node = node,
+                    destExpr = null,
+                    resultPlace = resultReg,
+                    dpTiling = dpTiling
+                ) ?: return null
+                return ExpressionTilingResult(instructions, resultReg)
             }
         }
     }
