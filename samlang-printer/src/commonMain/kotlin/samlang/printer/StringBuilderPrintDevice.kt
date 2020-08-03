@@ -1,6 +1,6 @@
-package samlang.util
+package samlang.printer
 
-class StringBuilderPrintDevice {
+internal class StringBuilderPrintDevice {
     private val builder: StringBuilder = StringBuilder()
 
     fun print(x: Any) {

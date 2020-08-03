@@ -14,7 +14,6 @@ kotlin {
                 implementation(kotlin("stdlib-common"))
                 implementation(project(":samlang-ast"))
                 implementation(project(":samlang-errors"))
-                implementation(project(":samlang-utils"))
             }
         }
         val jvmMain by getting {

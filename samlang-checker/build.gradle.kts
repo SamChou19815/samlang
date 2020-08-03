@@ -15,7 +15,6 @@ kotlin {
                 implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3")
                 implementation(project(":samlang-ast"))
                 implementation(project(":samlang-errors"))
-                implementation(project(":samlang-utils"))
             }
         }
         val commonTest by getting {

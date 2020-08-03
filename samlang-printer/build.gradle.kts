@@ -13,7 +13,6 @@ kotlin {
             dependencies {
                 implementation(kotlin("stdlib-common"))
                 implementation(project(":samlang-ast"))
-                implementation(project(":samlang-utils"))
             }
         }
         val jvmMain by getting {

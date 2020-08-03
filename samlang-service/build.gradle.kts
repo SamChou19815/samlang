@@ -5,7 +5,6 @@ plugins {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(project(":samlang-ast"))
-    implementation(project(":samlang-utils"))
     implementation(project(":samlang-checker"))
     implementation(project(":samlang-errors"))
     implementation(project(":samlang-parser"))

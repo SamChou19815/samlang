@@ -3,7 +3,6 @@ include(
     "samlang-ast",
     "samlang-checker",
     "samlang-errors",
-    "samlang-utils",
     "samlang-parser-generated-java",
     "samlang-parser",
     "samlang-analysis",
