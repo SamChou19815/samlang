@@ -18,13 +18,11 @@ import samlang.compiler.asm.ralloc.RegisterCollector.collect
  * The real register allocator.
  * It does non-trivial register allocation and the worst it can do is the same as naive register
  * allocator.
- *
- * @param functionContext the mutable context of a function.
- * @param tiledInstructions the assembly instructions to perform live variable analysis.
  */
 @ExperimentalStdlibApi
 class RealRegisterAllocator(
     private val functionContext: FunctionContext,
+    private val hasReturn: Boolean,
     tiledInstructions: List<AssemblyInstruction>
 ) {
     /*
@@ -161,7 +159,7 @@ class RealRegisterAllocator(
     /** The main function to run for register allocation. */
     private fun main() {
         while (true) {
-            val liveVariableAnalysisResult = LiveVariableAnalysis(functionContext.hasReturn, instructions)
+            val liveVariableAnalysisResult = LiveVariableAnalysis(hasReturn, instructions)
             build(liveVariableAnalysisResult)
             val useCount = buildUseCount(liveVariableAnalysisResult)
             makeWorkList()

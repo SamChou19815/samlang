@@ -19,8 +19,10 @@ import samlang.ast.asm.AssemblyInstruction.AlBinaryOpType.ADD
 import samlang.ast.asm.AssemblyInstruction.Companion.BIN_OP
 import samlang.ast.asm.AssemblyInstruction.Companion.CALL
 import samlang.ast.asm.AssemblyInstruction.Companion.COMMENT
+import samlang.ast.asm.AssemblyInstruction.Companion.JUMP
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
 import samlang.ast.asm.AssemblyInstruction.Companion.PUSH
+import samlang.ast.asm.AssemblyInstruction.JumpType.JMP
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrStatement.CallFunction
 import samlang.ast.mir.MidIrStatement.Return
@@ -103,7 +105,7 @@ internal object TileCallingConvention {
                 instructions += MOVE(RAX, resultReg)
             }
             // jump to the end of functions body / start of epilogue
-            instructions += context.jumpToFunctionCallEpilogue
+            instructions += JUMP(type = JMP, label = "LABEL_FUNCTION_CALL_EPILOGUE_FOR_${context.functionName}")
             return StatementTilingResult(instructions)
         }
     }

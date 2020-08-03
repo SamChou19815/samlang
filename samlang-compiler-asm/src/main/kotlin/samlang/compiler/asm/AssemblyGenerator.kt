@@ -1,5 +1,6 @@
 package samlang.compiler.asm
 
+import samlang.ast.asm.AssemblyArgs.CONST
 import samlang.ast.asm.AssemblyArgs.R8
 import samlang.ast.asm.AssemblyArgs.R9
 import samlang.ast.asm.AssemblyArgs.RBP
@@ -7,8 +8,16 @@ import samlang.ast.asm.AssemblyArgs.RCX
 import samlang.ast.asm.AssemblyArgs.RDI
 import samlang.ast.asm.AssemblyArgs.RDX
 import samlang.ast.asm.AssemblyArgs.RSI
+import samlang.ast.asm.AssemblyArgs.RSP
 import samlang.ast.asm.AssemblyInstruction
+import samlang.ast.asm.AssemblyInstruction.AlBinaryOpType.SUB
+import samlang.ast.asm.AssemblyInstruction.Companion.BIN_OP
+import samlang.ast.asm.AssemblyInstruction.Companion.COMMENT
 import samlang.ast.asm.AssemblyInstruction.Companion.LABEL
+import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
+import samlang.ast.asm.AssemblyInstruction.Companion.POP
+import samlang.ast.asm.AssemblyInstruction.Companion.PUSH
+import samlang.ast.asm.AssemblyInstruction.Companion.RET
 import samlang.ast.asm.AssemblyProgram
 import samlang.compiler.asm.common.FunctionContext
 import samlang.ast.common.IrOperator
@@ -18,7 +27,6 @@ import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrFunction
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.MoveTemp
-import samlang.compiler.asm.common.CallingConventionFixer
 import samlang.compiler.asm.ralloc.RealRegisterAllocator
 import samlang.compiler.asm.tiling.DpTiling
 import samlang.optimization.SimpleOptimizations
@@ -43,10 +51,7 @@ class AssemblyGenerator private constructor(
         publicFunctions += functionName
         val statementsToTile = getStatementsToTile(function)
         instructions.add(LABEL(functionName))
-        val context = FunctionContext(
-            functionName = functionName,
-            hasReturn = function.hasReturn
-        )
+        val context = FunctionContext(functionName = functionName)
         var tiledInstructions: List<AssemblyInstruction> = DpTiling(context).tile(statementsToTile)
         // simple optimizations
         tiledInstructions = SimpleOptimizations.optimizeAsm(tiledInstructions, removeComments)
@@ -54,16 +59,17 @@ class AssemblyGenerator private constructor(
         val numberOfTemporariesOnStack: Int
         val allocator = RealRegisterAllocator(
             functionContext = context,
+            hasReturn = function.hasReturn,
             tiledInstructions = tiledInstructions
         )
         registerAllocatedInstructions = allocator.realInstructions
         numberOfTemporariesOnStack = allocator.numberOfTemporariesOnStack
-        val fixedInstructions = CallingConventionFixer(
+        val fixedInstructions = fixCallingConvention(
             context = context,
             numberOfTemporariesOnStack = numberOfTemporariesOnStack,
             mainFunctionBody = SimpleOptimizations.optimizeAsm(registerAllocatedInstructions, removeComments),
             removeComments = removeComments
-        ).bodyWithCorrectCallingConvention
+        )
         instructions.addAll(fixedInstructions)
     }
 
@@ -126,6 +132,57 @@ class AssemblyGenerator private constructor(
             }
             statementsToTile += f.mainBodyStatements
             return statementsToTile
+        }
+
+        /**
+         * Generate prologue and epilogue of functions according System-V calling conventions.
+         *
+         * @param context calling convention context for function body.
+         * @param numberOfTemporariesOnStack number of temporaries to spill onto the stack.
+         * @param mainFunctionBody the not-yet-fixed main function body, generated during tiling.
+         * @param removeComments whether to cleanup comments.
+         */
+        private fun fixCallingConvention(
+            context: FunctionContext,
+            numberOfTemporariesOnStack: Int,
+            mainFunctionBody: List<AssemblyInstruction>,
+            removeComments: Boolean
+        ): List<AssemblyInstruction> {
+            val fixedInstructions = mutableListOf<AssemblyInstruction>()
+            val isLeafFunction: Boolean = mainFunctionBody.none { it is AssemblyInstruction.CallAddress }
+            if (!removeComments) {
+                fixedInstructions += COMMENT(comment = context.functionName + " prologue starts")
+            }
+            var stackPushDownCount = numberOfTemporariesOnStack
+            if (!isLeafFunction && stackPushDownCount % 2 == 1) { // not a leaf function, align alignment matters!
+                stackPushDownCount++
+            }
+            // not leaf function -> will override rbp, has still -> need rbp
+            val needToUseRBP = !isLeafFunction || numberOfTemporariesOnStack > 0
+            if (needToUseRBP) {
+                fixedInstructions += PUSH(RBP)
+                fixedInstructions += MOVE(RBP, RSP)
+            }
+            if (stackPushDownCount > 0) { // no need to move rsp pointer if no stack variables are used
+                fixedInstructions += BIN_OP(SUB, RSP, CONST(value = 8 * stackPushDownCount))
+            }
+            if (!removeComments) {
+                fixedInstructions += COMMENT(comment = context.functionName + " prologue ends")
+            }
+            // body
+            fixedInstructions += mainFunctionBody
+            if (!removeComments) {
+                fixedInstructions += COMMENT(comment = context.functionName + " epilogue starts")
+            }
+            if (needToUseRBP) {
+                fixedInstructions += MOVE(RSP, RBP)
+                fixedInstructions += POP(RBP)
+            }
+            fixedInstructions += RET()
+            if (!removeComments) {
+                fixedInstructions += COMMENT(context.functionName + " epilogue ends")
+            }
+            return fixedInstructions
         }
     }
 }

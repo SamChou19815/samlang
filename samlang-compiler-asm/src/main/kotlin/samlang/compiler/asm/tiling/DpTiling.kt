@@ -53,7 +53,7 @@ class DpTiling(val context: FunctionContext) {
         for (statement in statements) {
             instructions += tile(statement).instructions
         }
-        instructions.add(context.functionCallEpilogueLabelStatement)
+        instructions.add(LABEL(label = "LABEL_FUNCTION_CALL_EPILOGUE_FOR_${context.functionName}"))
         return instructions
     }
 

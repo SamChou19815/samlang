@@ -8,7 +8,7 @@ import samlang.ast.asm.AssemblyInstruction.Companion.LABEL
 import samlang.ast.asm.AssemblyInstruction.JumpType
 
 /** The mutable tiling context used to allocate registers and provide background information. */
-class FunctionContext(val functionName: String, val hasReturn: Boolean) {
+class FunctionContext(val functionName: String) {
     /** The id to allocate next. */
     private var nextRegisterId: Int = 0
 
@@ -16,14 +16,6 @@ class FunctionContext(val functionName: String, val hasReturn: Boolean) {
     fun nextReg(): Reg {
         val id = nextRegisterId
         nextRegisterId++
-        return REG(id = "INFINITE_REG_$id")
+        return REG(id = "_INFINITE_REG_$id")
     }
-
-    /** @return the label instruction for starting function call epilogue. */
-    val functionCallEpilogueLabelStatement: AssemblyInstruction
-        get() = LABEL(label = "LABEL_FUNCTION_CALL_EPILOGUE_FOR_$functionName")
-
-    /** @return the jump instruction for jumping to function call epilogue. */
-    val jumpToFunctionCallEpilogue: AssemblyInstruction
-        get() = JUMP(type = JumpType.JMP, label = "LABEL_FUNCTION_CALL_EPILOGUE_FOR_$functionName")
 }

@@ -12,7 +12,6 @@ import samlang.ast.mir.MidIrExpression.Constant
 import samlang.ast.mir.MidIrExpression.Temporary
 import samlang.ast.mir.MidIrStatement.MoveMem
 import samlang.ast.mir.MidIrStatement.MoveTemp
-import samlang.compiler.asm.common.MiscUtil
 
 /**
  * A collection of tiling for operations with a power of 2
@@ -61,15 +60,15 @@ internal object TileOpPowTwo {
         dpTiling: DpTiling
     ): Int? {
         return if (destExpr != null) {
-            if (e2 is Constant && MiscUtil.isPowerOfTwo(e2.value)) {
+            if (e2 is Constant && isPowerOfTwo(e2.value)) {
                 if (e1 == destExpr) {
-                    MiscUtil.logTwo(e2.value)
+                    logTwo(e2.value)
                 } else {
                     null
                 }
-            } else if (e1 is Constant && MiscUtil.isPowerOfTwo(e1.value)) {
+            } else if (e1 is Constant && isPowerOfTwo(e1.value)) {
                 if (e2 == destExpr) {
-                    MiscUtil.logTwo(e1.value)
+                    logTwo(e1.value)
                 } else {
                     null
                 }
@@ -79,15 +78,15 @@ internal object TileOpPowTwo {
         } else {
             val shiftCount: Int
             val argToShift: AssemblyArg
-            if (e2 is Constant && MiscUtil.isPowerOfTwo(e2.value)) {
+            if (e2 is Constant && isPowerOfTwo(e2.value)) {
                 val e1Result = dpTiling.tileArg(e1)
                 argToShift = e1Result.arg
-                shiftCount = MiscUtil.logTwo(e2.value)
+                shiftCount = logTwo(e2.value)
                 instructions.addAll(e1Result.instructions)
-            } else if (e1 is Constant && MiscUtil.isPowerOfTwo(e1.value)) {
+            } else if (e1 is Constant && isPowerOfTwo(e1.value)) {
                 val e2Result = dpTiling.tileArg(e2)
                 argToShift = e2Result.arg
-                shiftCount = MiscUtil.logTwo(e1.value)
+                shiftCount = logTwo(e1.value)
                 instructions.addAll(e2Result.instructions)
             } else {
                 return null
@@ -126,6 +125,10 @@ internal object TileOpPowTwo {
             else -> null
         }
     }
+
+    private fun logTwo(num: Long): Int = if (num == 1L) 0 else 1 + logTwo(num = num / 2)
+
+    private fun isPowerOfTwo(num: Long): Boolean = num > 0 && num and num - 1 == 0L
 
     object ForMoveTemp : IrStatementTile<MoveTemp> {
         override fun getTilingResult(node: MoveTemp, dpTiling: DpTiling): StatementTilingResult? {
