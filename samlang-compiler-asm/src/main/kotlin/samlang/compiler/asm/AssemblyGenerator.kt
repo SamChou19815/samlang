@@ -19,7 +19,6 @@ import samlang.ast.asm.AssemblyInstruction.Companion.POP
 import samlang.ast.asm.AssemblyInstruction.Companion.PUSH
 import samlang.ast.asm.AssemblyInstruction.Companion.RET
 import samlang.ast.asm.AssemblyProgram
-import samlang.compiler.asm.common.FunctionContext
 import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrCompilationUnit
 import samlang.ast.mir.MidIrExpression

@@ -1,4 +1,4 @@
-package samlang.compiler.asm.common
+package samlang.compiler.asm
 
 import samlang.ast.asm.AssemblyArgs.REG
 import samlang.ast.asm.AssemblyArgs.Reg

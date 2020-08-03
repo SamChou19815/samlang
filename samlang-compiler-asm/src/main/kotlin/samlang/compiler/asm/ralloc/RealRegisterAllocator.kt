@@ -5,7 +5,7 @@ import samlang.ast.asm.AssemblyArgs.Mem
 import samlang.ast.asm.AssemblyArgs.Reg
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.MoveToReg
-import samlang.compiler.asm.common.FunctionContext
+import samlang.compiler.asm.FunctionContext
 import samlang.compiler.asm.ralloc.CalleeSavedUtil.addCalleeSavedRegsMoves
 import samlang.compiler.asm.ralloc.CalleeSavedUtil.reorganizeSpilledVarMappings
 import samlang.compiler.asm.ralloc.RegisterAllocationConstants.CALLEE_SAVED_REGS
