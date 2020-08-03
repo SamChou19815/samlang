@@ -12,7 +12,6 @@ import samlang.compiler.hir.compileSources
 import samlang.compiler.mir.MidIrGenerator
 import samlang.optimization.IrCompilationUnitOptimizer
 import samlang.optimization.Optimizer
-import samlang.printer.AssemblyPrinter
 import samlang.service.lowerToAssemblyString
 
 fun collectSources(configuration: Configuration): List<Pair<ModuleReference, String>> {
@@ -64,7 +63,7 @@ fun compileToX86Executable(
     for ((moduleReference, unoptimizedCompilationUnit) in unoptimizedCompilationUnits.moduleMappings) {
         val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
         val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
-        val printedAssemblyProgram = AssemblyPrinter().printProgram(program = assemblyProgram)
+        val printedAssemblyProgram = assemblyProgram.toString()
         val outputAssemblyFile = Paths.get(outputDirectory.toString(), "$moduleReference.s").toFile()
         outputAssemblyFile.parentFile.mkdirs()
         outputAssemblyFile.writeText(text = printedAssemblyProgram)

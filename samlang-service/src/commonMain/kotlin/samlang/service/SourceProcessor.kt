@@ -12,7 +12,6 @@ import samlang.compiler.mir.MidIrGenerator
 import samlang.errors.CompileTimeError
 import samlang.optimization.Optimizer
 import samlang.parser.buildModuleFromText
-import samlang.printer.AssemblyPrinter
 
 fun checkSources(sourceHandles: List<Pair<ModuleReference, String>>): Pair<Sources<Module>, List<CompileTimeError>> {
     val errorCollector = ErrorCollector()
@@ -41,6 +40,5 @@ fun lowerToAssemblyString(
         entryModuleReference = entryModuleReference
     )
     val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
-    val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
-    return AssemblyPrinter().printProgram(program = assemblyProgram)
+    return AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit).toString()
 }
