@@ -1,9 +1,7 @@
-package samlang.util
+package samlang.checker
 
-/**
- * An lazily allocated union find data structure.
- */
-class UnionFind {
+/** An lazily allocated union find data structure */
+internal class UnionFind {
 
     private val parent: MutableMap<Int, Int> = mutableMapOf()
     private val treeSize: MutableMap<Int, Int> = mutableMapOf()

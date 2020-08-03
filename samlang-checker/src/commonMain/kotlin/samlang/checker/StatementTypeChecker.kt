@@ -10,7 +10,6 @@ import samlang.ast.lang.StatementBlock
 import samlang.errors.TupleSizeMismatchError
 import samlang.errors.UnexpectedTypeKindError
 import samlang.errors.UnresolvedNameError
-import samlang.util.Either
 
 internal class StatementTypeChecker(
     private val accessibleGlobalTypingContext: AccessibleGlobalTypingContext,

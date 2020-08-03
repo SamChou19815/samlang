@@ -2,11 +2,11 @@ package samlang.checker
 
 import samlang.ast.common.Type
 import samlang.ast.common.Type.UndecidedType
-import samlang.util.UnionFind
 
 internal class TypeResolution : ReadOnlyTypeResolution {
     /** The union find used to manage the potential complex aliasing relation between different undecided types. */
-    private val indexAliasingUnionFind: UnionFind = UnionFind()
+    private val indexAliasingUnionFind: UnionFind =
+        UnionFind()
     /**
      * A collection of known mappings between the undecided type index and the resolved types.
      * In particular:

@@ -50,7 +50,6 @@ import samlang.errors.InsufficientTypeInferenceContextError
 import samlang.errors.UnexpectedTypeKindError
 import samlang.errors.UnresolvedNameError
 import samlang.errors.UnsupportedClassTypeDefinitionError
-import samlang.util.Either
 
 internal fun typeCheckExpression(
     expression: Expression,

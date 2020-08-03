@@ -14,7 +14,6 @@ import samlang.errors.CompileTimeError
 import samlang.errors.IllegalOtherClassMatch
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnsupportedClassTypeDefinitionError
-import samlang.util.Either
 
 internal object ClassTypeDefinitionResolver {
     fun applyGenericTypeParameters(type: Type, context: Map<String, Type>): Type =

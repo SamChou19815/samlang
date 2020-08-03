@@ -9,7 +9,6 @@ import samlang.checker.GlobalTypingContext.ClassType
 import samlang.errors.CompileTimeError
 import samlang.errors.TypeParamSizeMismatchError
 import samlang.errors.UnresolvedNameError
-import samlang.util.Either
 
 /** Keep track of a set of global symbols that are accessible to a local context. */
 internal data class AccessibleGlobalTypingContext(

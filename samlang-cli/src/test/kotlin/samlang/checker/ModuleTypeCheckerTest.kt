@@ -8,7 +8,6 @@ import samlang.errors.CompilationFailedException
 import samlang.parser.buildModuleFromText
 import samlang.programs.badTestPrograms
 import samlang.programs.wellTypedTestPrograms
-import samlang.util.createOrFail
 
 class ModuleTypeCheckerTest : StringSpec() {
     init {
@@ -32,8 +31,10 @@ class ModuleTypeCheckerTest : StringSpec() {
             )
             parseErrors.forEach { errorCollector.add(compileTimeError = it) }
             val sources = Sources(mapOf(moduleReference to module))
-            val checkedSources = typeCheckSources(sources = sources, errorCollector = errorCollector)
-            createOrFail(item = checkedSources, errors = errorCollector.collectedErrors)
+            typeCheckSources(sources = sources, errorCollector = errorCollector)
+            if (errorCollector.collectedErrors.isNotEmpty()) {
+                throw CompilationFailedException(errors = errorCollector.collectedErrors)
+            }
             emptySet()
         } catch (compilationFailedException: CompilationFailedException) {
             compilationFailedException.errors.map { it.errorMessage }.toSortedSet()

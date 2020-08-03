@@ -3,8 +3,8 @@ package samlang.checker
 import kotlin.test.Test
 import samlang.ast.common.ModuleReference
 import samlang.ast.common.Sources
+import samlang.errors.CompilationFailedException
 import samlang.parser.buildModuleFromText
-import samlang.util.createOrFail
 
 class SourcesCheckerTest {
     @Test
@@ -70,7 +70,9 @@ class SourcesCheckerTest {
             )
         )
         val errorCollector = ErrorCollector()
-        val checkedSources = typeCheckSources(sources = sources, errorCollector = errorCollector)
-        createOrFail(item = checkedSources, errors = errorCollector.collectedErrors)
+        typeCheckSources(sources = sources, errorCollector = errorCollector)
+        if (errorCollector.collectedErrors.isNotEmpty()) {
+            throw CompilationFailedException(errors = errorCollector.collectedErrors)
+        }
     }
 }
