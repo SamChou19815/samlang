@@ -1,8 +1,57 @@
+import { ENCODED_COMPILED_PROGRAM_MAIN } from '../common/name-encoder';
 import { GlobalVariable } from '../common/structs';
-import { AssemblyInstruction } from './asm-instructions';
+import { AssemblyInstruction, assemblyInstructionToString } from './asm-instructions';
 
 export type AssemblyProgram = {
   readonly globalVariables: readonly GlobalVariable[];
-  readonly publicFunctions: readonly string[];
   readonly instructions: readonly AssemblyInstruction[];
 };
+
+export type AssemblyOSTarget = 'linux' | 'macos' | 'windows';
+
+const getSectionMarker = (osTarget: AssemblyOSTarget): string => {
+  switch (osTarget) {
+    case 'linux':
+      return '.section .ctors';
+    case 'macos':
+      return '.mod_init_func';
+    case 'windows':
+      return '.section .ctors,"w"';
+  }
+};
+
+const instructionToString = (instruction: AssemblyInstruction): string => {
+  if (instruction.__type__ === 'AssemblyLabel') {
+    return assemblyInstructionToString(instruction);
+  }
+  if (instruction.__type__ === 'AssemblySetOnFlag') {
+    return assemblyInstructionToString(instruction)
+      .split('\n')
+      .map((it) => `    ${it}`)
+      .join('\n');
+  }
+  return `    ${assemblyInstructionToString(instruction)}`;
+};
+
+const globalVariableToString = ({ name, content }: GlobalVariable): string => `    .data
+    .align 8
+${name}:
+    .quad ${content.length}
+${Array.from(content)
+  .map((it) => `    .quad ${it.charCodeAt(0)} ## ${it}`)
+  .join('\n')}
+    .text`;
+
+export const assemblyProgramToString = (
+  program: AssemblyProgram,
+  osTarget: AssemblyOSTarget
+): string => `    .text
+    .intel_syntax noprefix
+    .p2align 4, 0x90
+    .align 8
+    .globl ${ENCODED_COMPILED_PROGRAM_MAIN}
+${program.instructions.map(instructionToString).join('\n')}
+    ${getSectionMarker(osTarget)}
+    .align 8
+${program.globalVariables.map(globalVariableToString).join('\n')}
+`;
