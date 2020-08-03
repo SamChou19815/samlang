@@ -1,25 +1,9 @@
 plugins {
-    kotlin(module = "multiplatform")
+    kotlin(module = "jvm")
 }
 
-kotlin {
-    jvm {
-        tasks.named<Test>("jvmTest") {
-            useJUnitPlatform()
-        }
-    }
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-common"))
-                implementation(project(":samlang-ast"))
-                implementation(project(":samlang-optimization"))
-            }
-        }
-        val jvmMain by getting {
-            dependencies {
-                implementation(kotlin("stdlib-jdk8"))
-            }
-        }
-    }
+dependencies {
+    implementation(kotlin("stdlib-jdk8"))
+    implementation(project(":samlang-ast"))
+    implementation(project(":samlang-optimization"))
 }
