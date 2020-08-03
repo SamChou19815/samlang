@@ -18,36 +18,13 @@ internal class SetQueue<E> : Collection<E> {
 
     override fun containsAll(elements: Collection<E>): Boolean = set.containsAll(elements)
 
-    fun offer(e: E): Boolean {
-        set += e
-        return true
-    }
-
     fun remove(element: E): Boolean = set.remove(element = element)
-
-    fun remove(): E {
-        val element = set.firstOrNull() ?: throw NoSuchElementException()
-        remove(element)
-        return element
-    }
 
     fun poll(): E? {
         val element = set.firstOrNull() ?: return null
         remove(element)
         return element
     }
-
-    fun element(): E {
-        return set.firstOrNull() ?: throw NoSuchElementException()
-    }
-
-    fun peek(): E? {
-        return set.firstOrNull()
-    }
-
-    fun addAll(elements: Collection<E>): Boolean = set.addAll(elements = elements)
-
-    fun clear(): Unit = set.clear()
 
     override fun iterator(): Iterator<E> = set.iterator()
 }

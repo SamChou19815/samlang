@@ -163,12 +163,7 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
             TileNegForMoveTemp,
             TileOpPowTwo.ForMoveTemp
         )
-        private val moveMemTiles: List<IrStatementTile<MoveMem>> = listOf(
-            TileGenericMoveMem,
-            TileCommutativeOpForMoveMem,
-            TileSubForMoveMem,
-            TileMul3Args.ForMoveMem
-        )
+        private val moveMemTiles: List<IrStatementTile<MoveMem>> = listOf(TileGenericMoveMem, TileMul3Args.ForMoveMem)
 
         override fun visit(node: MoveTemp, context: Unit): StatementTilingResult =
             tile(node, moveTempTiles)
@@ -569,58 +564,6 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
             instructions += COMMENT(comment = "TileMoveSub: $node")
             instructions += argResult.instructions
             instructions += BIN_OP(AssemblyInstruction.AlBinaryOpType.SUB, REG(node.tempId), argResult.arg)
-            return StatementTilingResult(instructions)
-        }
-    }
-
-    private object TileCommutativeOpForMoveMem : IrStatementTile<MoveMem> {
-        override fun getTilingResult(node: MoveMem, dpTiling: DpTiling): StatementTilingResult? {
-            val source = node.source as? MidIrExpression.Op ?: return null
-            val (operator, e1, e2) = source
-            val opType: AssemblyInstruction.AlBinaryOpType
-            opType = when (operator) {
-                IrOperator.ADD -> ADD
-                IrOperator.XOR -> XOR
-                else -> return null // not commutative, die
-            }
-            val destMem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)
-            var argResult: ConstOrRegTilingResult? = null // set if it can be tiled
-            if (e1 == destMem) {
-                argResult = dpTiling.tileConstOrReg(e2)
-            } else if (e2 == destMem) {
-                argResult = dpTiling.tileConstOrReg(e1)
-            }
-            if (argResult == null) { // neither e1 or e2 match dest
-                return null
-            }
-            val instructions = mutableListOf<AssemblyInstruction>()
-            instructions += COMMENT(comment = "TileMoveCommutativeOp: $node")
-            instructions += argResult.instructions
-            val (instructions1, changedMem) = tileMem(destMem, dpTiling)
-            instructions += instructions1
-            instructions += BIN_OP(opType, changedMem, argResult.constOrReg)
-            return StatementTilingResult(instructions)
-        }
-    }
-
-    private object TileSubForMoveMem : IrStatementTile<MoveMem> {
-        override fun getTilingResult(node: MoveMem, dpTiling: DpTiling): StatementTilingResult? {
-            val source = node.source as? MidIrExpression.Op ?: return null
-            val (operator, e1, e2) = source
-            if (operator !== IrOperator.SUB) {
-                return null
-            }
-            val destMem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)
-            if (e1 != destMem) {
-                return null
-            }
-            val argResult = dpTiling.tileConstOrReg(e2)
-            val instructions = mutableListOf<AssemblyInstruction>()
-            instructions += COMMENT(comment = "TileMoveSub: $node")
-            instructions += argResult.instructions
-            val (instructions1, mem) = tileMem(destMem, dpTiling)
-            instructions += instructions1
-            instructions += BIN_OP(AssemblyInstruction.AlBinaryOpType.SUB, mem, argResult.constOrReg)
             return StatementTilingResult(instructions)
         }
     }
