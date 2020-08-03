@@ -7,7 +7,4 @@ import samlang.errors.CompileTimeError
 
 expect fun buildModuleFromText(moduleReference: ModuleReference, text: String): Pair<Module, List<CompileTimeError>>
 
-expect fun buildExpressionFromText(
-    moduleReference: ModuleReference,
-    source: String
-): Pair<Expression?, List<CompileTimeError>>
+expect fun buildExpressionFromText(moduleReference: ModuleReference, source: String): Pair<Expression?, List<CompileTimeError>>
