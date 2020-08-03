@@ -141,7 +141,6 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     const partiallyFixedType = undecideTypeParameters(typeInfo.type, typeInfo.typeParameters)[0];
     const classTypeParameters = relaventClass.typeParameters;
     if (classTypeArguments.length !== classTypeParameters.length) {
-      // TODO: add error.
       return {
         type: 'TypeParameterSizeMismatch',
         expected: classTypeParameters.length,

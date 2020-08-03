@@ -55,8 +55,6 @@ const compilationUnit: MidIRCompilationUnit = {
   ],
 };
 
-// TODO: replace this test with good integration tests once interpreters are ready.
-
 it('optimizeIRCompilationUnit all enabled test', () => {
   expect(midIRCompilationUnitToString(optimizeIRCompilationUnit(compilationUnit))).toBe(`
 function fooBar {
