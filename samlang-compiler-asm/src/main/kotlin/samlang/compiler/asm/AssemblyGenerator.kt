@@ -59,14 +59,14 @@ object AssemblyGenerator {
         val functionName = function.functionName
         val statementsToTile = getStatementsToTile(function)
         instructions.add(LABEL(functionName))
-        val context = FunctionContext()
-        var tiledInstructions: List<AssemblyInstruction> = DpTiling(context, functionName).tile(statementsToTile)
+        val functionAbstractRegisterAllocator = FunctionAbstractRegisterAllocator()
+        var tiledInstructions: List<AssemblyInstruction> = DpTiling(functionAbstractRegisterAllocator, functionName).tile(statementsToTile)
         // simple optimizations
         tiledInstructions = SimpleOptimizations.optimizeAsm(tiledInstructions, removeComments)
         val registerAllocatedInstructions: List<AssemblyInstruction>
         val numberOfTemporariesOnStack: Int
         val allocator = RealRegisterAllocator(
-            functionContext = context,
+            allocator = functionAbstractRegisterAllocator,
             hasReturn = function.hasReturn,
             tiledInstructions = tiledInstructions
         )

@@ -27,14 +27,11 @@ import samlang.ast.mir.MidIrExpressionVisitor
 import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.*
-import samlang.compiler.asm.FunctionContext
+import samlang.compiler.asm.FunctionAbstractRegisterAllocator
 import samlang.compiler.asm.tiling.MemTilingHelper.tileMem
 import kotlin.math.max
 
-/**
- * @param context the tiling context.
- */
-internal class DpTiling(val context: FunctionContext, val functionName: String) {
+internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val functionName: String) {
     /** The statement tiling visitor.  */
     private val statementTilingVisitor = StatementTilingVisitor()
 
@@ -311,12 +308,12 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
         )
 
         override fun visit(node: MidIrExpression.Constant, context: Unit): ExpressionTilingResult {
-            val reg = this@DpTiling.context.nextReg()
+            val reg = this@DpTiling.allocator.nextReg()
             return ExpressionTilingResult(listOf(MOVE(reg, node.value)), reg)
         }
 
         override fun visit(node: MidIrExpression.Name, context: Unit): ExpressionTilingResult {
-            val reg = this@DpTiling.context.nextReg()
+            val reg = this@DpTiling.allocator.nextReg()
             // In general, a name cannot stand on its own.
             // We need this lea trick to associate it with rip
             // For functions and mem[name], we will handle them specially in their tilers!
@@ -334,7 +331,7 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
             val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(node)
             instructions += instructions1
-            val resultReg = this@DpTiling.context.nextReg()
+            val resultReg = this@DpTiling.allocator.nextReg()
             instructions += MOVE(resultReg, mem)
             return ExpressionTilingResult(instructions, resultReg)
         }
@@ -347,7 +344,7 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
     private object TileGenericCommutativeOpReversed : IrExpressionTile<MidIrExpression.Op> {
         override fun getTilingResult(node: MidIrExpression.Op, dpTiling: DpTiling): ExpressionTilingResult? {
             val instructions = mutableListOf<AssemblyInstruction>()
-            val resultReg = dpTiling.context.nextReg()
+            val resultReg = dpTiling.allocator.nextReg()
             val (instructions1, e2Reg) = dpTiling.tile(node.e2)
             val e1Result: RegOrMemTilingResult = when (node.operator) {
                 IrOperator.SUB, IrOperator.DIV, IrOperator.MOD,
@@ -394,7 +391,7 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
     private object TileGenericOp : IrExpressionTile<MidIrExpression.Op> {
         override fun getTilingResult(node: MidIrExpression.Op, dpTiling: DpTiling): ExpressionTilingResult {
             val instructions = mutableListOf<AssemblyInstruction>()
-            val resultReg = dpTiling.context.nextReg()
+            val resultReg = dpTiling.allocator.nextReg()
             val (instructions1, e1Reg) = dpTiling.tile(node.e1)
             val e2Result = when (node.operator) {
                 IrOperator.LT, IrOperator.LE, IrOperator.GT,
@@ -475,7 +472,7 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
             node: MidIrExpression.Op,
             dpTiling: DpTiling
         ): ExpressionTilingResult? {
-            val resultReg = dpTiling.context.nextReg()
+            val resultReg = dpTiling.allocator.nextReg()
             // try to use LEA if we can
             val (instructions1, mem) = MemTilingHelper.tileExprForMem(node, dpTiling) ?: return null
             val instructions = mutableListOf<AssemblyInstruction>()
@@ -528,7 +525,7 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
             if (opType == null) {
                 // mul or hmul case
                 if (arg is AssemblyArgs.Const) {
-                    val tempReg = dpTiling.context.nextReg()
+                    val tempReg = dpTiling.allocator.nextReg()
                     instructions += MOVE(tempReg, arg)
                     instructions += IMUL(changedReg, tempReg)
                 } else {
@@ -612,7 +609,7 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
         object ForOp : IrExpressionTile<MidIrExpression.Op> {
             override fun getTilingResult(node: MidIrExpression.Op, dpTiling: DpTiling): ExpressionTilingResult? {
                 val (tileInstructions, op1, op2) = tryToTile(dpTiling, node) ?: return null
-                val resultReg = dpTiling.context.nextReg()
+                val resultReg = dpTiling.allocator.nextReg()
                 val instructions = mutableListOf<AssemblyInstruction>()
                 instructions += COMMENT(comment = "TileMul3ArgsForOp: $node")
                 instructions += tileInstructions
@@ -635,7 +632,7 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
                     src.matchConstVsRegOrMem<Unit>(
                         constF = { constOrRegSrc -> instructions.add(MOVE(memDest, constOrRegSrc)) },
                         regOrMemF = { memSrc ->
-                            val tempReg = dpTiling.context.nextReg()
+                            val tempReg = dpTiling.allocator.nextReg()
                             instructions.add(MOVE(tempReg, memSrc))
                             instructions.add(MOVE(memDest, tempReg))
                         }
@@ -749,7 +746,7 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
 
         object ForOp : IrExpressionTile<MidIrExpression.Op> {
             override fun getTilingResult(node: MidIrExpression.Op, dpTiling: DpTiling): ExpressionTilingResult? {
-                val resultReg = dpTiling.context.nextReg()
+                val resultReg = dpTiling.allocator.nextReg()
                 val instructions = tileOp(
                     node = node,
                     destExpr = null,

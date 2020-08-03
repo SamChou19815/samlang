@@ -5,7 +5,7 @@ import samlang.ast.asm.AssemblyArgs.Mem
 import samlang.ast.asm.AssemblyArgs.Reg
 import samlang.ast.asm.AssemblyInstruction
 import samlang.ast.asm.AssemblyInstruction.MoveToReg
-import samlang.compiler.asm.FunctionContext
+import samlang.compiler.asm.FunctionAbstractRegisterAllocator
 import samlang.compiler.asm.ralloc.CalleeSavedUtil.addCalleeSavedRegsMoves
 import samlang.compiler.asm.ralloc.CalleeSavedUtil.reorganizeSpilledVarMappings
 import samlang.compiler.asm.ralloc.RegisterAllocationConstants.CALLEE_SAVED_REGS
@@ -21,7 +21,7 @@ import samlang.compiler.asm.ralloc.RegisterCollector.collect
  */
 @ExperimentalStdlibApi
 internal class RealRegisterAllocator(
-    private val functionContext: FunctionContext,
+    private val allocator: FunctionAbstractRegisterAllocator,
     private val hasReturn: Boolean,
     tiledInstructions: List<AssemblyInstruction>
 ) {
@@ -591,7 +591,7 @@ internal class RealRegisterAllocator(
 
     private fun rewriteProgram() {
         val rewriter = SpillingProgramRewriter(
-            functionContext, instructions, spilledVars, spilledVarMappings.size
+            allocator, instructions, spilledVars, spilledVarMappings.size
         )
         instructions = rewriter.getNewInstructions()
         interferenceGraph.clear()

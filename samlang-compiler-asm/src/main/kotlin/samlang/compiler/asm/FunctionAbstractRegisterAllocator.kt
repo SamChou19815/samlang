@@ -3,8 +3,7 @@ package samlang.compiler.asm
 import samlang.ast.asm.AssemblyArgs.REG
 import samlang.ast.asm.AssemblyArgs.Reg
 
-/** The mutable tiling context used to allocate registers and provide background information. */
-internal class FunctionContext {
+internal class FunctionAbstractRegisterAllocator {
     private var nextRegisterId: Int = 0
 
     /** @return the allocated next register. */

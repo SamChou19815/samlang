@@ -22,19 +22,19 @@ import samlang.ast.asm.AssemblyInstruction.Companion.PUSH
 import samlang.ast.asm.AssemblyInstruction.Companion.SHL
 import samlang.ast.asm.AssemblyInstructionVisitor
 import samlang.ast.asm.ConstOrReg
-import samlang.compiler.asm.FunctionContext
+import samlang.compiler.asm.FunctionAbstractRegisterAllocator
 import samlang.ast.asm.RegOrMem
 
 /**
  * The program rewriter after spilling temporaries into stack.
  *
- * @param context the function context to aid program rewriting.
+ * @param allocator the function context to aid program rewriting.
  * @param oldInstructions old instructions to be rewritten.
  * @param spilledVars the spilled vars to put onto the stack.
  * @param numberOfSpilledVarsSoFar number of spilled vars so far, before spilling the new ones.
  */
 internal class SpillingProgramRewriter(
-    private val context: FunctionContext,
+    private val allocator: FunctionAbstractRegisterAllocator,
     oldInstructions: List<AssemblyInstruction>,
     spilledVars: Set<String>,
     numberOfSpilledVarsSoFar: Int
@@ -71,7 +71,7 @@ internal class SpillingProgramRewriter(
     private fun getExpectedRegOrMem(reg: Reg): RegOrMem = spilledVarMappings[reg.id] ?: reg
 
     private fun nextReg(): Reg {
-        val tempReg = context.nextReg()
+        val tempReg = allocator.nextReg()
         newTemps += tempReg.id
         return tempReg
     }
