@@ -59,8 +59,8 @@ object AssemblyGenerator {
         val functionName = function.functionName
         val statementsToTile = getStatementsToTile(function)
         instructions.add(LABEL(functionName))
-        val context = FunctionContext(functionName = functionName)
-        var tiledInstructions: List<AssemblyInstruction> = DpTiling(context).tile(statementsToTile)
+        val context = FunctionContext()
+        var tiledInstructions: List<AssemblyInstruction> = DpTiling(context, functionName).tile(statementsToTile)
         // simple optimizations
         tiledInstructions = SimpleOptimizations.optimizeAsm(tiledInstructions, removeComments)
         val registerAllocatedInstructions: List<AssemblyInstruction>

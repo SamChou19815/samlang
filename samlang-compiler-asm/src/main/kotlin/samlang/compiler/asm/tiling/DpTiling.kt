@@ -1,5 +1,7 @@
 package samlang.compiler.asm.tiling
 
+import samlang.ast.asm.AssemblyArg
+import samlang.ast.asm.AssemblyArgs
 import samlang.ast.asm.AssemblyArgs.CONST
 import samlang.ast.asm.AssemblyArgs.MEM
 import samlang.ast.asm.AssemblyArgs.NAME
@@ -26,13 +28,12 @@ import samlang.ast.mir.MidIrStatement.Jump
 import samlang.ast.mir.MidIrStatement.MoveMem
 import samlang.ast.mir.MidIrStatement.MoveTemp
 import samlang.compiler.asm.tiling.MemTilingHelper.tileMem
-import samlang.compiler.asm.tiling.TileCallingConvention.CallTiler.getTilingResult
-import samlang.compiler.asm.tiling.TileCallingConvention.ReturnTiler.getTilingResult
+import kotlin.math.max
 
 /**
  * @param context the tiling context.
  */
-class DpTiling(val context: FunctionContext) {
+internal class DpTiling(val context: FunctionContext, val functionName: String) {
     /** The statement tiling visitor.  */
     private val statementTilingVisitor = StatementTilingVisitor()
     /** The expression tiling visitor.  */
@@ -53,7 +54,7 @@ class DpTiling(val context: FunctionContext) {
         for (statement in statements) {
             instructions += tile(statement).instructions
         }
-        instructions.add(LABEL(label = "LABEL_FUNCTION_CALL_EPILOGUE_FOR_${context.functionName}"))
+        instructions.add(LABEL(label = "LABEL_FUNCTION_CALL_EPILOGUE_FOR_$functionName"))
         return instructions
     }
 
@@ -172,8 +173,71 @@ class DpTiling(val context: FunctionContext) {
         override fun visit(node: MoveMem, context: Unit): StatementTilingResult =
             tile(node, moveMemTiles)
 
-        override fun visit(node: CallFunction, context: Unit): StatementTilingResult =
-            getTilingResult(node, this@DpTiling)
+        override fun visit(node: CallFunction, context: Unit): StatementTilingResult {
+            val functionExpr = node.functionExpr
+            val instructions = mutableListOf<AssemblyInstruction>()
+            instructions += COMMENT(node)
+            // preparation: we till the function.
+            val irFunctionExpr = node.functionExpr
+            val asmFunctionExpr: AssemblyArg
+            asmFunctionExpr = if (irFunctionExpr is MidIrExpression.Name) {
+                NAME(irFunctionExpr.name)
+            } else {
+                val functionExprTilingResult = tileArg(irFunctionExpr)
+                instructions += functionExprTilingResult.instructions
+                functionExprTilingResult.arg
+            }
+            // preparation: we till all the arguments.
+            val args = mutableListOf<AssemblyArg>()
+            for (irArg in node.arguments) {
+                val tilingResult = tileArg(irArg)
+                instructions += tilingResult.instructions
+                args += tilingResult.arg
+            }
+            // preparation: we prepare slots to put the return values.
+            val resultReg = node.returnCollector?.let { REG(it.id) }
+            // compute the extra space we need.
+            val extraArgUnit = max(a = args.size - 6, b = 0)
+            val totalScratchSpace = extraArgUnit + 0
+            instructions += COMMENT(comment = "We are about to call $functionExpr")
+            // setup scratch space for args and return values, also prepare space for 16b alignment.
+            if (totalScratchSpace > 0) {
+                // we ensure we will eventually push down x units, where x is divisible by 2.
+                val offset = if (totalScratchSpace % 2 == 0) 0 else 1
+                instructions += AssemblyInstruction.BIN_OP(
+                    AssemblyInstruction.AlBinaryOpType.SUB,
+                    AssemblyArgs.RSP,
+                    CONST(value = 8 * offset)
+                )
+            }
+            // setup arguments and setup scratch space for arg passing
+            for (i in args.indices.reversed()) {
+                val arg = args[i]
+                when (i) {
+                    0 -> instructions += MOVE(AssemblyArgs.RDI, arg)
+                    1 -> instructions += MOVE(AssemblyArgs.RSI, arg)
+                    2 -> instructions += MOVE(AssemblyArgs.RDX, arg)
+                    3 -> instructions += MOVE(AssemblyArgs.RCX, arg)
+                    4 -> instructions += MOVE(AssemblyArgs.R8, arg)
+                    5 -> instructions += MOVE(AssemblyArgs.R9, arg)
+                    else -> instructions += AssemblyInstruction.PUSH(arg)
+                }
+            }
+            instructions += AssemblyInstruction.CALL(asmFunctionExpr)
+            // get return values back
+            if (resultReg != null) {
+                instructions += MOVE(resultReg, AssemblyArgs.RAX)
+            }
+            if (totalScratchSpace > 0) { // move the stack up again
+                instructions += AssemblyInstruction.BIN_OP(
+                    AssemblyInstruction.AlBinaryOpType.ADD,
+                    AssemblyArgs.RSP,
+                    CONST(value = 8 * totalScratchSpace)
+                )
+            }
+            instructions += COMMENT(comment = "We finished calling $functionExpr")
+            return StatementTilingResult(instructions)
+        }
 
         override fun visit(node: Jump, context: Unit): StatementTilingResult =
             StatementTilingResult(listOf(JUMP(JumpType.JMP, node.label)))
@@ -215,8 +279,20 @@ class DpTiling(val context: FunctionContext) {
         override fun visit(node: MidIrStatement.Label, context: Unit): StatementTilingResult =
             StatementTilingResult(listOf(LABEL(node.name)))
 
-        override fun visit(node: MidIrStatement.Return, context: Unit): StatementTilingResult =
-            getTilingResult(node = node, dpTiling = this@DpTiling)
+        override fun visit(node: MidIrStatement.Return, context: Unit): StatementTilingResult {
+            val instructions = mutableListOf<AssemblyInstruction>()
+            instructions += COMMENT(node)
+            val returnedExpression = node.returnedExpression
+            // move the stuff into the return position.
+            if (returnedExpression != null) {
+                val (returnedExpressionInstructions, resultReg) = tile(returnedExpression)
+                instructions += returnedExpressionInstructions
+                instructions += MOVE(AssemblyArgs.RAX, resultReg)
+            }
+            // jump to the end of functions body / start of epilogue
+            instructions += JUMP(type = JumpType.JMP, label = "LABEL_FUNCTION_CALL_EPILOGUE_FOR_${functionName}")
+            return StatementTilingResult(instructions)
+        }
     }
 
     private inner class ExpressionTilingVisitor : MidIrExpressionVisitor<Unit, ExpressionTilingResult> {

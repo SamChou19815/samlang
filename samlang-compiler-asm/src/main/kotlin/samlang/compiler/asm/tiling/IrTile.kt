@@ -5,7 +5,7 @@ package samlang.compiler.asm.tiling
  *
  * @param T type of the IR node.
  */
-interface IrTile<T, R : TilingResult> {
+internal interface IrTile<T, R : TilingResult> {
     /**
      * @param node the node to tile.
      * @param dpTiling the dp tiling class.

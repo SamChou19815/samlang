@@ -20,7 +20,7 @@ import samlang.compiler.asm.ralloc.RegisterCollector.collect
  * allocator.
  */
 @ExperimentalStdlibApi
-class RealRegisterAllocator(
+internal class RealRegisterAllocator(
     private val functionContext: FunctionContext,
     private val hasReturn: Boolean,
     tiledInstructions: List<AssemblyInstruction>

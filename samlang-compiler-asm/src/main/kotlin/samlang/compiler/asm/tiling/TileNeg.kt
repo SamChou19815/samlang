@@ -32,12 +32,7 @@ internal object TileNeg {
             val source = node.source as? MidIrExpression.Op ?: return null
             val destIrTemp = TEMP(node.tempId)
             return if (opIsForNeg(source, destIrTemp)) {
-                StatementTilingResult(
-                        listOf(
-                                COMMENT(node),
-                                NEG(REG(node.tempId))
-                        )
-                )
+                StatementTilingResult(listOf(COMMENT(node), NEG(REG(node.tempId))))
             } else null
         }
     }
