@@ -6,7 +6,6 @@ include(
     "samlang-utils",
     "samlang-parser-generated-java",
     "samlang-parser",
-    "samlang-interpreter",
     "samlang-analysis",
     "samlang-optimization",
     "samlang-compiler-asm",
