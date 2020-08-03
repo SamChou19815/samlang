@@ -29,16 +29,25 @@ import samlang.ast.lang.Pattern
 import samlang.ast.lang.Statement
 import samlang.ast.lang.StatementBlock
 import samlang.util.IndentedPrinter
-import samlang.util.PrintDevice
+import samlang.util.StringBuilderPrintDevice
 
-fun prettyPrint(module: Module, device: PrintDevice) {
+fun prettyPrint(module: Module, device: StringBuilderPrintDevice) {
     // use 4-space
     val indentedPrinter = IndentedPrinter(device = device, indentationSymbol = "    ")
     TopLevelPrinter(printer = indentedPrinter).print(module = module)
 }
 
-fun prettyPrint(module: Module): String =
-    printToDevice { device -> prettyPrint(module = module, device = device) }
+fun prettyPrint(module: Module): String {
+    val device = StringBuilderPrintDevice()
+    prettyPrint(module = module, device = device)
+    return device.dump()
+}
+
+private fun <T> typeParametersToString(typeParameters: List<T>): String =
+    typeParameters
+        .takeIf { it.isNotEmpty() }
+        ?.joinToString(separator = ", ", prefix = "<", postfix = ">")
+        ?: ""
 
 private class TopLevelPrinter(private val printer: IndentedPrinter) {
     private val expressionPrinter: ExpressionPrinter = ExpressionPrinter(printer = printer)

@@ -1,6 +1,6 @@
 package samlang.util
 
-class IndentedPrinter(private val device: PrintDevice, private val indentationSymbol: String) {
+class IndentedPrinter(private val device: StringBuilderPrintDevice, private val indentationSymbol: String) {
 
     private var disableIndentation: Boolean = false
     private var currentIndentationLevel: Int = 0

@@ -5,7 +5,6 @@ import samlang.ast.asm.AssemblyInstruction.SetOnFlag
 import samlang.ast.asm.AssemblyProgram
 import samlang.ast.common.GlobalVariable
 import samlang.ast.common.IrNameEncoder
-import samlang.util.StringBuilderPrintDevice
 
 /**
  * The printer utility for assembly instructions.
@@ -15,7 +14,7 @@ import samlang.util.StringBuilderPrintDevice
  */
 @ExperimentalStdlibApi
 class AssemblyPrinter(private val includeComments: Boolean) {
-    private val device: StringBuilderPrintDevice = StringBuilderPrintDevice()
+    private val sb: StringBuilder = StringBuilder()
 
     fun printProgram(program: AssemblyProgram): String {
         printlnInstruction(instructionLine = ".text")
@@ -26,12 +25,12 @@ class AssemblyPrinter(private val includeComments: Boolean) {
         program.instructions.forEach { printInstruction(instruction = it) }
         // global vars init
         program.globalVariables.forEach { printGlobalVariable(globalVariable = it) }
-        return device.dump()
+        return sb.toString()
     }
 
     private fun printInstruction(instruction: AssemblyInstruction) {
         when (instruction) {
-            is AssemblyInstruction.Label -> device.println(instruction)
+            is AssemblyInstruction.Label -> sb.append(instruction).append("\n")
             is SetOnFlag -> instruction.toString().split("\n").forEach { printlnInstruction(it) }
             else -> printlnInstruction(instruction.toString())
         }
@@ -41,7 +40,7 @@ class AssemblyPrinter(private val includeComments: Boolean) {
         val (name, content) = globalVariable
         printlnInstruction(instructionLine = ".data")
         printlnInstruction(instructionLine = ".align 8")
-        device.println("$name:")
+        sb.append(name).append(":\n")
         printlnInstruction(instructionLine = ".quad ${content.length}")
         content.toCharArray().forEach { character ->
             printlnInstruction(instructionLine = ".quad ${character.toLong()} ## $character")
@@ -50,6 +49,6 @@ class AssemblyPrinter(private val includeComments: Boolean) {
     }
 
     private fun printlnInstruction(instructionLine: String) {
-        device.println("    $instructionLine")
+        sb.append("    ").append(instructionLine).append("\n")
     }
 }
