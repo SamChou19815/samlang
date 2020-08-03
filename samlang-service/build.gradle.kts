@@ -12,7 +12,6 @@ dependencies {
     implementation(project(":samlang-optimization"))
     implementation(project(":samlang-compiler-asm"))
     implementation(project(":samlang-compiler-ir"))
-    implementation(project(":samlang-printer"))
 
     testImplementation("org.jetbrains.kotlin:kotlin-test-common")
     testImplementation("org.jetbrains.kotlin:kotlin-test-annotations-common")

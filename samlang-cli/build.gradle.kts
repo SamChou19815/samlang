@@ -14,7 +14,6 @@ dependencies {
     implementation(project(":samlang-optimization"))
     implementation(project(":samlang-compiler-ir"))
     implementation(project(":samlang-compiler-asm"))
-    implementation(project(":samlang-printer"))
     implementation(project(":samlang-service"))
     implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3")
     implementation(dependencyNotation = "com.google.code.gson:gson:2.8.6")

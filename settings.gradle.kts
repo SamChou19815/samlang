@@ -9,7 +9,6 @@ include(
     "samlang-optimization",
     "samlang-compiler-asm",
     "samlang-compiler-ir",
-    "samlang-printer",
     "samlang-service",
     "samlang-cli"
 )
