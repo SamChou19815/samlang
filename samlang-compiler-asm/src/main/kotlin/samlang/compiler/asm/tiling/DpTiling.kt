@@ -8,8 +8,12 @@ import samlang.ast.asm.AssemblyArgs.NAME
 import samlang.ast.asm.AssemblyArgs.REG
 import samlang.ast.asm.AssemblyArgs.RIP
 import samlang.ast.asm.AssemblyInstruction
+import samlang.ast.asm.AssemblyInstruction.AlBinaryOpType.ADD
+import samlang.ast.asm.AssemblyInstruction.AlBinaryOpType.XOR
+import samlang.ast.asm.AssemblyInstruction.Companion.BIN_OP
 import samlang.ast.asm.AssemblyInstruction.Companion.CMP
 import samlang.ast.asm.AssemblyInstruction.Companion.COMMENT
+import samlang.ast.asm.AssemblyInstruction.Companion.IMUL
 import samlang.ast.asm.AssemblyInstruction.Companion.JUMP
 import samlang.ast.asm.AssemblyInstruction.Companion.LABEL
 import samlang.ast.asm.AssemblyInstruction.Companion.LEA
@@ -204,7 +208,7 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
             if (totalScratchSpace > 0) {
                 // we ensure we will eventually push down x units, where x is divisible by 2.
                 val offset = if (totalScratchSpace % 2 == 0) 0 else 1
-                instructions += AssemblyInstruction.BIN_OP(
+                instructions += BIN_OP(
                     AssemblyInstruction.AlBinaryOpType.SUB,
                     AssemblyArgs.RSP,
                     CONST(value = 8 * offset)
@@ -229,8 +233,8 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
                 instructions += MOVE(resultReg, AssemblyArgs.RAX)
             }
             if (totalScratchSpace > 0) { // move the stack up again
-                instructions += AssemblyInstruction.BIN_OP(
-                    AssemblyInstruction.AlBinaryOpType.ADD,
+                instructions += BIN_OP(
+                    ADD,
                     AssemblyArgs.RSP,
                     CONST(value = 8 * totalScratchSpace)
                 )
@@ -314,10 +318,7 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
             // In general, a name cannot stand on its own.
             // We need this lea trick to associate it with rip
             // For functions and mem[name], we will handle them specially in their tilers!
-            return ExpressionTilingResult(
-                instructions = listOf(LEA(reg, MEM(RIP, NAME(node.name)))),
-                reg = reg
-            )
+            return ExpressionTilingResult(instructions = listOf(LEA(reg, MEM(RIP, NAME(node.name)))), reg = reg)
         }
 
         override fun visit(node: Temporary, context: Unit): ExpressionTilingResult =
@@ -333,6 +334,167 @@ internal class DpTiling(val context: FunctionContext, val functionName: String) 
             instructions += instructions1
             val resultReg = this@DpTiling.context.nextReg()
             instructions += MOVE(resultReg, mem)
+            return ExpressionTilingResult(instructions, resultReg)
+        }
+    }
+
+    /**
+     * A generic tiling of commutative op expression, but in reverse order.
+     * It's a complement for TileGenericOp
+     */
+    private object TileGenericCommutativeOpReversed : IrExpressionTile<MidIrExpression.Op> {
+        override fun getTilingResult(node: MidIrExpression.Op, dpTiling: DpTiling): ExpressionTilingResult? {
+            val instructions = mutableListOf<AssemblyInstruction>()
+            val resultReg = dpTiling.context.nextReg()
+            val (instructions1, e2Reg) = dpTiling.tile(node.e2)
+            val e1Result: RegOrMemTilingResult = when (node.operator) {
+                IrOperator.SUB, IrOperator.DIV, IrOperator.MOD,
+                IrOperator.LT, IrOperator.LE, IrOperator.GT,
+                IrOperator.GE, IrOperator.EQ, IrOperator.NE -> return null
+                else -> dpTiling.tileRegOrMem(node.e1)
+            }
+            instructions += COMMENT(comment = "TileGenericOp: $node")
+            instructions += e1Result.instructions
+            instructions += instructions1
+            val e1RegOrMem = e1Result.regOrMem
+            when (node.operator) {
+                IrOperator.ADD -> {
+                    instructions += MOVE(resultReg, e2Reg)
+                    instructions += BIN_OP(ADD, resultReg, e1RegOrMem)
+                }
+                IrOperator.MUL -> {
+                    instructions += MOVE(resultReg, e2Reg)
+                    instructions += IMUL(resultReg, e1RegOrMem)
+                }
+                IrOperator.XOR -> {
+                    instructions += MOVE(resultReg, e2Reg)
+                    instructions += BIN_OP(XOR, resultReg, e1RegOrMem)
+                }
+                else -> throw Error()
+            }
+            return ExpressionTilingResult(instructions, resultReg)
+        }
+    }
+
+    private object TileGenericMoveMem : IrStatementTile<MoveMem> {
+        override fun getTilingResult(node: MoveMem, dpTiling: DpTiling): StatementTilingResult {
+            val irMem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)
+            val (memLocInstructions, memLoc) = tileMem(irMem, dpTiling)
+            val instructions = mutableListOf<AssemblyInstruction>()
+            // first add mem loc instructions
+            instructions += COMMENT(comment = "GenericMoveMem: $node")
+            instructions += memLocInstructions
+            val srcTilingResult = dpTiling.tileConstOrReg(node.source)
+            instructions += srcTilingResult.instructions
+            instructions += MOVE(memLoc, srcTilingResult.constOrReg)
+            return StatementTilingResult(instructions)
+        }
+    }
+
+    private object TileGenericMoveTemp : IrStatementTile<MoveTemp> {
+        override fun getTilingResult(node: MoveTemp, dpTiling: DpTiling): StatementTilingResult {
+            val irSource = node.source
+            val resultReg = REG(node.tempId)
+            val srcTilingResult = dpTiling.tileArg(irSource)
+            val instructions = mutableListOf<AssemblyInstruction>()
+            instructions += COMMENT(comment = "GenericMoveTemp: $node")
+            instructions += srcTilingResult.instructions
+            instructions += MOVE(resultReg, srcTilingResult.arg)
+            return StatementTilingResult(instructions)
+        }
+    }
+
+    private object TileGenericOp : IrExpressionTile<MidIrExpression.Op> {
+        override fun getTilingResult(node: MidIrExpression.Op, dpTiling: DpTiling): ExpressionTilingResult {
+            val instructions = mutableListOf<AssemblyInstruction>()
+            val resultReg = dpTiling.context.nextReg()
+            val (instructions1, e1Reg) = dpTiling.tile(node.e1)
+            val e2Result = when (node.operator) {
+                IrOperator.LT, IrOperator.LE, IrOperator.GT,
+                IrOperator.GE, IrOperator.EQ, IrOperator.NE -> dpTiling.tile(node.e2)
+                else -> dpTiling.tileRegOrMem(node.e2)
+            }
+            instructions += COMMENT("TileGenericOp: $node")
+            instructions.addAll(instructions1)
+            instructions.addAll(e2Result.instructions)
+            val e2RegOrMem = e2Result.regOrMem
+            when (node.operator) {
+                IrOperator.ADD -> {
+                    instructions += MOVE(resultReg, e1Reg)
+                    instructions += BIN_OP(AssemblyInstruction.AlBinaryOpType.ADD, resultReg, e2RegOrMem)
+                }
+                IrOperator.SUB -> {
+                    instructions += MOVE(resultReg, e1Reg)
+                    instructions += BIN_OP(AssemblyInstruction.AlBinaryOpType.SUB, resultReg, e2RegOrMem)
+                }
+                IrOperator.MUL -> {
+                    instructions += MOVE(resultReg, e1Reg)
+                    instructions += IMUL(resultReg, e2RegOrMem)
+                }
+                IrOperator.DIV -> {
+                    instructions += MOVE(AssemblyArgs.RAX, e1Reg)
+                    instructions += AssemblyInstruction.CQO()
+                    instructions += AssemblyInstruction.IDIV(e2RegOrMem)
+                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                }
+                IrOperator.MOD -> {
+                    instructions += MOVE(AssemblyArgs.RAX, e1Reg)
+                    instructions += AssemblyInstruction.CQO()
+                    instructions += AssemblyInstruction.IDIV(e2RegOrMem)
+                    instructions += MOVE(resultReg, AssemblyArgs.RDX)
+                }
+                IrOperator.LT -> {
+                    instructions += CMP(e1Reg, e2RegOrMem as AssemblyArgs.Reg)
+                    instructions += AssemblyInstruction.SET(JumpType.JL, AssemblyArgs.RAX)
+                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                }
+                IrOperator.LE -> {
+                    instructions += CMP(e1Reg, e2RegOrMem as AssemblyArgs.Reg)
+                    instructions += AssemblyInstruction.SET(JumpType.JLE, AssemblyArgs.RAX)
+                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                }
+                IrOperator.GT -> {
+                    instructions += CMP(e1Reg, e2RegOrMem as AssemblyArgs.Reg)
+                    instructions += AssemblyInstruction.SET(JumpType.JG, AssemblyArgs.RAX)
+                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                }
+                IrOperator.GE -> {
+                    instructions += CMP(e1Reg, e2RegOrMem as AssemblyArgs.Reg)
+                    instructions += AssemblyInstruction.SET(JumpType.JGE, AssemblyArgs.RAX)
+                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                }
+                IrOperator.EQ -> {
+                    instructions += CMP(e1Reg, e2RegOrMem as AssemblyArgs.Reg)
+                    instructions += AssemblyInstruction.SET(JumpType.JE, AssemblyArgs.RAX)
+                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                }
+                IrOperator.NE -> {
+                    instructions += CMP(e1Reg, e2RegOrMem as AssemblyArgs.Reg)
+                    instructions += AssemblyInstruction.SET(JumpType.JNE, AssemblyArgs.RAX)
+                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                }
+                IrOperator.XOR -> {
+                    instructions += MOVE(resultReg, e1Reg)
+                    instructions += BIN_OP(AssemblyInstruction.AlBinaryOpType.XOR, resultReg, e2RegOrMem)
+                }
+            }
+            return ExpressionTilingResult(instructions, resultReg)
+        }
+    }
+
+    /** A tiling for op that tried to use LEA. */
+    private object TileOpByLEA : IrExpressionTile<MidIrExpression.Op> {
+        override fun getTilingResult(
+            node: MidIrExpression.Op,
+            dpTiling: DpTiling
+        ): ExpressionTilingResult? {
+            val resultReg = dpTiling.context.nextReg()
+            // try to use LEA if we can
+            val (instructions1, mem) = MemTilingHelper.tileExprForMem(node, dpTiling) ?: return null
+            val instructions = mutableListOf<AssemblyInstruction>()
+            instructions += COMMENT(comment = node)
+            instructions += instructions1
+            instructions += LEA(dest = resultReg, src = mem)
             return ExpressionTilingResult(instructions, resultReg)
         }
     }

@@ -1,10 +1,9 @@
 package samlang.compiler.asm.tiling
 
-/**
- * A tiling for an IR Node.
- *
- * @param T type of the IR node.
- */
+import samlang.ast.mir.MidIrExpression
+import samlang.ast.mir.MidIrStatement
+
+/** @param T type of the IR node. */
 internal interface IrTile<T, R : TilingResult> {
     /**
      * @param node the node to tile.
@@ -13,3 +12,9 @@ internal interface IrTile<T, R : TilingResult> {
      */
     fun getTilingResult(node: T, dpTiling: DpTiling): R?
 }
+
+/** A tile for IR statements. */
+internal interface IrStatementTile<T : MidIrStatement> : IrTile<T, StatementTilingResult>
+
+/** A tile for IR expressions. */
+internal interface IrExpressionTile<T : MidIrExpression> : IrTile<T, ExpressionTilingResult>
