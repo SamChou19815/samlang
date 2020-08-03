@@ -19,9 +19,8 @@ kotlin {
                 implementation(project(":samlang-parser"))
                 implementation(project(":samlang-analysis"))
                 implementation(project(":samlang-optimization"))
-                implementation(project(":samlang-compiler-hir"))
-                implementation(project(":samlang-compiler-mir"))
                 implementation(project(":samlang-compiler-asm"))
+                implementation(project(":samlang-compiler-ir"))
                 implementation(project(":samlang-printer"))
             }
         }

@@ -9,9 +9,8 @@ include(
     "samlang-interpreter",
     "samlang-analysis",
     "samlang-optimization",
-    "samlang-compiler-hir",
-    "samlang-compiler-mir",
     "samlang-compiler-asm",
+    "samlang-compiler-ir",
     "samlang-printer",
     "samlang-service",
     "samlang-cli"
