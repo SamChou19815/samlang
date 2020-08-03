@@ -10,11 +10,9 @@ import samlang.compiler.asm.AssemblyGenerator
 import samlang.compiler.hir.compileSources
 import samlang.compiler.mir.MidIrGenerator
 import samlang.errors.CompileTimeError
-import samlang.optimization.IrCompilationUnitOptimizer
 import samlang.optimization.Optimizer
 import samlang.parser.buildModuleFromText
 import samlang.printer.AssemblyPrinter
-import samlang.printer.OsTarget
 
 fun checkSources(sourceHandles: List<Pair<ModuleReference, String>>): Pair<Sources<Module>, List<CompileTimeError>> {
     val errorCollector = ErrorCollector()
@@ -35,7 +33,6 @@ fun checkSources(sourceHandles: List<Pair<ModuleReference, String>>): Pair<Sourc
 fun lowerToAssemblyString(
     source: Sources<Module>,
     entryModuleReference: ModuleReference,
-    osTarget: OsTarget,
     optimizer: Optimizer<MidIrCompilationUnit>
 ): String {
     val highIrSources = compileSources(sources = source)
@@ -45,12 +42,5 @@ fun lowerToAssemblyString(
     )
     val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
     val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
-    return AssemblyPrinter(includeComments = false, osTarget = osTarget).printProgram(program = assemblyProgram)
+    return AssemblyPrinter(includeComments = false).printProgram(program = assemblyProgram)
 }
-
-@ExperimentalStdlibApi
-fun lowerToOptimizedAssemblyString(
-    source: Sources<Module>,
-    entryModuleReference: ModuleReference,
-    osTarget: OsTarget
-): String = lowerToAssemblyString(source, entryModuleReference, osTarget, IrCompilationUnitOptimizer.allEnabled)

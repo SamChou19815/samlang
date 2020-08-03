@@ -13,10 +13,7 @@ import samlang.compiler.mir.MidIrGenerator
 import samlang.optimization.IrCompilationUnitOptimizer
 import samlang.optimization.Optimizer
 import samlang.printer.AssemblyPrinter
-import samlang.printer.OsTarget
 import samlang.service.lowerToAssemblyString
-
-private val osTarget: OsTarget = OsTarget.getOsFromString(osNameString = System.getProperty("os.name"))
 
 fun collectSources(configuration: Configuration): List<Pair<ModuleReference, String>> {
     val sourcePath = Paths.get(configuration.sourceDirectory).toAbsolutePath()
@@ -47,7 +44,6 @@ fun compileToX86Assembly(
     val printedAssemblyProgram = lowerToAssemblyString(
         source = source,
         entryModuleReference = entryModuleReference,
-        osTarget = osTarget,
         optimizer = optimizer
     )
     outputDirectory.mkdirs()
@@ -68,7 +64,7 @@ fun compileToX86Executable(
     for ((moduleReference, unoptimizedCompilationUnit) in unoptimizedCompilationUnits.moduleMappings) {
         val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
         val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
-        val printedAssemblyProgram = AssemblyPrinter(includeComments = false, osTarget = osTarget)
+        val printedAssemblyProgram = AssemblyPrinter(includeComments = false)
             .printProgram(program = assemblyProgram)
         val outputAssemblyFile = Paths.get(outputDirectory.toString(), "$moduleReference.s").toFile()
         outputAssemblyFile.parentFile.mkdirs()

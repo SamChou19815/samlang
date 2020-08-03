@@ -14,7 +14,7 @@ import samlang.util.StringBuilderPrintDevice
  * @param includeComments whether to include comments.
  */
 @ExperimentalStdlibApi
-class AssemblyPrinter(private val includeComments: Boolean, private val osTarget: OsTarget) {
+class AssemblyPrinter(private val includeComments: Boolean) {
     private val device: StringBuilderPrintDevice = StringBuilderPrintDevice()
 
     fun printProgram(program: AssemblyProgram): String {
@@ -24,12 +24,6 @@ class AssemblyPrinter(private val includeComments: Boolean, private val osTarget
         printlnInstruction(instructionLine = ".align 8")
         printlnInstruction(instructionLine = ".globl ${IrNameEncoder.compiledProgramMain}")
         program.instructions.forEach { printInstruction(instruction = it) }
-        when (osTarget) {
-            OsTarget.LINUX -> printlnInstruction(instructionLine = ".section .ctors")
-            OsTarget.MAC_OS -> printlnInstruction(instructionLine = ".mod_init_func")
-            OsTarget.WINDOWS -> printlnInstruction(instructionLine = ".section .ctors,\"w\"")
-        }
-        printlnInstruction(instructionLine = ".align 8")
         // global vars init
         program.globalVariables.forEach { printGlobalVariable(globalVariable = it) }
         return device.dump()

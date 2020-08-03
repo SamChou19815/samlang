@@ -7,19 +7,6 @@ export type AssemblyProgram = {
   readonly instructions: readonly AssemblyInstruction[];
 };
 
-export type AssemblyOSTarget = 'linux' | 'macos' | 'windows';
-
-const getSectionMarker = (osTarget: AssemblyOSTarget): string => {
-  switch (osTarget) {
-    case 'linux':
-      return '.section .ctors';
-    case 'macos':
-      return '.mod_init_func';
-    case 'windows':
-      return '.section .ctors,"w"';
-  }
-};
-
 const instructionToString = (instruction: AssemblyInstruction): string => {
   if (instruction.__type__ === 'AssemblyLabel') {
     return assemblyInstructionToString(instruction);
@@ -42,16 +29,11 @@ ${Array.from(content)
   .join('\n')}
     .text`;
 
-export const assemblyProgramToString = (
-  program: AssemblyProgram,
-  osTarget: AssemblyOSTarget
-): string => `    .text
+export const assemblyProgramToString = (program: AssemblyProgram): string => `    .text
     .intel_syntax noprefix
     .p2align 4, 0x90
     .align 8
     .globl ${ENCODED_COMPILED_PROGRAM_MAIN}
 ${program.instructions.map(instructionToString).join('\n')}
-    ${getSectionMarker(osTarget)}
-    .align 8
 ${program.globalVariables.map(globalVariableToString).join('\n')}
 `;
