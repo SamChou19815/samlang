@@ -337,6 +337,22 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
         }
     }
 
+    /** @param T type of the IR node. */
+    private interface IrTile<T, R : TilingResult> {
+        /**
+         * @param node the node to tile.
+         * @param dpTiling the dp tiling class.
+         * @return the tiling result, or null if it is impossible to tile this node with this tile.
+         */
+        fun getTilingResult(node: T, dpTiling: DpTiling): R?
+    }
+
+    /** A tile for IR statements. */
+    private interface IrStatementTile<T : MidIrStatement> : IrTile<T, StatementTilingResult>
+
+    /** A tile for IR expressions. */
+    private interface IrExpressionTile<T : MidIrExpression> : IrTile<T, ExpressionTilingResult>
+
     /**
      * A generic tiling of commutative op expression, but in reverse order.
      * It's a complement for TileGenericOp
