@@ -44,15 +44,9 @@ internal object MemTilingHelper {
      * @return the constant for mem add-and-multiply.
      */
     private fun getMulConst(expression: MidIrExpression): MultipliedConstant? {
-        if (expression !is Constant) {
-            return null
-        }
-        val value = if (expression.value > Int.MAX_VALUE || expression.value < Int.MIN_VALUE) {
-            return null
-        } else {
-            expression.value.toInt()
-        }
-        return when (value) {
+        if (expression !is Constant) return null
+        if (expression.value > Int.MAX_VALUE || expression.value < Int.MIN_VALUE) return null
+        return when (expression.value.toInt()) {
             1 -> MultipliedConstant.ONE
             2 -> MultipliedConstant.TWO
             4 -> MultipliedConstant.FOUR
@@ -69,8 +63,8 @@ internal object MemTilingHelper {
     private fun getMultipleOf(expression: MidIrExpression, dpTiling: DpTiling): Result<MultipleOf>? {
         if (expression is Temporary) {
             return Result(
-                    item = MultipleOf(REG(expression.id), MultipliedConstant.ONE),
-                    instructions = listOf(COMMENT(comment = "multipleOf: $expression"))
+                item = MultipleOf(REG(expression.id), MultipliedConstant.ONE),
+                instructions = listOf(COMMENT(comment = "multipleOf: $expression"))
             )
         }
         if (expression !is Op) {
@@ -80,11 +74,8 @@ internal object MemTilingHelper {
         // first let's deal with an unconventional case: x = e1 = e2, op = + ==> x * 2
         if (operator === IrOperator.ADD && e1 is Temporary && e2 is Temporary && e1.id == e2.id) {
             return Result(
-                    item = MultipleOf(
-                            baseReg = REG(e1.id),
-                            multipliedConstant = MultipliedConstant.TWO
-                    ),
-                    instructions = listOf(COMMENT(comment = "multipleOf: $expression"))
+                item = MultipleOf(baseReg = REG(e1.id), multipliedConstant = MultipliedConstant.TWO),
+                instructions = listOf(COMMENT(comment = "multipleOf: $expression"))
             )
         }
         // from this point, op must be mul!
@@ -93,19 +84,10 @@ internal object MemTilingHelper {
         }
         val instructions = mutableListOf<AssemblyInstruction>()
         instructions += COMMENT(comment = "multipleOf: $expression")
-        val e2Const = getMulConst(e2)
-        if (e2Const != null) {
-            val (instructions1, reg) = dpTiling.tile(e1)
-            instructions += instructions1
-            return Result(MultipleOf(baseReg = reg, multipliedConstant = e2Const), instructions)
-        }
-        val e1Const = getMulConst(e1)
-        if (e1Const != null) {
-            val (instructions1, reg) = dpTiling.tile(e2)
-            instructions += instructions1
-            return Result(item = MultipleOf(reg, e1Const), instructions = instructions)
-        }
-        return null
+        val e2Const = getMulConst(e2) ?: return null
+        val (instructions1, reg) = dpTiling.tile(e1)
+        instructions += instructions1
+        return Result(MultipleOf(baseReg = reg, multipliedConstant = e2Const), instructions)
     }
 
     private fun getRegWithDisplacement(op: Op, dpTiling: DpTiling): MemTilingResult? {
@@ -116,18 +98,7 @@ internal object MemTilingHelper {
                 val e2ConstOpt = getConstOpt(e2)
                 if (e2ConstOpt != null) {
                     val (instructions, reg) = dpTiling.tile(e1)
-                    return MemTilingResult(
-                            instructions = instructions,
-                            mem = MEM(reg, CONST(e2ConstOpt))
-                    )
-                }
-                val e1ConstOpt = getConstOpt(e1)
-                if (e1ConstOpt != null) {
-                    val (instructions, reg) = dpTiling.tile(e2)
-                    return MemTilingResult(
-                            instructions = instructions,
-                            mem = MEM(reg, CONST(e1ConstOpt))
-                    )
+                    return MemTilingResult(instructions = instructions, mem = MEM(reg, CONST(e2ConstOpt)))
                 }
                 null
             }
@@ -139,10 +110,7 @@ internal object MemTilingHelper {
                 } else {
                     val lowerBits = e2LongValue.toInt()
                     val (instructions, reg) = dpTiling.tile(e1)
-                    MemTilingResult(
-                            instructions,
-                            MEM(reg, CONST(lowerBits))
-                    )
+                    MemTilingResult(instructions, MEM(reg, CONST(lowerBits)))
                 }
             } else {
                 null
@@ -244,13 +212,6 @@ internal object MemTilingHelper {
         if (!isAdd) {
             return null
         }
-        val e1ConstOpt = getConstOpt(e1)
-        if (e1ConstOpt != null && e2 is Op) {
-            val (instructions, mem) = getRegWithMultipleOf(e2, dpTiling) ?: return null
-            val (baseReg, multipleOf) = mem
-            val newMem = AssemblyArgs.Mem(baseReg, multipleOf, CONST(e1ConstOpt))
-            return MemTilingResult(instructions, newMem)
-        }
         // case 2: one side is multiple of
         var potentialOpWithMultipleOf: Op? = null
         var potentialMultipleOf = getMultipleOf(e1, dpTiling)
@@ -299,11 +260,7 @@ internal object MemTilingHelper {
             val (instructions1, reg) = dpTiling.tile(potentialReg)
             instructions += instructions1
             val (_, multipleOf, displacement) = potentialMultipleOfWithDist!!.mem
-            val newMem = AssemblyArgs.Mem(
-                    baseReg = reg,
-                    multipleOf = multipleOf,
-                    displacement = displacement
-            )
+            val newMem = AssemblyArgs.Mem(baseReg = reg, multipleOf = multipleOf, displacement = displacement)
             return MemTilingResult(instructions, newMem)
         }
         return null
@@ -344,27 +301,16 @@ internal object MemTilingHelper {
         override fun visit(node: Constant, context: DpTiling): MemTilingResult? {
             // good case 1: only displacement
             val intValue = node.intValue ?: return null
-            return MemTilingResult(
-                    listOf(COMMENT(comment = "const: $node")),
-                    MEM(CONST(intValue))
-            )
+            return MemTilingResult(listOf(COMMENT(comment = "const: $node")), MEM(CONST(intValue)))
         }
 
         override fun visit(node: Name, context: DpTiling): MemTilingResult =
-                // special case: force name with rip
-                MemTilingResult(
-                        listOf(COMMENT(comment = "force named address with rip: $node")),
-                        MEM(RIP, NAME(node.name))
-                )
+            // special case: force name with rip
+            MemTilingResult(listOf(COMMENT(comment = "force named address with rip: $node")), MEM(RIP, NAME(node.name)))
 
-        override fun visit(node: Temporary, context: DpTiling): MemTilingResult {
+        override fun visit(node: Temporary, context: DpTiling): MemTilingResult =
             // good case 2: only base reg
-            val tempId = node.id
-            return MemTilingResult(
-                    listOf(COMMENT(comment = "only base reg: $node")),
-                    MEM(REG(tempId))
-            )
-        }
+            MemTilingResult(listOf(COMMENT(comment = "only base reg: $node")), MEM(REG(node.id)))
 
         override fun visit(node: Op, context: DpTiling): MemTilingResult? {
             // good case 3: all three components!
