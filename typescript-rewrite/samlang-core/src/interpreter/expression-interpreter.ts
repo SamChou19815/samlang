@@ -7,6 +7,8 @@ import { Value, ObjectValue, FunctionValue, VariantValue, TupleValue } from './v
 export default class ExpressionInterpreter {
   private printedCollector = '';
 
+  printed = (): string => this.printedCollector;
+
   private blameTypeChecker = (message = ''): never => {
     throw Error(message);
   };
