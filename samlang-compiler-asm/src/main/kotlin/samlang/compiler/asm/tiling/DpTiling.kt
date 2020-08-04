@@ -5,11 +5,18 @@ import samlang.ast.asm.AssemblyArgs
 import samlang.ast.asm.AssemblyArgs.CONST
 import samlang.ast.asm.AssemblyArgs.MEM
 import samlang.ast.asm.AssemblyArgs.NAME
+import samlang.ast.asm.AssemblyArgs.R8
+import samlang.ast.asm.AssemblyArgs.R9
+import samlang.ast.asm.AssemblyArgs.RAX
+import samlang.ast.asm.AssemblyArgs.RCX
+import samlang.ast.asm.AssemblyArgs.RDI
+import samlang.ast.asm.AssemblyArgs.RDX
 import samlang.ast.asm.AssemblyArgs.REG
 import samlang.ast.asm.AssemblyArgs.RIP
+import samlang.ast.asm.AssemblyArgs.RSI
+import samlang.ast.asm.AssemblyArgs.RSP
 import samlang.ast.asm.AssemblyInstruction
-import samlang.ast.asm.AssemblyInstruction.AlBinaryOpType.ADD
-import samlang.ast.asm.AssemblyInstruction.AlBinaryOpType.XOR
+import samlang.ast.asm.AssemblyInstruction.AlBinaryOpType.*
 import samlang.ast.asm.AssemblyInstruction.Companion.BIN_OP
 import samlang.ast.asm.AssemblyInstruction.Companion.CMP
 import samlang.ast.asm.AssemblyInstruction.Companion.COMMENT
@@ -122,11 +129,11 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
      * @param R the type of tiling result.
      * @return the best possible tiling result.
      */
-    private fun <N, R : TilingResult?, T : IrTile<N, R>?> tile(node: N, tiles: List<T>): R {
+    private fun <N, R : TilingResult?, T : IrTile<N, R>> tile(node: N, tiles: List<T>): R {
         var best: R? = null
         var bestCost = Int.MAX_VALUE
         for (tile in tiles) {
-            val result = tile!!.getTilingResult(node, this)
+            val result = tile.getTilingResult(node, this)
             if (result != null) {
                 val cost = result.cost
                 if (cost < bestCost) {
@@ -135,10 +142,7 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
                 }
             }
         }
-        if (best == null) {
-            throw Error("We do not cover every possible case of tiling! BAD!")
-        }
-        return best
+        return best ?: throw Error("We do not cover every possible case of tiling! BAD!")
     }
 
     /*
@@ -160,8 +164,7 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
             TileOpPowTwo.ForMoveTemp
         )
 
-        override fun visit(node: MoveTemp, context: Unit): StatementTilingResult =
-            tile(node, moveTempTiles)
+        override fun visit(node: MoveTemp, context: Unit): StatementTilingResult = tile(node, moveTempTiles)
 
         override fun visit(node: MoveMem, context: Unit): StatementTilingResult {
             val irMem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)
@@ -207,36 +210,29 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
             if (totalScratchSpace > 0) {
                 // we ensure we will eventually push down x units, where x is divisible by 2.
                 val offset = if (totalScratchSpace % 2 == 0) 0 else 1
-                instructions += BIN_OP(
-                    AssemblyInstruction.AlBinaryOpType.SUB,
-                    AssemblyArgs.RSP,
-                    CONST(value = 8 * offset)
-                )
+                instructions += BIN_OP(SUB, RSP, CONST(value = 8 * offset))
             }
             // setup arguments and setup scratch space for arg passing
             for (i in args.indices.reversed()) {
                 val arg = args[i]
                 when (i) {
-                    0 -> instructions += MOVE(AssemblyArgs.RDI, arg)
-                    1 -> instructions += MOVE(AssemblyArgs.RSI, arg)
-                    2 -> instructions += MOVE(AssemblyArgs.RDX, arg)
-                    3 -> instructions += MOVE(AssemblyArgs.RCX, arg)
-                    4 -> instructions += MOVE(AssemblyArgs.R8, arg)
-                    5 -> instructions += MOVE(AssemblyArgs.R9, arg)
+                    0 -> instructions += MOVE(RDI, arg)
+                    1 -> instructions += MOVE(RSI, arg)
+                    2 -> instructions += MOVE(RDX, arg)
+                    3 -> instructions += MOVE(RCX, arg)
+                    4 -> instructions += MOVE(R8, arg)
+                    5 -> instructions += MOVE(R9, arg)
                     else -> instructions += AssemblyInstruction.PUSH(arg)
                 }
             }
             instructions += AssemblyInstruction.CALL(asmFunctionExpr)
             // get return values back
             if (resultReg != null) {
-                instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                instructions += MOVE(resultReg, RAX)
             }
-            if (totalScratchSpace > 0) { // move the stack up again
-                instructions += BIN_OP(
-                    ADD,
-                    AssemblyArgs.RSP,
-                    CONST(value = 8 * totalScratchSpace)
-                )
+            if (totalScratchSpace > 0) {
+                // move the stack up again
+                instructions += BIN_OP(ADD, RSP, CONST(value = 8 * totalScratchSpace))
             }
             instructions += COMMENT(comment = "We finished calling $functionExpr")
             return StatementTilingResult(instructions)
@@ -290,7 +286,7 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
             if (returnedExpression != null) {
                 val (returnedExpressionInstructions, resultReg) = tile(returnedExpression)
                 instructions += returnedExpressionInstructions
-                instructions += MOVE(AssemblyArgs.RAX, resultReg)
+                instructions += MOVE(RAX, resultReg)
             }
             // jump to the end of functions body / start of epilogue
             instructions += JUMP(type = JumpType.JMP, label = "LABEL_FUNCTION_CALL_EPILOGUE_FOR_${functionName}")
@@ -323,8 +319,7 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
         override fun visit(node: Temporary, context: Unit): ExpressionTilingResult =
             ExpressionTilingResult(emptyList(), REG(node.id))
 
-        override fun visit(node: MidIrExpression.Op, context: Unit): ExpressionTilingResult =
-            tile(node, opTiles)
+        override fun visit(node: MidIrExpression.Op, context: Unit): ExpressionTilingResult = tile(node, opTiles)
 
         override fun visit(node: MidIrExpression.Mem, context: Unit): ExpressionTilingResult {
             val (instructions1, mem) = tileMem(mem = node, dpTiling = this@DpTiling)
@@ -425,53 +420,53 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
                 }
                 IrOperator.SUB -> {
                     instructions += MOVE(resultReg, e1Reg)
-                    instructions += BIN_OP(AssemblyInstruction.AlBinaryOpType.SUB, resultReg, e2RegOrMem)
+                    instructions += BIN_OP(SUB, resultReg, e2RegOrMem)
                 }
                 IrOperator.MUL -> {
                     instructions += MOVE(resultReg, e1Reg)
                     instructions += IMUL(resultReg, e2RegOrMem)
                 }
                 IrOperator.DIV -> {
-                    instructions += MOVE(AssemblyArgs.RAX, e1Reg)
+                    instructions += MOVE(RAX, e1Reg)
                     instructions += AssemblyInstruction.CQO()
                     instructions += AssemblyInstruction.IDIV(e2RegOrMem)
-                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                    instructions += MOVE(resultReg, RAX)
                 }
                 IrOperator.MOD -> {
-                    instructions += MOVE(AssemblyArgs.RAX, e1Reg)
+                    instructions += MOVE(RAX, e1Reg)
                     instructions += AssemblyInstruction.CQO()
                     instructions += AssemblyInstruction.IDIV(e2RegOrMem)
-                    instructions += MOVE(resultReg, AssemblyArgs.RDX)
+                    instructions += MOVE(resultReg, RDX)
                 }
                 IrOperator.LT -> {
                     instructions += CMP(e1Reg, e2RegOrMem as AssemblyArgs.Reg)
-                    instructions += AssemblyInstruction.SET(JumpType.JL, AssemblyArgs.RAX)
-                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                    instructions += AssemblyInstruction.SET(JumpType.JL, RAX)
+                    instructions += MOVE(resultReg, RAX)
                 }
                 IrOperator.LE -> {
                     instructions += CMP(e1Reg, e2RegOrMem as AssemblyArgs.Reg)
-                    instructions += AssemblyInstruction.SET(JumpType.JLE, AssemblyArgs.RAX)
-                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                    instructions += AssemblyInstruction.SET(JumpType.JLE, RAX)
+                    instructions += MOVE(resultReg, RAX)
                 }
                 IrOperator.GT -> {
                     instructions += CMP(e1Reg, e2RegOrMem as AssemblyArgs.Reg)
-                    instructions += AssemblyInstruction.SET(JumpType.JG, AssemblyArgs.RAX)
-                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                    instructions += AssemblyInstruction.SET(JumpType.JG, RAX)
+                    instructions += MOVE(resultReg, RAX)
                 }
                 IrOperator.GE -> {
                     instructions += CMP(e1Reg, e2RegOrMem as AssemblyArgs.Reg)
-                    instructions += AssemblyInstruction.SET(JumpType.JGE, AssemblyArgs.RAX)
-                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                    instructions += AssemblyInstruction.SET(JumpType.JGE, RAX)
+                    instructions += MOVE(resultReg, RAX)
                 }
                 IrOperator.EQ -> {
                     instructions += CMP(e1Reg, e2RegOrMem as AssemblyArgs.Reg)
-                    instructions += AssemblyInstruction.SET(JumpType.JE, AssemblyArgs.RAX)
-                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                    instructions += AssemblyInstruction.SET(JumpType.JE, RAX)
+                    instructions += MOVE(resultReg, RAX)
                 }
                 IrOperator.NE -> {
                     instructions += CMP(e1Reg, e2RegOrMem as AssemblyArgs.Reg)
-                    instructions += AssemblyInstruction.SET(JumpType.JNE, AssemblyArgs.RAX)
-                    instructions += MOVE(resultReg, AssemblyArgs.RAX)
+                    instructions += AssemblyInstruction.SET(JumpType.JNE, RAX)
+                    instructions += MOVE(resultReg, RAX)
                 }
                 IrOperator.XOR -> {
                     instructions += MOVE(resultReg, e1Reg)
@@ -569,7 +564,7 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
             val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "TileMoveSub: $node")
             instructions += argResult.instructions
-            instructions += BIN_OP(AssemblyInstruction.AlBinaryOpType.SUB, REG(node.tempId), argResult.arg)
+            instructions += BIN_OP(SUB, REG(node.tempId), argResult.arg)
             return StatementTilingResult(instructions)
         }
     }
