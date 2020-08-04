@@ -75,7 +75,7 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
      * @param expression the expression to tile.
      * @return the tiling result.
      */
-    fun tileConstOrReg(expression: MidIrExpression): ConstOrRegTilingResult {
+    private fun tileConstOrReg(expression: MidIrExpression): ConstOrRegTilingResult {
         if (expression is MidIrExpression.Constant) {
             val intValue = expression.intValue
             if (intValue != null) {
@@ -89,7 +89,7 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
      * @param expression the expression to tile.
      * @return the tiling result.
      */
-    fun tileRegOrMem(expression: MidIrExpression): RegOrMemTilingResult {
+    private fun tileRegOrMem(expression: MidIrExpression): RegOrMemTilingResult {
         return if (expression is MidIrExpression.Mem) {
             tileMem(expression, this)
         } else {
@@ -101,7 +101,7 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
      * @param expression the expression to tile.
      * @return the tiling result.
      */
-    fun tileArg(expression: MidIrExpression): AssemblyArgTilingResult {
+    private fun tileArg(expression: MidIrExpression): AssemblyArgTilingResult {
         if (expression is MidIrExpression.Constant) {
             val intValue = expression.intValue
             if (intValue != null) {
