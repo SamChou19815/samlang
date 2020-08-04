@@ -889,3 +889,43 @@ it('StatementBlockExpression lowering works.', () => {
     }
   );
 });
+
+it('shadowing statement block lowering works.', () => {
+  expectCorrectlyLowered(
+    EXPRESSION_STATEMENT_BLOCK({
+      range: Range.DUMMY,
+      type: unitType,
+      block: {
+        range: Range.DUMMY,
+        statements: [
+          {
+            range: Range.DUMMY,
+            typeAnnotation: intType,
+            pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
+            assignedExpression: EXPRESSION_STATEMENT_BLOCK({
+              range: Range.DUMMY,
+              type: unitType,
+              block: {
+                range: Range.DUMMY,
+                statements: [
+                  {
+                    range: Range.DUMMY,
+                    typeAnnotation: intType,
+                    pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
+                    assignedExpression: EXPRESSION_INT(Range.DUMMY, BigInt(1)),
+                  },
+                ],
+              },
+            }),
+          },
+        ],
+      },
+    }),
+    {
+      statements: [
+        HIR_LET({ name: 'a', assignedExpression: HIR_ONE }),
+        HIR_LET({ name: 'a', assignedExpression: HIR_ZERO }),
+      ],
+    }
+  );
+});
