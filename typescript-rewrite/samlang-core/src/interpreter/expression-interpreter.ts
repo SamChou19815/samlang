@@ -7,6 +7,8 @@ import { Value, ObjectValue, FunctionValue, VariantValue, TupleValue } from './v
 export default class ExpressionInterpreter {
   private printedCollector = '';
 
+  printed = (): string => this.printedCollector;
+
   private blameTypeChecker = (message = ''): never => {
     throw Error(message);
   };
@@ -101,7 +103,7 @@ export default class ExpressionInterpreter {
           case 'intToString':
             return (argumentValue as bigint).toString();
           case 'println':
-            this.printedCollector.concat(`${argumentValue as string}\n`);
+            this.printedCollector += `${argumentValue as string}\n`;
             return { type: 'unit' };
         }
       }
