@@ -862,7 +862,7 @@ it('StatementBlockExpression lowering works.', () => {
       statements: [
         HIR_LET({ name: '_t0', assignedExpression: IR_THIS }),
         HIR_LET({
-          name: 'a',
+          name: 'a__depth_1',
           assignedExpression: HIR_INDEX_ACCESS({
             expression: HIR_VARIABLE('_t0'),
             index: 0,
@@ -870,21 +870,21 @@ it('StatementBlockExpression lowering works.', () => {
         }),
         HIR_LET({ name: '_t1', assignedExpression: IR_THIS }),
         HIR_LET({
-          name: 'a',
+          name: 'a__depth_1',
           assignedExpression: HIR_INDEX_ACCESS({
             expression: HIR_VARIABLE('_t1'),
             index: 0,
           }),
         }),
         HIR_LET({
-          name: 'c',
+          name: 'c__depth_1',
           assignedExpression: HIR_INDEX_ACCESS({
             expression: HIR_VARIABLE('_t1'),
             index: 1,
           }),
         }),
         HIR_LET({ name: '_t2', assignedExpression: IR_THIS }),
-        HIR_LET({ name: 'a', assignedExpression: HIR_VARIABLE('a') }),
+        HIR_LET({ name: 'a', assignedExpression: HIR_VARIABLE('a__depth_1') }),
       ],
     }
   );
@@ -923,7 +923,7 @@ it('shadowing statement block lowering works.', () => {
     }),
     {
       statements: [
-        HIR_LET({ name: 'a', assignedExpression: HIR_ONE }),
+        HIR_LET({ name: 'a__depth_1', assignedExpression: HIR_ONE }),
         HIR_LET({ name: 'a', assignedExpression: HIR_ZERO }),
       ],
     }

@@ -63,6 +63,11 @@ class HighIRExpressionLoweringManager {
 
   private nextSyntheticFunctionId = 0;
 
+  depth = 0;
+
+  // The variable rewrite is introduced to resolve https://github.com/SamChou19815/samlang/issues/36
+  private nestedVariableRewriteMap = new Map<string, string>();
+
   readonly syntheticFunctions: HighIRFunction[] = [];
 
   constructor(
@@ -123,8 +128,10 @@ class HighIRExpressionLoweringManager {
       // eslint-disable-next-line no-fallthrough
       case 'ThisExpression':
         return { statements: [], expression: HIR_VARIABLE('this') };
-      case 'VariableExpression':
-        return { statements: [], expression: HIR_VARIABLE(expression.name) };
+      case 'VariableExpression': {
+        const name = this.nestedVariableRewriteMap.get(expression.name) ?? expression.name;
+        return { statements: [], expression: HIR_VARIABLE(name) };
+      }
       case 'ClassMemberExpression':
         return this.lowerClassMember(expression);
       case 'TupleConstructorExpression':
@@ -696,6 +703,8 @@ class HighIRExpressionLoweringManager {
     block: { statements: blockStatements, expression: finalExpression },
   }: StatementBlockExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
+    const blockLocalVariables = new Set<string>();
+    this.depth += 1;
     blockStatements.forEach(({ pattern, assignedExpression }) => {
       const loweredAssignedExpression = this.loweredAndAddStatements(
         assignedExpression,
@@ -716,7 +725,7 @@ class HighIRExpressionLoweringManager {
             }
             loweredStatements.push(
               HIR_LET({
-                name,
+                name: this.getRenamedVariableForNesting(name, blockLocalVariables),
                 assignedExpression: HIR_INDEX_ACCESS({
                   expression: HIR_VARIABLE(variableForDestructedExpression),
                   index,
@@ -737,7 +746,7 @@ class HighIRExpressionLoweringManager {
           pattern.destructedNames.forEach(({ fieldName, fieldOrder, alias }) => {
             loweredStatements.push(
               HIR_LET({
-                name: alias ?? fieldName,
+                name: this.getRenamedVariableForNesting(alias ?? fieldName, blockLocalVariables),
                 assignedExpression: HIR_INDEX_ACCESS({
                   expression: HIR_VARIABLE(variableForDestructedExpression),
                   index: fieldOrder,
@@ -749,7 +758,10 @@ class HighIRExpressionLoweringManager {
         }
         case 'VariablePattern':
           loweredStatements.push(
-            HIR_LET({ name: pattern.name, assignedExpression: loweredAssignedExpression })
+            HIR_LET({
+              name: this.getRenamedVariableForNesting(pattern.name, blockLocalVariables),
+              assignedExpression: loweredAssignedExpression,
+            })
           );
           break;
         case 'WildCardPattern':
@@ -763,11 +775,28 @@ class HighIRExpressionLoweringManager {
       }
     });
     if (finalExpression == null) {
+      this.depth -= 1;
+      blockLocalVariables.forEach((variable) => this.nestedVariableRewriteMap.delete(variable));
       return { statements: loweredStatements, expression: HIR_ZERO };
     }
     const loweredFinalExpression = this.loweredAndAddStatements(finalExpression, loweredStatements);
+    this.depth -= 1;
+    blockLocalVariables.forEach((variable) => this.nestedVariableRewriteMap.delete(variable));
     return { statements: loweredStatements, expression: loweredFinalExpression };
   }
+
+  private getRenamedVariableForNesting = (
+    name: string,
+    blockLocalVariables: Set<string>
+  ): string => {
+    if (this.depth === 0) {
+      return name;
+    }
+    const renamed = `${name}__depth_${this.depth}`;
+    this.nestedVariableRewriteMap.set(name, renamed);
+    blockLocalVariables.add(name);
+    return renamed;
+  };
 }
 
 const lowerSamlangExpression = (
@@ -781,6 +810,9 @@ const lowerSamlangExpression = (
     samlangModule,
     encodedFunctionName
   );
+  if (expression.__type__ === 'StatementBlockExpression') {
+    manager.depth = -1;
+  }
   const result = manager.lower(expression);
   return { ...result, syntheticFunctions: manager.syntheticFunctions };
 };
