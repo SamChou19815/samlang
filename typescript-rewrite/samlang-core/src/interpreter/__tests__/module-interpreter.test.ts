@@ -1,7 +1,12 @@
 import { Position } from '../..';
 import Range from '../../ast/common/range';
 import { intType } from '../../ast/common/types';
-import { EXPRESSION_INT, EXPRESSION_PANIC } from '../../ast/lang/samlang-expressions';
+import {
+  EXPRESSION_INT,
+  EXPRESSION_PANIC,
+  EXPRESSION_BUILTIN_FUNCTION_CALL,
+  EXPRESSION_STRING,
+} from '../../ast/lang/samlang-expressions';
 import {
   SamlangModule,
   ClassDefinition,
@@ -72,6 +77,19 @@ const memberMainFunctionNoArgs: ClassMemberDefinition = {
   body: EXPRESSION_INT(new Range(new Position(123, 45), new Position(145, 89)), BigInt(2)),
 };
 
+const memberMainFunctionNoArgsPrint: ClassMemberDefinition = {
+  ...memberMainFunctionNoArgs,
+  body: EXPRESSION_BUILTIN_FUNCTION_CALL({
+    range: new Range(new Position(12, 34), new Position(34, 45)),
+    type: intType,
+    functionName: 'println',
+    argumentExpression: EXPRESSION_STRING(
+      new Range(new Position(183, 23), new Position(203, 21)),
+      'Hello world'
+    ),
+  }),
+};
+
 const memberMainMethodNoArgs: ClassMemberDefinition = {
   ...memberMainFunctionNoArgs,
   isMethod: true,
@@ -128,6 +146,16 @@ const modulePanic: SamlangModule = {
   ],
 };
 
+const modulePrint: SamlangModule = {
+  imports: [],
+  classes: [
+    {
+      ...mainClassDef,
+      members: [memberMainFunctionNoArgsPrint],
+    },
+  ],
+};
+
 const moduleWithMainClassAndMainMethodNoArgs: SamlangModule = {
   imports: [],
   classes: [
@@ -168,4 +196,5 @@ it('module runs correctly', () => {
   expect(moduleInterpreter.run(moduleWithMainClassAndMainMethodNoArgs)).toEqual('');
   expect(moduleInterpreter.run(moduleWithMainClassAndMainFunctionWithArgs)).toEqual('');
   expect(() => moduleInterpreter.run(modulePanic)).toThrow('Interpreter Error.');
+  expect(moduleInterpreter.run(modulePrint)).toEqual('Hello world\n');
 });

@@ -308,6 +308,7 @@ it('built in function call expression evaluates correctly', () => {
   );
   expect(interpreter.eval(intToStringFunctionCall)).toEqual('5');
   expect(interpreter.eval(printlnFunctionCall)).toEqual({ type: 'unit' });
+  expect(interpreter.printed()).toEqual('value\n');
 });
 
 it('function expression evaluates correctly', () => {

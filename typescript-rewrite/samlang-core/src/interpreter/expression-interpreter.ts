@@ -103,7 +103,7 @@ export default class ExpressionInterpreter {
           case 'intToString':
             return (argumentValue as bigint).toString();
           case 'println':
-            this.printedCollector.concat(`${argumentValue as string}\n`);
+            this.printedCollector += `${argumentValue as string}\n`;
             return { type: 'unit' };
         }
       }
