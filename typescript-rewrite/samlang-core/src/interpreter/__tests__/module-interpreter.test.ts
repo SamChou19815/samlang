@@ -1,7 +1,7 @@
 import { Position } from '../..';
 import Range from '../../ast/common/range';
 import { intType } from '../../ast/common/types';
-import { EXPRESSION_INT } from '../../ast/lang/samlang-expressions';
+import { EXPRESSION_INT, EXPRESSION_PANIC } from '../../ast/lang/samlang-expressions';
 import {
   SamlangModule,
   ClassDefinition,
@@ -77,6 +77,15 @@ const memberMainMethodNoArgs: ClassMemberDefinition = {
   isMethod: true,
 };
 
+const memberMainMethodPanic: ClassMemberDefinition = {
+  ...memberMainFunctionNoArgs,
+  body: EXPRESSION_PANIC({
+    range: new Range(new Position(12, 34), new Position(34, 45)),
+    type: intType,
+    expression: EXPRESSION_INT(new Range(new Position(123, 45), new Position(145, 89)), BigInt(2)),
+  }),
+};
+
 const memberMainFunctionWithArgs: ClassMemberDefinition = {
   ...memberMainFunctionNoArgs,
   parameters: [
@@ -109,6 +118,16 @@ const moduleWithMainClassAndMainFunctionNoArgs: SamlangModule = {
   ],
 };
 
+const modulePanic: SamlangModule = {
+  imports: [],
+  classes: [
+    {
+      ...mainClassDef,
+      members: [memberMainMethodPanic],
+    },
+  ],
+};
+
 const moduleWithMainClassAndMainMethodNoArgs: SamlangModule = {
   imports: [],
   classes: [
@@ -135,6 +154,7 @@ it('module evaluates correctly', () => {
   expect(moduleInterpreter.eval(moduleWithMainClassNoMainFunction)).toEqual({ type: 'unit' });
   expect(moduleInterpreter.eval(moduleWithMainClassAndMainFunctionNoArgs)).toEqual(BigInt(2));
   expect(moduleInterpreter.eval(moduleWithMainClassAndMainMethodNoArgs)).toEqual({ type: 'unit' });
+  expect(() => moduleInterpreter.eval(modulePanic)).toThrow('Interpreter Error.');
   expect(moduleInterpreter.eval(moduleWithMainClassAndMainFunctionWithArgs)).toEqual({
     type: 'unit',
   });
@@ -147,4 +167,5 @@ it('module runs correctly', () => {
   expect(moduleInterpreter.run(moduleWithMainClassAndMainFunctionNoArgs)).toEqual('');
   expect(moduleInterpreter.run(moduleWithMainClassAndMainMethodNoArgs)).toEqual('');
   expect(moduleInterpreter.run(moduleWithMainClassAndMainFunctionWithArgs)).toEqual('');
+  expect(() => moduleInterpreter.run(modulePanic)).toThrow('Interpreter Error.');
 });
