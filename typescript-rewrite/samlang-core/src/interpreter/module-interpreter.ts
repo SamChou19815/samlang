@@ -17,7 +17,6 @@ export default class ModuleInterpreter {
    */
   run = (module: SamlangModule, context: InterpretationContext = EMPTY): string => {
     this.eval(module, context);
-    console.log(this.printed());
     return this.printed();
   };
 
