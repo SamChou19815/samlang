@@ -7,11 +7,7 @@ import {
   AssemblyArgument,
 } from '../../ast/asm/asm-arguments';
 import { AssemblyInstruction } from '../../ast/asm/asm-instructions';
-
-export interface AssemblyTilingResult {
-  readonly instructions: readonly AssemblyInstruction[];
-  readonly cost: number;
-}
+import { MidIRExpression } from '../../ast/mir';
 
 const estimateCostFromInstructions = (instructions: readonly AssemblyInstruction[]): number => {
   let cost = 0;
@@ -36,9 +32,10 @@ const estimateCostFromInstructions = (instructions: readonly AssemblyInstruction
   return cost;
 };
 
-export interface AssemblyArgumentTilingResult<E extends AssemblyArgument = AssemblyArgument>
-  extends AssemblyTilingResult {
+export interface AssemblyArgumentTilingResult<E extends AssemblyArgument = AssemblyArgument> {
+  readonly instructions: readonly AssemblyInstruction[];
   readonly assemblyArgument: E;
+  readonly cost: number;
 }
 
 export type AssemblyRegisterOrMemoryTilingResult<
@@ -56,10 +53,6 @@ export type AssemblyMemoryTilingResult = AssemblyRegisterOrMemoryTilingResult<As
 export interface AssemblyMidIRExpressionTilingResult
   extends AssemblyRegisterOrMemoryTilingResult<AssemblyRegister>,
     AssemblyConstOrRegisterTilingResult<AssemblyRegister> {}
-
-export const createAssemblyTilingResult = (
-  instructions: readonly AssemblyInstruction[]
-): AssemblyTilingResult => ({ instructions, cost: estimateCostFromInstructions(instructions) });
 
 export const createAssemblyConstantTilingResult = (
   constant: AssemblyConst
@@ -82,3 +75,7 @@ export const createAssemblyMidIRExpressionTilingResult = (
   cost: estimateCostFromInstructions(instructions),
   assemblyArgument: register,
 });
+
+export interface AssemblyTilingService {
+  tileExpression(midIRExpression: MidIRExpression): AssemblyMidIRExpressionTilingResult;
+}
