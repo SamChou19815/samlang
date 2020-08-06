@@ -1,3 +1,4 @@
+import { bigIntIsWithin32BitIntegerRange } from '../../util/int-util';
 import {
   AssemblyConst,
   AssemblyRegister,
@@ -226,14 +227,11 @@ export type AssemblyInstruction =
   | AssemblyLabel
   | AssemblyComment;
 
-const MIN_I32_VALUE = BigInt(-2147483648);
-const MAX_I32_VALUE = BigInt(2147483647);
-
 export const ASM_MOVE_CONST_TO_REG = (
   destination: AssemblyRegister,
   value: bigint
 ): AssemblyMoveFromLong | AssemblyMoveToRegister => {
-  if (value > MAX_I32_VALUE || value < MIN_I32_VALUE) {
+  if (!bigIntIsWithin32BitIntegerRange(value)) {
     return { __type__: 'AssemblyMoveFromLong', destination, value };
   }
   return {
