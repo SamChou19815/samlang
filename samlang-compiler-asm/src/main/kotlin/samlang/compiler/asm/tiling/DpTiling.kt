@@ -38,7 +38,6 @@ import samlang.ast.mir.MidIrLoweredStatementVisitor
 import samlang.ast.mir.MidIrStatement
 import samlang.ast.mir.MidIrStatement.*
 import samlang.compiler.asm.FunctionAbstractRegisterAllocator
-import samlang.compiler.asm.tiling.MemTilingHelper.tileMem
 import kotlin.math.max
 
 internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val functionName: String) {
@@ -83,7 +82,7 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
 
     private fun tileRegOrMem(expression: MidIrExpression): RegOrMemTilingResult {
         return if (expression is MidIrExpression.Mem) {
-            tileMem(expression, this)
+            MemTilingHelper.tileMem(expression, this)
         } else {
             tile(expression)
         }
@@ -97,7 +96,7 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
             }
         }
         return if (expression is MidIrExpression.Mem) {
-            tileMem(expression, this)
+            MemTilingHelper.tileMem(expression, this)
         } else {
             tile(expression)
         }
@@ -117,7 +116,7 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
 
         override fun visit(node: MoveMem, context: Unit): StatementTilingResult {
             val irMem = MidIrExpression.IMMUTABLE_MEM(expression = node.memLocation)
-            val (memLocInstructions, memLoc) = tileMem(mem = irMem, dpTiling = this@DpTiling)
+            val (memLocInstructions, memLoc) = MemTilingHelper.tileMem(mem = irMem, dpTiling = this@DpTiling)
             val instructions = mutableListOf<AssemblyInstruction>()
             // first add mem loc instructions
             instructions += COMMENT(comment = "GenericMoveMem: $node")
@@ -272,7 +271,7 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
             ?: throw Error("We do not cover every possible case of tiling! BAD!")
 
         override fun visit(node: MidIrExpression.Mem, context: Unit): ExpressionTilingResult {
-            val (instructions1, mem) = tileMem(mem = node, dpTiling = this@DpTiling)
+            val (instructions1, mem) = MemTilingHelper.tileMem(mem = node, dpTiling = this@DpTiling)
             val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(node)
             instructions += instructions1
