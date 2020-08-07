@@ -29,7 +29,6 @@ import samlang.ast.asm.AssemblyInstruction.Companion.LEA
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
 import samlang.ast.asm.AssemblyInstruction.Companion.SET
 import samlang.ast.asm.AssemblyInstruction.JumpType
-import samlang.ast.asm.RegOrMem
 import samlang.ast.common.IrOperator
 import samlang.ast.mir.MidIrExpression
 import samlang.ast.mir.MidIrExpression.Temporary
