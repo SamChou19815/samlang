@@ -423,27 +423,16 @@ internal class DpTiling(val allocator: FunctionAbstractRegisterAllocator, val fu
 
     /** The tiles for 3-arg form of imul for ops and move. */
     private object TileMul3ArgsForOp : IrOpExpressionTile {
-        private fun tryToTile(
-            dpTiling: DpTiling,
-            src: MidIrExpression
-        ): Triple<List<AssemblyInstruction>, RegOrMem, AssemblyArgs.Const>? {
-            if (src !is MidIrExpression.Op) return null
-            val (operator, e1, e2) = src
-            if (operator !== IrOperator.MUL || e2 !is MidIrExpression.Constant) return null
-            if (e2.value <= Int.MAX_VALUE || e2.value >= Int.MIN_VALUE) {
-                val tilingResult = dpTiling.tileRegOrMem(e1)
-                return Triple(tilingResult.instructions, tilingResult.regOrMem, CONST(value = e2.value.toInt()))
-            }
-            return null
-        }
-
         override fun getTilingResult(node: MidIrExpression.Op, dpTiling: DpTiling): ExpressionTilingResult? {
-            val (tileInstructions, op1, op2) = tryToTile(dpTiling, node) ?: return null
+            val (operator, e1, e2) = node
+            if (operator !== IrOperator.MUL || e2 !is MidIrExpression.Constant) return null
+            if (e2.value > Int.MAX_VALUE || e2.value < Int.MIN_VALUE) return null
+            val tilingResult = dpTiling.tileRegOrMem(e1)
             val resultReg = dpTiling.allocator.nextReg()
             val instructions = mutableListOf<AssemblyInstruction>()
             instructions += COMMENT(comment = "TileMul3ArgsForOp: $node")
-            instructions += tileInstructions
-            instructions += IMUL(resultReg, op1, op2)
+            instructions += tilingResult.instructions
+            instructions += IMUL(resultReg, tilingResult.regOrMem, CONST(value = e2.value.toInt()))
             return ExpressionTilingResult(instructions, resultReg)
         }
     }
