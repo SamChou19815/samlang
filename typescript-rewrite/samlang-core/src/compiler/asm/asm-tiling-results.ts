@@ -8,6 +8,7 @@ import {
 } from '../../ast/asm/asm-arguments';
 import { AssemblyInstruction } from '../../ast/asm/asm-instructions';
 import { MidIRExpression } from '../../ast/mir';
+import AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
 
 const estimateCostFromInstructions = (instructions: readonly AssemblyInstruction[]): number => {
   let cost = 0;
@@ -77,5 +78,8 @@ export const createAssemblyMidIRExpressionTilingResult = (
 });
 
 export interface AssemblyTilingService {
+  readonly allocator: AssemblyFunctionAbstractRegisterAllocator;
   tileExpression(midIRExpression: MidIRExpression): AssemblyMidIRExpressionTilingResult;
+  tileRegisterOrMemory(expression: MidIRExpression): AssemblyRegisterOrMemoryTilingResult;
+  tileAssemblyArgument(expression: MidIRExpression): AssemblyArgumentTilingResult;
 }

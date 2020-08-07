@@ -23,7 +23,12 @@ import {
   ASM_CMP_CONST_OR_REG,
   ASM_CALL,
   ASM_BIN_OP_REG_DEST,
+  ASM_IMUL,
+  ASM_IDIV,
+  ASM_SHL,
+  ASM_CQO,
   ASM_JUMP,
+  ASM_SET,
   ASM_PUSH,
   ASM_LABEL,
   ASM_COMMENT,
@@ -33,12 +38,14 @@ import {
 import {
   MidIRExpression,
   MidIRImmutableMemoryExpression,
+  MidIRBinaryExpression,
   MidIRStatement,
   MIR_IMMUTABLE_MEM,
   midIRExpressionToString,
   midIRStatementToString,
 } from '../../ast/mir';
-import { bigIntIsWithin32BitIntegerRange } from '../../util/int-util';
+import { bigIntIsWithin32BitIntegerRange, isPowerOfTwo, logTwo } from '../../util/int-util';
+import { assertNotNull } from '../../util/type-assertions';
 import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
 import {
   getMemoizedAssemblyExpressionTilingFunction,
@@ -56,14 +63,259 @@ import {
   createAssemblyMemoryTilingResult,
 } from './asm-tiling-results';
 
+type MidIRBinaryExpressionTiler = (
+  expression: MidIRBinaryExpression,
+  service: AssemblyTilingService,
+  memoryTilerForExpression: (
+    expression: MidIRBinaryExpression,
+    service: AssemblyTilingService
+  ) => AssemblyMemoryTilingResult | null
+) => AssemblyMidIRExpressionTilingResult | null;
+
+const genericArithmeticBinaryExpressionTiler: MidIRBinaryExpressionTiler = (
+  expression,
+  service
+) => {
+  switch (expression.operator) {
+    case '+':
+    case '-':
+    case '^':
+    case '*':
+    case '/':
+    case '%':
+      break;
+    default:
+      return null;
+  }
+  const resultRegister = service.allocator.nextReg();
+  const e1Result = service.tileExpression(expression.e1);
+  const e2Result = service.tileRegisterOrMemory(expression.e2);
+  const instructions: AssemblyInstruction[] = [
+    ASM_COMMENT(`genericMidIRBinaryExpressionTiler: ${midIRExpressionToString(expression)}`),
+    ...e1Result.instructions,
+    ...e2Result.instructions,
+  ];
+  switch (expression.operator) {
+    case '+': {
+      instructions.push(
+        ASM_MOVE_REG(resultRegister, e1Result.assemblyArgument),
+        ASM_BIN_OP_REG_DEST('add', resultRegister, e2Result.assemblyArgument)
+      );
+      return createAssemblyMidIRExpressionTilingResult(instructions, resultRegister);
+    }
+    case '-': {
+      instructions.push(
+        ASM_MOVE_REG(resultRegister, e1Result.assemblyArgument),
+        ASM_BIN_OP_REG_DEST('sub', resultRegister, e2Result.assemblyArgument)
+      );
+      return createAssemblyMidIRExpressionTilingResult(instructions, resultRegister);
+    }
+    case '^': {
+      instructions.push(
+        ASM_MOVE_REG(resultRegister, e1Result.assemblyArgument),
+        ASM_BIN_OP_REG_DEST('xor', resultRegister, e2Result.assemblyArgument)
+      );
+      return createAssemblyMidIRExpressionTilingResult(instructions, resultRegister);
+    }
+    case '*': {
+      instructions.push(
+        ASM_MOVE_REG(resultRegister, e1Result.assemblyArgument),
+        ASM_IMUL(resultRegister, e2Result.assemblyArgument)
+      );
+      return createAssemblyMidIRExpressionTilingResult(instructions, resultRegister);
+    }
+    case '/': {
+      instructions.push(
+        ASM_MOVE_REG(RAX, e1Result.assemblyArgument),
+        ASM_CQO,
+        ASM_IDIV(e2Result.assemblyArgument),
+        ASM_MOVE_REG(resultRegister, RAX)
+      );
+      return createAssemblyMidIRExpressionTilingResult(instructions, resultRegister);
+    }
+    case '%': {
+      instructions.push(
+        ASM_MOVE_REG(RAX, e1Result.assemblyArgument),
+        ASM_CQO,
+        ASM_IDIV(e2Result.assemblyArgument),
+        ASM_MOVE_REG(resultRegister, RDX)
+      );
+      return createAssemblyMidIRExpressionTilingResult(instructions, resultRegister);
+    }
+    default:
+      return null;
+  }
+};
+
+const genericCommutativeArithmeticBinaryExpressionReversedTiler: MidIRBinaryExpressionTiler = (
+  expression,
+  service
+) => {
+  switch (expression.operator) {
+    case '+':
+    case '*':
+    case '^':
+      break;
+    default:
+      return null;
+  }
+  const resultRegister = service.allocator.nextReg();
+  const e2Result = service.tileExpression(expression.e2);
+  const e1Result = service.tileRegisterOrMemory(expression.e1);
+  const instructions: AssemblyInstruction[] = [
+    ASM_COMMENT(
+      `genericMidIRCommutativeArithmeticBinaryExpressionReversedTiler: ${midIRExpressionToString(
+        expression
+      )}`
+    ),
+    ...e2Result.instructions,
+    ...e1Result.instructions,
+  ];
+  switch (expression.operator) {
+    case '+': {
+      instructions.push(
+        ASM_MOVE_REG(resultRegister, e2Result.assemblyArgument),
+        ASM_BIN_OP_REG_DEST('add', resultRegister, e1Result.assemblyArgument)
+      );
+      return createAssemblyMidIRExpressionTilingResult(instructions, resultRegister);
+    }
+    case '^': {
+      instructions.push(
+        ASM_MOVE_REG(resultRegister, e2Result.assemblyArgument),
+        ASM_BIN_OP_REG_DEST('xor', resultRegister, e1Result.assemblyArgument)
+      );
+      return createAssemblyMidIRExpressionTilingResult(instructions, resultRegister);
+    }
+    case '*': {
+      instructions.push(
+        ASM_MOVE_REG(resultRegister, e2Result.assemblyArgument),
+        ASM_IMUL(resultRegister, e1Result.assemblyArgument)
+      );
+      return createAssemblyMidIRExpressionTilingResult(instructions, resultRegister);
+    }
+    default:
+      return null;
+  }
+};
+
+const genericComparisonBinaryExpressionTiler: MidIRBinaryExpressionTiler = (
+  expression,
+  service
+) => {
+  let jumpType: AssemblyConditionalJumpType;
+  switch (expression.operator) {
+    case '<':
+      jumpType = 'jl';
+      break;
+    case '<=':
+      jumpType = 'jle';
+      break;
+    case '>':
+      jumpType = 'jg';
+      break;
+    case '>=':
+      jumpType = 'jge';
+      break;
+    case '==':
+      jumpType = 'je';
+      break;
+    case '!=':
+      jumpType = 'jne';
+      break;
+    default:
+      return null;
+  }
+  const resultRegister = service.allocator.nextReg();
+  const e1Result = service.tileExpression(expression.e1);
+  const e2Result = service.tileExpression(expression.e2);
+  return createAssemblyMidIRExpressionTilingResult(
+    [
+      ASM_COMMENT(
+        `genericMidIRComparisonBinaryExpressionTiler: ${midIRExpressionToString(expression)}`
+      ),
+      ...e1Result.instructions,
+      ...e2Result.instructions,
+      ASM_CMP_CONST_OR_REG(e1Result.assemblyArgument, e2Result.assemblyArgument),
+      ASM_SET(jumpType, RAX),
+      ASM_MOVE_REG(resultRegister, RAX),
+    ],
+    resultRegister
+  );
+};
+
+const leaBinaryExpressionTiler: MidIRBinaryExpressionTiler = (expression, service, memoryTiler) => {
+  const resultRegister = service.allocator.nextReg();
+  // try to use LEA if we can
+  const memoryTilingResult = memoryTiler(expression, service);
+  if (memoryTilingResult == null) return null;
+  return createAssemblyMidIRExpressionTilingResult(
+    [
+      ASM_COMMENT(`leaMidIRComparisonBinaryExpressionTiler ${midIRExpressionToString(expression)}`),
+      ...memoryTilingResult.instructions,
+      ASM_LEA(resultRegister, memoryTilingResult.assemblyArgument),
+    ],
+    resultRegister
+  );
+};
+
+const imul3ArgumentBinaryExpressionTiler: MidIRBinaryExpressionTiler = (expression, service) => {
+  const { operator, e1, e2 } = expression;
+  if (
+    operator !== '*' ||
+    e2.__type__ !== 'MidIRConstantExpression' ||
+    !bigIntIsWithin32BitIntegerRange(e2.value)
+  ) {
+    return null;
+  }
+  const tilingResult = service.tileRegisterOrMemory(e1);
+  const resultRegister = service.allocator.nextReg();
+  return createAssemblyMidIRExpressionTilingResult(
+    [
+      ASM_COMMENT(`imul3ArgumentBinaryExpressionTiler: ${midIRExpressionToString(expression)}`),
+      ...tilingResult.instructions,
+      ASM_IMUL(resultRegister, tilingResult.assemblyArgument, ASM_CONST(Number(e2.value))),
+    ],
+    resultRegister
+  );
+};
+
+const multiplyPowerOfTwoBinaryExpressionTiler: MidIRBinaryExpressionTiler = (
+  expression,
+  service
+) => {
+  const { operator, e1, e2 } = expression;
+  if (operator !== '*' || e2.__type__ !== 'MidIRConstantExpression' || !isPowerOfTwo(e2.value)) {
+    return null;
+  }
+  const resultRegister = service.allocator.nextReg();
+  const e1Result = service.tileAssemblyArgument(e1);
+  return createAssemblyMidIRExpressionTilingResult(
+    [
+      ASM_COMMENT(`multiplyPowerOfTwoBinaryExpressionTiler ${midIRExpressionToString(expression)}`),
+      ASM_MOVE_REG(resultRegister, e1Result.assemblyArgument),
+      ASM_SHL(resultRegister, logTwo(e2.value)),
+    ],
+    resultRegister
+  );
+};
+
+const midIRBinaryExpressionTilers: readonly MidIRBinaryExpressionTiler[] = [
+  genericArithmeticBinaryExpressionTiler,
+  genericCommutativeArithmeticBinaryExpressionReversedTiler,
+  genericComparisonBinaryExpressionTiler,
+  leaBinaryExpressionTiler,
+  imul3ArgumentBinaryExpressionTiler,
+  multiplyPowerOfTwoBinaryExpressionTiler,
+];
+
 class AssemblyDpTiling implements AssemblyTilingService {
   constructor(
     private readonly functionName: string,
-    private readonly allocator: AssemblyFunctionAbstractRegisterAllocator,
-    private readonly tileMemory: (
-      expression: MidIRImmutableMemoryExpression,
+    readonly allocator: AssemblyFunctionAbstractRegisterAllocator,
+    private readonly tileMemoryForExpression: (
+      expression: MidIRExpression,
       service: AssemblyTilingService
-    ) => AssemblyMemoryTilingResult
+    ) => AssemblyMemoryTilingResult | null
   ) {}
 
   tileStatement = getMemoizedAssemblyStatementTilingFunction(
@@ -82,7 +334,7 @@ class AssemblyDpTiling implements AssemblyTilingService {
           const {
             instructions: memoryLocationInstructions,
             assemblyArgument: memoryLocation,
-          } = this.tileMemory(MIR_IMMUTABLE_MEM(statement.memoryIndexExpression), this);
+          } = this.tileMemory(MIR_IMMUTABLE_MEM(statement.memoryIndexExpression));
           const sourceTilingResult = this.tileConstantOrRegister(statement.source);
           return [
             ...memoryLocationInstructions,
@@ -268,7 +520,7 @@ class AssemblyDpTiling implements AssemblyTilingService {
         case 'MidIRTemporaryExpression':
           return createAssemblyMidIRExpressionTilingResult([], ASM_REG(expression.temporaryID));
         case 'MidIRImmutableMemoryExpression': {
-          const memoryTilingResult = this.tileMemory(expression, this);
+          const memoryTilingResult = this.tileMemory(expression);
           const resultRegister = this.allocator.nextReg();
           return createAssemblyMidIRExpressionTilingResult(
             [
@@ -279,8 +531,25 @@ class AssemblyDpTiling implements AssemblyTilingService {
             resultRegister
           );
         }
-        case 'MidIRBinaryExpression':
-          throw new Error('TODO');
+        case 'MidIRBinaryExpression': {
+          let bestCost = Number.MAX_SAFE_INTEGER;
+          let bestTilingResult: AssemblyMidIRExpressionTilingResult | null = null;
+          const results = midIRBinaryExpressionTilers.map((tiler) =>
+            tiler(expression, this, this.tileMemoryForExpression)
+          );
+          for (let i = 0; i < results.length; i += 1) {
+            const tilingResult = results[i];
+            if (tilingResult != null) {
+              const cost = tilingResult.cost;
+              if (cost < bestCost) {
+                bestCost = cost;
+                bestTilingResult = tilingResult;
+              }
+            }
+          }
+          assertNotNull(bestTilingResult);
+          return bestTilingResult;
+        }
       }
     }
   );
@@ -295,14 +564,14 @@ class AssemblyDpTiling implements AssemblyTilingService {
     return this.tileExpression(expression);
   }
 
-  private tileRegisterOrMemory(expression: MidIRExpression): AssemblyRegisterOrMemoryTilingResult {
+  tileRegisterOrMemory(expression: MidIRExpression): AssemblyRegisterOrMemoryTilingResult {
     if (expression.__type__ === 'MidIRImmutableMemoryExpression') {
-      return this.tileMemory(expression, this);
+      return this.tileMemory(expression);
     }
     return this.tileExpression(expression);
   }
 
-  private tileAssemblyArgument(expression: MidIRExpression): AssemblyArgumentTilingResult {
+  tileAssemblyArgument(expression: MidIRExpression): AssemblyArgumentTilingResult {
     if (expression.__type__ === 'MidIRConstantExpression') {
       const value = expression.value;
       if (bigIntIsWithin32BitIntegerRange(value)) {
@@ -310,10 +579,27 @@ class AssemblyDpTiling implements AssemblyTilingService {
       }
     }
     if (expression.__type__ === 'MidIRImmutableMemoryExpression') {
-      return this.tileMemory(expression, this);
+      return this.tileMemory(expression);
     }
     return this.tileExpression(expression);
   }
+
+  private tileMemory = (expression: MidIRImmutableMemoryExpression): AssemblyMemoryTilingResult => {
+    const innerExpression = expression.indexExpression;
+    if (innerExpression.__type__ === 'MidIRNameExpression') {
+      return createAssemblyMemoryTilingResult(
+        [],
+        ASM_MEM_REG_WITH_CONST(RIP, ASM_NAME(innerExpression.name))
+      );
+    }
+    const memoryTilingResult = this.tileMemoryForExpression(innerExpression, this);
+    if (memoryTilingResult != null) return memoryTilingResult;
+    const tilingResult = this.tileExpression(innerExpression);
+    return createAssemblyMemoryTilingResult(
+      tilingResult.instructions,
+      ASM_MEM_REG(tilingResult.assemblyArgument)
+    );
+  };
 }
 
 const getAssemblyTilingForMidIRStatements = (
@@ -322,9 +608,9 @@ const getAssemblyTilingForMidIRStatements = (
   allocator: AssemblyFunctionAbstractRegisterAllocator
 ): readonly AssemblyInstruction[] => {
   const instructions: AssemblyInstruction[] = [];
-  const tiler = new AssemblyDpTiling(functionName, allocator, (memoryExpression, service) => {
+  const tiler = new AssemblyDpTiling(functionName, allocator, (expression, service) => {
     // TODO: replace this with a better implementation once mem tiling helper is ready.
-    const tilingResult = service.tileExpression(memoryExpression.indexExpression);
+    const tilingResult = service.tileExpression(expression);
     return createAssemblyMemoryTilingResult(
       tilingResult.instructions,
       ASM_MEM_REG(tilingResult.assemblyArgument)
