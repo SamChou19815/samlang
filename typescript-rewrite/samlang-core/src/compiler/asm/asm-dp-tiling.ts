@@ -88,7 +88,7 @@ const genericArithmeticBinaryExpressionTiler: MidIRBinaryExpressionTiler = (
       return null;
   }
   const resultRegister = service.allocator.nextReg();
-  const e1Result = service.tileExpression(expression.e1);
+  const e1Result = service.tileAssemblyArgument(expression.e1);
   const e2Result = service.tileRegisterOrMemory(expression.e2);
   const instructions: AssemblyInstruction[] = [
     ASM_COMMENT(`genericMidIRBinaryExpressionTiler: ${midIRExpressionToString(expression)}`),
@@ -142,8 +142,6 @@ const genericArithmeticBinaryExpressionTiler: MidIRBinaryExpressionTiler = (
       );
       return createAssemblyMidIRExpressionTilingResult(instructions, resultRegister);
     }
-    default:
-      return null;
   }
 };
 
@@ -193,8 +191,6 @@ const genericCommutativeArithmeticBinaryExpressionReversedTiler: MidIRBinaryExpr
       );
       return createAssemblyMidIRExpressionTilingResult(instructions, resultRegister);
     }
-    default:
-      return null;
   }
 };
 
@@ -243,7 +239,10 @@ const genericComparisonBinaryExpressionTiler: MidIRBinaryExpressionTiler = (
   );
 };
 
-const leaBinaryExpressionTiler: MidIRBinaryExpressionTiler = (expression, service, memoryTiler) => {
+const leaBinaryExpressionTiler: MidIRBinaryExpressionTiler = () => {
+  // TODO: reenable once we have the memory tiler
+  return null;
+  /*
   const resultRegister = service.allocator.nextReg();
   // try to use LEA if we can
   const memoryTilingResult = memoryTiler(expression, service);
@@ -256,6 +255,7 @@ const leaBinaryExpressionTiler: MidIRBinaryExpressionTiler = (expression, servic
     ],
     resultRegister
   );
+  */
 };
 
 const imul3ArgumentBinaryExpressionTiler: MidIRBinaryExpressionTiler = (expression, service) => {
@@ -375,7 +375,9 @@ class AssemblyDpTiling implements AssemblyTilingService {
           if (totalScratchSpace > 0) {
             const offset = totalScratchSpace % 2 === 0 ? 0 : 1;
             totalScratchSpace += offset;
-            instructions.push(ASM_BIN_OP_REG_DEST('sub', RSP, ASM_CONST(8 * offset)));
+            if (offset > 0) {
+              instructions.push(ASM_BIN_OP_REG_DEST('sub', RSP, ASM_CONST(8 * offset)));
+            }
           }
           for (let i = tiledFunctionArguments.length - 1; i >= 0; i -= 1) {
             const tiledFunctionArgument = tiledFunctionArguments[i];
@@ -482,7 +484,7 @@ class AssemblyDpTiling implements AssemblyTilingService {
           ];
           const { returnedExpression } = statement;
           if (returnedExpression != null) {
-            const tilingResult = this.tileExpression(returnedExpression);
+            const tilingResult = this.tileAssemblyArgument(returnedExpression);
             instructions.push(
               ...tilingResult.instructions,
               ASM_MOVE_REG(RAX, tilingResult.assemblyArgument)
@@ -593,8 +595,12 @@ class AssemblyDpTiling implements AssemblyTilingService {
       );
     }
     const memoryTilingResult = this.tileMemoryForExpression(innerExpression, this);
+    // TODO: unignore coverage here once we have memory tiling ready.
+    // istanbul ignore next
     if (memoryTilingResult != null) return memoryTilingResult;
+    // istanbul ignore next
     const tilingResult = this.tileExpression(innerExpression);
+    // istanbul ignore next
     return createAssemblyMemoryTilingResult(
       tilingResult.instructions,
       ASM_MEM_REG(tilingResult.assemblyArgument)
