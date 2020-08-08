@@ -70,10 +70,10 @@ const operator: DataflowAnalysisGraphOperator<MidIRStatement, Set<string>> = {
   computeNewEdge: (newOutEdge, statement) => {
     const newInEdge = new Set(newOutEdge);
     const { uses, def } = collectDefAndUsesFromMidIRStatement(statement);
-    uses.forEach((oneUse) => newInEdge.add(oneUse));
     if (def != null) {
       newInEdge.delete(def);
     }
+    uses.forEach((oneUse) => newInEdge.add(oneUse));
     return newInEdge;
   },
   edgeDataEquals: setEquals,
