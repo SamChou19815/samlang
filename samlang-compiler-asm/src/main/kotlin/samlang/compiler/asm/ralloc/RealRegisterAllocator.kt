@@ -202,9 +202,7 @@ internal class RealRegisterAllocator(
                 }
             }
             if (degree != c) {
-                val errorMessage = ("degree invariant is broken. degree = " +
-                        degree + ", cardinality = " + c + ", variable = " + u)
-                throw Error(errorMessage)
+                error(message = "degree invariant is broken. degree = $degree, cardinality = $c, variable = $u")
             }
         }
         // simplifyWorkList invariant
@@ -217,11 +215,7 @@ internal class RealRegisterAllocator(
             if (moveList != null) {
                 for (v in moveList) {
                     if (activeMoves.contains(v) || workListMoves.contains(v)) {
-                        val errorMessage = ("simplifyWorkList invariant is broken" +
-                                ". moveList = " + moveList +
-                                ", activeMoves = " + activeMoves +
-                                ", workListMoves = " + workListMoves)
-                        throw Error(errorMessage)
+                        error("simplifyWorkList invariant is broken. moveList=$moveList, activeMoves = $activeMoves, workListMoves = $workListMoves")
                     }
                 }
             }
@@ -230,7 +224,7 @@ internal class RealRegisterAllocator(
         freezeWorkList.forEach { u ->
             val degree = interferenceGraph.degree(u)
             if (degree >= K) {
-                throw Error("freezeWorkList invariant is broken. degree = $degree, variable = $u")
+                error("freezeWorkList invariant is broken. degree = $degree, variable = $u")
             }
             val moveList: Set<RegMove>? = moveMap[u]
             var intersectionIsEmpty = true
@@ -242,7 +236,7 @@ internal class RealRegisterAllocator(
                 }
             }
             if (intersectionIsEmpty) {
-                throw Error(
+                error(
                     "freezeWorkList invariant is broken. moveList = $moveList, activeMoves = $activeMoves, workListMoves = $workListMoves"
                 )
             }
@@ -250,22 +244,14 @@ internal class RealRegisterAllocator(
         // spillWorkList invariant
         spillWorkList.forEach { u ->
             val degree = interferenceGraph.degree(u)
-            if (degree < K) {
-                val errorMessage = ("spillWorkList invariant is broken" +
-                        ". degree = " + degree +
-                        ", variable = " + u)
-                throw Error(errorMessage)
-            }
+            if (degree < K) error("spillWorkList invariant is broken. degree = $degree, variable = $u")
         }
     }
 
     private fun build(liveVariableAnalysisResult: LiveVariableAnalysis) {
-        val liveMap =
-            liveVariableAnalysisResult.liveVariablesOut
-        val defMap =
-            liveVariableAnalysisResult.defs
-        val useMap =
-            liveVariableAnalysisResult.uses
+        val liveMap = liveVariableAnalysisResult.liveVariablesOut
+        val defMap = liveVariableAnalysisResult.defs
+        val useMap = liveVariableAnalysisResult.uses
         // iterating over the instructions in reverse order.
         for (i in instructions.indices.reversed()) {
             val instruction = instructions[i]
@@ -550,10 +536,7 @@ internal class RealRegisterAllocator(
                 lowestScore = score
             }
         }
-        val immutableBestVariableToSpill = bestVariableToSpill
-        if (immutableBestVariableToSpill == null) {
-            throw Error()
-        }
+        val immutableBestVariableToSpill = bestVariableToSpill ?: throw Error()
         spillWorkList.remove(immutableBestVariableToSpill)
         simplifyWorkList.add(immutableBestVariableToSpill)
         freezeMoves(immutableBestVariableToSpill)
