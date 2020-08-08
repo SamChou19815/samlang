@@ -39,7 +39,7 @@ import {
   ASM_NEG,
   ASM_SHL,
   ASM_PUSH,
-  ASM_POP,
+  ASM_POP_RBP,
   ASM_LABEL,
   ASM_COMMENT,
 } from '../asm-instructions';
@@ -88,7 +88,7 @@ it('assemblyInstructionToString test', () => {
   expect(toString(ASM_SHL(RAX, 1))).toBe('shl rax, 1');
 
   expect(toString(ASM_PUSH(RAX))).toBe('push rax');
-  expect(toString(ASM_POP(RAX))).toBe('pop rax');
+  expect(toString(ASM_POP_RBP)).toBe('pop rbp');
   expect(toString(ASM_LABEL('l1'))).toBe('l1:');
   expect(toString(ASM_COMMENT('haha'))).toBe('## haha');
 });

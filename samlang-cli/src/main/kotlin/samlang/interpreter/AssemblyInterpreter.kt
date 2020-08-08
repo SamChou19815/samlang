@@ -4,6 +4,7 @@ import samlang.ast.asm.AssemblyArg
 import samlang.ast.asm.AssemblyArgs
 import samlang.ast.asm.AssemblyArgs.MEM
 import samlang.ast.asm.AssemblyArgs.RAX
+import samlang.ast.asm.AssemblyArgs.RBP
 import samlang.ast.asm.AssemblyArgs.RDI
 import samlang.ast.asm.AssemblyArgs.RDX
 import samlang.ast.asm.AssemblyArgs.RSI
@@ -441,8 +442,8 @@ class AssemblyInterpreter(program: AssemblyProgram) {
             setValue(MEM(reg = RSP), value)
         }
 
-        override fun visit(node: Pop) {
-            setValue(regOrMem = node.arg, value = getValue(MEM(RSP)))
+        override fun visit(node: PopRBP) {
+            setValue(regOrMem = RBP, value = getValue(MEM(RSP)))
             setValue(regOrMem = RSP, value = getValue(RSP) + 8)
         }
 

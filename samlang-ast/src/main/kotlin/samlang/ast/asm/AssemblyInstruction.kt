@@ -73,8 +73,6 @@ sealed class AssemblyInstruction {
 
         fun PUSH(arg: AssemblyArg): Push = Push(arg = arg)
 
-        fun POP(regOrMem: RegOrMem): Pop = Pop(arg = regOrMem)
-
         fun LABEL(label: String): Label = Label(label = label)
 
         fun COMMENT(comment: Any): Comment = Comment(comment = comment.toString())
@@ -309,13 +307,13 @@ sealed class AssemblyInstruction {
     }
 
     /**
-     * pop instruction.
-     * This instruction loads the data stored in the location pointed to by the stack pointer
+     * pop rbp instruction.
+     * This instruction loads the data stored in RBP pointed to by the stack pointer
      * into the argument specified and then increments the stack pointer
      */
-    data class Pop(val arg: RegOrMem) : AssemblyInstruction() {
+    object PopRBP : AssemblyInstruction() {
         override fun accept(visitor: AssemblyInstructionVisitor): Unit = visitor.visit(node = this)
-        override fun toString(): String = "pop ${argToString(arg)}"
+        override fun toString(): String = "pop rbp"
     }
 
     data class Label(val label: String) : AssemblyInstruction() {

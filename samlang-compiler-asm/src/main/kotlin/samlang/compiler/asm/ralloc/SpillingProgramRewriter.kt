@@ -17,7 +17,6 @@ import samlang.ast.asm.AssemblyInstruction.Companion.IMUL
 import samlang.ast.asm.AssemblyInstruction.Companion.LEA
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
 import samlang.ast.asm.AssemblyInstruction.Companion.NEG
-import samlang.ast.asm.AssemblyInstruction.Companion.POP
 import samlang.ast.asm.AssemblyInstruction.Companion.PUSH
 import samlang.ast.asm.AssemblyInstruction.Companion.SHL
 import samlang.ast.asm.AssemblyInstructionVisitor
@@ -277,18 +276,15 @@ internal class SpillingProgramRewriter(
             newInstructions += PUSH(transformArg(node.arg))
         }
 
-        override fun visit(node: Pop) {
-            node.arg.matchRegOrMem(
-                regF = { regDest -> transformRegDest(dest = regDest) { dest -> newInstructions += POP(dest) } },
-                memF = { memDest -> newInstructions += POP(transformMem(memDest)) }
-            )
+        override fun visit(node: PopRBP) {
+            newInstructions += PopRBP
         }
 
-        override fun visit(node: AssemblyInstruction.Label) {
+        override fun visit(node: Label) {
             newInstructions += node
         }
 
-        override fun visit(node: AssemblyInstruction.Comment) {
+        override fun visit(node: Comment) {
             newInstructions += node
         }
     }

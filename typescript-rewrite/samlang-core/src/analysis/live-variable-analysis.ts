@@ -10,6 +10,7 @@ import {
   R10,
   R11,
   RSP,
+  RBP,
 } from '../ast/asm/asm-arguments';
 import type { AssemblyInstruction } from '../ast/asm/asm-instructions';
 import { setEquals } from '../util/collections';
@@ -113,17 +114,9 @@ const collectDefAndUsesFromAssemblyInstruction = (
       collectUsesFromAssemblyArgument(uses, instruction.pushArgument);
       uses.add(RSP.id);
       return { defs: new Set([RSP.id]), uses };
-    case 'AssemblyPop':
+    case 'AssemblyPopRBP':
       uses.add(RSP.id);
-      // istanbul ignore next
-      if (instruction.popArgument.__type__ === 'AssemblyRegister') {
-        return { defs: new Set([instruction.popArgument.id]), uses };
-      }
-      // TODO: remove once pop is always pop rbp.
-      // istanbul ignore next
-      collectUsesFromAssemblyArgument(uses, instruction.popArgument);
-      // istanbul ignore next
-      return { defs: new Set([]), uses };
+      return { defs: new Set([RSP.id, RBP.id]), uses };
     case 'AssemblyLabel':
     case 'AssemblyComment':
       return { defs: new Set(), uses };

@@ -15,7 +15,6 @@ import samlang.ast.asm.AssemblyInstruction.Companion.BIN_OP
 import samlang.ast.asm.AssemblyInstruction.Companion.COMMENT
 import samlang.ast.asm.AssemblyInstruction.Companion.LABEL
 import samlang.ast.asm.AssemblyInstruction.Companion.MOVE
-import samlang.ast.asm.AssemblyInstruction.Companion.POP
 import samlang.ast.asm.AssemblyInstruction.Companion.PUSH
 import samlang.ast.asm.AssemblyInstruction.Companion.RET
 import samlang.ast.asm.AssemblyProgram
@@ -165,7 +164,7 @@ object AssemblyGenerator {
         }
         if (needToUseRBP) {
             fixedInstructions += MOVE(RSP, RBP)
-            fixedInstructions += POP(RBP)
+            fixedInstructions += AssemblyInstruction.PopRBP
         }
         fixedInstructions += RET()
         if (!removeComments) {

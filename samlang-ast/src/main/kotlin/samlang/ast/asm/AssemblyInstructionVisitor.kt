@@ -22,7 +22,7 @@ interface AssemblyInstructionVisitor {
     fun visit(node: Neg)
     fun visit(node: ShiftLeft)
     fun visit(node: Push)
-    fun visit(node: Pop)
+    fun visit(node: PopRBP)
     fun visit(node: Label)
     fun visit(node: Comment)
 }

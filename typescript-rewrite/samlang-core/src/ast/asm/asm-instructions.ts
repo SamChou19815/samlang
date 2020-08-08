@@ -185,13 +185,10 @@ export type AssemblyPush = {
 
 /**
  * pop instruction.
- * This instruction loads the data stored in the location pointed to by the stack pointer
+ * This instruction loads the data stored in RBP pointed to by the stack pointer
  * into the argument specified and then increments the stack pointer
  */
-export type AssemblyPop = {
-  readonly __type__: 'AssemblyPop';
-  readonly popArgument: AssemblyRegisterOrMemory;
-};
+export type AssemblyPopRBP = { readonly __type__: 'AssemblyPopRBP' };
 
 export type AssemblyLabel = {
   readonly __type__: 'AssemblyLabel';
@@ -223,7 +220,7 @@ export type AssemblyInstruction =
   | AssemblyNeg
   | AssemblyShiftLeft
   | AssemblyPush
-  | AssemblyPop
+  | AssemblyPopRBP
   | AssemblyLabel
   | AssemblyComment;
 
@@ -365,10 +362,7 @@ export const ASM_PUSH = (pushArgument: AssemblyArgument): AssemblyPush => ({
   pushArgument,
 });
 
-export const ASM_POP = (popArgument: AssemblyRegisterOrMemory): AssemblyPop => ({
-  __type__: 'AssemblyPop',
-  popArgument,
-});
+export const ASM_POP_RBP: AssemblyPopRBP = { __type__: 'AssemblyPopRBP' };
 
 export const ASM_LABEL = (label: string): AssemblyLabel => ({ __type__: 'AssemblyLabel', label });
 
@@ -473,8 +467,8 @@ export const assemblyInstructionToString = (instruction: AssemblyInstruction): s
       return `shl ${argToString(instruction.destination)}, ${instruction.count}`;
     case 'AssemblyPush':
       return `push ${argToString(instruction.pushArgument)}`;
-    case 'AssemblyPop':
-      return `pop ${argToString(instruction.popArgument)}`;
+    case 'AssemblyPopRBP':
+      return 'pop rbp';
     case 'AssemblyLabel':
       return `${instruction.label}:`;
     case 'AssemblyComment':

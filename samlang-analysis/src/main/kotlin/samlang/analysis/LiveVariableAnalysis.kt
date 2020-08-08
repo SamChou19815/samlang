@@ -8,6 +8,7 @@ import samlang.ast.asm.AssemblyArgs.R11
 import samlang.ast.asm.AssemblyArgs.R8
 import samlang.ast.asm.AssemblyArgs.R9
 import samlang.ast.asm.AssemblyArgs.RAX
+import samlang.ast.asm.AssemblyArgs.RBP
 import samlang.ast.asm.AssemblyArgs.RCX
 import samlang.ast.asm.AssemblyArgs.RDI
 import samlang.ast.asm.AssemblyArgs.RDX
@@ -210,10 +211,10 @@ class LiveVariableAnalysis(
             findUse(node.arg)
         }
 
-        override fun visit(node: Pop) {
+        override fun visit(node: PopRBP) {
             findDef(RSP)
             findUseForReg(RSP)
-            node.arg.matchRegOrMem(regF = { findDef(reg = it) }, memF = { findUseForMem(mem = it) })
+            findDef(RBP)
         }
 
         override fun visit(node: Label): Unit = Unit

@@ -30,7 +30,7 @@ import {
   ASM_NEG,
   ASM_SHL,
   ASM_PUSH,
-  ASM_POP,
+  ASM_POP_RBP,
   ASM_RET,
   ASM_LABEL,
   ASM_COMMENT,
@@ -134,7 +134,7 @@ it('analyzeLiveVariablesAtTheEndOfEachInstruction test 4', () => {
       /* 0 */ ASM_BIN_OP_MEM_DEST('xor', ASM_MEM_REG(RDI), RSI),
       /* 1 */ ASM_IMUL(RAX, ASM_MEM_REG(RDI), ASM_CONST(2)),
       /* 2 */ ASM_PUSH(RBP),
-      /* 3 */ ASM_POP(RBP),
+      /* 3 */ ASM_POP_RBP,
       /* 4 */ ASM_RET,
     ])
   ).toEqual([

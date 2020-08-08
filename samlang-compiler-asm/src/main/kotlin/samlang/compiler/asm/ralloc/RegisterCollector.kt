@@ -116,7 +116,7 @@ internal object RegisterCollector {
         override fun visit(node: Neg): Unit = f(node.dest)
         override fun visit(node: ShiftLeft): Unit = f(node.dest)
         override fun visit(node: Push): Unit = f(node.arg)
-        override fun visit(node: Pop): Unit = f(node.arg)
+        override fun visit(node: PopRBP): Unit = Unit
         override fun visit(node: Label): Unit = Unit
         override fun visit(node: Comment): Unit = Unit
     }
