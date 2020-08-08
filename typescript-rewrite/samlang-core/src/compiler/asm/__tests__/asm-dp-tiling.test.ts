@@ -31,23 +31,20 @@ const tileStatements = (statements: readonly MidIRStatement[]): string => {
 it('assembly simple statement tiling tests', () => {
   expect(tileStatements([MIR_MOVE_TEMP(MIR_TEMP('foo'), MIR_TEMP('bar'))])).toBe('mov foo, bar');
 
-  expect(tileStatements([MIR_MOVE_IMMUTABLE_MEM(MIR_IMMUTABLE_MEM(MIR_ONE), MIR_ZERO)]))
-    .toBe(`mov _ABSTRACT_REG_0, 1
-mov qword ptr [_ABSTRACT_REG_0], 0`);
+  expect(tileStatements([MIR_MOVE_IMMUTABLE_MEM(MIR_IMMUTABLE_MEM(MIR_ONE), MIR_ZERO)])).toBe(
+    'mov qword ptr [1], 0'
+  );
   expect(
     tileStatements([
       MIR_MOVE_IMMUTABLE_MEM(MIR_IMMUTABLE_MEM(MIR_ONE), MIR_CONST(BigInt(1000000000000))),
     ])
-  ).toBe(`mov _ABSTRACT_REG_0, 1
-movabs _ABSTRACT_REG_1, 1000000000000
-mov qword ptr [_ABSTRACT_REG_0], _ABSTRACT_REG_1`);
+  ).toBe(`movabs _ABSTRACT_REG_0, 1000000000000
+mov qword ptr [1], _ABSTRACT_REG_0`);
   expect(
     tileStatements([MIR_MOVE_IMMUTABLE_MEM(MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE))])
-  ).toBe(`mov _ABSTRACT_REG_0, 1
-## MEM[1]
-mov _ABSTRACT_REG_0, 1
-mov _ABSTRACT_REG_1, qword ptr [_ABSTRACT_REG_0]
-mov qword ptr [_ABSTRACT_REG_0], _ABSTRACT_REG_1`);
+  ).toBe(`## MEM[1]
+mov _ABSTRACT_REG_0, qword ptr [1]
+mov qword ptr [1], _ABSTRACT_REG_0`);
 
   expect(tileStatements([MIR_JUMP('a'), MIR_LABEL('a')])).toBe('jmp a\na:');
 
@@ -68,9 +65,8 @@ it('assembly cjump statement tiling tests', () => {
     ])
   ).toBe(`## if ((a < MEM[1])) goto a;
 ## MEM[1]
-mov _ABSTRACT_REG_0, 1
-mov _ABSTRACT_REG_1, qword ptr [_ABSTRACT_REG_0]
-cmp a, _ABSTRACT_REG_1
+mov _ABSTRACT_REG_0, qword ptr [1]
+cmp a, _ABSTRACT_REG_0
 jl a`);
 
   expect(tileStatements([MIR_CJUMP_FALLTHROUGH(MIR_OP('<=', MIR_TEMP('a'), MIR_TEMP('b')), 'a')]))
@@ -99,8 +95,7 @@ jnz a`);
 
   expect(tileStatements([MIR_CJUMP_FALLTHROUGH(MIR_IMMUTABLE_MEM(MIR_ONE), 'a')]))
     .toBe(`## if (MEM[1]) goto a;
-mov _ABSTRACT_REG_0, 1
-cmp qword ptr [_ABSTRACT_REG_0], 0
+cmp qword ptr [1], 0
 jnz a`);
   expect(
     tileStatements([
@@ -108,9 +103,8 @@ jnz a`);
     ])
   ).toBe(`## if ((a + MEM[1])) goto a;
 ## genericMidIRBinaryExpressionTiler: (a + MEM[1])
-mov _ABSTRACT_REG_1, 1
 mov _ABSTRACT_REG_0, a
-add _ABSTRACT_REG_0, qword ptr [_ABSTRACT_REG_1]
+add _ABSTRACT_REG_0, qword ptr [1]
 cmp _ABSTRACT_REG_0, 0
 jnz a`);
   expect(tileStatements([MIR_CJUMP_FALLTHROUGH(MIR_OP('-', MIR_TEMP('a'), MIR_TEMP('b')), 'a')]))
@@ -249,6 +243,14 @@ it('assembly name tiling test', () => {
 mov _, _ABSTRACT_REG_0`);
 });
 
+it('assembly memory tiling test', () => {
+  expect(
+    tileStatements([MIR_MOVE_TEMP(MIR_TEMP('_'), MIR_IMMUTABLE_MEM(MIR_IMMUTABLE_MEM(MIR_ONE)))])
+  ).toBe(`## MEM[1]
+mov _ABSTRACT_REG_0, qword ptr [1]
+mov _, qword ptr [_ABSTRACT_REG_0]`);
+});
+
 it('assembly comparison expressions tiling test', () => {
   expect(tileStatements([MIR_MOVE_TEMP(MIR_TEMP('_'), MIR_OP('<', MIR_ONE, MIR_ZERO))]))
     .toBe(`## genericMidIRComparisonBinaryExpressionTiler: (1 < 0)
@@ -310,7 +312,7 @@ it('assembly multiply by power of 2 tiling test', () => {
   expect(
     tileStatements([MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_OP('*', MIR_ONE, MIR_CONST(BigInt(65536))))])
   ).toBe(`## multiplyPowerOfTwoBinaryExpressionTiler (1 * 65536)
-mov _ABSTRACT_REG_5, 1
-shl _ABSTRACT_REG_5, 16
-mov a, _ABSTRACT_REG_5`);
+mov _ABSTRACT_REG_6, 1
+shl _ABSTRACT_REG_6, 16
+mov a, _ABSTRACT_REG_6`);
 });

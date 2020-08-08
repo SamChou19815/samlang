@@ -47,6 +47,7 @@ import {
 import { bigIntIsWithin32BitIntegerRange, isPowerOfTwo, logTwo } from '../../util/int-util';
 import { assertNotNull } from '../../util/type-assertions';
 import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
+import getAssemblyMemoryTilingForMidIRExpression from './asm-memory-tiling';
 import {
   getMemoizedAssemblyExpressionTilingFunction,
   getMemoizedAssemblyStatementTilingFunction,
@@ -239,10 +240,7 @@ const genericComparisonBinaryExpressionTiler: MidIRBinaryExpressionTiler = (
   );
 };
 
-const leaBinaryExpressionTiler: MidIRBinaryExpressionTiler = () => {
-  // TODO: reenable once we have the memory tiler
-  return null;
-  /*
+const leaBinaryExpressionTiler: MidIRBinaryExpressionTiler = (expression, service, memoryTiler) => {
   const resultRegister = service.allocator.nextReg();
   // try to use LEA if we can
   const memoryTilingResult = memoryTiler(expression, service);
@@ -255,7 +253,6 @@ const leaBinaryExpressionTiler: MidIRBinaryExpressionTiler = () => {
     ],
     resultRegister
   );
-  */
 };
 
 const imul3ArgumentBinaryExpressionTiler: MidIRBinaryExpressionTiler = (expression, service) => {
@@ -595,12 +592,8 @@ class AssemblyDpTiling implements AssemblyTilingService {
       );
     }
     const memoryTilingResult = this.tileMemoryForExpression(innerExpression, this);
-    // TODO: unignore coverage here once we have memory tiling ready.
-    // istanbul ignore next
     if (memoryTilingResult != null) return memoryTilingResult;
-    // istanbul ignore next
     const tilingResult = this.tileExpression(innerExpression);
-    // istanbul ignore next
     return createAssemblyMemoryTilingResult(
       tilingResult.instructions,
       ASM_MEM_REG(tilingResult.assemblyArgument)
@@ -614,14 +607,11 @@ const getAssemblyTilingForMidIRStatements = (
   allocator: AssemblyFunctionAbstractRegisterAllocator
 ): readonly AssemblyInstruction[] => {
   const instructions: AssemblyInstruction[] = [];
-  const tiler = new AssemblyDpTiling(functionName, allocator, (expression, service) => {
-    // TODO: replace this with a better implementation once mem tiling helper is ready.
-    const tilingResult = service.tileExpression(expression);
-    return createAssemblyMemoryTilingResult(
-      tilingResult.instructions,
-      ASM_MEM_REG(tilingResult.assemblyArgument)
-    );
-  });
+  const tiler = new AssemblyDpTiling(
+    functionName,
+    allocator,
+    getAssemblyMemoryTilingForMidIRExpression
+  );
   statements.forEach((statement) => instructions.push(...tiler.tileStatement(statement)));
   instructions.push(ASM_LABEL(`LABEL_FUNCTION_CALL_EPILOGUE_FOR_${functionName}`));
   return instructions;
