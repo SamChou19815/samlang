@@ -1,5 +1,6 @@
 import ControlFlowGraph from '../analysis/control-flow-graph';
 import analyzeUsedFunctionNames from '../analysis/used-name-analysis';
+import type { AssemblyInstruction } from '../ast/asm/asm-instructions';
 import { MidIRCompilationUnit, MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from '../ast/mir';
 import { isNotNull } from '../util/type-assertions';
 
@@ -20,20 +21,22 @@ const withoutUnreachableIRCode = (
 ): readonly MidIRStatement[] =>
   withoutUnreachableCode(statements, ControlFlowGraph.fromMidIRStatements);
 
-const coalesceConsecutiveLabelsForIr = (
-  statements: readonly MidIRStatement[]
-): readonly MidIRStatement[] => {
+const getCoalesceConsecutiveLabelsReplacementMap = <I>(
+  instructions: readonly I[],
+  getLabel: (instruction: I) => string | null
+): ReadonlyMap<string, string> | null => {
   // If label A is immediately followed by label B, then A -> B should be in the mapping.
   const nextEquivalentLabelMap = new Map<string, string>();
-  statements.forEach((statement, index) => {
-    if (index >= statements.length - 1) return;
-    if (statement.__type__ !== 'MidIRLabelStatement') return;
-    const nextStatement = statements[index + 1];
-    if (nextStatement.__type__ !== 'MidIRLabelStatement') return;
-    nextEquivalentLabelMap.set(statement.name, nextStatement.name);
+  instructions.forEach((instruction, index) => {
+    if (index >= instructions.length - 1) return;
+    const label = getLabel(instruction);
+    if (label == null) return;
+    const nextLabel = getLabel(instructions[index + 1]);
+    if (nextLabel == null) return;
+    nextEquivalentLabelMap.set(label, nextLabel);
   });
   if (nextEquivalentLabelMap.size === 0) {
-    return statements;
+    return null;
   }
 
   // It might be the case that we find something like l1 -> l2, l2 -> l3.
@@ -49,6 +52,18 @@ const coalesceConsecutiveLabelsForIr = (
     }
     optimizedNextEquivalentLabelMap.set(source, finalTarget);
   });
+
+  return optimizedNextEquivalentLabelMap;
+};
+
+const coalesceConsecutiveLabelsForIr = (
+  statements: readonly MidIRStatement[]
+): readonly MidIRStatement[] => {
+  const optimizedNextEquivalentLabelMap = getCoalesceConsecutiveLabelsReplacementMap(
+    statements,
+    (statement) => (statement.__type__ === 'MidIRLabelStatement' ? statement.name : null)
+  );
+  if (optimizedNextEquivalentLabelMap == null) return statements;
 
   return statements
     .map((statement) => {
@@ -167,15 +182,6 @@ const withoutUnusedLabelInIr = (
   );
 };
 
-/**
- * Perform these optimizations and return an optimized sequence of mid IR statements.
- *
- * - unreachable code elimination
- * - jump to immediate label elimination
- * - unused label elimination
- *
- * @returns a list of all optimized statements.
- */
 export const optimizeIrWithSimpleOptimization = (
   statements: readonly MidIRStatement[]
 ): readonly MidIRStatement[] =>
@@ -198,3 +204,73 @@ export const optimizeIRWithUnusedNameElimination = (
     functions: compilationUnit.functions.filter((it) => usedNames.has(it.functionName)),
   };
 };
+
+const withoutUnreachableAssemblyCode = (
+  instructions: readonly AssemblyInstruction[]
+): readonly AssemblyInstruction[] =>
+  withoutUnreachableCode(instructions, ControlFlowGraph.fromAssemblyInstructions);
+
+const coalesceConsecutiveLabelsForAsm = (
+  instructions: readonly AssemblyInstruction[]
+): readonly AssemblyInstruction[] => {
+  const optimizedNextEquivalentLabelMap = getCoalesceConsecutiveLabelsReplacementMap(
+    instructions,
+    (instruction) => (instruction.__type__ === 'AssemblyLabel' ? instruction.label : null)
+  );
+  if (optimizedNextEquivalentLabelMap == null) return instructions;
+
+  return instructions
+    .map((instruction) => {
+      switch (instruction.__type__) {
+        case 'AssemblyJump': {
+          const optimizedLabel = optimizedNextEquivalentLabelMap.get(instruction.label);
+          return optimizedLabel == null ? instruction : { ...instruction, label: optimizedLabel };
+        }
+        case 'AssemblyLabel':
+          return optimizedNextEquivalentLabelMap.has(instruction.label) ? null : instruction;
+        default:
+          return instruction;
+      }
+    })
+    .filter(isNotNull);
+};
+
+const withoutImmediateJumpInAsm = (
+  instructions: readonly AssemblyInstruction[]
+): readonly AssemblyInstruction[] =>
+  instructions.filter((instruction, index) => {
+    if (index < instructions.length - 1 && instruction.__type__ === 'AssemblyJump') {
+      const { label } = instruction;
+      const nextInstruction = instructions[index + 1];
+      if (nextInstruction.__type__ === 'AssemblyLabel' && nextInstruction.label === label) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+const withoutUnusedLabelInAsm = (
+  instructions: readonly AssemblyInstruction[]
+): readonly AssemblyInstruction[] => {
+  const usedLabels = new Set<string>();
+  instructions.forEach((instruction) => {
+    if (instruction.__type__ === 'AssemblyJump') {
+      usedLabels.add(instruction.label);
+    }
+  });
+  return instructions.filter(
+    (instruction) => instruction.__type__ !== 'AssemblyLabel' || usedLabels.has(instruction.label)
+  );
+};
+
+export const optimizeAssemblyWithSimpleOptimization = (
+  instructions: readonly AssemblyInstruction[],
+  removeComments: boolean
+): readonly AssemblyInstruction[] =>
+  pipe(
+    removeComments ? instructions.filter((it) => it.__type__ !== 'AssemblyComment') : instructions,
+    coalesceConsecutiveLabelsForAsm,
+    withoutUnreachableAssemblyCode,
+    withoutImmediateJumpInAsm,
+    withoutUnusedLabelInAsm
+  );
