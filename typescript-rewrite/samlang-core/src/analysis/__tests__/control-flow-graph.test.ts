@@ -1,3 +1,4 @@
+import { ASM_JUMP, ASM_RET, ASM_LABEL } from '../../ast/asm/asm-instructions';
 import {
   MIR_MOVE_TEMP,
   MIR_JUMP,
@@ -50,4 +51,13 @@ it('getParentIds is correct.', () => {
   expect(parentOf(4)).toEqual([3]);
   expect(parentOf(5)).toEqual([3, 4]);
   expect(parentOf(6)).toEqual([5]);
+});
+
+it('Can construct CFG from assembly instructions', () => {
+  ControlFlowGraph.fromAssemblyInstructions([
+    ASM_JUMP('jmp', ''),
+    ASM_LABEL(''),
+    ASM_JUMP('jl', ''),
+    ASM_RET,
+  ]);
 });
