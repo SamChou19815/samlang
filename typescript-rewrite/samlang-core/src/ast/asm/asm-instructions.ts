@@ -16,10 +16,10 @@ import {
  * --------------------------------------------------------------------------------
  */
 
-/** mov instruction. */
+/** movabs instruction. */
 export type AssemblyMoveFromLong = {
   readonly __type__: 'AssemblyMoveFromLong';
-  readonly destination: AssemblyRegister;
+  readonly destination: AssemblyRegisterOrMemory;
   readonly value: bigint;
 };
 
