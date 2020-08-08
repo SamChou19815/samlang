@@ -164,7 +164,21 @@ export const MIR_OP = (
   operator: IROperator,
   e1: MidIRExpression,
   e2: MidIRExpression
-): MidIRBinaryExpression => ({ __type__: 'MidIRBinaryExpression', operator, e1, e2 });
+): MidIRBinaryExpression => {
+  if (operator === '-' && e2.__type__ === 'MidIRConstantExpression') {
+    const negOfE2Constant = -e2.value;
+    // eslint-disable-next-line no-bitwise
+    if (negOfE2Constant < BigInt(1) << BigInt(63)) {
+      return {
+        __type__: 'MidIRBinaryExpression',
+        operator: '+',
+        e1,
+        e2: MIR_CONST(negOfE2Constant),
+      };
+    }
+  }
+  return { __type__: 'MidIRBinaryExpression', operator, e1, e2 };
+};
 
 export const MIR_MOVE_TEMP = (
   temporary: MidIRTemporaryExpression,

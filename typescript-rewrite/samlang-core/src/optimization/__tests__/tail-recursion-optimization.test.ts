@@ -107,7 +107,7 @@ it('run optimizeIRWithTailRecursiveCallTransformation on factorial.', () => {
 
   LABEL_TAIL_REC_OPTIMIZATION_FOR_factorial:
   if ((n == 0)) goto LABEL_RETURN_ACC;
-  _OPT_TAIL_REC_ARG_TEMP_0 = (n - 1);
+  _OPT_TAIL_REC_ARG_TEMP_0 = (n + -1);
   _OPT_TAIL_REC_ARG_TEMP_1 = (acc * n);
   n = _OPT_TAIL_REC_ARG_TEMP_0;
   acc = _OPT_TAIL_REC_ARG_TEMP_1;
@@ -142,7 +142,7 @@ it('run optimizeIRWithTailRecursiveCallTransformation on factorialWithSelfCallRe
 
   LABEL_TAIL_REC_OPTIMIZATION_FOR_factorialWithSelfCallReturnNothing:
   if ((n == 0)) goto LABEL_RETURN_ACC;
-  _OPT_TAIL_REC_ARG_TEMP_0 = (n - 1);
+  _OPT_TAIL_REC_ARG_TEMP_0 = (n + -1);
   _OPT_TAIL_REC_ARG_TEMP_1 = (acc * n);
   n = _OPT_TAIL_REC_ARG_TEMP_0;
   acc = _OPT_TAIL_REC_ARG_TEMP_1;
@@ -177,7 +177,7 @@ it('run optimizeIRWithTailRecursiveCallTransformation on factorialWithGarbage.',
   let acc = _ARG1;
 
   if ((n == 0)) goto LABEL_RETURN_ACC;
-  dummy = factorialWithGarbage((n - 1), (acc * n));
+  dummy = factorialWithGarbage((n + -1), (acc * n));
   dummy = garbage;
   return dummy;
   LABEL_RETURN_ACC:
@@ -209,7 +209,7 @@ it('run optimizeIRWithTailRecursiveCallTransformation on factorialWithReturnGarb
   let acc = _ARG1;
 
   if ((n == 0)) goto LABEL_RETURN_ACC;
-  dummy = factorialWithReturnGarbage1((n - 1), (acc * n));
+  dummy = factorialWithReturnGarbage1((n + -1), (acc * n));
   return garbage;
   LABEL_RETURN_ACC:
   return acc;
@@ -240,7 +240,7 @@ it('run optimizeIRWithTailRecursiveCallTransformation on factorialWithReturnGarb
   let acc = _ARG1;
 
   if ((n == 0)) goto LABEL_RETURN_ACC;
-  dummy = factorialWithReturnGarbage2((n - 1), (acc * n));
+  dummy = factorialWithReturnGarbage2((n + -1), (acc * n));
   return 0;
   LABEL_RETURN_ACC:
   return acc;
@@ -275,7 +275,7 @@ it('run optimizeIRWithTailRecursiveCallTransformation on factorialWithIntermedia
 
   LABEL_TAIL_REC_OPTIMIZATION_FOR_factorialWithIntermediateMove:
   if ((n == 0)) goto LABEL_RETURN_ACC;
-  _OPT_TAIL_REC_ARG_TEMP_0 = (n - 1);
+  _OPT_TAIL_REC_ARG_TEMP_0 = (n + -1);
   _OPT_TAIL_REC_ARG_TEMP_1 = (acc * n);
   n = _OPT_TAIL_REC_ARG_TEMP_0;
   acc = _OPT_TAIL_REC_ARG_TEMP_1;
@@ -309,7 +309,7 @@ it('run optimizeIRWithTailRecursiveCallTransformation on factorialWithIntermedia
   let acc = _ARG1;
 
   if ((n == 0)) goto LABEL_RETURN_ACC;
-  dummy = factorialWithIntermediateJump((n - 1), (acc * n));
+  dummy = factorialWithIntermediateJump((n + -1), (acc * n));
   goto aaa;
   LABEL_RETURN_ACC:
   return acc;

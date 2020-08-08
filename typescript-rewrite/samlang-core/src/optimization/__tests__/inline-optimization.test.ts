@@ -109,10 +109,10 @@ function factorial {
   let acc = _ARG1;
 
   if ((n == 0)) goto LABEL_RETURN_ACC;
-  _INLINING_1_n = (n - 1);
+  _INLINING_1_n = (n + -1);
   _INLINING_1_acc = (acc * n);
   if ((_INLINING_1_n == 0)) goto INLINING_0_LABEL_RETURN_ACC;
-  _INLINING_1_dummy = factorial((_INLINING_1_n - 1), (_INLINING_1_acc * _INLINING_1_n));
+  _INLINING_1_dummy = factorial((_INLINING_1_n + -1), (_INLINING_1_acc * _INLINING_1_n));
   dummy = _INLINING_1_dummy;
   goto INLINING_0___INLINING_END;
   INLINING_0_LABEL_RETURN_ACC:

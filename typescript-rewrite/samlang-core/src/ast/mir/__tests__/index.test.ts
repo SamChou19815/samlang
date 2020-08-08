@@ -31,6 +31,10 @@ it('midIRExpressionToString tests', () => {
   expect(midIRExpressionToString(MIR_TEMP('variableName'))).toBe('variableName');
   expect(midIRExpressionToString(MIR_IMMUTABLE_MEM(MIR_ZERO))).toBe('MEM[0]');
   expect(midIRExpressionToString(MIR_OP('+', MIR_EIGHT, MIR_ONE))).toBe('(8 + 1)');
+  expect(midIRExpressionToString(MIR_OP('-', MIR_EIGHT, MIR_ONE))).toBe('(8 + -1)');
+  expect(
+    midIRExpressionToString(MIR_OP('-', MIR_EIGHT, MIR_CONST(BigInt('-9223372036854775808'))))
+  ).toBe('(8 - -9223372036854775808)');
 });
 
 it('midIRStatementToString tests', () => {
