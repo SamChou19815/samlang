@@ -77,9 +77,12 @@ export const createAssemblyMidIRExpressionTilingResult = (
   assemblyArgument: register,
 });
 
-export interface AssemblyTilingService {
-  readonly allocator: AssemblyFunctionAbstractRegisterAllocator;
+export interface AssemblyTilingServiceBasic {
   tileExpression(midIRExpression: MidIRExpression): AssemblyMidIRExpressionTilingResult;
+}
+
+export interface AssemblyTilingService extends AssemblyTilingServiceBasic {
+  readonly allocator: AssemblyFunctionAbstractRegisterAllocator;
   tileRegisterOrMemory(expression: MidIRExpression): AssemblyRegisterOrMemoryTilingResult;
   tileAssemblyArgument(expression: MidIRExpression): AssemblyArgumentTilingResult;
 }

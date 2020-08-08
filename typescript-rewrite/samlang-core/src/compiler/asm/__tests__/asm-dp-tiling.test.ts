@@ -3,6 +3,8 @@ import {
   MidIRStatement,
   MIR_ZERO,
   MIR_ONE,
+  MIR_NAME,
+  MIR_CONST,
   MIR_TEMP,
   MIR_IMMUTABLE_MEM,
   MIR_OP,
@@ -13,8 +15,6 @@ import {
   MIR_LABEL,
   MIR_CJUMP_FALLTHROUGH,
   MIR_RETURN,
-  MIR_NAME,
-  MIR_CONST,
 } from '../../../ast/mir';
 import getAssemblyTilingForMidIRStatements from '../asm-dp-tiling';
 import AssemblyFunctionAbstractRegisterAllocator from '../asm-function-abstract-register-allocator';
