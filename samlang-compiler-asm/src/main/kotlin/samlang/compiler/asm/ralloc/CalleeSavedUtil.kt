@@ -49,21 +49,17 @@ internal object CalleeSavedUtil {
     }
 
     /**
-     * Mutate the spilledVarMappings to remove unused space for callee saved registers.
-     *
      * @param spilledVarMappings the spilled var mappings to mutable.
      * @param unusedCalleeSavedRegisters a set of unused callee saved registers as a reference.
      * @return new mappings from the old mem to new mem.
      */
     fun reorganizeSpilledVarMappings(
-        spilledVarMappings: MutableMap<String, AssemblyArgs.Mem>,
+        spilledVarMappings: Map<String, AssemblyArgs.Mem>,
         unusedCalleeSavedRegisters: Set<String>
     ): Map<AssemblyArgs.Mem, AssemblyArgs.Mem> {
         val usedNames = mutableSetOf<String>()
-        val unusedNames = mutableSetOf<String>()
         for ((name, mem) in spilledVarMappings) {
             if (unusedCalleeSavedRegisters.contains(name)) {
-                unusedNames.add(name)
                 continue
             }
             // sanity check
@@ -87,10 +83,8 @@ internal object CalleeSavedUtil {
             val oldMem = spilledVarMappings[usedName]!!
             val newMem: AssemblyArgs.Mem = MEM(RBP, CONST(value = -8 * memId))
             newMappings[oldMem] = newMem
-            spilledVarMappings[usedName] = newMem
             memId++
         }
-        spilledVarMappings.keys.removeAll(unusedNames)
         return newMappings
     }
 }
