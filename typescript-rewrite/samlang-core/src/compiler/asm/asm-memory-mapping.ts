@@ -16,6 +16,10 @@ export interface ReadonlyAssemblyMemoryMapping {
 export class AssemblyMemoryMapping implements ReadonlyAssemblyMemoryMapping {
   private backingMap: HashMap<MemoryWrapper, AssemblyMemory> = hashMapOf();
 
+  get size(): number {
+    return this.backingMap.size;
+  }
+
   get(memory: AssemblyMemory): AssemblyMemory | undefined {
     return this.backingMap.get(new MemoryWrapper(memory));
   }
