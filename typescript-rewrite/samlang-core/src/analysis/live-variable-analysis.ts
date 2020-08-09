@@ -122,7 +122,17 @@ const collectDefAndUsesFromAssemblyInstruction = (
 const analyzeLiveVariablesAtTheEndOfEachInstruction = (
   instructions: readonly AssemblyInstruction[],
   hasReturn: boolean
-): readonly ReadonlySet<string>[] => {
+): {
+  readonly useAndDefs: readonly {
+    readonly uses: ReadonlySet<string>;
+    readonly defs: ReadonlySet<string>;
+  }[];
+  readonly out: readonly ReadonlySet<string>[];
+} => {
+  const useAndDefs = instructions.map((it) =>
+    collectDefAndUsesFromAssemblyInstruction(it, hasReturn)
+  );
+
   const operator: DataflowAnalysisGraphOperator<AssemblyInstruction, Set<string>> = {
     graphConstructor: ControlFlowGraph.fromAssemblyInstructions,
     edgeInitializer: () => new Set(),
@@ -131,9 +141,9 @@ const analyzeLiveVariablesAtTheEndOfEachInstruction = (
       parentInEdges.forEach((edge) => edge.forEach((v) => newOutEdge.add(v)));
       return newOutEdge;
     },
-    computeNewEdge: (newOutEdge, instruction) => {
+    computeNewEdge: (newOutEdge, _, nodeID) => {
       const newInEdge = new Set(newOutEdge);
-      const { uses, defs } = collectDefAndUsesFromAssemblyInstruction(instruction, hasReturn);
+      const { uses, defs } = useAndDefs[nodeID];
       defs.forEach((oneDef) => newInEdge.delete(oneDef));
       uses.forEach((oneUse) => newInEdge.add(oneUse));
       return newInEdge;
@@ -141,7 +151,10 @@ const analyzeLiveVariablesAtTheEndOfEachInstruction = (
     edgeDataEquals: setEquals,
   };
 
-  return runBackwardDataflowAnalysis(instructions, operator).outEdges;
+  return {
+    useAndDefs,
+    out: runBackwardDataflowAnalysis(instructions, operator).outEdges,
+  };
 };
 
 export default analyzeLiveVariablesAtTheEndOfEachInstruction;

@@ -41,7 +41,7 @@ const analyze = (
   instructions: readonly AssemblyInstruction[],
   hasReturn = true
 ): readonly (readonly string[])[] =>
-  analyzeLiveVariablesAtTheEndOfEachInstruction(instructions, hasReturn).map((it) =>
+  analyzeLiveVariablesAtTheEndOfEachInstruction(instructions, hasReturn).out.map((it) =>
     Array.from(it)
   );
 
