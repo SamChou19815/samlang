@@ -34,10 +34,12 @@ const collectUsesFromAssemblyArgument = (
   }
 };
 
+type UsesAndDefs = { readonly uses: ReadonlySet<string>; readonly defs: ReadonlySet<string> };
+
 const collectDefAndUsesFromAssemblyInstruction = (
   instruction: AssemblyInstruction,
   hasReturn: boolean
-): { readonly uses: ReadonlySet<string>; readonly defs: ReadonlySet<string> } => {
+): UsesAndDefs => {
   const uses = new Set<string>();
 
   switch (instruction.__type__) {
@@ -119,16 +121,15 @@ const collectDefAndUsesFromAssemblyInstruction = (
   }
 };
 
+export type LiveVariableAnalysisResult = {
+  readonly useAndDefs: readonly UsesAndDefs[];
+  readonly out: readonly ReadonlySet<string>[];
+};
+
 const analyzeLiveVariablesAtTheEndOfEachInstruction = (
   instructions: readonly AssemblyInstruction[],
   hasReturn: boolean
-): {
-  readonly useAndDefs: readonly {
-    readonly uses: ReadonlySet<string>;
-    readonly defs: ReadonlySet<string>;
-  }[];
-  readonly out: readonly ReadonlySet<string>[];
-} => {
+): LiveVariableAnalysisResult => {
   const useAndDefs = instructions.map((it) =>
     collectDefAndUsesFromAssemblyInstruction(it, hasReturn)
   );
