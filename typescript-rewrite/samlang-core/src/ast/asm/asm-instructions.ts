@@ -19,7 +19,7 @@ import {
 /** movabs instruction. */
 export type AssemblyMoveFromLong = {
   readonly __type__: 'AssemblyMoveFromLong';
-  readonly destination: AssemblyRegisterOrMemory;
+  readonly destination: AssemblyRegister;
   readonly value: bigint;
 };
 

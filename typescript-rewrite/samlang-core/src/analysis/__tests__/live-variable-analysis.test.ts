@@ -86,17 +86,6 @@ it('analyzeLiveVariablesAtTheEndOfEachInstruction test 1', () => {
 });
 
 it('analyzeLiveVariablesAtTheEndOfEachInstruction test 2', () => {
-  expect(
-    analyze([
-      {
-        __type__: 'AssemblyMoveFromLong',
-        destination: ASM_MEM_REG(RAX),
-        value: BigInt(1),
-      },
-      ASM_RET,
-    ])
-  ).toEqual([['rax'], []]);
-
   expect(analyze([ASM_SET('je', RAX), ASM_RET])).toEqual([['rax'], []]);
 
   expect(analyze([ASM_SET('je', RAX), ASM_RET], false)).toEqual([[], []]);

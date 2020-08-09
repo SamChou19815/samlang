@@ -42,10 +42,6 @@ const collectDefAndUsesFromAssemblyInstruction = (
 
   switch (instruction.__type__) {
     case 'AssemblyMoveFromLong':
-      if (instruction.destination.__type__ === 'AssemblyMemory') {
-        collectUsesFromAssemblyArgument(uses, instruction.destination);
-        return { defs: new Set(), uses };
-      }
       return { defs: new Set([instruction.destination.id]), uses };
     case 'AssemblyMoveToMemory':
       collectUsesFromAssemblyArgument(uses, instruction.destination);
