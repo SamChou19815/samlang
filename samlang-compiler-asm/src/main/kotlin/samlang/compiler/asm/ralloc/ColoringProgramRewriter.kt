@@ -40,23 +40,18 @@ internal class ColoringProgramRewriter(
 
     init {
         val visitor = Visitor()
-        for (oldInstruction in oldInstructions) {
-            oldInstruction.accept(visitor = visitor)
-        }
+        oldInstructions.forEach { it.accept(visitor) }
     }
 
-    /** @return the generated new instructions. */
     fun getNewInstructions(): List<AssemblyInstruction> = newInstructions
 
     private fun transform(reg: Reg): Reg {
-        val id = reg.id
-        val mappedId = colors[id]
+        val mappedId = colors[reg.id]
         return mappedId?.let { Reg(it) } ?: reg
     }
 
     private fun transform(mem: Mem): Mem {
-        val potentialNewMemMapping =
-                newSpilledVarMemMapping[mem]
+        val potentialNewMemMapping = newSpilledVarMemMapping[mem]
         if (potentialNewMemMapping != null) {
             return potentialNewMemMapping
         }
@@ -66,8 +61,7 @@ internal class ColoringProgramRewriter(
         }
         var multipleOf = mem.multipleOf
         if (multipleOf != null) {
-            val multipleOfBaseReg = transform(multipleOf.baseReg)
-            multipleOf = MultipleOf(multipleOfBaseReg, multipleOf.multipliedConstant)
+            multipleOf = MultipleOf(transform(multipleOf.baseReg), multipleOf.multipliedConstant)
         }
         return Mem(baseReg, multipleOf, mem.displacement)
     }
@@ -79,11 +73,7 @@ internal class ColoringProgramRewriter(
             constOrReg.matchConstOrReg(constF = { it }, regF = { transform(reg = it) })
 
     private fun transformArg(arg: AssemblyArg): AssemblyArg =
-            arg.match(
-                    constF = { it },
-                    regF = { transform(reg = it) },
-                    memF = { transform(mem = it) }
-            )
+            arg.match(constF = { it }, regF = { transform(reg = it) }, memF = { transform(mem = it) })
 
     private inner class Visitor : AssemblyInstructionVisitor {
         override fun visit(node: MoveFromLong) {
@@ -95,9 +85,7 @@ internal class ColoringProgramRewriter(
             if (newSrc is Reg) {
                 val id = newSrc.id
                 if (unusedCalleeSavedRegisters.contains(id)) {
-                    newInstructions += COMMENT(
-                            comment = "unnecessary 'mov [mem], $id' is optimized away."
-                    )
+                    newInstructions += COMMENT(comment = "unnecessary 'mov [mem], $id' is optimized away.")
                     return
                 }
             }
@@ -108,9 +96,7 @@ internal class ColoringProgramRewriter(
         override fun visit(node: MoveToReg) {
             val newDest = transform(node.dest)
             if (unusedCalleeSavedRegisters.contains(newDest.id)) {
-                newInstructions += COMMENT(
-                        comment = "unnecessary 'mov ${newDest.id}, [mem]' is optimized away."
-                )
+                newInstructions += COMMENT(comment = "unnecessary 'mov ${newDest.id}, [mem]' is optimized away.")
                 return
             }
             val newSource = transformArg(node.src)
@@ -128,10 +114,7 @@ internal class ColoringProgramRewriter(
         }
 
         override fun visit(node: CmpConstOrReg) {
-            newInstructions += CMP(
-                    transformRegOrMem(regOrMem = node.minuend),
-                    transformConstOrReg(node.subtrahend)
-            )
+            newInstructions += CMP(transformRegOrMem(regOrMem = node.minuend), transformConstOrReg(node.subtrahend))
         }
 
         override fun visit(node: CmpMem) {
@@ -145,16 +128,8 @@ internal class ColoringProgramRewriter(
             newInstructions += node
         }
 
-        override fun visit(node: JumpLabel) {
-            newInstructions += node
-        }
-
         override fun visit(node: CallAddress) {
             newInstructions += CALL(transformArg(node.address))
-        }
-
-        override fun visit(node: AssemblyInstruction.Return) {
-            newInstructions += node
         }
 
         override fun visit(node: AlBinaryOpMemDest) {
@@ -170,43 +145,22 @@ internal class ColoringProgramRewriter(
         }
 
         override fun visit(node: IMulThreeArgs) {
-            newInstructions += IMUL(
-                    dest = transform(node.dest),
-                    src = transformRegOrMem(node.src),
-                    immediate = node.immediate
-            )
+            newInstructions += IMUL(dest = transform(node.dest), src = transformRegOrMem(node.src), immediate = node.immediate)
         }
 
-        override fun visit(node: Cqo) {
-            newInstructions += node
-        }
+        override fun visit(node: IDiv) { newInstructions += IDIV(transformRegOrMem(node.divisor)) }
 
-        override fun visit(node: IDiv) {
-            newInstructions += IDIV(transformRegOrMem(node.divisor))
-        }
+        override fun visit(node: Neg) { newInstructions += NEG(transformRegOrMem(node.dest)) }
 
-        override fun visit(node: Neg) {
-            newInstructions += NEG(transformRegOrMem(node.dest))
-        }
+        override fun visit(node: ShiftLeft) { newInstructions += SHL(transformRegOrMem(node.dest), node.count) }
 
-        override fun visit(node: ShiftLeft) {
-            newInstructions += SHL(transformRegOrMem(node.dest), node.count)
-        }
+        override fun visit(node: Push) { newInstructions += PUSH(transformArg(node.arg)) }
 
-        override fun visit(node: Push) {
-            newInstructions += PUSH(transformArg(node.arg))
-        }
-
-        override fun visit(node: PopRBP) {
-            newInstructions += PopRBP
-        }
-
-        override fun visit(node: Label) {
-            newInstructions += node
-        }
-
-        override fun visit(node: Comment) {
-            newInstructions += node
-        }
+        override fun visit(node: JumpLabel) { newInstructions += node }
+        override fun visit(node: Return) { newInstructions += node }
+        override fun visit(node: Cqo) { newInstructions += node }
+        override fun visit(node: PopRBP) { newInstructions += node }
+        override fun visit(node: Label) { newInstructions += node }
+        override fun visit(node: Comment) { newInstructions += node }
     }
 }
