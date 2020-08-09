@@ -215,7 +215,7 @@ internal class RealRegisterAllocator(
             if (moveList != null) {
                 for (v in moveList) {
                     if (activeMoves.contains(v) || workListMoves.contains(v)) {
-                        error("simplifyWorkList invariant is broken. moveList=$moveList, activeMoves = $activeMoves, workListMoves = $workListMoves")
+                        error("simplifyWorkList invariant is broken.")
                     }
                 }
             }
@@ -236,9 +236,7 @@ internal class RealRegisterAllocator(
                 }
             }
             if (intersectionIsEmpty) {
-                error(
-                    "freezeWorkList invariant is broken. moveList = $moveList, activeMoves = $activeMoves, workListMoves = $workListMoves"
-                )
+                error("freezeWorkList invariant is broken.")
             }
         }
         // spillWorkList invariant
@@ -392,8 +390,7 @@ internal class RealRegisterAllocator(
     }
 
     private fun ok(t: String, r: String): Boolean {
-        return (interferenceGraph.degree(t) < K || PRE_COLORED_REGS.contains(t) ||
-                interferenceGraph.contains(t, r))
+        return interferenceGraph.degree(t) < K || PRE_COLORED_REGS.contains(t) || interferenceGraph.contains(t, r)
     }
 
     private fun conservative(variables: Collection<String>): Boolean {
@@ -406,21 +403,15 @@ internal class RealRegisterAllocator(
         return k < K
     }
 
-    private fun union(
-        sets: Collection<Collection<String>>
-    ): Set<String> {
+    private fun union(sets: Collection<Collection<String>>): Set<String> {
         val s = mutableSetOf<String>()
-        for (set in sets) {
-            s.addAll(set)
-        }
+        sets.forEach { s += it }
         return s
     }
 
     private fun coalesce() { // pick an arbitrary move from workListMoves
         val workListMovesIterator: Iterator<RegMove> = workListMoves.iterator()
-        if (!workListMovesIterator.hasNext()) {
-            throw Error()
-        }
+        if (!workListMovesIterator.hasNext()) throw Error()
         val move = workListMovesIterator.next()
         val x = getAlias(move.dest)
         val y = getAlias(move.src)
@@ -443,10 +434,9 @@ internal class RealRegisterAllocator(
             addToWorkList(u)
             addToWorkList(v)
         } else {
-            var condition = (PRE_COLORED_REGS.contains(u) && adjacentSet(v).all { t: String -> ok(t, u) })
+            var condition = PRE_COLORED_REGS.contains(u) && adjacentSet(v).all { t: String -> ok(t, u) }
             if (!condition) {
-                condition = (!PRE_COLORED_REGS.contains(u) &&
-                        conservative(union(listOf(adjacentSet(u), adjacentSet(v)))))
+                condition = !PRE_COLORED_REGS.contains(u) && conservative(union(listOf(adjacentSet(u), adjacentSet(v))))
             }
             if (condition) {
                 coalescedMoves.add(move)
@@ -546,8 +536,7 @@ internal class RealRegisterAllocator(
         while (!selectStack.isEmpty()) {
             val variable = selectStack.removeFirst()
             val okRegs = mutableSetOf(*OK_REGS.toTypedArray())
-            val adjacentVars =
-                interferenceGraph.getAdjacentList(variable)
+            val adjacentVars = interferenceGraph.getAdjacentList(variable)
             for (conflictingVar in adjacentVars) {
                 val alias = getAlias(conflictingVar)
                 if (coloredVars.contains(alias) || PRE_COLORED_REGS.contains(alias)) {

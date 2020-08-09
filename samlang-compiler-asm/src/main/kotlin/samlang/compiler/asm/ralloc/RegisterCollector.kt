@@ -42,11 +42,8 @@ internal object RegisterCollector {
         }
 
         private fun f(reg: Reg) {
-            val id = reg.id
-            if (!excludeMachineRegisters ||
-                !RegisterAllocationConstants.PRE_COLORED_REGS.contains(id)
-            ) {
-                collector.add(id)
+            if (!excludeMachineRegisters || !RegisterAllocationConstants.PRE_COLORED_REGS.contains(reg.id)) {
+                collector.add(reg.id)
             }
         }
 
