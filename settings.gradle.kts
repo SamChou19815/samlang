@@ -7,8 +7,7 @@ include(
     "samlang-parser",
     "samlang-analysis",
     "samlang-optimization",
-    "samlang-compiler-asm",
-    "samlang-compiler-ir",
+    "samlang-compiler",
     "samlang-service",
     "samlang-cli"
 )

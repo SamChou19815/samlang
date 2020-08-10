@@ -10,8 +10,7 @@ dependencies {
     implementation(project(":samlang-parser"))
     implementation(project(":samlang-analysis"))
     implementation(project(":samlang-optimization"))
-    implementation(project(":samlang-compiler-asm"))
-    implementation(project(":samlang-compiler-ir"))
+    implementation(project(":samlang-compiler"))
 
     testImplementation("org.jetbrains.kotlin:kotlin-test-common")
     testImplementation("org.jetbrains.kotlin:kotlin-test-annotations-common")
