@@ -28,18 +28,20 @@ const collectUsesFromAssemblyArgument = (
       return uses.add(assemblyArgument.id);
     case 'AssemblyMemory':
       if (assemblyArgument.baseRegister != null) uses.add(assemblyArgument.baseRegister.id);
-      if (assemblyArgument.multipleOf != null)
+      if (assemblyArgument.multipleOf != null) {
         uses.add(assemblyArgument.multipleOf.baseRegister.id);
+      }
       return uses;
   }
 };
 
+type MutableUsesAndDefs = { readonly uses: Set<string>; readonly defs: Set<string> };
 type UsesAndDefs = { readonly uses: ReadonlySet<string>; readonly defs: ReadonlySet<string> };
 
 const collectDefAndUsesFromAssemblyInstruction = (
   instruction: AssemblyInstruction,
   hasReturn: boolean
-): UsesAndDefs => {
+): MutableUsesAndDefs => {
   const uses = new Set<string>();
 
   switch (instruction.__type__) {
@@ -133,6 +135,15 @@ const analyzeLiveVariablesAtTheEndOfEachInstruction = (
   const useAndDefs = instructions.map((it) =>
     collectDefAndUsesFromAssemblyInstruction(it, hasReturn)
   );
+  // istanbul ignore next
+  if (instructions.length > 0) {
+    // last instruction is the epilogue label. It can be seen as the exit node.
+    const useSetOfLastInstruction = useAndDefs[instructions.length - 1].uses;
+    // we also want to use rax if they are return values.
+    if (hasReturn) {
+      useSetOfLastInstruction.add(RAX.id);
+    }
+  }
 
   const operator: DataflowAnalysisGraphOperator<AssemblyInstruction, Set<string>> = {
     graphConstructor: ControlFlowGraph.fromAssemblyInstructions,
@@ -143,10 +154,13 @@ const analyzeLiveVariablesAtTheEndOfEachInstruction = (
       return newOutEdge;
     },
     computeNewEdge: (newOutEdge, _, nodeID) => {
-      const newInEdge = new Set(newOutEdge);
       const { uses, defs } = useAndDefs[nodeID];
-      defs.forEach((oneDef) => newInEdge.delete(oneDef));
-      uses.forEach((oneUse) => newInEdge.add(oneUse));
+      const newInEdge = new Set(uses);
+      newOutEdge.forEach((outVariable) => {
+        if (!defs.has(outVariable)) {
+          newInEdge.add(outVariable);
+        }
+      });
       return newInEdge;
     },
     edgeDataEquals: setEquals,

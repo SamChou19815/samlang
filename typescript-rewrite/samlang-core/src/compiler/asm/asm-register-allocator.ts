@@ -163,19 +163,19 @@ export default class AssemblyRegisterAllocator {
     // run the allocator
     this.main();
     // post-processing
-    const unusedCalledSavedRegisters = new Set(CALLEE_SAVED_REGISTERS);
+    const unusedCalleeSavedRegisters = new Set(CALLEE_SAVED_REGISTERS);
     Array.from(this.colors.entries())
       .filter(([key]) => !PRE_COLORED_REGISTERS.has(key))
-      .forEach(([, value]) => unusedCalledSavedRegisters.delete(value));
+      .forEach(([, value]) => unusedCalleeSavedRegisters.delete(value));
     const newSpilledVariableMemoryMapping = reorganizeSpilledVariableMappingsToRemoveUnusedCalleeSavedRegisterMappings(
       this.spilledVariableMappings,
-      unusedCalledSavedRegisters
+      unusedCalleeSavedRegisters
     );
     this.numberOfTemporariesOnStack = newSpilledVariableMemoryMapping.size;
     this.realInstructions = assemblyInstructionColoringRewrite(
       this.colors,
       newSpilledVariableMemoryMapping,
-      unusedCalledSavedRegisters,
+      unusedCalleeSavedRegisters,
       this.instructions
     );
     // sanity check to ensure we get rid of all non-machine registers!
@@ -440,7 +440,7 @@ export default class AssemblyRegisterAllocator {
     );
   }
 
-  private conservative(variables: readonly string[]): boolean {
+  private conservative(variables: ReadonlySet<string>): boolean {
     let k = 0;
     variables.forEach((variable) => {
       if (this.interferenceGraph.degree(variable) >= K) {
@@ -480,7 +480,7 @@ export default class AssemblyRegisterAllocator {
       if (!condition) {
         condition =
           !PRE_COLORED_REGISTERS.has(u) &&
-          this.conservative(Array.from(union(this.adjacentSet(u), this.adjacentSet(v))));
+          this.conservative(union(this.adjacentSet(u), this.adjacentSet(v)));
       }
       if (condition) {
         this.coalescedMoves.add(move);

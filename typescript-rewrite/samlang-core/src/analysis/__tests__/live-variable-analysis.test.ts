@@ -70,7 +70,7 @@ it('analyzeLiveVariablesAtTheEndOfEachInstruction test 1', () => {
     /* 01 */ ['x', 'rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9'],
     /* 02 */ ['x', 'rdi', 'rsi', 'rdx', 'rcx', 'r8', 'r9'],
     /* 03 */ ['rax'],
-    /* 04 */ ['rax', 'z2'],
+    /* 04 */ ['z2', 'rax'],
     /* 05 */ ['rax'],
     /* 06 */ ['rax'],
     /* 07 */ ['rax'],
@@ -105,12 +105,12 @@ it('analyzeLiveVariablesAtTheEndOfEachInstruction test 3', () => {
       /* 8 */ ASM_RET,
     ])
   ).toEqual([
-    /* 0 */ ['rdi', 'rsi'],
-    /* 1 */ ['rsi', 'rdi'],
-    /* 2 */ ['rdi', 'rsi'],
+    /* 0 */ ['rsi', 'rdi'],
+    /* 1 */ ['rdi', 'rsi'],
+    /* 2 */ ['rsi', 'rdi'],
     /* 3 */ ['rsi', 'rdi'],
-    /* 4 */ ['rsi', 'rax', 'rdi'],
-    /* 5 */ ['rsi', 'rax'],
+    /* 4 */ ['rdi', 'rax', 'rsi'],
+    /* 5 */ ['rax', 'rsi'],
     /* 6 */ ['rsi', 'rax', 'rdx'],
     /* 7 */ ['rax'],
     /* 8 */ [],
@@ -127,9 +127,9 @@ it('analyzeLiveVariablesAtTheEndOfEachInstruction test 4', () => {
       /* 4 */ ASM_RET,
     ])
   ).toEqual([
-    /* 0 */ ['rbp', 'rsp', 'rdi'],
-    /* 1 */ ['rax', 'rbp', 'rsp'],
-    /* 2 */ ['rax', 'rsp'],
+    /* 0 */ ['rdi', 'rbp', 'rsp'],
+    /* 1 */ ['rbp', 'rsp', 'rax'],
+    /* 2 */ ['rsp', 'rax'],
     /* 3 */ ['rax'],
     /* 4 */ [],
   ]);
@@ -144,5 +144,5 @@ it('analyzeLiveVariablesAtTheEndOfEachInstruction test 5', () => {
       ASM_PUSH(ASM_MEM_REG(RDI)),
       ASM_RET,
     ])
-  ).toEqual([['rax', 'rdi', 'rsp'], ['rax', 'rdi', 'rsp'], ['rax', 'rdi', 'rsp'], ['rax'], []]);
+  ).toEqual([['rax', 'rdi', 'rsp'], ['rdi', 'rsp', 'rax'], ['rdi', 'rsp', 'rax'], ['rax'], []]);
 });

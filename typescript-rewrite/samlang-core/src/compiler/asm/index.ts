@@ -105,6 +105,7 @@ const getStatementsToTile = ({
 const generateInstructionsForFunction = (
   midIRFunction: MidIRFunction,
   instructions: AssemblyInstruction[],
+  checkInvaraint: boolean,
   removeComments: boolean
 ): void => {
   const functionName = midIRFunction.functionName;
@@ -121,7 +122,7 @@ const generateInstructionsForFunction = (
   const allocator = new AssemblyRegisterAllocator(
     functionAbstractRegisterAllocator,
     midIRFunction.hasReturn,
-    /* checkInvaraint */ false,
+    checkInvaraint,
     tiledInstructions
   );
   const registerAllocatedInstructions = allocator.realInstructions;
@@ -137,11 +138,12 @@ const generateInstructionsForFunction = (
 
 const generateAssemblyInstructionsFromMidIRCompilationUnit = (
   compilationUnit: MidIRCompilationUnit,
+  checkInvaraint = false,
   removeComments = true
 ): AssemblyProgram => {
   const instructions: AssemblyInstruction[] = [];
   compilationUnit.functions.forEach((it) =>
-    generateInstructionsForFunction(it, instructions, removeComments)
+    generateInstructionsForFunction(it, instructions, checkInvaraint, removeComments)
   );
   return {
     globalVariables: compilationUnit.globalVariables,
