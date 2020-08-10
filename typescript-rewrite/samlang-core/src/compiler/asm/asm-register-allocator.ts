@@ -197,6 +197,7 @@ export default class AssemblyRegisterAllocator {
       this.build(liveVariableAnalysisResult);
       const useCount = AssemblyRegisterAllocator.buildUseCount(liveVariableAnalysisResult);
       this.makeWorkList();
+      if (this.checkInvaraint) this.checkInvariant();
       // eslint-disable-next-line no-constant-condition
       while (true) {
         if (this.simplifyWorkList.size > 0) {
@@ -228,11 +229,14 @@ export default class AssemblyRegisterAllocator {
       let c = 0;
       const uAdjacentSet = this.adjacentSet(u);
       uAdjacentSet.forEach((v) => {
+        // istanbul ignore next
         if (PRE_COLORED_REGISTERS.has(v) || workListUnion.has(v)) {
           c += 1;
         }
       });
+      // istanbul ignore next
       if (degree !== c) {
+        // istanbul ignore next
         throw new Error(
           `degree invariant is broken. degree = ${degree}, cardinality = ${c}, variable = ${u}`
         );
@@ -248,7 +252,9 @@ export default class AssemblyRegisterAllocator {
       const moveList = this.moveMap.get(u);
       if (moveList != null) {
         moveList.forEach((v) => {
+          // istanbul ignore next
           if (this.activeMoves.has(v) || this.workListMoves.has(v)) {
+            // istanbul ignore next
             throw new Error('simplifyWorkList invariant is broken.');
           }
         });
@@ -257,11 +263,14 @@ export default class AssemblyRegisterAllocator {
     // freeWorkList invariant
     this.freezeWorkList.forEach((u) => {
       const degree = this.interferenceGraph.degree(u);
+      // istanbul ignore next
       if (degree >= K) {
+        // istanbul ignore next
         throw new Error('freezeWorkList invariant is broken. degree = $degree, variable = $u');
       }
       const moveList = this.moveMap.get(u);
       let intersectionIsEmpty = true;
+      // istanbul ignore next
       if (moveList != null) {
         moveList.forEach((v) => {
           if (this.activeMoves.has(v) || this.workListMoves.has(v)) {
@@ -269,14 +278,18 @@ export default class AssemblyRegisterAllocator {
           }
         });
       }
+      // istanbul ignore next
       if (intersectionIsEmpty) {
+        // istanbul ignore next
         throw new Error('freezeWorkList invariant is broken.');
       }
     });
     // spillWorkList invariant
     this.spillWorkList.forEach((u) => {
       const degree = this.interferenceGraph.degree(u);
+      // istanbul ignore next
       if (degree < K) {
+        // istanbul ignore next
         throw new Error(`spillWorkList invariant is broken. degree = ${degree}, variable = ${u}`);
       }
     });
@@ -504,10 +517,15 @@ export default class AssemblyRegisterAllocator {
     this.alias.set(v, u);
     // moveList[u] := moveList[u] union moveList[v]
     const moveListU = this.moveMap.get(u);
+    // istanbul ignore next
     const moveListV = this.moveMap.get(v) ?? hashSetOf();
+    // istanbul ignore next
     if (moveListU == null) {
+      // istanbul ignore next
       const set = hashSetOf<RegMove>();
+      // istanbul ignore next
       moveListV.forEach((it) => set.add(it));
+      // istanbul ignore next
       this.moveMap.set(u, set);
     } else {
       moveListV.forEach((it) => moveListU.add(it));
@@ -559,8 +577,11 @@ export default class AssemblyRegisterAllocator {
       const v = yAlias === uAlias ? this.getAlias(x) : yAlias;
       this.activeMoves.delete(move);
       this.frozenMoves.add(move);
+      // istanbul ignore next
       if (this.freezeWorkList.has(v) && this.nodeMoves(v).size === 0) {
+        // istanbul ignore next
         this.freezeWorkList.delete(v);
+        // istanbul ignore next
         this.simplifyWorkList.add(v);
       }
     });
@@ -570,8 +591,10 @@ export default class AssemblyRegisterAllocator {
     let lowestScore = Number.MAX_SAFE_INTEGER;
     let bestVariableToSpill: string | null = null;
     this.spillWorkList.forEach((variable) => {
+      // istanbul ignore next
       const uses = useCount.get(variable) ?? 0;
       const degree = this.interferenceGraph.degree(variable);
+      // istanbul ignore next
       const score = degree <= 0 ? Number.MAX_SAFE_INTEGER : (1.0 * uses) / degree;
       if (score < lowestScore) {
         bestVariableToSpill = variable;
@@ -595,6 +618,7 @@ export default class AssemblyRegisterAllocator {
         const alias = this.getAlias(conflictingVariable);
         if (this.coloredVars.has(alias) || PRE_COLORED_REGISTERS.has(alias)) {
           const a = this.colors.get(alias);
+          // istanbul ignore next
           if (a != null) okRegs.delete(a);
         }
       });
@@ -610,6 +634,7 @@ export default class AssemblyRegisterAllocator {
     this.coalescedVars.forEach((variable) => {
       const varAlias = this.getAlias(variable);
       const colorOfAlias = this.colors.get(varAlias);
+      // istanbul ignore next
       if (colorOfAlias != null) {
         this.colors.set(variable, colorOfAlias);
       }
@@ -631,6 +656,7 @@ export default class AssemblyRegisterAllocator {
     this.initial.clear();
     this.coloredVars.forEach((it) => this.initial.add(it));
     this.coalescedVars.forEach((it) => this.initial.add(it));
+    // istanbul ignore next
     rewriter.getNewTemps().forEach((it) => this.initial.add(it));
     // cleanup vars in this round
     this.spilledVars.clear();

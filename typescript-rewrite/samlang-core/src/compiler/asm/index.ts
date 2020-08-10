@@ -138,7 +138,9 @@ const generateInstructionsForFunction = (
 
 const generateAssemblyInstructionsFromMidIRCompilationUnit = (
   compilationUnit: MidIRCompilationUnit,
+  // istanbul ignore next
   checkInvaraint = false,
+  // istanbul ignore next
   removeComments = true
 ): AssemblyProgram => {
   const instructions: AssemblyInstruction[] = [];

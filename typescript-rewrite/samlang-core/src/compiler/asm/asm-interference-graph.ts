@@ -57,14 +57,14 @@ export default class AssemblyInterferenceGraph {
     existingSetOfU.add(v);
     const adjacentSetOfV = this.adjacentSet.get(v);
     if (adjacentSetOfV == null) {
-      this.adjacentSet.set(v, new Set(u));
+      this.adjacentSet.set(v, new Set([u]));
     } else {
       adjacentSetOfV.add(u);
     }
     if (!PRE_COLORED_REGISTERS.has(u)) {
       const adjacentListOfU = this.adjacentList.get(u);
       if (adjacentListOfU == null) {
-        this.adjacentList.set(u, new Set(v));
+        this.adjacentList.set(u, new Set([v]));
       } else {
         adjacentListOfU.add(v);
       }
@@ -73,7 +73,7 @@ export default class AssemblyInterferenceGraph {
     if (!PRE_COLORED_REGISTERS.has(v)) {
       const adjacentListOfV = this.adjacentList.get(v);
       if (adjacentListOfV == null) {
-        this.adjacentList.set(v, new Set(u));
+        this.adjacentList.set(v, new Set([u]));
       } else {
         adjacentListOfV.add(u);
       }
