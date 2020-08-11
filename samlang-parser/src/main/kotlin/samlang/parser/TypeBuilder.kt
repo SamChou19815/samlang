@@ -36,4 +36,9 @@ internal object TypeBuilder : PLBaseVisitor<Type?>() {
         val returnType = types.last().accept(TypeBuilder) ?: return null
         return Type.FunctionType(argumentTypes = argumentTypes, returnType = returnType)
     }
+
+    override fun visitFunctionTypeNoArg(ctx: PLParser.FunctionTypeNoArgContext): Type? {
+        val returnType = ctx.typeExpr()?.accept(TypeBuilder) ?: return null
+        return Type.FunctionType(argumentTypes = emptyList(), returnType = returnType)
+    }
 }

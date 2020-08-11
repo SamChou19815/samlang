@@ -18,6 +18,7 @@ import {
   SingleIdentifierTypeContext,
   TupleTypeContext,
   FunctionTypeContext,
+  FunctionTypeNoArgContext,
 } from './generated/PLParser';
 import { PLVisitor } from './generated/PLVisitor';
 
@@ -57,14 +58,20 @@ class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVis
   visitFunctionType = (ctx: FunctionTypeContext): FunctionType | null => {
     const types = ctx.typeExpr();
     const returnType = types[types.length - 1].accept(this);
-    if (returnType == null) {
-      return null;
-    }
+    // istanbul ignore next
+    if (returnType == null) return null;
     const argumentTypes = types
       .slice(0, types.length - 1)
       .map((it) => it.accept(this))
       .filter(isNotNull);
     return functionType(argumentTypes, returnType);
+  };
+
+  visitFunctionTypeNoArg = (ctx: FunctionTypeNoArgContext): FunctionType | null => {
+    const returnType = ctx.typeExpr().accept(this);
+    // istanbul ignore next
+    if (returnType == null) return null;
+    return functionType([], returnType);
   };
 }
 

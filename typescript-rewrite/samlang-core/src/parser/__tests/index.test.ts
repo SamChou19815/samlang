@@ -59,6 +59,7 @@ it('Can parse good expressions.', () => {
   expectASTWithTheSameKind('(foo) -> 3', 'LambdaExpression');
   expectASTWithTheSameKind('(foo: bool) -> 3', 'LambdaExpression');
   expectASTWithTheSameKind('{ val a = 3; }', 'StatementBlockExpression');
+  expectASTWithTheSameKind('{ val a: () -> int = () -> 3; }', 'StatementBlockExpression');
   expectASTWithTheSameKind('{ val a = 3 val b = 3 }', 'StatementBlockExpression');
   expectASTWithTheSameKind('{ val a = 3; a }', 'StatementBlockExpression');
   expectASTWithTheSameKind('{ val a: int = 3; }', 'StatementBlockExpression');

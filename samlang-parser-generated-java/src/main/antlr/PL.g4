@@ -47,6 +47,7 @@ typeExpr
     | UpperId typeParameters? # SingleIdentifierType
     | LBRACKET typeExpr (MUL typeExpr)+ RBRACKET # TupleType
     | LPAREN typeExpr (COMMA typeExpr)* COMMA? RPAREN ARROW typeExpr # FunctionType
+    | LPAREN RPAREN ARROW typeExpr # FunctionTypeNoArg
     ;
 
 // Some parser type fragment
