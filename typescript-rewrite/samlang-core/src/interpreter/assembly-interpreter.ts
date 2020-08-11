@@ -119,6 +119,7 @@ class AssemblyInterpreter {
         // istanbul ignore next
         throw e;
       }
+      this.instructionPointer += 8;
     }
   }
 
@@ -258,7 +259,7 @@ class AssemblyInterpreter {
             doesSetFlag = !this.flags.get('lt');
             break;
           case 'jz':
-            doesSetFlag = this.flags.get('eq');
+            doesSetFlag = this.flags.get('z');
             break;
           case 'jnz':
             doesSetFlag = !this.flags.get('z');
@@ -293,7 +294,7 @@ class AssemblyInterpreter {
             doesJump = !this.flags.get('lt');
             break;
           case 'jz':
-            doesJump = this.flags.get('eq');
+            doesJump = this.flags.get('z');
             break;
           case 'jnz':
             doesJump = !this.flags.get('z');

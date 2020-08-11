@@ -266,11 +266,16 @@ const withoutUnusedLabelInAsm = (
 export const optimizeAssemblyWithSimpleOptimization = (
   instructions: readonly AssemblyInstruction[],
   removeComments: boolean
-): readonly AssemblyInstruction[] =>
-  pipe(
-    removeComments ? instructions.filter((it) => it.__type__ !== 'AssemblyComment') : instructions,
+): readonly AssemblyInstruction[] => {
+  const instructionsWithoutComments = removeComments
+    ? instructions.filter((it) => it.__type__ !== 'AssemblyComment')
+    : instructions;
+  if (instructionsWithoutComments.length === 0) return instructionsWithoutComments;
+  return pipe(
+    instructionsWithoutComments,
     coalesceConsecutiveLabelsForAsm,
     withoutUnreachableAssemblyCode,
     withoutImmediateJumpInAsm,
     withoutUnusedLabelInAsm
   );
+};

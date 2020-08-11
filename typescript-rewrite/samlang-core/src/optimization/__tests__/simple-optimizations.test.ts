@@ -157,6 +157,8 @@ it('optimizeIRWithUnusedNameElimination test', () => {
 });
 
 it('optimizeAssemblyWithSimpleOptimization test', () => {
+  expect(optimizeASMAndConvertToString([])).toBe('');
+
   expect(optimizeASMAndConvertToString([ASM_COMMENT('A'), ASM_MOVE_REG(RAX, RBX)])).toBe(
     'mov rax, rbx'
   );
