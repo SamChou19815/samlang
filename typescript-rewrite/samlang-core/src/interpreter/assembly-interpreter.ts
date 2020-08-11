@@ -20,6 +20,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_MALLOC,
+  ENCODED_FUNCTION_NAME_THROW,
 } from '../ast/common/name-encoder';
 import { assertNotNull } from '../util/type-assertions';
 import PanicException from './panic-exception';
@@ -97,7 +98,8 @@ class AssemblyInterpreter {
     const instructionPointer = labelInstructionNumberMapping[ENCODED_COMPILED_PROGRAM_MAIN];
     assertNotNull(instructionPointer);
     this.instructionPointer = instructionPointer;
-    this.currentHeapEndPointer = Number(globalVarsTotalSize);
+    // istanbul ignore next
+    if (this.currentHeapEndPointer !== Number(globalVarsTotalSize)) throw new Error();
     this.stepUntilReturn();
   }
 
@@ -110,7 +112,10 @@ class AssemblyInterpreter {
     while (true) {
       // istanbul ignore next
       if (this.instructionPointer % 8 !== 0) throw new Error(`Bad RIP: ${this.instructionPointer}`);
-      const instruction = this.instructions[this.instructionPointer / 8];
+      const index = this.instructionPointer / 8;
+      const instruction = this.instructions[index];
+      // istanbul ignore next
+      if (instruction == null) throw new Error(`index=${index}, len=${this.instructions.length}`);
       try {
         this.interpret(instruction);
       } catch (e) {
@@ -125,8 +130,11 @@ class AssemblyInterpreter {
 
   private getRegister = (id: string): bigint => {
     const value = this.registers[id];
+    // istanbul ignore next
     if (value != null) return value;
+    // istanbul ignore next
     this.registers[id] = BigInt(0);
+    // istanbul ignore next
     return BigInt(0);
   };
 
@@ -137,8 +145,11 @@ class AssemblyInterpreter {
   private getMemory = (location: bigint): bigint => {
     checkMemoryLocation(location);
     const value = this.memory.get(location);
+    // istanbul ignore next
     if (value != null) return value;
+    // istanbul ignore next
     this.memory.set(location, BigInt(0));
+    // istanbul ignore next
     return BigInt(0);
   };
 
@@ -183,7 +194,7 @@ class AssemblyInterpreter {
       case 'AssemblyRegister':
         return this.getRegister(assemblyArgument.id);
       case 'AssemblyMemory':
-        return this.getMemoryLocation(assemblyArgument);
+        return this.getMemory(this.getMemoryLocation(assemblyArgument));
     }
   };
 
@@ -208,10 +219,6 @@ class AssemblyInterpreter {
     }
     const pointerToBeReturned = BigInt(this.currentHeapEndPointer);
     this.currentHeapEndPointer += Number(size);
-    // eslint-disable-next-line no-bitwise
-    if (this.currentHeapEndPointer > BigInt(1 << 20)) {
-      throw new Error('Out of heap!');
-    }
     return pointerToBeReturned;
   };
 
@@ -227,6 +234,7 @@ class AssemblyInterpreter {
       case 'AssemblyLoadEffectiveAddress':
         this.setValue(node.destination, this.getMemoryLocation(node.source));
         return;
+      // istanbul ignore next
       case 'AssemblyCompareMemory':
       case 'AssemblyCompareConstOrRegister': {
         const m = this.getValue(node.minuend);
@@ -239,6 +247,7 @@ class AssemblyInterpreter {
       }
       case 'AssemblySetOnFlag': {
         let doesSetFlag: boolean | undefined;
+        // istanbul ignore next
         switch (node.type) {
           case 'je':
             doesSetFlag = this.flags.get('eq');
@@ -266,11 +275,13 @@ class AssemblyInterpreter {
             break;
         }
         assertNotNull(doesSetFlag);
+        // istanbul ignore next
         this.setValue(node.register, doesSetFlag ? BigInt(1) : BigInt(0));
         return;
       }
       case 'AssemblyJump': {
         let doesJump: boolean | undefined;
+        // istanbul ignore next
         switch (node.type) {
           case 'jmp':
             doesJump = true;
@@ -313,6 +324,7 @@ class AssemblyInterpreter {
         return;
       case 'AssemblyReturn':
         throw new ReturnException();
+      // istanbul ignore next
       case 'AssemblyArithmeticBinaryMemoryDestination':
       case 'AssemblyArithmeticBinaryRegisterDestination': {
         const sourceValue = this.getValue(node.source);
@@ -339,9 +351,11 @@ class AssemblyInterpreter {
           this.getValue(node.destination) * this.getValue(node.source)
         );
         return;
+      // istanbul ignore next
       case 'AssemblyIMulThreeArgs':
         this.setValue(node.destination, this.getValue(node.source) * this.getValue(node.immediate));
         return;
+      // istanbul ignore next
       case 'AssemblyCqo':
         if (this.getValue(RAX) >= 0) {
           this.setValue(RDX, BigInt(0));
@@ -352,16 +366,17 @@ class AssemblyInterpreter {
       case 'AssemblyIDiv': {
         const raxValue = this.getValue(RAX);
         const argumentValue = this.getValue(node.divisor);
-        if (argumentValue === BigInt(0)) {
-          throw new PanicException('Division by zero!');
-        }
+        // istanbul ignore next
+        if (argumentValue === BigInt(0)) throw new PanicException('Division by zero!');
         this.setValue(RAX, raxValue / argumentValue);
         this.setValue(RDX, raxValue % argumentValue);
         return;
       }
+      // istanbul ignore next
       case 'AssemblyNeg':
         this.setValue(node.destination, -this.getValue(node.destination));
         return;
+      // istanbul ignore next
       case 'AssemblyShiftLeft':
         // eslint-disable-next-line no-bitwise
         this.setValue(node.destination, this.getValue(node.destination) << BigInt(node.count));
@@ -421,7 +436,9 @@ class AssemblyInterpreter {
           try {
             this.setValue(RAX, BigInt(stringToParse));
             return;
+            // istanbul ignore next
           } catch {
+            // istanbul ignore next
             throw new PanicException(`Bad string: ${stringToParse}`);
           }
         }
@@ -441,6 +458,9 @@ class AssemblyInterpreter {
         case ENCODED_FUNCTION_NAME_MALLOC:
           this.setValue(RAX, this.calloc(this.getValue(RDI)));
           return;
+        // istanbul ignore next
+        case ENCODED_FUNCTION_NAME_THROW:
+          throw new PanicException(this.readArray(this.getValue(RDI)));
         default: {
           const newInstructionPointer = this.labelInstructionNumberMapping[functionName];
           assertNotNull(newInstructionPointer);
