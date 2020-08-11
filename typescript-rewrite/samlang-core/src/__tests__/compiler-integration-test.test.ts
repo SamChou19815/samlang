@@ -1243,10 +1243,6 @@ mirBaseTestCases.forEach((testCase) => {
     testAssemblyResult(testCase, (it) => optimizeIRCompilationUnit(it)));
 });
 
-it(`lowerSourcesToAssemblyProgram[no-opt] hello-world`, () => {
-  lowerSourcesToAssemblyProgram(checkedSources, new ModuleReference(['concat-string']), (it) => it);
-});
-
 it(`lowerSourcesToAssemblyProgram[all] hello-world`, () => {
   lowerSourcesToAssemblyProgram(checkedSources, new ModuleReference(['concat-string']), (it) =>
     optimizeIRCompilationUnit(it)
