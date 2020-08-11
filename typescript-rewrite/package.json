@@ -60,6 +60,7 @@
                 "**/samlang-core/src/interpreter/*",
                 "**/samlang-core/src/optimization/*",
                 "**/samlang-core/src/parser/generated/*",
+                "**/samlang-core/src/services/*",
                 "**/samlang-core/src/util/*"
               ]
             }

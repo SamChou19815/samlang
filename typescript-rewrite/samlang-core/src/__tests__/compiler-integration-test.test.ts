@@ -1,15 +1,12 @@
 import ModuleReference from '../ast/common/module-reference';
 import { MidIRCompilationUnit, midIRCompilationUnitToString } from '../ast/mir';
-import { typeCheckSources } from '../checker';
 // eslint-disable-next-line import/no-internal-modules
 import compileSamlangSourcesToHighIRSources from '../compiler/hir';
 // eslint-disable-next-line import/no-internal-modules
 import { compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries } from '../compiler/mir';
-import { createGlobalErrorCollector } from '../errors';
 import interpretMidIRCompilationUnit from '../interpreter/mid-ir-interpreter';
 import optimizeIRCompilationUnit from '../optimization';
-import { parseSamlangModuleFromText } from '../parser';
-import { mapOf } from '../util/collections';
+import { checkSources, lowerSourcesToAssemblyProgram } from '../services/source-processor';
 import { assertNotNull } from '../util/type-assertions';
 
 type WellTypedSamlangProgramTestCase = {
@@ -1148,28 +1145,18 @@ type MidIRTestCase = {
   readonly compilationUnit: MidIRCompilationUnit;
 };
 
+const { checkedSources, compileTimeErrors } = checkSources(
+  runnableSamlangProgramTestCases.map((it) => [
+    new ModuleReference([it.testCaseName]),
+    it.sourceCode,
+  ])
+);
+
 const mirBaseTestCases: readonly MidIRTestCase[] = (() => {
-  const errorCollector = createGlobalErrorCollector();
-
-  const parsedSamlangSources = mapOf(
-    ...runnableSamlangProgramTestCases.map((it) => {
-      const moduleReference = new ModuleReference([it.testCaseName]);
-      return [
-        moduleReference,
-        parseSamlangModuleFromText(
-          it.sourceCode,
-          errorCollector.getModuleErrorCollector(moduleReference)
-        ),
-      ] as const;
-    })
-  );
-  expect(errorCollector.getErrors()).toEqual([]);
-
-  const [checkedSamlangSources] = typeCheckSources(parsedSamlangSources, errorCollector);
-  expect(errorCollector.getErrors()).toEqual([]);
+  expect(compileTimeErrors).toEqual([]);
 
   const mirSources = compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries(
-    compileSamlangSourcesToHighIRSources(checkedSamlangSources)
+    compileSamlangSourcesToHighIRSources(checkedSources)
   );
 
   return runnableSamlangProgramTestCases.map(({ testCaseName, expectedStandardOut }) => {
@@ -1243,4 +1230,14 @@ mirBaseTestCases.forEach((testCase) => {
 
   it(`IR[all]: ${testCase.testCaseName}`, () =>
     testMidIROptimizerResult(testCase, (it) => optimizeIRCompilationUnit(it)));
+});
+
+it(`ASM[no-opt] hello-world`, () => {
+  lowerSourcesToAssemblyProgram(checkedSources, new ModuleReference(['concat-string']), (it) => it);
+});
+
+it(`ASM[all] hello-world`, () => {
+  lowerSourcesToAssemblyProgram(checkedSources, new ModuleReference(['concat-string']), (it) =>
+    optimizeIRCompilationUnit(it)
+  );
 });

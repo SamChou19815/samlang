@@ -1,8 +1,5 @@
 import ModuleReference from '../ast/common/module-reference';
-import { typeCheckSources } from '../checker';
-import { createGlobalErrorCollector } from '../errors';
-import { parseSamlangModuleFromText } from '../parser';
-import { mapOf } from '../util/collections';
+import { checkSources } from '../services/source-processor';
 
 type SamlangProgramCheckerTestSource = {
   readonly testName: string;
@@ -445,24 +442,14 @@ const expectedErrors: readonly string[] = [
 ];
 
 it('samlang type checker integration test', () => {
-  const errorCollector = createGlobalErrorCollector();
-
-  const parsedSources = mapOf(
-    ...samlangProgramCheckerTestSources.map(
-      (it) =>
-        [
-          new ModuleReference([it.testName]),
-          parseSamlangModuleFromText(
-            it.sourceCode,
-            errorCollector.getModuleErrorCollector(new ModuleReference([it.testName]))
-          ),
-        ] as const
-    )
+  const { compileTimeErrors } = checkSources(
+    samlangProgramCheckerTestSources.map((it) => [
+      new ModuleReference([it.testName]),
+      it.sourceCode,
+    ])
   );
-  typeCheckSources(parsedSources, errorCollector);
 
-  const actualErrors = errorCollector
-    .getErrors()
+  const actualErrors = compileTimeErrors
     .map((it) => it.toString())
     .sort((a, b) => a.localeCompare(b));
 
