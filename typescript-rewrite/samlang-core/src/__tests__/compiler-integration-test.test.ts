@@ -1,9 +1,9 @@
 import ModuleReference from '../ast/common/module-reference';
 import { MidIRCompilationUnit, midIRCompilationUnitToString } from '../ast/mir';
-// eslint-disable-next-line import/no-internal-modules
-import compileSamlangSourcesToHighIRSources from '../compiler/hir';
-// eslint-disable-next-line import/no-internal-modules
-import { compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries } from '../compiler/mir';
+import {
+  compileSamlangSourcesToHighIRSources,
+  compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries,
+} from '../compiler';
 import interpretMidIRCompilationUnit from '../interpreter/mid-ir-interpreter';
 import optimizeIRCompilationUnit from '../optimization';
 import { checkSources, lowerSourcesToAssemblyProgram } from '../services/source-processor';
