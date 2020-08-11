@@ -1,6 +1,7 @@
+import type { Hashable } from '../../util/collections';
 import Position from './position';
 
-export default class Range {
+export default class Range implements Hashable {
   static readonly DUMMY: Range = new Range(Position.DUMMY, Position.DUMMY);
 
   constructor(public readonly start: Position, public readonly end: Position) {}
@@ -18,4 +19,8 @@ export default class Range {
   };
 
   readonly toString = (): string => `${this.start}-${this.end}`;
+
+  uniqueHash(): string {
+    return this.toString();
+  }
 }
