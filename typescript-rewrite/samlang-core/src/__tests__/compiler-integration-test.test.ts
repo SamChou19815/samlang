@@ -1,9 +1,12 @@
+import { assemblyProgramToString } from '../ast/asm/asm-program';
 import ModuleReference from '../ast/common/module-reference';
 import { MidIRCompilationUnit, midIRCompilationUnitToString } from '../ast/mir';
 import {
   compileSamlangSourcesToHighIRSources,
   compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries,
+  generateAssemblyInstructionsFromMidIRCompilationUnit,
 } from '../compiler';
+import interpretAssemblyProgram from '../interpreter/assembly-interpreter';
 import interpretMidIRCompilationUnit from '../interpreter/mid-ir-interpreter';
 import optimizeIRCompilationUnit from '../optimization';
 import { checkSources, lowerSourcesToAssemblyProgram } from '../services/source-processor';
@@ -1187,6 +1190,21 @@ const testMidIROptimizerResult = (
   }
 };
 
+const testAssemblyResult = (
+  testCase: MidIRTestCase,
+  optimizer: (compilationUnit: MidIRCompilationUnit) => MidIRCompilationUnit
+): void => {
+  const unoptimized = testCase.compilationUnit;
+  const optimized = optimizer(unoptimized);
+  const program = generateAssemblyInstructionsFromMidIRCompilationUnit(optimized);
+  const interpretationResult = interpretAssemblyProgram(program);
+  if (interpretationResult !== testCase.expectedStandardOut) {
+    const expected = testCase.expectedStandardOut;
+    const optimizedString = assemblyProgramToString(program);
+    fail(`Expected:\n${expected}\nActual:\n${interpretationResult}\nAssembly:${optimizedString}`);
+  }
+};
+
 mirBaseTestCases.forEach((testCase) => {
   it(`IR[no-opt]: ${testCase.testCaseName}`, () => {
     let result: string;
@@ -1220,13 +1238,16 @@ mirBaseTestCases.forEach((testCase) => {
 
   it(`IR[all]: ${testCase.testCaseName}`, () =>
     testMidIROptimizerResult(testCase, (it) => optimizeIRCompilationUnit(it)));
+
+  it(`ASM[all]: ${testCase.testCaseName}`, () =>
+    testAssemblyResult(testCase, (it) => optimizeIRCompilationUnit(it)));
 });
 
-it(`ASM[no-opt] hello-world`, () => {
+it(`lowerSourcesToAssemblyProgram[no-opt] hello-world`, () => {
   lowerSourcesToAssemblyProgram(checkedSources, new ModuleReference(['concat-string']), (it) => it);
 });
 
-it(`ASM[all] hello-world`, () => {
+it(`lowerSourcesToAssemblyProgram[all] hello-world`, () => {
   lowerSourcesToAssemblyProgram(checkedSources, new ModuleReference(['concat-string']), (it) =>
     optimizeIRCompilationUnit(it)
   );
