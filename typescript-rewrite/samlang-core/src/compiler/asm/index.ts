@@ -118,7 +118,10 @@ const generateInstructionsForFunction = (
     functionAbstractRegisterAllocator
   );
   // simple optimizations
-  tiledInstructions = optimizeAssemblyWithSimpleOptimization(tiledInstructions, removeComments);
+  tiledInstructions = optimizeAssemblyWithSimpleOptimization(
+    tiledInstructions,
+    /* removeComments */ false
+  );
   const allocator = new AssemblyRegisterAllocator(
     functionAbstractRegisterAllocator,
     midIRFunction.hasReturn,
