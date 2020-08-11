@@ -1198,11 +1198,6 @@ mirBaseTestCases.forEach((testCase) => {
     expect(result).toBe(testCase.expectedStandardOut);
   });
 
-  it(`IR[cp]: ${testCase.testCaseName}`, () =>
-    testMidIROptimizerResult(testCase, (it) =>
-      optimizeIRCompilationUnit(it, { doesPerformConstantPropagation: true })
-    ));
-
   it(`IR[copy]: ${testCase.testCaseName}`, () =>
     testMidIROptimizerResult(testCase, (it) =>
       optimizeIRCompilationUnit(it, { doesPerformCopyPropagation: true })
@@ -1216,11 +1211,6 @@ mirBaseTestCases.forEach((testCase) => {
   it(`IR[cse]: ${testCase.testCaseName}`, () =>
     testMidIROptimizerResult(testCase, (it) =>
       optimizeIRCompilationUnit(it, { doesPerformCommonSubExpressionElimination: true })
-    ));
-
-  it(`IR[dse]: ${testCase.testCaseName}`, () =>
-    testMidIROptimizerResult(testCase, (it) =>
-      optimizeIRCompilationUnit(it, { doesPerformDeadCodeElimination: true })
     ));
 
   it(`IR[inl]: ${testCase.testCaseName}`, () =>

@@ -71,17 +71,9 @@ it('optimizeIRCompilationUnit all disabled test', () => {
   expect(midIRCompilationUnitToString(optimizeIRCompilationUnit(compilationUnit, {}))).toBe(`
 function fooBar {
 
-  x = 1;
-  if ((x < 1)) goto true;
   z2 = f(1);
-  MEM[z2] = (1 + x);
-  goto end;
-  true:
-  y = (1 + x);
-  z1 = ((1 + x) * MEM[1]);
-  z2 = (((1 + x) * MEM[1]) / (1 + x));
-  end:
-  a = (y != z2);
+  MEM[z2] = 2;
+  a = (2 != z2);
   return a;
 }
 `);

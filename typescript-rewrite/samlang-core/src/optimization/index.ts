@@ -12,20 +12,16 @@ import { optimizeIrWithSimpleOptimization } from './simple-optimizations';
 import optimizeIRWithTailRecursiveCallTransformation from './tail-recursion-optimization';
 
 type OptimizationConfiguration = {
-  doesPerformConstantPropagation?: boolean;
   doesPerformCopyPropagation?: boolean;
   doesPerformLocalValueNumbering?: boolean;
   doesPerformCommonSubExpressionElimination?: boolean;
-  doesPerformDeadCodeElimination?: boolean;
   doesPerformInlining?: boolean;
 };
 
 const allEnabledOptimizationConfiguration: OptimizationConfiguration = {
-  doesPerformConstantPropagation: true,
   doesPerformCopyPropagation: true,
   doesPerformLocalValueNumbering: true,
   doesPerformCommonSubExpressionElimination: true,
-  doesPerformDeadCodeElimination: true,
   doesPerformInlining: true,
 };
 
@@ -33,17 +29,14 @@ const optimizeMidIRStatementsForOneRound = (
   statements: readonly MidIRStatement[],
   allocator: OptimizationResourceAllocator,
   {
-    doesPerformConstantPropagation,
     doesPerformCopyPropagation,
     doesPerformLocalValueNumbering,
     doesPerformCommonSubExpressionElimination,
-    doesPerformDeadCodeElimination,
   }: OptimizationConfiguration
 ): readonly MidIRStatement[] => {
-  let optimized = doesPerformConstantPropagation
-    ? optimizeIRWithConstantPropagation(statements)
-    : statements;
-  optimized = optimizeIRWithConstantFolding(optimizeIRWithAlgebraicSimplification(optimized));
+  let optimized = optimizeIRWithConstantFolding(
+    optimizeIRWithAlgebraicSimplification(optimizeIRWithConstantPropagation(statements))
+  );
   if (doesPerformCopyPropagation) {
     optimized = optimizeIRWithCopyPropagation(optimized);
   }
@@ -54,9 +47,7 @@ const optimizeMidIRStatementsForOneRound = (
   if (doesPerformCommonSubExpressionElimination) {
     optimized = optimizeIRWithCommonSubExpressionElimination(optimized, allocator);
   }
-  if (doesPerformDeadCodeElimination) {
-    optimized = optimizeIRWithDeadCodeElimination(optimized);
-  }
+  optimized = optimizeIRWithDeadCodeElimination(optimized);
   return optimizeIrWithSimpleOptimization(optimized);
 };
 
