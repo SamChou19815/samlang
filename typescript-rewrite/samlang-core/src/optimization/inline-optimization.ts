@@ -13,7 +13,6 @@ import {
   MIR_LABEL,
   MIR_CJUMP_FALLTHROUGH,
 } from '../ast/mir';
-import { assertNotNull } from '../util/type-assertions';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
 import { optimizeIrWithSimpleOptimization } from './simple-optimizations';
 
@@ -173,8 +172,10 @@ const inlineRewriteForMidIRStatement = (
         ),
       ];
     case 'MidIRReturnStatement':
-      if (statement.returnedExpression == null) return [MIR_JUMP(`${labelPrefix}__INLINING_END`)];
-      assertNotNull(returnCollectorTemporaryID);
+      // istanbul ignore next
+      if (statement.returnedExpression == null || returnCollectorTemporaryID == null) {
+        return [MIR_JUMP(`${labelPrefix}__INLINING_END`)];
+      }
       return [
         MIR_MOVE_TEMP(
           MIR_TEMP(returnCollectorTemporaryID),
