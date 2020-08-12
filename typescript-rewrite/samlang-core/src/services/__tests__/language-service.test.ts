@@ -1,5 +1,7 @@
 import ModuleReference from '../../ast/common/module-reference';
-import LanguageServiceState from '../language-service';
+import Position from '../../ast/common/position';
+import { stringType } from '../../ast/common/types';
+import LanguageServices, { LanguageServiceState } from '../language-service';
 
 it('Language server state can update.', () => {
   const state = new LanguageServiceState([]);
@@ -120,4 +122,22 @@ class Test2 {
   );
   expect(state.getErrors(test1ModuleReference)).toEqual([]);
   expect(state.getErrors(test2ModuleReference)).toEqual([]);
+});
+
+it('LanguageServices type query test', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const state = new LanguageServiceState([
+    [
+      testModuleReference,
+      `
+class Test1 {
+  function test(): int = "haha"
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state);
+
+  expect(service.queryType(testModuleReference, new Position(100, 100))).toBeNull();
+  expect(service.queryType(testModuleReference, new Position(2, 27))?.[0]).toEqual(stringType);
 });

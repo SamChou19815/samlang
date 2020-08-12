@@ -1,4 +1,7 @@
 import ModuleReference from '../ast/common/module-reference';
+import type Position from '../ast/common/position';
+import type Range from '../ast/common/range';
+import type { Type } from '../ast/common/types';
 import { SamlangExpression } from '../ast/lang/samlang-expressions';
 import { SamlangModule } from '../ast/lang/samlang-toplevel';
 import { GlobalTypingContext, typeCheckSources, typeCheckSourcesIncrementally } from '../checker';
@@ -17,7 +20,7 @@ import {
   SamlangExpressionLocationLookupBuilder,
 } from './location-service';
 
-export default class LanguageServiceState {
+export class LanguageServiceState {
   private readonly dependencyTracker: DependencyTracker = new DependencyTracker();
 
   private readonly rawSources: HashMap<ModuleReference, string> = hashMapOf();
@@ -178,5 +181,15 @@ export default class LanguageServiceState {
     });
     affectedSourceList.forEach((affectedSource) => this.errors.delete(affectedSource));
     this.updateErrors(errorCollector.getErrors());
+  }
+}
+
+export default class LanguageServices {
+  constructor(private readonly state: LanguageServiceState) {}
+
+  queryType(moduleReference: ModuleReference, position: Position): readonly [Type, Range] | null {
+    const expression = this.state.expressionLocationLookup.get(moduleReference, position);
+    if (expression == null) return null;
+    return [expression.type, expression.range];
   }
 }
