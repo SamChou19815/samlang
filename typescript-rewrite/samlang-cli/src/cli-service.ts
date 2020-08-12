@@ -1,9 +1,15 @@
-import { lstatSync, readdirSync, readFileSync } from 'fs';
-import { join, normalize, resolve, relative, sep } from 'path';
+import { lstatSync, readdirSync, readFileSync, mkdirSync, writeFileSync } from 'fs';
+import { join, normalize, dirname, resolve, relative, sep } from 'path';
 
 import { SamlangProjectConfiguration } from './configuration';
 
-import { ModuleReference } from '@dev-sam/samlang-core';
+import {
+  ModuleReference,
+  Sources,
+  SamlangModule,
+  assemblyProgramToString,
+  lowerSourcesToAssemblyPrograms,
+} from '@dev-sam/samlang-core';
 
 const walk = (startPath: string, visitor: (file: string) => void): void => {
   const recursiveVisit = (path: string): void => {
@@ -20,7 +26,6 @@ const walk = (startPath: string, visitor: (file: string) => void): void => {
   return recursiveVisit(startPath);
 };
 
-// eslint-disable-next-line import/prefer-default-export
 export const collectSources = ({
   sourceDirectory,
 }: SamlangProjectConfiguration): readonly (readonly [ModuleReference, string])[] => {
@@ -38,4 +43,19 @@ export const collectSources = ({
   });
 
   return sources;
+};
+
+export const compileToX86Assembly = (
+  sources: Sources<SamlangModule>,
+  outputDirectory: string
+): readonly string[] => {
+  const programs = lowerSourcesToAssemblyPrograms(sources);
+  const paths: string[] = [];
+  programs.forEach((program, moduleReference) => {
+    const outputAssemblyFilePath = join(outputDirectory, `${moduleReference}.s`);
+    mkdirSync(dirname(outputAssemblyFilePath), { recursive: true });
+    writeFileSync(outputAssemblyFilePath, assemblyProgramToString(program));
+    paths.push(outputAssemblyFilePath);
+  });
+  return paths;
 };

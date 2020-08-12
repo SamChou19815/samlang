@@ -9,7 +9,7 @@ import {
 import interpretAssemblyProgram from '../interpreter/assembly-interpreter';
 import interpretMidIRCompilationUnit from '../interpreter/mid-ir-interpreter';
 import optimizeIRCompilationUnit from '../optimization';
-import { checkSources, lowerSourcesToAssemblyPrograms } from '../services/source-processor';
+import { checkSources } from '../services/source-processor';
 import { assertNotNull } from '../util/type-assertions';
 
 type WellTypedSamlangProgramTestCase = {
@@ -1241,8 +1241,4 @@ mirBaseTestCases.forEach((testCase) => {
 
   it(`ASM[all]: ${testCase.testCaseName}`, () =>
     testAssemblyResult(testCase, (it) => optimizeIRCompilationUnit(it)));
-});
-
-it(`lowerSourcesToAssemblyPrograms`, () => {
-  lowerSourcesToAssemblyPrograms(checkedSources, (it) => it);
 });

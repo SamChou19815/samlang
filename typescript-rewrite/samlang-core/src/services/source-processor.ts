@@ -2,7 +2,6 @@ import type { AssemblyProgram } from '../ast/asm/asm-program';
 import type ModuleReference from '../ast/common/module-reference';
 import type { Sources } from '../ast/common/structs';
 import type { SamlangModule } from '../ast/lang/samlang-toplevel';
-import type { MidIRCompilationUnit } from '../ast/mir';
 import { typeCheckSources, GlobalTypingContext } from '../checker';
 import {
   compileSamlangSourcesToHighIRSources,
@@ -10,6 +9,7 @@ import {
   generateAssemblyInstructionsFromMidIRCompilationUnit,
 } from '../compiler';
 import { CompileTimeError, createGlobalErrorCollector } from '../errors';
+import optimizeIRCompilationUnit from '../optimization';
 import { parseSamlangModuleFromText } from '../parser';
 import { hashMapOf } from '../util/collections';
 
@@ -37,8 +37,7 @@ export const checkSources = (
 };
 
 export const lowerSourcesToAssemblyPrograms = (
-  sources: Sources<SamlangModule>,
-  optimizer: (compilationUnit: MidIRCompilationUnit) => MidIRCompilationUnit
+  sources: Sources<SamlangModule>
 ): Sources<AssemblyProgram> =>
   hashMapOf(
     ...compileHighIrSourcesToMidIRCompilationUnits(compileSamlangSourcesToHighIRSources(sources))
@@ -48,7 +47,7 @@ export const lowerSourcesToAssemblyPrograms = (
           [
             moduleReference,
             generateAssemblyInstructionsFromMidIRCompilationUnit(
-              optimizer(unoptimizedCompilationUnit)
+              optimizeIRCompilationUnit(unoptimizedCompilationUnit)
             ),
           ] as const
       )

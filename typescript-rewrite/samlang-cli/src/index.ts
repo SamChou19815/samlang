@@ -1,34 +1,42 @@
 /* eslint-disable no-console */
 
 import cliMainRunner, { CLIRunners } from './cli';
-import { collectSources } from './cli-service';
-import { loadSamlangProjectConfiguration } from './configuration';
+import { collectSources, compileToX86Assembly } from './cli-service';
+import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './configuration';
 
-import { checkSources } from '@dev-sam/samlang-core';
+import { checkSources, Sources, SamlangModule } from '@dev-sam/samlang-core';
+
+const typeCheck = (): {
+  readonly checkedSources: Sources<SamlangModule>;
+  readonly configuration: SamlangProjectConfiguration;
+} => {
+  const configuration = loadSamlangProjectConfiguration();
+  if (
+    configuration === 'NO_CONFIGURATION' ||
+    configuration === 'UNPARSABLE_CONFIGURATION_FILE' ||
+    configuration === 'UNREADABLE_CONFIGURATION_FILE'
+  ) {
+    console.error(configuration);
+    process.exit(2);
+  }
+  const { checkedSources, compileTimeErrors } = checkSources(collectSources(configuration));
+  if (compileTimeErrors.length > 0) {
+    console.error(`Found ${compileTimeErrors.length} error(s).`);
+    compileTimeErrors
+      .map((it) => it.toString())
+      .sort((a, b) => a.localeCompare(b))
+      .forEach((it) => console.error(it));
+    process.exit(1);
+  }
+  return { checkedSources, configuration };
+};
 
 const runners: CLIRunners = {
   typeCheck(needHelp) {
     if (needHelp) {
       console.log('samlang [check]: Type checks your codebase according to sconfig.json.');
     } else {
-      const configuration = loadSamlangProjectConfiguration();
-      if (
-        configuration === 'NO_CONFIGURATION' ||
-        configuration === 'UNPARSABLE_CONFIGURATION_FILE' ||
-        configuration === 'UNREADABLE_CONFIGURATION_FILE'
-      ) {
-        console.error(configuration);
-        process.exit(2);
-      }
-      const { compileTimeErrors } = checkSources(collectSources(configuration));
-      if (compileTimeErrors.length > 0) {
-        console.error(`Found ${compileTimeErrors.length} error(s).`);
-        compileTimeErrors
-          .map((it) => it.toString())
-          .sort((a, b) => a.localeCompare(b))
-          .forEach((it) => console.error(it));
-        process.exit(1);
-      }
+      typeCheck();
       console.log('No errors!');
     }
   },
@@ -36,7 +44,12 @@ const runners: CLIRunners = {
     if (needHelp) {
       console.log('samlang compile: Compile your codebase according to sconfig.json.');
     } else {
-      console.error('samlang-compiler WIP.');
+      const {
+        checkedSources,
+        configuration: { outputDirectory },
+      } = typeCheck();
+      compileToX86Assembly(checkedSources, outputDirectory);
+      console.error(compileToX86Assembly(checkedSources, outputDirectory).join('\n'));
     }
   },
   lsp(needHelp) {
