@@ -1,6 +1,0 @@
-// ERROR_COUNT: 1
-// invalid-property-declaration-syntax.sam:4:12-4:13: [SyntaxError]: mismatched input 'a' expecting {'val', 'private', UpperId}
-
-class Main(a: int, val b: int) {
-  function main(): int = 42
-}

@@ -1,7 +1,0 @@
-// ERROR_COUNT: 2
-// multiple-type-errors.sam:6:35-6:40: [UnexpectedType]: Expected: `int`, actual: `string`.
-// multiple-type-errors.sam:6:43-6:48: [UnexpectedType]: Expected: `int`, actual: `string`.
-
-class Main {
-  function main(): int = 233333 + "foo" + "bar" + 42
-}

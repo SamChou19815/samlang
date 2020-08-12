@@ -13,12 +13,10 @@ import java.nio.file.Paths
  *
  * @param sourceDirectory source directory to process, default to the current working directory.
  * @param outputDirectory output directory of compilation result, default to `out`.
- * @param excludes path patterns (glob syntax) to exclude from source directory.
  */
 data class Configuration(
     val sourceDirectory: String,
-    val outputDirectory: String,
-    val excludes: List<String>
+    val outputDirectory: String
 ) {
     class IllFormattedConfigurationException(val reason: String) : RuntimeException(reason)
     companion object {
@@ -50,11 +48,9 @@ data class Configuration(
                 val configurationJson = parsedJson.asJsonObject
                 val sourceDirectory = configurationJson.get("sourceDirectory")?.let { parseStringStrict(it) } ?: "."
                 val outputDirectory = configurationJson.get("outputDirectory")?.let { parseStringStrict(it) } ?: "out"
-                val excludes = parseOptionalStringList(jsonElement = configurationJson.get("excludes"))
                 return Configuration(
                     sourceDirectory = sourceDirectory,
-                    outputDirectory = outputDirectory,
-                    excludes = excludes
+                    outputDirectory = outputDirectory
                 )
             } catch (jsonParseException: JsonParseException) {
                 throw IllFormattedConfigurationException(
@@ -66,9 +62,6 @@ data class Configuration(
                 throw IllFormattedConfigurationException(reason = "Bad configuration file.")
             }
         }
-
-        private fun parseOptionalStringList(jsonElement: JsonElement?): List<String> =
-            jsonElement?.asJsonArray?.map(transform = ::parseStringStrict) ?: emptyList()
 
         private fun parseStringStrict(jsonElement: JsonElement): String {
             if (!jsonElement.isJsonPrimitive) {

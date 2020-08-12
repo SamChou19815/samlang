@@ -1,6 +1,0 @@
-// ERROR_COUNT: 1
-// undefined-variable.sam:5:29-5:39: [UnresolvedName]: Name `helloWorld` is not resolved.
-
-class Main {
-  function main(): string = helloWorld
-}

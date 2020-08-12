@@ -10,13 +10,9 @@ import samlang.common.getTypeCheckedModule
 import samlang.compiler.asm.AssemblyGenerator
 import samlang.compiler.hir.compileModule
 import samlang.compiler.mir.MidIrGenerator
-import samlang.optimization.ALL_OPT
-import samlang.optimization.COPY_OPT
-import samlang.optimization.CSE_OPT
-import samlang.optimization.DCE_OPT
-import samlang.optimization.INL_OPT
+import samlang.optimization.IrCompilationUnitOptimizer
+import samlang.optimization.MidIrStatementOptimizer
 import samlang.optimization.Optimizer
-import samlang.optimization.VN_OPT
 import samlang.programs.runnableTestPrograms
 
 @ExperimentalStdlibApi
@@ -44,29 +40,19 @@ class PrintInterpreterTest : FreeSpec() {
         }
     }
 
+    private val allOptimizer: IrCompilationUnitOptimizer = IrCompilationUnitOptimizer(
+        statementOptimizer = MidIrStatementOptimizer.allEnabled,
+        doesPerformInlining = true
+    )
+
     init {
         for ((id, module, expected) in programTestCases) {
-            "Program: $id" - { ModuleInterpreter().run(module = module).trim() shouldBe expected }
+            "Program: $id" { ModuleInterpreter().run(module = module).trim() shouldBe expected }
         }
         for ((id, ir, expected) in irTestCases) {
             "IR[no-opt]: $id" { testIr(ir = ir, expected = expected, optimizer = Optimizer.getNoOpOptimizer()) }
-            "IR[copy]: $id" { testIr(ir = ir, expected = expected, optimizer = COPY_OPT) }
-            "IR[vn]: $id" { testIr(ir = ir, expected = expected, optimizer = VN_OPT) }
-            "IR[cse]: $id" { testIr(ir = ir, expected = expected, optimizer = CSE_OPT) }
-            "IR[dce]: $id" { testIr(ir = ir, expected = expected, optimizer = DCE_OPT) }
-            "IR[inl]: $id" { testIr(ir = ir, expected = expected, optimizer = INL_OPT) }
-            "ASM[ir-no-opt]: $id" {
-                testAsm(
-                    irCompilationUnit = testIr(ir = ir, expected = expected, optimizer = Optimizer.getNoOpOptimizer()),
-                    expected = expected
-                )
-            }
-            "ASM[ir-all-opt]: $id" {
-                testAsm(
-                    irCompilationUnit = testIr(ir = ir, expected = expected, optimizer = ALL_OPT),
-                    expected = expected
-                )
-            }
+            "IR[all]: $id" { testIr(ir = ir, expected = expected, optimizer = allOptimizer) }
+            "ASM[all]: $id" { testAsm(testIr(ir = ir, expected = expected, optimizer = allOptimizer), expected) }
         }
     }
 
