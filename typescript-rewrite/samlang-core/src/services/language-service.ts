@@ -1,7 +1,7 @@
 import ModuleReference from '../ast/common/module-reference';
 import type Position from '../ast/common/position';
 import type Range from '../ast/common/range';
-import type { Type } from '../ast/common/types';
+import { Type, IdentifierType, FunctionType, prettyPrintType } from '../ast/common/types';
 import { SamlangExpression } from '../ast/lang/samlang-expressions';
 import { SamlangModule } from '../ast/lang/samlang-toplevel';
 import { GlobalTypingContext, typeCheckSources, typeCheckSourcesIncrementally } from '../checker';
@@ -14,11 +14,13 @@ import {
 } from '../errors';
 import { parseSamlangModuleFromText } from '../parser';
 import { HashMap, hashMapOf, hashSetOf } from '../util/collections';
+import { assertNotNull } from '../util/type-assertions';
 import {
   ReadOnlyLocationLookup,
   LocationLookup,
   SamlangExpressionLocationLookupBuilder,
 } from './location-service';
+import { MemberTypeInformation } from '../checker/typing-context';
 
 export class LanguageServiceState {
   private readonly dependencyTracker: DependencyTracker = new DependencyTracker();
@@ -62,7 +64,7 @@ export class LanguageServiceState {
       locationLookupBuilder.rebuild(moduleReference, checkedModule);
       checkedModule.classes.forEach((classDefinition) =>
         this._classLocationLookup.set(
-          { moduleReference, range: classDefinition.nameRange },
+          { moduleReference, range: classDefinition.range },
           classDefinition.name
         )
       );
@@ -174,7 +176,7 @@ export class LanguageServiceState {
       locationLookupBuilder.rebuild(moduleReference, checkedModule);
       checkedModule.classes.forEach((classDefinition) => {
         this._classLocationLookup.set(
-          { moduleReference, range: classDefinition.nameRange },
+          { moduleReference, range: classDefinition.range },
           classDefinition.name
         );
       });
@@ -184,12 +186,154 @@ export class LanguageServiceState {
   }
 }
 
-export default class LanguageServices {
+export type CompletionItemKind = 2 | 3 | 5;
+
+export class CompletionItemKinds {
+  static readonly METHOD: CompletionItemKind = 2;
+
+  static readonly FUNCTION: CompletionItemKind = 3;
+
+  static readonly FIELD: CompletionItemKind = 5;
+}
+
+export type AutoCompletionItem = {
+  readonly name: string;
+  readonly text: string;
+  readonly isSnippet: boolean;
+  readonly kind: CompletionItemKind;
+  readonly type: string;
+};
+
+export class LanguageServices {
   constructor(private readonly state: LanguageServiceState) {}
 
   queryType(moduleReference: ModuleReference, position: Position): readonly [Type, Range] | null {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     if (expression == null) return null;
     return [expression.type, expression.range];
+  }
+
+  autoComplete(
+    moduleReference: ModuleReference,
+    position: Position
+  ): readonly AutoCompletionItem[] {
+    // istanbul ignore next
+    if (position.column < 0) return [];
+    const expression = this.state.expressionLocationLookup.get(moduleReference, position);
+    const classOfExpression = this.state.classLocationLookup.get(moduleReference, position);
+    const moduleContext = this.state.globalTypingContext.get(moduleReference);
+    // istanbul ignore next
+    if (expression == null || classOfExpression == null || moduleContext == null) return [];
+    if (expression.__type__ === 'ClassMemberExpression') {
+      const className = expression.className;
+      const relevantClassType =
+        // istanbul ignore next
+        moduleContext.definedClasses[className] ??
+        // istanbul ignore next
+        moduleContext.importedClasses[className];
+      // istanbul ignore next
+      if (relevantClassType == null) return [];
+      return Object.entries(relevantClassType.functions).map(([name, typeInformation]) => {
+        assertNotNull(typeInformation);
+        return LanguageServices.getCompletionResultFromTypeInformation(
+          name,
+          typeInformation,
+          CompletionItemKinds.FUNCTION
+        );
+      });
+    }
+    let type: IdentifierType;
+    switch (expression.__type__) {
+      case 'FieldAccessExpression':
+      case 'MethodAccessExpression': {
+        const objectExpressionType = expression.expression.type;
+        // istanbul ignore next
+        if (objectExpressionType.type !== 'IdentifierType') return [];
+        type = objectExpressionType;
+        break;
+      }
+      default:
+        return [];
+    }
+    const relevantClassType =
+      moduleContext.definedClasses[type.identifier] ??
+      // istanbul ignore next
+      moduleContext.importedClasses[type.identifier];
+    // istanbul ignore next
+    if (relevantClassType == null) return [];
+    const completionResults: AutoCompletionItem[] = [];
+    const isInsideClass = classOfExpression === type.identifier;
+    if (isInsideClass && relevantClassType.typeDefinition?.type === 'object') {
+      Object.entries(relevantClassType.typeDefinition.mappings).forEach(([name, fieldType]) => {
+        assertNotNull(fieldType);
+        completionResults.push({
+          name,
+          text: name,
+          isSnippet: false,
+          kind: CompletionItemKinds.FIELD,
+          type: prettyPrintType(fieldType.type),
+        });
+      });
+    }
+    Object.entries(relevantClassType.methods).forEach(([name, typeInformation]) => {
+      assertNotNull(typeInformation);
+      // istanbul ignore next
+      if (isInsideClass || typeInformation.isPublic) {
+        completionResults.push(
+          LanguageServices.getCompletionResultFromTypeInformation(
+            name,
+            typeInformation,
+            CompletionItemKinds.METHOD
+          )
+        );
+      }
+    });
+    return completionResults;
+  }
+
+  private static getCompletionResultFromTypeInformation(
+    name: string,
+    typeInformation: MemberTypeInformation,
+    kind: CompletionItemKind
+  ): AutoCompletionItem {
+    const functionType = typeInformation.type;
+    const detailedName = `${name}${LanguageServices.prettyPrintFunctionTypeWithDummyParameters(
+      functionType
+    )}`;
+    const [text, isSnippet] = LanguageServices.getInsertText(
+      name,
+      functionType.argumentTypes.length
+    );
+    return {
+      name: detailedName,
+      text,
+      isSnippet,
+      kind,
+      type: LanguageServices.prettyPrintTypeInformation(typeInformation),
+    };
+  }
+
+  private static prettyPrintTypeInformation(typeInformation: MemberTypeInformation): string {
+    return typeInformation.typeParameters.length === 0
+      ? prettyPrintType(typeInformation.type)
+      : `<${typeInformation.typeParameters.join(', ')}>(${prettyPrintType(typeInformation.type)})`;
+  }
+
+  private static prettyPrintFunctionTypeWithDummyParameters({
+    argumentTypes,
+    returnType,
+  }: FunctionType) {
+    const argumentPart = argumentTypes.map((it, id) => `a${id}: ${prettyPrintType(it)}`).join(', ');
+    return `(${argumentPart}): ${prettyPrintType(returnType)}`;
+  }
+
+  private static getInsertText(name: string, argumentLength: number): readonly [string, boolean] {
+    // istanbul ignore next
+    if (argumentLength === 0) return [`${name}()`, false];
+    const items: string[] = [];
+    for (let i = 0; i < argumentLength; i += 1) {
+      items.push(`$${i}`);
+    }
+    return [`${name}(${items.join(', ')})$${items.length}`, true];
   }
 }
