@@ -9,7 +9,6 @@ import java.io.File
 import java.nio.file.Paths
 import kotlin.system.exitProcess
 import org.eclipse.lsp4j.launch.LSPLauncher
-import samlang.ast.common.ModuleReference
 import samlang.lsp.LanguageServer
 import samlang.service.checkSources
 
@@ -47,11 +46,6 @@ private class CompileCommand : CliktCommand(name = "compile") {
             return
         }
         val assemblyOutputDirectory = Paths.get(outputDirectory.toString(), "x86").toFile()
-        compileToX86Assembly(
-            source = checkedSources,
-            entryModuleReference = ModuleReference.ROOT, // TODO
-            outputDirectory = assemblyOutputDirectory
-        )
         val noLinkError = compileToX86Executable(source = checkedSources, outputDirectory = assemblyOutputDirectory)
         if (!noLinkError) {
             echo(message = "Compiled output has link errors.", err = true)

@@ -11,7 +11,6 @@ import samlang.compiler.hir.compileSources
 import samlang.compiler.mir.MidIrGenerator
 import samlang.optimization.IrCompilationUnitOptimizer
 import samlang.optimization.Optimizer
-import samlang.service.lowerToAssemblyString
 
 fun collectSources(configuration: Configuration): List<Pair<ModuleReference, String>> {
     val sourcePath = Paths.get(configuration.sourceDirectory).toAbsolutePath()
@@ -24,23 +23,6 @@ fun collectSources(configuration: Configuration): List<Pair<ModuleReference, Str
         parts.add(element = relativeFile.nameWithoutExtension)
         ModuleReference(parts = parts) to file.readText()
     }.toList()
-}
-
-@ExperimentalStdlibApi
-fun compileToX86Assembly(
-    source: Sources<Module>,
-    entryModuleReference: ModuleReference,
-    optimizer: Optimizer<MidIrCompilationUnit> = IrCompilationUnitOptimizer.allEnabled,
-    outputDirectory: File
-) {
-    val printedAssemblyProgram = lowerToAssemblyString(
-        source = source,
-        entryModuleReference = entryModuleReference,
-        optimizer = optimizer
-    )
-    outputDirectory.mkdirs()
-    val outputFile = Paths.get(outputDirectory.toString(), "program.s").toFile()
-    outputFile.writeText(text = printedAssemblyProgram)
 }
 
 @ExperimentalStdlibApi

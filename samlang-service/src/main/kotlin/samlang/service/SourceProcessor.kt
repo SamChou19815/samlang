@@ -27,18 +27,3 @@ fun checkSources(sourceHandles: List<Pair<ModuleReference, String>>): Pair<Sourc
     )
     return checkedSources to errorCollector.collectedErrors
 }
-
-@ExperimentalStdlibApi
-fun lowerToAssemblyString(
-    source: Sources<Module>,
-    entryModuleReference: ModuleReference,
-    optimizer: Optimizer<MidIrCompilationUnit>
-): String {
-    val highIrSources = compileSources(sources = source)
-    val unoptimizedCompilationUnit = MidIrGenerator.generate(
-        sources = highIrSources,
-        entryModuleReference = entryModuleReference
-    )
-    val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
-    return AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit).toString()
-}
