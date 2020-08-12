@@ -58,7 +58,7 @@ it('When the configuration file is good, say so', () => {
         return '{}';
       },
     })
-  ).toEqual({ sourceDirectory: '.', outputDirectory: 'out', excludes: [] });
+  ).toEqual({ sourceDirectory: '.', outputDirectory: 'out' });
 });
 
 it('Real filesystem bad configuration file integration test.', () => {
@@ -85,6 +85,5 @@ it('Real filesystem integration test.', () => {
   expect(loadSamlangProjectConfiguration()).toEqual({
     sourceDirectory: '.',
     outputDirectory: 'out',
-    excludes: ['**/bad/*.sam', 'build/**', 'out/**'],
   });
 });

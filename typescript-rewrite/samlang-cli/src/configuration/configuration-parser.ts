@@ -8,26 +8,11 @@ const parseSamlangProjectConfiguration = (
     if (typeof json !== 'object' || json === null) {
       return null;
     }
-    const { sourceDirectory = '.', outputDirectory = 'out', excludes = [] } = json as Record<
-      string,
-      unknown
-    >;
-    if (
-      typeof sourceDirectory !== 'string' ||
-      typeof outputDirectory !== 'string' ||
-      !Array.isArray(excludes)
-    ) {
+    const { sourceDirectory = '.', outputDirectory = 'out' } = json as Record<string, unknown>;
+    if (typeof sourceDirectory !== 'string' || typeof outputDirectory !== 'string') {
       return null;
     }
-    const sanitizedExcludes: string[] = [];
-    for (let i = 0; i < excludes.length; i += 1) {
-      const oneExclude = excludes[i];
-      if (typeof oneExclude !== 'string') {
-        return null;
-      }
-      sanitizedExcludes.push(oneExclude);
-    }
-    return { sourceDirectory, outputDirectory, excludes: sanitizedExcludes };
+    return { sourceDirectory, outputDirectory };
   } catch {
     return null;
   }
