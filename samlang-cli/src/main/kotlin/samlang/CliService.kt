@@ -34,7 +34,6 @@ fun compileToX86Executable(
     val highIrSources = compileSources(sources = source)
     val unoptimizedCompilationUnits = MidIrGenerator.generateWithMultipleEntries(sources = highIrSources)
     var withoutLinkError = true
-    val jarPath = Paths.get(System.getProperty("java.class.path")).toAbsolutePath().toString()
     for ((moduleReference, unoptimizedCompilationUnit) in unoptimizedCompilationUnits.moduleMappings) {
         val optimizedCompilationUnit = optimizer.optimize(source = unoptimizedCompilationUnit)
         val assemblyProgram = AssemblyGenerator.generate(compilationUnit = optimizedCompilationUnit)
@@ -43,7 +42,6 @@ fun compileToX86Executable(
         outputAssemblyFile.parentFile.mkdirs()
         outputAssemblyFile.writeText(text = printedAssemblyProgram)
         withoutLinkError = withoutLinkError && linkWithGcc(
-            jarPath = jarPath,
             outputProgramFile = Paths.get(outputDirectory.toString(), moduleReference.toString()).toString(),
             outputAssemblyFile = outputAssemblyFile.toString()
         )
@@ -51,12 +49,13 @@ fun compileToX86Executable(
     return withoutLinkError
 }
 
+private val jarPath: String = Paths.get(System.getProperty("java.class.path")).toAbsolutePath().toString()
+private val runtimePath: String = Paths.get(File(jarPath).parentFile.parentFile.parentFile.toString(), "runtime").toString()
+
 private fun linkWithGcc(
-    jarPath: String,
     outputProgramFile: String,
     outputAssemblyFile: String
 ): Boolean {
-    val runtimePath = Paths.get(File(jarPath).parentFile.parentFile.parentFile.toString(), "runtime").toString()
     val processBuilder = ProcessBuilder(
         "gcc", "-o", outputProgramFile, outputAssemblyFile, "-L$runtimePath", "-lsam", "-lpthread"
     )
