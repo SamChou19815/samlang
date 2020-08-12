@@ -58,7 +58,7 @@ it('When the configuration file is good, say so', () => {
         return '{}';
       },
     })
-  ).toEqual({ sourceDirectory: '.', outputDirectory: 'out' });
+  ).toBeTruthy();
 });
 
 it('Real filesystem bad configuration file integration test.', () => {
@@ -83,7 +83,7 @@ it('Real filesystem bad start path integration test.', () => {
 
 it('Real filesystem integration test.', () => {
   expect(loadSamlangProjectConfiguration()).toEqual({
-    sourceDirectory: '.',
-    outputDirectory: 'out',
+    sourceDirectory: resolve(__dirname, '..', '..', '..', '..', '..'),
+    outputDirectory: resolve(__dirname, '..', '..', '..', '..', '..', 'out'),
   });
 });

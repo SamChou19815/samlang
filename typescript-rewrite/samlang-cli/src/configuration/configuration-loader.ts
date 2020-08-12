@@ -44,7 +44,12 @@ const loadSamlangProjectConfiguration = ({
         return 'UNREADABLE_CONFIGURATION_FILE';
       }
       const configuration = parseSamlangProjectConfiguration(content);
-      return configuration === null ? 'UNPARSABLE_CONFIGURATION_FILE' : configuration;
+      return configuration === null
+        ? 'UNPARSABLE_CONFIGURATION_FILE'
+        : {
+            sourceDirectory: resolve(configurationDirectory, configuration.sourceDirectory),
+            outputDirectory: resolve(configurationDirectory, configuration.outputDirectory),
+          };
     }
     configurationDirectory = dirname(configurationDirectory);
   }
