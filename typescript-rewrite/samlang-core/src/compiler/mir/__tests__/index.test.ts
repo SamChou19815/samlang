@@ -1,6 +1,5 @@
-import {
+import compileHighIrSourcesToMidIRCompilationUnits, {
   compileHighIrSourcesToMidIRCompilationUnit,
-  compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries,
 } from '..';
 import ModuleReference from '../../../ast/common/module-reference';
 import { HIR_RETURN, HIR_STRING } from '../../../ast/hir/hir-expressions';
@@ -73,8 +72,8 @@ function fooBar {
 `);
 });
 
-it('compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries and compileHighIrSourcesToMidIRCompilationUnitWithSingleEntry self-consistency test', () => {
-  const result = compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries(commonSources);
+it('compileHighIrSourcesToMidIRCompilationUnits test', () => {
+  const result = compileHighIrSourcesToMidIRCompilationUnits(commonSources);
   expect(result.size).toBe(1);
   const root = result.get(ModuleReference.ROOT);
   assertNotNull(root);

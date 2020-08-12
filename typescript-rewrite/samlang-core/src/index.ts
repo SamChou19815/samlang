@@ -5,5 +5,5 @@ export { default as Position } from './ast/common/position';
 export { default as Range } from './ast/common/range';
 export type { SamlangModule } from './ast/lang/samlang-toplevel';
 export { ReadonlyGlobalErrorCollector, createGlobalErrorCollector } from './errors';
-export { checkSources, lowerSourcesToAssemblyProgram } from './services/source-processor';
+export { checkSources, lowerSourcesToAssemblyPrograms } from './services/source-processor';
 export { LanguageServiceState, LanguageServices } from './services/language-service';

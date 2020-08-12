@@ -6,7 +6,7 @@ import type { MidIRCompilationUnit } from '../ast/mir';
 import { typeCheckSources, GlobalTypingContext } from '../checker';
 import {
   compileSamlangSourcesToHighIRSources,
-  compileHighIrSourcesToMidIRCompilationUnitWithSingleEntry,
+  compileHighIrSourcesToMidIRCompilationUnits,
   generateAssemblyInstructionsFromMidIRCompilationUnit,
 } from '../compiler';
 import { CompileTimeError, createGlobalErrorCollector } from '../errors';
@@ -36,16 +36,20 @@ export const checkSources = (
   return { checkedSources, globalTypingContext, compileTimeErrors: errorCollector.getErrors() };
 };
 
-export const lowerSourcesToAssemblyProgram = (
+export const lowerSourcesToAssemblyPrograms = (
   sources: Sources<SamlangModule>,
-  entryModuleReference: ModuleReference,
   optimizer: (compilationUnit: MidIRCompilationUnit) => MidIRCompilationUnit
-): AssemblyProgram => {
-  const highIrSources = compileSamlangSourcesToHighIRSources(sources);
-  const unoptimizedCompilationUnit = compileHighIrSourcesToMidIRCompilationUnitWithSingleEntry(
-    highIrSources,
-    entryModuleReference
+): Sources<AssemblyProgram> =>
+  hashMapOf(
+    ...compileHighIrSourcesToMidIRCompilationUnits(compileSamlangSourcesToHighIRSources(sources))
+      .entries()
+      .map(
+        ([moduleReference, unoptimizedCompilationUnit]) =>
+          [
+            moduleReference,
+            generateAssemblyInstructionsFromMidIRCompilationUnit(
+              optimizer(unoptimizedCompilationUnit)
+            ),
+          ] as const
+      )
   );
-  const optimizedCompilationUnit = optimizer(unoptimizedCompilationUnit);
-  return generateAssemblyInstructionsFromMidIRCompilationUnit(optimizedCompilationUnit);
-};

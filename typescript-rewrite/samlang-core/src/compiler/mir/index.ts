@@ -67,7 +67,7 @@ const getMidIRMainFunction = (entryModuleReference: ModuleReference): MidIRFunct
   ],
 });
 
-export const compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries = (
+const compileHighIrSourcesToMidIRCompilationUnits = (
   sources: Sources<HighIRModule>
 ): Sources<MidIRCompilationUnit> => {
   const compilationUnitWithoutMain = compileHighIrSourcesToMidIRCompilationUnit(sources);
@@ -88,16 +88,4 @@ export const compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries = (
   return midIRCompilationUnitSources;
 };
 
-export const compileHighIrSourcesToMidIRCompilationUnitWithSingleEntry = (
-  sources: Sources<HighIRModule>,
-  entryModuleReference: ModuleReference
-): MidIRCompilationUnit => {
-  const compilationUnitWithoutMain = compileHighIrSourcesToMidIRCompilationUnit(sources);
-  return optimizeIRWithUnusedNameElimination({
-    ...compilationUnitWithoutMain,
-    functions: [
-      ...compilationUnitWithoutMain.functions,
-      getMidIRMainFunction(entryModuleReference),
-    ],
-  });
-};
+export default compileHighIrSourcesToMidIRCompilationUnits;
