@@ -7,6 +7,8 @@ import { SamlangModule } from '../ast/lang/samlang-toplevel';
 import { GlobalTypingContext, typeCheckSources, typeCheckSourcesIncrementally } from '../checker';
 // eslint-disable-next-line import/no-internal-modules
 import DependencyTracker from '../checker/dependency-tracker';
+// eslint-disable-next-line import/no-internal-modules
+import type { MemberTypeInformation } from '../checker/typing-context';
 import {
   ReadonlyGlobalErrorCollector,
   CompileTimeError,
@@ -20,7 +22,6 @@ import {
   LocationLookup,
   SamlangExpressionLocationLookupBuilder,
 } from './location-service';
-import { MemberTypeInformation } from '../checker/typing-context';
 
 export class LanguageServiceState {
   private readonly dependencyTracker: DependencyTracker = new DependencyTracker();
