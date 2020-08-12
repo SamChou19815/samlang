@@ -72,7 +72,11 @@ export const compileHighIrSourcesToMidIRCompilationUnitWithMultipleEntries = (
 ): Sources<MidIRCompilationUnit> => {
   const compilationUnitWithoutMain = compileHighIrSourcesToMidIRCompilationUnit(sources);
   const midIRCompilationUnitSources = hashMapOf<ModuleReference, MidIRCompilationUnit>();
-  sources.forEach((_, moduleReference) => {
+  sources.forEach((highIRModule, moduleReference) => {
+    const entryPointFunctionName = encodeMainFunctionName(moduleReference);
+    if (!highIRModule.functions.some(({ name }) => name === entryPointFunctionName)) {
+      return;
+    }
     midIRCompilationUnitSources.set(
       moduleReference,
       optimizeIRWithUnusedNameElimination({
