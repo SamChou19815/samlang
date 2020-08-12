@@ -1,3 +1,4 @@
+import { spawnSync } from 'child_process';
 import { lstatSync, readdirSync, readFileSync, mkdirSync, writeFileSync } from 'fs';
 import { join, normalize, dirname, resolve, relative, sep } from 'path';
 
@@ -45,7 +46,7 @@ export const collectSources = ({
   return sources;
 };
 
-export const compileToX86Assembly = (
+const compileToX86Assembly = (
   sources: Sources<SamlangModule>,
   outputDirectory: string
 ): readonly string[] => {
@@ -58,4 +59,27 @@ export const compileToX86Assembly = (
     paths.push(outputAssemblyFilePath);
   });
   return paths;
+};
+
+// TODO: Change this hardcoded value when infra is ready.
+const RUNTIME_PATH = join(__dirname, '..', '..', '..', 'runtime');
+
+const linkWithGcc = (outputProgramFile: string, outputAssemblyFile: string): boolean => {
+  const gccProcess = spawnSync(
+    'gcc',
+    ['-o', outputProgramFile, outputAssemblyFile, `-L${RUNTIME_PATH}`, '-lsam', '-lpthread'],
+    { shell: true, stdio: 'inherit' }
+  );
+  return gccProcess.status === 0;
+};
+
+export const compileToX86Executables = (
+  sources: Sources<SamlangModule>,
+  outputDirectory: string
+): boolean => {
+  const assemblyPaths = compileToX86Assembly(sources, outputDirectory);
+  const linkResults = assemblyPaths.map((assemblyPath) =>
+    linkWithGcc(assemblyPath.substring(0, assemblyPath.length - 2), assemblyPath)
+  );
+  return linkResults.every((it) => it);
 };

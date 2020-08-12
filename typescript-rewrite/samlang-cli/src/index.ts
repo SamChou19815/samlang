@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 
 import cliMainRunner, { CLIRunners } from './cli';
-import { collectSources, compileToX86Assembly } from './cli-service';
+import { collectSources, compileToX86Executables } from './cli-service';
 import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './configuration';
 
 import { checkSources, Sources, SamlangModule } from '@dev-sam/samlang-core';
@@ -48,8 +48,11 @@ const runners: CLIRunners = {
         checkedSources,
         configuration: { outputDirectory },
       } = typeCheck();
-      compileToX86Assembly(checkedSources, outputDirectory);
-      console.error(compileToX86Assembly(checkedSources, outputDirectory).join('\n'));
+      const successful = compileToX86Executables(checkedSources, outputDirectory);
+      if (!successful) {
+        console.error('Failed to link some programs.');
+        process.exit(3);
+      }
     }
   },
   lsp(needHelp) {
