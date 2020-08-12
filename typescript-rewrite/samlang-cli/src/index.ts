@@ -3,13 +3,11 @@
 import cliMainRunner, { CLIRunners } from './cli';
 import { collectSources, compileToX86Executables } from './cli-service';
 import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './configuration';
+import startSamlangLanguageServer from './lsp';
 
 import { checkSources, Sources, SamlangModule } from '@dev-sam/samlang-core';
 
-const typeCheck = (): {
-  readonly checkedSources: Sources<SamlangModule>;
-  readonly configuration: SamlangProjectConfiguration;
-} => {
+const getConfiguration = (): SamlangProjectConfiguration => {
   const configuration = loadSamlangProjectConfiguration();
   if (
     configuration === 'NO_CONFIGURATION' ||
@@ -19,6 +17,14 @@ const typeCheck = (): {
     console.error(configuration);
     process.exit(2);
   }
+  return configuration;
+};
+
+const typeCheck = (): {
+  readonly checkedSources: Sources<SamlangModule>;
+  readonly configuration: SamlangProjectConfiguration;
+} => {
+  const configuration = getConfiguration();
   const { checkedSources, compileTimeErrors } = checkSources(collectSources(configuration));
   if (compileTimeErrors.length > 0) {
     console.error(`Found ${compileTimeErrors.length} error(s).`);
@@ -59,7 +65,7 @@ const runners: CLIRunners = {
     if (needHelp) {
       console.log('samlang lsp: Start an LSP process according to sconfig.json.');
     } else {
-      console.error('samlang-lsp WIP.');
+      startSamlangLanguageServer(getConfiguration());
     }
   },
   version() {

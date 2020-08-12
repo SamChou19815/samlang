@@ -1,7 +1,7 @@
 'use strict';
 
 import * as vscode from 'vscode';
-import { LanguageClient, LanguageClientOptions } from 'vscode-languageclient';
+import { LanguageClient, LanguageClientOptions, TransportKind } from 'vscode-languageclient';
 
 const provideDocumentFormattingEdits = (document: vscode.TextDocument): vscode.TextEdit[] => {
   // const whitespace
@@ -55,22 +55,30 @@ const provideDocumentFormattingEdits = (document: vscode.TextDocument): vscode.T
   return edits;
 };
 
-export function activate(_: vscode.ExtensionContext) {
+export function activate(context: vscode.ExtensionContext) {
   vscode.languages.registerDocumentFormattingEditProvider('SAMLANG', {
-    provideDocumentFormattingEdits
+    provideDocumentFormattingEdits,
   });
 
-  const programPath = vscode.workspace.getConfiguration().get('samlang.programPath');
-  if (typeof programPath != 'string') {
-    throw new Error(`Invalid program path: ${programPath}.`);
+  const serverModule = vscode.workspace.getConfiguration().get('samlang.programPath');
+  if (typeof serverModule != 'string') {
+    throw new Error(`Invalid program path: ${serverModule}.`);
   }
-  console.log(`Connecting to ${programPath}...`);
   const serverOptions = {
-    command: 'java',
-    args: ['-jar', programPath, 'lsp']
+    run: {
+      module: serverModule,
+      args: ['lsp'],
+      transport: TransportKind.ipc,
+    },
+    debug: {
+      module: serverModule,
+      transport: TransportKind.ipc,
+      args: ['lsp'],
+      options: { execArgv: ['--nolazy', '--inspect=6009'] },
+    },
   };
   const clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: 'file', language: 'samlang' }]
+    documentSelector: [{ scheme: 'file', language: 'samlang' }],
   };
 
   const languageClient = new LanguageClient(
