@@ -1,55 +1,55 @@
-#./out/x86/test.runnable.and-or-inside-if
+#./out/test.runnable.and-or-inside-if
 one
 
-#./out/x86/test.runnable.block-in-if-else
+#./out/test.runnable.block-in-if-else
 
-#./out/x86/test.runnable.builtins
+#./out/test.runnable.builtins
 42
 
-#./out/x86/test.runnable.cf-test-1
+#./out/test.runnable.cf-test-1
 361200
 
-#./out/x86/test.runnable.cf-test-2
+#./out/test.runnable.cf-test-2
 7000
 
-#./out/x86/test.runnable.cf-test-3
+#./out/test.runnable.cf-test-3
 1400
 
-#./out/x86/test.runnable.concat-string
+#./out/test.runnable.concat-string
 Hello World!
 
-#./out/x86/test.runnable.correct-op
+#./out/test.runnable.correct-op
 OK
 
-#./out/x86/test.runnable.cse-test-1
+#./out/test.runnable.cse-test-1
 30
 12
 15
 
-#./out/x86/test.runnable.cse-test-2
+#./out/test.runnable.cse-test-2
 OK
 
-#./out/x86/test.runnable.cse-test-3
+#./out/test.runnable.cse-test-3
 2181
 
-#./out/x86/test.runnable.cse-test-4
+#./out/test.runnable.cse-test-4
 2700
 
-#./out/x86/test.runnable.cse-test-5
+#./out/test.runnable.cse-test-5
 150
 
-#./out/x86/test.runnable.cse-test-6
+#./out/test.runnable.cse-test-6
 OK
 
-#./out/x86/test.runnable.different-expr-demo
+#./out/test.runnable.different-expr-demo
 42
 
-#./out/x86/test.runnable.different-modules-demo
+#./out/test.runnable.different-modules-demo
 OK
 
-#./out/x86/test.runnable.empty
+#./out/test.runnable.empty
 
-#./out/x86/test.runnable.evaluation-order
+#./out/test.runnable.evaluation-order
 0
 1
 2
@@ -77,43 +77,43 @@ OK
 24
 25
 
-#./out/x86/test.runnable.function-call-never-ignored
+#./out/test.runnable.function-call-never-ignored
 hi
 
-#./out/x86/test.runnable.generic-object-test
+#./out/test.runnable.generic-object-test
 2
 42
 
-#./out/x86/test.runnable.if-else-consistency
+#./out/test.runnable.if-else-consistency
 3
 3
 OK
 
-#./out/x86/test.runnable.if-else-unreachable-1
+#./out/test.runnable.if-else-unreachable-1
 success
 
-#./out/x86/test.runnable.if-else-unreachable-2
+#./out/test.runnable.if-else-unreachable-2
 success
 
-#./out/x86/test.runnable.map-but-ignore
+#./out/test.runnable.map-but-ignore
 
-#./out/x86/test.runnable.math-functions
+#./out/test.runnable.math-functions
 24
 55
 
-#./out/x86/test.runnable.mutually-recursive
+#./out/test.runnable.mutually-recursive
 OK
 
-#./out/x86/test.runnable.optional-semicolon
+#./out/test.runnable.optional-semicolon
 -7
 
-#./out/x86/test.runnable.print-hello-world
+#./out/test.runnable.print-hello-world
 Hello World!
 
-#./out/x86/test.runnable.reordering-test
+#./out/test.runnable.reordering-test
 OK
 
-#./out/x86/test.runnable.short-circuit-and-or
+#./out/test.runnable.short-circuit-and-or
 0
 1
 false
@@ -147,11 +147,11 @@ true
 0
 1
 
-#./out/x86/test.runnable.string-global-constant
+#./out/test.runnable.string-global-constant
 OK
 
-#./out/x86/test.runnable.too-much-interference
+#./out/test.runnable.too-much-interference
 0
 
-#./out/x86/test.runnable.various-syntax-forms
+#./out/test.runnable.various-syntax-forms
 84

@@ -25,7 +25,7 @@ const runWithErrorCheck = (command, args = []) => {
   return result.stdout.toString();
 };
 
-const basePath = './out/x86';
+const basePath = './out';
 
 const getX86Programs = () => {
   /** @type {string[]} */

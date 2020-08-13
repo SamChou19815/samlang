@@ -1,4 +1,4 @@
 #!/bin/bash
 MY_PATH=$(dirname "$0")
-JAR_PATH="${MY_PATH}"/build/libs/samlang-all.jar
-java -jar "$JAR_PATH" "$@"
+NODEJS_CLI_PATH="${MY_PATH}"/typescript-rewrite/samlang-cli/build/index.js
+node "$NODEJS_CLI_PATH" "$@"

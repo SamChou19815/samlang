@@ -24,12 +24,6 @@ on:
       - '**.kts'
 
 jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-      - name: Gradle Wrapper Validation
-        uses: gradle/wrapper-validation-action@v1.0.3
   build:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -46,5 +40,3 @@ jobs:
         run: ./scripts/release
       - name: Verify that Release Program Works
         run: ./build/release/samlang
-      - name: Compile samlang Programs
-        run: ./scripts/compile-repository.js
