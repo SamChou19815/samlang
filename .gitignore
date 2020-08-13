@@ -8,9 +8,30 @@ runtime/gc-7.6.4
 
 # Node
 node_modules
-*.vsix
-out
-build
 
 # System Files
 .DS_Store
+
+## Yarn
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/versions
+**/node_modules
+**/.pnp
+**/.pnp.js
+
+## Cache
+.eslintcache
+
+## Converage
+coverage
+
+## Compiled output
+*.vsix
+out
+lib
+build
+
+# Generated
+samlang-core/src/parser/generated

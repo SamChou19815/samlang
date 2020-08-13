@@ -83,7 +83,7 @@ it('Real filesystem bad start path integration test.', () => {
 
 it('Real filesystem integration test.', () => {
   expect(loadSamlangProjectConfiguration()).toEqual({
-    sourceDirectory: resolve(__dirname, '..', '..', '..', '..', '..'),
-    outputDirectory: resolve(__dirname, '..', '..', '..', '..', '..', 'out'),
+    sourceDirectory: resolve(__dirname, '..', '..', '..', '..'),
+    outputDirectory: resolve(__dirname, '..', '..', '..', '..', 'out'),
   });
 });

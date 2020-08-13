@@ -7,14 +7,19 @@
 **/.pnp
 **/.pnp.js
 
+## Compiled output
+lib
+build
+out
+
 ## Cache
 .eslintcache
 
 ## Converage
 coverage
 
-## Compiled output
-lib
+# Yarn Vendor
+.yarn
 
 # Generated
 samlang-core/src/parser/generated

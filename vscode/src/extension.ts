@@ -1,15 +1,15 @@
-'use strict';
-
+// eslint-disable-next-line import/no-unresolved
 import * as vscode from 'vscode';
+// eslint-disable-next-line import/no-unresolved
 import { LanguageClient, LanguageClientOptions, TransportKind } from 'vscode-languageclient';
 
 const provideDocumentFormattingEdits = (document: vscode.TextDocument): vscode.TextEdit[] => {
   // const whitespace
   const edits: vscode.TextEdit[] = [];
   let indentLevel = 0;
-  for (let i = 0; i < document.lineCount; i++) {
+  for (let i = 0; i < document.lineCount; i += 1) {
     const line = document.lineAt(i);
-    let whiteIdx = line.firstNonWhitespaceCharacterIndex;
+    const whiteIdx = line.firstNonWhitespaceCharacterIndex;
     const lineText = line.text;
     let numLeft = 0;
     let numRight = 0;
@@ -17,15 +17,15 @@ const provideDocumentFormattingEdits = (document: vscode.TextDocument): vscode.T
     let inString: string | null = null;
     let currentEdit: vscode.TextEdit | null = null;
 
-    for (let charIdx = 0; charIdx < lineText.length; charIdx++) {
+    for (let charIdx = 0; charIdx < lineText.length; charIdx += 1) {
       const char = lineText[charIdx];
-      if (char == '{' && inString == null) {
-        numLeft++;
+      if (char === '{' && inString == null) {
+        numLeft += 1;
         if (onlyRights) {
           onlyRights = false;
         }
-      } else if (char == '}' && inString == null) {
-        numRight++;
+      } else if (char === '}' && inString == null) {
+        numRight += 1;
         if (onlyRights) {
           currentEdit = vscode.TextEdit.replace(
             new vscode.Range(line.range.start, new vscode.Position(i, whiteIdx)),
@@ -33,11 +33,11 @@ const provideDocumentFormattingEdits = (document: vscode.TextDocument): vscode.T
           );
         }
       }
-      if (char == '"' && inString == null) {
+      if (char === '"' && inString == null) {
         inString = '"';
-      } else if (char == "'" && inString == null) {
+      } else if (char === "'" && inString == null) {
         inString = "'";
-      } else if (char == inString && lineText[charIdx - 1] != '\\') {
+      } else if (char === inString && lineText[charIdx - 1] !== '\\') {
         inString = null;
       }
     }
@@ -55,13 +55,14 @@ const provideDocumentFormattingEdits = (document: vscode.TextDocument): vscode.T
   return edits;
 };
 
-export function activate(context: vscode.ExtensionContext) {
+// eslint-disable-next-line import/prefer-default-export
+export function activate(): void {
   vscode.languages.registerDocumentFormattingEditProvider('SAMLANG', {
     provideDocumentFormattingEdits,
   });
 
   const serverModule = vscode.workspace.getConfiguration().get('samlang.programPath');
-  if (typeof serverModule != 'string') {
+  if (typeof serverModule !== 'string') {
     throw new Error(`Invalid program path: ${serverModule}.`);
   }
   const serverOptions = {

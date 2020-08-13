@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
 // @ts-check
+/* eslint-disable no-console */
 
+const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { spawnSync } = require('child_process');
 
 /**
  * @param {string} filename
@@ -20,7 +21,9 @@ const read = (filename) => fs.readFileSync(filename).toString();
 const runWithErrorCheck = (command, args = []) => {
   const result = spawnSync(command, args);
   if (result.status !== 0) {
-    throw new Error(`Command \`${command}\` failed with ${result.status}. Error: ${result.stderr.toString()}`);
+    throw new Error(
+      `Command \`${command}\` failed with ${result.status}. Error: ${result.stderr.toString()}`
+    );
   }
   return result.stdout.toString();
 };
@@ -42,6 +45,7 @@ const getX86Programs = () => {
       try {
         fs.accessSync(fullRelativePath, fs.constants.X_OK);
         programs.push(fullRelativePath);
+        // eslint-disable-next-line no-empty
       } catch (_) {}
     }
   });

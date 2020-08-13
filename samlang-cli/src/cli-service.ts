@@ -62,7 +62,7 @@ const compileToX86Assembly = (
 };
 
 // TODO: Change this hardcoded value when infra is ready.
-const RUNTIME_PATH = join(__dirname, '..', '..', '..', 'runtime');
+const RUNTIME_PATH = join(__dirname, '..', '..', 'runtime');
 
 const linkWithGcc = (outputProgramFile: string, outputAssemblyFile: string): boolean => {
   const gccProcess = spawnSync(
