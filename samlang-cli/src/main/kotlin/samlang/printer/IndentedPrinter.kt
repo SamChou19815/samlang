@@ -1,6 +1,7 @@
 package samlang.printer
 
-internal class IndentedPrinter(private val device: StringBuilderPrintDevice, private val indentationSymbol: String) {
+internal class IndentedPrinter(private val indentationSymbol: String) {
+    private val builder: StringBuilder = StringBuilder()
 
     private var disableIndentation: Boolean = false
     private var currentIndentationLevel: Int = 0
@@ -14,7 +15,7 @@ internal class IndentedPrinter(private val device: StringBuilderPrintDevice, pri
         thunk()
         disableIndentation = tempDisableIndentation
         if (!disableIndentation) {
-            device.println()
+            builder.append('\n')
         }
     }
 
@@ -30,7 +31,7 @@ internal class IndentedPrinter(private val device: StringBuilderPrintDevice, pri
 
     private fun printIndentation() {
         if (!disableIndentation) {
-            repeat(times = currentIndentationLevel) { device.print(indentationSymbol) }
+            repeat(times = currentIndentationLevel) { builder.append(indentationSymbol) }
         }
     }
 
@@ -40,13 +41,15 @@ internal class IndentedPrinter(private val device: StringBuilderPrintDevice, pri
     private fun print(x: Any, requireBreak: Boolean) {
         printIndentation()
         if (disableIndentation) {
-            device.print(x)
+            builder.append(x)
         } else {
             if (requireBreak) {
-                device.println(x)
+                builder.append(x).append('\n')
             } else {
-                device.print(x)
+                builder.append(x)
             }
         }
     }
+
+    fun dump(): String = builder.toString()
 }

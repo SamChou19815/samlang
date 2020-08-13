@@ -30,11 +30,10 @@ import samlang.ast.lang.Statement
 import samlang.ast.lang.StatementBlock
 
 fun prettyPrint(module: Module): String {
-    val device = StringBuilderPrintDevice()
     // use 4-space
-    val indentedPrinter = IndentedPrinter(device = device, indentationSymbol = "    ")
+    val indentedPrinter = IndentedPrinter(indentationSymbol = "    ")
     TopLevelPrinter(printer = indentedPrinter).print(module = module)
-    return device.dump()
+    return indentedPrinter.dump()
 }
 
 private fun <T> typeParametersToString(typeParameters: List<T>): String =
