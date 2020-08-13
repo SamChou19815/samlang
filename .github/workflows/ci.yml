@@ -6,13 +6,47 @@ on:
   pull_request:
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-node@v2-beta
+      - uses: actions/cache@v2
+        with:
+          path: |
+            .yarn/cache
+            .pnp.js
+          key: yarn-berry-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-berry-
+      - name: Yarn Install
+        run: yarn
+      - name: Lint
+        run: yarn lint
+      - name: Check Format
+        run: yarn format:check
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
       - uses: actions/setup-node@v2-beta
+      - uses: actions/cache@v2
         with:
-          node-version: '12'
+          path: |
+            .yarn/cache
+            .pnp.js
+          key: yarn-berry-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-berry-
+      - name: Yarn Install
+        run: yarn
+      - name: Build
+        run: yarn build
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-node@v2-beta
       - uses: actions/cache@v2
         with:
           path: |
@@ -25,10 +59,23 @@ jobs:
         run: yarn
       - name: Test
         run: yarn test
-      - name: Lint
-        run: yarn lint
-      - name: Check Format
-        run: yarn format:check
+  integration-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-node@v2-beta
+      - uses: actions/cache@v2
+        with:
+          path: |
+            .yarn/cache
+            .pnp.js
+          key: yarn-berry-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-berry-
+      - name: Yarn Install
+        run: yarn
+      - name: Bundle
+        run: yarn bundle
       - name: Compile runtime
         run: cd runtime && make
       - name: Compile samlang Programs

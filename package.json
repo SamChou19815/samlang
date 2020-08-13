@@ -10,8 +10,9 @@
     "format:check": "prettier --check '**/*.{ts,js}'",
     "build": "yarn workspaces foreach -t run build",
     "codegen": "yarn workspaces foreach -t run codegen",
+    "bundle": "yarn build && yarn workspaces foreach -t run bundle",
     "test": "jest --coverage",
-    "postinstall": "yarn codegen && yarn build && yarn workspace @dev-sam/samlang-cli bundle"
+    "postinstall": "yarn codegen"
   },
   "devDependencies": {
     "@babel/core": "^7.10.5",
