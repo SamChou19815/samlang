@@ -50,7 +50,7 @@ jobs:
         run: yarn lint
       - name: Check Format
         run: yarn format:check
-      - name: Create runtime
+      - name: Compile runtime
         run: cd ../runtime && make
       - name: Compile samlang Programs
         run: cd ../ && ./scripts/compile-repository.js
