@@ -1,12 +1,17 @@
 package samlang.printer
 
+import io.kotlintest.fail
 import io.kotlintest.shouldBe
 import io.kotlintest.specs.StringSpec
-import samlang.common.getTypeCheckedModule
+import samlang.ast.common.ModuleReference
+import samlang.ast.lang.Module
+import samlang.checker.ErrorCollector
+import samlang.checker.typeCheckSingleModuleSource
+import samlang.parser.buildModuleFromText
 import samlang.programs.wellTypedTestPrograms
 
 class PrettyPrinterTest : StringSpec() {
-    private val programs: List<Pair<String, String>> = wellTypedTestPrograms.map { (id, _, code) -> id to code }
+    private val programs: List<Pair<String, String>> = wellTypedTestPrograms.map { (id, code) -> id to code }
 
     init {
         for ((id, code) in programs) {
@@ -22,5 +27,20 @@ class PrettyPrinterTest : StringSpec() {
                 }
             }
         }
+    }
+
+    private fun getTypeCheckedModule(code: String): Module {
+        val errorCollector = ErrorCollector()
+        val module = typeCheckSingleModuleSource(
+            module = buildModuleFromText(
+                moduleReference = ModuleReference(moduleName = "test"),
+                text = code
+            ).first,
+            errorCollector = errorCollector
+        )
+        if (errorCollector.collectedErrors.isNotEmpty()) {
+            fail(msg = "Detected errors: ${errorCollector.collectedErrors}")
+        }
+        return module
     }
 }

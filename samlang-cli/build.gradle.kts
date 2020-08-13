@@ -1,7 +1,6 @@
 plugins {
     java
     kotlin(module = "jvm")
-    id("com.github.johnrengelman.shadow") version "5.2.0"
 }
 
 dependencies {
@@ -15,9 +14,6 @@ dependencies {
     implementation(project(":samlang-compiler"))
     implementation(project(":samlang-service"))
     implementation(dependencyNotation = "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3")
-    implementation(dependencyNotation = "com.google.code.gson:gson:2.8.6")
-    implementation(dependencyNotation = "com.github.ajalt:clikt:2.1.0")
-    implementation(dependencyNotation = "org.eclipse.lsp4j:org.eclipse.lsp4j:0.8.1")
 
     testImplementation(kotlin(module = "reflect"))
     testImplementation(kotlin(module = "test"))
@@ -25,16 +21,6 @@ dependencies {
 }
 
 tasks {
-    shadowJar {
-        minimize()
-        archiveBaseName.set("samlang")
-        destinationDirectory.set(file("../build/libs"))
-        manifest { attributes["Main-Class"] = "samlang.Main" }
-        isZip64 = true
-        artifacts { shadow(archiveFile) { builtBy(shadowJar) } }
-    }
-    "assemble" { dependsOn(shadowJar) }
-
     withType<Test> {
         maxParallelForks = 4
         reports.junitXml.isEnabled = false
