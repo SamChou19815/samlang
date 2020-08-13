@@ -75,34 +75,27 @@ private class TopLevelPrinter(private val printer: IndentedPrinter) {
                 names.forEach { name ->
                     val fieldType = mappings[name] ?: error(message = "Bad type definition!")
                     when (typeDefinitionType) {
-                        OBJECT -> {
-                            val (type, isPublic) = fieldType
-                            val modifier = if (isPublic) "" else "private "
-                            printWithBreak(x = "${modifier}val $name: $type,")
-                        }
+                        OBJECT -> printWithBreak(x = "${if (fieldType.isPublic) "" else "private "}val $name: ${fieldType.type},")
                         VARIANT -> printWithBreak(x = "$name(${fieldType.type}),")
                     }
                 }
             }
             printer.printWithBreak(x = ") {")
         }
-        printer.indented {
-            members.forEach { printMember(member = it) }
-        }
+        printer.indented { members.forEach { printMember(member = it) } }
         printer.printWithBreak(x = "}")
     }
 
     private fun printMember(member: ClassDefinition.MemberDefinition) {
-        val (_, isPublic, isMethod, _, name, typeParameters, type, parameters, body) = member
-        val memberVisibility = if (isPublic) "" else "private "
-        val memberType = if (isMethod) "method" else "function"
-        val typeParameterString = typeParametersToString(typeParameters = typeParameters)
-        val argsString = parameters.joinToString(separator = ", ", prefix = "(", postfix = ")") { (name, _, type, _) ->
+        val memberVisibility = if (member.isPublic) "" else "private "
+        val memberType = if (member.isMethod) "method" else "function"
+        val typeParameterString = typeParametersToString(typeParameters = member.typeParameters)
+        val argsString = member.parameters.joinToString(separator = ", ", prefix = "(", postfix = ")") { (name, _, type, _) ->
             "$name: $type"
         }
-        val returnTypeString = type.returnType.prettyPrint()
-        val header = "$memberVisibility$memberType$typeParameterString $name$argsString: $returnTypeString = "
-        expressionPrinter.printAfterExistingLine(header = header, footer = "", expression = body)
+        val returnTypeString = member.type.returnType.prettyPrint()
+        val header = "$memberVisibility$memberType$typeParameterString ${member.name}$argsString: $returnTypeString = "
+        expressionPrinter.printAfterExistingLine(header = header, footer = "", expression = member.body)
     }
 }
 
