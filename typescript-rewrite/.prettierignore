@@ -9,6 +9,7 @@
 
 ## Compiled output
 lib
+build
 
 ## Cache
 .eslintcache
