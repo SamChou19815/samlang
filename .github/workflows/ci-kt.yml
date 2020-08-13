@@ -33,6 +33,4 @@ jobs:
         with:
           java-version: 11
       - name: Build
-        run: ./scripts/release
-      - name: Verify that Release Program Works
-        run: ./build/release/samlang
+        run: ./gradlew build

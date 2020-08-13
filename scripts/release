@@ -8,6 +8,7 @@ make > /dev/null
 cd ../
 ./gradlew build
 
+# TODO: unbreak it once ts-rewrite finishes
 # Create release folder
 # rm -rf build/release
 # mkdir build/release
