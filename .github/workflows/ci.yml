@@ -41,7 +41,7 @@ jobs:
       - name: Yarn Install
         run: yarn
       - name: Test
-        run: yarn test
+        run: FULL_TEST=true yarn test
   integration-test:
     runs-on: ubuntu-latest
     steps:

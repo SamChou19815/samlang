@@ -77,35 +77,38 @@ const testAssemblyResult = (
 };
 
 mirBaseTestCases.forEach((testCase) => {
-  it(`IR[no-opt]: ${testCase.testCaseName}`, () => {
-    let result: string;
-    try {
-      result = interpretMidIRCompilationUnit(testCase.compilationUnit);
-    } catch {
-      fail(midIRCompilationUnitToString(testCase.compilationUnit));
-    }
-    expect(result).toBe(testCase.expectedStandardOut);
-  });
+  // @ts-expect-error: process type is in @types/node, but we deliberatively excludes it to prevent core package depending on node.
+  if (process.env.FULL_TEST) {
+    it(`IR[no-opt]: ${testCase.testCaseName}`, () => {
+      let result: string;
+      try {
+        result = interpretMidIRCompilationUnit(testCase.compilationUnit);
+      } catch {
+        fail(midIRCompilationUnitToString(testCase.compilationUnit));
+      }
+      expect(result).toBe(testCase.expectedStandardOut);
+    });
 
-  it(`IR[copy]: ${testCase.testCaseName}`, () =>
-    testMidIROptimizerResult(testCase, (it) =>
-      optimizeIRCompilationUnit(it, { doesPerformCopyPropagation: true })
-    ));
+    it(`IR[copy]: ${testCase.testCaseName}`, () =>
+      testMidIROptimizerResult(testCase, (it) =>
+        optimizeIRCompilationUnit(it, { doesPerformCopyPropagation: true })
+      ));
 
-  it(`IR[vn]: ${testCase.testCaseName}`, () =>
-    testMidIROptimizerResult(testCase, (it) =>
-      optimizeIRCompilationUnit(it, { doesPerformLocalValueNumbering: true })
-    ));
+    it(`IR[vn]: ${testCase.testCaseName}`, () =>
+      testMidIROptimizerResult(testCase, (it) =>
+        optimizeIRCompilationUnit(it, { doesPerformLocalValueNumbering: true })
+      ));
 
-  it(`IR[cse]: ${testCase.testCaseName}`, () =>
-    testMidIROptimizerResult(testCase, (it) =>
-      optimizeIRCompilationUnit(it, { doesPerformCommonSubExpressionElimination: true })
-    ));
+    it(`IR[cse]: ${testCase.testCaseName}`, () =>
+      testMidIROptimizerResult(testCase, (it) =>
+        optimizeIRCompilationUnit(it, { doesPerformCommonSubExpressionElimination: true })
+      ));
 
-  it(`IR[inl]: ${testCase.testCaseName}`, () =>
-    testMidIROptimizerResult(testCase, (it) =>
-      optimizeIRCompilationUnit(it, { doesPerformInlining: true })
-    ));
+    it(`IR[inl]: ${testCase.testCaseName}`, () =>
+      testMidIROptimizerResult(testCase, (it) =>
+        optimizeIRCompilationUnit(it, { doesPerformInlining: true })
+      ));
+  }
 
   it(`IR[all]: ${testCase.testCaseName}`, () =>
     testMidIROptimizerResult(testCase, (it) => optimizeIRCompilationUnit(it)));
