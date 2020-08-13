@@ -1,5 +1,0 @@
-// ERROR_COUNT: 0
-
-class Main {
-  function main(): string = "Hello World!"
-}
