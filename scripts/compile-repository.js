@@ -20,7 +20,7 @@ const read = (filename) => fs.readFileSync(filename).toString();
 const runWithErrorCheck = (command, args = []) => {
   const result = spawnSync(command, args);
   if (result.status !== 0) {
-    throw new Error(`Command \`${command}\` failed with ${result.status}.`);
+    throw new Error(`Command \`${command}\` failed with ${result.status}. Error: ${result.stderr.toString()}`);
   }
   return result.stdout.toString();
 };
