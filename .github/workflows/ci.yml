@@ -16,8 +16,8 @@ jobs:
       - uses: actions/cache@v2
         with:
           path: |
-            typescript-rewrite/.yarn/cache
-            typescript-rewrite/.pnp.js
+            .yarn/cache
+            .pnp.js
           key: yarn-berry-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             yarn-berry-
