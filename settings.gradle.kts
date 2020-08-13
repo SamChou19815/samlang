@@ -5,9 +5,5 @@ include(
     "samlang-errors",
     "samlang-parser-generated-java",
     "samlang-parser",
-    "samlang-analysis",
-    "samlang-optimization",
-    "samlang-compiler",
-    "samlang-service",
     "samlang-cli"
 )
