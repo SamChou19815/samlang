@@ -21,6 +21,8 @@ jobs:
             yarn-berry-
       - name: Yarn Install
         run: yarn
+      - name: Build
+        run: yarn build
       - name: Lint
         run: yarn lint
       - name: Check Format
