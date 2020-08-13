@@ -30,6 +30,6 @@ jobs:
       - name: Check Format
         run: yarn format:check
       - name: Compile runtime
-        run: cd ../runtime && make
+        run: cd runtime && make
       - name: Compile samlang Programs
-        run: cd ../ && ./scripts/compile-repository.js
+        run: ./scripts/compile-repository.js
