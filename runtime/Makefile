@@ -11,8 +11,6 @@ GCLIB = $(GCLIBDIR)/.libs/libgc.a
 LIBATOMIC = libatomic_ops-7.6.2
 LIBATOMICZIP = $(LIBATOMIC).tar.gz
 
-ABI_FLAG=$(shell ./platform-flags.sh)
-
 all: libsam.a
 
 libsam.a: $(GCLIB) libsam/libsam.o
@@ -21,7 +19,7 @@ libsam.a: $(GCLIB) libsam/libsam.o
 	ar rcs $@ libsam/libsam.o
 
 %.o: %.c
-	gcc $(CFLAGS) $(ABI_FLAG) -c -o $@ $<
+	gcc $(CFLAGS) -c -o $@ $<
 
 $(GCLIB): $(GCLIBDIR)/configure
 	cd $(GCLIBDIR); ./configure; make
