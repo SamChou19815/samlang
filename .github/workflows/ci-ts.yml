@@ -42,8 +42,6 @@ jobs:
             yarn-berry-
       - name: Yarn Install
         run: yarn
-      - name: Build
-        run: yarn build
       - name: Test
         run: yarn test
       - name: Lint
