@@ -1,9 +1,24 @@
 import type { BinaryOperator } from '../common/binary-operators';
 import type { BuiltInFunctionName, UnaryOperator } from '../common/enums';
-import { Literal, TRUE, FALSE, intLiteralOf, stringLiteralOf } from '../common/literals';
+import {
+  Literal,
+  TRUE,
+  FALSE,
+  intLiteralOf,
+  stringLiteralOf,
+  prettyPrintLiteral,
+} from '../common/literals';
 import type Range from '../common/range';
 import type { Node } from '../common/structs';
-import { Type, boolType, intType, stringType, TupleType, FunctionType } from '../common/types';
+import {
+  Type,
+  boolType,
+  intType,
+  stringType,
+  TupleType,
+  FunctionType,
+  prettyPrintType,
+} from '../common/types';
 import type { Pattern } from './samlang-pattern';
 
 interface BaseExpression extends Node {
@@ -454,3 +469,99 @@ export const EXPRESSION_STATEMENT_BLOCK = ({
   precedence: 14,
   block,
 });
+
+export const prettyPrintSamlangExpression = (expression: SamlangExpression): string => {
+  switch (expression.__type__) {
+    case 'LiteralExpression':
+      return prettyPrintLiteral(expression.literal);
+    case 'VariableExpression':
+      return expression.name;
+    case 'ThisExpression':
+      return 'this';
+    case 'ClassMemberExpression':
+      return `${expression.className}.${expression.memberName}`;
+    case 'TupleConstructorExpression':
+      return `[${expression.expressions.map(prettyPrintSamlangExpression).join(', ')}]`;
+    case 'ObjectConstructorExpression': {
+      const fields = expression.fieldDeclarations.map((fieldDeclaration) =>
+        fieldDeclaration.expression != null
+          ? `${fieldDeclaration.name}: ${prettyPrintSamlangExpression(fieldDeclaration.expression)}`
+          : fieldDeclaration.name
+      );
+      return `{ ${fields.join(', ')} }`;
+    }
+    case 'VariantConstructorExpression':
+      return `${expression.tag}(${prettyPrintSamlangExpression(expression.data)})`;
+    case 'FieldAccessExpression':
+      return `(${prettyPrintSamlangExpression(expression.expression)}).${expression.fieldName}`;
+    case 'MethodAccessExpression':
+      return `(${prettyPrintSamlangExpression(expression.expression)}).${expression.methodName}`;
+    case 'UnaryExpression':
+      return `${expression.operator}(${prettyPrintSamlangExpression(expression.expression)})`;
+    case 'PanicExpression':
+      return `panic(${prettyPrintSamlangExpression(expression.expression)})`;
+    case 'BuiltInFunctionCallExpression':
+      return `${expression.functionName}(${prettyPrintSamlangExpression(
+        expression.argumentExpression
+      )})`;
+    case 'FunctionCallExpression': {
+      const argumentString = expression.functionArguments
+        .map(prettyPrintSamlangExpression)
+        .join(', ');
+      return `(${prettyPrintSamlangExpression(expression.functionExpression)})(${argumentString})`;
+    }
+    case 'BinaryExpression': {
+      const e1 = prettyPrintSamlangExpression(expression.e1);
+      const e2 = prettyPrintSamlangExpression(expression.e2);
+      return `(${e1}) ${expression.operator.symbol} (${e2})`;
+    }
+    case 'IfElseExpression': {
+      const boolExpression = prettyPrintSamlangExpression(expression.boolExpression);
+      const e1 = prettyPrintSamlangExpression(expression.e1);
+      const e2 = prettyPrintSamlangExpression(expression.e2);
+      return `if (${boolExpression}) then (${e1}) else (${e2})`;
+    }
+    case 'MatchExpression': {
+      const matched = prettyPrintSamlangExpression(expression.matchedExpression);
+      const matchingList = expression.matchingList
+        .map(({ tag, dataVariable, expression: finalExpression }) => {
+          const expressionString = prettyPrintSamlangExpression(finalExpression);
+          return `| ${tag} ${dataVariable ?? '_'} -> (${expressionString}) `;
+        })
+        .join('');
+      return `match (${matched}) { ${matchingList}}`;
+    }
+    case 'LambdaExpression': {
+      const parameters = expression.parameters
+        .map(([name, type]) => `${name}: ${prettyPrintType(type)}`)
+        .join(', ');
+      return `(${parameters}) -> (${prettyPrintSamlangExpression(expression.body)})`;
+    }
+    case 'StatementBlockExpression': {
+      const { statements, expression: finalExpression } = expression.block;
+      const statementString = statements
+        // eslint-disable-next-line array-callback-return
+        .map(({ pattern, typeAnnotation, assignedExpression }) => {
+          const assigned = prettyPrintSamlangExpression(assignedExpression);
+          const annotatedAssigned = `${prettyPrintType(typeAnnotation)} = ${assigned};`;
+          switch (pattern.type) {
+            case 'TuplePattern':
+              return `val [${pattern.destructedNames
+                .map((it) => it[0] ?? '_')
+                .join(', ')}]: ${annotatedAssigned}`;
+            case 'ObjectPattern':
+              return `val { ${pattern.destructedNames
+                .map((it) => (it.alias == null ? it.fieldName : `${it.fieldName} as ${it.alias}`))
+                .join(', ')} }: ${annotatedAssigned}`;
+            case 'VariablePattern':
+              return `val ${pattern.name}: ${annotatedAssigned}`;
+            case 'WildCardPattern':
+              return `val _: ${annotatedAssigned}`;
+          }
+        })
+        .join(' ');
+      if (finalExpression == null) return `{ ${statementString} }`;
+      return `{ ${statementString} ${prettyPrintSamlangExpression(finalExpression)} }`;
+    }
+  }
+};

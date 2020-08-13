@@ -3,7 +3,7 @@ export { Type, prettyPrintType } from './ast/common/types';
 export { default as ModuleReference } from './ast/common/module-reference';
 export { default as Position } from './ast/common/position';
 export { default as Range } from './ast/common/range';
-export type { SamlangModule } from './ast/lang/samlang-toplevel';
+export { SamlangModule, prettyPrintSamlangModule } from './ast/lang/samlang-toplevel';
 export { assemblyProgramToString } from './ast/asm/asm-program';
 export { ReadonlyGlobalErrorCollector, createGlobalErrorCollector } from './errors';
 export { checkSources, lowerSourcesToAssemblyPrograms } from './services/source-processor';
