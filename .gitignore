@@ -1,50 +1,16 @@
-# Compiled class file
-*.class
-
 # GCC output
 *.o
 *.a
-
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
-*.war
-*.nar
-*.ear
-*.tar.gz
-*.rar
 
 # Extracted dependencies
 runtime/gc-7.6.4
 !runtime/deps/*.gz
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
-
-# IntelliJ IDEA
-/.idea/
-*.iml
-
-# Build Output Folders
-**/build/
-**/out/
-**/.gradle/
-
-# Generated Parser
-samlang-parser-generated-java/src/main/java/samlang
-*.tokens
-*.interp
-
 # Node
 node_modules
 *.vsix
+out
+build
 
 # System Files
 .DS_Store
