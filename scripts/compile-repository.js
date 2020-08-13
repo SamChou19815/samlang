@@ -34,13 +34,7 @@ const getX86Programs = () => {
   /** @type {string[]} */
   const programs = [];
   fs.readdirSync(basePath).forEach((filename) => {
-    if (filename === 'program.s') {
-      return;
-    }
-    if (!filename.startsWith('test.runnable')) {
-      return;
-    }
-    if (path.extname(filename) !== '.s') {
+    if (filename.startsWith('test') && path.extname(filename) !== '.s') {
       const fullRelativePath = `${basePath}/${filename}`;
       try {
         fs.accessSync(fullRelativePath, fs.constants.X_OK);

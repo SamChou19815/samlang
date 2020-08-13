@@ -1,55 +1,55 @@
-#./out/test.runnable.and-or-inside-if
+#./out/test.and-or-inside-if
 one
 
-#./out/test.runnable.block-in-if-else
+#./out/test.block-in-if-else
 
-#./out/test.runnable.builtins
+#./out/test.builtins
 42
 
-#./out/test.runnable.cf-test-1
+#./out/test.cf-test-1
 361200
 
-#./out/test.runnable.cf-test-2
+#./out/test.cf-test-2
 7000
 
-#./out/test.runnable.cf-test-3
+#./out/test.cf-test-3
 1400
 
-#./out/test.runnable.concat-string
+#./out/test.concat-string
 Hello World!
 
-#./out/test.runnable.correct-op
+#./out/test.correct-op
 OK
 
-#./out/test.runnable.cse-test-1
+#./out/test.cse-test-1
 30
 12
 15
 
-#./out/test.runnable.cse-test-2
+#./out/test.cse-test-2
 OK
 
-#./out/test.runnable.cse-test-3
+#./out/test.cse-test-3
 2181
 
-#./out/test.runnable.cse-test-4
+#./out/test.cse-test-4
 2700
 
-#./out/test.runnable.cse-test-5
+#./out/test.cse-test-5
 150
 
-#./out/test.runnable.cse-test-6
+#./out/test.cse-test-6
 OK
 
-#./out/test.runnable.different-expr-demo
+#./out/test.different-expr-demo
 42
 
-#./out/test.runnable.different-modules-demo
+#./out/test.different-modules-demo
 OK
 
-#./out/test.runnable.empty
+#./out/test.empty
 
-#./out/test.runnable.evaluation-order
+#./out/test.evaluation-order
 0
 1
 2
@@ -77,43 +77,43 @@ OK
 24
 25
 
-#./out/test.runnable.function-call-never-ignored
+#./out/test.function-call-never-ignored
 hi
 
-#./out/test.runnable.generic-object-test
+#./out/test.generic-object-test
 2
 42
 
-#./out/test.runnable.if-else-consistency
+#./out/test.if-else-consistency
 3
 3
 OK
 
-#./out/test.runnable.if-else-unreachable-1
+#./out/test.if-else-unreachable-1
 success
 
-#./out/test.runnable.if-else-unreachable-2
+#./out/test.if-else-unreachable-2
 success
 
-#./out/test.runnable.map-but-ignore
+#./out/test.map-but-ignore
 
-#./out/test.runnable.math-functions
+#./out/test.math-functions
 24
 55
 
-#./out/test.runnable.mutually-recursive
+#./out/test.mutually-recursive
 OK
 
-#./out/test.runnable.optional-semicolon
+#./out/test.optional-semicolon
 -7
 
-#./out/test.runnable.print-hello-world
+#./out/test.print-hello-world
 Hello World!
 
-#./out/test.runnable.reordering-test
+#./out/test.reordering-test
 OK
 
-#./out/test.runnable.short-circuit-and-or
+#./out/test.short-circuit-and-or
 0
 1
 false
@@ -147,11 +147,11 @@ true
 0
 1
 
-#./out/test.runnable.string-global-constant
+#./out/test.string-global-constant
 OK
 
-#./out/test.runnable.too-much-interference
+#./out/test.too-much-interference
 0
 
-#./out/test.runnable.various-syntax-forms
+#./out/test.various-syntax-forms
 84
