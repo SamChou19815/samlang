@@ -5,7 +5,7 @@
 
 // TODO: wait to be tested.
 
-type Doc =
+export type Doc =
   | { readonly __type__: 'NIL' }
   | { readonly __type__: 'TEXT'; readonly text: string; readonly next: Doc }
   | {
@@ -19,7 +19,7 @@ type Doc =
  * > "... we introduce a new representation for documents, with one constructor corresponding to each
  * operator that builds a document."
  */
-type DOC =
+export type DOC =
   | { readonly __type__: 'NIL' }
   | {
       readonly __type__: 'CONCAT';
@@ -39,19 +39,25 @@ type DOC =
       readonly doc2: DOC;
     };
 
-const nil: DOC = { __type__: 'NIL' };
-const nest = (indentation: number, doc: DOC): DOC => ({ __type__: 'NEST', indentation, doc });
-const text = (t: string): DOC => ({ __type__: 'TEXT', text: t });
-const line: DOC = { __type__: 'LINE' };
-const union = (doc1: DOC, doc2: DOC): DOC => ({ __type__: 'UNION', doc1, doc2 });
+export const nil: DOC = { __type__: 'NIL' };
 
-const concat = (...docs: DOC[]): DOC => {
+export const concat = (...docs: DOC[]): DOC => {
   let base: DOC = { __type__: 'CONCAT', doc1: docs[docs.length - 2], doc2: docs[docs.length - 1] };
-  for (let i = docs.length - 3; i > 0; i -= 1) {
+  for (let i = docs.length - 3; i >= 0; i -= 1) {
     base = concat(docs[i], base);
   }
   return base;
 };
+
+export const nest = (indentation: number, doc: DOC): DOC => ({
+  __type__: 'NEST',
+  indentation,
+  doc,
+});
+
+export const text = (t: string): DOC => ({ __type__: 'TEXT', text: t });
+export const line: DOC = { __type__: 'LINE' };
+export const union = (doc1: DOC, doc2: DOC): DOC => ({ __type__: 'UNION', doc1, doc2 });
 
 /**
  * Replace all LINE with TEXT(' ').
@@ -97,6 +103,7 @@ const documentFitsInAvailableWidth = (availableWidth: number, document: Doc): bo
   let remainingWidth = availableWidth;
   let doc = document;
   while (remainingWidth >= 0) {
+    // istanbul ignore next
     switch (doc.__type__) {
       case 'NIL':
       case 'LINE':
@@ -157,34 +164,45 @@ export const prettyPrintAccordingToPrettierAlgorithm = (
   document: DOC
 ): string => layoutDocumentToString(best(availableWidth, 0, [[0, document]]));
 
-const foldDocument = (
+export const foldDocument = (
   folder: (document: DOC, anotherDocument: DOC) => DOC,
   documents: readonly DOC[]
 ): DOC => {
+  // istanbul ignore next
   if (documents.length === 0) return nil;
+  // istanbul ignore next
   if (documents.length === 1) return documents[0];
   // TODO: optimize list and destruct.
+  // istanbul ignore next
   const [document, ...rest] = documents;
+  // istanbul ignore next
   return folder(document, foldDocument(folder, rest));
 };
 
+// istanbul ignore next
 const concatDocsWithSpace = (doc1: DOC, doc2: DOC): DOC => concat(doc1, text(' '), doc2);
+// istanbul ignore next
 const concatDocsWithLine = (doc1: DOC, doc2: DOC): DOC => concat(doc1, line, doc2);
 
+// istanbul ignore next
 export const spread = (documents: readonly DOC[]): DOC =>
   foldDocument(concatDocsWithSpace, documents);
+
+// istanbul ignore next
 export const stack = (documents: readonly DOC[]): DOC =>
   foldDocument(concatDocsWithLine, documents);
 
-const group = (document: DOC): DOC => union(flattenDocument(document), document);
+export const group = (document: DOC): DOC => union(flattenDocument(document), document);
 
 export const bracket = (left: string, doc: DOC, right: string): DOC =>
   group(concat(text(left), nest(2, concat(line, doc)), line, text(right)));
 
+// istanbul ignore next
 export const concatDocsWithSpaceOrLine = (doc1: DOC, doc2: DOC): DOC =>
   concat(doc1, union(text(' '), line), doc2);
 
 export const fill = (documents: readonly DOC[]): DOC => {
+  // istanbul ignore next
   if (documents.length === 0) return nil;
   if (documents.length === 1) return documents[0];
   // TODO: optimize list and destruct.
