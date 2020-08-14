@@ -28,29 +28,34 @@ export type PrettierDocument =
       readonly doc2: PrettierDocument;
     };
 
-export const nil: PrettierDocument = { __type__: 'NIL' };
+export const PRETTIER_NIL: PrettierDocument = { __type__: 'NIL' };
 
-export const concat = (...docs: PrettierDocument[]): PrettierDocument => {
+export const PRETTIER_CONCAT = (...docs: PrettierDocument[]): PrettierDocument => {
   let base: PrettierDocument = {
     __type__: 'CONCAT',
     doc1: docs[docs.length - 2],
     doc2: docs[docs.length - 1],
   };
   for (let i = docs.length - 3; i >= 0; i -= 1) {
-    base = concat(docs[i], base);
+    base = PRETTIER_CONCAT(docs[i], base);
   }
   return base;
 };
 
-export const nest = (indentation: number, doc: PrettierDocument): PrettierDocument => ({
+export const PRETTIER_NEST = (indentation: number, doc: PrettierDocument): PrettierDocument => ({
   __type__: 'NEST',
   indentation,
   doc,
 });
 
-export const text = (t: string): PrettierDocument => ({ __type__: 'TEXT', text: t });
-export const line: PrettierDocument = { __type__: 'LINE' };
-export const union = (doc1: PrettierDocument, doc2: PrettierDocument): PrettierDocument => ({
+export const PRETTIER_TEXT = (t: string): PrettierDocument => ({ __type__: 'TEXT', text: t });
+
+export const PRETTIER_LINE: PrettierDocument = { __type__: 'LINE' };
+
+export const PRETTIER_UNION = (
+  doc1: PrettierDocument,
+  doc2: PrettierDocument
+): PrettierDocument => ({
   __type__: 'UNION',
   doc1,
   doc2,
@@ -60,19 +65,22 @@ export const union = (doc1: PrettierDocument, doc2: PrettierDocument): PrettierD
  * Replace all LINE with TEXT(' ').
  * Correspond to the `flatten` function in the prettier paper.
  */
-const flattenDocument = (document: PrettierDocument): PrettierDocument => {
+const flattenPrettierDocument = (document: PrettierDocument): PrettierDocument => {
   switch (document.__type__) {
     case 'NIL':
     case 'TEXT':
       return document;
     case 'CONCAT':
-      return concat(flattenDocument(document.doc1), flattenDocument(document.doc2));
+      return PRETTIER_CONCAT(
+        flattenPrettierDocument(document.doc1),
+        flattenPrettierDocument(document.doc2)
+      );
     case 'NEST':
-      return nest(document.indentation, flattenDocument(document.doc));
+      return PRETTIER_NEST(document.indentation, flattenPrettierDocument(document.doc));
     case 'LINE':
-      return text(' ');
+      return PRETTIER_TEXT(' ');
     case 'UNION':
-      return flattenDocument(document.doc1);
+      return flattenPrettierDocument(document.doc1);
   }
 };
 
@@ -89,7 +97,7 @@ type PrettierIntermediateDocumentForPrinting =
       readonly next: PrettierIntermediateDocumentForPrinting;
     };
 
-const documentFitsInAvailableWidth = (
+const intermediateDocumentFitsInAvailableWidth = (
   availableWidth: number,
   document: PrettierIntermediateDocumentForPrinting
 ): boolean => {
@@ -109,13 +117,15 @@ const documentFitsInAvailableWidth = (
   return false;
 };
 
-type ImmutableDOCList = readonly [readonly [number, PrettierDocument], ImmutableDOCList] | null;
+type ImmutablePrettierDocumentList =
+  | readonly [readonly [number, PrettierDocument], ImmutablePrettierDocumentList]
+  | null;
 
 /** Correspond to the be/best function in the prettier paper. */
 const generateBestDoc = (
   availableWidth: number,
   consumed: number,
-  list: ImmutableDOCList
+  list: ImmutablePrettierDocumentList
 ): PrettierIntermediateDocumentForPrinting => {
   if (list === null) return { __type__: 'NIL' };
   const [[i, document], rest] = list;
@@ -142,7 +152,9 @@ const generateBestDoc = (
       return { __type__: 'LINE', indentation: i, next: generateBestDoc(availableWidth, i, rest) };
     case 'UNION': {
       const choice1 = generateBestDoc(availableWidth, consumed, [[i, document.doc1], rest]);
-      if (documentFitsInAvailableWidth(availableWidth - consumed, choice1)) return choice1;
+      if (intermediateDocumentFitsInAvailableWidth(availableWidth - consumed, choice1)) {
+        return choice1;
+      }
       return generateBestDoc(availableWidth, consumed, [[i, document.doc2], rest]);
     }
   }
@@ -172,56 +184,67 @@ export const prettyPrintAccordingToPrettierAlgorithm = (
   }
 };
 
-export const foldDocument = (
+export const foldPrettierDocument = (
   folder: (document: PrettierDocument, anotherDocument: PrettierDocument) => PrettierDocument,
   documents: readonly PrettierDocument[]
 ): PrettierDocument => {
   // istanbul ignore next
-  if (documents.length === 0) return nil;
+  if (documents.length === 0) return PRETTIER_NIL;
   // istanbul ignore next
   if (documents.length === 1) return documents[0];
   // TODO: optimize list and destruct.
   // istanbul ignore next
   const [document, ...rest] = documents;
   // istanbul ignore next
-  return folder(document, foldDocument(folder, rest));
+  return folder(document, foldPrettierDocument(folder, rest));
 };
 
 // istanbul ignore next
 const concatDocsWithSpace = (doc1: PrettierDocument, doc2: PrettierDocument): PrettierDocument =>
-  concat(doc1, text(' '), doc2);
+  PRETTIER_CONCAT(doc1, PRETTIER_TEXT(' '), doc2);
 // istanbul ignore next
 const concatDocsWithLine = (doc1: PrettierDocument, doc2: PrettierDocument): PrettierDocument =>
-  concat(doc1, line, doc2);
+  PRETTIER_CONCAT(doc1, PRETTIER_LINE, doc2);
 
 // istanbul ignore next
 export const spread = (documents: readonly PrettierDocument[]): PrettierDocument =>
-  foldDocument(concatDocsWithSpace, documents);
+  foldPrettierDocument(concatDocsWithSpace, documents);
 
 // istanbul ignore next
 export const stack = (documents: readonly PrettierDocument[]): PrettierDocument =>
-  foldDocument(concatDocsWithLine, documents);
+  foldPrettierDocument(concatDocsWithLine, documents);
 
 export const group = (document: PrettierDocument): PrettierDocument =>
-  union(flattenDocument(document), document);
+  PRETTIER_UNION(flattenPrettierDocument(document), document);
 
 export const bracket = (left: string, doc: PrettierDocument, right: string): PrettierDocument =>
-  group(concat(text(left), nest(2, concat(line, doc)), line, text(right)));
+  group(
+    PRETTIER_CONCAT(
+      PRETTIER_TEXT(left),
+      PRETTIER_NEST(2, PRETTIER_CONCAT(PRETTIER_LINE, doc)),
+      PRETTIER_LINE,
+      PRETTIER_TEXT(right)
+    )
+  );
 
 // istanbul ignore next
 export const concatDocsWithSpaceOrLine = (
   doc1: PrettierDocument,
   doc2: PrettierDocument
-): PrettierDocument => concat(doc1, union(text(' '), line), doc2);
+): PrettierDocument =>
+  PRETTIER_CONCAT(doc1, PRETTIER_UNION(PRETTIER_TEXT(' '), PRETTIER_LINE), doc2);
 
 export const fill = (documents: readonly PrettierDocument[]): PrettierDocument => {
   // istanbul ignore next
-  if (documents.length === 0) return nil;
+  if (documents.length === 0) return PRETTIER_NIL;
   if (documents.length === 1) return documents[0];
   // TODO: optimize list and destruct.
   const [doc1, doc2, ...rest] = documents;
-  return union(
-    concatDocsWithSpace(flattenDocument(doc1), fill([flattenDocument(doc2), ...rest])),
+  return PRETTIER_UNION(
+    concatDocsWithSpace(
+      flattenPrettierDocument(doc1),
+      fill([flattenPrettierDocument(doc2), ...rest])
+    ),
     concatDocsWithLine(doc1, fill([doc2, ...rest]))
   );
 };
