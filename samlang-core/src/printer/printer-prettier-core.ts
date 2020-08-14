@@ -116,16 +116,6 @@ const documentFitsInAvailableWidth = (availableWidth: number, document: Doc): bo
   return false;
 };
 
-const better = (
-  availableWidth: number,
-  consumed: number,
-  documentChoice1: Doc,
-  documentChoice2: Doc
-): Doc =>
-  documentFitsInAvailableWidth(availableWidth - consumed, documentChoice1)
-    ? documentChoice1
-    : documentChoice2;
-
 const best = (
   availableWidth: number,
   consumed: number,
@@ -149,13 +139,11 @@ const best = (
       };
     case 'LINE':
       return { __type__: 'LINE', indentation: i, next: best(availableWidth, i, rest) };
-    case 'UNION':
-      return better(
-        availableWidth,
-        consumed,
-        best(availableWidth, consumed, [[i, document.doc1], ...rest]),
-        best(availableWidth, consumed, [[i, document.doc2], ...rest])
-      );
+    case 'UNION': {
+      const choice1 = best(availableWidth, consumed, [[i, document.doc1], ...rest]);
+      if (documentFitsInAvailableWidth(availableWidth - consumed, choice1)) return choice1;
+      return best(availableWidth, consumed, [[i, document.doc2], ...rest]);
+    }
   }
 };
 
