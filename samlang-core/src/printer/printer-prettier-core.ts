@@ -128,18 +128,18 @@ const generateBestDoc = (
   list: ImmutablePrettierDocumentList
 ): PrettierIntermediateDocumentForPrinting => {
   if (list === null) return { __type__: 'NIL' };
-  const [[i, document], rest] = list;
+  const [[indentation, document], rest] = list;
   switch (document.__type__) {
     case 'NIL':
       return generateBestDoc(availableWidth, consumed, rest);
     case 'CONCAT':
       return generateBestDoc(availableWidth, consumed, [
-        [i, document.doc1],
-        [[i, document.doc2], rest],
+        [indentation, document.doc1],
+        [[indentation, document.doc2], rest],
       ]);
     case 'NEST':
       return generateBestDoc(availableWidth, consumed, [
-        [i + document.indentation, document.doc],
+        [indentation + document.indentation, document.doc],
         rest,
       ]);
     case 'TEXT':
@@ -149,13 +149,20 @@ const generateBestDoc = (
         next: generateBestDoc(availableWidth, consumed + document.text.length, rest),
       };
     case 'LINE':
-      return { __type__: 'LINE', indentation: i, next: generateBestDoc(availableWidth, i, rest) };
+      return {
+        __type__: 'LINE',
+        indentation,
+        next: generateBestDoc(availableWidth, indentation, rest),
+      };
     case 'UNION': {
-      const choice1 = generateBestDoc(availableWidth, consumed, [[i, document.doc1], rest]);
+      const choice1 = generateBestDoc(availableWidth, consumed, [
+        [indentation, document.doc1],
+        rest,
+      ]);
       if (intermediateDocumentFitsInAvailableWidth(availableWidth - consumed, choice1)) {
         return choice1;
       }
-      return generateBestDoc(availableWidth, consumed, [[i, document.doc2], rest]);
+      return generateBestDoc(availableWidth, consumed, [[indentation, document.doc2], rest]);
     }
   }
 };
