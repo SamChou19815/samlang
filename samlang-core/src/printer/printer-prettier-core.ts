@@ -94,15 +94,19 @@ const layoutDocumentToString = (document: Doc): string => {
 };
 
 const documentFitsInAvailableWidth = (availableWidth: number, document: Doc): boolean => {
-  if (availableWidth < 0) return false;
-  switch (document.__type__) {
-    case 'NIL':
-      return true;
-    case 'TEXT':
-      return documentFitsInAvailableWidth(availableWidth - document.text.length, document.next);
-    case 'LINE':
-      return true;
+  let remainingWidth = availableWidth;
+  let doc = document;
+  while (remainingWidth >= 0) {
+    switch (doc.__type__) {
+      case 'NIL':
+      case 'LINE':
+        return true;
+      case 'TEXT':
+        remainingWidth -= doc.text.length;
+        doc = doc.next;
+    }
   }
+  return false;
 };
 
 const better = (
