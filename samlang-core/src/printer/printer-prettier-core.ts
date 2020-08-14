@@ -79,26 +79,6 @@ const flattenDocument = (document: DOC): DOC => {
   }
 };
 
-const layoutDocumentToString = (document: Doc): string => {
-  const collector: string[] = [];
-  let doc = document;
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    switch (doc.__type__) {
-      case 'NIL':
-        return collector.join('');
-      case 'TEXT':
-        collector.push(doc.text);
-        doc = doc.next;
-        break;
-      case 'LINE':
-        collector.push(`\n${' '.repeat(doc.indentation)}`);
-        doc = doc.next;
-        break;
-    }
-  }
-};
-
 const documentFitsInAvailableWidth = (availableWidth: number, document: Doc): boolean => {
   let remainingWidth = availableWidth;
   let doc = document;
@@ -116,33 +96,37 @@ const documentFitsInAvailableWidth = (availableWidth: number, document: Doc): bo
   return false;
 };
 
-const best = (
-  availableWidth: number,
-  consumed: number,
-  list: readonly (readonly [number, DOC])[]
-): Doc => {
-  if (list.length === 0) return { __type__: 'NIL' };
-  // TODO: optimize list concat and destruct.
-  const [[i, document], ...rest] = list;
+type ImmutableDOCList = readonly [readonly [number, DOC], ImmutableDOCList] | null;
+
+/** Correspond to the be/best function in the prettier paper. */
+const generateBestDoc = (availableWidth: number, consumed: number, list: ImmutableDOCList): Doc => {
+  if (list === null) return { __type__: 'NIL' };
+  const [[i, document], rest] = list;
   switch (document.__type__) {
     case 'NIL':
-      return best(availableWidth, consumed, rest);
+      return generateBestDoc(availableWidth, consumed, rest);
     case 'CONCAT':
-      return best(availableWidth, consumed, [[i, document.doc1], [i, document.doc2], ...rest]);
+      return generateBestDoc(availableWidth, consumed, [
+        [i, document.doc1],
+        [[i, document.doc2], rest],
+      ]);
     case 'NEST':
-      return best(availableWidth, consumed, [[i + document.indentation, document.doc], ...rest]);
+      return generateBestDoc(availableWidth, consumed, [
+        [i + document.indentation, document.doc],
+        rest,
+      ]);
     case 'TEXT':
       return {
         __type__: 'TEXT',
         text: document.text,
-        next: best(availableWidth, consumed + document.text.length, rest),
+        next: generateBestDoc(availableWidth, consumed + document.text.length, rest),
       };
     case 'LINE':
-      return { __type__: 'LINE', indentation: i, next: best(availableWidth, i, rest) };
+      return { __type__: 'LINE', indentation: i, next: generateBestDoc(availableWidth, i, rest) };
     case 'UNION': {
-      const choice1 = best(availableWidth, consumed, [[i, document.doc1], ...rest]);
+      const choice1 = generateBestDoc(availableWidth, consumed, [[i, document.doc1], rest]);
       if (documentFitsInAvailableWidth(availableWidth - consumed, choice1)) return choice1;
-      return best(availableWidth, consumed, [[i, document.doc2], ...rest]);
+      return generateBestDoc(availableWidth, consumed, [[i, document.doc2], rest]);
     }
   }
 };
@@ -150,7 +134,26 @@ const best = (
 export const prettyPrintAccordingToPrettierAlgorithm = (
   availableWidth: number,
   document: DOC
-): string => layoutDocumentToString(best(availableWidth, 0, [[0, document]]));
+): string => {
+  let doc = generateBestDoc(availableWidth, 0, [[0, document], null]);
+  const collector: string[] = [];
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    switch (doc.__type__) {
+      case 'NIL':
+        return collector.join('');
+      case 'TEXT':
+        collector.push(doc.text);
+        doc = doc.next;
+        break;
+      case 'LINE':
+        collector.push(`\n${' '.repeat(doc.indentation)}`);
+        doc = doc.next;
+        break;
+    }
+  }
+};
 
 export const foldDocument = (
   folder: (document: DOC, anotherDocument: DOC) => DOC,
