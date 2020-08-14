@@ -28,8 +28,13 @@ export type PrettierDocument =
       readonly doc2: PrettierDocument;
     };
 
+/** Correspond to the `NIL` node in the prettier paper. It is used as a placeholder. */
 export const PRETTIER_NIL: PrettierDocument = { __type__: 'NIL' };
 
+/**
+ * Correspond to the `DOC :<> DOC` node in the prettier paper.
+ * It connects together tokens and documents.
+ */
 export const PRETTIER_CONCAT = (...docs: PrettierDocument[]): PrettierDocument => {
   let base: PrettierDocument = {
     __type__: 'CONCAT',
@@ -42,22 +47,44 @@ export const PRETTIER_CONCAT = (...docs: PrettierDocument[]): PrettierDocument =
   return base;
 };
 
+/**
+ * Correspond to the `NEST Int DOC` node in the prettier paper.
+ * It is the mechanism to introduce extra levels of indentation.
+ */
 export const PRETTIER_NEST = (indentation: number, doc: PrettierDocument): PrettierDocument => ({
   __type__: 'NEST',
   indentation,
   doc,
 });
 
+/**
+ * Correspond to the `TEXT String` node in the prettier paper.
+ * It is the leaf node that won't be further break down.
+ */
 export const PRETTIER_TEXT = (t: string): PrettierDocument => ({ __type__: 'TEXT', text: t });
 
+/** Correspond to the `LINE` node in the prettier paper. It is used to introduce a new line. */
 export const PRETTIER_LINE: PrettierDocument = { __type__: 'LINE' };
 
+/**
+ * Correspond to the `DOC :<|> DOC` node in the prettier paper.
+ * It represents two different ways to print the document, where `doc1` is preferred over `doc2`.
+ * In general, `doc1` is the flattened version of `doc2`.
+ */
 const PRETTIER_UNION = (doc1: PrettierDocument, doc2: PrettierDocument): PrettierDocument => ({
   __type__: 'UNION',
   doc1,
   doc2,
 });
 
+/**
+ * Given a `document`, returns the union of flattened document and its original form.
+ *
+ * Correspond to the `group` function in the prettier paper.
+ *
+ * This is useful when we want the algorithm to choose between two forms to optimically fitting
+ * elements into lines with width constraits.
+ */
 export const PRETTIER_GROUP = (document: PrettierDocument): PrettierDocument =>
   PRETTIER_UNION(flattenPrettierDocument(document), document);
 
