@@ -119,7 +119,7 @@ const better = (
     ? documentChoice1
     : documentChoice2;
 
-const bestHelper = (
+const best = (
   availableWidth: number,
   consumed: number,
   list: readonly (readonly [number, DOC])[]
@@ -129,41 +129,31 @@ const bestHelper = (
   const [[i, document], ...rest] = list;
   switch (document.__type__) {
     case 'NIL':
-      return bestHelper(availableWidth, consumed, rest);
+      return best(availableWidth, consumed, rest);
     case 'CONCAT':
-      return bestHelper(availableWidth, consumed, [
-        [i, document.doc1],
-        [i, document.doc2],
-        ...rest,
-      ]);
+      return best(availableWidth, consumed, [[i, document.doc1], [i, document.doc2], ...rest]);
     case 'NEST':
-      return bestHelper(availableWidth, consumed, [
-        [i + document.indentation, document.doc],
-        ...rest,
-      ]);
+      return best(availableWidth, consumed, [[i + document.indentation, document.doc], ...rest]);
     case 'TEXT':
       return {
         __type__: 'TEXT',
         text: document.text,
-        next: bestHelper(availableWidth, consumed + document.text.length, rest),
+        next: best(availableWidth, consumed + document.text.length, rest),
       };
     case 'LINE':
-      return { __type__: 'LINE', indentation: i, next: bestHelper(availableWidth, i, rest) };
+      return { __type__: 'LINE', indentation: i, next: best(availableWidth, i, rest) };
     case 'UNION':
       return better(
         availableWidth,
         consumed,
-        bestHelper(availableWidth, consumed, [[i, document.doc1], ...rest]),
-        bestHelper(availableWidth, consumed, [[i, document.doc2], ...rest])
+        best(availableWidth, consumed, [[i, document.doc1], ...rest]),
+        best(availableWidth, consumed, [[i, document.doc2], ...rest])
       );
   }
 };
 
-const best = (availableWidth: number, consumed: number, document: DOC): Doc =>
-  bestHelper(availableWidth, consumed, [[0, document]]);
-
 export const pretty = (availableWidth: number, document: DOC): string =>
-  layoutDocumentToString(best(availableWidth, 0, document));
+  layoutDocumentToString(best(availableWidth, 0, [[0, document]]));
 
 const foldDocument = (
   folder: (document: DOC, anotherDocument: DOC) => DOC,
