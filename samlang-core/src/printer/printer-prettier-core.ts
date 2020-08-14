@@ -152,8 +152,10 @@ const best = (
   }
 };
 
-export const pretty = (availableWidth: number, document: DOC): string =>
-  layoutDocumentToString(best(availableWidth, 0, [[0, document]]));
+export const prettyPrintAccordingToPrettierAlgorithm = (
+  availableWidth: number,
+  document: DOC
+): string => layoutDocumentToString(best(availableWidth, 0, [[0, document]]));
 
 const foldDocument = (
   folder: (document: DOC, anotherDocument: DOC) => DOC,
