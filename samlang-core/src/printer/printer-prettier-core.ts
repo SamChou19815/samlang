@@ -53,13 +53,17 @@ const concat = (...docs: DOC[]): DOC => {
   return base;
 };
 
+/**
+ * Replace all LINE with TEXT(' ').
+ * Correspond to the `flatten` function in the prettier paper.
+ */
 const flattenDocument = (document: DOC): DOC => {
   switch (document.__type__) {
     case 'NIL':
     case 'TEXT':
       return document;
     case 'CONCAT':
-      return union(flattenDocument(document.doc1), flattenDocument(document.doc2));
+      return concat(flattenDocument(document.doc1), flattenDocument(document.doc2));
     case 'NEST':
       return nest(document.indentation, flattenDocument(document.doc));
     case 'LINE':
