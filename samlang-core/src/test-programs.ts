@@ -315,11 +315,13 @@ class Main {
     testName: 'private-classes',
     sourceCode: `
 private class Util {}
-private class Foo(val bar: int) {}
+private class Foo(val bar: int) {
+  function create(): Foo = { bar: 42 }
+}
 private class Jar(Bar(int), Baz(bool)) {}
 
 class Main {
-  function main(): unit = {}
+  function main(): unit = println(intToString(Foo.create().bar))
 }
 `,
   },

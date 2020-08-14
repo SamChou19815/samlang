@@ -38,12 +38,10 @@ const buildClassTypingContext = ({
 const buildModuleTypingContextPhase1 = (samlangModule: SamlangModule): ModuleTypingContext => ({
   definedClasses: Object.fromEntries(
     samlangModule.classes
-      .map((classDeclaration) => {
-        if (!classDeclaration.isPublic) {
-          return null;
-        }
-        return [classDeclaration.name, buildClassTypingContext(classDeclaration)] as const;
-      })
+      .map(
+        (classDeclaration) =>
+          [classDeclaration.name, buildClassTypingContext(classDeclaration)] as const
+      )
       .filter(isNotNull)
   ),
   importedClasses: {},
