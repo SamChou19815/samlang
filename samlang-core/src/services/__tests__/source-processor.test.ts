@@ -1,14 +1,12 @@
 import { assemblyProgramToString } from '../../ast/asm/asm-program';
 import ModuleReference from '../../ast/common/module-reference';
+import { compileSamlangSourcesToHighIRSources } from '../../compiler';
 import { assertNotNull } from '../../util/type-assertions';
 import {
   checkSources,
   lowerSourcesToAssemblyPrograms,
   highIRSourcesToJSString,
 } from '../source-processor';
-import { compileSamlangSourcesToHighIRSources } from '../../compiler';
-import { hashMapOf, HashMap } from '../../util/collections';
-import { Sources, SamlangModule } from '../..';
 
 it('hello world processor test', () => {
   const moduleReference = new ModuleReference(['Test']);

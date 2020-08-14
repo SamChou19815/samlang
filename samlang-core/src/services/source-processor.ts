@@ -1,6 +1,7 @@
 import type { AssemblyProgram } from '../ast/asm/asm-program';
 import type ModuleReference from '../ast/common/module-reference';
 import type { Sources } from '../ast/common/structs';
+import { HighIRModule, HighIRFunction } from '../ast/hir/hir-toplevel';
 import type { SamlangModule } from '../ast/lang/samlang-toplevel';
 import { typeCheckSources, GlobalTypingContext } from '../checker';
 import {
@@ -12,7 +13,6 @@ import { CompileTimeError, createGlobalErrorCollector } from '../errors';
 import optimizeIRCompilationUnit from '../optimization';
 import { parseSamlangModuleFromText } from '../parser';
 import { hashMapOf, HashMap } from '../util/collections';
-import { HighIRModule, HighIRFunction } from '../ast/hir/hir-toplevel';
 
 type CheckSourcesResult = {
   readonly checkedSources: Sources<SamlangModule>;
@@ -54,8 +54,8 @@ export const lowerSourcesToAssemblyPrograms = (
       )
   );
 
-export const highIRSourcesToJSString = (sources: Sources<HighIRModule>): Sources<String> => {
-  const jsSources: HashMap<ModuleReference, String> = hashMapOf();
+export const highIRSourcesToJSString = (sources: Sources<HighIRModule>): Sources<string> => {
+  const jsSources: HashMap<ModuleReference, string> = hashMapOf();
   sources.forEach((hirModule, reference) => {
     jsSources.set(
       reference,
