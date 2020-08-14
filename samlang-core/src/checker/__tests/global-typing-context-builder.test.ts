@@ -111,6 +111,12 @@ it('can handle imports and definitions', () => {
           m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
         },
       },
+      Class2: {
+        typeParameters: [],
+        typeDefinition,
+        functions: {},
+        methods: {},
+      },
     },
     importedClasses: {
       Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
@@ -182,6 +188,12 @@ it('can handle incremental update', () => {
         methods: {
           m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
         },
+      },
+      Class2: {
+        typeParameters: [],
+        typeDefinition,
+        functions: {},
+        methods: {},
       },
     },
     importedClasses: {},
