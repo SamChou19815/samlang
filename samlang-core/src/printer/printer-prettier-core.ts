@@ -52,14 +52,14 @@ export const PRETTIER_TEXT = (t: string): PrettierDocument => ({ __type__: 'TEXT
 
 export const PRETTIER_LINE: PrettierDocument = { __type__: 'LINE' };
 
-export const PRETTIER_UNION = (
-  doc1: PrettierDocument,
-  doc2: PrettierDocument
-): PrettierDocument => ({
+const PRETTIER_UNION = (doc1: PrettierDocument, doc2: PrettierDocument): PrettierDocument => ({
   __type__: 'UNION',
   doc1,
   doc2,
 });
+
+export const PRETTIER_GROUP = (document: PrettierDocument): PrettierDocument =>
+  PRETTIER_UNION(flattenPrettierDocument(document), document);
 
 /**
  * Replace all LINE with TEXT(' ').
@@ -221,11 +221,8 @@ export const spread = (documents: readonly PrettierDocument[]): PrettierDocument
 export const stack = (documents: readonly PrettierDocument[]): PrettierDocument =>
   foldPrettierDocument(concatDocsWithLine, documents);
 
-export const group = (document: PrettierDocument): PrettierDocument =>
-  PRETTIER_UNION(flattenPrettierDocument(document), document);
-
 export const bracket = (left: string, doc: PrettierDocument, right: string): PrettierDocument =>
-  group(
+  PRETTIER_GROUP(
     PRETTIER_CONCAT(
       PRETTIER_TEXT(left),
       PRETTIER_NEST(2, PRETTIER_CONCAT(PRETTIER_LINE, doc)),

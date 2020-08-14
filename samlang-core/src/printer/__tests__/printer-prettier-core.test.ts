@@ -5,9 +5,9 @@ import {
   PRETTIER_NEST,
   PRETTIER_TEXT,
   PRETTIER_LINE,
+  PRETTIER_GROUP,
   prettyPrintAccordingToPrettierAlgorithm,
   foldPrettierDocument,
-  group,
   bracket,
   fill,
 } from '../printer-prettier-core';
@@ -16,7 +16,9 @@ it('tree test', () => {
   type Tree = { readonly name: string; readonly children: readonly Tree[] };
 
   const showTree = ({ name, children }: Tree): PrettierDocument =>
-    group(PRETTIER_CONCAT(PRETTIER_TEXT(name), PRETTIER_NEST(name.length, showBracket(children))));
+    PRETTIER_GROUP(
+      PRETTIER_CONCAT(PRETTIER_TEXT(name), PRETTIER_NEST(name.length, showBracket(children)))
+    );
 
   const showTrees = (trees: readonly Tree[]): PrettierDocument => {
     const [first, ...rest] = trees;
