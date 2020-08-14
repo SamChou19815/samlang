@@ -73,15 +73,23 @@ const flattenDocument = (document: DOC): DOC => {
   }
 };
 
-// TODO: optimize string concat here!
 const layoutDocumentToString = (document: Doc): string => {
-  switch (document.__type__) {
-    case 'NIL':
-      return '';
-    case 'TEXT':
-      return document.text + layoutDocumentToString(document.next);
-    case 'LINE':
-      return `\n${' '.repeat(document.indentation)}${layoutDocumentToString(document.next)}`;
+  const collector: string[] = [];
+  let doc = document;
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    switch (doc.__type__) {
+      case 'NIL':
+        return collector.join('');
+      case 'TEXT':
+        collector.push(doc.text);
+        doc = doc.next;
+        break;
+      case 'LINE':
+        collector.push(`\n${' '.repeat(doc.indentation)}`);
+        doc = doc.next;
+        break;
+    }
   }
 };
 
