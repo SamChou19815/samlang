@@ -53,41 +53,41 @@ const concat = (...docs: DOC[]): DOC => {
   return base;
 };
 
-const flatten = (document: DOC): DOC => {
+const flattenDocument = (document: DOC): DOC => {
   switch (document.__type__) {
     case 'NIL':
     case 'TEXT':
       return document;
     case 'CONCAT':
-      return union(flatten(document.doc1), flatten(document.doc2));
+      return union(flattenDocument(document.doc1), flattenDocument(document.doc2));
     case 'NEST':
-      return nest(document.indentation, flatten(document.doc));
+      return nest(document.indentation, flattenDocument(document.doc));
     case 'LINE':
       return text(' ');
     case 'UNION':
-      return flatten(document.doc1);
+      return flattenDocument(document.doc1);
   }
 };
 
 // TODO: optimize string concat here!
-const layout = (document: Doc): string => {
+const layoutDocumentToString = (document: Doc): string => {
   switch (document.__type__) {
     case 'NIL':
       return '';
     case 'TEXT':
-      return document.text + layout(document.next);
+      return document.text + layoutDocumentToString(document.next);
     case 'LINE':
-      return `\n${' '.repeat(document.indentation)}${layout(document.next)}`;
+      return `\n${' '.repeat(document.indentation)}${layoutDocumentToString(document.next)}`;
   }
 };
 
-const fits = (availableWidth: number, document: Doc): boolean => {
+const documentFitsInAvailableWidth = (availableWidth: number, document: Doc): boolean => {
   if (availableWidth < 0) return false;
   switch (document.__type__) {
     case 'NIL':
       return true;
     case 'TEXT':
-      return fits(availableWidth - document.text.length, document.next);
+      return documentFitsInAvailableWidth(availableWidth - document.text.length, document.next);
     case 'LINE':
       return true;
   }
@@ -98,9 +98,12 @@ const better = (
   consumed: number,
   documentChoice1: Doc,
   documentChoice2: Doc
-): Doc => (fits(availableWidth - consumed, documentChoice1) ? documentChoice1 : documentChoice2);
+): Doc =>
+  documentFitsInAvailableWidth(availableWidth - consumed, documentChoice1)
+    ? documentChoice1
+    : documentChoice2;
 
-const be = (
+const bestHelper = (
   availableWidth: number,
   consumed: number,
   list: readonly (readonly [number, DOC])[]
@@ -110,34 +113,41 @@ const be = (
   const [[i, document], ...rest] = list;
   switch (document.__type__) {
     case 'NIL':
-      return be(availableWidth, consumed, rest);
+      return bestHelper(availableWidth, consumed, rest);
     case 'CONCAT':
-      return be(availableWidth, consumed, [[i, document.doc1], [i, document.doc2], ...rest]);
+      return bestHelper(availableWidth, consumed, [
+        [i, document.doc1],
+        [i, document.doc2],
+        ...rest,
+      ]);
     case 'NEST':
-      return be(availableWidth, consumed, [[i + document.indentation, document.doc], ...rest]);
+      return bestHelper(availableWidth, consumed, [
+        [i + document.indentation, document.doc],
+        ...rest,
+      ]);
     case 'TEXT':
       return {
         __type__: 'TEXT',
         text: document.text,
-        next: be(availableWidth, consumed + document.text.length, rest),
+        next: bestHelper(availableWidth, consumed + document.text.length, rest),
       };
     case 'LINE':
-      return { __type__: 'LINE', indentation: i, next: be(availableWidth, i, rest) };
+      return { __type__: 'LINE', indentation: i, next: bestHelper(availableWidth, i, rest) };
     case 'UNION':
       return better(
         availableWidth,
         consumed,
-        be(availableWidth, consumed, [[i, document.doc1], ...rest]),
-        be(availableWidth, consumed, [[i, document.doc2], ...rest])
+        bestHelper(availableWidth, consumed, [[i, document.doc1], ...rest]),
+        bestHelper(availableWidth, consumed, [[i, document.doc2], ...rest])
       );
   }
 };
 
 const best = (availableWidth: number, consumed: number, document: DOC): Doc =>
-  be(availableWidth, consumed, [[0, document]]);
+  bestHelper(availableWidth, consumed, [[0, document]]);
 
 export const pretty = (availableWidth: number, document: DOC): string =>
-  layout(best(availableWidth, 0, document));
+  layoutDocumentToString(best(availableWidth, 0, document));
 
 const foldDocument = (
   folder: (document: DOC, anotherDocument: DOC) => DOC,
@@ -158,7 +168,7 @@ export const spread = (documents: readonly DOC[]): DOC =>
 export const stack = (documents: readonly DOC[]): DOC =>
   foldDocument(concatDocsWithLine, documents);
 
-const group = (document: DOC): DOC => union(flatten(document), document);
+const group = (document: DOC): DOC => union(flattenDocument(document), document);
 
 export const bracket = (left: string, doc: DOC, right: string): DOC =>
   group(concat(text(left), nest(2, concat(line, doc)), line, text(right)));
@@ -172,7 +182,7 @@ export const fill = (documents: readonly DOC[]): DOC => {
   // TODO: optimize list and destruct.
   const [doc1, doc2, ...rest] = documents;
   return union(
-    concatDocsWithSpace(flatten(doc1), fill([flatten(doc2), ...rest])),
+    concatDocsWithSpace(flattenDocument(doc1), fill([flattenDocument(doc2), ...rest])),
     concatDocsWithLine(doc1, fill([doc2, ...rest]))
   );
 };
