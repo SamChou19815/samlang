@@ -11,7 +11,8 @@ import {
 import { CompileTimeError, createGlobalErrorCollector } from '../errors';
 import optimizeIRCompilationUnit from '../optimization';
 import { parseSamlangModuleFromText } from '../parser';
-import { hashMapOf } from '../util/collections';
+import { hashMapOf, HashMap } from '../util/collections';
+import { HighIRModule, HighIRFunction } from '../ast/hir/hir-toplevel';
 
 type CheckSourcesResult = {
   readonly checkedSources: Sources<SamlangModule>;
@@ -52,3 +53,18 @@ export const lowerSourcesToAssemblyPrograms = (
           ] as const
       )
   );
+
+export const highIRSourcesToJSString = (sources: Sources<HighIRModule>): Sources<String> => {
+  const jsSources: HashMap<ModuleReference, String> = hashMapOf();
+  sources.forEach((hirModule, reference) => {
+    jsSources.set(
+      reference,
+      JSON.stringify(
+        hirModule.functions.map((highIRFunction: HighIRFunction) => {
+          return JSON.stringify(highIRFunction);
+        })
+      )
+    );
+  });
+  return jsSources;
+};

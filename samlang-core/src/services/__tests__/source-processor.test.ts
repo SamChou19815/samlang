@@ -1,7 +1,14 @@
 import { assemblyProgramToString } from '../../ast/asm/asm-program';
 import ModuleReference from '../../ast/common/module-reference';
 import { assertNotNull } from '../../util/type-assertions';
-import { checkSources, lowerSourcesToAssemblyPrograms } from '../source-processor';
+import {
+  checkSources,
+  lowerSourcesToAssemblyPrograms,
+  highIRSourcesToJSString,
+} from '../source-processor';
+import { compileSamlangSourcesToHighIRSources } from '../../compiler';
+import { hashMapOf, HashMap } from '../../util/collections';
+import { Sources, SamlangModule } from '../..';
 
 it('hello world processor test', () => {
   const moduleReference = new ModuleReference(['Test']);
@@ -63,4 +70,17 @@ GLOBAL_STRING_1:
     .quad 33 ## !
     .text
 `);
+});
+
+it('compile hello world to JS test', () => {
+  const moduleReference = new ModuleReference(['Test']);
+  const sourceCode = `
+    class Main {
+        function main(): unit = println("Hello "::"World!")
+    }
+    `;
+  const { checkedSources } = checkSources([[moduleReference, sourceCode]]);
+  const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
+  // TODO: fill in expected testing string
+  expect(highIRSourcesToJSString(hirSources)).toBe('');
 });
