@@ -1,5 +1,5 @@
 import {
-  DOC,
+  PrettierDocument,
   nil,
   concat,
   nest,
@@ -15,26 +15,27 @@ import {
 it('tree test', () => {
   type Tree = { readonly name: string; readonly children: readonly Tree[] };
 
-  const showTree = ({ name, children }: Tree): DOC =>
+  const showTree = ({ name, children }: Tree): PrettierDocument =>
     group(concat(text(name), nest(name.length, showBracket(children))));
 
-  const showTrees = (trees: readonly Tree[]): DOC => {
+  const showTrees = (trees: readonly Tree[]): PrettierDocument => {
     const [first, ...rest] = trees;
     if (rest.length === 0) return showTree(first);
     return concat(showTree(first), text(','), line, showTrees(rest));
   };
 
-  const showBracket = (trees: readonly Tree[]): DOC => {
+  const showBracket = (trees: readonly Tree[]): PrettierDocument => {
     if (trees.length === 0) return nil;
     return concat(text('['), nest(1, showTrees(trees)), text(']'));
   };
 
-  const showBracket2 = (trees: readonly Tree[]): DOC => {
+  const showBracket2 = (trees: readonly Tree[]): PrettierDocument => {
     if (trees.length === 0) return nil;
     return bracket('[', showTrees(trees), ']');
   };
 
-  const showTree2 = ({ name, children }: Tree): DOC => concat(text(name), showBracket2(children));
+  const showTree2 = ({ name, children }: Tree): PrettierDocument =>
+    concat(text(name), showBracket2(children));
 
   const exampleTree: Tree = {
     name: 'aaa',
@@ -84,19 +85,23 @@ it('xml test', () => {
       }
     | { readonly type: 'text'; readonly text: string };
 
-  const showFill = <E>(f: (element: E) => readonly DOC[], elements: readonly E[]): DOC => {
+  const showFill = <E>(
+    f: (element: E) => readonly PrettierDocument[],
+    elements: readonly E[]
+  ): PrettierDocument => {
     if (elements.length === 0) return nil;
     return bracket('', fill(elements.map(f).flat()), '');
   };
 
-  const showAttributes = ([name, value]: readonly [string, string]): readonly DOC[] => [
-    text(`${name}="${value}"`),
-  ];
+  const showAttributes = ([name, value]: readonly [
+    string,
+    string
+  ]): readonly PrettierDocument[] => [text(`${name}="${value}"`)];
 
-  const showTag = (name: string, attributes: Readonly<Record<string, string>>): DOC =>
+  const showTag = (name: string, attributes: Readonly<Record<string, string>>): PrettierDocument =>
     concat(text(name), showFill(showAttributes, Object.entries(attributes)));
 
-  const showXMLs = (xml: XML): readonly DOC[] => {
+  const showXMLs = (xml: XML): readonly PrettierDocument[] => {
     switch (xml.type) {
       case 'text':
         return [text(xml.text)];
@@ -116,7 +121,7 @@ it('xml test', () => {
     }
   };
 
-  const showXML = (xml: XML): DOC => foldDocument(concat, showXMLs(xml));
+  const showXML = (xml: XML): PrettierDocument => foldDocument(concat, showXMLs(xml));
 
   const exampleXML: XML = {
     type: 'element',
