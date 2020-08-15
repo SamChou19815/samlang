@@ -31,7 +31,7 @@ it('compile hello world to JS integration test', () => {
   const { checkedSources } = checkSources([[moduleReference, sourceCode]]);
   const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
   expect(highIRSourcesToJSString(hirSources)).toBe(
-    `{const _module_Test_class_Main_function_main = () => {let _t0 = _builtin_stringConcat('Hello ', 'World!');;let _t1 = _builtin_println(_t0); };}`
+    `{const _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };}`
   );
 });
 
@@ -65,7 +65,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'val',
       })
     )
-  ).toBe('let val = func();');
+  ).toBe('var val = func();');
   expect(
     highIRStatementToString(
       HIR_LET({
@@ -73,7 +73,7 @@ it('HIR statements to JS string test', () => {
         assignedExpression: HIR_INT(BigInt(19815)),
       })
     )
-  ).toBe(`let foo = 19815;`);
+  ).toBe(`var foo = 19815;`);
   expect(highIRStatementToString(HIR_RETURN())).toBe('return;');
   expect(highIRStatementToString(HIR_RETURN(HIR_ZERO))).toBe('return 0;');
   expect(
@@ -99,7 +99,7 @@ it('HIR function to JS string test', () => {
         }),
       ],
     })
-  ).toBe(`const baz = (d, t, i) => {let b = 1857; return;};`);
+  ).toBe(`const baz = (d, t, i) => {var b = 1857; return;};`);
 });
 
 it('HIR expression to JS string test', () => {

@@ -18,13 +18,13 @@ export const highIRStatementToString = (highIRStatement: HighIRStatement): strin
     }
     case 'HighIRFunctionCallStatement': {
       const { functionArguments, functionExpression, returnCollector } = highIRStatement;
-      return `let ${returnCollector} = ${highIRExpressionToString(
+      return `var ${returnCollector} = ${highIRExpressionToString(
         functionExpression
       )}(${functionArguments.map((arg) => highIRExpressionToString(arg)).join(', ')});`;
     }
     case 'HighIRLetDefinitionStatement': {
       const { name, assignedExpression } = highIRStatement;
-      return `let ${name} = ${highIRExpressionToString(assignedExpression)};`;
+      return `var ${name} = ${highIRExpressionToString(assignedExpression)};`;
     }
     case 'HighIRReturnStatement':
       return `return${
