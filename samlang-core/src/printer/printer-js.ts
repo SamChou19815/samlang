@@ -59,9 +59,9 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
       return `${highIRExpressionToString(expression)}[${index}]`;
     }
     case 'HighIRVariableExpression':
-      return `${(highIRExpression as HighIRVariableExpression).name}`;
+      return (highIRExpression as HighIRVariableExpression).name;
     case 'HighIRNameExpression':
-      return `${(highIRExpression as HighIRNameExpression).name}`;
+      return (highIRExpression as HighIRNameExpression).name;
     case 'HighIRBinaryExpression': {
       const { e1, e2, operator } = highIRExpression;
       return `(${highIRExpressionToString(e1)} ${operator} ${highIRExpressionToString(e2)})`;
