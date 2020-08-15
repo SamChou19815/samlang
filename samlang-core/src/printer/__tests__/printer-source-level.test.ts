@@ -3,10 +3,13 @@ import Range from '../../ast/common/range';
 import { intType } from '../../ast/common/types';
 import { EXPRESSION_METHOD_ACCESS, EXPRESSION_VARIABLE } from '../../ast/lang/samlang-expressions';
 import { createGlobalErrorCollector } from '../../errors';
-import { parseSamlangExpressionFromText } from '../../parser';
+import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
 import { assertNotNull } from '../../util/type-assertions';
-// eslint-disable-next-line camelcase
-import { prettyPrintSamlangExpression_EXPOSED_FOR_TESTING } from '../printer-source-level';
+import { prettyPrintAccordingToPrettierAlgorithm } from '../printer-prettier-core';
+import createPrettierDocumentsFromSamlangClassMember, {
+  // eslint-disable-next-line camelcase
+  prettyPrintSamlangExpression_EXPOSED_FOR_TESTING,
+} from '../printer-source-level';
 
 const reprintExpression = (rawSourceWithTypeAnnotation: string, width = 40): string => {
   const errorCollector = createGlobalErrorCollector();
@@ -18,6 +21,20 @@ const reprintExpression = (rawSourceWithTypeAnnotation: string, width = 40): str
   const errors = errorCollector.getErrors().map((it) => it.toString());
   expect(errors).toEqual([]);
   return prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(width, expression).trimEnd();
+};
+
+const reprintModule = (rawSourceWithTypeAnnotation: string, width = 40): string => {
+  const errorCollector = createGlobalErrorCollector();
+  const samlangModule = parseSamlangModuleFromText(
+    rawSourceWithTypeAnnotation,
+    errorCollector.getModuleErrorCollector(ModuleReference.ROOT)
+  );
+  const errors = errorCollector.getErrors().map((it) => it.toString());
+  expect(errors).toEqual([]);
+  return `\n${prettyPrintAccordingToPrettierAlgorithm(
+    width,
+    createPrettierDocumentsFromSamlangClassMember(samlangModule)
+  ).trimEnd()}`;
 };
 
 it('prettyPrintSamlangExpression test', () => {
@@ -196,4 +213,78 @@ it('prettyPrintSamlangExpression test', () => {
     )
   )
 )`);
+});
+
+it('prettyPrintSamlangModule test', () => {
+  expect(reprintModule('')).toBe('\n');
+
+  expect(
+    reprintModule(`
+import {Foo} from Bar.Baz
+import {F1,F2,F3,F4,F5,F6,F7,F8,F9,F10} from Bar.Baz
+
+class Option<T>(None(unit), Some(T)) {
+  private method <T> matchExample(opt: Option<int>): int =
+    match (opt) {
+      | None _ -> 42
+      | Some a -> a
+    }
+
+  function a(): int = 3
+}
+
+private class Obj(private val d: int, val e: int) {
+  function valExample(): unit = {
+    val a: int = 1;
+    val b: int = 2;
+  }
+}
+
+class A(val a: int) {}
+
+class Main {}
+`)
+  ).toBe(`
+import { Foo } from Bar.Baz
+import {
+  F1,
+  F2,
+  F3,
+  F4,
+  F5,
+  F6,
+  F7,
+  F8,
+  F9,
+  F10
+} from Bar.Baz
+
+class Option<T>(None(unit), Some(T)) {
+  private method <T> matchExample(
+    opt: Option<int>
+  ): int =
+    match (opt) {
+      | None _ -> (42)
+      | Some a -> (a)
+    }
+
+  function a(): int = 3
+
+}
+
+private class Obj(
+  private val d: int,
+  val e: int
+) {
+  function valExample(): unit =
+    {
+      val a: int = 1;
+      val b: int = 2;
+    }
+
+}
+
+class A(val a: int) {  }
+
+class Main {  }`);
 });
