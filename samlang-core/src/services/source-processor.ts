@@ -4,14 +4,8 @@ import type { Sources } from '../ast/common/structs';
 import {
   HighIRStatement,
   HighIRExpression,
-  HighIRIndexAccessExpression,
   HighIRVariableExpression,
   HighIRNameExpression,
-  HighIRBinaryExpression,
-  HighIRIfElseStatement,
-  HighIRFunctionCallStatement,
-  HighIRLetDefinitionStatement,
-  HighIRStructInitializationStatement,
 } from '../ast/hir/hir-expressions';
 import { HighIRModule, HighIRFunction } from '../ast/hir/hir-toplevel';
 import type { SamlangModule } from '../ast/lang/samlang-toplevel';
