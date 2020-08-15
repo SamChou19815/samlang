@@ -15,11 +15,6 @@ import {
 it('tree test', () => {
   type Tree = { readonly name: string; readonly children: readonly Tree[] };
 
-  const showTree = ({ name, children }: Tree): PrettierDocument =>
-    PRETTIER_GROUP(
-      PRETTIER_CONCAT(PRETTIER_TEXT(name), PRETTIER_NEST(name.length, showBracket(children)))
-    );
-
   const showTrees = (trees: readonly Tree[]): PrettierDocument => {
     const [first, ...rest] = trees;
     if (rest.length === 0) return showTree(first);
@@ -31,7 +26,7 @@ it('tree test', () => {
     return bracket('[', showTrees(trees), ']');
   };
 
-  const showTree2 = ({ name, children }: Tree): PrettierDocument =>
+  const showTree = ({ name, children }: Tree): PrettierDocument =>
     PRETTIER_CONCAT(PRETTIER_TEXT(name), showBracket(children));
 
   const exampleTree: Tree = {
@@ -56,24 +51,24 @@ it('tree test', () => {
     ],
   };
 
-  expect(prettyPrintAccordingToPrettierAlgorithm(20, showTree2(exampleTree))).toBe(`aaa[
+  expect(prettyPrintAccordingToPrettierAlgorithm(20, showTree(exampleTree))).toBe(`aaa[
   bbbbb[ccc, dd],
   eee,
   ffff[gg, hhh, ii]
 ]
 `);
 
-  expect(prettyPrintAccordingToPrettierAlgorithm(16, showTree2(exampleTree))).toBe(`aaa[
+  expect(prettyPrintAccordingToPrettierAlgorithm(16, showTree(exampleTree))).toBe(`aaa[
   bbbbb[
-         ccc,
-         dd
-       ],
+    ccc,
+    dd
+  ],
   eee,
   ffff[
-        gg,
-        hhh,
-        ii
-      ]
+    gg,
+    hhh,
+    ii
+  ]
 ]
 `);
 });
