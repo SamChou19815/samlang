@@ -6,7 +6,10 @@ import {
   checkSources,
   lowerSourcesToAssemblyPrograms,
   highIRSourcesToJSString,
+  highIRStatementToString,
 } from '../source-processor';
+import { HIR_IF_ELSE, HIR_BINARY, HIR_INT } from '../../ast/hir/hir-expressions';
+import { AND, EQ } from '../../ast/common/binary-operators';
 
 it('hello world processor test', () => {
   const moduleReference = new ModuleReference(['Test']);
@@ -70,7 +73,7 @@ GLOBAL_STRING_1:
 `);
 });
 
-it('compile hello world to JS test', () => {
+it('compile hello world to JS integration test', () => {
   const moduleReference = new ModuleReference(['Test']);
   const sourceCode = `
     class Main {
@@ -79,6 +82,31 @@ it('compile hello world to JS test', () => {
     `;
   const { checkedSources } = checkSources([[moduleReference, sourceCode]]);
   const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
-  // TODO: fill in expected testing string
-  expect(highIRSourcesToJSString(hirSources)).toBe('');
+  expect(highIRSourcesToJSString(hirSources)).toBe(
+    `{const _module_Test_class_Main_function_main = () => {let _t0 = _builtin_stringConcat(Hello , World!);let _t1 = _builtin_println(_t0); }}`
+  );
+});
+
+it('HIR statements to JS string test', () => {
+  expect(
+    highIRStatementToString(
+      HIR_IF_ELSE({
+        booleanExpression: HIR_BINARY({
+          operator: '==',
+          e1: HIR_INT(BigInt(5)),
+          e2: HIR_INT(BigInt(5)),
+        }),
+        s1: [
+          {
+            __type__: 'HighIRReturnStatement',
+          },
+        ],
+        s2: [
+          {
+            __type__: 'HighIRReturnStatement',
+          },
+        ],
+      })
+    )
+  ).toBe(`if (5 == 5) {} else {}`);
 });

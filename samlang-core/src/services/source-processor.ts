@@ -66,15 +66,14 @@ export const lowerSourcesToAssemblyPrograms = (
       )
   );
 
-const highIRStatementToString = (highIRStatement: HighIRStatement): string => {
+export const highIRStatementToString = (highIRStatement: HighIRStatement): string => {
   switch (highIRStatement.__type__) {
     case 'HighIRIfElseStatement': {
       const { booleanExpression, s1, s2 } = highIRStatement as HighIRIfElseStatement;
-      return `if (${highIRExpressionToString(booleanExpression)}) {
-        ${s1.map((s) => highIRStatementToString(s)).join(';\n')}  
-      } else {
-        ${s2.map((s) => highIRStatementToString(s)).join(';\n')}
-      }`;
+      const booleanExpressionStr = highIRExpressionToString(booleanExpression);
+      const s1Str = s1.map((s) => highIRStatementToString(s)).join(';');
+      const s2Str = s2.map((s) => highIRStatementToString(s)).join(';');
+      return `if (${booleanExpressionStr}) {${s1Str}} else {${s2Str}}`;
     }
     case 'HighIRFunctionCallStatement': {
       const {
@@ -91,9 +90,7 @@ const highIRStatementToString = (highIRStatement: HighIRStatement): string => {
       return `let ${name} = ${highIRExpressionToString(assignedExpression)}`;
     }
     case 'HighIRReturnStatement':
-      return `return ${
-        highIRStatement.expression && highIRExpressionToString(highIRStatement.expression)
-      };`;
+      return highIRStatement.expression ? `return ${highIRStatement.expression}` : '';
     case 'HighIRStructInitializationStatement': {
       const {
         structVariableName,
@@ -106,13 +103,14 @@ const highIRStatementToString = (highIRStatement: HighIRStatement): string => {
   }
 };
 
-const highIRFunctionToString = (highIRFunction: HighIRFunction): string =>
-  `const ${highIRFunction.name} = (${highIRFunction.parameters.join(', ')}) => {
-    ${highIRFunction.body.map((statement) => highIRStatementToString(statement)).join(';\n')}
-    ${highIRFunction.hasReturn && 'return;'}
-  }`;
+export const highIRFunctionToString = (highIRFunction: HighIRFunction): string => {
+  const { name, parameters, body, hasReturn } = highIRFunction;
+  const bodyStr = body.map((statement) => highIRStatementToString(statement)).join(';');
+  const hasReturnStr = hasReturn ? 'return;' : '';
+  return `const ${name} = (${parameters.join(', ')}) => {${bodyStr}; ${hasReturnStr}}`;
+};
 
-const highIRExpressionToString = (highIRExpression: HighIRExpression): string => {
+export const highIRExpressionToString = (highIRExpression: HighIRExpression): string => {
   switch (highIRExpression.__type__) {
     case 'HighIRIntLiteralExpression':
       return `${highIRExpression.value}`;
@@ -136,9 +134,7 @@ const highIRExpressionToString = (highIRExpression: HighIRExpression): string =>
 export const highIRSourcesToJSString = (sources: Sources<HighIRModule>): string => {
   let finalStr = '';
   sources.forEach((module) => {
-    finalStr += `{
-      ${module.functions.map((f) => highIRFunctionToString(f)).join(';\n')}
-    }`;
+    finalStr += `{${module.functions.map((f) => highIRFunctionToString(f)).join(';')}}`;
   });
   return finalStr;
 };
