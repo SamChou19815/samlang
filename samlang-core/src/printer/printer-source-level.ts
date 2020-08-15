@@ -5,6 +5,7 @@ import {
   PrettierDocument,
   PRETTIER_NIL,
   PRETTIER_CONCAT,
+  PRETTIER_NEST,
   PRETTIER_TEXT,
   PRETTIER_LINE,
   PRETTIER_NO_SPACE_BRACKET,
@@ -176,7 +177,7 @@ const createPrettierDocumentFromSamlangExpression = (
       );
     case 'StatementBlockExpression': {
       const { statements, expression: finalExpression } = expression.block;
-      const statementDocuments = statements
+      const segments = statements
         .map(({ pattern, typeAnnotation, assignedExpression }) => {
           let patternDocument: PrettierDocument;
           switch (pattern.type) {
@@ -211,18 +212,23 @@ const createPrettierDocumentFromSamlangExpression = (
           ];
         })
         .flat();
-      if (finalExpression == null) {
-        return statementDocuments.length === 0
-          ? createBracesSurroundedDocument(PRETTIER_CONCAT())
-          : createBracesSurroundedDocument(
-              PRETTIER_CONCAT(...statementDocuments.slice(0, statementDocuments.length - 1))
-            );
+      const finalExpressionDocument =
+        finalExpression == null
+          ? null
+          : createPrettierDocumentFromSamlangExpression(finalExpression);
+      if (segments.length === 0) {
+        return createBracesSurroundedDocument(finalExpressionDocument ?? PRETTIER_NIL);
       }
-      return createBracesSurroundedDocument(
-        PRETTIER_CONCAT(
-          ...statementDocuments,
-          createPrettierDocumentFromSamlangExpression(finalExpression)
-        )
+      if (finalExpressionDocument == null) {
+        segments.pop();
+      } else {
+        segments.push(finalExpressionDocument);
+      }
+      return PRETTIER_CONCAT(
+        PRETTIER_TEXT('{'),
+        PRETTIER_NEST(2, PRETTIER_CONCAT(PRETTIER_LINE, ...segments)),
+        PRETTIER_LINE,
+        PRETTIER_TEXT('}')
       );
     }
   }

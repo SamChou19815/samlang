@@ -150,14 +150,19 @@ it('prettyPrintSamlangExpression test', () => {
   expect(reprintExpression('{}')).toBe('{  }');
   expect(reprintExpression('{3}')).toBe('{ 3 }');
   expect(reprintExpression('{ val _:int=0;val _:int=0; }')).toBe(
-    '{ val _: int = 0; val _: int = 0; }'
+    `{
+  val _: int = 0;
+  val _: int = 0;
+}`
   );
   expect(reprintExpression('{ val a:int=1;val [b,_]:[int*int]=2; 3 }')).toBe(`{
   val a: int = 1;
   val [b, _]: [int * int] = 2;
   3
 }`);
-  expect(reprintExpression('{ val {a, b as c}: int = 3 }')).toBe('{ val { a, b as c }: int = 3; }');
+  expect(reprintExpression('{ val {a, b as c}: int = 3 }')).toBe(`{
+  val { a, b as c }: int = 3;
+}`);
 
   expect(
     reprintExpression(

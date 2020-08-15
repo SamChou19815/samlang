@@ -8,6 +8,15 @@ import {
   prettyPrintAccordingToPrettierAlgorithm,
 } from '../printer-prettier-core';
 
+it('prettier concat constructor test', () => {
+  expect(PRETTIER_CONCAT()).toEqual(PRETTIER_NIL);
+  expect(PRETTIER_CONCAT(PRETTIER_TEXT('a'))).toEqual(PRETTIER_TEXT('a'));
+  expect(PRETTIER_CONCAT(PRETTIER_TEXT('a'))).toEqual(PRETTIER_TEXT('a'));
+  expect(PRETTIER_CONCAT(PRETTIER_TEXT('a'), PRETTIER_TEXT('b'), PRETTIER_TEXT('c'))).toEqual(
+    PRETTIER_CONCAT(PRETTIER_TEXT('a'), PRETTIER_CONCAT(PRETTIER_TEXT('b'), PRETTIER_TEXT('c')))
+  );
+});
+
 it('prettier-core tree test', () => {
   type Tree = { readonly name: string; readonly children: readonly Tree[] };
 
