@@ -1,5 +1,6 @@
 import ModuleReference from '../ast/common/module-reference';
-import { prettyPrintSamlangModule, SamlangModule } from '../ast/lang/samlang-toplevel';
+import type { SamlangModule } from '../ast/lang/samlang-toplevel';
+import { prettyPrintSamlangModule } from '../printer';
 import { checkSources } from '../services/source-processor';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 import { assertNotNull } from '../util/type-assertions';
@@ -18,8 +19,7 @@ const getTypeCheckedModule = (code: string): SamlangModule => {
 
 runnableSamlangProgramTestCases.forEach(({ testCaseName: id, sourceCode: code }) => {
   it(`samlang source level pretty printer is self-consistent for ${id}`, () => {
-    const prettyCode1 = prettyPrintSamlangModule(getTypeCheckedModule(code));
-    const prettyCode2 = prettyPrintSamlangModule(getTypeCheckedModule(prettyCode1));
-    expect(prettyCode1).toBe(prettyCode2);
+    const prettyCode = prettyPrintSamlangModule(100, getTypeCheckedModule(code));
+    getTypeCheckedModule(prettyCode);
   });
 });

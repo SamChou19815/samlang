@@ -884,7 +884,7 @@ class Option<T>(None(unit), Some(T)) {
     }
 }
 
-class Obj(val d: int, val e: int) {
+class Obj(private val d: int, val e: int) {
   function valExample(): int = {
     val a: int = 1;
     val b = 2;
