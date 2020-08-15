@@ -133,16 +133,14 @@ const highIRExpressionToString = (highIRExpression: HighIRExpression): string =>
   }
 };
 
-export const highIRSourcesToJSString = (sources: Sources<HighIRModule>): Sources<string> => {
-  const jsSources: HashMap<ModuleReference, string> = hashMapOf();
+export const highIRSourcesToJSString = (sources: Sources<HighIRModule>): Sources<string[]> => {
+  const jsSources: HashMap<ModuleReference, string[]> = hashMapOf();
   sources.forEach((hirModule, reference) => {
     jsSources.set(
       reference,
-      JSON.stringify(
-        hirModule.functions.map((highIRFunction: HighIRFunction) => {
-          return JSON.stringify(highIRFunction);
-        })
-      )
+      hirModule.functions.map((highIRFunction: HighIRFunction) => {
+        return highIRFunctionToString(highIRFunction);
+      })
     );
   });
   return jsSources;
