@@ -22,6 +22,7 @@ export type PrettierDocument =
     }
   | { readonly __type__: 'TEXT'; readonly text: string }
   | { readonly __type__: 'LINE' }
+  | { readonly __type__: 'LINE_FLATTEN_TO_NIL' }
   | {
       readonly __type__: 'UNION';
       readonly doc1: PrettierDocument;
@@ -67,6 +68,14 @@ export const PRETTIER_TEXT = (t: string): PrettierDocument => ({ __type__: 'TEXT
 export const PRETTIER_LINE: PrettierDocument = { __type__: 'LINE' };
 
 /**
+ * Sam's extension to prettier's document.
+ * It behaves exactly like `LINE`, except that it is flattened to nil instead of a space.
+ */
+export const PRETTIER_EXTENSION_LINE_FLATTEN_TO_NIL: PrettierDocument = {
+  __type__: 'LINE_FLATTEN_TO_NIL',
+};
+
+/**
  * Correspond to the `DOC :<|> DOC` node in the prettier paper.
  * It represents two different ways to print the document, where `doc1` is preferred over `doc2`.
  * In general, `doc1` is the flattened version of `doc2`.
@@ -106,6 +115,8 @@ const flattenPrettierDocument = (document: PrettierDocument): PrettierDocument =
       return PRETTIER_NEST(document.indentation, flattenPrettierDocument(document.doc));
     case 'LINE':
       return PRETTIER_TEXT(' ');
+    case 'LINE_FLATTEN_TO_NIL':
+      return PRETTIER_NIL;
     case 'UNION':
       return flattenPrettierDocument(document.doc1);
   }
@@ -176,6 +187,7 @@ const generateBestDoc = (
         next: generateBestDoc(availableWidth, consumed + document.text.length, rest),
       };
     case 'LINE':
+    case 'LINE_FLATTEN_TO_NIL':
       return {
         __type__: 'LINE',
         indentation,
@@ -204,8 +216,14 @@ export const prettyPrintAccordingToPrettierAlgorithm = (
   // eslint-disable-next-line no-constant-condition
   while (true) {
     switch (doc.__type__) {
-      case 'NIL':
-        return collector.join('');
+      case 'NIL': {
+        const postProcessed = collector
+          .join('')
+          .split('\n')
+          .map((line) => line.trimEnd())
+          .join('\n');
+        return `${postProcessed}\n`;
+      }
       case 'TEXT':
         collector.push(doc.text);
         doc = doc.next;
@@ -252,8 +270,8 @@ export const bracket = (left: string, doc: PrettierDocument, right: string): Pre
   PRETTIER_GROUP(
     PRETTIER_CONCAT(
       PRETTIER_TEXT(left),
-      PRETTIER_NEST(2, PRETTIER_CONCAT(PRETTIER_LINE, doc)),
-      PRETTIER_LINE,
+      PRETTIER_NEST(2, PRETTIER_CONCAT(PRETTIER_EXTENSION_LINE_FLATTEN_TO_NIL, doc)),
+      PRETTIER_EXTENSION_LINE_FLATTEN_TO_NIL,
       PRETTIER_TEXT(right)
     )
   );

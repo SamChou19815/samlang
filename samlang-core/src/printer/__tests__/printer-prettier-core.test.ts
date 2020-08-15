@@ -28,20 +28,11 @@ it('tree test', () => {
 
   const showBracket = (trees: readonly Tree[]): PrettierDocument => {
     if (trees.length === 0) return PRETTIER_NIL;
-    return PRETTIER_CONCAT(
-      PRETTIER_TEXT('['),
-      PRETTIER_NEST(1, showTrees(trees)),
-      PRETTIER_TEXT(']')
-    );
-  };
-
-  const showBracket2 = (trees: readonly Tree[]): PrettierDocument => {
-    if (trees.length === 0) return PRETTIER_NIL;
     return bracket('[', showTrees(trees), ']');
   };
 
   const showTree2 = ({ name, children }: Tree): PrettierDocument =>
-    PRETTIER_CONCAT(PRETTIER_TEXT(name), showBracket2(children));
+    PRETTIER_CONCAT(PRETTIER_TEXT(name), showBracket(children));
 
   const exampleTree: Tree = {
     name: 'aaa',
@@ -69,16 +60,22 @@ it('tree test', () => {
   bbbbb[ccc, dd],
   eee,
   ffff[gg, hhh, ii]
-]`);
+]
+`);
 
   expect(prettyPrintAccordingToPrettierAlgorithm(16, showTree2(exampleTree))).toBe(`aaa[
-  bbbbb[ccc,
-        dd],
+  bbbbb[
+         ccc,
+         dd
+       ],
   eee,
-  ffff[gg,
-       hhh,
-       ii]
-]`);
+  ffff[
+        gg,
+        hhh,
+        ii
+      ]
+]
+`);
 });
 
 it('xml test', () => {
@@ -99,13 +96,11 @@ it('xml test', () => {
     return bracket('', fill(elements.map(f).flat()), '');
   };
 
-  const showAttributes = ([name, value]: readonly [
-    string,
-    string
-  ]): readonly PrettierDocument[] => [PRETTIER_TEXT(`${name}="${value}"`)];
-
-  const showTag = (name: string, attributes: Readonly<Record<string, string>>): PrettierDocument =>
-    PRETTIER_CONCAT(PRETTIER_TEXT(name), showFill(showAttributes, Object.entries(attributes)));
+  const showTagAttributes = (attributes: Readonly<Record<string, string>>): PrettierDocument =>
+    PRETTIER_CONCAT(
+      PRETTIER_TEXT(' '),
+      showFill(([name, value]) => [PRETTIER_TEXT(`${name}="${value}"`)], Object.entries(attributes))
+    );
 
   const showXMLs = (xml: XML): readonly PrettierDocument[] => {
     switch (xml.type) {
@@ -115,16 +110,25 @@ it('xml test', () => {
         if (xml.children.length === 0) {
           return [
             PRETTIER_CONCAT(
-              PRETTIER_TEXT('<'),
-              showTag(xml.name, xml.attributes),
+              PRETTIER_TEXT(`<${xml.name}`),
+              showTagAttributes(xml.attributes),
               PRETTIER_TEXT('/>')
+            ),
+          ];
+        }
+        if (Object.entries(xml.attributes).length === 0) {
+          return [
+            PRETTIER_CONCAT(
+              PRETTIER_TEXT(`<${xml.name}>`),
+              showFill(showXMLs, xml.children),
+              PRETTIER_TEXT(`</${xml.name}>`)
             ),
           ];
         }
         return [
           PRETTIER_CONCAT(
-            PRETTIER_TEXT('<'),
-            showTag(xml.name, xml.attributes),
+            PRETTIER_TEXT(`<${xml.name}`),
+            showTagAttributes(xml.attributes),
             PRETTIER_TEXT('>'),
             showFill(showXMLs, xml.children),
             PRETTIER_TEXT(`</${xml.name}>`)
@@ -161,23 +165,25 @@ it('xml test', () => {
   };
 
   expect(prettyPrintAccordingToPrettierAlgorithm(60, showXML(exampleXML)))
-    .toBe(`<p color="red" front="Times" size="10" >
-  Here is some <em> emphasized </em> text. Here is a
-  <a href="https://developersam.com" > link </a> elsewhere.
-</p>`);
+    .toBe(`<p color="red" front="Times" size="10">
+  Here is some <em>emphasized</em> text. Here is a
+  <a href="https://developersam.com">link</a> elsewhere.
+</p>
+`);
 
   expect(prettyPrintAccordingToPrettierAlgorithm(30, showXML(exampleXML))).toBe(`<p
   color="red" front="Times"
   size="10"
 >
   Here is some
-  <em> emphasized </em> text.
+  <em>emphasized</em> text.
   Here is a
   <a
     href="https://developersam.com"
-  > link </a>
+  >link</a>
   elsewhere.
-</p>`);
+</p>
+`);
 
   expect(prettyPrintAccordingToPrettierAlgorithm(20, showXML(exampleXML))).toBe(`<p
   color="red"
@@ -191,7 +197,8 @@ it('xml test', () => {
   text. Here is a
   <a
     href="https://developersam.com"
-  > link </a>
+  >link</a>
   elsewhere.
-</p>`);
+</p>
+`);
 });
