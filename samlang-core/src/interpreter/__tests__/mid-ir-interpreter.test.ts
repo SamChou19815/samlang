@@ -354,6 +354,26 @@ it('interpretMidIRCompilationUnit binary expression test 1', () => {
           argumentNames: [],
           hasReturn: false,
           mainBodyStatements: [
+            MIR_MOVE_TEMP(MIR_TEMP('one'), MIR_ONE),
+            MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('-', MIR_ONE, MIR_TEMP('one'))),
+            MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('v')], 's'),
+            MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_PRINTLN, [MIR_TEMP('s')]),
+            MIR_RETURN(),
+          ],
+        },
+      ],
+    })
+  ).toBe('0\n');
+
+  expect(
+    interpretMidIRCompilationUnit({
+      globalVariables: [],
+      functions: [
+        {
+          functionName: ENCODED_COMPILED_PROGRAM_MAIN,
+          argumentNames: [],
+          hasReturn: false,
+          mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('/', MIR_ONE, MIR_ONE)),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('v')], 's'),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_PRINTLN, [MIR_TEMP('s')]),

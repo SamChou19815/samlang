@@ -1,3 +1,4 @@
+import { prettyPrintSamlangModule } from '..';
 import ModuleReference from '../../ast/common/module-reference';
 import Range from '../../ast/common/range';
 import { intType } from '../../ast/common/types';
@@ -5,11 +6,8 @@ import { EXPRESSION_METHOD_ACCESS, EXPRESSION_VARIABLE } from '../../ast/lang/sa
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
 import { assertNotNull } from '../../util/type-assertions';
-import { prettyPrintAccordingToPrettierAlgorithm } from '../printer-prettier-core';
-import createPrettierDocumentsFromSamlangClassMember, {
-  // eslint-disable-next-line camelcase
-  prettyPrintSamlangExpression_EXPOSED_FOR_TESTING,
-} from '../printer-source-level';
+// eslint-disable-next-line camelcase
+import { prettyPrintSamlangExpression_EXPOSED_FOR_TESTING } from '../printer-source-level';
 
 const reprintExpression = (rawSourceWithTypeAnnotation: string, width = 40): string => {
   const errorCollector = createGlobalErrorCollector();
@@ -31,10 +29,7 @@ const reprintModule = (rawSourceWithTypeAnnotation: string, width = 40): string 
   );
   const errors = errorCollector.getErrors().map((it) => it.toString());
   expect(errors).toEqual([]);
-  return `\n${prettyPrintAccordingToPrettierAlgorithm(
-    width,
-    createPrettierDocumentsFromSamlangClassMember(samlangModule)
-  ).trimEnd()}`;
+  return `\n${prettyPrintSamlangModule(width, samlangModule).trimEnd()}`;
 };
 
 it('prettyPrintSamlangExpression test', () => {

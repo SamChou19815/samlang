@@ -78,7 +78,7 @@ const testAssemblyResult = (
 
 mirBaseTestCases.forEach((testCase) => {
   // @ts-expect-error: process type is in @types/node, but we deliberatively excludes it to prevent core package depending on node.
-  if (process.env.FULL_TEST) {
+  if (process.env.CI) {
     it(`IR[no-opt]: ${testCase.testCaseName}`, () => {
       let result: string;
       try {
@@ -108,10 +108,10 @@ mirBaseTestCases.forEach((testCase) => {
       testMidIROptimizerResult(testCase, (it) =>
         optimizeIRCompilationUnit(it, { doesPerformInlining: true })
       ));
-  }
 
-  it(`IR[all]: ${testCase.testCaseName}`, () =>
-    testMidIROptimizerResult(testCase, (it) => optimizeIRCompilationUnit(it)));
+    it(`IR[all]: ${testCase.testCaseName}`, () =>
+      testMidIROptimizerResult(testCase, (it) => optimizeIRCompilationUnit(it)));
+  }
 
   it(`ASM[all]: ${testCase.testCaseName}`, () =>
     testAssemblyResult(testCase, (it) => optimizeIRCompilationUnit(it)));
