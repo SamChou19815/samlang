@@ -19,7 +19,6 @@ import {
   PRETTIER_NO_SPACE_BRACKET,
   PRETTIER_SPACED_BRACKET,
   prettyPrintAccordingToPrettierAlgorithm,
-  PRETTIER_EXTENSION_LINE_FLATTEN_TO_NIL,
 } from './printer-prettier-core';
 
 const createCommaSeparatedList = <E>(
@@ -57,6 +56,17 @@ const createBracesSurroundedBlockDocument = (
 const createPrettierDocumentFromSamlangExpression = (
   expression: SamlangExpression
 ): PrettierDocument => {
+  const createDocumentForSubExpressionConsideringPrecedenceLevel = (
+    subExpression: SamlangExpression
+  ): PrettierDocument => {
+    if (subExpression.precedence >= expression.precedence) {
+      return createParenthesisSurroundedDocument(
+        createPrettierDocumentFromSamlangExpression(subExpression)
+      );
+    }
+    return createPrettierDocumentFromSamlangExpression(subExpression);
+  };
+
   switch (expression.__type__) {
     case 'LiteralExpression':
       return PRETTIER_TEXT(prettyPrintLiteral(expression.literal));
@@ -93,24 +103,18 @@ const createPrettierDocumentFromSamlangExpression = (
       );
     case 'FieldAccessExpression':
       return PRETTIER_CONCAT(
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.expression)
-        ),
+        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
         PRETTIER_TEXT(`.${expression.fieldName}`)
       );
     case 'MethodAccessExpression':
       return PRETTIER_CONCAT(
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.expression)
-        ),
+        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
         PRETTIER_TEXT(`.${expression.methodName}`)
       );
     case 'UnaryExpression':
       return PRETTIER_CONCAT(
         PRETTIER_TEXT(`${expression.operator}`),
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.expression)
-        )
+        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression)
       );
     case 'PanicExpression':
       return PRETTIER_CONCAT(
@@ -128,9 +132,7 @@ const createPrettierDocumentFromSamlangExpression = (
       );
     case 'FunctionCallExpression':
       return PRETTIER_CONCAT(
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.functionExpression)
-        ),
+        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.functionExpression),
         createParenthesisSurroundedDocument(
           createCommaSeparatedList(
             expression.functionArguments,
@@ -140,13 +142,9 @@ const createPrettierDocumentFromSamlangExpression = (
       );
     case 'BinaryExpression':
       return PRETTIER_CONCAT(
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.e1)
-        ),
+        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
         PRETTIER_TEXT(` ${expression.operator.symbol} `),
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.e2)
-        )
+        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
       );
     case 'IfElseExpression':
       return PRETTIER_CONCAT(
@@ -155,21 +153,15 @@ const createPrettierDocumentFromSamlangExpression = (
           createPrettierDocumentFromSamlangExpression(expression.boolExpression)
         ),
         PRETTIER_TEXT(' then '),
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.e1)
-        ),
+        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
         PRETTIER_TEXT(' else '),
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.e2)
-        )
+        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
       );
     case 'MatchExpression': {
       const list = expression.matchingList
         .map(({ tag, dataVariable, expression: finalExpression }) => [
           PRETTIER_TEXT(`| ${tag} ${dataVariable ?? '_'} -> `),
-          createParenthesisSurroundedDocument(
-            createPrettierDocumentFromSamlangExpression(finalExpression)
-          ),
+          createDocumentForSubExpressionConsideringPrecedenceLevel(finalExpression),
           PRETTIER_LINE,
         ])
         .flat();
@@ -190,9 +182,7 @@ const createPrettierDocumentFromSamlangExpression = (
           )
         ),
         PRETTIER_TEXT(' -> '),
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.body)
-        )
+        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.body)
       );
     case 'StatementBlockExpression': {
       const { statements, expression: finalExpression } = expression.block;

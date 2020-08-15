@@ -78,7 +78,7 @@ it('prettyPrintSamlangExpression test', () => {
 )`
   );
 
-  expect(reprintExpression('foo.bar')).toBe('(foo).bar');
+  expect(reprintExpression('foo.bar')).toBe('foo.bar');
 
   expect(
     prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(
@@ -90,20 +90,20 @@ it('prettyPrintSamlangExpression test', () => {
         methodName: 'bar',
       })
     ).trimEnd()
-  ).toBe('(foo).bar');
+  ).toBe('foo.bar');
 
-  expect(reprintExpression('-42')).toBe('-(42)');
-  expect(reprintExpression('!aVariableNameThatIsVeryVeryVeryVeryVeryLong')).toBe(`!(
-  aVariableNameThatIsVeryVeryVeryVeryVeryLong
+  expect(reprintExpression('-42')).toBe('-42');
+  expect(reprintExpression('!(1+aVariableNameThatIsVeryVeryVeryVeryVeryLong)')).toBe(`!(
+  1 + aVariableNameThatIsVeryVeryVeryVeryVeryLong
 )`);
 
   expect(reprintExpression('panic(ah)')).toBe('panic(ah)');
   expect(reprintExpression('println(ah)')).toBe('println(ah)');
-  expect(reprintExpression('foo()')).toBe('(foo)()');
-  expect(reprintExpression('foo(bar)')).toBe('(foo)(bar)');
-  expect(reprintExpression('foo(bar,baz)')).toBe('(foo)(bar, baz)');
+  expect(reprintExpression('foo()')).toBe('foo()');
+  expect(reprintExpression('foo(bar)')).toBe('foo(bar)');
+  expect(reprintExpression('foo(bar,baz)')).toBe('foo(bar, baz)');
   expect(reprintExpression('foo(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10)')).toBe(
-    `(foo)(
+    `foo(
   v1,
   v2,
   v3,
@@ -117,47 +117,23 @@ it('prettyPrintSamlangExpression test', () => {
 )`
   );
 
-  expect(reprintExpression('1 + 1')).toBe('(1) + (1)');
-  expect(
-    reprintExpression(
-      'aVariableNameThatIsVeryVeryVeryVeryVeryLong + aVariableNameThatIsVeryVeryVeryVeryVeryLong'
-    )
-  ).toBe(
-    `(
-  aVariableNameThatIsVeryVeryVeryVeryVeryLong
-) + (
-  aVariableNameThatIsVeryVeryVeryVeryVeryLong
-)`
-  );
+  expect(reprintExpression('1 + 1')).toBe('1 + 1');
+  expect(reprintExpression('1 + 1 * 1')).toBe('1 + 1 * 1');
+  expect(reprintExpression('(1 + 1) * 1')).toBe('(1 + 1) * 1');
+  expect(reprintExpression('1 + 1 + 1')).toBe('(1 + 1) + 1');
 
-  expect(reprintExpression('if (b) then a else c')).toBe('if (b) then (a) else (c)');
-  expect(
-    reprintExpression(
-      'if (aVariableNameThatIsVeryVeryVeryVeryVeryLong) then aVariableNameThatIsVeryVeryVeryVeryVeryLong else aVariableNameThatIsVeryVeryVeryVeryVeryLong'
-    )
-  ).toBe(
-    `if (
-  aVariableNameThatIsVeryVeryVeryVeryVeryLong
-) then (
-  aVariableNameThatIsVeryVeryVeryVeryVeryLong
-) else (
-  aVariableNameThatIsVeryVeryVeryVeryVeryLong
-)`
-  );
+  expect(reprintExpression('if (b) then a else c')).toBe('if (b) then a else c');
 
   expect(reprintExpression('match (v) { | None _ -> fooBar | Some bazBaz -> bazBaz }'))
     .toBe(`match (v) {
-  | None _ -> (fooBar)
-  | Some bazBaz -> (bazBaz)
+  | None _ -> fooBar
+  | Some bazBaz -> bazBaz
 }`);
 
-  expect(reprintExpression('() -> 1')).toBe('() -> (1)');
-  expect(reprintExpression('(a: int) -> 1')).toBe('(a: int) -> (1)');
-  expect(reprintExpression('(a: int) -> aVariableNameThatIsVeryVeryVeryVeryVeryLong')).toBe(
-    `(a: int) -> (
-  aVariableNameThatIsVeryVeryVeryVeryVeryLong
-)`
-  );
+  expect(reprintExpression('() -> 1')).toBe('() -> 1');
+  expect(reprintExpression('(a: int) -> 1')).toBe('(a: int) -> 1');
+  expect(reprintExpression('(a: int) -> 1 + 1')).toBe('(a: int) -> 1 + 1');
+  expect(reprintExpression('(() -> 1)()')).toBe('(() -> 1)()');
 
   expect(reprintExpression('{}')).toBe('{  }');
   expect(reprintExpression('{3}')).toBe('{ 3 }');
@@ -263,8 +239,8 @@ class Option<T>(None(unit), Some(T)) {
     opt: Option<int>
   ): int =
     match (opt) {
-      | None _ -> (42)
-      | Some a -> (a)
+      | None _ -> 42
+      | Some a -> a
     }
 
   function a(): int = 3
