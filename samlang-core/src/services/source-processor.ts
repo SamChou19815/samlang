@@ -24,7 +24,7 @@ import {
 import { CompileTimeError, createGlobalErrorCollector } from '../errors';
 import optimizeIRCompilationUnit from '../optimization';
 import { parseSamlangModuleFromText } from '../parser';
-import { hashMapOf, HashMap } from '../util/collections';
+import { hashMapOf } from '../util/collections';
 
 type CheckSourcesResult = {
   readonly checkedSources: Sources<SamlangModule>;
@@ -83,14 +83,16 @@ export const highIRStatementToString = (highIRStatement: HighIRStatement): strin
       } = highIRStatement as HighIRFunctionCallStatement;
       return `let ${returnCollector} = ${highIRExpressionToString(
         functionExpression
-      )}(${functionArguments.map((arg) => highIRExpressionToString(arg)).join(', ')})`;
+      )}(${functionArguments.map((arg) => highIRExpressionToString(arg)).join(', ')});`;
     }
     case 'HighIRLetDefinitionStatement': {
       const { name, assignedExpression } = highIRStatement as HighIRLetDefinitionStatement;
-      return `let ${name} = ${highIRExpressionToString(assignedExpression)}`;
+      return `let ${name} = ${highIRExpressionToString(assignedExpression)};`;
     }
     case 'HighIRReturnStatement':
-      return highIRStatement.expression ? `return ${highIRStatement.expression}` : '';
+      return highIRStatement.expression
+        ? `return ${highIRExpressionToString(highIRStatement.expression)};`
+        : '';
     case 'HighIRStructInitializationStatement': {
       const {
         structVariableName,
@@ -98,7 +100,7 @@ export const highIRStatementToString = (highIRStatement: HighIRStatement): strin
       } = highIRStatement as HighIRStructInitializationStatement;
       return `${structVariableName} = [${expressionList
         .map((e) => highIRExpressionToString(e))
-        .join(', ')}]`;
+        .join(', ')}];`;
     }
   }
 };
@@ -115,7 +117,7 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
     case 'HighIRIntLiteralExpression':
       return `${highIRExpression.value}`;
     case 'HighIRStringLiteralExpression':
-      return highIRExpression.value;
+      return `'${highIRExpression.value}'`;
     case 'HighIRIndexAccessExpression': {
       const { expression, index } = highIRExpression as HighIRIndexAccessExpression;
       return `${highIRExpressionToString(expression)}[${index}]`;
