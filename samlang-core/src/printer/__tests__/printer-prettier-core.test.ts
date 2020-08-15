@@ -2,13 +2,11 @@ import {
   PrettierDocument,
   PRETTIER_NIL,
   PRETTIER_CONCAT,
-  PRETTIER_NEST,
   PRETTIER_TEXT,
   PRETTIER_LINE,
-  PRETTIER_GROUP,
   prettyPrintAccordingToPrettierAlgorithm,
   foldPrettierDocument,
-  bracket,
+  bracketWithoutSpace,
   fill,
 } from '../printer-prettier-core';
 
@@ -23,7 +21,7 @@ it('tree test', () => {
 
   const showBracket = (trees: readonly Tree[]): PrettierDocument => {
     if (trees.length === 0) return PRETTIER_NIL;
-    return bracket('[', showTrees(trees), ']');
+    return bracketWithoutSpace('[', showTrees(trees), ']');
   };
 
   const showTree = ({ name, children }: Tree): PrettierDocument =>
@@ -88,7 +86,7 @@ it('xml test', () => {
     elements: readonly E[]
   ): PrettierDocument => {
     if (elements.length === 0) return PRETTIER_NIL;
-    return bracket('', fill(elements.map(f).flat()), '');
+    return bracketWithoutSpace('', fill(elements.map(f).flat()), '');
   };
 
   const showTagAttributes = (attributes: Readonly<Record<string, string>>): PrettierDocument =>
