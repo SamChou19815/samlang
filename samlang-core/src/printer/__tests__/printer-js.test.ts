@@ -56,7 +56,7 @@ it('HIR statements to JS string test', () => {
         ],
       })
     )
-  ).toBe(`if ({5 == 5}) {return;} else {return;}`);
+  ).toBe(`if ((5 == 5)) {return;} else {return;}`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -112,7 +112,7 @@ it('HIR expression to JS string test', () => {
         index: 3,
       })
     )
-  ).toBe(`{samlang[3]}`);
+  ).toBe(`samlang[3]`);
   expect(highIRExpressionToString(HIR_VARIABLE('ts'))).toBe('ts');
   expect(highIRExpressionToString(HIR_NAME('key'))).toBe('key');
   expect(
@@ -123,5 +123,5 @@ it('HIR expression to JS string test', () => {
         e2: HIR_INT(BigInt(7)),
       })
     )
-  ).toBe('{7 != 7}');
+  ).toBe('(7 != 7)');
 });
