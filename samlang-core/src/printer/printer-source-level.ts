@@ -19,6 +19,7 @@ import {
   PRETTIER_NO_SPACE_BRACKET,
   PRETTIER_SPACED_BRACKET,
   prettyPrintAccordingToPrettierAlgorithm,
+  PRETTIER_EXTENSION_LINE_FLATTEN_TO_NIL,
 } from './printer-prettier-core';
 
 const createCommaSeparatedList = <E>(
@@ -260,28 +261,42 @@ export const prettyPrintSamlangExpression_EXPOSED_FOR_TESTING = (
 
 export const createPrettierDocumentsFromSamlangClassMember = (
   member: ClassMemberDefinition
-): readonly PrettierDocument[] => [
-  member.isPublic ? PRETTIER_NIL : PRETTIER_TEXT('private '),
-  PRETTIER_TEXT(member.isMethod ? 'method ' : 'function '),
-  member.typeParameters.length > 0
-    ? PRETTIER_TEXT(`<${member.typeParameters.join(', ')}> `)
-    : PRETTIER_NIL,
-  PRETTIER_TEXT(member.name),
-  createParenthesisSurroundedDocument(
-    createCommaSeparatedList(member.parameters, (annotated) =>
-      PRETTIER_TEXT(`${annotated.name}: ${prettyPrintType(annotated.type)}`)
-    )
-  ),
-  PRETTIER_TEXT(`: ${prettyPrintType(member.type.returnType)} =`),
-  PRETTIER_GROUP(
-    PRETTIER_NEST(
-      2,
-      PRETTIER_CONCAT(PRETTIER_LINE, createPrettierDocumentFromSamlangExpression(member.body))
-    )
-  ),
-  PRETTIER_LINE,
-  PRETTIER_LINE,
-];
+): readonly PrettierDocument[] => {
+  const bodyDocument = createPrettierDocumentFromSamlangExpression(member.body);
+
+  // Special case for statement block as body for prettier result.
+  // We want to lift the leading `{` to the same line as `=`.
+  let bodyDocumentWithPotentialIndentation: PrettierDocument;
+  if (
+    bodyDocument.__type__ === 'CONCAT' &&
+    bodyDocument.doc1.__type__ === 'TEXT' &&
+    bodyDocument.doc1.text === '{'
+  ) {
+    bodyDocumentWithPotentialIndentation = PRETTIER_CONCAT(PRETTIER_TEXT(' {'), bodyDocument.doc2);
+  } else {
+    bodyDocumentWithPotentialIndentation = PRETTIER_GROUP(
+      PRETTIER_NEST(2, PRETTIER_CONCAT(PRETTIER_LINE, bodyDocument))
+    );
+  }
+
+  return [
+    member.isPublic ? PRETTIER_NIL : PRETTIER_TEXT('private '),
+    PRETTIER_TEXT(member.isMethod ? 'method ' : 'function '),
+    member.typeParameters.length > 0
+      ? PRETTIER_TEXT(`<${member.typeParameters.join(', ')}> `)
+      : PRETTIER_NIL,
+    PRETTIER_TEXT(member.name),
+    createParenthesisSurroundedDocument(
+      createCommaSeparatedList(member.parameters, (annotated) =>
+        PRETTIER_TEXT(`${annotated.name}: ${prettyPrintType(annotated.type)}`)
+      )
+    ),
+    PRETTIER_TEXT(`: ${prettyPrintType(member.type.returnType)} =`),
+    bodyDocumentWithPotentialIndentation,
+    PRETTIER_LINE,
+    PRETTIER_LINE,
+  ];
+};
 
 const createPrettierDocumentForImport = (oneImport: ModuleMembersImport): PrettierDocument =>
   PRETTIER_CONCAT(
