@@ -4,13 +4,11 @@ import {
   PRETTIER_CONCAT,
   PRETTIER_TEXT,
   PRETTIER_LINE,
+  PRETTIER_NO_SPACE_BRACKET,
   prettyPrintAccordingToPrettierAlgorithm,
-  foldPrettierDocument,
-  bracketWithoutSpace,
-  fill,
 } from '../printer-prettier-core';
 
-it('tree test', () => {
+it('prettier-core tree test', () => {
   type Tree = { readonly name: string; readonly children: readonly Tree[] };
 
   const showTrees = (trees: readonly Tree[]): PrettierDocument => {
@@ -21,7 +19,7 @@ it('tree test', () => {
 
   const showBracket = (trees: readonly Tree[]): PrettierDocument => {
     if (trees.length === 0) return PRETTIER_NIL;
-    return bracketWithoutSpace('[', showTrees(trees), ']');
+    return PRETTIER_NO_SPACE_BRACKET('[', showTrees(trees), ']');
   };
 
   const showTree = ({ name, children }: Tree): PrettierDocument =>
@@ -68,130 +66,5 @@ it('tree test', () => {
     ii
   ]
 ]
-`);
-});
-
-it('xml test', () => {
-  type XML =
-    | {
-        readonly type: 'element';
-        readonly name: string;
-        readonly attributes: Readonly<Record<string, string>>;
-        children: readonly XML[];
-      }
-    | { readonly type: 'text'; readonly text: string };
-
-  const showFill = <E>(
-    f: (element: E) => readonly PrettierDocument[],
-    elements: readonly E[]
-  ): PrettierDocument => {
-    if (elements.length === 0) return PRETTIER_NIL;
-    return bracketWithoutSpace('', fill(elements.map(f).flat()), '');
-  };
-
-  const showTagAttributes = (attributes: Readonly<Record<string, string>>): PrettierDocument =>
-    PRETTIER_CONCAT(
-      PRETTIER_TEXT(' '),
-      showFill(([name, value]) => [PRETTIER_TEXT(`${name}="${value}"`)], Object.entries(attributes))
-    );
-
-  const showXMLs = (xml: XML): readonly PrettierDocument[] => {
-    switch (xml.type) {
-      case 'text':
-        return [PRETTIER_TEXT(xml.text)];
-      case 'element':
-        if (xml.children.length === 0) {
-          return [
-            PRETTIER_CONCAT(
-              PRETTIER_TEXT(`<${xml.name}`),
-              showTagAttributes(xml.attributes),
-              PRETTIER_TEXT('/>')
-            ),
-          ];
-        }
-        if (Object.entries(xml.attributes).length === 0) {
-          return [
-            PRETTIER_CONCAT(
-              PRETTIER_TEXT(`<${xml.name}>`),
-              showFill(showXMLs, xml.children),
-              PRETTIER_TEXT(`</${xml.name}>`)
-            ),
-          ];
-        }
-        return [
-          PRETTIER_CONCAT(
-            PRETTIER_TEXT(`<${xml.name}`),
-            showTagAttributes(xml.attributes),
-            PRETTIER_TEXT('>'),
-            showFill(showXMLs, xml.children),
-            PRETTIER_TEXT(`</${xml.name}>`)
-          ),
-        ];
-    }
-  };
-
-  const showXML = (xml: XML): PrettierDocument =>
-    foldPrettierDocument(PRETTIER_CONCAT, showXMLs(xml));
-
-  const exampleXML: XML = {
-    type: 'element',
-    name: 'p',
-    attributes: { color: 'red', front: 'Times', size: '10' },
-    children: [
-      { type: 'text', text: 'Here is some' },
-      {
-        type: 'element',
-        name: 'em',
-        attributes: {},
-        children: [{ type: 'text', text: 'emphasized' }],
-      },
-      { type: 'text', text: 'text.' },
-      { type: 'text', text: 'Here is a' },
-      {
-        type: 'element',
-        name: 'a',
-        attributes: { href: 'https://developersam.com' },
-        children: [{ type: 'text', text: 'link' }],
-      },
-      { type: 'text', text: 'elsewhere.' },
-    ],
-  };
-
-  expect(prettyPrintAccordingToPrettierAlgorithm(60, showXML(exampleXML)))
-    .toBe(`<p color="red" front="Times" size="10">
-  Here is some <em>emphasized</em> text. Here is a
-  <a href="https://developersam.com">link</a> elsewhere.
-</p>
-`);
-
-  expect(prettyPrintAccordingToPrettierAlgorithm(30, showXML(exampleXML))).toBe(`<p
-  color="red" front="Times"
-  size="10"
->
-  Here is some
-  <em>emphasized</em> text.
-  Here is a
-  <a
-    href="https://developersam.com"
-  >link</a>
-  elsewhere.
-</p>
-`);
-
-  expect(prettyPrintAccordingToPrettierAlgorithm(20, showXML(exampleXML))).toBe(`<p
-  color="red"
-  front="Times"
-  size="10"
->
-  Here is some
-  <em>
-    emphasized
-  </em>
-  text. Here is a
-  <a
-    href="https://developersam.com"
-  >link</a>
-  elsewhere.
-</p>
 `);
 });

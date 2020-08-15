@@ -7,9 +7,9 @@ import {
   PRETTIER_CONCAT,
   PRETTIER_TEXT,
   PRETTIER_LINE,
+  PRETTIER_NO_SPACE_BRACKET,
+  PRETTIER_SPACED_BRACKET,
   prettyPrintAccordingToPrettierAlgorithm,
-  bracketWithoutSpace,
-  bracketWithSpace,
 } from './printer-prettier-core';
 
 const createCommaSeparatedList = <E>(
@@ -26,13 +26,13 @@ const createCommaSeparatedList = <E>(
 };
 
 const createParenthesisSurroundedDocument = (document: PrettierDocument): PrettierDocument =>
-  bracketWithoutSpace('(', document, ')');
+  PRETTIER_NO_SPACE_BRACKET('(', document, ')');
 
 const createBracketSurroundedDocument = (document: PrettierDocument): PrettierDocument =>
-  bracketWithoutSpace('[', document, ']');
+  PRETTIER_NO_SPACE_BRACKET('[', document, ']');
 
 const createBracesSurroundedDocument = (document: PrettierDocument): PrettierDocument =>
-  bracketWithSpace('{', document, '}');
+  PRETTIER_SPACED_BRACKET('{', document, '}');
 
 const createPrettierDocumentFromSamlangExpression = (
   expression: SamlangExpression

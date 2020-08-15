@@ -99,6 +99,38 @@ const PRETTIER_UNION = (doc1: PrettierDocument, doc2: PrettierDocument): Prettie
 export const PRETTIER_GROUP = (document: PrettierDocument): PrettierDocument =>
   PRETTIER_UNION(flattenPrettierDocument(document), document);
 
+const bracketFlexible = (
+  left: string,
+  separator: PrettierDocument,
+  doc: PrettierDocument,
+  right: string
+): PrettierDocument =>
+  PRETTIER_GROUP(
+    PRETTIER_CONCAT(
+      PRETTIER_TEXT(left),
+      PRETTIER_NEST(2, PRETTIER_CONCAT(separator, doc)),
+      separator,
+      PRETTIER_TEXT(right)
+    )
+  );
+
+/**
+ * Correspond to the bracket function in the prettier paper,
+ * but using `LINE_FLATTEN_TO_NIL` as separator.
+ */
+export const PRETTIER_NO_SPACE_BRACKET = (
+  left: string,
+  doc: PrettierDocument,
+  right: string
+): PrettierDocument => bracketFlexible(left, PRETTIER_EXTENSION_LINE_FLATTEN_TO_NIL, doc, right);
+
+/** Correspond to the bracket function in the prettier paper. */
+export const PRETTIER_SPACED_BRACKET = (
+  left: string,
+  doc: PrettierDocument,
+  right: string
+): PrettierDocument => bracketFlexible(left, PRETTIER_LINE, doc, right);
+
 /**
  * Replace all LINE with TEXT(' ').
  * Correspond to the `flatten` function in the prettier paper.
@@ -236,68 +268,4 @@ export const prettyPrintAccordingToPrettierAlgorithm = (
         break;
     }
   }
-};
-
-export const foldPrettierDocument = (
-  folder: (document: PrettierDocument, anotherDocument: PrettierDocument) => PrettierDocument,
-  documents: readonly PrettierDocument[]
-): PrettierDocument => {
-  // istanbul ignore next
-  if (documents.length === 0) return PRETTIER_NIL;
-  // istanbul ignore next
-  if (documents.length === 1) return documents[0];
-  // TODO: optimize list and destruct.
-  // istanbul ignore next
-  const [document, ...rest] = documents;
-  // istanbul ignore next
-  return folder(document, foldPrettierDocument(folder, rest));
-};
-
-// istanbul ignore next
-const concatDocsWithSpace = (doc1: PrettierDocument, doc2: PrettierDocument): PrettierDocument =>
-  PRETTIER_CONCAT(doc1, PRETTIER_TEXT(' '), doc2);
-// istanbul ignore next
-const concatDocsWithLine = (doc1: PrettierDocument, doc2: PrettierDocument): PrettierDocument =>
-  PRETTIER_CONCAT(doc1, PRETTIER_LINE, doc2);
-
-const bracketFlexible = (
-  left: string,
-  separator: PrettierDocument,
-  doc: PrettierDocument,
-  right: string
-): PrettierDocument =>
-  PRETTIER_GROUP(
-    PRETTIER_CONCAT(
-      PRETTIER_TEXT(left),
-      PRETTIER_NEST(2, PRETTIER_CONCAT(separator, doc)),
-      separator,
-      PRETTIER_TEXT(right)
-    )
-  );
-
-export const bracketWithoutSpace = (
-  left: string,
-  doc: PrettierDocument,
-  right: string
-): PrettierDocument => bracketFlexible(left, PRETTIER_EXTENSION_LINE_FLATTEN_TO_NIL, doc, right);
-
-export const bracketWithSpace = (
-  left: string,
-  doc: PrettierDocument,
-  right: string
-): PrettierDocument => bracketFlexible(left, PRETTIER_LINE, doc, right);
-
-export const fill = (documents: readonly PrettierDocument[]): PrettierDocument => {
-  // istanbul ignore next
-  if (documents.length === 0) return PRETTIER_NIL;
-  if (documents.length === 1) return documents[0];
-  // TODO: optimize list and destruct.
-  const [doc1, doc2, ...rest] = documents;
-  return PRETTIER_UNION(
-    concatDocsWithSpace(
-      flattenPrettierDocument(doc1),
-      fill([flattenPrettierDocument(doc2), ...rest])
-    ),
-    concatDocsWithLine(doc1, fill([doc2, ...rest]))
-  );
 };
