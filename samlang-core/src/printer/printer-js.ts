@@ -56,7 +56,7 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
       return `'${highIRExpression.value}'`;
     case 'HighIRIndexAccessExpression': {
       const { expression, index } = highIRExpression;
-      return `${highIRExpressionToString(expression)}[${index}]`;
+      return `{${highIRExpressionToString(expression)}[${index}]}`;
     }
     case 'HighIRVariableExpression':
       return (highIRExpression as HighIRVariableExpression).name;
@@ -64,7 +64,7 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
       return (highIRExpression as HighIRNameExpression).name;
     case 'HighIRBinaryExpression': {
       const { e1, e2, operator } = highIRExpression;
-      return `${highIRExpressionToString(e1)} ${operator} ${highIRExpressionToString(e2)}`;
+      return `{${highIRExpressionToString(e1)} ${operator} ${highIRExpressionToString(e2)}}`;
     }
   }
 };
@@ -72,7 +72,7 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
 export const highIRSourcesToJSString = (sources: Sources<HighIRModule>): string => {
   let finalStr = '';
   sources.forEach((module) => {
-    finalStr += `{${module.functions.map((f) => highIRFunctionToString(f)).join(';')}}`;
+    finalStr += `${module.functions.map((f) => highIRFunctionToString(f)).join(';\n')}`;
   });
   return finalStr;
 };
