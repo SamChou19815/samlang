@@ -37,6 +37,8 @@ export const PRETTIER_NIL: PrettierDocument = { __type__: 'NIL' };
  * It connects together tokens and documents.
  */
 export const PRETTIER_CONCAT = (...docs: PrettierDocument[]): PrettierDocument => {
+  if (docs.length === 0) return PRETTIER_NIL;
+  if (docs.length === 1) return docs[0];
   let base: PrettierDocument = {
     __type__: 'CONCAT',
     doc1: docs[docs.length - 2],
@@ -258,30 +260,32 @@ const concatDocsWithSpace = (doc1: PrettierDocument, doc2: PrettierDocument): Pr
 const concatDocsWithLine = (doc1: PrettierDocument, doc2: PrettierDocument): PrettierDocument =>
   PRETTIER_CONCAT(doc1, PRETTIER_LINE, doc2);
 
-// istanbul ignore next
-export const spread = (documents: readonly PrettierDocument[]): PrettierDocument =>
-  foldPrettierDocument(concatDocsWithSpace, documents);
-
-// istanbul ignore next
-export const stack = (documents: readonly PrettierDocument[]): PrettierDocument =>
-  foldPrettierDocument(concatDocsWithLine, documents);
-
-export const bracket = (left: string, doc: PrettierDocument, right: string): PrettierDocument =>
+const bracketFlexible = (
+  left: string,
+  separator: PrettierDocument,
+  doc: PrettierDocument,
+  right: string
+): PrettierDocument =>
   PRETTIER_GROUP(
     PRETTIER_CONCAT(
       PRETTIER_TEXT(left),
-      PRETTIER_NEST(2, PRETTIER_CONCAT(PRETTIER_EXTENSION_LINE_FLATTEN_TO_NIL, doc)),
-      PRETTIER_EXTENSION_LINE_FLATTEN_TO_NIL,
+      PRETTIER_NEST(2, PRETTIER_CONCAT(separator, doc)),
+      separator,
       PRETTIER_TEXT(right)
     )
   );
 
-// istanbul ignore next
-export const concatDocsWithSpaceOrLine = (
-  doc1: PrettierDocument,
-  doc2: PrettierDocument
-): PrettierDocument =>
-  PRETTIER_CONCAT(doc1, PRETTIER_UNION(PRETTIER_TEXT(' '), PRETTIER_LINE), doc2);
+export const bracketWithoutSpace = (
+  left: string,
+  doc: PrettierDocument,
+  right: string
+): PrettierDocument => bracketFlexible(left, PRETTIER_EXTENSION_LINE_FLATTEN_TO_NIL, doc, right);
+
+export const bracketWithSpace = (
+  left: string,
+  doc: PrettierDocument,
+  right: string
+): PrettierDocument => bracketFlexible(left, PRETTIER_LINE, doc, right);
 
 export const fill = (documents: readonly PrettierDocument[]): PrettierDocument => {
   // istanbul ignore next
