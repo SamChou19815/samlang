@@ -69,35 +69,30 @@ export const lowerSourcesToAssemblyPrograms = (
 export const highIRStatementToString = (highIRStatement: HighIRStatement): string => {
   switch (highIRStatement.__type__) {
     case 'HighIRIfElseStatement': {
-      const { booleanExpression, s1, s2 } = highIRStatement as HighIRIfElseStatement;
+      const { booleanExpression, s1, s2 } = highIRStatement;
       const booleanExpressionStr = highIRExpressionToString(booleanExpression);
       const s1Str = s1.map((s) => highIRStatementToString(s)).join(';');
       const s2Str = s2.map((s) => highIRStatementToString(s)).join(';');
       return `if (${booleanExpressionStr}) {${s1Str}} else {${s2Str}}`;
     }
     case 'HighIRFunctionCallStatement': {
-      const {
-        functionArguments,
-        functionExpression,
-        returnCollector,
-      } = highIRStatement as HighIRFunctionCallStatement;
+      const { functionArguments, functionExpression, returnCollector } = highIRStatement;
       return `let ${returnCollector} = ${highIRExpressionToString(
         functionExpression
       )}(${functionArguments.map((arg) => highIRExpressionToString(arg)).join(', ')});`;
     }
     case 'HighIRLetDefinitionStatement': {
-      const { name, assignedExpression } = highIRStatement as HighIRLetDefinitionStatement;
+      const { name, assignedExpression } = highIRStatement;
       return `let ${name} = ${highIRExpressionToString(assignedExpression)};`;
     }
     case 'HighIRReturnStatement':
-      return highIRStatement.expression
-        ? `return ${highIRExpressionToString(highIRStatement.expression)};`
-        : '';
+      return `return${
+        highIRStatement.expression
+          ? ` ${highIRExpressionToString(highIRStatement.expression)};`
+          : ';'
+      }`;
     case 'HighIRStructInitializationStatement': {
-      const {
-        structVariableName,
-        expressionList,
-      } = highIRStatement as HighIRStructInitializationStatement;
+      const { structVariableName, expressionList } = highIRStatement;
       return `${structVariableName} = [${expressionList
         .map((e) => highIRExpressionToString(e))
         .join(', ')}];`;
@@ -109,7 +104,7 @@ export const highIRFunctionToString = (highIRFunction: HighIRFunction): string =
   const { name, parameters, body, hasReturn } = highIRFunction;
   const bodyStr = body.map((statement) => highIRStatementToString(statement)).join(';');
   const hasReturnStr = hasReturn ? 'return;' : '';
-  return `const ${name} = (${parameters.join(', ')}) => {${bodyStr}; ${hasReturnStr}}`;
+  return `const ${name} = (${parameters.join(', ')}) => {${bodyStr} ${hasReturnStr}};`;
 };
 
 export const highIRExpressionToString = (highIRExpression: HighIRExpression): string => {
@@ -119,7 +114,7 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
     case 'HighIRStringLiteralExpression':
       return `'${highIRExpression.value}'`;
     case 'HighIRIndexAccessExpression': {
-      const { expression, index } = highIRExpression as HighIRIndexAccessExpression;
+      const { expression, index } = highIRExpression;
       return `${highIRExpressionToString(expression)}[${index}]`;
     }
     case 'HighIRVariableExpression':
@@ -127,7 +122,7 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
     case 'HighIRNameExpression':
       return (highIRExpression as HighIRNameExpression).name;
     case 'HighIRBinaryExpression': {
-      const { e1, e2, operator } = highIRExpression as HighIRBinaryExpression;
+      const { e1, e2, operator } = highIRExpression;
       return `${highIRExpressionToString(e1)} ${operator} ${highIRExpressionToString(e2)}`;
     }
   }
