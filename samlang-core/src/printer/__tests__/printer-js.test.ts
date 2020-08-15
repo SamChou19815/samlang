@@ -13,7 +13,7 @@ import {
   HIR_INDEX_ACCESS,
   HIR_VARIABLE,
 } from '../../ast/hir/hir-expressions';
-import compileSamlangSourcesToHighIRSources from '../../compiler';
+import { compileSamlangSourcesToHighIRSources } from '../../compiler';
 import {
   highIRSourcesToJSString,
   highIRStatementToString,
