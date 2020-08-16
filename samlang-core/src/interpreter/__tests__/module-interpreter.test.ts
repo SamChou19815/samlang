@@ -1,27 +1,17 @@
-import { Position } from '../..';
 import ModuleReference from '../../ast/common/module-reference';
 import Range from '../../ast/common/range';
-import { intType, stringType, identifierType } from '../../ast/common/types';
+import { stringType, identifierType } from '../../ast/common/types';
 import {
   SamlangExpression,
   VariantConstructorExpression,
-  EXPRESSION_INT,
-  EXPRESSION_STRING,
-  EXPRESSION_PANIC,
-  EXPRESSION_BUILTIN_FUNCTION_CALL,
   EXPRESSION_METHOD_ACCESS,
   EXPRESSION_MATCH,
 } from '../../ast/lang/samlang-expressions';
-import {
-  SamlangModule,
-  ClassDefinition,
-  ClassMemberDefinition,
-} from '../../ast/lang/samlang-toplevel';
 import { createGlobalErrorCollector } from '../../errors';
-import { parseSamlangExpressionFromText } from '../../parser';
+import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
 import { assertNotNull } from '../../util/type-assertions';
 import { EMPTY, InterpretationContext } from '../interpretation-context';
-import ModuleInterpreter, { ExpressionInterpreter } from '../module-interpreter';
+import interpretSamlangModule, { ExpressionInterpreter } from '../module-interpreter';
 import type { FunctionValue, Value } from '../value';
 
 const getExpression = (rawSourceWithTypeAnnotation: string): SamlangExpression => {
@@ -44,6 +34,16 @@ const interpret = (
     getExpression(rawSourceWithTypeAnnotation),
     interpretationContext
   );
+
+const interpretModule = (rawSourceWithTypeAnnotation: string): string => {
+  const errorCollector = createGlobalErrorCollector();
+  const samlangModule = parseSamlangModuleFromText(
+    rawSourceWithTypeAnnotation,
+    errorCollector.getModuleErrorCollector(ModuleReference.ROOT)
+  );
+  expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
+  return interpretSamlangModule(samlangModule);
+};
 
 it('literal expressions evaluate correctly', () => {
   expect(interpret('5')).toEqual(BigInt(5));
@@ -252,187 +252,17 @@ it('statement block expression evalutes correctly', () => {
   expect(() => interpret('{ val {fieldName as f} = {field: 5}; }')).toThrow();
 });
 
-const moduleInterpreter = new ModuleInterpreter();
-
-const moduleEmpty: SamlangModule = {
-  imports: [],
-  classes: [],
-};
-
-const exampleClassDef: ClassDefinition = {
-  name: 'class',
-  nameRange: new Range(new Position(5, 2), new Position(7, 6)),
-  isPublic: true,
-  typeParameters: ['param'],
-  members: [],
-  range: new Range(new Position(1, 10), new Position(3, 4)),
-  typeDefinition: {
-    range: new Range(new Position(1, 2), new Position(3, 4)),
-    type: 'object',
-    names: ['types'],
-    mappings: {
-      types: {
-        type: intType,
-        isPublic: true,
-      },
-    },
-  },
-};
-
-const mainClassDef: ClassDefinition = {
-  name: 'Main',
-  nameRange: new Range(new Position(5, 2), new Position(7, 6)),
-  isPublic: true,
-  typeParameters: ['main'],
-  members: [],
-  range: new Range(new Position(1, 10), new Position(3, 4)),
-  typeDefinition: {
-    range: new Range(new Position(1, 2), new Position(3, 4)),
-    type: 'object',
-    names: ['types'],
-    mappings: {
-      types: {
-        type: intType,
-        isPublic: true,
-      },
-    },
-  },
-};
-
-const memberMainFunctionNoArgs: ClassMemberDefinition = {
-  range: new Range(new Position(1, 10), new Position(3, 4)),
-  isPublic: true,
-  isMethod: false,
-  nameRange: new Range(new Position(12, 34), new Position(34, 45)),
-  name: 'main',
-  typeParameters: ['param'],
-  type: {
-    type: 'FunctionType',
-    argumentTypes: [intType],
-    returnType: intType,
-  },
-  parameters: [],
-  body: EXPRESSION_INT(new Range(new Position(123, 45), new Position(145, 89)), BigInt(2)),
-};
-
-const memberMainFunctionNoArgsPrint: ClassMemberDefinition = {
-  ...memberMainFunctionNoArgs,
-  body: EXPRESSION_BUILTIN_FUNCTION_CALL({
-    range: new Range(new Position(12, 34), new Position(34, 45)),
-    type: intType,
-    functionName: 'println',
-    argumentExpression: EXPRESSION_STRING(
-      new Range(new Position(183, 23), new Position(203, 21)),
-      'Hello world'
-    ),
-  }),
-};
-
-const memberMainMethodNoArgs: ClassMemberDefinition = {
-  ...memberMainFunctionNoArgs,
-  isMethod: true,
-};
-
-const memberMainMethodPanic: ClassMemberDefinition = {
-  ...memberMainFunctionNoArgs,
-  body: EXPRESSION_PANIC({
-    range: new Range(new Position(12, 34), new Position(34, 45)),
-    type: intType,
-    expression: EXPRESSION_INT(new Range(new Position(123, 45), new Position(145, 89)), BigInt(2)),
-  }),
-};
-
-const memberMainFunctionWithArgs: ClassMemberDefinition = {
-  ...memberMainFunctionNoArgs,
-  parameters: [
-    {
-      name: 'param',
-      nameRange: new Range(new Position(231, 34), new Position(88, 78)),
-      type: intType,
-      typeRange: new Range(new Position(123, 98), new Position(124, 78)),
-    },
-  ],
-};
-
-const moduleNoMainClass: SamlangModule = {
-  imports: [],
-  classes: [exampleClassDef],
-};
-
-const moduleWithMainClassNoMainFunction: SamlangModule = {
-  imports: [],
-  classes: [mainClassDef],
-};
-
-const moduleWithMainClassAndMainFunctionNoArgs: SamlangModule = {
-  imports: [],
-  classes: [
-    {
-      ...mainClassDef,
-      members: [memberMainFunctionNoArgs],
-    },
-  ],
-};
-
-const modulePanic: SamlangModule = {
-  imports: [],
-  classes: [
-    {
-      ...mainClassDef,
-      members: [memberMainMethodPanic],
-    },
-  ],
-};
-
-const modulePrint: SamlangModule = {
-  imports: [],
-  classes: [
-    {
-      ...mainClassDef,
-      members: [memberMainFunctionNoArgsPrint],
-    },
-  ],
-};
-
-const moduleWithMainClassAndMainMethodNoArgs: SamlangModule = {
-  imports: [],
-  classes: [
-    {
-      ...mainClassDef,
-      members: [memberMainMethodNoArgs],
-    },
-  ],
-};
-
-const moduleWithMainClassAndMainFunctionWithArgs: SamlangModule = {
-  imports: [],
-  classes: [
-    {
-      ...mainClassDef,
-      members: [memberMainFunctionWithArgs],
-    },
-  ],
-};
-
-it('module evaluates correctly', () => {
-  expect(moduleInterpreter.eval(moduleEmpty)).toEqual({ type: 'unit' });
-  expect(moduleInterpreter.eval(moduleNoMainClass)).toEqual({ type: 'unit' });
-  expect(moduleInterpreter.eval(moduleWithMainClassNoMainFunction)).toEqual({ type: 'unit' });
-  expect(moduleInterpreter.eval(moduleWithMainClassAndMainFunctionNoArgs)).toEqual(BigInt(2));
-  expect(moduleInterpreter.eval(moduleWithMainClassAndMainMethodNoArgs)).toEqual({ type: 'unit' });
-  expect(() => moduleInterpreter.eval(modulePanic)).toThrow('Interpreter Error.');
-  expect(moduleInterpreter.eval(moduleWithMainClassAndMainFunctionWithArgs)).toEqual({
-    type: 'unit',
-  });
-});
-
 it('module runs correctly', () => {
-  expect(moduleInterpreter.run(moduleEmpty)).toEqual('');
-  expect(moduleInterpreter.run(moduleNoMainClass)).toEqual('');
-  expect(moduleInterpreter.run(moduleWithMainClassNoMainFunction)).toEqual('');
-  expect(moduleInterpreter.run(moduleWithMainClassAndMainFunctionNoArgs)).toEqual('');
-  expect(moduleInterpreter.run(moduleWithMainClassAndMainMethodNoArgs)).toEqual('');
-  expect(moduleInterpreter.run(moduleWithMainClassAndMainFunctionWithArgs)).toEqual('');
-  expect(() => moduleInterpreter.run(modulePanic)).toThrow('Interpreter Error.');
-  expect(moduleInterpreter.run(modulePrint)).toEqual('Hello world\n');
+  expect(interpretModule('')).toBe('');
+  expect(interpretModule('class ExampleClass<P>(val types: int) { }')).toBe('');
+  expect(interpretModule(`class Main { }`)).toBe('');
+  expect(interpretModule('class Main { function main(): int = 2 }')).toBe('');
+  expect(interpretModule('class Main { method main(): unit = println("a") }')).toBe('');
+  expect(interpretModule('class Main { function main(a: int): unit = println("a") }')).toBe('');
+  expect(interpretModule('class Main { function main(): unit = println("Hello World!") }')).toBe(
+    'Hello World!\n'
+  );
+  expect(() =>
+    interpretModule('class Main { function main(): unit = panic("Hello World!") }')
+  ).toThrow();
 });
