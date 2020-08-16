@@ -2,7 +2,13 @@ import compileSamlangSourcesToHighIRSources from '..';
 import { MUL, MINUS, EQ } from '../../../ast/common/binary-operators';
 import ModuleReference from '../../../ast/common/module-reference';
 import Range from '../../../ast/common/range';
-import { boolType, intType, identifierType, functionType } from '../../../ast/common/types';
+import {
+  boolType,
+  intType,
+  identifierType,
+  functionType,
+  unitType,
+} from '../../../ast/common/types';
 import {
   HIR_VARIABLE,
   HIR_RETURN,
@@ -59,6 +65,30 @@ it('HIR compiler integration test', () => {
             ],
             type: functionType([intType], intType),
             body: THIS,
+          },
+          {
+            range: Range.DUMMY,
+            isPublic: true,
+            isMethod: false,
+            nameRange: Range.DUMMY,
+            name: 'infiniteLoop',
+            typeParameters: [],
+            parameters: [],
+            type: functionType([], unitType),
+            body: EXPRESSION_FUNCTION_CALL({
+              range: Range.DUMMY,
+              type: unitType,
+              functionExpression: EXPRESSION_CLASS_MEMBER({
+                range: Range.DUMMY,
+                type: functionType([], intType),
+                typeArguments: [],
+                className: 'Class1',
+                classNameRange: Range.DUMMY,
+                memberName: 'infiniteLoop',
+                memberNameRange: Range.DUMMY,
+              }),
+              functionArguments: [],
+            }),
           },
           {
             range: Range.DUMMY,
@@ -126,6 +156,18 @@ it('HIR compiler integration test', () => {
         hasReturn: true,
         parameters: ['this', 'a'],
         body: [HIR_RETURN(IR_THIS)],
+      },
+      {
+        name: '_module__class_Class1_function_infiniteLoop',
+        hasReturn: false,
+        parameters: [],
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('_module__class_Class1_function_infiniteLoop'),
+            functionArguments: [],
+            returnCollector: '_t0',
+          }),
+        ],
       },
       {
         name: '_module__class_Class1_function_factorial',
