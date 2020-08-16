@@ -87,7 +87,7 @@ export interface HighIRStructInitializationStatement extends BaseHighIRStatement
 
 export interface HighIRReturnStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRReturnStatement';
-  readonly expression?: HighIRExpression;
+  readonly expression: HighIRExpression;
 }
 
 export type HighIRStatement =
@@ -195,7 +195,7 @@ export const HIR_STRUCT_INITIALIZATION = ({
   expressionList,
 });
 
-export const HIR_RETURN = (expression?: HighIRExpression): HighIRReturnStatement => ({
+export const HIR_RETURN = (expression: HighIRExpression): HighIRReturnStatement => ({
   __type__: 'HighIRReturnStatement',
   expression,
 });

@@ -143,13 +143,7 @@ class MidIRLoweringManager {
         return statements;
       }
       case 'HighIRReturnStatement':
-        return [
-          MIR_RETURN(
-            statement.expression == null
-              ? undefined
-              : this.lowerHIRExpressionToMIRExpression(statement.expression)
-          ),
-        ];
+        return [MIR_RETURN(this.lowerHIRExpressionToMIRExpression(statement.expression))];
     }
   };
 }

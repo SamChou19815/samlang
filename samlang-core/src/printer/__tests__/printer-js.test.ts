@@ -45,19 +45,11 @@ it('HIR statements to JS string test', () => {
           e1: HIR_INT(BigInt(5)),
           e2: HIR_INT(BigInt(5)),
         }),
-        s1: [
-          {
-            __type__: 'HighIRReturnStatement',
-          },
-        ],
-        s2: [
-          {
-            __type__: 'HighIRReturnStatement',
-          },
-        ],
+        s1: [HIR_RETURN(HIR_ZERO)],
+        s2: [HIR_RETURN(HIR_ZERO)],
       })
     )
-  ).toBe(`if ((5 == 5)) {return;} else {return;}`);
+  ).toBe(`if ((5 == 5)) {return 0;} else {return 0;}`);
   expect(
     highIRStatementToString(
       HIR_WHILE_TRUE([
@@ -86,7 +78,6 @@ it('HIR statements to JS string test', () => {
       })
     )
   ).toBe(`var foo = 19815;`);
-  expect(highIRStatementToString(HIR_RETURN())).toBe('return;');
   expect(highIRStatementToString(HIR_RETURN(HIR_ZERO))).toBe('return 0;');
   expect(
     highIRStatementToString(
