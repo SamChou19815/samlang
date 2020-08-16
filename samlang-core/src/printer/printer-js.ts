@@ -30,11 +30,7 @@ export const highIRStatementToString = (highIRStatement: HighIRStatement): strin
       return `var ${name} = ${highIRExpressionToString(assignedExpression)};`;
     }
     case 'HighIRReturnStatement':
-      return `return${
-        highIRStatement.expression
-          ? ` ${highIRExpressionToString(highIRStatement.expression)};`
-          : ';'
-      }`;
+      return `return ${highIRExpressionToString(highIRStatement.expression)};`;
     case 'HighIRStructInitializationStatement': {
       const { structVariableName, expressionList } = highIRStatement;
       return `${structVariableName} = [${expressionList
