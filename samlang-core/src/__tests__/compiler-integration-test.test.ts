@@ -8,6 +8,7 @@ import {
 } from '../compiler';
 import interpretAssemblyProgram from '../interpreter/assembly-interpreter';
 import interpretMidIRCompilationUnit from '../interpreter/mid-ir-interpreter';
+import interpretSamlangModule from '../interpreter/module-interpreter';
 import optimizeIRCompilationUnit from '../optimization';
 import { checkSources } from '../services/source-processor';
 import { runnableSamlangProgramTestCases } from '../test-programs';
@@ -25,6 +26,17 @@ const { checkedSources, compileTimeErrors } = checkSources(
     it.sourceCode,
   ])
 );
+
+// @ts-expect-error: process type is in @types/node, but we deliberatively excludes it to prevent core package depending on node.
+if (process.env.CI) {
+  runnableSamlangProgramTestCases.forEach((testCase) => {
+    it(`source-level: ${testCase.testCaseName}`, () => {
+      const samlangModule = checkedSources.get(new ModuleReference([testCase.testCaseName]));
+      assertNotNull(samlangModule);
+      expect(interpretSamlangModule(samlangModule)).toBe(testCase.expectedStandardOut);
+    });
+  });
+}
 
 const mirBaseTestCases: readonly MidIRTestCase[] = (() => {
   expect(compileTimeErrors).toEqual([]);
