@@ -116,20 +116,18 @@ const coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable = (
  */
 const coalesceMoveAndReturnWithForHighIRStatements = (
   statements: readonly HighIRStatement[]
-): readonly HighIRStatement[] => {
-  if (statements.length === 0) return statements;
+): readonly HighIRStatement[] | null => {
+  if (statements.length === 0) return null;
   const lastStatement = statements[statements.length - 1];
-  if (lastStatement.__type__ !== 'HighIRReturnStatement') return statements;
+  if (lastStatement.__type__ !== 'HighIRReturnStatement') return null;
   // If the last statement is return, then it must be the only return.
   // This is guaranteed by the implementation of HIR compiler.
   const returnedExpression = lastStatement.expression;
-  if (returnedExpression.__type__ !== 'HighIRVariableExpression') return statements;
-  return (
-    coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable(
-      statements,
-      statements.length - 1,
-      [returnedExpression.name]
-    ) ?? statements
+  if (returnedExpression.__type__ !== 'HighIRVariableExpression') return null;
+  return coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable(
+    statements,
+    statements.length - 1,
+    [returnedExpression.name]
   );
 };
 

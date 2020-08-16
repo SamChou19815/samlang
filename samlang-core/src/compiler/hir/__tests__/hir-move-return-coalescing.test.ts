@@ -13,19 +13,15 @@ import {
 import coalesceMoveAndReturnWithForHighIRStatements from '../hir-move-return-coalescing';
 
 it('coalesceMoveAndReturnWithForHighIRStatements empty array test', () => {
-  expect(coalesceMoveAndReturnWithForHighIRStatements([])).toEqual([]);
+  expect(coalesceMoveAndReturnWithForHighIRStatements([])).toBeNull();
 });
 
 it('coalesceMoveAndReturnWithForHighIRStatements not end with return test', () => {
-  expect(coalesceMoveAndReturnWithForHighIRStatements([HIR_WHILE_TRUE([])])).toEqual([
-    HIR_WHILE_TRUE([]),
-  ]);
+  expect(coalesceMoveAndReturnWithForHighIRStatements([HIR_WHILE_TRUE([])])).toBeNull();
 });
 
 it('coalesceMoveAndReturnWithForHighIRStatements not end with return variable test', () => {
-  expect(coalesceMoveAndReturnWithForHighIRStatements([HIR_RETURN(HIR_ZERO)])).toEqual([
-    HIR_RETURN(HIR_ZERO),
-  ]);
+  expect(coalesceMoveAndReturnWithForHighIRStatements([HIR_RETURN(HIR_ZERO)])).toBeNull();
 });
 
 it('coalesceMoveAndReturnWithForHighIRStatements linear sequence test', () => {
@@ -54,16 +50,7 @@ it('coalesceMoveAndReturnWithForHighIRStatements failed linear sequence test', (
       HIR_LET({ name: 'garbage', assignedExpression: HIR_VARIABLE('garbage') }),
       HIR_RETURN(HIR_VARIABLE('_t1')),
     ])
-  ).toEqual([
-    HIR_WHILE_TRUE([]),
-    HIR_LET({ name: 'one_const_value', assignedExpression: HIR_ONE }),
-    HIR_LET({ name: 'one2', assignedExpression: HIR_VARIABLE('one_const_value') }),
-    HIR_LET({ name: 'one1', assignedExpression: HIR_VARIABLE('one2') }),
-    HIR_LET({ name: 'one', assignedExpression: HIR_VARIABLE('one1') }),
-    HIR_LET({ name: '_t1', assignedExpression: HIR_VARIABLE('one') }),
-    HIR_LET({ name: 'garbage', assignedExpression: HIR_VARIABLE('garbage') }),
-    HIR_RETURN(HIR_VARIABLE('_t1')),
-  ]);
+  ).toBeNull();
 });
 
 it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
