@@ -149,10 +149,9 @@ it('panic expression evaluates correctly', () => {
 });
 
 it('built in function call expression evaluates correctly', () => {
-  // FIXME: the test clearly shows that the stringToInt and intToString got messed up.
-  expect(interpret('stringToInt(5)')).toEqual(BigInt(5));
+  expect(interpret('stringToInt("5")')).toEqual(BigInt(5));
   expect(() => interpret('stringToInt("value")')).toThrow(`Cannot convert \`value\` to int.`);
-  expect(interpret('intToString("5")')).toEqual('5');
+  expect(interpret('intToString(5)')).toEqual('5');
 
   const temporaryInterpreterForPrint = new ExpressionInterpreter();
   expect(temporaryInterpreterForPrint.eval(getExpression('println("value")'), EMPTY)).toEqual({
