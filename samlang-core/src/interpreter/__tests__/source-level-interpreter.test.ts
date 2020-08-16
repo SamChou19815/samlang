@@ -11,7 +11,7 @@ import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
 import { assertNotNull } from '../../util/type-assertions';
 import { EMPTY, InterpretationContext } from '../interpretation-context';
-import interpretSamlangModule, { ExpressionInterpreter } from '../module-interpreter';
+import interpretSamlangModule, { ExpressionInterpreter } from '../source-level-interpreter';
 import type { FunctionValue, Value } from '../value';
 
 const getExpression = (rawSourceWithTypeAnnotation: string): SamlangExpression => {
