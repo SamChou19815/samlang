@@ -286,16 +286,16 @@ export class ExpressionInterpreter {
 }
 
 /** The interpreter used to evaluate an already type checked source with single module. */
-export default class ModuleInterpreter {
+class ModuleInterpreter {
   private expressionInterpreter: ExpressionInterpreter = new ExpressionInterpreter();
 
   printed = (): string => this.expressionInterpreter.printed();
 
   /**
-   * Run the [module] under some interpretation [context] (default to empty)
+   * Run the [module] under some interpretation [context].
    * to get all printed strings or a [PanicException].
    */
-  run = (module: SamlangModule, context: InterpretationContext = EMPTY): string => {
+  run = (module: SamlangModule, context: InterpretationContext): string => {
     this.eval(module, context);
     return this.printed();
   };
@@ -304,7 +304,7 @@ export default class ModuleInterpreter {
    * Evaluate the [module] under some interpretation [context] (default to empty)
    * to either a value or a [PanicException].
    */
-  eval = (module: SamlangModule, context: InterpretationContext = EMPTY): Value => {
+  private eval = (module: SamlangModule, context: InterpretationContext): Value => {
     try {
       return this.unsafeEval(module, context);
     } catch (e) {
@@ -376,3 +376,10 @@ export default class ModuleInterpreter {
     return newContext;
   };
 }
+
+const interpretSamlangModule = (
+  samlangModule: SamlangModule,
+  context: InterpretationContext = EMPTY
+): string => new ModuleInterpreter().run(samlangModule, context);
+
+export default interpretSamlangModule;
