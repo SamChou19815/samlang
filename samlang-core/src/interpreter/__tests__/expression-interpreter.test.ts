@@ -1,775 +1,244 @@
-import {
-  MUL,
-  DIV,
-  MOD,
-  PLUS,
-  MINUS,
-  LT,
-  LE,
-  GT,
-  GE,
-  EQ,
-  NE,
-  AND,
-  CONCAT,
-  OR,
-} from '../../ast/common/binary-operators';
-import Position from '../../ast/common/position';
+import ModuleReference from '../../ast/common/module-reference';
 import Range from '../../ast/common/range';
-import {
-  boolType,
-  intType,
-  stringType,
-  unitType,
-  FunctionType,
-  identifierType,
-  TupleType,
-} from '../../ast/common/types';
+import { stringType, identifierType } from '../../ast/common/types';
 import {
   SamlangExpression,
-  EXPRESSION_INT,
-  EXPRESSION_STRING,
-  EXPRESSION_TRUE,
-  EXPRESSION_THIS,
-  EXPRESSION_VARIABLE,
-  EXPRESSION_CLASS_MEMBER,
-  EXPRESSION_TUPLE_CONSTRUCTOR,
-  EXPRESSION_OBJECT_CONSTRUCTOR,
-  EXPRESSION_VARIANT_CONSTRUCTOR,
-  EXPRESSION_FIELD_ACCESS,
+  VariantConstructorExpression,
   EXPRESSION_METHOD_ACCESS,
-  EXPRESSION_UNARY,
-  EXPRESSION_BUILTIN_FUNCTION_CALL,
-  EXPRESSION_FUNCTION_CALL,
-  EXPRESSION_BINARY,
-  EXPRESSION_IF_ELSE,
-  EXPRESSION_FALSE,
   EXPRESSION_MATCH,
-  VariantPatternToExpression,
-  EXPRESSION_LAMBDA,
-  EXPRESSION_PANIC,
-  EXPRESSION_STATEMENT_BLOCK,
-  StatementBlock,
-  SamlangValStatement,
 } from '../../ast/lang/samlang-expressions';
-import {
-  TuplePattern,
-  ObjectPattern,
-  ObjectPatternDestucturedName,
-  VariablePattern,
-  WildCardPattern,
-} from '../../ast/lang/samlang-pattern';
+import { createGlobalErrorCollector } from '../../errors';
+import { parseSamlangExpressionFromText } from '../../parser';
+import { assertNotNull } from '../../util/type-assertions';
 import ExpressionInterpreter from '../expression-interpreter';
-import { ClassValue, EMPTY, InterpretationContext } from '../interpretation-context';
-import { Value, FunctionValue } from '../value';
+import { EMPTY, InterpretationContext } from '../interpretation-context';
+import type { FunctionValue, Value } from '../value';
 
-const interpreter = new ExpressionInterpreter();
+const getExpression = (rawSourceWithTypeAnnotation: string): SamlangExpression => {
+  const errorCollector = createGlobalErrorCollector();
+  const expression = parseSamlangExpressionFromText(
+    rawSourceWithTypeAnnotation,
+    errorCollector.getModuleErrorCollector(ModuleReference.ROOT)
+  );
+  assertNotNull(expression);
+  const errors = errorCollector.getErrors().map((it) => it.toString());
+  expect(errors).toEqual([]);
+  return expression;
+};
 
-const exampleRange: Range = new Range(new Position(1, 2), new Position(3, 4));
-const intLiteralExpression: SamlangExpression = EXPRESSION_INT(exampleRange, BigInt(5));
-const intLiteralValue: Value = BigInt(5);
-const stringLiteralExpression: SamlangExpression = EXPRESSION_STRING(exampleRange, 'value');
-const stringLiteralValue: Value = 'value';
-const boolLiteralExpression: SamlangExpression = EXPRESSION_TRUE(exampleRange);
-const boolLiteralValue: Value = true;
-const classMemberFunction: Value = {
-  type: 'functionValue',
-  arguments: [],
-  body: EXPRESSION_INT(exampleRange, BigInt(5)),
-  context: EMPTY,
-};
-const objectConstructorExpressionNonEmpty = EXPRESSION_OBJECT_CONSTRUCTOR({
-  range: exampleRange,
-  type: intType,
-  fieldDeclarations: [
-    { range: exampleRange, type: intType, name: 'test', expression: intLiteralExpression },
-  ],
-});
-const functionType: FunctionType = {
-  type: 'FunctionType',
-  argumentTypes: [unitType],
-  returnType: stringType,
-};
-const functionExpression = EXPRESSION_LAMBDA({
-  range: exampleRange,
-  type: functionType,
-  parameters: [],
-  captured: {},
-  body: stringLiteralExpression,
-});
+const interpret = (
+  rawSourceWithTypeAnnotation: string,
+  interpretationContext: InterpretationContext = EMPTY
+): Value =>
+  new ExpressionInterpreter().eval(
+    getExpression(rawSourceWithTypeAnnotation),
+    interpretationContext
+  );
 
 it('literal expressions evaluate correctly', () => {
-  expect(interpreter.eval(intLiteralExpression)).toEqual(intLiteralValue);
-  expect(interpreter.eval(stringLiteralExpression)).toEqual(stringLiteralValue);
-  expect(interpreter.eval(boolLiteralExpression)).toEqual(boolLiteralValue);
+  expect(interpret('5')).toEqual(BigInt(5));
+  expect(interpret('"value"')).toEqual('value');
+  expect(interpret('true')).toEqual(true);
 });
 
 it('this expressions evaluate correctly', () => {
-  const thisExpression = EXPRESSION_THIS({ range: exampleRange, type: boolType });
-  const thisLocalValues: Record<string, Value | undefined> = {};
-  thisLocalValues.this = true;
-  const thisContext = { classes: {}, localValues: thisLocalValues };
-  expect(interpreter.eval(thisExpression, thisContext)).toEqual(boolLiteralValue);
-  expect(() => interpreter.eval(thisExpression)).toThrow('Missing `this`');
+  expect(interpret('this', { classes: {}, localValues: { this: true } })).toEqual(true);
+  expect(() => interpret('this')).toThrow('Missing `this`');
 });
 
 it('variable expressions evaluate correctly', () => {
-  const variableExpression = EXPRESSION_VARIABLE({
-    range: exampleRange,
-    type: boolType,
-    name: 'test',
-  });
-  const variableLocalValues: Record<string, Value | undefined> = {};
-  variableLocalValues.test = boolLiteralValue;
-  const variableContext = { classes: {}, localValues: variableLocalValues };
-  expect(interpreter.eval(variableExpression, variableContext)).toEqual(boolLiteralValue);
-  expect(() => interpreter.eval(variableExpression)).toThrow(
-    `Missing variable ${variableExpression.name}`
-  );
+  expect(
+    interpret('test', {
+      classes: {},
+      localValues: { test: true },
+    })
+  ).toEqual(true);
+  expect(() => interpret('test')).toThrow(`Missing variable test`);
 });
 
 it('class member expressions evaluate correctly', () => {
-  const classMemberExpression = EXPRESSION_CLASS_MEMBER({
-    range: exampleRange,
-    type: boolType,
-    typeArguments: [boolType],
-    className: 'myClass',
-    classNameRange: exampleRange,
-    memberName: 'func',
-    memberNameRange: exampleRange,
-  });
-  const classMemberClasses: Record<string, ClassValue | undefined> = {};
-  const classMemberFunctions: Record<string, FunctionValue | undefined> = {};
-  classMemberFunctions.func = classMemberFunction;
-  const classMemberClassValue = { functions: classMemberFunctions, methods: {} };
-  classMemberClasses.myClass = classMemberClassValue;
-  const classMemberContext = { classes: classMemberClasses, localValues: {} };
-  expect(interpreter.eval(classMemberExpression, classMemberContext)).toEqual(classMemberFunction);
-  expect(() => interpreter.eval(classMemberExpression)).toThrow('');
+  expect(
+    interpret('(MyClass.classFunction)()', {
+      classes: {
+        MyClass: {
+          functions: {
+            classFunction: {
+              type: 'functionValue',
+              arguments: [],
+              body: getExpression('5'),
+              context: EMPTY,
+            },
+          },
+          methods: {},
+        },
+      },
+      localValues: {},
+    })
+  ).toBe(BigInt(5));
+
+  expect(() => interpret('MyClass.func')).toThrow('');
 });
 
 it('tuple expression evaluates correctly', () => {
-  const tupleExpression = EXPRESSION_TUPLE_CONSTRUCTOR({
-    range: exampleRange,
-    type: { type: 'TupleType', mappings: [intType] },
-    expressions: [intLiteralExpression],
-  });
-  const tupleExpressionMultiple = EXPRESSION_TUPLE_CONSTRUCTOR({
-    range: exampleRange,
-    type: { type: 'TupleType', mappings: [intType, boolType] },
-    expressions: [intLiteralExpression, boolLiteralExpression],
-  });
-  expect(interpreter.eval(tupleExpression)).toEqual({
+  expect(interpret('[5, true]')).toEqual({
     type: 'tuple',
-    tupleContent: [intLiteralValue],
-  });
-  expect(interpreter.eval(tupleExpressionMultiple)).toEqual({
-    type: 'tuple',
-    tupleContent: [intLiteralValue, boolLiteralValue],
+    tupleContent: [BigInt(5), true],
   });
 });
 
 it('object constructor expression evaluates correctly', () => {
-  const objectConstructorExpressionEmpty = EXPRESSION_OBJECT_CONSTRUCTOR({
-    range: exampleRange,
-    type: intType,
-    fieldDeclarations: [{ range: exampleRange, type: intType, name: 'test' }],
-  });
-  const objectContentNonEmpty = new Map();
-  objectContentNonEmpty.set('test', intLiteralValue);
-  expect(() => interpreter.eval(objectConstructorExpressionEmpty)).toThrow('Missing variable test');
-  expect(interpreter.eval(objectConstructorExpressionNonEmpty)).toEqual({
+  expect(() => interpret('{ test }')).toThrow('Missing variable test');
+  expect(interpret('{ test: 5 }')).toEqual({
     type: 'object',
-    objectContent: objectContentNonEmpty,
+    objectContent: new Map([['test', BigInt(5)]]),
   });
 });
 
 it('variant expression evaluates correctly', () => {
-  const variantExpression = EXPRESSION_VARIANT_CONSTRUCTOR({
-    range: exampleRange,
-    type: intType,
-    tag: 'tag',
-    tagOrder: 0,
-    data: intLiteralExpression,
-  });
-  expect(interpreter.eval(variantExpression)).toEqual({
+  expect(interpret('Tag(5)')).toEqual({
     type: 'variant',
-    tag: 'tag',
+    tag: 'Tag',
     data: BigInt(5),
   });
 });
 
 it('field access expression evaluates correctly', () => {
-  const fieldAccessExpression = EXPRESSION_FIELD_ACCESS({
-    range: exampleRange,
-    type: intType,
-    expression: objectConstructorExpressionNonEmpty,
-    fieldName: 'test',
-    fieldOrder: 0,
-  });
-  const fieldAccessExpressionFail = EXPRESSION_FIELD_ACCESS({
-    range: exampleRange,
-    type: intType,
-    expression: stringLiteralExpression,
-    fieldName: 'test',
-    fieldOrder: 0,
-  });
-  expect(interpreter.eval(fieldAccessExpression)).toEqual(intLiteralValue);
-  expect(() => interpreter.eval(fieldAccessExpressionFail)).toThrow('');
+  expect(interpret('{test:5}.test')).toEqual(BigInt(5));
+  expect(() => interpret('"value".test')).toThrow('');
 });
 
 it('method access expression evaluates correctly', () => {
-  const identifier = identifierType('method', []);
-  const identifierExpression = EXPRESSION_VARIANT_CONSTRUCTOR({
-    range: exampleRange,
-    type: identifier,
-    tag: 'tag',
-    tagOrder: 0,
-    data: intLiteralExpression,
-  });
   const methodAccessExpression = EXPRESSION_METHOD_ACCESS({
-    range: exampleRange,
-    type: identifier,
-    expression: identifierExpression,
+    range: Range.DUMMY,
+    type: identifierType('C', []),
+    expression: {
+      ...(getExpression('Tag(5)') as VariantConstructorExpression),
+      type: identifierType('C', []),
+    },
     methodName: 'method',
   });
-  const methodAccessMethods: Record<string, FunctionValue | undefined> = {};
-  methodAccessMethods.method = classMemberFunction;
-  const methodAccessClass = {
-    functions: {},
-    methods: methodAccessMethods,
-  };
-  const methodAccessClasses: Record<string, ClassValue | undefined> = {};
-  methodAccessClasses.method = methodAccessClass;
-  const methodAccessContext: InterpretationContext = {
-    classes: methodAccessClasses,
-    localValues: {},
-  };
-  expect(interpreter.eval(methodAccessExpression, methodAccessContext)).toEqual(
-    classMemberFunction
-  );
-  expect(() => interpreter.eval(methodAccessExpression)).toThrow('');
+
+  expect(
+    (new ExpressionInterpreter().eval(methodAccessExpression, {
+      classes: {
+        C: {
+          functions: {},
+          methods: {
+            method: {
+              type: 'functionValue',
+              arguments: [],
+              body: getExpression('5'),
+              context: EMPTY,
+            },
+          },
+        },
+      },
+      localValues: {},
+    }) as FunctionValue).type
+  ).toBe('functionValue');
+  expect(() => new ExpressionInterpreter().eval(methodAccessExpression, EMPTY)).toThrow('');
 });
 
 it('unary expression evaluates correctly', () => {
-  const unaryExpressionNeg = EXPRESSION_UNARY({
-    range: exampleRange,
-    type: intType,
-    operator: '-',
-    expression: intLiteralExpression,
-  });
-  const unaryExpressionNot = EXPRESSION_UNARY({
-    range: exampleRange,
-    type: intType,
-    operator: '!',
-    expression: boolLiteralExpression,
-  });
-  expect(interpreter.eval(unaryExpressionNeg)).toEqual(BigInt(-5));
-  expect(interpreter.eval(unaryExpressionNot)).toEqual(false);
+  expect(interpret('-5')).toEqual(BigInt(-5));
+  expect(interpret('!true')).toEqual(false);
 });
 
 it('panic expression evaluates correctly', () => {
-  const panicExpression = EXPRESSION_PANIC({
-    range: exampleRange,
-    type: stringType,
-    expression: stringLiteralExpression,
-  });
-  expect(() => interpreter.eval(panicExpression)).toThrow('value');
+  expect(() => interpret('panic("value")')).toThrow('value');
 });
 
 it('built in function call expression evaluates correctly', () => {
-  const stringToIntFunctionCall = EXPRESSION_BUILTIN_FUNCTION_CALL({
-    range: exampleRange,
-    type: stringType,
-    functionName: 'stringToInt',
-    argumentExpression: intLiteralExpression,
+  // FIXME: the test clearly shows that the stringToInt and intToString got messed up.
+  expect(interpret('stringToInt(5)')).toEqual(BigInt(5));
+  expect(() => interpret('stringToInt("value")')).toThrow(`Cannot convert \`value\` to int.`);
+  expect(interpret('intToString("5")')).toEqual('5');
+
+  const temporaryInterpreterForPrint = new ExpressionInterpreter();
+  expect(temporaryInterpreterForPrint.eval(getExpression('println("value")'), EMPTY)).toEqual({
+    type: 'unit',
   });
-  const stringToIntFunctionCallFail = EXPRESSION_BUILTIN_FUNCTION_CALL({
-    range: exampleRange,
-    type: stringType,
-    functionName: 'stringToInt',
-    argumentExpression: stringLiteralExpression,
-  });
-  const intToStringFunctionCall = EXPRESSION_BUILTIN_FUNCTION_CALL({
-    range: exampleRange,
-    type: intType,
-    functionName: 'intToString',
-    argumentExpression: EXPRESSION_STRING(exampleRange, '5'),
-  });
-  const printlnFunctionCall = EXPRESSION_BUILTIN_FUNCTION_CALL({
-    range: exampleRange,
-    type: stringType,
-    functionName: 'println',
-    argumentExpression: stringLiteralExpression,
-  });
-  expect(interpreter.eval(stringToIntFunctionCall)).toEqual(intLiteralValue);
-  expect(() => interpreter.eval(stringToIntFunctionCallFail)).toThrow(
-    `Cannot convert \`${stringLiteralExpression.literal.value}\` to int.`
-  );
-  expect(interpreter.eval(intToStringFunctionCall)).toEqual('5');
-  expect(interpreter.eval(printlnFunctionCall)).toEqual({ type: 'unit' });
-  expect(interpreter.printed()).toEqual('value\n');
+  expect(temporaryInterpreterForPrint.printed()).toEqual('value\n');
 });
 
 it('function expression evaluates correctly', () => {
-  const functionExpressionWithArgs = EXPRESSION_LAMBDA({
-    range: exampleRange,
-    type: functionType,
-    parameters: [['arg1', stringType]],
-    captured: {},
-    body: stringLiteralExpression,
-  });
-  const functionCallExpressionNoArgs = EXPRESSION_FUNCTION_CALL({
-    range: exampleRange,
-    type: stringType,
-    functionExpression,
-    functionArguments: [],
-  });
-  const functionCallExpressionWithArgs = EXPRESSION_FUNCTION_CALL({
-    range: exampleRange,
-    type: stringType,
-    functionExpression: functionExpressionWithArgs,
-    functionArguments: [stringLiteralExpression],
-  });
-  expect(interpreter.eval(functionCallExpressionNoArgs)).toEqual(stringLiteralValue);
-  expect(interpreter.eval(functionCallExpressionWithArgs)).toEqual(stringLiteralValue);
+  expect(interpret('(() -> "value")()')).toEqual('value');
+  expect(interpret('((arg1: string) -> "value")("aaa")')).toEqual('value');
 });
 
 it('binary expression evaluates correctly', () => {
-  const binExpressionMul = EXPRESSION_BINARY({
-    type: intType,
-    range: exampleRange,
-    operator: MUL,
-    e1: intLiteralExpression,
-    e2: intLiteralExpression,
-  });
-  const binExpressionDiv = EXPRESSION_BINARY({
-    type: intType,
-    range: exampleRange,
-    operator: DIV,
-    e1: intLiteralExpression,
-    e2: intLiteralExpression,
-  });
-  const binExpressionDiv0 = EXPRESSION_BINARY({
-    type: intType,
-    range: exampleRange,
-    operator: DIV,
-    e1: intLiteralExpression,
-    e2: EXPRESSION_INT(exampleRange, BigInt(0)),
-  });
-  const binExpressionMod = EXPRESSION_BINARY({
-    type: intType,
-    range: exampleRange,
-    operator: MOD,
-    e1: intLiteralExpression,
-    e2: intLiteralExpression,
-  });
-  const binExpressionMod0 = EXPRESSION_BINARY({
-    type: intType,
-    range: exampleRange,
-    operator: MOD,
-    e1: intLiteralExpression,
-    e2: EXPRESSION_INT(exampleRange, BigInt(0)),
-  });
-  const binExpressionAdd = EXPRESSION_BINARY({
-    type: intType,
-    range: exampleRange,
-    operator: PLUS,
-    e1: intLiteralExpression,
-    e2: intLiteralExpression,
-  });
-  const binExpressionSub = EXPRESSION_BINARY({
-    type: intType,
-    range: exampleRange,
-    operator: MINUS,
-    e1: intLiteralExpression,
-    e2: intLiteralExpression,
-  });
-  const binExpressionLt = EXPRESSION_BINARY({
-    type: boolType,
-    range: exampleRange,
-    operator: LT,
-    e1: intLiteralExpression,
-    e2: intLiteralExpression,
-  });
-  const binExpressionLe = EXPRESSION_BINARY({
-    type: boolType,
-    range: exampleRange,
-    operator: LE,
-    e1: intLiteralExpression,
-    e2: intLiteralExpression,
-  });
-  const binExpressionGt = EXPRESSION_BINARY({
-    type: boolType,
-    range: exampleRange,
-    operator: GT,
-    e1: intLiteralExpression,
-    e2: intLiteralExpression,
-  });
-  const binExpressionGe = EXPRESSION_BINARY({
-    type: boolType,
-    range: exampleRange,
-    operator: GE,
-    e1: intLiteralExpression,
-    e2: intLiteralExpression,
-  });
-  const binExpressionEq = EXPRESSION_BINARY({
-    type: boolType,
-    range: exampleRange,
-    operator: EQ,
-    e1: intLiteralExpression,
-    e2: intLiteralExpression,
-  });
-  const binExpressionEqfn = EXPRESSION_BINARY({
-    type: boolType,
-    range: exampleRange,
-    operator: EQ,
-    e1: functionExpression,
-    e2: functionExpression,
-  });
-  const binExpressionNe = EXPRESSION_BINARY({
-    type: boolType,
-    range: exampleRange,
-    operator: NE,
-    e1: intLiteralExpression,
-    e2: intLiteralExpression,
-  });
-  const binExpressionNefn = EXPRESSION_BINARY({
-    type: boolType,
-    range: exampleRange,
-    operator: NE,
-    e1: functionExpression,
-    e2: intLiteralExpression,
-  });
-  const binExpressionAnd = EXPRESSION_BINARY({
-    type: boolType,
-    range: exampleRange,
-    operator: AND,
-    e1: boolLiteralExpression,
-    e2: boolLiteralExpression,
-  });
-  const binExpressionAndFalse = EXPRESSION_BINARY({
-    type: boolType,
-    range: exampleRange,
-    operator: AND,
-    e1: EXPRESSION_FALSE(exampleRange),
-    e2: boolLiteralExpression,
-  });
-  const binExpressionOr = EXPRESSION_BINARY({
-    type: boolType,
-    range: exampleRange,
-    operator: OR,
-    e1: boolLiteralExpression,
-    e2: boolLiteralExpression,
-  });
-  const binExpressionOrFalse = EXPRESSION_BINARY({
-    type: boolType,
-    range: exampleRange,
-    operator: OR,
-    e1: EXPRESSION_FALSE(exampleRange),
-    e2: boolLiteralExpression,
-  });
-  const binExpressionConcat = EXPRESSION_BINARY({
-    type: stringType,
-    range: exampleRange,
-    operator: CONCAT,
-    e1: stringLiteralExpression,
-    e2: stringLiteralExpression,
-  });
-  expect(interpreter.eval(binExpressionMul)).toEqual(BigInt(25));
-  expect(interpreter.eval(binExpressionDiv)).toEqual(BigInt(1));
-  expect(() => interpreter.eval(binExpressionDiv0)).toThrow('Division by zero!');
-  expect(interpreter.eval(binExpressionMod)).toEqual(BigInt(0));
-  expect(() => interpreter.eval(binExpressionMod0)).toThrow('Mod by zero!');
-  expect(interpreter.eval(binExpressionAdd)).toEqual(BigInt(10));
-  expect(interpreter.eval(binExpressionSub)).toEqual(BigInt(0));
-  expect(interpreter.eval(binExpressionLt)).toEqual(false);
-  expect(interpreter.eval(binExpressionLe)).toEqual(true);
-  expect(interpreter.eval(binExpressionGt)).toEqual(false);
-  expect(interpreter.eval(binExpressionGe)).toEqual(true);
-  expect(interpreter.eval(binExpressionEq)).toEqual(true);
-  expect(() => interpreter.eval(binExpressionEqfn)).toThrow('Cannot compare functions!');
-  expect(interpreter.eval(binExpressionNe)).toEqual(false);
-  expect(() => interpreter.eval(binExpressionNefn)).toThrow('Cannot compare functions!');
-  expect(interpreter.eval(binExpressionAnd)).toEqual(true);
-  expect(interpreter.eval(binExpressionAndFalse)).toEqual(false);
-  expect(interpreter.eval(binExpressionOr)).toEqual(true);
-  expect(interpreter.eval(binExpressionOrFalse)).toEqual(true);
-  expect(interpreter.eval(binExpressionConcat)).toEqual('valuevalue');
+  expect(interpret('5 * 5')).toEqual(BigInt(25));
+  expect(interpret('5 / 5')).toEqual(BigInt(1));
+  expect(() => interpret('5 / 0')).toThrow('Division by zero!');
+  expect(interpret('5 % 5')).toEqual(BigInt(0));
+  expect(() => interpret('5 % 0')).toThrow('Mod by zero!');
+  expect(interpret('5 + 5')).toEqual(BigInt(10));
+  expect(interpret('5 - 5')).toEqual(BigInt(0));
+  expect(interpret('5 < 5')).toEqual(false);
+  expect(interpret('5 <= 5')).toEqual(true);
+  expect(interpret('5 > 5')).toEqual(false);
+  expect(interpret('5 >= 5')).toEqual(true);
+  expect(interpret('5 == 5')).toEqual(true);
+  expect(() => interpret('(() -> "value") == (() -> "value")')).toThrow(
+    'Cannot compare functions!'
+  );
+  expect(interpret('5 != 5')).toEqual(false);
+  expect(() => interpret('(() -> "value") != 5')).toThrow('Cannot compare functions!');
+  expect(interpret('true && true')).toEqual(true);
+  expect(interpret('false && true')).toEqual(false);
+  expect(interpret('true || true')).toEqual(true);
+  expect(interpret('false || true')).toEqual(true);
+  expect(interpret('"value"::"value"')).toEqual('valuevalue');
 });
 
 it('if else expression evaluates correctly', () => {
-  const ifElseExpressionTrue = EXPRESSION_IF_ELSE({
-    type: stringType,
-    range: exampleRange,
-    boolExpression: boolLiteralExpression,
-    e1: EXPRESSION_STRING(exampleRange, 'true branch'),
-    e2: EXPRESSION_STRING(exampleRange, 'false branch'),
-  });
-  const ifElseExpressionFalse = EXPRESSION_IF_ELSE({
-    type: stringType,
-    range: exampleRange,
-    boolExpression: EXPRESSION_FALSE(exampleRange),
-    e1: EXPRESSION_STRING(exampleRange, 'true branch'),
-    e2: EXPRESSION_STRING(exampleRange, 'false branch'),
-  });
-  expect(interpreter.eval(ifElseExpressionTrue)).toEqual('true branch');
-  expect(interpreter.eval(ifElseExpressionFalse)).toEqual('false branch');
+  expect(interpret('if (true) then "true branch" else "false branch"')).toEqual('true branch');
+  expect(interpret('if (false) then "true branch" else "false branch"')).toEqual('false branch');
 });
 
 it('matching list evaluates correctly', () => {
-  const matchingList: VariantPatternToExpression[] = [
-    {
-      range: exampleRange,
-      tag: 'tag',
-      tagOrder: 0,
-      expression: stringLiteralExpression,
-      dataVariable: 'data',
-    },
-  ];
-  const matchingListNoData: VariantPatternToExpression[] = [
-    { range: exampleRange, tag: 'tag', tagOrder: 0, expression: stringLiteralExpression },
-  ];
-  const matchedExpression = EXPRESSION_VARIANT_CONSTRUCTOR({
-    range: exampleRange,
-    type: intType,
-    tag: 'tag',
-    tagOrder: 0,
-    data: intLiteralExpression,
-  });
-  const matchExpression = EXPRESSION_MATCH({
-    range: exampleRange,
-    type: stringType,
-    matchedExpression,
-    matchingList,
-  });
-  const matchExpressionNoData = EXPRESSION_MATCH({
-    range: exampleRange,
-    type: stringType,
-    matchedExpression,
-    matchingList: matchingListNoData,
-  });
-  const matchExpressionFail = EXPRESSION_MATCH({
-    range: exampleRange,
-    type: stringType,
-    matchedExpression,
-    matchingList: [],
-  });
-  expect(interpreter.eval(matchExpression)).toEqual(stringLiteralValue);
-  expect(interpreter.eval(matchExpressionNoData)).toEqual(stringLiteralValue);
-  expect(() => interpreter.eval(matchExpressionFail)).toThrow('');
+  expect(interpret('match (Tag(5)) { | Tag data -> data }')).toEqual(BigInt(5));
+  expect(interpret('match (Tag(5)) { | Tag _ -> "value" }')).toEqual('value');
+  expect(() =>
+    new ExpressionInterpreter().eval(
+      EXPRESSION_MATCH({
+        range: Range.DUMMY,
+        type: stringType,
+        matchedExpression: getExpression('Tag(5)'),
+        matchingList: [],
+      }),
+      EMPTY
+    )
+  ).toThrow();
 });
 
 it('lambda expression evaluates correctly', () => {
-  const lambdaFunctionType: FunctionType = {
-    type: 'FunctionType',
-    argumentTypes: [unitType],
-    returnType: intType,
-  };
-  const lambdaExpression = EXPRESSION_LAMBDA({
-    range: exampleRange,
-    type: lambdaFunctionType,
-    parameters: [],
-    captured: {},
-    body: intLiteralExpression,
-  });
-  expect(interpreter.eval(lambdaExpression)).toEqual({
-    type: 'functionValue',
-    arguments: [],
-    body: intLiteralExpression,
-    context: EMPTY,
-  });
+  expect((interpret('() -> 5') as FunctionValue).type).toBe('functionValue');
 });
 
 it('statement block expression evalutes correctly', () => {
-  const tuplePattern: TuplePattern = {
-    range: exampleRange,
-    type: 'TuplePattern',
-    destructedNames: [['tuple', exampleRange]],
-  };
-  const tuplePatternNull: TuplePattern = {
-    range: exampleRange,
-    type: 'TuplePattern',
-    destructedNames: [[null, exampleRange]],
-  };
-  const tupleType: TupleType = { type: 'TupleType', mappings: [intType] };
-  const tupleExpression: SamlangExpression = EXPRESSION_TUPLE_CONSTRUCTOR({
-    range: exampleRange,
-    type: tupleType,
-    expressions: [intLiteralExpression],
-  });
-  const tupleStatement: SamlangValStatement = {
-    pattern: tuplePattern,
-    range: exampleRange,
-    typeAnnotation: intType,
-    assignedExpression: tupleExpression,
-  };
-  const tupleStatementNull: SamlangValStatement = {
-    pattern: tuplePatternNull,
-    range: exampleRange,
-    typeAnnotation: intType,
-    assignedExpression: tupleExpression,
-  };
-  const objectDestructedNames: ObjectPatternDestucturedName = {
-    fieldName: 'field',
-    fieldOrder: 0,
-    alias: 'f',
-    range: exampleRange,
-  };
-  const objectDestructedNamesNoAlias: ObjectPatternDestucturedName = {
-    fieldName: 'field',
-    fieldOrder: 0,
-    range: exampleRange,
-  };
-  const objectDestructedNamesFail: ObjectPatternDestucturedName = {
-    fieldName: 'fieldName',
-    fieldOrder: 0,
-    alias: 'f',
-    range: exampleRange,
-  };
-  const objectPattern: ObjectPattern = {
-    range: exampleRange,
-    type: 'ObjectPattern',
-    destructedNames: [objectDestructedNames, objectDestructedNamesNoAlias],
-  };
-  const objectPatternFail: ObjectPattern = {
-    range: exampleRange,
-    type: 'ObjectPattern',
-    destructedNames: [objectDestructedNamesFail],
-  };
-  const objectExpression: SamlangExpression = EXPRESSION_OBJECT_CONSTRUCTOR({
-    range: exampleRange,
-    type: intType,
-    fieldDeclarations: [
-      { range: exampleRange, type: intType, name: 'field', expression: intLiteralExpression },
-    ],
-  });
-  const objectStatement: SamlangValStatement = {
-    pattern: objectPattern,
-    range: exampleRange,
-    typeAnnotation: intType,
-    assignedExpression: objectExpression,
-  };
-  const objectStatementFail: SamlangValStatement = {
-    pattern: objectPatternFail,
-    range: exampleRange,
-    typeAnnotation: intType,
-    assignedExpression: objectExpression,
-  };
-  const variableLocalValues: Record<string, Value | undefined> = {};
-  variableLocalValues.var = true;
-  const variableContext = { classes: {}, localValues: variableLocalValues };
-  const variablePattern: VariablePattern = {
-    range: exampleRange,
-    type: 'VariablePattern',
-    name: 'var',
-  };
-  const variableExpression: SamlangExpression = EXPRESSION_VARIABLE({
-    range: exampleRange,
-    type: intType,
-    name: 'var',
-  });
-  const variableStatement: SamlangValStatement = {
-    pattern: variablePattern,
-    range: exampleRange,
-    typeAnnotation: intType,
-    assignedExpression: variableExpression,
-  };
-  const wildCardPattern: WildCardPattern = { type: 'WildCardPattern', range: exampleRange };
-  const wildCardStatement: SamlangValStatement = {
-    pattern: wildCardPattern,
-    range: exampleRange,
-    typeAnnotation: intType,
-    assignedExpression: intLiteralExpression,
-  };
-  const statementBlock: StatementBlock = {
-    range: exampleRange,
-    statements: [
-      tupleStatement,
-      tupleStatementNull,
-      objectStatement,
-      variableStatement,
-      wildCardStatement,
-    ],
-  };
-  const statementBlockWithExpression: StatementBlock = {
-    range: exampleRange,
-    statements: [],
-    expression: intLiteralExpression,
-  };
-  const statementBlockFail: StatementBlock = {
-    range: exampleRange,
-    statements: [objectStatementFail],
-  };
-  const statementBlockExpression = EXPRESSION_STATEMENT_BLOCK({
-    range: exampleRange,
-    type: intType,
-    block: statementBlock,
-  });
-  const statementBlockExpressionWithBlockExpression = EXPRESSION_STATEMENT_BLOCK({
-    range: exampleRange,
-    type: intType,
-    block: statementBlockWithExpression,
-  });
-  const statementBlockExpressionFail = EXPRESSION_STATEMENT_BLOCK({
-    range: exampleRange,
-    type: intType,
-    block: statementBlockFail,
-  });
-  const nestedBlockExpressionFail = EXPRESSION_STATEMENT_BLOCK({
-    range: exampleRange,
-    type: intType,
-    block: {
-      range: exampleRange,
-      statements: [
-        {
-          pattern: {
-            type: 'VariablePattern',
-            name: 'diffVar',
-            range: exampleRange,
-          },
-          typeAnnotation: intType,
-          assignedExpression: EXPRESSION_STATEMENT_BLOCK({
-            range: exampleRange,
-            type: intType,
-            block: {
-              range: exampleRange,
-              statements: [
-                {
-                  pattern: variablePattern,
-                  range: exampleRange,
-                  typeAnnotation: intType,
-                  assignedExpression: intLiteralExpression,
-                },
-              ],
-              expression: variableExpression,
-            },
-          }),
-          range: exampleRange,
-        },
-        variableStatement,
-      ],
-    },
-  });
-  const nestedBlockExpressionPass = EXPRESSION_STATEMENT_BLOCK({
-    range: exampleRange,
-    type: intType,
-    block: {
-      range: exampleRange,
-      statements: [
-        {
-          pattern: variablePattern,
-          typeAnnotation: intType,
-          assignedExpression: intLiteralExpression,
-          range: exampleRange,
-        },
-      ],
-      expression: variableExpression,
-    },
-  });
-  expect(interpreter.eval(statementBlockExpression, variableContext)).toEqual({ type: 'unit' });
-  expect(() => interpreter.eval(nestedBlockExpressionFail)).toThrow('Missing variable var');
-  expect(interpreter.eval(statementBlockExpressionWithBlockExpression)).toEqual(BigInt(5));
-  expect(interpreter.eval(nestedBlockExpressionPass)).toEqual(BigInt(5));
-  expect(() => interpreter.eval(statementBlockExpressionFail)).toThrow('');
+  expect(
+    interpret(`{
+      val [tuple, _] = [5, 6];
+      val {field as f, field} = {field: 5};
+      val varrr = {bar:4}.bar;
+      val _ = 5;
+    }`)
+  ).toEqual({ type: 'unit' });
+
+  expect(() =>
+    interpret(`{
+      val diffVar = {
+        val varrr = 5;
+        varrr
+      };
+      val varrr = varrr;
+    }`)
+  ).toThrow('Missing variable varrr');
+
+  expect(interpret('{ 5 }')).toEqual(BigInt(5));
+
+  expect(interpret('{ val varrr = 5; varrr }')).toEqual(BigInt(5));
+
+  expect(() => interpret('{ val {fieldName as f} = {field: 5}; }')).toThrow();
 });

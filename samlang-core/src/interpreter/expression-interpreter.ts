@@ -1,6 +1,6 @@
 import { IdentifierType } from '../ast/common/types';
 import { SamlangExpression, EXPRESSION_VARIABLE } from '../ast/lang/samlang-expressions';
-import { InterpretationContext, EMPTY } from './interpretation-context';
+import { InterpretationContext } from './interpretation-context';
 import PanicException from './panic-exception';
 import { Value, ObjectValue, FunctionValue, VariantValue, TupleValue } from './value';
 
@@ -13,10 +13,7 @@ export default class ExpressionInterpreter {
     throw Error(message);
   };
 
-  readonly eval = (
-    expression: SamlangExpression,
-    context: InterpretationContext = EMPTY
-  ): Value => {
+  readonly eval = (expression: SamlangExpression, context: InterpretationContext): Value => {
     switch (expression.__type__) {
       case 'LiteralExpression': {
         switch (expression.literal.type) {
@@ -38,7 +35,9 @@ export default class ExpressionInterpreter {
       case 'ClassMemberExpression':
         return (
           context.classes[expression.className]?.functions?.[expression.memberName] ||
-          this.blameTypeChecker()
+          this.blameTypeChecker(
+            `Missing ${expression.className}.${expression.memberName} ${JSON.stringify(context)}`
+          )
         );
       case 'TupleConstructorExpression':
         return {
@@ -78,7 +77,7 @@ export default class ExpressionInterpreter {
         return methodValue;
       }
       case 'UnaryExpression': {
-        const v = this.eval(expression.expression);
+        const v = this.eval(expression.expression, context);
         switch (expression.operator) {
           case '-':
             return -v;
@@ -109,7 +108,7 @@ export default class ExpressionInterpreter {
       }
       // eslint-disable-next-line no-fallthrough
       case 'FunctionCallExpression': {
-        const functionVal = this.eval(expression.functionExpression) as FunctionValue;
+        const functionVal = this.eval(expression.functionExpression, context) as FunctionValue;
         const args = functionVal.arguments;
         const body = functionVal.body;
         const ctx = functionVal.context;
@@ -124,59 +123,59 @@ export default class ExpressionInterpreter {
       case 'BinaryExpression': {
         switch (expression.operator.symbol) {
           case '*': {
-            const v1 = this.eval(expression.e1) as bigint;
-            const v2 = this.eval(expression.e2) as bigint;
+            const v1 = this.eval(expression.e1, context) as bigint;
+            const v2 = this.eval(expression.e2, context) as bigint;
             return BigInt(v1 * v2);
           }
           case '/': {
-            const v1 = this.eval(expression.e1) as bigint;
-            const v2 = this.eval(expression.e2) as bigint;
+            const v1 = this.eval(expression.e1, context) as bigint;
+            const v2 = this.eval(expression.e2, context) as bigint;
             if (v2 === BigInt(0)) {
               throw new PanicException('Division by zero!');
             }
             return BigInt(v1 / v2);
           }
           case '%': {
-            const v1 = this.eval(expression.e1) as bigint;
-            const v2 = this.eval(expression.e2) as bigint;
+            const v1 = this.eval(expression.e1, context) as bigint;
+            const v2 = this.eval(expression.e2, context) as bigint;
             if (v2 === BigInt(0)) {
               throw new PanicException('Mod by zero!');
             }
             return BigInt(v1 % v2);
           }
           case '+': {
-            const v1 = this.eval(expression.e1) as bigint;
-            const v2 = this.eval(expression.e2) as bigint;
+            const v1 = this.eval(expression.e1, context) as bigint;
+            const v2 = this.eval(expression.e2, context) as bigint;
             return BigInt(v1 + v2);
           }
           case '-': {
-            const v1 = this.eval(expression.e1) as bigint;
-            const v2 = this.eval(expression.e2) as bigint;
+            const v1 = this.eval(expression.e1, context) as bigint;
+            const v2 = this.eval(expression.e2, context) as bigint;
             return BigInt(v1 - v2);
           }
           case '<': {
-            const v1 = this.eval(expression.e1) as bigint;
-            const v2 = this.eval(expression.e2) as bigint;
+            const v1 = this.eval(expression.e1, context) as bigint;
+            const v2 = this.eval(expression.e2, context) as bigint;
             return v1 < v2;
           }
           case '<=': {
-            const v1 = this.eval(expression.e1) as bigint;
-            const v2 = this.eval(expression.e2) as bigint;
+            const v1 = this.eval(expression.e1, context) as bigint;
+            const v2 = this.eval(expression.e2, context) as bigint;
             return v1 <= v2;
           }
           case '>': {
-            const v1 = this.eval(expression.e1) as bigint;
-            const v2 = this.eval(expression.e2) as bigint;
+            const v1 = this.eval(expression.e1, context) as bigint;
+            const v2 = this.eval(expression.e2, context) as bigint;
             return v1 > v2;
           }
           case '>=': {
-            const v1 = this.eval(expression.e1) as bigint;
-            const v2 = this.eval(expression.e2) as bigint;
+            const v1 = this.eval(expression.e1, context) as bigint;
+            const v2 = this.eval(expression.e2, context) as bigint;
             return v1 >= v2;
           }
           case '==': {
-            const v1 = this.eval(expression.e1);
-            const v2 = this.eval(expression.e2);
+            const v1 = this.eval(expression.e1, context);
+            const v2 = this.eval(expression.e2, context);
             if (
               (v1 as FunctionValue).type === 'functionValue' ||
               (v2 as FunctionValue).type === 'functionValue'
@@ -186,8 +185,8 @@ export default class ExpressionInterpreter {
             return v1 === v2;
           }
           case '!=': {
-            const v1 = this.eval(expression.e1);
-            const v2 = this.eval(expression.e2);
+            const v1 = this.eval(expression.e1, context);
+            const v2 = this.eval(expression.e2, context);
             if (
               (v1 as FunctionValue).type === 'functionValue' ||
               (v2 as FunctionValue).type === 'functionValue'
@@ -197,16 +196,16 @@ export default class ExpressionInterpreter {
             return v1 !== v2;
           }
           case '&&': {
-            const v1 = this.eval(expression.e1) as boolean;
+            const v1 = this.eval(expression.e1, context) as boolean;
             return v1 && this.eval(expression.e2, context);
           }
           case '||': {
-            const v1 = this.eval(expression.e1) as boolean;
+            const v1 = this.eval(expression.e1, context) as boolean;
             return v1 || this.eval(expression.e2, context);
           }
           case '::': {
-            const v1 = this.eval(expression.e1) as string;
-            const v2 = this.eval(expression.e2) as string;
+            const v1 = this.eval(expression.e1, context) as string;
+            const v2 = this.eval(expression.e2, context) as string;
             return v1 + v2;
           }
         }
@@ -214,7 +213,9 @@ export default class ExpressionInterpreter {
       // eslint-disable-next-line no-fallthrough
       case 'IfElseExpression': {
         return this.eval(
-          (this.eval(expression.boolExpression) as boolean) ? expression.e1 : expression.e2,
+          (this.eval(expression.boolExpression, context) as boolean)
+            ? expression.e1
+            : expression.e2,
           context
         );
       }
