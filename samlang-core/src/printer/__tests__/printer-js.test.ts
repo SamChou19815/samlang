@@ -12,6 +12,7 @@ import {
   HIR_STRING,
   HIR_INDEX_ACCESS,
   HIR_VARIABLE,
+  HIR_WHILE_TRUE,
 } from '../../ast/hir/hir-expressions';
 import { compileSamlangSourcesToHighIRSources } from '../../compiler';
 import {
@@ -57,6 +58,17 @@ it('HIR statements to JS string test', () => {
       })
     )
   ).toBe(`if ((5 == 5)) {return;} else {return;}`);
+  expect(
+    highIRStatementToString(
+      HIR_WHILE_TRUE([
+        HIR_FUNCTION_CALL({
+          functionArguments: [],
+          functionExpression: HIR_NAME('func'),
+          returnCollector: 'val',
+        }),
+      ])
+    )
+  ).toBe('while (true) { var val = func(); }');
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({

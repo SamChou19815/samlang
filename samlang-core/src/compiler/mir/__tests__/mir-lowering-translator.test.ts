@@ -11,6 +11,7 @@ import {
   HIR_LET,
   HIR_INDEX_ACCESS,
   HIR_STRUCT_INITIALIZATION,
+  HIR_WHILE_TRUE,
 } from '../../../ast/hir/hir-expressions';
 import { midIRStatementToString } from '../../../ast/mir';
 import midIRTranslateStatementsAndCollectGlobalStrings from '../mir-lowering-translator';
@@ -52,6 +53,13 @@ goto LABEL__2_PURPOSE_IF_ELSE_END;
 LABEL__1_PURPOSE_FALSE_BRANCH:
 return 2;
 LABEL__2_PURPOSE_IF_ELSE_END:`
+  );
+
+  assertCorrectlyLoweredWithPreConfiguredSetup(
+    HIR_WHILE_TRUE([HIR_RETURN(HIR_INT(BigInt(2)))]),
+    `LABEL__0_PURPOSE_WHILE_TRUE_START:
+return 2;
+goto LABEL__0_PURPOSE_WHILE_TRUE_START;`
   );
 
   assertCorrectlyLoweredWithPreConfiguredSetup(
