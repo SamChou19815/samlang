@@ -63,6 +63,11 @@ export interface HighIRIfElseStatement extends BaseHighIRStatement {
   readonly s2: readonly HighIRStatement[];
 }
 
+export interface HighIRWhileTrueStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRWhileTrueStatement';
+  readonly statements: readonly HighIRStatement[];
+}
+
 export interface HighIRVariantPatternToStatement {
   readonly tagOrder: number;
   readonly statements: readonly HighIRStatement[];
@@ -88,6 +93,7 @@ export interface HighIRReturnStatement extends BaseHighIRStatement {
 export type HighIRStatement =
   | HighIRFunctionCallStatement
   | HighIRIfElseStatement
+  | HighIRWhileTrueStatement
   | HighIRLetDefinitionStatement
   | HighIRStructInitializationStatement
   | HighIRReturnStatement;
@@ -160,6 +166,13 @@ export const HIR_IF_ELSE = ({
   booleanExpression,
   s1,
   s2,
+});
+
+export const HIR_WHILE_TRUE = (
+  statements: readonly HighIRStatement[]
+): HighIRWhileTrueStatement => ({
+  __type__: 'HighIRWhileTrueStatement',
+  statements,
 });
 
 export const HIR_LET = ({

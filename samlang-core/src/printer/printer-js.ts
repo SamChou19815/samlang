@@ -16,6 +16,9 @@ export const highIRStatementToString = (highIRStatement: HighIRStatement): strin
       const s2Str = s2.map((s) => highIRStatementToString(s)).join(';');
       return `if (${booleanExpressionStr}) {${s1Str}} else {${s2Str}}`;
     }
+    case 'HighIRWhileTrueStatement': {
+      return `while (true) { ${highIRStatement.statements.map(highIRStatementToString).join('')} }`;
+    }
     case 'HighIRFunctionCallStatement': {
       const { functionArguments, functionExpression, returnCollector } = highIRStatement;
       return `var ${returnCollector} = ${highIRExpressionToString(
