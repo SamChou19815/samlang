@@ -8,7 +8,7 @@ import {
 } from '../compiler';
 import interpretAssemblyProgram from '../interpreter/assembly-interpreter';
 import interpretMidIRCompilationUnit from '../interpreter/mid-ir-interpreter';
-import interpretSamlangModule from '../interpreter/module-interpreter';
+import interpretSamlangModule from '../interpreter/source-level-interpreter';
 import optimizeIRCompilationUnit from '../optimization';
 import { checkSources } from '../services/source-processor';
 import { runnableSamlangProgramTestCases } from '../test-programs';
