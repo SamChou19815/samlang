@@ -10,7 +10,6 @@ import {
   optimizeIrWithSimpleOptimization,
   optimizeIRWithUnusedNameElimination,
 } from '../../optimization/simple-optimizations';
-import optimizeIRWithTailRecursiveCallTransformation from '../../optimization/tail-recursion-optimization';
 import { hashMapOf } from '../../util/collections';
 import createMidIRBasicBlocks from './mir-basic-block';
 import emitCanonicalMidIRStatementsFromReorderedBasicBlocks from './mir-basic-block-optimized-emitter';
@@ -35,23 +34,21 @@ export const compileHighIrSourcesToMidIRCompilationUnit = (
         highIRFunction.body
       );
       stringGlobalVariables.forEach((it) => globalVariables.set(it.name, it));
-      functions.push(
-        optimizeIRWithTailRecursiveCallTransformation({
-          functionName: highIRFunction.name,
-          argumentNames: highIRFunction.parameters.map((it) => `_${it}`),
-          mainBodyStatements: optimizeIrWithSimpleOptimization(
-            emitCanonicalMidIRStatementsFromReorderedBasicBlocks(
-              reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath(
-                createMidIRBasicBlocks(allocator, highIRFunction.name, [
-                  ...loweredStatements,
-                  MIR_RETURN(),
-                ])
-              )
+      functions.push({
+        functionName: highIRFunction.name,
+        argumentNames: highIRFunction.parameters.map((it) => `_${it}`),
+        mainBodyStatements: optimizeIrWithSimpleOptimization(
+          emitCanonicalMidIRStatementsFromReorderedBasicBlocks(
+            reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath(
+              createMidIRBasicBlocks(allocator, highIRFunction.name, [
+                ...loweredStatements,
+                MIR_RETURN(),
+              ])
             )
-          ),
-          hasReturn: highIRFunction.hasReturn,
-        })
-      );
+          )
+        ),
+        hasReturn: highIRFunction.hasReturn,
+      });
     })
   );
   return { globalVariables: Array.from(globalVariables.values()), functions };
