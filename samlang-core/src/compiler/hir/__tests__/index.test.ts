@@ -19,6 +19,7 @@ import {
   HIR_ONE,
   HIR_FUNCTION_CALL,
   HIR_NAME,
+  HIR_WHILE_TRUE,
 } from '../../../ast/hir/hir-expressions';
 import type { HighIRModule } from '../../../ast/hir/hir-toplevel';
 import {
@@ -161,35 +162,49 @@ it('HIR compiler integration test', () => {
         name: '_module__class_Class1_function_infiniteLoop',
         hasReturn: false,
         parameters: [],
-        body: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('_module__class_Class1_function_infiniteLoop'),
-            functionArguments: [],
-            returnCollector: '_t0',
-          }),
-        ],
+        body: [HIR_WHILE_TRUE([])],
       },
       {
         name: '_module__class_Class1_function_factorial',
         hasReturn: true,
         parameters: ['n', 'acc'],
         body: [
-          HIR_IF_ELSE({
-            booleanExpression: HIR_BINARY({ operator: '==', e1: HIR_VARIABLE('n'), e2: HIR_ZERO }),
-            s1: [HIR_LET({ name: '_t1', assignedExpression: HIR_ONE })],
-            s2: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('_module__class_Class1_function_factorial'),
-                functionArguments: [
-                  HIR_BINARY({ operator: '-', e1: HIR_VARIABLE('n'), e2: HIR_ONE }),
-                  HIR_BINARY({ operator: '*', e1: HIR_VARIABLE('n'), e2: HIR_VARIABLE('acc') }),
-                ],
-                returnCollector: '_t0',
+          HIR_WHILE_TRUE([
+            HIR_IF_ELSE({
+              booleanExpression: HIR_BINARY({
+                operator: '==',
+                e1: HIR_VARIABLE('n'),
+                e2: HIR_ZERO,
               }),
-              HIR_LET({ name: '_t1', assignedExpression: HIR_VARIABLE('_t0') }),
-            ],
-          }),
-          HIR_RETURN(HIR_VARIABLE('_t1')),
+              s1: [HIR_RETURN(HIR_ONE)],
+              s2: [
+                HIR_LET({
+                  name: '_tailRecTransformationArgument0',
+                  assignedExpression: HIR_BINARY({
+                    operator: '-',
+                    e1: HIR_VARIABLE('n'),
+                    e2: HIR_ONE,
+                  }),
+                }),
+                HIR_LET({
+                  name: '_tailRecTransformationArgument1',
+                  assignedExpression: HIR_BINARY({
+                    operator: '*',
+                    e1: HIR_VARIABLE('n'),
+                    e2: HIR_VARIABLE('acc'),
+                  }),
+                }),
+                HIR_LET({
+                  name: 'n',
+                  assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0'),
+                }),
+                HIR_LET({
+                  name: 'acc',
+                  assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument1'),
+                }),
+              ],
+            }),
+          ]),
         ],
       },
     ],

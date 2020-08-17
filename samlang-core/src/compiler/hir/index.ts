@@ -6,6 +6,7 @@ import type { HighIRFunction, HighIRModule } from '../../ast/hir/hir-toplevel';
 import type { ClassMemberDefinition, SamlangModule } from '../../ast/lang/samlang-toplevel';
 import { HashMap, hashMapOf } from '../../util/collections';
 import lowerSamlangExpression from './hir-expression-lowering';
+import performTailRecursiveCallTransformationOnHighIRFunction from './hir-tail-recursion-transformation-hir';
 
 const compileFunction = (
   moduleReference: ModuleReference,
@@ -38,7 +39,13 @@ const compileSamlangModule = (
 ): HighIRModule => ({
   functions: samlangModule.classes
     .map(({ name: className, members }) =>
-      members.map((it) => compileFunction(moduleReference, samlangModule, className, it)).flat()
+      members
+        .map((it) =>
+          compileFunction(moduleReference, samlangModule, className, it).map(
+            performTailRecursiveCallTransformationOnHighIRFunction
+          )
+        )
+        .flat()
     )
     .flat(),
 });

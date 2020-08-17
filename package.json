@@ -12,6 +12,7 @@
     "codegen": "yarn workspaces foreach -t run codegen",
     "bundle": "yarn workspaces foreach -t run bundle",
     "test": "jest --coverage",
+    "test:single": "jest -t",
     "postinstall": "yarn codegen && yarn build"
   },
   "devDependencies": {
@@ -49,7 +50,7 @@
                 "**/samlang-core/src/ast/**",
                 "**/samlang-core/src/errors/*",
                 "**/samlang-core/src/interpreter/*",
-                "**/samlang-core/src/optimization/*",
+                "**/samlang-core/src/optimization/simple-optimizations*",
                 "**/samlang-core/src/parser/generated/*",
                 "**/samlang-core/src/services/*",
                 "**/samlang-core/src/util/*"

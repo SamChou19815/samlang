@@ -9,7 +9,6 @@ import optimizeMidIRCompilationUnitByInlining from './inline-optimization';
 import optimizeIRWithLocalValueNumbering from './local-value-numbering-optimization';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
 import { optimizeIrWithSimpleOptimization } from './simple-optimizations';
-import optimizeIRWithTailRecursiveCallTransformation from './tail-recursion-optimization';
 
 type OptimizationConfiguration = {
   doesPerformCopyPropagation?: boolean;
@@ -68,10 +67,10 @@ const optimizeIRCompilationUnit = (
           optimizationConfiguration
         );
       }
-      return optimizeIRWithTailRecursiveCallTransformation({
+      return {
         ...midIRFunction,
         mainBodyStatements: statements,
-      });
+      };
     });
     intermediate = { ...intermediate, functions: newFunctions };
     if (optimizationConfiguration.doesPerformInlining) {
