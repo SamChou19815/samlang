@@ -209,7 +209,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level no transform 
   ).toBeNull();
 });
 
-it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test', () => {
+it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 1', () => {
   expect(
     performTailRecursiveCallTransformationOnHighIRFunction({
       name: 'tailRec',
@@ -273,6 +273,87 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test'
             }),
           ],
           s2: [HIR_RETURN(HIR_ZERO)],
+        }),
+      ]),
+    ],
+  });
+});
+
+it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 2', () => {
+  expect(
+    performTailRecursiveCallTransformationOnHighIRFunction({
+      name: 'tailRec',
+      parameters: ['n'],
+      hasReturn: false,
+      body: [
+        HIR_IF_ELSE({
+          booleanExpression: HIR_ONE,
+          s1: [
+            HIR_IF_ELSE({
+              booleanExpression: HIR_ONE,
+              s1: [
+                HIR_IF_ELSE({
+                  booleanExpression: HIR_ONE,
+                  s1: [
+                    HIR_FUNCTION_CALL({
+                      functionExpression: HIR_NAME('tailRec'),
+                      functionArguments: [HIR_VARIABLE('n')],
+                      returnCollector: 'collector',
+                    }),
+                  ],
+                  s2: [
+                    HIR_FUNCTION_CALL({
+                      functionExpression: HIR_NAME('tailRec1'),
+                      functionArguments: [HIR_VARIABLE('n')],
+                      returnCollector: 'collector',
+                    }),
+                  ],
+                }),
+              ],
+              s2: [],
+            }),
+          ],
+          s2: [],
+        }),
+      ],
+    })
+  ).toEqual({
+    name: 'tailRec',
+    parameters: ['n'],
+    hasReturn: false,
+    body: [
+      HIR_WHILE_TRUE([
+        HIR_IF_ELSE({
+          booleanExpression: HIR_ONE,
+          s1: [
+            HIR_IF_ELSE({
+              booleanExpression: HIR_ONE,
+              s1: [
+                HIR_IF_ELSE({
+                  booleanExpression: HIR_ONE,
+                  s1: [
+                    HIR_LET({
+                      name: '_tailRecTransformationArgument0',
+                      assignedExpression: HIR_VARIABLE('n'),
+                    }),
+                    HIR_LET({
+                      name: 'n',
+                      assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0'),
+                    }),
+                  ],
+                  s2: [
+                    HIR_FUNCTION_CALL({
+                      functionExpression: HIR_NAME('tailRec1'),
+                      functionArguments: [HIR_VARIABLE('n')],
+                      returnCollector: 'collector',
+                    }),
+                  ],
+                }),
+              ],
+              s2: [],
+            }),
+          ],
+          s2: [],
         }),
       ]),
     ],
