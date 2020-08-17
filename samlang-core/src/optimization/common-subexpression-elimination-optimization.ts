@@ -81,7 +81,7 @@ type ExpressionUsageAndFirstAppears = {
   readonly usage: ReadonlySet<number>;
 };
 
-// eslint-disable-next-line camelcase, import/prefer-default-export
+// eslint-disable-next-line camelcase
 export const computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING = (
   statements: readonly MidIRStatement[]
 ): ReadonlyHashMap<MidIRExpressionWrapper, ExpressionUsageAndFirstAppears> => {
@@ -265,7 +265,6 @@ const computeHoistingListAndReplacementMap = (
     }
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const hoistingLists = statements.map((_, index) => {
     const hoistingMap = hoistingMaps.get(index) ?? new Map<string, MidIRExpression>();
     // cleanup hoisting map to avoid repeated computation of sub expressions.
