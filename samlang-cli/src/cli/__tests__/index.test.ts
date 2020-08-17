@@ -9,10 +9,8 @@ const assertCalled = (commandLineArguments: readonly string[], called: keyof CLI
     help: jest.fn(),
   };
   cliMainRunner(runner, commandLineArguments);
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-expect-error: expected
   Object.keys(runner).forEach((commandName: keyof CLIRunners) => {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error: expected
     expect(runner[commandName].mock.calls.length).toBe(commandName === called ? 1 : 0);
   });

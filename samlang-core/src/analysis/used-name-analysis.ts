@@ -70,7 +70,6 @@ const analyzeUsedFunctionNames = ({ functions }: MidIRCompilationUnit): Readonly
     const usedByThisFunction = usedFunctionMap.get(functionName);
     if (usedByThisFunction == null) {
       // It's possible since `functionName` could be a builtin function.
-      // eslint-disable-next-line no-continue
       continue;
     }
     usedByThisFunction.forEach((usedFunction) => {
