@@ -6,7 +6,7 @@ import {
   HIR_WHILE_TRUE,
 } from '../../ast/hir/hir-expressions';
 import type { HighIRFunction } from '../../ast/hir/hir-toplevel';
-import coalesceMoveAndReturnWithForHighIRStatements from './hir-move-return-coalescing';
+import coalesceMoveAndReturnForHighIRStatements from './hir-move-return-coalescing';
 
 const performTailRecursiveCallTransformationOnLinearStatements = (
   highIRFunction: HighIRFunction,
@@ -79,7 +79,7 @@ const performTailRecursiveCallTransformationOnHighIRFunction = (
   highIRFunction: HighIRFunction
 ): HighIRFunction | null => {
   const moveReturnCoalescedStatements =
-    coalesceMoveAndReturnWithForHighIRStatements(highIRFunction.body) ?? highIRFunction.body;
+    coalesceMoveAndReturnForHighIRStatements(highIRFunction.body) ?? highIRFunction.body;
   const potentialRewrittenStatements = recursivelyPerformTailRecursiveCallTransformationOnStatements(
     highIRFunction,
     moveReturnCoalescedStatements

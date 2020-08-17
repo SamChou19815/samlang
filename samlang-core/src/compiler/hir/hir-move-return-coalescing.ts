@@ -18,6 +18,9 @@ const coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable = (
   if (indexOfFinalReturnStatement <= 0) return null;
   const statementBeforeReturn = statements[indexOfFinalReturnStatement - 1];
   switch (statementBeforeReturn.__type__) {
+    case 'HighIRFunctionCallStatement':
+      // We cannot safely ignore a function call.
+      return null;
     case 'HighIRIfElseStatement': {
       const { booleanExpression, s1, s2 } = statementBeforeReturn;
       const trueBranchResult = coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable(
@@ -64,8 +67,12 @@ const coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable = (
     }
     default:
       // HighIRWhileTrueStatement: The return statement will be unreachable, so no point to check this.
-      // Others: not a move, cannot coalesce.
-      return null;
+      // Others: a statement with no side effect, which can be safely eliminated.
+      return coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable(
+        statements,
+        indexOfFinalReturnStatement - 1,
+        possibleVariablesToBeReturned
+      );
   }
 };
 
@@ -114,7 +121,7 @@ const coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable = (
  * at least we now have the guarantee that they are only 1-statement apart and must be in the same
  * block.
  */
-const coalesceMoveAndReturnWithForHighIRStatements = (
+const coalesceMoveAndReturnForHighIRStatements = (
   statements: readonly HighIRStatement[]
 ): readonly HighIRStatement[] | null => {
   if (statements.length === 0) return null;
@@ -131,4 +138,4 @@ const coalesceMoveAndReturnWithForHighIRStatements = (
   );
 };
 
-export default coalesceMoveAndReturnWithForHighIRStatements;
+export default coalesceMoveAndReturnForHighIRStatements;
