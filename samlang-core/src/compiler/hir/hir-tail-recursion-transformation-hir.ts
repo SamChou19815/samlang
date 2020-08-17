@@ -1,9 +1,11 @@
 import {
   HighIRStatement,
+  HIR_ZERO,
   HIR_VARIABLE,
   HIR_LET,
   HIR_IF_ELSE,
   HIR_WHILE_TRUE,
+  HIR_RETURN,
 } from '../../ast/hir/hir-expressions';
 import type { HighIRFunction } from '../../ast/hir/hir-toplevel';
 import eliminateUselessEndingMoveForHighIRStatements from './hir-eliminate-useless-ending-moves';
@@ -72,18 +74,18 @@ const performTailRecursiveCallTransformationOnLinearStatementsWithoutFinalReturn
   ];
 };
 
-const performTailRecursiveCallTransformationOnIfElseEndedStatements = (
+const performTailRecursiveCallTransformationOnIfElseEndedStatementsWithFinalReturn = (
   highIRFunction: HighIRFunction,
   statements: readonly HighIRStatement[]
 ): readonly HighIRStatement[] | null => {
   const lastStatement = statements[statements.length - 1];
   if (lastStatement == null || lastStatement.__type__ !== 'HighIRIfElseStatement') return null;
 
-  const s1 = recursivelyPerformTailRecursiveCallTransformationOnStatements(
+  const s1 = recursivelyPerformTailRecursiveCallTransformationOnStatementsWithFinalReturn(
     highIRFunction,
     lastStatement.s1
   );
-  const s2 = recursivelyPerformTailRecursiveCallTransformationOnStatements(
+  const s2 = recursivelyPerformTailRecursiveCallTransformationOnStatementsWithFinalReturn(
     highIRFunction,
     lastStatement.s2
   );
@@ -98,7 +100,34 @@ const performTailRecursiveCallTransformationOnIfElseEndedStatements = (
   ];
 };
 
-const recursivelyPerformTailRecursiveCallTransformationOnStatements = (
+const performTailRecursiveCallTransformationOnIfElseEndedStatementsWithoutFinalReturn = (
+  highIRFunction: HighIRFunction,
+  statements: readonly HighIRStatement[]
+): readonly HighIRStatement[] | null => {
+  const lastStatement = statements[statements.length - 1];
+  if (lastStatement == null || lastStatement.__type__ !== 'HighIRIfElseStatement') return null;
+
+  const s1 = recursivelyPerformTailRecursiveCallTransformationOnStatementsWithoutFinalReturn(
+    highIRFunction,
+    lastStatement.s1
+  );
+  const s2 = recursivelyPerformTailRecursiveCallTransformationOnStatementsWithoutFinalReturn(
+    highIRFunction,
+    lastStatement.s2
+  );
+  // istanbul ignore next
+  if (s1 == null && s2 == null) return null;
+  return [
+    ...statements.slice(0, statements.length - 1),
+    HIR_IF_ELSE({
+      booleanExpression: lastStatement.booleanExpression,
+      s1: s1 ?? [...lastStatement.s1, HIR_RETURN(HIR_ZERO)],
+      s2: s2 ?? [...lastStatement.s2, HIR_RETURN(HIR_ZERO)],
+    }),
+  ];
+};
+
+const recursivelyPerformTailRecursiveCallTransformationOnStatementsWithFinalReturn = (
   highIRFunction: HighIRFunction,
   statements: readonly HighIRStatement[]
 ): readonly HighIRStatement[] | null =>
@@ -106,23 +135,35 @@ const recursivelyPerformTailRecursiveCallTransformationOnStatements = (
     highIRFunction,
     statements
   ) ??
+  performTailRecursiveCallTransformationOnIfElseEndedStatementsWithFinalReturn(
+    highIRFunction,
+    statements
+  );
+
+const recursivelyPerformTailRecursiveCallTransformationOnStatementsWithoutFinalReturn = (
+  highIRFunction: HighIRFunction,
+  statements: readonly HighIRStatement[]
+): readonly HighIRStatement[] | null =>
   performTailRecursiveCallTransformationOnLinearStatementsWithoutFinalReturn(
     highIRFunction,
     statements
   ) ??
-  performTailRecursiveCallTransformationOnIfElseEndedStatements(highIRFunction, statements);
+  performTailRecursiveCallTransformationOnIfElseEndedStatementsWithoutFinalReturn(
+    highIRFunction,
+    statements
+  );
 
 const performTailRecursiveCallTransformationOnHighIRFunction = (
   highIRFunction: HighIRFunction
-): HighIRFunction | null => {
+): HighIRFunction => {
   const optimizedStatements = highIRFunction.hasReturn
     ? coalesceMoveAndReturnForHighIRStatements(highIRFunction.body) ?? highIRFunction.body
     : eliminateUselessEndingMoveForHighIRStatements(highIRFunction.body);
-  const potentialRewrittenStatements = recursivelyPerformTailRecursiveCallTransformationOnStatements(
-    highIRFunction,
-    optimizedStatements
-  );
-  if (potentialRewrittenStatements == null) return null;
+  const optimizer = highIRFunction.hasReturn
+    ? recursivelyPerformTailRecursiveCallTransformationOnStatementsWithFinalReturn
+    : recursivelyPerformTailRecursiveCallTransformationOnStatementsWithoutFinalReturn;
+  const potentialRewrittenStatements = optimizer(highIRFunction, optimizedStatements);
+  if (potentialRewrittenStatements == null) return { ...highIRFunction, body: optimizedStatements };
   return { ...highIRFunction, body: [HIR_WHILE_TRUE(potentialRewrittenStatements)] };
 };
 
