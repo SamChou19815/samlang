@@ -224,7 +224,9 @@ class AssemblyInterpreter {
 
   private interpret = (node: AssemblyInstruction): void => {
     switch (node.__type__) {
+      // istanbul ignore next
       case 'AssemblyMoveFromLong':
+        // istanbul ignore next
         this.setValue(node.destination, node.value);
         return;
       case 'AssemblyMoveToMemory':

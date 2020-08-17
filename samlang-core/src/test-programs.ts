@@ -482,63 +482,36 @@ class Main {
   },
   {
     testCaseName: 'cf-test-1',
-    expectedStandardOut: '361200\n',
+    expectedStandardOut: '1205\n',
     sourceCode: `
 class Main {
-  function testI(acc: int, i: int): int =
-    if (i >= 30 + 100/100 - 2000*2000/(10*10*10*4000)) then
-      acc
-    else
-      Main.testI(Main.testJ(acc, 0), i + 1)
-
-  function testJ(acc: int, j: int): int =
-    if (j >= 10 + 100 * 99 * 98 * 97 * 0) then
-      acc
-    else
-      // +1204
-      Main.testJ(acc + 34 * 34 + 4 + 1 + 1231 / 28, j + 1)
-
-  // 1204 * 30 * 10 = 361200
-  function main(): unit = println(intToString(Main.testI(0, 0)))
+  function main(): unit = println(intToString(
+    1 + 34 * 34 + 4 + 1 + 1231 / 28 + 100/100 - 2000*2000/(10*10*10*4000)
+  ))
 }
 `,
   },
   {
     testCaseName: 'cf-test-2',
-    expectedStandardOut: '7000\n',
+    expectedStandardOut: '37\n',
     sourceCode: `
 class Main {
-  function test(acc: int, i: int): int =
-    if (i >= 10*10*2) then
-      acc
-    else {
-      // 35
-      val increase = (1+2*3-4/5%10000000/12334) + (1+2*3-4/5%10000000/12334) +
-                     (1+2*3-4/5%10000000/12334) + (1+2*3-4/5%10000000/12334) +
-                     (1+2*3-4/5%10000000/12334);
-      Main.test(acc + increase, i + 1)
-    }
-
-  // 35 * 200 = 7000
-  function main(): unit = println(intToString(Main.test(0, 0)))
+  function main(): unit = {
+    // 35
+    val increase = (1+2*3-4/5%10000000/12334) + (1+2*3-4/5%10000000/12334) +
+                   (1+2*3-4/5%10000000/12334) + (1+2*3-4/5%10000000/12334) +
+                   (1+2*3-4/5%10000000/12334);
+    println(intToString(2 + increase))
+  }
 }
 `,
   },
   {
     testCaseName: 'cf-test-3',
-    expectedStandardOut: '1400\n',
+    expectedStandardOut: '7\n',
     sourceCode: `
 class Main {
-  function test(acc: int, i: int): int =
-    if (i >= 10*10*2) then
-      acc
-    else {
-      // +7
-      Main.test(acc + 1 + 2 * 3 - 4 / 5 % 10000000 / 1234, i + 1)
-    }
-
-  // 200 * 7 = 1400
-  function main(): unit = println(intToString(Main.test(0, 0)))
+  function main(): unit = println(intToString(1 + 2 * 3 - 4 / 5 % 10000000 / 1234))
 }
 `,
   },
@@ -703,35 +676,28 @@ class Main {
   },
   {
     testCaseName: 'cse-test-4',
-    expectedStandardOut: '2700\n',
+    expectedStandardOut: '9\n',
     sourceCode: `
 class Main {
-  function test(totalPicograms: int, i: int): int = {
-    val maxLong = 9223372036854775807;
-    if (i >= 300) then
-      totalPicograms
-    else {
-      val megagrams = maxLong - i;
-      val kilograms = megagrams / 1000;
-      val grams = (megagrams / 1000) / 1000;
-      val milligrams = ((megagrams / 1000) / 1000) / 1000;
-      val micrograms = (((megagrams / 1000) / 1000) / 1000) / 1000;
-      val nanograms = ((((megagrams / 1000) / 1000) / 1000) / 1000) / 1000;
-      val picograms = (((((megagrams / 1000) / 1000) / 1000) / 1000) / 1000) / 1000;
-      Main.test(totalPicograms + picograms, i + 1)
-    }
+  function main(): unit = {
+    val megagrams = 9223372036854775807;
+    val kilograms = megagrams / 1000;
+    val grams = (megagrams / 1000) / 1000;
+    val milligrams = ((megagrams / 1000) / 1000) / 1000;
+    val micrograms = (((megagrams / 1000) / 1000) / 1000) / 1000;
+    val nanograms = ((((megagrams / 1000) / 1000) / 1000) / 1000) / 1000;
+    val picograms = (((((megagrams / 1000) / 1000) / 1000) / 1000) / 1000) / 1000;
+    println(intToString(picograms))
   }
-
-  function main(): unit = println(intToString(Main.test(0, 0)))
 }`,
   },
   {
     testCaseName: 'cse-test-5',
-    expectedStandardOut: '150\n',
+    expectedStandardOut: '2\n',
     sourceCode: `
 class Main {
   function test(totalOddNumbers: int, i: int): int = {
-    if (i >= 300) then
+    if (i >= 4) then
       totalOddNumbers
     else {
       val iMod64 = i % 64;
@@ -1153,7 +1119,7 @@ class Main {
   function main(): unit = {
     val _ = println(intToString(Main.factorial(4)));
     val _ = println(intToString(Main.fib(10)));
-    val _ = Main.uselessRecursion(20);
+    val _ = Main.uselessRecursion(3);
   }
 }
 `,
@@ -1186,74 +1152,6 @@ class Main(val a: int, val b: bool) {
     val _ = { a: e, b }
     val finalValue = a + c + d + (if (b) then 0 else panic("")) + e; // 2 + (-1) + (-7) + (-1) = -7
     println(intToString(finalValue))
-  }
-}
-`,
-  },
-  {
-    testCaseName: 'reordering-test',
-    expectedStandardOut: 'OK\n',
-    sourceCode: `
-class Main {
-  function assertEqual(a: int, b: int): unit = if (a != b) then panic("") else {}
-
-  function main(): unit = {
-    val v0 = if (true) then {
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      65536
-    } else 42;
-    val v1 = if (false) then 42 else {
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      65536
-    };
-    val v2 = if (!true) then 42 else {
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      65536
-    };
-    val v3 = if (!false) then {
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      val _ = 0;
-      65536
-    } else 42;
-    val _ = Main.assertEqual(v0, v1);
-    val _ = Main.assertEqual(v2, v3);
-    val _ = Main.assertEqual(v0, v2);
-    println("OK")
   }
 }
 `,
