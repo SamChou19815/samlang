@@ -19,7 +19,12 @@ it('performTailRecursiveCallTransformationOnHighIRFunction failed coalescing tes
       hasReturn: true,
       body: [],
     })
-  ).toBeNull();
+  ).toEqual({
+    name: '',
+    parameters: [],
+    hasReturn: true,
+    body: [],
+  });
 });
 
 it('performTailRecursiveCallTransformationOnHighIRFunction no tailrec call test', () => {
@@ -33,7 +38,12 @@ it('performTailRecursiveCallTransformationOnHighIRFunction no tailrec call test'
         HIR_RETURN(HIR_VARIABLE('_t1')),
       ],
     })
-  ).toBeNull();
+  ).toEqual({
+    name: '',
+    parameters: [],
+    hasReturn: true,
+    body: [HIR_RETURN(HIR_ONE)],
+  });
 });
 
 it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', () => {
@@ -79,7 +89,19 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow mismatch 
         HIR_RETURN(HIR_VARIABLE('collector')),
       ],
     })
-  ).toBeNull();
+  ).toEqual({
+    name: 'tailRec',
+    parameters: ['n'],
+    hasReturn: true,
+    body: [
+      HIR_FUNCTION_CALL({
+        functionExpression: HIR_NAME('tailRec1'),
+        functionArguments: [HIR_VARIABLE('n')],
+        returnCollector: 'collector',
+      }),
+      HIR_RETURN(HIR_VARIABLE('collector')),
+    ],
+  });
 });
 
 it('performTailRecursiveCallTransformationOnHighIRFunction linear flow mismatch test 2', () => {
@@ -97,7 +119,19 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow mismatch 
         HIR_RETURN(HIR_VARIABLE('collector')),
       ],
     })
-  ).toBeNull();
+  ).toEqual({
+    name: 'tailRec',
+    parameters: ['n'],
+    hasReturn: true,
+    body: [
+      HIR_FUNCTION_CALL({
+        functionExpression: HIR_NAME('tailRec'),
+        functionArguments: [HIR_VARIABLE('n')],
+        returnCollector: 'collector1',
+      }),
+      HIR_RETURN(HIR_VARIABLE('collector')),
+    ],
+  });
 });
 
 it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 1', () => {
@@ -206,7 +240,18 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level no transform 
         }),
       ],
     })
-  ).toBeNull();
+  ).toEqual({
+    name: 'tailRec',
+    parameters: ['n'],
+    hasReturn: true,
+    body: [
+      HIR_IF_ELSE({
+        booleanExpression: HIR_ONE,
+        s1: [HIR_RETURN(HIR_ZERO)],
+        s2: [HIR_RETURN(HIR_ZERO)],
+      }),
+    ],
+  });
 });
 
 it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 1', () => {
@@ -313,7 +358,19 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
               s2: [],
             }),
           ],
-          s2: [],
+          s2: [
+            HIR_IF_ELSE({
+              booleanExpression: HIR_ONE,
+              s1: [],
+              s2: [
+                HIR_FUNCTION_CALL({
+                  functionExpression: HIR_NAME('tailRec'),
+                  functionArguments: [HIR_VARIABLE('n')],
+                  returnCollector: 'collector',
+                }),
+              ],
+            }),
+          ],
         }),
       ],
     })
@@ -347,13 +404,29 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
                       functionArguments: [HIR_VARIABLE('n')],
                       returnCollector: 'collector',
                     }),
+                    HIR_RETURN(HIR_ZERO),
                   ],
                 }),
               ],
-              s2: [],
+              s2: [HIR_RETURN(HIR_ZERO)],
             }),
           ],
-          s2: [],
+          s2: [
+            HIR_IF_ELSE({
+              booleanExpression: HIR_ONE,
+              s1: [HIR_RETURN(HIR_ZERO)],
+              s2: [
+                HIR_LET({
+                  name: '_tailRecTransformationArgument0',
+                  assignedExpression: HIR_VARIABLE('n'),
+                }),
+                HIR_LET({
+                  name: 'n',
+                  assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0'),
+                }),
+              ],
+            }),
+          ],
         }),
       ]),
     ],
