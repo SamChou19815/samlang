@@ -35,6 +35,9 @@ it('compile hello world to JS integration test', () => {
   expect(highIRSourcesToJSString(hirSources)).toBe(
     `const _module_Test_class_Main_function_main = () => {var _t0 = ''.concat('Hello ', 'World!');;var _t1 = console.log(_t0); };`
   );
+  expect(highIRSourcesToJSString(hirSources, moduleReference)).toBe(
+    `const _module_Test_class_Main_function_main = () => {var _t0 = ''.concat('Hello ', 'World!');;var _t1 = console.log(_t0); };\n_module_Test_class_Main_function_main();`
+  );
 });
 
 it('HIR statements to JS string test', () => {
