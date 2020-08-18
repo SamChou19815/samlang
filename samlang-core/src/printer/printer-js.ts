@@ -1,5 +1,11 @@
 import { Sources } from '..';
 import {
+  ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
+  ENCODED_FUNCTION_NAME_STRING_CONCAT,
+} from '../ast/common/name-encoder';
+import {
   HighIRStatement,
   HighIRExpression,
   HighIRVariableExpression,
@@ -21,9 +27,30 @@ export const highIRStatementToString = (highIRStatement: HighIRStatement): strin
     }
     case 'HighIRFunctionCallStatement': {
       const { functionArguments, functionExpression, returnCollector } = highIRStatement;
-      return `var ${returnCollector} = ${highIRExpressionToString(
-        functionExpression
-      )}(${functionArguments.map((arg) => highIRExpressionToString(arg)).join(', ')});`;
+      let functionName = highIRExpressionToString(functionExpression);
+      switch (functionName) {
+        case ENCODED_FUNCTION_NAME_INT_TO_STRING: {
+          functionName = 'String';
+          break;
+        }
+        case ENCODED_FUNCTION_NAME_PRINTLN: {
+          functionName = 'console.log';
+          break;
+        }
+        case ENCODED_FUNCTION_NAME_STRING_TO_INT: {
+          functionName = 'parseInt';
+          break;
+        }
+        case ENCODED_FUNCTION_NAME_STRING_CONCAT: {
+          functionName = "''.concat";
+          break;
+        }
+        default:
+          break;
+      }
+      return `var ${returnCollector} = ${functionName}(${functionArguments
+        .map((arg) => highIRExpressionToString(arg))
+        .join(', ')});`;
     }
     case 'HighIRLetDefinitionStatement': {
       const { name, assignedExpression } = highIRStatement;

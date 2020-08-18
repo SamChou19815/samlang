@@ -1,4 +1,5 @@
 import { ModuleReference, checkSources } from '../..';
+import { encodeBuiltinName } from '../../ast/common/name-encoder';
 import {
   HIR_IF_ELSE,
   HIR_BINARY,
@@ -32,7 +33,7 @@ it('compile hello world to JS integration test', () => {
   const { checkedSources } = checkSources([[moduleReference, sourceCode]]);
   const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
   expect(highIRSourcesToJSString(hirSources)).toBe(
-    `const _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };`
+    `const _module_Test_class_Main_function_main = () => {var _t0 = ''.concat('Hello ', 'World!');;var _t1 = console.log(_t0); };`
   );
 });
 
@@ -70,6 +71,42 @@ it('HIR statements to JS string test', () => {
       })
     )
   ).toBe('var val = func();');
+  expect(
+    highIRStatementToString(
+      HIR_FUNCTION_CALL({
+        functionArguments: [HIR_STRING('Hello, '), HIR_STRING('world')],
+        functionExpression: HIR_NAME(encodeBuiltinName('println')),
+        returnCollector: 'res',
+      })
+    )
+  ).toBe(`var res = console.log('Hello, ', 'world');`);
+  expect(
+    highIRStatementToString(
+      HIR_FUNCTION_CALL({
+        functionArguments: [HIR_STRING('5')],
+        functionExpression: HIR_NAME(encodeBuiltinName('stringToInt')),
+        returnCollector: 'res',
+      })
+    )
+  ).toBe(`var res = parseInt('5');`);
+  expect(
+    highIRStatementToString(
+      HIR_FUNCTION_CALL({
+        functionArguments: [HIR_INT(BigInt(5))],
+        functionExpression: HIR_NAME(encodeBuiltinName('intToString')),
+        returnCollector: 'res',
+      })
+    )
+  ).toBe(`var res = String(5);`);
+  expect(
+    highIRStatementToString(
+      HIR_FUNCTION_CALL({
+        functionArguments: [HIR_STRING('5'), HIR_STRING('4')],
+        functionExpression: HIR_NAME(encodeBuiltinName('stringConcat')),
+        returnCollector: 'res',
+      })
+    )
+  ).toBe(`var res = ''.concat('5', '4');`);
   expect(
     highIRStatementToString(
       HIR_LET({
