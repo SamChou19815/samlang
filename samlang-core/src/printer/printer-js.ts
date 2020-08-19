@@ -35,15 +35,15 @@ export const highIRStatementToString = (highIRStatement: HighIRStatement): strin
           break;
         }
         case ENCODED_FUNCTION_NAME_PRINTLN: {
-          functionName = 'console.log';
+          functionName = '_builtin_println';
           break;
         }
         case ENCODED_FUNCTION_NAME_STRING_TO_INT: {
-          functionName = 'parseInt';
+          functionName = 'BigInt';
           break;
         }
         case ENCODED_FUNCTION_NAME_STRING_CONCAT: {
-          functionName = "''.concat";
+          functionName = '_builtin_stringConcat';
           break;
         }
         default:
@@ -100,7 +100,8 @@ export const highIRSourcesToJSString = (
   sources: Sources<HighIRModule>,
   entryModule?: ModuleReference
 ): string => {
-  let finalStr = '';
+  let finalStr =
+    'const _builtin_stringConcat = (a, b) => a + b;\nconst _builtin_println = (v) => console.log(v);\n';
   sources.forEach((module) => {
     finalStr += `${module.functions.map((f) => highIRFunctionToString(f)).join(';\n')}`;
   });

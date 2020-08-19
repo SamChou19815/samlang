@@ -33,10 +33,10 @@ it('compile hello world to JS integration test', () => {
   const { checkedSources } = checkSources([[moduleReference, sourceCode]]);
   const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
   expect(highIRSourcesToJSString(hirSources)).toBe(
-    `const _module_Test_class_Main_function_main = () => {var _t0 = ''.concat('Hello ', 'World!');;var _t1 = console.log(_t0); };`
+    `const _builtin_stringConcat = (a, b) => a + b;\nconst _builtin_println = (v) => console.log(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };`
   );
   expect(highIRSourcesToJSString(hirSources, moduleReference)).toBe(
-    `const _module_Test_class_Main_function_main = () => {var _t0 = ''.concat('Hello ', 'World!');;var _t1 = console.log(_t0); };\n_module_Test_class_Main_function_main();`
+    `const _builtin_stringConcat = (a, b) => a + b;\nconst _builtin_println = (v) => console.log(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\n_module_Test_class_Main_function_main();`
   );
 });
 
@@ -77,12 +77,12 @@ it('HIR statements to JS string test', () => {
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
-        functionArguments: [HIR_STRING('Hello, '), HIR_STRING('world')],
+        functionArguments: [HIR_STRING('Hello, world')],
         functionExpression: HIR_NAME(encodeBuiltinName('println')),
         returnCollector: 'res',
       })
     )
-  ).toBe(`var res = console.log('Hello, ', 'world');`);
+  ).toBe(`var res = _builtin_println('Hello, world');`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -91,7 +91,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'res',
       })
     )
-  ).toBe(`var res = parseInt('5');`);
+  ).toBe(`var res = BigInt('5');`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -109,7 +109,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'res',
       })
     )
-  ).toBe(`var res = ''.concat('5', '4');`);
+  ).toBe(`var res = _builtin_stringConcat('5', '4');`);
   expect(
     highIRStatementToString(
       HIR_LET({
