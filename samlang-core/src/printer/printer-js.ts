@@ -28,30 +28,9 @@ export const highIRStatementToString = (highIRStatement: HighIRStatement): strin
     }
     case 'HighIRFunctionCallStatement': {
       const { functionArguments, functionExpression, returnCollector } = highIRStatement;
-      let functionName = highIRExpressionToString(functionExpression);
-      switch (functionName) {
-        case ENCODED_FUNCTION_NAME_INT_TO_STRING: {
-          functionName = 'String';
-          break;
-        }
-        case ENCODED_FUNCTION_NAME_PRINTLN: {
-          functionName = '_builtin_println';
-          break;
-        }
-        case ENCODED_FUNCTION_NAME_STRING_TO_INT: {
-          functionName = 'BigInt';
-          break;
-        }
-        case ENCODED_FUNCTION_NAME_STRING_CONCAT: {
-          functionName = '_builtin_stringConcat';
-          break;
-        }
-        default:
-          break;
-      }
-      return `var ${returnCollector} = ${functionName}(${functionArguments
-        .map((arg) => highIRExpressionToString(arg))
-        .join(', ')});`;
+      return `var ${returnCollector} = ${highIRExpressionToString(
+        functionExpression
+      )}(${functionArguments.map((arg) => highIRExpressionToString(arg)).join(', ')});`;
     }
     case 'HighIRLetDefinitionStatement': {
       const { name, assignedExpression } = highIRStatement;
@@ -100,8 +79,10 @@ export const highIRSourcesToJSString = (
   sources: Sources<HighIRModule>,
   entryModule?: ModuleReference
 ): string => {
-  let finalStr =
-    'const _builtin_stringConcat = (a, b) => a + b;\nconst _builtin_println = (v) => console.log(v);\n';
+  let finalStr = `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+  const ${ENCODED_FUNCTION_NAME_PRINTLN} = (v) => console.log(v);
+  const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
+  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\n`;
   sources.forEach((module) => {
     finalStr += `${module.functions.map((f) => highIRFunctionToString(f)).join(';\n')}`;
   });
