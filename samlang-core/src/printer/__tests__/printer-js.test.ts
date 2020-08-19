@@ -1,5 +1,11 @@
 import { ModuleReference, checkSources } from '../..';
 import {
+  ENCODED_FUNCTION_NAME_STRING_CONCAT,
+  ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
+  ENCODED_FUNCTION_NAME_INT_TO_STRING,
+} from '../../ast/common/name-encoder';
+import {
   HIR_IF_ELSE,
   HIR_BINARY,
   HIR_INT,
@@ -32,7 +38,16 @@ it('compile hello world to JS integration test', () => {
   const { checkedSources } = checkSources([[moduleReference, sourceCode]]);
   const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
   expect(highIRSourcesToJSString(hirSources)).toBe(
-    `const _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };`
+    `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+  const ${ENCODED_FUNCTION_NAME_PRINTLN} = (v) => console.log(v);
+  const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
+  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };`
+  );
+  expect(highIRSourcesToJSString(hirSources, moduleReference)).toBe(
+    `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+  const ${ENCODED_FUNCTION_NAME_PRINTLN} = (v) => console.log(v);
+  const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
+  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\n_module_Test_class_Main_function_main();`
   );
 });
 
@@ -70,6 +85,42 @@ it('HIR statements to JS string test', () => {
       })
     )
   ).toBe('var val = func();');
+  expect(
+    highIRStatementToString(
+      HIR_FUNCTION_CALL({
+        functionArguments: [HIR_STRING('Hello, world')],
+        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN),
+        returnCollector: 'res',
+      })
+    )
+  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_PRINTLN}('Hello, world');`);
+  expect(
+    highIRStatementToString(
+      HIR_FUNCTION_CALL({
+        functionArguments: [HIR_STRING('5')],
+        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_TO_INT),
+        returnCollector: 'res',
+      })
+    )
+  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_TO_INT}('5');`);
+  expect(
+    highIRStatementToString(
+      HIR_FUNCTION_CALL({
+        functionArguments: [HIR_INT(BigInt(5))],
+        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_INT_TO_STRING),
+        returnCollector: 'res',
+      })
+    )
+  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_INT_TO_STRING}(5);`);
+  expect(
+    highIRStatementToString(
+      HIR_FUNCTION_CALL({
+        functionArguments: [HIR_STRING('5'), HIR_STRING('4')],
+        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_CONCAT),
+        returnCollector: 'res',
+      })
+    )
+  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}('5', '4');`);
   expect(
     highIRStatementToString(
       HIR_LET({

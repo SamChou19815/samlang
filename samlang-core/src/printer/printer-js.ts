@@ -1,4 +1,11 @@
-import { Sources } from '..';
+import { Sources, ModuleReference } from '..';
+import {
+  ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
+  ENCODED_FUNCTION_NAME_STRING_CONCAT,
+  encodeMainFunctionName,
+} from '../ast/common/name-encoder';
 import {
   HighIRStatement,
   HighIRExpression,
@@ -68,10 +75,19 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
   }
 };
 
-export const highIRSourcesToJSString = (sources: Sources<HighIRModule>): string => {
-  let finalStr = '';
+export const highIRSourcesToJSString = (
+  sources: Sources<HighIRModule>,
+  entryModule?: ModuleReference
+): string => {
+  let finalStr = `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+  const ${ENCODED_FUNCTION_NAME_PRINTLN} = (v) => console.log(v);
+  const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
+  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\n`;
   sources.forEach((module) => {
     finalStr += `${module.functions.map((f) => highIRFunctionToString(f)).join(';\n')}`;
   });
+  if (entryModule) {
+    finalStr += `\n${encodeMainFunctionName(entryModule)}();`;
+  }
   return finalStr;
 };
