@@ -1,4 +1,5 @@
 import { Sources, ModuleReference } from '..';
+import { binaryOperatorSymbolTable } from '../ast/common/binary-operators';
 import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_PRINTLN,
@@ -11,10 +12,8 @@ import {
   HighIRExpression,
   HighIRVariableExpression,
   HighIRNameExpression,
-  HighIRBinaryExpression,
 } from '../ast/hir/hir-expressions';
 import { HighIRFunction, HighIRModule } from '../ast/hir/hir-toplevel';
-import { binaryOperatorSymbolTable } from '../ast/common/binary-operators';
 
 export const highIRStatementToString = (highIRStatement: HighIRStatement): string => {
   switch (highIRStatement.__type__) {
@@ -73,7 +72,7 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
     case 'HighIRBinaryExpression': {
       const { e1, e2, operator } = highIRExpression;
       const addParentheses = (subExpression: HighIRExpression): string => {
-        if (subExpression.__type__ == 'HighIRBinaryExpression') {
+        if (subExpression.__type__ === 'HighIRBinaryExpression') {
           const p1 = binaryOperatorSymbolTable[operator]?.precedence;
           const p2 = binaryOperatorSymbolTable[subExpression.operator]?.precedence;
           if (p1 != null && p2 != null && p2 >= p1) {
