@@ -63,7 +63,13 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
       return `'${highIRExpression.value}'`;
     case 'HighIRIndexAccessExpression': {
       const { expression, index } = highIRExpression;
-      return `${highIRExpressionToString(expression)}[${index}]`;
+      const addParentheses = (subExpression: HighIRExpression): string => {
+        if (subExpression.__type__ === 'HighIRBinaryExpression') {
+          return `(${highIRExpressionToString(subExpression)})`;
+        }
+        return highIRExpressionToString(subExpression);
+      };
+      return `${addParentheses(expression)}[${index}]`;
     }
     case 'HighIRVariableExpression':
       return (highIRExpression as HighIRVariableExpression).name;
