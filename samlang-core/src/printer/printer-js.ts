@@ -11,8 +11,10 @@ import {
   HighIRExpression,
   HighIRVariableExpression,
   HighIRNameExpression,
+  HighIRBinaryExpression,
 } from '../ast/hir/hir-expressions';
 import { HighIRFunction, HighIRModule } from '../ast/hir/hir-toplevel';
+import { binaryOperatorSymbolTable } from '../ast/common/binary-operators';
 
 export const highIRStatementToString = (highIRStatement: HighIRStatement): string => {
   switch (highIRStatement.__type__) {
@@ -70,7 +72,17 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
       return (highIRExpression as HighIRNameExpression).name;
     case 'HighIRBinaryExpression': {
       const { e1, e2, operator } = highIRExpression;
-      return `(${highIRExpressionToString(e1)} ${operator} ${highIRExpressionToString(e2)})`;
+      const addParentheses = (subExpression: HighIRExpression): string => {
+        if (subExpression.__type__ == 'HighIRBinaryExpression') {
+          const p1 = binaryOperatorSymbolTable[operator]?.precedence;
+          const p2 = binaryOperatorSymbolTable[subExpression.operator]?.precedence;
+          if (p1 != null && p2 != null && p2 >= p1) {
+            return `(${highIRExpressionToString(subExpression)})`;
+          }
+        }
+        return highIRExpressionToString(subExpression);
+      };
+      return `${addParentheses(e1)} ${operator} ${addParentheses(e2)}`;
     }
   }
 };
