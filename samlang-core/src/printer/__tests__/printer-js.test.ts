@@ -64,7 +64,7 @@ it('HIR statements to JS string test', () => {
         s2: [HIR_RETURN(HIR_ZERO)],
       })
     )
-  ).toBe(`if ((5 == 5)) {return 0;} else {return 0;}`);
+  ).toBe(`if (5 == 5) {return 0;} else {return 0;}`);
   expect(
     highIRStatementToString(
       HIR_WHILE_TRUE([
@@ -167,6 +167,29 @@ it('HIR expression to JS string test', () => {
       })
     )
   ).toBe(`samlang[3]`);
+  expect(
+    highIRExpressionToString(
+      HIR_INDEX_ACCESS({
+        expression: HIR_INDEX_ACCESS({
+          expression: HIR_VARIABLE('a'),
+          index: 4,
+        }),
+        index: 3,
+      })
+    )
+  ).toBe('a[4][3]');
+  expect(
+    highIRExpressionToString(
+      HIR_INDEX_ACCESS({
+        expression: HIR_BINARY({
+          operator: '+',
+          e1: HIR_STRING('a'),
+          e2: HIR_STRING('b'),
+        }),
+        index: 0,
+      })
+    )
+  ).toBe("('a' + 'b')[0]");
   expect(highIRExpressionToString(HIR_VARIABLE('ts'))).toBe('ts');
   expect(highIRExpressionToString(HIR_NAME('key'))).toBe('key');
   expect(
@@ -177,5 +200,103 @@ it('HIR expression to JS string test', () => {
         e2: HIR_INT(BigInt(7)),
       })
     )
-  ).toBe('(7 != 7)');
+  ).toBe('7 != 7');
+  expect(
+    highIRExpressionToString(
+      HIR_BINARY({
+        operator: '+',
+        e1: HIR_INT(BigInt(7)),
+        e2: HIR_BINARY({
+          operator: '*',
+          e1: HIR_INT(BigInt(4)),
+          e2: HIR_INT(BigInt(4)),
+        }),
+      })
+    )
+  ).toBe('7 + 4 * 4');
+  expect(
+    highIRExpressionToString(
+      HIR_BINARY({
+        operator: '*',
+        e1: HIR_INT(BigInt(7)),
+        e2: HIR_BINARY({
+          operator: '+',
+          e1: HIR_INT(BigInt(4)),
+          e2: HIR_INT(BigInt(4)),
+        }),
+      })
+    )
+  ).toBe('7 * (4 + 4)');
+  expect(
+    highIRExpressionToString(
+      HIR_BINARY({
+        operator: '*',
+        e1: HIR_INT(BigInt(7)),
+        e2: HIR_BINARY({
+          operator: '*',
+          e1: HIR_INT(BigInt(4)),
+          e2: HIR_INT(BigInt(4)),
+        }),
+      })
+    )
+  ).toBe('7 * (4 * 4)');
+  expect(
+    highIRExpressionToString(
+      HIR_BINARY({
+        operator: '*',
+        e1: HIR_BINARY({
+          operator: '*',
+          e1: HIR_INT(BigInt(1)),
+          e2: HIR_INT(BigInt(2)),
+        }),
+        e2: HIR_BINARY({
+          operator: '*',
+          e1: HIR_INT(BigInt(3)),
+          e2: HIR_INT(BigInt(4)),
+        }),
+      })
+    )
+  ).toBe('(1 * 2) * (3 * 4)');
+  expect(
+    highIRExpressionToString(
+      HIR_BINARY({
+        operator: '+',
+        e1: HIR_BINARY({
+          operator: '-',
+          e1: HIR_INT(BigInt(1)),
+          e2: HIR_INT(BigInt(2)),
+        }),
+        e2: HIR_BINARY({
+          operator: '%',
+          e1: HIR_INT(BigInt(3)),
+          e2: HIR_INT(BigInt(4)),
+        }),
+      })
+    )
+  ).toBe('(1 - 2) + 3 % 4');
+  expect(
+    highIRExpressionToString(
+      HIR_BINARY({
+        operator: '+',
+        e1: HIR_NAME('somevar'),
+        e2: HIR_BINARY({
+          operator: '-',
+          e1: HIR_INT(BigInt(3)),
+          e2: HIR_INT(BigInt(4)),
+        }),
+      })
+    )
+  ).toBe('somevar + (3 - 4)');
+  expect(
+    highIRExpressionToString(
+      HIR_BINARY({
+        operator: '+',
+        e1: HIR_INDEX_ACCESS({
+          expression: HIR_VARIABLE('a'),
+          index: 2,
+        }),
+        e2: HIR_INT(BigInt(1)),
+      })
+    )
+  ).toBe('a[2] + 1');
 });

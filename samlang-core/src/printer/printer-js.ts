@@ -1,4 +1,5 @@
 import { Sources, ModuleReference } from '..';
+import { binaryOperatorSymbolTable } from '../ast/common/binary-operators';
 import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_PRINTLN,
@@ -62,7 +63,13 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
       return `'${highIRExpression.value}'`;
     case 'HighIRIndexAccessExpression': {
       const { expression, index } = highIRExpression;
-      return `${highIRExpressionToString(expression)}[${index}]`;
+      const addParentheses = (subExpression: HighIRExpression): string => {
+        if (subExpression.__type__ === 'HighIRBinaryExpression') {
+          return `(${highIRExpressionToString(subExpression)})`;
+        }
+        return highIRExpressionToString(subExpression);
+      };
+      return `${addParentheses(expression)}[${index}]`;
     }
     case 'HighIRVariableExpression':
       return (highIRExpression as HighIRVariableExpression).name;
@@ -70,7 +77,17 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
       return (highIRExpression as HighIRNameExpression).name;
     case 'HighIRBinaryExpression': {
       const { e1, e2, operator } = highIRExpression;
-      return `(${highIRExpressionToString(e1)} ${operator} ${highIRExpressionToString(e2)})`;
+      const addParentheses = (subExpression: HighIRExpression): string => {
+        if (subExpression.__type__ === 'HighIRBinaryExpression') {
+          const p1 = binaryOperatorSymbolTable[operator]?.precedence;
+          const p2 = binaryOperatorSymbolTable[subExpression.operator]?.precedence;
+          if (p1 != null && p2 != null && p2 >= p1) {
+            return `(${highIRExpressionToString(subExpression)})`;
+          }
+        }
+        return highIRExpressionToString(subExpression);
+      };
+      return `${addParentheses(e1)} ${operator} ${addParentheses(e2)}`;
     }
   }
 };
