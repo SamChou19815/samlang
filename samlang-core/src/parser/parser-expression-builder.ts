@@ -115,7 +115,8 @@ class ObjectFieldDeclarationBuilder
   };
 }
 
-export default class ExpressionBuilder extends AbstractParseTreeVisitor<SamlangExpression | null>
+export default class ExpressionBuilder
+  extends AbstractParseTreeVisitor<SamlangExpression | null>
   implements PLVisitor<SamlangExpression | null> {
   private static DUMMY_EXPRESSION = EXPRESSION_PANIC({
     range: Range.DUMMY,

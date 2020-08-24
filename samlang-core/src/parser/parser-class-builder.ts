@@ -24,7 +24,8 @@ import { tokenRange, contextRange } from './parser-util';
 
 type ModuleName = readonly [boolean, string, Range];
 
-class ModuleNameBuilder extends AbstractParseTreeVisitor<ModuleName | null>
+class ModuleNameBuilder
+  extends AbstractParseTreeVisitor<ModuleName | null>
   implements PLVisitor<ModuleName | null> {
   defaultResult = (): ModuleName | null => null;
 
@@ -136,7 +137,8 @@ class ModuleTypeDefinitionBuilder
 
 const moduleTypeDefinitionBuilder = new ModuleTypeDefinitionBuilder();
 
-export default class ClassBuilder extends AbstractParseTreeVisitor<ClassDefinition | null>
+export default class ClassBuilder
+  extends AbstractParseTreeVisitor<ClassDefinition | null>
   implements PLVisitor<ClassDefinition | null> {
   private readonly expressionBuilder: ExpressionBuilder;
 

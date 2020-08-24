@@ -17,7 +17,8 @@ import patternBuilder from './parser-pattern-builder';
 import typeBuilder from './parser-type-builder';
 import { contextRange } from './parser-util';
 
-class StatementBuilder extends AbstractParseTreeVisitor<SamlangValStatement | null>
+class StatementBuilder
+  extends AbstractParseTreeVisitor<SamlangValStatement | null>
   implements PLVisitor<SamlangValStatement | null> {
   constructor(
     private readonly expressionBuilder: (context: ExpressionContext) => SamlangExpression | null
@@ -45,7 +46,8 @@ class StatementBuilder extends AbstractParseTreeVisitor<SamlangValStatement | nu
   };
 }
 
-export default class StatementBlockBuilder extends AbstractParseTreeVisitor<StatementBlock | null>
+export default class StatementBlockBuilder
+  extends AbstractParseTreeVisitor<StatementBlock | null>
   implements PLVisitor<StatementBlock | null> {
   private readonly statementBuilder: StatementBuilder;
 

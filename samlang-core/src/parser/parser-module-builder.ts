@@ -14,7 +14,8 @@ import { PLVisitor } from './generated/PLVisitor';
 import ClassBuilder from './parser-class-builder';
 import { tokenRange, contextRange } from './parser-util';
 
-class ModuleMemberVisitor extends AbstractParseTreeVisitor<ClassDefinition | null>
+class ModuleMemberVisitor
+  extends AbstractParseTreeVisitor<ClassDefinition | null>
   implements PLVisitor<ClassDefinition | null> {
   // istanbul ignore next
   defaultResult = (): ClassDefinition | null => null;
@@ -32,7 +33,8 @@ class ModuleMemberVisitor extends AbstractParseTreeVisitor<ClassDefinition | nul
   // TODO: parseInterface
 }
 
-export default class ModuleVisitor extends AbstractParseTreeVisitor<SamlangModule>
+export default class ModuleVisitor
+  extends AbstractParseTreeVisitor<SamlangModule>
   implements PLVisitor<SamlangModule> {
   private readonly moduleMemberVisitor: ModuleMemberVisitor;
 
