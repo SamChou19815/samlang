@@ -41,7 +41,7 @@ it('compile hello world to JS integration test', () => {
     `let printed = '';
   const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
   const _builtin_println = (line) => {
-    printed += \`\${line}\`;
+    printed += \`\${line}\n\`;
   };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
   const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\nprinted`
@@ -50,7 +50,7 @@ it('compile hello world to JS integration test', () => {
     `let printed = '';
   const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
   const _builtin_println = (line) => {
-    printed += \`\${line}\`;
+    printed += \`\${line}\n\`;
   };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
   const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\n_module_Test_class_Main_function_main();\nprinted`
@@ -59,7 +59,8 @@ it('compile hello world to JS integration test', () => {
 
 const setupIntegration = (sourceCode: string): string => {
   const moduleReference = new ModuleReference(['Test']);
-  const { checkedSources } = checkSources([[moduleReference, sourceCode]]);
+  const { checkedSources, compileTimeErrors } = checkSources([[moduleReference, sourceCode]]);
+  expect(compileTimeErrors).toEqual([]);
   const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
   // eslint-disable-next-line no-eval
   return eval(highIRSourcesToJSString(hirSources, moduleReference));
@@ -70,11 +71,13 @@ it('confirm samlang & equivalent JS have same print output', () => {
     setupIntegration(
       `
     class Main {
-        function main(): unit = println("Hello "::"World!")
+        function main(): unit = {
+          println("Hello "::"World!")
+        }
     }
     `
     )
-  ).toBe('Hello World!');
+  ).toBe('Hello World!\n');
 
   expect(
     setupIntegration(
@@ -89,12 +92,12 @@ it('confirm samlang & equivalent JS have same print output', () => {
     setupIntegration(
       `
     class Main {
-      function main(): int = println(Main.sum(42, 7))
       function sum(a: int, b: int): int = a + b
+      function main(): unit = println(intToString(Main.sum(42, 7)))
     }
     `
     )
-  ).toBe('49');
+  ).toBe('49\n');
   expect(
     setupIntegration(
       `
@@ -103,12 +106,12 @@ it('confirm samlang & equivalent JS have same print output', () => {
     }
 
     class Main {
-      function main(): unit = println(MeaningOfLife.conditional(Main.sum(42+7)))
+      function main(): unit = println(MeaningOfLife.conditional(Main.sum(42, 7)))
       function sum(a: int, b: int): int = a + b
     }
     `
     )
-  ).toBe('Not the meaning of life... keep looking');
+  ).toBe('Not the meaning of life... keep looking\n');
   expect(
     setupIntegration(
       `
@@ -118,11 +121,11 @@ it('confirm samlang & equivalent JS have same print output', () => {
     
     class Main {
       function oof(): int = 14
-      function main(): unit = println(Foo.bar() * Main.oof())
+      function main(): unit = println(intToString(Foo.bar() * Main.oof()))
     }
     `
     )
-  ).toBe(`42`);
+  ).toBe(`42\n`);
   expect(
     setupIntegration(
       `
@@ -133,11 +136,14 @@ it('confirm samlang & equivalent JS have same print output', () => {
     }
 
     class Main {
-      function main(): unit = println(Student.dummyStundent().name + Student.dummyStudent().age)
+      function main(): unit = {
+        val _ = println(Student.dummyStudent().getName())
+        val _ = println(intToString(Student.dummyStudent().age))
+      }
     }
     `
     )
-  ).toBe(`RANDOM_BABY0`);
+  ).toBe(`RANDOM_BABY\n0\n`);
   expect(
     setupIntegration(
       `
@@ -158,7 +164,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
     }
     `
     )
-  ).toBe(`Hello World`);
+  ).toBe(`Hello World\n`);
   expect(
     setupIntegration(
       `
@@ -176,7 +182,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
   }
   `
     )
-  ).toBe(`15`);
+  ).toBe(`15\n`);
 });
 
 it('HIR statements to JS string test', () => {

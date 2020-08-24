@@ -99,7 +99,7 @@ export const highIRSourcesToJSString = (
   let finalStr = `let printed = '';
   const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
   const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => {
-    printed += \`\${line}\`;
+    printed += \`\${line}\n\`;
   };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
   const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\n`;
