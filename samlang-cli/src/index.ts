@@ -3,6 +3,7 @@
 import cliMainRunner, { CLIRunners } from './cli';
 import { collectSources, compileToX86Executables } from './cli-service';
 import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './configuration';
+import ASCII_ART_SAMLANG_LOGO from './logo';
 import startSamlangLanguageServer from './lsp';
 
 import { checkSources, Sources, SamlangModule } from '@dev-sam/samlang-core';
@@ -72,7 +73,7 @@ const runners: CLIRunners = {
     console.log('samlang version: unreleased.');
   },
   help() {
-    console.log(`
+    console.log(`${ASCII_ART_SAMLANG_LOGO}
 Usage:
 samlang [command]
 
