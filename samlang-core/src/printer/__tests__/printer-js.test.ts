@@ -63,6 +63,7 @@ const setupIntegration = (sourceCode: string): string => {
   expect(compileTimeErrors).toEqual([]);
   const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
   // eslint-disable-next-line no-eval
+  console.log(highIRSourcesToJSString(hirSources, moduleReference));
   return eval(highIRSourcesToJSString(hirSources, moduleReference));
 };
 
