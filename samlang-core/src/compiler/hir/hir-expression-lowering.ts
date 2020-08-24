@@ -127,7 +127,7 @@ class HighIRExpressionLoweringManager {
         }
       // eslint-disable-next-line no-fallthrough
       case 'ThisExpression':
-        return { statements: [], expression: HIR_VARIABLE('this') };
+        return { statements: [], expression: HIR_VARIABLE('_this') };
       case 'VariableExpression': {
         const name = this.nestedVariableRewriteMap.get(expression.name) ?? expression.name;
         return { statements: [], expression: HIR_VARIABLE(name) };
