@@ -35,7 +35,7 @@ import type { SamlangModule } from '../../../ast/lang/samlang-toplevel';
 import { mapOf } from '../../../util/collections';
 
 const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Dummy') });
-const IR_THIS = HIR_VARIABLE('this');
+const IR_THIS = HIR_VARIABLE('_this');
 
 it('HIR compiler integration test', () => {
   const sourceModule: SamlangModule = {
@@ -155,7 +155,7 @@ it('HIR compiler integration test', () => {
       {
         name: '_module__class_Class1_function_foo',
         hasReturn: true,
-        parameters: ['this', 'a'],
+        parameters: ['_this', 'a'],
         body: [HIR_RETURN(IR_THIS)],
       },
       {
