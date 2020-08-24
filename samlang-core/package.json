@@ -6,12 +6,12 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc --incremental",
-    "codegen": "yarn antlr4ts -o src/parser/generated -visitor -no-listener PL.g4"
+    "codegen": "yarn antlr4ts -o src/parser/generated -visitor -no-listener PL.g4 && node suppress-type-errors.js"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.3",
+    "@types/jest": "^26.0.10",
     "antlr4ts-cli": "0.5.0-alpha.3",
-    "typescript": "3.9.5"
+    "typescript": "4.0.2"
   },
   "dependencies": {
     "antlr4ts": "0.5.0-alpha.3"

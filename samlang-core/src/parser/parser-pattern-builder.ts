@@ -20,7 +20,8 @@ import {
 import { PLVisitor } from './generated/PLVisitor';
 import { tokenRange, contextRange } from './parser-util';
 
-class FieldNameBuilder extends AbstractParseTreeVisitor<ObjectPatternDestucturedName | null>
+class FieldNameBuilder
+  extends AbstractParseTreeVisitor<ObjectPatternDestucturedName | null>
   implements PLVisitor<ObjectPatternDestucturedName | null> {
   // istanbul ignore next
   defaultResult = (): ObjectPatternDestucturedName | null => null;
@@ -49,7 +50,8 @@ class FieldNameBuilder extends AbstractParseTreeVisitor<ObjectPatternDestuctured
 
 const fieldNameBuilder = new FieldNameBuilder();
 
-class PatternBuilder extends AbstractParseTreeVisitor<Pattern | null>
+class PatternBuilder
+  extends AbstractParseTreeVisitor<Pattern | null>
   implements PLVisitor<Pattern | null> {
   defaultResult = (): Pattern | null => null;
 
