@@ -123,6 +123,60 @@ it('confirm samlang & equivalent JS have same print output', () => {
     `
     )
   ).toBe(`42`);
+  expect(
+    setupIntegration(
+      `
+    class Student(private val name: string, val age: int) {
+      method getName(): string = this.name
+      private method getAge(): int = this.age
+      function dummyStudent(): Student = { name: "RANDOM_BABY", age: 0 }
+    }
+
+    class Main {
+      function main(): unit = println(Student.dummyStundent().name + Student.dummyStudent().age)
+    }
+    `
+    )
+  ).toBe(`RANDOM_BABY0`);
+  expect(
+    setupIntegration(
+      `
+    class HelloWorld(val message: string) {
+      private method getMessage(): string = {
+        val { message } = this;
+        message
+      }
+    
+      function getGlobalMessage(): string = {
+        val hw = { message: "Hello World" };
+        hw.getMessage()
+      }
+    }
+    
+    class Main {
+      function main(): unit = println(HelloWorld.getGlobalMessage())
+    }
+    `
+    )
+  ).toBe(`Hello World`);
+  expect(
+    setupIntegration(
+      `
+  class Main {
+    function div(a: int, b: int): int =
+      if b == 0 then (
+        panic("Division by zero is illegal!")
+      ) else (
+        a / b
+      )
+    function main(): unit = {
+      println(Main.div(42, 0))
+      println(Main.div(30, 2))
+    }
+  }
+  `
+    )
+  ).toBe(`15`);
 });
 
 it('HIR statements to JS string test', () => {
