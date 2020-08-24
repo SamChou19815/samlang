@@ -80,7 +80,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
     setupIntegration(
       `
     class Main {
-        function main(a: int, b: int): int = a + b;
+        function main(a: int, b: int): int = a + b
     }
     `
     )
@@ -89,8 +89,8 @@ it('confirm samlang & equivalent JS have same print output', () => {
     setupIntegration(
       `
     class Main {
-      function main(): int = println(Main.sum(42, 7));
-      function sum(a: int, b: int): int = a + b;
+      function main(): int = println(Main.sum(42, 7))
+      function sum(a: int, b: int): int = a + b
     }
     `
     )
@@ -99,12 +99,12 @@ it('confirm samlang & equivalent JS have same print output', () => {
     setupIntegration(
       `
     class MeaningOfLife {
-      function conditional(sum: int): string = if (sum == 42) then ("Meaning of life") else ("Not the meaning of life... keep looking");
+      function conditional(sum: int): string = if (sum == 42) then ("Meaning of life") else ("Not the meaning of life... keep looking")
     }
 
     class Main {
-      function main(): unit = println(MeaningOfLife.conditional(Main.sum(42+7)));
-      function sum(a: int, b: int): int = a + b;
+      function main(): unit = println(MeaningOfLife.conditional(Main.sum(42+7)))
+      function sum(a: int, b: int): int = a + b
     }
     `
     )
