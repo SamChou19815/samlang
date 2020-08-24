@@ -38,17 +38,91 @@ it('compile hello world to JS integration test', () => {
   const { checkedSources } = checkSources([[moduleReference, sourceCode]]);
   const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
   expect(highIRSourcesToJSString(hirSources)).toBe(
-    `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-  const ${ENCODED_FUNCTION_NAME_PRINTLN} = (v) => console.log(v);
+    `let printed = '';
+  const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+  const _builtin_println = (line) => {
+    printed += \`\${line}\`;
+  };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
-  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };`
+  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\nprinted`
   );
   expect(highIRSourcesToJSString(hirSources, moduleReference)).toBe(
-    `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-  const ${ENCODED_FUNCTION_NAME_PRINTLN} = (v) => console.log(v);
+    `let printed = '';
+  const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+  const _builtin_println = (line) => {
+    printed += \`\${line}\`;
+  };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
-  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\n_module_Test_class_Main_function_main();`
+  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\n_module_Test_class_Main_function_main();\nprinted`
   );
+});
+
+const setupIntegration = (sourceCode: string): string => {
+  const moduleReference = new ModuleReference(['Test']);
+  const { checkedSources } = checkSources([[moduleReference, sourceCode]]);
+  const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
+  // eslint-disable-next-line no-eval
+  return eval(highIRSourcesToJSString(hirSources, moduleReference));
+};
+
+it('confirm samlang & equivalent JS have same print output', () => {
+  expect(
+    setupIntegration(
+      `
+    class Main {
+        function main(): unit = println("Hello "::"World!")
+    }
+    `
+    )
+  ).toBe('Hello World!');
+
+  expect(
+    setupIntegration(
+      `
+    class Main {
+        function main(a: int, b: int): int = a + b;
+    }
+    `
+    )
+  ).toBe('');
+  expect(
+    setupIntegration(
+      `
+    class Main {
+      function main(): int = println(Main.sum(42, 7));
+      function sum(a: int, b: int): int = a + b;
+    }
+    `
+    )
+  ).toBe('49');
+  expect(
+    setupIntegration(
+      `
+    class MeaningOfLife {
+      function conditional(sum: int): string = if (sum == 42) then ("Meaning of life") else ("Not the meaning of life... keep looking");
+    }
+
+    class Main {
+      function main(): unit = println(MeaningOfLife.conditional(Main.sum(42+7)));
+      function sum(a: int, b: int): int = a + b;
+    }
+    `
+    )
+  ).toBe('Not the meaning of life... keep looking');
+  expect(
+    setupIntegration(
+      `
+    class Foo {
+      function bar(): int = 3
+    }
+    
+    class Main {
+      function oof(): int = 14
+      function main(): unit = println(Foo.bar() * Main.oof())
+    }
+    `
+    )
+  ).toBe(`42`);
 });
 
 it('HIR statements to JS string test', () => {

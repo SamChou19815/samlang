@@ -96,15 +96,19 @@ export const highIRSourcesToJSString = (
   sources: Sources<HighIRModule>,
   entryModule?: ModuleReference
 ): string => {
-  let finalStr = `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-  const ${ENCODED_FUNCTION_NAME_PRINTLN} = (v) => console.log(v);
+  let finalStr = `let printed = '';
+  const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+  const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => {
+    printed += \`\${line}\`;
+  };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
   const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\n`;
+
   sources.forEach((module) => {
     finalStr += `${module.functions.map((f) => highIRFunctionToString(f)).join(';\n')}`;
   });
   if (entryModule) {
     finalStr += `\n${encodeMainFunctionName(entryModule)}();`;
   }
-  return finalStr;
+  return `${finalStr}\nprinted`;
 };
