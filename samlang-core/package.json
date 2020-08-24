@@ -6,7 +6,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc --incremental",
-    "codegen": "yarn antlr4ts -o src/parser/generated -visitor -no-listener PL.g4"
+    "codegen": "yarn antlr4ts -o src/parser/generated -visitor -no-listener PL.g4 && node suppress-type-errors.js"
   },
   "devDependencies": {
     "@types/jest": "^26.0.10",
