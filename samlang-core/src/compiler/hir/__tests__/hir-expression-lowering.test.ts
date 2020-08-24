@@ -53,7 +53,7 @@ import lowerSamlangExpression from '../hir-expression-lowering';
 
 const DUMMY_IDENTIFIER_TYPE = identifierType('Dummy');
 const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE });
-const IR_THIS = HIR_VARIABLE('this');
+const IR_THIS = HIR_VARIABLE('_this');
 
 const testModule: SamlangModule = {
   imports: [

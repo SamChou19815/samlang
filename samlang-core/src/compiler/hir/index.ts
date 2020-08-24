@@ -22,7 +22,7 @@ const compileFunction = (
     classMember.body
   );
   const parameters = classMember.parameters.map(({ name }) => name);
-  const parametersWithThis = classMember.isMethod ? ['this', ...parameters] : parameters;
+  const parametersWithThis = classMember.isMethod ? ['_this', ...parameters] : parameters;
   const statements = bodyLoweringResult.statements;
   const returnType = classMember.type.returnType;
   const hasReturn = returnType.type !== 'PrimitiveType' || returnType.name !== 'unit';
