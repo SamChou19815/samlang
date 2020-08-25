@@ -40,13 +40,13 @@ it('compile hello world to JS integration test', () => {
   const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
   expect(highIRSourcesToJSString(hirSources)).toBe(
     `let printed = '';
-  const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-  const _builtin_println = (line) => {
-    printed += \`\${line}\n\`;
-  };
-  const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
-  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
-  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }
+
+const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => { printed += line; printed += "\\n" };
+const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
+const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
+const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
+
 const _module_Test_class_Main_function_main = () => {
   var _t0 = _builtin_stringConcat('Hello ', 'World!');
   var _t1 = _builtin_println(_t0);
@@ -56,13 +56,13 @@ printed`
   );
   expect(highIRSourcesToJSString(hirSources, moduleReference)).toBe(
     `let printed = '';
-  const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-  const _builtin_println = (line) => {
-    printed += \`\${line}\n\`;
-  };
-  const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
-  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
-  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }
+
+const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => { printed += line; printed += "\\n" };
+const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
+const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
+const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
+
 const _module_Test_class_Main_function_main = () => {
   var _t0 = _builtin_stringConcat('Hello ', 'World!');
   var _t1 = _builtin_println(_t0);

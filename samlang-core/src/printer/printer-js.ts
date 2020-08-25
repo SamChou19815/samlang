@@ -12,7 +12,6 @@ import { HighIRStatement, HighIRExpression } from '../ast/hir/hir-expressions';
 import { HighIRFunction, HighIRModule } from '../ast/hir/hir-toplevel';
 import {
   PrettierDocument,
-  PRETTIER_NIL,
   PRETTIER_CONCAT,
   PRETTIER_TEXT,
   PRETTIER_LINE,
@@ -163,24 +162,51 @@ export const highIRFunctionToString = (highIRFunction: HighIRFunction): string =
     createPrettierDocumentFromHighIRFunction(highIRFunction)
   );
 
+const createPrettierDocumentFromHighIRSources = (
+  sources: Sources<HighIRModule>,
+  entryModule: ModuleReference | undefined
+): PrettierDocument => {
+  const segments: PrettierDocument[] = [
+    PRETTIER_TEXT("let printed = '';"),
+    PRETTIER_LINE,
+    PRETTIER_LINE,
+    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;`),
+    PRETTIER_LINE,
+    PRETTIER_TEXT(
+      `const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => { printed += line; printed += "\\n" };`
+    ),
+    PRETTIER_LINE,
+    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);`),
+    PRETTIER_LINE,
+    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);`),
+    PRETTIER_LINE,
+    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };`),
+    PRETTIER_LINE,
+    PRETTIER_LINE,
+  ];
+  sources.forEach((samlangModule) =>
+    samlangModule.functions.forEach((highIRFunction) =>
+      segments.push(createPrettierDocumentFromHighIRFunction(highIRFunction), PRETTIER_LINE)
+    )
+  );
+  if (entryModule != null) {
+    segments.push(
+      PRETTIER_LINE,
+      PRETTIER_TEXT(`${encodeMainFunctionName(entryModule)}();`),
+      PRETTIER_LINE,
+      PRETTIER_TEXT('printed')
+    );
+  } else {
+    segments.push(PRETTIER_LINE, PRETTIER_TEXT('printed'));
+  }
+  return PRETTIER_CONCAT(...segments);
+};
+
 export const highIRSourcesToJSString = (
   sources: Sources<HighIRModule>,
   entryModule?: ModuleReference
-): string => {
-  let finalStr = `let printed = '';
-  const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-  const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => {
-    printed += \`\${line}\n\`;
-  };
-  const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
-  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
-  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }\n`;
-
-  sources.forEach((module) => {
-    finalStr += `${module.functions.map((f) => highIRFunctionToString(f)).join(';\n')}`;
-  });
-  if (entryModule) {
-    finalStr += `\n${encodeMainFunctionName(entryModule)}();`;
-  }
-  return `${finalStr}\nprinted`;
-};
+): string =>
+  prettyPrintAccordingToPrettierAlgorithm(
+    /* availableWidth */ 100,
+    createPrettierDocumentFromHighIRSources(sources, entryModule)
+  ).trimEnd();
