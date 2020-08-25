@@ -41,7 +41,7 @@ export const highIRStatementToString = (highIRStatement: HighIRStatement): strin
       return `return ${highIRExpressionToString(highIRStatement.expression)};`;
     case 'HighIRStructInitializationStatement': {
       const { structVariableName, expressionList } = highIRStatement;
-      return `${structVariableName} = [${expressionList
+      return `var ${structVariableName} = [${expressionList
         .map((e) => highIRExpressionToString(e))
         .join(', ')}];`;
     }
@@ -105,7 +105,12 @@ export const highIRSourcesToJSString = (
   const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\n`;
 
   sources.forEach((module) => {
-    finalStr += `${module.functions.map((f) => highIRFunctionToString(f)).join(';\n')}`;
+    finalStr += `${module.functions
+      .map((f) => {
+        console.log(f);
+        return highIRFunctionToString(f);
+      })
+      .join(';\n')}`;
   });
   if (entryModule) {
     finalStr += `\n${encodeMainFunctionName(entryModule)}();`;

@@ -177,8 +177,8 @@ it('confirm samlang & equivalent JS have same print output', () => {
         a / b
       )
     function main(): unit = {
-      println(Main.div(42, 0))
-      println(Main.div(30, 2))
+      val _ = println(intToString(Main.div(42, 0)))
+      val _ = println(intToString(Main.div(30, 2)))
     }
   }
   `
@@ -272,7 +272,7 @@ it('HIR statements to JS string test', () => {
         expressionList: [HIR_ZERO, HIR_STRING('bar'), HIR_INT(BigInt(13))],
       })
     )
-  ).toBe(`st = [0, 'bar', 13];`);
+  ).toBe(`var st = [0, 'bar', 13];`);
 });
 
 it('HIR function to JS string test', () => {
