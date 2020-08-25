@@ -4,6 +4,7 @@ import {
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_THROW,
 } from '../../ast/common/name-encoder';
 import {
   HIR_IF_ELSE,
@@ -38,17 +39,153 @@ it('compile hello world to JS integration test', () => {
   const { checkedSources } = checkSources([[moduleReference, sourceCode]]);
   const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
   expect(highIRSourcesToJSString(hirSources)).toBe(
-    `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-  const ${ENCODED_FUNCTION_NAME_PRINTLN} = (v) => console.log(v);
+    `let printed = '';
+  const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+  const _builtin_println = (line) => {
+    printed += \`\${line}\n\`;
+  };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
-  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };`
+  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
+  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\nprinted`
   );
   expect(highIRSourcesToJSString(hirSources, moduleReference)).toBe(
-    `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-  const ${ENCODED_FUNCTION_NAME_PRINTLN} = (v) => console.log(v);
+    `let printed = '';
+  const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+  const _builtin_println = (line) => {
+    printed += \`\${line}\n\`;
+  };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
-  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\n_module_Test_class_Main_function_main();`
+  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
+  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\n_module_Test_class_Main_function_main();\nprinted`
   );
+});
+
+const setupIntegration = (sourceCode: string): string => {
+  const moduleReference = new ModuleReference(['Test']);
+  const { checkedSources, compileTimeErrors } = checkSources([[moduleReference, sourceCode]]);
+  expect(compileTimeErrors).toEqual([]);
+  const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
+  // eslint-disable-next-line no-eval
+  return eval(highIRSourcesToJSString(hirSources, moduleReference));
+};
+
+it('confirm samlang & equivalent JS have same print output', () => {
+  expect(
+    setupIntegration(
+      `
+    class Main {
+        function main(): unit = {
+          println("Hello "::"World!")
+        }
+    }
+    `
+    )
+  ).toBe('Hello World!\n');
+
+  expect(
+    setupIntegration(
+      `
+    class Main {
+        function main(a: int, b: int): int = a + b
+    }
+    `
+    )
+  ).toBe('');
+  expect(
+    setupIntegration(
+      `
+    class Main {
+      function sum(a: int, b: int): int = a + b
+      function main(): unit = println(intToString(Main.sum(42, 7)))
+    }
+    `
+    )
+  ).toBe('49\n');
+  expect(
+    setupIntegration(
+      `
+    class MeaningOfLife {
+      function conditional(sum: int): string = if (sum == 42) then ("Meaning of life") else ("Not the meaning of life... keep looking")
+    }
+
+    class Main {
+      function main(): unit = println(MeaningOfLife.conditional(Main.sum(42, 7)))
+      function sum(a: int, b: int): int = a + b
+    }
+    `
+    )
+  ).toBe('Not the meaning of life... keep looking\n');
+  expect(
+    setupIntegration(
+      `
+    class Foo {
+      function bar(): int = 3
+    }
+    
+    class Main {
+      function oof(): int = 14
+      function main(): unit = println(intToString(Foo.bar() * Main.oof()))
+    }
+    `
+    )
+  ).toBe(`42\n`);
+  expect(
+    setupIntegration(
+      `
+    class Student(private val name: string, val age: int) {
+      method getName(): string = this.name
+      private method getAge(): int = this.age
+      function dummyStudent(): Student = { name: "RANDOM_BABY", age: 0 }
+    }
+
+    class Main {
+      function main(): unit = {
+        val _ = println(Student.dummyStudent().getName())
+        val _ = println(intToString(Student.dummyStudent().age))
+      }
+    }
+    `
+    )
+  ).toBe(`RANDOM_BABY\n0\n`);
+  expect(
+    setupIntegration(
+      `
+    class HelloWorld(val message: string) {
+      private method getMessage(): string = {
+        val { message } = this;
+        message
+      }
+    
+      function getGlobalMessage(): string = {
+        val hw = { message: "Hello World" };
+        hw.getMessage()
+      }
+    }
+    
+    class Main {
+      function main(): unit = println(HelloWorld.getGlobalMessage())
+    }
+    `
+    )
+  ).toBe(`Hello World\n`);
+  expect(() =>
+    setupIntegration(
+      `
+  class Main {
+    function div(a: int, b: int): int =
+      if b == 0 then (
+        panic("Division by zero is illegal!")
+      ) else (
+        a / b
+      )
+    function main(): unit = {
+      val _ = println(intToString(Main.div(42, 0)))
+      val _ = println(intToString(Main.div(30, 2)))
+    }
+  }
+  `
+    )
+  ).toThrow(`Division by zero is illegal!`);
 });
 
 it('HIR statements to JS string test', () => {
@@ -123,6 +260,15 @@ it('HIR statements to JS string test', () => {
   ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}('5', '4');`);
   expect(
     highIRStatementToString(
+      HIR_FUNCTION_CALL({
+        functionArguments: [HIR_STRING('panik')],
+        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_THROW),
+        returnCollector: 'panik',
+      })
+    )
+  ).toBe(`var panik = ${ENCODED_FUNCTION_NAME_THROW}('panik');`);
+  expect(
+    highIRStatementToString(
       HIR_LET({
         name: 'foo',
         assignedExpression: HIR_INT(BigInt(19815)),
@@ -137,7 +283,7 @@ it('HIR statements to JS string test', () => {
         expressionList: [HIR_ZERO, HIR_STRING('bar'), HIR_INT(BigInt(13))],
       })
     )
-  ).toBe(`st = [0, 'bar', 13];`);
+  ).toBe(`var st = [0, 'bar', 13];`);
 });
 
 it('HIR function to JS string test', () => {
