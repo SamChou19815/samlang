@@ -72,17 +72,17 @@ export const highIRExpressionToString = (highIRExpression: HighIRExpression): st
     createPrettierDocumentFromHighIRExpression(highIRExpression)
   ).trimEnd();
 
+const concatStatements = (statements: readonly HighIRStatement[]) => {
+  const documents = statements
+    .map((it) => [createPrettierDocumentFromHighIRStatement(it), PRETTIER_LINE])
+    .flat();
+  if (documents.length === 0) return documents;
+  return documents.slice(0, documents.length - 1);
+};
+
 const createPrettierDocumentFromHighIRStatement = (
   highIRStatement: HighIRStatement
 ): PrettierDocument => {
-  const concatStatements = (statements: readonly HighIRStatement[]) => {
-    const documents = statements
-      .map((it) => [createPrettierDocumentFromHighIRStatement(it), PRETTIER_LINE])
-      .flat();
-    if (documents.length === 0) return documents;
-    return documents.slice(0, documents.length - 1);
-  };
-
   switch (highIRStatement.__type__) {
     case 'HighIRFunctionCallStatement':
       return PRETTIER_CONCAT(
@@ -144,12 +144,24 @@ export const highIRStatementToString = (highIRStatement: HighIRStatement): strin
     createPrettierDocumentFromHighIRStatement(highIRStatement)
   ).trimEnd();
 
-export const highIRFunctionToString = (highIRFunction: HighIRFunction): string => {
-  const { name, parameters, body, hasReturn } = highIRFunction;
-  const bodyStr = body.map((statement) => highIRStatementToString(statement)).join(';');
-  const hasReturnStr = hasReturn ? 'return;' : '';
-  return `const ${name} = (${parameters.join(', ')}) => {${bodyStr} ${hasReturnStr}};`;
-};
+const createPrettierDocumentFromHighIRFunction = (
+  highIRFunction: HighIRFunction
+): PrettierDocument =>
+  PRETTIER_CONCAT(
+    PRETTIER_TEXT(`const ${highIRFunction.name} = `),
+    createParenthesisSurroundedDocument(
+      createCommaSeparatedList(highIRFunction.parameters, PRETTIER_TEXT)
+    ),
+    PRETTIER_TEXT(' => '),
+    createBracesSurroundedBlockDocument(concatStatements(highIRFunction.body)),
+    PRETTIER_TEXT(';')
+  );
+
+export const highIRFunctionToString = (highIRFunction: HighIRFunction): string =>
+  prettyPrintAccordingToPrettierAlgorithm(
+    /* availableWidth */ 100,
+    createPrettierDocumentFromHighIRFunction(highIRFunction)
+  );
 
 export const highIRSourcesToJSString = (
   sources: Sources<HighIRModule>,

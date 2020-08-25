@@ -46,7 +46,13 @@ it('compile hello world to JS integration test', () => {
   };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
   const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
-  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\nprinted`
+  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }
+const _module_Test_class_Main_function_main = () => {
+  var _t0 = _builtin_stringConcat('Hello ', 'World!');
+  var _t1 = _builtin_println(_t0);
+};
+
+printed`
   );
   expect(highIRSourcesToJSString(hirSources, moduleReference)).toBe(
     `let printed = '';
@@ -56,7 +62,14 @@ it('compile hello world to JS integration test', () => {
   };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
   const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
-  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\n_module_Test_class_Main_function_main();\nprinted`
+  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }
+const _module_Test_class_Main_function_main = () => {
+  var _t0 = _builtin_stringConcat('Hello ', 'World!');
+  var _t1 = _builtin_println(_t0);
+};
+
+_module_Test_class_Main_function_main();
+printed`
   );
 });
 
@@ -340,7 +353,7 @@ it('HIR statements to JS string test', () => {
   ).toBe(`var st = [0, 'bar', 13];`);
 });
 
-it('HIR function to JS string test', () => {
+it('HIR function to JS string test 1', () => {
   expect(
     highIRFunctionToString({
       name: 'baz',
@@ -353,7 +366,24 @@ it('HIR function to JS string test', () => {
         }),
       ],
     })
-  ).toBe(`const baz = (d, t, i) => {var b = 1857; return;};`);
+  ).toBe(`const baz = (d, t, i) => {
+  var b = 1857;
+};
+`);
+});
+
+it('HIR function to JS string test 2', () => {
+  expect(
+    highIRFunctionToString({
+      name: 'baz',
+      parameters: ['d', 't', 'i'],
+      hasReturn: true,
+      body: [HIR_RETURN(HIR_INT(BigInt(42)))],
+    })
+  ).toBe(`const baz = (d, t, i) => {
+  return 42;
+};
+`);
 });
 
 it('HIR expression to JS string test', () => {
