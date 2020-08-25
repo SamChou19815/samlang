@@ -8,13 +8,68 @@ import {
   encodeMainFunctionName,
   ENCODED_FUNCTION_NAME_THROW,
 } from '../ast/common/name-encoder';
-import {
-  HighIRStatement,
-  HighIRExpression,
-  HighIRVariableExpression,
-  HighIRNameExpression,
-} from '../ast/hir/hir-expressions';
+import { HighIRStatement, HighIRExpression } from '../ast/hir/hir-expressions';
 import { HighIRFunction, HighIRModule } from '../ast/hir/hir-toplevel';
+import {
+  PrettierDocument,
+  PRETTIER_NIL,
+  PRETTIER_CONCAT,
+  PRETTIER_NEST,
+  PRETTIER_TEXT,
+  PRETTIER_LINE,
+  PRETTIER_GROUP,
+  PRETTIER_NO_SPACE_BRACKET,
+  PRETTIER_SPACED_BRACKET,
+  prettyPrintAccordingToPrettierAlgorithm,
+} from './printer-prettier-core';
+import { createParenthesisSurroundedDocument } from './printer-prettier-library';
+
+const createPrettierDocumentFromHighIRExpression = (
+  highIRExpression: HighIRExpression
+): PrettierDocument => {
+  switch (highIRExpression.__type__) {
+    case 'HighIRIntLiteralExpression':
+      return PRETTIER_TEXT(String(highIRExpression.value));
+    case 'HighIRStringLiteralExpression':
+      return PRETTIER_TEXT(`'${highIRExpression.value}'`);
+    case 'HighIRVariableExpression':
+    case 'HighIRNameExpression':
+      return PRETTIER_TEXT(highIRExpression.name);
+    case 'HighIRIndexAccessExpression': {
+      const { expression: subExpression, index } = highIRExpression;
+      let subExpressionDocument = createPrettierDocumentFromHighIRExpression(subExpression);
+      if (subExpression.__type__ === 'HighIRBinaryExpression') {
+        subExpressionDocument = createParenthesisSurroundedDocument(subExpressionDocument);
+      }
+      return PRETTIER_CONCAT(subExpressionDocument, PRETTIER_TEXT(`[${index}]`));
+    }
+    case 'HighIRBinaryExpression': {
+      const { e1, e2, operator } = highIRExpression;
+      const withParenthesisWhenNecesasry = (subExpression: HighIRExpression): PrettierDocument => {
+        const subExpressionDocument = createPrettierDocumentFromHighIRExpression(subExpression);
+        if (subExpression.__type__ === 'HighIRBinaryExpression') {
+          const p1 = binaryOperatorSymbolTable[operator]?.precedence;
+          const p2 = binaryOperatorSymbolTable[subExpression.operator]?.precedence;
+          if (p1 != null && p2 != null && p2 >= p1) {
+            return createParenthesisSurroundedDocument(subExpressionDocument);
+          }
+        }
+        return subExpressionDocument;
+      };
+      return PRETTIER_CONCAT(
+        withParenthesisWhenNecesasry(e1),
+        PRETTIER_TEXT(` ${operator} `),
+        withParenthesisWhenNecesasry(e2)
+      );
+    }
+  }
+};
+
+export const highIRExpressionToString = (highIRExpression: HighIRExpression): string =>
+  prettyPrintAccordingToPrettierAlgorithm(
+    /* availableWidth */ 80,
+    createPrettierDocumentFromHighIRExpression(highIRExpression)
+  ).trimEnd();
 
 export const highIRStatementToString = (highIRStatement: HighIRStatement): string => {
   switch (highIRStatement.__type__) {
@@ -54,43 +109,6 @@ export const highIRFunctionToString = (highIRFunction: HighIRFunction): string =
   const bodyStr = body.map((statement) => highIRStatementToString(statement)).join(';');
   const hasReturnStr = hasReturn ? 'return;' : '';
   return `const ${name} = (${parameters.join(', ')}) => {${bodyStr} ${hasReturnStr}};`;
-};
-
-export const highIRExpressionToString = (highIRExpression: HighIRExpression): string => {
-  switch (highIRExpression.__type__) {
-    case 'HighIRIntLiteralExpression':
-      return `${highIRExpression.value}`;
-    case 'HighIRStringLiteralExpression':
-      return `'${highIRExpression.value}'`;
-    case 'HighIRIndexAccessExpression': {
-      const { expression, index } = highIRExpression;
-      const addParentheses = (subExpression: HighIRExpression): string => {
-        if (subExpression.__type__ === 'HighIRBinaryExpression') {
-          return `(${highIRExpressionToString(subExpression)})`;
-        }
-        return highIRExpressionToString(subExpression);
-      };
-      return `${addParentheses(expression)}[${index}]`;
-    }
-    case 'HighIRVariableExpression':
-      return (highIRExpression as HighIRVariableExpression).name;
-    case 'HighIRNameExpression':
-      return (highIRExpression as HighIRNameExpression).name;
-    case 'HighIRBinaryExpression': {
-      const { e1, e2, operator } = highIRExpression;
-      const addParentheses = (subExpression: HighIRExpression): string => {
-        if (subExpression.__type__ === 'HighIRBinaryExpression') {
-          const p1 = binaryOperatorSymbolTable[operator]?.precedence;
-          const p2 = binaryOperatorSymbolTable[subExpression.operator]?.precedence;
-          if (p1 != null && p2 != null && p2 >= p1) {
-            return `(${highIRExpressionToString(subExpression)})`;
-          }
-        }
-        return highIRExpressionToString(subExpression);
-      };
-      return `${addParentheses(e1)} ${operator} ${addParentheses(e2)}`;
-    }
-  }
 };
 
 export const highIRSourcesToJSString = (
