@@ -6,6 +6,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   encodeMainFunctionName,
+  ENCODED_FUNCTION_NAME_THROW,
 } from '../ast/common/name-encoder';
 import {
   HighIRStatement,
@@ -102,15 +103,11 @@ export const highIRSourcesToJSString = (
     printed += \`\${line}\n\`;
   };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
-  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\n`;
+  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
+  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }\n`;
 
   sources.forEach((module) => {
-    finalStr += `${module.functions
-      .map((f) => {
-        console.log(f);
-        return highIRFunctionToString(f);
-      })
-      .join(';\n')}`;
+    finalStr += `${module.functions.map((f) => highIRFunctionToString(f)).join(';\n')}`;
   });
   if (entryModule) {
     finalStr += `\n${encodeMainFunctionName(entryModule)}();`;

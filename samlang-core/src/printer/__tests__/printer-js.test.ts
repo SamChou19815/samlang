@@ -4,6 +4,7 @@ import {
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_THROW,
 } from '../../ast/common/name-encoder';
 import {
   HIR_IF_ELSE,
@@ -44,7 +45,8 @@ it('compile hello world to JS integration test', () => {
     printed += \`\${line}\n\`;
   };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
-  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\nprinted`
+  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
+  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\nprinted`
   );
   expect(highIRSourcesToJSString(hirSources, moduleReference)).toBe(
     `let printed = '';
@@ -53,7 +55,8 @@ it('compile hello world to JS integration test', () => {
     printed += \`\${line}\n\`;
   };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
-  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\n_module_Test_class_Main_function_main();\nprinted`
+  const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
+  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\n_module_Test_class_Main_function_main();\nprinted`
   );
 });
 
@@ -63,7 +66,6 @@ const setupIntegration = (sourceCode: string): string => {
   expect(compileTimeErrors).toEqual([]);
   const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
   // eslint-disable-next-line no-eval
-  console.log(highIRSourcesToJSString(hirSources, moduleReference));
   return eval(highIRSourcesToJSString(hirSources, moduleReference));
 };
 
@@ -166,7 +168,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
     `
     )
   ).toBe(`Hello World\n`);
-  expect(
+  expect(() =>
     setupIntegration(
       `
   class Main {
@@ -183,7 +185,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
   }
   `
     )
-  ).toBe(`15\n`);
+  ).toThrow(`Division by zero is illegal!`);
 });
 
 it('HIR statements to JS string test', () => {
@@ -256,6 +258,15 @@ it('HIR statements to JS string test', () => {
       })
     )
   ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}('5', '4');`);
+  expect(
+    highIRStatementToString(
+      HIR_FUNCTION_CALL({
+        functionArguments: [HIR_STRING('panik')],
+        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_THROW),
+        returnCollector: 'panik',
+      })
+    )
+  ).toBe(`var panik = ${ENCODED_FUNCTION_NAME_THROW}('panik');`);
   expect(
     highIRStatementToString(
       HIR_LET({
