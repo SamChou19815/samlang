@@ -121,7 +121,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
     class Foo {
       function bar(): int = 3
     }
-    
+
     class Main {
       function oof(): int = 14
       function main(): unit = println(intToString(Foo.bar() * Main.oof()))
@@ -155,13 +155,13 @@ it('confirm samlang & equivalent JS have same print output', () => {
         val { message } = this;
         message
       }
-    
+
       function getGlobalMessage(): string = {
         val hw = { message: "Hello World" };
         hw.getMessage()
       }
     }
-    
+
     class Main {
       function main(): unit = println(HelloWorld.getGlobalMessage())
     }
@@ -197,11 +197,63 @@ it('HIR statements to JS string test', () => {
           e1: HIR_INT(BigInt(5)),
           e2: HIR_INT(BigInt(5)),
         }),
+        s1: [],
+        s2: [HIR_RETURN(HIR_ZERO)],
+      })
+    )
+  ).toBe(`if (5 == 5) {
+
+} else {
+  return 0;
+}`);
+  expect(
+    highIRStatementToString(
+      HIR_IF_ELSE({
+        booleanExpression: HIR_BINARY({
+          operator: '==',
+          e1: HIR_INT(BigInt(5)),
+          e2: HIR_INT(BigInt(5)),
+        }),
         s1: [HIR_RETURN(HIR_ZERO)],
         s2: [HIR_RETURN(HIR_ZERO)],
       })
     )
-  ).toBe(`if (5 == 5) {return 0;} else {return 0;}`);
+  ).toBe(`if (5 == 5) {
+  return 0;
+} else {
+  return 0;
+}`);
+  expect(
+    highIRStatementToString(
+      HIR_IF_ELSE({
+        booleanExpression: HIR_BINARY({
+          operator: '==',
+          e1: HIR_INT(BigInt(5)),
+          e2: HIR_INT(BigInt(5)),
+        }),
+        s1: [HIR_RETURN(HIR_ZERO)],
+        s2: [
+          HIR_IF_ELSE({
+            booleanExpression: HIR_BINARY({
+              operator: '==',
+              e1: HIR_INT(BigInt(5)),
+              e2: HIR_INT(BigInt(5)),
+            }),
+            s1: [HIR_RETURN(HIR_ZERO)],
+            s2: [HIR_RETURN(HIR_ZERO)],
+          }),
+        ],
+      })
+    )
+  ).toBe(`if (5 == 5) {
+  return 0;
+} else {
+  if (5 == 5) {
+    return 0;
+  } else {
+    return 0;
+  }
+}`);
   expect(
     highIRStatementToString(
       HIR_WHILE_TRUE([
@@ -212,7 +264,9 @@ it('HIR statements to JS string test', () => {
         }),
       ])
     )
-  ).toBe('while (true) { var val = func(); }');
+  ).toBe(`while (true) {
+  var val = func();
+}`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({

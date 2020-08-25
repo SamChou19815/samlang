@@ -14,15 +14,16 @@ import {
   PrettierDocument,
   PRETTIER_NIL,
   PRETTIER_CONCAT,
-  PRETTIER_NEST,
   PRETTIER_TEXT,
   PRETTIER_LINE,
-  PRETTIER_GROUP,
-  PRETTIER_NO_SPACE_BRACKET,
-  PRETTIER_SPACED_BRACKET,
   prettyPrintAccordingToPrettierAlgorithm,
 } from './printer-prettier-core';
-import { createParenthesisSurroundedDocument } from './printer-prettier-library';
+import {
+  createCommaSeparatedList,
+  createParenthesisSurroundedDocument,
+  createBracketSurroundedDocument,
+  createBracesSurroundedBlockDocument,
+} from './printer-prettier-library';
 
 const createPrettierDocumentFromHighIRExpression = (
   highIRExpression: HighIRExpression
@@ -67,42 +68,81 @@ const createPrettierDocumentFromHighIRExpression = (
 
 export const highIRExpressionToString = (highIRExpression: HighIRExpression): string =>
   prettyPrintAccordingToPrettierAlgorithm(
-    /* availableWidth */ 80,
+    /* availableWidth */ 100,
     createPrettierDocumentFromHighIRExpression(highIRExpression)
   ).trimEnd();
 
-export const highIRStatementToString = (highIRStatement: HighIRStatement): string => {
+const createPrettierDocumentFromHighIRStatement = (
+  highIRStatement: HighIRStatement
+): PrettierDocument => {
+  const concatStatements = (statements: readonly HighIRStatement[]) => {
+    const documents = statements
+      .map((it) => [createPrettierDocumentFromHighIRStatement(it), PRETTIER_LINE])
+      .flat();
+    if (documents.length === 0) return documents;
+    return documents.slice(0, documents.length - 1);
+  };
+
   switch (highIRStatement.__type__) {
-    case 'HighIRIfElseStatement': {
-      const { booleanExpression, s1, s2 } = highIRStatement;
-      const booleanExpressionStr = highIRExpressionToString(booleanExpression);
-      const s1Str = s1.map((s) => highIRStatementToString(s)).join(';');
-      const s2Str = s2.map((s) => highIRStatementToString(s)).join(';');
-      return `if (${booleanExpressionStr}) {${s1Str}} else {${s2Str}}`;
-    }
-    case 'HighIRWhileTrueStatement': {
-      return `while (true) { ${highIRStatement.statements.map(highIRStatementToString).join('')} }`;
-    }
-    case 'HighIRFunctionCallStatement': {
-      const { functionArguments, functionExpression, returnCollector } = highIRStatement;
-      return `var ${returnCollector} = ${highIRExpressionToString(
-        functionExpression
-      )}(${functionArguments.map((arg) => highIRExpressionToString(arg)).join(', ')});`;
-    }
-    case 'HighIRLetDefinitionStatement': {
-      const { name, assignedExpression } = highIRStatement;
-      return `var ${name} = ${highIRExpressionToString(assignedExpression)};`;
-    }
+    case 'HighIRFunctionCallStatement':
+      return PRETTIER_CONCAT(
+        PRETTIER_TEXT(`var ${highIRStatement.returnCollector} = `),
+        createPrettierDocumentFromHighIRExpression(highIRStatement.functionExpression),
+        createParenthesisSurroundedDocument(
+          createCommaSeparatedList(
+            highIRStatement.functionArguments,
+            createPrettierDocumentFromHighIRExpression
+          )
+        ),
+        PRETTIER_TEXT(';')
+      );
+    case 'HighIRIfElseStatement':
+      return PRETTIER_CONCAT(
+        PRETTIER_TEXT('if '),
+        createParenthesisSurroundedDocument(
+          createPrettierDocumentFromHighIRExpression(highIRStatement.booleanExpression)
+        ),
+        PRETTIER_TEXT(' '),
+        createBracesSurroundedBlockDocument(concatStatements(highIRStatement.s1)),
+        PRETTIER_TEXT(' else '),
+        createBracesSurroundedBlockDocument(concatStatements(highIRStatement.s2))
+      );
+    case 'HighIRWhileTrueStatement':
+      return PRETTIER_CONCAT(
+        PRETTIER_TEXT('while (true) '),
+        createBracesSurroundedBlockDocument(concatStatements(highIRStatement.statements))
+      );
+    case 'HighIRLetDefinitionStatement':
+      return PRETTIER_CONCAT(
+        PRETTIER_TEXT(`var ${highIRStatement.name} = `),
+        createPrettierDocumentFromHighIRExpression(highIRStatement.assignedExpression),
+        PRETTIER_TEXT(';')
+      );
+    case 'HighIRStructInitializationStatement':
+      return PRETTIER_CONCAT(
+        PRETTIER_TEXT(`var ${highIRStatement.structVariableName} = `),
+        createBracketSurroundedDocument(
+          createCommaSeparatedList(
+            highIRStatement.expressionList,
+            createPrettierDocumentFromHighIRExpression
+          )
+        ),
+        PRETTIER_TEXT(';')
+      );
     case 'HighIRReturnStatement':
-      return `return ${highIRExpressionToString(highIRStatement.expression)};`;
-    case 'HighIRStructInitializationStatement': {
-      const { structVariableName, expressionList } = highIRStatement;
-      return `var ${structVariableName} = [${expressionList
-        .map((e) => highIRExpressionToString(e))
-        .join(', ')}];`;
-    }
+      return PRETTIER_CONCAT(
+        PRETTIER_TEXT('return '),
+        createPrettierDocumentFromHighIRExpression(highIRStatement.expression),
+        PRETTIER_TEXT(';')
+      );
   }
 };
+
+export const highIRStatementToString = (highIRStatement: HighIRStatement): string =>
+  prettyPrintAccordingToPrettierAlgorithm(
+    /* availableWidth */ 100,
+    createPrettierDocumentFromHighIRStatement(highIRStatement)
+  ).trimEnd();
 
 export const highIRFunctionToString = (highIRFunction: HighIRFunction): string => {
   const { name, parameters, body, hasReturn } = highIRFunction;
