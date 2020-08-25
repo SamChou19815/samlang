@@ -46,7 +46,13 @@ it('compile hello world to JS integration test', () => {
   };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
   const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
-  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\nprinted`
+  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }
+const _module_Test_class_Main_function_main = () => {
+  var _t0 = _builtin_stringConcat('Hello ', 'World!');
+  var _t1 = _builtin_println(_t0);
+};
+
+printed`
   );
   expect(highIRSourcesToJSString(hirSources, moduleReference)).toBe(
     `let printed = '';
@@ -56,7 +62,14 @@ it('compile hello world to JS integration test', () => {
   };
   const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
   const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
-  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }\nconst _module_Test_class_Main_function_main = () => {var _t0 = _builtin_stringConcat('Hello ', 'World!');;var _t1 = _builtin_println(_t0); };\n_module_Test_class_Main_function_main();\nprinted`
+  const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); }
+const _module_Test_class_Main_function_main = () => {
+  var _t0 = _builtin_stringConcat('Hello ', 'World!');
+  var _t1 = _builtin_println(_t0);
+};
+
+_module_Test_class_Main_function_main();
+printed`
   );
 });
 
@@ -121,7 +134,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
     class Foo {
       function bar(): int = 3
     }
-    
+
     class Main {
       function oof(): int = 14
       function main(): unit = println(intToString(Foo.bar() * Main.oof()))
@@ -155,13 +168,13 @@ it('confirm samlang & equivalent JS have same print output', () => {
         val { message } = this;
         message
       }
-    
+
       function getGlobalMessage(): string = {
         val hw = { message: "Hello World" };
         hw.getMessage()
       }
     }
-    
+
     class Main {
       function main(): unit = println(HelloWorld.getGlobalMessage())
     }
@@ -197,11 +210,63 @@ it('HIR statements to JS string test', () => {
           e1: HIR_INT(BigInt(5)),
           e2: HIR_INT(BigInt(5)),
         }),
+        s1: [],
+        s2: [HIR_RETURN(HIR_ZERO)],
+      })
+    )
+  ).toBe(`if (5 == 5) {
+
+} else {
+  return 0;
+}`);
+  expect(
+    highIRStatementToString(
+      HIR_IF_ELSE({
+        booleanExpression: HIR_BINARY({
+          operator: '==',
+          e1: HIR_INT(BigInt(5)),
+          e2: HIR_INT(BigInt(5)),
+        }),
         s1: [HIR_RETURN(HIR_ZERO)],
         s2: [HIR_RETURN(HIR_ZERO)],
       })
     )
-  ).toBe(`if (5 == 5) {return 0;} else {return 0;}`);
+  ).toBe(`if (5 == 5) {
+  return 0;
+} else {
+  return 0;
+}`);
+  expect(
+    highIRStatementToString(
+      HIR_IF_ELSE({
+        booleanExpression: HIR_BINARY({
+          operator: '==',
+          e1: HIR_INT(BigInt(5)),
+          e2: HIR_INT(BigInt(5)),
+        }),
+        s1: [HIR_RETURN(HIR_ZERO)],
+        s2: [
+          HIR_IF_ELSE({
+            booleanExpression: HIR_BINARY({
+              operator: '==',
+              e1: HIR_INT(BigInt(5)),
+              e2: HIR_INT(BigInt(5)),
+            }),
+            s1: [HIR_RETURN(HIR_ZERO)],
+            s2: [HIR_RETURN(HIR_ZERO)],
+          }),
+        ],
+      })
+    )
+  ).toBe(`if (5 == 5) {
+  return 0;
+} else {
+  if (5 == 5) {
+    return 0;
+  } else {
+    return 0;
+  }
+}`);
   expect(
     highIRStatementToString(
       HIR_WHILE_TRUE([
@@ -212,7 +277,9 @@ it('HIR statements to JS string test', () => {
         }),
       ])
     )
-  ).toBe('while (true) { var val = func(); }');
+  ).toBe(`while (true) {
+  var val = func();
+}`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -286,7 +353,7 @@ it('HIR statements to JS string test', () => {
   ).toBe(`var st = [0, 'bar', 13];`);
 });
 
-it('HIR function to JS string test', () => {
+it('HIR function to JS string test 1', () => {
   expect(
     highIRFunctionToString({
       name: 'baz',
@@ -299,7 +366,24 @@ it('HIR function to JS string test', () => {
         }),
       ],
     })
-  ).toBe(`const baz = (d, t, i) => {var b = 1857; return;};`);
+  ).toBe(`const baz = (d, t, i) => {
+  var b = 1857;
+};
+`);
+});
+
+it('HIR function to JS string test 2', () => {
+  expect(
+    highIRFunctionToString({
+      name: 'baz',
+      parameters: ['d', 't', 'i'],
+      hasReturn: true,
+      body: [HIR_RETURN(HIR_INT(BigInt(42)))],
+    })
+  ).toBe(`const baz = (d, t, i) => {
+  return 42;
+};
+`);
 });
 
 it('HIR expression to JS string test', () => {
