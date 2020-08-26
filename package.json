@@ -46,14 +46,14 @@
             {
               "allow": [
                 "antlr4ts/**",
-                "**/samlang-core/src/analysis/*",
-                "**/samlang-core/src/ast/*",
-                "**/samlang-core/src/errors/*",
-                "**/samlang-core/src/interpreter/*",
-                "**/samlang-core/src/optimization/simple-optimizations*",
-                "**/samlang-core/src/parser/generated/*",
-                "**/samlang-core/src/services/*",
-                "**/samlang-core/src/util/*"
+                "**/samlang-core/analysis/*",
+                "**/samlang-core/ast/*",
+                "**/samlang-core/errors/*",
+                "**/samlang-core/interpreter/*",
+                "**/samlang-core/optimization/simple-optimizations*",
+                "**/samlang-core/parser/generated/*",
+                "**/samlang-core/services/*",
+                "**/samlang-core/util/*"
               ]
             }
           ]
