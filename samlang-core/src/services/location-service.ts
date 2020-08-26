@@ -1,8 +1,8 @@
+import { identifierType, TupleType } from '../ast/common-nodes';
 import type ModuleReference from '../ast/common/module-reference';
 import type Position from '../ast/common/position';
 import type Range from '../ast/common/range';
 import type { Location } from '../ast/common/structs';
-import { identifierType, TupleType } from '../ast/common/types';
 import { SamlangExpression, EXPRESSION_VARIABLE } from '../ast/samlang-expressions';
 import type { SamlangModule } from '../ast/samlang-toplevel';
 import { HashMap, hashMapOf } from '../util/collections';

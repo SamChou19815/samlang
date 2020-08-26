@@ -52,3 +52,5 @@ export const binaryOperatorSymbolTable: Record<
 > = Object.fromEntries(
   binaryOperatorValues.map((operator) => [operator.symbol, operator] as const)
 );
+
+export type IROperator = '+' | '-' | '*' | '/' | '%' | '^' | '<' | '>' | '<=' | '>=' | '==' | '!=';

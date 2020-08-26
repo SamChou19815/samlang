@@ -1,6 +1,3 @@
-import { PLUS, AND, OR, CONCAT } from '../../../ast/common/binary-operators';
-import ModuleReference from '../../../ast/common/module-reference';
-import Range from '../../../ast/common/range';
 import {
   unitType,
   identifierType,
@@ -8,7 +5,10 @@ import {
   intType,
   functionType,
   stringType,
-} from '../../../ast/common/types';
+} from '../../../ast/common-nodes';
+import { PLUS, AND, OR, CONCAT } from '../../../ast/common-operators';
+import ModuleReference from '../../../ast/common/module-reference';
+import Range from '../../../ast/common/range';
 import {
   HIR_NAME,
   HIR_VARIABLE,

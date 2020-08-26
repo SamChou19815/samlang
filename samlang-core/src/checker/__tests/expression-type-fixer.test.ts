@@ -1,5 +1,3 @@
-import { MUL, LT, AND, EQ, CONCAT } from '../../ast/common/binary-operators';
-import Range from '../../ast/common/range';
 import {
   Type,
   unitType,
@@ -9,7 +7,9 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from '../../ast/common/types';
+} from '../../ast/common-nodes';
+import { MUL, LT, AND, EQ, CONCAT } from '../../ast/common-operators';
+import Range from '../../ast/common/range';
 import {
   SamlangExpression,
   EXPRESSION_TRUE,

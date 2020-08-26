@@ -1,6 +1,5 @@
-import { prettyPrintLiteral } from '../ast/common/literals';
+import { prettyPrintLiteral, prettyPrintType } from '../ast/common-nodes';
 import type { ModuleMembersImport } from '../ast/common/structs';
-import { prettyPrintType } from '../ast/common/types';
 import type { SamlangExpression } from '../ast/samlang-expressions';
 import type {
   ClassMemberDefinition,

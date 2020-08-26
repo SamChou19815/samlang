@@ -1,7 +1,3 @@
-import { PLUS } from '../../ast/common/binary-operators';
-import ModuleReference from '../../ast/common/module-reference';
-import Position from '../../ast/common/position';
-import Range from '../../ast/common/range';
 import {
   Type,
   unitType as unit,
@@ -11,7 +7,11 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from '../../ast/common/types';
+} from '../../ast/common-nodes';
+import { PLUS } from '../../ast/common-operators';
+import ModuleReference from '../../ast/common/module-reference';
+import Position from '../../ast/common/position';
+import Range from '../../ast/common/range';
 import {
   SamlangExpression,
   EXPRESSION_INT,

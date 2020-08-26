@@ -1,4 +1,4 @@
-import { IdentifierType } from '../ast/common/types';
+import { IdentifierType } from '../ast/common-nodes';
 import {
   SamlangExpression,
   EXPRESSION_VARIABLE,

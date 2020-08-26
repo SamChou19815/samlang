@@ -1,5 +1,3 @@
-import ModuleReference from '../../ast/common/module-reference';
-import Range from '../../ast/common/range';
 import {
   IdentifierType,
   unitType,
@@ -9,7 +7,9 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from '../../ast/common/types';
+} from '../../ast/common-nodes';
+import ModuleReference from '../../ast/common/module-reference';
+import Range from '../../ast/common/range';
 import { createGlobalErrorCollector } from '../../errors';
 import {
   IdentifierTypeValidator,

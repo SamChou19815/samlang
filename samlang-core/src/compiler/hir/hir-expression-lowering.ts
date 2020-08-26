@@ -1,4 +1,3 @@
-import ModuleReference from '../../ast/common/module-reference';
 import {
   encodeFunctionNameGlobally,
   ENCODED_FUNCTION_NAME_THROW,
@@ -6,8 +5,9 @@ import {
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
-} from '../../ast/common/name-encoder';
-import type { IdentifierType } from '../../ast/common/types';
+} from '../../ast/common-names';
+import type { IdentifierType } from '../../ast/common-nodes';
+import ModuleReference from '../../ast/common/module-reference';
 import {
   HighIRStatement,
   HighIRExpression,

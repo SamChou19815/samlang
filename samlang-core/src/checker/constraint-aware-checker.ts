@@ -1,5 +1,5 @@
+import { Type, UndecidedType, isTheSameType } from '../ast/common-nodes';
 import type Range from '../ast/common/range';
-import { Type, UndecidedType, isTheSameType } from '../ast/common/types';
 import { ModuleErrorCollector } from '../errors';
 import TypeResolution from './type-resolution';
 

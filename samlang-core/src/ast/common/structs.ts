@@ -1,7 +1,7 @@
 import type { ReadonlyHashMap } from '../../util/collections';
+import type { Type } from '../common-nodes';
 import type ModuleReference from './module-reference';
 import type Range from './range';
-import type { Type } from './types';
 
 /** A common interface for all AST nodes. */
 export interface Node {
@@ -22,12 +22,6 @@ export interface ModuleMembersImport extends Node {
 
 export interface GlobalVariable {
   readonly name: string;
-  readonly content: string;
-}
-
-export interface StringGlobalVariable {
-  readonly referenceVariable: GlobalVariable;
-  readonly contentVariable: GlobalVariable;
   readonly content: string;
 }
 

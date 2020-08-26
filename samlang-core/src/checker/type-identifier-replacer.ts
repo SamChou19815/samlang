@@ -1,4 +1,4 @@
-import { Type, identifierType, tupleType, functionType } from '../ast/common/types';
+import { Type, identifierType, tupleType, functionType } from '../ast/common-nodes';
 
 const replaceTypeIdentifier = (
   type: Type,

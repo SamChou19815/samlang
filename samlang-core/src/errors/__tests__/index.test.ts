@@ -15,9 +15,9 @@ import {
   DuplicateFieldDeclarationError,
   NonExhausiveMatchError,
 } from '..';
+import { intType, boolType } from '../../ast/common-nodes';
 import ModuleReference from '../../ast/common/module-reference';
 import Range from '../../ast/common/range';
-import { intType, boolType } from '../../ast/common/types';
 
 const testCases: readonly (readonly [CompileTimeError, string])[] = [
   [

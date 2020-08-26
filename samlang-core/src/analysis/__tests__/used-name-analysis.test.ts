@@ -1,4 +1,4 @@
-import { ENCODED_COMPILED_PROGRAM_MAIN } from '../../ast/common/name-encoder';
+import { ENCODED_COMPILED_PROGRAM_MAIN } from '../../ast/common-names';
 import {
   MIR_ZERO,
   MIR_NAME,

@@ -6,7 +6,7 @@ import {
   tupleType,
   functionType,
   Type,
-} from '../../ast/common/types';
+} from '../../ast/common-nodes';
 import TypeResolution from '../type-resolution';
 
 it('can resolve basic disjoint types with sufficient information', () => {

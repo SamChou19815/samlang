@@ -1,8 +1,8 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
+import { functionType } from '../ast/common-nodes';
 import Range from '../ast/common/range';
 import type { TypeDefinition } from '../ast/common/structs';
-import { functionType } from '../ast/common/types';
 import { SamlangExpression } from '../ast/samlang-expressions';
 import { ClassDefinition, ClassMemberDefinition } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';

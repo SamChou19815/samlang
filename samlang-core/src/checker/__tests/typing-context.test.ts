@@ -1,5 +1,5 @@
+import { intType, identifierType, functionType } from '../../ast/common-nodes';
 import Range from '../../ast/common/range';
-import { intType, identifierType, functionType } from '../../ast/common/types';
 import { LocalTypingContext, AccessibleGlobalTypingContext } from '../typing-context';
 
 it('LocalTypingContext basic methods test.', () => {

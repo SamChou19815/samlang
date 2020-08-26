@@ -1,4 +1,4 @@
-import { Type, UndecidedType, identifierType, tupleType, functionType } from '../ast/common/types';
+import { Type, UndecidedType, identifierType, tupleType, functionType } from '../ast/common-nodes';
 
 const resolveType = (
   type: Type,

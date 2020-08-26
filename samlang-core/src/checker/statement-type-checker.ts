@@ -1,5 +1,5 @@
+import { Type, unitType } from '../ast/common-nodes';
 import type { FieldType } from '../ast/common/structs';
-import { Type, unitType } from '../ast/common/types';
 import {
   SamlangExpression,
   SamlangValStatement,
