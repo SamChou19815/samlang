@@ -35,4 +35,4 @@ lib
 build
 
 # Generated
-samlang-core/src/parser/generated
+samlang-core/parser/generated
