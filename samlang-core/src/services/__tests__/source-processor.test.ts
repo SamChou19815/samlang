@@ -49,7 +49,7 @@ GLOBAL_STRING_0:
     .quad 108 ## l
     .quad 108 ## l
     .quad 111 ## o
-    .quad 32 ##
+    .quad 32 ## ${' '}
     .text
     .data
     .align 8
