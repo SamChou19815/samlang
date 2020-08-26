@@ -5,7 +5,7 @@ import {
   MIR_RETURN,
   MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
   MIR_ZERO,
-} from '../../../ast/mir';
+} from '../../../ast/mir-nodes';
 import type { ReadonlyMidIRBasicBlockWithoutPointers } from '../mir-basic-block';
 import emitCanonicalMidIRStatementsFromReorderedBasicBlocks from '../mir-basic-block-optimized-emitter';
 

@@ -12,7 +12,7 @@ import {
   MIR_LABEL,
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import analyzeLiveTemporariesAtTheEndOfEachStatement from '../live-temp-analysis';
 
 const analyze = (statements: readonly MidIRStatement[]): readonly (readonly string[])[] =>

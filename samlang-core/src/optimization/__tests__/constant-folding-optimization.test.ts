@@ -15,7 +15,7 @@ import {
   MIR_RETURN,
   MIR_CJUMP_FALLTHROUGH,
   MIR_CALL_FUNCTION,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import optimizeIRWithConstantFolding from '../constant-folding-optimization';
 
 const optimizeAndDumpToString = (statements: readonly MidIRStatement[]): string =>

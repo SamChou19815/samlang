@@ -1,4 +1,4 @@
-import { ASM_CONST, ASM_REG, ASM_MEM, RAX, ASM_MEM_CONST } from '../../../ast/asm/asm-arguments';
+import { ASM_CONST, ASM_REG, ASM_MEM, RAX, ASM_MEM_CONST } from '../../../ast/asm-arguments';
 import {
   AssemblyInstruction,
   ASM_MOVE_CONST_TO_REG,
@@ -22,7 +22,7 @@ import {
   ASM_LABEL,
   ASM_COMMENT,
   assemblyInstructionToString,
-} from '../../../ast/asm/asm-instructions';
+} from '../../../ast/asm-instructions';
 import AssemblyFunctionAbstractRegisterAllocator from '../asm-function-abstract-register-allocator';
 import AssemblySpillingProgramWriter from '../asm-spilling-program-rewriter';
 

@@ -17,8 +17,8 @@ import {
   EXPRESSION_INT,
   EXPRESSION_VARIABLE,
   EXPRESSION_STATEMENT_BLOCK,
-} from '../../ast/lang/samlang-expressions';
-import type { Pattern } from '../../ast/lang/samlang-pattern';
+} from '../../ast/samlang-expressions';
+import type { Pattern } from '../../ast/samlang-pattern';
 import { createGlobalErrorCollector } from '../../errors';
 import StatementTypeChecker from '../statement-type-checker';
 import { AccessibleGlobalTypingContext, LocalTypingContext } from '../typing-context';

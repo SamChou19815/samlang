@@ -1,4 +1,4 @@
-import { RAX, RBX } from '../../ast/asm/asm-arguments';
+import { RAX, RBX } from '../../ast/asm-arguments';
 import {
   AssemblyInstruction,
   assemblyInstructionToString,
@@ -7,7 +7,7 @@ import {
   ASM_RET,
   ASM_LABEL,
   ASM_COMMENT,
-} from '../../ast/asm/asm-instructions';
+} from '../../ast/asm-instructions';
 import {
   MidIRStatement,
   midIRStatementToString,
@@ -17,7 +17,7 @@ import {
   MIR_CJUMP_FALLTHROUGH,
   MIR_RETURN,
   MIR_TEMP,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import {
   optimizeIrWithSimpleOptimization,
   optimizeAssemblyWithSimpleOptimization,

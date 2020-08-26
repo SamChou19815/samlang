@@ -1,4 +1,4 @@
-import { HighIRStatement, HIR_IF_ELSE, HIR_RETURN } from '../../ast/hir/hir-expressions';
+import { HighIRStatement, HIR_IF_ELSE, HIR_RETURN } from '../../ast/hir-expressions';
 
 /**
  * @param statements A full list of statements.

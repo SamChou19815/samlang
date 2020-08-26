@@ -1,5 +1,5 @@
 import type { IROperator } from '../../ast/common/enums';
-import { MidIRExpression, MIR_OP } from '../../ast/mir';
+import { MidIRExpression, MIR_OP } from '../../ast/mir-nodes';
 
 /**
  * Compare two Mid IR expression.

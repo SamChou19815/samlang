@@ -1,5 +1,5 @@
-import { RBP, ASM_CONST, ASM_MEM_REG_WITH_CONST } from '../../../ast/asm/asm-arguments';
-import { assemblyInstructionToString } from '../../../ast/asm/asm-instructions';
+import { RBP, ASM_CONST, ASM_MEM_REG_WITH_CONST } from '../../../ast/asm-arguments';
+import { assemblyInstructionToString } from '../../../ast/asm-instructions';
 import {
   rewriteAssemblyInstructionsWithCalleeSavedRegistersMoves,
   reorganizeSpilledVariableMappingsToRemoveUnusedCalleeSavedRegisterMappings,

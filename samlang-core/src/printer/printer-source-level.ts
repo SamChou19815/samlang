@@ -1,12 +1,12 @@
 import { prettyPrintLiteral } from '../ast/common/literals';
 import type { ModuleMembersImport } from '../ast/common/structs';
 import { prettyPrintType } from '../ast/common/types';
-import type { SamlangExpression } from '../ast/lang/samlang-expressions';
+import type { SamlangExpression } from '../ast/samlang-expressions';
 import type {
   ClassMemberDefinition,
   ClassDefinition,
   SamlangModule,
-} from '../ast/lang/samlang-toplevel';
+} from '../ast/samlang-toplevel';
 import { assertNotNull } from '../util/type-assertions';
 import {
   PrettierDocument,

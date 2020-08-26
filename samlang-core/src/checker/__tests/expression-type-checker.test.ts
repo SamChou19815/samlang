@@ -21,7 +21,7 @@ import {
   EXPRESSION_IF_ELSE,
   EXPRESSION_STATEMENT_BLOCK,
   EXPRESSION_LAMBDA,
-} from '../../ast/lang/samlang-expressions';
+} from '../../ast/samlang-expressions';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
 import { assertNotNull } from '../../util/type-assertions';

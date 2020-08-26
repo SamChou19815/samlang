@@ -2,8 +2,8 @@
 
 /** Part 1: Type Imports */
 
-import type { IROperator } from '../common/enums';
-import type { GlobalVariable } from '../common/structs';
+import type { IROperator } from './common/enums';
+import type { GlobalVariable } from './common/structs';
 
 /** Part 2: Expressions */
 

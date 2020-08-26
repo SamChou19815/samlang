@@ -8,7 +8,7 @@ import {
   ASM_CONST,
   ASM_MEM_REG_WITH_CONST,
   ASM_MEM,
-} from '../../ast/asm/asm-arguments';
+} from '../../ast/asm-arguments';
 import {
   AssemblyInstruction,
   ASM_MOVE_CONST_TO_REG,
@@ -23,7 +23,7 @@ import {
   ASM_IMUL,
   ASM_IDIV,
   ASM_PUSH,
-} from '../../ast/asm/asm-instructions';
+} from '../../ast/asm-instructions';
 import AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
 import { PRE_COLORED_REGISTERS } from './asm-register-allocation-utils';
 

@@ -10,9 +10,9 @@ import {
   AssemblyMemory,
   AssemblyRegisterOrMemory,
   AssemblyArgument,
-} from '../ast/asm/asm-arguments';
-import type { AssemblyInstruction, AssemblyCall } from '../ast/asm/asm-instructions';
-import type { AssemblyProgram } from '../ast/asm/asm-program';
+} from '../ast/asm-arguments';
+import type { AssemblyInstruction, AssemblyCall } from '../ast/asm-instructions';
+import type { AssemblyProgram } from '../ast/asm-program';
 import {
   ENCODED_COMPILED_PROGRAM_MAIN,
   ENCODED_FUNCTION_NAME_PRINTLN,

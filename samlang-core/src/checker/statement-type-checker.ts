@@ -6,8 +6,8 @@ import {
   StatementBlock,
   EXPRESSION_PANIC,
   EXPRESSION_STRING,
-} from '../ast/lang/samlang-expressions';
-import type { Pattern, ObjectPatternDestucturedName } from '../ast/lang/samlang-pattern';
+} from '../ast/samlang-expressions';
+import type { Pattern, ObjectPatternDestucturedName } from '../ast/samlang-pattern';
 import type { ModuleErrorCollector } from '../errors';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
 import type { AccessibleGlobalTypingContext, LocalTypingContext } from './typing-context';

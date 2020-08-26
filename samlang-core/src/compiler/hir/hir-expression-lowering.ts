@@ -24,8 +24,8 @@ import {
   HIR_LET,
   HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
-} from '../../ast/hir/hir-expressions';
-import type { HighIRFunction } from '../../ast/hir/hir-toplevel';
+} from '../../ast/hir-expressions';
+import type { HighIRFunction } from '../../ast/hir-toplevel';
 import type {
   SamlangExpression,
   ClassMemberExpression,
@@ -43,8 +43,8 @@ import type {
   MatchExpression,
   LambdaExpression,
   StatementBlockExpression,
-} from '../../ast/lang/samlang-expressions';
-import type { SamlangModule } from '../../ast/lang/samlang-toplevel';
+} from '../../ast/samlang-expressions';
+import type { SamlangModule } from '../../ast/samlang-toplevel';
 import { isNotNull } from '../../util/type-assertions';
 
 type HighIRExpressionLoweringResult = {

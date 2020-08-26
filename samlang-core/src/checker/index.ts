@@ -1,6 +1,6 @@
 import ModuleReference from '../ast/common/module-reference';
 import type { Sources } from '../ast/common/structs';
-import type { SamlangModule } from '../ast/lang/samlang-toplevel';
+import type { SamlangModule } from '../ast/samlang-toplevel';
 import type { ReadonlyGlobalErrorCollector } from '../errors';
 import { hashMapOf, mapOf } from '../util/collections';
 import { assertNotNull } from '../util/type-assertions';

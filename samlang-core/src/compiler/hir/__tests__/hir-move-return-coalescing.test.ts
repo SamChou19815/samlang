@@ -10,7 +10,7 @@ import {
   HIR_NAME,
   HIR_RETURN,
   HIR_STRUCT_INITIALIZATION,
-} from '../../../ast/hir/hir-expressions';
+} from '../../../ast/hir-expressions';
 import coalesceMoveAndReturnForHighIRStatements from '../hir-move-return-coalescing';
 
 it('coalesceMoveAndReturnWithForHighIRStatements empty array test', () => {

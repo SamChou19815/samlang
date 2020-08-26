@@ -1,4 +1,4 @@
-import { assemblyInstructionToString } from '../../../ast/asm/asm-instructions';
+import { assemblyInstructionToString } from '../../../ast/asm-instructions';
 import {
   MidIRStatement,
   MIR_ZERO,
@@ -15,7 +15,7 @@ import {
   MIR_LABEL,
   MIR_CJUMP_FALLTHROUGH,
   MIR_RETURN,
-} from '../../../ast/mir';
+} from '../../../ast/mir-nodes';
 import getAssemblyTilingForMidIRStatements from '../asm-dp-tiling';
 import AssemblyFunctionAbstractRegisterAllocator from '../asm-function-abstract-register-allocator';
 

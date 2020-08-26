@@ -23,7 +23,7 @@ import {
   HIR_LET,
   HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
-} from '../../../ast/hir/hir-expressions';
+} from '../../../ast/hir-expressions';
 import {
   SamlangExpression,
   EXPRESSION_FALSE,
@@ -47,8 +47,8 @@ import {
   EXPRESSION_IF_ELSE,
   EXPRESSION_MATCH,
   EXPRESSION_STATEMENT_BLOCK,
-} from '../../../ast/lang/samlang-expressions';
-import type { SamlangModule } from '../../../ast/lang/samlang-toplevel';
+} from '../../../ast/samlang-expressions';
+import type { SamlangModule } from '../../../ast/samlang-toplevel';
 import lowerSamlangExpression from '../hir-expression-lowering';
 
 const DUMMY_IDENTIFIER_TYPE = identifierType('Dummy');

@@ -2,8 +2,8 @@ import ModuleReference from '../ast/common/module-reference';
 import type Position from '../ast/common/position';
 import type Range from '../ast/common/range';
 import { Type, IdentifierType, FunctionType, prettyPrintType } from '../ast/common/types';
-import { SamlangExpression } from '../ast/lang/samlang-expressions';
-import { SamlangModule } from '../ast/lang/samlang-toplevel';
+import { SamlangExpression } from '../ast/samlang-expressions';
+import { SamlangModule } from '../ast/samlang-toplevel';
 import { GlobalTypingContext, typeCheckSources, typeCheckSourcesIncrementally } from '../checker';
 // eslint-disable-next-line import/no-internal-modules
 import DependencyTracker from '../checker/dependency-tracker';

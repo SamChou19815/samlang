@@ -1,9 +1,9 @@
 import type ModuleReference from '../../ast/common/module-reference';
 import { encodeFunctionNameGlobally } from '../../ast/common/name-encoder';
 import type { Sources } from '../../ast/common/structs';
-import { HIR_RETURN } from '../../ast/hir/hir-expressions';
-import type { HighIRFunction, HighIRModule } from '../../ast/hir/hir-toplevel';
-import type { ClassMemberDefinition, SamlangModule } from '../../ast/lang/samlang-toplevel';
+import { HIR_RETURN } from '../../ast/hir-expressions';
+import type { HighIRFunction, HighIRModule } from '../../ast/hir-toplevel';
+import type { ClassMemberDefinition, SamlangModule } from '../../ast/samlang-toplevel';
 import { HashMap, hashMapOf } from '../../util/collections';
 import lowerSamlangExpression from './hir-expression-lowering';
 import performTailRecursiveCallTransformationOnHighIRFunction from './hir-tail-recursion-transformation-hir';

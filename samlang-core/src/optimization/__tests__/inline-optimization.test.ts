@@ -12,7 +12,7 @@ import {
   MIR_OP,
   midIRCompilationUnitToString,
   MIR_ONE,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import optimizeMidIRCompilationUnitByInlining, {
   // eslint-disable-next-line camelcase
   estimateMidIRFunctionInlineCost_EXPOSED_FOR_TESTING,

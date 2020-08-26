@@ -14,7 +14,7 @@ import {
   MIR_LABEL,
   midIRStatementToString,
   MIR_RETURN,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import optimizeIRWithConstantPropagation from '../constant-propagation-optimization';
 
 it('optimizeIRWithConstantPropagation test 1', () => {

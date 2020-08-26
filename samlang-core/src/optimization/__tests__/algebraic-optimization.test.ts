@@ -15,7 +15,7 @@ import {
   MIR_RETURN,
   MIR_CJUMP_FALLTHROUGH,
   MIR_CALL_FUNCTION,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import optimizeIRWithAlgebraicSimplification from '../algebraic-optimization';
 
 const optimizeAndDumpToString = (statements: readonly MidIRStatement[]): string =>

@@ -1,4 +1,4 @@
-import type { MidIRStatement } from '../ast/mir';
+import type { MidIRStatement } from '../ast/mir-nodes';
 import { Hashable, ReadonlyHashSet, hashSetOf, listShallowEquals } from '../util/collections';
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';

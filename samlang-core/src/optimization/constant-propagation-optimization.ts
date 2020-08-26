@@ -7,7 +7,7 @@ import {
   MIR_OP,
   MIR_JUMP,
   MIR_RETURN,
-} from '../ast/mir';
+} from '../ast/mir-nodes';
 import { isNotNull } from '../util/type-assertions';
 import { constantFoldExpression } from './constant-folding-optimization';
 

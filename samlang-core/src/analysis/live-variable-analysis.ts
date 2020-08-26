@@ -11,8 +11,8 @@ import {
   R11,
   RSP,
   RBP,
-} from '../ast/asm/asm-arguments';
-import type { AssemblyInstruction } from '../ast/asm/asm-instructions';
+} from '../ast/asm-arguments';
+import type { AssemblyInstruction } from '../ast/asm-instructions';
 import { setEquals } from '../util/collections';
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runBackwardDataflowAnalysis } from './dataflow-analysis';

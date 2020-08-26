@@ -12,7 +12,7 @@ import {
   MIR_JUMP,
   MIR_LABEL,
   MIR_CJUMP_FALLTHROUGH,
-} from '../ast/mir';
+} from '../ast/mir-nodes';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
 import { optimizeIrWithSimpleOptimization } from './simple-optimizations';
 

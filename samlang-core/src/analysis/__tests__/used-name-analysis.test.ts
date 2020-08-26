@@ -11,7 +11,7 @@ import {
   MIR_JUMP,
   MIR_RETURN,
   MIR_CJUMP_FALLTHROUGH,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import analyzeUsedFunctionNames from '../used-name-analysis';
 
 it('analyzeUsedFunctionNames test', () => {

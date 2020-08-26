@@ -1,6 +1,6 @@
 import { ENCODED_FUNCTION_NAME_MALLOC } from '../../ast/common/name-encoder';
 import type { GlobalVariable } from '../../ast/common/structs';
-import type { HighIRExpression, HighIRStatement } from '../../ast/hir/hir-expressions';
+import type { HighIRExpression, HighIRStatement } from '../../ast/hir-expressions';
 import {
   MidIRExpression,
   // eslint-disable-next-line camelcase
@@ -18,7 +18,7 @@ import {
   MIR_LABEL,
   MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
   MIR_RETURN,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import createMidIRFlexibleOrderOperatorNode from './mir-flexible-op';
 import MidIRResourceAllocator from './mir-resource-allocator';
 

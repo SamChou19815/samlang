@@ -6,7 +6,7 @@ import {
   MIR_TEMP,
   MIR_OP,
   MIR_IMMUTABLE_MEM,
-} from '../../../ast/mir';
+} from '../../../ast/mir-nodes';
 import invertMidIRConditionExpression from '../mir-condition-inverter';
 
 it('invertMidIRConditionExpression constant inversion tests', () => {

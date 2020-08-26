@@ -9,7 +9,7 @@ import {
   MIR_CALL_FUNCTION,
   MIR_RETURN,
   MIR_CJUMP_FALLTHROUGH,
-} from '../ast/mir';
+} from '../ast/mir-nodes';
 
 const algebraicallyOptimizeExpression = (expression: MidIRExpression): MidIRExpression => {
   switch (expression.__type__) {

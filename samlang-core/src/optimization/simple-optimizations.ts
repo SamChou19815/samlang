@@ -1,7 +1,12 @@
 import ControlFlowGraph from '../analysis/control-flow-graph';
 import analyzeUsedFunctionNames from '../analysis/used-name-analysis';
-import type { AssemblyInstruction } from '../ast/asm/asm-instructions';
-import { MidIRCompilationUnit, MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from '../ast/mir';
+import type { AssemblyInstruction } from '../ast/asm-instructions';
+import {
+  MidIRCompilationUnit,
+  MidIRStatement,
+  MIR_JUMP,
+  MIR_CJUMP_FALLTHROUGH,
+} from '../ast/mir-nodes';
 import { isNotNull } from '../util/type-assertions';
 
 const pipe = <E>(element: E, ...functions: readonly ((element: E) => E)[]): E =>

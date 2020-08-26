@@ -1,4 +1,4 @@
-import { MidIRExpression, MidIRStatement, midIRExpressionToString } from '../ast/mir';
+import { MidIRExpression, MidIRStatement, midIRExpressionToString } from '../ast/mir-nodes';
 import {
   Hashable,
   ReadonlyHashMap,

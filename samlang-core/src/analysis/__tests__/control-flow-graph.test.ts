@@ -1,4 +1,4 @@
-import { ASM_JUMP, ASM_RET, ASM_LABEL } from '../../ast/asm/asm-instructions';
+import { ASM_JUMP, ASM_RET, ASM_LABEL } from '../../ast/asm-instructions';
 import {
   MIR_MOVE_TEMP,
   MIR_JUMP,
@@ -6,7 +6,7 @@ import {
   MIR_LABEL,
   MIR_RETURN,
   MIR_TEMP,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import ControlFlowGraph from '../control-flow-graph';
 
 const statements = [

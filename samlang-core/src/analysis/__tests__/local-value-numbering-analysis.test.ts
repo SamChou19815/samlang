@@ -12,7 +12,7 @@ import {
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
   MIR_EIGHT,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import analyzeLocalValueNumberingAssignment, {
   LocalNumberingInformation,
 } from '../local-value-numbering-analysis';

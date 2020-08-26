@@ -1,4 +1,4 @@
-import { assemblyProgramToString } from '../../ast/asm/asm-program';
+import { assemblyProgramToString } from '../../ast/asm-program';
 import ModuleReference from '../../ast/common/module-reference';
 import { assertNotNull } from '../../util/type-assertions';
 import { checkSources, lowerSourcesToAssemblyPrograms } from '../source-processor';
@@ -49,7 +49,7 @@ GLOBAL_STRING_0:
     .quad 108 ## l
     .quad 108 ## l
     .quad 111 ## o
-    .quad 32 ##  
+    .quad 32 ## ${' '}
     .text
     .data
     .align 8

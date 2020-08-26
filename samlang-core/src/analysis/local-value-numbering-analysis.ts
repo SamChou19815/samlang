@@ -4,7 +4,7 @@ import {
   midIRExpressionToString,
   MIR_TEMP,
   MidIRStatement,
-} from '../ast/mir';
+} from '../ast/mir-nodes';
 import { assertNotNull } from '../util/type-assertions';
 import ControlFlowGraph, { ControlFlowGraphNode } from './control-flow-graph';
 

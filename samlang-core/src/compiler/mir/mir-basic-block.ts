@@ -7,7 +7,7 @@ import {
   MidIRReturnStatement,
   MIR_LABEL,
   MIR_JUMP,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import MidIRResourceAllocator from './mir-resource-allocator';
 
 export interface ReadonlyMidIRBasicBlockWithoutPointers {

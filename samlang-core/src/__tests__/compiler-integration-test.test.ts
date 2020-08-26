@@ -1,6 +1,6 @@
-import { assemblyProgramToString } from '../ast/asm/asm-program';
+import { assemblyProgramToString } from '../ast/asm-program';
 import ModuleReference from '../ast/common/module-reference';
-import { MidIRCompilationUnit, midIRCompilationUnitToString } from '../ast/mir';
+import { MidIRCompilationUnit, midIRCompilationUnitToString } from '../ast/mir-nodes';
 import {
   compileSamlangSourcesToHighIRSources,
   compileHighIrSourcesToMidIRCompilationUnits,

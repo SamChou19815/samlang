@@ -32,7 +32,7 @@ import {
   EXPRESSION_MATCH,
   EXPRESSION_LAMBDA,
   EXPRESSION_STATEMENT_BLOCK,
-} from '../../ast/lang/samlang-expressions';
+} from '../../ast/samlang-expressions';
 import fixExpressionType from '../expression-type-fixer';
 import { ReadOnlyTypeResolution } from '../type-resolution';
 import resolveType from '../type-resolver';

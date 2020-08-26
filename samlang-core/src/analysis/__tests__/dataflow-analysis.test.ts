@@ -11,7 +11,7 @@ import {
   MIR_JUMP,
   MIR_LABEL,
   MIR_RETURN,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import ControlFlowGraph from '../control-flow-graph';
 import {
   DataflowAnalysisGraphOperator,

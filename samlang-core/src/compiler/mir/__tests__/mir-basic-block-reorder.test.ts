@@ -9,7 +9,7 @@ import {
   MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
   MIR_RETURN,
   MIR_TEMP,
-} from '../../../ast/mir';
+} from '../../../ast/mir-nodes';
 import createMidIRBasicBlocks from '../mir-basic-block';
 import reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath from '../mir-basic-block-reorder';
 import MidIRResourceAllocator from '../mir-resource-allocator';

@@ -10,7 +10,7 @@ import {
   MIR_CJUMP_FALLTHROUGH,
   MIR_JUMP,
   MIR_LABEL,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import analyzePropagatedConstants from '../constant-propagation-analysis';
 
 it('analyzePropagatedConstants test 1', () => {

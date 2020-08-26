@@ -19,7 +19,7 @@ import {
   midIRExpressionToString,
   midIRStatementToString,
   midIRCompilationUnitToString,
-} from '..';
+} from '../mir-nodes';
 
 it('midIRExpressionToString tests', () => {
   expect(midIRExpressionToString(MIR_ZERO)).toBe('0');

@@ -1,4 +1,4 @@
-import { MIR_CONST, MIR_NAME, MIR_TEMP, MIR_IMMUTABLE_MEM, MIR_OP } from '../../../ast/mir';
+import { MIR_CONST, MIR_NAME, MIR_TEMP, MIR_IMMUTABLE_MEM, MIR_OP } from '../../../ast/mir-nodes';
 import createMidIRFlexibleOrderOperatorNode from '../mir-flexible-op';
 
 it('createMidIRFlexibleOrderOperatorNode test', () => {

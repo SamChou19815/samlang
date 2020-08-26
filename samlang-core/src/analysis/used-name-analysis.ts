@@ -1,5 +1,10 @@
 import { ENCODED_COMPILED_PROGRAM_MAIN } from '../ast/common/name-encoder';
-import { MidIRExpression, MidIRStatement, MidIRFunction, MidIRCompilationUnit } from '../ast/mir';
+import {
+  MidIRExpression,
+  MidIRStatement,
+  MidIRFunction,
+  MidIRCompilationUnit,
+} from '../ast/mir-nodes';
 import { assertNotNull } from '../util/type-assertions';
 
 const collectUsedNamesFromExpression = (set: Set<string>, expression: MidIRExpression): void => {

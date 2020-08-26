@@ -13,7 +13,7 @@ import {
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
   midIRStatementToString,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import optimizeIRWithCommonSubExpressionElimination, {
   // eslint-disable-next-line camelcase
   computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING,

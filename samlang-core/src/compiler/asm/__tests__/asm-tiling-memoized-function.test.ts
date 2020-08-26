@@ -1,4 +1,4 @@
-import { MIR_CONST, MIR_JUMP } from '../../../ast/mir';
+import { MIR_CONST, MIR_JUMP } from '../../../ast/mir-nodes';
 import {
   getMemoizedAssemblyExpressionTilingFunction,
   getMemoizedAssemblyStatementTilingFunction,

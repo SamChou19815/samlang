@@ -1,5 +1,5 @@
-import type Range from '../common/range';
-import type { Node } from '../common/structs';
+import type Range from './common/range';
+import type { Node } from './common/structs';
 
 export interface TuplePattern extends Node {
   readonly type: 'TuplePattern';

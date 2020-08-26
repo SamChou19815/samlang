@@ -13,7 +13,7 @@ import {
   MIR_RETURN,
   MIR_JUMP,
   MIR_CJUMP_FALLTHROUGH,
-} from '../ast/mir';
+} from '../ast/mir-nodes';
 import { isNotNull } from '../util/type-assertions';
 
 export const constantFoldExpression = (expression: MidIRExpression): MidIRExpression => {

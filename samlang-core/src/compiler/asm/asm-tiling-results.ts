@@ -5,9 +5,9 @@ import {
   AssemblyConstOrRegister,
   AssemblyRegisterOrMemory,
   AssemblyArgument,
-} from '../../ast/asm/asm-arguments';
-import { AssemblyInstruction } from '../../ast/asm/asm-instructions';
-import { MidIRExpression } from '../../ast/mir';
+} from '../../ast/asm-arguments';
+import { AssemblyInstruction } from '../../ast/asm-instructions';
+import { MidIRExpression } from '../../ast/mir-nodes';
 import AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
 
 const estimateCostFromInstructions = (instructions: readonly AssemblyInstruction[]): number => {

@@ -1,4 +1,4 @@
-import { ASM_CONST, ASM_REG, ASM_MEM, ASM_MEM_CONST, RAX } from '../../../ast/asm/asm-arguments';
+import { ASM_CONST, ASM_REG, ASM_MEM, ASM_MEM_CONST, RAX } from '../../../ast/asm-arguments';
 import {
   ASM_MOVE_CONST_TO_REG,
   ASM_MOVE_REG,
@@ -20,7 +20,7 @@ import {
   ASM_POP_RBP,
   ASM_LABEL,
   ASM_COMMENT,
-} from '../../../ast/asm/asm-instructions';
+} from '../../../ast/asm-instructions';
 import collectAssemblyRegistersFromAssemblyInstructions from '../asm-register-collector';
 
 const REG = ASM_REG('reg');
