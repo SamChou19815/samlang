@@ -2,10 +2,8 @@
   "name": "@dev-sam/samlang-core",
   "version": "0.0.1",
   "license": "AGPLv3",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
   "scripts": {
-    "build": "tsc --incremental --noEmit",
+    "compile": "tsc --incremental --noEmit",
     "codegen": "yarn antlr4ts -o parser/generated -visitor -no-listener PL.g4 && node suppress-type-errors.js"
   },
   "devDependencies": {

@@ -2,10 +2,8 @@
   "name": "@dev-sam/samlang-cli",
   "version": "0.0.1",
   "license": "AGPLv3",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
   "scripts": {
-    "build": "tsc --incremental",
+    "compile": "tsc --incremental",
     "bundle": "pnpify ncc build src/index.ts -o build -m --transpile-only"
   },
   "bin": {
