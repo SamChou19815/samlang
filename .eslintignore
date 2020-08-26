@@ -23,4 +23,4 @@ coverage
 .yarn
 
 # Generated
-samlang-core/src/parser/generated
+samlang-core/parser/generated
