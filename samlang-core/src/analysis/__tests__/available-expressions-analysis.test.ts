@@ -10,7 +10,7 @@ import {
   MIR_LABEL,
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import analyzeAvailableExpressionsComingOutAtEachStatement from '../available-expressions-analysis';
 
 it('analyzeLocalValueNumberingAssignment test 1', () => {

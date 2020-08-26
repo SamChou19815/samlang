@@ -1,4 +1,4 @@
-import { MidIRStatement, MIR_CJUMP_FALLTHROUGH, MIR_JUMP } from '../../ast/mir';
+import { MidIRStatement, MIR_CJUMP_FALLTHROUGH, MIR_JUMP } from '../../ast/mir-nodes';
 import type { ReadonlyMidIRBasicBlockWithoutPointers } from './mir-basic-block';
 import invertMidIRConditionExpression from './mir-condition-inverter';
 

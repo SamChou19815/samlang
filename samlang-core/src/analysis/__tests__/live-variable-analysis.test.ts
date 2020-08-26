@@ -10,7 +10,7 @@ import {
   ASM_MEM_REG,
   ASM_MEM_CONST,
   ASM_MEM_REG_SUM,
-} from '../../ast/asm/asm-arguments';
+} from '../../ast/asm-arguments';
 import {
   AssemblyInstruction,
   ASM_MOVE_MEM,
@@ -34,7 +34,7 @@ import {
   ASM_RET,
   ASM_LABEL,
   ASM_COMMENT,
-} from '../../ast/asm/asm-instructions';
+} from '../../ast/asm-instructions';
 import analyzeLiveVariablesAtTheEndOfEachInstruction from '../live-variable-analysis';
 
 const analyze = (

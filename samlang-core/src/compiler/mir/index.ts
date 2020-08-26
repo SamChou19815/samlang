@@ -4,8 +4,8 @@ import {
   encodeMainFunctionName,
 } from '../../ast/common/name-encoder';
 import type { Sources, GlobalVariable } from '../../ast/common/structs';
-import type { HighIRModule } from '../../ast/hir/hir-toplevel';
-import { MidIRCompilationUnit, MidIRFunction, MIR_CALL_FUNCTION, MIR_RETURN } from '../../ast/mir';
+import type { HighIRModule } from '../../ast/hir-toplevel';
+import { MidIRCompilationUnit, MidIRFunction, MIR_CALL_FUNCTION, MIR_RETURN } from '../../ast/mir-nodes';
 import {
   optimizeIrWithSimpleOptimization,
   optimizeIRWithUnusedNameElimination,

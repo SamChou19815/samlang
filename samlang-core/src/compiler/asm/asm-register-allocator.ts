@@ -1,8 +1,8 @@
 import analyzeLiveVariablesAtTheEndOfEachInstruction, {
   LiveVariableAnalysisResult,
 } from '../../analysis/live-variable-analysis';
-import { AssemblyMemory } from '../../ast/asm/asm-arguments';
-import { AssemblyInstruction } from '../../ast/asm/asm-instructions';
+import { AssemblyMemory } from '../../ast/asm-arguments';
+import { AssemblyInstruction } from '../../ast/asm-instructions';
 import { Hashable, HashSet, hashSetOf, ReadonlyHashSet } from '../../util/collections';
 import { assertNotNull } from '../../util/type-assertions';
 import assemblyInstructionColoringRewrite from './asm-coloring-program-rewriter';

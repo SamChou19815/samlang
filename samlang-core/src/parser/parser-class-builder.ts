@@ -3,8 +3,8 @@ import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor
 import Range from '../ast/common/range';
 import type { TypeDefinition } from '../ast/common/structs';
 import { functionType } from '../ast/common/types';
-import { SamlangExpression } from '../ast/lang/samlang-expressions';
-import { ClassDefinition, ClassMemberDefinition } from '../ast/lang/samlang-toplevel';
+import { SamlangExpression } from '../ast/samlang-expressions';
+import { ClassDefinition, ClassMemberDefinition } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {

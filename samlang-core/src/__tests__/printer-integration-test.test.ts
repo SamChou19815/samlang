@@ -1,5 +1,5 @@
 import ModuleReference from '../ast/common/module-reference';
-import type { SamlangModule } from '../ast/lang/samlang-toplevel';
+import type { SamlangModule } from '../ast/samlang-toplevel';
 import { prettyPrintSamlangModule } from '../printer';
 import { checkSources } from '../services/source-processor';
 import { runnableSamlangProgramTestCases } from '../test-programs';

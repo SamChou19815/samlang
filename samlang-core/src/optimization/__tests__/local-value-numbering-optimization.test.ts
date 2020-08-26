@@ -11,7 +11,7 @@ import {
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
   midIRStatementToString,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import optimizeIRWithLocalValueNumbering from '../local-value-numbering-optimization';
 
 it('optimizeIRWithLocalValueNumbering test', () => {

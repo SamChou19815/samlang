@@ -17,11 +17,9 @@ import {
   HIR_ZERO,
   HIR_LET,
   HIR_ONE,
-  HIR_FUNCTION_CALL,
-  HIR_NAME,
   HIR_WHILE_TRUE,
-} from '../../../ast/hir/hir-expressions';
-import type { HighIRModule } from '../../../ast/hir/hir-toplevel';
+} from '../../../ast/hir-expressions';
+import type { HighIRModule } from '../../../ast/hir-toplevel';
 import {
   EXPRESSION_INT,
   EXPRESSION_VARIABLE,
@@ -30,8 +28,8 @@ import {
   EXPRESSION_BINARY,
   EXPRESSION_IF_ELSE,
   EXPRESSION_CLASS_MEMBER,
-} from '../../../ast/lang/samlang-expressions';
-import type { SamlangModule } from '../../../ast/lang/samlang-toplevel';
+} from '../../../ast/samlang-expressions';
+import type { SamlangModule } from '../../../ast/samlang-toplevel';
 import { mapOf } from '../../../util/collections';
 
 const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Dummy') });

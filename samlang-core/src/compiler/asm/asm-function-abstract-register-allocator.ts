@@ -1,4 +1,4 @@
-import { AssemblyRegister, ASM_REG } from '../../ast/asm/asm-arguments';
+import { AssemblyRegister, ASM_REG } from '../../ast/asm-arguments';
 
 export default class AssemblyFunctionAbstractRegisterAllocator {
   private nextRegisterId = 0;

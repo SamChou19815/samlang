@@ -8,7 +8,7 @@ import {
   HIR_LET,
   HIR_NAME,
   HIR_RETURN,
-} from '../../../ast/hir/hir-expressions';
+} from '../../../ast/hir-expressions';
 import performTailRecursiveCallTransformationOnHighIRFunction from '../hir-tail-recursion-transformation-hir';
 
 it('performTailRecursiveCallTransformationOnHighIRFunction failed coalescing test', () => {

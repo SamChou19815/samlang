@@ -20,8 +20,8 @@ import {
   AssemblyMemory,
   ASM_MEM_REG_WITH_CONST,
   ASM_CONST,
-} from '../../ast/asm/asm-arguments';
-import { AssemblyInstruction, ASM_MOVE_REG, ASM_COMMENT } from '../../ast/asm/asm-instructions';
+} from '../../ast/asm-arguments';
+import { AssemblyInstruction, ASM_MOVE_REG, ASM_COMMENT } from '../../ast/asm-instructions';
 import { AssemblyMemoryMapping } from './asm-memory-mapping';
 
 /**

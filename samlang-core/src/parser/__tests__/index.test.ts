@@ -1,6 +1,6 @@
 import { parseSamlangModuleFromText, parseSamlangExpressionFromText } from '..';
 import ModuleReference from '../../ast/common/module-reference';
-import type { SamlangExpression } from '../../ast/lang/samlang-expressions';
+import type { SamlangExpression } from '../../ast/samlang-expressions';
 import { createGlobalErrorCollector } from '../../errors';
 
 it('Can parse good expressions.', () => {

@@ -8,7 +8,7 @@ import {
   HIR_LET,
   HIR_NAME,
   HIR_STRUCT_INITIALIZATION,
-} from '../../../ast/hir/hir-expressions';
+} from '../../../ast/hir-expressions';
 import eliminateUselessEndingMoveForHighIRStatements from '../hir-eliminate-useless-ending-moves';
 
 it('eliminateUselessEndingMoveForHighIRStatements empty array test', () => {

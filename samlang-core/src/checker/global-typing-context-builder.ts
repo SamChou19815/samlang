@@ -2,7 +2,7 @@
 
 import type ModuleReference from '../ast/common/module-reference';
 import type { Sources } from '../ast/common/structs';
-import type { ClassInterface, SamlangModule } from '../ast/lang/samlang-toplevel';
+import type { ClassInterface, SamlangModule } from '../ast/samlang-toplevel';
 import { hashMapOf } from '../util/collections';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
 import type {

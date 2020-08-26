@@ -3,8 +3,8 @@ import {
   SamlangExpression,
   EXPRESSION_VARIABLE,
   EXPRESSION_LAMBDA,
-} from '../ast/lang/samlang-expressions';
-import { SamlangModule, ClassDefinition } from '../ast/lang/samlang-toplevel';
+} from '../ast/samlang-expressions';
+import { SamlangModule, ClassDefinition } from '../ast/samlang-toplevel';
 import { InterpretationContext, EMPTY, ClassValue } from './interpretation-context';
 import PanicException from './panic-exception';
 import { Value, ObjectValue, FunctionValue, VariantValue, TupleValue } from './value';

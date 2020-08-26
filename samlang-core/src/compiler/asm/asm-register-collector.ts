@@ -1,5 +1,5 @@
-import type { AssemblyRegister, AssemblyArgument } from '../../ast/asm/asm-arguments';
-import type { AssemblyInstruction } from '../../ast/asm/asm-instructions';
+import type { AssemblyRegister, AssemblyArgument } from '../../ast/asm-arguments';
+import type { AssemblyInstruction } from '../../ast/asm-instructions';
 import { PRE_COLORED_REGISTERS } from './asm-register-allocation-utils';
 
 const collectAssemblyRegistersWithoutMachineRegisters = (

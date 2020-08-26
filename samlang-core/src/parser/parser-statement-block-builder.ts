@@ -1,11 +1,7 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
 import { UndecidedTypes } from '../ast/common/types';
-import {
-  SamlangValStatement,
-  StatementBlock,
-  SamlangExpression,
-} from '../ast/lang/samlang-expressions';
+import { SamlangValStatement, StatementBlock, SamlangExpression } from '../ast/samlang-expressions';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {
   ExpressionContext,

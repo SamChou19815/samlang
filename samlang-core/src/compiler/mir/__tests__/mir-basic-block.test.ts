@@ -8,7 +8,7 @@ import {
   MIR_LABEL,
   MIR_RETURN,
   MIR_TEMP,
-} from '../../../ast/mir';
+} from '../../../ast/mir-nodes';
 import createMidIRBasicBlocks, { MidIRBasicBlock } from '../mir-basic-block';
 import MidIRResourceAllocator from '../mir-resource-allocator';
 

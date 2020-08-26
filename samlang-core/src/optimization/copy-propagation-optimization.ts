@@ -6,7 +6,7 @@ import {
   MIR_IMMUTABLE_MEM,
   MIR_OP,
   MIR_RETURN,
-} from '../ast/mir';
+} from '../ast/mir-nodes';
 
 const replaceMidIRExpressionAccordingToAvailableCopies = (
   availableCopies: Readonly<Record<string, string | undefined>>,

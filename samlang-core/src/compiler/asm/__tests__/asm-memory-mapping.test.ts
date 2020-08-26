@@ -1,4 +1,4 @@
-import { ASM_CONST, ASM_MEM_CONST } from '../../../ast/asm/asm-arguments';
+import { ASM_CONST, ASM_MEM_CONST } from '../../../ast/asm-arguments';
 import { AssemblyMemoryMapping } from '../asm-memory-mapping';
 
 it('AssemblyMemoryMapping self consistency test', () => {

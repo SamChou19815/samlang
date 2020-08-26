@@ -6,7 +6,7 @@ import {
   VariantConstructorExpression,
   EXPRESSION_METHOD_ACCESS,
   EXPRESSION_MATCH,
-} from '../../ast/lang/samlang-expressions';
+} from '../../ast/samlang-expressions';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
 import { assertNotNull } from '../../util/type-assertions';

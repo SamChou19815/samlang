@@ -6,7 +6,7 @@ import {
   AssemblyArgument,
   ASM_REG,
   ASM_MEM,
-} from '../../ast/asm/asm-arguments';
+} from '../../ast/asm-arguments';
 import {
   AssemblyInstruction,
   ASM_MOVE_CONST_TO_REG,
@@ -24,7 +24,7 @@ import {
   ASM_SHL,
   ASM_PUSH,
   ASM_COMMENT,
-} from '../../ast/asm/asm-instructions';
+} from '../../ast/asm-instructions';
 import type { ReadonlyAssemblyMemoryMapping } from './asm-memory-mapping';
 import { PRE_COLORED_REGISTERS } from './asm-register-allocation-utils';
 

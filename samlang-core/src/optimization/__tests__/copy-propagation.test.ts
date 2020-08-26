@@ -13,7 +13,7 @@ import {
   MIR_RETURN,
   midIRStatementToString,
   MIR_OP,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import optimizeIRWithCopyPropagation from '../copy-propagation-optimization';
 
 it('optimizeIRWithCopyPropagation test 1', () => {

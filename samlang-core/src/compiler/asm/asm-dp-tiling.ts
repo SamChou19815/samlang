@@ -14,7 +14,7 @@ import {
   ASM_MEM_REG_WITH_CONST,
   ASM_NAME,
   AssemblyArgument,
-} from '../../ast/asm/asm-arguments';
+} from '../../ast/asm-arguments';
 import {
   ASM_MOVE_CONST_TO_REG,
   ASM_MOVE_REG,
@@ -34,7 +34,7 @@ import {
   ASM_COMMENT,
   AssemblyInstruction,
   AssemblyConditionalJumpType,
-} from '../../ast/asm/asm-instructions';
+} from '../../ast/asm-instructions';
 import {
   MidIRExpression,
   MidIRImmutableMemoryExpression,
@@ -43,7 +43,7 @@ import {
   MIR_IMMUTABLE_MEM,
   midIRExpressionToString,
   midIRStatementToString,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import { bigIntIsWithin32BitIntegerRange, isPowerOfTwo, logTwo } from '../../util/int-util';
 import { assertNotNull } from '../../util/type-assertions';
 import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';

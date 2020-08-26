@@ -20,7 +20,7 @@ import {
   HIR_INDEX_ACCESS,
   HIR_VARIABLE,
   HIR_WHILE_TRUE,
-} from '../../ast/hir/hir-expressions';
+} from '../../ast/hir-expressions';
 import { compileSamlangSourcesToHighIRSources } from '../../compiler';
 import {
   highIRSourcesToJSString,

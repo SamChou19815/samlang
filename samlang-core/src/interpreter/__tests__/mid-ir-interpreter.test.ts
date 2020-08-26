@@ -23,7 +23,7 @@ import {
   MIR_LABEL,
   MIR_CJUMP_FALLTHROUGH,
   MIR_RETURN,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import interpretMidIRCompilationUnit from '../mid-ir-interpreter';
 
 it('interpretMidIRCompilationUnit hello world test', () => {

@@ -1,4 +1,4 @@
-import { AssemblyMemory, assemblyArgumentToString } from '../../ast/asm/asm-arguments';
+import { AssemblyMemory, assemblyArgumentToString } from '../../ast/asm-arguments';
 import { Hashable, HashMap, hashMapOf } from '../../util/collections';
 
 class MemoryWrapper implements Hashable {

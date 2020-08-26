@@ -1,4 +1,4 @@
-import type { SamlangModule } from '../ast/lang/samlang-toplevel';
+import type { SamlangModule } from '../ast/samlang-toplevel';
 import { prettyPrintAccordingToPrettierAlgorithm } from './printer-prettier-core';
 import createPrettierDocumentForSamlangModule from './printer-source-level';
 

@@ -1,5 +1,5 @@
 import { Range, Position } from '../..';
-import { EXPRESSION_TRUE } from '../../ast/lang/samlang-expressions';
+import { EXPRESSION_TRUE } from '../../ast/samlang-expressions';
 import { EMPTY, ClassValue } from '../interpretation-context';
 import { FunctionValue, Value } from '../value';
 

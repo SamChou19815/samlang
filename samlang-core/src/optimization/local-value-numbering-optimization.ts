@@ -1,7 +1,7 @@
 import analyzeLocalValueNumberingAssignment, {
   ReadonlyLocalNumberingInformation,
 } from '../analysis/local-value-numbering-analysis';
-import { MidIRStatement, MidIRExpression, MIR_IMMUTABLE_MEM, MIR_OP } from '../ast/mir';
+import { MidIRStatement, MidIRExpression, MIR_IMMUTABLE_MEM, MIR_OP } from '../ast/mir-nodes';
 
 const rewriteMidIRExpressionWithLocalValueNumberingInformation = (
   information: ReadonlyLocalNumberingInformation,

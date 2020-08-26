@@ -1,6 +1,6 @@
-import { ENCODED_COMPILED_PROGRAM_MAIN } from '../common/name-encoder';
-import { GlobalVariable } from '../common/structs';
 import { AssemblyInstruction, assemblyInstructionToString } from './asm-instructions';
+import { ENCODED_COMPILED_PROGRAM_MAIN } from './common/name-encoder';
+import { GlobalVariable } from './common/structs';
 
 export type AssemblyProgram = {
   readonly globalVariables: readonly GlobalVariable[];

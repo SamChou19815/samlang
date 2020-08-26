@@ -10,7 +10,7 @@ import {
   isTheSameType,
   prettyPrintType,
 } from '../ast/common/types';
-import { SamlangExpression } from '../ast/lang/samlang-expressions';
+import { SamlangExpression } from '../ast/samlang-expressions';
 import { assertNotNull } from '../util/type-assertions';
 import type { ReadOnlyTypeResolution } from './type-resolution';
 import resolveType from './type-resolver';

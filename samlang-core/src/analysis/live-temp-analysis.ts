@@ -1,4 +1,4 @@
-import type { MidIRExpression, MidIRStatement } from '../ast/mir';
+import type { MidIRExpression, MidIRStatement } from '../ast/mir-nodes';
 import { setEquals } from '../util/collections';
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runBackwardDataflowAnalysis } from './dataflow-analysis';

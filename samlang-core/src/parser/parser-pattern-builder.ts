@@ -7,7 +7,7 @@ import type {
   ObjectPatternDestucturedName,
   VariablePattern,
   WildCardPattern,
-} from '../ast/lang/samlang-pattern';
+} from '../ast/samlang-pattern';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {
   TuplePatternContext,

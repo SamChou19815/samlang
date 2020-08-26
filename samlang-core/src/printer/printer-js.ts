@@ -8,8 +8,8 @@ import {
   encodeMainFunctionName,
   ENCODED_FUNCTION_NAME_THROW,
 } from '../ast/common/name-encoder';
-import { HighIRStatement, HighIRExpression } from '../ast/hir/hir-expressions';
-import { HighIRFunction, HighIRModule } from '../ast/hir/hir-toplevel';
+import { HighIRStatement, HighIRExpression } from '../ast/hir-expressions';
+import { HighIRFunction, HighIRModule } from '../ast/hir-toplevel';
 import {
   PrettierDocument,
   PRETTIER_CONCAT,

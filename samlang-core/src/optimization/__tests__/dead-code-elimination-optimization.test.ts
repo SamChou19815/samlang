@@ -10,7 +10,7 @@ import {
   MIR_LABEL,
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 import optimizeIRWithDeadCodeElimination from '../dead-code-elimination-optimization';
 
 it('optimizeIRWithDeadCodeElimination test', () => {

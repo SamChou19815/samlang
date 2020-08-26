@@ -1,4 +1,4 @@
-import { bigIntIsWithin32BitIntegerRange } from '../../util/int-util';
+import { bigIntIsWithin32BitIntegerRange } from '../util/int-util';
 import {
   AssemblyConst,
   AssemblyRegister,

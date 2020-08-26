@@ -6,8 +6,8 @@ import {
   HIR_IF_ELSE,
   HIR_WHILE_TRUE,
   HIR_RETURN,
-} from '../../ast/hir/hir-expressions';
-import type { HighIRFunction } from '../../ast/hir/hir-toplevel';
+} from '../../ast/hir-expressions';
+import type { HighIRFunction } from '../../ast/hir-toplevel';
 import eliminateUselessEndingMoveForHighIRStatements from './hir-eliminate-useless-ending-moves';
 import coalesceMoveAndReturnForHighIRStatements from './hir-move-return-coalescing';
 

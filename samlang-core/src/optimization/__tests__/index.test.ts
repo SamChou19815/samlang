@@ -13,7 +13,7 @@ import {
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
   midIRCompilationUnitToString,
-} from '../../ast/mir';
+} from '../../ast/mir-nodes';
 
 const compilationUnit: MidIRCompilationUnit = {
   globalVariables: [],

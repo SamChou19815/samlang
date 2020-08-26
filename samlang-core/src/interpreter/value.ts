@@ -1,4 +1,4 @@
-import { SamlangExpression } from '../ast/lang/samlang-expressions';
+import { SamlangExpression } from '../ast/samlang-expressions';
 import { InterpretationContext } from './interpretation-context';
 
 export type Value =

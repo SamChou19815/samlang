@@ -3,8 +3,8 @@ import type Position from '../ast/common/position';
 import type Range from '../ast/common/range';
 import type { Location } from '../ast/common/structs';
 import { identifierType, TupleType } from '../ast/common/types';
-import { SamlangExpression, EXPRESSION_VARIABLE } from '../ast/lang/samlang-expressions';
-import type { SamlangModule } from '../ast/lang/samlang-toplevel';
+import { SamlangExpression, EXPRESSION_VARIABLE } from '../ast/samlang-expressions';
+import type { SamlangModule } from '../ast/samlang-toplevel';
 import { HashMap, hashMapOf } from '../util/collections';
 import { assertNotNull } from '../util/type-assertions';
 

@@ -1,4 +1,4 @@
-import { HighIRStatement, HIR_IF_ELSE } from '../../ast/hir/hir-expressions';
+import { HighIRStatement, HIR_IF_ELSE } from '../../ast/hir-expressions';
 
 const eliminateUselessEndingMoveForHighIRStatementsHelper = (
   statements: readonly HighIRStatement[],

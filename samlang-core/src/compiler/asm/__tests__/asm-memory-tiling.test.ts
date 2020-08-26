@@ -1,8 +1,7 @@
-import { ASM_REG, assemblyArgumentToString, ASM_MEM, RIP } from '../../../ast/asm/asm-arguments';
-import { assemblyInstructionToString, ASM_MOVE_MEM } from '../../../ast/asm/asm-instructions';
+import { ASM_REG, assemblyArgumentToString, ASM_MEM, RIP } from '../../../ast/asm-arguments';
+import { assemblyInstructionToString, ASM_MOVE_MEM } from '../../../ast/asm-instructions';
 import {
   MidIRExpression,
-  MIR_ZERO,
   MIR_ONE,
   MIR_EIGHT,
   MIR_NAME,
@@ -10,14 +9,7 @@ import {
   MIR_TEMP,
   MIR_IMMUTABLE_MEM,
   MIR_OP,
-  MIR_MOVE_TEMP,
-  MIR_MOVE_IMMUTABLE_MEM,
-  MIR_CALL_FUNCTION,
-  MIR_JUMP,
-  MIR_LABEL,
-  MIR_CJUMP_FALLTHROUGH,
-  MIR_RETURN,
-} from '../../../ast/mir';
+} from '../../../ast/mir-nodes';
 import getAssemblyMemoryTilingForMidIRExpression from '../asm-memory-tiling';
 import {
   AssemblyTilingServiceBasic,

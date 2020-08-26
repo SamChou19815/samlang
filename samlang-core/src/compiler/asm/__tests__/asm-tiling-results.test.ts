@@ -1,4 +1,4 @@
-import { RAX, ASM_CONST, ASM_MEM_CONST, ASM_REG } from '../../../ast/asm/asm-arguments';
+import { RAX, ASM_CONST, ASM_MEM_CONST, ASM_REG } from '../../../ast/asm-arguments';
 import {
   ASM_MOVE_REG,
   ASM_LEA,
@@ -7,7 +7,7 @@ import {
   ASM_IDIV,
   ASM_LABEL,
   ASM_COMMENT,
-} from '../../../ast/asm/asm-instructions';
+} from '../../../ast/asm-instructions';
 import {
   createAssemblyConstantTilingResult,
   createAssemblyMemoryTilingResult,

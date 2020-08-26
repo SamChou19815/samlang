@@ -1,4 +1,4 @@
-import type { MidIRStatement, MidIRExpression } from '../../ast/mir';
+import type { MidIRStatement, MidIRExpression } from '../../ast/mir-nodes';
 
 /** The utility class used to memoize function application. */
 class AssemblyTilingMemoizedFunction<T, R> {

@@ -11,9 +11,9 @@ import {
   ASM_MEM_REG_WITH_MUL,
   ASM_MEM_MUL_WITH_CONST,
   ASM_MEM,
-} from '../../ast/asm/asm-arguments';
-import { AssemblyInstruction, ASM_COMMENT } from '../../ast/asm/asm-instructions';
-import { MidIRExpression, MidIRBinaryExpression } from '../../ast/mir';
+} from '../../ast/asm-arguments';
+import { AssemblyInstruction, ASM_COMMENT } from '../../ast/asm-instructions';
+import { MidIRExpression, MidIRBinaryExpression } from '../../ast/mir-nodes';
 import { bigIntIsWithin32BitIntegerRange } from '../../util/int-util';
 import { assertNotNull } from '../../util/type-assertions';
 import {

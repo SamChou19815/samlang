@@ -1,7 +1,7 @@
 import analyzeAvailableExpressionsComingOutAtEachStatement, {
   MidIRExpressionWrapper,
 } from '../analysis/available-expressions-analysis';
-import { MidIRExpression, MidIRStatement, MIR_TEMP, MIR_MOVE_TEMP } from '../ast/mir';
+import { MidIRExpression, MidIRStatement, MIR_TEMP, MIR_MOVE_TEMP } from '../ast/mir-nodes';
 import { ReadonlyHashMap, ReadonlyHashSet, hashMapOf, hashSetOf } from '../util/collections';
 import { assertNotNull } from '../util/type-assertions';
 import OptimizationResourceAllocator from './optimization-resource-allocator';

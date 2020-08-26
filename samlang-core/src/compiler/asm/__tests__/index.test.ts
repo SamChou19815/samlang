@@ -1,5 +1,5 @@
 import generateAssemblyInstructionsFromMidIRCompilationUnit from '..';
-import { assemblyInstructionToString } from '../../../ast/asm/asm-instructions';
+import { assemblyInstructionToString } from '../../../ast/asm-instructions';
 import {
   MidIRCompilationUnit,
   MIR_MOVE_TEMP,
@@ -17,7 +17,7 @@ import {
   MidIRExpression,
   MIR_JUMP,
   MIR_CONST,
-} from '../../../ast/mir';
+} from '../../../ast/mir-nodes';
 
 const compile = (
   compilationUnit: MidIRCompilationUnit,

@@ -1,4 +1,4 @@
-import type { IROperator } from '../common/enums';
+import type { IROperator } from '../ast/common/enums';
 
 interface BaseHighIRExpression {
   readonly __type__: string;

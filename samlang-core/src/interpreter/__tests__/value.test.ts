@@ -1,5 +1,5 @@
 import { Range, Position } from '../..';
-import { EXPRESSION_TRUE } from '../../ast/lang/samlang-expressions';
+import { EXPRESSION_TRUE } from '../../ast/samlang-expressions';
 import { Value } from '../value';
 
 it('value equality test', () => {
