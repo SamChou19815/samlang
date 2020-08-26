@@ -25,6 +25,23 @@ jobs:
         run: yarn lint
       - name: Check Format
         run: yarn format:check
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-node@v2-beta
+      - uses: actions/cache@v2
+        with:
+          path: |
+            .yarn/cache
+            .pnp.js
+          key: yarn-berry-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-berry-
+      - name: Yarn Install
+        run: yarn
+      - name: Compile
+        run: yarn compile
   test:
     runs-on: ubuntu-latest
     steps:
