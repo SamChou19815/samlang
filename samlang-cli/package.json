@@ -6,7 +6,7 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "build": "tsc --incremental",
-    "bundle": "pnpify ncc build lib/index.js -o build -m"
+    "bundle": "pnpify ncc build src/index.ts -o build -m --transpile-only"
   },
   "bin": {
     "samlang": "./lib/index.js"

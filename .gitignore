@@ -23,6 +23,7 @@ node_modules
 
 ## Cache
 .eslintcache
+tsconfig.tsbuildinfo
 
 ## Converage
 coverage
