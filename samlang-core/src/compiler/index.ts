@@ -1,6 +1,6 @@
-import generateAssemblyInstructionsFromMidIRCompilationUnit from './asm';
-import compileSamlangSourcesToHighIRSources from './hir';
-import compileHighIrSourcesToMidIRCompilationUnits from './mir';
+import generateAssemblyInstructionsFromMidIRCompilationUnit from './asm-toplevel-generator';
+import compileSamlangSourcesToHighIRSources from './hir-toplevel-lowering';
+import { compileHighIrSourcesToMidIRCompilationUnits } from './mir-toplevel-lowering';
 
 export {
   compileSamlangSourcesToHighIRSources,
