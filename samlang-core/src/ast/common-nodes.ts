@@ -1,4 +1,4 @@
-import type { Hashable } from '../util/collections';
+import type { Hashable, ReadonlyHashMap } from '../util/collections';
 
 /** SECTION 1: Literals */
 
@@ -223,3 +223,18 @@ export interface Location {
   readonly moduleReference: ModuleReference;
   readonly range: Range;
 }
+
+/** SECTION 4: MISC */
+
+/** A common interface for all AST nodes. */
+export interface Node {
+  /** The range of the entire node. */
+  readonly range: Range;
+}
+
+export interface GlobalVariable {
+  readonly name: string;
+  readonly content: string;
+}
+
+export type Sources<M> = ReadonlyHashMap<ModuleReference, M>;

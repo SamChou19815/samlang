@@ -1,8 +1,7 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
 import { ModuleReference } from '../ast/common-nodes';
-import { ModuleMembersImport } from '../ast/common/structs';
-import type { ClassDefinition, SamlangModule } from '../ast/samlang-toplevel';
+import type { ClassDefinition, ModuleMembersImport, SamlangModule } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {

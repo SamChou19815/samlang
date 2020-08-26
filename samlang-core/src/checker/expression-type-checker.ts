@@ -10,7 +10,6 @@ import {
   tupleType,
   functionType,
 } from '../ast/common-nodes';
-import type { FieldType } from '../ast/common/structs';
 import {
   SamlangExpression,
   LiteralExpression,
@@ -39,6 +38,7 @@ import {
   EXPRESSION_MATCH,
   EXPRESSION_LAMBDA,
 } from '../ast/samlang-expressions';
+import type { FieldType } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import { listShallowEquals } from '../util/collections';
 import { assertNotNull, isNotNull } from '../util/type-assertions';

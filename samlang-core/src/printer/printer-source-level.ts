@@ -1,9 +1,9 @@
 import { prettyPrintLiteral, prettyPrintType } from '../ast/common-nodes';
-import type { ModuleMembersImport } from '../ast/common/structs';
 import type { SamlangExpression } from '../ast/samlang-expressions';
 import type {
   ClassMemberDefinition,
   ClassDefinition,
+  ModuleMembersImport,
   SamlangModule,
 } from '../ast/samlang-toplevel';
 import { assertNotNull } from '../util/type-assertions';

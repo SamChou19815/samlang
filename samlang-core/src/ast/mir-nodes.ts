@@ -2,8 +2,8 @@
 
 /** Part 1: Type Imports */
 
+import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
-import type { GlobalVariable } from './common/structs';
 
 /** Part 2: Expressions */
 

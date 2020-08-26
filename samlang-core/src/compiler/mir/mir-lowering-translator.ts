@@ -1,5 +1,5 @@
 import { ENCODED_FUNCTION_NAME_MALLOC } from '../../ast/common-names';
-import type { GlobalVariable } from '../../ast/common/structs';
+import type { GlobalVariable } from '../../ast/common-nodes';
 import type { HighIRExpression, HighIRStatement } from '../../ast/hir-expressions';
 import {
   MidIRExpression,
