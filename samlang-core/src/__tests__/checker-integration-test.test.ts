@@ -1,4 +1,4 @@
-import ModuleReference from '../ast/common/module-reference';
+import { ModuleReference } from '../ast/common-nodes';
 import { checkSources } from '../services/source-processor';
 import { samlangProgramCheckerTestSources } from '../test-programs';
 

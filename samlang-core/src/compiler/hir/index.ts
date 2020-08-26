@@ -1,5 +1,5 @@
 import { encodeFunctionNameGlobally } from '../../ast/common-names';
-import type ModuleReference from '../../ast/common/module-reference';
+import type { ModuleReference } from '../../ast/common-nodes';
 import type { Sources } from '../../ast/common/structs';
 import { HIR_RETURN } from '../../ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from '../../ast/hir-toplevel';

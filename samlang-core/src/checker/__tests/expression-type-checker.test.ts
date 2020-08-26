@@ -7,11 +7,11 @@ import {
   identifierType,
   tupleType,
   functionType,
+  Position,
+  Range,
+  ModuleReference,
 } from '../../ast/common-nodes';
 import { PLUS } from '../../ast/common-operators';
-import ModuleReference from '../../ast/common/module-reference';
-import Position from '../../ast/common/position';
-import Range from '../../ast/common/range';
 import {
   SamlangExpression,
   EXPRESSION_INT,

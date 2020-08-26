@@ -1,5 +1,4 @@
-import type { FunctionType } from './common-nodes';
-import type Range from './common/range';
+import type { FunctionType, Range } from './common-nodes';
 import type {
   AnnotatedParameter,
   ModuleMembersImport,

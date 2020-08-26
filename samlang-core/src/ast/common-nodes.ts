@@ -1,3 +1,5 @@
+import type { Hashable } from '../util/collections';
+
 /** SECTION 1: Literals */
 
 /** A boolean literal, like `true` or `false`.  */
@@ -155,3 +157,69 @@ export const isTheSameType = (t1: Type, t2: Type): boolean => {
       return t2.type === 'UndecidedType' && t1.index === t2.index;
   }
 };
+
+/** SECTION 3: Locations */
+
+export class Position {
+  static readonly DUMMY: Position = new Position(-1, -1);
+
+  constructor(public readonly line: number, public readonly column: number) {}
+
+  readonly compareTo = (other: Position): number => {
+    const c = this.line - other.line;
+    return c !== 0 ? c : this.column - other.column;
+  };
+
+  readonly toString = (): string => `${this.line + 1}:${this.column + 1}`;
+}
+
+export class Range implements Hashable {
+  static readonly DUMMY: Range = new Range(Position.DUMMY, Position.DUMMY);
+
+  constructor(public readonly start: Position, public readonly end: Position) {}
+
+  readonly containsPosition = (position: Position): boolean =>
+    this.start.compareTo(position) <= 0 && this.end.compareTo(position) >= 0;
+
+  readonly containsRange = (range: Range): boolean =>
+    this.containsPosition(range.start) && this.containsPosition(range.end);
+
+  readonly union = (range: Range): Range => {
+    const start = this.start.compareTo(range.start) < 0 ? this.start : range.start;
+    const end = this.end.compareTo(range.end) > 0 ? this.end : range.end;
+    return new Range(start, end);
+  };
+
+  readonly toString = (): string => `${this.start}-${this.end}`;
+
+  uniqueHash(): string {
+    return this.toString();
+  }
+}
+
+/**
+ * Reference to a samlang module.
+ * This class, instead of a filename string, should be used to point to a module during type checking
+ * and code generation.
+ */
+export class ModuleReference implements Hashable {
+  /**
+   * The root module that can never be referenced in the source code.
+   * It can be used as a starting point for cyclic dependency analysis,
+   * since it cannot be named according to the syntax so no module can depend on it.
+   */
+  static readonly ROOT: ModuleReference = new ModuleReference([]);
+
+  constructor(public readonly parts: readonly string[]) {}
+
+  readonly toString = (): string => this.parts.join('.');
+
+  readonly toFilename = (): string => `${this.parts.join('/')}.sam`;
+
+  readonly uniqueHash = (): string => this.toString();
+}
+
+export interface Location {
+  readonly moduleReference: ModuleReference;
+  readonly range: Range;
+}

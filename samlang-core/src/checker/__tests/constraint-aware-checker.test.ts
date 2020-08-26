@@ -6,9 +6,9 @@ import {
   identifierType,
   tupleType,
   functionType,
+  Range,
+  ModuleReference,
 } from '../../ast/common-nodes';
-import ModuleReference from '../../ast/common/module-reference';
-import Range from '../../ast/common/range';
 import { createGlobalErrorCollector } from '../../errors';
 import { checkAndInfer, ConstraintAwareChecker } from '../constraint-aware-checker';
 import TypeResolution from '../type-resolution';

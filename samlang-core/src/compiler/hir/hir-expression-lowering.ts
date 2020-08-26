@@ -6,8 +6,7 @@ import {
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
 } from '../../ast/common-names';
-import type { IdentifierType } from '../../ast/common-nodes';
-import ModuleReference from '../../ast/common/module-reference';
+import { IdentifierType, ModuleReference } from '../../ast/common-nodes';
 import {
   HighIRStatement,
   HighIRExpression,

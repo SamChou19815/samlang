@@ -1,6 +1,4 @@
-import { stringType, identifierType } from '../../ast/common-nodes';
-import ModuleReference from '../../ast/common/module-reference';
-import Range from '../../ast/common/range';
+import { stringType, identifierType, Range, ModuleReference } from '../../ast/common-nodes';
 import {
   SamlangExpression,
   VariantConstructorExpression,

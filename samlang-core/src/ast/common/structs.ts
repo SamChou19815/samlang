@@ -1,16 +1,9 @@
 import type { ReadonlyHashMap } from '../../util/collections';
-import type { Type } from '../common-nodes';
-import type ModuleReference from './module-reference';
-import type Range from './range';
+import type { Type, Range, ModuleReference } from '../common-nodes';
 
 /** A common interface for all AST nodes. */
 export interface Node {
   /** The range of the entire node. */
-  readonly range: Range;
-}
-
-export interface Location {
-  readonly moduleReference: ModuleReference;
   readonly range: Range;
 }
 

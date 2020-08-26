@@ -1,4 +1,3 @@
-import { ModuleReference, checkSources } from '../..';
 import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_PRINTLN,
@@ -6,6 +5,7 @@ import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_THROW,
 } from '../../ast/common-names';
+import { ModuleReference } from '../../ast/common-nodes';
 import {
   HIR_IF_ELSE,
   HIR_BINARY,
@@ -22,6 +22,7 @@ import {
   HIR_WHILE_TRUE,
 } from '../../ast/hir-expressions';
 import { compileSamlangSourcesToHighIRSources } from '../../compiler';
+import { checkSources } from '../../services/source-processor';
 import {
   highIRSourcesToJSString,
   highIRStatementToString,

@@ -7,9 +7,9 @@ import {
   identifierType,
   tupleType,
   functionType,
+  Range,
+  ModuleReference,
 } from '../../ast/common-nodes';
-import ModuleReference from '../../ast/common/module-reference';
-import Range from '../../ast/common/range';
 import { createGlobalErrorCollector } from '../../errors';
 import {
   IdentifierTypeValidator,

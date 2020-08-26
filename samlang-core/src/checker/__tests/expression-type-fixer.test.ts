@@ -7,9 +7,9 @@ import {
   identifierType,
   tupleType,
   functionType,
+  Range,
 } from '../../ast/common-nodes';
 import { MUL, LT, AND, EQ, CONCAT } from '../../ast/common-operators';
-import Range from '../../ast/common/range';
 import {
   SamlangExpression,
   EXPRESSION_TRUE,

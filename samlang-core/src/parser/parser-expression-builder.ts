@@ -8,9 +8,9 @@ import {
   stringType,
   tupleType,
   functionType,
+  Range,
 } from '../ast/common-nodes';
 import { binaryOperatorSymbolTable, AND, OR, CONCAT } from '../ast/common-operators';
-import Range from '../ast/common/range';
 import {
   ObjectConstructorExpressionFieldConstructor,
   VariantPatternToExpression,

@@ -2,8 +2,7 @@ import { ANTLRInputStream, CommonTokenStream, ANTLRErrorListener } from 'antlr4t
 import type { RecognitionException } from 'antlr4ts/RecognitionException';
 import type { Recognizer } from 'antlr4ts/Recognizer';
 
-import Position from '../ast/common/position';
-import Range from '../ast/common/range';
+import { Position, Range } from '../ast/common-nodes';
 import type { SamlangExpression } from '../ast/samlang-expressions';
 import type { SamlangModule } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';

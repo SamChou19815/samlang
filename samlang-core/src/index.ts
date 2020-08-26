@@ -1,8 +1,12 @@
-export type { Sources, Location } from './ast/common/structs';
-export { Type, prettyPrintType } from './ast/common-nodes';
-export { default as ModuleReference } from './ast/common/module-reference';
-export { default as Position } from './ast/common/position';
-export { default as Range } from './ast/common/range';
+export type { Sources } from './ast/common/structs';
+export {
+  Type,
+  prettyPrintType,
+  Position,
+  Range,
+  ModuleReference,
+  Location,
+} from './ast/common-nodes';
 export type { SamlangModule } from './ast/samlang-toplevel';
 export { assemblyProgramToString } from './ast/asm-program';
 export { ReadonlyGlobalErrorCollector, createGlobalErrorCollector } from './errors';

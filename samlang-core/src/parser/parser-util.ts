@@ -1,7 +1,6 @@
 import { Token, ParserRuleContext } from 'antlr4ts';
 
-import Position from '../ast/common/position';
-import Range from '../ast/common/range';
+import { Position, Range } from '../ast/common-nodes';
 
 export const tokenStartPosition = (token: Token): Position =>
   new Position(token.line - 1, token.charPositionInLine);
