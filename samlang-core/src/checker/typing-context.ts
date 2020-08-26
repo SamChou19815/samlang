@@ -5,7 +5,7 @@ import {
   identifierType,
   ModuleReference,
 } from '../ast/common-nodes';
-import type { TypeDefinition, FieldType } from '../ast/common/structs';
+import type { FieldType, TypeDefinition } from '../ast/samlang-toplevel';
 import { HashMap, ReadonlyHashMap } from '../util/collections';
 import { assertNotNull } from '../util/type-assertions';
 import replaceTypeIdentifier from './type-identifier-replacer';

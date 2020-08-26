@@ -1,4 +1,3 @@
-export type { Sources } from './ast/common/structs';
 export {
   Type,
   prettyPrintType,
@@ -6,6 +5,7 @@ export {
   Range,
   ModuleReference,
   Location,
+  Sources,
 } from './ast/common-nodes';
 export type { SamlangModule } from './ast/samlang-toplevel';
 export { assemblyProgramToString } from './ast/asm-program';

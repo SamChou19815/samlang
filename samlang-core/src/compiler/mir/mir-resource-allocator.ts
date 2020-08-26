@@ -1,4 +1,4 @@
-import type { GlobalVariable } from '../../ast/common/structs';
+import type { GlobalVariable } from '../../ast/common-nodes';
 
 export default class MidIRResourceAllocator {
   private nextGlobalVariableId = 0;

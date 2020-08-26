@@ -1,7 +1,6 @@
 /** Responsible for building the global typing environment as part of pre-processing phase. */
 
-import type { ModuleReference } from '../ast/common-nodes';
-import type { Sources } from '../ast/common/structs';
+import type { ModuleReference, Sources } from '../ast/common-nodes';
 import type { ClassInterface, SamlangModule } from '../ast/samlang-toplevel';
 import { hashMapOf } from '../util/collections';
 import { isNotNull, assertNotNull } from '../util/type-assertions';

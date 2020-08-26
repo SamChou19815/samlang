@@ -6,7 +6,7 @@ import {
   tupleType,
   functionType,
 } from '../ast/common-nodes';
-import type { FieldType } from '../ast/common/structs';
+import type { FieldType } from '../ast/samlang-toplevel';
 import { assertNotNull } from '../util/type-assertions';
 
 /**

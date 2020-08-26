@@ -1,5 +1,5 @@
-import type { Sources, ModuleMembersImport } from '../ast/common/structs';
-import type { SamlangModule } from '../ast/samlang-toplevel';
+import type { Sources } from '../ast/common-nodes';
+import type { ModuleMembersImport, SamlangModule } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import { isNotNull } from '../util/type-assertions';
 

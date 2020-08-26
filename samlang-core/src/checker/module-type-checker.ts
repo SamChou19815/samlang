@@ -1,6 +1,5 @@
 import type { Range } from '../ast/common-nodes';
-import { TypeDefinition } from '../ast/common/structs';
-import { ClassMemberDefinition, SamlangModule } from '../ast/samlang-toplevel';
+import { ClassMemberDefinition, TypeDefinition, SamlangModule } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import { assertNotNull, isNotNull } from '../util/type-assertions';
 import typeCheckExpression from './expression-type-checker';

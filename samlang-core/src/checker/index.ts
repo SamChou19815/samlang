@@ -1,5 +1,4 @@
-import { ModuleReference } from '../ast/common-nodes';
-import type { Sources } from '../ast/common/structs';
+import { ModuleReference, Sources } from '../ast/common-nodes';
 import type { SamlangModule } from '../ast/samlang-toplevel';
 import type { ReadonlyGlobalErrorCollector } from '../errors';
 import { hashMapOf, mapOf } from '../util/collections';

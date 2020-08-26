@@ -1,5 +1,4 @@
 import { Type, unitType } from '../ast/common-nodes';
-import type { FieldType } from '../ast/common/structs';
 import {
   SamlangExpression,
   SamlangValStatement,
@@ -8,6 +7,7 @@ import {
   EXPRESSION_STRING,
 } from '../ast/samlang-expressions';
 import type { Pattern, ObjectPatternDestucturedName } from '../ast/samlang-pattern';
+import type { FieldType } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
 import type { AccessibleGlobalTypingContext, LocalTypingContext } from './typing-context';
