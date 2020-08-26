@@ -1,5 +1,3 @@
-import ModuleReference from '../../ast/common/module-reference';
-import Range from '../../ast/common/range';
 import {
   Type,
   boolType,
@@ -8,7 +6,9 @@ import {
   unitType,
   identifierType,
   isTheSameType,
-} from '../../ast/common/types';
+} from '../../ast/common-nodes';
+import ModuleReference from '../../ast/common/module-reference';
+import Range from '../../ast/common/range';
 import {
   StatementBlock,
   SamlangExpression,

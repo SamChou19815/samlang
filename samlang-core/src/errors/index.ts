@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-empty-interface */
 
+import { Type, prettyPrintType } from '../ast/common-nodes';
 import type ModuleReference from '../ast/common/module-reference';
 import type Range from '../ast/common/range';
-import { Type, prettyPrintType } from '../ast/common/types';
 
 export abstract class CompileTimeError<T = string> {
   constructor(

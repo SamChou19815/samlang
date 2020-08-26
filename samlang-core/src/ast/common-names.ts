@@ -1,4 +1,4 @@
-import type ModuleReference from './module-reference';
+import type ModuleReference from './common/module-reference';
 
 export const encodeFunctionNameGlobally = (
   moduleReference: ModuleReference,

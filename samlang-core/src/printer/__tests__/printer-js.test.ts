@@ -5,7 +5,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_THROW,
-} from '../../ast/common/name-encoder';
+} from '../../ast/common-names';
 import {
   HIR_IF_ELSE,
   HIR_BINARY,

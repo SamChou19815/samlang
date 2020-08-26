@@ -5,7 +5,7 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from '../../ast/common/types';
+} from '../../ast/common-nodes';
 import { undecideTypeParameters, undecideFieldTypeParameters } from '../type-undecider';
 
 it('will throw on undecided type', () => {

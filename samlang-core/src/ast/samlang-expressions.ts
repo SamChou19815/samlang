@@ -1,9 +1,19 @@
-import type { BinaryOperator } from './common/binary-operators';
-import type { BuiltInFunctionName, UnaryOperator } from './common/enums';
-import { Literal, TRUE, FALSE, intLiteralOf, stringLiteralOf } from './common/literals';
+import {
+  Literal,
+  TRUE,
+  FALSE,
+  intLiteralOf,
+  stringLiteralOf,
+  Type,
+  boolType,
+  intType,
+  stringType,
+  TupleType,
+  FunctionType,
+} from './common-nodes';
+import type { BinaryOperator } from './common-operators';
 import type Range from './common/range';
 import type { Node } from './common/structs';
-import { Type, boolType, intType, stringType, TupleType, FunctionType } from './common/types';
 import type { Pattern } from './samlang-pattern';
 
 interface BaseExpression extends Node {
@@ -82,7 +92,7 @@ export interface MethodAccessExpression extends BaseExpression {
 
 export interface UnaryExpression extends BaseExpression {
   readonly __type__: 'UnaryExpression';
-  readonly operator: UnaryOperator;
+  readonly operator: '!' | '-';
   readonly expression: SamlangExpression;
 }
 
@@ -93,7 +103,7 @@ export interface PanicExpression extends BaseExpression {
 
 export interface BuiltInFunctionCallExpression extends BaseExpression {
   readonly __type__: 'BuiltInFunctionCallExpression';
-  readonly functionName: BuiltInFunctionName;
+  readonly functionName: 'stringToInt' | 'intToString' | 'println';
   readonly argumentExpression: SamlangExpression;
 }
 

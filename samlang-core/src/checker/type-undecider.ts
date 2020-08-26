@@ -1,4 +1,3 @@
-import type { FieldType } from '../ast/common/structs';
 import {
   Type,
   UndecidedTypes,
@@ -6,7 +5,8 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from '../ast/common/types';
+} from '../ast/common-nodes';
+import type { FieldType } from '../ast/common/structs';
 import { assertNotNull } from '../util/type-assertions';
 
 /**

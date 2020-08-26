@@ -1,4 +1,4 @@
-import { intType, identifierType, tupleType, functionType } from '../../ast/common/types';
+import { intType, identifierType, tupleType, functionType } from '../../ast/common-nodes';
 import replaceTypeIdentifier from '../type-identifier-replacer';
 
 it('can replace deeply nested identifiers', () => {

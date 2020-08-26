@@ -12,7 +12,7 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from '../ast/common/types';
+} from '../ast/common-nodes';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {
   SingleIdentifierTypeContext,

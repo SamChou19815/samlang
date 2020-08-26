@@ -21,7 +21,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_MALLOC,
   ENCODED_FUNCTION_NAME_THROW,
-} from '../ast/common/name-encoder';
+} from '../ast/common-names';
 import { assertNotNull } from '../util/type-assertions';
 import PanicException from './panic-exception';
 

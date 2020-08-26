@@ -1,7 +1,7 @@
 import { prettyPrintSamlangModule } from '..';
+import { intType } from '../../ast/common-nodes';
 import ModuleReference from '../../ast/common/module-reference';
 import Range from '../../ast/common/range';
-import { intType } from '../../ast/common/types';
 import { EXPRESSION_METHOD_ACCESS, EXPRESSION_VARIABLE } from '../../ast/samlang-expressions';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';

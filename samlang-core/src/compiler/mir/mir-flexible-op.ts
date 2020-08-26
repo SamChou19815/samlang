@@ -1,4 +1,4 @@
-import type { IROperator } from '../../ast/common/enums';
+import type { IROperator } from '../../ast/common-operators';
 import { MidIRExpression, MIR_OP } from '../../ast/mir-nodes';
 
 /**

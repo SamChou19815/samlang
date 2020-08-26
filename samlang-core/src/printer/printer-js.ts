@@ -1,5 +1,4 @@
 import { Sources, ModuleReference } from '..';
-import { binaryOperatorSymbolTable } from '../ast/common/binary-operators';
 import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_PRINTLN,
@@ -7,7 +6,8 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   encodeMainFunctionName,
   ENCODED_FUNCTION_NAME_THROW,
-} from '../ast/common/name-encoder';
+} from '../ast/common-names';
+import { binaryOperatorSymbolTable } from '../ast/common-operators';
 import { HighIRStatement, HighIRExpression } from '../ast/hir-expressions';
 import { HighIRFunction, HighIRModule } from '../ast/hir-toplevel';
 import {

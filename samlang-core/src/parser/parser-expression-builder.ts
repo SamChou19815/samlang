@@ -1,7 +1,5 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
-import { binaryOperatorSymbolTable, AND, OR, CONCAT } from '../ast/common/binary-operators';
-import Range from '../ast/common/range';
 import {
   UndecidedTypes,
   unitType,
@@ -10,7 +8,9 @@ import {
   stringType,
   tupleType,
   functionType,
-} from '../ast/common/types';
+} from '../ast/common-nodes';
+import { binaryOperatorSymbolTable, AND, OR, CONCAT } from '../ast/common-operators';
+import Range from '../ast/common/range';
 import {
   ObjectConstructorExpressionFieldConstructor,
   VariantPatternToExpression,

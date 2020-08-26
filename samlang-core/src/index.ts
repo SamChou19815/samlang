@@ -1,5 +1,5 @@
 export type { Sources, Location } from './ast/common/structs';
-export { Type, prettyPrintType } from './ast/common/types';
+export { Type, prettyPrintType } from './ast/common-nodes';
 export { default as ModuleReference } from './ast/common/module-reference';
 export { default as Position } from './ast/common/position';
 export { default as Range } from './ast/common/range';

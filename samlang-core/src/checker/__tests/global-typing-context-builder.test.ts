@@ -1,6 +1,6 @@
+import { functionType, intType } from '../../ast/common-nodes';
 import ModuleReference from '../../ast/common/module-reference';
 import Range from '../../ast/common/range';
-import { functionType, intType } from '../../ast/common/types';
 import { EXPRESSION_FALSE } from '../../ast/samlang-expressions';
 import type { ClassDefinition, SamlangModule } from '../../ast/samlang-toplevel';
 import { mapOf } from '../../util/collections';

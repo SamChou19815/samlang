@@ -4,7 +4,7 @@ import {
   tupleType,
   identifierType,
   functionType,
-} from '../../ast/common/types';
+} from '../../ast/common-nodes';
 import collectUndecidedTypeIndices from '../undecided-type-collector';
 
 it('can collect all undecided types', () => {

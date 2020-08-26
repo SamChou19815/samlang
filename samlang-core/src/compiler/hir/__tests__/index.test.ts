@@ -1,14 +1,14 @@
 import compileSamlangSourcesToHighIRSources from '..';
-import { MUL, MINUS, EQ } from '../../../ast/common/binary-operators';
-import ModuleReference from '../../../ast/common/module-reference';
-import Range from '../../../ast/common/range';
 import {
   boolType,
   intType,
   identifierType,
   functionType,
   unitType,
-} from '../../../ast/common/types';
+} from '../../../ast/common-nodes';
+import { MUL, MINUS, EQ } from '../../../ast/common-operators';
+import ModuleReference from '../../../ast/common/module-reference';
+import Range from '../../../ast/common/range';
 import {
   HIR_VARIABLE,
   HIR_RETURN,

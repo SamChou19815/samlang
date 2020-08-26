@@ -1,7 +1,7 @@
+import { Type, IdentifierType, FunctionType, prettyPrintType } from '../ast/common-nodes';
 import ModuleReference from '../ast/common/module-reference';
 import type Position from '../ast/common/position';
 import type Range from '../ast/common/range';
-import { Type, IdentifierType, FunctionType, prettyPrintType } from '../ast/common/types';
 import { SamlangExpression } from '../ast/samlang-expressions';
 import { SamlangModule } from '../ast/samlang-toplevel';
 import { GlobalTypingContext, typeCheckSources, typeCheckSourcesIncrementally } from '../checker';

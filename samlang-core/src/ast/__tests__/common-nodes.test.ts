@@ -1,4 +1,9 @@
 import {
+  prettyPrintLiteral,
+  TRUE,
+  FALSE,
+  intLiteralOf,
+  stringLiteralOf,
   prettyPrintType,
   isTheSameType,
   unitType,
@@ -9,7 +14,14 @@ import {
   tupleType,
   functionType,
   UndecidedTypes,
-} from '../types';
+} from '../common-nodes';
+
+it('Literals have expected pretty printed values', () => {
+  expect(prettyPrintLiteral(TRUE)).toBe('true');
+  expect(prettyPrintLiteral(FALSE)).toBe('false');
+  expect(prettyPrintLiteral(intLiteralOf(BigInt(42)))).toBe('42');
+  expect(prettyPrintLiteral(stringLiteralOf('hello'))).toBe('"hello"');
+});
 
 it('prettyPrint is working.', () => {
   expect(prettyPrintType(unitType)).toBe('unit');

@@ -8,7 +8,7 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from '../../ast/common/types';
+} from '../../ast/common-nodes';
 import typeResolver from '../type-resolver';
 
 // eslint-disable-next-line import/prefer-default-export

@@ -1,3 +1,4 @@
+import type { FunctionType } from './common-nodes';
 import type Range from './common/range';
 import type {
   AnnotatedParameter,
@@ -5,7 +6,6 @@ import type {
   TypeDefinition,
   Node,
 } from './common/structs';
-import { FunctionType } from './common/types';
 import { SamlangExpression } from './samlang-expressions';
 
 export interface ClassMemberDeclaration extends Node {
