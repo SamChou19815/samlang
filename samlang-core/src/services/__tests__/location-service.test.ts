@@ -1,6 +1,4 @@
-import { Position } from '../..';
-import ModuleReference from '../../ast/common/module-reference';
-import Range from '../../ast/common/range';
+import { Position, Range, ModuleReference } from '../../ast/common-nodes';
 import type { SamlangExpression } from '../../ast/samlang-expressions';
 import { assertNotNull } from '../../util/type-assertions';
 import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../location-service';

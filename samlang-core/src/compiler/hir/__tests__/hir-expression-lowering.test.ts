@@ -5,10 +5,10 @@ import {
   intType,
   functionType,
   stringType,
+  Range,
+  ModuleReference,
 } from '../../../ast/common-nodes';
 import { PLUS, AND, OR, CONCAT } from '../../../ast/common-operators';
-import ModuleReference from '../../../ast/common/module-reference';
-import Range from '../../../ast/common/range';
 import {
   HIR_NAME,
   HIR_VARIABLE,

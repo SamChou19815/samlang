@@ -1,5 +1,5 @@
 import { encodeMainFunctionName, ENCODED_FUNCTION_NAME_THROW } from '../common-names';
-import ModuleReference from '../common/module-reference';
+import { ModuleReference } from '../common-nodes';
 
 it('Has correct names', () => {
   expect(encodeMainFunctionName(ModuleReference.ROOT)).toBe('_module__class_Main_function_main');

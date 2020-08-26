@@ -6,9 +6,9 @@ import {
   unitType,
   identifierType,
   isTheSameType,
+  Range,
+  ModuleReference,
 } from '../../ast/common-nodes';
-import ModuleReference from '../../ast/common/module-reference';
-import Range from '../../ast/common/range';
 import {
   StatementBlock,
   SamlangExpression,

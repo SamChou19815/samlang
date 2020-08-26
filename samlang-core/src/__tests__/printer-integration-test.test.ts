@@ -1,4 +1,4 @@
-import ModuleReference from '../ast/common/module-reference';
+import { ModuleReference } from '../ast/common-nodes';
 import type { SamlangModule } from '../ast/samlang-toplevel';
 import { prettyPrintSamlangModule } from '../printer';
 import { checkSources } from '../services/source-processor';

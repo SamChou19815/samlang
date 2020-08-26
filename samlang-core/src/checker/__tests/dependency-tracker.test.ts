@@ -1,4 +1,4 @@
-import ModuleReference from '../../ast/common/module-reference';
+import { ModuleReference } from '../../ast/common-nodes';
 import DependencyTracker from '../dependency-tracker';
 
 it('can track and update dependencies', () => {

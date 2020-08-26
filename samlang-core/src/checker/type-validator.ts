@@ -1,5 +1,4 @@
-import type { Type } from '../ast/common-nodes';
-import type Range from '../ast/common/range';
+import type { Type, Range } from '../ast/common-nodes';
 import type { ModuleErrorCollector } from '../errors';
 
 export interface IdentifierTypeValidator {

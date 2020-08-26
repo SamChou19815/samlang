@@ -1,4 +1,4 @@
-import type Range from './common/range';
+import type { Range } from './common-nodes';
 import type { Node } from './common/structs';
 
 export interface TuplePattern extends Node {

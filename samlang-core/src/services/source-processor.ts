@@ -1,5 +1,5 @@
 import type { AssemblyProgram } from '../ast/asm-program';
-import type ModuleReference from '../ast/common/module-reference';
+import type { ModuleReference } from '../ast/common-nodes';
 import type { Sources } from '../ast/common/structs';
 import type { SamlangModule } from '../ast/samlang-toplevel';
 import { typeCheckSources, GlobalTypingContext } from '../checker';

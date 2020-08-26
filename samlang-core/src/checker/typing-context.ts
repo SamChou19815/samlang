@@ -1,5 +1,10 @@
-import { IdentifierType, FunctionType, Type, identifierType } from '../ast/common-nodes';
-import type ModuleReference from '../ast/common/module-reference';
+import {
+  IdentifierType,
+  FunctionType,
+  Type,
+  identifierType,
+  ModuleReference,
+} from '../ast/common-nodes';
 import type { TypeDefinition, FieldType } from '../ast/common/structs';
 import { HashMap, ReadonlyHashMap } from '../util/collections';
 import { assertNotNull } from '../util/type-assertions';

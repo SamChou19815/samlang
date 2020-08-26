@@ -1,4 +1,4 @@
-import type Range from '../ast/common/range';
+import type { Range } from '../ast/common-nodes';
 import { TypeDefinition } from '../ast/common/structs';
 import { ClassMemberDefinition, SamlangModule } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';

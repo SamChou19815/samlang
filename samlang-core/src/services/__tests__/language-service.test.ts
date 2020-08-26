@@ -1,6 +1,4 @@
-import { stringType } from '../../ast/common-nodes';
-import ModuleReference from '../../ast/common/module-reference';
-import Position from '../../ast/common/position';
+import { stringType, Position, ModuleReference } from '../../ast/common-nodes';
 import { LanguageServiceState, LanguageServices, CompletionItemKinds } from '../language-service';
 
 it('Language server state can update.', () => {

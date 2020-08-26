@@ -1,4 +1,4 @@
-import type ModuleReference from '../ast/common/module-reference';
+import type { ModuleReference } from '../ast/common-nodes';
 import {
   HashMap,
   HashSet,

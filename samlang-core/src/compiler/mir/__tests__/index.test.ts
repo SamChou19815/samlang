@@ -1,7 +1,7 @@
 import compileHighIrSourcesToMidIRCompilationUnits, {
   compileHighIrSourcesToMidIRCompilationUnit,
 } from '..';
-import ModuleReference from '../../../ast/common/module-reference';
+import { ModuleReference } from '../../../ast/common-nodes';
 import { HIR_RETURN, HIR_STRING } from '../../../ast/hir-expressions';
 import { midIRCompilationUnitToString } from '../../../ast/mir-nodes';
 import { mapOf } from '../../../util/collections';

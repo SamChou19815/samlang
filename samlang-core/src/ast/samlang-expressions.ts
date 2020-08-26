@@ -10,9 +10,9 @@ import {
   stringType,
   TupleType,
   FunctionType,
+  Range,
 } from './common-nodes';
 import type { BinaryOperator } from './common-operators';
-import type Range from './common/range';
 import type { Node } from './common/structs';
 import type { Pattern } from './samlang-pattern';
 
