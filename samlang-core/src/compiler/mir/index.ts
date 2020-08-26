@@ -1,7 +1,4 @@
-import {
-  ENCODED_COMPILED_PROGRAM_MAIN,
-  encodeMainFunctionName,
-} from '../../ast/common-names';
+import { ENCODED_COMPILED_PROGRAM_MAIN, encodeMainFunctionName } from '../../ast/common-names';
 import type ModuleReference from '../../ast/common/module-reference';
 import type { Sources, GlobalVariable } from '../../ast/common/structs';
 import type { HighIRModule } from '../../ast/hir-toplevel';
