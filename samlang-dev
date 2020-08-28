@@ -1,4 +1,3 @@
 #!/bin/bash
 MY_PATH=$(dirname "$0")
-NODEJS_CLI_PATH="${MY_PATH}"/samlang-cli/bin/index.js
-node "$NODEJS_CLI_PATH" "$@"
+"${MY_PATH}"/samlang-cli/bin/index.js "$@"

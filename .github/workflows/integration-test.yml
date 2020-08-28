@@ -22,8 +22,6 @@ jobs:
       - name: Yarn Install
         run: yarn
       - name: Bundle
-        run: yarn bundle
-      - name: Compile runtime
-        run: cd runtime && make
+        run: ./scripts/compile-runtime
       - name: Compile samlang Programs
         run: ./scripts/compile-repository.js

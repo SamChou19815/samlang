@@ -61,13 +61,10 @@ const compileToX86Assembly = (
   return paths;
 };
 
-// TODO: Change this hardcoded value when infra is ready.
-const RUNTIME_PATH = join(__dirname, '..', '..', 'runtime');
-
 const linkWithGcc = (outputProgramFile: string, outputAssemblyFile: string): boolean => {
   const gccProcess = spawnSync(
     'gcc',
-    ['-o', outputProgramFile, outputAssemblyFile, `-L${RUNTIME_PATH}`, '-lsam', '-lpthread'],
+    ['-o', outputProgramFile, outputAssemblyFile, `-L${__dirname}`, '-lsam', '-lpthread'],
     { shell: true, stdio: 'inherit' }
   );
   return gccProcess.status === 0;
