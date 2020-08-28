@@ -4,10 +4,10 @@
   "license": "AGPLv3",
   "scripts": {
     "compile": "tsc --incremental",
-    "bundle": "pnpify ncc build src/index.ts -o build -m --transpile-only"
+    "bundle": "pnpify ncc build src/index.ts -o bin -m --transpile-only"
   },
   "bin": {
-    "samlang": "./lib/index.js"
+    "samlang": "./bin/index.js"
   },
   "dependencies": {
     "@dev-sam/samlang-core": "0.0.1",
