@@ -1,3 +1,19 @@
+# @generated
+
+# GCC output
+*.o
+*.a
+
+# Extracted dependencies
+runtime/gc-7.6.4
+!runtime/deps/*.gz
+
+# Node
+node_modules
+
+# System Files
+.DS_Store
+
 ## Yarn
 .yarn/*
 !.yarn/releases
@@ -7,20 +23,28 @@
 **/.pnp
 **/.pnp.js
 
-## Compiled output
-lib
-build
-out
-
 ## Cache
 .eslintcache
 tsconfig.tsbuildinfo
+.monorail
+.codegen
 
 ## Converage
 coverage
 
-# Yarn Vendor
-.yarn
+## Compiled output
+*.vsix
+out
+lib
+bin
+build
 
 # Generated
 samlang-core/parser/generated
+
+# additions
+.yarn
+**/bin/
+**/out/
+**/build/
+**/dist/
