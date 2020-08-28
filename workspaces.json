@@ -1,0 +1,22 @@
+{
+  "__type__": "@generated",
+  "information": {
+    "@dev-sam/samlang-cli": {
+      "workspaceLocation": "samlang-cli",
+      "dependencyChain": [
+        "@dev-sam/samlang-core",
+        "@dev-sam/samlang-cli"
+      ]
+    },
+    "@dev-sam/samlang-core": {
+      "workspaceLocation": "samlang-core",
+      "dependencyChain": [
+        "@dev-sam/samlang-core"
+      ]
+    }
+  },
+  "topologicallyOrdered": [
+    "@dev-sam/samlang-core",
+    "@dev-sam/samlang-cli"
+  ]
+}

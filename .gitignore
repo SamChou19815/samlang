@@ -24,6 +24,8 @@ node_modules
 ## Cache
 .eslintcache
 tsconfig.tsbuildinfo
+.monorail
+.codegen
 
 ## Converage
 coverage

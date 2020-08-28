@@ -1624,6 +1624,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dev-sam/codegen-cli@npm:^0.0.2":
+  version: 0.0.2
+  resolution: "@dev-sam/codegen-cli@npm:0.0.2"
+  bin:
+    sam-codegen: ./bin/index.js
+  checksum: 4b56124e1a147d90197fe3a80eacff177aaa5772063db5ebfeea85aa33373ece6d5d0cc5f1f5f4d1232ba5c75272ab1eb422ca65dc477a8e605365cd3de8f4a3
+  languageName: node
+  linkType: hard
+
 "@dev-sam/eslint-config-common@npm:0.17.0":
   version: 0.17.0
   resolution: "@dev-sam/eslint-config-common@npm:0.17.0"
@@ -7294,6 +7303,7 @@ fsevents@^2.1.2:
     "@babel/core": ^7.11.4
     "@babel/preset-env": ^7.11.0
     "@babel/preset-typescript": ^7.10.4
+    "@dev-sam/codegen-cli": ^0.0.2
     "@dev-sam/eslint-config-common": 0.17.0
     "@types/jest": ^26.0.10
     "@typescript-eslint/eslint-plugin": ^3.10.0

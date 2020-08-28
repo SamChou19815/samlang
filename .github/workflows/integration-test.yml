@@ -1,0 +1,29 @@
+name: Integration Test
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - uses: actions/setup-node@v2-beta
+      - uses: actions/cache@v2
+        with:
+          path: |
+            .yarn/cache
+            .pnp.js
+          key: yarn-berry-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            yarn-berry-
+      - name: Yarn Install
+        run: yarn
+      - name: Bundle
+        run: yarn bundle
+      - name: Compile runtime
+        run: cd runtime && make
+      - name: Compile samlang Programs
+        run: ./scripts/compile-repository.js

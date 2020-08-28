@@ -8,8 +8,9 @@
     "lint": "eslint . --cache",
     "format": "prettier --write '**/*.{ts,js}'",
     "format:check": "prettier --check '**/*.{ts,js}'",
+    "codegen": "sam-codegen ./bin/repo-codegen-services.js",
     "compile": "yarn workspaces foreach -t run compile",
-    "bundle": "yarn workspaces foreach -t run bundle",
+    "bundle": "./bin/monorail bundle",
     "test": "jest --coverage",
     "test:single": "jest -t",
     "postinstall": "yarn workspaces foreach -t run codegen"
@@ -18,6 +19,7 @@
     "@babel/core": "^7.11.4",
     "@babel/preset-env": "^7.11.0",
     "@babel/preset-typescript": "^7.10.4",
+    "@dev-sam/codegen-cli": "^0.0.2",
     "@dev-sam/eslint-config-common": "0.17.0",
     "@types/jest": "^26.0.10",
     "@typescript-eslint/eslint-plugin": "^3.10.0",
