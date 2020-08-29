@@ -8,6 +8,7 @@ import {
   InsertTextFormat,
   DiagnosticSeverity,
   Range as LspRange,
+  // eslint-disable-next-line import/no-extraneous-dependencies
 } from 'vscode-languageserver';
 
 import { collectSources } from './cli-service';
