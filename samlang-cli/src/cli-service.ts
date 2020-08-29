@@ -61,10 +61,25 @@ const compileToX86Assembly = (
   return paths;
 };
 
+// TODO: Change this hardcoded value when infra is ready.
+const RUNTIME_PATH =
+  process.env.SAMLANG_DEV === 'true'
+    ? join(__dirname, '..', '..', 'runtime')
+    : join(__dirname, '..', 'samlang-runtime');
+
+const LIBRARY_NAME = process.env.SAMLANG_DEV === 'true' ? 'sam' : `sam-${process.platform}`;
+
 const linkWithGcc = (outputProgramFile: string, outputAssemblyFile: string): boolean => {
   const gccProcess = spawnSync(
     'gcc',
-    ['-o', outputProgramFile, outputAssemblyFile, `-L${__dirname}`, '-lsam', '-lpthread'],
+    [
+      '-o',
+      outputProgramFile,
+      outputAssemblyFile,
+      `-L${RUNTIME_PATH}`,
+      `-l${LIBRARY_NAME}`,
+      '-lpthread',
+    ],
     { shell: true, stdio: 'inherit' }
   );
   return gccProcess.status === 0;

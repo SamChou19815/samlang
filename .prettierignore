@@ -2,7 +2,7 @@
 
 # GCC output
 *.o
-*.a
+runtime/*.a
 
 # Extracted dependencies
 runtime/gc-7.6.4
