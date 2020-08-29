@@ -1,0 +1,9 @@
+{
+  "extends": "../configurations/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "outDir": "bin"
+  },
+  "include": ["src"]
+}

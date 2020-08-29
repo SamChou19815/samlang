@@ -2,7 +2,7 @@
 
 set -e
 
-yarn bundle
+yarn workspace @dev-sam/samlang-cli bundle
 chmod +x samlang-cli/bin/index.js
 cd runtime
 make > /dev/null

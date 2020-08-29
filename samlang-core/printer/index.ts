@@ -7,7 +7,7 @@ export const prettyPrintSamlangModule = (
   availableWidth: number,
   samlangModule: SamlangModule
 ): string =>
-  prettyPrintAccordingToPrettierAlgorithm(
+  `${prettyPrintAccordingToPrettierAlgorithm(
     availableWidth,
     createPrettierDocumentForSamlangModule(samlangModule)
-  );
+  ).trimEnd()}\n`;
