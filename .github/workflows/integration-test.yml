@@ -25,3 +25,8 @@ jobs:
         run: ./scripts/compile-runtime
       - name: Compile samlang Programs
         run: ./scripts/compile-repository.js
+      - name: Upload Bundled Release
+        uses: actions/upload-artifact@master
+        with:
+          name: samlang-release
+          path: samlang-cli/bin
