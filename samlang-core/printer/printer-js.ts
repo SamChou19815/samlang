@@ -58,11 +58,17 @@ const createPrettierDocumentFromHighIRExpression = (
         }
         return subExpressionDocument;
       };
-      return PRETTIER_CONCAT(
+      const binaryExpressionDocument = PRETTIER_CONCAT(
         withParenthesisWhenNecesasry(e1),
         PRETTIER_TEXT(` ${operator} `),
         withParenthesisWhenNecesasry(e2)
       );
+      return operator === '/'
+        ? PRETTIER_CONCAT(
+            PRETTIER_TEXT('Math.floor'),
+            createParenthesisSurroundedDocument(binaryExpressionDocument)
+          )
+        : binaryExpressionDocument;
     }
   }
 };

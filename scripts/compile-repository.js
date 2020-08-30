@@ -55,6 +55,15 @@ const interpretPrograms = (programs) =>
   programs.map((program) => `#${program}\n${runWithErrorCheck(program)}`).join('\n');
 
 /**
+ * @param {string[]} programs
+ * @returns {string}
+ */
+const interpretJSPrograms = (programs) =>
+  programs
+    .map((program) => `#${program}\n${runWithErrorCheck('node', [`${program}.js`])}`)
+    .join('\n');
+
+/**
  * @param {string} expected
  * @param {string} actual
  * @returns {boolean}
@@ -76,3 +85,8 @@ if (!compare(read('./scripts/snapshot.txt'), interpretPrograms(getX86Programs())
   process.exit(1);
 }
 console.error('Generated X86 code is good.');
+console.error('Checking generated JS code...');
+if (!compare(read('./scripts/snapshot.txt'), interpretJSPrograms(getX86Programs()))) {
+  process.exit(1);
+}
+console.error('Generated JS code is good.');
