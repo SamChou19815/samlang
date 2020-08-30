@@ -166,15 +166,18 @@ export const highIRFunctionToString = (highIRFunction: HighIRFunction): string =
     createPrettierDocumentFromHighIRFunction(highIRFunction)
   );
 
-const createPrettierDocumentFromHighIRModule = (highIRModule: HighIRModule): PrettierDocument => {
+const createPrettierDocumentFromHighIRModule = (
+  highIRModule: HighIRModule,
+  forInterpreter: boolean
+): PrettierDocument => {
   const segments: PrettierDocument[] = [
-    PRETTIER_TEXT("let printed = '';"),
-    PRETTIER_LINE,
-    PRETTIER_LINE,
+    ...(forInterpreter ? [PRETTIER_TEXT("let printed = '';"), PRETTIER_LINE, PRETTIER_LINE] : []),
     PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;`),
     PRETTIER_LINE,
     PRETTIER_TEXT(
-      `const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => { printed += line; printed += "\\n" };`
+      forInterpreter
+        ? `const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => { printed += line; printed += "\\n" };`
+        : `const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => console.log(line);`
     ),
     PRETTIER_LINE,
     PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);`),
@@ -192,13 +195,16 @@ const createPrettierDocumentFromHighIRModule = (highIRModule: HighIRModule): Pre
     PRETTIER_LINE,
     PRETTIER_TEXT(`${ENCODED_COMPILED_PROGRAM_MAIN}();`),
     PRETTIER_LINE,
-    PRETTIER_TEXT('printed')
+    ...(forInterpreter ? [PRETTIER_TEXT('printed')] : [])
   );
   return PRETTIER_CONCAT(...segments);
 };
 
-export const highIRModuleToJSString = (highIRModule: HighIRModule): string =>
+export const highIRModuleToJSString = (
+  highIRModule: HighIRModule,
+  forInterpreter = false
+): string =>
   prettyPrintAccordingToPrettierAlgorithm(
     /* availableWidth */ 100,
-    createPrettierDocumentFromHighIRModule(highIRModule)
+    createPrettierDocumentFromHighIRModule(highIRModule, forInterpreter)
   ).trimEnd();
