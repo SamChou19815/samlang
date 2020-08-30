@@ -23,6 +23,9 @@ import {
   createBracesSurroundedBlockDocument,
 } from './printer-prettier-library';
 
+// Thanks https://gist.github.com/getify/3667624
+const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
+
 const createPrettierDocumentFromHighIRExpression = (
   highIRExpression: HighIRExpression
 ): PrettierDocument => {
@@ -30,7 +33,7 @@ const createPrettierDocumentFromHighIRExpression = (
     case 'HighIRIntLiteralExpression':
       return PRETTIER_TEXT(String(highIRExpression.value));
     case 'HighIRStringLiteralExpression':
-      return PRETTIER_TEXT(`'${highIRExpression.value}'`);
+      return PRETTIER_TEXT(`"${escapeDoubleQuotes(highIRExpression.value)}"`);
     case 'HighIRVariableExpression':
     case 'HighIRNameExpression':
       return PRETTIER_TEXT(highIRExpression.name);
