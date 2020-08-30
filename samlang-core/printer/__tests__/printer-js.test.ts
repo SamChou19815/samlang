@@ -42,10 +42,8 @@ it('compile hello world to JS integration test', () => {
   const hirModule = compileSamlangSourcesToHighIRSources(checkedSources).get(moduleReference);
   assertNotNull(hirModule);
   expect(highIRModuleToJSString(hirModule)).toBe(
-    `let printed = '';
-
-const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => { printed += line; printed += "\\n" };
+    `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => console.log(line);
 const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
 const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
 const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
@@ -58,8 +56,7 @@ const _compiled_program_main = () => {
   _module_Test_class_Main_function_main();
 };
 
-_compiled_program_main();
-printed`
+_compiled_program_main();`
   );
 });
 
@@ -70,7 +67,7 @@ const setupIntegration = (sourceCode: string): string => {
   const hirModule = compileSamlangSourcesToHighIRSources(checkedSources).get(moduleReference);
   assertNotNull(hirModule);
   // eslint-disable-next-line no-eval
-  return eval(highIRModuleToJSString(hirModule));
+  return eval(highIRModuleToJSString(hirModule, true));
 };
 
 it('confirm samlang & equivalent JS have same print output', () => {

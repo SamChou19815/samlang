@@ -4,10 +4,8 @@ it('runSamlangDemo works when given good program.', () => {
   expect(runSamlangDemo('class Main { function main(): unit = println("hello world") }')).toEqual({
     interpreterPrinted: 'hello world\n',
     prettyPrintedProgram: `class Main { function main(): unit = println("hello world")  }\n`,
-    jsString: `let printed = '';
-
-const _builtin_stringConcat = (a, b) => a + b;
-const _builtin_println = (line) => { printed += line; printed += "\\n" };
+    jsString: `const _builtin_stringConcat = (a, b) => a + b;
+const _builtin_println = (line) => console.log(line);
 const _builtin_stringToInt = (v) => BigInt(v);
 const _builtin_intToString = (v) => String(v);
 const _builtin_throw = (v) => { throw Error(v); };
@@ -19,8 +17,7 @@ const _compiled_program_main = () => {
   _module_Demo_class_Main_function_main();
 };
 
-_compiled_program_main();
-printed`,
+_compiled_program_main();`,
     assemblyString: `    .text
     .intel_syntax noprefix
     .p2align 4, 0x90
