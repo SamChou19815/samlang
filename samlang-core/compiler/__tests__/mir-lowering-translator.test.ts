@@ -38,6 +38,13 @@ it('midIRTranslateStatementsAndCollectGlobalStrings test', () => {
     }),
     `_bar = foo(1, (GLOBAL_STRING_0 + 8), _baz);`
   );
+  assertCorrectlyLoweredWithPreConfiguredSetup(
+    HIR_FUNCTION_CALL({
+      functionExpression: HIR_NAME('foo'),
+      functionArguments: [HIR_INT(BigInt(1)), HIR_STRING('bar'), HIR_VARIABLE('baz')],
+    }),
+    `foo(1, (GLOBAL_STRING_0 + 8), _baz);`
+  );
 
   assertCorrectlyLoweredWithPreConfiguredSetup(
     HIR_IF_ELSE({
