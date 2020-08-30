@@ -53,7 +53,7 @@ export interface HighIRFunctionCallStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRFunctionCallStatement';
   readonly functionExpression: HighIRExpression;
   readonly functionArguments: readonly HighIRExpression[];
-  readonly returnCollector: string;
+  readonly returnCollector?: string;
 }
 
 export interface HighIRIfElseStatement extends BaseHighIRStatement {

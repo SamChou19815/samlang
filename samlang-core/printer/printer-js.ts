@@ -83,9 +83,12 @@ const createPrettierDocumentFromHighIRStatement = (
   highIRStatement: HighIRStatement
 ): PrettierDocument => {
   switch (highIRStatement.__type__) {
-    case 'HighIRFunctionCallStatement':
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`var ${highIRStatement.returnCollector} = `),
+    case 'HighIRFunctionCallStatement': {
+      const segments: PrettierDocument[] = [];
+      if (highIRStatement.returnCollector != null) {
+        segments.push(PRETTIER_TEXT(`var ${highIRStatement.returnCollector} = `));
+      }
+      segments.push(
         createPrettierDocumentFromHighIRExpression(highIRStatement.functionExpression),
         createParenthesisSurroundedDocument(
           createCommaSeparatedList(
@@ -95,6 +98,8 @@ const createPrettierDocumentFromHighIRStatement = (
         ),
         PRETTIER_TEXT(';')
       );
+      return PRETTIER_CONCAT(...segments);
+    }
     case 'HighIRIfElseStatement':
       return PRETTIER_CONCAT(
         PRETTIER_TEXT('if '),

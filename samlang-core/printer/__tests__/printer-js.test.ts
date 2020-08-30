@@ -293,6 +293,14 @@ it('HIR statements to JS string test', () => {
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
+        functionArguments: [],
+        functionExpression: HIR_NAME('func'),
+      })
+    )
+  ).toBe('func();');
+  expect(
+    highIRStatementToString(
+      HIR_FUNCTION_CALL({
         functionArguments: [HIR_STRING('Hello, world')],
         functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN),
         returnCollector: 'res',
