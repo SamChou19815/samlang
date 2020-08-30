@@ -432,6 +432,15 @@ it('HIR expression to JS string test', () => {
   expect(
     highIRExpressionToString(
       HIR_BINARY({
+        operator: '/',
+        e1: HIR_INT(BigInt(7)),
+        e2: HIR_INT(BigInt(8)),
+      })
+    )
+  ).toBe('Math.floor(7 / 8)');
+  expect(
+    highIRExpressionToString(
+      HIR_BINARY({
         operator: '+',
         e1: HIR_INT(BigInt(7)),
         e2: HIR_BINARY({
