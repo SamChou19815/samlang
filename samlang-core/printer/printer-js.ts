@@ -1,11 +1,10 @@
-import { Sources, ModuleReference } from '..';
 import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
-  encodeMainFunctionName,
   ENCODED_FUNCTION_NAME_THROW,
+  ENCODED_COMPILED_PROGRAM_MAIN,
 } from '../ast/common-names';
 import { binaryOperatorSymbolTable } from '../ast/common-operators';
 import { HighIRStatement, HighIRExpression } from '../ast/hir-expressions';
@@ -167,10 +166,7 @@ export const highIRFunctionToString = (highIRFunction: HighIRFunction): string =
     createPrettierDocumentFromHighIRFunction(highIRFunction)
   );
 
-const createPrettierDocumentFromHighIRSources = (
-  sources: Sources<HighIRModule>,
-  entryModule: ModuleReference | undefined
-): PrettierDocument => {
+const createPrettierDocumentFromHighIRModule = (highIRModule: HighIRModule): PrettierDocument => {
   const segments: PrettierDocument[] = [
     PRETTIER_TEXT("let printed = '';"),
     PRETTIER_LINE,
@@ -189,29 +185,20 @@ const createPrettierDocumentFromHighIRSources = (
     PRETTIER_LINE,
     PRETTIER_LINE,
   ];
-  sources.forEach((samlangModule) =>
-    samlangModule.functions.forEach((highIRFunction) =>
-      segments.push(createPrettierDocumentFromHighIRFunction(highIRFunction), PRETTIER_LINE)
-    )
+  highIRModule.functions.forEach((highIRFunction) =>
+    segments.push(createPrettierDocumentFromHighIRFunction(highIRFunction), PRETTIER_LINE)
   );
-  if (entryModule != null) {
-    segments.push(
-      PRETTIER_LINE,
-      PRETTIER_TEXT(`${encodeMainFunctionName(entryModule)}();`),
-      PRETTIER_LINE,
-      PRETTIER_TEXT('printed')
-    );
-  } else {
-    segments.push(PRETTIER_LINE, PRETTIER_TEXT('printed'));
-  }
+  segments.push(
+    PRETTIER_LINE,
+    PRETTIER_TEXT(`${ENCODED_COMPILED_PROGRAM_MAIN}();`),
+    PRETTIER_LINE,
+    PRETTIER_TEXT('printed')
+  );
   return PRETTIER_CONCAT(...segments);
 };
 
-export const highIRSourcesToJSString = (
-  sources: Sources<HighIRModule>,
-  entryModule?: ModuleReference
-): string =>
+export const highIRModuleToJSString = (highIRModule: HighIRModule): string =>
   prettyPrintAccordingToPrettierAlgorithm(
     /* availableWidth */ 100,
-    createPrettierDocumentFromHighIRSources(sources, entryModule)
+    createPrettierDocumentFromHighIRModule(highIRModule)
   ).trimEnd();

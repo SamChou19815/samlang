@@ -10,13 +10,9 @@ import {
 import { MUL, MINUS, EQ } from '../../ast/common-operators';
 import {
   HIR_VARIABLE,
-  HIR_RETURN,
-  HIR_IF_ELSE,
-  HIR_BINARY,
-  HIR_ZERO,
-  HIR_LET,
-  HIR_ONE,
   HIR_WHILE_TRUE,
+  HIR_FUNCTION_CALL,
+  HIR_NAME,
 } from '../../ast/hir-expressions';
 import type { HighIRModule } from '../../ast/hir-toplevel';
 import {
@@ -33,12 +29,50 @@ import { mapOf } from '../../util/collections';
 import compileSamlangSourcesToHighIRSources from '../hir-toplevel-lowering';
 
 const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Dummy') });
-const IR_THIS = HIR_VARIABLE('_this');
 
-it('HIR compiler integration test', () => {
+it('compileSamlangSourcesToHighIRSources integration test', () => {
   const sourceModule: SamlangModule = {
     imports: [],
     classes: [
+      {
+        range: Range.DUMMY,
+        name: 'Main',
+        nameRange: Range.DUMMY,
+        isPublic: false,
+        typeParameters: [],
+        typeDefinition: {
+          range: Range.DUMMY,
+          type: 'object',
+          names: [],
+          mappings: {},
+        },
+        members: [
+          {
+            range: Range.DUMMY,
+            isPublic: true,
+            isMethod: false,
+            nameRange: Range.DUMMY,
+            name: 'main',
+            typeParameters: [],
+            parameters: [],
+            type: functionType([], unitType),
+            body: EXPRESSION_FUNCTION_CALL({
+              range: Range.DUMMY,
+              type: unitType,
+              functionExpression: EXPRESSION_CLASS_MEMBER({
+                range: Range.DUMMY,
+                type: functionType([], intType),
+                typeArguments: [],
+                className: 'Class1',
+                classNameRange: Range.DUMMY,
+                memberName: 'infiniteLoop',
+                memberNameRange: Range.DUMMY,
+              }),
+              functionArguments: [],
+            }),
+          },
+        ],
+      },
       {
         range: Range.DUMMY,
         name: 'Class1',
@@ -151,66 +185,43 @@ it('HIR compiler integration test', () => {
   const expectedCompiledModule: HighIRModule = {
     functions: [
       {
-        name: '_module__class_Class1_function_foo',
-        hasReturn: true,
-        parameters: ['_this', 'a'],
-        body: [HIR_RETURN(IR_THIS)],
+        name: '_module__class_Main_function_main',
+        parameters: [],
+        hasReturn: false,
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('_module__class_Class1_function_infiniteLoop'),
+            functionArguments: [],
+            returnCollector: '_t0',
+          }),
+        ],
       },
       {
         name: '_module__class_Class1_function_infiniteLoop',
-        hasReturn: false,
         parameters: [],
+        hasReturn: false,
         body: [HIR_WHILE_TRUE([])],
       },
       {
-        name: '_module__class_Class1_function_factorial',
-        hasReturn: true,
-        parameters: ['n', 'acc'],
+        name: '_compiled_program_main',
+        parameters: [],
+        hasReturn: false,
         body: [
-          HIR_WHILE_TRUE([
-            HIR_IF_ELSE({
-              booleanExpression: HIR_BINARY({
-                operator: '==',
-                e1: HIR_VARIABLE('n'),
-                e2: HIR_ZERO,
-              }),
-              s1: [HIR_RETURN(HIR_ONE)],
-              s2: [
-                HIR_LET({
-                  name: '_tailRecTransformationArgument0',
-                  assignedExpression: HIR_BINARY({
-                    operator: '-',
-                    e1: HIR_VARIABLE('n'),
-                    e2: HIR_ONE,
-                  }),
-                }),
-                HIR_LET({
-                  name: '_tailRecTransformationArgument1',
-                  assignedExpression: HIR_BINARY({
-                    operator: '*',
-                    e1: HIR_VARIABLE('n'),
-                    e2: HIR_VARIABLE('acc'),
-                  }),
-                }),
-                HIR_LET({
-                  name: 'n',
-                  assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0'),
-                }),
-                HIR_LET({
-                  name: 'acc',
-                  assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument1'),
-                }),
-              ],
-            }),
-          ]),
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('_module__class_Main_function_main'),
+            functionArguments: [],
+          }),
         ],
       },
     ],
   };
 
-  expect(
-    compileSamlangSourcesToHighIRSources(mapOf([ModuleReference.ROOT, sourceModule])).get(
-      ModuleReference.ROOT
-    )
-  ).toEqual(expectedCompiledModule);
+  const actualCompiledModule = compileSamlangSourcesToHighIRSources(
+    mapOf([ModuleReference.ROOT, sourceModule])
+  ).get(ModuleReference.ROOT);
+
+  const serialize = (json: unknown): string =>
+    JSON.stringify(json, (_, value) => (typeof value === 'bigint' ? value.toString() : value), 4);
+
+  expect(serialize(actualCompiledModule)).toEqual(serialize(expectedCompiledModule));
 });

@@ -1,59 +1,80 @@
 import { ENCODED_COMPILED_PROGRAM_MAIN } from '../../ast/common-names';
 import {
-  MIR_ZERO,
-  MIR_NAME,
-  MIR_TEMP,
-  MIR_OP,
-  MIR_IMMUTABLE_MEM,
-  MIR_MOVE_TEMP,
-  MIR_CALL_FUNCTION,
-  MIR_MOVE_IMMUTABLE_MEM,
-  MIR_JUMP,
-  MIR_RETURN,
-  MIR_CJUMP_FALLTHROUGH,
-} from '../../ast/mir-nodes';
+  HIR_ZERO,
+  HIR_NAME,
+  HIR_FUNCTION_CALL,
+  HIR_LET,
+  HIR_STRUCT_INITIALIZATION,
+  HIR_INDEX_ACCESS,
+  HIR_RETURN,
+  HIR_WHILE_TRUE,
+  HIR_IF_ELSE,
+  HIR_BINARY,
+} from '../../ast/hir-expressions';
 import analyzeUsedFunctionNames from '../used-name-analysis';
 
 it('analyzeUsedFunctionNames test', () => {
   expect(
     Array.from(
       analyzeUsedFunctionNames({
-        globalVariables: [],
         functions: [
           {
-            functionName: ENCODED_COMPILED_PROGRAM_MAIN,
-            argumentNames: [],
+            name: ENCODED_COMPILED_PROGRAM_MAIN,
+            parameters: [],
             hasReturn: false,
-            mainBodyStatements: [MIR_CALL_FUNCTION('foo', [])],
-          },
-          {
-            functionName: 'foo',
-            argumentNames: [],
-            hasReturn: false,
-            mainBodyStatements: [
-              MIR_MOVE_TEMP(MIR_TEMP(''), MIR_ZERO),
-              MIR_MOVE_IMMUTABLE_MEM(
-                MIR_IMMUTABLE_MEM(MIR_NAME('bar')),
-                MIR_IMMUTABLE_MEM(MIR_NAME('bar'))
-              ),
-              MIR_JUMP(''),
-              MIR_CALL_FUNCTION('baz', [MIR_NAME('haha')]),
-              MIR_RETURN(MIR_NAME('bar')),
-              MIR_RETURN(),
-              MIR_CJUMP_FALLTHROUGH(MIR_OP('+', MIR_NAME('foo'), MIR_NAME('bar')), ''),
+            body: [
+              HIR_FUNCTION_CALL({ functionExpression: HIR_NAME('foo'), functionArguments: [] }),
             ],
           },
           {
-            functionName: 'bar',
-            argumentNames: [],
+            name: 'foo',
+            parameters: [],
             hasReturn: false,
-            mainBodyStatements: [MIR_CALL_FUNCTION('foo', [])],
+            body: [
+              HIR_LET({ name: '', assignedExpression: HIR_ZERO }),
+              HIR_STRUCT_INITIALIZATION({
+                structVariableName: '',
+                expressionList: [HIR_INDEX_ACCESS({ expression: HIR_NAME('bar'), index: 0 })],
+              }),
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('baz'),
+                functionArguments: [HIR_NAME('haha')],
+              }),
+              HIR_RETURN(HIR_NAME('bar')),
+              HIR_WHILE_TRUE([
+                HIR_IF_ELSE({
+                  booleanExpression: HIR_ZERO,
+                  s1: [
+                    HIR_LET({
+                      name: '',
+                      assignedExpression: HIR_BINARY({
+                        operator: '+',
+                        e1: HIR_NAME('foo'),
+                        e2: HIR_NAME('bar'),
+                      }),
+                    }),
+                  ],
+                  s2: [HIR_LET({ name: '', assignedExpression: HIR_ZERO })],
+                }),
+              ]),
+            ],
           },
           {
-            functionName: 'baz',
-            argumentNames: [],
+            name: 'bar',
+            parameters: [],
             hasReturn: false,
-            mainBodyStatements: [],
+            body: [
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('foo'),
+                functionArguments: [],
+              }),
+            ],
+          },
+          {
+            name: 'baz',
+            parameters: [],
+            hasReturn: false,
+            body: [],
           },
         ],
       }).values()

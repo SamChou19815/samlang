@@ -4,7 +4,7 @@ import type { SamlangModule } from '../ast/samlang-toplevel';
 import { typeCheckSources, GlobalTypingContext } from '../checker';
 import {
   compileSamlangSourcesToHighIRSources,
-  compileHighIrSourcesToMidIRCompilationUnits,
+  compileHighIrModuleToMidIRCompilationUnit,
   generateAssemblyInstructionsFromMidIRCompilationUnit,
 } from '../compiler';
 import { CompileTimeError, createGlobalErrorCollector } from '../errors';
@@ -39,14 +39,14 @@ export const lowerSourcesToAssemblyPrograms = (
   sources: Sources<SamlangModule>
 ): Sources<AssemblyProgram> =>
   hashMapOf(
-    ...compileHighIrSourcesToMidIRCompilationUnits(compileSamlangSourcesToHighIRSources(sources))
+    ...compileSamlangSourcesToHighIRSources(sources)
       .entries()
       .map(
-        ([moduleReference, unoptimizedCompilationUnit]) =>
+        ([moduleReference, highIRModule]) =>
           [
             moduleReference,
             generateAssemblyInstructionsFromMidIRCompilationUnit(
-              optimizeIRCompilationUnit(unoptimizedCompilationUnit)
+              optimizeIRCompilationUnit(compileHighIrModuleToMidIRCompilationUnit(highIRModule))
             ),
           ] as const
       )

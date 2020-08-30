@@ -23,8 +23,9 @@ import {
 } from '../../ast/hir-expressions';
 import { compileSamlangSourcesToHighIRSources } from '../../compiler';
 import { checkSources } from '../../services/source-processor';
+import { assertNotNull } from '../../util/type-assertions';
 import {
-  highIRSourcesToJSString,
+  highIRModuleToJSString,
   highIRStatementToString,
   highIRFunctionToString,
   highIRExpressionToString,
@@ -38,8 +39,9 @@ it('compile hello world to JS integration test', () => {
     }
     `;
   const { checkedSources } = checkSources([[moduleReference, sourceCode]]);
-  const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
-  expect(highIRSourcesToJSString(hirSources)).toBe(
+  const hirModule = compileSamlangSourcesToHighIRSources(checkedSources).get(moduleReference);
+  assertNotNull(hirModule);
+  expect(highIRModuleToJSString(hirModule)).toBe(
     `let printed = '';
 
 const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
@@ -52,24 +54,11 @@ const _module_Test_class_Main_function_main = () => {
   var _t0 = _builtin_stringConcat('Hello ', 'World!');
   var _t1 = _builtin_println(_t0);
 };
-
-printed`
-  );
-  expect(highIRSourcesToJSString(hirSources, moduleReference)).toBe(
-    `let printed = '';
-
-const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => { printed += line; printed += "\\n" };
-const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
-const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
-const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
-
-const _module_Test_class_Main_function_main = () => {
-  var _t0 = _builtin_stringConcat('Hello ', 'World!');
-  var _t1 = _builtin_println(_t0);
+const _compiled_program_main = () => {
+  _module_Test_class_Main_function_main();
 };
 
-_module_Test_class_Main_function_main();
+_compiled_program_main();
 printed`
   );
 });
@@ -78,9 +67,10 @@ const setupIntegration = (sourceCode: string): string => {
   const moduleReference = new ModuleReference(['Test']);
   const { checkedSources, compileTimeErrors } = checkSources([[moduleReference, sourceCode]]);
   expect(compileTimeErrors).toEqual([]);
-  const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
+  const hirModule = compileSamlangSourcesToHighIRSources(checkedSources).get(moduleReference);
+  assertNotNull(hirModule);
   // eslint-disable-next-line no-eval
-  return eval(highIRSourcesToJSString(hirSources, moduleReference));
+  return eval(highIRModuleToJSString(hirModule));
 };
 
 it('confirm samlang & equivalent JS have same print output', () => {

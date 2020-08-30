@@ -3,7 +3,7 @@ import { ModuleReference } from '../ast/common-nodes';
 import { MidIRCompilationUnit, midIRCompilationUnitToString } from '../ast/mir-nodes';
 import {
   compileSamlangSourcesToHighIRSources,
-  compileHighIrSourcesToMidIRCompilationUnits,
+  compileHighIrModuleToMidIRCompilationUnit,
   generateAssemblyInstructionsFromMidIRCompilationUnit,
 } from '../compiler';
 import interpretAssemblyProgram from '../interpreter/assembly-interpreter';
@@ -41,13 +41,12 @@ if (process.env.CI) {
 const mirBaseTestCases: readonly MidIRTestCase[] = (() => {
   expect(compileTimeErrors).toEqual([]);
 
-  const mirSources = compileHighIrSourcesToMidIRCompilationUnits(
-    compileSamlangSourcesToHighIRSources(checkedSources)
-  );
+  const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
 
   return runnableSamlangProgramTestCases.map(({ testCaseName, expectedStandardOut }) => {
-    const compilationUnit = mirSources.get(new ModuleReference([testCaseName]));
-    assertNotNull(compilationUnit);
+    const highIRModule = hirSources.get(new ModuleReference([testCaseName]));
+    assertNotNull(highIRModule);
+    const compilationUnit = compileHighIrModuleToMidIRCompilationUnit(highIRModule);
     return {
       testCaseName,
       expectedStandardOut,
