@@ -4,6 +4,23 @@ it('runSamlangDemo works when given good program.', () => {
   expect(runSamlangDemo('class Main { function main(): unit = println("hello world") }')).toEqual({
     interpreterPrinted: 'hello world\n',
     prettyPrintedProgram: `class Main { function main(): unit = println("hello world")  }\n`,
+    jsString: `let printed = '';
+
+const _builtin_stringConcat = (a, b) => a + b;
+const _builtin_println = (line) => { printed += line; printed += "\\n" };
+const _builtin_stringToInt = (v) => BigInt(v);
+const _builtin_intToString = (v) => String(v);
+const _builtin_throw = (v) => { throw Error(v); };
+
+const _module_Demo_class_Main_function_main = () => {
+  var _t0 = _builtin_println('hello world');
+};
+const _compiled_program_main = () => {
+  _module_Demo_class_Main_function_main();
+};
+
+_compiled_program_main();
+printed`,
     assemblyString: `    .text
     .intel_syntax noprefix
     .p2align 4, 0x90
@@ -52,6 +69,7 @@ it('runSamlangDemo works when given non-runnable program', () => {
   expect(runSamlangDemo('class Main {}')).toEqual({
     prettyPrintedProgram: 'class Main {  }\n',
     interpreterPrinted: '',
+    jsString: '// No JS output because there is no Main.main() function\n',
     assemblyString: undefined,
     errors: [],
   });
