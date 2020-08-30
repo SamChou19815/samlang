@@ -1,69 +1,65 @@
 import { ENCODED_COMPILED_PROGRAM_MAIN } from '../ast/common-names';
-import {
-  MidIRExpression,
-  MidIRStatement,
-  MidIRFunction,
-  MidIRCompilationUnit,
-} from '../ast/mir-nodes';
+import type { HighIRExpression, HighIRStatement } from '../ast/hir-expressions';
+import type { HighIRFunction, HighIRModule } from '../ast/hir-toplevel';
 import { assertNotNull } from '../util/type-assertions';
 
-const collectUsedNamesFromExpression = (set: Set<string>, expression: MidIRExpression): void => {
+const collectUsedNamesFromExpression = (set: Set<string>, expression: HighIRExpression): void => {
   switch (expression.__type__) {
-    case 'MidIRConstantExpression':
-    case 'MidIRTemporaryExpression':
-      return;
-    case 'MidIRNameExpression':
+    case 'HighIRIntLiteralExpression':
+    case 'HighIRStringLiteralExpression':
+    case 'HighIRVariableExpression':
+      break;
+    case 'HighIRNameExpression':
       set.add(expression.name);
       break;
-    case 'MidIRImmutableMemoryExpression':
-      collectUsedNamesFromExpression(set, expression.indexExpression);
+    case 'HighIRIndexAccessExpression':
+      collectUsedNamesFromExpression(set, expression.expression);
       break;
-    case 'MidIRBinaryExpression':
+    case 'HighIRBinaryExpression':
       collectUsedNamesFromExpression(set, expression.e1);
       collectUsedNamesFromExpression(set, expression.e2);
       break;
   }
 };
 
-const collectUsedNamesFromStatement = (set: Set<string>, statement: MidIRStatement): void => {
+const collectUsedNamesFromStatement = (set: Set<string>, statement: HighIRStatement): void => {
   switch (statement.__type__) {
-    case 'MidIRMoveTempStatement':
-      collectUsedNamesFromExpression(set, statement.source);
-      break;
-    case 'MidIRMoveMemStatement':
-      collectUsedNamesFromExpression(set, statement.source);
-      collectUsedNamesFromExpression(set, statement.memoryIndexExpression);
-      break;
-    case 'MidIRJumpStatement':
-    case 'MidIRLabelStatement':
-      break;
-    case 'MidIRCallFunctionStatement':
+    case 'HighIRFunctionCallStatement':
       collectUsedNamesFromExpression(set, statement.functionExpression);
       statement.functionArguments.forEach((it) => collectUsedNamesFromExpression(set, it));
       break;
-    case 'MidIRConditionalJumpFallThrough':
-      collectUsedNamesFromExpression(set, statement.conditionExpression);
+    case 'HighIRWhileTrueStatement':
+      statement.statements.forEach((it) => collectUsedNamesFromStatement(set, it));
       break;
-    case 'MidIRReturnStatement':
-      if (statement.returnedExpression != null) {
-        collectUsedNamesFromExpression(set, statement.returnedExpression);
-      }
+    case 'HighIRIfElseStatement':
+      collectUsedNamesFromExpression(set, statement.booleanExpression);
+      statement.s1.forEach((it) => collectUsedNamesFromStatement(set, it));
+      statement.s2.forEach((it) => collectUsedNamesFromStatement(set, it));
+      break;
+    case 'HighIRLetDefinitionStatement':
+      collectUsedNamesFromExpression(set, statement.assignedExpression);
+      break;
+    case 'HighIRStructInitializationStatement':
+      statement.expressionList.forEach((it) => collectUsedNamesFromExpression(set, it));
+      break;
+    case 'HighIRReturnStatement':
+      collectUsedNamesFromExpression(set, statement.expression);
       break;
   }
 };
 
 const getOtherFunctionsUsedByGivenFunction = (
-  midIRFunction: MidIRFunction
+  highIRFunction: HighIRFunction
 ): ReadonlySet<string> => {
   const set = new Set<string>();
-  midIRFunction.mainBodyStatements.forEach((it) => collectUsedNamesFromStatement(set, it));
-  set.delete(midIRFunction.functionName);
+  highIRFunction.body.forEach((it) => collectUsedNamesFromStatement(set, it));
+  set.delete(highIRFunction.name);
   return set;
 };
 
-const analyzeUsedFunctionNames = ({ functions }: MidIRCompilationUnit): ReadonlySet<string> => {
+const analyzeUsedFunctionNames = ({ functions }: HighIRModule): ReadonlySet<string> => {
   const usedFunctionMap = new Map(
-    functions.map((it) => [it.functionName, getOtherFunctionsUsedByGivenFunction(it)])
+    functions.map((it) => [it.name, getOtherFunctionsUsedByGivenFunction(it)])
   );
 
   const used = new Set<string>();

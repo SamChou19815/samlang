@@ -1,6 +1,11 @@
-import { encodeFunctionNameGlobally } from '../ast/common-names';
+import analyzeUsedFunctionNames from '../analysis/used-name-analysis';
+import {
+  ENCODED_COMPILED_PROGRAM_MAIN,
+  encodeFunctionNameGlobally,
+  encodeMainFunctionName,
+} from '../ast/common-names';
 import type { ModuleReference, Sources } from '../ast/common-nodes';
-import { HIR_RETURN } from '../ast/hir-expressions';
+import { HIR_FUNCTION_CALL, HIR_NAME, HIR_RETURN } from '../ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from '../ast/hir-toplevel';
 import type { ClassMemberDefinition, SamlangModule } from '../ast/samlang-toplevel';
 import { HashMap, hashMapOf } from '../util/collections';
@@ -32,30 +37,45 @@ const compileFunction = (
   ];
 };
 
-const compileSamlangModule = (
-  moduleReference: ModuleReference,
-  samlangModule: SamlangModule
-): HighIRModule => ({
-  functions: samlangModule.classes
-    .map(({ name: className, members }) =>
-      members
-        .map((it) =>
-          compileFunction(moduleReference, samlangModule, className, it).map(
-            performTailRecursiveCallTransformationOnHighIRFunction
-          )
-        )
-        .flat()
-    )
-    .flat(),
-});
-
 const compileSamlangSourcesToHighIRSources = (
   sources: Sources<SamlangModule>
 ): Sources<HighIRModule> => {
-  const irSources: HashMap<ModuleReference, HighIRModule> = hashMapOf();
-  sources.forEach((samlangModule, reference) =>
-    irSources.set(reference, compileSamlangModule(reference, samlangModule))
+  const compiledFunctions: HighIRFunction[] = [];
+  sources.forEach((samlangModule, moduleReference) =>
+    samlangModule.classes.map(({ name: className, members }) =>
+      members.forEach((member) =>
+        compileFunction(moduleReference, samlangModule, className, member).forEach((it) =>
+          compiledFunctions.push(performTailRecursiveCallTransformationOnHighIRFunction(it))
+        )
+      )
+    )
   );
+
+  const irSources: HashMap<ModuleReference, HighIRModule> = hashMapOf();
+  sources.forEach((_, moduleReference) => {
+    const entryPointFunctionName = encodeMainFunctionName(moduleReference);
+    if (!compiledFunctions.some(({ name }) => name === entryPointFunctionName)) {
+      return;
+    }
+    const allFunctions = [
+      ...compiledFunctions,
+      {
+        name: ENCODED_COMPILED_PROGRAM_MAIN,
+        parameters: [],
+        hasReturn: false,
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME(entryPointFunctionName),
+            functionArguments: [],
+          }),
+        ],
+      },
+    ];
+    const usedNames = analyzeUsedFunctionNames({ functions: allFunctions });
+    irSources.set(moduleReference, {
+      functions: allFunctions.filter((it) => usedNames.has(it.name)),
+    });
+  });
   return irSources;
 };
 

@@ -21,7 +21,6 @@ import {
 import {
   optimizeIrWithSimpleOptimization,
   optimizeAssemblyWithSimpleOptimization,
-  optimizeIRWithUnusedNameElimination,
 } from '../simple-optimizations';
 
 const optimizeIRAndConvertToString = (midIRStatements: readonly MidIRStatement[]): string =>
@@ -136,24 +135,6 @@ c = d;`);
 a = b;
 c = d;
 goto C;`);
-});
-
-it('optimizeIRWithUnusedNameElimination test', () => {
-  expect(
-    optimizeIRWithUnusedNameElimination({
-      globalVariables: [
-        { name: 'v1', content: '' },
-        { name: 'v2', content: 'v2' },
-      ],
-      functions: [
-        { functionName: 'f1', argumentNames: [], hasReturn: false, mainBodyStatements: [] },
-        { functionName: 'f2', argumentNames: [], hasReturn: false, mainBodyStatements: [] },
-      ],
-    })
-  ).toEqual({
-    globalVariables: [],
-    functions: [],
-  });
 });
 
 it('optimizeAssemblyWithSimpleOptimization test', () => {

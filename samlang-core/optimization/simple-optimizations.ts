@@ -1,12 +1,6 @@
 import ControlFlowGraph from '../analysis/control-flow-graph';
-import analyzeUsedFunctionNames from '../analysis/used-name-analysis';
 import type { AssemblyInstruction } from '../ast/asm-instructions';
-import {
-  MidIRCompilationUnit,
-  MidIRStatement,
-  MIR_JUMP,
-  MIR_CJUMP_FALLTHROUGH,
-} from '../ast/mir-nodes';
+import { MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from '../ast/mir-nodes';
 import { isNotNull } from '../util/type-assertions';
 
 const pipe = <E>(element: E, ...functions: readonly ((element: E) => E)[]): E =>
@@ -199,16 +193,6 @@ export const optimizeIrWithSimpleOptimization = (
     withoutImmediateJumpInIr,
     withoutUnusedLabelInIr
   );
-
-export const optimizeIRWithUnusedNameElimination = (
-  compilationUnit: MidIRCompilationUnit
-): MidIRCompilationUnit => {
-  const usedNames = analyzeUsedFunctionNames(compilationUnit);
-  return {
-    globalVariables: compilationUnit.globalVariables.filter((it) => usedNames.has(it.name)),
-    functions: compilationUnit.functions.filter((it) => usedNames.has(it.functionName)),
-  };
-};
 
 const withoutUnreachableAssemblyCode = (
   instructions: readonly AssemblyInstruction[]
