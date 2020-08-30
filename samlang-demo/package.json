@@ -1,6 +1,6 @@
 {
   "name": "@dev-sam/samlang-demo",
-  "version": "0.0.5",
+  "version": "0.3.0",
   "license": "AGPLv3",
   "files": [
     "bin"
