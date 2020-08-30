@@ -49,7 +49,7 @@ const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
 const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
 
 const _module_Test_class_Main_function_main = () => {
-  var _t0 = _builtin_stringConcat('Hello ', 'World!');
+  var _t0 = _builtin_stringConcat("Hello ", "World!");
   var _t1 = _builtin_println(_t0);
 };
 const _compiled_program_main = () => {
@@ -293,7 +293,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'res',
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_PRINTLN}('Hello, world');`);
+  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_PRINTLN}("Hello, world");`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -302,7 +302,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'res',
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_TO_INT}('5');`);
+  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_TO_INT}("5");`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -320,7 +320,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'res',
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}('5', '4');`);
+  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}("5", "4");`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -329,7 +329,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'panik',
       })
     )
-  ).toBe(`var panik = ${ENCODED_FUNCTION_NAME_THROW}('panik');`);
+  ).toBe(`var panik = ${ENCODED_FUNCTION_NAME_THROW}("panik");`);
   expect(
     highIRStatementToString(
       HIR_LET({
@@ -346,7 +346,7 @@ it('HIR statements to JS string test', () => {
         expressionList: [HIR_ZERO, HIR_STRING('bar'), HIR_INT(BigInt(13))],
       })
     )
-  ).toBe(`var st = [0, 'bar', 13];`);
+  ).toBe(`var st = [0, "bar", 13];`);
 });
 
 it('HIR function to JS string test 1', () => {
@@ -384,7 +384,9 @@ it('HIR function to JS string test 2', () => {
 
 it('HIR expression to JS string test', () => {
   expect(highIRExpressionToString(HIR_INT(BigInt(1305)))).toBe('1305');
-  expect(highIRExpressionToString(HIR_STRING('bloop'))).toBe(`'bloop'`);
+  expect(highIRExpressionToString(HIR_STRING('bloop'))).toBe(`"bloop"`);
+  expect(highIRExpressionToString(HIR_STRING('"foo'))).toBe(`"\\"foo"`);
+  expect(highIRExpressionToString(HIR_STRING("'foo"))).toBe(`"'foo"`);
   expect(
     highIRExpressionToString(
       HIR_INDEX_ACCESS({
@@ -415,7 +417,7 @@ it('HIR expression to JS string test', () => {
         index: 0,
       })
     )
-  ).toBe("('a' + 'b')[0]");
+  ).toBe('("a" + "b")[0]');
   expect(highIRExpressionToString(HIR_VARIABLE('ts'))).toBe('ts');
   expect(highIRExpressionToString(HIR_NAME('key'))).toBe('key');
   expect(
