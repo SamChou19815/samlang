@@ -3,7 +3,7 @@
 /* eslint-disable no-console */
 
 import cliMainRunner, { CLIRunners } from './cli';
-import { collectSources, compileToX86Executables } from './cli-service';
+import { collectSources, compileToJS, compileToX86Executables } from './cli-service';
 import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './configuration';
 import ASCII_ART_SAMLANG_LOGO from './logo';
 import startSamlangLanguageServer from './lsp';
@@ -57,6 +57,7 @@ const runners: CLIRunners = {
         checkedSources,
         configuration: { outputDirectory },
       } = typeCheck();
+      compileToJS(checkedSources, outputDirectory);
       const successful = compileToX86Executables(checkedSources, outputDirectory);
       if (!successful) {
         console.error('Failed to link some programs.');
