@@ -9,7 +9,9 @@ import {
   Sources,
   SamlangModule,
   assemblyProgramToString,
+  compileSamlangSourcesToHighIRSources,
   lowerSourcesToAssemblyPrograms,
+  prettyPrintHighIRModuleAsJS,
 } from '@dev-sam/samlang-core';
 
 const walk = (startPath: string, visitor: (file: string) => void): void => {
@@ -44,6 +46,17 @@ export const collectSources = ({
   });
 
   return sources;
+};
+
+export const compileToJS = (sources: Sources<SamlangModule>, outputDirectory: string): void => {
+  const programs = compileSamlangSourcesToHighIRSources(sources);
+  const paths: string[] = [];
+  programs.forEach((program, moduleReference) => {
+    const outputJSFilePath = join(outputDirectory, `${moduleReference}.js`);
+    mkdirSync(dirname(outputJSFilePath), { recursive: true });
+    writeFileSync(outputJSFilePath, prettyPrintHighIRModuleAsJS(program));
+    paths.push(outputJSFilePath);
+  });
 };
 
 const compileToX86Assembly = (
