@@ -1,4 +1,6 @@
+import type { HighIRModule } from '../ast/hir-toplevel';
 import type { SamlangModule } from '../ast/samlang-toplevel';
+import { highIRModuleToJSString } from './printer-js';
 import { prettyPrintAccordingToPrettierAlgorithm } from './printer-prettier-core';
 import createPrettierDocumentForSamlangModule from './printer-source-level';
 
@@ -11,3 +13,7 @@ export const prettyPrintSamlangModule = (
     availableWidth,
     createPrettierDocumentForSamlangModule(samlangModule)
   ).trimEnd()}\n`;
+
+export const prettyPrintHighIRModuleAsJS: (
+  highIRModule: HighIRModule
+) => string = highIRModuleToJSString;
