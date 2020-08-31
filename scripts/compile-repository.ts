@@ -3,22 +3,13 @@
 // @ts-check
 /* eslint-disable no-console */
 
-const { spawnSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { spawnSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 
-/**
- * @param {string} filename
- * @returns {string}
- */
-const read = (filename) => fs.readFileSync(filename).toString();
+const read = (filename: string): string => fs.readFileSync(filename).toString();
 
-/**
- * @param {string} command
- * @param {string[]} args
- * @returns {string}
- */
-const runWithErrorCheck = (command, args = []) => {
+const runWithErrorCheck = (command: string, args: readonly string[] = []): string => {
   const result = spawnSync(command, args);
   if (result.status !== 0) {
     throw new Error(
@@ -30,9 +21,8 @@ const runWithErrorCheck = (command, args = []) => {
 
 const basePath = './out';
 
-const getX86Programs = () => {
-  /** @type {string[]} */
-  const programs = [];
+const getX86Programs = (): readonly string[] => {
+  const programs: string[] = [];
   fs.readdirSync(basePath).forEach((filename) => {
     if (filename.startsWith('test') && path.extname(filename) !== '.s') {
       const fullRelativePath = `${basePath}/${filename}`;
@@ -47,28 +37,15 @@ const getX86Programs = () => {
   return programs;
 };
 
-/**
- * @param {string[]} programs
- * @returns {string}
- */
-const interpretPrograms = (programs) =>
+const interpretPrograms = (programs: readonly string[]): string =>
   programs.map((program) => `#${program}\n${runWithErrorCheck(program)}`).join('\n');
 
-/**
- * @param {string[]} programs
- * @returns {string}
- */
-const interpretJSPrograms = (programs) =>
+const interpretJSPrograms = (programs: readonly string[]): string =>
   programs
     .map((program) => `#${program}\n${runWithErrorCheck('node', [`${program}.js`])}`)
     .join('\n');
 
-/**
- * @param {string} expected
- * @param {string} actual
- * @returns {boolean}
- */
-const compare = (expected, actual) => {
+const compare = (expected: string, actual: string): boolean => {
   if (expected === actual) {
     return true;
   }
