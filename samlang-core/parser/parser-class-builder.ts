@@ -2,7 +2,14 @@ import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor
 
 import { functionType, Range } from '../ast/common-nodes';
 import { SamlangExpression } from '../ast/samlang-expressions';
-import { TypeDefinition, ClassDefinition, ClassMemberDefinition } from '../ast/samlang-toplevel';
+import {
+  TypeDefinition,
+  AnnotatedVariable,
+  ClassInterface,
+  ClassDefinition,
+  ClassMemberDeclaration,
+  ClassMemberDefinition,
+} from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
 import {
@@ -11,8 +18,11 @@ import {
   ObjTypeContext,
   VariantTypeContext,
   TypeParametersDeclarationContext,
+  AnnotatedVariableContext,
   ClassMemberDefinitionContext,
+  ClassMemberDeclarationContext,
   ClazzContext,
+  InterfazeContext,
   ExpressionContext,
 } from './generated/PLParser';
 import { PLVisitor } from './generated/PLVisitor';
@@ -51,6 +61,21 @@ const getTypeParameters = (context: TypeParametersDeclarationContext): readonly 
     .UpperId()
     .map((it) => it.symbol.text)
     .filter(isNotNull);
+
+const getAnnotatedVariable = (context: AnnotatedVariableContext): AnnotatedVariable => {
+  const parameterNameSymbol = context.LowerId().symbol;
+  const variablename = parameterNameSymbol.text;
+  const typeExpression = context.typeAnnotation().typeExpr();
+  const type = typeExpression.accept(typeBuilder);
+  assertNotNull(variablename);
+  assertNotNull(type);
+  return {
+    name: variablename,
+    nameRange: tokenRange(parameterNameSymbol),
+    type,
+    typeRange: contextRange(typeExpression),
+  };
+};
 
 type TypeDefinitionWithTypeParameters = TypeDefinition & {
   readonly typeParameters: readonly string[];
@@ -135,7 +160,56 @@ class ModuleTypeDefinitionBuilder
 
 const moduleTypeDefinitionBuilder = new ModuleTypeDefinitionBuilder();
 
-export default class ClassBuilder
+class ClassInterfaceBuilder
+  extends AbstractParseTreeVisitor<ClassInterface | null>
+  implements PLVisitor<ClassInterface | null> {
+  // istanbul ignore next
+  defaultResult = (): ClassInterface | null => null;
+
+  private buildClassMemberDeclaration = (
+    ctx: ClassMemberDeclarationContext
+  ): ClassMemberDeclaration | null => {
+    const nameSymbol = ctx.LowerId().symbol;
+    const name = nameSymbol.text;
+    const returnType = ctx.typeExpr()?.accept(typeBuilder);
+    if (name == null || returnType == null) return null;
+    const parameters = ctx.annotatedVariable().map(getAnnotatedVariable);
+    const type = functionType(
+      parameters.map((it) => it.type),
+      returnType
+    );
+    const typeParametersDeclaration = ctx.typeParametersDeclaration();
+    return {
+      range: contextRange(ctx),
+      isPublic: ctx.PRIVATE() == null,
+      isMethod: ctx.METHOD() != null,
+      nameRange: tokenRange(nameSymbol),
+      name,
+      typeParameters:
+        typeParametersDeclaration != null ? getTypeParameters(typeParametersDeclaration) : [],
+      type,
+      parameters,
+    };
+  };
+
+  visitInterfaze = (ctx: InterfazeContext): ClassInterface | null => {
+    const typeParametersContext = ctx.typeParametersDeclaration();
+    const typeParameters =
+      typeParametersContext == null ? [] : getTypeParameters(typeParametersContext);
+    return {
+      range: contextRange(ctx),
+      nameRange: tokenRange(ctx.UpperId().symbol),
+      name: ctx.UpperId().text,
+      isPublic: ctx.PRIVATE() == null,
+      typeParameters,
+      members: ctx.classMemberDeclaration().map(this.buildClassMemberDeclaration).filter(isNotNull),
+    };
+  };
+}
+
+export const classInterfaceBuilder = new ClassInterfaceBuilder();
+
+export class ClassDefinitionBuilder
   extends AbstractParseTreeVisitor<ClassDefinition | null>
   implements PLVisitor<ClassDefinition | null> {
   private readonly expressionBuilder: ExpressionBuilder;
@@ -159,23 +233,7 @@ export default class ClassBuilder
     const returnType = ctx.typeExpr()?.accept(typeBuilder);
     const body = this.buildExpression(ctx.expression());
     if (name == null || returnType == null || body == null) return null;
-    const parameters = ctx
-      .annotatedVariable()
-      .map((annotatedVariable) => {
-        const parameterNameSymbol = annotatedVariable.LowerId().symbol;
-        const variablename = parameterNameSymbol.text;
-        const typeExpression = annotatedVariable.typeAnnotation().typeExpr();
-        const type = typeExpression.accept(typeBuilder);
-        assertNotNull(variablename);
-        assertNotNull(type);
-        return {
-          name: variablename,
-          nameRange: tokenRange(parameterNameSymbol),
-          type,
-          typeRange: contextRange(typeExpression),
-        };
-      })
-      .filter(isNotNull);
+    const parameters = ctx.annotatedVariable().map(getAnnotatedVariable);
     const type = functionType(
       parameters.map((it) => it.type),
       returnType

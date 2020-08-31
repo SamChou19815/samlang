@@ -1,7 +1,7 @@
 import type { Type, FunctionType, Range, ModuleReference, Node } from './common-nodes';
 import { SamlangExpression } from './samlang-expressions';
 
-type AnnotatedVariable = {
+export type AnnotatedVariable = {
   readonly name: string;
   readonly nameRange: Range;
   readonly type: Type;
