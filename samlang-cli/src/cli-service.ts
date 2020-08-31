@@ -74,13 +74,8 @@ const compileToX86Assembly = (
   return paths;
 };
 
-// TODO: Change this hardcoded value when infra is ready.
-const RUNTIME_PATH =
-  process.env.SAMLANG_DEV === 'true'
-    ? join(__dirname, '..', '..', 'runtime')
-    : join(__dirname, '..', 'samlang-runtime');
-
-const LIBRARY_NAME = process.env.SAMLANG_DEV === 'true' ? 'sam' : `sam-${process.platform}`;
+const RUNTIME_PATH = join(__dirname, '..', 'samlang-runtime');
+const LIBRARY_NAME = `sam-${process.platform}`;
 
 const linkWithGcc = (outputProgramFile: string, outputAssemblyFile: string): boolean => {
   const gccProcess = spawnSync(
