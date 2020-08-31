@@ -22,11 +22,6 @@ jobs:
       - name: Yarn Install
         run: yarn
       - name: Bundle
-        run: ./scripts/compile-runtime
+        run: yarn workspace @dev-sam/samlang-cli bundle
       - name: Compile samlang Programs
         run: ./scripts/compile-repository.js
-      - name: Upload Bundled Release
-        uses: actions/upload-artifact@master
-        with:
-          name: samlang-release
-          path: samlang-cli/bin
