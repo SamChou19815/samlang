@@ -68,8 +68,8 @@ type MidIRBinaryExpressionTiler = (
   expression: MidIRBinaryExpression,
   service: AssemblyTilingService,
   memoryTilerForExpression: (
-    expression: MidIRBinaryExpression,
-    service: AssemblyTilingService
+    expressionToTile: MidIRBinaryExpression,
+    serviceForTiling: AssemblyTilingService
   ) => AssemblyMemoryTilingResult | null
 ) => AssemblyMidIRExpressionTilingResult | null;
 
