@@ -8,9 +8,10 @@ import {
   ModuleContext,
   ImportModuleMembersContext,
   ClassAsModuleMemberContext,
+  InterfaceAsModuleMemberContext,
 } from './generated/PLParser';
 import { PLVisitor } from './generated/PLVisitor';
-import ClassBuilder from './parser-class-builder';
+import { classInterfaceBuilder, ClassDefinitionBuilder } from './parser-class-builder';
 import { tokenRange, contextRange } from './parser-util';
 
 class ModuleMemberVisitor
@@ -19,17 +20,19 @@ class ModuleMemberVisitor
   // istanbul ignore next
   defaultResult = (): ClassDefinition | null => null;
 
-  private readonly classBuilder: ClassBuilder;
+  private readonly classBuilder: ClassDefinitionBuilder;
 
   constructor(errorCollector: ModuleErrorCollector) {
     super();
-    this.classBuilder = new ClassBuilder(errorCollector);
+    this.classBuilder = new ClassDefinitionBuilder(errorCollector);
   }
 
   visitClassAsModuleMember = (ctx: ClassAsModuleMemberContext): ClassDefinition | null =>
     ctx.clazz().accept(this.classBuilder);
 
-  // TODO: parseInterface
+  visitInterfaceAsModuleMember = (ctx: InterfaceAsModuleMemberContext): ClassDefinition | null =>
+    // TODO widen the type
+    ctx.interfaze().accept(classInterfaceBuilder) as ClassDefinition;
 }
 
 export default class ModuleVisitor
