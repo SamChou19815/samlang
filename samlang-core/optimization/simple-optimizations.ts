@@ -3,12 +3,12 @@ import type { AssemblyInstruction } from '../ast/asm-instructions';
 import { MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from '../ast/mir-nodes';
 import { isNotNull } from '../util/type-assertions';
 
-const pipe = <E>(element: E, ...functions: readonly ((element: E) => E)[]): E =>
+const pipe = <E>(element: E, ...functions: readonly ((e: E) => E)[]): E =>
   functions.reduce((accumulator, f) => f(accumulator), element);
 
 const withoutUnreachableCode = <I>(
   instructions: readonly I[],
-  controlFlowGraphConstructor: (instructions: readonly I[]) => ControlFlowGraph<I>
+  controlFlowGraphConstructor: (instructionList: readonly I[]) => ControlFlowGraph<I>
 ): readonly I[] => {
   const reachableSet = new Set<number>();
   controlFlowGraphConstructor(instructions).dfs((node) => reachableSet.add(node.id));
