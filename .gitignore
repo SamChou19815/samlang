@@ -26,6 +26,7 @@ node_modules
 tsconfig.tsbuildinfo
 .monorail
 .codegen
+workspaces.json
 
 ## Converage
 coverage
@@ -34,7 +35,9 @@ coverage
 *.vsix
 out
 lib
-bin
+**/bin/**
+!bin/monorail
+!bin/repo-codegen-services.js
 build
 
 # Generated
