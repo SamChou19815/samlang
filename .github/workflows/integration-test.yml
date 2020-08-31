@@ -24,4 +24,4 @@ jobs:
       - name: Bundle
         run: yarn workspace @dev-sam/samlang-cli bundle
       - name: Compile samlang Programs
-        run: ./scripts/compile-repository.js
+        run: yarn test:integration
