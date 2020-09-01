@@ -181,8 +181,8 @@ class ClassInterfaceBuilder
     const typeParametersDeclaration = ctx.typeParametersDeclaration();
     return {
       range: contextRange(ctx),
-      isPublic: ctx.PRIVATE() == null,
-      isMethod: ctx.METHOD() != null,
+      isPublic: true,
+      isMethod: true,
       nameRange: tokenRange(nameSymbol),
       name,
       typeParameters:
