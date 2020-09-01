@@ -25,7 +25,7 @@ classMemberDefinition
       ASSIGN expression
     ;
 classMemberDeclaration
-    : PRIVATE? (FUNCTION | METHOD) typeParametersDeclaration? LowerId LPAREN
+    : METHOD typeParametersDeclaration? LowerId LPAREN
         (annotatedVariable (COMMA annotatedVariable)* COMMA?)?
       RPAREN (COLON typeExpr)?
     ;

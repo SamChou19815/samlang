@@ -209,7 +209,7 @@ it('Can handle bad programs.', () => {
     }
 
     interface FooBar {
-      function baz(haha: string): int
+      method baz(haha: string): int
     }
 
     interface Parameterized<T> {
@@ -239,7 +239,7 @@ it('Can handle really bad programs.', () => {
     interface {}
 
     interface Ahhh {
-      function notAnnotated(bad: , : int):
+      method notAnnotated(bad: , : int):
     }
 
     class TypeInference(val : string, val foo: ) {
