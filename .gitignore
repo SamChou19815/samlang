@@ -37,7 +37,7 @@ out
 lib
 **/bin/**
 !bin/monorail
-!bin/repo-codegen-services.js
+!bin/repo-codegen-services
 build
 
 # Generated

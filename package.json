@@ -9,7 +9,7 @@
     "lint": "eslint . --cache",
     "format": "prettier --write '**/*.{ts,js}'",
     "format:check": "prettier --check '**/*.{ts,js}'",
-    "codegen": "sam-codegen ./bin/repo-codegen-services.js",
+    "codegen": "sam-codegen ./bin/repo-codegen-services",
     "compile": "yarn workspaces foreach -t run compile",
     "bundle": "./bin/monorail bundle",
     "test": "jest --coverage",
