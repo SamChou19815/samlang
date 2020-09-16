@@ -4,6 +4,7 @@
     "declaration": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
+    "importsNotUsedAsValues": "error",
     "isolatedModules": false,
     "lib": ["dom", "dom.iterable", "esnext"],
     "module": "CommonJS",

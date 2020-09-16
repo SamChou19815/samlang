@@ -1,12 +1,12 @@
 import analyzeLiveVariablesAtTheEndOfEachInstruction, {
   LiveVariableAnalysisResult,
 } from '../analysis/live-variable-analysis';
-import { AssemblyMemory } from '../ast/asm-arguments';
-import { AssemblyInstruction } from '../ast/asm-instructions';
+import type { AssemblyMemory } from '../ast/asm-arguments';
+import type { AssemblyInstruction } from '../ast/asm-instructions';
 import { Hashable, HashSet, hashSetOf, ReadonlyHashSet } from '../util/collections';
 import { assertNotNull } from '../util/type-assertions';
 import assemblyInstructionColoringRewrite from './asm-coloring-program-rewriter';
-import AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
+import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
 import AssemblyInterferenceGraph from './asm-interference-graph';
 import {
   rewriteAssemblyInstructionsWithCalleeSavedRegistersMoves,

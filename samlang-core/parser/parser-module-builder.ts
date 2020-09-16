@@ -4,13 +4,13 @@ import { ModuleReference } from '../ast/common-nodes';
 import type { ClassDefinition, ModuleMembersImport, SamlangModule } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
-import {
+import type {
   ModuleContext,
   ImportModuleMembersContext,
   ClassAsModuleMemberContext,
   InterfaceAsModuleMemberContext,
 } from './generated/PLParser';
-import { PLVisitor } from './generated/PLVisitor';
+import type { PLVisitor } from './generated/PLVisitor';
 import { classInterfaceBuilder, ClassDefinitionBuilder } from './parser-class-builder';
 import { tokenRange, contextRange } from './parser-util';
 

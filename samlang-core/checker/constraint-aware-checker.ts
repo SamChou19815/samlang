@@ -1,6 +1,6 @@
 import { Type, UndecidedType, isTheSameType, Range } from '../ast/common-nodes';
-import { ModuleErrorCollector } from '../errors';
-import TypeResolution from './type-resolution';
+import type { ModuleErrorCollector } from '../errors';
+import type TypeResolution from './type-resolution';
 
 const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
   const meetWithResolution = (type1: Type, type2: Type): Type => meet(type1, type2, resolution);

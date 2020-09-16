@@ -1,4 +1,4 @@
-import { ReadonlyMidIRBasicBlock } from './mir-basic-block';
+import type { ReadonlyMidIRBasicBlock } from './mir-basic-block';
 
 type SizedImmutableStack = {
   readonly size: number;

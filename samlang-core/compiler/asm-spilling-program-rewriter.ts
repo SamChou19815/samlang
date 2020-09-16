@@ -24,7 +24,7 @@ import {
   ASM_IDIV,
   ASM_PUSH,
 } from '../ast/asm-instructions';
-import AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
+import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
 import { PRE_COLORED_REGISTERS } from './asm-register-allocation-utils';
 
 /** The program rewriter after spilling temporaries into stack. */

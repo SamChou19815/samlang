@@ -1,4 +1,4 @@
-import { Token, ParserRuleContext } from 'antlr4ts';
+import type { Token, ParserRuleContext } from 'antlr4ts';
 
 import { Position, Range } from '../ast/common-nodes';
 

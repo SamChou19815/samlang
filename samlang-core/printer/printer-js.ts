@@ -7,8 +7,8 @@ import {
   ENCODED_COMPILED_PROGRAM_MAIN,
 } from '../ast/common-names';
 import { binaryOperatorSymbolTable } from '../ast/common-operators';
-import { HighIRStatement, HighIRExpression } from '../ast/hir-expressions';
-import { HighIRFunction, HighIRModule } from '../ast/hir-toplevel';
+import type { HighIRStatement, HighIRExpression } from '../ast/hir-expressions';
+import type { HighIRFunction, HighIRModule } from '../ast/hir-toplevel';
 import {
   PrettierDocument,
   PRETTIER_CONCAT,

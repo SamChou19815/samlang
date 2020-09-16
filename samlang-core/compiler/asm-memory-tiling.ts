@@ -13,7 +13,7 @@ import {
   ASM_MEM,
 } from '../ast/asm-arguments';
 import { AssemblyInstruction, ASM_COMMENT } from '../ast/asm-instructions';
-import { MidIRExpression, MidIRBinaryExpression } from '../ast/mir-nodes';
+import type { MidIRExpression, MidIRBinaryExpression } from '../ast/mir-nodes';
 import { bigIntIsWithin32BitIntegerRange } from '../util/int-util';
 import { assertNotNull } from '../util/type-assertions';
 import {

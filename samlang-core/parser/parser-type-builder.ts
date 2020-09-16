@@ -14,13 +14,13 @@ import {
   functionType,
 } from '../ast/common-nodes';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
-import {
+import type {
   SingleIdentifierTypeContext,
   TupleTypeContext,
   FunctionTypeContext,
   FunctionTypeNoArgContext,
 } from './generated/PLParser';
-import { PLVisitor } from './generated/PLVisitor';
+import type { PLVisitor } from './generated/PLVisitor';
 
 class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVisitor<Type | null> {
   defaultResult = (): Type | null => null;

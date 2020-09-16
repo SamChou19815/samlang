@@ -20,7 +20,7 @@ import {
   MIR_RETURN,
 } from '../ast/mir-nodes';
 import createMidIRFlexibleOrderOperatorNode from './mir-flexible-op';
-import MidIRResourceAllocator from './mir-resource-allocator';
+import type MidIRResourceAllocator from './mir-resource-allocator';
 
 const mangleVariableForMIR = (variable: string): string => `_${variable}`;
 

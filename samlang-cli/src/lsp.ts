@@ -12,7 +12,7 @@ import {
 } from 'vscode-languageserver';
 
 import { collectSources } from './cli-service';
-import { SamlangProjectConfiguration } from './configuration';
+import type { SamlangProjectConfiguration } from './configuration';
 
 import {
   LanguageServiceState,

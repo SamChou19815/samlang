@@ -1,4 +1,4 @@
-import { MidIRStatement, MidIRCompilationUnit } from '../ast/mir-nodes';
+import type { MidIRStatement, MidIRCompilationUnit } from '../ast/mir-nodes';
 import optimizeIRWithAlgebraicSimplification from './algebraic-optimization';
 import optimizeIRWithCommonSubExpressionElimination from './common-subexpression-elimination-optimization';
 import optimizeIRWithConstantFolding from './constant-folding-optimization';

@@ -1,8 +1,8 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
 import { functionType, Range } from '../ast/common-nodes';
-import { SamlangExpression } from '../ast/samlang-expressions';
-import {
+import type { SamlangExpression } from '../ast/samlang-expressions';
+import type {
   TypeDefinition,
   AnnotatedVariable,
   ClassInterface,
@@ -12,7 +12,7 @@ import {
 } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
-import {
+import type {
   ClassHeaderContext,
   UtilClassHeaderContext,
   ObjTypeContext,
@@ -25,7 +25,7 @@ import {
   InterfazeContext,
   ExpressionContext,
 } from './generated/PLParser';
-import { PLVisitor } from './generated/PLVisitor';
+import type { PLVisitor } from './generated/PLVisitor';
 import ExpressionBuilder from './parser-expression-builder';
 import typeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';

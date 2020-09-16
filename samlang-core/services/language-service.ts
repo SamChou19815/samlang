@@ -7,8 +7,8 @@ import {
   Range,
   ModuleReference,
 } from '../ast/common-nodes';
-import { SamlangExpression } from '../ast/samlang-expressions';
-import { SamlangModule } from '../ast/samlang-toplevel';
+import type { SamlangExpression } from '../ast/samlang-expressions';
+import type { SamlangModule } from '../ast/samlang-toplevel';
 import { GlobalTypingContext, typeCheckSources, typeCheckSourcesIncrementally } from '../checker';
 // eslint-disable-next-line import/no-internal-modules
 import DependencyTracker from '../checker/dependency-tracker';
