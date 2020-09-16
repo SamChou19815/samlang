@@ -12,10 +12,19 @@ node_modules
 # System Files
 .DS_Store
 
+## Compiled output
+*.vsix
+out
+**/bin/**
+!bin/monorail
+!bin/repo-codegen-services
+build
+
 ## Yarn
 .yarn/*
 !.yarn/releases
 !.yarn/plugins
+!.yarn/sdks
 !.yarn/versions
 **/node_modules
 **/.pnp
@@ -30,15 +39,6 @@ workspaces.json
 
 ## Converage
 coverage
-
-## Compiled output
-*.vsix
-out
-lib
-**/bin/**
-!bin/monorail
-!bin/repo-codegen-services
-build
 
 # Generated
 samlang-core/parser/generated
