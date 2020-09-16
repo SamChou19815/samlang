@@ -34,7 +34,7 @@ import {
   EXPRESSION_STATEMENT_BLOCK,
 } from '../../ast/samlang-expressions';
 import fixExpressionType from '../expression-type-fixer';
-import { ReadOnlyTypeResolution } from '../type-resolution';
+import type { ReadOnlyTypeResolution } from '../type-resolution';
 import resolveType from '../type-resolver';
 import { undecidedTypeResolver } from './type-resolver.test';
 

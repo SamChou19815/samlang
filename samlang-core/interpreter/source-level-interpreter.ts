@@ -1,13 +1,13 @@
-import { IdentifierType } from '../ast/common-nodes';
+import type { IdentifierType } from '../ast/common-nodes';
 import {
   SamlangExpression,
   EXPRESSION_VARIABLE,
   EXPRESSION_LAMBDA,
 } from '../ast/samlang-expressions';
-import { SamlangModule, ClassDefinition } from '../ast/samlang-toplevel';
+import type { SamlangModule, ClassDefinition } from '../ast/samlang-toplevel';
 import { InterpretationContext, EMPTY, ClassValue } from './interpretation-context';
 import PanicException from './panic-exception';
-import { Value, ObjectValue, FunctionValue, VariantValue, TupleValue } from './value';
+import type { Value, ObjectValue, FunctionValue, VariantValue, TupleValue } from './value';
 
 export class ExpressionInterpreter {
   private printedCollector = '';

@@ -38,7 +38,7 @@ import {
 } from '../ast/samlang-expressions';
 import type { ModuleErrorCollector } from '../errors';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
-import {
+import type {
   ExpressionContext,
   NestedExprContext,
   LiteralExprContext,
@@ -70,7 +70,7 @@ import {
   NoArgFunExprContext,
   StatementBlockExprContext,
 } from './generated/PLParser';
-import { PLVisitor } from './generated/PLVisitor';
+import type { PLVisitor } from './generated/PLVisitor';
 import StatementBlockBuilder from './parser-statement-block-builder';
 import typeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';

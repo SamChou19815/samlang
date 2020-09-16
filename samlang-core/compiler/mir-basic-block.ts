@@ -8,7 +8,7 @@ import {
   MIR_LABEL,
   MIR_JUMP,
 } from '../ast/mir-nodes';
-import MidIRResourceAllocator from './mir-resource-allocator';
+import type MidIRResourceAllocator from './mir-resource-allocator';
 
 export interface ReadonlyMidIRBasicBlockWithoutPointers {
   readonly label: string;

@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 
 import parseSamlangProjectConfiguration from './configuration-parser';
-import { SamlangProjectConfiguration } from './configuration-type';
+import type { SamlangProjectConfiguration } from './configuration-type';
 
 // Used for mock.
 type ConfigurationLoader = {

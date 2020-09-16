@@ -1,14 +1,18 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
 import { UndecidedTypes } from '../ast/common-nodes';
-import { SamlangValStatement, StatementBlock, SamlangExpression } from '../ast/samlang-expressions';
+import type {
+  SamlangValStatement,
+  StatementBlock,
+  SamlangExpression,
+} from '../ast/samlang-expressions';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
-import {
+import type {
   ExpressionContext,
   StatementBlockContext,
   ValStatementContext,
 } from './generated/PLParser';
-import { PLVisitor } from './generated/PLVisitor';
+import type { PLVisitor } from './generated/PLVisitor';
 import patternBuilder from './parser-pattern-builder';
 import typeBuilder from './parser-type-builder';
 import { contextRange } from './parser-util';

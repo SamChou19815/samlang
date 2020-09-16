@@ -2,7 +2,7 @@ import { spawnSync } from 'child_process';
 import { lstatSync, readdirSync, readFileSync, mkdirSync, writeFileSync } from 'fs';
 import { join, normalize, dirname, resolve, relative, sep } from 'path';
 
-import { SamlangProjectConfiguration } from './configuration';
+import type { SamlangProjectConfiguration } from './configuration';
 
 import {
   ModuleReference,

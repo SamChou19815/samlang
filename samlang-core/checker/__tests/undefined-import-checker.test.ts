@@ -1,5 +1,5 @@
 import { ModuleReference, Range, Sources } from '../../ast/common-nodes';
-import { SamlangModule, ClassDefinition } from '../../ast/samlang-toplevel';
+import type { SamlangModule, ClassDefinition } from '../../ast/samlang-toplevel';
 import { createGlobalErrorCollector } from '../../errors';
 import { hashMapOf } from '../../util/collections';
 import checkUndefinedImportsError from '../undefined-imports-checker';

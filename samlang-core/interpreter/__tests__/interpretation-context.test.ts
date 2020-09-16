@@ -1,7 +1,7 @@
 import { Range, Position } from '../..';
 import { EXPRESSION_TRUE } from '../../ast/samlang-expressions';
 import { EMPTY, ClassValue } from '../interpretation-context';
-import { FunctionValue, Value } from '../value';
+import type { FunctionValue, Value } from '../value';
 
 it('empty context equality check', () => {
   expect(EMPTY).toEqual(EMPTY);

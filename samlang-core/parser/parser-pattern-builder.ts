@@ -9,7 +9,7 @@ import type {
   WildCardPattern,
 } from '../ast/samlang-pattern';
 import { isNotNull, assertNotNull } from '../util/type-assertions';
-import {
+import type {
   TuplePatternContext,
   ObjectPatternContext,
   RawVarContext,
@@ -17,7 +17,7 @@ import {
   VariablePatternContext,
   WildcardPatternContext,
 } from './generated/PLParser';
-import { PLVisitor } from './generated/PLVisitor';
+import type { PLVisitor } from './generated/PLVisitor';
 import { tokenRange, contextRange } from './parser-util';
 
 class FieldNameBuilder

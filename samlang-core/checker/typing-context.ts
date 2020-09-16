@@ -6,7 +6,7 @@ import {
   ModuleReference,
 } from '../ast/common-nodes';
 import type { FieldType, TypeDefinition } from '../ast/samlang-toplevel';
-import { HashMap, ReadonlyHashMap } from '../util/collections';
+import type { HashMap, ReadonlyHashMap } from '../util/collections';
 import { assertNotNull } from '../util/type-assertions';
 import replaceTypeIdentifier from './type-identifier-replacer';
 import { undecideTypeParameters } from './type-undecider';

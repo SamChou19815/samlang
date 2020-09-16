@@ -13,7 +13,7 @@ import {
   MIR_LABEL,
   MIR_CJUMP_FALLTHROUGH,
 } from '../ast/mir-nodes';
-import OptimizationResourceAllocator from './optimization-resource-allocator';
+import type OptimizationResourceAllocator from './optimization-resource-allocator';
 import { optimizeIrWithSimpleOptimization } from './simple-optimizations';
 
 /** The threshold max tolerable cost of inlining.  */

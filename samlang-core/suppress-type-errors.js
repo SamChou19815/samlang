@@ -5,3 +5,4 @@ const suppress = (filename) =>
 
 suppress('parser/generated/PLLexer.ts');
 suppress('parser/generated/PLParser.ts');
+suppress('parser/generated/PLVisitor.ts');

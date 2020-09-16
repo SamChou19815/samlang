@@ -1,4 +1,4 @@
-import { SamlangProjectConfiguration } from './configuration-type';
+import type { SamlangProjectConfiguration } from './configuration-type';
 
 const parseSamlangProjectConfiguration = (
   configurationString: string

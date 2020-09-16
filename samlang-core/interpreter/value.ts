@@ -1,5 +1,5 @@
-import { SamlangExpression } from '../ast/samlang-expressions';
-import { InterpretationContext } from './interpretation-context';
+import type { SamlangExpression } from '../ast/samlang-expressions';
+import type { InterpretationContext } from './interpretation-context';
 
 export type Value =
   | UnitValue

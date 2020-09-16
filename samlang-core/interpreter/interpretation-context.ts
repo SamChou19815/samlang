@@ -1,4 +1,4 @@
-import { FunctionValue, Value } from './value';
+import type { FunctionValue, Value } from './value';
 
 /**
  * Context for interpretation. It stores the previously computed values and references.

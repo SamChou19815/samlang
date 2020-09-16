@@ -1,6 +1,6 @@
 import { Range, Position } from '../..';
 import { EXPRESSION_TRUE } from '../../ast/samlang-expressions';
-import { Value } from '../value';
+import type { Value } from '../value';
 
 it('value equality test', () => {
   expect({ type: 'unit' }).toEqual({ type: 'unit' });
