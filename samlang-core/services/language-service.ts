@@ -1,11 +1,4 @@
 import {
-  DependencyTracker,
-  GlobalTypingContext,
-  MemberTypeInformation,
-  typeCheckSources,
-  typeCheckSourcesIncrementally,
-} from '../checker';
-import {
   ReadOnlyLocationLookup,
   LocationLookup,
   SamlangExpressionLocationLookupBuilder,
@@ -22,6 +15,13 @@ import {
 } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import {
+  DependencyTracker,
+  GlobalTypingContext,
+  MemberTypeInformation,
+  typeCheckSources,
+  typeCheckSourcesIncrementally,
+} from 'samlang-core-checker';
 import {
   ReadonlyGlobalErrorCollector,
   CompileTimeError,
