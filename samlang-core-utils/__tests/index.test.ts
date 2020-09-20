@@ -1,4 +1,11 @@
 import {
+  MIN_I32_VALUE,
+  MAX_I32_VALUE,
+  bigIntIsWithin32BitIntegerRange,
+  logTwo,
+  isPowerOfTwo,
+  isNotNull,
+  assertNotNull,
   Hashable,
   mapOf,
   setOf,
@@ -8,7 +15,51 @@ import {
   mapEquals,
   hashMapEquals,
   setEquals,
-} from '../collections';
+  UnionFind,
+} from '..';
+
+it('bigIntIsWithin32BitIntegerRange test', () => {
+  expect(bigIntIsWithin32BitIntegerRange(BigInt(-21474836480))).toBeFalsy();
+  expect(bigIntIsWithin32BitIntegerRange(MIN_I32_VALUE)).toBeTruthy();
+  expect(bigIntIsWithin32BitIntegerRange(BigInt(0))).toBeTruthy();
+  expect(bigIntIsWithin32BitIntegerRange(MAX_I32_VALUE)).toBeTruthy();
+  expect(bigIntIsWithin32BitIntegerRange(BigInt(21474836470))).toBeFalsy();
+});
+
+it('logTwo, isPowerOfTwo test', () => {
+  expect(isPowerOfTwo(BigInt(0))).toBeFalsy();
+  expect(isPowerOfTwo(BigInt(1))).toBeTruthy();
+  expect(isPowerOfTwo(BigInt(2))).toBeTruthy();
+  expect(isPowerOfTwo(BigInt(3))).toBeFalsy();
+  expect(isPowerOfTwo(BigInt(4))).toBeTruthy();
+  expect(isPowerOfTwo(BigInt(5))).toBeFalsy();
+  expect(isPowerOfTwo(BigInt(6))).toBeFalsy();
+  expect(isPowerOfTwo(BigInt(7))).toBeFalsy();
+  expect(isPowerOfTwo(BigInt(8))).toBeTruthy();
+
+  expect(logTwo(BigInt(1))).toBe(0);
+  expect(logTwo(BigInt(2))).toBe(1);
+  expect(logTwo(BigInt(4))).toBe(2);
+  expect(logTwo(BigInt(8))).toBe(3);
+  expect(logTwo(BigInt(16))).toBe(4);
+  expect(logTwo(BigInt(65536))).toBe(16);
+});
+
+it('isNotNull tests', () => {
+  expect(isNotNull(2)).toBeTruthy();
+  expect(isNotNull('2')).toBeTruthy();
+  expect(isNotNull([3])).toBeTruthy();
+  expect(isNotNull(null)).toBeFalsy();
+  expect(isNotNull(undefined)).toBeFalsy();
+});
+
+it('assertNotNull tests', () => {
+  assertNotNull(2);
+  assertNotNull('2');
+  assertNotNull([3]);
+  expect(() => assertNotNull(null)).toThrow();
+  expect(() => assertNotNull(undefined)).toThrow();
+});
 
 it('ReadOnly map and set tests', () => {
   expect(mapOf().size).toBe(0);
@@ -131,4 +182,59 @@ it('setEquals tests', () => {
   expect(setEquals(new Set(), new Set([1]))).toBeFalsy();
   expect(setEquals(new Set([2]), new Set([1]))).toBeFalsy();
   expect(setEquals(new Set([1]), new Set([1]))).toBeTruthy();
+});
+
+it('basic methods test', () => {
+  const unionFind = new UnionFind();
+  unionFind.getParent(0);
+  unionFind.getTreeSize(1);
+  unionFind.link(2, 3);
+  unionFind.link(1, 3);
+  unionFind.link(1, 1);
+});
+
+it('disjoint test', () => {
+  const unionFind = new UnionFind();
+  unionFind.link(1, 2);
+  unionFind.link(3, 4);
+  expect(unionFind.isLinked(1, 2)).toBeTruthy();
+  expect(unionFind.isLinked(2, 1)).toBeTruthy();
+  expect(unionFind.isLinked(1, 2)).toBeTruthy();
+  expect(unionFind.isLinked(3, 4)).toBeTruthy();
+  expect(unionFind.isLinked(4, 3)).toBeTruthy();
+  expect(unionFind.isLinked(1, 3)).toBeFalsy();
+  expect(unionFind.isLinked(1, 4)).toBeFalsy();
+  expect(unionFind.isLinked(3, 1)).toBeFalsy();
+  expect(unionFind.isLinked(4, 1)).toBeFalsy();
+  expect(unionFind.isLinked(2, 3)).toBeFalsy();
+  expect(unionFind.isLinked(2, 4)).toBeFalsy();
+  expect(unionFind.isLinked(3, 2)).toBeFalsy();
+  expect(unionFind.isLinked(4, 2)).toBeFalsy();
+});
+
+it('chain test', () => {
+  const unionFind = new UnionFind();
+  unionFind.link(1, 2);
+  unionFind.link(3, 4);
+  unionFind.link(4, 1);
+  for (let i = 1; i <= 4; i += 1) {
+    for (let j = 1; j <= 4; j += 1) {
+      expect(unionFind.isLinked(i, j)).toBeTruthy();
+    }
+  }
+  expect(unionFind.isLinked(1, 5)).toBeFalsy();
+  expect(unionFind.isLinked(5, 1)).toBeFalsy();
+});
+
+it('stress test', () => {
+  const unionFind = new UnionFind();
+  for (let i = 0; i < 10000; i += 1) {
+    unionFind.link(i, i + 1);
+  }
+  for (let i = 20000; i < 30000; i += 1) {
+    unionFind.link(i, i + 1);
+  }
+  expect(unionFind.isLinked(0, 10000)).toBeTruthy();
+  expect(unionFind.isLinked(20000, 30000)).toBeTruthy();
+  expect(unionFind.isLinked(41, 11213)).toBeFalsy();
 });
