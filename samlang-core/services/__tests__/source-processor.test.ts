@@ -1,7 +1,7 @@
-import { assemblyProgramToString } from '../../ast/asm-program';
-import { ModuleReference } from '../../ast/common-nodes';
 import { checkSources, lowerSourcesToAssemblyPrograms } from '../source-processor';
 
+import { assemblyProgramToString } from 'samlang-core-ast/asm-program';
+import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { assertNotNull } from 'samlang-core-utils';
 
 it('hello world processor test', () => {

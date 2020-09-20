@@ -1,14 +1,3 @@
-import {
-  Type,
-  IdentifierType,
-  FunctionType,
-  prettyPrintType,
-  Position,
-  Range,
-  ModuleReference,
-} from '../ast/common-nodes';
-import type { SamlangExpression } from '../ast/samlang-expressions';
-import type { SamlangModule } from '../ast/samlang-toplevel';
 import { GlobalTypingContext, typeCheckSources, typeCheckSourcesIncrementally } from '../checker';
 // eslint-disable-next-line import/no-internal-modules
 import DependencyTracker from '../checker/dependency-tracker';
@@ -26,6 +15,17 @@ import {
   SamlangExpressionLocationLookupBuilder,
 } from './location-service';
 
+import {
+  Type,
+  IdentifierType,
+  FunctionType,
+  prettyPrintType,
+  Position,
+  Range,
+  ModuleReference,
+} from 'samlang-core-ast/common-nodes';
+import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
+import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { HashMap, hashMapOf, hashSetOf, assertNotNull } from 'samlang-core-utils';
 
 export class LanguageServiceState {

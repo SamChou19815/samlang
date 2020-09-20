@@ -1,3 +1,5 @@
+import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
+
 import type {
   AssemblyConst,
   AssemblyRegister,
@@ -5,10 +7,9 @@ import type {
   AssemblyConstOrRegister,
   AssemblyRegisterOrMemory,
   AssemblyArgument,
-} from '../ast/asm-arguments';
-import type { AssemblyInstruction } from '../ast/asm-instructions';
-import type { MidIRExpression } from '../ast/mir-nodes';
-import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
+} from 'samlang-core-ast/asm-arguments';
+import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
+import type { MidIRExpression } from 'samlang-core-ast/mir-nodes';
 
 const estimateCostFromInstructions = (instructions: readonly AssemblyInstruction[]): number => {
   let cost = 0;

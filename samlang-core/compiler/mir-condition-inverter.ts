@@ -4,7 +4,7 @@ import {
   MIR_ZERO,
   MIR_ONE,
   MIR_OP,
-} from '../ast/mir-nodes';
+} from 'samlang-core-ast/mir-nodes';
 
 /**
  * Invert the condition in the most efficient way.

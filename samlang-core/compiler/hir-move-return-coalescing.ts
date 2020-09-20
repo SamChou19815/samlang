@@ -1,4 +1,4 @@
-import { HighIRStatement, HIR_IF_ELSE, HIR_RETURN } from '../ast/hir-expressions';
+import { HighIRStatement, HIR_IF_ELSE, HIR_RETURN } from 'samlang-core-ast/hir-expressions';
 
 /**
  * @param statements A full list of statements.

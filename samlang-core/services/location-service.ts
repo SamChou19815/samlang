@@ -5,10 +5,9 @@ import {
   Range,
   ModuleReference,
   Location,
-} from '../ast/common-nodes';
-import { SamlangExpression, EXPRESSION_VARIABLE } from '../ast/samlang-expressions';
-import type { SamlangModule } from '../ast/samlang-toplevel';
-
+} from 'samlang-core-ast/common-nodes';
+import { SamlangExpression, EXPRESSION_VARIABLE } from 'samlang-core-ast/samlang-expressions';
+import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { HashMap, hashMapOf, assertNotNull } from 'samlang-core-utils';
 
 export interface ReadOnlyLocationLookup<E> {

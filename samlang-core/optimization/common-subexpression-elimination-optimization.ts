@@ -1,9 +1,14 @@
 import analyzeAvailableExpressionsComingOutAtEachStatement, {
   MidIRExpressionWrapper,
 } from '../analysis/available-expressions-analysis';
-import { MidIRExpression, MidIRStatement, MIR_TEMP, MIR_MOVE_TEMP } from '../ast/mir-nodes';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
+import {
+  MidIRExpression,
+  MidIRStatement,
+  MIR_TEMP,
+  MIR_MOVE_TEMP,
+} from 'samlang-core-ast/mir-nodes';
 import {
   ReadonlyHashMap,
   ReadonlyHashSet,

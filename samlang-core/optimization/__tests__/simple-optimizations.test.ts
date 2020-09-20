@@ -1,4 +1,9 @@
-import { RAX, RBX } from '../../ast/asm-arguments';
+import {
+  optimizeIrWithSimpleOptimization,
+  optimizeAssemblyWithSimpleOptimization,
+} from '../simple-optimizations';
+
+import { RAX, RBX } from 'samlang-core-ast/asm-arguments';
 import {
   AssemblyInstruction,
   assemblyInstructionToString,
@@ -7,7 +12,7 @@ import {
   ASM_RET,
   ASM_LABEL,
   ASM_COMMENT,
-} from '../../ast/asm-instructions';
+} from 'samlang-core-ast/asm-instructions';
 import {
   MidIRStatement,
   midIRStatementToString,
@@ -17,11 +22,7 @@ import {
   MIR_CJUMP_FALLTHROUGH,
   MIR_RETURN,
   MIR_TEMP,
-} from '../../ast/mir-nodes';
-import {
-  optimizeIrWithSimpleOptimization,
-  optimizeAssemblyWithSimpleOptimization,
-} from '../simple-optimizations';
+} from 'samlang-core-ast/mir-nodes';
 
 const optimizeIRAndConvertToString = (midIRStatements: readonly MidIRStatement[]): string =>
   optimizeIrWithSimpleOptimization(midIRStatements).map(midIRStatementToString).join('\n');

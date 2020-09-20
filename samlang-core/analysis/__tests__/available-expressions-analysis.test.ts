@@ -1,3 +1,5 @@
+import analyzeAvailableExpressionsComingOutAtEachStatement from '../available-expressions-analysis';
+
 import {
   MIR_ONE,
   MIR_TEMP,
@@ -10,8 +12,7 @@ import {
   MIR_LABEL,
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
-} from '../../ast/mir-nodes';
-import analyzeAvailableExpressionsComingOutAtEachStatement from '../available-expressions-analysis';
+} from 'samlang-core-ast/mir-nodes';
 
 it('analyzeLocalValueNumberingAssignment test 1', () => {
   const localValueNumberingResults = analyzeAvailableExpressionsComingOutAtEachStatement([

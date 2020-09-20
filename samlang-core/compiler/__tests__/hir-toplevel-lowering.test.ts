@@ -1,3 +1,5 @@
+import compileSamlangSourcesToHighIRSources from '../hir-toplevel-lowering';
+
 import {
   boolType,
   intType,
@@ -6,15 +8,15 @@ import {
   unitType,
   Range,
   ModuleReference,
-} from '../../ast/common-nodes';
-import { MUL, MINUS, EQ } from '../../ast/common-operators';
+} from 'samlang-core-ast/common-nodes';
+import { MUL, MINUS, EQ } from 'samlang-core-ast/common-operators';
 import {
   HIR_VARIABLE,
   HIR_WHILE_TRUE,
   HIR_FUNCTION_CALL,
   HIR_NAME,
-} from '../../ast/hir-expressions';
-import type { HighIRModule } from '../../ast/hir-toplevel';
+} from 'samlang-core-ast/hir-expressions';
+import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import {
   EXPRESSION_INT,
   EXPRESSION_VARIABLE,
@@ -23,10 +25,8 @@ import {
   EXPRESSION_BINARY,
   EXPRESSION_IF_ELSE,
   EXPRESSION_CLASS_MEMBER,
-} from '../../ast/samlang-expressions';
-import type { SamlangModule } from '../../ast/samlang-toplevel';
-import compileSamlangSourcesToHighIRSources from '../hir-toplevel-lowering';
-
+} from 'samlang-core-ast/samlang-expressions';
+import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { mapOf } from 'samlang-core-utils';
 
 const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Dummy') });

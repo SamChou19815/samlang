@@ -1,11 +1,20 @@
+import { compileSamlangSourcesToHighIRSources } from '../../compiler';
+import { checkSources } from '../../services/source-processor';
+import {
+  highIRModuleToJSString,
+  highIRStatementToString,
+  highIRFunctionToString,
+  highIRExpressionToString,
+} from '../printer-js';
+
 import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_THROW,
-} from '../../ast/common-names';
-import { ModuleReference } from '../../ast/common-nodes';
+} from 'samlang-core-ast/common-names';
+import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import {
   HIR_IF_ELSE,
   HIR_BINARY,
@@ -20,16 +29,7 @@ import {
   HIR_INDEX_ACCESS,
   HIR_VARIABLE,
   HIR_WHILE_TRUE,
-} from '../../ast/hir-expressions';
-import { compileSamlangSourcesToHighIRSources } from '../../compiler';
-import { checkSources } from '../../services/source-processor';
-import {
-  highIRModuleToJSString,
-  highIRStatementToString,
-  highIRFunctionToString,
-  highIRExpressionToString,
-} from '../printer-js';
-
+} from 'samlang-core-ast/hir-expressions';
 import { assertNotNull } from 'samlang-core-utils';
 
 it('compile hello world to JS integration test', () => {

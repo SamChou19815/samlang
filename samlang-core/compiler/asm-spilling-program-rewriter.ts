@@ -1,3 +1,6 @@
+import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
+import { PRE_COLORED_REGISTERS } from './asm-register-allocation-utils';
+
 import {
   AssemblyRegister,
   AssemblyMemory,
@@ -8,7 +11,7 @@ import {
   ASM_CONST,
   ASM_MEM_REG_WITH_CONST,
   ASM_MEM,
-} from '../ast/asm-arguments';
+} from 'samlang-core-ast/asm-arguments';
 import {
   AssemblyInstruction,
   ASM_MOVE_CONST_TO_REG,
@@ -23,9 +26,7 @@ import {
   ASM_IMUL,
   ASM_IDIV,
   ASM_PUSH,
-} from '../ast/asm-instructions';
-import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
-import { PRE_COLORED_REGISTERS } from './asm-register-allocation-utils';
+} from 'samlang-core-ast/asm-instructions';
 
 /** The program rewriter after spilling temporaries into stack. */
 export default class AssemblySpillingProgramWriter {

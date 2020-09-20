@@ -1,4 +1,9 @@
-import { RSP, RBP, ASM_CONST, RDI, RSI, RDX, RCX, R8, R9 } from '../ast/asm-arguments';
+import { optimizeAssemblyWithSimpleOptimization } from '../optimization/simple-optimizations';
+import getAssemblyTilingForMidIRStatements from './asm-dp-tiling';
+import AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
+import AssemblyRegisterAllocator from './asm-register-allocator';
+
+import { RSP, RBP, ASM_CONST, RDI, RSI, RDX, RCX, R8, R9 } from 'samlang-core-ast/asm-arguments';
 import {
   AssemblyInstruction,
   ASM_MOVE_REG,
@@ -8,8 +13,8 @@ import {
   ASM_POP_RBP,
   ASM_COMMENT,
   ASM_LABEL,
-} from '../ast/asm-instructions';
-import type { AssemblyProgram } from '../ast/asm-program';
+} from 'samlang-core-ast/asm-instructions';
+import type { AssemblyProgram } from 'samlang-core-ast/asm-program';
 import {
   MidIRCompilationUnit,
   MidIRFunction,
@@ -20,11 +25,7 @@ import {
   MIR_TEMP,
   MIR_IMMUTABLE_MEM,
   MIR_OP,
-} from '../ast/mir-nodes';
-import { optimizeAssemblyWithSimpleOptimization } from '../optimization/simple-optimizations';
-import getAssemblyTilingForMidIRStatements from './asm-dp-tiling';
-import AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
-import AssemblyRegisterAllocator from './asm-register-allocator';
+} from 'samlang-core-ast/mir-nodes';
 
 /** Generate prologue and epilogue of functions according System-V calling conventions. */
 const fixCallingConvention = (

@@ -1,6 +1,9 @@
-import { ENCODED_FUNCTION_NAME_MALLOC } from '../ast/common-names';
-import type { GlobalVariable } from '../ast/common-nodes';
-import type { HighIRExpression, HighIRStatement } from '../ast/hir-expressions';
+import createMidIRFlexibleOrderOperatorNode from './mir-flexible-op';
+import type MidIRResourceAllocator from './mir-resource-allocator';
+
+import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
+import type { GlobalVariable } from 'samlang-core-ast/common-nodes';
+import type { HighIRExpression, HighIRStatement } from 'samlang-core-ast/hir-expressions';
 import {
   MidIRExpression,
   // eslint-disable-next-line camelcase
@@ -18,9 +21,7 @@ import {
   MIR_LABEL,
   MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
   MIR_RETURN,
-} from '../ast/mir-nodes';
-import createMidIRFlexibleOrderOperatorNode from './mir-flexible-op';
-import type MidIRResourceAllocator from './mir-resource-allocator';
+} from 'samlang-core-ast/mir-nodes';
 
 const mangleVariableForMIR = (variable: string): string => `_${variable}`;
 

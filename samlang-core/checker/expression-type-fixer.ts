@@ -1,3 +1,6 @@
+import type { ReadOnlyTypeResolution } from './type-resolution';
+import resolveType from './type-resolver';
+
 import {
   Type,
   IdentifierType,
@@ -9,11 +12,8 @@ import {
   stringType,
   isTheSameType,
   prettyPrintType,
-} from '../ast/common-nodes';
-import type { SamlangExpression } from '../ast/samlang-expressions';
-import type { ReadOnlyTypeResolution } from './type-resolution';
-import resolveType from './type-resolver';
-
+} from 'samlang-core-ast/common-nodes';
+import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import { assertNotNull } from 'samlang-core-utils';
 
 const checkedZip = <E1, E2>(

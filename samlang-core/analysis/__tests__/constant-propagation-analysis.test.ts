@@ -1,3 +1,5 @@
+import analyzePropagatedConstants from '../constant-propagation-analysis';
+
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -10,8 +12,7 @@ import {
   MIR_CJUMP_FALLTHROUGH,
   MIR_JUMP,
   MIR_LABEL,
-} from '../../ast/mir-nodes';
-import analyzePropagatedConstants from '../constant-propagation-analysis';
+} from 'samlang-core-ast/mir-nodes';
 
 it('analyzePropagatedConstants test 1', () => {
   expect(

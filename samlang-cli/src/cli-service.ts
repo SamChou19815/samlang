@@ -5,14 +5,13 @@ import { join, normalize, dirname, resolve, relative, sep } from 'path';
 import type { SamlangProjectConfiguration } from './configuration';
 
 import {
-  ModuleReference,
-  Sources,
-  SamlangModule,
-  assemblyProgramToString,
   compileSamlangSourcesToHighIRSources,
   lowerSourcesToAssemblyPrograms,
   prettyPrintHighIRModuleAsJS,
 } from '@dev-sam/samlang-core';
+import { assemblyProgramToString } from 'samlang-core-ast/asm-program';
+import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 
 const walk = (startPath: string, visitor: (file: string) => void): void => {
   const recursiveVisit = (path: string): void => {

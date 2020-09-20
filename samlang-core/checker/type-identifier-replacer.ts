@@ -1,4 +1,4 @@
-import { Type, identifierType, tupleType, functionType } from '../ast/common-nodes';
+import { Type, identifierType, tupleType, functionType } from 'samlang-core-ast/common-nodes';
 
 const replaceTypeIdentifier = (
   type: Type,

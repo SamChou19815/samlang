@@ -1,4 +1,10 @@
-import { Type, UndecidedType, identifierType, tupleType, functionType } from '../ast/common-nodes';
+import {
+  Type,
+  UndecidedType,
+  identifierType,
+  tupleType,
+  functionType,
+} from 'samlang-core-ast/common-nodes';
 
 const resolveType = (
   type: Type,

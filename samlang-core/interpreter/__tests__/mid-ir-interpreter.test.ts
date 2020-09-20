@@ -1,3 +1,5 @@
+import interpretMidIRCompilationUnit from '../mid-ir-interpreter';
+
 import {
   ENCODED_FUNCTION_NAME_MALLOC,
   ENCODED_FUNCTION_NAME_THROW,
@@ -6,7 +8,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_COMPILED_PROGRAM_MAIN,
-} from '../../ast/common-names';
+} from 'samlang-core-ast/common-names';
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -23,8 +25,7 @@ import {
   MIR_LABEL,
   MIR_CJUMP_FALLTHROUGH,
   MIR_RETURN,
-} from '../../ast/mir-nodes';
-import interpretMidIRCompilationUnit from '../mid-ir-interpreter';
+} from 'samlang-core-ast/mir-nodes';
 
 it('interpretMidIRCompilationUnit hello world test', () => {
   expect(

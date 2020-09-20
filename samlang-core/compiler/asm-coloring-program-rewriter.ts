@@ -1,3 +1,6 @@
+import type { ReadonlyAssemblyMemoryMapping } from './asm-memory-mapping';
+import { PRE_COLORED_REGISTERS } from './asm-register-allocation-utils';
+
 import {
   AssemblyRegister,
   AssemblyMemory,
@@ -6,7 +9,7 @@ import {
   AssemblyArgument,
   ASM_REG,
   ASM_MEM,
-} from '../ast/asm-arguments';
+} from 'samlang-core-ast/asm-arguments';
 import {
   AssemblyInstruction,
   ASM_MOVE_CONST_TO_REG,
@@ -24,9 +27,7 @@ import {
   ASM_SHL,
   ASM_PUSH,
   ASM_COMMENT,
-} from '../ast/asm-instructions';
-import type { ReadonlyAssemblyMemoryMapping } from './asm-memory-mapping';
-import { PRE_COLORED_REGISTERS } from './asm-register-allocation-utils';
+} from 'samlang-core-ast/asm-instructions';
 
 /** The program rewriter after coloring is finished. */
 class AssemblyColoringProgramRewriter {

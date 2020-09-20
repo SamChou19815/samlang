@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "antlr4ts": "0.5.0-alpha.3",
+    "samlang-core-ast": "workspace:0.0.1",
     "samlang-core-utils": "workspace:0.0.1"
   }
 }

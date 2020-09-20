@@ -1,3 +1,6 @@
+import type OptimizationResourceAllocator from './optimization-resource-allocator';
+import { optimizeIrWithSimpleOptimization } from './simple-optimizations';
+
 import {
   MidIRExpression,
   MidIRStatement,
@@ -12,9 +15,7 @@ import {
   MIR_JUMP,
   MIR_LABEL,
   MIR_CJUMP_FALLTHROUGH,
-} from '../ast/mir-nodes';
-import type OptimizationResourceAllocator from './optimization-resource-allocator';
-import { optimizeIrWithSimpleOptimization } from './simple-optimizations';
+} from 'samlang-core-ast/mir-nodes';
 
 /** The threshold max tolerable cost of inlining.  */
 const INLINE_THRESHOLD = 25;

@@ -1,3 +1,9 @@
+import { createGlobalErrorCollector } from '../../errors';
+import { parseSamlangExpressionFromText } from '../../parser';
+import typeCheckExpression from '../expression-type-checker';
+import TypeResolution from '../type-resolution';
+import { AccessibleGlobalTypingContext, LocalTypingContext } from '../typing-context';
+
 import {
   Type,
   unitType as unit,
@@ -10,8 +16,8 @@ import {
   Position,
   Range,
   ModuleReference,
-} from '../../ast/common-nodes';
-import { PLUS } from '../../ast/common-operators';
+} from 'samlang-core-ast/common-nodes';
+import { PLUS } from 'samlang-core-ast/common-operators';
 import {
   SamlangExpression,
   EXPRESSION_INT,
@@ -21,13 +27,7 @@ import {
   EXPRESSION_IF_ELSE,
   EXPRESSION_STATEMENT_BLOCK,
   EXPRESSION_LAMBDA,
-} from '../../ast/samlang-expressions';
-import { createGlobalErrorCollector } from '../../errors';
-import { parseSamlangExpressionFromText } from '../../parser';
-import typeCheckExpression from '../expression-type-checker';
-import TypeResolution from '../type-resolution';
-import { AccessibleGlobalTypingContext, LocalTypingContext } from '../typing-context';
-
+} from 'samlang-core-ast/samlang-expressions';
 import { assertNotNull } from 'samlang-core-utils';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);

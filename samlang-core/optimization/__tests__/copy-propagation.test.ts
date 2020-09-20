@@ -1,3 +1,5 @@
+import optimizeIRWithCopyPropagation from '../copy-propagation-optimization';
+
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -13,8 +15,7 @@ import {
   MIR_RETURN,
   midIRStatementToString,
   MIR_OP,
-} from '../../ast/mir-nodes';
-import optimizeIRWithCopyPropagation from '../copy-propagation-optimization';
+} from 'samlang-core-ast/mir-nodes';
 
 it('optimizeIRWithCopyPropagation test 1', () => {
   expect(

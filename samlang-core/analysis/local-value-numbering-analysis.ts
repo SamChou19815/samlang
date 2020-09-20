@@ -1,12 +1,12 @@
+import ControlFlowGraph, { ControlFlowGraphNode } from './control-flow-graph';
+
 import {
   MidIRTemporaryExpression,
   MidIRExpression,
   midIRExpressionToString,
   MIR_TEMP,
   MidIRStatement,
-} from '../ast/mir-nodes';
-import ControlFlowGraph, { ControlFlowGraphNode } from './control-flow-graph';
-
+} from 'samlang-core-ast/mir-nodes';
 import { assertNotNull } from 'samlang-core-utils';
 
 class LocalNumberingAllocator {

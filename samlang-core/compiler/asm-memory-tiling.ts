@@ -1,4 +1,10 @@
 import {
+  AssemblyMemoryTilingResult,
+  AssemblyTilingServiceBasic,
+  createAssemblyMemoryTilingResult,
+} from './asm-tiling-results';
+
+import {
   AssemblyMemoryMultipleOf,
   RIP,
   ASM_CONST,
@@ -11,15 +17,9 @@ import {
   ASM_MEM_REG_WITH_MUL,
   ASM_MEM_MUL_WITH_CONST,
   ASM_MEM,
-} from '../ast/asm-arguments';
-import { AssemblyInstruction, ASM_COMMENT } from '../ast/asm-instructions';
-import type { MidIRExpression, MidIRBinaryExpression } from '../ast/mir-nodes';
-import {
-  AssemblyMemoryTilingResult,
-  AssemblyTilingServiceBasic,
-  createAssemblyMemoryTilingResult,
-} from './asm-tiling-results';
-
+} from 'samlang-core-ast/asm-arguments';
+import { AssemblyInstruction, ASM_COMMENT } from 'samlang-core-ast/asm-instructions';
+import type { MidIRExpression, MidIRBinaryExpression } from 'samlang-core-ast/mir-nodes';
 import { bigIntIsWithin32BitIntegerRange, assertNotNull } from 'samlang-core-utils';
 
 const getTilingResultWithLowerCost = (

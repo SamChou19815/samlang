@@ -14,14 +14,8 @@ import {
 import { collectSources } from './cli-service';
 import type { SamlangProjectConfiguration } from './configuration';
 
-import {
-  LanguageServiceState,
-  LanguageServices,
-  Position,
-  Range,
-  ModuleReference,
-  prettyPrintType,
-} from '@dev-sam/samlang-core';
+import { LanguageServiceState, LanguageServices } from '@dev-sam/samlang-core';
+import { Position, Range, ModuleReference, prettyPrintType } from 'samlang-core-ast/common-nodes';
 
 const samlangRangeToLspRange = (range: Range): LspRange => ({
   start: { line: range.start.line, character: range.start.column },

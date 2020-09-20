@@ -1,4 +1,5 @@
 import optimizeIRCompilationUnit from '..';
+
 import {
   MidIRCompilationUnit,
   MIR_ONE,
@@ -13,7 +14,7 @@ import {
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
   midIRCompilationUnitToString,
-} from '../../ast/mir-nodes';
+} from 'samlang-core-ast/mir-nodes';
 
 const compilationUnit: MidIRCompilationUnit = {
   globalVariables: [],

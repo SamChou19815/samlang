@@ -1,16 +1,16 @@
-import { Type, unitType } from '../ast/common-nodes';
+import type { ModuleErrorCollector } from '../errors';
+import type { AccessibleGlobalTypingContext, LocalTypingContext } from './typing-context';
+
+import { Type, unitType } from 'samlang-core-ast/common-nodes';
 import {
   SamlangExpression,
   SamlangValStatement,
   StatementBlock,
   EXPRESSION_PANIC,
   EXPRESSION_STRING,
-} from '../ast/samlang-expressions';
-import type { Pattern, ObjectPatternDestucturedName } from '../ast/samlang-pattern';
-import type { FieldType } from '../ast/samlang-toplevel';
-import type { ModuleErrorCollector } from '../errors';
-import type { AccessibleGlobalTypingContext, LocalTypingContext } from './typing-context';
-
+} from 'samlang-core-ast/samlang-expressions';
+import type { Pattern, ObjectPatternDestucturedName } from 'samlang-core-ast/samlang-pattern';
+import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 export default class StatementTypeChecker {

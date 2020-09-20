@@ -1,14 +1,3 @@
-export {
-  Type,
-  prettyPrintType,
-  Position,
-  Range,
-  ModuleReference,
-  Location,
-  Sources,
-} from './ast/common-nodes';
-export type { SamlangModule } from './ast/samlang-toplevel';
-export { assemblyProgramToString } from './ast/asm-program';
 export { compileSamlangSourcesToHighIRSources } from './compiler';
 export { ReadonlyGlobalErrorCollector, createGlobalErrorCollector } from './errors';
 export { default as interpretSamlangModule } from './interpreter/source-level-interpreter';

@@ -1,5 +1,7 @@
 /* eslint-disable no-param-reassign */
 
+import PanicException from './panic-exception';
+
 import {
   ENCODED_FUNCTION_NAME_MALLOC,
   ENCODED_FUNCTION_NAME_THROW,
@@ -8,9 +10,12 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_COMPILED_PROGRAM_MAIN,
-} from '../ast/common-names';
-import type { MidIRExpression, MidIRFunction, MidIRCompilationUnit } from '../ast/mir-nodes';
-import PanicException from './panic-exception';
+} from 'samlang-core-ast/common-names';
+import type {
+  MidIRExpression,
+  MidIRFunction,
+  MidIRCompilationUnit,
+} from 'samlang-core-ast/mir-nodes';
 
 class StackFrame {
   private variables = new Map<string, bigint>();

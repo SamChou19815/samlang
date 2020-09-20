@@ -1,3 +1,6 @@
+import type { ReadonlyMidIRBasicBlockWithoutPointers } from '../mir-basic-block';
+import emitCanonicalMidIRStatementsFromReorderedBasicBlocks from '../mir-basic-block-optimized-emitter';
+
 import {
   midIRStatementToString,
   MIR_JUMP,
@@ -5,9 +8,7 @@ import {
   MIR_RETURN,
   MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
   MIR_ZERO,
-} from '../../ast/mir-nodes';
-import type { ReadonlyMidIRBasicBlockWithoutPointers } from '../mir-basic-block';
-import emitCanonicalMidIRStatementsFromReorderedBasicBlocks from '../mir-basic-block-optimized-emitter';
+} from 'samlang-core-ast/mir-nodes';
 
 const emitToString = (blocks: readonly ReadonlyMidIRBasicBlockWithoutPointers[]): string =>
   emitCanonicalMidIRStatementsFromReorderedBasicBlocks(blocks)

@@ -1,5 +1,4 @@
-import type { ModuleReference } from '../ast/common-nodes';
-
+import type { ModuleReference } from 'samlang-core-ast/common-nodes';
 import {
   HashMap,
   HashSet,

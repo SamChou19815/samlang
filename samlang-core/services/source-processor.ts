@@ -1,6 +1,3 @@
-import type { AssemblyProgram } from '../ast/asm-program';
-import type { ModuleReference, Sources } from '../ast/common-nodes';
-import type { SamlangModule } from '../ast/samlang-toplevel';
 import { typeCheckSources, GlobalTypingContext } from '../checker';
 import {
   compileSamlangSourcesToHighIRSources,
@@ -11,6 +8,9 @@ import { CompileTimeError, createGlobalErrorCollector } from '../errors';
 import optimizeIRCompilationUnit from '../optimization';
 import { parseSamlangModuleFromText } from '../parser';
 
+import type { AssemblyProgram } from 'samlang-core-ast/asm-program';
+import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { hashMapOf } from 'samlang-core-utils';
 
 type CheckSourcesResult = {

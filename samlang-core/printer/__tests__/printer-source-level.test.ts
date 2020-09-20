@@ -1,11 +1,14 @@
 import { prettyPrintSamlangModule } from '..';
-import { intType, Range, ModuleReference } from '../../ast/common-nodes';
-import { EXPRESSION_METHOD_ACCESS, EXPRESSION_VARIABLE } from '../../ast/samlang-expressions';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
 // eslint-disable-next-line camelcase
 import { prettyPrintSamlangExpression_EXPOSED_FOR_TESTING } from '../printer-source-level';
 
+import { intType, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
+import {
+  EXPRESSION_METHOD_ACCESS,
+  EXPRESSION_VARIABLE,
+} from 'samlang-core-ast/samlang-expressions';
 import { assertNotNull } from 'samlang-core-utils';
 
 const reprintExpression = (rawSourceWithTypeAnnotation: string, width = 40): string => {

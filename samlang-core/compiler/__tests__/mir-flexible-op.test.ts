@@ -1,5 +1,12 @@
-import { MIR_CONST, MIR_NAME, MIR_TEMP, MIR_IMMUTABLE_MEM, MIR_OP } from '../../ast/mir-nodes';
 import createMidIRFlexibleOrderOperatorNode from '../mir-flexible-op';
+
+import {
+  MIR_CONST,
+  MIR_NAME,
+  MIR_TEMP,
+  MIR_IMMUTABLE_MEM,
+  MIR_OP,
+} from 'samlang-core-ast/mir-nodes';
 
 it('createMidIRFlexibleOrderOperatorNode test', () => {
   expect(

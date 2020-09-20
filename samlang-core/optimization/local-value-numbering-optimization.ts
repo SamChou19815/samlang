@@ -1,7 +1,13 @@
 import analyzeLocalValueNumberingAssignment, {
   ReadonlyLocalNumberingInformation,
 } from '../analysis/local-value-numbering-analysis';
-import { MidIRStatement, MidIRExpression, MIR_IMMUTABLE_MEM, MIR_OP } from '../ast/mir-nodes';
+
+import {
+  MidIRStatement,
+  MidIRExpression,
+  MIR_IMMUTABLE_MEM,
+  MIR_OP,
+} from 'samlang-core-ast/mir-nodes';
 
 const rewriteMidIRExpressionWithLocalValueNumberingInformation = (
   information: ReadonlyLocalNumberingInformation,

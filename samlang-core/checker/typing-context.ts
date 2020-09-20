@@ -1,15 +1,15 @@
+import replaceTypeIdentifier from './type-identifier-replacer';
+import { undecideTypeParameters } from './type-undecider';
+import type { IdentifierTypeValidator } from './type-validator';
+
 import {
   IdentifierType,
   FunctionType,
   Type,
   identifierType,
   ModuleReference,
-} from '../ast/common-nodes';
-import type { FieldType, TypeDefinition } from '../ast/samlang-toplevel';
-import replaceTypeIdentifier from './type-identifier-replacer';
-import { undecideTypeParameters } from './type-undecider';
-import type { IdentifierTypeValidator } from './type-validator';
-
+} from 'samlang-core-ast/common-nodes';
+import type { FieldType, TypeDefinition } from 'samlang-core-ast/samlang-toplevel';
 import type { HashMap, ReadonlyHashMap } from 'samlang-core-utils';
 import { assertNotNull } from 'samlang-core-utils';
 

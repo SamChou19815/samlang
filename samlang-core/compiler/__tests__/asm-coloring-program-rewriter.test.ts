@@ -1,4 +1,14 @@
-import { ASM_CONST, ASM_REG, ASM_MEM_CONST, ASM_MEM, RAX, RBX } from '../../ast/asm-arguments';
+import assemblyInstructionColoringRewrite from '../asm-coloring-program-rewriter';
+import { AssemblyMemoryMapping } from '../asm-memory-mapping';
+
+import {
+  ASM_CONST,
+  ASM_REG,
+  ASM_MEM_CONST,
+  ASM_MEM,
+  RAX,
+  RBX,
+} from 'samlang-core-ast/asm-arguments';
 import {
   AssemblyInstruction,
   ASM_MOVE_CONST_TO_REG,
@@ -22,9 +32,7 @@ import {
   ASM_LABEL,
   ASM_COMMENT,
   assemblyInstructionToString,
-} from '../../ast/asm-instructions';
-import assemblyInstructionColoringRewrite from '../asm-coloring-program-rewriter';
-import { AssemblyMemoryMapping } from '../asm-memory-mapping';
+} from 'samlang-core-ast/asm-instructions';
 
 const mockColors = new Map([
   ['a', 'rax'],

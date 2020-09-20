@@ -1,3 +1,5 @@
+import optimizeIRWithAlgebraicSimplification from '../algebraic-optimization';
+
 import {
   MidIRStatement,
   midIRStatementToString,
@@ -15,8 +17,7 @@ import {
   MIR_RETURN,
   MIR_CJUMP_FALLTHROUGH,
   MIR_CALL_FUNCTION,
-} from '../../ast/mir-nodes';
-import optimizeIRWithAlgebraicSimplification from '../algebraic-optimization';
+} from 'samlang-core-ast/mir-nodes';
 
 const optimizeAndDumpToString = (statements: readonly MidIRStatement[]): string =>
   optimizeIRWithAlgebraicSimplification(statements).map(midIRStatementToString).join('\n');

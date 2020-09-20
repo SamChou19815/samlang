@@ -1,3 +1,9 @@
+import optimizeIRWithCommonSubExpressionElimination, {
+  // eslint-disable-next-line camelcase
+  computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING,
+} from '../common-subexpression-elimination-optimization';
+import OptimizationResourceAllocator from '../optimization-resource-allocator';
+
 import {
   MidIRStatement,
   MIR_ZERO,
@@ -13,12 +19,7 @@ import {
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
   midIRStatementToString,
-} from '../../ast/mir-nodes';
-import optimizeIRWithCommonSubExpressionElimination, {
-  // eslint-disable-next-line camelcase
-  computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING,
-} from '../common-subexpression-elimination-optimization';
-import OptimizationResourceAllocator from '../optimization-resource-allocator';
+} from 'samlang-core-ast/mir-nodes';
 
 const statements: readonly MidIRStatement[] = [
   /* 00 */ MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_ONE),

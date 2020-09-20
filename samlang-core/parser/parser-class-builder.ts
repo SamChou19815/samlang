@@ -1,15 +1,5 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
-import { functionType, Range } from '../ast/common-nodes';
-import type { SamlangExpression } from '../ast/samlang-expressions';
-import type {
-  TypeDefinition,
-  AnnotatedVariable,
-  ClassInterface,
-  ClassDefinition,
-  ClassMemberDeclaration,
-  ClassMemberDefinition,
-} from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import type {
   ClassHeaderContext,
@@ -29,6 +19,16 @@ import ExpressionBuilder from './parser-expression-builder';
 import typeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';
 
+import { functionType, Range } from 'samlang-core-ast/common-nodes';
+import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
+import type {
+  TypeDefinition,
+  AnnotatedVariable,
+  ClassInterface,
+  ClassDefinition,
+  ClassMemberDeclaration,
+  ClassMemberDefinition,
+} from 'samlang-core-ast/samlang-toplevel';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 type ModuleName = readonly [boolean, string, Range];

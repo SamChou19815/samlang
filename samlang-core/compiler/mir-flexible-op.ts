@@ -1,5 +1,5 @@
-import type { IROperator } from '../ast/common-operators';
-import { MidIRExpression, MIR_OP } from '../ast/mir-nodes';
+import type { IROperator } from 'samlang-core-ast/common-operators';
+import { MidIRExpression, MIR_OP } from 'samlang-core-ast/mir-nodes';
 
 /**
  * Compare two Mid IR expression.

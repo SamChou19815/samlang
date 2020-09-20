@@ -8,7 +8,9 @@ import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './
 import ASCII_ART_SAMLANG_LOGO from './logo';
 import startSamlangLanguageServer from './lsp';
 
-import { checkSources, Sources, SamlangModule } from '@dev-sam/samlang-core';
+import { checkSources } from '@dev-sam/samlang-core';
+import type { Sources } from 'samlang-core-ast/common-nodes';
+import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 
 const getConfiguration = (): SamlangProjectConfiguration => {
   const configuration = loadSamlangProjectConfiguration();

@@ -1,3 +1,12 @@
+import type { ModuleErrorCollector } from '../errors';
+import { ConstraintAwareChecker } from './constraint-aware-checker';
+import fixExpressionType from './expression-type-fixer';
+import StatementTypeChecker from './statement-type-checker';
+import type TypeResolution from './type-resolution';
+import { undecideFieldTypeParameters, undecideTypeParameters } from './type-undecider';
+import { validateType } from './type-validator';
+import type { LocalTypingContext, AccessibleGlobalTypingContext } from './typing-context';
+
 import {
   Type,
   IdentifierType,
@@ -9,7 +18,7 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from '../ast/common-nodes';
+} from 'samlang-core-ast/common-nodes';
 import {
   SamlangExpression,
   LiteralExpression,
@@ -37,17 +46,8 @@ import {
   EXPRESSION_FUNCTION_CALL,
   EXPRESSION_MATCH,
   EXPRESSION_LAMBDA,
-} from '../ast/samlang-expressions';
-import type { FieldType } from '../ast/samlang-toplevel';
-import type { ModuleErrorCollector } from '../errors';
-import { ConstraintAwareChecker } from './constraint-aware-checker';
-import fixExpressionType from './expression-type-fixer';
-import StatementTypeChecker from './statement-type-checker';
-import type TypeResolution from './type-resolution';
-import { undecideFieldTypeParameters, undecideTypeParameters } from './type-undecider';
-import { validateType } from './type-validator';
-import type { LocalTypingContext, AccessibleGlobalTypingContext } from './typing-context';
-
+} from 'samlang-core-ast/samlang-expressions';
+import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import { listShallowEquals, assertNotNull, isNotNull } from 'samlang-core-utils';
 
 class ExpressionTypeChecker {

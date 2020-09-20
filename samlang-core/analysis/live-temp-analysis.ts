@@ -1,7 +1,7 @@
-import type { MidIRExpression, MidIRStatement } from '../ast/mir-nodes';
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runBackwardDataflowAnalysis } from './dataflow-analysis';
 
+import type { MidIRExpression, MidIRStatement } from 'samlang-core-ast/mir-nodes';
 import { setEquals } from 'samlang-core-utils';
 
 const collectUsesFromMidIRExpression = (

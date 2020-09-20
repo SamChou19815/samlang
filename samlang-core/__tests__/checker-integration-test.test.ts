@@ -1,6 +1,7 @@
-import { ModuleReference } from '../ast/common-nodes';
 import { checkSources } from '../services/source-processor';
 import { samlangProgramCheckerTestSources } from '../test-programs';
+
+import { ModuleReference } from 'samlang-core-ast/common-nodes';
 
 const expectedErrors: readonly string[] = [
   'access-private-member.sam:12:13-12:16: [UnresolvedName]: Name `A.b` is not resolved.',

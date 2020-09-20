@@ -1,4 +1,4 @@
-import type { IROperator } from '../ast/common-operators';
+import type { IROperator } from 'samlang-core-ast/common-operators';
 
 interface BaseHighIRExpression {
   readonly __type__: string;

@@ -4,10 +4,10 @@ import {
   // eslint-disable-next-line camelcase
   typeCheckSingleModuleSource_EXPOSED_FOR_TESTING,
 } from '..';
-import { ModuleReference } from '../../ast/common-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangModuleFromText } from '../../parser';
 
+import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { mapOf, hashMapOf } from 'samlang-core-utils';
 
 it('typeCheckSources integration smoke test (passing case)', () => {

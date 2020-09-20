@@ -1,3 +1,7 @@
+import { createGlobalErrorCollector } from '../../errors';
+import { checkAndInfer, ConstraintAwareChecker } from '../constraint-aware-checker';
+import TypeResolution from '../type-resolution';
+
 import {
   unitType,
   boolType,
@@ -8,10 +12,7 @@ import {
   functionType,
   Range,
   ModuleReference,
-} from '../../ast/common-nodes';
-import { createGlobalErrorCollector } from '../../errors';
-import { checkAndInfer, ConstraintAwareChecker } from '../constraint-aware-checker';
-import TypeResolution from '../type-resolution';
+} from 'samlang-core-ast/common-nodes';
 
 it('t1=primitive type', () => {
   const resolution = new TypeResolution();

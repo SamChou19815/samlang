@@ -1,11 +1,12 @@
+import collectUndecidedTypeIndices from '../undecided-type-collector';
+
 import {
   unitType,
   boolType,
   tupleType,
   identifierType,
   functionType,
-} from '../../ast/common-nodes';
-import collectUndecidedTypeIndices from '../undecided-type-collector';
+} from 'samlang-core-ast/common-nodes';
 
 it('can collect all undecided types', () => {
   expect(

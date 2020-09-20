@@ -1,4 +1,6 @@
-import { ENCODED_COMPILED_PROGRAM_MAIN } from '../../ast/common-names';
+import analyzeUsedFunctionNames from '../used-name-analysis';
+
+import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
 import {
   HIR_ZERO,
   HIR_NAME,
@@ -10,8 +12,7 @@ import {
   HIR_WHILE_TRUE,
   HIR_IF_ELSE,
   HIR_BINARY,
-} from '../../ast/hir-expressions';
-import analyzeUsedFunctionNames from '../used-name-analysis';
+} from 'samlang-core-ast/hir-expressions';
 
 it('analyzeUsedFunctionNames test', () => {
   expect(

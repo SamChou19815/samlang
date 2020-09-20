@@ -1,4 +1,4 @@
-import { HighIRStatement, HIR_IF_ELSE } from '../ast/hir-expressions';
+import { HighIRStatement, HIR_IF_ELSE } from 'samlang-core-ast/hir-expressions';
 
 const eliminateUselessEndingMoveForHighIRStatementsHelper = (
   statements: readonly HighIRStatement[],

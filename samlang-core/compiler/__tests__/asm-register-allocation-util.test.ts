@@ -1,9 +1,10 @@
-import { RBP, ASM_CONST, ASM_MEM_REG_WITH_CONST } from '../../ast/asm-arguments';
-import { assemblyInstructionToString } from '../../ast/asm-instructions';
 import {
   rewriteAssemblyInstructionsWithCalleeSavedRegistersMoves,
   reorganizeSpilledVariableMappingsToRemoveUnusedCalleeSavedRegisterMappings,
 } from '../asm-register-allocation-utils';
+
+import { RBP, ASM_CONST, ASM_MEM_REG_WITH_CONST } from 'samlang-core-ast/asm-arguments';
+import { assemblyInstructionToString } from 'samlang-core-ast/asm-instructions';
 
 it('rewriteAssemblyInstructionsWithCalleeSavedRegistersMoves test', () => {
   expect(

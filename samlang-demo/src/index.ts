@@ -1,13 +1,13 @@
 import {
-  ModuleReference,
   checkSources,
   compileSamlangSourcesToHighIRSources,
   lowerSourcesToAssemblyPrograms,
   interpretSamlangModule,
   prettyPrintSamlangModule,
   prettyPrintHighIRModuleAsJS,
-  assemblyProgramToString,
 } from '@dev-sam/samlang-core';
+import { assemblyProgramToString } from 'samlang-core-ast/asm-program';
+import { ModuleReference } from 'samlang-core-ast/common-nodes';
 
 type SamlangDemoResult = {
   readonly interpreterPrinted?: string;

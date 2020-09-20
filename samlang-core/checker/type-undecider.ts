@@ -5,9 +5,8 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from '../ast/common-nodes';
-import type { FieldType } from '../ast/samlang-toplevel';
-
+} from 'samlang-core-ast/common-nodes';
+import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import { assertNotNull } from 'samlang-core-utils';
 
 /**

@@ -1,16 +1,16 @@
 import analyzeUsedFunctionNames from '../analysis/used-name-analysis';
+import lowerSamlangExpression from './hir-expression-lowering';
+import performTailRecursiveCallTransformationOnHighIRFunction from './hir-tail-recursion-transformation-hir';
+
 import {
   ENCODED_COMPILED_PROGRAM_MAIN,
   encodeFunctionNameGlobally,
   encodeMainFunctionName,
-} from '../ast/common-names';
-import type { ModuleReference, Sources } from '../ast/common-nodes';
-import { HIR_FUNCTION_CALL, HIR_NAME, HIR_RETURN } from '../ast/hir-expressions';
-import type { HighIRFunction, HighIRModule } from '../ast/hir-toplevel';
-import type { ClassMemberDefinition, SamlangModule } from '../ast/samlang-toplevel';
-import lowerSamlangExpression from './hir-expression-lowering';
-import performTailRecursiveCallTransformationOnHighIRFunction from './hir-tail-recursion-transformation-hir';
-
+} from 'samlang-core-ast/common-names';
+import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import { HIR_FUNCTION_CALL, HIR_NAME, HIR_RETURN } from 'samlang-core-ast/hir-expressions';
+import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
+import type { ClassMemberDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { HashMap, hashMapOf } from 'samlang-core-utils';
 
 const compileFunction = (

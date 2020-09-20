@@ -1,4 +1,6 @@
 import analyzePropagatedConstants from '../analysis/constant-propagation-analysis';
+import { constantFoldExpression } from './constant-folding-optimization';
+
 import {
   MidIRStatement,
   MidIRExpression,
@@ -7,9 +9,7 @@ import {
   MIR_OP,
   MIR_JUMP,
   MIR_RETURN,
-} from '../ast/mir-nodes';
-import { constantFoldExpression } from './constant-folding-optimization';
-
+} from 'samlang-core-ast/mir-nodes';
 import { isNotNull } from 'samlang-core-utils';
 
 const optimizeExpressionWithConstantPropagationInformation = (

@@ -1,6 +1,7 @@
-import type { AssemblyRegister, AssemblyArgument } from '../ast/asm-arguments';
-import type { AssemblyInstruction } from '../ast/asm-instructions';
 import { PRE_COLORED_REGISTERS } from './asm-register-allocation-utils';
+
+import type { AssemblyRegister, AssemblyArgument } from 'samlang-core-ast/asm-arguments';
+import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
 
 const collectAssemblyRegistersWithoutMachineRegisters = (
   collector: Set<string>,

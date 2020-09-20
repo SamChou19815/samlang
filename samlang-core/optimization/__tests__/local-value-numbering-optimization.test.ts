@@ -1,3 +1,5 @@
+import optimizeIRWithLocalValueNumbering from '../local-value-numbering-optimization';
+
 import {
   MIR_ONE,
   MIR_TEMP,
@@ -11,8 +13,7 @@ import {
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
   midIRStatementToString,
-} from '../../ast/mir-nodes';
-import optimizeIRWithLocalValueNumbering from '../local-value-numbering-optimization';
+} from 'samlang-core-ast/mir-nodes';
 
 it('optimizeIRWithLocalValueNumbering test', () => {
   expect(

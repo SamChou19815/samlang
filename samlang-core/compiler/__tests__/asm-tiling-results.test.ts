@@ -1,4 +1,10 @@
-import { RAX, ASM_CONST, ASM_MEM_CONST, ASM_REG } from '../../ast/asm-arguments';
+import {
+  createAssemblyConstantTilingResult,
+  createAssemblyMemoryTilingResult,
+  createAssemblyMidIRExpressionTilingResult,
+} from '../asm-tiling-results';
+
+import { RAX, ASM_CONST, ASM_MEM_CONST, ASM_REG } from 'samlang-core-ast/asm-arguments';
 import {
   ASM_MOVE_REG,
   ASM_LEA,
@@ -7,12 +13,7 @@ import {
   ASM_IDIV,
   ASM_LABEL,
   ASM_COMMENT,
-} from '../../ast/asm-instructions';
-import {
-  createAssemblyConstantTilingResult,
-  createAssemblyMemoryTilingResult,
-  createAssemblyMidIRExpressionTilingResult,
-} from '../asm-tiling-results';
+} from 'samlang-core-ast/asm-instructions';
 
 it('tiling results have correct estimated cost', () => {
   expect(createAssemblyConstantTilingResult(ASM_CONST(1)).cost).toBe(0);

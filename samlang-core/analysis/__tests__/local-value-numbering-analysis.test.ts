@@ -1,3 +1,7 @@
+import analyzeLocalValueNumberingAssignment, {
+  LocalNumberingInformation,
+} from '../local-value-numbering-analysis';
+
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -12,10 +16,7 @@ import {
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
   MIR_EIGHT,
-} from '../../ast/mir-nodes';
-import analyzeLocalValueNumberingAssignment, {
-  LocalNumberingInformation,
-} from '../local-value-numbering-analysis';
+} from 'samlang-core-ast/mir-nodes';
 
 it('analyzeLocalValueNumberingAssignment test 1', () => {
   const localValueNumberingResults = analyzeLocalValueNumberingAssignment([

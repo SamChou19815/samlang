@@ -1,3 +1,5 @@
+import coalesceMoveAndReturnForHighIRStatements from '../hir-move-return-coalescing';
+
 import {
   HIR_ZERO,
   HIR_ONE,
@@ -10,8 +12,7 @@ import {
   HIR_NAME,
   HIR_RETURN,
   HIR_STRUCT_INITIALIZATION,
-} from '../../ast/hir-expressions';
-import coalesceMoveAndReturnForHighIRStatements from '../hir-move-return-coalescing';
+} from 'samlang-core-ast/hir-expressions';
 
 it('coalesceMoveAndReturnWithForHighIRStatements empty array test', () => {
   expect(coalesceMoveAndReturnForHighIRStatements([])).toBeNull();

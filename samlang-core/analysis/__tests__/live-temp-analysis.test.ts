@@ -1,3 +1,5 @@
+import analyzeLiveTemporariesAtTheEndOfEachStatement from '../live-temp-analysis';
+
 import {
   MidIRStatement,
   MIR_ZERO,
@@ -12,8 +14,7 @@ import {
   MIR_LABEL,
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
-} from '../../ast/mir-nodes';
-import analyzeLiveTemporariesAtTheEndOfEachStatement from '../live-temp-analysis';
+} from 'samlang-core-ast/mir-nodes';
 
 const analyze = (statements: readonly MidIRStatement[]): readonly (readonly string[])[] =>
   analyzeLiveTemporariesAtTheEndOfEachStatement(statements).map((it) => Array.from(it));

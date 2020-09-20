@@ -1,6 +1,7 @@
-import { HIR_RETURN, HIR_STRING } from '../../ast/hir-expressions';
-import { midIRCompilationUnitToString } from '../../ast/mir-nodes';
 import compileHighIrModuleToMidIRCompilationUnit from '../mir-toplevel-lowering';
+
+import { HIR_RETURN, HIR_STRING } from 'samlang-core-ast/hir-expressions';
+import { midIRCompilationUnitToString } from 'samlang-core-ast/mir-nodes';
 
 it('compileHighIrModuleToMidIRCompilationUnit dummy source test', () => {
   expect(

@@ -1,3 +1,5 @@
+import optimizeIRWithDeadCodeElimination from '../dead-code-elimination-optimization';
+
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -10,8 +12,7 @@ import {
   MIR_LABEL,
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
-} from '../../ast/mir-nodes';
-import optimizeIRWithDeadCodeElimination from '../dead-code-elimination-optimization';
+} from 'samlang-core-ast/mir-nodes';
 
 it('optimizeIRWithDeadCodeElimination test', () => {
   expect(
