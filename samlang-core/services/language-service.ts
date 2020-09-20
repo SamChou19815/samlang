@@ -1,8 +1,10 @@
-import { GlobalTypingContext, typeCheckSources, typeCheckSourcesIncrementally } from '../checker';
-// eslint-disable-next-line import/no-internal-modules
-import DependencyTracker from '../checker/dependency-tracker';
-// eslint-disable-next-line import/no-internal-modules
-import type { MemberTypeInformation } from '../checker/typing-context';
+import {
+  DependencyTracker,
+  GlobalTypingContext,
+  MemberTypeInformation,
+  typeCheckSources,
+  typeCheckSourcesIncrementally,
+} from '../checker';
 import {
   ReadOnlyLocationLookup,
   LocationLookup,
