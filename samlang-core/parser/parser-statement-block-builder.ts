@@ -16,7 +16,7 @@ import patternBuilder from './parser-pattern-builder';
 import typeBuilder from './parser-type-builder';
 import { contextRange } from './parser-util';
 
-import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
+import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 class StatementBuilder
   extends AbstractParseTreeVisitor<SamlangValStatement | null>

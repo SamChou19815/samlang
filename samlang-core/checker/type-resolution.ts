@@ -1,8 +1,7 @@
 import type { UndecidedType, Type } from '../ast/common-nodes';
 import typeResolver from './type-resolver';
 
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
-import UnionFind from 'samlang-core-utils/union-find';
+import { assertNotNull, UnionFind } from 'samlang-core-utils';
 
 /** A provider of type resolution to previously undecided types. */
 export interface ReadOnlyTypeResolution {

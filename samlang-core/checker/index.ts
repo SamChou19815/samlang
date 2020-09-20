@@ -9,8 +9,7 @@ import ModuleTypeChecker from './module-type-checker';
 import type { GlobalTypingContext } from './typing-context';
 import checkUndefinedImportsError from './undefined-imports-checker';
 
-import { hashMapOf, mapOf } from 'samlang-core-utils/collections';
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { hashMapOf, mapOf, assertNotNull } from 'samlang-core-utils';
 
 const typeCheckModule = (
   sources: Sources<SamlangModule>,

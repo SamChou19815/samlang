@@ -6,7 +6,7 @@ import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../.
 // eslint-disable-next-line camelcase
 import { prettyPrintSamlangExpression_EXPOSED_FOR_TESTING } from '../printer-source-level';
 
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { assertNotNull } from 'samlang-core-utils';
 
 const reprintExpression = (rawSourceWithTypeAnnotation: string, width = 40): string => {
   const errorCollector = createGlobalErrorCollector();

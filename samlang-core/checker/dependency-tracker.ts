@@ -7,8 +7,8 @@ import {
   hashMapOf,
   setOf,
   hashSetOf,
-} from 'samlang-core-utils/collections';
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+  assertNotNull,
+} from 'samlang-core-utils';
 
 /**
  * A centralized place to manage up-to-date dependency relationship.

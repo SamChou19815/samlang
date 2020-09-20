@@ -15,7 +15,7 @@ import {
   MIR_CJUMP_FALLTHROUGH,
 } from '../ast/mir-nodes';
 
-import { isNotNull } from 'samlang-core-utils/type-assertions';
+import { isNotNull } from 'samlang-core-utils';
 
 export const constantFoldExpression = (expression: MidIRExpression): MidIRExpression => {
   switch (expression.__type__) {

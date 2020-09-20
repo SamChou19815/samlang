@@ -2,7 +2,7 @@ import ControlFlowGraph from '../analysis/control-flow-graph';
 import type { AssemblyInstruction } from '../ast/asm-instructions';
 import { MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from '../ast/mir-nodes';
 
-import { isNotNull } from 'samlang-core-utils/type-assertions';
+import { isNotNull } from 'samlang-core-utils';
 
 const pipe = <E>(element: E, ...functions: readonly ((e: E) => E)[]): E =>
   functions.reduce((accumulator, f) => f(accumulator), element);

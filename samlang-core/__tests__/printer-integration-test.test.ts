@@ -4,7 +4,7 @@ import { prettyPrintSamlangModule } from '../printer';
 import { checkSources } from '../services/source-processor';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { assertNotNull } from 'samlang-core-utils';
 
 const getTypeCheckedModule = (code: string): SamlangModule => {
   const moduleReference = new ModuleReference(['test']);

@@ -10,7 +10,7 @@ import {
 } from '../ast/mir-nodes';
 import { constantFoldExpression } from './constant-folding-optimization';
 
-import { isNotNull } from 'samlang-core-utils/type-assertions';
+import { isNotNull } from 'samlang-core-utils';
 
 const optimizeExpressionWithConstantPropagationInformation = (
   expression: MidIRExpression,

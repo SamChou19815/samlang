@@ -11,7 +11,7 @@ import { CompileTimeError, createGlobalErrorCollector } from '../errors';
 import optimizeIRCompilationUnit from '../optimization';
 import { parseSamlangModuleFromText } from '../parser';
 
-import { hashMapOf } from 'samlang-core-utils/collections';
+import { hashMapOf } from 'samlang-core-utils';
 
 type CheckSourcesResult = {
   readonly checkedSources: Sources<SamlangModule>;

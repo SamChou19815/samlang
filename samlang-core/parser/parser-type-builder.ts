@@ -21,7 +21,7 @@ import type {
 } from './generated/PLParser';
 import type { PLVisitor } from './generated/PLVisitor';
 
-import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
+import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVisitor<Type | null> {
   defaultResult = (): Type | null => null;

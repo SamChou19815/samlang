@@ -24,7 +24,7 @@ import {
   createBracesSurroundedBlockDocument,
 } from './printer-prettier-library';
 
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { assertNotNull } from 'samlang-core-utils';
 
 const createPrettierDocumentFromSamlangExpression = (
   expression: SamlangExpression

@@ -11,7 +11,7 @@ import type { FieldType } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import type { AccessibleGlobalTypingContext, LocalTypingContext } from './typing-context';
 
-import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
+import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 export default class StatementTypeChecker {
   constructor(

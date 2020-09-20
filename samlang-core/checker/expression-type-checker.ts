@@ -48,8 +48,7 @@ import { undecideFieldTypeParameters, undecideTypeParameters } from './type-unde
 import { validateType } from './type-validator';
 import type { LocalTypingContext, AccessibleGlobalTypingContext } from './typing-context';
 
-import { listShallowEquals } from 'samlang-core-utils/collections';
-import { assertNotNull, isNotNull } from 'samlang-core-utils/type-assertions';
+import { listShallowEquals, assertNotNull, isNotNull } from 'samlang-core-utils';
 
 class ExpressionTypeChecker {
   private readonly constraintAwareTypeChecker: ConstraintAwareChecker;

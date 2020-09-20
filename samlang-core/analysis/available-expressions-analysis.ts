@@ -11,8 +11,8 @@ import {
   hashSetOf,
   listShallowEquals,
   hashMapEquals,
-} from 'samlang-core-utils/collections';
-import { isNotNull } from 'samlang-core-utils/type-assertions';
+  isNotNull,
+} from 'samlang-core-utils';
 
 export class MidIRExpressionWrapper implements Hashable {
   constructor(public readonly expression: MidIRExpression) {}

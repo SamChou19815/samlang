@@ -3,7 +3,7 @@ import type { SamlangModule, ClassDefinition } from '../../ast/samlang-toplevel'
 import { createGlobalErrorCollector } from '../../errors';
 import checkUndefinedImportsError from '../undefined-imports-checker';
 
-import { hashMapOf } from 'samlang-core-utils/collections';
+import { hashMapOf } from 'samlang-core-utils';
 
 const createMockClass = (name: string, isPublic: boolean): ClassDefinition => ({
   range: Range.DUMMY,

@@ -10,8 +10,8 @@ import replaceTypeIdentifier from './type-identifier-replacer';
 import { undecideTypeParameters } from './type-undecider';
 import type { IdentifierTypeValidator } from './type-validator';
 
-import type { HashMap, ReadonlyHashMap } from 'samlang-core-utils/collections';
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import type { HashMap, ReadonlyHashMap } from 'samlang-core-utils';
+import { assertNotNull } from 'samlang-core-utils';
 
 /** One layer of the typing context. We should stack a new layer when encounter a new nested scope. */
 class ContextLayer {

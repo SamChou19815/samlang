@@ -30,7 +30,7 @@ import {
   highIRExpressionToString,
 } from '../printer-js';
 
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { assertNotNull } from 'samlang-core-utils';
 
 it('compile hello world to JS integration test', () => {
   const moduleReference = new ModuleReference(['Test']);

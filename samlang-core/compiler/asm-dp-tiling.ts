@@ -62,8 +62,12 @@ import {
   createAssemblyMemoryTilingResult,
 } from './asm-tiling-results';
 
-import { bigIntIsWithin32BitIntegerRange, isPowerOfTwo, logTwo } from 'samlang-core-utils/int-util';
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import {
+  bigIntIsWithin32BitIntegerRange,
+  isPowerOfTwo,
+  logTwo,
+  assertNotNull,
+} from 'samlang-core-utils';
 
 type MidIRBinaryExpressionTiler = (
   expression: MidIRBinaryExpression,

@@ -13,7 +13,7 @@ import type { PLVisitor } from './generated/PLVisitor';
 import { classInterfaceBuilder, ClassDefinitionBuilder } from './parser-class-builder';
 import { tokenRange, contextRange } from './parser-util';
 
-import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
+import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 class ModuleMemberVisitor
   extends AbstractParseTreeVisitor<ClassDefinition | null>

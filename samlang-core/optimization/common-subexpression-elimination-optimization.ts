@@ -9,8 +9,8 @@ import {
   ReadonlyHashSet,
   hashMapOf,
   hashSetOf,
-} from 'samlang-core-utils/collections';
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+  assertNotNull,
+} from 'samlang-core-utils';
 
 const expressionIsPrimitive = (expression: MidIRExpression): boolean =>
   expression.__type__ === 'MidIRConstantExpression' ||

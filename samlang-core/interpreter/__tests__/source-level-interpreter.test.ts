@@ -23,7 +23,7 @@ import interpretSamlangModule, {
   Value,
 } from '../source-level-interpreter';
 
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { assertNotNull } from 'samlang-core-utils';
 
 const getExpression = (rawSourceWithTypeAnnotation: string): SamlangExpression => {
   const errorCollector = createGlobalErrorCollector();

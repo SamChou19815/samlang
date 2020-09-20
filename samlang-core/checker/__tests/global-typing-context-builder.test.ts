@@ -6,7 +6,7 @@ import {
   updateGlobalTypingContext,
 } from '../global-typing-context-builder';
 
-import { mapOf } from 'samlang-core-utils/collections';
+import { mapOf } from 'samlang-core-utils';
 
 const module0Reference = new ModuleReference(['Module0']);
 const module1Reference = new ModuleReference(['Module1']);
