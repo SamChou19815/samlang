@@ -35,7 +35,6 @@ build
 tsconfig.tsbuildinfo
 .monorail
 .codegen
-workspaces.json
 
 ## Converage
 coverage
