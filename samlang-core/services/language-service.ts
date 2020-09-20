@@ -26,8 +26,7 @@ import {
   SamlangExpressionLocationLookupBuilder,
 } from './location-service';
 
-import { HashMap, hashMapOf, hashSetOf } from 'samlang-core-utils/collections';
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { HashMap, hashMapOf, hashSetOf, assertNotNull } from 'samlang-core-utils';
 
 export class LanguageServiceState {
   private readonly dependencyTracker: DependencyTracker = new DependencyTracker();

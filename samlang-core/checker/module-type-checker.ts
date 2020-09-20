@@ -10,7 +10,7 @@ import {
   ClassTypingContext,
 } from './typing-context';
 
-import { assertNotNull, isNotNull } from 'samlang-core-utils/type-assertions';
+import { assertNotNull, isNotNull } from 'samlang-core-utils';
 
 export default class ModuleTypeChecker {
   constructor(private readonly errorCollector: ModuleErrorCollector) {}

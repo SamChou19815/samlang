@@ -10,8 +10,7 @@ import type {
   ReadonlyGlobalTypingContext,
 } from './typing-context';
 
-import { hashMapOf } from 'samlang-core-utils/collections';
-import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
+import { hashMapOf, isNotNull, assertNotNull } from 'samlang-core-utils';
 
 const buildClassTypingContext = ({
   typeParameters,

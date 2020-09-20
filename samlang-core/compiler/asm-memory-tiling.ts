@@ -20,8 +20,7 @@ import {
   createAssemblyMemoryTilingResult,
 } from './asm-tiling-results';
 
-import { bigIntIsWithin32BitIntegerRange } from 'samlang-core-utils/int-util';
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { bigIntIsWithin32BitIntegerRange, assertNotNull } from 'samlang-core-utils';
 
 const getTilingResultWithLowerCost = (
   result1: AssemblyMemoryTilingResult | null,

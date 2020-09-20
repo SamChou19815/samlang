@@ -19,7 +19,7 @@ import type {
 import type { PLVisitor } from './generated/PLVisitor';
 import { tokenRange, contextRange } from './parser-util';
 
-import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
+import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 class FieldNameBuilder
   extends AbstractParseTreeVisitor<ObjectPatternDestucturedName | null>

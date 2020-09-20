@@ -74,7 +74,7 @@ import StatementBlockBuilder from './parser-statement-block-builder';
 import typeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';
 
-import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
+import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');
 

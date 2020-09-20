@@ -11,7 +11,7 @@ import type { ClassMemberDefinition, SamlangModule } from '../ast/samlang-toplev
 import lowerSamlangExpression from './hir-expression-lowering';
 import performTailRecursiveCallTransformationOnHighIRFunction from './hir-tail-recursion-transformation-hir';
 
-import { HashMap, hashMapOf } from 'samlang-core-utils/collections';
+import { HashMap, hashMapOf } from 'samlang-core-utils';
 
 const compileFunction = (
   moduleReference: ModuleReference,

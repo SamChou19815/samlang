@@ -7,7 +7,7 @@ import {
 } from '../ast/mir-nodes';
 import ControlFlowGraph, { ControlFlowGraphNode } from './control-flow-graph';
 
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { assertNotNull } from 'samlang-core-utils';
 
 class LocalNumberingAllocator {
   private id = 0;

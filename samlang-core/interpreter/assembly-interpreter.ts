@@ -24,7 +24,7 @@ import {
 } from '../ast/common-names';
 import PanicException from './panic-exception';
 
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { assertNotNull } from 'samlang-core-utils';
 
 // istanbul ignore next
 const checkMemoryLocation = (location: bigint): void => {

@@ -8,7 +8,7 @@ import {
   assemblyArgumentToString as argToString,
 } from './asm-arguments';
 
-import { bigIntIsWithin32BitIntegerRange } from 'samlang-core-utils/int-util';
+import { bigIntIsWithin32BitIntegerRange } from 'samlang-core-utils';
 
 /*
  * --------------------------------------------------------------------------------

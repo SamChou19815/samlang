@@ -14,7 +14,7 @@ import type { SamlangExpression } from '../ast/samlang-expressions';
 import type { ReadOnlyTypeResolution } from './type-resolution';
 import resolveType from './type-resolver';
 
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { assertNotNull } from 'samlang-core-utils';
 
 const checkedZip = <E1, E2>(
   list1: readonly E1[],

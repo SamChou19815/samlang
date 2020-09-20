@@ -27,7 +27,7 @@ import {
 import type { SamlangModule } from '../../ast/samlang-toplevel';
 import compileSamlangSourcesToHighIRSources from '../hir-toplevel-lowering';
 
-import { mapOf } from 'samlang-core-utils/collections';
+import { mapOf } from 'samlang-core-utils';
 
 const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Dummy') });
 

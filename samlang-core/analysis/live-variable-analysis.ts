@@ -16,7 +16,7 @@ import type { AssemblyInstruction } from '../ast/asm-instructions';
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runBackwardDataflowAnalysis } from './dataflow-analysis';
 
-import { setEquals } from 'samlang-core-utils/collections';
+import { setEquals } from 'samlang-core-utils';
 
 const collectUsesFromAssemblyArgument = (
   uses: Set<string>,

@@ -17,8 +17,7 @@ import {
 import collectAssemblyRegistersFromAssemblyInstructions from './asm-register-collector';
 import AssemblySpillingProgramWriter from './asm-spilling-program-rewriter';
 
-import { Hashable, HashSet, hashSetOf, ReadonlyHashSet } from 'samlang-core-utils/collections';
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { Hashable, HashSet, hashSetOf, ReadonlyHashSet, assertNotNull } from 'samlang-core-utils';
 
 const K = AVAILABLE_REGISTERS_NUMBER;
 

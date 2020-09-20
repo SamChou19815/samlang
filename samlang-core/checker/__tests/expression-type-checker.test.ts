@@ -28,7 +28,7 @@ import typeCheckExpression from '../expression-type-checker';
 import TypeResolution from '../type-resolution';
 import { AccessibleGlobalTypingContext, LocalTypingContext } from '../typing-context';
 
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { assertNotNull } from 'samlang-core-utils';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
 

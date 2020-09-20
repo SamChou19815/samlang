@@ -3,7 +3,7 @@ import type { SamlangExpression } from '../../ast/samlang-expressions';
 import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../location-service';
 import { checkSources } from '../source-processor';
 
-import { assertNotNull } from 'samlang-core-utils/type-assertions';
+import { assertNotNull } from 'samlang-core-utils';
 
 it('LocationLookupTest self consistent test', () => {
   const lookup = new LocationLookup<string>();
