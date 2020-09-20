@@ -1,5 +1,3 @@
-import { createGlobalErrorCollector } from '../../errors';
-import { parseSamlangExpressionFromText } from '../../parser';
 import typeCheckExpression from '../expression-type-checker';
 import TypeResolution from '../type-resolution';
 import { AccessibleGlobalTypingContext, LocalTypingContext } from '../typing-context';
@@ -28,6 +26,8 @@ import {
   EXPRESSION_STATEMENT_BLOCK,
   EXPRESSION_LAMBDA,
 } from 'samlang-core-ast/samlang-expressions';
+import { createGlobalErrorCollector } from 'samlang-core-errors';
+import { parseSamlangExpressionFromText } from 'samlang-core-parser';
 import { assertNotNull } from 'samlang-core-utils';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);

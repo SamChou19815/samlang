@@ -1,6 +1,5 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
-import type { ModuleErrorCollector } from '../errors';
 import type {
   ClassHeaderContext,
   UtilClassHeaderContext,
@@ -29,6 +28,7 @@ import type {
   ClassMemberDeclaration,
   ClassMemberDefinition,
 } from 'samlang-core-ast/samlang-toplevel';
+import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 type ModuleName = readonly [boolean, string, Range];

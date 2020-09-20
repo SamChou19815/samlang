@@ -6,6 +6,8 @@
       "dependencyChain": [
         "samlang-core-utils",
         "samlang-core-ast",
+        "samlang-core-errors",
+        "samlang-core-parser",
         "@dev-sam/samlang-core",
         "@dev-sam/samlang-cli"
       ]
@@ -15,6 +17,8 @@
       "dependencyChain": [
         "samlang-core-utils",
         "samlang-core-ast",
+        "samlang-core-errors",
+        "samlang-core-parser",
         "@dev-sam/samlang-core"
       ]
     },
@@ -23,6 +27,8 @@
       "dependencyChain": [
         "samlang-core-utils",
         "samlang-core-ast",
+        "samlang-core-errors",
+        "samlang-core-parser",
         "@dev-sam/samlang-core",
         "@dev-sam/samlang-demo"
       ]
@@ -32,6 +38,23 @@
       "dependencyChain": [
         "samlang-core-utils",
         "samlang-core-ast"
+      ]
+    },
+    "samlang-core-errors": {
+      "workspaceLocation": "samlang-core-errors",
+      "dependencyChain": [
+        "samlang-core-utils",
+        "samlang-core-ast",
+        "samlang-core-errors"
+      ]
+    },
+    "samlang-core-parser": {
+      "workspaceLocation": "samlang-core-parser",
+      "dependencyChain": [
+        "samlang-core-utils",
+        "samlang-core-ast",
+        "samlang-core-errors",
+        "samlang-core-parser"
       ]
     },
     "samlang-core-utils": {
@@ -44,6 +67,8 @@
   "topologicallyOrdered": [
     "samlang-core-utils",
     "samlang-core-ast",
+    "samlang-core-errors",
+    "samlang-core-parser",
     "@dev-sam/samlang-core",
     "@dev-sam/samlang-cli",
     "@dev-sam/samlang-demo"

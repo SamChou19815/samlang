@@ -4,12 +4,6 @@ import DependencyTracker from '../checker/dependency-tracker';
 // eslint-disable-next-line import/no-internal-modules
 import type { MemberTypeInformation } from '../checker/typing-context';
 import {
-  ReadonlyGlobalErrorCollector,
-  CompileTimeError,
-  createGlobalErrorCollector,
-} from '../errors';
-import { parseSamlangModuleFromText } from '../parser';
-import {
   ReadOnlyLocationLookup,
   LocationLookup,
   SamlangExpressionLocationLookupBuilder,
@@ -26,6 +20,12 @@ import {
 } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import {
+  ReadonlyGlobalErrorCollector,
+  CompileTimeError,
+  createGlobalErrorCollector,
+} from 'samlang-core-errors';
+import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import { HashMap, hashMapOf, hashSetOf, assertNotNull } from 'samlang-core-utils';
 
 export class LanguageServiceState {

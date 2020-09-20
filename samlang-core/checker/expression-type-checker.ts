@@ -1,4 +1,3 @@
-import type { ModuleErrorCollector } from '../errors';
 import { ConstraintAwareChecker } from './constraint-aware-checker';
 import fixExpressionType from './expression-type-fixer';
 import StatementTypeChecker from './statement-type-checker';
@@ -48,6 +47,7 @@ import {
   EXPRESSION_LAMBDA,
 } from 'samlang-core-ast/samlang-expressions';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
+import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { listShallowEquals, assertNotNull, isNotNull } from 'samlang-core-utils';
 
 class ExpressionTypeChecker {

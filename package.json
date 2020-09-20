@@ -17,7 +17,7 @@
     "test:single": "jest -t",
     "test:integration": "ts-node-script scripts/compile-repository.ts",
     "test:new-linter-config:dev-sam-local": "eslint --config configurations/latest-local-linter-config.js .",
-    "postinstall": "yarn workspace @dev-sam/samlang-core run codegen"
+    "postinstall": "yarn workspace samlang-core-parser run codegen"
   },
   "devDependencies": {
     "@babel/core": "^7.11.4",
@@ -58,9 +58,9 @@
                 "**/samlang-core/errors/*",
                 "**/samlang-core/interpreter/*",
                 "**/samlang-core/optimization/simple-optimizations*",
-                "**/samlang-core/parser/generated/*",
                 "**/samlang-core/services/*",
-                "**/samlang-core-ast/*"
+                "**/samlang-core-ast/*",
+                "**/samlang-core-parser/generated/*"
               ]
             }
           ]

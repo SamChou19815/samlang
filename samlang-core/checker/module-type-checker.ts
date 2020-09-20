@@ -1,4 +1,3 @@
-import type { ModuleErrorCollector } from '../errors';
 import typeCheckExpression from './expression-type-checker';
 import TypeResolution from './type-resolution';
 import { validateType } from './type-validator';
@@ -14,6 +13,7 @@ import type {
   TypeDefinition,
   SamlangModule,
 } from 'samlang-core-ast/samlang-toplevel';
+import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { assertNotNull, isNotNull } from 'samlang-core-utils';
 
 export default class ModuleTypeChecker {

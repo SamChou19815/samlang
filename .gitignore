@@ -40,4 +40,4 @@ tsconfig.tsbuildinfo
 coverage
 
 # Generated
-samlang-core/parser/generated
+samlang-core-parser/generated

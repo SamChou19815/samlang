@@ -1,4 +1,3 @@
-import { createGlobalErrorCollector } from '../../errors';
 import {
   IdentifierTypeValidator,
   // eslint-disable-next-line camelcase
@@ -18,6 +17,7 @@ import {
   Range,
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
+import { createGlobalErrorCollector } from 'samlang-core-errors';
 
 const identifierTypeValidatorForTesting: IdentifierTypeValidator = {
   identifierTypeIsWellDefined: (name: string, typeArgumentLength: number) =>

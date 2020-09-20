@@ -1,6 +1,5 @@
-import type { ModuleErrorCollector } from '../errors';
-
 import type { Type, Range } from 'samlang-core-ast/common-nodes';
+import type { ModuleErrorCollector } from 'samlang-core-errors';
 
 export interface IdentifierTypeValidator {
   /**

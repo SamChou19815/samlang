@@ -1,6 +1,5 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
-import type { ModuleErrorCollector } from '../errors';
 import type {
   ExpressionContext,
   NestedExprContext,
@@ -74,6 +73,7 @@ import {
   EXPRESSION_LAMBDA,
   EXPRESSION_STATEMENT_BLOCK,
 } from 'samlang-core-ast/samlang-expressions';
+import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');

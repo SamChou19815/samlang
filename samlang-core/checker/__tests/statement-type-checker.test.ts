@@ -1,4 +1,3 @@
-import { createGlobalErrorCollector } from '../../errors';
 import StatementTypeChecker from '../statement-type-checker';
 import { AccessibleGlobalTypingContext, LocalTypingContext } from '../typing-context';
 
@@ -23,6 +22,7 @@ import {
   EXPRESSION_STATEMENT_BLOCK,
 } from 'samlang-core-ast/samlang-expressions';
 import type { Pattern } from 'samlang-core-ast/samlang-pattern';
+import { createGlobalErrorCollector } from 'samlang-core-errors';
 
 const STATEMENT = (
   pattern: Pattern,
