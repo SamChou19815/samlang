@@ -8,7 +8,6 @@ import type {
   VariablePattern,
   WildCardPattern,
 } from '../ast/samlang-pattern';
-import { isNotNull, assertNotNull } from '../util/type-assertions';
 import type {
   TuplePatternContext,
   ObjectPatternContext,
@@ -19,6 +18,8 @@ import type {
 } from './generated/PLParser';
 import type { PLVisitor } from './generated/PLVisitor';
 import { tokenRange, contextRange } from './parser-util';
+
+import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
 
 class FieldNameBuilder
   extends AbstractParseTreeVisitor<ObjectPatternDestucturedName | null>

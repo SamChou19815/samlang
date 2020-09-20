@@ -9,8 +9,9 @@ import {
 import type { Pattern, ObjectPatternDestucturedName } from '../ast/samlang-pattern';
 import type { FieldType } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
-import { isNotNull, assertNotNull } from '../util/type-assertions';
 import type { AccessibleGlobalTypingContext, LocalTypingContext } from './typing-context';
+
+import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
 
 export default class StatementTypeChecker {
   constructor(

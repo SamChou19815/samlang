@@ -11,9 +11,10 @@ import {
   prettyPrintType,
 } from '../ast/common-nodes';
 import type { SamlangExpression } from '../ast/samlang-expressions';
-import { assertNotNull } from '../util/type-assertions';
 import type { ReadOnlyTypeResolution } from './type-resolution';
 import resolveType from './type-resolver';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 const checkedZip = <E1, E2>(
   list1: readonly E1[],

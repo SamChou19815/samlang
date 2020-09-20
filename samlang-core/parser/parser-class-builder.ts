@@ -11,7 +11,6 @@ import type {
   ClassMemberDefinition,
 } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
-import { isNotNull, assertNotNull } from '../util/type-assertions';
 import type {
   ClassHeaderContext,
   UtilClassHeaderContext,
@@ -29,6 +28,8 @@ import type { PLVisitor } from './generated/PLVisitor';
 import ExpressionBuilder from './parser-expression-builder';
 import typeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';
+
+import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
 
 type ModuleName = readonly [boolean, string, Range];
 

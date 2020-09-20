@@ -8,8 +8,9 @@ import {
 } from '../ast/common-nodes';
 import { SamlangExpression, EXPRESSION_VARIABLE } from '../ast/samlang-expressions';
 import type { SamlangModule } from '../ast/samlang-toplevel';
-import { HashMap, hashMapOf } from '../util/collections';
-import { assertNotNull } from '../util/type-assertions';
+
+import { HashMap, hashMapOf } from 'samlang-core-utils/collections';
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 export interface ReadOnlyLocationLookup<E> {
   get(moduleReference: ModuleReference, position: Position): E | null;

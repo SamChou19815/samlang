@@ -3,7 +3,6 @@ import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor
 import { ModuleReference } from '../ast/common-nodes';
 import type { ClassDefinition, ModuleMembersImport, SamlangModule } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
-import { isNotNull, assertNotNull } from '../util/type-assertions';
 import type {
   ModuleContext,
   ImportModuleMembersContext,
@@ -13,6 +12,8 @@ import type {
 import type { PLVisitor } from './generated/PLVisitor';
 import { classInterfaceBuilder, ClassDefinitionBuilder } from './parser-class-builder';
 import { tokenRange, contextRange } from './parser-util';
+
+import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
 
 class ModuleMemberVisitor
   extends AbstractParseTreeVisitor<ClassDefinition | null>

@@ -3,9 +3,10 @@ import { intType, Range, ModuleReference } from '../../ast/common-nodes';
 import { EXPRESSION_METHOD_ACCESS, EXPRESSION_VARIABLE } from '../../ast/samlang-expressions';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
-import { assertNotNull } from '../../util/type-assertions';
 // eslint-disable-next-line camelcase
 import { prettyPrintSamlangExpression_EXPOSED_FOR_TESTING } from '../printer-source-level';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 const reprintExpression = (rawSourceWithTypeAnnotation: string, width = 40): string => {
   const errorCollector = createGlobalErrorCollector();

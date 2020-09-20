@@ -8,9 +8,10 @@ import type { ModuleReference, Sources } from '../ast/common-nodes';
 import { HIR_FUNCTION_CALL, HIR_NAME, HIR_RETURN } from '../ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from '../ast/hir-toplevel';
 import type { ClassMemberDefinition, SamlangModule } from '../ast/samlang-toplevel';
-import { HashMap, hashMapOf } from '../util/collections';
 import lowerSamlangExpression from './hir-expression-lowering';
 import performTailRecursiveCallTransformationOnHighIRFunction from './hir-tail-recursion-transformation-hir';
+
+import { HashMap, hashMapOf } from 'samlang-core-utils/collections';
 
 const compileFunction = (
   moduleReference: ModuleReference,

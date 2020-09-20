@@ -1,7 +1,8 @@
 import type { MidIRStatement, MidIRExpression } from '../ast/mir-nodes';
-import { mapEquals } from '../util/collections';
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
+
+import { mapEquals } from 'samlang-core-utils/collections';
 
 type KnownConstant = { readonly __type__: 'known'; readonly value: bigint };
 type UnknownConstant = { readonly __type__: 'unknown' };

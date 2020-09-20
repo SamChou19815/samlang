@@ -6,7 +6,6 @@ import type {
   ModuleMembersImport,
   SamlangModule,
 } from '../ast/samlang-toplevel';
-import { assertNotNull } from '../util/type-assertions';
 import {
   PrettierDocument,
   PRETTIER_NIL,
@@ -24,6 +23,8 @@ import {
   createBracesSurroundedDocument,
   createBracesSurroundedBlockDocument,
 } from './printer-prettier-library';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 const createPrettierDocumentFromSamlangExpression = (
   expression: SamlangExpression

@@ -1,4 +1,7 @@
 import { MidIRExpression, MidIRStatement, midIRExpressionToString } from '../ast/mir-nodes';
+import ControlFlowGraph from './control-flow-graph';
+import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
+
 import {
   Hashable,
   ReadonlyHashMap,
@@ -8,10 +11,8 @@ import {
   hashSetOf,
   listShallowEquals,
   hashMapEquals,
-} from '../util/collections';
-import { isNotNull } from '../util/type-assertions';
-import ControlFlowGraph from './control-flow-graph';
-import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
+} from 'samlang-core-utils/collections';
+import { isNotNull } from 'samlang-core-utils/type-assertions';
 
 export class MidIRExpressionWrapper implements Hashable {
   constructor(public readonly expression: MidIRExpression) {}

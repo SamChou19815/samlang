@@ -1,5 +1,6 @@
 import { AssemblyMemory, assemblyArgumentToString } from '../ast/asm-arguments';
-import { Hashable, HashMap, hashMapOf } from '../util/collections';
+
+import { Hashable, HashMap, hashMapOf } from 'samlang-core-utils/collections';
 
 class MemoryWrapper implements Hashable {
   constructor(public readonly memory: AssemblyMemory) {}

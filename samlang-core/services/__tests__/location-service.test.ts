@@ -1,8 +1,9 @@
 import { Position, Range, ModuleReference } from '../../ast/common-nodes';
 import type { SamlangExpression } from '../../ast/samlang-expressions';
-import { assertNotNull } from '../../util/type-assertions';
 import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../location-service';
 import { checkSources } from '../source-processor';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 it('LocationLookupTest self consistent test', () => {
   const lookup = new LocationLookup<string>();

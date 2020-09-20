@@ -14,13 +14,14 @@ import {
 } from '../ast/asm-arguments';
 import { AssemblyInstruction, ASM_COMMENT } from '../ast/asm-instructions';
 import type { MidIRExpression, MidIRBinaryExpression } from '../ast/mir-nodes';
-import { bigIntIsWithin32BitIntegerRange } from '../util/int-util';
-import { assertNotNull } from '../util/type-assertions';
 import {
   AssemblyMemoryTilingResult,
   AssemblyTilingServiceBasic,
   createAssemblyMemoryTilingResult,
 } from './asm-tiling-results';
+
+import { bigIntIsWithin32BitIntegerRange } from 'samlang-core-utils/int-util';
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 const getTilingResultWithLowerCost = (
   result1: AssemblyMemoryTilingResult | null,

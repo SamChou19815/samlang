@@ -2,8 +2,6 @@
 
 import type { ModuleReference, Sources } from '../ast/common-nodes';
 import type { ClassInterface, SamlangModule } from '../ast/samlang-toplevel';
-import { hashMapOf } from '../util/collections';
-import { isNotNull, assertNotNull } from '../util/type-assertions';
 import type {
   MemberTypeInformation,
   ClassTypingContext,
@@ -11,6 +9,9 @@ import type {
   GlobalTypingContext,
   ReadonlyGlobalTypingContext,
 } from './typing-context';
+
+import { hashMapOf } from 'samlang-core-utils/collections';
+import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
 
 const buildClassTypingContext = ({
   typeParameters,

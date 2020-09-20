@@ -7,7 +7,8 @@ import {
   functionType,
 } from '../ast/common-nodes';
 import type { FieldType } from '../ast/samlang-toplevel';
-import { assertNotNull } from '../util/type-assertions';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 /**
  * This modules is useful for doing type inference constraint solving on constructors/functions with

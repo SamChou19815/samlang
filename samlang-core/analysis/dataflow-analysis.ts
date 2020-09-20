@@ -1,7 +1,8 @@
 /* eslint-disable no-param-reassign */
 
-import { assertNotNull } from '../util/type-assertions';
 import type ControlFlowGraph from './control-flow-graph';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 /** Defines how to compute stuff on the graph. */
 export interface DataflowAnalysisGraphOperator<Instruction, DataEdge> {

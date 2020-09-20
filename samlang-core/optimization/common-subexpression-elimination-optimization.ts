@@ -2,9 +2,15 @@ import analyzeAvailableExpressionsComingOutAtEachStatement, {
   MidIRExpressionWrapper,
 } from '../analysis/available-expressions-analysis';
 import { MidIRExpression, MidIRStatement, MIR_TEMP, MIR_MOVE_TEMP } from '../ast/mir-nodes';
-import { ReadonlyHashMap, ReadonlyHashSet, hashMapOf, hashSetOf } from '../util/collections';
-import { assertNotNull } from '../util/type-assertions';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
+
+import {
+  ReadonlyHashMap,
+  ReadonlyHashSet,
+  hashMapOf,
+  hashSetOf,
+} from 'samlang-core-utils/collections';
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 const expressionIsPrimitive = (expression: MidIRExpression): boolean =>
   expression.__type__ === 'MidIRConstantExpression' ||

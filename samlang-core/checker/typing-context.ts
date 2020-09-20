@@ -6,11 +6,12 @@ import {
   ModuleReference,
 } from '../ast/common-nodes';
 import type { FieldType, TypeDefinition } from '../ast/samlang-toplevel';
-import type { HashMap, ReadonlyHashMap } from '../util/collections';
-import { assertNotNull } from '../util/type-assertions';
 import replaceTypeIdentifier from './type-identifier-replacer';
 import { undecideTypeParameters } from './type-undecider';
 import type { IdentifierTypeValidator } from './type-validator';
+
+import type { HashMap, ReadonlyHashMap } from 'samlang-core-utils/collections';
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 /** One layer of the typing context. We should stack a new layer when encounter a new nested scope. */
 class ContextLayer {

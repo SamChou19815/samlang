@@ -7,7 +7,8 @@ import {
 import { ModuleReference } from '../../ast/common-nodes';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangModuleFromText } from '../../parser';
-import { mapOf, hashMapOf } from '../../util/collections';
+
+import { mapOf, hashMapOf } from 'samlang-core-utils/collections';
 
 it('typeCheckSources integration smoke test (passing case)', () => {
   const sourceA = `class A { function a(): int = 42 }`;
