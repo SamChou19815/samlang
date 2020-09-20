@@ -15,6 +15,7 @@
     "test": "jest --coverage",
     "test:single": "jest -t",
     "test:integration": "ts-node-script scripts/compile-repository.ts",
+    "test:new-linter-config:dev-sam-local": "eslint --config configurations/latest-local-linter-config.js .",
     "postinstall": "yarn workspaces foreach -t run codegen"
   },
   "devDependencies": {
