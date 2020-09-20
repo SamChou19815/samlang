@@ -35,11 +35,9 @@ build
 tsconfig.tsbuildinfo
 .monorail
 .codegen
-workspaces.json
 
 ## Converage
 coverage
 
 # Generated
-workspaces.json
 samlang-core/parser/generated
