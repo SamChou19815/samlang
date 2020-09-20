@@ -23,13 +23,14 @@ import {
 } from '../../ast/hir-expressions';
 import { compileSamlangSourcesToHighIRSources } from '../../compiler';
 import { checkSources } from '../../services/source-processor';
-import { assertNotNull } from '../../util/type-assertions';
 import {
   highIRModuleToJSString,
   highIRStatementToString,
   highIRFunctionToString,
   highIRExpressionToString,
 } from '../printer-js';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 it('compile hello world to JS integration test', () => {
   const moduleReference = new ModuleReference(['Test']);

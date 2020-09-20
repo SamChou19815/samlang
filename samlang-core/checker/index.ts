@@ -1,8 +1,6 @@
 import { ModuleReference, Sources } from '../ast/common-nodes';
 import type { SamlangModule } from '../ast/samlang-toplevel';
 import type { ReadonlyGlobalErrorCollector } from '../errors';
-import { hashMapOf, mapOf } from '../util/collections';
-import { assertNotNull } from '../util/type-assertions';
 import {
   buildGlobalTypingContext,
   updateGlobalTypingContext,
@@ -10,6 +8,9 @@ import {
 import ModuleTypeChecker from './module-type-checker';
 import type { GlobalTypingContext } from './typing-context';
 import checkUndefinedImportsError from './undefined-imports-checker';
+
+import { hashMapOf, mapOf } from 'samlang-core-utils/collections';
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 const typeCheckModule = (
   sources: Sources<SamlangModule>,

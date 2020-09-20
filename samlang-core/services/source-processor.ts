@@ -10,7 +10,8 @@ import {
 import { CompileTimeError, createGlobalErrorCollector } from '../errors';
 import optimizeIRCompilationUnit from '../optimization';
 import { parseSamlangModuleFromText } from '../parser';
-import { hashMapOf } from '../util/collections';
+
+import { hashMapOf } from 'samlang-core-utils/collections';
 
 type CheckSourcesResult = {
   readonly checkedSources: Sources<SamlangModule>;

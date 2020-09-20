@@ -1,4 +1,5 @@
 import type { ModuleReference } from '../ast/common-nodes';
+
 import {
   HashMap,
   HashSet,
@@ -6,8 +7,8 @@ import {
   hashMapOf,
   setOf,
   hashSetOf,
-} from '../util/collections';
-import { assertNotNull } from '../util/type-assertions';
+} from 'samlang-core-utils/collections';
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 /**
  * A centralized place to manage up-to-date dependency relationship.

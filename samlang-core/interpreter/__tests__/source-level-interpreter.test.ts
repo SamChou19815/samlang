@@ -14,7 +14,6 @@ import {
 } from '../../ast/samlang-expressions';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
-import { assertNotNull } from '../../util/type-assertions';
 import interpretSamlangModule, {
   ExpressionInterpreter,
   InterpretationContext,
@@ -23,6 +22,8 @@ import interpretSamlangModule, {
   ClassValue,
   Value,
 } from '../source-level-interpreter';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 const getExpression = (rawSourceWithTypeAnnotation: string): SamlangExpression => {
   const errorCollector = createGlobalErrorCollector();

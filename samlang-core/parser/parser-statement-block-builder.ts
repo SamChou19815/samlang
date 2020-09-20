@@ -6,7 +6,6 @@ import type {
   StatementBlock,
   SamlangExpression,
 } from '../ast/samlang-expressions';
-import { isNotNull, assertNotNull } from '../util/type-assertions';
 import type {
   ExpressionContext,
   StatementBlockContext,
@@ -16,6 +15,8 @@ import type { PLVisitor } from './generated/PLVisitor';
 import patternBuilder from './parser-pattern-builder';
 import typeBuilder from './parser-type-builder';
 import { contextRange } from './parser-util';
+
+import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
 
 class StatementBuilder
   extends AbstractParseTreeVisitor<SamlangValStatement | null>

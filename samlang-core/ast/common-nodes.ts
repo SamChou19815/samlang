@@ -1,4 +1,4 @@
-import type { Hashable, ReadonlyHashMap } from '../util/collections';
+import type { Hashable, ReadonlyHashMap } from 'samlang-core-utils/collections';
 
 /** SECTION 1: Literals */
 

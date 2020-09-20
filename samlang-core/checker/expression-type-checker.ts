@@ -40,8 +40,6 @@ import {
 } from '../ast/samlang-expressions';
 import type { FieldType } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
-import { listShallowEquals } from '../util/collections';
-import { assertNotNull, isNotNull } from '../util/type-assertions';
 import { ConstraintAwareChecker } from './constraint-aware-checker';
 import fixExpressionType from './expression-type-fixer';
 import StatementTypeChecker from './statement-type-checker';
@@ -49,6 +47,9 @@ import type TypeResolution from './type-resolution';
 import { undecideFieldTypeParameters, undecideTypeParameters } from './type-undecider';
 import { validateType } from './type-validator';
 import type { LocalTypingContext, AccessibleGlobalTypingContext } from './typing-context';
+
+import { listShallowEquals } from 'samlang-core-utils/collections';
+import { assertNotNull, isNotNull } from 'samlang-core-utils/type-assertions';
 
 class ExpressionTypeChecker {
   private readonly constraintAwareTypeChecker: ConstraintAwareChecker;

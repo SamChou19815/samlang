@@ -20,13 +20,14 @@ import {
   createGlobalErrorCollector,
 } from '../errors';
 import { parseSamlangModuleFromText } from '../parser';
-import { HashMap, hashMapOf, hashSetOf } from '../util/collections';
-import { assertNotNull } from '../util/type-assertions';
 import {
   ReadOnlyLocationLookup,
   LocationLookup,
   SamlangExpressionLocationLookupBuilder,
 } from './location-service';
+
+import { HashMap, hashMapOf, hashSetOf } from 'samlang-core-utils/collections';
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 export class LanguageServiceState {
   private readonly dependencyTracker: DependencyTracker = new DependencyTracker();

@@ -37,7 +37,6 @@ import {
   EXPRESSION_STATEMENT_BLOCK,
 } from '../ast/samlang-expressions';
 import type { ModuleErrorCollector } from '../errors';
-import { isNotNull, assertNotNull } from '../util/type-assertions';
 import type {
   ExpressionContext,
   NestedExprContext,
@@ -74,6 +73,8 @@ import type { PLVisitor } from './generated/PLVisitor';
 import StatementBlockBuilder from './parser-statement-block-builder';
 import typeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';
+
+import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
 
 const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');
 

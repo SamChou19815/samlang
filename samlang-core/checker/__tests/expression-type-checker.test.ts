@@ -24,10 +24,11 @@ import {
 } from '../../ast/samlang-expressions';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText } from '../../parser';
-import { assertNotNull } from '../../util/type-assertions';
 import typeCheckExpression from '../expression-type-checker';
 import TypeResolution from '../type-resolution';
 import { AccessibleGlobalTypingContext, LocalTypingContext } from '../typing-context';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
 

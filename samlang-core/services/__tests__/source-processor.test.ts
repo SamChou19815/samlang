@@ -1,7 +1,8 @@
 import { assemblyProgramToString } from '../../ast/asm-program';
 import { ModuleReference } from '../../ast/common-nodes';
-import { assertNotNull } from '../../util/type-assertions';
 import { checkSources, lowerSourcesToAssemblyPrograms } from '../source-processor';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 it('hello world processor test', () => {
   const moduleReference = new ModuleReference(['Test']);

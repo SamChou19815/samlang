@@ -12,7 +12,8 @@ import interpretSamlangModule from '../interpreter/source-level-interpreter';
 import optimizeIRCompilationUnit from '../optimization';
 import { checkSources } from '../services/source-processor';
 import { runnableSamlangProgramTestCases } from '../test-programs';
-import { assertNotNull } from '../util/type-assertions';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 type MidIRTestCase = {
   readonly testCaseName: string;

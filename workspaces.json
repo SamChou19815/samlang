@@ -4,6 +4,7 @@
     "@dev-sam/samlang-cli": {
       "workspaceLocation": "samlang-cli",
       "dependencyChain": [
+        "samlang-core-utils",
         "@dev-sam/samlang-core",
         "@dev-sam/samlang-cli"
       ]
@@ -11,18 +12,27 @@
     "@dev-sam/samlang-core": {
       "workspaceLocation": "samlang-core",
       "dependencyChain": [
+        "samlang-core-utils",
         "@dev-sam/samlang-core"
       ]
     },
     "@dev-sam/samlang-demo": {
       "workspaceLocation": "samlang-demo",
       "dependencyChain": [
+        "samlang-core-utils",
         "@dev-sam/samlang-core",
         "@dev-sam/samlang-demo"
+      ]
+    },
+    "samlang-core-utils": {
+      "workspaceLocation": "samlang-core-utils",
+      "dependencyChain": [
+        "samlang-core-utils"
       ]
     }
   },
   "topologicallyOrdered": [
+    "samlang-core-utils",
     "@dev-sam/samlang-core",
     "@dev-sam/samlang-cli",
     "@dev-sam/samlang-demo"

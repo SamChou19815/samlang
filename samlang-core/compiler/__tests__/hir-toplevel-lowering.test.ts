@@ -25,8 +25,9 @@ import {
   EXPRESSION_CLASS_MEMBER,
 } from '../../ast/samlang-expressions';
 import type { SamlangModule } from '../../ast/samlang-toplevel';
-import { mapOf } from '../../util/collections';
 import compileSamlangSourcesToHighIRSources from '../hir-toplevel-lowering';
+
+import { mapOf } from 'samlang-core-utils/collections';
 
 const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Dummy') });
 

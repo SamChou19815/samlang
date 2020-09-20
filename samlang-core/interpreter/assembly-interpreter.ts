@@ -22,8 +22,9 @@ import {
   ENCODED_FUNCTION_NAME_MALLOC,
   ENCODED_FUNCTION_NAME_THROW,
 } from '../ast/common-names';
-import { assertNotNull } from '../util/type-assertions';
 import PanicException from './panic-exception';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 // istanbul ignore next
 const checkMemoryLocation = (location: bigint): void => {

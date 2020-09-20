@@ -1668,6 +1668,7 @@ __metadata:
     "@types/jest": ^26.0.10
     antlr4ts: 0.5.0-alpha.3
     antlr4ts-cli: 0.5.0-alpha.3
+    samlang-core-utils: "workspace:0.0.1"
     typescript: 4.0.2
   languageName: unknown
   linkType: soft
@@ -7133,6 +7134,15 @@ fsevents@^2.1.2:
   checksum: 549ba83f5b314b59898efe3422120ce1ca7987a6eae5925a5fa5db930dc414d4a9dde0a5594f89638cd6ea60b6840ea961872908933ac2428d1726489db46fa5
   languageName: node
   linkType: hard
+
+"samlang-core-utils@workspace:0.0.1, samlang-core-utils@workspace:samlang-core-utils":
+  version: 0.0.0-use.local
+  resolution: "samlang-core-utils@workspace:samlang-core-utils"
+  dependencies:
+    "@types/jest": ^26.0.10
+    typescript: 4.0.2
+  languageName: unknown
+  linkType: soft
 
 "sane@npm:^4.0.3":
   version: 4.1.0

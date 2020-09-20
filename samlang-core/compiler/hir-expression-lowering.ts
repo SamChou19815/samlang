@@ -44,7 +44,8 @@ import type {
   StatementBlockExpression,
 } from '../ast/samlang-expressions';
 import type { SamlangModule } from '../ast/samlang-toplevel';
-import { isNotNull } from '../util/type-assertions';
+
+import { isNotNull } from 'samlang-core-utils/type-assertions';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];

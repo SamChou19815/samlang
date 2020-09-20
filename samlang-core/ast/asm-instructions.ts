@@ -1,4 +1,3 @@
-import { bigIntIsWithin32BitIntegerRange } from '../util/int-util';
 import {
   AssemblyConst,
   AssemblyRegister,
@@ -8,6 +7,8 @@ import {
   AssemblyRegisterOrMemory,
   assemblyArgumentToString as argToString,
 } from './asm-arguments';
+
+import { bigIntIsWithin32BitIntegerRange } from 'samlang-core-utils/int-util';
 
 /*
  * --------------------------------------------------------------------------------

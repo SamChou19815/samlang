@@ -8,8 +8,9 @@ import {
   MIR_JUMP,
   MIR_RETURN,
 } from '../ast/mir-nodes';
-import { isNotNull } from '../util/type-assertions';
 import { constantFoldExpression } from './constant-folding-optimization';
+
+import { isNotNull } from 'samlang-core-utils/type-assertions';
 
 const optimizeExpressionWithConstantPropagationInformation = (
   expression: MidIRExpression,

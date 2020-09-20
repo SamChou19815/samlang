@@ -44,8 +44,6 @@ import {
   midIRExpressionToString,
   midIRStatementToString,
 } from '../ast/mir-nodes';
-import { bigIntIsWithin32BitIntegerRange, isPowerOfTwo, logTwo } from '../util/int-util';
-import { assertNotNull } from '../util/type-assertions';
 import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
 import getAssemblyMemoryTilingForMidIRExpression from './asm-memory-tiling';
 import {
@@ -63,6 +61,9 @@ import {
   createAssemblyMidIRExpressionTilingResult,
   createAssemblyMemoryTilingResult,
 } from './asm-tiling-results';
+
+import { bigIntIsWithin32BitIntegerRange, isPowerOfTwo, logTwo } from 'samlang-core-utils/int-util';
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 type MidIRBinaryExpressionTiler = (
   expression: MidIRBinaryExpression,

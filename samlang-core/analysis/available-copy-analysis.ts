@@ -1,7 +1,13 @@
 import type { MidIRStatement } from '../ast/mir-nodes';
-import { Hashable, ReadonlyHashSet, hashSetOf, listShallowEquals } from '../util/collections';
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
+
+import {
+  Hashable,
+  ReadonlyHashSet,
+  hashSetOf,
+  listShallowEquals,
+} from 'samlang-core-utils/collections';
 
 class AvailableCopy implements Hashable {
   constructor(readonly destination: string, readonly source: string) {}

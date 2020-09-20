@@ -5,8 +5,9 @@ import {
   MIR_TEMP,
   MidIRStatement,
 } from '../ast/mir-nodes';
-import { assertNotNull } from '../util/type-assertions';
 import ControlFlowGraph, { ControlFlowGraphNode } from './control-flow-graph';
+
+import { assertNotNull } from 'samlang-core-utils/type-assertions';
 
 class LocalNumberingAllocator {
   private id = 0;

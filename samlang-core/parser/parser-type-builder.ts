@@ -13,7 +13,6 @@ import {
   tupleType,
   functionType,
 } from '../ast/common-nodes';
-import { isNotNull, assertNotNull } from '../util/type-assertions';
 import type {
   SingleIdentifierTypeContext,
   TupleTypeContext,
@@ -21,6 +20,8 @@ import type {
   FunctionTypeNoArgContext,
 } from './generated/PLParser';
 import type { PLVisitor } from './generated/PLVisitor';
+
+import { isNotNull, assertNotNull } from 'samlang-core-utils/type-assertions';
 
 class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVisitor<Type | null> {
   defaultResult = (): Type | null => null;

@@ -1,11 +1,12 @@
 import { functionType, intType, Range, ModuleReference } from '../../ast/common-nodes';
 import { EXPRESSION_FALSE } from '../../ast/samlang-expressions';
 import type { ClassDefinition, SamlangModule } from '../../ast/samlang-toplevel';
-import { mapOf } from '../../util/collections';
 import {
   buildGlobalTypingContext,
   updateGlobalTypingContext,
 } from '../global-typing-context-builder';
+
+import { mapOf } from 'samlang-core-utils/collections';
 
 const module0Reference = new ModuleReference(['Module0']);
 const module1Reference = new ModuleReference(['Module1']);

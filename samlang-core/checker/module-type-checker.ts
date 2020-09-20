@@ -1,7 +1,6 @@
 import type { Range } from '../ast/common-nodes';
 import type { ClassMemberDefinition, TypeDefinition, SamlangModule } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
-import { assertNotNull, isNotNull } from '../util/type-assertions';
 import typeCheckExpression from './expression-type-checker';
 import TypeResolution from './type-resolution';
 import { validateType } from './type-validator';
@@ -10,6 +9,8 @@ import {
   LocalTypingContext,
   ClassTypingContext,
 } from './typing-context';
+
+import { assertNotNull, isNotNull } from 'samlang-core-utils/type-assertions';
 
 export default class ModuleTypeChecker {
   constructor(private readonly errorCollector: ModuleErrorCollector) {}
