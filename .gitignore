@@ -41,4 +41,5 @@ workspaces.json
 coverage
 
 # Generated
+workspaces.json
 samlang-core/parser/generated
