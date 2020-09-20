@@ -1,6 +1,3 @@
-import { assemblyProgramToString } from '../ast/asm-program';
-import { ModuleReference } from '../ast/common-nodes';
-import { MidIRCompilationUnit, midIRCompilationUnitToString } from '../ast/mir-nodes';
 import {
   compileSamlangSourcesToHighIRSources,
   compileHighIrModuleToMidIRCompilationUnit,
@@ -13,6 +10,9 @@ import optimizeIRCompilationUnit from '../optimization';
 import { checkSources } from '../services/source-processor';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
+import { assemblyProgramToString } from 'samlang-core-ast/asm-program';
+import { ModuleReference } from 'samlang-core-ast/common-nodes';
+import { MidIRCompilationUnit, midIRCompilationUnitToString } from 'samlang-core-ast/mir-nodes';
 import { assertNotNull } from 'samlang-core-utils';
 
 type MidIRTestCase = {

@@ -1,3 +1,9 @@
+import optimizeMidIRCompilationUnitByInlining, {
+  // eslint-disable-next-line camelcase
+  estimateMidIRFunctionInlineCost_EXPOSED_FOR_TESTING,
+} from '../inline-optimization';
+import OptimizationResourceAllocator from '../optimization-resource-allocator';
+
 import {
   MIR_MOVE_TEMP,
   MIR_MOVE_IMMUTABLE_MEM,
@@ -12,12 +18,7 @@ import {
   MIR_OP,
   midIRCompilationUnitToString,
   MIR_ONE,
-} from '../../ast/mir-nodes';
-import optimizeMidIRCompilationUnitByInlining, {
-  // eslint-disable-next-line camelcase
-  estimateMidIRFunctionInlineCost_EXPOSED_FOR_TESTING,
-} from '../inline-optimization';
-import OptimizationResourceAllocator from '../optimization-resource-allocator';
+} from 'samlang-core-ast/mir-nodes';
 
 it('estimateMidIRFunctionInlineCost test', () => {
   expect(

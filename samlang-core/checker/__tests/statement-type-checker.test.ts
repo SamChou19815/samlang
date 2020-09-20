@@ -1,3 +1,7 @@
+import { createGlobalErrorCollector } from '../../errors';
+import StatementTypeChecker from '../statement-type-checker';
+import { AccessibleGlobalTypingContext, LocalTypingContext } from '../typing-context';
+
 import {
   Type,
   boolType,
@@ -8,7 +12,7 @@ import {
   isTheSameType,
   Range,
   ModuleReference,
-} from '../../ast/common-nodes';
+} from 'samlang-core-ast/common-nodes';
 import {
   StatementBlock,
   SamlangExpression,
@@ -17,11 +21,8 @@ import {
   EXPRESSION_INT,
   EXPRESSION_VARIABLE,
   EXPRESSION_STATEMENT_BLOCK,
-} from '../../ast/samlang-expressions';
-import type { Pattern } from '../../ast/samlang-pattern';
-import { createGlobalErrorCollector } from '../../errors';
-import StatementTypeChecker from '../statement-type-checker';
-import { AccessibleGlobalTypingContext, LocalTypingContext } from '../typing-context';
+} from 'samlang-core-ast/samlang-expressions';
+import type { Pattern } from 'samlang-core-ast/samlang-pattern';
 
 const STATEMENT = (
   pattern: Pattern,

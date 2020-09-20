@@ -1,8 +1,9 @@
-import { MIR_CONST, MIR_JUMP } from '../../ast/mir-nodes';
 import {
   getMemoizedAssemblyExpressionTilingFunction,
   getMemoizedAssemblyStatementTilingFunction,
 } from '../asm-tiling-memoized-function';
+
+import { MIR_CONST, MIR_JUMP } from 'samlang-core-ast/mir-nodes';
 
 it('function returned by getMemoizedAssemblyExpressionTilingFunction is correctly memoized.', () => {
   let called = 0;

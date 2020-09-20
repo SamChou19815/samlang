@@ -1,3 +1,5 @@
+import invertMidIRConditionExpression from '../mir-condition-inverter';
+
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -6,8 +8,7 @@ import {
   MIR_TEMP,
   MIR_OP,
   MIR_IMMUTABLE_MEM,
-} from '../../ast/mir-nodes';
-import invertMidIRConditionExpression from '../mir-condition-inverter';
+} from 'samlang-core-ast/mir-nodes';
 
 it('invertMidIRConditionExpression constant inversion tests', () => {
   expect(invertMidIRConditionExpression(MIR_ZERO)).toEqual(MIR_ONE);

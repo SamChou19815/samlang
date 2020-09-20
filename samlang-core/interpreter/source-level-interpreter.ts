@@ -1,11 +1,12 @@
-import type { IdentifierType } from '../ast/common-nodes';
+import PanicException from './panic-exception';
+
+import type { IdentifierType } from 'samlang-core-ast/common-nodes';
 import {
   SamlangExpression,
   EXPRESSION_VARIABLE,
   EXPRESSION_LAMBDA,
-} from '../ast/samlang-expressions';
-import type { SamlangModule, ClassDefinition } from '../ast/samlang-toplevel';
-import PanicException from './panic-exception';
+} from 'samlang-core-ast/samlang-expressions';
+import type { SamlangModule, ClassDefinition } from 'samlang-core-ast/samlang-toplevel';
 
 export type Value =
   | UnitValue

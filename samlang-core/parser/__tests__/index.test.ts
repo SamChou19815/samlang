@@ -1,7 +1,8 @@
 import { parseSamlangModuleFromText, parseSamlangExpressionFromText } from '..';
-import { ModuleReference } from '../../ast/common-nodes';
-import type { SamlangExpression } from '../../ast/samlang-expressions';
 import { createGlobalErrorCollector } from '../../errors';
+
+import { ModuleReference } from 'samlang-core-ast/common-nodes';
+import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 
 it('Can parse good expressions.', () => {
   const globalErrorCollector = createGlobalErrorCollector();

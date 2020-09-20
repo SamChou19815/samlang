@@ -1,3 +1,5 @@
+import optimizeIRWithConstantPropagation from '../constant-propagation-optimization';
+
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -14,8 +16,7 @@ import {
   MIR_LABEL,
   midIRStatementToString,
   MIR_RETURN,
-} from '../../ast/mir-nodes';
-import optimizeIRWithConstantPropagation from '../constant-propagation-optimization';
+} from 'samlang-core-ast/mir-nodes';
 
 it('optimizeIRWithConstantPropagation test 1', () => {
   expect(

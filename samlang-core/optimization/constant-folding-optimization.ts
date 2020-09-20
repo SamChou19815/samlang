@@ -13,8 +13,7 @@ import {
   MIR_RETURN,
   MIR_JUMP,
   MIR_CJUMP_FALLTHROUGH,
-} from '../ast/mir-nodes';
-
+} from 'samlang-core-ast/mir-nodes';
 import { isNotNull } from 'samlang-core-utils';
 
 export const constantFoldExpression = (expression: MidIRExpression): MidIRExpression => {

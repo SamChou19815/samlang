@@ -1,6 +1,6 @@
 import type { Token, ParserRuleContext } from 'antlr4ts';
 
-import { Position, Range } from '../ast/common-nodes';
+import { Position, Range } from 'samlang-core-ast/common-nodes';
 
 export const tokenStartPosition = (token: Token): Position =>
   new Position(token.line - 1, token.charPositionInLine);

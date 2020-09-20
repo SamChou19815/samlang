@@ -1,5 +1,13 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
+import type {
+  SingleIdentifierTypeContext,
+  TupleTypeContext,
+  FunctionTypeContext,
+  FunctionTypeNoArgContext,
+} from './generated/PLParser';
+import type { PLVisitor } from './generated/PLVisitor';
+
 import {
   Type,
   IdentifierType,
@@ -12,15 +20,7 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from '../ast/common-nodes';
-import type {
-  SingleIdentifierTypeContext,
-  TupleTypeContext,
-  FunctionTypeContext,
-  FunctionTypeNoArgContext,
-} from './generated/PLParser';
-import type { PLVisitor } from './generated/PLVisitor';
-
+} from 'samlang-core-ast/common-nodes';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVisitor<Type | null> {

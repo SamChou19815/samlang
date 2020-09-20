@@ -1,3 +1,5 @@
+import typeResolver from '../type-resolver';
+
 import {
   Type,
   UndecidedType,
@@ -8,8 +10,7 @@ import {
   identifierType,
   tupleType,
   functionType,
-} from '../../ast/common-nodes';
-import typeResolver from '../type-resolver';
+} from 'samlang-core-ast/common-nodes';
 
 // eslint-disable-next-line import/prefer-default-export
 export const undecidedTypeResolver = ({ index }: UndecidedType): Type => {

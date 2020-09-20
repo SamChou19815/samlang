@@ -1,3 +1,21 @@
+import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
+import getAssemblyMemoryTilingForMidIRExpression from './asm-memory-tiling';
+import {
+  getMemoizedAssemblyExpressionTilingFunction,
+  getMemoizedAssemblyStatementTilingFunction,
+} from './asm-tiling-memoized-function';
+import {
+  AssemblyArgumentTilingResult,
+  AssemblyMemoryTilingResult,
+  AssemblyRegisterOrMemoryTilingResult,
+  AssemblyConstOrRegisterTilingResult,
+  AssemblyMidIRExpressionTilingResult,
+  AssemblyTilingService,
+  createAssemblyConstantTilingResult,
+  createAssemblyMidIRExpressionTilingResult,
+  createAssemblyMemoryTilingResult,
+} from './asm-tiling-results';
+
 import {
   RIP,
   RSP,
@@ -14,7 +32,7 @@ import {
   ASM_MEM_REG_WITH_CONST,
   ASM_NAME,
   AssemblyArgument,
-} from '../ast/asm-arguments';
+} from 'samlang-core-ast/asm-arguments';
 import {
   ASM_MOVE_CONST_TO_REG,
   ASM_MOVE_REG,
@@ -34,7 +52,7 @@ import {
   ASM_COMMENT,
   AssemblyInstruction,
   AssemblyConditionalJumpType,
-} from '../ast/asm-instructions';
+} from 'samlang-core-ast/asm-instructions';
 import {
   MidIRExpression,
   MidIRImmutableMemoryExpression,
@@ -43,25 +61,7 @@ import {
   MIR_IMMUTABLE_MEM,
   midIRExpressionToString,
   midIRStatementToString,
-} from '../ast/mir-nodes';
-import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
-import getAssemblyMemoryTilingForMidIRExpression from './asm-memory-tiling';
-import {
-  getMemoizedAssemblyExpressionTilingFunction,
-  getMemoizedAssemblyStatementTilingFunction,
-} from './asm-tiling-memoized-function';
-import {
-  AssemblyArgumentTilingResult,
-  AssemblyMemoryTilingResult,
-  AssemblyRegisterOrMemoryTilingResult,
-  AssemblyConstOrRegisterTilingResult,
-  AssemblyMidIRExpressionTilingResult,
-  AssemblyTilingService,
-  createAssemblyConstantTilingResult,
-  createAssemblyMidIRExpressionTilingResult,
-  createAssemblyMemoryTilingResult,
-} from './asm-tiling-results';
-
+} from 'samlang-core-ast/mir-nodes';
 import {
   bigIntIsWithin32BitIntegerRange,
   isPowerOfTwo,

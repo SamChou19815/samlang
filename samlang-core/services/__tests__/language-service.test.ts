@@ -1,5 +1,6 @@
-import { stringType, Position, ModuleReference } from '../../ast/common-nodes';
 import { LanguageServiceState, LanguageServices, CompletionItemKinds } from '../language-service';
+
+import { stringType, Position, ModuleReference } from 'samlang-core-ast/common-nodes';
 
 it('Language server state can update.', () => {
   const state = new LanguageServiceState([]);

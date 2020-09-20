@@ -1,3 +1,10 @@
+import ControlFlowGraph from '../control-flow-graph';
+import {
+  DataflowAnalysisGraphOperator,
+  runBackwardDataflowAnalysis,
+  runForwardDataflowAnalysis,
+} from '../dataflow-analysis';
+
 import {
   MidIRStatement,
   MIR_ZERO,
@@ -11,13 +18,7 @@ import {
   MIR_JUMP,
   MIR_LABEL,
   MIR_RETURN,
-} from '../../ast/mir-nodes';
-import ControlFlowGraph from '../control-flow-graph';
-import {
-  DataflowAnalysisGraphOperator,
-  runBackwardDataflowAnalysis,
-  runForwardDataflowAnalysis,
-} from '../dataflow-analysis';
+} from 'samlang-core-ast/mir-nodes';
 
 const exampleProgram: readonly MidIRStatement[] = [
   /* 00 */ MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_ONE),

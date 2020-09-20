@@ -1,4 +1,5 @@
 import analyzeAvailableCopies from '../analysis/available-copy-analysis';
+
 import {
   MidIRStatement,
   MidIRExpression,
@@ -6,7 +7,7 @@ import {
   MIR_IMMUTABLE_MEM,
   MIR_OP,
   MIR_RETURN,
-} from '../ast/mir-nodes';
+} from 'samlang-core-ast/mir-nodes';
 
 const replaceMidIRExpressionAccordingToAvailableCopies = (
   availableCopies: Readonly<Record<string, string | undefined>>,

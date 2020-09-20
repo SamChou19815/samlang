@@ -1,7 +1,6 @@
-import { ENCODED_COMPILED_PROGRAM_MAIN } from '../ast/common-names';
-import type { HighIRExpression, HighIRStatement } from '../ast/hir-expressions';
-import type { HighIRFunction, HighIRModule } from '../ast/hir-toplevel';
-
+import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
+import type { HighIRExpression, HighIRStatement } from 'samlang-core-ast/hir-expressions';
+import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import { assertNotNull } from 'samlang-core-utils';
 
 const collectUsedNamesFromExpression = (set: Set<string>, expression: HighIRExpression): void => {

@@ -1,4 +1,4 @@
-import type { Type } from '../ast/common-nodes';
+import type { Type } from 'samlang-core-ast/common-nodes';
 
 const collectUndecidedTypeIndicesVisitor = (type: Type, collector: Set<number>): void => {
   switch (type.type) {

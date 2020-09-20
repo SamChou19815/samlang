@@ -1,41 +1,5 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
-import {
-  UndecidedTypes,
-  unitType,
-  boolType,
-  intType,
-  stringType,
-  tupleType,
-  functionType,
-  Range,
-} from '../ast/common-nodes';
-import { binaryOperatorSymbolTable, AND, OR, CONCAT } from '../ast/common-operators';
-import {
-  ObjectConstructorExpressionFieldConstructor,
-  VariantPatternToExpression,
-  SamlangExpression,
-  EXPRESSION_TRUE,
-  EXPRESSION_FALSE,
-  EXPRESSION_INT,
-  EXPRESSION_STRING,
-  EXPRESSION_THIS,
-  EXPRESSION_VARIABLE,
-  EXPRESSION_CLASS_MEMBER,
-  EXPRESSION_TUPLE_CONSTRUCTOR,
-  EXPRESSION_OBJECT_CONSTRUCTOR,
-  EXPRESSION_VARIANT_CONSTRUCTOR,
-  EXPRESSION_PANIC,
-  EXPRESSION_FIELD_ACCESS,
-  EXPRESSION_UNARY,
-  EXPRESSION_BUILTIN_FUNCTION_CALL,
-  EXPRESSION_FUNCTION_CALL,
-  EXPRESSION_BINARY,
-  EXPRESSION_IF_ELSE,
-  EXPRESSION_MATCH,
-  EXPRESSION_LAMBDA,
-  EXPRESSION_STATEMENT_BLOCK,
-} from '../ast/samlang-expressions';
 import type { ModuleErrorCollector } from '../errors';
 import type {
   ExpressionContext,
@@ -74,6 +38,42 @@ import StatementBlockBuilder from './parser-statement-block-builder';
 import typeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';
 
+import {
+  UndecidedTypes,
+  unitType,
+  boolType,
+  intType,
+  stringType,
+  tupleType,
+  functionType,
+  Range,
+} from 'samlang-core-ast/common-nodes';
+import { binaryOperatorSymbolTable, AND, OR, CONCAT } from 'samlang-core-ast/common-operators';
+import {
+  ObjectConstructorExpressionFieldConstructor,
+  VariantPatternToExpression,
+  SamlangExpression,
+  EXPRESSION_TRUE,
+  EXPRESSION_FALSE,
+  EXPRESSION_INT,
+  EXPRESSION_STRING,
+  EXPRESSION_THIS,
+  EXPRESSION_VARIABLE,
+  EXPRESSION_CLASS_MEMBER,
+  EXPRESSION_TUPLE_CONSTRUCTOR,
+  EXPRESSION_OBJECT_CONSTRUCTOR,
+  EXPRESSION_VARIANT_CONSTRUCTOR,
+  EXPRESSION_PANIC,
+  EXPRESSION_FIELD_ACCESS,
+  EXPRESSION_UNARY,
+  EXPRESSION_BUILTIN_FUNCTION_CALL,
+  EXPRESSION_FUNCTION_CALL,
+  EXPRESSION_BINARY,
+  EXPRESSION_IF_ELSE,
+  EXPRESSION_MATCH,
+  EXPRESSION_LAMBDA,
+  EXPRESSION_STATEMENT_BLOCK,
+} from 'samlang-core-ast/samlang-expressions';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');

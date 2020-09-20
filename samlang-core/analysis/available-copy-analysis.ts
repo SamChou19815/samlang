@@ -1,7 +1,7 @@
-import type { MidIRStatement } from '../ast/mir-nodes';
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
 
+import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
 import { Hashable, ReadonlyHashSet, hashSetOf, listShallowEquals } from 'samlang-core-utils';
 
 class AvailableCopy implements Hashable {

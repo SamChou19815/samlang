@@ -1,4 +1,6 @@
-import { assemblyInstructionToString } from '../../ast/asm-instructions';
+import generateAssemblyInstructionsFromMidIRCompilationUnit from '../asm-toplevel-generator';
+
+import { assemblyInstructionToString } from 'samlang-core-ast/asm-instructions';
 import {
   MidIRCompilationUnit,
   MIR_MOVE_TEMP,
@@ -16,8 +18,7 @@ import {
   MidIRExpression,
   MIR_JUMP,
   MIR_CONST,
-} from '../../ast/mir-nodes';
-import generateAssemblyInstructionsFromMidIRCompilationUnit from '../asm-toplevel-generator';
+} from 'samlang-core-ast/mir-nodes';
 
 const compile = (
   compilationUnit: MidIRCompilationUnit,

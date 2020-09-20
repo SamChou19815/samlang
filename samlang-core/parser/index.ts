@@ -2,14 +2,15 @@ import { ANTLRInputStream, CommonTokenStream, ANTLRErrorListener } from 'antlr4t
 import type { RecognitionException } from 'antlr4ts/RecognitionException';
 import type { Recognizer } from 'antlr4ts/Recognizer';
 
-import { Position, Range } from '../ast/common-nodes';
-import type { SamlangExpression } from '../ast/samlang-expressions';
-import type { SamlangModule } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import { PLLexer } from './generated/PLLexer';
 import { PLParser } from './generated/PLParser';
 import ExpressionBuilder from './parser-expression-builder';
 import ModuleBuilder from './parser-module-builder';
+
+import { Position, Range } from 'samlang-core-ast/common-nodes';
+import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
+import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 
 class ErrorListener implements ANTLRErrorListener<unknown> {
   constructor(public readonly moduleErrorCollector: ModuleErrorCollector) {}

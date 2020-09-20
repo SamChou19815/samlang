@@ -1,11 +1,3 @@
-import { prettyPrintLiteral, prettyPrintType } from '../ast/common-nodes';
-import type { SamlangExpression } from '../ast/samlang-expressions';
-import type {
-  ClassMemberDefinition,
-  ClassDefinition,
-  ModuleMembersImport,
-  SamlangModule,
-} from '../ast/samlang-toplevel';
 import {
   PrettierDocument,
   PRETTIER_NIL,
@@ -24,6 +16,14 @@ import {
   createBracesSurroundedBlockDocument,
 } from './printer-prettier-library';
 
+import { prettyPrintLiteral, prettyPrintType } from 'samlang-core-ast/common-nodes';
+import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
+import type {
+  ClassMemberDefinition,
+  ClassDefinition,
+  ModuleMembersImport,
+  SamlangModule,
+} from 'samlang-core-ast/samlang-toplevel';
 import { assertNotNull } from 'samlang-core-utils';
 
 const createPrettierDocumentFromSamlangExpression = (

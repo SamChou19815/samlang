@@ -1,3 +1,8 @@
+import fixExpressionType from '../expression-type-fixer';
+import type { ReadOnlyTypeResolution } from '../type-resolution';
+import resolveType from '../type-resolver';
+import { undecidedTypeResolver } from './type-resolver.test';
+
 import {
   Type,
   unitType,
@@ -8,8 +13,8 @@ import {
   tupleType,
   functionType,
   Range,
-} from '../../ast/common-nodes';
-import { MUL, LT, AND, EQ, CONCAT } from '../../ast/common-operators';
+} from 'samlang-core-ast/common-nodes';
+import { MUL, LT, AND, EQ, CONCAT } from 'samlang-core-ast/common-operators';
 import {
   SamlangExpression,
   EXPRESSION_TRUE,
@@ -32,11 +37,7 @@ import {
   EXPRESSION_MATCH,
   EXPRESSION_LAMBDA,
   EXPRESSION_STATEMENT_BLOCK,
-} from '../../ast/samlang-expressions';
-import fixExpressionType from '../expression-type-fixer';
-import type { ReadOnlyTypeResolution } from '../type-resolution';
-import resolveType from '../type-resolver';
-import { undecidedTypeResolver } from './type-resolver.test';
+} from 'samlang-core-ast/samlang-expressions';
 
 const TestingResolution: ReadOnlyTypeResolution = {
   getPartiallyResolvedType() {

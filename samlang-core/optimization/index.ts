@@ -1,4 +1,3 @@
-import type { MidIRStatement, MidIRCompilationUnit } from '../ast/mir-nodes';
 import optimizeIRWithAlgebraicSimplification from './algebraic-optimization';
 import optimizeIRWithCommonSubExpressionElimination from './common-subexpression-elimination-optimization';
 import optimizeIRWithConstantFolding from './constant-folding-optimization';
@@ -9,6 +8,8 @@ import optimizeMidIRCompilationUnitByInlining from './inline-optimization';
 import optimizeIRWithLocalValueNumbering from './local-value-numbering-optimization';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
 import { optimizeIrWithSimpleOptimization } from './simple-optimizations';
+
+import type { MidIRStatement, MidIRCompilationUnit } from 'samlang-core-ast/mir-nodes';
 
 type OptimizationConfiguration = {
   doesPerformCopyPropagation?: boolean;

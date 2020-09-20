@@ -1,5 +1,9 @@
 /* eslint-disable camelcase */
 
+import createMidIRBasicBlocks from '../mir-basic-block';
+import reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath from '../mir-basic-block-reorder';
+import MidIRResourceAllocator from '../mir-resource-allocator';
+
 import {
   MidIRStatement_DANGEROUSLY_NON_CANONICAL,
   midIRStatementToString,
@@ -9,10 +13,7 @@ import {
   MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
   MIR_RETURN,
   MIR_TEMP,
-} from '../../ast/mir-nodes';
-import createMidIRBasicBlocks from '../mir-basic-block';
-import reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath from '../mir-basic-block-reorder';
-import MidIRResourceAllocator from '../mir-resource-allocator';
+} from 'samlang-core-ast/mir-nodes';
 
 const reorderAndDumpToString = (
   statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[]

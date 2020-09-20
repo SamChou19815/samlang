@@ -1,3 +1,6 @@
+import ControlFlowGraph from './control-flow-graph';
+import { DataflowAnalysisGraphOperator, runBackwardDataflowAnalysis } from './dataflow-analysis';
+
 import {
   AssemblyArgument,
   RDI,
@@ -11,11 +14,8 @@ import {
   R11,
   RSP,
   RBP,
-} from '../ast/asm-arguments';
-import type { AssemblyInstruction } from '../ast/asm-instructions';
-import ControlFlowGraph from './control-flow-graph';
-import { DataflowAnalysisGraphOperator, runBackwardDataflowAnalysis } from './dataflow-analysis';
-
+} from 'samlang-core-ast/asm-arguments';
+import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
 import { setEquals } from 'samlang-core-utils';
 
 const collectUsesFromAssemblyArgument = (

@@ -1,3 +1,5 @@
+import PanicException from './panic-exception';
+
 import {
   RAX,
   RDX,
@@ -10,9 +12,9 @@ import {
   AssemblyMemory,
   AssemblyRegisterOrMemory,
   AssemblyArgument,
-} from '../ast/asm-arguments';
-import type { AssemblyInstruction, AssemblyCall } from '../ast/asm-instructions';
-import type { AssemblyProgram } from '../ast/asm-program';
+} from 'samlang-core-ast/asm-arguments';
+import type { AssemblyInstruction, AssemblyCall } from 'samlang-core-ast/asm-instructions';
+import type { AssemblyProgram } from 'samlang-core-ast/asm-program';
 import {
   ENCODED_COMPILED_PROGRAM_MAIN,
   ENCODED_FUNCTION_NAME_PRINTLN,
@@ -21,9 +23,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_MALLOC,
   ENCODED_FUNCTION_NAME_THROW,
-} from '../ast/common-names';
-import PanicException from './panic-exception';
-
+} from 'samlang-core-ast/common-names';
 import { assertNotNull } from 'samlang-core-utils';
 
 // istanbul ignore next

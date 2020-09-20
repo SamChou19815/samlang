@@ -1,3 +1,5 @@
+import analyzeLiveVariablesAtTheEndOfEachInstruction from '../live-variable-analysis';
+
 import {
   RAX,
   RDX,
@@ -10,7 +12,7 @@ import {
   ASM_MEM_REG,
   ASM_MEM_CONST,
   ASM_MEM_REG_SUM,
-} from '../../ast/asm-arguments';
+} from 'samlang-core-ast/asm-arguments';
 import {
   AssemblyInstruction,
   ASM_MOVE_MEM,
@@ -34,8 +36,7 @@ import {
   ASM_RET,
   ASM_LABEL,
   ASM_COMMENT,
-} from '../../ast/asm-instructions';
-import analyzeLiveVariablesAtTheEndOfEachInstruction from '../live-variable-analysis';
+} from 'samlang-core-ast/asm-instructions';
 
 const analyze = (
   instructions: readonly AssemblyInstruction[],

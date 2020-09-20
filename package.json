@@ -11,7 +11,7 @@
     "format": "prettier --write '**/*.{ts,js}'",
     "format:check": "prettier --check '**/*.{ts,js}'",
     "codegen": "sam-codegen ./bin/repo-codegen-services",
-    "compile": "yarn workspaces foreach -t run compile",
+    "compile": "./bin/monorail compile",
     "bundle": "./bin/monorail bundle",
     "test": "jest --coverage",
     "test:single": "jest -t",
@@ -55,12 +55,12 @@
               "allow": [
                 "antlr4ts/**",
                 "**/samlang-core/analysis/*",
-                "**/samlang-core/ast/*",
                 "**/samlang-core/errors/*",
                 "**/samlang-core/interpreter/*",
                 "**/samlang-core/optimization/simple-optimizations*",
                 "**/samlang-core/parser/generated/*",
-                "**/samlang-core/services/*"
+                "**/samlang-core/services/*",
+                "**/samlang-core-ast/*"
               ]
             }
           ]

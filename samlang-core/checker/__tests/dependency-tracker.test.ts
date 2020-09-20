@@ -1,5 +1,6 @@
-import { ModuleReference } from '../../ast/common-nodes';
 import DependencyTracker from '../dependency-tracker';
+
+import { ModuleReference } from 'samlang-core-ast/common-nodes';
 
 it('can track and update dependencies', () => {
   const tracker = new DependencyTracker();

@@ -1,5 +1,5 @@
-import type { AssemblyInstruction } from '../ast/asm-instructions';
-import type { MidIRStatement } from '../ast/mir-nodes';
+import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
+import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
 
 interface Adapter<I> {
   /** @returns the label if the given instruction is the label instruction. */

@@ -1,6 +1,7 @@
-import { Type, UndecidedType, isTheSameType, Range } from '../ast/common-nodes';
 import type { ModuleErrorCollector } from '../errors';
 import type TypeResolution from './type-resolution';
+
+import { Type, UndecidedType, isTheSameType, Range } from 'samlang-core-ast/common-nodes';
 
 const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
   const meetWithResolution = (type1: Type, type2: Type): Type => meet(type1, type2, resolution);

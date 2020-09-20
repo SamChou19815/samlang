@@ -1,11 +1,5 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
-import { UndecidedTypes } from '../ast/common-nodes';
-import type {
-  SamlangValStatement,
-  StatementBlock,
-  SamlangExpression,
-} from '../ast/samlang-expressions';
 import type {
   ExpressionContext,
   StatementBlockContext,
@@ -16,6 +10,12 @@ import patternBuilder from './parser-pattern-builder';
 import typeBuilder from './parser-type-builder';
 import { contextRange } from './parser-util';
 
+import { UndecidedTypes } from 'samlang-core-ast/common-nodes';
+import type {
+  SamlangValStatement,
+  StatementBlock,
+  SamlangExpression,
+} from 'samlang-core-ast/samlang-expressions';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 class StatementBuilder

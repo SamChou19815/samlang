@@ -1,5 +1,3 @@
-import type { Range } from '../ast/common-nodes';
-import type { ClassMemberDefinition, TypeDefinition, SamlangModule } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 import typeCheckExpression from './expression-type-checker';
 import TypeResolution from './type-resolution';
@@ -10,6 +8,12 @@ import {
   ClassTypingContext,
 } from './typing-context';
 
+import type { Range } from 'samlang-core-ast/common-nodes';
+import type {
+  ClassMemberDefinition,
+  TypeDefinition,
+  SamlangModule,
+} from 'samlang-core-ast/samlang-toplevel';
 import { assertNotNull, isNotNull } from 'samlang-core-utils';
 
 export default class ModuleTypeChecker {

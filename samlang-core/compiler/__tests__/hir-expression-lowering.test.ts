@@ -1,3 +1,5 @@
+import lowerSamlangExpression from '../hir-expression-lowering';
+
 import {
   unitType,
   identifierType,
@@ -7,8 +9,8 @@ import {
   stringType,
   Range,
   ModuleReference,
-} from '../../ast/common-nodes';
-import { PLUS, AND, OR, CONCAT } from '../../ast/common-operators';
+} from 'samlang-core-ast/common-nodes';
+import { PLUS, AND, OR, CONCAT } from 'samlang-core-ast/common-operators';
 import {
   HIR_NAME,
   HIR_VARIABLE,
@@ -23,7 +25,7 @@ import {
   HIR_LET,
   HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
-} from '../../ast/hir-expressions';
+} from 'samlang-core-ast/hir-expressions';
 import {
   SamlangExpression,
   EXPRESSION_FALSE,
@@ -47,9 +49,8 @@ import {
   EXPRESSION_IF_ELSE,
   EXPRESSION_MATCH,
   EXPRESSION_STATEMENT_BLOCK,
-} from '../../ast/samlang-expressions';
-import type { SamlangModule } from '../../ast/samlang-toplevel';
-import lowerSamlangExpression from '../hir-expression-lowering';
+} from 'samlang-core-ast/samlang-expressions';
+import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 
 const DUMMY_IDENTIFIER_TYPE = identifierType('Dummy');
 const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE });

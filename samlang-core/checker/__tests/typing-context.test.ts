@@ -1,5 +1,6 @@
-import { intType, identifierType, functionType, Range } from '../../ast/common-nodes';
 import { LocalTypingContext, AccessibleGlobalTypingContext } from '../typing-context';
+
+import { intType, identifierType, functionType, Range } from 'samlang-core-ast/common-nodes';
 
 it('LocalTypingContext basic methods test.', () => {
   const context = new LocalTypingContext();

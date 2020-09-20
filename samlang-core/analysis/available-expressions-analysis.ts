@@ -1,7 +1,11 @@
-import { MidIRExpression, MidIRStatement, midIRExpressionToString } from '../ast/mir-nodes';
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
 
+import {
+  MidIRExpression,
+  MidIRStatement,
+  midIRExpressionToString,
+} from 'samlang-core-ast/mir-nodes';
 import {
   Hashable,
   ReadonlyHashMap,

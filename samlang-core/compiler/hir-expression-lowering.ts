@@ -5,8 +5,8 @@ import {
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
-} from '../ast/common-names';
-import type { IdentifierType, ModuleReference } from '../ast/common-nodes';
+} from 'samlang-core-ast/common-names';
+import type { IdentifierType, ModuleReference } from 'samlang-core-ast/common-nodes';
 import {
   HighIRStatement,
   HighIRExpression,
@@ -23,8 +23,8 @@ import {
   HIR_LET,
   HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
-} from '../ast/hir-expressions';
-import type { HighIRFunction } from '../ast/hir-toplevel';
+} from 'samlang-core-ast/hir-expressions';
+import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import type {
   SamlangExpression,
   ClassMemberExpression,
@@ -42,9 +42,8 @@ import type {
   MatchExpression,
   LambdaExpression,
   StatementBlockExpression,
-} from '../ast/samlang-expressions';
-import type { SamlangModule } from '../ast/samlang-toplevel';
-
+} from 'samlang-core-ast/samlang-expressions';
+import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { isNotNull } from 'samlang-core-utils';
 
 type HighIRExpressionLoweringResult = {

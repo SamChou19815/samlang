@@ -1,3 +1,5 @@
+import analyzeAvailableCopies from '../available-copy-analysis';
+
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -11,8 +13,7 @@ import {
   MIR_JUMP,
   MIR_LABEL,
   MIR_RETURN,
-} from '../../ast/mir-nodes';
-import analyzeAvailableCopies from '../available-copy-analysis';
+} from 'samlang-core-ast/mir-nodes';
 
 it('analyzeAvailableCopies test 1', () => {
   expect(

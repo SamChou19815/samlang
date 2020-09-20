@@ -1,5 +1,7 @@
 /* eslint-disable camelcase */
 
+import type MidIRResourceAllocator from './mir-resource-allocator';
+
 import {
   MidIRStatement_DANGEROUSLY_NON_CANONICAL,
   MidIRJumpStatement,
@@ -7,8 +9,7 @@ import {
   MidIRReturnStatement,
   MIR_LABEL,
   MIR_JUMP,
-} from '../ast/mir-nodes';
-import type MidIRResourceAllocator from './mir-resource-allocator';
+} from 'samlang-core-ast/mir-nodes';
 
 export interface ReadonlyMidIRBasicBlockWithoutPointers {
   readonly label: string;

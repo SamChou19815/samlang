@@ -1,3 +1,6 @@
+import midIRTranslateStatementsAndCollectGlobalStrings from '../mir-lowering-translator';
+import MidIRResourceAllocator from '../mir-resource-allocator';
+
 import {
   HighIRStatement,
   HIR_INT,
@@ -13,10 +16,8 @@ import {
   HIR_STRUCT_INITIALIZATION,
   HIR_WHILE_TRUE,
   HIR_ZERO,
-} from '../../ast/hir-expressions';
-import { midIRStatementToString, MIR_ZERO } from '../../ast/mir-nodes';
-import midIRTranslateStatementsAndCollectGlobalStrings from '../mir-lowering-translator';
-import MidIRResourceAllocator from '../mir-resource-allocator';
+} from 'samlang-core-ast/hir-expressions';
+import { midIRStatementToString, MIR_ZERO } from 'samlang-core-ast/mir-nodes';
 
 const assertCorrectlyLoweredWithPreConfiguredSetup = (
   statement: HighIRStatement,

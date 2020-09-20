@@ -1,7 +1,7 @@
-import type { Sources } from '../ast/common-nodes';
-import type { ModuleMembersImport, SamlangModule } from '../ast/samlang-toplevel';
 import type { ModuleErrorCollector } from '../errors';
 
+import type { Sources } from 'samlang-core-ast/common-nodes';
+import type { ModuleMembersImport, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { isNotNull } from 'samlang-core-utils';
 
 class UndefinedImportChecker {

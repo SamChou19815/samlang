@@ -1,4 +1,6 @@
-import { ASM_JUMP, ASM_RET, ASM_LABEL } from '../../ast/asm-instructions';
+import ControlFlowGraph from '../control-flow-graph';
+
+import { ASM_JUMP, ASM_RET, ASM_LABEL } from 'samlang-core-ast/asm-instructions';
 import {
   MIR_MOVE_TEMP,
   MIR_JUMP,
@@ -6,8 +8,7 @@ import {
   MIR_LABEL,
   MIR_RETURN,
   MIR_TEMP,
-} from '../../ast/mir-nodes';
-import ControlFlowGraph from '../control-flow-graph';
+} from 'samlang-core-ast/mir-nodes';
 
 const statements = [
   MIR_LABEL('foo'),

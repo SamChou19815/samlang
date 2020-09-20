@@ -1,3 +1,5 @@
+import TypeResolution from '../type-resolution';
+
 import {
   unitType,
   boolType,
@@ -6,8 +8,7 @@ import {
   tupleType,
   functionType,
   Type,
-} from '../../ast/common-nodes';
-import TypeResolution from '../type-resolution';
+} from 'samlang-core-ast/common-nodes';
 
 it('can resolve basic disjoint types with sufficient information', () => {
   const resolution = new TypeResolution();

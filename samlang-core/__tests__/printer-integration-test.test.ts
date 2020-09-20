@@ -1,9 +1,9 @@
-import { ModuleReference } from '../ast/common-nodes';
-import type { SamlangModule } from '../ast/samlang-toplevel';
 import { prettyPrintSamlangModule } from '../printer';
 import { checkSources } from '../services/source-processor';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
+import { ModuleReference } from 'samlang-core-ast/common-nodes';
+import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { assertNotNull } from 'samlang-core-utils';
 
 const getTypeCheckedModule = (code: string): SamlangModule => {

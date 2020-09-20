@@ -1,3 +1,5 @@
+import eliminateUselessEndingMoveForHighIRStatements from '../hir-eliminate-useless-ending-moves';
+
 import {
   HIR_ZERO,
   HIR_ONE,
@@ -8,8 +10,7 @@ import {
   HIR_LET,
   HIR_NAME,
   HIR_STRUCT_INITIALIZATION,
-} from '../../ast/hir-expressions';
-import eliminateUselessEndingMoveForHighIRStatements from '../hir-eliminate-useless-ending-moves';
+} from 'samlang-core-ast/hir-expressions';
 
 it('eliminateUselessEndingMoveForHighIRStatements empty array test', () => {
   expect(eliminateUselessEndingMoveForHighIRStatements([])).toEqual([]);

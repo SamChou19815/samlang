@@ -1,3 +1,6 @@
+import eliminateUselessEndingMoveForHighIRStatements from './hir-eliminate-useless-ending-moves';
+import coalesceMoveAndReturnForHighIRStatements from './hir-move-return-coalescing';
+
 import {
   HighIRStatement,
   HIR_ZERO,
@@ -6,10 +9,8 @@ import {
   HIR_IF_ELSE,
   HIR_WHILE_TRUE,
   HIR_RETURN,
-} from '../ast/hir-expressions';
-import type { HighIRFunction } from '../ast/hir-toplevel';
-import eliminateUselessEndingMoveForHighIRStatements from './hir-eliminate-useless-ending-moves';
-import coalesceMoveAndReturnForHighIRStatements from './hir-move-return-coalescing';
+} from 'samlang-core-ast/hir-expressions';
+import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 
 const performTailRecursiveCallTransformationOnLinearStatementsWithFinalReturn = (
   highIRFunction: HighIRFunction,

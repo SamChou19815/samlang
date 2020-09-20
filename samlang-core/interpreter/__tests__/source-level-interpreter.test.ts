@@ -1,17 +1,3 @@
-import {
-  stringType,
-  identifierType,
-  Range,
-  ModuleReference,
-  Position,
-} from '../../ast/common-nodes';
-import {
-  SamlangExpression,
-  VariantConstructorExpression,
-  EXPRESSION_TRUE,
-  EXPRESSION_METHOD_ACCESS,
-  EXPRESSION_MATCH,
-} from '../../ast/samlang-expressions';
 import { createGlobalErrorCollector } from '../../errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
 import interpretSamlangModule, {
@@ -23,6 +9,20 @@ import interpretSamlangModule, {
   Value,
 } from '../source-level-interpreter';
 
+import {
+  stringType,
+  identifierType,
+  Range,
+  ModuleReference,
+  Position,
+} from 'samlang-core-ast/common-nodes';
+import {
+  SamlangExpression,
+  VariantConstructorExpression,
+  EXPRESSION_TRUE,
+  EXPRESSION_METHOD_ACCESS,
+  EXPRESSION_MATCH,
+} from 'samlang-core-ast/samlang-expressions';
 import { assertNotNull } from 'samlang-core-utils';
 
 const getExpression = (rawSourceWithTypeAnnotation: string): SamlangExpression => {

@@ -1,3 +1,5 @@
+import performTailRecursiveCallTransformationOnHighIRFunction from '../hir-tail-recursion-transformation-hir';
+
 import {
   HIR_ZERO,
   HIR_ONE,
@@ -8,8 +10,7 @@ import {
   HIR_LET,
   HIR_NAME,
   HIR_RETURN,
-} from '../../ast/hir-expressions';
-import performTailRecursiveCallTransformationOnHighIRFunction from '../hir-tail-recursion-transformation-hir';
+} from 'samlang-core-ast/hir-expressions';
 
 it('performTailRecursiveCallTransformationOnHighIRFunction failed coalescing test', () => {
   expect(

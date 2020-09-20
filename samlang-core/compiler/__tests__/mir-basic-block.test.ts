@@ -1,5 +1,8 @@
 /* eslint-disable camelcase */
 
+import createMidIRBasicBlocks, { MidIRBasicBlock } from '../mir-basic-block';
+import MidIRResourceAllocator from '../mir-resource-allocator';
+
 import {
   MidIRStatement_DANGEROUSLY_NON_CANONICAL,
   MIR_MOVE_TEMP,
@@ -8,9 +11,7 @@ import {
   MIR_LABEL,
   MIR_RETURN,
   MIR_TEMP,
-} from '../../ast/mir-nodes';
-import createMidIRBasicBlocks, { MidIRBasicBlock } from '../mir-basic-block';
-import MidIRResourceAllocator from '../mir-resource-allocator';
+} from 'samlang-core-ast/mir-nodes';
 
 it('Constructor correctly finishes on good input.', () => {
   expect(new MidIRBasicBlock('', [MIR_RETURN()]).allStatements.length).toBe(1);

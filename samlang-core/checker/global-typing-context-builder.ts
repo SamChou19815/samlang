@@ -1,7 +1,5 @@
 /** Responsible for building the global typing environment as part of pre-processing phase. */
 
-import type { ModuleReference, Sources } from '../ast/common-nodes';
-import type { ClassInterface, SamlangModule } from '../ast/samlang-toplevel';
 import type {
   MemberTypeInformation,
   ClassTypingContext,
@@ -10,6 +8,8 @@ import type {
   ReadonlyGlobalTypingContext,
 } from './typing-context';
 
+import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import type { ClassInterface, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { hashMapOf, isNotNull, assertNotNull } from 'samlang-core-utils';
 
 const buildClassTypingContext = ({

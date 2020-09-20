@@ -1,4 +1,7 @@
-import { assemblyInstructionToString } from '../../ast/asm-instructions';
+import getAssemblyTilingForMidIRStatements from '../asm-dp-tiling';
+import AssemblyFunctionAbstractRegisterAllocator from '../asm-function-abstract-register-allocator';
+
+import { assemblyInstructionToString } from 'samlang-core-ast/asm-instructions';
 import {
   MidIRStatement,
   MIR_ZERO,
@@ -15,9 +18,7 @@ import {
   MIR_LABEL,
   MIR_CJUMP_FALLTHROUGH,
   MIR_RETURN,
-} from '../../ast/mir-nodes';
-import getAssemblyTilingForMidIRStatements from '../asm-dp-tiling';
-import AssemblyFunctionAbstractRegisterAllocator from '../asm-function-abstract-register-allocator';
+} from 'samlang-core-ast/mir-nodes';
 
 const tileStatements = (statements: readonly MidIRStatement[]): string => {
   const lines = getAssemblyTilingForMidIRStatements(

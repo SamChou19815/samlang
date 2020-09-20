@@ -1,4 +1,6 @@
-import { ASM_CONST, ASM_REG, ASM_MEM, ASM_MEM_CONST, RAX } from '../../ast/asm-arguments';
+import collectAssemblyRegistersFromAssemblyInstructions from '../asm-register-collector';
+
+import { ASM_CONST, ASM_REG, ASM_MEM, ASM_MEM_CONST, RAX } from 'samlang-core-ast/asm-arguments';
 import {
   ASM_MOVE_CONST_TO_REG,
   ASM_MOVE_REG,
@@ -20,8 +22,7 @@ import {
   ASM_POP_RBP,
   ASM_LABEL,
   ASM_COMMENT,
-} from '../../ast/asm-instructions';
-import collectAssemblyRegistersFromAssemblyInstructions from '../asm-register-collector';
+} from 'samlang-core-ast/asm-instructions';
 
 const REG = ASM_REG('reg');
 const FORTY_TWO = ASM_CONST(42);

@@ -1,5 +1,11 @@
-import { ASM_REG, assemblyArgumentToString, ASM_MEM, RIP } from '../../ast/asm-arguments';
-import { assemblyInstructionToString, ASM_MOVE_MEM } from '../../ast/asm-instructions';
+import getAssemblyMemoryTilingForMidIRExpression from '../asm-memory-tiling';
+import {
+  AssemblyTilingServiceBasic,
+  createAssemblyMidIRExpressionTilingResult,
+} from '../asm-tiling-results';
+
+import { ASM_REG, assemblyArgumentToString, ASM_MEM, RIP } from 'samlang-core-ast/asm-arguments';
+import { assemblyInstructionToString, ASM_MOVE_MEM } from 'samlang-core-ast/asm-instructions';
 import {
   MidIRExpression,
   MIR_ONE,
@@ -9,12 +15,7 @@ import {
   MIR_TEMP,
   MIR_IMMUTABLE_MEM,
   MIR_OP,
-} from '../../ast/mir-nodes';
-import getAssemblyMemoryTilingForMidIRExpression from '../asm-memory-tiling';
-import {
-  AssemblyTilingServiceBasic,
-  createAssemblyMidIRExpressionTilingResult,
-} from '../asm-tiling-results';
+} from 'samlang-core-ast/mir-nodes';
 
 const mockedService: AssemblyTilingServiceBasic = {
   tileExpression(expression) {

@@ -1,15 +1,4 @@
 import {
-  ENCODED_FUNCTION_NAME_INT_TO_STRING,
-  ENCODED_FUNCTION_NAME_PRINTLN,
-  ENCODED_FUNCTION_NAME_STRING_TO_INT,
-  ENCODED_FUNCTION_NAME_STRING_CONCAT,
-  ENCODED_FUNCTION_NAME_THROW,
-  ENCODED_COMPILED_PROGRAM_MAIN,
-} from '../ast/common-names';
-import { binaryOperatorSymbolTable } from '../ast/common-operators';
-import type { HighIRStatement, HighIRExpression } from '../ast/hir-expressions';
-import type { HighIRFunction, HighIRModule } from '../ast/hir-toplevel';
-import {
   PrettierDocument,
   PRETTIER_CONCAT,
   PRETTIER_TEXT,
@@ -22,6 +11,18 @@ import {
   createBracketSurroundedDocument,
   createBracesSurroundedBlockDocument,
 } from './printer-prettier-library';
+
+import {
+  ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
+  ENCODED_FUNCTION_NAME_STRING_CONCAT,
+  ENCODED_FUNCTION_NAME_THROW,
+  ENCODED_COMPILED_PROGRAM_MAIN,
+} from 'samlang-core-ast/common-names';
+import { binaryOperatorSymbolTable } from 'samlang-core-ast/common-operators';
+import type { HighIRStatement, HighIRExpression } from 'samlang-core-ast/hir-expressions';
+import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
 
 // Thanks https://gist.github.com/getify/3667624
 const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');

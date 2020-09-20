@@ -1,5 +1,6 @@
 import analyzeLiveTemporariesAtTheEndOfEachStatement from '../analysis/live-temp-analysis';
-import type { MidIRStatement, MidIRExpression } from '../ast/mir-nodes';
+
+import type { MidIRStatement, MidIRExpression } from 'samlang-core-ast/mir-nodes';
 
 /** Some expressions might trigger exceptions, removing them changes the behavior of programs. */
 const isMidIRExpressionUnsafeToRemove = (expression: MidIRExpression): boolean => {

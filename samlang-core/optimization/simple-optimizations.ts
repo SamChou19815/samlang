@@ -1,7 +1,7 @@
 import ControlFlowGraph from '../analysis/control-flow-graph';
-import type { AssemblyInstruction } from '../ast/asm-instructions';
-import { MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from '../ast/mir-nodes';
 
+import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
+import { MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from 'samlang-core-ast/mir-nodes';
 import { isNotNull } from 'samlang-core-utils';
 
 const pipe = <E>(element: E, ...functions: readonly ((e: E) => E)[]): E =>
