@@ -1,6 +1,4 @@
 import { prettyPrintSamlangModule } from '..';
-import { createGlobalErrorCollector } from '../../errors';
-import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from '../../parser';
 // eslint-disable-next-line camelcase
 import { prettyPrintSamlangExpression_EXPOSED_FOR_TESTING } from '../printer-source-level';
 
@@ -9,6 +7,8 @@ import {
   EXPRESSION_METHOD_ACCESS,
   EXPRESSION_VARIABLE,
 } from 'samlang-core-ast/samlang-expressions';
+import { createGlobalErrorCollector } from 'samlang-core-errors';
+import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from 'samlang-core-parser';
 import { assertNotNull } from 'samlang-core-utils';
 
 const reprintExpression = (rawSourceWithTypeAnnotation: string, width = 40): string => {

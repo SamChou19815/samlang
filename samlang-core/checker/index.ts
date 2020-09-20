@@ -1,4 +1,3 @@
-import type { ReadonlyGlobalErrorCollector } from '../errors';
 import {
   buildGlobalTypingContext,
   updateGlobalTypingContext,
@@ -9,6 +8,7 @@ import checkUndefinedImportsError from './undefined-imports-checker';
 
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import type { ReadonlyGlobalErrorCollector } from 'samlang-core-errors';
 import { hashMapOf, mapOf, assertNotNull } from 'samlang-core-utils';
 
 const typeCheckModule = (

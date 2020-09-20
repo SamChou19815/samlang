@@ -4,13 +4,13 @@ import {
   compileHighIrModuleToMidIRCompilationUnit,
   generateAssemblyInstructionsFromMidIRCompilationUnit,
 } from '../compiler';
-import { CompileTimeError, createGlobalErrorCollector } from '../errors';
 import optimizeIRCompilationUnit from '../optimization';
-import { parseSamlangModuleFromText } from '../parser';
 
 import type { AssemblyProgram } from 'samlang-core-ast/asm-program';
 import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import { CompileTimeError, createGlobalErrorCollector } from 'samlang-core-errors';
+import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import { hashMapOf } from 'samlang-core-utils';
 
 type CheckSourcesResult = {
