@@ -17,23 +17,6 @@
         "@dev-sam/samlang-cli"
       ]
     },
-    "@dev-sam/samlang-core": {
-      "workspaceLocation": "samlang-core",
-      "dependencyChain": [
-        "samlang-core-utils",
-        "samlang-core-ast",
-        "samlang-core-errors",
-        "samlang-core-parser",
-        "samlang-core-checker",
-        "samlang-core-analysis",
-        "samlang-core-optimization",
-        "samlang-core-compiler",
-        "samlang-core-interpreter",
-        "samlang-core-services",
-        "samlang-core-printer",
-        "@dev-sam/samlang-core"
-      ]
-    },
     "@dev-sam/samlang-demo": {
       "workspaceLocation": "samlang-demo",
       "dependencyChain": [
@@ -92,6 +75,23 @@
         "samlang-core-utils",
         "samlang-core-ast",
         "samlang-core-errors"
+      ]
+    },
+    "samlang-core-integration-tests": {
+      "workspaceLocation": "samlang-core-integration-tests",
+      "dependencyChain": [
+        "samlang-core-utils",
+        "samlang-core-ast",
+        "samlang-core-analysis",
+        "samlang-core-optimization",
+        "samlang-core-compiler",
+        "samlang-core-errors",
+        "samlang-core-parser",
+        "samlang-core-interpreter",
+        "samlang-core-checker",
+        "samlang-core-services",
+        "samlang-core-printer",
+        "samlang-core-integration-tests"
       ]
     },
     "samlang-core-interpreter": {
@@ -171,7 +171,7 @@
     "samlang-core-printer",
     "@dev-sam/samlang-cli",
     "samlang-core-interpreter",
-    "@dev-sam/samlang-core",
+    "samlang-core-integration-tests",
     "@dev-sam/samlang-demo"
   ]
 }
