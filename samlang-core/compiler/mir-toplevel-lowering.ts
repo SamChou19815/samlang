@@ -1,4 +1,3 @@
-import { optimizeIrWithSimpleOptimization } from '../optimization/simple-optimizations';
 import createMidIRBasicBlocks from './mir-basic-block';
 import emitCanonicalMidIRStatementsFromReorderedBasicBlocks from './mir-basic-block-optimized-emitter';
 import reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath from './mir-basic-block-reorder';
@@ -8,6 +7,7 @@ import MidIRResourceAllocator from './mir-resource-allocator';
 import type { GlobalVariable } from 'samlang-core-ast/common-nodes';
 import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import { MidIRCompilationUnit, MidIRFunction, MIR_RETURN } from 'samlang-core-ast/mir-nodes';
+import { optimizeIrWithSimpleOptimization } from 'samlang-core-optimization/simple-optimizations';
 
 const compileHighIrModuleToMidIRCompilationUnit = (
   highIRModule: HighIRModule

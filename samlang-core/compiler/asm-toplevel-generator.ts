@@ -1,4 +1,3 @@
-import { optimizeAssemblyWithSimpleOptimization } from '../optimization/simple-optimizations';
 import getAssemblyTilingForMidIRStatements from './asm-dp-tiling';
 import AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
 import AssemblyRegisterAllocator from './asm-register-allocator';
@@ -26,6 +25,7 @@ import {
   MIR_IMMUTABLE_MEM,
   MIR_OP,
 } from 'samlang-core-ast/mir-nodes';
+import { optimizeAssemblyWithSimpleOptimization } from 'samlang-core-optimization/simple-optimizations';
 
 /** Generate prologue and epilogue of functions according System-V calling conventions. */
 const fixCallingConvention = (
