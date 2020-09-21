@@ -1,0 +1,18 @@
+{
+  "name": "samlang-core-compiler",
+  "version": "0.0.1",
+  "license": "AGPLv3",
+  "scripts": {
+    "compile": "tsc --incremental --noEmit"
+  },
+  "dependencies": {
+    "samlang-core-analysis": "workspace:0.0.1",
+    "samlang-core-ast": "workspace:0.0.1",
+    "samlang-core-optimization": "workspace:0.0.1",
+    "samlang-core-utils": "workspace:0.0.1"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.10",
+    "typescript": "4.0.2"
+  }
+}

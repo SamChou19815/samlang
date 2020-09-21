@@ -13,6 +13,7 @@
     "samlang-core-analysis": "workspace:0.0.1",
     "samlang-core-ast": "workspace:0.0.1",
     "samlang-core-checker": "workspace:0.0.1",
+    "samlang-core-compiler": "workspace:0.0.1",
     "samlang-core-errors": "workspace:0.0.1",
     "samlang-core-interpreter": "workspace:0.0.1",
     "samlang-core-optimization": "workspace:0.0.1",
