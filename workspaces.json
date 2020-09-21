@@ -10,8 +10,9 @@
         "samlang-core-errors",
         "samlang-core-parser",
         "samlang-core-checker",
-        "samlang-core-interpreter",
         "samlang-core-optimization",
+        "samlang-core-compiler",
+        "samlang-core-interpreter",
         "@dev-sam/samlang-core",
         "@dev-sam/samlang-cli"
       ]
@@ -25,8 +26,9 @@
         "samlang-core-errors",
         "samlang-core-parser",
         "samlang-core-checker",
-        "samlang-core-interpreter",
         "samlang-core-optimization",
+        "samlang-core-compiler",
+        "samlang-core-interpreter",
         "@dev-sam/samlang-core"
       ]
     },
@@ -39,8 +41,9 @@
         "samlang-core-errors",
         "samlang-core-parser",
         "samlang-core-checker",
-        "samlang-core-interpreter",
         "samlang-core-optimization",
+        "samlang-core-compiler",
+        "samlang-core-interpreter",
         "@dev-sam/samlang-core",
         "@dev-sam/samlang-demo"
       ]
@@ -68,6 +71,16 @@
         "samlang-core-errors",
         "samlang-core-parser",
         "samlang-core-checker"
+      ]
+    },
+    "samlang-core-compiler": {
+      "workspaceLocation": "samlang-core-compiler",
+      "dependencyChain": [
+        "samlang-core-utils",
+        "samlang-core-ast",
+        "samlang-core-analysis",
+        "samlang-core-optimization",
+        "samlang-core-compiler"
       ]
     },
     "samlang-core-errors": {
@@ -120,8 +133,9 @@
     "samlang-core-errors",
     "samlang-core-parser",
     "samlang-core-checker",
-    "samlang-core-interpreter",
     "samlang-core-optimization",
+    "samlang-core-compiler",
+    "samlang-core-interpreter",
     "@dev-sam/samlang-core",
     "@dev-sam/samlang-cli",
     "@dev-sam/samlang-demo"

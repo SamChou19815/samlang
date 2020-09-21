@@ -1,14 +1,14 @@
-import {
-  compileSamlangSourcesToHighIRSources,
-  compileHighIrModuleToMidIRCompilationUnit,
-  generateAssemblyInstructionsFromMidIRCompilationUnit,
-} from '../compiler';
 import { checkSources } from '../services/source-processor';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
 import { assemblyProgramToString } from 'samlang-core-ast/asm-program';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { MidIRCompilationUnit, midIRCompilationUnitToString } from 'samlang-core-ast/mir-nodes';
+import {
+  compileSamlangSourcesToHighIRSources,
+  compileHighIrModuleToMidIRCompilationUnit,
+  generateAssemblyInstructionsFromMidIRCompilationUnit,
+} from 'samlang-core-compiler';
 import interpretAssemblyProgram from 'samlang-core-interpreter/assembly-interpreter';
 import interpretMidIRCompilationUnit from 'samlang-core-interpreter/mid-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
