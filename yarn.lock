@@ -1650,12 +1650,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@dev-sam/samlang-cli@workspace:samlang-cli"
   dependencies:
-    "@dev-sam/samlang-core": "workspace:0.0.1"
     "@types/jest": ^26.0.10
     "@types/node": ^14.6.0
     "@vercel/ncc": ^0.24.0
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
+    samlang-core-printer: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
     typescript: 4.0.2
     vscode-languageserver: ^6.1.1
@@ -1664,7 +1664,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@dev-sam/samlang-core@workspace:0.0.1, @dev-sam/samlang-core@workspace:samlang-core":
+"@dev-sam/samlang-core@workspace:samlang-core":
   version: 0.0.0-use.local
   resolution: "@dev-sam/samlang-core@workspace:samlang-core"
   dependencies:
@@ -1676,6 +1676,7 @@ __metadata:
     samlang-core-interpreter: "workspace:0.0.1"
     samlang-core-optimization: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
+    samlang-core-printer: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
     typescript: 4.0.2
@@ -1686,12 +1687,12 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@dev-sam/samlang-demo@workspace:samlang-demo"
   dependencies:
-    "@dev-sam/samlang-core": "workspace:0.0.1"
     "@types/jest": ^26.0.10
     "@vercel/ncc": ^0.24.0
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
+    samlang-core-printer: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
     typescript: 4.0.2
   languageName: unknown
@@ -7239,6 +7240,22 @@ fsevents@^2.1.2:
     antlr4ts-cli: 0.5.0-alpha.3
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
+    samlang-core-utils: "workspace:0.0.1"
+    typescript: 4.0.2
+  languageName: unknown
+  linkType: soft
+
+"samlang-core-printer@workspace:0.0.1, samlang-core-printer@workspace:samlang-core-printer":
+  version: 0.0.0-use.local
+  resolution: "samlang-core-printer@workspace:samlang-core-printer"
+  dependencies:
+    "@types/jest": ^26.0.10
+    samlang-core-ast: "workspace:0.0.1"
+    samlang-core-checker: "workspace:0.0.1"
+    samlang-core-compiler: "workspace:0.0.1"
+    samlang-core-errors: "workspace:0.0.1"
+    samlang-core-parser: "workspace:0.0.1"
+    samlang-core-services: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
     typescript: 4.0.2
   languageName: unknown

@@ -1,1 +1,1 @@
-export { prettyPrintSamlangModule, prettyPrintHighIRModuleAsJS } from './printer';
+export {};
