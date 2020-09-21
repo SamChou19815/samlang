@@ -6,13 +6,14 @@
       "dependencyChain": [
         "samlang-core-utils",
         "samlang-core-ast",
-        "samlang-core-analysis",
         "samlang-core-errors",
         "samlang-core-parser",
         "samlang-core-checker",
+        "samlang-core-analysis",
         "samlang-core-optimization",
         "samlang-core-compiler",
         "samlang-core-interpreter",
+        "samlang-core-services",
         "@dev-sam/samlang-core",
         "@dev-sam/samlang-cli"
       ]
@@ -22,13 +23,14 @@
       "dependencyChain": [
         "samlang-core-utils",
         "samlang-core-ast",
-        "samlang-core-analysis",
         "samlang-core-errors",
         "samlang-core-parser",
         "samlang-core-checker",
+        "samlang-core-analysis",
         "samlang-core-optimization",
         "samlang-core-compiler",
         "samlang-core-interpreter",
+        "samlang-core-services",
         "@dev-sam/samlang-core"
       ]
     },
@@ -37,13 +39,14 @@
       "dependencyChain": [
         "samlang-core-utils",
         "samlang-core-ast",
-        "samlang-core-analysis",
         "samlang-core-errors",
         "samlang-core-parser",
         "samlang-core-checker",
+        "samlang-core-analysis",
         "samlang-core-optimization",
         "samlang-core-compiler",
         "samlang-core-interpreter",
+        "samlang-core-services",
         "@dev-sam/samlang-core",
         "@dev-sam/samlang-demo"
       ]
@@ -119,6 +122,20 @@
         "samlang-core-parser"
       ]
     },
+    "samlang-core-services": {
+      "workspaceLocation": "samlang-core-services",
+      "dependencyChain": [
+        "samlang-core-utils",
+        "samlang-core-ast",
+        "samlang-core-errors",
+        "samlang-core-parser",
+        "samlang-core-checker",
+        "samlang-core-analysis",
+        "samlang-core-optimization",
+        "samlang-core-compiler",
+        "samlang-core-services"
+      ]
+    },
     "samlang-core-utils": {
       "workspaceLocation": "samlang-core-utils",
       "dependencyChain": [
@@ -129,13 +146,14 @@
   "topologicallyOrdered": [
     "samlang-core-utils",
     "samlang-core-ast",
-    "samlang-core-analysis",
     "samlang-core-errors",
     "samlang-core-parser",
     "samlang-core-checker",
+    "samlang-core-analysis",
     "samlang-core-optimization",
     "samlang-core-compiler",
     "samlang-core-interpreter",
+    "samlang-core-services",
     "@dev-sam/samlang-core",
     "@dev-sam/samlang-cli",
     "@dev-sam/samlang-demo"

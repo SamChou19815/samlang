@@ -1,4 +1,3 @@
-import { checkSources } from '../services/source-processor';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
 import { assemblyProgramToString } from 'samlang-core-ast/asm-program';
@@ -13,6 +12,7 @@ import interpretAssemblyProgram from 'samlang-core-interpreter/assembly-interpre
 import interpretMidIRCompilationUnit from 'samlang-core-interpreter/mid-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import optimizeIRCompilationUnit from 'samlang-core-optimization';
+import { checkSources } from 'samlang-core-services';
 import { assertNotNull } from 'samlang-core-utils';
 
 type MidIRTestCase = {
