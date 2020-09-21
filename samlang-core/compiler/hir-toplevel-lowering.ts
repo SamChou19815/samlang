@@ -1,7 +1,7 @@
-import analyzeUsedFunctionNames from '../analysis/used-name-analysis';
 import lowerSamlangExpression from './hir-expression-lowering';
 import performTailRecursiveCallTransformationOnHighIRFunction from './hir-tail-recursion-transformation-hir';
 
+import analyzeUsedFunctionNames from 'samlang-core-analysis/used-name-analysis';
 import {
   ENCODED_COMPILED_PROGRAM_MAIN,
   encodeFunctionNameGlobally,

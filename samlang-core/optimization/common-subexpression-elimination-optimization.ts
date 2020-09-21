@@ -1,8 +1,8 @@
-import analyzeAvailableExpressionsComingOutAtEachStatement, {
-  MidIRExpressionWrapper,
-} from '../analysis/available-expressions-analysis';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
+import analyzeAvailableExpressionsComingOutAtEachStatement, {
+  MidIRExpressionWrapper,
+} from 'samlang-core-analysis/available-expressions-analysis';
 import {
   MidIRExpression,
   MidIRStatement,

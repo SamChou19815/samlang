@@ -1,6 +1,3 @@
-import analyzeLiveVariablesAtTheEndOfEachInstruction, {
-  LiveVariableAnalysisResult,
-} from '../analysis/live-variable-analysis';
 import assemblyInstructionColoringRewrite from './asm-coloring-program-rewriter';
 import type AssemblyFunctionAbstractRegisterAllocator from './asm-function-abstract-register-allocator';
 import AssemblyInterferenceGraph from './asm-interference-graph';
@@ -15,6 +12,9 @@ import {
 import collectAssemblyRegistersFromAssemblyInstructions from './asm-register-collector';
 import AssemblySpillingProgramWriter from './asm-spilling-program-rewriter';
 
+import analyzeLiveVariablesAtTheEndOfEachInstruction, {
+  LiveVariableAnalysisResult,
+} from 'samlang-core-analysis/live-variable-analysis';
 import type { AssemblyMemory } from 'samlang-core-ast/asm-arguments';
 import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
 import { Hashable, HashSet, hashSetOf, ReadonlyHashSet, assertNotNull } from 'samlang-core-utils';

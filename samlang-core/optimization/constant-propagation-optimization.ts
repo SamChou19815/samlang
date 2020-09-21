@@ -1,6 +1,6 @@
-import analyzePropagatedConstants from '../analysis/constant-propagation-analysis';
 import { constantFoldExpression } from './constant-folding-optimization';
 
+import analyzePropagatedConstants from 'samlang-core-analysis/constant-propagation-analysis';
 import {
   MidIRStatement,
   MidIRExpression,

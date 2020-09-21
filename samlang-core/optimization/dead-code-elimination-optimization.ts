@@ -1,5 +1,4 @@
-import analyzeLiveTemporariesAtTheEndOfEachStatement from '../analysis/live-temp-analysis';
-
+import analyzeLiveTemporariesAtTheEndOfEachStatement from 'samlang-core-analysis/live-temp-analysis';
 import type { MidIRStatement, MidIRExpression } from 'samlang-core-ast/mir-nodes';
 
 /** Some expressions might trigger exceptions, removing them changes the behavior of programs. */

@@ -1,7 +1,6 @@
 import analyzeLocalValueNumberingAssignment, {
   ReadonlyLocalNumberingInformation,
-} from '../analysis/local-value-numbering-analysis';
-
+} from 'samlang-core-analysis/local-value-numbering-analysis';
 import {
   MidIRStatement,
   MidIRExpression,

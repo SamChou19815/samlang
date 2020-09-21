@@ -1667,6 +1667,7 @@ __metadata:
   resolution: "@dev-sam/samlang-core@workspace:samlang-core"
   dependencies:
     "@types/jest": ^26.0.10
+    samlang-core-analysis: "workspace:0.0.1"
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
@@ -7140,6 +7141,17 @@ fsevents@^2.1.2:
   checksum: 549ba83f5b314b59898efe3422120ce1ca7987a6eae5925a5fa5db930dc414d4a9dde0a5594f89638cd6ea60b6840ea961872908933ac2428d1726489db46fa5
   languageName: node
   linkType: hard
+
+"samlang-core-analysis@workspace:0.0.1, samlang-core-analysis@workspace:samlang-core-analysis":
+  version: 0.0.0-use.local
+  resolution: "samlang-core-analysis@workspace:samlang-core-analysis"
+  dependencies:
+    "@types/jest": ^26.0.10
+    samlang-core-ast: "workspace:0.0.1"
+    samlang-core-utils: "workspace:0.0.1"
+    typescript: 4.0.2
+  languageName: unknown
+  linkType: soft
 
 "samlang-core-ast@workspace:0.0.1, samlang-core-ast@workspace:samlang-core-ast":
   version: 0.0.0-use.local
