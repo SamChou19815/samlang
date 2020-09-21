@@ -1,8 +1,8 @@
-import { prettyPrintSamlangModule } from '../printer';
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import { prettyPrintSamlangModule } from 'samlang-core-printer';
 import { checkSources } from 'samlang-core-services';
 import { assertNotNull } from 'samlang-core-utils';
 
