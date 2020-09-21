@@ -13,5 +13,7 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2019"
-  }
+  },
+  // Avoid type checking samlang code since it will eventually be checked.
+  "exclude": ["node_modules/samlang-*"]
 }

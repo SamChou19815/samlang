@@ -3,9 +3,6 @@ import {
   compileHighIrModuleToMidIRCompilationUnit,
   generateAssemblyInstructionsFromMidIRCompilationUnit,
 } from '../compiler';
-import interpretAssemblyProgram from '../interpreter/assembly-interpreter';
-import interpretMidIRCompilationUnit from '../interpreter/mid-ir-interpreter';
-import interpretSamlangModule from '../interpreter/source-level-interpreter';
 import optimizeIRCompilationUnit from '../optimization';
 import { checkSources } from '../services/source-processor';
 import { runnableSamlangProgramTestCases } from '../test-programs';
@@ -13,6 +10,9 @@ import { runnableSamlangProgramTestCases } from '../test-programs';
 import { assemblyProgramToString } from 'samlang-core-ast/asm-program';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { MidIRCompilationUnit, midIRCompilationUnitToString } from 'samlang-core-ast/mir-nodes';
+import interpretAssemblyProgram from 'samlang-core-interpreter/assembly-interpreter';
+import interpretMidIRCompilationUnit from 'samlang-core-interpreter/mid-ir-interpreter';
+import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import { assertNotNull } from 'samlang-core-utils';
 
 type MidIRTestCase = {
