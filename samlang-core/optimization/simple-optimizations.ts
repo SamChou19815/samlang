@@ -1,5 +1,4 @@
-import ControlFlowGraph from '../analysis/control-flow-graph';
-
+import ControlFlowGraph from 'samlang-core-analysis/control-flow-graph';
 import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
 import { MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from 'samlang-core-ast/mir-nodes';
 import { isNotNull } from 'samlang-core-utils';

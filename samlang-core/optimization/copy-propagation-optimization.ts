@@ -1,5 +1,4 @@
-import analyzeAvailableCopies from '../analysis/available-copy-analysis';
-
+import analyzeAvailableCopies from 'samlang-core-analysis/available-copy-analysis';
 import {
   MidIRStatement,
   MidIRExpression,
