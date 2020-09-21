@@ -1,4 +1,3 @@
-import { checkSources } from '../../services/source-processor';
 import {
   highIRModuleToJSString,
   highIRStatementToString,
@@ -30,6 +29,7 @@ import {
   HIR_WHILE_TRUE,
 } from 'samlang-core-ast/hir-expressions';
 import { compileSamlangSourcesToHighIRSources } from 'samlang-core-compiler';
+import { checkSources } from 'samlang-core-services';
 import { assertNotNull } from 'samlang-core-utils';
 
 it('compile hello world to JS integration test', () => {

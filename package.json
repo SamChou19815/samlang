@@ -54,7 +54,6 @@
             {
               "allow": [
                 "antlr4ts/**",
-                "**/samlang-core/services/*",
                 "**/samlang-core-analysis/*",
                 "**/samlang-core-ast/*",
                 "**/samlang-core-interpreter/*",
