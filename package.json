@@ -2,7 +2,6 @@
   "private": true,
   "workspaces": [
     "samlang-cli",
-    "samlang-core",
     "samlang-core-*",
     "samlang-demo"
   ],
