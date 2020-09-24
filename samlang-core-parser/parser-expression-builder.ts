@@ -1,38 +1,5 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
-import type {
-  ExpressionContext,
-  NestedExprContext,
-  LiteralExprContext,
-  ThisExprContext,
-  VariableExprContext,
-  ClassMemberExprContext,
-  TupleConstructorContext,
-  NormalObjFieldDeclarationContext,
-  ShorthandObjFieldDeclarationContext,
-  ObjConstructorContext,
-  VariantConstructorContext,
-  FieldAccessExprContext,
-  NotExprContext,
-  NegExprContext,
-  PanicExprContext,
-  StringToIntExprContext,
-  IntToStringExprContext,
-  PrintLineExprContext,
-  FunctionApplicationExprContext,
-  FactorExprContext,
-  TermExprContext,
-  ComparisonExprContext,
-  ConjunctionExprContext,
-  ConcatExprContext,
-  DisjunctionExprContext,
-  IfElseExprContext,
-  MatchExprContext,
-  FunExprContext,
-  NoArgFunExprContext,
-  StatementBlockExprContext,
-} from './generated/PLParser';
-import type { PLVisitor } from './generated/PLVisitor';
 import StatementBlockBuilder from './parser-statement-block-builder';
 import typeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';
@@ -74,6 +41,39 @@ import {
   EXPRESSION_STATEMENT_BLOCK,
 } from 'samlang-core-ast/samlang-expressions';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
+import type {
+  ExpressionContext,
+  NestedExprContext,
+  LiteralExprContext,
+  ThisExprContext,
+  VariableExprContext,
+  ClassMemberExprContext,
+  TupleConstructorContext,
+  NormalObjFieldDeclarationContext,
+  ShorthandObjFieldDeclarationContext,
+  ObjConstructorContext,
+  VariantConstructorContext,
+  FieldAccessExprContext,
+  NotExprContext,
+  NegExprContext,
+  PanicExprContext,
+  StringToIntExprContext,
+  IntToStringExprContext,
+  PrintLineExprContext,
+  FunctionApplicationExprContext,
+  FactorExprContext,
+  TermExprContext,
+  ComparisonExprContext,
+  ConjunctionExprContext,
+  ConcatExprContext,
+  DisjunctionExprContext,
+  IfElseExprContext,
+  MatchExprContext,
+  FunExprContext,
+  NoArgFunExprContext,
+  StatementBlockExprContext,
+} from 'samlang-core-parser-generated/PLParser';
+import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');

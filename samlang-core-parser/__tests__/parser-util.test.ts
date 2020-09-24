@@ -1,5 +1,6 @@
-import { TupleTypeContext, TypeExprContext } from '../generated/PLParser';
 import { contextRange } from '../parser-util';
+
+import { TupleTypeContext, TypeExprContext } from 'samlang-core-parser-generated/PLParser';
 
 it('nullable context/token field test', () => {
   const dummyContext = new TupleTypeContext(new TypeExprContext(undefined, 0));

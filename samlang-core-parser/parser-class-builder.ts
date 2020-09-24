@@ -1,19 +1,5 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
-import type {
-  ClassHeaderContext,
-  UtilClassHeaderContext,
-  ObjTypeContext,
-  VariantTypeContext,
-  TypeParametersDeclarationContext,
-  AnnotatedVariableContext,
-  ClassMemberDefinitionContext,
-  ClassMemberDeclarationContext,
-  ClazzContext,
-  InterfazeContext,
-  ExpressionContext,
-} from './generated/PLParser';
-import type { PLVisitor } from './generated/PLVisitor';
 import ExpressionBuilder from './parser-expression-builder';
 import typeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';
@@ -29,6 +15,20 @@ import type {
   ClassMemberDefinition,
 } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
+import type {
+  ClassHeaderContext,
+  UtilClassHeaderContext,
+  ObjTypeContext,
+  VariantTypeContext,
+  TypeParametersDeclarationContext,
+  AnnotatedVariableContext,
+  ClassMemberDefinitionContext,
+  ClassMemberDeclarationContext,
+  ClazzContext,
+  InterfazeContext,
+  ExpressionContext,
+} from 'samlang-core-parser-generated/PLParser';
+import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 type ModuleName = readonly [boolean, string, Range];

@@ -1,14 +1,5 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
-import type {
-  TuplePatternContext,
-  ObjectPatternContext,
-  RawVarContext,
-  RenamedVarContext,
-  VariablePatternContext,
-  WildcardPatternContext,
-} from './generated/PLParser';
-import type { PLVisitor } from './generated/PLVisitor';
 import { tokenRange, contextRange } from './parser-util';
 
 import type {
@@ -19,6 +10,15 @@ import type {
   VariablePattern,
   WildCardPattern,
 } from 'samlang-core-ast/samlang-pattern';
+import type {
+  TuplePatternContext,
+  ObjectPatternContext,
+  RawVarContext,
+  RenamedVarContext,
+  VariablePatternContext,
+  WildcardPatternContext,
+} from 'samlang-core-parser-generated/PLParser';
+import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 class FieldNameBuilder

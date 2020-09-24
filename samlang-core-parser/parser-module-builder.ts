@@ -1,12 +1,5 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
-import type {
-  ModuleContext,
-  ImportModuleMembersContext,
-  ClassAsModuleMemberContext,
-  InterfaceAsModuleMemberContext,
-} from './generated/PLParser';
-import type { PLVisitor } from './generated/PLVisitor';
 import { classInterfaceBuilder, ClassDefinitionBuilder } from './parser-class-builder';
 import { tokenRange, contextRange } from './parser-util';
 
@@ -17,6 +10,13 @@ import type {
   SamlangModule,
 } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
+import type {
+  ModuleContext,
+  ImportModuleMembersContext,
+  ClassAsModuleMemberContext,
+  InterfaceAsModuleMemberContext,
+} from 'samlang-core-parser-generated/PLParser';
+import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
 class ModuleMemberVisitor

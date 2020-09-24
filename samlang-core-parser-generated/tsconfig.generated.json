@@ -1,0 +1,9 @@
+{
+  "extends": "../configurations/tsconfig.base.json",
+  "compilerOptions": {
+    "esModuleInterop": false,
+    "importsNotUsedAsValues": "remove",
+    "outDir": "."
+  },
+  "include": ["src"]
+}

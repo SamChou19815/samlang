@@ -1,3 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 .yarn/** linguist-generated=true
+samlang-core-parser/** linguist-generated=true

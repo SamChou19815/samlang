@@ -7,16 +7,16 @@
   ],
   "scripts": {
     "lint": "eslint . --cache",
-    "format": "prettier --write '**/*.{ts,js}'",
-    "format:check": "prettier --check '**/*.{ts,js}'",
-    "codegen": "sam-codegen ./bin/repo-codegen-services",
+    "format": "prettier --write '**/*.ts'",
+    "format:generatedDTS": "prettier --write samlang-core-parser-generated/*.d.ts",
+    "format:check": "prettier --check '**/*.ts'",
+    "codegen": "exit 0",
     "compile": "./bin/monorail compile",
     "bundle": "./bin/monorail bundle",
     "test": "jest --coverage",
     "test:single": "jest -t",
     "test:integration": "ts-node-script scripts/compile-repository.ts",
-    "test:new-linter-config:dev-sam-local": "eslint --config configurations/latest-local-linter-config.js .",
-    "postinstall": "yarn workspace samlang-core-parser run codegen"
+    "test:new-linter-config:dev-sam-local": "eslint --config configurations/latest-local-linter-config.js ."
   },
   "devDependencies": {
     "@babel/core": "^7.11.4",
@@ -24,7 +24,7 @@
     "@babel/preset-typescript": "^7.10.4",
     "@dev-sam/codegen-cli": "^0.0.2",
     "@dev-sam/eslint-config-common": "0.17.0",
-    "@dev-sam/tssa": "^0.0.2",
+    "@dev-sam/tssa": "^0.0.5",
     "@types/jest": "^26.0.10",
     "@types/node": "^14.6.0",
     "@typescript-eslint/eslint-plugin": "^4.0.1",
@@ -57,7 +57,7 @@
                 "**/samlang-core-ast/*",
                 "**/samlang-core-interpreter/*",
                 "**/samlang-core-optimization/simple-optimizations*",
-                "**/samlang-core-parser/generated/*"
+                "**/samlang-core-parser-generated/*"
               ]
             }
           ]
@@ -82,7 +82,7 @@
     },
     "coverageDirectory": "coverage",
     "coveragePathIgnorePatterns": [
-      "/generated/"
+      "/samlang-core-parser-generated/"
     ],
     "testEnvironment": "node",
     "testPathIgnorePatterns": [
@@ -95,7 +95,7 @@
     }
   },
   "lint-staged": {
-    "**/*.{ts,js}": [
+    "**/*.ts": [
       "yarn prettier --write"
     ]
   }

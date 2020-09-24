@@ -1679,9 +1679,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@dev-sam/tssa@npm:^0.0.2":
-  version: 0.0.2
-  resolution: "@dev-sam/tssa@npm:0.0.2"
+"@dev-sam/tssa@npm:^0.0.5":
+  version: 0.0.5
+  resolution: "@dev-sam/tssa@npm:0.0.5"
   dependencies:
     "@octokit/rest": ^18.0.5
     ts-morph: ^8.1.0
@@ -1689,7 +1689,7 @@ __metadata:
     typescript: "*"
   bin:
     tssa: dist/index.js
-  checksum: e19cc8efbef68caf81a37f95f963e534d93739f0d42ecb8fd6cd25c12e6f2059d4033add246cdc8b2542fd3293faf0387c34adc60e86ed7f07fe2c9098a8d276
+  checksum: 61466a67984cb01db3385822cf8942abb0bc175b2a70da062ab22f8a4fe1bb77d7d7e7a019137886ad332cff2a504aaf1eeab409e13442fb7fbc2e9cd2460157
   languageName: node
   linkType: hard
 
@@ -3186,6 +3186,13 @@ __metadata:
   dependencies:
     delayed-stream: ~1.0.0
   checksum: 5791ce7944530f0db74a97e77ea28b6fdbf89afcf038e41d6b4195019c4c803cd19ed2905a54959e5b3830d50bd5d6f93c681c6d3aaea8614ad43b48e62e9d65
+  languageName: node
+  linkType: hard
+
+"commander@npm:^2.20.0":
+  version: 2.20.3
+  resolution: "commander@npm:2.20.3"
+  checksum: b73428e97de7624323f81ba13f8ed9271de487017432d18b4da3f07cfc528ad754bbd199004bd5d14e0ccd67d1fdfe0ec8dbbd4c438b401df3c4cc387bfd1daa
   languageName: node
   linkType: hard
 
@@ -7066,7 +7073,7 @@ fsevents@^2.1.2:
     "@babel/preset-typescript": ^7.10.4
     "@dev-sam/codegen-cli": ^0.0.2
     "@dev-sam/eslint-config-common": 0.17.0
-    "@dev-sam/tssa": ^0.0.2
+    "@dev-sam/tssa": ^0.0.5
     "@types/jest": ^26.0.10
     "@types/node": ^14.6.0
     "@typescript-eslint/eslint-plugin": ^4.0.1
@@ -7229,15 +7236,27 @@ fsevents@^2.1.2:
   languageName: unknown
   linkType: soft
 
+"samlang-core-parser-generated@workspace:0.0.1, samlang-core-parser-generated@workspace:samlang-core-parser-generated":
+  version: 0.0.0-use.local
+  resolution: "samlang-core-parser-generated@workspace:samlang-core-parser-generated"
+  dependencies:
+    "@types/jest": ^26.0.10
+    antlr4ts: 0.5.0-alpha.3
+    antlr4ts-cli: 0.5.0-alpha.3
+    terser: ^5.3.2
+    typescript: 4.0.2
+  languageName: unknown
+  linkType: soft
+
 "samlang-core-parser@workspace:0.0.1, samlang-core-parser@workspace:samlang-core-parser":
   version: 0.0.0-use.local
   resolution: "samlang-core-parser@workspace:samlang-core-parser"
   dependencies:
     "@types/jest": ^26.0.10
     antlr4ts: 0.5.0-alpha.3
-    antlr4ts-cli: 0.5.0-alpha.3
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
+    samlang-core-parser-generated: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
     typescript: 4.0.2
   languageName: unknown
@@ -7523,7 +7542,7 @@ fsevents@^2.1.2:
   languageName: node
   linkType: hard
 
-"source-map-support@npm:^0.5.17, source-map-support@npm:^0.5.6":
+"source-map-support@npm:^0.5.17, source-map-support@npm:^0.5.6, source-map-support@npm:~0.5.12":
   version: 0.5.19
   resolution: "source-map-support@npm:0.5.19"
   dependencies:
@@ -7878,6 +7897,19 @@ fsevents@^2.1.2:
     ansi-escapes: ^4.2.1
     supports-hyperlinks: ^2.0.0
   checksum: f84553e11e9dc9034c9a62aeada2985e2c50adf161b773b3e4a5cf174b0d14f6b8868eb1dcdf91c3f71e3d932a3be158b8742c2a43ee459e9b88a246d78a6dc1
+  languageName: node
+  linkType: hard
+
+"terser@npm:^5.3.2":
+  version: 5.3.2
+  resolution: "terser@npm:5.3.2"
+  dependencies:
+    commander: ^2.20.0
+    source-map: ~0.6.1
+    source-map-support: ~0.5.12
+  bin:
+    terser: bin/terser
+  checksum: 4de06e4c6ca0e01199a9beba4a6a1e7b76d3465e2cfcf6a7cb195badfdebace709aa687fa209fb6793fa30d74b935d3d1e68603d3d90774109e0f2037a954ae3
   languageName: node
   linkType: hard
 
