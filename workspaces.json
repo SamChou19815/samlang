@@ -10,6 +10,7 @@
         "samlang-core-optimization",
         "samlang-core-compiler",
         "samlang-core-errors",
+        "samlang-core-parser-generated",
         "samlang-core-parser",
         "samlang-core-checker",
         "samlang-core-services",
@@ -26,6 +27,7 @@
         "samlang-core-optimization",
         "samlang-core-compiler",
         "samlang-core-errors",
+        "samlang-core-parser-generated",
         "samlang-core-parser",
         "samlang-core-interpreter",
         "samlang-core-checker",
@@ -55,6 +57,7 @@
         "samlang-core-utils",
         "samlang-core-ast",
         "samlang-core-errors",
+        "samlang-core-parser-generated",
         "samlang-core-parser",
         "samlang-core-checker"
       ]
@@ -86,6 +89,7 @@
         "samlang-core-optimization",
         "samlang-core-compiler",
         "samlang-core-errors",
+        "samlang-core-parser-generated",
         "samlang-core-parser",
         "samlang-core-interpreter",
         "samlang-core-checker",
@@ -100,6 +104,7 @@
         "samlang-core-utils",
         "samlang-core-ast",
         "samlang-core-errors",
+        "samlang-core-parser-generated",
         "samlang-core-parser",
         "samlang-core-interpreter"
       ]
@@ -119,7 +124,14 @@
         "samlang-core-utils",
         "samlang-core-ast",
         "samlang-core-errors",
+        "samlang-core-parser-generated",
         "samlang-core-parser"
+      ]
+    },
+    "samlang-core-parser-generated": {
+      "workspaceLocation": "samlang-core-parser-generated",
+      "dependencyChain": [
+        "samlang-core-parser-generated"
       ]
     },
     "samlang-core-printer": {
@@ -128,6 +140,7 @@
         "samlang-core-utils",
         "samlang-core-ast",
         "samlang-core-errors",
+        "samlang-core-parser-generated",
         "samlang-core-parser",
         "samlang-core-checker",
         "samlang-core-analysis",
@@ -143,6 +156,7 @@
         "samlang-core-utils",
         "samlang-core-ast",
         "samlang-core-errors",
+        "samlang-core-parser-generated",
         "samlang-core-parser",
         "samlang-core-checker",
         "samlang-core-analysis",
@@ -165,6 +179,7 @@
     "samlang-core-optimization",
     "samlang-core-compiler",
     "samlang-core-errors",
+    "samlang-core-parser-generated",
     "samlang-core-parser",
     "samlang-core-checker",
     "samlang-core-services",
