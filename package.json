@@ -24,7 +24,7 @@
     "@babel/preset-typescript": "^7.10.4",
     "@dev-sam/codegen-cli": "^0.0.2",
     "@dev-sam/eslint-config-common": "0.17.0",
-    "@dev-sam/tssa": "^0.0.5",
+    "@dev-sam/tssa": "^0.0.8",
     "@types/jest": "^26.0.14",
     "@types/node": "^14.11.2",
     "@typescript-eslint/eslint-plugin": "^4.3.0",
