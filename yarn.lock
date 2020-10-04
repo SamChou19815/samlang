@@ -1690,17 +1690,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@dev-sam/tssa@npm:^0.0.5":
-  version: 0.0.5
-  resolution: "@dev-sam/tssa@npm:0.0.5"
+"@dev-sam/tssa@npm:^0.0.8":
+  version: 0.0.8
+  resolution: "@dev-sam/tssa@npm:0.0.8"
   dependencies:
-    "@octokit/rest": ^18.0.5
-    ts-morph: ^8.1.0
+    "@octokit/rest": ^18.0.6
+    "@types/diff": ^4.0.2
+    diff: ^4.0.2
+    ts-morph: ^8.1.1
   peerDependencies:
     typescript: "*"
   bin:
     tssa: dist/index.js
-  checksum: 61466a67984cb01db3385822cf8942abb0bc175b2a70da062ab22f8a4fe1bb77d7d7e7a019137886ad332cff2a504aaf1eeab409e13442fb7fbc2e9cd2460157
+  checksum: de59ba8056f1fa64ee7dff60b0d61278b4f7690a7fdb68a3f13bb0655dd3b5a4998f44a9636307c4b2d2eb601e4c1a482f25c47d1af70b932a430e343b664c26
   languageName: node
   linkType: hard
 
@@ -2049,13 +2051,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/plugin-rest-endpoint-methods@npm:4.1.4":
-  version: 4.1.4
-  resolution: "@octokit/plugin-rest-endpoint-methods@npm:4.1.4"
+"@octokit/plugin-rest-endpoint-methods@npm:4.2.0":
+  version: 4.2.0
+  resolution: "@octokit/plugin-rest-endpoint-methods@npm:4.2.0"
   dependencies:
-    "@octokit/types": ^5.4.1
+    "@octokit/types": ^5.5.0
     deprecation: ^2.3.1
-  checksum: c4d6efaa3bc7e85e06f004dda56627a2941a0fe6382b6d8e4c5e253e9f110de2d8cf5546be05a21e4ee0b12d18c29e87619b1e2925bb376f172a39395e87db16
+  checksum: 4ab0c2eb8da8fac1e9bd0b053f27c2b7e2b7bd15279bb91f7a52d591c874200641e395efaef23d3e549f6260c7f8fbcf25b6faea77389aefe62e479df845d720
   languageName: node
   linkType: hard
 
@@ -2086,24 +2088,33 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/rest@npm:^18.0.5":
-  version: 18.0.5
-  resolution: "@octokit/rest@npm:18.0.5"
+"@octokit/rest@npm:^18.0.6":
+  version: 18.0.6
+  resolution: "@octokit/rest@npm:18.0.6"
   dependencies:
     "@octokit/core": ^3.0.0
     "@octokit/plugin-paginate-rest": ^2.2.0
     "@octokit/plugin-request-log": ^1.0.0
-    "@octokit/plugin-rest-endpoint-methods": 4.1.4
-  checksum: dbeae68f4d373b8d0e2db40ec945934ec2491101f08371a13a8215df589a1999b71d6df4479c0d127d71d33d9f4f1efcd7c89e5fbddb50c397e98231fbb48c9b
+    "@octokit/plugin-rest-endpoint-methods": 4.2.0
+  checksum: 3353b232ff80619cf8c976338ee581e29910771931534e5b7937e2e96f541d5c9606d42c62742635f0229a6f51cd6785ed037a0389b51cd972cae1443659550b
   languageName: node
   linkType: hard
 
-"@octokit/types@npm:^5.0.0, @octokit/types@npm:^5.0.1, @octokit/types@npm:^5.3.0, @octokit/types@npm:^5.4.1":
+"@octokit/types@npm:^5.0.0, @octokit/types@npm:^5.0.1, @octokit/types@npm:^5.3.0":
   version: 5.4.1
   resolution: "@octokit/types@npm:5.4.1"
   dependencies:
     "@types/node": ">= 8"
   checksum: 3dda743b7f8dd572b3592dcf938542147133a5229ae04242a83d80579daad28dc493bd83f84e9b682eb8864457ca69ebe95ab787241c1fe9ef5cf328648c0bb0
+  languageName: node
+  linkType: hard
+
+"@octokit/types@npm:^5.5.0":
+  version: 5.5.0
+  resolution: "@octokit/types@npm:5.5.0"
+  dependencies:
+    "@types/node": ">= 8"
+  checksum: ef5429c90b6d8d4a8816611f39ae469f238f0de76085818081b6185c9a53c9dd8e1e024000c633f935920bdb8075c18cea6475bb2c1fc67aa5d0f50c8e104a12
   languageName: node
   linkType: hard
 
@@ -2184,6 +2195,13 @@ __metadata:
   version: 1.1.1
   resolution: "@types/color-name@npm:1.1.1"
   checksum: 8311db94a9c4ecd247763b81e783ee49d87678b4ce6a7ee502e2bd5cea242b7357804a04855db009f713174bc654cc0c01c7303d40d757e5d710f5ac0368500f
+  languageName: node
+  linkType: hard
+
+"@types/diff@npm:^4.0.2":
+  version: 4.0.2
+  resolution: "@types/diff@npm:4.0.2"
+  checksum: 22333cc87c525bb61d5603e306fff5e971d2a15658fcf2b929db10588b6fcb3878dd5aeff05b502edb3cbb96e1cbb0d7292c4590f88a9baa28941060f1a5bf73
   languageName: node
   linkType: hard
 
@@ -3560,7 +3578,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"diff@npm:^4.0.1":
+"diff@npm:^4.0.1, diff@npm:^4.0.2":
   version: 4.0.2
   resolution: "diff@npm:4.0.2"
   checksum: 81b5cd7ddde6f0ba2a532d434cfdca365aedd6cc62bb133e851e66e071d40382a30924a07c1034bd3d5a2e332146f64514b73c06fe2ebc0490a67f0c98da79fb
@@ -7191,7 +7209,7 @@ fsevents@^2.1.2:
     "@babel/preset-typescript": ^7.10.4
     "@dev-sam/codegen-cli": ^0.0.2
     "@dev-sam/eslint-config-common": 0.17.0
-    "@dev-sam/tssa": ^0.0.5
+    "@dev-sam/tssa": ^0.0.8
     "@types/jest": ^26.0.14
     "@types/node": ^14.11.2
     "@typescript-eslint/eslint-plugin": ^4.3.0
@@ -8154,14 +8172,14 @@ fsevents@^2.1.2:
   languageName: node
   linkType: hard
 
-"ts-morph@npm:^8.1.0":
-  version: 8.1.0
-  resolution: "ts-morph@npm:8.1.0"
+"ts-morph@npm:^8.1.1":
+  version: 8.1.1
+  resolution: "ts-morph@npm:8.1.1"
   dependencies:
     "@dsherret/to-absolute-glob": ^2.0.2
     "@ts-morph/common": ~0.6.0
     code-block-writer: ^10.1.0
-  checksum: e010e74d4139e01d27eb5d6cab385dc74ef9080f0815b901073a874588a2406094c3646db86ab0204a4fad513571aafd3136ec6a68bb46ad7147f5bc28fd55cf
+  checksum: 32cb3cda063425541007d3df698938ad6611f714c0a0c46c6354ce29b2f5fc9b794608bf1fcbb6503836b7ceb591b1befe0794183a0ae6111fa2e9dd19b036be
   languageName: node
   linkType: hard
 
