@@ -12,6 +12,7 @@ import {
   Position,
   Range,
   ModuleReference,
+  Location,
 } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
@@ -226,6 +227,75 @@ export class LanguageServices {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     if (expression == null) return null;
     return [expression.type, expression.range];
+  }
+
+  queryDefinitionLocation(moduleReference: ModuleReference, position: Position): Location | null {
+    const expression = this.state.expressionLocationLookup.get(moduleReference, position);
+    if (expression == null) return null;
+    // istanbul ignore next
+    switch (expression.__type__) {
+      case 'LiteralExpression':
+      case 'ThisExpression':
+      case 'TupleConstructorExpression':
+        return null;
+      case 'VariableExpression':
+        // TODO: depending on infra to record variable declaration location.
+        return null;
+      case 'ClassMemberExpression':
+        return this.findClassMemberLocation(
+          moduleReference,
+          expression.className,
+          expression.memberName
+        );
+      case 'ObjectConstructorExpression':
+      case 'VariantConstructorExpression':
+      case 'FieldAccessExpression':
+        // TODO: go to constructor/field definition, depending on finer location recording.
+        // istanbul ignore next
+        return null;
+      case 'MethodAccessExpression':
+        return this.findClassMemberLocation(
+          moduleReference,
+          (expression.expression.type as IdentifierType).identifier,
+          expression.methodName
+        );
+      case 'UnaryExpression':
+      case 'PanicExpression':
+      case 'BuiltInFunctionCallExpression':
+      case 'FunctionCallExpression':
+      case 'BinaryExpression':
+      case 'IfElseExpression':
+      case 'MatchExpression':
+      case 'LambdaExpression':
+      case 'StatementBlockExpression':
+        return null;
+    }
+  }
+
+  private findClassMemberLocation(
+    moduleReference: ModuleReference,
+    className: string,
+    memberName: string
+  ): Location {
+    const samlangModule = this.state.getCheckedModule(moduleReference);
+    assertNotNull(samlangModule);
+    const { imports, classes } = samlangModule;
+    for (let i = 0; i < classes.length; i += 1) {
+      const samlangClass = classes[i];
+      if (samlangClass.name === className) {
+        const matchingMember = samlangClass.members.find((it) => it.name === memberName);
+        assertNotNull(matchingMember);
+        return { moduleReference, range: matchingMember.range };
+      }
+    }
+    for (let i = 0; i < imports.length; i += 1) {
+      const { importedMembers, importedModule } = imports[i];
+      if (importedMembers.some((it) => it[0] === className)) {
+        return this.findClassMemberLocation(importedModule, className, memberName);
+      }
+    }
+    // istanbul ignore next
+    throw new Error('Type checker is messed up!');
   }
 
   autoComplete(
