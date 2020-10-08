@@ -154,10 +154,11 @@ it('LanguageServices.queryDefinitionLocation test', () => {
       moduleReference1,
       `import {ABC} from Test3
 import {TTT} from Test2
-class Test1 {
+class Test1(val a: int) {
   function test1(): int = 42
   function test(t: TTT): int = Test1.test(t) + t.test() + 1
   function test2(): unit = ABC.a()
+  function test3(): int = { a: 3 }.a
 }
 `,
     ],
@@ -176,7 +177,7 @@ class Test1 {
   const actualLocation0 = service.queryDefinitionLocation(moduleReference1, new Position(4, 34));
   expect(actualLocation0?.moduleReference.toString()).toEqual(moduleReference1.toString());
   expect(actualLocation0?.range.toString()).toEqual(
-    new Range(new Position(2, 0), new Position(6, 1)).toString()
+    new Range(new Position(2, 0), new Position(7, 1)).toString()
   );
 
   const actualLocation1 = service.queryDefinitionLocation(moduleReference1, new Position(4, 40));
@@ -195,6 +196,18 @@ class Test1 {
   expect(actualLocation3?.moduleReference.toString()).toEqual(moduleReference3.toString());
   expect(actualLocation3?.range.toString()).toEqual(
     new Range(new Position(0, 0), new Position(0, 53)).toString()
+  );
+
+  const actualLocation4 = service.queryDefinitionLocation(moduleReference1, new Position(6, 28));
+  expect(actualLocation4?.moduleReference.toString()).toEqual(moduleReference1.toString());
+  expect(actualLocation4?.range.toString()).toEqual(
+    new Range(new Position(2, 12), new Position(2, 22)).toString()
+  );
+
+  const actualLocation5 = service.queryDefinitionLocation(moduleReference1, new Position(6, 36));
+  expect(actualLocation5?.moduleReference.toString()).toEqual(moduleReference1.toString());
+  expect(actualLocation5?.range.toString()).toEqual(
+    new Range(new Position(2, 12), new Position(2, 22)).toString()
   );
 });
 
