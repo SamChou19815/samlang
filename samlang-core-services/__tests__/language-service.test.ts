@@ -21,6 +21,8 @@ class Test {
   expect(state.globalTypingContext.size).toBe(1);
   expect(state.expressionLocationLookup).toBeTruthy();
   expect(state.classLocationLookup).toBeTruthy();
+  expect(state.getCheckedModule(new ModuleReference(['test']))).toBeTruthy();
+  expect(state.getCheckedModule(new ModuleReference(['test2']))).toBeUndefined();
 
   state.remove(new ModuleReference(['test']));
   expect(state.allErrors.length).toBe(0);
@@ -135,7 +137,7 @@ class Test1 {
 `,
     ],
   ]);
-  const service = new LanguageServices(state);
+  const service = new LanguageServices(state, () => '');
 
   expect(service.queryType(testModuleReference, new Position(100, 100))).toBeNull();
   expect(service.queryType(testModuleReference, new Position(2, 27))?.[0]).toEqual(stringType);
@@ -169,7 +171,7 @@ class Main {
 `,
     ],
   ]);
-  const service = new LanguageServices(state);
+  const service = new LanguageServices(state, () => '');
 
   expect(service.autoComplete(testModuleReference, new Position(3, 5))).toEqual([]);
   expect(service.autoComplete(testModuleReference, new Position(12, 17))).toEqual([
@@ -213,4 +215,37 @@ class Main {
       type: 'List<string>',
     },
   ]);
+});
+
+it('LanguageServices autocompletion test', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const state = new LanguageServiceState([
+    [
+      testModuleReference,
+      `
+class List<T>(Nil(unit), Cons([T * List<T>])) {
+  function <T> of(t: T): List<T> =
+    Cons([t, Nil({})])
+  method cons(t: T): List<T> =
+    Cons([t, this])
+}
+class Developer(
+  val name: string, val github: string,
+  val projects: List<string>,
+) {
+  function sam(): Developer = {
+    val l = List.of("SAMLANG").cons("...")
+    val github = "SamChou19815"
+    { name: "Sam Zhou", github, projects: l }.
+  }
+}
+class Main {
+  function main(): Developer = Developer.sam()
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => 'foo bar');
+  expect(service.formatEntireDocument(testModuleReference)).toBe('foo bar');
+  expect(service.formatEntireDocument(new ModuleReference(['dsafadfasd']))).toBe(null);
 });

@@ -103,6 +103,10 @@ export class LanguageServiceState {
       .flat();
   }
 
+  getCheckedModule(moduleReference: ModuleReference): SamlangModule | undefined {
+    return this.checkedModules.get(moduleReference);
+  }
+
   getErrors(moduleReference: ModuleReference): readonly CompileTimeError[] {
     return this.errors.get(moduleReference) ?? [];
   }
@@ -213,7 +217,10 @@ export type AutoCompletionItem = {
 };
 
 export class LanguageServices {
-  constructor(private readonly state: LanguageServiceState) {}
+  constructor(
+    private readonly state: LanguageServiceState,
+    private readonly formatter: (samlangModule: SamlangModule) => string
+  ) {}
 
   queryType(moduleReference: ModuleReference, position: Position): readonly [Type, Range] | null {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
@@ -343,5 +350,10 @@ export class LanguageServices {
       items.push(`$${i}`);
     }
     return [`${name}(${items.join(', ')})$${items.length}`, true];
+  }
+
+  formatEntireDocument(moduleReference: ModuleReference): string | null {
+    const moduleToFormat = this.state.getCheckedModule(moduleReference);
+    return moduleToFormat == null ? null : this.formatter(moduleToFormat);
   }
 }
