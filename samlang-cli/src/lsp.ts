@@ -1,4 +1,4 @@
-import { relative, sep, resolve } from 'path';
+import { relative, sep } from 'path';
 
 import {
   createConnection,
@@ -42,7 +42,7 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
   const publishDiagnostics = (affectedModules: readonly ModuleReference[]): void =>
     affectedModules.forEach((affectedModule) => {
       connection.sendDiagnostics({
-        uri: resolve(configuration.sourceDirectory, affectedModule.toFilename()),
+        uri: affectedModule.toFilename(),
         diagnostics: state.getErrors(affectedModule).map((error) => ({
           range: samlangRangeToLspRange(error.range),
           severity: DiagnosticSeverity.Error,
@@ -59,6 +59,7 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
         capabilities: {
           textDocumentSync: TextDocumentSyncKind.Full,
           hoverProvider: true,
+          definitionProvider: {},
           completionProvider: {
             triggerCharacters: ['.'],
             resolveProvider: false,
@@ -87,6 +88,19 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
       contents: { language: 'samlang', value: prettyPrintType(type) },
       range: samlangRangeToLspRange(range),
     };
+  });
+
+  connection.onDefinition((gotoDefinitionParameters) => {
+    const moduleReference = uriToModuleReference(gotoDefinitionParameters.textDocument.uri);
+    const lspPosition = gotoDefinitionParameters.position;
+    const samlangPosition = new Position(lspPosition.line, lspPosition.character);
+    const location = service.queryDefinitionLocation(moduleReference, samlangPosition);
+    return location == null
+      ? null
+      : {
+          uri: location.moduleReference.toFilename(),
+          range: samlangRangeToLspRange(location.range),
+        };
   });
 
   connection.onCompletion((completionParameters) => {

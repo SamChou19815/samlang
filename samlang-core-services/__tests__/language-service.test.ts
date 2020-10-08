@@ -1,6 +1,6 @@
 import { LanguageServiceState, LanguageServices, CompletionItemKinds } from '../language-service';
 
-import { stringType, Position, ModuleReference } from 'samlang-core-ast/common-nodes';
+import { stringType, Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
 
 it('Language server state can update.', () => {
   const state = new LanguageServiceState([]);
@@ -141,6 +141,48 @@ class Test1 {
 
   expect(service.queryType(testModuleReference, new Position(100, 100))).toBeNull();
   expect(service.queryType(testModuleReference, new Position(2, 27))?.[0]).toEqual(stringType);
+});
+
+it('LanguageServices.queryDefinitionLocation test', () => {
+  const moduleReference1 = new ModuleReference(['Test1']);
+  const moduleReference2 = new ModuleReference(['Test2']);
+  const moduleReference3 = new ModuleReference(['Test3']);
+  const state = new LanguageServiceState([
+    [moduleReference3, 'class ABC { function a(): unit = { val _ = [1,2]; } }'],
+    [moduleReference2, 'class TTT { method test(): int = this.test() }'],
+    [
+      moduleReference1,
+      `import {ABC} from Test3
+import {TTT} from Test2
+class Test1 {
+  function test1(): int = 42
+  function test(t: TTT): int = Test1.test(t) + t.test() + 1
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => '');
+
+  expect(state.allErrors.map((it) => it.toString())).toEqual([]);
+
+  expect(service.queryDefinitionLocation(moduleReference1, new Position(100, 100))).toBeNull();
+  expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 46))).toBeNull();
+  expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 47))).toBeNull();
+  expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 48))).toBeNull();
+  expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 59))).toBeNull();
+  expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 60))).toBeNull();
+
+  const actualLocation1 = service.queryDefinitionLocation(moduleReference1, new Position(4, 40));
+  expect(actualLocation1?.moduleReference.toString()).toEqual(moduleReference1.toString());
+  expect(actualLocation1?.range.toString()).toEqual(
+    new Range(new Position(4, 2), new Position(4, 59)).toString()
+  );
+
+  const actualLocation2 = service.queryDefinitionLocation(moduleReference1, new Position(4, 51));
+  expect(actualLocation2?.moduleReference.toString()).toEqual(moduleReference2.toString());
+  expect(actualLocation2?.range.toString()).toEqual(
+    new Range(new Position(0, 12), new Position(0, 44)).toString()
+  );
 });
 
 it('LanguageServices autocompletion test', () => {
