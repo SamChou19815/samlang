@@ -21,6 +21,7 @@ class Test {
   expect(state.globalTypingContext.size).toBe(1);
   expect(state.expressionLocationLookup).toBeTruthy();
   expect(state.classLocationLookup).toBeTruthy();
+  expect(state.classMemberLocationLookup).toBeTruthy();
   expect(state.getCheckedModule(new ModuleReference(['test']))).toBeTruthy();
   expect(state.getCheckedModule(new ModuleReference(['test2']))).toBeUndefined();
 
@@ -159,6 +160,12 @@ class Test1(val a: int) {
   function test(t: TTT): int = Test1.test(t) + t.test() + 1
   function test2(): unit = ABC.a()
   function test3(): int = { a: 3 }.a
+  function test4(): unit = {
+    val _ = {
+      val b = 3;
+      val _ = b + 2;
+    }
+  }
 }
 `,
     ],
@@ -177,7 +184,7 @@ class Test1(val a: int) {
   const actualLocation0 = service.queryDefinitionLocation(moduleReference1, new Position(4, 34));
   expect(actualLocation0?.moduleReference.toString()).toEqual(moduleReference1.toString());
   expect(actualLocation0?.range.toString()).toEqual(
-    new Range(new Position(2, 0), new Position(7, 1)).toString()
+    new Range(new Position(2, 0), new Position(13, 1)).toString()
   );
 
   const actualLocation1 = service.queryDefinitionLocation(moduleReference1, new Position(4, 40));
@@ -208,6 +215,12 @@ class Test1(val a: int) {
   expect(actualLocation5?.moduleReference.toString()).toEqual(moduleReference1.toString());
   expect(actualLocation5?.range.toString()).toEqual(
     new Range(new Position(2, 12), new Position(2, 22)).toString()
+  );
+
+  const actualLocation6 = service.queryDefinitionLocation(moduleReference1, new Position(10, 15));
+  expect(actualLocation6?.moduleReference.toString()).toEqual(moduleReference1.toString());
+  expect(actualLocation6?.range.toString()).toEqual(
+    new Range(new Position(9, 6), new Position(9, 16)).toString()
   );
 });
 
