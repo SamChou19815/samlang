@@ -1,24 +1,13 @@
-// ERROR_COUNT: 0
-
 class Option<T>(None(unit), Some(T)) {
   method <R> mapButIgnore(f: (T) -> R): unit = {
-    val _ = match (this) {
-      // Resolved to Option<UNDECIDED>
-      | None _ -> None({})
-      // Resolved to Option<R>
-      // If the merge process does not go deeper,
-      // we will complain that Option<UNDECIDED> != Option<R>,
-      // which is bad!
-      | Some d -> Some(f(d))
-    };
+    val _: Option<R> = match (this) { | None _ -> None({  }) | Some d -> Some(f(d)) };
   }
 
   function main(): unit = {
-    val none = None({});
-    val _ = Some(none.mapButIgnore((it) -> it)).mapButIgnore((it) -> it);
+    val none: Option<unit> = None({  });
+    val _: unit = Some(none.mapButIgnore((it: unit) -> it)).mapButIgnore((it: unit) -> it);
   }
+
 }
 
-class Main {
-  function main(): unit = Option.main()
-}
+class Main { function main(): unit = Option.main()  }

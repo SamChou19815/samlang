@@ -1,17 +1,16 @@
-// ERROR_COUNT: 0
-
 class Main {
-  function factorial(n: int): int =
-    if (n == 0) then 1 else Main.factorial(n - 1) * n
+  function factorial(n: int): int = if (n == 0) then 1 else Main.factorial(n - 1) * n
 
   function fib(n: int): int =
-    if (n == 0) then 0 else if (n == 1) then 1 else Main.fib(n - 2) + Main.fib(n - 1)
+    if (n == 0) then 0 else (if (n == 1) then 1 else Main.fib(n - 2) + Main.fib(n - 1))
 
-  function uselessRecursion(n: int): unit = if (n == 0) then {} else Main.uselessRecursion(n - 1)
+  function uselessRecursion(n: int): unit =
+    if (n == 0) then ({  }) else Main.uselessRecursion(n - 1)
 
   function main(): unit = {
-    val _ = println(intToString(Main.factorial(4)));
-    val _ = println(intToString(Main.fib(10)));
-    val _ = Main.uselessRecursion(20);
+    val _: unit = println(intToString(Main.factorial(4)));
+    val _: unit = println(intToString(Main.fib(10)));
+    val _: unit = Main.uselessRecursion(20);
   }
+
 }

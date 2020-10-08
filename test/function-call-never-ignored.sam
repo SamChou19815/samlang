@@ -1,12 +1,11 @@
-// ERROR_COUNT: 0
-
 class Main {
   function hi(): int = {
-    val _ = println("hi");
+    val _: unit = println("hi");
     5
   }
 
   function main(): unit = {
-    val _ = Main.hi();
+    val _: int = Main.hi();
   }
+
 }
