@@ -8,6 +8,7 @@ import {
   InsertTextFormat,
   DiagnosticSeverity,
   Range as LspRange,
+  TextEdit,
   // eslint-disable-next-line import/no-extraneous-dependencies
 } from 'vscode-languageserver';
 
@@ -15,6 +16,7 @@ import { collectSources } from './cli-service';
 import type { SamlangProjectConfiguration } from './configuration';
 
 import { Position, Range, ModuleReference, prettyPrintType } from 'samlang-core-ast/common-nodes';
+import { prettyPrintSamlangModule } from 'samlang-core-printer';
 import { LanguageServiceState, LanguageServices } from 'samlang-core-services';
 
 const samlangRangeToLspRange = (range: Range): LspRange => ({
@@ -24,7 +26,9 @@ const samlangRangeToLspRange = (range: Range): LspRange => ({
 
 const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration): void => {
   const state = new LanguageServiceState(collectSources(configuration));
-  const service = new LanguageServices(state);
+  const service = new LanguageServices(state, (samlangModule) =>
+    prettyPrintSamlangModule(100, samlangModule)
+  );
 
   const uriToModuleReference = (uri: string): ModuleReference => {
     const relativePath = relative(configuration.sourceDirectory, uri);
@@ -59,6 +63,7 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
             triggerCharacters: ['.'],
             resolveProvider: false,
           },
+          documentFormattingProvider: {},
         },
       };
     }
@@ -96,6 +101,24 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
       insertText: item.text,
       insertTextFormat: item.isSnippet ? InsertTextFormat.Snippet : InsertTextFormat.PlainText,
     }));
+  });
+
+  connection.onDocumentFormatting((formatParameters) => {
+    const moduleReference = uriToModuleReference(formatParameters.textDocument.uri);
+    if (moduleReference == null) return null;
+    const formattedString = service.formatEntireDocument(moduleReference);
+    if (formattedString == null) return null;
+    return [
+      TextEdit.replace(
+        samlangRangeToLspRange(
+          new Range(
+            new Position(0, 0),
+            new Position(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
+          )
+        ),
+        formattedString
+      ),
+    ];
   });
 
   connection.listen();
