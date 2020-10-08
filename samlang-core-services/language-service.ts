@@ -239,6 +239,12 @@ export class LanguageServices {
       case 'TupleConstructorExpression':
         return null;
       case 'VariableExpression':
+        if (
+          expression.type.type === 'IdentifierType' &&
+          expression.type.identifier.startsWith('class ')
+        ) {
+          return this.findClassLocation(moduleReference, expression.name);
+        }
         // TODO: depending on infra to record variable declaration location.
         return null;
       case 'ClassMemberExpression':
@@ -270,6 +276,27 @@ export class LanguageServices {
       case 'StatementBlockExpression':
         return null;
     }
+  }
+
+  private findClassLocation(moduleReference: ModuleReference, className: string): Location {
+    const samlangModule = this.state.getCheckedModule(moduleReference);
+    assertNotNull(samlangModule);
+    const { imports, classes } = samlangModule;
+    for (let i = 0; i < classes.length; i += 1) {
+      const samlangClass = classes[i];
+      if (samlangClass.name === className) {
+        return { moduleReference, range: samlangClass.range };
+      }
+    }
+    for (let i = 0; i < imports.length; i += 1) {
+      const { importedMembers, importedModule } = imports[i];
+      // istanbul ignore next
+      if (importedMembers.some((it) => it[0] === className)) {
+        return this.findClassLocation(importedModule, className);
+      }
+    }
+    // istanbul ignore next
+    throw new Error('Type checker is messed up!');
   }
 
   private findClassMemberLocation(
