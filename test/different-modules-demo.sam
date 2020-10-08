@@ -1,89 +1,88 @@
-// ERROR_COUNT: 0
-
 class Math {
   function plus(a: int, b: int): int = a + b
+
   function cosine(angleInDegree: int): int = panic("Not supported!")
+
 }
 
 class Student(val name: string, val age: int) {
   method getName(): string = this.name
+
   method getAge(): int = this.age
+
   function dummyStudent(): Student = { name: "RANDOM_BABY", age: 0 }
+
 }
 
-class PrimitiveType(
-  U(bool),
-  I(int),
-  S(string),
-  B(bool),
-) {
-  // some random functions
+class PrimitiveType(U(bool), I(int), S(string), B(bool)) {
   function getUnit(): PrimitiveType = U(false)
+
   function getInteger(): PrimitiveType = I(42)
+
   function getString(): PrimitiveType = S("Answer to life, universe, and everything.")
+
   function getBool(): PrimitiveType = B(false)
 
-  // pattern matching!
   method isTruthy(): bool =
-    match (this) {
-      | U _ -> false
-      | I i -> i != 0
-      | S s -> s != ""
-      | B b -> b
-    }
+    match (this) { | U _ -> false | I i -> i != 0 | S s -> s != "" | B b -> b }
+
 }
 
-class FunctionExample {
-  function <T> getIdentityFunction(): (T) -> T = (x) -> x
-}
+class FunctionExample { function <T> getIdentityFunction(): (T) -> T = (x: T) -> x  }
 
 class Box<T>(val content: T) {
-  function <T> init(content: T): Box<T> = { content } // object short hand syntax
+  function <T> init(content: T): Box<T> = { content }
+
   method getContent(): T = {
-    val { content } = this; content
+    val { content }: Box<T> = this;
+    content
   }
+
 }
 
 class Option<T>(None(unit), Some(T)) {
-  function <T> getNone(): Option<T> = None({})
+  function <T> getNone(): Option<T> = None({  })
+
   function <T> getSome(d: T): Option<T> = Some(d)
-  method forceValue(): T =
-    match (this) {
-      | None _ -> panic("Ah")
-      | Some v -> v
-    }
+
+  method forceValue(): T = match (this) { | None _ -> panic("Ah") | Some v -> v }
+
   method <R> map(f: (T) -> R): Option<R> =
-    match (this) {
-      | None _ -> None({})
-      | Some d -> Some(f(d))
-    }
+    match (this) { | None _ -> None({  }) | Some d -> Some(f(d)) }
+
 }
 
 class Main {
-
   private function assertTrue(condition: bool, message: string): unit =
-    if (condition) then {} else panic(message)
+    if (condition) then ({  }) else panic(message)
 
   private function assertFalse(condition: bool, message: string): unit =
-    if (!condition) then {} else panic(message)
+    if (!condition) then ({  }) else panic(message)
 
   private function assertEquals(e1: int, e2: int, message: string): unit =
-    if (e1 == e2) then {} else panic(intToString(e1)::" "::intToString(e2)::" "::message)
+    if (e1 == e2) then ({  }) else panic(
+      (((intToString(e1) :: " ") :: intToString(e2)) :: " ") :: message
+    )
 
   private function consistencyTest(): unit = {
-    val _ = Main.assertEquals(Option.getSome(3).map((i) -> i + 1).forceValue(), 4, "Ah1");
-    val _ = Main.assertEquals(Box.init(42).getContent(), 42, "Ah2");
-    val _ = Main.assertEquals(FunctionExample.getIdentityFunction()(42), 42, "Ah3");
-    val _ = Main.assertEquals(Student.dummyStudent().getAge(), 0, "Ah4");
-    val _ = Main.assertEquals(Math.plus(2, 2), 4, "Ah5");
-    val _ = Main.assertFalse(PrimitiveType.getUnit().isTruthy(), "Ah6");
-    val _ = Main.assertTrue(PrimitiveType.getInteger().isTruthy(), "Ah7");
-    val _ = Main.assertTrue(PrimitiveType.getString().isTruthy(), "Ah8");
-    val _ = Main.assertFalse(PrimitiveType.getBool().isTruthy(), "Ah9");
+    val _: unit = Main.assertEquals(
+      ((Option.getSome(3)).map((i: int) -> i + 1)).forceValue(),
+      4,
+      "Ah1"
+    );
+    val _: unit = Main.assertEquals((Box.init(42)).getContent(), 42, "Ah2");
+    val _: unit = Main.assertEquals((FunctionExample.getIdentityFunction())(42), 42, "Ah3");
+    val _: unit = Main.assertEquals((Student.dummyStudent()).getAge(), 0, "Ah4");
+    val _: unit = Main.assertEquals(Math.plus(2, 2), 4, "Ah5");
+    val _: unit = Main.assertFalse((PrimitiveType.getUnit()).isTruthy(), "Ah6");
+    val _: unit = Main.assertTrue((PrimitiveType.getInteger()).isTruthy(), "Ah7");
+    val _: unit = Main.assertTrue((PrimitiveType.getString()).isTruthy(), "Ah8");
+    val _: unit = Main.assertFalse((PrimitiveType.getBool()).isTruthy(), "Ah9");
   }
 
   function main(): unit = {
-    val _ = Main.consistencyTest();
+    val _: unit = Main.consistencyTest();
     println("OK")
   }
+
 }

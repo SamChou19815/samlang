@@ -1,23 +1,20 @@
-// ERROR_COUNT: 0
-
 class Main {
   function printInt(i: int): unit = println(intToString(i))
 
   function check(actual: int, expected: int): unit =
-    if (actual != expected) then
-      panic("actual: "::intToString(actual)::", expected "::intToString(expected))
-    else {}
+    if (actual != expected) then panic(
+      (("actual: " :: intToString(actual)) :: ", expected ") :: intToString(expected)
+    ) else ({  })
 
   function test(first: bool, a: int, b: int, aTimesB: int): unit = {
-    val _ = if (first) then {
-      val _ = a * b;
-    } else {};
-    val _ = Main.check(a * b, aTimesB);
+    val _: unit = if (first) then ({ val _: int = a * b; }) else ({  });
+    val _: unit = Main.check(a * b, aTimesB);
   }
 
   function main(): unit = {
-    val _ = Main.test(true, 3, 4, 12);
-    val _ = Main.test(false, 3, 4, 12);
+    val _: unit = Main.test(true, 3, 4, 12);
+    val _: unit = Main.test(false, 3, 4, 12);
     println("OK")
   }
+
 }
