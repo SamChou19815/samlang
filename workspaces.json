@@ -12,9 +12,9 @@
         "samlang-core-errors",
         "samlang-core-parser-generated",
         "samlang-core-parser",
+        "samlang-core-printer",
         "samlang-core-checker",
         "samlang-core-services",
-        "samlang-core-printer",
         "@dev-sam/samlang-cli"
       ]
     },
@@ -30,9 +30,9 @@
         "samlang-core-parser-generated",
         "samlang-core-parser",
         "samlang-core-interpreter",
+        "samlang-core-printer",
         "samlang-core-checker",
         "samlang-core-services",
-        "samlang-core-printer",
         "@dev-sam/samlang-demo"
       ]
     },
@@ -92,9 +92,9 @@
         "samlang-core-parser-generated",
         "samlang-core-parser",
         "samlang-core-interpreter",
+        "samlang-core-printer",
         "samlang-core-checker",
         "samlang-core-services",
-        "samlang-core-printer",
         "samlang-core-integration-tests"
       ]
     },
@@ -142,11 +142,6 @@
         "samlang-core-errors",
         "samlang-core-parser-generated",
         "samlang-core-parser",
-        "samlang-core-checker",
-        "samlang-core-analysis",
-        "samlang-core-optimization",
-        "samlang-core-compiler",
-        "samlang-core-services",
         "samlang-core-printer"
       ]
     },
@@ -181,9 +176,9 @@
     "samlang-core-errors",
     "samlang-core-parser-generated",
     "samlang-core-parser",
+    "samlang-core-printer",
     "samlang-core-checker",
     "samlang-core-services",
-    "samlang-core-printer",
     "@dev-sam/samlang-cli",
     "samlang-core-interpreter",
     "samlang-core-integration-tests",

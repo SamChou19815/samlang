@@ -7404,11 +7404,8 @@ fsevents@^2.1.2:
   dependencies:
     "@types/jest": ^26.0.10
     samlang-core-ast: "workspace:0.0.1"
-    samlang-core-checker: "workspace:0.0.1"
-    samlang-core-compiler: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
-    samlang-core-services: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
     typescript: 4.0.3
   languageName: unknown

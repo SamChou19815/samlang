@@ -12,7 +12,6 @@ import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_THROW,
 } from 'samlang-core-ast/common-names';
-import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import {
   HIR_IF_ELSE,
   HIR_BINARY,
@@ -28,19 +27,42 @@ import {
   HIR_VARIABLE,
   HIR_WHILE_TRUE,
 } from 'samlang-core-ast/hir-expressions';
-import { compileSamlangSourcesToHighIRSources } from 'samlang-core-compiler';
-import { checkSources } from 'samlang-core-services';
+import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import { assertNotNull } from 'samlang-core-utils';
 
 it('compile hello world to JS integration test', () => {
-  const moduleReference = new ModuleReference(['Test']);
-  const sourceCode = `
-    class Main {
-        function main(): unit = println("Hello "::"World!")
-    }
-    `;
-  const { checkedSources } = checkSources([[moduleReference, sourceCode]]);
-  const hirModule = compileSamlangSourcesToHighIRSources(checkedSources).get(moduleReference);
+  const hirModule: HighIRModule = {
+    functions: [
+      {
+        name: '_module_Test_class_Main_function_main',
+        parameters: [],
+        hasReturn: false,
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('_builtin_stringConcat'),
+            functionArguments: [HIR_STRING('Hello '), HIR_STRING('World!')],
+            returnCollector: '_t0',
+          }),
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('_builtin_println'),
+            functionArguments: [HIR_VARIABLE('_t0')],
+            returnCollector: '_t1',
+          }),
+        ],
+      },
+      {
+        name: '_compiled_program_main',
+        parameters: [],
+        hasReturn: false,
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('_module_Test_class_Main_function_main'),
+            functionArguments: [],
+          }),
+        ],
+      },
+    ],
+  };
   assertNotNull(hirModule);
   expect(highIRModuleToJSString(hirModule)).toBe(
     `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
@@ -61,132 +83,227 @@ _compiled_program_main();`
   );
 });
 
-const setupIntegration = (sourceCode: string): string => {
-  const moduleReference = new ModuleReference(['Test']);
-  const { checkedSources, compileTimeErrors } = checkSources([[moduleReference, sourceCode]]);
-  expect(compileTimeErrors).toEqual([]);
-  const hirModule = compileSamlangSourcesToHighIRSources(checkedSources).get(moduleReference);
-  assertNotNull(hirModule);
+const setupHIRIntegration = (hirModule: HighIRModule): string => {
   // eslint-disable-next-line no-eval
   return eval(highIRModuleToJSString(hirModule, true));
 };
 
 it('confirm samlang & equivalent JS have same print output', () => {
   expect(
-    setupIntegration(
-      `
-    class Main {
-        function main(): unit = {
-          println("Hello "::"World!")
-        }
-    }
-    `
-    )
+    setupHIRIntegration({
+      functions: [
+        {
+          name: '_compiled_program_main',
+          parameters: [],
+          hasReturn: false,
+          body: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('_builtin_stringConcat'),
+              functionArguments: [HIR_STRING('Hello '), HIR_STRING('World!')],
+              returnCollector: '_t0',
+            }),
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('_builtin_println'),
+              functionArguments: [HIR_VARIABLE('_t0')],
+              returnCollector: '_t1',
+            }),
+          ],
+        },
+      ],
+    })
   ).toBe('Hello World!\n');
 
   expect(
-    setupIntegration(
-      `
-    class Main {
-        function main(a: int, b: int): int = a + b
-    }
-    `
-    )
+    setupHIRIntegration({
+      functions: [
+        {
+          name: '_compiled_program_main',
+          parameters: [],
+          hasReturn: false,
+          body: [],
+        },
+      ],
+    })
   ).toBe('');
+
   expect(
-    setupIntegration(
-      `
-    class Main {
-      function sum(a: int, b: int): int = a + b
-      function main(): unit = println(intToString(Main.sum(42, 7)))
-    }
-    `
-    )
+    setupHIRIntegration({
+      functions: [
+        {
+          name: 'sum',
+          parameters: ['a', 'b'],
+          hasReturn: true,
+          body: [
+            HIR_RETURN(HIR_BINARY({ operator: '+', e1: HIR_VARIABLE('a'), e2: HIR_VARIABLE('b') })),
+          ],
+        },
+        {
+          name: '_compiled_program_main',
+          parameters: [],
+          hasReturn: false,
+          body: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('sum'),
+              functionArguments: [HIR_INT(BigInt(42)), HIR_INT(BigInt(7))],
+              returnCollector: '_t0',
+            }),
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('_builtin_intToString'),
+              functionArguments: [HIR_VARIABLE('_t0')],
+              returnCollector: '_t1',
+            }),
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('_builtin_println'),
+              functionArguments: [HIR_VARIABLE('_t1')],
+              returnCollector: '_t2',
+            }),
+          ],
+        },
+      ],
+    })
   ).toBe('49\n');
-  expect(
-    setupIntegration(
-      `
-    class MeaningOfLife {
-      function conditional(sum: int): string = if (sum == 42) then ("Meaning of life") else ("Not the meaning of life... keep looking")
-    }
 
-    class Main {
-      function main(): unit = println(MeaningOfLife.conditional(Main.sum(42, 7)))
-      function sum(a: int, b: int): int = a + b
-    }
-    `
-    )
+  expect(
+    setupHIRIntegration({
+      functions: [
+        {
+          name: 'MeaningOfLifeConditional',
+          parameters: ['sum'],
+          hasReturn: true,
+          body: [
+            HIR_IF_ELSE({
+              booleanExpression: HIR_BINARY({
+                operator: '==',
+                e1: HIR_VARIABLE('sum'),
+                e2: HIR_INT(BigInt(42)),
+              }),
+              s1: [HIR_RETURN(HIR_STRING('Meaning of life'))],
+              s2: [HIR_RETURN(HIR_STRING('Not the meaning of life... keep looking'))],
+            }),
+          ],
+        },
+        {
+          name: 'sum',
+          parameters: ['a', 'b'],
+          hasReturn: true,
+          body: [
+            HIR_RETURN(HIR_BINARY({ operator: '+', e1: HIR_VARIABLE('a'), e2: HIR_VARIABLE('b') })),
+          ],
+        },
+        {
+          name: '_compiled_program_main',
+          parameters: [],
+          hasReturn: false,
+          body: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('sum'),
+              functionArguments: [HIR_INT(BigInt(42)), HIR_INT(BigInt(7))],
+              returnCollector: '_t0',
+            }),
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('MeaningOfLifeConditional'),
+              functionArguments: [HIR_VARIABLE('_t0')],
+              returnCollector: '_t1',
+            }),
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('_builtin_println'),
+              functionArguments: [HIR_VARIABLE('_t1')],
+              returnCollector: '_t2',
+            }),
+          ],
+        },
+      ],
+    })
   ).toBe('Not the meaning of life... keep looking\n');
+
   expect(
-    setupIntegration(
-      `
-    class Foo {
-      function bar(): int = 3
-    }
+    setupHIRIntegration({
+      functions: [
+        {
+          name: 'dummyStudent',
+          parameters: [],
+          hasReturn: true,
+          body: [
+            HIR_STRUCT_INITIALIZATION({
+              structVariableName: 't0',
+              expressionList: [HIR_STRING('RANDOM_BABY')],
+            }),
+            HIR_RETURN(HIR_VARIABLE('t0')),
+          ],
+        },
+        {
+          name: 'getName',
+          parameters: ['s'],
+          hasReturn: true,
+          body: [
+            HIR_RETURN(
+              HIR_INDEX_ACCESS({
+                expression: HIR_VARIABLE('s'),
+                index: 0,
+              })
+            ),
+          ],
+        },
+        {
+          name: '_compiled_program_main',
+          parameters: [],
+          hasReturn: false,
+          body: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('dummyStudent'),
+              functionArguments: [],
+              returnCollector: '_t0',
+            }),
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('getName'),
+              functionArguments: [HIR_VARIABLE('_t0')],
+              returnCollector: '_t1',
+            }),
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('_builtin_println'),
+              functionArguments: [HIR_VARIABLE('_t1')],
+              returnCollector: '_t2',
+            }),
+          ],
+        },
+      ],
+    })
+  ).toBe('RANDOM_BABY\n');
 
-    class Main {
-      function oof(): int = 14
-      function main(): unit = println(intToString(Foo.bar() * Main.oof()))
-    }
-    `
-    )
-  ).toBe(`42\n`);
-  expect(
-    setupIntegration(
-      `
-    class Student(private val name: string, val age: int) {
-      method getName(): string = this.name
-      private method getAge(): int = this.age
-      function dummyStudent(): Student = { name: "RANDOM_BABY", age: 0 }
-    }
-
-    class Main {
-      function main(): unit = {
-        val _ = println(Student.dummyStudent().getName())
-        val _ = println(intToString(Student.dummyStudent().age))
-      }
-    }
-    `
-    )
-  ).toBe(`RANDOM_BABY\n0\n`);
-  expect(
-    setupIntegration(
-      `
-    class HelloWorld(val message: string) {
-      private method getMessage(): string = {
-        val { message } = this;
-        message
-      }
-
-      function getGlobalMessage(): string = {
-        val hw = { message: "Hello World" };
-        hw.getMessage()
-      }
-    }
-
-    class Main {
-      function main(): unit = println(HelloWorld.getGlobalMessage())
-    }
-    `
-    )
-  ).toBe(`Hello World\n`);
   expect(() =>
-    setupIntegration(
-      `
-  class Main {
-    function div(a: int, b: int): int =
-      if b == 0 then (
-        panic("Division by zero is illegal!")
-      ) else (
-        a / b
-      )
-    function main(): unit = {
-      val _ = println(intToString(Main.div(42, 0)))
-      val _ = println(intToString(Main.div(30, 2)))
-    }
-  }
-  `
-    )
+    setupHIRIntegration({
+      functions: [
+        {
+          name: 'sum',
+          parameters: ['a', 'b'],
+          hasReturn: true,
+          body: [
+            HIR_RETURN(HIR_BINARY({ operator: '+', e1: HIR_VARIABLE('a'), e2: HIR_VARIABLE('b') })),
+          ],
+        },
+        {
+          name: '_compiled_program_main',
+          parameters: [],
+          hasReturn: false,
+          body: [
+            HIR_IF_ELSE({
+              booleanExpression: HIR_BINARY({
+                operator: '==',
+                e1: HIR_INT(BigInt(0)),
+                e2: HIR_INT(BigInt(0)),
+              }),
+              s1: [
+                HIR_FUNCTION_CALL({
+                  functionExpression: HIR_NAME('_builtin_throw'),
+                  functionArguments: [HIR_STRING('Division by zero is illegal!')],
+                }),
+              ],
+              s2: [],
+            }),
+          ],
+        },
+      ],
+    })
   ).toThrow(`Division by zero is illegal!`);
 });
 
