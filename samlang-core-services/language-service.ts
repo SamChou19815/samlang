@@ -15,7 +15,11 @@ import {
   Location,
 } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
-import type { ClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import type {
+  ClassDefinition,
+  ClassMemberDefinition,
+  SamlangModule,
+} from 'samlang-core-ast/samlang-toplevel';
 import {
   DependencyTracker,
   GlobalTypingContext,
@@ -29,7 +33,7 @@ import {
   createGlobalErrorCollector,
 } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
-import { HashMap, hashMapOf, hashSetOf, assertNotNull } from 'samlang-core-utils';
+import { HashMap, hashMapOf, hashSetOf, assertNotNull, isNotNull } from 'samlang-core-utils';
 
 export class LanguageServiceState {
   private readonly dependencyTracker: DependencyTracker = new DependencyTracker();
@@ -47,6 +51,8 @@ export class LanguageServiceState {
   private _expressionLocationLookup: LocationLookup<SamlangExpression> = new LocationLookup();
 
   private _classLocationLookup: LocationLookup<string> = new LocationLookup();
+
+  private _classMemberLocationLookup: LocationLookup<ClassMemberDefinition> = new LocationLookup();
 
   constructor(sourceHandles: readonly (readonly [ModuleReference, string])[]) {
     const errorCollector = createGlobalErrorCollector();
@@ -71,12 +77,15 @@ export class LanguageServiceState {
     );
     checkedModules.forEach((checkedModule, moduleReference) => {
       locationLookupBuilder.rebuild(moduleReference, checkedModule);
-      checkedModule.classes.forEach((classDefinition) =>
+      checkedModule.classes.forEach((classDefinition) => {
         this._classLocationLookup.set(
           { moduleReference, range: classDefinition.range },
           classDefinition.name
-        )
-      );
+        );
+        classDefinition.members.forEach((member) => {
+          this._classMemberLocationLookup.set({ moduleReference, range: member.range }, member);
+        });
+      });
     });
   }
 
@@ -90,6 +99,10 @@ export class LanguageServiceState {
 
   get classLocationLookup(): ReadOnlyLocationLookup<string> {
     return this._classLocationLookup;
+  }
+
+  get classMemberLocationLookup(): ReadOnlyLocationLookup<ClassMemberDefinition> {
+    return this._classMemberLocationLookup;
   }
 
   get allModulesWithError(): readonly ModuleReference[] {
@@ -238,15 +251,28 @@ export class LanguageServices {
       case 'ThisExpression':
       case 'TupleConstructorExpression':
         return null;
-      case 'VariableExpression':
+      case 'VariableExpression': {
         if (
           expression.type.type === 'IdentifierType' &&
           expression.type.identifier.startsWith('class ')
         ) {
-          return this.findClassLocation(moduleReference, expression.name);
+          const [moduleReferenceOfClass, classDefinition] = this.getClassDefinition(
+            moduleReference,
+            expression.name
+          );
+          return { moduleReference: moduleReferenceOfClass, range: classDefinition.range };
         }
-        // TODO: depending on infra to record variable declaration location.
-        return null;
+        const classMemberDefinition = this.state.classMemberLocationLookup.get(
+          moduleReference,
+          position
+        );
+        if (classMemberDefinition == null) return null;
+        const range = LanguageServices.findLocalVariableDefinitionDefiningStatementRange(
+          classMemberDefinition.body,
+          expression.name
+        );
+        return range == null ? null : { moduleReference, range };
+      }
       case 'ClassMemberExpression':
         return this.findClassMemberLocation(
           moduleReference,
@@ -316,12 +342,38 @@ export class LanguageServices {
     throw new Error('Type checker is messed up!');
   }
 
-  private findClassLocation(moduleReference: ModuleReference, className: string): Location {
-    const [moduleReferenceOfClass, classDefinition] = this.getClassDefinition(
-      moduleReference,
-      className
-    );
-    return { moduleReference: moduleReferenceOfClass, range: classDefinition.range };
+  private static findLocalVariableDefinitionDefiningStatementRange(
+    expression: SamlangExpression,
+    variableName: string
+  ): Range | null {
+    if (expression.__type__ !== 'StatementBlockExpression') return null;
+    const statements = expression.block.statements;
+    const definingStatement = statements.find((statement) => {
+      // istanbul ignore next
+      switch (statement.pattern.type) {
+        case 'TuplePattern':
+          // istanbul ignore next
+          return statement.pattern.destructedNames.some((it) => it[0] === variableName);
+        case 'ObjectPattern':
+          // istanbul ignore next
+          return statement.pattern.destructedNames.some(
+            (it) => it.alias === variableName || it.fieldName === variableName
+          );
+        case 'VariablePattern':
+          return statement.pattern.name === variableName;
+        case 'WildCardPattern':
+          return false;
+      }
+    });
+    if (definingStatement != null) return definingStatement.range;
+    return statements
+      .map((statement) =>
+        LanguageServices.findLocalVariableDefinitionDefiningStatementRange(
+          statement.assignedExpression,
+          variableName
+        )
+      )
+      .filter(isNotNull)[0];
   }
 
   private findClassMemberLocation(
