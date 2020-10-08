@@ -15,7 +15,7 @@ import {
   Location,
 } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
-import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import type { ClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import {
   DependencyTracker,
   GlobalTypingContext,
@@ -254,11 +254,26 @@ export class LanguageServices {
           expression.memberName
         );
       case 'ObjectConstructorExpression':
-      case 'VariantConstructorExpression':
-      case 'FieldAccessExpression':
-        // TODO: go to constructor/field definition, depending on finer location recording.
-        // istanbul ignore next
-        return null;
+      case 'VariantConstructorExpression': {
+        const [moduleReferenceOfClass, classDefinition] = this.getClassDefinition(
+          moduleReference,
+          (expression.type as IdentifierType).identifier
+        );
+        return {
+          moduleReference: moduleReferenceOfClass,
+          range: classDefinition.typeDefinition.range,
+        };
+      }
+      case 'FieldAccessExpression': {
+        const [moduleReferenceOfClass, classDefinition] = this.getClassDefinition(
+          moduleReference,
+          (expression.expression.type as IdentifierType).identifier
+        );
+        return {
+          moduleReference: moduleReferenceOfClass,
+          range: classDefinition.typeDefinition.range,
+        };
+      }
       case 'MethodAccessExpression':
         return this.findClassMemberLocation(
           moduleReference,
@@ -278,25 +293,35 @@ export class LanguageServices {
     }
   }
 
-  private findClassLocation(moduleReference: ModuleReference, className: string): Location {
+  private getClassDefinition(
+    moduleReference: ModuleReference,
+    className: string
+  ): readonly [ModuleReference, ClassDefinition] {
     const samlangModule = this.state.getCheckedModule(moduleReference);
     assertNotNull(samlangModule);
     const { imports, classes } = samlangModule;
     for (let i = 0; i < classes.length; i += 1) {
       const samlangClass = classes[i];
       if (samlangClass.name === className) {
-        return { moduleReference, range: samlangClass.range };
+        return [moduleReference, samlangClass];
       }
     }
     for (let i = 0; i < imports.length; i += 1) {
       const { importedMembers, importedModule } = imports[i];
-      // istanbul ignore next
       if (importedMembers.some((it) => it[0] === className)) {
-        return this.findClassLocation(importedModule, className);
+        return this.getClassDefinition(importedModule, className);
       }
     }
     // istanbul ignore next
     throw new Error('Type checker is messed up!');
+  }
+
+  private findClassLocation(moduleReference: ModuleReference, className: string): Location {
+    const [moduleReferenceOfClass, classDefinition] = this.getClassDefinition(
+      moduleReference,
+      className
+    );
+    return { moduleReference: moduleReferenceOfClass, range: classDefinition.range };
   }
 
   private findClassMemberLocation(
@@ -304,25 +329,13 @@ export class LanguageServices {
     className: string,
     memberName: string
   ): Location {
-    const samlangModule = this.state.getCheckedModule(moduleReference);
-    assertNotNull(samlangModule);
-    const { imports, classes } = samlangModule;
-    for (let i = 0; i < classes.length; i += 1) {
-      const samlangClass = classes[i];
-      if (samlangClass.name === className) {
-        const matchingMember = samlangClass.members.find((it) => it.name === memberName);
-        assertNotNull(matchingMember);
-        return { moduleReference, range: matchingMember.range };
-      }
-    }
-    for (let i = 0; i < imports.length; i += 1) {
-      const { importedMembers, importedModule } = imports[i];
-      if (importedMembers.some((it) => it[0] === className)) {
-        return this.findClassMemberLocation(importedModule, className, memberName);
-      }
-    }
-    // istanbul ignore next
-    throw new Error('Type checker is messed up!');
+    const [moduleReferenceOfClass, classDefinition] = this.getClassDefinition(
+      moduleReference,
+      className
+    );
+    const matchingMember = classDefinition.members.find((it) => it.name === memberName);
+    assertNotNull(matchingMember);
+    return { moduleReference: moduleReferenceOfClass, range: matchingMember.range };
   }
 
   autoComplete(
