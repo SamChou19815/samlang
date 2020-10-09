@@ -242,6 +242,18 @@ export class LanguageServices {
     return [expression.type, expression.range];
   }
 
+  queryFoldingRanges(moduleReference: ModuleReference): readonly Range[] | null {
+    const module = this.state.getCheckedModule(moduleReference);
+    if (module == null) return null;
+    const ranges = module.classes.flatMap((moduleClass) => {
+      const range = moduleClass.range;
+      const members = moduleClass.members;
+      const memberRanges = members.flatMap((member) => member.range);
+      return [...memberRanges, range];
+    });
+    return ranges;
+  }
+
   queryDefinitionLocation(moduleReference: ModuleReference, position: Position): Location | null {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     if (expression == null) return null;

@@ -8,6 +8,8 @@ import {
   InsertTextFormat,
   DiagnosticSeverity,
   Range as LspRange,
+  FoldingRangeParams,
+  FoldingRange as LspFoldingRange,
   TextEdit,
   // eslint-disable-next-line import/no-extraneous-dependencies
 } from 'vscode-languageserver';
@@ -22,6 +24,13 @@ import { LanguageServiceState, LanguageServices } from 'samlang-core-services';
 const samlangRangeToLspRange = (range: Range): LspRange => ({
   start: { line: range.start.line, character: range.start.column },
   end: { line: range.end.line, character: range.end.column },
+});
+
+const samlangRangeToLspFoldingRange = (range: Range): LspFoldingRange => ({
+  startLine: range.start.line,
+  startCharacter: range.start.column,
+  endLine: range.end.line,
+  endCharacter: range.end.column,
 });
 
 const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration): void => {
@@ -60,6 +69,7 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
           textDocumentSync: TextDocumentSyncKind.Full,
           hoverProvider: true,
           definitionProvider: {},
+          foldingRangeProvider: true,
           completionProvider: {
             triggerCharacters: ['.'],
             resolveProvider: false,
@@ -101,6 +111,15 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
           uri: location.moduleReference.toFilename(),
           range: samlangRangeToLspRange(location.range),
         };
+  });
+
+  connection.onFoldingRanges((foldingrangeParameters: FoldingRangeParams):
+    | LspFoldingRange[]
+    | null => {
+    const moduleReference = uriToModuleReference(foldingrangeParameters.textDocument.uri);
+    if (moduleReference == null) return null;
+    const foldingRangeResult = service.queryFoldingRanges(moduleReference);
+    return foldingRangeResult.map((foldingRange) => samlangRangeToLspFoldingRange(foldingRange));
   });
 
   connection.onCompletion((completionParameters) => {
