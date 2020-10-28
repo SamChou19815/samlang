@@ -224,6 +224,54 @@ class Test1(val a: int) {
   );
 });
 
+it('LanguageServices.queryFoldingRanges test', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const state = new LanguageServiceState([
+    [
+      testModuleReference,
+      `
+class List<T>(Nil(unit), Cons([T * List<T>])) {
+  function <T> of(t: T): List<T> =
+    Cons([t, Nil({})])
+  method cons(t: T): List<T> =
+    Cons([t, this])
+}
+class Developer(
+  val name: string, val github: string,
+  val projects: List<string>,
+) {
+  function sam(): Developer = {
+    val l = List.of("SAMLANG").cons("...")
+    val github = "SamChou19815"
+    { name: "Sam Zhou", github, projects: l }.
+    function sam(): Developer = {
+      val l = List.of("SAMLANG").cons("...")
+      val github = "SamChou19815"
+      { name: "Sam Zhou", github, projects: l }.
+    }
+  }
+}
+class Main {
+  function main(): Developer = Developer.sam()
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => 'foo bar');
+  expect(
+    service.queryFoldingRanges(testModuleReference)?.map((module) => module.toString())
+  ).toMatchObject([
+    new Range(new Position(2, 2), new Position(3, 22)).toString(),
+    new Range(new Position(4, 2), new Position(5, 19)).toString(),
+    new Range(new Position(1, 0), new Position(6, 1)).toString(),
+    new Range(new Position(11, 2), new Position(16, 44)).toString(),
+    new Range(new Position(7, 0), new Position(18, 47)).toString(),
+    new Range(new Position(23, 2), new Position(23, 46)).toString(),
+    new Range(new Position(22, 0), new Position(24, 1)).toString(),
+  ]);
+  expect(service.queryFoldingRanges(new ModuleReference(['dsafadfasd']))).toBe(null);
+});
+
 it('LanguageServices autocompletion test', () => {
   const testModuleReference = new ModuleReference(['Test']);
   const state = new LanguageServiceState([
