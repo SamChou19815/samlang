@@ -119,6 +119,7 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
     const moduleReference = uriToModuleReference(foldingrangeParameters.textDocument.uri);
     if (moduleReference == null) return null;
     const foldingRangeResult = service.queryFoldingRanges(moduleReference);
+    if (foldingRangeResult == null) return null;
     return foldingRangeResult.map((foldingRange) => samlangRangeToLspFoldingRange(foldingRange));
   });
 
