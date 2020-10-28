@@ -269,6 +269,7 @@ class Main {
     new Range(new Position(23, 2), new Position(23, 46)).toString(),
     new Range(new Position(22, 0), new Position(24, 1)).toString(),
   ]);
+  expect(service.queryFoldingRanges(new ModuleReference(['dsafadfasd']))).toBe(null);
 });
 
 it('LanguageServices autocompletion test', () => {
