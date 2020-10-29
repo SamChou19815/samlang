@@ -16,5 +16,6 @@ export const prettyPrintSamlangModule = (
   ).trimEnd()}\n`;
 
 export const prettyPrintHighIRModuleAsJS: (
+  availableWidth: number,
   highIRModule: HighIRModule
 ) => string = highIRModuleToJSString;

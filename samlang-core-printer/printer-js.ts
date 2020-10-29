@@ -211,10 +211,11 @@ const createPrettierDocumentFromHighIRModule = (
 };
 
 export const highIRModuleToJSString = (
+  availableWidth: number,
   highIRModule: HighIRModule,
   forInterpreter = false
 ): string =>
   prettyPrintAccordingToPrettierAlgorithm(
-    /* availableWidth */ 100,
+    availableWidth,
     createPrettierDocumentFromHighIRModule(highIRModule, forInterpreter)
   ).trimEnd();

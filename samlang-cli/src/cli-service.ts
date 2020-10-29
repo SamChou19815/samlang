@@ -51,7 +51,7 @@ export const compileToJS = (sources: Sources<SamlangModule>, outputDirectory: st
   programs.forEach((program, moduleReference) => {
     const outputJSFilePath = join(outputDirectory, `${moduleReference}.js`);
     mkdirSync(dirname(outputJSFilePath), { recursive: true });
-    writeFileSync(outputJSFilePath, prettyPrintHighIRModuleAsJS(program));
+    writeFileSync(outputJSFilePath, prettyPrintHighIRModuleAsJS(/* availableWidth */ 100, program));
     paths.push(outputJSFilePath);
   });
 };
