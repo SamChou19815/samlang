@@ -43,7 +43,7 @@ const runSamlangDemo = (programString: string): SamlangDemoResult => {
   const prettyPrintedProgram = prettyPrintSamlangModule(100, demoSamlangModule);
   const jsString =
     jsProgram != null
-      ? prettyPrintHighIRModuleAsJS(jsProgram)
+      ? prettyPrintHighIRModuleAsJS(100, jsProgram)
       : '// No JS output because there is no Main.main() function\n';
   const assemblyString =
     demoAssemblyProgram != null ? assemblyProgramToString(demoAssemblyProgram) : undefined;
