@@ -151,7 +151,9 @@ const createPrettierDocumentFromSamlangExpression = (
       return PRETTIER_CONCAT(
         createParenthesisSurroundedDocument(
           createCommaSeparatedList(expression.parameters, ([name, type]) =>
-            PRETTIER_TEXT(`${name}: ${prettyPrintType(type)}`)
+            PRETTIER_TEXT(
+              type.type === 'UndecidedType' ? name : `${name}: ${prettyPrintType(type)}`
+            )
           )
         ),
         PRETTIER_TEXT(' -> '),
@@ -187,7 +189,10 @@ const createPrettierDocumentFromSamlangExpression = (
           return [
             PRETTIER_TEXT('val '),
             patternDocument,
-            PRETTIER_TEXT(`: ${prettyPrintType(typeAnnotation)} = `),
+            typeAnnotation.type === 'UndecidedType'
+              ? PRETTIER_NIL
+              : PRETTIER_TEXT(`: ${prettyPrintType(typeAnnotation)}`),
+            PRETTIER_TEXT(' = '),
             createPrettierDocumentFromSamlangExpression(assignedExpression),
             PRETTIER_TEXT(';'),
             PRETTIER_LINE,
