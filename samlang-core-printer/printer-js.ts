@@ -3,7 +3,6 @@ import {
   PRETTIER_CONCAT,
   PRETTIER_TEXT,
   PRETTIER_LINE,
-  prettyPrintAccordingToPrettierAlgorithm,
 } from './printer-prettier-core';
 import {
   createCommaSeparatedList,
@@ -27,7 +26,7 @@ import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel
 // Thanks https://gist.github.com/getify/3667624
 const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
 
-const createPrettierDocumentFromHighIRExpression = (
+export const createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING = (
   highIRExpression: HighIRExpression
 ): PrettierDocument => {
   switch (highIRExpression.__type__) {
@@ -40,7 +39,9 @@ const createPrettierDocumentFromHighIRExpression = (
       return PRETTIER_TEXT(highIRExpression.name);
     case 'HighIRIndexAccessExpression': {
       const { expression: subExpression, index } = highIRExpression;
-      let subExpressionDocument = createPrettierDocumentFromHighIRExpression(subExpression);
+      let subExpressionDocument = createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+        subExpression
+      );
       if (subExpression.__type__ === 'HighIRBinaryExpression') {
         subExpressionDocument = createParenthesisSurroundedDocument(subExpressionDocument);
       }
@@ -49,7 +50,9 @@ const createPrettierDocumentFromHighIRExpression = (
     case 'HighIRBinaryExpression': {
       const { e1, e2, operator } = highIRExpression;
       const withParenthesisWhenNecesasry = (subExpression: HighIRExpression): PrettierDocument => {
-        const subExpressionDocument = createPrettierDocumentFromHighIRExpression(subExpression);
+        const subExpressionDocument = createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+          subExpression
+        );
         if (subExpression.__type__ === 'HighIRBinaryExpression') {
           const p1 = binaryOperatorSymbolTable[operator]?.precedence;
           const p2 = binaryOperatorSymbolTable[subExpression.operator]?.precedence;
@@ -74,21 +77,15 @@ const createPrettierDocumentFromHighIRExpression = (
   }
 };
 
-export const highIRExpressionToString = (highIRExpression: HighIRExpression): string =>
-  prettyPrintAccordingToPrettierAlgorithm(
-    /* availableWidth */ 100,
-    createPrettierDocumentFromHighIRExpression(highIRExpression)
-  ).trimEnd();
-
 const concatStatements = (statements: readonly HighIRStatement[]) => {
   const documents = statements
-    .map((it) => [createPrettierDocumentFromHighIRStatement(it), PRETTIER_LINE])
+    .map((it) => [createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING(it), PRETTIER_LINE])
     .flat();
   if (documents.length === 0) return documents;
   return documents.slice(0, documents.length - 1);
 };
 
-const createPrettierDocumentFromHighIRStatement = (
+export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
   highIRStatement: HighIRStatement
 ): PrettierDocument => {
   switch (highIRStatement.__type__) {
@@ -98,11 +95,13 @@ const createPrettierDocumentFromHighIRStatement = (
         segments.push(PRETTIER_TEXT(`var ${highIRStatement.returnCollector} = `));
       }
       segments.push(
-        createPrettierDocumentFromHighIRExpression(highIRStatement.functionExpression),
+        createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+          highIRStatement.functionExpression
+        ),
         createParenthesisSurroundedDocument(
           createCommaSeparatedList(
             highIRStatement.functionArguments,
-            createPrettierDocumentFromHighIRExpression
+            createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING
           )
         ),
         PRETTIER_TEXT(';')
@@ -113,7 +112,9 @@ const createPrettierDocumentFromHighIRStatement = (
       return PRETTIER_CONCAT(
         PRETTIER_TEXT('if '),
         createParenthesisSurroundedDocument(
-          createPrettierDocumentFromHighIRExpression(highIRStatement.booleanExpression)
+          createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+            highIRStatement.booleanExpression
+          )
         ),
         PRETTIER_TEXT(' '),
         createBracesSurroundedBlockDocument(concatStatements(highIRStatement.s1)),
@@ -128,7 +129,9 @@ const createPrettierDocumentFromHighIRStatement = (
     case 'HighIRLetDefinitionStatement':
       return PRETTIER_CONCAT(
         PRETTIER_TEXT(`var ${highIRStatement.name} = `),
-        createPrettierDocumentFromHighIRExpression(highIRStatement.assignedExpression),
+        createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+          highIRStatement.assignedExpression
+        ),
         PRETTIER_TEXT(';')
       );
     case 'HighIRStructInitializationStatement':
@@ -137,7 +140,7 @@ const createPrettierDocumentFromHighIRStatement = (
         createBracketSurroundedDocument(
           createCommaSeparatedList(
             highIRStatement.expressionList,
-            createPrettierDocumentFromHighIRExpression
+            createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING
           )
         ),
         PRETTIER_TEXT(';')
@@ -145,19 +148,13 @@ const createPrettierDocumentFromHighIRStatement = (
     case 'HighIRReturnStatement':
       return PRETTIER_CONCAT(
         PRETTIER_TEXT('return '),
-        createPrettierDocumentFromHighIRExpression(highIRStatement.expression),
+        createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(highIRStatement.expression),
         PRETTIER_TEXT(';')
       );
   }
 };
 
-export const highIRStatementToString = (highIRStatement: HighIRStatement): string =>
-  prettyPrintAccordingToPrettierAlgorithm(
-    /* availableWidth */ 100,
-    createPrettierDocumentFromHighIRStatement(highIRStatement)
-  ).trimEnd();
-
-const createPrettierDocumentFromHighIRFunction = (
+export const createPrettierDocumentFromHighIRFunction_EXPOSED_FOR_TESTING = (
   highIRFunction: HighIRFunction
 ): PrettierDocument =>
   PRETTIER_CONCAT(
@@ -170,13 +167,7 @@ const createPrettierDocumentFromHighIRFunction = (
     PRETTIER_TEXT(';')
   );
 
-export const highIRFunctionToString = (highIRFunction: HighIRFunction): string =>
-  prettyPrintAccordingToPrettierAlgorithm(
-    /* availableWidth */ 100,
-    createPrettierDocumentFromHighIRFunction(highIRFunction)
-  );
-
-const createPrettierDocumentFromHighIRModule = (
+export const createPrettierDocumentFromHighIRModule = (
   highIRModule: HighIRModule,
   forInterpreter: boolean
 ): PrettierDocument => {
@@ -199,7 +190,10 @@ const createPrettierDocumentFromHighIRModule = (
     PRETTIER_LINE,
   ];
   highIRModule.functions.forEach((highIRFunction) =>
-    segments.push(createPrettierDocumentFromHighIRFunction(highIRFunction), PRETTIER_LINE)
+    segments.push(
+      createPrettierDocumentFromHighIRFunction_EXPOSED_FOR_TESTING(highIRFunction),
+      PRETTIER_LINE
+    )
   );
   segments.push(
     PRETTIER_LINE,
@@ -209,13 +203,3 @@ const createPrettierDocumentFromHighIRModule = (
   );
   return PRETTIER_CONCAT(...segments);
 };
-
-export const highIRModuleToJSString = (
-  availableWidth: number,
-  highIRModule: HighIRModule,
-  forInterpreter = false
-): string =>
-  prettyPrintAccordingToPrettierAlgorithm(
-    availableWidth,
-    createPrettierDocumentFromHighIRModule(highIRModule, forInterpreter)
-  ).trimEnd();
