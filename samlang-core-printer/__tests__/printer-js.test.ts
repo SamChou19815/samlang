@@ -1,9 +1,10 @@
 import {
-  highIRModuleToJSString,
-  highIRStatementToString,
-  highIRFunctionToString,
-  highIRExpressionToString,
+  createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING,
+  createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING,
+  createPrettierDocumentFromHighIRFunction_EXPOSED_FOR_TESTING,
+  createPrettierDocumentFromHighIRModule,
 } from '../printer-js';
+import { prettyPrintAccordingToPrettierAlgorithm } from '../printer-prettier-core';
 
 import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
@@ -26,9 +27,33 @@ import {
   HIR_INDEX_ACCESS,
   HIR_VARIABLE,
   HIR_WHILE_TRUE,
+  HighIRExpression,
+  HighIRStatement,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import { assertNotNull } from 'samlang-core-utils';
+
+const highIRExpressionToString = (highIRExpression: HighIRExpression): string =>
+  prettyPrintAccordingToPrettierAlgorithm(
+    /* availableWidth */ 100,
+    createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(highIRExpression)
+  ).trimEnd();
+
+const highIRStatementToString = (highIRStatement: HighIRStatement): string =>
+  prettyPrintAccordingToPrettierAlgorithm(
+    /* availableWidth */ 100,
+    createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING(highIRStatement)
+  ).trimEnd();
+
+const highIRModuleToJSString = (
+  availableWidth: number,
+  highIRModule: HighIRModule,
+  forInterpreter = false
+): string =>
+  prettyPrintAccordingToPrettierAlgorithm(
+    availableWidth,
+    createPrettierDocumentFromHighIRModule(highIRModule, forInterpreter)
+  ).trimEnd();
 
 it('compile hello world to JS integration test', () => {
   const hirModule: HighIRModule = {
@@ -469,17 +494,20 @@ it('HIR statements to JS string test', () => {
 
 it('HIR function to JS string test 1', () => {
   expect(
-    highIRFunctionToString({
-      name: 'baz',
-      parameters: ['d', 't', 'i'],
-      hasReturn: true,
-      body: [
-        HIR_LET({
-          name: 'b',
-          assignedExpression: HIR_INT(BigInt(1857)),
-        }),
-      ],
-    })
+    prettyPrintAccordingToPrettierAlgorithm(
+      100,
+      createPrettierDocumentFromHighIRFunction_EXPOSED_FOR_TESTING({
+        name: 'baz',
+        parameters: ['d', 't', 'i'],
+        hasReturn: true,
+        body: [
+          HIR_LET({
+            name: 'b',
+            assignedExpression: HIR_INT(BigInt(1857)),
+          }),
+        ],
+      })
+    )
   ).toBe(`const baz = (d, t, i) => {
   var b = 1857;
 };
@@ -488,12 +516,15 @@ it('HIR function to JS string test 1', () => {
 
 it('HIR function to JS string test 2', () => {
   expect(
-    highIRFunctionToString({
-      name: 'baz',
-      parameters: ['d', 't', 'i'],
-      hasReturn: true,
-      body: [HIR_RETURN(HIR_INT(BigInt(42)))],
-    })
+    prettyPrintAccordingToPrettierAlgorithm(
+      100,
+      createPrettierDocumentFromHighIRFunction_EXPOSED_FOR_TESTING({
+        name: 'baz',
+        parameters: ['d', 't', 'i'],
+        hasReturn: true,
+        body: [HIR_RETURN(HIR_INT(BigInt(42)))],
+      })
+    )
   ).toBe(`const baz = (d, t, i) => {
   return 42;
 };
