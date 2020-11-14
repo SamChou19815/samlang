@@ -21,6 +21,9 @@ Hello World!
 #./out/test.correct-op
 OK
 
+#./out/test.create-variants
+hello
+
 #./out/test.cse-test-1
 30
 12

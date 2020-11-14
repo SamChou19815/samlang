@@ -190,6 +190,7 @@ class HighIRExpressionLoweringManager {
     );
     return {
       statements: [
+        ...loweredStatements,
         HIR_STRUCT_INITIALIZATION({
           structVariableName: tupleVariableName,
           expressionList: loweredExpressions,

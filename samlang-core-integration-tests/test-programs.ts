@@ -602,6 +602,15 @@ class Main {
 `,
   },
   {
+    testCaseName: 'create-variants',
+    expectedStandardOut: 'hello\n',
+    sourceCode: `
+class List(Nil(unit), Cons([int * List])) { function of(i: int): List = Cons([i, Nil({  })])  }
+
+class Main { function main(): unit = { val _: List = List.of(1); println("hello") }  }
+`,
+  },
+  {
     testCaseName: 'cse-test-1',
     expectedStandardOut: '30\n12\n15\n',
     sourceCode: `
