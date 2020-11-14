@@ -96,7 +96,7 @@ const PRETTIER_UNION = (doc1: PrettierDocument, doc2: PrettierDocument): Prettie
  *
  * Correspond to the `group` function in the prettier paper.
  *
- * This is useful when we want the algorithm to choose between two forms to optimically fitting
+ * This is useful when we want the algorithm to choose between two forms to optimally fitting
  * elements into lines with width constraits.
  */
 export const PRETTIER_GROUP = (document: PrettierDocument): PrettierDocument =>
