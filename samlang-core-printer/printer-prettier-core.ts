@@ -4,6 +4,9 @@
  */
 
 /**
+ * This prettier document type is a little clumsy at the stage of pretty printing.
+ * However, it is very useful for doing optimization on whether to start a new line.
+ *
  * Quote:
  * > "... we introduce a new representation for documents, with one constructor corresponding to each
  * operator that builds a document."
@@ -93,7 +96,7 @@ const PRETTIER_UNION = (doc1: PrettierDocument, doc2: PrettierDocument): Prettie
  *
  * Correspond to the `group` function in the prettier paper.
  *
- * This is useful when we want the algorithm to choose between two forms to optimically fitting
+ * This is useful when we want the algorithm to choose between two forms to optimally fitting
  * elements into lines with width constraits.
  */
 export const PRETTIER_GROUP = (document: PrettierDocument): PrettierDocument =>
@@ -156,6 +159,10 @@ const flattenPrettierDocument = (document: PrettierDocument): PrettierDocument =
   }
 };
 
+/**
+ * The representation of a document that is most useful for pretty-printing.
+ * Each variant can be translated easily into a printable form without extra state.
+ */
 type PrettierIntermediateDocumentForPrinting =
   | { readonly __type__: 'NIL' }
   | {
@@ -193,7 +200,12 @@ type ImmutablePrettierDocumentList =
   | readonly [readonly [number, PrettierDocument], ImmutablePrettierDocumentList]
   | null;
 
-/** Correspond to the be/best function in the prettier paper. */
+/**
+ * This function inspects the number of available remaining width in a line, and try to produce
+ * a flattened document as much as it can.
+ *
+ * Correspond to the be/best function in the prettier paper.
+ */
 const generateBestDoc = (
   availableWidth: number,
   consumed: number,
