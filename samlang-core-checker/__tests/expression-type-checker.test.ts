@@ -34,11 +34,15 @@ const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
 
 const position = (p: string): Position => {
   const [line, column] = p.split(':').map((part) => parseInt(part, 10) - 1);
+  assertNotNull(line);
+  assertNotNull(column);
   return new Position(line, column);
 };
 
 const range = (r: string): Range => {
   const [start, end] = r.split('-').map(position);
+  assertNotNull(start);
+  assertNotNull(end);
   return new Range(start, end);
 };
 

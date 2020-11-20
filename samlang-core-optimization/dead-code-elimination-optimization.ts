@@ -1,5 +1,6 @@
 import analyzeLiveTemporariesAtTheEndOfEachStatement from 'samlang-core-analysis/live-temp-analysis';
 import type { MidIRStatement, MidIRExpression } from 'samlang-core-ast/mir-nodes';
+import { checkNotNull } from 'samlang-core-utils';
 
 /** Some expressions might trigger exceptions, removing them changes the behavior of programs. */
 const isMidIRExpressionUnsafeToRemove = (expression: MidIRExpression): boolean => {
@@ -32,7 +33,9 @@ const optimizeIRWithDeadCodeElimination = (
   );
   return statements.filter((statement, index) => {
     if (statement.__type__ !== 'MidIRMoveTempStatement') return true;
-    if (liveTemporariesAtTheEndOfEachStatement[index].has(statement.temporaryID)) return true;
+    if (checkNotNull(liveTemporariesAtTheEndOfEachStatement[index]).has(statement.temporaryID)) {
+      return true;
+    }
     return isMidIRExpressionUnsafeToRemove(statement.source);
   });
 };

@@ -10,8 +10,7 @@ import {
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
 import type { FieldType, TypeDefinition } from 'samlang-core-ast/samlang-toplevel';
-import type { HashMap, ReadonlyHashMap } from 'samlang-core-utils';
-import { assertNotNull } from 'samlang-core-utils';
+import { assertNotNull, checkNotNull, HashMap, ReadonlyHashMap } from 'samlang-core-utils';
 
 /** One layer of the typing context. We should stack a new layer when encounter a new nested scope. */
 class ContextLayer {
@@ -42,12 +41,15 @@ export class LocalTypingContext {
   private readonly stacks: ContextLayer[] = [new ContextLayer()];
 
   getLocalValueType(name: string): Type | undefined {
-    const closestStackType = this.stacks[this.stacks.length - 1].getLocalValueType(name);
+    const closestStackType = checkNotNull(this.stacks[this.stacks.length - 1]).getLocalValueType(
+      name
+    );
     if (closestStackType != null) {
       return closestStackType;
     }
     for (let level = this.stacks.length - 2; level >= 0; level -= 1) {
       const stack = this.stacks[level];
+      assertNotNull(stack);
       const type = stack.getLocalValueType(name);
       if (type != null) {
         for (
@@ -55,7 +57,7 @@ export class LocalTypingContext {
           capturedLevel < this.stacks.length;
           capturedLevel += 1
         ) {
-          this.stacks[capturedLevel].capturedValues.set(name, type);
+          checkNotNull(this.stacks[capturedLevel]).capturedValues.set(name, type);
         }
         return type;
       }
@@ -65,16 +67,16 @@ export class LocalTypingContext {
 
   addLocalValueType(name: string, type: Type, onCollision: () => void): void {
     for (let level = 0; level < this.stacks.length - 1; level += 1) {
-      const previousLevelType = this.stacks[level].getLocalValueType(name);
+      const previousLevelType = checkNotNull(this.stacks[level]).getLocalValueType(name);
       if (previousLevelType != null) {
         onCollision();
       }
     }
-    this.stacks[this.stacks.length - 1].addLocalValueType(name, type, onCollision);
+    checkNotNull(this.stacks[this.stacks.length - 1]).addLocalValueType(name, type, onCollision);
   }
 
   removeLocalValue(name: string): void {
-    this.stacks[this.stacks.length - 1].removeLocalValue(name);
+    checkNotNull(this.stacks[this.stacks.length - 1]).removeLocalValue(name);
   }
 
   withNestedScope<T>(block: () => T): T {

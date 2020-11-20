@@ -16,6 +16,7 @@ import {
   listShallowEquals,
   hashMapEquals,
   isNotNull,
+  checkNotNull,
 } from 'samlang-core-utils';
 
 export class MidIRExpressionWrapper implements Hashable {
@@ -96,7 +97,7 @@ const operator: DataflowAnalysisGraphOperator<
     }
     const newInEdgeMapping = hashMapOf<MidIRExpressionWrapper, number[]>();
     const otherParents = parentOutEdges.slice(1);
-    parentOutEdges[0].forEach((statementIds, availableExpression) => {
+    checkNotNull(parentOutEdges[0]).forEach((statementIds, availableExpression) => {
       const appearIdsFromOtherParentsWithNull = otherParents.map((map) =>
         map.get(availableExpression)
       );

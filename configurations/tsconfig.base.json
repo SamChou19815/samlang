@@ -9,6 +9,7 @@
     "lib": ["dom", "dom.iterable", "esnext"],
     "module": "CommonJS",
     "moduleResolution": "node",
+    "noUncheckedIndexedAccess": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,

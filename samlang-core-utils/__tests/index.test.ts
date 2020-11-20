@@ -6,6 +6,7 @@ import {
   isPowerOfTwo,
   isNotNull,
   assertNotNull,
+  checkNotNull,
   Hashable,
   mapOf,
   setOf,
@@ -59,6 +60,10 @@ it('assertNotNull tests', () => {
   assertNotNull([3]);
   expect(() => assertNotNull(null)).toThrow();
   expect(() => assertNotNull(undefined)).toThrow();
+});
+
+it('checkNotNull tests', () => {
+  expect(checkNotNull(2)).toBe(2);
 });
 
 it('ReadOnly map and set tests', () => {

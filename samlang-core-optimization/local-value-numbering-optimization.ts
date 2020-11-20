@@ -7,6 +7,7 @@ import {
   MIR_IMMUTABLE_MEM,
   MIR_OP,
 } from 'samlang-core-ast/mir-nodes';
+import { checkNotNull } from 'samlang-core-utils';
 
 const rewriteMidIRExpressionWithLocalValueNumberingInformation = (
   information: ReadonlyLocalNumberingInformation,
@@ -100,7 +101,7 @@ const optimizeIRWithLocalValueNumbering = (
 ): readonly MidIRStatement[] => {
   const result = analyzeLocalValueNumberingAssignment(statements);
   return statements.map((statement, index) =>
-    rewriteMidIRStatementWithLocalValueNumberingInformation(result[index], statement)
+    rewriteMidIRStatementWithLocalValueNumberingInformation(checkNotNull(result[index]), statement)
   );
 };
 

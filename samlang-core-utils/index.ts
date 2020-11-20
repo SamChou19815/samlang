@@ -20,6 +20,11 @@ export function assertNotNull<V>(value: V | null | undefined): asserts value is 
   }
 }
 
+export const checkNotNull = <V>(value: V | null | undefined): V => {
+  assertNotNull(value);
+  return value;
+};
+
 export interface Hashable {
   readonly uniqueHash: () => string | number;
 }

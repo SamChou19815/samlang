@@ -2,7 +2,7 @@ import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
 
 import type { MidIRStatement, MidIRExpression } from 'samlang-core-ast/mir-nodes';
-import { mapEquals } from 'samlang-core-utils';
+import { checkNotNull, mapEquals } from 'samlang-core-utils';
 
 type KnownConstant = { readonly __type__: 'known'; readonly value: bigint };
 type UnknownConstant = { readonly __type__: 'unknown' };
@@ -184,7 +184,7 @@ const analyzePropagatedConstants = (
   const propagatedConstants = new Array<Map<string, bigint>>(statements.length);
   for (let i = 0; i < statements.length; i += 1) {
     const map = new Map<string, bigint>();
-    Array.from(inEdges[i].entries()).forEach(([variable, status]) => {
+    Array.from(checkNotNull(inEdges[i]).entries()).forEach(([variable, status]) => {
       if (status.__type__ === 'known') {
         map.set(variable, status.value);
       }

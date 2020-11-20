@@ -10,6 +10,7 @@ import {
   MIR_LABEL,
   MIR_JUMP,
 } from 'samlang-core-ast/mir-nodes';
+import { assertNotNull, checkNotNull } from 'samlang-core-utils';
 
 export interface ReadonlyMidIRBasicBlockWithoutPointers {
   readonly label: string;
@@ -39,6 +40,7 @@ export class MidIRBasicBlock implements ReadonlyMidIRBasicBlock {
     readonly allStatements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[]
   ) {
     const lastStatement = allStatements[allStatements.length - 1];
+    assertNotNull(lastStatement);
     switch (lastStatement.__type__) {
       case 'MidIRJumpStatement':
       case 'MidIRConditionalJumpNoFallThrough':
@@ -65,6 +67,7 @@ const createTempBasicBlock = (
   if (statements.length === 0) throw new Error();
 
   const firstStatement = statements[0];
+  assertNotNull(firstStatement);
   if (firstStatement.__type__ === 'MidIRLabelStatement') {
     return { label: firstStatement.name, statements };
   }
@@ -112,13 +115,13 @@ export const createMidIRBasicBlocks = (
 
   // Add synthetic jump
   const basicBlocks = tempBasicBlocks.map((tempBlock, index) => {
-    switch (tempBlock.statements[tempBlock.statements.length - 1].__type__) {
+    switch (checkNotNull(tempBlock.statements[tempBlock.statements.length - 1]).__type__) {
       case 'MidIRJumpStatement':
       case 'MidIRConditionalJumpNoFallThrough':
       case 'MidIRReturnStatement':
         break;
       default:
-        tempBlock.statements.push(MIR_JUMP(tempBasicBlocks[index + 1].label));
+        tempBlock.statements.push(MIR_JUMP(checkNotNull(tempBasicBlocks[index + 1]).label));
     }
     return new MidIRBasicBlock(tempBlock.label, tempBlock.statements);
   });
@@ -128,12 +131,12 @@ export const createMidIRBasicBlocks = (
     const lastStatement = block.lastStatement;
     switch (lastStatement.__type__) {
       case 'MidIRJumpStatement':
-        block.targets.push(labelBlockMap[lastStatement.label]);
+        block.targets.push(checkNotNull(labelBlockMap[lastStatement.label]));
         break;
       case 'MidIRConditionalJumpNoFallThrough':
         block.targets.push(
-          labelBlockMap[lastStatement.label2],
-          labelBlockMap[lastStatement.label1]
+          checkNotNull(labelBlockMap[lastStatement.label2]),
+          checkNotNull(labelBlockMap[lastStatement.label1])
         );
         break;
       case 'MidIRReturnStatement':

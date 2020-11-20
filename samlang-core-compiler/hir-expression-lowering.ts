@@ -44,7 +44,7 @@ import type {
   StatementBlockExpression,
 } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { isNotNull } from 'samlang-core-utils';
+import { checkNotNull, isNotNull } from 'samlang-core-utils';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -110,7 +110,7 @@ class HighIRExpressionLoweringManager {
           : null
       )
       .filter(isNotNull);
-    return candidate.length === 0 ? this.moduleReference : candidate[0];
+    return candidate.length === 0 ? this.moduleReference : checkNotNull(candidate[0]);
   };
 
   readonly lower = (expression: SamlangExpression): HighIRExpressionLoweringResult => {
@@ -620,13 +620,15 @@ class HighIRExpressionLoweringManager {
       booleanExpression: HIR_BINARY({
         operator: '==',
         e1: HIR_VARIABLE(variableForTag),
-        e2: HIR_INT(BigInt(loweredMatchingList[loweredMatchingList.length - 1].tagOrder)),
+        e2: HIR_INT(
+          BigInt(checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).tagOrder)
+        ),
       }),
-      s1: loweredMatchingList[loweredMatchingList.length - 1].statements,
+      s1: checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).statements,
       s2: [],
     });
     for (let i = loweredMatchingList.length - 2; i >= 0; i -= 1) {
-      const { tagOrder, statements: localStatements } = loweredMatchingList[i];
+      const { tagOrder, statements: localStatements } = checkNotNull(loweredMatchingList[i]);
       ifElse = HIR_IF_ELSE({
         booleanExpression: HIR_BINARY({
           operator: '==',

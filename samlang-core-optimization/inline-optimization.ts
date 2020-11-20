@@ -16,6 +16,7 @@ import {
   MIR_LABEL,
   MIR_CJUMP_FALLTHROUGH,
 } from 'samlang-core-ast/mir-nodes';
+import { checkNotNull } from 'samlang-core-utils';
 
 /** The threshold max tolerable cost of inlining.  */
 const INLINE_THRESHOLD = 25;
@@ -218,13 +219,16 @@ const performInlineRewriteOnFunction = (
     const {
       argumentNames: argumentNamesOfFunctionToBeInlined,
       mainBodyStatements: mainBodyStatementsOfFunctionToBeInlined,
-    } = allFunctions[functionName];
+    } = checkNotNull(allFunctions[functionName]);
     const labelPrefix = allocator.allocateInliningLabelPrefix();
     const temporaryPrefix = allocator.allocateInliningTemporaryPrefix();
     newMainBodyStatements.push(
       // inline step 1: move args to args temp
       ...argumentNamesOfFunctionToBeInlined.map((parameter, index) =>
-        MIR_MOVE_TEMP(MIR_TEMP(`${temporaryPrefix}${parameter}`), functionArguments[index])
+        MIR_MOVE_TEMP(
+          MIR_TEMP(`${temporaryPrefix}${parameter}`),
+          checkNotNull(functionArguments[index])
+        )
       ),
       // inline step 2: add in body code and change return statements and label prefix
       ...mainBodyStatementsOfFunctionToBeInlined

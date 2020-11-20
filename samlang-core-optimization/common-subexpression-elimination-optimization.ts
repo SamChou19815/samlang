@@ -15,6 +15,7 @@ import {
   hashMapOf,
   hashSetOf,
   assertNotNull,
+  checkNotNull,
 } from 'samlang-core-utils';
 
 const expressionIsPrimitive = (expression: MidIRExpression): boolean =>
@@ -103,6 +104,7 @@ export const computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING = (
   const map = hashMapOf<MidIRExpressionWrapper, { appears: Set<number>; usage: Set<number> }>();
   statements.forEach((statement, index) => {
     const analysisResultForStatement = availableExpressionAnalysisResult[index];
+    assertNotNull(analysisResultForStatement);
 
     analysisResultForStatement.forEach((apperances, expressionWrapper) => {
       const appearsAndUses = map.get(expressionWrapper);
@@ -260,7 +262,10 @@ const computeHoistingListAndReplacementMap = (
       // Only hoist expressions when it's used more than it's defined.
       const tempForHoistedExpression = allocator.allocateCSEHoistedTemporary();
       usageAndAppearance.usage.forEach((usagePlace) => {
-        replacementMaps[usagePlace].set(expressionToReplaceWrapper, tempForHoistedExpression);
+        checkNotNull(replacementMaps[usagePlace]).set(
+          expressionToReplaceWrapper,
+          tempForHoistedExpression
+        );
       });
       usageAndAppearance.appears.forEach((appearId) => {
         const hoistingMap = hoistingMaps.get(appearId);
@@ -322,11 +327,14 @@ const optimizeIRWithCommonSubExpressionElimination = (
 
   const newStatements: MidIRStatement[] = [];
   statements.forEach((statement, index) => {
-    hoistingLists[index].forEach(([temporary, hoistedExpression]) => {
+    checkNotNull(hoistingLists[index]).forEach(([temporary, hoistedExpression]) => {
       newStatements.push(MIR_MOVE_TEMP(MIR_TEMP(temporary), hoistedExpression));
     });
     newStatements.push(
-      rewriteStatementByReplacingExpressionByHoistedTemporary(statement, replacementMaps[index])
+      rewriteStatementByReplacingExpressionByHoistedTemporary(
+        statement,
+        checkNotNull(replacementMaps[index])
+      )
     );
   });
   return newStatements;

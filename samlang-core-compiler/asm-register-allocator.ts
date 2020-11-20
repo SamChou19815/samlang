@@ -17,7 +17,14 @@ import analyzeLiveVariablesAtTheEndOfEachInstruction, {
 } from 'samlang-core-analysis/live-variable-analysis';
 import type { AssemblyMemory } from 'samlang-core-ast/asm-arguments';
 import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
-import { Hashable, HashSet, hashSetOf, ReadonlyHashSet, assertNotNull } from 'samlang-core-utils';
+import {
+  Hashable,
+  HashSet,
+  hashSetOf,
+  ReadonlyHashSet,
+  assertNotNull,
+  checkNotNull,
+} from 'samlang-core-utils';
 
 const K = AVAILABLE_REGISTERS_NUMBER;
 
@@ -297,9 +304,9 @@ export default class AssemblyRegisterAllocator {
 
   private build({ out: liveMap, useAndDefs }: LiveVariableAnalysisResult): void {
     for (let i = this.instructions.length - 1; i >= 0; i -= 1) {
-      const instruction = this.instructions[i];
+      const instruction = checkNotNull(this.instructions[i]);
       const liveSet = new Set(liveMap[i]);
-      const { uses: useSet, defs: defSet } = useAndDefs[i];
+      const { uses: useSet, defs: defSet } = checkNotNull(useAndDefs[i]);
       // if isMoveInstruction(instruction) then
       if (instruction.__type__ === 'AssemblyMoveToRegister') {
         const {

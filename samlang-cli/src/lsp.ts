@@ -82,7 +82,8 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
 
   connection.onDidChangeTextDocument((didChangeTextDocumentParameters) => {
     const moduleReference = uriToModuleReference(didChangeTextDocumentParameters.textDocument.uri);
-    const sourceCode = didChangeTextDocumentParameters.contentChanges[0].text;
+    const sourceCode = didChangeTextDocumentParameters.contentChanges[0]?.text;
+    if (sourceCode == null) return;
     const affected = state.update(moduleReference, sourceCode);
     publishDiagnostics(affected);
   });

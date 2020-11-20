@@ -340,12 +340,15 @@ export class LanguageServices {
     const { imports, classes } = samlangModule;
     for (let i = 0; i < classes.length; i += 1) {
       const samlangClass = classes[i];
+      assertNotNull(samlangClass);
       if (samlangClass.name === className) {
         return [moduleReference, samlangClass];
       }
     }
     for (let i = 0; i < imports.length; i += 1) {
-      const { importedMembers, importedModule } = imports[i];
+      const oneImport = imports[i];
+      assertNotNull(oneImport);
+      const { importedMembers, importedModule } = oneImport;
       if (importedMembers.some((it) => it[0] === className)) {
         return this.getClassDefinition(importedModule, className);
       }
@@ -378,7 +381,7 @@ export class LanguageServices {
       }
     });
     if (definingStatement != null) return definingStatement.range;
-    return statements
+    const range = statements
       .map((statement) =>
         LanguageServices.findLocalVariableDefinitionDefiningStatementRange(
           statement.assignedExpression,
@@ -386,6 +389,8 @@ export class LanguageServices {
         )
       )
       .filter(isNotNull)[0];
+    assertNotNull(range);
+    return range;
   }
 
   private findClassMemberLocation(

@@ -10,7 +10,7 @@ import {
   MIR_JUMP,
   MIR_RETURN,
 } from 'samlang-core-ast/mir-nodes';
-import { isNotNull } from 'samlang-core-utils';
+import { checkNotNull, isNotNull } from 'samlang-core-utils';
 
 const optimizeExpressionWithConstantPropagationInformation = (
   expression: MidIRExpression,
@@ -118,7 +118,9 @@ const optimizeIRWithConstantPropagation = (
 ): readonly MidIRStatement[] => {
   const constantPropagationInformationList = analyzePropagatedConstants(statements);
   return statements
-    .map((statement, i) => optimizeStatement(statement, constantPropagationInformationList[i]))
+    .map((statement, i) =>
+      optimizeStatement(statement, checkNotNull(constantPropagationInformationList[i]))
+    )
     .filter(isNotNull);
 };
 

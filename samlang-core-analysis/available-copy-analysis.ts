@@ -2,7 +2,13 @@ import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
 
 import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
-import { Hashable, ReadonlyHashSet, hashSetOf, listShallowEquals } from 'samlang-core-utils';
+import {
+  Hashable,
+  ReadonlyHashSet,
+  hashSetOf,
+  listShallowEquals,
+  checkNotNull,
+} from 'samlang-core-utils';
 
 class AvailableCopy implements Hashable {
   constructor(readonly destination: string, readonly source: string) {}
@@ -41,7 +47,7 @@ const operator: DataflowAnalysisGraphOperator<MidIRStatement, ReadonlyHashSet<Av
     });
     const otherParentOutEdges = parentOutEdges.slice(1);
     const newInCopySet = hashSetOf<AvailableCopy>();
-    parentOutEdges[0].forEach((copy) => {
+    checkNotNull(parentOutEdges[0]).forEach((copy) => {
       if (
         otherParentOutEdges.every((edge) => edge.has(copy)) &&
         !conflictingDestinationSet.has(copy.destination)

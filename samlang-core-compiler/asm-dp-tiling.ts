@@ -67,6 +67,7 @@ import {
   isPowerOfTwo,
   logTwo,
   assertNotNull,
+  checkNotNull,
 } from 'samlang-core-utils';
 
 type MidIRBinaryExpressionTiler = (
@@ -382,7 +383,7 @@ class AssemblyDpTiling implements AssemblyTilingService {
             }
           }
           for (let i = tiledFunctionArguments.length - 1; i >= 0; i -= 1) {
-            const tiledFunctionArgument = tiledFunctionArguments[i];
+            const tiledFunctionArgument = checkNotNull(tiledFunctionArguments[i]);
             switch (i) {
               case 0:
                 instructions.push(ASM_MOVE_REG(RDI, tiledFunctionArgument));
