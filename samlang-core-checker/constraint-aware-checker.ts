@@ -2,6 +2,7 @@ import type TypeResolution from './type-resolution';
 
 import { Type, UndecidedType, isTheSameType, Range } from 'samlang-core-ast/common-nodes';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
+import { checkNotNull } from 'samlang-core-utils';
 
 const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
   const meetWithResolution = (type1: Type, type2: Type): Type => meet(type1, type2, resolution);
@@ -34,7 +35,7 @@ const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
             type: 'IdentifierType',
             identifier: t1.identifier,
             typeArguments: t1.typeArguments.map((type, index) =>
-              meetWithResolution(type, t2.typeArguments[index])
+              meetWithResolution(type, checkNotNull(t2.typeArguments[index]))
             ),
           };
         default:
@@ -51,7 +52,7 @@ const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
           return {
             type: 'TupleType',
             mappings: t1.mappings.map((type, index) =>
-              meetWithResolution(type, t2.mappings[index])
+              meetWithResolution(type, checkNotNull(t2.mappings[index]))
             ),
           };
         default:
@@ -67,7 +68,7 @@ const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
             throw new Error();
           }
           const argumentTypes = t1.argumentTypes.map((type, index) =>
-            meetWithResolution(type, t2.argumentTypes[index])
+            meetWithResolution(type, checkNotNull(t2.argumentTypes[index]))
           );
           return { type: 'FunctionType', argumentTypes, returnType };
         }

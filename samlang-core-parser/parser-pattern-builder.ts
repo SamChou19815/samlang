@@ -36,9 +36,9 @@ class FieldNameBuilder
 
   visitRenamedVar = (ctx: RenamedVarContext): ObjectPatternDestucturedName | null => {
     const idList = ctx.LowerId();
-    const fieldName = idList[0].symbol.text;
+    const fieldName = idList[0]?.symbol.text;
     assertNotNull(fieldName);
-    const alias = idList[1].symbol.text;
+    const alias = idList[1]?.symbol.text;
     assertNotNull(alias);
     return {
       fieldName,

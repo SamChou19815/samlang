@@ -1,4 +1,4 @@
-import type { Hashable, ReadonlyHashMap } from 'samlang-core-utils';
+import { checkNotNull, Hashable, ReadonlyHashMap } from 'samlang-core-utils';
 
 /** SECTION 1: Literals */
 
@@ -135,14 +135,16 @@ export const isTheSameType = (t1: Type, t2: Type): boolean => {
         t1.identifier === t2.identifier &&
         t1.typeArguments.length === t2.typeArguments.length &&
         t1.typeArguments.every((t1Argument, index) =>
-          isTheSameType(t1Argument, t2.typeArguments[index])
+          isTheSameType(t1Argument, checkNotNull(t2.typeArguments[index]))
         )
       );
     case 'TupleType':
       return (
         t2.type === 'TupleType' &&
         t1.mappings.length === t2.mappings.length &&
-        t1.mappings.every((t1Element, index) => isTheSameType(t1Element, t2.mappings[index]))
+        t1.mappings.every((t1Element, index) =>
+          isTheSameType(t1Element, checkNotNull(t2.mappings[index]))
+        )
       );
     case 'FunctionType':
       return (
@@ -150,7 +152,7 @@ export const isTheSameType = (t1: Type, t2: Type): boolean => {
         isTheSameType(t1.returnType, t2.returnType) &&
         t1.argumentTypes.length === t2.argumentTypes.length &&
         t1.argumentTypes.every((t1Argument, index) =>
-          isTheSameType(t1Argument, t2.argumentTypes[index])
+          isTheSameType(t1Argument, checkNotNull(t2.argumentTypes[index]))
         )
       );
     case 'UndecidedType':

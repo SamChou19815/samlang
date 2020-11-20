@@ -11,7 +11,7 @@ import {
 import type { Pattern, ObjectPatternDestucturedName } from 'samlang-core-ast/samlang-pattern';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { isNotNull, assertNotNull } from 'samlang-core-utils';
+import { isNotNull, assertNotNull, checkNotNull } from 'samlang-core-utils';
 
 export default class StatementTypeChecker {
   constructor(
@@ -83,7 +83,7 @@ export default class StatementTypeChecker {
           })
           .filter(isNotNull)
           .forEach(([name, nameRange, elementType]) => {
-            localContext.addLocalValueType(name, elementType, () =>
+            localContext.addLocalValueType(name, checkNotNull(elementType), () =>
               this.errorCollector.reportCollisionError(nameRange, name)
             );
           });
@@ -140,7 +140,9 @@ export default class StatementTypeChecker {
         );
         const destructedNames: ObjectPatternDestucturedName[] = [];
         for (let i = 0; i < pattern.destructedNames.length; i += 1) {
-          const destructedName: ObjectPatternDestucturedName = pattern.destructedNames[i];
+          const destructedName: ObjectPatternDestucturedName = checkNotNull(
+            pattern.destructedNames[i]
+          );
           const { fieldName: originalName, alias: renamedName, range: fieldRange } = destructedName;
           const fieldInformation = fieldMappings[originalName];
           if (fieldInformation == null) {

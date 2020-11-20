@@ -48,7 +48,7 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { listShallowEquals, assertNotNull, isNotNull } from 'samlang-core-utils';
+import { listShallowEquals, assertNotNull, isNotNull, checkNotNull } from 'samlang-core-utils';
 
 class ExpressionTypeChecker {
   private readonly constraintAwareTypeChecker: ConstraintAwareChecker;
@@ -295,7 +295,8 @@ class ExpressionTypeChecker {
     if (constraintInferredType.type === 'IdentifierType') {
       const fieldOrderMap = Object.fromEntries(fieldNames.map((name, index) => [name, index]));
       const sortedFields = enhancedFieldDeclarations.sort(
-        (field1, field2) => fieldOrderMap[field1.name] - fieldOrderMap[field2.name]
+        (field1, field2) =>
+          checkNotNull(fieldOrderMap[field1.name]) - checkNotNull(fieldOrderMap[field2.name])
       );
       return EXPRESSION_OBJECT_CONSTRUCTOR({
         range: expression.range,
@@ -537,7 +538,7 @@ class ExpressionTypeChecker {
     checkedArguments.forEach(({ type, range }, index) => {
       this.constraintAwareTypeChecker.checkAndInfer(
         type,
-        locallyInferredArgumentTypes[index],
+        checkNotNull(locallyInferredArgumentTypes[index]),
         range
       );
     });

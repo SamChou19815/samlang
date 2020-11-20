@@ -24,7 +24,7 @@ import {
   ENCODED_FUNCTION_NAME_MALLOC,
   ENCODED_FUNCTION_NAME_THROW,
 } from 'samlang-core-ast/common-names';
-import { assertNotNull } from 'samlang-core-utils';
+import { assertNotNull, checkNotNull } from 'samlang-core-utils';
 
 // istanbul ignore next
 const checkMemoryLocation = (location: bigint): void => {
@@ -429,7 +429,10 @@ class AssemblyInterpreter {
           const unparsedStringStartingPointer = memoryStartPointer + BigInt(8);
           this.setMemory(memoryStartPointer, BigInt(resultArray.length));
           for (let i = 0; i < resultArray.length; i += 1) {
-            this.setMemory(unparsedStringStartingPointer + BigInt(i * 8), resultArray[i]);
+            this.setMemory(
+              unparsedStringStartingPointer + BigInt(i * 8),
+              checkNotNull(resultArray[i])
+            );
           }
           this.setValue(RAX, unparsedStringStartingPointer);
           return;
@@ -453,7 +456,7 @@ class AssemblyInterpreter {
           this.setMemory(memoryStartPointer, BigInt(concatString.length));
           const stringStartPointer = memoryStartPointer + BigInt(8);
           for (let i = 0; i < concatString.length; i += 1) {
-            this.setMemory(stringStartPointer + BigInt(i * 8), concatString[i]);
+            this.setMemory(stringStartPointer + BigInt(i * 8), checkNotNull(concatString[i]));
           }
           this.setValue(RAX, stringStartPointer);
           return;

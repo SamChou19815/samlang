@@ -16,7 +16,7 @@ import {
   RBP,
 } from 'samlang-core-ast/asm-arguments';
 import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
-import { setEquals } from 'samlang-core-utils';
+import { checkNotNull, setEquals } from 'samlang-core-utils';
 
 const collectUsesFromAssemblyArgument = (
   uses: Set<string>,
@@ -139,7 +139,7 @@ const analyzeLiveVariablesAtTheEndOfEachInstruction = (
   // istanbul ignore next
   if (instructions.length > 0) {
     // last instruction is the epilogue label. It can be seen as the exit node.
-    const useSetOfLastInstruction = useAndDefs[instructions.length - 1].uses;
+    const useSetOfLastInstruction = checkNotNull(useAndDefs[instructions.length - 1]).uses;
     // we also want to use rax if they are return values.
     if (hasReturn) {
       useSetOfLastInstruction.add(RAX.id);
@@ -155,7 +155,7 @@ const analyzeLiveVariablesAtTheEndOfEachInstruction = (
       return newOutEdge;
     },
     computeNewEdge: (newOutEdge, _, nodeID) => {
-      const { uses, defs } = useAndDefs[nodeID];
+      const { uses, defs } = checkNotNull(useAndDefs[nodeID]);
       const newInEdge = new Set(uses);
       newOutEdge.forEach((outVariable) => {
         if (!defs.has(outVariable)) {

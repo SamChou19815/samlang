@@ -216,6 +216,6 @@ it('typeCheckSingleModuleSource smoke test', () => {
   expect(errorCollector.getErrors()).toEqual([]);
   expect(checkedModule.imports).toEqual([]);
   expect(checkedModule.classes.length).toBe(1);
-  expect(checkedModule.classes[0].name).toBe('Main');
-  expect(checkedModule.classes[0].members).toEqual([]);
+  expect(checkedModule.classes[0]?.name).toBe('Main');
+  expect(checkedModule.classes[0]?.members).toEqual([]);
 });

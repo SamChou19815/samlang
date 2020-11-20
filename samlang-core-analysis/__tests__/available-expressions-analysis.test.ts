@@ -13,6 +13,7 @@ import {
   MIR_RETURN,
   MIR_IMMUTABLE_MEM,
 } from 'samlang-core-ast/mir-nodes';
+import { checkNotNull } from 'samlang-core-utils';
 
 it('analyzeLocalValueNumberingAssignment test 1', () => {
   const localValueNumberingResults = analyzeAvailableExpressionsComingOutAtEachStatement([
@@ -71,5 +72,7 @@ it('analyzeLocalValueNumberingAssignment test 1', () => {
 });
 
 it('analyzeLocalValueNumberingAssignment test 2', () => {
-  expect(analyzeAvailableExpressionsComingOutAtEachStatement([MIR_RETURN()])[0].size).toBe(0);
+  expect(
+    checkNotNull(analyzeAvailableExpressionsComingOutAtEachStatement([MIR_RETURN()])[0]).size
+  ).toBe(0);
 });

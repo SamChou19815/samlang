@@ -3,6 +3,8 @@
  * https://homepages.inf.ed.ac.uk/wadler/papers/prettier/prettier.pdf
  */
 
+import { checkNotNull } from 'samlang-core-utils';
+
 /**
  * This prettier document type is a little clumsy at the stage of pretty printing.
  * However, it is very useful for doing optimization on whether to start a new line.
@@ -41,14 +43,14 @@ export const PRETTIER_NIL: PrettierDocument = { __type__: 'NIL' };
  */
 export const PRETTIER_CONCAT = (...docs: PrettierDocument[]): PrettierDocument => {
   if (docs.length === 0) return PRETTIER_NIL;
-  if (docs.length === 1) return docs[0];
+  if (docs.length === 1) return checkNotNull(docs[0]);
   let base: PrettierDocument = {
     __type__: 'CONCAT',
-    doc1: docs[docs.length - 2],
-    doc2: docs[docs.length - 1],
+    doc1: checkNotNull(docs[docs.length - 2]),
+    doc2: checkNotNull(docs[docs.length - 1]),
   };
   for (let i = docs.length - 3; i >= 0; i -= 1) {
-    base = PRETTIER_CONCAT(docs[i], base);
+    base = PRETTIER_CONCAT(checkNotNull(docs[i]), base);
   }
   return base;
 };

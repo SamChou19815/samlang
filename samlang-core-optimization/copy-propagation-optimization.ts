@@ -7,6 +7,7 @@ import {
   MIR_OP,
   MIR_RETURN,
 } from 'samlang-core-ast/mir-nodes';
+import { checkNotNull } from 'samlang-core-utils';
 
 const replaceMidIRExpressionAccordingToAvailableCopies = (
   availableCopies: Readonly<Record<string, string | undefined>>,
@@ -93,7 +94,7 @@ const optimizeIRWithCopyPropagation = (
 ): readonly MidIRStatement[] => {
   const availableCopies = analyzeAvailableCopies(statements);
   return statements.map((statement, index) =>
-    rewriteMidIRStatementAccordingToAvailableCopies(availableCopies[index], statement)
+    rewriteMidIRStatementAccordingToAvailableCopies(checkNotNull(availableCopies[index]), statement)
   );
 };
 

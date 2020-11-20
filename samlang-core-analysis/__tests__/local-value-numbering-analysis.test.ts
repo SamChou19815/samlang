@@ -17,6 +17,7 @@ import {
   MIR_IMMUTABLE_MEM,
   MIR_EIGHT,
 } from 'samlang-core-ast/mir-nodes';
+import { assertNotNull } from 'samlang-core-utils';
 
 it('analyzeLocalValueNumberingAssignment test 1', () => {
   const localValueNumberingResults = analyzeLocalValueNumberingAssignment([
@@ -69,23 +70,25 @@ it('analyzeLocalValueNumberingAssignment test 1', () => {
     ),
   ]);
 
+  const localValueNumberingResults10 = localValueNumberingResults[10];
+  assertNotNull(localValueNumberingResults10);
   expect(
-    localValueNumberingResults[10].getTemporaryReplacementForExpression(
+    localValueNumberingResults10.getTemporaryReplacementForExpression(
       MIR_OP('+', MIR_ONE, MIR_TEMP('x'))
     )
   ).toEqual(MIR_TEMP('y'));
   expect(
-    localValueNumberingResults[10].getTemporaryReplacementForExpression(
+    localValueNumberingResults10.getTemporaryReplacementForExpression(
       MIR_OP('*', MIR_OP('+', MIR_ONE, MIR_TEMP('x')), MIR_IMMUTABLE_MEM(MIR_ONE))
     )
   ).toEqual(MIR_TEMP('z1'));
   expect(
-    localValueNumberingResults[10].getTemporaryReplacementForExpression(
+    localValueNumberingResults10.getTemporaryReplacementForExpression(
       MIR_OP('*', MIR_OP('+', MIR_ONE, MIR_TEMP('x')), MIR_IMMUTABLE_MEM(MIR_EIGHT))
     )
   ).toBe(null);
   expect(
-    localValueNumberingResults[10].getTemporaryReplacementForExpression(
+    localValueNumberingResults10.getTemporaryReplacementForExpression(
       MIR_OP('<', MIR_TEMP('x'), MIR_ONE)
     )
   ).toBe(null);

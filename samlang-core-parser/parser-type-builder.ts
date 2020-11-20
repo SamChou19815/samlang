@@ -57,7 +57,7 @@ class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVis
 
   visitFunctionType = (ctx: FunctionTypeContext): FunctionType | null => {
     const types = ctx.typeExpr();
-    const returnType = types[types.length - 1].accept(this);
+    const returnType = types[types.length - 1]?.accept(this);
     // istanbul ignore next
     if (returnType == null) return null;
     const argumentTypes = types

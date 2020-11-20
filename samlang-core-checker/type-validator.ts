@@ -1,5 +1,6 @@
 import type { Type, Range } from 'samlang-core-ast/common-nodes';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
+import { checkNotNull } from 'samlang-core-utils';
 
 export interface IdentifierTypeValidator {
   /**
@@ -48,7 +49,7 @@ const findInvalidTypeIdentifierForList = (
 ): string | null => {
   for (let i = 0; i < types.length; i += 1) {
     const invalidName = findInvalidTypeIdentifier_EXPOSED_FOR_TESTING(
-      types[i],
+      checkNotNull(types[i]),
       identifierTypeValidator
     );
     if (invalidName != null) {

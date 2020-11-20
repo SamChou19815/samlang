@@ -1,4 +1,5 @@
 import { HighIRStatement, HIR_IF_ELSE } from 'samlang-core-ast/hir-expressions';
+import { assertNotNull } from 'samlang-core-utils';
 
 const eliminateUselessEndingMoveForHighIRStatementsHelper = (
   statements: readonly HighIRStatement[],
@@ -7,6 +8,7 @@ const eliminateUselessEndingMoveForHighIRStatementsHelper = (
   // istanbul ignore next
   if (indexOfFinalStatement <= 0) return [];
   const statementBeforeReturn = statements[indexOfFinalStatement - 1];
+  assertNotNull(statementBeforeReturn);
   switch (statementBeforeReturn.__type__) {
     case 'HighIRFunctionCallStatement':
       // We cannot safely ignore a function call.

@@ -16,6 +16,7 @@ import type {
   MidIRFunction,
   MidIRCompilationUnit,
 } from 'samlang-core-ast/mir-nodes';
+import { assertNotNull, checkNotNull } from 'samlang-core-utils';
 
 class StackFrame {
   private variables = new Map<string, bigint>();
@@ -124,7 +125,7 @@ const interpretMidIRFunction = (
   if (functionArguments.length !== midIRFunction.argumentNames.length) throw new Error();
   const stackFrame = new StackFrame();
   midIRFunction.argumentNames.forEach((argumentName, index) => {
-    stackFrame.setLocalValue(argumentName, functionArguments[index]);
+    stackFrame.setLocalValue(argumentName, checkNotNull(functionArguments[index]));
   });
 
   let programCounter = 0;
@@ -138,6 +139,7 @@ const interpretMidIRFunction = (
   let returnedValue: bigint | null = null;
   while (returnedValue == null) {
     const statementToInterpret = midIRFunction.mainBodyStatements[programCounter];
+    assertNotNull(statementToInterpret);
 
     switch (statementToInterpret.__type__) {
       case 'MidIRMoveTempStatement':
@@ -213,18 +215,18 @@ const interpretMidIRFunction = (
           switch (functionName) {
             case ENCODED_FUNCTION_NAME_MALLOC: {
               const start = environment.heapPointer;
-              environment.heapPointer += functionArgumentValues[0];
+              environment.heapPointer += checkNotNull(functionArgumentValues[0]);
               result = start;
               break;
             }
             case ENCODED_FUNCTION_NAME_THROW: {
-              const string = environment.strings.get(functionArgumentValues[0]);
+              const string = environment.strings.get(checkNotNull(functionArgumentValues[0]));
               // istanbul ignore next
               if (string == null) throw new Error('Bad string!');
               throw new PanicException(string);
             }
             case ENCODED_FUNCTION_NAME_STRING_TO_INT: {
-              const string = environment.strings.get(functionArgumentValues[0]);
+              const string = environment.strings.get(checkNotNull(functionArgumentValues[0]));
               // istanbul ignore next
               if (string == null) throw new Error('Bad string!');
               try {
@@ -243,8 +245,8 @@ const interpretMidIRFunction = (
               break;
             }
             case ENCODED_FUNCTION_NAME_STRING_CONCAT: {
-              const string1 = environment.strings.get(functionArgumentValues[0]);
-              const string2 = environment.strings.get(functionArgumentValues[1]);
+              const string1 = environment.strings.get(checkNotNull(functionArgumentValues[0]));
+              const string2 = environment.strings.get(checkNotNull(functionArgumentValues[1]));
               // istanbul ignore next
               if (string1 == null || string2 == null) throw new Error('Bad string');
               const location = environment.heapPointer;
@@ -254,7 +256,7 @@ const interpretMidIRFunction = (
               break;
             }
             case ENCODED_FUNCTION_NAME_PRINTLN: {
-              const string = environment.strings.get(functionArgumentValues[0]);
+              const string = environment.strings.get(checkNotNull(functionArgumentValues[0]));
               // istanbul ignore next
               if (string == null) throw new Error('Bad string!');
               environment.printed += `${string}\n`;

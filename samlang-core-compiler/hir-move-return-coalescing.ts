@@ -1,4 +1,5 @@
 import { HighIRStatement, HIR_IF_ELSE, HIR_RETURN } from 'samlang-core-ast/hir-expressions';
+import { assertNotNull } from 'samlang-core-utils';
 
 /**
  * @param statements A full list of statements.
@@ -17,6 +18,7 @@ const coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable = (
   // istanbul ignore next
   if (indexOfFinalReturnStatement <= 0) return null;
   const statementBeforeReturn = statements[indexOfFinalReturnStatement - 1];
+  assertNotNull(statementBeforeReturn);
   switch (statementBeforeReturn.__type__) {
     case 'HighIRFunctionCallStatement':
       // We cannot safely ignore a function call.
@@ -126,6 +128,7 @@ const coalesceMoveAndReturnForHighIRStatements = (
 ): readonly HighIRStatement[] | null => {
   if (statements.length === 0) return null;
   const lastStatement = statements[statements.length - 1];
+  assertNotNull(lastStatement);
   if (lastStatement.__type__ !== 'HighIRReturnStatement') return null;
   // If the last statement is return, then it must be the only return.
   // This is guaranteed by the implementation of HIR compiler.

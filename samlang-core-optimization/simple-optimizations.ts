@@ -1,7 +1,7 @@
 import ControlFlowGraph from 'samlang-core-analysis/control-flow-graph';
 import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
 import { MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from 'samlang-core-ast/mir-nodes';
-import { isNotNull } from 'samlang-core-utils';
+import { assertNotNull, checkNotNull, isNotNull } from 'samlang-core-utils';
 
 const pipe = <E>(element: E, ...functions: readonly ((e: E) => E)[]): E =>
   functions.reduce((accumulator, f) => f(accumulator), element);
@@ -30,7 +30,7 @@ const getCoalesceConsecutiveLabelsReplacementMap = <I>(
     if (index >= instructions.length - 1) return;
     const label = getLabel(instruction);
     if (label == null) return;
-    const nextLabel = getLabel(instructions[index + 1]);
+    const nextLabel = getLabel(checkNotNull(instructions[index + 1]));
     if (nextLabel == null) return;
     nextEquivalentLabelMap.set(label, nextLabel);
   });
@@ -95,6 +95,7 @@ const withoutConsecutiveJumpsInIr = (
     if (index >= statements.length - 1) return;
     if (statement.__type__ !== 'MidIRLabelStatement') return;
     const nextStatement = statements[index + 1];
+    assertNotNull(nextStatement);
     if (nextStatement.__type__ !== 'MidIRJumpStatement') return;
     singleJumpLabelMap.set(statement.name, nextStatement.label);
   });
@@ -142,6 +143,7 @@ const withoutImmediateJumpInIr = (
     .map((statement, index) => {
       if (index >= statements.length - 1) return statement;
       const nextStatement = statements[index + 1];
+      assertNotNull(nextStatement);
       if (nextStatement.__type__ !== 'MidIRLabelStatement') return statement;
       const nextLabel = nextStatement.name;
       if (statement.__type__ === 'MidIRJumpStatement') {
@@ -231,6 +233,7 @@ const withoutImmediateJumpInAsm = (
     if (index < instructions.length - 1 && instruction.__type__ === 'AssemblyJump') {
       const { label } = instruction;
       const nextInstruction = instructions[index + 1];
+      assertNotNull(nextInstruction);
       if (nextInstruction.__type__ === 'AssemblyLabel' && nextInstruction.label === label) {
         return false;
       }

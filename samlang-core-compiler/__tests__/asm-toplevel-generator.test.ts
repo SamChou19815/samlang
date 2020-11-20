@@ -19,6 +19,7 @@ import {
   MIR_JUMP,
   MIR_CONST,
 } from 'samlang-core-ast/mir-nodes';
+import { checkNotNull } from 'samlang-core-utils';
 
 const compile = (
   compilationUnit: MidIRCompilationUnit,
@@ -189,9 +190,9 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 5', () => {
   for (let i = 0; i < 30; i += 1) {
     temps.push(MIR_TEMP(`v${i}`));
   }
-  let op: MidIRExpression = temps[0];
+  let op: MidIRExpression = checkNotNull(temps[0]);
   for (let i = 1; i < 30; i += 1) {
-    op = MIR_OP('+', op, temps[i]);
+    op = MIR_OP('+', op, checkNotNull(temps[i]));
   }
   expect(
     compile({

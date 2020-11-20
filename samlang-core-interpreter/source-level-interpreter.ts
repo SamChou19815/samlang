@@ -7,6 +7,7 @@ import {
   EXPRESSION_LAMBDA,
 } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule, ClassDefinition } from 'samlang-core-ast/samlang-toplevel';
+import { checkNotNull } from 'samlang-core-utils';
 
 export type Value =
   | UnitValue
@@ -433,10 +434,10 @@ class ModuleInterpreter {
     };
     // patch the functions and methods with correct context.
     Object.keys(functions).forEach((key) => {
-      functions[key].context = newContext;
+      checkNotNull(functions[key]).context = newContext;
     });
     Object.keys(methods).forEach((key) => {
-      methods[key].context = newContext;
+      checkNotNull(methods[key]).context = newContext;
     });
     return newContext;
   };
