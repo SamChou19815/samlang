@@ -187,9 +187,7 @@ export const HIR_LET = ({
 export const HIR_STRUCT_INITIALIZATION = ({
   structVariableName,
   expressionList,
-}: ConstructorArgumentObject<
-  HighIRStructInitializationStatement
->): HighIRStructInitializationStatement => ({
+}: ConstructorArgumentObject<HighIRStructInitializationStatement>): HighIRStructInitializationStatement => ({
   __type__: 'HighIRStructInitializationStatement',
   structVariableName,
   expressionList,

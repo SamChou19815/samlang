@@ -54,9 +54,7 @@ export class UnresolvedNameError extends CompileTimeError<'UnresolvedName'> {
   }
 }
 
-export class UnsupportedClassTypeDefinitionError extends CompileTimeError<
-  'UnsupportedClassTypeDefinition'
-> {
+export class UnsupportedClassTypeDefinitionError extends CompileTimeError<'UnsupportedClassTypeDefinition'> {
   constructor(
     moduleReference: ModuleReference,
     range: Range,
@@ -105,9 +103,7 @@ export class TupleSizeMismatchError extends CompileTimeError<'TupleSizeMismatch'
   }
 }
 
-export class InsufficientTypeInferenceContextError extends CompileTimeError<
-  'InsufficientTypeInferenceContext'
-> {
+export class InsufficientTypeInferenceContextError extends CompileTimeError<'InsufficientTypeInferenceContext'> {
   constructor(moduleReference: ModuleReference, range: Range) {
     super(
       'InsufficientTypeInferenceContext',
@@ -146,9 +142,7 @@ export class IllegalThisError extends CompileTimeError<'IllegalThis'> {
   }
 }
 
-export class InconsistentFieldsInObjectError extends CompileTimeError<
-  'InconsistentFieldsInObject'
-> {
+export class InconsistentFieldsInObjectError extends CompileTimeError<'InconsistentFieldsInObject'> {
   constructor(
     moduleReference: ModuleReference,
     range: Range,
