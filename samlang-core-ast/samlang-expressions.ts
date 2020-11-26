@@ -263,9 +263,7 @@ export const EXPRESSION_TUPLE_CONSTRUCTOR = ({
   range,
   type,
   expressions,
-}: ExpressionConstructorArgumentObject<
-  TupleConstructorExpression
->): TupleConstructorExpression => ({
+}: ExpressionConstructorArgumentObject<TupleConstructorExpression>): TupleConstructorExpression => ({
   __type__: 'TupleConstructorExpression',
   range,
   type,
@@ -277,9 +275,7 @@ export const EXPRESSION_OBJECT_CONSTRUCTOR = ({
   range,
   type,
   fieldDeclarations,
-}: ExpressionConstructorArgumentObject<
-  ObjectConstructorExpression
->): ObjectConstructorExpression => ({
+}: ExpressionConstructorArgumentObject<ObjectConstructorExpression>): ObjectConstructorExpression => ({
   __type__: 'ObjectConstructorExpression',
   range,
   type,
@@ -293,9 +289,7 @@ export const EXPRESSION_VARIANT_CONSTRUCTOR = ({
   tag,
   tagOrder,
   data,
-}: ExpressionConstructorArgumentObject<
-  VariantConstructorExpression
->): VariantConstructorExpression => ({
+}: ExpressionConstructorArgumentObject<VariantConstructorExpression>): VariantConstructorExpression => ({
   __type__: 'VariantConstructorExpression',
   range,
   type,
@@ -366,9 +360,7 @@ export const EXPRESSION_BUILTIN_FUNCTION_CALL = ({
   type,
   functionName,
   argumentExpression,
-}: ExpressionConstructorArgumentObject<
-  BuiltInFunctionCallExpression
->): BuiltInFunctionCallExpression => ({
+}: ExpressionConstructorArgumentObject<BuiltInFunctionCallExpression>): BuiltInFunctionCallExpression => ({
   __type__: 'BuiltInFunctionCallExpression',
   range,
   type,
