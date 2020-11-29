@@ -1,6 +1,7 @@
 import parseCLIArguments from './cli-parser';
 
 export interface CLIRunners {
+  format(needHelp: boolean): void;
   typeCheck(needHelp: boolean): void;
   compile(needHelp: boolean): void;
   lsp(needHelp: boolean): void;
@@ -11,6 +12,9 @@ export interface CLIRunners {
 const cliMainRunner = (runners: CLIRunners, commandLineArguments: readonly string[]): void => {
   const action = parseCLIArguments(commandLineArguments);
   switch (action.type) {
+    case 'format':
+      runners.format(action.needHelp);
+      return;
     case 'check':
       runners.typeCheck(action.needHelp);
       return;

@@ -10,7 +10,20 @@ import {
 import { CompileTimeError, createGlobalErrorCollector } from 'samlang-core-errors';
 import optimizeIRCompilationUnit from 'samlang-core-optimization';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
-import { hashMapOf } from 'samlang-core-utils';
+import { hashMapOf, isNotNull } from 'samlang-core-utils';
+
+export const parseSources = (
+  sourceHandles: readonly (readonly [ModuleReference, string])[]
+): readonly (readonly [ModuleReference, SamlangModule])[] => {
+  const errorCollector = createGlobalErrorCollector();
+  return sourceHandles
+    .map(([moduleReference, sourceString]) => {
+      const moduleErrorCollector = errorCollector.getModuleErrorCollector(moduleReference);
+      const parsed = parseSamlangModuleFromText(sourceString, moduleErrorCollector);
+      return moduleErrorCollector.hasErrors ? null : ([moduleReference, parsed] as const);
+    })
+    .filter(isNotNull);
+};
 
 type CheckSourcesResult = {
   readonly checkedSources: Sources<SamlangModule>;

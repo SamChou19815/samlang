@@ -1,5 +1,5 @@
 type ParsedCLIAction =
-  | { readonly type: 'check' | 'compile' | 'lsp'; readonly needHelp: boolean }
+  | { readonly type: 'format' | 'check' | 'compile' | 'lsp'; readonly needHelp: boolean }
   | { readonly type: 'version' }
   | { readonly type: 'help' };
 
@@ -11,8 +11,9 @@ const parseCLIArguments = (commandLineArguments: readonly string[]): ParsedCLIAc
     return { type: 'check', needHelp: false };
   }
 
-  let type: 'check' | 'compile' | 'lsp';
+  let type: 'format' | 'check' | 'compile' | 'lsp';
   switch (commandLineArguments[0]) {
+    case 'format':
     case 'check':
     case 'compile':
     case 'lsp':

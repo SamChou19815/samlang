@@ -1,8 +1,18 @@
-import { checkSources, lowerSourcesToAssemblyPrograms } from '../source-processor';
+import { parseSources, checkSources, lowerSourcesToAssemblyPrograms } from '../source-processor';
 
 import { assemblyProgramToString } from 'samlang-core-ast/asm-program';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { assertNotNull } from 'samlang-core-utils';
+
+it('parseSources test', () => {
+  expect(
+    parseSources([
+      [new ModuleReference(['Test1']), 'class Main { function main(): unit = {} }'],
+      // with syntax error
+      [new ModuleReference(['Test2']), 'class Main { function main(): unt = {} }'],
+    ]).length
+  ).toBe(1);
+});
 
 it('hello world processor test', () => {
   const moduleReference = new ModuleReference(['Test']);

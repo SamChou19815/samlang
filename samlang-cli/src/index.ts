@@ -2,6 +2,8 @@
 
 /* eslint-disable no-console */
 
+import { writeFileSync } from 'fs';
+
 import cliMainRunner, { CLIRunners } from './cli';
 import { collectSources, compileToJS, compileToX86Executables } from './cli-service';
 import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './configuration';
@@ -10,7 +12,8 @@ import startSamlangLanguageServer from './lsp';
 
 import type { Sources } from 'samlang-core-ast/common-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { checkSources } from 'samlang-core-services';
+import { prettyPrintSamlangModule } from 'samlang-core-printer';
+import { parseSources, checkSources } from 'samlang-core-services';
 
 const getConfiguration = (): SamlangProjectConfiguration => {
   const configuration = loadSamlangProjectConfiguration();
@@ -23,6 +26,13 @@ const getConfiguration = (): SamlangProjectConfiguration => {
     process.exit(2);
   }
   return configuration;
+};
+
+const format = () => {
+  const sources = collectSources(getConfiguration());
+  parseSources(sources).forEach(([moduleReference, samlangModule]) => {
+    writeFileSync(moduleReference.toFilename(), prettyPrintSamlangModule(100, samlangModule));
+  });
 };
 
 const typeCheck = (): {
@@ -43,9 +53,16 @@ const typeCheck = (): {
 };
 
 const runners: CLIRunners = {
+  format(needHelp) {
+    if (needHelp) {
+      console.log('samlang format: Format your codebase according to sconfig.json.');
+    } else {
+      format();
+    }
+  },
   typeCheck(needHelp) {
     if (needHelp) {
-      console.log('samlang [check]: Type checks your codebase according to sconfig.json.');
+      console.log('samlang check: Type checks your codebase according to sconfig.json.');
     } else {
       typeCheck();
       console.log('No errors!');
