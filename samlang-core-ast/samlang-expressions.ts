@@ -453,6 +453,6 @@ export const EXPRESSION_STATEMENT_BLOCK = ({
   __type__: 'StatementBlockExpression',
   range,
   type,
-  precedence: 14,
+  precedence: 2,
   block,
 });

@@ -1,67 +1,59 @@
 class Main {
-  function assertEqual(a: int, b: int): unit = if (a != b) then panic("") else ({  })
+  function assertEqual(a: int, b: int): unit = if (a != b) then panic("") else {  }
 
   function main(): unit = {
-    val v0: int = if (true) then (
-      {
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        65536
-      }
-    ) else 42;
-    val v1: int = if (false) then 42 else (
-      {
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        65536
-      }
-    );
-    val v2: int = if (!true) then 42 else (
-      {
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        65536
-      }
-    );
-    val v3: int = if (!false) then (
-      {
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        val _: int = 0;
-        65536
-      }
-    ) else 42;
+    val v0: int = if (true) then {
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      65536
+    } else 42;
+    val v1: int = if (false) then 42 else {
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      65536
+    };
+    val v2: int = if (!true) then 42 else {
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      65536
+    };
+    val v3: int = if (!false) then {
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      val _: int = 0;
+      65536
+    } else 42;
     val _: unit = Main.assertEqual(v0, v1);
     val _: unit = Main.assertEqual(v2, v3);
     val _: unit = Main.assertEqual(v0, v2);

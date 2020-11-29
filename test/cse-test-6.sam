@@ -4,10 +4,12 @@ class Main {
   function check(actual: int, expected: int): unit =
     if (actual != expected) then panic(
       (("actual: " :: intToString(actual)) :: ", expected ") :: intToString(expected)
-    ) else ({  })
+    ) else {  }
 
   function test(first: bool, a: int, b: int, aTimesB: int): unit = {
-    val _: unit = if (first) then ({ val _: int = a * b; }) else ({  });
+    val _: unit = if (first) then {
+      val _: int = a * b;
+    } else {  };
     val _: unit = Main.check(a * b, aTimesB);
   }
 

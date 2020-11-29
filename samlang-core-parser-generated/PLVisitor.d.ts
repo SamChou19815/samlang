@@ -25,6 +25,7 @@ import { ClassMemberExprContext } from './PLParser';
 import { TupleConstructorContext } from './PLParser';
 import { ObjConstructorContext } from './PLParser';
 import { VariantConstructorContext } from './PLParser';
+import { StatementBlockExprContext } from './PLParser';
 import { FieldAccessExprContext } from './PLParser';
 import { NegExprContext } from './PLParser';
 import { NotExprContext } from './PLParser';
@@ -43,7 +44,6 @@ import { IfElseExprContext } from './PLParser';
 import { MatchExprContext } from './PLParser';
 import { FunExprContext } from './PLParser';
 import { NoArgFunExprContext } from './PLParser';
-import { StatementBlockExprContext } from './PLParser';
 import { UnitTypeContext } from './PLParser';
 import { IntTypeContext } from './PLParser';
 import { StrTypeContext } from './PLParser';
@@ -254,6 +254,13 @@ export interface PLVisitor<Result> extends ParseTreeVisitor<Result> {
    */
   visitVariantConstructor?: (ctx: VariantConstructorContext) => Result;
   /**
+   * Visit a parse tree produced by the `StatementBlockExpr`
+   * labeled alternative in `PLParser.expression`.
+   * @param ctx the parse tree
+   * @return the visitor result
+   */
+  visitStatementBlockExpr?: (ctx: StatementBlockExprContext) => Result;
+  /**
    * Visit a parse tree produced by the `FieldAccessExpr`
    * labeled alternative in `PLParser.expression`.
    * @param ctx the parse tree
@@ -379,13 +386,6 @@ export interface PLVisitor<Result> extends ParseTreeVisitor<Result> {
    * @return the visitor result
    */
   visitNoArgFunExpr?: (ctx: NoArgFunExprContext) => Result;
-  /**
-   * Visit a parse tree produced by the `StatementBlockExpr`
-   * labeled alternative in `PLParser.expression`.
-   * @param ctx the parse tree
-   * @return the visitor result
-   */
-  visitStatementBlockExpr?: (ctx: StatementBlockExprContext) => Result;
   /**
    * Visit a parse tree produced by the `UnitType`
    * labeled alternative in `PLParser.typeExpr`.

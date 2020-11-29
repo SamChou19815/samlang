@@ -4,7 +4,7 @@ class Main {
   function check(actual: int, expected: int): unit =
     if (actual != expected) then panic(
       (("actual: " :: intToString(actual)) :: ", expected ") :: intToString(expected)
-    ) else ({  })
+    ) else {  }
 
   function test(first: bool, a: int, b: int, aTimesB: int): unit = {
     val t: int = if (first) then a * b else a * b;
