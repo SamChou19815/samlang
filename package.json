@@ -10,7 +10,7 @@
     "format": "prettier --write '**/*.ts'",
     "format:generatedDTS": "prettier --write samlang-core-parser-generated/*.d.ts",
     "format:check": "prettier --check '**/*.ts'",
-    "codegen": "exit 0",
+    "codegen": "yarn bundle && ./samlang-dev format",
     "compile": "./bin/monorail compile",
     "bundle": "./bin/monorail bundle",
     "test": "jest --coverage",
