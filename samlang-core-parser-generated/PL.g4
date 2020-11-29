@@ -73,6 +73,7 @@ expression
     | LBRACKET expression (COMMA expression)+ COMMA? RBRACKET # TupleConstructor
     | LBRACE objectFieldDeclarations RBRACE # ObjConstructor
     | UpperId LPAREN expression RPAREN # VariantConstructor
+    | statementBlock # StatementBlockExpr
     | expression DOT LowerId # FieldAccessExpr
     | MINUS expression # NegExpr
     | NOT expression # NotExpr
@@ -91,7 +92,6 @@ expression
     | MATCH LPAREN expression RPAREN LBRACE patternToExpr+ RBRACE # MatchExpr
     | LPAREN optionallyAnnotatedParameter (COMMA optionallyAnnotatedParameter)* COMMA? RPAREN ARROW expression # FunExpr
     | LPAREN RPAREN ARROW expression # NoArgFunExpr
-    | statementBlock # StatementBlockExpr
     ;
 
 objectFieldDeclarations : objectFieldDeclaration (COMMA objectFieldDeclaration)* COMMA?;

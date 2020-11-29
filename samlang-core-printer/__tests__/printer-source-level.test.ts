@@ -174,17 +174,15 @@ it('prettyPrintSamlangExpression test', () => {
     )
   ).toBe(`() -> (
   () -> (
-    () -> (
-      {
-        val a: unit = {
-          val b: unit = {
-            val c: unit = {
-              val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong;
-            };
+    () -> {
+      val a: unit = {
+        val b: unit = {
+          val c: unit = {
+            val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong;
           };
         };
-      }
-    )
+      };
+    }
   )
 )`);
 });

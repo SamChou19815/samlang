@@ -2,13 +2,11 @@ class Main {
   function main(): unit = {
     val a1: string = "a";
     val a2: string = "a";
-    if (a1 == a2) then println("OK") else (
-      {
-        val _: unit = println("BAD");
-        val _: unit = println(a1);
-        val _: unit = println(a2);
-      }
-    )
+    if (a1 == a2) then println("OK") else {
+      val _: unit = println("BAD");
+      val _: unit = println(a1);
+      val _: unit = println(a2);
+    }
   }
 
 }

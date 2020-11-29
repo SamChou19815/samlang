@@ -539,6 +539,11 @@ export declare class VariantConstructorContext extends ExpressionContext {
   constructor(ctx: ExpressionContext);
   accept<Result>(visitor: PLVisitor<Result>): Result;
 }
+export declare class StatementBlockExprContext extends ExpressionContext {
+  statementBlock(): StatementBlockContext;
+  constructor(ctx: ExpressionContext);
+  accept<Result>(visitor: PLVisitor<Result>): Result;
+}
 export declare class FieldAccessExprContext extends ExpressionContext {
   expression(): ExpressionContext;
   DOT(): TerminalNode;
@@ -676,11 +681,6 @@ export declare class NoArgFunExprContext extends ExpressionContext {
   RPAREN(): TerminalNode;
   ARROW(): TerminalNode;
   expression(): ExpressionContext;
-  constructor(ctx: ExpressionContext);
-  accept<Result>(visitor: PLVisitor<Result>): Result;
-}
-export declare class StatementBlockExprContext extends ExpressionContext {
-  statementBlock(): StatementBlockContext;
   constructor(ctx: ExpressionContext);
   accept<Result>(visitor: PLVisitor<Result>): Result;
 }

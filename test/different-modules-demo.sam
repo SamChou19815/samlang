@@ -54,13 +54,13 @@ class Option<T>(None(unit), Some(T)) {
 
 class Main {
   private function assertTrue(condition: bool, message: string): unit =
-    if (condition) then ({  }) else panic(message)
+    if (condition) then {  } else panic(message)
 
   private function assertFalse(condition: bool, message: string): unit =
-    if (!condition) then ({  }) else panic(message)
+    if (!condition) then {  } else panic(message)
 
   private function assertEquals(e1: int, e2: int, message: string): unit =
-    if (e1 == e2) then ({  }) else panic(
+    if (e1 == e2) then {  } else panic(
       (((intToString(e1) :: " ") :: intToString(e2)) :: " ") :: message
     )
 

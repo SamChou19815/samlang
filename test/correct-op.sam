@@ -9,12 +9,12 @@ class Main {
   }
 
   function checkInt(a: int, b: int): unit =
-    if (a == b) then ({  }) else Main.crash(intToString(a), intToString(b))
+    if (a == b) then {  } else Main.crash(intToString(a), intToString(b))
 
   function boolToString(b: bool): string = if (b) then "true" else "false"
 
   function checkBool(a: bool, b: bool): unit =
-    if (a == b) then ({  }) else Main.crash(Main.boolToString(a), Main.boolToString(b))
+    if (a == b) then {  } else Main.crash(Main.boolToString(a), Main.boolToString(b))
 
   function checkAll(): unit = {
     val _: unit = Main.checkInt(42, 21 * 2);
