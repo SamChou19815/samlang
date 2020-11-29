@@ -1,7 +1,7 @@
 class Main {
   function main(): unit = {
     val a: int = if (true) then (if (false) then 10000 else 3) else 4;
-    val b: int = if (false) then 4 else (if (true) then 3 else 20000);
+    val b: int = if (false) then 4 else if (true) then 3 else 20000;
     val _: unit = println(intToString(a));
     val _: unit = println(intToString(b));
     if (a != b) then panic("Not OK") else println("OK")

@@ -125,6 +125,42 @@ it('prettyPrintSamlangExpression test', () => {
   expect(reprintExpression('1 + 1 + 1')).toBe('(1 + 1) + 1');
 
   expect(reprintExpression('if (b) then a else c')).toBe('if (b) then a else c');
+  expect(
+    reprintExpression(
+      `
+      if (b) then {
+        val _ = println("");
+        val _ = println("");
+        val _ = println("");
+        val _ = println("");
+      } else if (b) then {
+        val _ = println("");
+        val _ = println("");
+        val _ = println("");
+        val _ = println("");
+      } else {
+        val _ = println("");
+        val _ = println("");
+        val _ = println("");
+        val _ = println("");
+      }`
+    )
+  ).toBe(`if (b) then {
+  val _ = println("");
+  val _ = println("");
+  val _ = println("");
+  val _ = println("");
+} else if (b) then {
+  val _ = println("");
+  val _ = println("");
+  val _ = println("");
+  val _ = println("");
+} else {
+  val _ = println("");
+  val _ = println("");
+  val _ = println("");
+  val _ = println("");
+}`);
 
   expect(reprintExpression('match (v) { | None _ -> fooBar | Some bazBaz -> bazBaz }'))
     .toBe(`match (v) {
