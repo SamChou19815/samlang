@@ -2,6 +2,7 @@ import cliMainRunner, { CLIRunners } from '..';
 
 const assertCalled = (commandLineArguments: readonly string[], called: keyof CLIRunners): void => {
   const runner: CLIRunners = {
+    format: jest.fn(),
     typeCheck: jest.fn(),
     compile: jest.fn(),
     lsp: jest.fn(),
@@ -18,9 +19,11 @@ const assertCalled = (commandLineArguments: readonly string[], called: keyof CLI
 
 it('Commands are correctly triggered', () => {
   assertCalled([], 'typeCheck');
+  assertCalled(['format'], 'format');
   assertCalled(['check'], 'typeCheck');
   assertCalled(['compile'], 'compile');
   assertCalled(['lsp'], 'lsp');
+  assertCalled(['format', '--help'], 'format');
   assertCalled(['check', '--help'], 'typeCheck');
   assertCalled(['compile', '--help'], 'compile');
   assertCalled(['lsp', '--help'], 'lsp');
