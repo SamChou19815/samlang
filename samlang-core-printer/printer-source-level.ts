@@ -17,7 +17,7 @@ import {
 } from './printer-prettier-library';
 
 import { prettyPrintLiteral, prettyPrintType } from 'samlang-core-ast/common-nodes';
-import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
+import type { SamlangExpression, IfElseExpression } from 'samlang-core-ast/samlang-expressions';
 import type {
   ClassMemberDefinition,
   ClassDefinition,
@@ -38,6 +38,25 @@ const createPrettierDocumentFromSamlangExpression = (
       );
     }
     return createPrettierDocumentFromSamlangExpression(subExpression);
+  };
+
+  const createDocumentIfElseExpression = (ifElse: IfElseExpression): PrettierDocument => {
+    const documents: PrettierDocument[] = [];
+    let ifElseExpression: SamlangExpression = ifElse;
+    do {
+      documents.push(
+        PRETTIER_TEXT('if '),
+        createParenthesisSurroundedDocument(
+          createPrettierDocumentFromSamlangExpression(ifElseExpression.boolExpression)
+        ),
+        PRETTIER_TEXT(' then '),
+        createDocumentForSubExpressionConsideringPrecedenceLevel(ifElseExpression.e1),
+        PRETTIER_TEXT(' else ')
+      );
+      ifElseExpression = ifElseExpression.e2;
+    } while (ifElseExpression.__type__ === 'IfElseExpression');
+    documents.push(createDocumentForSubExpressionConsideringPrecedenceLevel(ifElseExpression));
+    return PRETTIER_CONCAT(...documents);
   };
 
   switch (expression.__type__) {
@@ -120,16 +139,7 @@ const createPrettierDocumentFromSamlangExpression = (
         createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
       );
     case 'IfElseExpression':
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT('if '),
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.boolExpression)
-        ),
-        PRETTIER_TEXT(' then '),
-        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
-        PRETTIER_TEXT(' else '),
-        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
-      );
+      return createDocumentIfElseExpression(expression);
     case 'MatchExpression': {
       const list = expression.matchingList
         .map(({ tag, dataVariable, expression: finalExpression }) => [
