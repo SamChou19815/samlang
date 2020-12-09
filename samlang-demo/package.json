@@ -12,7 +12,7 @@
     "bundle": "node build.js"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.10",
+    "@types/jest": "^26.0.18",
     "@vercel/ncc": "^0.24.0",
     "samlang-core-ast": "workspace:0.0.1",
     "samlang-core-compiler": "workspace:0.0.1",
