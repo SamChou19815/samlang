@@ -14,14 +14,14 @@
     "samlang": "./bin/index.js"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.18",
-    "@types/node": "^14.14.11",
+    "@types/jest": "^26.0.19",
+    "@types/node": "^14.14.14",
     "@vercel/ncc": "^0.24.0",
     "samlang-core-ast": "workspace:0.0.1",
     "samlang-core-compiler": "workspace:0.0.1",
     "samlang-core-printer": "workspace:0.0.1",
     "samlang-core-services": "workspace:0.0.1",
-    "typescript": "^4.1.2",
+    "typescript": "^4.1.3",
     "vscode-languageserver": "^6.1.1"
   }
 }
