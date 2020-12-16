@@ -54,27 +54,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/core@npm:^7.12.9":
-  version: 7.12.9
-  resolution: "@babel/core@npm:7.12.9"
+"@babel/core@npm:^7.12.10":
+  version: 7.12.10
+  resolution: "@babel/core@npm:7.12.10"
   dependencies:
     "@babel/code-frame": ^7.10.4
-    "@babel/generator": ^7.12.5
+    "@babel/generator": ^7.12.10
     "@babel/helper-module-transforms": ^7.12.1
     "@babel/helpers": ^7.12.5
-    "@babel/parser": ^7.12.7
+    "@babel/parser": ^7.12.10
     "@babel/template": ^7.12.7
-    "@babel/traverse": ^7.12.9
-    "@babel/types": ^7.12.7
+    "@babel/traverse": ^7.12.10
+    "@babel/types": ^7.12.10
     convert-source-map: ^1.7.0
     debug: ^4.1.0
     gensync: ^1.0.0-beta.1
     json5: ^2.1.2
     lodash: ^4.17.19
-    resolve: ^1.3.2
     semver: ^5.4.1
     source-map: ^0.5.0
-  checksum: beefb9f490cfff7cafc02e5a11148297a71260ee18f5fdf6e14bf5694bc28431eec3813a91d0f0fc8c6122c5133d90d3261dadf45cb914d7d340a5b3077fd9bd
+  checksum: 4d7b892764009b80ac36b193ee37dd27a04244113dfa7510a937e81999e4b0f8ad3237f809792975abab5e07b44a7f7c36bb21e6f9957cdf54cd91cbf149c411
   languageName: node
   linkType: hard
 
@@ -109,6 +108,17 @@ __metadata:
     jsesc: ^2.5.1
     source-map: ^0.5.0
   checksum: e0f5f9af4f5e1ed3afd02a57b1f15a85c7adb7e4deafbda2534bb49d889d6443b1fb5494e4543e31525788db20e1426e4a89c8cbd0c55289a8fdc6da0a9700cf
+  languageName: node
+  linkType: hard
+
+"@babel/generator@npm:^7.12.10":
+  version: 7.12.11
+  resolution: "@babel/generator@npm:7.12.11"
+  dependencies:
+    "@babel/types": ^7.12.11
+    jsesc: ^2.5.1
+    source-map: ^0.5.0
+  checksum: eb76477ff89b609393fc002975fe7f9aafe91e915218e56a5f3cc6c5b54690762a06ff654b3d322ab454823b271c14e40bc8c92e97fa0a91a29f7f2047973b54
   languageName: node
   linkType: hard
 
@@ -507,6 +517,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/helper-validator-identifier@npm:^7.12.11":
+  version: 7.12.11
+  resolution: "@babel/helper-validator-identifier@npm:7.12.11"
+  checksum: 18de432203264b501db2690b53370a4289dc56084f5a2c66de624b159ee28b8abaeb402b2b7584296d9261645d91ddb6bfd21125d3ffd9bf02e9262e77baf3d2
+  languageName: node
+  linkType: hard
+
 "@babel/helper-validator-option@npm:^7.12.1":
   version: 7.12.1
   resolution: "@babel/helper-validator-option@npm:7.12.1"
@@ -594,6 +611,15 @@ __metadata:
   bin:
     parser: ./bin/babel-parser.js
   checksum: 3605bcf97e956ef36506ccb7e0ca4432025d8992c7e1f5d5b03976750a1198a0b27f461ab9304dbc5319a154b5ea19c09e72f87bfc5c08dd2780428734e13339
+  languageName: node
+  linkType: hard
+
+"@babel/parser@npm:^7.12.10":
+  version: 7.12.11
+  resolution: "@babel/parser@npm:7.12.11"
+  bin:
+    parser: ./bin/babel-parser.js
+  checksum: 2f650e8e57342bdd1b624ba89d6df2332ee8e6ec0287316aa47d49a7bee8a6d9bab4581e753a4b72a2ddd8f272a2f9947f6c7f1ca191a0006a297789226f4b55
   languageName: node
   linkType: hard
 
@@ -1574,7 +1600,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/traverse@npm:^7.12.5, @babel/traverse@npm:^7.12.9":
+"@babel/traverse@npm:^7.12.10":
+  version: 7.12.10
+  resolution: "@babel/traverse@npm:7.12.10"
+  dependencies:
+    "@babel/code-frame": ^7.10.4
+    "@babel/generator": ^7.12.10
+    "@babel/helper-function-name": ^7.10.4
+    "@babel/helper-split-export-declaration": ^7.11.0
+    "@babel/parser": ^7.12.10
+    "@babel/types": ^7.12.10
+    debug: ^4.1.0
+    globals: ^11.1.0
+    lodash: ^4.17.19
+  checksum: 63e8500aed71da6fba8058751298c3bc1b54628585fb27047cbf2c0ed66df03f19e6b0fa9a8809bbb5131c27464b4ce950753479ef4333759fe5a400ae954956
+  languageName: node
+  linkType: hard
+
+"@babel/traverse@npm:^7.12.5":
   version: 7.12.9
   resolution: "@babel/traverse@npm:7.12.9"
   dependencies:
@@ -1635,6 +1678,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@babel/types@npm:^7.12.10, @babel/types@npm:^7.12.11":
+  version: 7.12.11
+  resolution: "@babel/types@npm:7.12.11"
+  dependencies:
+    "@babel/helper-validator-identifier": ^7.12.11
+    lodash: ^4.17.19
+    to-fast-properties: ^2.0.0
+  checksum: e592c52b097da2c56f7388f35bf84a267c88e0e1bd7d3b7730892a8c70b2a80bd7f67a2ee57b2acf6aee58a074a234214d3e43ff6968dfb834733aa1417a5a43
+  languageName: node
+  linkType: hard
+
 "@babel/types@npm:^7.12.5, @babel/types@npm:^7.12.7":
   version: 7.12.7
   resolution: "@babel/types@npm:7.12.7"
@@ -1685,9 +1739,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dev-sam/eslint-config-common@npm:0.17.0":
-  version: 0.17.0
-  resolution: "@dev-sam/eslint-config-common@npm:0.17.0"
+"@dev-sam/eslint-config-common@npm:0.19.0":
+  version: 0.19.0
+  resolution: "@dev-sam/eslint-config-common@npm:0.19.0"
   peerDependencies:
     "@typescript-eslint/eslint-plugin": "*"
     "@typescript-eslint/parser": "*"
@@ -1703,7 +1757,7 @@ __metadata:
       optional: true
     eslint-plugin-react-hooks:
       optional: true
-  checksum: 0e9718cc1bed539c6f04c9f058709708ed26f921201461eab88d41e8b3b7af264ec421cf5f09c37ea1a4ce0ccbc8b5ecb673c5e2f606425895d985caecef0840
+  checksum: 7f15dbbbf2aecb8dfe76521acc17a3773580c7b8040cf782083e310e629e3e0ae27ba9595e59c83a1b13d68d369fc0fa9ccb997935a9e04601cf29f4b3181696
   languageName: node
   linkType: hard
 
@@ -1711,14 +1765,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@dev-sam/samlang-cli@workspace:samlang-cli"
   dependencies:
-    "@types/jest": ^26.0.18
-    "@types/node": ^14.14.11
+    "@types/jest": ^26.0.19
+    "@types/node": ^14.14.14
     "@vercel/ncc": ^0.24.0
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
     vscode-languageserver: ^6.1.1
   bin:
     samlang: ./bin/index.js
@@ -1729,14 +1783,14 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@dev-sam/samlang-demo@workspace:samlang-demo"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     "@vercel/ncc": ^0.24.0
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -2290,13 +2344,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jest@npm:^26.0.18":
-  version: 26.0.18
-  resolution: "@types/jest@npm:26.0.18"
+"@types/jest@npm:^26.0.19":
+  version: 26.0.19
+  resolution: "@types/jest@npm:26.0.19"
   dependencies:
     jest-diff: ^26.0.0
     pretty-format: ^26.0.0
-  checksum: 942433a3bebfcc88f0d7e9662ef2157826e8018b0c30191f9ca56bc75703652e614c5019d8bc43950abacf304777204e35d968a6e28a35ad98d9f1bdb9442390
+  checksum: 98c8daaf89ca79823461818c1c22d337354e250a135e0314ba1a49e615620c8e2f54c5b900ba8554bf853919c97538f9a38b5af00cea83fd715ee2e6d75e04b8
   languageName: node
   linkType: hard
 
@@ -2335,10 +2389,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^14.14.11":
-  version: 14.14.11
-  resolution: "@types/node@npm:14.14.11"
-  checksum: aa09069a4914819692278da742c11f629ce61ff40682e13afbc4421d0647107bffb6bcb8929d1cf8da22821779164078ae86a382f61324c9df7e1af8eaed567b
+"@types/node@npm:^14.14.14":
+  version: 14.14.14
+  resolution: "@types/node@npm:14.14.14"
+  checksum: dea8d257d49d68c65dafa6ebde9453bb61b67febc92ed8d7e38fce8b95f18d32ccffb3ab37021f9be8d1e5c65cd59cdb7dd8981d9b89b2be103b3012aee09fcf
   languageName: node
   linkType: hard
 
@@ -2386,12 +2440,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@typescript-eslint/eslint-plugin@npm:^4.9.1":
-  version: 4.9.1
-  resolution: "@typescript-eslint/eslint-plugin@npm:4.9.1"
+"@typescript-eslint/eslint-plugin@npm:^4.10.0":
+  version: 4.10.0
+  resolution: "@typescript-eslint/eslint-plugin@npm:4.10.0"
   dependencies:
-    "@typescript-eslint/experimental-utils": 4.9.1
-    "@typescript-eslint/scope-manager": 4.9.1
+    "@typescript-eslint/experimental-utils": 4.10.0
+    "@typescript-eslint/scope-manager": 4.10.0
     debug: ^4.1.1
     functional-red-black-tree: ^1.0.1
     regexpp: ^3.0.0
@@ -2403,66 +2457,66 @@ __metadata:
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: 8de2705aaf40252c16e0408e3eee5e04c2048608ab2a3e3a40d65057e7abd185c7fad33b3d586836dd670452ec008edcbb00055a565ce86e6621f3ea71f6ef24
+  checksum: 7c9ef88c112ad81b75697023f3e8df0bb69c33d130868003b55e02416a620ad0e95341576b10050d16d4e04a4c87b1721d762ad5367bc9c2d305a23ab4f94505
   languageName: node
   linkType: hard
 
-"@typescript-eslint/experimental-utils@npm:4.9.1":
-  version: 4.9.1
-  resolution: "@typescript-eslint/experimental-utils@npm:4.9.1"
+"@typescript-eslint/experimental-utils@npm:4.10.0":
+  version: 4.10.0
+  resolution: "@typescript-eslint/experimental-utils@npm:4.10.0"
   dependencies:
     "@types/json-schema": ^7.0.3
-    "@typescript-eslint/scope-manager": 4.9.1
-    "@typescript-eslint/types": 4.9.1
-    "@typescript-eslint/typescript-estree": 4.9.1
+    "@typescript-eslint/scope-manager": 4.10.0
+    "@typescript-eslint/types": 4.10.0
+    "@typescript-eslint/typescript-estree": 4.10.0
     eslint-scope: ^5.0.0
     eslint-utils: ^2.0.0
   peerDependencies:
     eslint: "*"
-  checksum: fee1f272addbcd453a8f477cd31bb62c6f445b0e7b642e99cb134aa3cfc72a691e51e5aacc5b70cc6f8f18d234f4c8bf1772d3abc683befa0d82f1efd6474cd0
+  checksum: 20dad7bdb6e0694cf6b89edd35d9568ac91e76f7ad84bb052a7e79c764a84ebfc32ecd14d924c34e5c0d9e07961d27cdc209858a7861199c771f10eb77bc801e
   languageName: node
   linkType: hard
 
-"@typescript-eslint/parser@npm:^4.9.1":
-  version: 4.9.1
-  resolution: "@typescript-eslint/parser@npm:4.9.1"
+"@typescript-eslint/parser@npm:^4.10.0":
+  version: 4.10.0
+  resolution: "@typescript-eslint/parser@npm:4.10.0"
   dependencies:
-    "@typescript-eslint/scope-manager": 4.9.1
-    "@typescript-eslint/types": 4.9.1
-    "@typescript-eslint/typescript-estree": 4.9.1
+    "@typescript-eslint/scope-manager": 4.10.0
+    "@typescript-eslint/types": 4.10.0
+    "@typescript-eslint/typescript-estree": 4.10.0
     debug: ^4.1.1
   peerDependencies:
     eslint: ^5.0.0 || ^6.0.0 || ^7.0.0
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: 61fc1b3e9bfd5056b46337bbea333eb0b86391232ff63669a4e5c08766e041f2cf05ab769374a1b8fde25728646e5b4441d992476cc66abab2a72289cdabfc5a
+  checksum: 8968583d8c789a2b3f33d9acc258297ddafc083eb339322f87402e21690a3e0b9c32926d3729a38b5c143af2702bda9d7d0531469ac11da068cf4004689c8e48
   languageName: node
   linkType: hard
 
-"@typescript-eslint/scope-manager@npm:4.9.1":
-  version: 4.9.1
-  resolution: "@typescript-eslint/scope-manager@npm:4.9.1"
+"@typescript-eslint/scope-manager@npm:4.10.0":
+  version: 4.10.0
+  resolution: "@typescript-eslint/scope-manager@npm:4.10.0"
   dependencies:
-    "@typescript-eslint/types": 4.9.1
-    "@typescript-eslint/visitor-keys": 4.9.1
-  checksum: 352c9c2dd8057210376a65aa753e330d3b6ed670a8686905acbd81d118062d4f0a5043b28bedf6340d6e29a386b58c8e9bee7732fca1d21fdab69dea1554b9db
+    "@typescript-eslint/types": 4.10.0
+    "@typescript-eslint/visitor-keys": 4.10.0
+  checksum: c320c086637a532400ce6e34aedb66e443b0e5ab725e814093a585419053f8e404aab8f7ea890f0866c2137fe7108b34f9c9216d8a74f4908f17b263d5086dd9
   languageName: node
   linkType: hard
 
-"@typescript-eslint/types@npm:4.9.1":
-  version: 4.9.1
-  resolution: "@typescript-eslint/types@npm:4.9.1"
-  checksum: e7c5094ce054e2443c4304b6fa35cae8937ffa04f32b0f32db71738671e0ec94a54f29e820745079067fdafa0061a58846b5cde4390f0a9804d5ca7075e89f76
+"@typescript-eslint/types@npm:4.10.0":
+  version: 4.10.0
+  resolution: "@typescript-eslint/types@npm:4.10.0"
+  checksum: e82f04695b11792e49c8b9fc60e289f337f7c31b68d04a6f2405163b8a85462eff683ad62e2694368432024f18cdc4d592fe048372774b6cb65057715e9c3105
   languageName: node
   linkType: hard
 
-"@typescript-eslint/typescript-estree@npm:4.9.1":
-  version: 4.9.1
-  resolution: "@typescript-eslint/typescript-estree@npm:4.9.1"
+"@typescript-eslint/typescript-estree@npm:4.10.0":
+  version: 4.10.0
+  resolution: "@typescript-eslint/typescript-estree@npm:4.10.0"
   dependencies:
-    "@typescript-eslint/types": 4.9.1
-    "@typescript-eslint/visitor-keys": 4.9.1
+    "@typescript-eslint/types": 4.10.0
+    "@typescript-eslint/visitor-keys": 4.10.0
     debug: ^4.1.1
     globby: ^11.0.1
     is-glob: ^4.0.1
@@ -2472,17 +2526,17 @@ __metadata:
   peerDependenciesMeta:
     typescript:
       optional: true
-  checksum: cb5ce82696ac4d7d8ce63a54dd522511d3231193d07be44b2456d9f22890c6cdbb03e531ec889629081d9e4a2c322566424246da02e2d82c80625eb346b91006
+  checksum: fbc87779af4fa59a5caae47a9429a2229303066c760db46e824d8bdb6d437e1c887d82e9bc85f89570189aacb899875f9b677cadd6b28fa47364ddd2b8f92268
   languageName: node
   linkType: hard
 
-"@typescript-eslint/visitor-keys@npm:4.9.1":
-  version: 4.9.1
-  resolution: "@typescript-eslint/visitor-keys@npm:4.9.1"
+"@typescript-eslint/visitor-keys@npm:4.10.0":
+  version: 4.10.0
+  resolution: "@typescript-eslint/visitor-keys@npm:4.10.0"
   dependencies:
-    "@typescript-eslint/types": 4.9.1
+    "@typescript-eslint/types": 4.10.0
     eslint-visitor-keys: ^2.0.0
-  checksum: 1b059e2ffd0432f588d13160a8f7d64dff30a8727e0c3c5c0235db1be8b13f08544b2eab8374157b8fbc77ad8f58e768ae3c5266d61275f275dc2cda8aad6717
+  checksum: e8d8057632a4aa5595769da14d41a19cbc4a6c02539e5c882b218b2f347445a397f9ef28ffc8b9eefa4d271bed39aa9e3adb182416840f1c73ecf59a0abac876
   languageName: node
   linkType: hard
 
@@ -4702,9 +4756,9 @@ fsevents@^2.1.2:
   languageName: node
   linkType: hard
 
-"husky@npm:^4.3.5":
-  version: 4.3.5
-  resolution: "husky@npm:4.3.5"
+"husky@npm:^4.3.6":
+  version: 4.3.6
+  resolution: "husky@npm:4.3.6"
   dependencies:
     chalk: ^4.0.0
     ci-info: ^2.0.0
@@ -4719,7 +4773,7 @@ fsevents@^2.1.2:
   bin:
     husky-run: bin/run.js
     husky-upgrade: lib/upgrader/bin.js
-  checksum: d15ccb44da39432bb5db1cd0c81eb169be25863bd4ff998c9ecf0c4e769e7d3fb547ed5044ae8b77050303841264bbe48aedf066afb1ee394bcbea4469e2d684
+  checksum: 3c8708887822c93094c4af22608df00a3bdd74784172d13cd08c5d1ed3e7a602f6016bce9982de206f060661f1ea801362edf5658c18fc4a3866d605c47ecaf9
   languageName: node
   linkType: hard
 
@@ -7276,26 +7330,26 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@babel/core": ^7.12.9
+    "@babel/core": ^7.12.10
     "@babel/preset-env": ^7.12.7
     "@babel/preset-typescript": ^7.12.7
     "@dev-sam/codegen-cli": ^0.0.2
-    "@dev-sam/eslint-config-common": 0.17.0
+    "@dev-sam/eslint-config-common": 0.19.0
     "@dev-sam/tssa": ^0.0.10
-    "@types/jest": ^26.0.18
-    "@types/node": ^14.14.11
-    "@typescript-eslint/eslint-plugin": ^4.9.1
-    "@typescript-eslint/parser": ^4.9.1
+    "@types/jest": ^26.0.19
+    "@types/node": ^14.14.14
+    "@typescript-eslint/eslint-plugin": ^4.10.0
+    "@typescript-eslint/parser": ^4.10.0
     babel-jest: ^26.6.3
     eslint: ^7.15.0
     eslint-import-resolver-node: ^0.3.4
     eslint-plugin-import: ^2.22.1
-    husky: ^4.3.5
+    husky: ^4.3.6
     jest: ^26.6.3
     lint-staged: ^10.5.3
     prettier: ^2.2.1
     ts-node: ^9.0.0
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7349,10 +7403,10 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-analysis@workspace:samlang-core-analysis"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7360,9 +7414,9 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-ast@workspace:samlang-core-ast"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7370,12 +7424,12 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-checker@workspace:samlang-core-checker"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7383,12 +7437,12 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-compiler@workspace:samlang-core-compiler"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     samlang-core-analysis: "workspace:0.0.1"
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-optimization: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7396,9 +7450,9 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-errors@workspace:samlang-core-errors"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     samlang-core-ast: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7406,7 +7460,7 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-integration-tests@workspace:samlang-core-integration-tests"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
@@ -7415,7 +7469,7 @@ resolve@^1.18.1:
     samlang-core-printer: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7423,12 +7477,12 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-interpreter@workspace:samlang-core-interpreter"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7436,11 +7490,11 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-optimization@workspace:samlang-core-optimization"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     samlang-core-analysis: "workspace:0.0.1"
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7448,11 +7502,11 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-parser-generated@workspace:samlang-core-parser-generated"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     antlr4ts: 0.5.0-alpha.3
     antlr4ts-cli: 0.5.0-alpha.3
     terser: ^5.3.2
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7460,13 +7514,13 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-parser@workspace:samlang-core-parser"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     antlr4ts: 0.5.0-alpha.3
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser-generated: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7474,12 +7528,12 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-printer@workspace:samlang-core-printer"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7487,7 +7541,7 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-services@workspace:samlang-core-services"
   dependencies:
-    "@types/jest": ^26.0.18
+    "@types/jest": ^26.0.19
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
@@ -7495,7 +7549,7 @@ resolve@^1.18.1:
     samlang-core-optimization: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.1.2
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -7503,8 +7557,8 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "samlang-core-utils@workspace:samlang-core-utils"
   dependencies:
-    "@types/jest": ^26.0.18
-    typescript: ^4.1.2
+    "@types/jest": ^26.0.19
+    typescript: ^4.1.3
   languageName: unknown
   linkType: soft
 
@@ -8373,23 +8427,23 @@ resolve@^1.18.1:
   languageName: node
   linkType: hard
 
-typescript@^4.1.2:
-  version: 4.1.2
-  resolution: "typescript@npm:4.1.2"
+typescript@^4.1.3:
+  version: 4.1.3
+  resolution: "typescript@npm:4.1.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: d2ac373b469e973448c7287d0fbc732dbd34d00d07911b9506bbf81469a80db6613361fc9293d021da357cb7c7da2ee32f56d8ef76446361231374200cd6aee9
+  checksum: 4f7ab1506ea22c7a1c313ec5b4285e93ce08d709ad6086d02d3096adb399ca339972ee56d1e578213c51dd0fb7b0fad50283c2d3c39642405644458ae29774f8
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^4.1.2#builtin<compat/typescript>":
-  version: 4.1.2
-  resolution: "typescript@patch:typescript@npm%3A4.1.2#builtin<compat/typescript>::version=4.1.2&hash=cc6730"
+"typescript@patch:typescript@^4.1.3#builtin<compat/typescript>":
+  version: 4.1.3
+  resolution: "typescript@patch:typescript@npm%3A4.1.3#builtin<compat/typescript>::version=4.1.3&hash=cc6730"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 001ab09bb8f597aab1ec43476aedb91b5d547749219273c232bf34cf5a2209d18fa782e64475755115f0907598bb9b503f5e1c0fed06c3651cac584fc88a8172
+  checksum: 017af992148346e671d5b83b041773825888e9c94db8d2b9472cdbb6d6f0ee85927817473121524d319f8be6ffe5a6904d27ff6ef21356d2274fcadd52e17938
   languageName: node
   linkType: hard
 
