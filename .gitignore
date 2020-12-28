@@ -1,5 +1,6 @@
-# GCC output
+# GCC/LLVM output
 *.o
+*.bc
 runtime/*.a
 
 # Extracted dependencies

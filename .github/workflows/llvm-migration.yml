@@ -12,4 +12,4 @@ jobs:
       - name: Compile to LLVM
         run: |
           cd runtime
-          make libsam/libsam.bc
+          make llvm

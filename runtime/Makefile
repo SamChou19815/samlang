@@ -9,6 +9,10 @@ LIBATOMICZIP = $(LIBATOMIC).tar.gz
 
 all: libsam.a
 
+llvm: $(GCLIB) libsam/libsam.bc
+	rm -f $@
+	cp $(GCLIB) $@
+
 libsam.a: $(GCLIB) libsam/libsam.o
 	rm -f $@
 	cp $(GCLIB) $@
