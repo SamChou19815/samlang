@@ -1,6 +1,6 @@
 # Boehm-Demers-Weiser collector
-GCLIBDIR = gc-7.6.4
-GCLIBZIP = gc-7.6.4.tar.gz
+GCLIBDIR = gc-8.0.4
+GCLIBZIP = gc-8.0.4.tar.gz
 GCLIB = $(GCLIBDIR)/.libs/libgc.a
 
 # libatomic_ops (dependency of Boehm GC)
@@ -25,7 +25,7 @@ libsam.a: $(GCLIB) libsam/libsam.o
 	clang -O3 -emit-llvm $< -c -o $@
 
 $(GCLIB): $(GCLIBDIR)/configure
-	cd $(GCLIBDIR); ./configure; make
+	cd $(GCLIBDIR); ./configure --enable-static=yes --enable-shared=no; make
 
 $(GCLIBDIR)/configure:
 	# extract and install dependencies

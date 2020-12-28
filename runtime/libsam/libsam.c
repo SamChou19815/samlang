@@ -9,7 +9,7 @@
 #include <sys/time.h>
 #include <inttypes.h>
 
-#include "../gc-7.6.4/include/gc.h"
+#include "../gc-8.0.4/include/gc.h"
 #define WORDSIZE 8
 
 /** Core runtime */
