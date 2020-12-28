@@ -1,7 +1,3 @@
-CFLAGS=-g -Wall -O2 -m64 -fno-stack-protector
-#CFLAGS=-g -Wall -O2 -fno-stack-protector
-CC=gcc
-
 # Boehm-Demers-Weiser collector
 GCLIBDIR = gc-7.6.4
 GCLIBZIP = gc-7.6.4.tar.gz
@@ -19,7 +15,10 @@ libsam.a: $(GCLIB) libsam/libsam.o
 	ar rcs $@ libsam/libsam.o
 
 %.o: %.c
-	gcc $(CFLAGS) -c -o $@ $<
+	gcc -g -Wall -O2 -m64 -c -o $@ $<
+
+%.bc: %.c
+	clang -O3 -emit-llvm $< -c -o $@
 
 $(GCLIB): $(GCLIBDIR)/configure
 	cd $(GCLIBDIR); ./configure; make
