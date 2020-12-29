@@ -1,0 +1,15 @@
+name: Runtime
+on:
+  pull_request:
+    paths:
+      - 'runtime/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Install LLVM
+        run: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+      - name: Compile runtime
+        run: cd runtime && make

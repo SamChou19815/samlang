@@ -9,7 +9,7 @@
 #include <sys/time.h>
 #include <inttypes.h>
 
-#include "../gc-8.0.4/include/gc.h"
+#include "./gc.h"
 #define WORDSIZE 8
 
 /** Core runtime */
@@ -23,16 +23,11 @@ void* SAMLANG_BUILTIN(malloc)(samlang_int size) {
          * code written in Xi (in other words, we can't rely
          * on main() to do the initialization)
          */
-        GC_INIT();
-        GC_set_all_interior_pointers(1);
+        gc_init();
         GC_ready = 1;
     }
 
 	return (int64_t *) GC_malloc(size);
-}
-
-void registerFinalizer(void* object, Finalizer* fin) {
-    GC_register_finalizer_ignore_self(object, fin, 0, 0, 0);
 }
 
 // Internal helper for making arrays
