@@ -1,11 +1,7 @@
 # GCC/LLVM output
 *.o
-*.bc
 runtime/*.a
-
-# Extracted dependencies
-runtime/gc-8.0.4
-!runtime/deps/*.gz
+runtime/libsam/*.bc
 
 # Node
 node_modules
