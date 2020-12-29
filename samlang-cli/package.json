@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@types/jest": "^26.0.19",
-    "@types/node": "^14.14.14",
+    "@types/node": "^14.14.16",
     "@vercel/ncc": "^0.24.0",
     "samlang-core-ast": "workspace:0.0.1",
     "samlang-core-compiler": "workspace:0.0.1",
