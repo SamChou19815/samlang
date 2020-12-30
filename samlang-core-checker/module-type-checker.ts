@@ -21,7 +21,7 @@ export default class ModuleTypeChecker {
 
   typeCheck(
     samlangmodule: SamlangModule,
-    classes: Record<string, ClassTypingContext | undefined>
+    classes: Readonly<Record<string, ClassTypingContext>>
   ): SamlangModule {
     this.checkNameCollisionForCompoundList(
       samlangmodule.classes.map(({ name, nameRange }) => [name, nameRange])
