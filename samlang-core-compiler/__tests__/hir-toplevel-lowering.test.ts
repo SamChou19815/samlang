@@ -29,7 +29,10 @@ import {
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { mapOf } from 'samlang-core-utils';
 
-const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Dummy') });
+const THIS = EXPRESSION_THIS({
+  range: Range.DUMMY,
+  type: identifierType(ModuleReference.ROOT, 'Dummy'),
+});
 
 it('compileSamlangSourcesToHighIRSources integration test', () => {
   const sourceModule: SamlangModule = {

@@ -26,6 +26,7 @@ const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
           return meetWithUndecidedType(t1, t2, resolution);
         case 'IdentifierType':
           if (
+            t1.moduleReference.toString() !== t2.moduleReference.toString() ||
             t1.identifier !== t2.identifier ||
             t1.typeArguments.length !== t2.typeArguments.length
           ) {
@@ -33,6 +34,7 @@ const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
           }
           return {
             type: 'IdentifierType',
+            moduleReference: t1.moduleReference,
             identifier: t1.identifier,
             typeArguments: t1.typeArguments.map((type, index) =>
               meetWithResolution(type, checkNotNull(t2.typeArguments[index]))

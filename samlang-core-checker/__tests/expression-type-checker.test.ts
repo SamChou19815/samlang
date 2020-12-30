@@ -55,6 +55,7 @@ const typeCheckInSandbox = (
   const globalErrorCollector = createGlobalErrorCollector();
   const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(dummyModuleReference);
   const accessibleGlobalTypingContext: AccessibleGlobalTypingContext = new AccessibleGlobalTypingContext(
+    dummyModuleReference,
     {
       Test: {
         typeParameters: [],
@@ -99,7 +100,7 @@ const typeCheckInSandbox = (
           type: 'object',
           names: ['foo', 'bar'],
           mappings: {
-            foo: { isPublic: true, type: identifierType('E') },
+            foo: { isPublic: true, type: identifierType(dummyModuleReference, 'E') },
             bar: { isPublic: false, type: int },
           },
         },
@@ -113,7 +114,7 @@ const typeCheckInSandbox = (
           type: 'variant',
           names: ['Foo', 'Bar'],
           mappings: {
-            Foo: { isPublic: true, type: identifierType('E') },
+            Foo: { isPublic: true, type: identifierType(dummyModuleReference, 'E') },
             Bar: { isPublic: true, type: int },
           },
         },
@@ -126,7 +127,11 @@ const typeCheckInSandbox = (
   );
 
   // Parse
-  const parsedExpression = parseSamlangExpressionFromText(source, moduleErrorCollector);
+  const parsedExpression = parseSamlangExpressionFromText(
+    source,
+    dummyModuleReference,
+    moduleErrorCollector
+  );
   assertNotNull(parsedExpression);
   expect(globalErrorCollector.getErrors()).toEqual([]);
 
@@ -205,7 +210,9 @@ it('Literal', () => {
 });
 
 it('This', () => {
-  assertTypeChecks('this', identifierType('Test'), undefined, [['this', identifierType('Test')]]);
+  assertTypeChecks('this', identifierType(dummyModuleReference, 'Test'), undefined, [
+    ['this', identifierType(dummyModuleReference, 'Test')],
+  ]);
 
   assertTypeErrors('this', int, [
     'Test.sam:1:1-1:5: [IllegalThis]: Keyword `this` cannot be used in this context.',
@@ -243,26 +250,26 @@ it('TupleConstructor', () => {
 });
 
 it('FieldConstructor', () => {
-  assertTypeChecks('{foo:true,bar:3}', identifierType('Test'));
-  assertTypeChecks('{ val foo=true; {foo,bar:3} }', identifierType('Test'));
+  assertTypeChecks('{foo:true,bar:3}', identifierType(dummyModuleReference, 'Test'));
+  assertTypeChecks('{ val foo=true; {foo,bar:3} }', identifierType(dummyModuleReference, 'Test'));
   assertTypeChecks(
     '{ val foo=true; {foo,bar:3} }',
-    identifierType('Test3', [bool]),
+    identifierType(dummyModuleReference, 'Test3', [bool]),
     undefined,
     undefined,
     'Test3'
   );
 
-  assertTypeErrors('{foo:true,bar:3,foo:true}', identifierType('Test'), [
+  assertTypeErrors('{foo:true,bar:3,foo:true}', identifierType(dummyModuleReference, 'Test'), [
     'Test.sam:1:17-1:20: [DuplicateFieldDeclaration]: Field name `foo` is declared twice.',
   ]);
-  assertTypeErrors('{foo:true,bar:3,baz:true}', identifierType('Test'), [
+  assertTypeErrors('{foo:true,bar:3,baz:true}', identifierType(dummyModuleReference, 'Test'), [
     'Test.sam:1:1-1:26: [InconsistentFieldsInObject]: Inconsistent fields. Expected: `bar, foo`, actual: `bar, baz, foo`.',
   ]);
-  assertTypeErrors('{foo:true,bar:false}', identifierType('Test'), [
+  assertTypeErrors('{foo:true,bar:false}', identifierType(dummyModuleReference, 'Test'), [
     'Test.sam:1:11-1:14: [UnexpectedType]: Expected: `int`, actual: `bool`.',
   ]);
-  assertTypeErrors('{ val foo=3; {foo,bar:3} }', identifierType('Test'), [
+  assertTypeErrors('{ val foo=3; {foo,bar:3} }', identifierType(dummyModuleReference, 'Test'), [
     'Test.sam:1:15-1:18: [UnexpectedType]: Expected: `bool`, actual: `int`.',
   ]);
   assertTypeErrors('{foo:true,bar:3}', int, [
@@ -271,7 +278,7 @@ it('FieldConstructor', () => {
   ]);
   assertTypeErrors(
     '{ val foo=true; {foo,bar:3} }',
-    identifierType('Test2', [bool]),
+    identifierType(dummyModuleReference, 'Test2', [bool]),
     [
       "Test.sam:1:17-1:28: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
     ],
@@ -281,19 +288,37 @@ it('FieldConstructor', () => {
 });
 
 it('VariantConstructor', () => {
-  assertTypeChecks('Foo(true)', identifierType('Test2'), undefined, undefined, 'Test2');
-  assertTypeChecks('Bar(42)', identifierType('Test2'), undefined, undefined, 'Test2');
-  assertTypeChecks('Foo(true)}', identifierType('Test4', [bool]), undefined, undefined, 'Test4');
+  assertTypeChecks(
+    'Foo(true)',
+    identifierType(dummyModuleReference, 'Test2'),
+    undefined,
+    undefined,
+    'Test2'
+  );
+  assertTypeChecks(
+    'Bar(42)',
+    identifierType(dummyModuleReference, 'Test2'),
+    undefined,
+    undefined,
+    'Test2'
+  );
+  assertTypeChecks(
+    'Foo(true)}',
+    identifierType(dummyModuleReference, 'Test4', [bool]),
+    undefined,
+    undefined,
+    'Test4'
+  );
 
-  assertTypeErrors('Foo(true)', identifierType('Test2'), [
+  assertTypeErrors('Foo(true)', identifierType(dummyModuleReference, 'Test2'), [
     "Test.sam:1:1-1:10: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
   ]);
-  assertTypeErrors('Bar(42)', identifierType('Test2'), [
+  assertTypeErrors('Bar(42)', identifierType(dummyModuleReference, 'Test2'), [
     "Test.sam:1:1-1:8: [UnsupportedClassTypeDefinition]: Expect the current class to have `variant` type definition, but it doesn't.",
   ]);
   assertTypeErrors(
     'Tars(42)',
-    identifierType('Test2'),
+    identifierType(dummyModuleReference, 'Test2'),
     ['Test.sam:1:1-1:9: [UnresolvedName]: Name `Tars` is not resolved.'],
     undefined,
     'Test2'

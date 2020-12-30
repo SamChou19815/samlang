@@ -12,7 +12,9 @@ it('Can parse good expressions.', () => {
     text: string,
     expected: SamlangExpression['__type__']
   ): void => {
-    expect(parseSamlangExpressionFromText(text, moduleErrorCollector)?.__type__).toBe(expected);
+    expect(
+      parseSamlangExpressionFromText(text, ModuleReference.ROOT, moduleErrorCollector)?.__type__
+    ).toBe(expected);
   };
 
   expectASTWithTheSameKind('true /* nothing here */', 'LiteralExpression');
@@ -80,7 +82,7 @@ it('Can report bad expressions.', () => {
   const expectBadAST = (text: string): void => {
     const globalErrorCollector = createGlobalErrorCollector();
     const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.ROOT);
-    parseSamlangExpressionFromText(text, moduleErrorCollector);
+    parseSamlangExpressionFromText(text, ModuleReference.ROOT, moduleErrorCollector);
     expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
   };
 
@@ -176,6 +178,7 @@ it('Can parse good programs.', () => {
       }
     }
     `,
+    ModuleReference.ROOT,
     moduleErrorCollector
   );
   if (parsed == null) {
@@ -209,6 +212,7 @@ it('Can handle bad programs.', () => {
       }
     }
     `,
+    ModuleReference.ROOT,
     moduleErrorCollector
   );
   if (parsed == null) {
@@ -241,6 +245,7 @@ it('Can handle really bad programs.', () => {
       }
     }
     `,
+    ModuleReference.ROOT,
     moduleErrorCollector
   );
   expect(parsed.imports).toEqual([]);

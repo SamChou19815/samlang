@@ -52,7 +52,7 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 
-const DUMMY_IDENTIFIER_TYPE = identifierType('Dummy');
+const DUMMY_IDENTIFIER_TYPE = identifierType(ModuleReference.ROOT, 'Dummy');
 const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE });
 const IR_THIS = HIR_VARIABLE('_this', DUMMY_IDENTIFIER_TYPE);
 
@@ -147,7 +147,7 @@ it('Lowering to StructConstructor works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType('Foo'),
+      type: identifierType(ModuleReference.ROOT, 'Foo'),
       fieldDeclarations: [
         { range: Range.DUMMY, type: unitType, name: 'foo', expression: THIS },
         { range: Range.DUMMY, type: unitType, name: 'bar' },
@@ -167,7 +167,7 @@ it('Lowering to StructConstructor works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType('Foo'),
+      type: identifierType(ModuleReference.ROOT, 'Foo'),
       tag: 'Foo',
       tagOrder: 1,
       data: THIS,

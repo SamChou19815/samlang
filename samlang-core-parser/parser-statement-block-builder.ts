@@ -1,7 +1,7 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
 import patternBuilder from './parser-pattern-builder';
-import typeBuilder from './parser-type-builder';
+import type TypeBuilder from './parser-type-builder';
 import { contextRange } from './parser-util';
 
 import { UndecidedTypes } from 'samlang-core-ast/common-nodes';
@@ -22,7 +22,8 @@ class StatementBuilder
   extends AbstractParseTreeVisitor<SamlangValStatement | null>
   implements PLVisitor<SamlangValStatement | null> {
   constructor(
-    private readonly expressionBuilder: (context: ExpressionContext) => SamlangExpression | null
+    private readonly expressionBuilder: (context: ExpressionContext) => SamlangExpression | null,
+    private readonly typeBuilder: TypeBuilder
   ) {
     super();
   }
@@ -41,7 +42,7 @@ class StatementBuilder
       range: contextRange(patternContext),
     };
     const typeAnnotation =
-      ctx.typeAnnotation()?.typeExpr()?.accept(typeBuilder) ?? UndecidedTypes.next();
+      ctx.typeAnnotation()?.typeExpr()?.accept(this.typeBuilder) ?? UndecidedTypes.next();
 
     return { range: contextRange(ctx), pattern, typeAnnotation, assignedExpression };
   };
@@ -53,10 +54,11 @@ export default class StatementBlockBuilder
   private readonly statementBuilder: StatementBuilder;
 
   constructor(
-    private readonly expressionBuilder: (context: ExpressionContext) => SamlangExpression
+    private readonly expressionBuilder: (context: ExpressionContext) => SamlangExpression,
+    typeBuilder: TypeBuilder
   ) {
     super();
-    this.statementBuilder = new StatementBuilder(expressionBuilder);
+    this.statementBuilder = new StatementBuilder(expressionBuilder, typeBuilder);
   }
 
   // istanbul ignore next

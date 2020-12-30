@@ -7,7 +7,7 @@ import {
   ClassTypingContext,
 } from './typing-context';
 
-import type { Range } from 'samlang-core-ast/common-nodes';
+import type { ModuleReference, Range } from 'samlang-core-ast/common-nodes';
 import type {
   ClassMemberDefinition,
   TypeDefinition,
@@ -17,7 +17,10 @@ import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { assertNotNull, isNotNull } from 'samlang-core-utils';
 
 export default class ModuleTypeChecker {
-  constructor(private readonly errorCollector: ModuleErrorCollector) {}
+  constructor(
+    private readonly moduleReference: ModuleReference,
+    private readonly errorCollector: ModuleErrorCollector
+  ) {}
 
   typeCheck(
     samlangmodule: SamlangModule,
@@ -30,6 +33,7 @@ export default class ModuleTypeChecker {
     const checkedClasses = samlangmodule.classes.map((classDefinition) => {
       const currentClass = classDefinition.name;
       const accessibleGlobalTypingContext = new AccessibleGlobalTypingContext(
+        this.moduleReference,
         classes,
         new Set(classDefinition.typeParameters),
         currentClass

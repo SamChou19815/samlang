@@ -10,6 +10,7 @@ import {
   identifierType,
   tupleType,
   functionType,
+  ModuleReference,
 } from 'samlang-core-ast/common-nodes';
 
 // eslint-disable-next-line import/prefer-default-export
@@ -47,12 +48,12 @@ it('Undecided types will always be resolved', () => {
 it('Recursive types will be resolved', () => {
   expect(
     resolve(
-      identifierType('A', [
+      identifierType(ModuleReference.ROOT, 'A', [
         { type: 'UndecidedType', index: 0 },
         { type: 'UndecidedType', index: 1 },
       ])
     )
-  ).toEqual(identifierType('A', [unitType, boolType]));
+  ).toEqual(identifierType(ModuleReference.ROOT, 'A', [unitType, boolType]));
 
   expect(
     resolve(

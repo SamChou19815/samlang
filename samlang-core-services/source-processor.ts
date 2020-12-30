@@ -19,7 +19,11 @@ export const parseSources = (
   return sourceHandles
     .map(([moduleReference, sourceString]) => {
       const moduleErrorCollector = errorCollector.getModuleErrorCollector(moduleReference);
-      const parsed = parseSamlangModuleFromText(sourceString, moduleErrorCollector);
+      const parsed = parseSamlangModuleFromText(
+        sourceString,
+        moduleReference,
+        moduleErrorCollector
+      );
       return moduleErrorCollector.hasErrors ? null : ([moduleReference, parsed] as const);
     })
     .filter(isNotNull);
@@ -40,7 +44,11 @@ export const checkSources = (
       ([moduleReference, text]) =>
         [
           moduleReference,
-          parseSamlangModuleFromText(text, errorCollector.getModuleErrorCollector(moduleReference)),
+          parseSamlangModuleFromText(
+            text,
+            moduleReference,
+            errorCollector.getModuleErrorCollector(moduleReference)
+          ),
         ] as const
     )
   );

@@ -1,14 +1,26 @@
 import replaceTypeIdentifier from '../type-identifier-replacer';
 
-import { intType, identifierType, tupleType, functionType } from 'samlang-core-ast/common-nodes';
+import {
+  intType,
+  identifierType,
+  tupleType,
+  functionType,
+  ModuleReference,
+} from 'samlang-core-ast/common-nodes';
 
 it('can replace deeply nested identifiers', () => {
   expect(
     replaceTypeIdentifier(
       functionType(
         [
-          identifierType('A', [identifierType('B'), identifierType('C', [intType])]),
-          tupleType([identifierType('D'), identifierType('E', [identifierType('F')])]),
+          identifierType(ModuleReference.ROOT, 'A', [
+            identifierType(ModuleReference.ROOT, 'B'),
+            identifierType(ModuleReference.ROOT, 'C', [intType]),
+          ]),
+          tupleType([
+            identifierType(ModuleReference.ROOT, 'D'),
+            identifierType(ModuleReference.ROOT, 'E', [identifierType(ModuleReference.ROOT, 'F')]),
+          ]),
           { type: 'UndecidedType', index: 0 },
         ],
         intType
@@ -18,8 +30,14 @@ it('can replace deeply nested identifiers', () => {
   ).toEqual(
     functionType(
       [
-        identifierType('A', [intType, identifierType('C', [intType])]),
-        tupleType([intType, identifierType('E', [identifierType('F')])]),
+        identifierType(ModuleReference.ROOT, 'A', [
+          intType,
+          identifierType(ModuleReference.ROOT, 'C', [intType]),
+        ]),
+        tupleType([
+          intType,
+          identifierType(ModuleReference.ROOT, 'E', [identifierType(ModuleReference.ROOT, 'F')]),
+        ]),
         { type: 'UndecidedType', index: 0 },
       ],
       intType

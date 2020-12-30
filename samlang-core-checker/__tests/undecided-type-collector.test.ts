@@ -6,6 +6,7 @@ import {
   tupleType,
   identifierType,
   functionType,
+  ModuleReference,
 } from 'samlang-core-ast/common-nodes';
 
 it('can collect all undecided types', () => {
@@ -14,7 +15,10 @@ it('can collect all undecided types', () => {
       collectUndecidedTypeIndices(
         functionType(
           [
-            identifierType('A', [boolType, { type: 'UndecidedType', index: 0 }]),
+            identifierType(ModuleReference.ROOT, 'A', [
+              boolType,
+              { type: 'UndecidedType', index: 0 },
+            ]),
             unitType,
             unitType,
             tupleType([{ type: 'UndecidedType', index: 1 }]),

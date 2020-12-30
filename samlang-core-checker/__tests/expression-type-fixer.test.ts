@@ -13,6 +13,7 @@ import {
   tupleType,
   functionType,
   Range,
+  ModuleReference,
 } from 'samlang-core-ast/common-nodes';
 import { MUL, LT, AND, EQ, CONCAT } from 'samlang-core-ast/common-operators';
 import {
@@ -189,7 +190,7 @@ it('Object constructors are correctly resolved', () => {
   assertCorrectlyFixed(
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType('A', [intType, boolType]),
+      type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
       fieldDeclarations: [
         { range: Range.DUMMY, name: 'a', type: intType },
         { range: Range.DUMMY, name: 'b', type: boolType, expression: EXPRESSION_TRUE(Range.DUMMY) },
@@ -197,7 +198,7 @@ it('Object constructors are correctly resolved', () => {
     }),
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType('A', [
+      type: identifierType(ModuleReference.ROOT, 'A', [
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 1 },
       ]),
@@ -211,13 +212,13 @@ it('Object constructors are correctly resolved', () => {
         },
       ],
     }),
-    identifierType('A', [intType, boolType])
+    identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
   );
 
   assertThrows(
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType('A', [{ type: 'UndecidedType', index: 2 }]),
+      type: identifierType(ModuleReference.ROOT, 'A', [{ type: 'UndecidedType', index: 2 }]),
       fieldDeclarations: [
         { range: Range.DUMMY, name: 'a', type: { type: 'UndecidedType', index: 2 } },
         {
@@ -228,13 +229,13 @@ it('Object constructors are correctly resolved', () => {
         },
       ],
     }),
-    identifierType('A', [intType, boolType])
+    identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
   );
 
   assertThrows(
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType('A', [
+      type: identifierType(ModuleReference.ROOT, 'A', [
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 3 },
       ]),
@@ -248,7 +249,7 @@ it('Object constructors are correctly resolved', () => {
         },
       ],
     }),
-    identifierType('A', [intType, boolType])
+    identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
   );
 });
 
@@ -256,14 +257,14 @@ it('Variant constructors are correctly resolved.', () => {
   assertCorrectlyFixed(
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType('A', [intType, boolType]),
+      type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
       tag: 'Foo',
       tagOrder: 0,
       data: EXPRESSION_INT(Range.DUMMY, BigInt(1)),
     }),
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType('A', [
+      type: identifierType(ModuleReference.ROOT, 'A', [
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 1 },
       ]),
@@ -271,24 +272,24 @@ it('Variant constructors are correctly resolved.', () => {
       tagOrder: 0,
       data: EXPRESSION_INT(Range.DUMMY, BigInt(1)),
     }),
-    identifierType('A', [intType, boolType])
+    identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
   );
 
   assertThrows(
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType('A', [{ type: 'UndecidedType', index: 2 }]),
+      type: identifierType(ModuleReference.ROOT, 'A', [{ type: 'UndecidedType', index: 2 }]),
       tag: 'Foo',
       tagOrder: 0,
       data: EXPRESSION_INT(Range.DUMMY, BigInt(1)),
     }),
-    identifierType('A', [intType, boolType])
+    identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
   );
 
   assertThrows(
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType('A', [
+      type: identifierType(ModuleReference.ROOT, 'A', [
         { type: 'UndecidedType', index: 1 },
         { type: 'UndecidedType', index: 2 },
       ]),
@@ -296,7 +297,7 @@ it('Variant constructors are correctly resolved.', () => {
       tagOrder: 0,
       data: EXPRESSION_INT(Range.DUMMY, BigInt(1)),
     }),
-    identifierType('A', [intType, boolType])
+    identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
   );
 });
 
@@ -305,14 +306,20 @@ it('Field accesses are correctly resolved.', () => {
     EXPRESSION_FIELD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], intType),
-      expression: EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Foo') }),
+      expression: EXPRESSION_THIS({
+        range: Range.DUMMY,
+        type: identifierType(ModuleReference.ROOT, 'Foo'),
+      }),
       fieldName: 'bar',
       fieldOrder: 1,
     }),
     EXPRESSION_FIELD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], { type: 'UndecidedType', index: 2 }),
-      expression: EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Foo') }),
+      expression: EXPRESSION_THIS({
+        range: Range.DUMMY,
+        type: identifierType(ModuleReference.ROOT, 'Foo'),
+      }),
       fieldName: 'bar',
       fieldOrder: 1,
     }),
@@ -323,7 +330,10 @@ it('Field accesses are correctly resolved.', () => {
     EXPRESSION_METHOD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], { type: 'UndecidedType', index: 3 }),
-      expression: EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Foo') }),
+      expression: EXPRESSION_THIS({
+        range: Range.DUMMY,
+        type: identifierType(ModuleReference.ROOT, 'Foo'),
+      }),
       methodName: 'bar',
     }),
     functionType([], intType)
@@ -335,13 +345,19 @@ it('Method accesses are correctly resolved.', () => {
     EXPRESSION_METHOD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], intType),
-      expression: EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Foo') }),
+      expression: EXPRESSION_THIS({
+        range: Range.DUMMY,
+        type: identifierType(ModuleReference.ROOT, 'Foo'),
+      }),
       methodName: 'bar',
     }),
     EXPRESSION_METHOD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], { type: 'UndecidedType', index: 2 }),
-      expression: EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Foo') }),
+      expression: EXPRESSION_THIS({
+        range: Range.DUMMY,
+        type: identifierType(ModuleReference.ROOT, 'Foo'),
+      }),
       methodName: 'bar',
     }),
     functionType([], intType)
@@ -351,7 +367,10 @@ it('Method accesses are correctly resolved.', () => {
     EXPRESSION_METHOD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], { type: 'UndecidedType', index: 3 }),
-      expression: EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('Foo') }),
+      expression: EXPRESSION_THIS({
+        range: Range.DUMMY,
+        type: identifierType(ModuleReference.ROOT, 'Foo'),
+      }),
       methodName: 'bar',
     }),
     functionType([], intType)
@@ -753,7 +772,10 @@ it('Match expressions are correctly resolved.', () => {
     EXPRESSION_MATCH({
       range: Range.DUMMY,
       type: intType,
-      matchedExpression: EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('A') }),
+      matchedExpression: EXPRESSION_THIS({
+        range: Range.DUMMY,
+        type: identifierType(ModuleReference.ROOT, 'A'),
+      }),
       matchingList: [
         {
           range: Range.DUMMY,
@@ -766,7 +788,10 @@ it('Match expressions are correctly resolved.', () => {
     EXPRESSION_MATCH({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
-      matchedExpression: EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('A') }),
+      matchedExpression: EXPRESSION_THIS({
+        range: Range.DUMMY,
+        type: identifierType(ModuleReference.ROOT, 'A'),
+      }),
       matchingList: [
         {
           range: Range.DUMMY,
@@ -787,7 +812,10 @@ it('Match expressions are correctly resolved.', () => {
     EXPRESSION_MATCH({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
-      matchedExpression: EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('A') }),
+      matchedExpression: EXPRESSION_THIS({
+        range: Range.DUMMY,
+        type: identifierType(ModuleReference.ROOT, 'A'),
+      }),
       matchingList: [
         {
           range: Range.DUMMY,
@@ -808,7 +836,10 @@ it('Match expressions are correctly resolved.', () => {
     EXPRESSION_MATCH({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
-      matchedExpression: EXPRESSION_THIS({ range: Range.DUMMY, type: identifierType('A') }),
+      matchedExpression: EXPRESSION_THIS({
+        range: Range.DUMMY,
+        type: identifierType(ModuleReference.ROOT, 'A'),
+      }),
       matchingList: [
         {
           range: Range.DUMMY,

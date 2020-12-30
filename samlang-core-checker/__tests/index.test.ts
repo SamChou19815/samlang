@@ -94,19 +94,35 @@ it('typeCheckSources integration smoke test (passing case)', () => {
   const sources = hashMapOf(
     [
       moduleReferenceA,
-      parseSamlangModuleFromText(sourceA, errorCollector.getModuleErrorCollector(moduleReferenceA)),
+      parseSamlangModuleFromText(
+        sourceA,
+        moduleReferenceA,
+        errorCollector.getModuleErrorCollector(moduleReferenceA)
+      ),
     ],
     [
       moduleReferenceB,
-      parseSamlangModuleFromText(sourceB, errorCollector.getModuleErrorCollector(moduleReferenceB)),
+      parseSamlangModuleFromText(
+        sourceB,
+        moduleReferenceB,
+        errorCollector.getModuleErrorCollector(moduleReferenceB)
+      ),
     ],
     [
       moduleReferenceC,
-      parseSamlangModuleFromText(sourceC, errorCollector.getModuleErrorCollector(moduleReferenceC)),
+      parseSamlangModuleFromText(
+        sourceC,
+        moduleReferenceC,
+        errorCollector.getModuleErrorCollector(moduleReferenceC)
+      ),
     ],
     [
       moduleReferenceD,
-      parseSamlangModuleFromText(sourceD, errorCollector.getModuleErrorCollector(moduleReferenceD)),
+      parseSamlangModuleFromText(
+        sourceD,
+        moduleReferenceD,
+        errorCollector.getModuleErrorCollector(moduleReferenceD)
+      ),
     ]
   );
 
@@ -167,19 +183,35 @@ it('typeCheckSources smoke test (failing case)', () => {
   const sources = mapOf(
     [
       moduleReferenceA,
-      parseSamlangModuleFromText(sourceA, errorCollector.getModuleErrorCollector(moduleReferenceA)),
+      parseSamlangModuleFromText(
+        sourceA,
+        moduleReferenceA,
+        errorCollector.getModuleErrorCollector(moduleReferenceA)
+      ),
     ],
     [
       moduleReferenceB,
-      parseSamlangModuleFromText(sourceB, errorCollector.getModuleErrorCollector(moduleReferenceB)),
+      parseSamlangModuleFromText(
+        sourceB,
+        moduleReferenceB,
+        errorCollector.getModuleErrorCollector(moduleReferenceB)
+      ),
     ],
     [
       moduleReferenceC,
-      parseSamlangModuleFromText(sourceC, errorCollector.getModuleErrorCollector(moduleReferenceC)),
+      parseSamlangModuleFromText(
+        sourceC,
+        moduleReferenceC,
+        errorCollector.getModuleErrorCollector(moduleReferenceC)
+      ),
     ],
     [
       moduleReferenceD,
-      parseSamlangModuleFromText(sourceD, errorCollector.getModuleErrorCollector(moduleReferenceD)),
+      parseSamlangModuleFromText(
+        sourceD,
+        moduleReferenceD,
+        errorCollector.getModuleErrorCollector(moduleReferenceD)
+      ),
     ]
   );
 
@@ -208,6 +240,7 @@ it('typeCheckSingleModuleSource smoke test', () => {
   const checkedModule = typeCheckSingleModuleSource_EXPOSED_FOR_TESTING(
     parseSamlangModuleFromText(
       'class Main {}',
+      new ModuleReference(['Test']),
       errorCollector.getModuleErrorCollector(new ModuleReference(['Test']))
     ),
     errorCollector

@@ -12,6 +12,7 @@ import {
   identifierType,
   tupleType,
   functionType,
+  ModuleReference,
 } from 'samlang-core-ast/common-nodes';
 import type {
   SingleIdentifierTypeContext,
@@ -22,7 +23,13 @@ import type {
 import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
-class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVisitor<Type | null> {
+export default class TypeBuilder
+  extends AbstractParseTreeVisitor<Type | null>
+  implements PLVisitor<Type | null> {
+  constructor(private readonly resolveClass: (className: string) => ModuleReference) {
+    super();
+  }
+
   defaultResult = (): Type | null => null;
 
   visitUnitType = (): Type => unitType;
@@ -38,13 +45,13 @@ class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVis
     assertNotNull(identifier);
     const typeParametersContext = ctx.typeParameters();
     if (typeParametersContext == null) {
-      return identifierType(identifier);
+      return identifierType(this.resolveClass(identifier), identifier);
     }
     const typeArguments = typeParametersContext
       .typeExpr()
       .map((it) => it.accept(this))
       .filter(isNotNull);
-    return identifierType(identifier, typeArguments);
+    return identifierType(this.resolveClass(identifier), identifier, typeArguments);
   };
 
   visitTupleType = (ctx: TupleTypeContext): TupleType =>
@@ -74,6 +81,3 @@ class TypeBuilder extends AbstractParseTreeVisitor<Type | null> implements PLVis
     return functionType([], returnType);
   };
 }
-
-const typeBuilder = new TypeBuilder();
-export default typeBuilder;

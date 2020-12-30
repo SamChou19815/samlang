@@ -7,11 +7,14 @@ import {
   identifierType,
   tupleType,
   functionType,
+  ModuleReference,
 } from 'samlang-core-ast/common-nodes';
 
 it('will throw on undecided type', () => {
   expect(() => undecideTypeParameters(UndecidedTypes.next(), [])).toThrow();
-  expect(() => undecideTypeParameters(identifierType('A', [UndecidedTypes.next()]), [])).toThrow();
+  expect(() =>
+    undecideTypeParameters(identifierType(ModuleReference.ROOT, 'A', [UndecidedTypes.next()]), [])
+  ).toThrow();
 });
 
 it('can undecide big nested type', () => {
@@ -21,19 +24,25 @@ it('can undecide big nested type', () => {
     undecideTypeParameters(
       functionType(
         [
-          identifierType('A', [boolType, identifierType('T1')]),
+          identifierType(ModuleReference.ROOT, 'A', [
+            boolType,
+            identifierType(ModuleReference.ROOT, 'T1'),
+          ]),
           unitType,
           unitType,
-          tupleType([identifierType('T2')]),
+          tupleType([identifierType(ModuleReference.ROOT, 'T2')]),
         ],
-        tupleType([identifierType('T3'), identifierType('T4')])
+        tupleType([
+          identifierType(ModuleReference.ROOT, 'T3'),
+          identifierType(ModuleReference.ROOT, 'T4'),
+        ])
       ),
       ['T1', 'T2', 'T3', 'T4']
     )[0]
   ).toEqual(
     functionType(
       [
-        identifierType('A', [boolType, { type: 'UndecidedType', index: 0 }]),
+        identifierType(ModuleReference.ROOT, 'A', [boolType, { type: 'UndecidedType', index: 0 }]),
         unitType,
         unitType,
         tupleType([{ type: 'UndecidedType', index: 1 }]),
@@ -49,15 +58,17 @@ it('can undecide big nested type', () => {
 it("will avoid undeciding identifier that should't be undecided", () => {
   UndecidedTypes.resetUndecidedTypeIndex_ONLY_FOR_TEST();
 
-  expect(undecideTypeParameters(identifierType('A', [boolType]), ['A'])[0]).toEqual(
-    identifierType('A', [boolType])
+  expect(
+    undecideTypeParameters(identifierType(ModuleReference.ROOT, 'A', [boolType]), ['A'])[0]
+  ).toEqual(identifierType(ModuleReference.ROOT, 'A', [boolType]));
+
+  expect(undecideTypeParameters(identifierType(ModuleReference.ROOT, 'A', []), [])[0]).toEqual(
+    identifierType(ModuleReference.ROOT, 'A', [])
   );
 
-  expect(undecideTypeParameters(identifierType('A', []), [])[0]).toEqual(identifierType('A', []));
-
-  expect(undecideTypeParameters(identifierType('A', [boolType]), ['B'])[0]).toEqual(
-    identifierType('A', [boolType])
-  );
+  expect(
+    undecideTypeParameters(identifierType(ModuleReference.ROOT, 'A', [boolType]), ['B'])[0]
+  ).toEqual(identifierType(ModuleReference.ROOT, 'A', [boolType]));
 });
 
 it('can undecide field types', () => {
@@ -66,8 +77,8 @@ it('can undecide field types', () => {
   expect(
     undecideFieldTypeParameters(
       {
-        a: { isPublic: true, type: identifierType('A') },
-        b: { isPublic: false, type: identifierType('B') },
+        a: { isPublic: true, type: identifierType(ModuleReference.ROOT, 'A') },
+        b: { isPublic: false, type: identifierType(ModuleReference.ROOT, 'B') },
       },
       ['A', 'B']
     )[0]

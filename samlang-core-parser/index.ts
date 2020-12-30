@@ -5,7 +5,7 @@ import type { Recognizer } from 'antlr4ts/Recognizer';
 import ExpressionBuilder from './parser-expression-builder';
 import ModuleBuilder from './parser-module-builder';
 
-import { Position, Range } from 'samlang-core-ast/common-nodes';
+import { Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
@@ -37,6 +37,7 @@ class ErrorListener implements ANTLRErrorListener<unknown> {
 
 export const parseSamlangModuleFromText = (
   text: string,
+  moduleReference: ModuleReference,
   moduleErrorCollector: ModuleErrorCollector
 ): SamlangModule => {
   const parser = new PLParser(new CommonTokenStream(new PLLexer(new ANTLRInputStream(text))));
@@ -44,7 +45,7 @@ export const parseSamlangModuleFromText = (
   parser.removeErrorListeners();
   parser.addErrorListener(errorListener);
   try {
-    return parser.module().accept(new ModuleBuilder(moduleErrorCollector));
+    return parser.module().accept(new ModuleBuilder(moduleReference, moduleErrorCollector));
   } catch {
     moduleErrorCollector.reportSyntaxError(Range.DUMMY, 'Encountered unrecoverable syntax error');
     return { imports: [], classes: [] };
@@ -53,6 +54,7 @@ export const parseSamlangModuleFromText = (
 
 export const parseSamlangExpressionFromText = (
   text: string,
+  moduleReference: ModuleReference,
   moduleErrorCollector: ModuleErrorCollector
 ): SamlangExpression | null => {
   const parser = new PLParser(new CommonTokenStream(new PLLexer(new ANTLRInputStream(text))));
@@ -60,7 +62,9 @@ export const parseSamlangExpressionFromText = (
   parser.removeErrorListeners();
   parser.addErrorListener(errorListener);
   try {
-    return parser.expression().accept(new ExpressionBuilder(moduleErrorCollector));
+    return parser
+      .expression()
+      .accept(new ExpressionBuilder(moduleErrorCollector, () => moduleReference));
   } catch {
     moduleErrorCollector.reportSyntaxError(Range.DUMMY, 'Encountered unrecoverable syntax error');
     return null;
