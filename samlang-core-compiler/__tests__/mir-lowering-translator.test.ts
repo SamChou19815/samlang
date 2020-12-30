@@ -54,7 +54,6 @@ it('midIRTranslateStatementsAndCollectGlobalStrings test', () => {
       s1: [
         HIR_RETURN(
           HIR_BINARY({
-            type: intType,
             operator: '+',
             e1: HIR_INT(BigInt(2)),
             e2: HIR_INT(BigInt(2)),

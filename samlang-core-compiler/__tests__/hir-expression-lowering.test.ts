@@ -223,7 +223,6 @@ it('Unary lowering works.', () => {
         }),
       ],
       expression: HIR_BINARY({
-        type: intType,
         operator: '^',
         e1: HIR_ZERO,
         e2: HIR_ONE,
@@ -247,7 +246,6 @@ it('Unary lowering works.', () => {
         }),
       ],
       expression: HIR_BINARY({
-        type: intType,
         operator: '-',
         e1: HIR_ZERO,
         e2: HIR_ZERO,
@@ -399,7 +397,6 @@ it('FunctionCall family lowering works 6/n.', () => {
         }),
         HIR_IF_ELSE({
           booleanExpression: HIR_BINARY({
-            type: intType,
             operator: '==',
             e1: HIR_VARIABLE('_t2', intType),
             e2: HIR_ZERO,
@@ -454,7 +451,6 @@ it('FunctionCall family lowering works 7/n.', () => {
         }),
         HIR_IF_ELSE({
           booleanExpression: HIR_BINARY({
-            type: intType,
             operator: '==',
             e1: HIR_VARIABLE('_t2', intType),
             e2: HIR_ZERO,
@@ -491,7 +487,7 @@ it('FunctionCall family lowering works 7/n.', () => {
 it('Normal binary lowering works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_BINARY({ range: Range.DUMMY, type: intType, operator: PLUS, e1: THIS, e2: THIS }),
-    { expression: HIR_BINARY({ type: intType, operator: '+', e1: IR_THIS, e2: IR_THIS }) }
+    { expression: HIR_BINARY({ operator: '+', e1: IR_THIS, e2: IR_THIS }) }
   );
 });
 
@@ -828,7 +824,6 @@ it('Match lowering works.', () => {
         }),
         HIR_IF_ELSE({
           booleanExpression: HIR_BINARY({
-            type: intType,
             operator: '==',
             e1: HIR_VARIABLE('_t1', intType),
             e2: HIR_ZERO,
@@ -850,7 +845,6 @@ it('Match lowering works.', () => {
           s2: [
             HIR_IF_ELSE({
               booleanExpression: HIR_BINARY({
-                type: intType,
                 operator: '==',
                 e1: HIR_VARIABLE('_t1', intType),
                 e2: HIR_INT(BigInt(1)),

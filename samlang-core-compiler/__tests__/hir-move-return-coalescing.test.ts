@@ -62,7 +62,6 @@ it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
     coalesceMoveAndReturnForHighIRStatements([
       HIR_IF_ELSE({
         booleanExpression: HIR_BINARY({
-          type: intType,
           operator: '==',
           e1: HIR_VARIABLE('n', intType),
           e2: HIR_ZERO,
@@ -82,13 +81,11 @@ it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
             ),
             functionArguments: [
               HIR_BINARY({
-                type: intType,
                 operator: '-',
                 e1: HIR_VARIABLE('n', intType),
                 e2: HIR_ONE,
               }),
               HIR_BINARY({
-                type: intType,
                 operator: '*',
                 e1: HIR_VARIABLE('n', intType),
                 e2: HIR_VARIABLE('acc', intType),
@@ -104,7 +101,6 @@ it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
   ).toEqual([
     HIR_IF_ELSE({
       booleanExpression: HIR_BINARY({
-        type: intType,
         operator: '==',
         e1: HIR_VARIABLE('n', intType),
         e2: HIR_ZERO,
@@ -118,13 +114,11 @@ it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
           ),
           functionArguments: [
             HIR_BINARY({
-              type: intType,
               operator: '-',
               e1: HIR_VARIABLE('n', intType),
               e2: HIR_ONE,
             }),
             HIR_BINARY({
-              type: intType,
               operator: '*',
               e1: HIR_VARIABLE('n', intType),
               e2: HIR_VARIABLE('acc', intType),
