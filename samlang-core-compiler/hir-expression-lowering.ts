@@ -711,7 +711,7 @@ class HighIRExpressionLoweringManager {
         HIR_STRUCT_INITIALIZATION({
           structVariableName: contextName,
           expressionList: captured.map(([variableName, variableType]) =>
-            HIR_VARIABLE(variableName, checkNotNull(variableType))
+            HIR_VARIABLE(variableName, variableType)
           ),
         })
       );
@@ -732,13 +732,13 @@ class HighIRExpressionLoweringManager {
   private createSyntheticLambdaFunction(expression: LambdaExpression): HighIRFunction {
     const loweringResult = this.lower(expression.body);
     const lambdaStatements: HighIRStatement[] = [];
-    const contextType = tupleType(Object.values(expression.captured).map(checkNotNull));
+    const contextType = tupleType(Object.values(expression.captured));
     Object.entries(expression.captured).forEach(([variable, variableType], index) => {
       lambdaStatements.push(
         HIR_LET({
           name: variable,
           assignedExpression: HIR_INDEX_ACCESS({
-            type: checkNotNull(variableType),
+            type: variableType,
             expression: HIR_VARIABLE('_context', contextType),
             index,
           }),

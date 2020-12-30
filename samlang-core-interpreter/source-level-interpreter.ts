@@ -52,8 +52,8 @@ export type FunctionValue = {
  * @param localValues the local values computed inside a function.
  */
 export type InterpretationContext = {
-  readonly classes: Readonly<Record<string, ClassValue | undefined>>;
-  readonly localValues: Readonly<Record<string, Value | undefined>>;
+  readonly classes: Readonly<Record<string, ClassValue>>;
+  readonly localValues: Readonly<Record<string, Value>>;
 };
 
 /**
@@ -63,8 +63,8 @@ export type InterpretationContext = {
  * @param methods all the defined instance methods inside the class definition.
  */
 export type ClassValue = {
-  readonly functions: Readonly<Record<string, FunctionValue | undefined>>;
-  readonly methods: Readonly<Record<string, FunctionValue | undefined>>;
+  readonly functions: Readonly<Record<string, FunctionValue>>;
+  readonly methods: Readonly<Record<string, FunctionValue>>;
 };
 
 /**
@@ -186,7 +186,7 @@ export class ExpressionInterpreter {
         const argValues = expression.functionArguments.map((arg) => this.eval(arg, context));
         const bodyLocalValues = { ...ctx.localValues };
         args.forEach((arg, i) => {
-          bodyLocalValues[arg] = argValues[i];
+          bodyLocalValues[arg] = checkNotNull(argValues[i]);
         });
         const bodyContext = { classes: ctx.classes, localValues: { ...bodyLocalValues } };
         return this.eval(body, bodyContext);
@@ -325,7 +325,9 @@ export class ExpressionInterpreter {
               const { tupleContent } = assignedValue as TupleValue;
               p.destructedNames.forEach((nameWithRange, i) => {
                 if (nameWithRange[0] !== null) {
-                  contextForStatementBlock.localValues[nameWithRange[0]] = tupleContent[i];
+                  contextForStatementBlock.localValues[nameWithRange[0]] = checkNotNull(
+                    tupleContent[i]
+                  );
                 }
               });
               break;

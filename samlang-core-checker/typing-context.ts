@@ -169,7 +169,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
       partiallyFixedType,
       Object.fromEntries(
         classTypeParameters.map(
-          (parameter, index) => [parameter, classTypeArguments[index]] as const
+          (parameter, index) => [parameter, checkNotNull(classTypeArguments[index])] as const
         )
       )
     );
@@ -241,7 +241,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
                 fieldType.type,
                 Object.fromEntries(
                   classTypeParameters.map(
-                    (parameter, index) => [parameter, typeArguments[index]] as const
+                    (parameter, index) => [parameter, checkNotNull(typeArguments[index])] as const
                   )
                 )
               ),

@@ -79,11 +79,15 @@ export default class StatementTypeChecker {
           .map(([name, nameRange], index) => {
             return name == null
               ? null
-              : ([name, nameRange, checkedAssignedExpressionType.mappings[index]] as const);
+              : ([
+                  name,
+                  nameRange,
+                  checkNotNull(checkedAssignedExpressionType.mappings[index]),
+                ] as const);
           })
           .filter(isNotNull)
           .forEach(([name, nameRange, elementType]) => {
-            localContext.addLocalValueType(name, checkNotNull(elementType), () =>
+            localContext.addLocalValueType(name, elementType, () =>
               this.errorCollector.reportCollisionError(nameRange, name)
             );
           });
@@ -110,7 +114,7 @@ export default class StatementTypeChecker {
         );
         let fieldNamesMappings: {
           readonly fieldNames: readonly string[];
-          readonly fieldMappings: Readonly<Record<string, FieldType | undefined>>;
+          readonly fieldMappings: Readonly<Record<string, FieldType>>;
         };
         switch (fieldMappingsOrError.type) {
           case 'Resolved':

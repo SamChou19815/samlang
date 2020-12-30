@@ -10,7 +10,7 @@ import {
 import { checkNotNull } from 'samlang-core-utils';
 
 const replaceMidIRExpressionAccordingToAvailableCopies = (
-  availableCopies: Readonly<Record<string, string | undefined>>,
+  availableCopies: Readonly<Record<string, string>>,
   expression: MidIRExpression
 ): MidIRExpression => {
   switch (expression.__type__) {
@@ -36,7 +36,7 @@ const replaceMidIRExpressionAccordingToAvailableCopies = (
 };
 
 const rewriteMidIRStatementAccordingToAvailableCopies = (
-  availableCopies: Readonly<Record<string, string | undefined>>,
+  availableCopies: Readonly<Record<string, string>>,
   statement: MidIRStatement
 ): MidIRStatement => {
   switch (statement.__type__) {

@@ -198,10 +198,10 @@ class ExpressionTypeChecker {
   private typeCheckFieldDeclarations(
     fieldDeclarations: readonly ObjectConstructorExpressionFieldConstructor[]
   ): {
-    readonly declaredFieldTypes: Readonly<Record<string, Type | undefined>>;
+    readonly declaredFieldTypes: Readonly<Record<string, Type>>;
     readonly checkedDeclarations: readonly ObjectConstructorExpressionFieldConstructor[];
   } {
-    const declaredFieldTypes: Record<string, Type | undefined> = {};
+    const declaredFieldTypes: Record<string, Type> = {};
     const checkedDeclarations: ObjectConstructorExpressionFieldConstructor[] = [];
     fieldDeclarations.forEach(({ range, name, type, expression }) => {
       if (declaredFieldTypes[name] != null) {
@@ -433,7 +433,7 @@ class ExpressionTypeChecker {
       'object'
     );
     let fieldNames: readonly string[];
-    let fieldMappings: Readonly<Record<string, FieldType | undefined>>;
+    let fieldMappings: Readonly<Record<string, FieldType>>;
     switch (fieldMappingsOrError.type) {
       case 'Resolved':
         fieldNames = fieldMappingsOrError.names;
