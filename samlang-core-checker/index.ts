@@ -46,29 +46,29 @@ export class DependencyTracker {
   }
 
   /**
-   * Update dependency tracker with `moduleReference` and `importedModules`.
-   * If `importedModules` is null, it means that we want to remove `moduleReference` from system.
+   * Update dependency tracker with `moduleReference` and `usedModules`.
+   * If `usedModules` is null, it means that we want to remove `moduleReference` from system.
    */
-  update(moduleReference: ModuleReference, importedModules?: readonly ModuleReference[]): void {
-    const oldImportedModules = this.forwardDependency.get(moduleReference);
-    if (oldImportedModules != null) {
-      oldImportedModules.forEach((oldImportedModule) => {
-        const reverseDependencySet = this.reverseDependency.get(oldImportedModule);
+  update(moduleReference: ModuleReference, usedModules?: readonly ModuleReference[]): void {
+    const oldUsedModules = this.forwardDependency.get(moduleReference);
+    if (oldUsedModules != null) {
+      oldUsedModules.forEach((oldUsedModule) => {
+        const reverseDependencySet = this.reverseDependency.get(oldUsedModule);
         // If things are consistent:
         //   then if B is A's forward dependency, then A must be B's reverse dependency.
         assertNotNull(reverseDependencySet);
         reverseDependencySet.delete(moduleReference);
       });
     }
-    if (importedModules == null) {
+    if (usedModules == null) {
       this.forwardDependency.delete(moduleReference);
       return;
     }
-    this.forwardDependency.set(moduleReference, setOf(...importedModules));
-    importedModules.forEach((newImportedModule) => {
-      const reverseDependencies = this.reverseDependency.get(newImportedModule);
+    this.forwardDependency.set(moduleReference, setOf(...usedModules));
+    usedModules.forEach((newUsedModule) => {
+      const reverseDependencies = this.reverseDependency.get(newUsedModule);
       if (reverseDependencies == null) {
-        this.reverseDependency.set(newImportedModule, hashSetOf(moduleReference));
+        this.reverseDependency.set(newUsedModule, hashSetOf(moduleReference));
       } else {
         reverseDependencies?.add(moduleReference);
       }
