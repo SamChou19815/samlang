@@ -13,6 +13,7 @@ import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_THROW,
 } from 'samlang-core-ast/common-names';
+import { intType, unitType } from 'samlang-core-ast/common-nodes';
 import {
   HIR_IF_ELSE,
   HIR_BINARY,
@@ -64,13 +65,13 @@ it('compile hello world to JS integration test', () => {
         hasReturn: false,
         body: [
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('_builtin_stringConcat'),
+            functionExpression: HIR_NAME('_builtin_stringConcat', unitType),
             functionArguments: [HIR_STRING('Hello '), HIR_STRING('World!')],
             returnCollector: '_t0',
           }),
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('_builtin_println'),
-            functionArguments: [HIR_VARIABLE('_t0')],
+            functionExpression: HIR_NAME('_builtin_println', unitType),
+            functionArguments: [HIR_VARIABLE('_t0', unitType)],
             returnCollector: '_t1',
           }),
         ],
@@ -81,7 +82,7 @@ it('compile hello world to JS integration test', () => {
         hasReturn: false,
         body: [
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('_module_Test_class_Main_function_main'),
+            functionExpression: HIR_NAME('_module_Test_class_Main_function_main', unitType),
             functionArguments: [],
           }),
         ],
@@ -123,13 +124,13 @@ it('confirm samlang & equivalent JS have same print output', () => {
           hasReturn: false,
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_stringConcat'),
+              functionExpression: HIR_NAME('_builtin_stringConcat', unitType),
               functionArguments: [HIR_STRING('Hello '), HIR_STRING('World!')],
               returnCollector: '_t0',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_println'),
-              functionArguments: [HIR_VARIABLE('_t0')],
+              functionExpression: HIR_NAME('_builtin_println', unitType),
+              functionArguments: [HIR_VARIABLE('_t0', unitType)],
               returnCollector: '_t1',
             }),
           ],
@@ -159,7 +160,14 @@ it('confirm samlang & equivalent JS have same print output', () => {
           parameters: ['a', 'b'],
           hasReturn: true,
           body: [
-            HIR_RETURN(HIR_BINARY({ operator: '+', e1: HIR_VARIABLE('a'), e2: HIR_VARIABLE('b') })),
+            HIR_RETURN(
+              HIR_BINARY({
+                type: unitType,
+                operator: '+',
+                e1: HIR_VARIABLE('a', unitType),
+                e2: HIR_VARIABLE('b', unitType),
+              })
+            ),
           ],
         },
         {
@@ -168,18 +176,18 @@ it('confirm samlang & equivalent JS have same print output', () => {
           hasReturn: false,
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('sum'),
+              functionExpression: HIR_NAME('sum', unitType),
               functionArguments: [HIR_INT(BigInt(42)), HIR_INT(BigInt(7))],
               returnCollector: '_t0',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_intToString'),
-              functionArguments: [HIR_VARIABLE('_t0')],
+              functionExpression: HIR_NAME('_builtin_intToString', unitType),
+              functionArguments: [HIR_VARIABLE('_t0', unitType)],
               returnCollector: '_t1',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_println'),
-              functionArguments: [HIR_VARIABLE('_t1')],
+              functionExpression: HIR_NAME('_builtin_println', unitType),
+              functionArguments: [HIR_VARIABLE('_t1', unitType)],
               returnCollector: '_t2',
             }),
           ],
@@ -198,8 +206,9 @@ it('confirm samlang & equivalent JS have same print output', () => {
           body: [
             HIR_IF_ELSE({
               booleanExpression: HIR_BINARY({
+                type: unitType,
                 operator: '==',
-                e1: HIR_VARIABLE('sum'),
+                e1: HIR_VARIABLE('sum', unitType),
                 e2: HIR_INT(BigInt(42)),
               }),
               s1: [HIR_RETURN(HIR_STRING('Meaning of life'))],
@@ -212,7 +221,14 @@ it('confirm samlang & equivalent JS have same print output', () => {
           parameters: ['a', 'b'],
           hasReturn: true,
           body: [
-            HIR_RETURN(HIR_BINARY({ operator: '+', e1: HIR_VARIABLE('a'), e2: HIR_VARIABLE('b') })),
+            HIR_RETURN(
+              HIR_BINARY({
+                type: intType,
+                operator: '+',
+                e1: HIR_VARIABLE('a', unitType),
+                e2: HIR_VARIABLE('b', unitType),
+              })
+            ),
           ],
         },
         {
@@ -221,18 +237,18 @@ it('confirm samlang & equivalent JS have same print output', () => {
           hasReturn: false,
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('sum'),
+              functionExpression: HIR_NAME('sum', unitType),
               functionArguments: [HIR_INT(BigInt(42)), HIR_INT(BigInt(7))],
               returnCollector: '_t0',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('MeaningOfLifeConditional'),
-              functionArguments: [HIR_VARIABLE('_t0')],
+              functionExpression: HIR_NAME('MeaningOfLifeConditional', unitType),
+              functionArguments: [HIR_VARIABLE('_t0', unitType)],
               returnCollector: '_t1',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_println'),
-              functionArguments: [HIR_VARIABLE('_t1')],
+              functionExpression: HIR_NAME('_builtin_println', unitType),
+              functionArguments: [HIR_VARIABLE('_t1', unitType)],
               returnCollector: '_t2',
             }),
           ],
@@ -253,7 +269,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
               structVariableName: 't0',
               expressionList: [HIR_STRING('RANDOM_BABY')],
             }),
-            HIR_RETURN(HIR_VARIABLE('t0')),
+            HIR_RETURN(HIR_VARIABLE('t0', unitType)),
           ],
         },
         {
@@ -263,7 +279,8 @@ it('confirm samlang & equivalent JS have same print output', () => {
           body: [
             HIR_RETURN(
               HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('s'),
+                type: unitType,
+                expression: HIR_VARIABLE('s', unitType),
                 index: 0,
               })
             ),
@@ -275,18 +292,18 @@ it('confirm samlang & equivalent JS have same print output', () => {
           hasReturn: false,
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('dummyStudent'),
+              functionExpression: HIR_NAME('dummyStudent', unitType),
               functionArguments: [],
               returnCollector: '_t0',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('getName'),
-              functionArguments: [HIR_VARIABLE('_t0')],
+              functionExpression: HIR_NAME('getName', unitType),
+              functionArguments: [HIR_VARIABLE('_t0', unitType)],
               returnCollector: '_t1',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_println'),
-              functionArguments: [HIR_VARIABLE('_t1')],
+              functionExpression: HIR_NAME('_builtin_println', unitType),
+              functionArguments: [HIR_VARIABLE('_t1', unitType)],
               returnCollector: '_t2',
             }),
           ],
@@ -303,7 +320,14 @@ it('confirm samlang & equivalent JS have same print output', () => {
           parameters: ['a', 'b'],
           hasReturn: true,
           body: [
-            HIR_RETURN(HIR_BINARY({ operator: '+', e1: HIR_VARIABLE('a'), e2: HIR_VARIABLE('b') })),
+            HIR_RETURN(
+              HIR_BINARY({
+                type: unitType,
+                operator: '+',
+                e1: HIR_VARIABLE('a', unitType),
+                e2: HIR_VARIABLE('b', unitType),
+              })
+            ),
           ],
         },
         {
@@ -313,13 +337,14 @@ it('confirm samlang & equivalent JS have same print output', () => {
           body: [
             HIR_IF_ELSE({
               booleanExpression: HIR_BINARY({
+                type: unitType,
                 operator: '==',
                 e1: HIR_INT(BigInt(0)),
                 e2: HIR_INT(BigInt(0)),
               }),
               s1: [
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_NAME('_builtin_throw'),
+                  functionExpression: HIR_NAME('_builtin_throw', unitType),
                   functionArguments: [HIR_STRING('Division by zero is illegal!')],
                 }),
               ],
@@ -337,6 +362,7 @@ it('HIR statements to JS string test', () => {
     highIRStatementToString(
       HIR_IF_ELSE({
         booleanExpression: HIR_BINARY({
+          type: unitType,
           operator: '==',
           e1: HIR_INT(BigInt(5)),
           e2: HIR_INT(BigInt(5)),
@@ -354,6 +380,7 @@ it('HIR statements to JS string test', () => {
     highIRStatementToString(
       HIR_IF_ELSE({
         booleanExpression: HIR_BINARY({
+          type: unitType,
           operator: '==',
           e1: HIR_INT(BigInt(5)),
           e2: HIR_INT(BigInt(5)),
@@ -371,6 +398,7 @@ it('HIR statements to JS string test', () => {
     highIRStatementToString(
       HIR_IF_ELSE({
         booleanExpression: HIR_BINARY({
+          type: unitType,
           operator: '==',
           e1: HIR_INT(BigInt(5)),
           e2: HIR_INT(BigInt(5)),
@@ -379,6 +407,7 @@ it('HIR statements to JS string test', () => {
         s2: [
           HIR_IF_ELSE({
             booleanExpression: HIR_BINARY({
+              type: unitType,
               operator: '==',
               e1: HIR_INT(BigInt(5)),
               e2: HIR_INT(BigInt(5)),
@@ -403,7 +432,7 @@ it('HIR statements to JS string test', () => {
       HIR_WHILE_TRUE([
         HIR_FUNCTION_CALL({
           functionArguments: [],
-          functionExpression: HIR_NAME('func'),
+          functionExpression: HIR_NAME('func', unitType),
           returnCollector: 'val',
         }),
       ])
@@ -415,7 +444,7 @@ it('HIR statements to JS string test', () => {
     highIRStatementToString(
       HIR_FUNCTION_CALL({
         functionArguments: [],
-        functionExpression: HIR_NAME('func'),
+        functionExpression: HIR_NAME('func', unitType),
         returnCollector: 'val',
       })
     )
@@ -424,7 +453,7 @@ it('HIR statements to JS string test', () => {
     highIRStatementToString(
       HIR_FUNCTION_CALL({
         functionArguments: [],
-        functionExpression: HIR_NAME('func'),
+        functionExpression: HIR_NAME('func', unitType),
       })
     )
   ).toBe('func();');
@@ -432,7 +461,7 @@ it('HIR statements to JS string test', () => {
     highIRStatementToString(
       HIR_FUNCTION_CALL({
         functionArguments: [HIR_STRING('Hello, world')],
-        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN),
+        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, unitType),
         returnCollector: 'res',
       })
     )
@@ -441,7 +470,7 @@ it('HIR statements to JS string test', () => {
     highIRStatementToString(
       HIR_FUNCTION_CALL({
         functionArguments: [HIR_STRING('5')],
-        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_TO_INT),
+        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_TO_INT, unitType),
         returnCollector: 'res',
       })
     )
@@ -450,7 +479,7 @@ it('HIR statements to JS string test', () => {
     highIRStatementToString(
       HIR_FUNCTION_CALL({
         functionArguments: [HIR_INT(BigInt(5))],
-        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_INT_TO_STRING),
+        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_INT_TO_STRING, unitType),
         returnCollector: 'res',
       })
     )
@@ -459,7 +488,7 @@ it('HIR statements to JS string test', () => {
     highIRStatementToString(
       HIR_FUNCTION_CALL({
         functionArguments: [HIR_STRING('5'), HIR_STRING('4')],
-        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_CONCAT),
+        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_CONCAT, unitType),
         returnCollector: 'res',
       })
     )
@@ -468,7 +497,7 @@ it('HIR statements to JS string test', () => {
     highIRStatementToString(
       HIR_FUNCTION_CALL({
         functionArguments: [HIR_STRING('panik')],
-        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_THROW),
+        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_THROW, unitType),
         returnCollector: 'panik',
       })
     )
@@ -539,7 +568,8 @@ it('HIR expression to JS string test', () => {
   expect(
     highIRExpressionToString(
       HIR_INDEX_ACCESS({
-        expression: HIR_VARIABLE('samlang'),
+        type: unitType,
+        expression: HIR_VARIABLE('samlang', unitType),
         index: 3,
       })
     )
@@ -547,8 +577,10 @@ it('HIR expression to JS string test', () => {
   expect(
     highIRExpressionToString(
       HIR_INDEX_ACCESS({
+        type: unitType,
         expression: HIR_INDEX_ACCESS({
-          expression: HIR_VARIABLE('a'),
+          type: unitType,
+          expression: HIR_VARIABLE('a', unitType),
           index: 4,
         }),
         index: 3,
@@ -558,7 +590,9 @@ it('HIR expression to JS string test', () => {
   expect(
     highIRExpressionToString(
       HIR_INDEX_ACCESS({
+        type: unitType,
         expression: HIR_BINARY({
+          type: unitType,
           operator: '+',
           e1: HIR_STRING('a'),
           e2: HIR_STRING('b'),
@@ -567,11 +601,12 @@ it('HIR expression to JS string test', () => {
       })
     )
   ).toBe('("a" + "b")[0]');
-  expect(highIRExpressionToString(HIR_VARIABLE('ts'))).toBe('ts');
-  expect(highIRExpressionToString(HIR_NAME('key'))).toBe('key');
+  expect(highIRExpressionToString(HIR_VARIABLE('ts', unitType))).toBe('ts');
+  expect(highIRExpressionToString(HIR_NAME('key', unitType))).toBe('key');
   expect(
     highIRExpressionToString(
       HIR_BINARY({
+        type: unitType,
         operator: '!=',
         e1: HIR_INT(BigInt(7)),
         e2: HIR_INT(BigInt(7)),
@@ -581,6 +616,7 @@ it('HIR expression to JS string test', () => {
   expect(
     highIRExpressionToString(
       HIR_BINARY({
+        type: unitType,
         operator: '/',
         e1: HIR_INT(BigInt(7)),
         e2: HIR_INT(BigInt(8)),
@@ -590,9 +626,11 @@ it('HIR expression to JS string test', () => {
   expect(
     highIRExpressionToString(
       HIR_BINARY({
+        type: unitType,
         operator: '+',
         e1: HIR_INT(BigInt(7)),
         e2: HIR_BINARY({
+          type: unitType,
           operator: '*',
           e1: HIR_INT(BigInt(4)),
           e2: HIR_INT(BigInt(4)),
@@ -603,9 +641,11 @@ it('HIR expression to JS string test', () => {
   expect(
     highIRExpressionToString(
       HIR_BINARY({
+        type: unitType,
         operator: '*',
         e1: HIR_INT(BigInt(7)),
         e2: HIR_BINARY({
+          type: unitType,
           operator: '+',
           e1: HIR_INT(BigInt(4)),
           e2: HIR_INT(BigInt(4)),
@@ -616,9 +656,11 @@ it('HIR expression to JS string test', () => {
   expect(
     highIRExpressionToString(
       HIR_BINARY({
+        type: unitType,
         operator: '*',
         e1: HIR_INT(BigInt(7)),
         e2: HIR_BINARY({
+          type: unitType,
           operator: '*',
           e1: HIR_INT(BigInt(4)),
           e2: HIR_INT(BigInt(4)),
@@ -629,13 +671,16 @@ it('HIR expression to JS string test', () => {
   expect(
     highIRExpressionToString(
       HIR_BINARY({
+        type: unitType,
         operator: '*',
         e1: HIR_BINARY({
+          type: unitType,
           operator: '*',
           e1: HIR_INT(BigInt(1)),
           e2: HIR_INT(BigInt(2)),
         }),
         e2: HIR_BINARY({
+          type: unitType,
           operator: '*',
           e1: HIR_INT(BigInt(3)),
           e2: HIR_INT(BigInt(4)),
@@ -646,13 +691,16 @@ it('HIR expression to JS string test', () => {
   expect(
     highIRExpressionToString(
       HIR_BINARY({
+        type: unitType,
         operator: '+',
         e1: HIR_BINARY({
+          type: unitType,
           operator: '-',
           e1: HIR_INT(BigInt(1)),
           e2: HIR_INT(BigInt(2)),
         }),
         e2: HIR_BINARY({
+          type: unitType,
           operator: '%',
           e1: HIR_INT(BigInt(3)),
           e2: HIR_INT(BigInt(4)),
@@ -663,9 +711,11 @@ it('HIR expression to JS string test', () => {
   expect(
     highIRExpressionToString(
       HIR_BINARY({
+        type: unitType,
         operator: '+',
-        e1: HIR_NAME('somevar'),
+        e1: HIR_NAME('somevar', unitType),
         e2: HIR_BINARY({
+          type: unitType,
           operator: '-',
           e1: HIR_INT(BigInt(3)),
           e2: HIR_INT(BigInt(4)),
@@ -676,9 +726,11 @@ it('HIR expression to JS string test', () => {
   expect(
     highIRExpressionToString(
       HIR_BINARY({
+        type: unitType,
         operator: '+',
         e1: HIR_INDEX_ACCESS({
-          expression: HIR_VARIABLE('a'),
+          type: unitType,
+          expression: HIR_VARIABLE('a', unitType),
           index: 2,
         }),
         e2: HIR_INT(BigInt(1)),

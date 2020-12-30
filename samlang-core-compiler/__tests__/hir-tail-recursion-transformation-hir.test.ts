@@ -1,5 +1,6 @@
 import performTailRecursiveCallTransformationOnHighIRFunction from '../hir-tail-recursion-transformation-hir';
 
+import { functionType, intType } from 'samlang-core-ast/common-nodes';
 import {
   HIR_ZERO,
   HIR_ONE,
@@ -36,7 +37,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction no tailrec call test'
       hasReturn: true,
       body: [
         HIR_LET({ name: '_t1', assignedExpression: HIR_ONE }),
-        HIR_RETURN(HIR_VARIABLE('_t1')),
+        HIR_RETURN(HIR_VARIABLE('_t1', intType)),
       ],
     })
   ).toEqual({
@@ -55,11 +56,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
       hasReturn: true,
       body: [
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('tailRec'),
-          functionArguments: [HIR_VARIABLE('n')],
+          functionExpression: HIR_NAME('tailRec', functionType([intType], intType)),
+          functionArguments: [HIR_VARIABLE('n', intType)],
           returnCollector: 'collector',
         }),
-        HIR_RETURN(HIR_VARIABLE('collector')),
+        HIR_RETURN(HIR_VARIABLE('collector', intType)),
       ],
     })
   ).toEqual({
@@ -68,8 +69,14 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
     hasReturn: true,
     body: [
       HIR_WHILE_TRUE([
-        HIR_LET({ name: '_tailRecTransformationArgument0', assignedExpression: HIR_VARIABLE('n') }),
-        HIR_LET({ name: 'n', assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0') }),
+        HIR_LET({
+          name: '_tailRecTransformationArgument0',
+          assignedExpression: HIR_VARIABLE('n', intType),
+        }),
+        HIR_LET({
+          name: 'n',
+          assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0', intType),
+        }),
       ]),
     ],
   });
@@ -83,11 +90,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow mismatch 
       hasReturn: true,
       body: [
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('tailRec1'),
-          functionArguments: [HIR_VARIABLE('n')],
+          functionExpression: HIR_NAME('tailRec1', functionType([intType], intType)),
+          functionArguments: [HIR_VARIABLE('n', intType)],
           returnCollector: 'collector',
         }),
-        HIR_RETURN(HIR_VARIABLE('collector')),
+        HIR_RETURN(HIR_VARIABLE('collector', intType)),
       ],
     })
   ).toEqual({
@@ -96,11 +103,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow mismatch 
     hasReturn: true,
     body: [
       HIR_FUNCTION_CALL({
-        functionExpression: HIR_NAME('tailRec1'),
-        functionArguments: [HIR_VARIABLE('n')],
+        functionExpression: HIR_NAME('tailRec1', functionType([intType], intType)),
+        functionArguments: [HIR_VARIABLE('n', intType)],
         returnCollector: 'collector',
       }),
-      HIR_RETURN(HIR_VARIABLE('collector')),
+      HIR_RETURN(HIR_VARIABLE('collector', intType)),
     ],
   });
 });
@@ -113,11 +120,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow mismatch 
       hasReturn: true,
       body: [
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('tailRec'),
-          functionArguments: [HIR_VARIABLE('n')],
+          functionExpression: HIR_NAME('tailRec', functionType([intType], intType)),
+          functionArguments: [HIR_VARIABLE('n', intType)],
           returnCollector: 'collector1',
         }),
-        HIR_RETURN(HIR_VARIABLE('collector')),
+        HIR_RETURN(HIR_VARIABLE('collector', intType)),
       ],
     })
   ).toEqual({
@@ -126,11 +133,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow mismatch 
     hasReturn: true,
     body: [
       HIR_FUNCTION_CALL({
-        functionExpression: HIR_NAME('tailRec'),
-        functionArguments: [HIR_VARIABLE('n')],
+        functionExpression: HIR_NAME('tailRec', functionType([intType], intType)),
+        functionArguments: [HIR_VARIABLE('n', intType)],
         returnCollector: 'collector1',
       }),
-      HIR_RETURN(HIR_VARIABLE('collector')),
+      HIR_RETURN(HIR_VARIABLE('collector', intType)),
     ],
   });
 });
@@ -146,11 +153,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
           booleanExpression: HIR_ONE,
           s1: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('tailRec'),
-              functionArguments: [HIR_VARIABLE('n')],
+              functionExpression: HIR_NAME('tailRec', functionType([intType], intType)),
+              functionArguments: [HIR_VARIABLE('n', intType)],
               returnCollector: 'collector',
             }),
-            HIR_RETURN(HIR_VARIABLE('collector')),
+            HIR_RETURN(HIR_VARIABLE('collector', intType)),
           ],
           s2: [HIR_RETURN(HIR_ZERO)],
         }),
@@ -167,11 +174,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
           s1: [
             HIR_LET({
               name: '_tailRecTransformationArgument0',
-              assignedExpression: HIR_VARIABLE('n'),
+              assignedExpression: HIR_VARIABLE('n', intType),
             }),
             HIR_LET({
               name: 'n',
-              assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0'),
+              assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0', intType),
             }),
           ],
           s2: [HIR_RETURN(HIR_ZERO)],
@@ -193,11 +200,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
           s1: [HIR_RETURN(HIR_ZERO)],
           s2: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('tailRec'),
-              functionArguments: [HIR_VARIABLE('n')],
+              functionExpression: HIR_NAME('tailRec', functionType([intType], intType)),
+              functionArguments: [HIR_VARIABLE('n', intType)],
               returnCollector: 'collector',
             }),
-            HIR_RETURN(HIR_VARIABLE('collector')),
+            HIR_RETURN(HIR_VARIABLE('collector', intType)),
           ],
         }),
       ],
@@ -214,11 +221,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
           s2: [
             HIR_LET({
               name: '_tailRecTransformationArgument0',
-              assignedExpression: HIR_VARIABLE('n'),
+              assignedExpression: HIR_VARIABLE('n', intType),
             }),
             HIR_LET({
               name: 'n',
-              assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0'),
+              assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0', intType),
             }),
           ],
         }),
@@ -272,11 +279,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
                   booleanExpression: HIR_ONE,
                   s1: [
                     HIR_FUNCTION_CALL({
-                      functionExpression: HIR_NAME('tailRec'),
-                      functionArguments: [HIR_VARIABLE('n')],
+                      functionExpression: HIR_NAME('tailRec', functionType([intType], intType)),
+                      functionArguments: [HIR_VARIABLE('n', intType)],
                       returnCollector: 'collector',
                     }),
-                    HIR_RETURN(HIR_VARIABLE('collector')),
+                    HIR_RETURN(HIR_VARIABLE('collector', intType)),
                   ],
                   s2: [HIR_RETURN(HIR_ZERO)],
                 }),
@@ -305,11 +312,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
                   s1: [
                     HIR_LET({
                       name: '_tailRecTransformationArgument0',
-                      assignedExpression: HIR_VARIABLE('n'),
+                      assignedExpression: HIR_VARIABLE('n', intType),
                     }),
                     HIR_LET({
                       name: 'n',
-                      assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0'),
+                      assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0', intType),
                     }),
                   ],
                   s2: [HIR_RETURN(HIR_ZERO)],
@@ -342,15 +349,15 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
                   booleanExpression: HIR_ONE,
                   s1: [
                     HIR_FUNCTION_CALL({
-                      functionExpression: HIR_NAME('tailRec'),
-                      functionArguments: [HIR_VARIABLE('n')],
+                      functionExpression: HIR_NAME('tailRec', functionType([intType], intType)),
+                      functionArguments: [HIR_VARIABLE('n', intType)],
                       returnCollector: 'collector',
                     }),
                   ],
                   s2: [
                     HIR_FUNCTION_CALL({
-                      functionExpression: HIR_NAME('tailRec1'),
-                      functionArguments: [HIR_VARIABLE('n')],
+                      functionExpression: HIR_NAME('tailRec1', functionType([intType], intType)),
+                      functionArguments: [HIR_VARIABLE('n', intType)],
                       returnCollector: 'collector',
                     }),
                   ],
@@ -365,8 +372,8 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
               s1: [],
               s2: [
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_NAME('tailRec'),
-                  functionArguments: [HIR_VARIABLE('n')],
+                  functionExpression: HIR_NAME('tailRec', functionType([intType], intType)),
+                  functionArguments: [HIR_VARIABLE('n', intType)],
                   returnCollector: 'collector',
                 }),
               ],
@@ -392,17 +399,17 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
                   s1: [
                     HIR_LET({
                       name: '_tailRecTransformationArgument0',
-                      assignedExpression: HIR_VARIABLE('n'),
+                      assignedExpression: HIR_VARIABLE('n', intType),
                     }),
                     HIR_LET({
                       name: 'n',
-                      assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0'),
+                      assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0', intType),
                     }),
                   ],
                   s2: [
                     HIR_FUNCTION_CALL({
-                      functionExpression: HIR_NAME('tailRec1'),
-                      functionArguments: [HIR_VARIABLE('n')],
+                      functionExpression: HIR_NAME('tailRec1', functionType([intType], intType)),
+                      functionArguments: [HIR_VARIABLE('n', intType)],
                       returnCollector: 'collector',
                     }),
                     HIR_RETURN(HIR_ZERO),
@@ -419,11 +426,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
               s2: [
                 HIR_LET({
                   name: '_tailRecTransformationArgument0',
-                  assignedExpression: HIR_VARIABLE('n'),
+                  assignedExpression: HIR_VARIABLE('n', intType),
                 }),
                 HIR_LET({
                   name: 'n',
-                  assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0'),
+                  assignedExpression: HIR_VARIABLE('_tailRecTransformationArgument0', intType),
                 }),
               ],
             }),

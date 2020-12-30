@@ -6,7 +6,16 @@ import {
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
 } from 'samlang-core-ast/common-names';
-import type { IdentifierType, ModuleReference } from 'samlang-core-ast/common-nodes';
+import {
+  IdentifierType,
+  FunctionType,
+  ModuleReference,
+  unitType,
+  intType,
+  stringType,
+  tupleType,
+  functionType,
+} from 'samlang-core-ast/common-nodes';
 import {
   HighIRStatement,
   HighIRExpression,
@@ -126,10 +135,10 @@ class HighIRExpressionLoweringManager {
         }
       // eslint-disable-next-line no-fallthrough
       case 'ThisExpression':
-        return { statements: [], expression: HIR_VARIABLE('_this') };
+        return { statements: [], expression: HIR_VARIABLE('_this', expression.type) };
       case 'VariableExpression': {
         const name = this.nestedVariableRewriteMap.get(expression.name) ?? expression.name;
-        return { statements: [], expression: HIR_VARIABLE(name) };
+        return { statements: [], expression: HIR_VARIABLE(name, expression.type) };
       }
       case 'ClassMemberExpression':
         return this.lowerClassMember(expression);
@@ -171,12 +180,15 @@ class HighIRExpressionLoweringManager {
         HIR_STRUCT_INITIALIZATION({
           structVariableName,
           expressionList: [
-            HIR_NAME(this.getFunctionName(expression.className, expression.memberName)),
+            HIR_NAME(
+              this.getFunctionName(expression.className, expression.memberName),
+              expression.type
+            ),
             HIR_ZERO,
           ],
         }),
       ],
-      expression: HIR_VARIABLE(structVariableName),
+      expression: HIR_VARIABLE(structVariableName, tupleType([expression.type, intType])),
     };
   }
 
@@ -196,7 +208,7 @@ class HighIRExpressionLoweringManager {
           expressionList: loweredExpressions,
         }),
       ],
-      expression: HIR_VARIABLE(tupleVariableName),
+      expression: HIR_VARIABLE(tupleVariableName, expression.type),
     };
   }
 
@@ -225,7 +237,7 @@ class HighIRExpressionLoweringManager {
     );
     return {
       statements: loweredStatements,
-      expression: HIR_VARIABLE(structVariableName),
+      expression: HIR_VARIABLE(structVariableName, tupleType(loweredFields.map((it) => it.type))),
     };
   }
 
@@ -242,7 +254,7 @@ class HighIRExpressionLoweringManager {
           expressionList: [HIR_INT(BigInt(expression.tagOrder)), result.expression],
         }),
       ],
-      expression: HIR_VARIABLE(structVariableName),
+      expression: HIR_VARIABLE(structVariableName, tupleType([intType, result.expression.type])),
     };
   }
 
@@ -250,7 +262,11 @@ class HighIRExpressionLoweringManager {
     const result = this.lower(expression.expression);
     return {
       statements: result.statements,
-      expression: HIR_INDEX_ACCESS({ expression: result.expression, index: expression.fieldOrder }),
+      expression: HIR_INDEX_ACCESS({
+        type: result.expression.type,
+        expression: result.expression,
+        index: expression.fieldOrder,
+      }),
     };
   }
 
@@ -267,13 +283,17 @@ class HighIRExpressionLoweringManager {
               this.getFunctionName(
                 (expression.expression.type as IdentifierType).identifier,
                 expression.methodName
-              )
+              ),
+              expression.type
             ),
             result.expression,
           ],
         }),
       ],
-      expression: HIR_VARIABLE(structVariableName),
+      expression: HIR_VARIABLE(
+        structVariableName,
+        tupleType([expression.type, result.expression.type])
+      ),
     };
   }
 
@@ -283,12 +303,22 @@ class HighIRExpressionLoweringManager {
       case '!':
         return {
           statements: result.statements,
-          expression: HIR_BINARY({ operator: '^', e1: result.expression, e2: HIR_INT(BigInt(1)) }),
+          expression: HIR_BINARY({
+            type: intType,
+            operator: '^',
+            e1: result.expression,
+            e2: HIR_INT(BigInt(1)),
+          }),
         };
       case '-':
         return {
           statements: result.statements,
-          expression: HIR_BINARY({ operator: '-', e1: HIR_INT(BigInt(0)), e2: result.expression }),
+          expression: HIR_BINARY({
+            type: intType,
+            operator: '-',
+            e1: HIR_INT(BigInt(0)),
+            e2: result.expression,
+          }),
         };
     }
   }
@@ -299,7 +329,10 @@ class HighIRExpressionLoweringManager {
       statements: [
         ...result.statements,
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_THROW),
+          functionExpression: HIR_NAME(
+            ENCODED_FUNCTION_NAME_THROW,
+            functionType([stringType], unitType)
+          ),
           functionArguments: [result.expression],
           returnCollector: this.allocateTemporaryVariable(),
         }),
@@ -318,27 +351,31 @@ class HighIRExpressionLoweringManager {
     );
     const returnCollector = this.allocateTemporaryVariable();
     let functionName: string;
+    let calledFunctionType: FunctionType;
     switch (expression.functionName) {
       case 'intToString':
         functionName = ENCODED_FUNCTION_NAME_INT_TO_STRING;
+        calledFunctionType = functionType([intType], stringType);
         break;
       case 'stringToInt':
         functionName = ENCODED_FUNCTION_NAME_STRING_TO_INT;
+        calledFunctionType = functionType([stringType], intType);
         break;
       case 'println':
         functionName = ENCODED_FUNCTION_NAME_PRINTLN;
+        calledFunctionType = functionType([stringType], unitType);
         break;
     }
     loweredStatements.push(
       HIR_FUNCTION_CALL({
-        functionExpression: HIR_NAME(functionName),
+        functionExpression: HIR_NAME(functionName, calledFunctionType),
         functionArguments: [loweredArgument],
         returnCollector,
       })
     );
     return {
       statements: loweredStatements,
-      expression: HIR_VARIABLE(returnCollector),
+      expression: HIR_VARIABLE(returnCollector, calledFunctionType.returnType),
     };
   }
 
@@ -355,7 +392,8 @@ class HighIRExpressionLoweringManager {
       case 'ClassMemberExpression':
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME(
-            this.getFunctionName(functionExpression.className, functionExpression.memberName)
+            this.getFunctionName(functionExpression.className, functionExpression.memberName),
+            functionExpression.type
           ),
           functionArguments: expression.functionArguments.map((oneArgument) =>
             this.loweredAndAddStatements(oneArgument, loweredStatements)
@@ -369,7 +407,8 @@ class HighIRExpressionLoweringManager {
             this.getFunctionName(
               (functionExpression.expression.type as IdentifierType).identifier,
               functionExpression.methodName
-            )
+            ),
+            functionExpression.type
           ),
           functionArguments: [
             this.loweredAndAddStatements(functionExpression.expression, loweredStatements),
@@ -408,7 +447,8 @@ class HighIRExpressionLoweringManager {
           HIR_LET({
             name: contextTemp,
             assignedExpression: HIR_INDEX_ACCESS({
-              expression: HIR_VARIABLE(closureTemp),
+              type: intType,
+              expression: HIR_VARIABLE(closureTemp, intType),
               index: 1,
             }),
           })
@@ -416,14 +456,16 @@ class HighIRExpressionLoweringManager {
 
         functionCall = HIR_IF_ELSE({
           booleanExpression: HIR_BINARY({
+            type: intType,
             operator: '==',
-            e1: HIR_VARIABLE(contextTemp),
+            e1: HIR_VARIABLE(contextTemp, intType),
             e2: HIR_ZERO,
           }),
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE(closureTemp),
+                type: intType,
+                expression: HIR_VARIABLE(closureTemp, intType),
                 index: 0,
               }),
               functionArguments: loweredFunctionArguments,
@@ -433,10 +475,11 @@ class HighIRExpressionLoweringManager {
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE(closureTemp),
+                type: intType,
+                expression: HIR_VARIABLE(closureTemp, intType),
                 index: 0,
               }),
-              functionArguments: [HIR_VARIABLE(contextTemp), ...loweredFunctionArguments],
+              functionArguments: [HIR_VARIABLE(contextTemp, intType), ...loweredFunctionArguments],
               returnCollector,
             }),
           ],
@@ -447,7 +490,7 @@ class HighIRExpressionLoweringManager {
     loweredStatements.push(functionCall);
     return {
       statements: loweredStatements,
-      expression: HIR_VARIABLE(returnCollector),
+      expression: HIR_VARIABLE(returnCollector, expression.type),
     };
   }
 
@@ -485,7 +528,7 @@ class HighIRExpressionLoweringManager {
               s2: [HIR_LET({ name: temp, assignedExpression: HIR_ZERO })],
             }),
           ],
-          expression: HIR_VARIABLE(temp),
+          expression: HIR_VARIABLE(temp, intType),
         };
       }
       case '||': {
@@ -504,7 +547,7 @@ class HighIRExpressionLoweringManager {
               ],
             }),
           ],
-          expression: HIR_VARIABLE(temp),
+          expression: HIR_VARIABLE(temp, intType),
         };
       }
       case '::': {
@@ -514,12 +557,18 @@ class HighIRExpressionLoweringManager {
         const returnCollector = this.allocateTemporaryVariable();
         loweredStatements.push(
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_CONCAT),
+            functionExpression: HIR_NAME(
+              ENCODED_FUNCTION_NAME_STRING_CONCAT,
+              functionType([stringType, stringType], stringType)
+            ),
             functionArguments: [loweredE1, loweredE2],
             returnCollector,
           })
         );
-        return { statements: loweredStatements, expression: HIR_VARIABLE(returnCollector) };
+        return {
+          statements: loweredStatements,
+          expression: HIR_VARIABLE(returnCollector, stringType),
+        };
       }
       default: {
         const loweredStatements: HighIRStatement[] = [];
@@ -527,7 +576,12 @@ class HighIRExpressionLoweringManager {
         const loweredE2 = this.loweredAndAddStatements(expression.e2, loweredStatements);
         return {
           statements: loweredStatements,
-          expression: HIR_BINARY({ operator: operatorSymbol, e1: loweredE1, e2: loweredE2 }),
+          expression: HIR_BINARY({
+            type: expression.type,
+            operator: operatorSymbol,
+            e1: loweredE1,
+            e2: loweredE2,
+          }),
         };
       }
     }
@@ -567,7 +621,7 @@ class HighIRExpressionLoweringManager {
     );
     return {
       statements: loweredStatements,
-      expression: HIR_VARIABLE(variableForIfElseAssign),
+      expression: HIR_VARIABLE(variableForIfElseAssign, expression.type),
     };
   }
 
@@ -587,7 +641,8 @@ class HighIRExpressionLoweringManager {
       HIR_LET({
         name: variableForTag,
         assignedExpression: HIR_INDEX_ACCESS({
-          expression: HIR_VARIABLE(variableForMatchedExpression),
+          type: intType,
+          expression: HIR_VARIABLE(variableForMatchedExpression, matchedExpression.type),
           index: 0,
         }),
       })
@@ -600,7 +655,8 @@ class HighIRExpressionLoweringManager {
             HIR_LET({
               name: dataVariable,
               assignedExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE(variableForMatchedExpression),
+                type: intType,
+                expression: HIR_VARIABLE(variableForMatchedExpression, matchedExpression.type),
                 index: 1,
               }),
             })
@@ -618,8 +674,9 @@ class HighIRExpressionLoweringManager {
     if (loweredMatchingList.length < 1) throw new Error();
     let ifElse = HIR_IF_ELSE({
       booleanExpression: HIR_BINARY({
+        type: intType,
         operator: '==',
-        e1: HIR_VARIABLE(variableForTag),
+        e1: HIR_VARIABLE(variableForTag, intType),
         e2: HIR_INT(
           BigInt(checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).tagOrder)
         ),
@@ -631,8 +688,9 @@ class HighIRExpressionLoweringManager {
       const { tagOrder, statements: localStatements } = checkNotNull(loweredMatchingList[i]);
       ifElse = HIR_IF_ELSE({
         booleanExpression: HIR_BINARY({
+          type: intType,
           operator: '==',
-          e1: HIR_VARIABLE(variableForTag),
+          e1: HIR_VARIABLE(variableForTag, intType),
           e2: HIR_INT(BigInt(tagOrder)),
         }),
         s1: localStatements,
@@ -640,14 +698,17 @@ class HighIRExpressionLoweringManager {
       });
     }
     loweredStatements.push(ifElse);
-    return { statements: loweredStatements, expression: HIR_VARIABLE(temporaryVariable) };
+    return {
+      statements: loweredStatements,
+      expression: HIR_VARIABLE(temporaryVariable, expression.type),
+    };
   }
 
   private lowerLambda(expression: LambdaExpression): HighIRExpressionLoweringResult {
     const syntheticLambda = this.createSyntheticLambdaFunction(expression);
     this.syntheticFunctions.push(syntheticLambda);
 
-    const captured = Object.keys(expression.captured);
+    const captured = Object.entries(expression.captured);
     const loweredStatements: HighIRStatement[] = [];
     const structVariableName = this.allocateTemporaryVariable();
     let context: HighIRExpression;
@@ -659,31 +720,38 @@ class HighIRExpressionLoweringManager {
       loweredStatements.push(
         HIR_STRUCT_INITIALIZATION({
           structVariableName: contextName,
-          expressionList: captured.map(HIR_VARIABLE),
+          expressionList: captured.map(([variableName, variableType]) =>
+            HIR_VARIABLE(variableName, checkNotNull(variableType))
+          ),
         })
       );
-      context = HIR_VARIABLE(contextName);
+      context = HIR_VARIABLE(contextName, intType);
     }
     loweredStatements.push(
       HIR_STRUCT_INITIALIZATION({
         structVariableName,
-        expressionList: [HIR_NAME(syntheticLambda.name), context],
+        expressionList: [HIR_NAME(syntheticLambda.name, expression.type), context],
       })
     );
     return {
       statements: loweredStatements,
-      expression: HIR_VARIABLE(structVariableName),
+      expression: HIR_VARIABLE(structVariableName, tupleType([expression.type, intType])),
     };
   }
 
   private createSyntheticLambdaFunction(expression: LambdaExpression): HighIRFunction {
     const loweringResult = this.lower(expression.body);
     const lambdaStatements: HighIRStatement[] = [];
-    Object.keys(expression.captured).forEach((variable, index) => {
+    const contextType = tupleType(Object.values(expression.captured).map(checkNotNull));
+    Object.entries(expression.captured).forEach(([variable, variableType], index) => {
       lambdaStatements.push(
         HIR_LET({
           name: variable,
-          assignedExpression: HIR_INDEX_ACCESS({ expression: HIR_VARIABLE('_context'), index }),
+          assignedExpression: HIR_INDEX_ACCESS({
+            type: checkNotNull(variableType),
+            expression: HIR_VARIABLE('_context', contextType),
+            index,
+          }),
         })
       );
     });
@@ -729,7 +797,11 @@ class HighIRExpressionLoweringManager {
               HIR_LET({
                 name: this.getRenamedVariableForNesting(name, blockLocalVariables),
                 assignedExpression: HIR_INDEX_ACCESS({
-                  expression: HIR_VARIABLE(variableForDestructedExpression),
+                  type: intType,
+                  expression: HIR_VARIABLE(
+                    variableForDestructedExpression,
+                    loweredAssignedExpression.type
+                  ),
                   index,
                 }),
               })
@@ -750,7 +822,11 @@ class HighIRExpressionLoweringManager {
               HIR_LET({
                 name: this.getRenamedVariableForNesting(alias ?? fieldName, blockLocalVariables),
                 assignedExpression: HIR_INDEX_ACCESS({
-                  expression: HIR_VARIABLE(variableForDestructedExpression),
+                  type: intType,
+                  expression: HIR_VARIABLE(
+                    variableForDestructedExpression,
+                    loweredAssignedExpression.type
+                  ),
                   index: fieldOrder,
                 }),
               })

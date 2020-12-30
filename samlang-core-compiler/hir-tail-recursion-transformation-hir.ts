@@ -11,6 +11,7 @@ import {
   HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
+import { checkNotNull } from 'samlang-core-utils';
 
 const performTailRecursiveCallTransformationOnLinearStatementsWithFinalReturn = (
   highIRFunction: HighIRFunction,
@@ -41,7 +42,13 @@ const performTailRecursiveCallTransformationOnLinearStatementsWithFinalReturn = 
       HIR_LET({ name: `_tailRecTransformationArgument${i}`, assignedExpression: functionArgument })
     ),
     ...highIRFunction.parameters.map((name, i) =>
-      HIR_LET({ name, assignedExpression: HIR_VARIABLE(`_tailRecTransformationArgument${i}`) })
+      HIR_LET({
+        name,
+        assignedExpression: HIR_VARIABLE(
+          `_tailRecTransformationArgument${i}`,
+          checkNotNull(functionArguments[i]).type
+        ),
+      })
     ),
   ];
 };
@@ -70,7 +77,13 @@ const performTailRecursiveCallTransformationOnLinearStatementsWithoutFinalReturn
       HIR_LET({ name: `_tailRecTransformationArgument${i}`, assignedExpression: functionArgument })
     ),
     ...highIRFunction.parameters.map((name, i) =>
-      HIR_LET({ name, assignedExpression: HIR_VARIABLE(`_tailRecTransformationArgument${i}`) })
+      HIR_LET({
+        name,
+        assignedExpression: HIR_VARIABLE(
+          `_tailRecTransformationArgument${i}`,
+          checkNotNull(functionArguments[i]).type
+        ),
+      })
     ),
   ];
 };

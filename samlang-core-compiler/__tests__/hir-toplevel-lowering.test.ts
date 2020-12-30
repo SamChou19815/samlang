@@ -1,11 +1,11 @@
 import compileSamlangSourcesToHighIRSources from '../hir-toplevel-lowering';
 
 import {
+  unitType,
   boolType,
   intType,
   identifierType,
   functionType,
-  unitType,
   Range,
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
@@ -191,7 +191,10 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
         hasReturn: false,
         body: [
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('_module__class_Class1_function_infiniteLoop'),
+            functionExpression: HIR_NAME(
+              '_module__class_Class1_function_infiniteLoop',
+              functionType([], intType)
+            ),
             functionArguments: [],
             returnCollector: '_t0',
           }),
@@ -209,7 +212,10 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
         hasReturn: false,
         body: [
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('_module__class_Main_function_main'),
+            functionExpression: HIR_NAME(
+              '_module__class_Main_function_main',
+              functionType([], unitType)
+            ),
             functionArguments: [],
           }),
         ],

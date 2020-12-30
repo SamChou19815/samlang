@@ -7,7 +7,7 @@ import {
   encodeFunctionNameGlobally,
   encodeMainFunctionName,
 } from 'samlang-core-ast/common-names';
-import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import { ModuleReference, unitType, functionType, Sources } from 'samlang-core-ast/common-nodes';
 import { HIR_FUNCTION_CALL, HIR_NAME, HIR_RETURN } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import type { ClassMemberDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
@@ -66,7 +66,7 @@ const compileSamlangSourcesToHighIRSources = (
         hasReturn: false,
         body: [
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME(entryPointFunctionName),
+            functionExpression: HIR_NAME(entryPointFunctionName, functionType([], unitType)),
             functionArguments: [],
           }),
         ],

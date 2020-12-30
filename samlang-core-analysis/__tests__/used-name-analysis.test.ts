@@ -1,6 +1,7 @@
 import analyzeUsedFunctionNames from '../used-name-analysis';
 
 import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
+import { unitType } from 'samlang-core-ast/common-nodes';
 import {
   HIR_ZERO,
   HIR_NAME,
@@ -24,7 +25,10 @@ it('analyzeUsedFunctionNames test', () => {
             parameters: [],
             hasReturn: false,
             body: [
-              HIR_FUNCTION_CALL({ functionExpression: HIR_NAME('foo'), functionArguments: [] }),
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('foo', unitType),
+                functionArguments: [],
+              }),
             ],
           },
           {
@@ -35,13 +39,19 @@ it('analyzeUsedFunctionNames test', () => {
               HIR_LET({ name: '', assignedExpression: HIR_ZERO }),
               HIR_STRUCT_INITIALIZATION({
                 structVariableName: '',
-                expressionList: [HIR_INDEX_ACCESS({ expression: HIR_NAME('bar'), index: 0 })],
+                expressionList: [
+                  HIR_INDEX_ACCESS({
+                    type: unitType,
+                    expression: HIR_NAME('bar', unitType),
+                    index: 0,
+                  }),
+                ],
               }),
               HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('baz'),
-                functionArguments: [HIR_NAME('haha')],
+                functionExpression: HIR_NAME('baz', unitType),
+                functionArguments: [HIR_NAME('haha', unitType)],
               }),
-              HIR_RETURN(HIR_NAME('bar')),
+              HIR_RETURN(HIR_NAME('bar', unitType)),
               HIR_WHILE_TRUE([
                 HIR_IF_ELSE({
                   booleanExpression: HIR_ZERO,
@@ -49,9 +59,10 @@ it('analyzeUsedFunctionNames test', () => {
                     HIR_LET({
                       name: '',
                       assignedExpression: HIR_BINARY({
+                        type: unitType,
                         operator: '+',
-                        e1: HIR_NAME('foo'),
-                        e2: HIR_NAME('bar'),
+                        e1: HIR_NAME('foo', unitType),
+                        e2: HIR_NAME('bar', unitType),
                       }),
                     }),
                   ],
@@ -66,7 +77,7 @@ it('analyzeUsedFunctionNames test', () => {
             hasReturn: false,
             body: [
               HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('foo'),
+                functionExpression: HIR_NAME('foo', unitType),
                 functionArguments: [],
               }),
             ],
