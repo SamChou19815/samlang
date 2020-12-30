@@ -11,8 +11,6 @@ import { ShorthandObjFieldDeclarationContext } from './PLParser';
 import { ObjTypeContext } from './PLParser';
 import { VariantTypeContext } from './PLParser';
 import { ValStatementContext } from './PLParser';
-import { ClassAsModuleMemberContext } from './PLParser';
-import { InterfaceAsModuleMemberContext } from './PLParser';
 import { RawVarContext } from './PLParser';
 import { RenamedVarContext } from './PLParser';
 import { ClassHeaderContext } from './PLParser';
@@ -55,12 +53,9 @@ import { FunctionTypeNoArgContext } from './PLParser';
 import { ModuleContext } from './PLParser';
 import { ImportModuleMembersContext } from './PLParser';
 import { ModuleReferenceContext } from './PLParser';
-import { ModuleMemberContext } from './PLParser';
 import { ClazzContext } from './PLParser';
-import { InterfazeContext } from './PLParser';
 import { ClassHeaderDeclarationContext } from './PLParser';
 import { ClassMemberDefinitionContext } from './PLParser';
-import { ClassMemberDeclarationContext } from './PLParser';
 import { TypeParametersDeclarationContext } from './PLParser';
 import { TypeDeclarationContext } from './PLParser';
 import { ObjectTypeFieldDeclarationContext } from './PLParser';
@@ -155,20 +150,6 @@ export interface PLVisitor<Result> extends ParseTreeVisitor<Result> {
    * @return the visitor result
    */
   visitValStatement?: (ctx: ValStatementContext) => Result;
-  /**
-   * Visit a parse tree produced by the `ClassAsModuleMember`
-   * labeled alternative in `PLParser.moduleMember`.
-   * @param ctx the parse tree
-   * @return the visitor result
-   */
-  visitClassAsModuleMember?: (ctx: ClassAsModuleMemberContext) => Result;
-  /**
-   * Visit a parse tree produced by the `InterfaceAsModuleMember`
-   * labeled alternative in `PLParser.moduleMember`.
-   * @param ctx the parse tree
-   * @return the visitor result
-   */
-  visitInterfaceAsModuleMember?: (ctx: InterfaceAsModuleMemberContext) => Result;
   /**
    * Visit a parse tree produced by the `RawVar`
    * labeled alternative in `PLParser.varOrRenamedVar`.
@@ -461,23 +442,11 @@ export interface PLVisitor<Result> extends ParseTreeVisitor<Result> {
    */
   visitModuleReference?: (ctx: ModuleReferenceContext) => Result;
   /**
-   * Visit a parse tree produced by `PLParser.moduleMember`.
-   * @param ctx the parse tree
-   * @return the visitor result
-   */
-  visitModuleMember?: (ctx: ModuleMemberContext) => Result;
-  /**
    * Visit a parse tree produced by `PLParser.clazz`.
    * @param ctx the parse tree
    * @return the visitor result
    */
   visitClazz?: (ctx: ClazzContext) => Result;
-  /**
-   * Visit a parse tree produced by `PLParser.interfaze`.
-   * @param ctx the parse tree
-   * @return the visitor result
-   */
-  visitInterfaze?: (ctx: InterfazeContext) => Result;
   /**
    * Visit a parse tree produced by `PLParser.classHeaderDeclaration`.
    * @param ctx the parse tree
@@ -490,12 +459,6 @@ export interface PLVisitor<Result> extends ParseTreeVisitor<Result> {
    * @return the visitor result
    */
   visitClassMemberDefinition?: (ctx: ClassMemberDefinitionContext) => Result;
-  /**
-   * Visit a parse tree produced by `PLParser.classMemberDeclaration`.
-   * @param ctx the parse tree
-   * @return the visitor result
-   */
-  visitClassMemberDeclaration?: (ctx: ClassMemberDeclarationContext) => Result;
   /**
    * Visit a parse tree produced by `PLParser.typeParametersDeclaration`.
    * @param ctx the parse tree

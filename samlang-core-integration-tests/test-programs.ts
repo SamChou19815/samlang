@@ -151,11 +151,6 @@ class ConflictingFunctions {
   function test(): unit = ConflictingFunctions.test()
 }
 
-class ConflictingMethods(val a: int) {
-  method test(): int = 42
-  method test(): int = 42
-}
-
 class ConflictingMethodsAndFunctions(val a: int) {
   method test(): int = 42
   function test(): unit = ConflictingMethodsAndFunctions.test()

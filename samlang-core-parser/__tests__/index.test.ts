@@ -208,14 +208,6 @@ it('Can handle bad programs.', () => {
         val _ = (a, b, c) -> if a(b + 1) then b else c;
       }
     }
-
-    interface FooBar {
-      method baz(haha: string): int
-    }
-
-    interface Parameterized<T> {
-      method <C> baz(c: C): T
-    }
     `,
     moduleErrorCollector
   );
@@ -223,7 +215,7 @@ it('Can handle bad programs.', () => {
     fail();
   }
   expect(parsed.imports.length).toBe(1);
-  expect(parsed.classes.length).toBe(4);
+  expect(parsed.classes.length).toBe(2);
   expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
 });
 

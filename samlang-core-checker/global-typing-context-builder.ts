@@ -9,14 +9,14 @@ import type {
 } from './typing-context';
 
 import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
-import type { ClassInterface, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import type { ClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { hashMapOf, isNotNull, assertNotNull } from 'samlang-core-utils';
 
 const buildClassTypingContext = ({
   typeParameters,
   typeDefinition,
   members,
-}: ClassInterface): ClassTypingContext => {
+}: ClassDefinition): ClassTypingContext => {
   const functions: Record<string, MemberTypeInformation> = {};
   const methods: Record<string, MemberTypeInformation> = {};
   members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {

@@ -93,35 +93,32 @@ export declare class PLParser extends Parser {
   static readonly RULE_module = 0;
   static readonly RULE_importModuleMembers = 1;
   static readonly RULE_moduleReference = 2;
-  static readonly RULE_moduleMember = 3;
-  static readonly RULE_clazz = 4;
-  static readonly RULE_interfaze = 5;
-  static readonly RULE_classHeaderDeclaration = 6;
-  static readonly RULE_classMemberDefinition = 7;
-  static readonly RULE_classMemberDeclaration = 8;
-  static readonly RULE_typeParametersDeclaration = 9;
-  static readonly RULE_typeDeclaration = 10;
-  static readonly RULE_objectTypeFieldDeclaration = 11;
-  static readonly RULE_variantTypeConstructorDeclaration = 12;
-  static readonly RULE_typeExpr = 13;
-  static readonly RULE_typeParameters = 14;
-  static readonly RULE_annotatedVariable = 15;
-  static readonly RULE_optionallyAnnotatedParameter = 16;
-  static readonly RULE_typeAnnotation = 17;
-  static readonly RULE_patternToExpr = 18;
-  static readonly RULE_statementBlock = 19;
-  static readonly RULE_statement = 20;
-  static readonly RULE_expression = 21;
-  static readonly RULE_objectFieldDeclarations = 22;
-  static readonly RULE_objectFieldDeclaration = 23;
-  static readonly RULE_functionArguments = 24;
-  static readonly RULE_pattern = 25;
-  static readonly RULE_varOrWildCard = 26;
-  static readonly RULE_varOrRenamedVar = 27;
-  static readonly RULE_factorOperator = 28;
-  static readonly RULE_termOperator = 29;
-  static readonly RULE_comparisonOperator = 30;
-  static readonly RULE_literal = 31;
+  static readonly RULE_clazz = 3;
+  static readonly RULE_classHeaderDeclaration = 4;
+  static readonly RULE_classMemberDefinition = 5;
+  static readonly RULE_typeParametersDeclaration = 6;
+  static readonly RULE_typeDeclaration = 7;
+  static readonly RULE_objectTypeFieldDeclaration = 8;
+  static readonly RULE_variantTypeConstructorDeclaration = 9;
+  static readonly RULE_typeExpr = 10;
+  static readonly RULE_typeParameters = 11;
+  static readonly RULE_annotatedVariable = 12;
+  static readonly RULE_optionallyAnnotatedParameter = 13;
+  static readonly RULE_typeAnnotation = 14;
+  static readonly RULE_patternToExpr = 15;
+  static readonly RULE_statementBlock = 16;
+  static readonly RULE_statement = 17;
+  static readonly RULE_expression = 18;
+  static readonly RULE_objectFieldDeclarations = 19;
+  static readonly RULE_objectFieldDeclaration = 20;
+  static readonly RULE_functionArguments = 21;
+  static readonly RULE_pattern = 22;
+  static readonly RULE_varOrWildCard = 23;
+  static readonly RULE_varOrRenamedVar = 24;
+  static readonly RULE_factorOperator = 25;
+  static readonly RULE_termOperator = 26;
+  static readonly RULE_comparisonOperator = 27;
+  static readonly RULE_literal = 28;
   static readonly ruleNames: string[];
   private static readonly _LITERAL_NAMES;
   private static readonly _SYMBOLIC_NAMES;
@@ -134,12 +131,9 @@ export declare class PLParser extends Parser {
   module(): ModuleContext;
   importModuleMembers(): ImportModuleMembersContext;
   moduleReference(): ModuleReferenceContext;
-  moduleMember(): ModuleMemberContext;
   clazz(): ClazzContext;
-  interfaze(): InterfazeContext;
   classHeaderDeclaration(): ClassHeaderDeclarationContext;
   classMemberDefinition(): ClassMemberDefinitionContext;
-  classMemberDeclaration(): ClassMemberDeclarationContext;
   typeParametersDeclaration(): TypeParametersDeclarationContext;
   typeDeclaration(): TypeDeclarationContext;
   objectTypeFieldDeclaration(): ObjectTypeFieldDeclarationContext;
@@ -174,8 +168,8 @@ export declare class ModuleContext extends ParserRuleContext {
   EOF(): TerminalNode;
   importModuleMembers(): ImportModuleMembersContext[];
   importModuleMembers(i: number): ImportModuleMembersContext;
-  moduleMember(): ModuleMemberContext[];
-  moduleMember(i: number): ModuleMemberContext;
+  clazz(): ClazzContext[];
+  clazz(i: number): ClazzContext;
   constructor(parent: ParserRuleContext | undefined, invokingState: number);
   get ruleIndex(): number;
   accept<Result>(visitor: PLVisitor<Result>): Result;
@@ -203,40 +197,12 @@ export declare class ModuleReferenceContext extends ParserRuleContext {
   get ruleIndex(): number;
   accept<Result>(visitor: PLVisitor<Result>): Result;
 }
-export declare class ModuleMemberContext extends ParserRuleContext {
-  constructor(parent: ParserRuleContext | undefined, invokingState: number);
-  get ruleIndex(): number;
-  copyFrom(ctx: ModuleMemberContext): void;
-}
-export declare class ClassAsModuleMemberContext extends ModuleMemberContext {
-  clazz(): ClazzContext;
-  constructor(ctx: ModuleMemberContext);
-  accept<Result>(visitor: PLVisitor<Result>): Result;
-}
-export declare class InterfaceAsModuleMemberContext extends ModuleMemberContext {
-  interfaze(): InterfazeContext;
-  constructor(ctx: ModuleMemberContext);
-  accept<Result>(visitor: PLVisitor<Result>): Result;
-}
 export declare class ClazzContext extends ParserRuleContext {
   classHeaderDeclaration(): ClassHeaderDeclarationContext;
   LBRACE(): TerminalNode;
   RBRACE(): TerminalNode;
   classMemberDefinition(): ClassMemberDefinitionContext[];
   classMemberDefinition(i: number): ClassMemberDefinitionContext;
-  constructor(parent: ParserRuleContext | undefined, invokingState: number);
-  get ruleIndex(): number;
-  accept<Result>(visitor: PLVisitor<Result>): Result;
-}
-export declare class InterfazeContext extends ParserRuleContext {
-  INTERFACE(): TerminalNode;
-  UpperId(): TerminalNode;
-  LBRACE(): TerminalNode;
-  RBRACE(): TerminalNode;
-  PRIVATE(): TerminalNode | undefined;
-  typeParametersDeclaration(): TypeParametersDeclarationContext | undefined;
-  classMemberDeclaration(): ClassMemberDeclarationContext[];
-  classMemberDeclaration(i: number): ClassMemberDeclarationContext;
   constructor(parent: ParserRuleContext | undefined, invokingState: number);
   get ruleIndex(): number;
   accept<Result>(visitor: PLVisitor<Result>): Result;
@@ -271,22 +237,6 @@ export declare class ClassMemberDefinitionContext extends ParserRuleContext {
   FUNCTION(): TerminalNode | undefined;
   METHOD(): TerminalNode | undefined;
   PRIVATE(): TerminalNode | undefined;
-  typeParametersDeclaration(): TypeParametersDeclarationContext | undefined;
-  annotatedVariable(): AnnotatedVariableContext[];
-  annotatedVariable(i: number): AnnotatedVariableContext;
-  COLON(): TerminalNode | undefined;
-  typeExpr(): TypeExprContext | undefined;
-  COMMA(): TerminalNode[];
-  COMMA(i: number): TerminalNode;
-  constructor(parent: ParserRuleContext | undefined, invokingState: number);
-  get ruleIndex(): number;
-  accept<Result>(visitor: PLVisitor<Result>): Result;
-}
-export declare class ClassMemberDeclarationContext extends ParserRuleContext {
-  METHOD(): TerminalNode;
-  LowerId(): TerminalNode;
-  LPAREN(): TerminalNode;
-  RPAREN(): TerminalNode;
   typeParametersDeclaration(): TypeParametersDeclarationContext | undefined;
   annotatedVariable(): AnnotatedVariableContext[];
   annotatedVariable(i: number): AnnotatedVariableContext;
