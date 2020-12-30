@@ -50,23 +50,10 @@ import {
   EXPRESSION_MATCH,
   EXPRESSION_STATEMENT_BLOCK,
 } from 'samlang-core-ast/samlang-expressions';
-import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 
 const DUMMY_IDENTIFIER_TYPE = identifierType(ModuleReference.ROOT, 'Dummy');
 const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE });
 const IR_THIS = HIR_VARIABLE('_this', DUMMY_IDENTIFIER_TYPE);
-
-const testModule: SamlangModule = {
-  imports: [
-    {
-      range: Range.DUMMY,
-      importedMembers: [['ImportedClass', Range.DUMMY]],
-      importedModule: new ModuleReference(['ModuleModule']),
-      importedModuleRange: Range.DUMMY,
-    },
-  ],
-  classes: [],
-};
 
 const expectCorrectlyLowered = (
   samlangExpression: SamlangExpression,
@@ -77,12 +64,7 @@ const expectCorrectlyLowered = (
   }: Partial<ReturnType<typeof lowerSamlangExpression>>
 ): void =>
   expect(
-    lowerSamlangExpression(
-      ModuleReference.ROOT,
-      testModule,
-      'ENCODED_FUNCTION_NAME',
-      samlangExpression
-    )
+    lowerSamlangExpression(ModuleReference.ROOT, 'ENCODED_FUNCTION_NAME', samlangExpression)
   ).toEqual({
     syntheticFunctions,
     statements,
@@ -112,6 +94,7 @@ it('ClassMember lowering works.', () => {
       range: Range.DUMMY,
       type: unitType,
       typeArguments: [],
+      moduleReference: ModuleReference.ROOT,
       className: 'A',
       classNameRange: Range.DUMMY,
       memberName: 'b',
@@ -345,6 +328,7 @@ it('FunctionCall family lowering works 4/n.', () => {
         range: Range.DUMMY,
         type: intType,
         typeArguments: [],
+        moduleReference: new ModuleReference(['ModuleModule']),
         className: 'ImportedClass',
         classNameRange: Range.DUMMY,
         memberName: 'bar',

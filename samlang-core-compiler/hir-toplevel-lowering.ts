@@ -20,12 +20,7 @@ const compileFunction = (
   classMember: ClassMemberDefinition
 ): readonly HighIRFunction[] => {
   const encodedName = encodeFunctionNameGlobally(moduleReference, className, classMember.name);
-  const bodyLoweringResult = lowerSamlangExpression(
-    moduleReference,
-    samlangModule,
-    encodedName,
-    classMember.body
-  );
+  const bodyLoweringResult = lowerSamlangExpression(moduleReference, encodedName, classMember.body);
   const parameters = classMember.parameters.map(({ name }) => name);
   const parametersWithThis = classMember.isMethod ? ['_this', ...parameters] : parameters;
   const statements = bodyLoweringResult.statements;

@@ -417,16 +417,13 @@ export class LanguageServices {
     if (position.column < 0) return [];
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     const classOfExpression = this.state.classLocationLookup.get(moduleReference, position);
-    const moduleContext = this.state.globalTypingContext.get(moduleReference);
     // istanbul ignore next
-    if (expression == null || classOfExpression == null || moduleContext == null) return [];
+    if (expression == null || classOfExpression == null) return [];
     if (expression.__type__ === 'ClassMemberExpression') {
+      const moduleContext = this.state.globalTypingContext.get(expression.moduleReference);
       const className = expression.className;
-      const relevantClassType =
-        // istanbul ignore next
-        moduleContext.definedClasses[className] ??
-        // istanbul ignore next
-        moduleContext.importedClasses[className];
+      // istanbul ignore next
+      const relevantClassType = moduleContext?.definedClasses[className];
       // istanbul ignore next
       if (relevantClassType == null) return [];
       return Object.entries(relevantClassType.functions).map(([name, typeInformation]) => {
@@ -452,9 +449,8 @@ export class LanguageServices {
         return [];
     }
     const relevantClassType =
-      moduleContext.definedClasses[type.identifier] ??
       // istanbul ignore next
-      moduleContext.importedClasses[type.identifier];
+      this.state.globalTypingContext.get(type.moduleReference)?.definedClasses[type.identifier];
     // istanbul ignore next
     if (relevantClassType == null) return [];
     const completionResults: AutoCompletionItem[] = [];

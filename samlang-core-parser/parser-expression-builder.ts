@@ -131,7 +131,7 @@ export default class ExpressionBuilder
 
   constructor(
     private readonly errorCollector: ModuleErrorCollector,
-    resolveClass: (className: string) => ModuleReference
+    private readonly resolveClass: (className: string) => ModuleReference
   ) {
     super();
     this.typeBuilder = new TypeBuilder(resolveClass);
@@ -203,6 +203,7 @@ export default class ExpressionBuilder
       range: contextRange(ctx),
       type: UndecidedTypes.next(),
       typeArguments: [], // At parsing time, the information is not resolved yet.
+      moduleReference: this.resolveClass(className),
       className,
       classNameRange: tokenRange(classNameNode),
       memberName,
