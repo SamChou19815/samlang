@@ -63,6 +63,7 @@ export class LanguageServiceState {
         errorCollector.getModuleErrorCollector(moduleReference)
       );
       this.rawModules.set(moduleReference, rawModule);
+      // TODO: update it to compute used module from type information instead.
       this.dependencyTracker.update(
         moduleReference,
         rawModule.imports.map((it) => it.importedModule)
