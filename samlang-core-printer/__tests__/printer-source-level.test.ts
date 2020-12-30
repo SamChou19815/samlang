@@ -245,7 +245,7 @@ class Option<T>(None(unit), Some(T)) {
   function c(): int = { val a: int = 3; }
 }
 
-private class Obj(private val d: int, val e: int) {
+class Obj(private val d: int, val e: int) {
   function valExample(): unit = {
     val a: int = 1;
     val b: int = 2;
@@ -290,7 +290,7 @@ class Option<T>(None(unit), Some(T)) {
 
 }
 
-private class Obj(
+class Obj(
   private val d: int,
   val e: int
 ) {

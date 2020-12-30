@@ -166,9 +166,6 @@ export declare class PLParser extends Parser {
   literal(): LiteralContext;
   sempred(_localctx: RuleContext, ruleIndex: number, predIndex: number): boolean;
   private expression_sempred;
-  private static readonly _serializedATNSegments;
-  private static readonly _serializedATNSegment0;
-  private static readonly _serializedATNSegment1;
   static readonly _serializedATN: string;
   static __ATN: ATN;
   static get _ATN(): ATN;
@@ -255,7 +252,6 @@ export declare class ClassHeaderContext extends ClassHeaderDeclarationContext {
   LPAREN(): TerminalNode;
   typeDeclaration(): TypeDeclarationContext;
   RPAREN(): TerminalNode;
-  PRIVATE(): TerminalNode | undefined;
   typeParametersDeclaration(): TypeParametersDeclarationContext | undefined;
   constructor(ctx: ClassHeaderDeclarationContext);
   accept<Result>(visitor: PLVisitor<Result>): Result;
@@ -263,7 +259,6 @@ export declare class ClassHeaderContext extends ClassHeaderDeclarationContext {
 export declare class UtilClassHeaderContext extends ClassHeaderDeclarationContext {
   CLASS(): TerminalNode;
   UpperId(): TerminalNode;
-  PRIVATE(): TerminalNode | undefined;
   constructor(ctx: ClassHeaderDeclarationContext);
   accept<Result>(visitor: PLVisitor<Result>): Result;
 }

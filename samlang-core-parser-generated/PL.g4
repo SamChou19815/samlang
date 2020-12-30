@@ -16,8 +16,8 @@ interfaze : PRIVATE? INTERFACE UpperId typeParametersDeclaration? LBRACE classMe
 
 // Module Level Declarations
 classHeaderDeclaration
-    : PRIVATE? CLASS UpperId typeParametersDeclaration? LPAREN typeDeclaration RPAREN # ClassHeader
-    | PRIVATE? CLASS UpperId # UtilClassHeader
+    : CLASS UpperId typeParametersDeclaration? LPAREN typeDeclaration RPAREN # ClassHeader
+    | CLASS UpperId # UtilClassHeader
     ;
 classMemberDefinition
     : PRIVATE? (FUNCTION | METHOD) typeParametersDeclaration? LowerId
