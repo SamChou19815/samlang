@@ -59,7 +59,6 @@ it('analyzeUsedFunctionNames test', () => {
                     HIR_LET({
                       name: '',
                       assignedExpression: HIR_BINARY({
-                        type: unitType,
                         operator: '+',
                         e1: HIR_NAME('foo', unitType),
                         e2: HIR_NAME('bar', unitType),

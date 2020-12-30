@@ -35,7 +35,6 @@ it('eliminateUselessEndingMoveForHighIRStatements if-else test 1', () => {
     eliminateUselessEndingMoveForHighIRStatements([
       HIR_IF_ELSE({
         booleanExpression: HIR_BINARY({
-          type: intType,
           operator: '==',
           e1: HIR_VARIABLE('n', intType),
           e2: HIR_ZERO,
@@ -55,13 +54,11 @@ it('eliminateUselessEndingMoveForHighIRStatements if-else test 1', () => {
             ),
             functionArguments: [
               HIR_BINARY({
-                type: intType,
                 operator: '-',
                 e1: HIR_VARIABLE('n', intType),
                 e2: HIR_ONE,
               }),
               HIR_BINARY({
-                type: intType,
                 operator: '*',
                 e1: HIR_VARIABLE('n', intType),
                 e2: HIR_VARIABLE('acc', intType),
@@ -76,7 +73,6 @@ it('eliminateUselessEndingMoveForHighIRStatements if-else test 1', () => {
   ).toEqual([
     HIR_IF_ELSE({
       booleanExpression: HIR_BINARY({
-        type: intType,
         operator: '==',
         e1: HIR_VARIABLE('n', intType),
         e2: HIR_ZERO,
@@ -90,13 +86,11 @@ it('eliminateUselessEndingMoveForHighIRStatements if-else test 1', () => {
           ),
           functionArguments: [
             HIR_BINARY({
-              type: intType,
               operator: '-',
               e1: HIR_VARIABLE('n', intType),
               e2: HIR_ONE,
             }),
             HIR_BINARY({
-              type: intType,
               operator: '*',
               e1: HIR_VARIABLE('n', intType),
               e2: HIR_VARIABLE('acc', intType),
@@ -115,7 +109,6 @@ it('eliminateUselessEndingMoveForHighIRStatements if-else test 2', () => {
       HIR_STRUCT_INITIALIZATION({ structVariableName: 'useless', expressionList: [] }),
       HIR_IF_ELSE({
         booleanExpression: HIR_BINARY({
-          type: intType,
           operator: '==',
           e1: HIR_VARIABLE('n', intType),
           e2: HIR_ZERO,

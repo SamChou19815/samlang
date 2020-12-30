@@ -294,7 +294,6 @@ class HighIRExpressionLoweringManager {
         return {
           statements: result.statements,
           expression: HIR_BINARY({
-            type: intType,
             operator: '^',
             e1: result.expression,
             e2: HIR_INT(BigInt(1)),
@@ -304,7 +303,6 @@ class HighIRExpressionLoweringManager {
         return {
           statements: result.statements,
           expression: HIR_BINARY({
-            type: intType,
             operator: '-',
             e1: HIR_INT(BigInt(0)),
             e2: result.expression,
@@ -451,7 +449,6 @@ class HighIRExpressionLoweringManager {
 
         functionCall = HIR_IF_ELSE({
           booleanExpression: HIR_BINARY({
-            type: intType,
             operator: '==',
             e1: HIR_VARIABLE(contextTemp, intType),
             e2: HIR_ZERO,
@@ -572,7 +569,6 @@ class HighIRExpressionLoweringManager {
         return {
           statements: loweredStatements,
           expression: HIR_BINARY({
-            type: expression.type,
             operator: operatorSymbol,
             e1: loweredE1,
             e2: loweredE2,
@@ -670,7 +666,6 @@ class HighIRExpressionLoweringManager {
     if (loweredMatchingList.length < 1) throw new Error();
     let ifElse = HIR_IF_ELSE({
       booleanExpression: HIR_BINARY({
-        type: intType,
         operator: '==',
         e1: HIR_VARIABLE(variableForTag, intType),
         e2: HIR_INT(
@@ -684,7 +679,6 @@ class HighIRExpressionLoweringManager {
       const { tagOrder, statements: localStatements } = checkNotNull(loweredMatchingList[i]);
       ifElse = HIR_IF_ELSE({
         booleanExpression: HIR_BINARY({
-          type: intType,
           operator: '==',
           e1: HIR_VARIABLE(variableForTag, intType),
           e2: HIR_INT(BigInt(tagOrder)),

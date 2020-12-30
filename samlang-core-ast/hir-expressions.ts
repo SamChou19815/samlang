@@ -144,13 +144,12 @@ export const HIR_INDEX_ACCESS = ({
 });
 
 export const HIR_BINARY = ({
-  type,
   operator,
   e1,
   e2,
-}: ConstructorArgumentObject<HighIRBinaryExpression>): HighIRBinaryExpression => ({
+}: Omit<ConstructorArgumentObject<HighIRBinaryExpression>, 'type'>): HighIRBinaryExpression => ({
   __type__: 'HighIRBinaryExpression',
-  type,
+  type: intType,
   operator,
   e1,
   e2,
