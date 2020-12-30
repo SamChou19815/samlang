@@ -1,7 +1,9 @@
-import type { IROperator } from 'samlang-core-ast/common-operators';
+import { intType, stringType, Type } from './common-nodes';
+import type { IROperator } from './common-operators';
 
 interface BaseHighIRExpression {
   readonly __type__: string;
+  readonly type: Type;
 }
 
 export interface HighIRIntLiteralExpression extends BaseHighIRExpression {
@@ -105,42 +107,50 @@ type ConstructorArgumentObject<E extends BaseHighIRExpression | BaseHighIRStatem
 
 export const HIR_INT = (value: bigint): HighIRIntLiteralExpression => ({
   __type__: 'HighIRIntLiteralExpression',
+  type: intType,
   value,
 });
 
 export const HIR_STRING = (value: string): HighIRStringLiteralExpression => ({
   __type__: 'HighIRStringLiteralExpression',
+  type: stringType,
   value,
 });
 
 export const HIR_ZERO: HighIRIntLiteralExpression = HIR_INT(BigInt(0));
 export const HIR_ONE: HighIRIntLiteralExpression = HIR_INT(BigInt(1));
 
-export const HIR_NAME = (name: string): HighIRNameExpression => ({
+export const HIR_NAME = (name: string, type: Type): HighIRNameExpression => ({
   __type__: 'HighIRNameExpression',
+  type,
   name,
 });
 
-export const HIR_VARIABLE = (name: string): HighIRVariableExpression => ({
+export const HIR_VARIABLE = (name: string, type: Type): HighIRVariableExpression => ({
   __type__: 'HighIRVariableExpression',
+  type,
   name,
 });
 
 export const HIR_INDEX_ACCESS = ({
+  type,
   expression,
   index,
 }: ConstructorArgumentObject<HighIRIndexAccessExpression>): HighIRIndexAccessExpression => ({
   __type__: 'HighIRIndexAccessExpression',
+  type,
   expression,
   index,
 });
 
 export const HIR_BINARY = ({
+  type,
   operator,
   e1,
   e2,
 }: ConstructorArgumentObject<HighIRBinaryExpression>): HighIRBinaryExpression => ({
   __type__: 'HighIRBinaryExpression',
+  type,
   operator,
   e1,
   e2,

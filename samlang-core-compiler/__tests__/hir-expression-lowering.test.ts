@@ -54,7 +54,7 @@ import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 
 const DUMMY_IDENTIFIER_TYPE = identifierType('Dummy');
 const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE });
-const IR_THIS = HIR_VARIABLE('_this');
+const IR_THIS = HIR_VARIABLE('_this', DUMMY_IDENTIFIER_TYPE);
 
 const testModule: SamlangModule = {
   imports: [
@@ -102,7 +102,7 @@ it('This lowering works.', () => {
 
 it('Variable lowering works.', () => {
   expectCorrectlyLowered(EXPRESSION_VARIABLE({ range: Range.DUMMY, type: unitType, name: 'foo' }), {
-    expression: HIR_VARIABLE('foo'),
+    expression: HIR_VARIABLE('foo', unitType),
   });
 });
 
@@ -121,22 +121,26 @@ it('ClassMember lowering works.', () => {
       statements: [
         HIR_STRUCT_INITIALIZATION({
           structVariableName: '_t0',
-          expressionList: [HIR_NAME('_module__class_A_function_b'), HIR_ZERO],
+          expressionList: [HIR_NAME('_module__class_A_function_b', unitType), HIR_ZERO],
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', tupleType([unitType, intType])),
     }
   );
 });
 
 it('Lowering to StructConstructor works.', () => {
   expectCorrectlyLowered(
-    EXPRESSION_TUPLE_CONSTRUCTOR({ range: Range.DUMMY, type: tupleType([]), expressions: [THIS] }),
+    EXPRESSION_TUPLE_CONSTRUCTOR({
+      range: Range.DUMMY,
+      type: tupleType([DUMMY_IDENTIFIER_TYPE]),
+      expressions: [THIS],
+    }),
     {
       statements: [
         HIR_STRUCT_INITIALIZATION({ structVariableName: '_t0', expressionList: [IR_THIS] }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', tupleType([DUMMY_IDENTIFIER_TYPE])),
     }
   );
 
@@ -153,10 +157,10 @@ it('Lowering to StructConstructor works.', () => {
       statements: [
         HIR_STRUCT_INITIALIZATION({
           structVariableName: '_t0',
-          expressionList: [IR_THIS, HIR_VARIABLE('bar')],
+          expressionList: [IR_THIS, HIR_VARIABLE('bar', unitType)],
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', tupleType([DUMMY_IDENTIFIER_TYPE, unitType])),
     }
   );
 
@@ -175,7 +179,7 @@ it('Lowering to StructConstructor works.', () => {
           expressionList: [HIR_INT(BigInt(1)), IR_THIS],
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', tupleType([intType, DUMMY_IDENTIFIER_TYPE])),
     }
   );
 });
@@ -189,7 +193,7 @@ it('FieldAccess lowering works.', () => {
       fieldName: 'foo',
       fieldOrder: 0,
     }),
-    { expression: HIR_INDEX_ACCESS({ expression: IR_THIS, index: 0 }) }
+    { expression: HIR_INDEX_ACCESS({ type: DUMMY_IDENTIFIER_TYPE, expression: IR_THIS, index: 0 }) }
   );
 });
 
@@ -197,7 +201,7 @@ it('MethodAccess lowering works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_METHOD_ACCESS({
       range: Range.DUMMY,
-      type: unitType,
+      type: functionType([], unitType),
       expression: THIS,
       methodName: 'foo',
     }),
@@ -205,10 +209,16 @@ it('MethodAccess lowering works.', () => {
       statements: [
         HIR_STRUCT_INITIALIZATION({
           structVariableName: '_t0',
-          expressionList: [HIR_NAME('_module__class_Dummy_function_foo'), IR_THIS],
+          expressionList: [
+            HIR_NAME('_module__class_Dummy_function_foo', functionType([], unitType)),
+            IR_THIS,
+          ],
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE(
+        '_t0',
+        tupleType([functionType([], unitType), DUMMY_IDENTIFIER_TYPE])
+      ),
     }
   );
 });
@@ -224,12 +234,17 @@ it('Unary lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('_builtin_throw'),
+          functionExpression: HIR_NAME('_builtin_throw', functionType([stringType], unitType)),
           functionArguments: [IR_THIS],
           returnCollector: '_t0',
         }),
       ],
-      expression: HIR_BINARY({ operator: '^', e1: HIR_ZERO, e2: HIR_INT(BigInt(1)) }),
+      expression: HIR_BINARY({
+        type: intType,
+        operator: '^',
+        e1: HIR_ZERO,
+        e2: HIR_ONE,
+      }),
     }
   );
 
@@ -243,17 +258,22 @@ it('Unary lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('_builtin_throw'),
+          functionExpression: HIR_NAME('_builtin_throw', functionType([stringType], unitType)),
           functionArguments: [IR_THIS],
           returnCollector: '_t0',
         }),
       ],
-      expression: HIR_BINARY({ operator: '-', e1: HIR_INT(BigInt(0)), e2: HIR_ZERO }),
+      expression: HIR_BINARY({
+        type: intType,
+        operator: '-',
+        e1: HIR_ZERO,
+        e2: HIR_ZERO,
+      }),
     }
   );
 });
 
-it('FunctionCall family lowering works.', () => {
+it('FunctionCall family lowering works 1/n.', () => {
   expectCorrectlyLowered(
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
@@ -264,14 +284,17 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('_builtin_intToString'),
+          functionExpression: HIR_NAME('_builtin_intToString', functionType([intType], stringType)),
           functionArguments: [IR_THIS],
           returnCollector: '_t0',
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', stringType),
     }
   );
+});
+
+it('FunctionCall family lowering works 2/n.', () => {
   expectCorrectlyLowered(
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
@@ -282,14 +305,17 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('_builtin_stringToInt'),
+          functionExpression: HIR_NAME('_builtin_stringToInt', functionType([stringType], intType)),
           functionArguments: [IR_THIS],
           returnCollector: '_t0',
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', intType),
     }
   );
+});
+
+it('FunctionCall family lowering works 3/n.', () => {
   expectCorrectlyLowered(
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
@@ -300,15 +326,17 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('_builtin_println'),
+          functionExpression: HIR_NAME('_builtin_println', functionType([stringType], unitType)),
           functionArguments: [IR_THIS],
           returnCollector: '_t0',
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', unitType),
     }
   );
+});
 
+it('FunctionCall family lowering works 4/n.', () => {
   expectCorrectlyLowered(
     EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
@@ -327,15 +355,20 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('_module_ModuleModule_class_ImportedClass_function_bar'),
+          functionExpression: HIR_NAME(
+            '_module_ModuleModule_class_ImportedClass_function_bar',
+            intType
+          ),
           functionArguments: [IR_THIS, IR_THIS],
           returnCollector: '_t0',
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', intType),
     }
   );
+});
 
+it('FunctionCall family lowering works 5/n.', () => {
   expectCorrectlyLowered(
     EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
@@ -351,15 +384,17 @@ it('FunctionCall family lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('_module__class_Dummy_function_fooBar'),
+          functionExpression: HIR_NAME('_module__class_Dummy_function_fooBar', intType),
           functionArguments: [IR_THIS, IR_THIS, IR_THIS],
           returnCollector: '_t0',
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', intType),
     }
   );
+});
 
+it('FunctionCall family lowering works 6/n.', () => {
   expectCorrectlyLowered(
     EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
@@ -373,20 +408,23 @@ it('FunctionCall family lowering works.', () => {
         HIR_LET({
           name: '_t2',
           assignedExpression: HIR_INDEX_ACCESS({
-            expression: HIR_VARIABLE('_t1'),
+            type: intType,
+            expression: HIR_VARIABLE('_t1', intType),
             index: 1,
           }),
         }),
         HIR_IF_ELSE({
           booleanExpression: HIR_BINARY({
+            type: intType,
             operator: '==',
-            e1: HIR_VARIABLE('_t2'),
+            e1: HIR_VARIABLE('_t2', intType),
             e2: HIR_ZERO,
           }),
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_t1'),
+                type: intType,
+                expression: HIR_VARIABLE('_t1', intType),
                 index: 0,
               }),
               functionArguments: [IR_THIS, IR_THIS],
@@ -396,19 +434,22 @@ it('FunctionCall family lowering works.', () => {
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_t1'),
+                type: intType,
+                expression: HIR_VARIABLE('_t1', intType),
                 index: 0,
               }),
-              functionArguments: [HIR_VARIABLE('_t2'), IR_THIS, IR_THIS],
+              functionArguments: [HIR_VARIABLE('_t2', intType), IR_THIS, IR_THIS],
               returnCollector: '_t0',
             }),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', intType),
     }
   );
+});
 
+it('FunctionCall family lowering works 7/n.', () => {
   expectCorrectlyLowered(
     EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
@@ -422,20 +463,23 @@ it('FunctionCall family lowering works.', () => {
         HIR_LET({
           name: '_t2',
           assignedExpression: HIR_INDEX_ACCESS({
-            expression: HIR_VARIABLE('_t1'),
+            type: intType,
+            expression: HIR_VARIABLE('_t1', intType),
             index: 1,
           }),
         }),
         HIR_IF_ELSE({
           booleanExpression: HIR_BINARY({
+            type: intType,
             operator: '==',
-            e1: HIR_VARIABLE('_t2'),
+            e1: HIR_VARIABLE('_t2', intType),
             e2: HIR_ZERO,
           }),
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_t1'),
+                type: intType,
+                expression: HIR_VARIABLE('_t1', intType),
                 index: 0,
               }),
               functionArguments: [IR_THIS, IR_THIS],
@@ -445,39 +489,49 @@ it('FunctionCall family lowering works.', () => {
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_t1'),
+                type: intType,
+                expression: HIR_VARIABLE('_t1', intType),
                 index: 0,
               }),
-              functionArguments: [HIR_VARIABLE('_t2'), IR_THIS, IR_THIS],
+              functionArguments: [HIR_VARIABLE('_t2', intType), IR_THIS, IR_THIS],
               returnCollector: '_t0',
             }),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', unitType),
     }
   );
 });
 
 it('Normal binary lowering works.', () => {
   expectCorrectlyLowered(
-    EXPRESSION_BINARY({ range: Range.DUMMY, type: unitType, operator: PLUS, e1: THIS, e2: THIS }),
-    { expression: HIR_BINARY({ operator: '+', e1: IR_THIS, e2: IR_THIS }) }
+    EXPRESSION_BINARY({ range: Range.DUMMY, type: intType, operator: PLUS, e1: THIS, e2: THIS }),
+    { expression: HIR_BINARY({ type: intType, operator: '+', e1: IR_THIS, e2: IR_THIS }) }
   );
 });
 
 it('String concat binary lowering works.', () => {
   expectCorrectlyLowered(
-    EXPRESSION_BINARY({ range: Range.DUMMY, type: unitType, operator: CONCAT, e1: THIS, e2: THIS }),
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: stringType,
+      operator: CONCAT,
+      e1: THIS,
+      e2: THIS,
+    }),
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('_builtin_stringConcat'),
+          functionExpression: HIR_NAME(
+            '_builtin_stringConcat',
+            functionType([stringType, stringType], stringType)
+          ),
           functionArguments: [IR_THIS, IR_THIS],
           returnCollector: '_t0',
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', stringType),
     }
   );
 });
@@ -495,11 +549,11 @@ it('Short circuiting binary lowering works.', () => {
       statements: [
         HIR_IF_ELSE({
           booleanExpression: HIR_ONE,
-          s1: [HIR_LET({ name: '_t0', assignedExpression: HIR_VARIABLE('foo') })],
+          s1: [HIR_LET({ name: '_t0', assignedExpression: HIR_VARIABLE('foo', unitType) })],
           s2: [HIR_LET({ name: '_t0', assignedExpression: HIR_ZERO })],
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', intType),
     }
   );
 
@@ -519,12 +573,12 @@ it('Short circuiting binary lowering works.', () => {
           s2: [HIR_LET({ name: '_t0', assignedExpression: HIR_ZERO })],
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', intType),
     }
   );
 });
 
-it('Lambda lowering works.', () => {
+it('Lambda lowering works (1/n).', () => {
   expectCorrectlyLowered(
     EXPRESSION_LAMBDA({
       range: Range.DUMMY,
@@ -543,7 +597,8 @@ it('Lambda lowering works.', () => {
             HIR_LET({
               name: 'a',
               assignedExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_context'),
+                type: unitType,
+                expression: HIR_VARIABLE('_context', tupleType([unitType])),
                 index: 0,
               }),
             }),
@@ -553,20 +608,25 @@ it('Lambda lowering works.', () => {
       statements: [
         HIR_STRUCT_INITIALIZATION({
           structVariableName: '_t1',
-          expressionList: [HIR_VARIABLE('a')],
+          expressionList: [HIR_VARIABLE('a', unitType)],
         }),
         HIR_STRUCT_INITIALIZATION({
           structVariableName: '_t0',
           expressionList: [
-            HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
-            HIR_VARIABLE('_t1'),
+            HIR_NAME(
+              '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+              functionType([], unitType)
+            ),
+            HIR_VARIABLE('_t1', intType),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', tupleType([functionType([], unitType), intType])),
     }
   );
+});
 
+it('Lambda lowering works (2/n).', () => {
   expectCorrectlyLowered(
     EXPRESSION_LAMBDA({
       range: Range.DUMMY,
@@ -585,7 +645,8 @@ it('Lambda lowering works.', () => {
             HIR_LET({
               name: 'a',
               assignedExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_context'),
+                type: unitType,
+                expression: HIR_VARIABLE('_context', tupleType([unitType])),
                 index: 0,
               }),
             }),
@@ -596,20 +657,25 @@ it('Lambda lowering works.', () => {
       statements: [
         HIR_STRUCT_INITIALIZATION({
           structVariableName: '_t1',
-          expressionList: [HIR_VARIABLE('a')],
+          expressionList: [HIR_VARIABLE('a', unitType)],
         }),
         HIR_STRUCT_INITIALIZATION({
           structVariableName: '_t0',
           expressionList: [
-            HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
-            HIR_VARIABLE('_t1'),
+            HIR_NAME(
+              '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+              functionType([], intType)
+            ),
+            HIR_VARIABLE('_t1', intType),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE('_t0', tupleType([functionType([], intType), intType])),
     }
   );
+});
 
+it('Lambda lowering works (3/n).', () => {
   expectCorrectlyLowered(
     EXPRESSION_LAMBDA({
       range: Range.DUMMY,
@@ -628,7 +694,8 @@ it('Lambda lowering works.', () => {
             HIR_LET({
               name: 'a',
               assignedExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_context'),
+                type: unitType,
+                expression: HIR_VARIABLE('_context', tupleType([unitType])),
                 index: 0,
               }),
             }),
@@ -639,20 +706,28 @@ it('Lambda lowering works.', () => {
       statements: [
         HIR_STRUCT_INITIALIZATION({
           structVariableName: '_t1',
-          expressionList: [HIR_VARIABLE('a')],
+          expressionList: [HIR_VARIABLE('a', unitType)],
         }),
         HIR_STRUCT_INITIALIZATION({
           structVariableName: '_t0',
           expressionList: [
-            HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
-            HIR_VARIABLE('_t1'),
+            HIR_NAME(
+              '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+              functionType([], DUMMY_IDENTIFIER_TYPE)
+            ),
+            HIR_VARIABLE('_t1', intType),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE(
+        '_t0',
+        tupleType([functionType([], DUMMY_IDENTIFIER_TYPE), intType])
+      ),
     }
   );
+});
 
+it('Lambda lowering works (4/n).', () => {
   expectCorrectlyLowered(
     EXPRESSION_LAMBDA({
       range: Range.DUMMY,
@@ -674,12 +749,18 @@ it('Lambda lowering works.', () => {
         HIR_STRUCT_INITIALIZATION({
           structVariableName: '_t0',
           expressionList: [
-            HIR_NAME('_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0'),
+            HIR_NAME(
+              '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
+              functionType([], DUMMY_IDENTIFIER_TYPE)
+            ),
             HIR_INT(BigInt(1)),
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_t0'),
+      expression: HIR_VARIABLE(
+        '_t0',
+        tupleType([functionType([], DUMMY_IDENTIFIER_TYPE), intType])
+      ),
     }
   );
 });
@@ -690,7 +771,7 @@ it('Panic lowering works.', () => {
     {
       statements: [
         HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME('_builtin_throw'),
+          functionExpression: HIR_NAME('_builtin_throw', functionType([stringType], unitType)),
           functionArguments: [IR_THIS],
           returnCollector: '_t0',
         }),
@@ -703,7 +784,7 @@ it('IfElse lowering works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_IF_ELSE({
       range: Range.DUMMY,
-      type: unitType,
+      type: DUMMY_IDENTIFIER_TYPE,
       boolExpression: THIS,
       e1: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
       e2: THIS,
@@ -714,7 +795,7 @@ it('IfElse lowering works.', () => {
           booleanExpression: IR_THIS,
           s1: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_throw'),
+              functionExpression: HIR_NAME('_builtin_throw', functionType([stringType], unitType)),
               functionArguments: [IR_THIS],
               returnCollector: '_t0',
             }),
@@ -723,7 +804,7 @@ it('IfElse lowering works.', () => {
           s2: [HIR_LET({ name: '_t1', assignedExpression: IR_THIS })],
         }),
       ],
-      expression: HIR_VARIABLE('_t1'),
+      expression: HIR_VARIABLE('_t1', DUMMY_IDENTIFIER_TYPE),
     }
   );
 });
@@ -750,21 +831,24 @@ it('Match lowering works.', () => {
         HIR_LET({
           name: '_t1',
           assignedExpression: HIR_INDEX_ACCESS({
-            expression: HIR_VARIABLE('_t0'),
+            type: intType,
+            expression: HIR_VARIABLE('_t0', DUMMY_IDENTIFIER_TYPE),
             index: 0,
           }),
         }),
         HIR_IF_ELSE({
           booleanExpression: HIR_BINARY({
+            type: intType,
             operator: '==',
-            e1: HIR_VARIABLE('_t1'),
-            e2: HIR_INT(BigInt(0)),
+            e1: HIR_VARIABLE('_t1', intType),
+            e2: HIR_ZERO,
           }),
           s1: [
             HIR_LET({
               name: 'bar',
               assignedExpression: HIR_INDEX_ACCESS({
-                expression: HIR_VARIABLE('_t0'),
+                type: intType,
+                expression: HIR_VARIABLE('_t0', DUMMY_IDENTIFIER_TYPE),
                 index: 1,
               }),
             }),
@@ -776,13 +860,17 @@ it('Match lowering works.', () => {
           s2: [
             HIR_IF_ELSE({
               booleanExpression: HIR_BINARY({
+                type: intType,
                 operator: '==',
-                e1: HIR_VARIABLE('_t1'),
+                e1: HIR_VARIABLE('_t1', intType),
                 e2: HIR_INT(BigInt(1)),
               }),
               s1: [
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_NAME('_builtin_throw'),
+                  functionExpression: HIR_NAME(
+                    '_builtin_throw',
+                    functionType([stringType], unitType)
+                  ),
                   functionArguments: [IR_THIS],
                   returnCollector: '_t3',
                 }),
@@ -796,7 +884,7 @@ it('Match lowering works.', () => {
           ],
         }),
       ],
-      expression: HIR_VARIABLE('_t2'),
+      expression: HIR_VARIABLE('_t2', DUMMY_IDENTIFIER_TYPE),
     }
   );
 });
@@ -829,7 +917,7 @@ it('StatementBlockExpression lowering works.', () => {
                         [null, Range.DUMMY],
                       ],
                     },
-                    typeAnnotation: unitType,
+                    typeAnnotation: DUMMY_IDENTIFIER_TYPE,
                     assignedExpression: THIS,
                   },
                   {
@@ -842,13 +930,13 @@ it('StatementBlockExpression lowering works.', () => {
                         { range: Range.DUMMY, fieldName: 'b', fieldOrder: 1, alias: 'c' },
                       ],
                     },
-                    typeAnnotation: unitType,
+                    typeAnnotation: DUMMY_IDENTIFIER_TYPE,
                     assignedExpression: THIS,
                   },
                   {
                     range: Range.DUMMY,
                     pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
-                    typeAnnotation: unitType,
+                    typeAnnotation: DUMMY_IDENTIFIER_TYPE,
                     assignedExpression: THIS,
                   },
                 ],
@@ -865,7 +953,8 @@ it('StatementBlockExpression lowering works.', () => {
         HIR_LET({
           name: 'a__depth_1',
           assignedExpression: HIR_INDEX_ACCESS({
-            expression: HIR_VARIABLE('_t0'),
+            type: intType,
+            expression: HIR_VARIABLE('_t0', DUMMY_IDENTIFIER_TYPE),
             index: 0,
           }),
         }),
@@ -873,19 +962,21 @@ it('StatementBlockExpression lowering works.', () => {
         HIR_LET({
           name: 'a__depth_1',
           assignedExpression: HIR_INDEX_ACCESS({
-            expression: HIR_VARIABLE('_t1'),
+            type: intType,
+            expression: HIR_VARIABLE('_t1', DUMMY_IDENTIFIER_TYPE),
             index: 0,
           }),
         }),
         HIR_LET({
           name: 'c__depth_1',
           assignedExpression: HIR_INDEX_ACCESS({
-            expression: HIR_VARIABLE('_t1'),
+            type: intType,
+            expression: HIR_VARIABLE('_t1', DUMMY_IDENTIFIER_TYPE),
             index: 1,
           }),
         }),
         HIR_LET({ name: '_t2', assignedExpression: IR_THIS }),
-        HIR_LET({ name: 'a', assignedExpression: HIR_VARIABLE('a__depth_1') }),
+        HIR_LET({ name: 'a', assignedExpression: HIR_VARIABLE('a__depth_1', unitType) }),
       ],
     }
   );
