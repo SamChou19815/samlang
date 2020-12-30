@@ -31,7 +31,7 @@ import type {
 import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
 import { isNotNull, assertNotNull } from 'samlang-core-utils';
 
-type ModuleName = readonly [boolean, string, Range];
+type ModuleName = readonly [string, Range];
 
 class ModuleNameBuilder
   extends AbstractParseTreeVisitor<ModuleName | null>
@@ -39,19 +39,17 @@ class ModuleNameBuilder
   defaultResult = (): ModuleName | null => null;
 
   visitClassHeader = (ctx: ClassHeaderContext): ModuleName | null => {
-    const isPublic = ctx.PRIVATE() == null;
     const symbol = ctx.UpperId().symbol;
     const name = symbol.text;
     assertNotNull(name);
-    return [isPublic, name, tokenRange(symbol)];
+    return [name, tokenRange(symbol)];
   };
 
   visitUtilClassHeader = (ctx: UtilClassHeaderContext): ModuleName | null => {
-    const isPublic = ctx.PRIVATE() == null;
     const symbol = ctx.UpperId().symbol;
     const name = symbol.text;
     assertNotNull(name);
-    return [isPublic, name, tokenRange(symbol)];
+    return [name, tokenRange(symbol)];
   };
 }
 
@@ -201,7 +199,6 @@ class ClassInterfaceBuilder
       range: contextRange(ctx),
       nameRange: tokenRange(ctx.UpperId().symbol),
       name: ctx.UpperId().text,
-      isPublic: ctx.PRIVATE() == null,
       typeParameters,
       members: ctx.classMemberDeclaration().map(this.buildClassMemberDeclaration).filter(isNotNull),
     };
@@ -262,13 +259,12 @@ export class ClassDefinitionBuilder
     if (moduleName == null || typeDefinitionWithTypeParameters == null) {
       return null;
     }
-    const [isPublic, name, nameRange] = moduleName;
+    const [name, nameRange] = moduleName;
     const { typeParameters, ...typeDefinition } = typeDefinitionWithTypeParameters;
     return {
       range: contextRange(ctx),
       nameRange,
       name,
-      isPublic,
       typeParameters,
       typeDefinition,
       members: ctx.classMemberDefinition().map(this.buildClassMemberDefinition).filter(isNotNull),

@@ -312,20 +312,6 @@ class Main {
 `,
   },
   {
-    testName: 'private-classes',
-    sourceCode: `
-private class Util {}
-private class Foo(val bar: int) {
-  function create(): Foo = { bar: 42 }
-}
-private class Jar(Bar(int), Baz(bool)) {}
-
-class Main {
-  function main(): unit = println(intToString(Foo.create().bar))
-}
-`,
-  },
-  {
     testName: 'sam-in-samlang-list',
     sourceCode: `
 class List<T>(Nil(unit), Cons([T * List<T>])) {

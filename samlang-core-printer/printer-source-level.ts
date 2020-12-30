@@ -296,7 +296,6 @@ const createPrettierDocumentsForClassDefinition = (
   if (classMembersDocuments.length > 1) classMembersDocuments.pop();
 
   return [
-    classDefinition.isPublic ? PRETTIER_NIL : PRETTIER_TEXT('private '),
     PRETTIER_TEXT(`class ${classDefinition.name}`),
     PRETTIER_TEXT(
       classDefinition.typeParameters.length === 0

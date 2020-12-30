@@ -39,7 +39,6 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
         range: Range.DUMMY,
         name: 'Main',
         nameRange: Range.DUMMY,
-        isPublic: false,
         typeParameters: [],
         typeDefinition: {
           range: Range.DUMMY,
@@ -78,7 +77,6 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
         range: Range.DUMMY,
         name: 'Class1',
         nameRange: Range.DUMMY,
-        isPublic: false,
         typeParameters: [],
         typeDefinition: {
           range: Range.DUMMY,

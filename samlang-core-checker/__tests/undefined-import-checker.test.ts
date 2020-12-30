@@ -5,11 +5,10 @@ import type { SamlangModule, ClassDefinition } from 'samlang-core-ast/samlang-to
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { hashMapOf } from 'samlang-core-utils';
 
-const createMockClass = (name: string, isPublic: boolean): ClassDefinition => ({
+const createMockClass = (name: string): ClassDefinition => ({
   range: Range.DUMMY,
   name,
   nameRange: Range.DUMMY,
-  isPublic,
   typeParameters: [],
   members: [],
   typeDefinition: { range: Range.DUMMY, type: 'object', names: [], mappings: {} },
@@ -18,7 +17,7 @@ const createMockClass = (name: string, isPublic: boolean): ClassDefinition => ({
 const createMockModule = (
   name: string,
   imports: readonly (readonly [string, readonly string[]])[] = [],
-  members: readonly (readonly [string, boolean])[] = []
+  members: readonly string[] = []
 ): readonly [string, SamlangModule] => [
   name,
   {
@@ -28,7 +27,7 @@ const createMockModule = (
       importedModule: new ModuleReference([importedModuleName]),
       importedModuleRange: Range.DUMMY,
     })),
-    classes: members.map(([className, isPublic]) => createMockClass(className, isPublic)),
+    classes: members.map((className) => createMockClass(className)),
   },
 ];
 
@@ -59,11 +58,7 @@ it('Empty sources have no errors.', () => checkErrors([], []));
 
 it('No import sources have no errors.', () => {
   checkErrors(
-    [
-      createMockModule('A'),
-      createMockModule('B', [], [['Foo', true]]),
-      createMockModule('C', [], [['Bar', true]]),
-    ],
+    [createMockModule('A'), createMockModule('B', [], ['Foo']), createMockModule('C', [], ['Bar'])],
     []
   );
 });
@@ -71,8 +66,8 @@ it('No import sources have no errors.', () => {
 it('Cyclic dependency causes no errors.', () => {
   checkErrors(
     [
-      createMockModule('A', [['B', ['Bar']]], [['Foo', true]]),
-      createMockModule('B', [['A', ['Foo']]], [['Bar', true]]),
+      createMockModule('A', [['B', ['Bar']]], ['Foo']),
+      createMockModule('B', [['A', ['Foo']]], ['Bar']),
     ],
     []
   );
@@ -90,13 +85,6 @@ it('Missing classes cause errors.', () => {
       'B.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.',
       'B.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved.',
     ]
-  );
-});
-
-it('Importing private classes causes errors.', () => {
-  checkErrors(
-    [createMockModule('A', [], [['Foo', false]]), createMockModule('B', [['A', ['Foo']]])],
-    ['B.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.']
   );
 });
 

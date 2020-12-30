@@ -27,11 +27,7 @@ class UndefinedImportChecker {
       );
       return null;
     }
-    const availableMembersSet = new Set(
-      availableMembers.classes
-        .map((oneClass) => (oneClass.isPublic ? oneClass.name : null))
-        .filter(isNotNull)
-    );
+    const availableMembersSet = new Set(availableMembers.classes.map((oneClass) => oneClass.name));
     const checkedMemberImports = oneImport.importedMembers.filter(([importedMember, range]) => {
       if (!availableMembersSet.has(importedMember)) {
         this.errorCollector.reportUnresolvedNameError(range, importedMember);

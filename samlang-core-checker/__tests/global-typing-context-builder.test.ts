@@ -22,7 +22,6 @@ const class0: ClassDefinition = {
   range: Range.DUMMY,
   name: 'Class0',
   nameRange: Range.DUMMY,
-  isPublic: true,
   typeParameters: [],
   typeDefinition,
   members: [],
@@ -31,7 +30,6 @@ const class1: ClassDefinition = {
   range: Range.DUMMY,
   name: 'Class1',
   nameRange: Range.DUMMY,
-  isPublic: true,
   typeParameters: [],
   typeDefinition,
   members: [
@@ -63,12 +61,10 @@ const class2: ClassDefinition = {
   range: Range.DUMMY,
   name: 'Class2',
   nameRange: Range.DUMMY,
-  isPublic: false,
   typeParameters: [],
   typeDefinition,
   members: [],
 };
-const publicClass2: ClassDefinition = { ...class2, isPublic: true };
 
 const module0: SamlangModule = { imports: [], classes: [class0] };
 const module1: SamlangModule = {
@@ -129,7 +125,7 @@ it('can handle incremental add', () => {
     actualGlobalTypingContext,
     mapOf(
       [module0Reference, module0],
-      [module1Reference, { ...module1, classes: [class1, publicClass2] }]
+      [module1Reference, { ...module1, classes: [class1, class2] }]
     ),
     [module0Reference, module1Reference]
   );
