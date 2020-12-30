@@ -52,8 +52,7 @@ import type {
   LambdaExpression,
   StatementBlockExpression,
 } from 'samlang-core-ast/samlang-expressions';
-import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { checkNotNull, isNotNull } from 'samlang-core-utils';
+import { checkNotNull } from 'samlang-core-utils';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -80,7 +79,6 @@ class HighIRExpressionLoweringManager {
 
   constructor(
     private readonly moduleReference: ModuleReference,
-    private readonly samlangModule: SamlangModule,
     private readonly encodedFunctionName: string
   ) {}
 
@@ -91,7 +89,8 @@ class HighIRExpressionLoweringManager {
   }
 
   private allocateSyntheticFunctionName(): string {
-    const functionName = this.getFunctionName(
+    const functionName = encodeFunctionNameGlobally(
+      this.moduleReference,
       this.encodedFunctionName,
       `_SYNTHETIC_${this.nextSyntheticFunctionId}`
     );
@@ -107,20 +106,6 @@ class HighIRExpressionLoweringManager {
     statements.push(...result.statements);
     return result.expression;
   }
-
-  private getFunctionName = (className: string, functionName: string): string =>
-    encodeFunctionNameGlobally(this.getModuleOfClass(className), className, functionName);
-
-  private getModuleOfClass = (className: string): ModuleReference => {
-    const candidate = this.samlangModule.imports
-      .map((oneImport) =>
-        oneImport.importedMembers.some(([name]) => name === className)
-          ? oneImport.importedModule
-          : null
-      )
-      .filter(isNotNull);
-    return candidate.length === 0 ? this.moduleReference : checkNotNull(candidate[0]);
-  };
 
   readonly lower = (expression: SamlangExpression): HighIRExpressionLoweringResult => {
     switch (expression.__type__) {
@@ -181,7 +166,11 @@ class HighIRExpressionLoweringManager {
           structVariableName,
           expressionList: [
             HIR_NAME(
-              this.getFunctionName(expression.className, expression.memberName),
+              encodeFunctionNameGlobally(
+                expression.moduleReference,
+                expression.className,
+                expression.memberName
+              ),
               expression.type
             ),
             HIR_ZERO,
@@ -280,7 +269,8 @@ class HighIRExpressionLoweringManager {
           structVariableName,
           expressionList: [
             HIR_NAME(
-              this.getFunctionName(
+              encodeFunctionNameGlobally(
+                (expression.expression.type as IdentifierType).moduleReference,
                 (expression.expression.type as IdentifierType).identifier,
                 expression.methodName
               ),
@@ -392,7 +382,11 @@ class HighIRExpressionLoweringManager {
       case 'ClassMemberExpression':
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME(
-            this.getFunctionName(functionExpression.className, functionExpression.memberName),
+            encodeFunctionNameGlobally(
+              functionExpression.moduleReference,
+              functionExpression.className,
+              functionExpression.memberName
+            ),
             functionExpression.type
           ),
           functionArguments: expression.functionArguments.map((oneArgument) =>
@@ -404,7 +398,8 @@ class HighIRExpressionLoweringManager {
       case 'MethodAccessExpression':
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME(
-            this.getFunctionName(
+            encodeFunctionNameGlobally(
+              (functionExpression.expression.type as IdentifierType).moduleReference,
               (functionExpression.expression.type as IdentifierType).identifier,
               functionExpression.methodName
             ),
@@ -879,15 +874,10 @@ class HighIRExpressionLoweringManager {
 
 const lowerSamlangExpression = (
   moduleReference: ModuleReference,
-  samlangModule: SamlangModule,
   encodedFunctionName: string,
   expression: SamlangExpression
 ): HighIRExpressionLoweringResultWithSyntheticFunctions => {
-  const manager = new HighIRExpressionLoweringManager(
-    moduleReference,
-    samlangModule,
-    encodedFunctionName
-  );
+  const manager = new HighIRExpressionLoweringManager(moduleReference, encodedFunctionName);
   if (expression.__type__ === 'StatementBlockExpression') {
     manager.depth = -1;
   }

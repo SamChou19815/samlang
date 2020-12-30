@@ -10,12 +10,7 @@ import {
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
 import { MUL, MINUS, EQ } from 'samlang-core-ast/common-operators';
-import {
-  HIR_VARIABLE,
-  HIR_WHILE_TRUE,
-  HIR_FUNCTION_CALL,
-  HIR_NAME,
-} from 'samlang-core-ast/hir-expressions';
+import { HIR_WHILE_TRUE, HIR_FUNCTION_CALL, HIR_NAME } from 'samlang-core-ast/hir-expressions';
 import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import {
   EXPRESSION_INT,
@@ -66,6 +61,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                 range: Range.DUMMY,
                 type: functionType([], intType),
                 typeArguments: [],
+                moduleReference: ModuleReference.ROOT,
                 className: 'Class1',
                 classNameRange: Range.DUMMY,
                 memberName: 'infiniteLoop',
@@ -117,6 +113,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                 range: Range.DUMMY,
                 type: functionType([], intType),
                 typeArguments: [],
+                moduleReference: ModuleReference.ROOT,
                 className: 'Class1',
                 classNameRange: Range.DUMMY,
                 memberName: 'infiniteLoop',
@@ -155,6 +152,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                   range: Range.DUMMY,
                   type: functionType([intType, intType], intType),
                   typeArguments: [],
+                  moduleReference: ModuleReference.ROOT,
                   className: 'Class1',
                   classNameRange: Range.DUMMY,
                   memberName: 'factorial',

@@ -12,6 +12,7 @@ import {
   FunctionType,
   Range,
   Node,
+  ModuleReference,
 } from './common-nodes';
 import type { BinaryOperator } from './common-operators';
 import type { Pattern } from './samlang-pattern';
@@ -47,6 +48,7 @@ export interface VariableExpression extends BaseExpression {
 export interface ClassMemberExpression extends BaseExpression {
   readonly __type__: 'ClassMemberExpression';
   readonly typeArguments: readonly Type[];
+  readonly moduleReference: ModuleReference;
   readonly className: string;
   readonly classNameRange: Range;
   readonly memberName: string;
@@ -243,6 +245,7 @@ export const EXPRESSION_CLASS_MEMBER = ({
   range,
   type,
   typeArguments,
+  moduleReference,
   className,
   classNameRange,
   memberName,
@@ -253,6 +256,7 @@ export const EXPRESSION_CLASS_MEMBER = ({
   type,
   precedence: 0,
   typeArguments,
+  moduleReference,
   className,
   classNameRange,
   memberName,
