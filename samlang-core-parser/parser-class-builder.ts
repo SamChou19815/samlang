@@ -9,9 +9,7 @@ import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type {
   TypeDefinition,
   AnnotatedVariable,
-  ClassInterface,
   ClassDefinition,
-  ClassMemberDeclaration,
   ClassMemberDefinition,
 } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
@@ -23,9 +21,7 @@ import type {
   TypeParametersDeclarationContext,
   AnnotatedVariableContext,
   ClassMemberDefinitionContext,
-  ClassMemberDeclarationContext,
   ClazzContext,
-  InterfazeContext,
   ExpressionContext,
 } from 'samlang-core-parser-generated/PLParser';
 import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
@@ -159,55 +155,7 @@ class ModuleTypeDefinitionBuilder
 
 const moduleTypeDefinitionBuilder = new ModuleTypeDefinitionBuilder();
 
-class ClassInterfaceBuilder
-  extends AbstractParseTreeVisitor<ClassInterface | null>
-  implements PLVisitor<ClassInterface | null> {
-  // istanbul ignore next
-  defaultResult = (): ClassInterface | null => null;
-
-  private buildClassMemberDeclaration = (
-    ctx: ClassMemberDeclarationContext
-  ): ClassMemberDeclaration | null => {
-    const nameSymbol = ctx.LowerId().symbol;
-    const name = nameSymbol.text;
-    const returnType = ctx.typeExpr()?.accept(typeBuilder);
-    if (name == null || returnType == null) return null;
-    const parameters = ctx.annotatedVariable().map(getAnnotatedVariable);
-    const type = functionType(
-      parameters.map((it) => it.type),
-      returnType
-    );
-    const typeParametersDeclaration = ctx.typeParametersDeclaration();
-    return {
-      range: contextRange(ctx),
-      isPublic: true,
-      isMethod: true,
-      nameRange: tokenRange(nameSymbol),
-      name,
-      typeParameters:
-        typeParametersDeclaration != null ? getTypeParameters(typeParametersDeclaration) : [],
-      type,
-      parameters,
-    };
-  };
-
-  visitInterfaze = (ctx: InterfazeContext): ClassInterface | null => {
-    const typeParametersContext = ctx.typeParametersDeclaration();
-    const typeParameters =
-      typeParametersContext == null ? [] : getTypeParameters(typeParametersContext);
-    return {
-      range: contextRange(ctx),
-      nameRange: tokenRange(ctx.UpperId().symbol),
-      name: ctx.UpperId().text,
-      typeParameters,
-      members: ctx.classMemberDeclaration().map(this.buildClassMemberDeclaration).filter(isNotNull),
-    };
-  };
-}
-
-export const classInterfaceBuilder = new ClassInterfaceBuilder();
-
-export class ClassDefinitionBuilder
+export default class ClassDefinitionBuilder
   extends AbstractParseTreeVisitor<ClassDefinition | null>
   implements PLVisitor<ClassDefinition | null> {
   private readonly expressionBuilder: ExpressionBuilder;

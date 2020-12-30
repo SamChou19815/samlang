@@ -8,7 +8,7 @@ export type AnnotatedVariable = {
   readonly typeRange: Range;
 };
 
-export interface ClassMemberDeclaration extends Node {
+export interface ClassMemberDefinition extends Node {
   readonly isPublic: boolean;
   readonly isMethod: boolean;
   readonly nameRange: Range;
@@ -16,9 +16,6 @@ export interface ClassMemberDeclaration extends Node {
   readonly typeParameters: readonly string[];
   readonly type: FunctionType;
   readonly parameters: readonly AnnotatedVariable[];
-}
-
-export interface ClassMemberDefinition extends ClassMemberDeclaration {
   readonly body: SamlangExpression;
 }
 
@@ -34,16 +31,11 @@ export interface TypeDefinition extends Node {
   readonly mappings: Readonly<Record<string, FieldType | undefined>>;
 }
 
-export interface ClassInterface<M extends ClassMemberDeclaration = ClassMemberDeclaration>
-  extends Node {
+export interface ClassDefinition extends Node {
   readonly nameRange: Range;
   readonly name: string;
   readonly typeParameters: readonly string[];
-  readonly members: readonly M[];
-  readonly typeDefinition?: TypeDefinition;
-}
-
-export interface ClassDefinition extends ClassInterface<ClassMemberDefinition> {
+  readonly members: readonly ClassMemberDefinition[];
   readonly typeDefinition: TypeDefinition;
 }
 
