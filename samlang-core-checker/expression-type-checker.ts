@@ -639,7 +639,7 @@ class ExpressionTypeChecker {
       'variant'
     );
     let variantNames: readonly string[];
-    let variantMappings: Readonly<Record<string, FieldType | undefined>>;
+    let variantMappings: Readonly<Record<string, FieldType>>;
     switch (variantTypeDefinition.type) {
       case 'Resolved':
         variantNames = variantTypeDefinition.names;
@@ -665,21 +665,30 @@ class ExpressionTypeChecker {
         }
         delete unusedMappings[tag];
         let checkedExpression: SamlangExpression;
+        let checkedDatadataVariable: readonly [string, Type] | undefined = undefined;
         if (dataVariable == null) {
           checkedExpression = this.localTypingContext.withNestedScope(() =>
             this.typeCheck(correspondingExpression, expectedType)
           );
         } else {
-          this.localTypingContext.addLocalValueType(dataVariable, mappingDataType, () =>
-            this.errorCollector.reportCollisionError(range, dataVariable)
+          const [dataVariableName] = dataVariable;
+          this.localTypingContext.addLocalValueType(dataVariableName, mappingDataType, () =>
+            this.errorCollector.reportCollisionError(range, dataVariableName)
           );
           checkedExpression = this.typeCheck(correspondingExpression, expectedType);
-          this.localTypingContext.removeLocalValue(dataVariable);
+          this.localTypingContext.removeLocalValue(dataVariableName);
+          checkedDatadataVariable = [dataVariableName, mappingDataType];
         }
         const tagOrder = variantNames.findIndex((name) => name === tag);
         // istanbul ignore next
         if (tagOrder === -1) throw new Error(`Bad tag: ${tag}`);
-        return { range, tag, tagOrder, dataVariable, expression: checkedExpression };
+        return {
+          range,
+          tag,
+          tagOrder,
+          dataVariable: checkedDatadataVariable,
+          expression: checkedExpression,
+        };
       })
       .filter(isNotNull);
     const unusedTags = Object.keys(unusedMappings);

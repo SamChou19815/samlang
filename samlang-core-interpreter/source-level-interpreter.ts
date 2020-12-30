@@ -299,7 +299,10 @@ export class ExpressionInterpreter {
         if (matchedPattern.dataVariable) {
           ctx = {
             classes: ctx.classes,
-            localValues: { ...ctx.localValues, [matchedPattern.dataVariable]: matchedValue.data },
+            localValues: {
+              ...ctx.localValues,
+              [matchedPattern.dataVariable?.[0]]: matchedValue.data,
+            },
           };
         }
         return this.eval(matchedPattern.expression, ctx);

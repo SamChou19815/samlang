@@ -143,7 +143,7 @@ const createPrettierDocumentFromSamlangExpression = (
     case 'MatchExpression': {
       const list = expression.matchingList
         .map(({ tag, dataVariable, expression: finalExpression }) => [
-          PRETTIER_TEXT(`| ${tag} ${dataVariable ?? '_'} -> `),
+          PRETTIER_TEXT(`| ${tag} ${dataVariable?.[0] ?? '_'} -> `),
           createDocumentForSubExpressionConsideringPrecedenceLevel(finalExpression),
           PRETTIER_LINE,
         ])
