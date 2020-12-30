@@ -7,6 +7,7 @@ import {
   Range,
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
+import { hashMapOf } from 'samlang-core-utils';
 
 it('LocalTypingContext basic methods test.', () => {
   const context = new LocalTypingContext();
@@ -55,116 +56,149 @@ it('LocalTypingContext can compute captured values.', () => {
 it('AccessibleGlobalTypingContext tests', () => {
   const context = new AccessibleGlobalTypingContext(
     ModuleReference.ROOT,
-    {
-      A: {
-        typeParameters: ['A', 'B'],
-        typeDefinition: {
-          range: Range.DUMMY,
-          type: 'variant',
-          names: ['a', 'b'],
-          mappings: {
-            a: { isPublic: true, type: identifierType(ModuleReference.ROOT, 'A') },
-            b: { isPublic: false, type: identifierType(ModuleReference.ROOT, 'B') },
+    hashMapOf([
+      ModuleReference.ROOT,
+      {
+        A: {
+          typeParameters: ['A', 'B'],
+          typeDefinition: {
+            range: Range.DUMMY,
+            type: 'variant',
+            names: ['a', 'b'],
+            mappings: {
+              a: { isPublic: true, type: identifierType(ModuleReference.ROOT, 'A') },
+              b: { isPublic: false, type: identifierType(ModuleReference.ROOT, 'B') },
+            },
+          },
+          functions: {
+            f1: {
+              isPublic: true,
+              typeParameters: ['C'],
+              type: functionType([], intType),
+            },
+            f2: {
+              isPublic: false,
+              typeParameters: ['C'],
+              type: functionType([], intType),
+            },
+          },
+          methods: {
+            m1: {
+              isPublic: true,
+              typeParameters: ['C'],
+              type: functionType(
+                [
+                  identifierType(ModuleReference.ROOT, 'A'),
+                  identifierType(ModuleReference.ROOT, 'B'),
+                ],
+                intType
+              ),
+            },
+            m2: {
+              isPublic: false,
+              typeParameters: ['C'],
+              type: functionType([], intType),
+            },
           },
         },
-        functions: {
-          f1: {
-            isPublic: true,
-            typeParameters: ['C'],
-            type: functionType([], intType),
+        B: {
+          typeParameters: ['E', 'F'],
+          typeDefinition: {
+            range: Range.DUMMY,
+            type: 'object',
+            names: [],
+            mappings: {},
           },
-          f2: {
-            isPublic: false,
-            typeParameters: ['C'],
-            type: functionType([], intType),
+          functions: {
+            f1: {
+              isPublic: true,
+              typeParameters: ['C'],
+              type: functionType([], intType),
+            },
+            f2: {
+              isPublic: false,
+              typeParameters: ['C'],
+              type: functionType([], intType),
+            },
           },
-        },
-        methods: {
-          m1: {
-            isPublic: true,
-            typeParameters: ['C'],
-            type: functionType(
-              [
-                identifierType(ModuleReference.ROOT, 'A'),
-                identifierType(ModuleReference.ROOT, 'B'),
-              ],
-              intType
-            ),
-          },
-          m2: {
-            isPublic: false,
-            typeParameters: ['C'],
-            type: functionType([], intType),
+          methods: {
+            m1: {
+              isPublic: true,
+              typeParameters: ['C'],
+              type: functionType([], intType),
+            },
+            m2: {
+              isPublic: false,
+              typeParameters: ['C'],
+              type: functionType([], intType),
+            },
           },
         },
       },
-      B: {
-        typeParameters: ['E', 'F'],
-        typeDefinition: {
-          range: Range.DUMMY,
-          type: 'object',
-          names: [],
-          mappings: {},
-        },
-        functions: {
-          f1: {
-            isPublic: true,
-            typeParameters: ['C'],
-            type: functionType([], intType),
-          },
-          f2: {
-            isPublic: false,
-            typeParameters: ['C'],
-            type: functionType([], intType),
-          },
-        },
-        methods: {
-          m1: {
-            isPublic: true,
-            typeParameters: ['C'],
-            type: functionType([], intType),
-          },
-          m2: {
-            isPublic: false,
-            typeParameters: ['C'],
-            type: functionType([], intType),
-          },
-        },
-      },
-    },
+    ]),
     new Set('T'),
     'A'
   );
 
-  expect(context.getClassFunctionType('A', 'f1')).toBeTruthy();
-  expect(context.getClassFunctionType('A', 'f2')).toBeTruthy();
-  expect(context.getClassFunctionType('A', 'f3')).toBeNull();
-  expect(context.getClassFunctionType('A', 'm1')).toBeNull();
-  expect(context.getClassFunctionType('A', 'm2')).toBeNull();
-  expect(context.getClassFunctionType('A', 'm3')).toBeNull();
-  expect(context.getClassFunctionType('B', 'f1')).toBeTruthy();
-  expect(context.getClassFunctionType('B', 'f2')).toBeNull();
-  expect(context.getClassFunctionType('B', 'f3')).toBeNull();
-  expect(context.getClassFunctionType('B', 'm1')).toBeNull();
-  expect(context.getClassFunctionType('B', 'm2')).toBeNull();
-  expect(context.getClassFunctionType('B', 'm3')).toBeNull();
+  expect(context.getClassFunctionType(new ModuleReference(['A']), 'A', 'f1')).toBeFalsy();
+  expect(context.getClassFunctionType(ModuleReference.ROOT, 'A', 'f1')).toBeTruthy();
+  expect(context.getClassFunctionType(ModuleReference.ROOT, 'A', 'f2')).toBeTruthy();
+  expect(context.getClassFunctionType(ModuleReference.ROOT, 'A', 'f3')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.ROOT, 'A', 'm1')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.ROOT, 'A', 'm2')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.ROOT, 'A', 'm3')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.ROOT, 'B', 'f1')).toBeTruthy();
+  expect(context.getClassFunctionType(ModuleReference.ROOT, 'B', 'f2')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.ROOT, 'B', 'f3')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.ROOT, 'B', 'm1')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.ROOT, 'B', 'm2')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.ROOT, 'B', 'm3')).toBeNull();
 
-  expect(context.getClassMethodType('A', 'f1', []).type).toBe('UnresolvedName');
-  expect(context.getClassMethodType('A', 'f2', []).type).toBe('UnresolvedName');
-  expect(context.getClassMethodType('A', 'f3', []).type).toBe('UnresolvedName');
-  expect(context.getClassMethodType('A', 'm1', [intType]).type).toBe('TypeParameterSizeMismatch');
-  expect(context.getClassMethodType('A', 'm1', [intType, intType])).toEqual(
+  expect(context.getClassMethodType(new ModuleReference(['A']), 'A', 'f1', []).type).toBe(
+    'UnresolvedName'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'f1', []).type).toBe(
+    'UnresolvedName'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'f2', []).type).toBe(
+    'UnresolvedName'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'f3', []).type).toBe(
+    'UnresolvedName'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'm1', [intType]).type).toBe(
+    'TypeParameterSizeMismatch'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'm1', [intType, intType])).toEqual(
     functionType([intType, intType], intType)
   );
-  expect(context.getClassMethodType('A', 'm2', [intType, intType]).type).toBe('FunctionType');
-  expect(context.getClassMethodType('A', 'm3', []).type).toBe('UnresolvedName');
-  expect(context.getClassMethodType('B', 'f1', []).type).toBe('UnresolvedName');
-  expect(context.getClassMethodType('B', 'f2', []).type).toBe('UnresolvedName');
-  expect(context.getClassMethodType('B', 'f3', []).type).toBe('UnresolvedName');
-  expect(context.getClassMethodType('B', 'm1', [intType, intType]).type).toBe('FunctionType');
-  expect(context.getClassMethodType('B', 'm2', []).type).toBe('UnresolvedName');
-  expect(context.getClassMethodType('B', 'm3', []).type).toBe('UnresolvedName');
-  expect(context.getClassMethodType('C', 'm3', []).type).toBe('UnresolvedName');
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'm2', [intType, intType]).type).toBe(
+    'FunctionType'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'm3', []).type).toBe(
+    'UnresolvedName'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'B', 'f1', []).type).toBe(
+    'UnresolvedName'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'B', 'f2', []).type).toBe(
+    'UnresolvedName'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'B', 'f3', []).type).toBe(
+    'UnresolvedName'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'B', 'm1', [intType, intType]).type).toBe(
+    'FunctionType'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'B', 'm2', []).type).toBe(
+    'UnresolvedName'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'B', 'm3', []).type).toBe(
+    'UnresolvedName'
+  );
+  expect(context.getClassMethodType(ModuleReference.ROOT, 'C', 'm3', []).type).toBe(
+    'UnresolvedName'
+  );
 
   context.getCurrentClassTypeDefinition();
 
@@ -208,18 +242,19 @@ it('AccessibleGlobalTypingContext tests', () => {
     ])
   );
 
-  expect(context.identifierTypeIsWellDefined('A', 2)).toBeTruthy();
-  expect(context.identifierTypeIsWellDefined('B', 2)).toBeTruthy();
-  expect(context.identifierTypeIsWellDefined('A', 1)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined('B', 1)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined('A', 0)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined('B', 0)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined('C', 0)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined('D', 0)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined('E', 0)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined('F', 0)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined('T', 0)).toBeTruthy();
-  expect(context.identifierTypeIsWellDefined('T', 1)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(new ModuleReference(['A']), 'A', 2)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'A', 2)).toBeTruthy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'B', 2)).toBeTruthy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'A', 1)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'B', 1)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'A', 0)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'B', 0)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'C', 0)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'D', 0)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'E', 0)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'F', 0)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'T', 0)).toBeTruthy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'T', 1)).toBeFalsy();
 
   context.withAdditionalTypeParameters(['A', 'B']);
   context.withAdditionalTypeParameters(new Set(['C', 'D']));

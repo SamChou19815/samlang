@@ -153,6 +153,7 @@ class ExpressionTypeChecker {
     expectedType: Type
   ): SamlangExpression {
     const classFunctionTypeInformation = this.accessibleGlobalTypingContext.getClassFunctionType(
+      expression.moduleReference,
       expression.className,
       expression.memberName
     );
@@ -368,10 +369,12 @@ class ExpressionTypeChecker {
       return null;
     }
     const {
+      moduleReference: checkedExprTypeModuleReference,
       identifier: checkedExprTypeIdentifier,
       typeArguments: checkedExprTypeArguments,
     } = checkedExpressionType;
     const methodTypeOrError = this.accessibleGlobalTypingContext.getClassMethodType(
+      checkedExprTypeModuleReference,
       checkedExprTypeIdentifier,
       expression.methodName,
       checkedExprTypeArguments

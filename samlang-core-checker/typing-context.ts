@@ -108,30 +108,39 @@ export interface ClassTypingContext {
   readonly methods: Readonly<Record<string, MemberTypeInformation>>;
 }
 
-export interface ModuleTypingContext {
-  readonly importedClasses: Readonly<Record<string, ClassTypingContext>>;
-  readonly definedClasses: Readonly<Record<string, ClassTypingContext>>;
-}
-
+export type ModuleTypingContext = Readonly<Record<string, ClassTypingContext>>;
 export type GlobalTypingContext = HashMap<ModuleReference, ModuleTypingContext>;
 export type ReadonlyGlobalTypingContext = ReadonlyHashMap<ModuleReference, ModuleTypingContext>;
 
 export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
   constructor(
     public readonly currentModuleReference: ModuleReference,
-    private readonly classes: Readonly<Record<string, ClassTypingContext>>,
+    private readonly globalTypingContext: ReadonlyGlobalTypingContext,
     public readonly typeParameters: ReadonlySet<string>,
     public readonly currentClass: string
   ) {}
 
-  getClassFunctionType(className: string, member: string): readonly [Type, readonly Type[]] | null {
-    const typeInfo = this.classes[className]?.functions?.[member];
+  getClassFunctionType(
+    moduleReference: ModuleReference,
+    className: string,
+    member: string
+  ): readonly [Type, readonly Type[]] | null {
+    const typeInfo = this.globalTypingContext.get(moduleReference)?.[className]?.functions?.[
+      member
+    ];
     if (typeInfo == null) return null;
-    if (!typeInfo.isPublic && className !== this.currentClass) return null;
+    if (
+      !typeInfo.isPublic &&
+      (moduleReference.toString() !== this.currentModuleReference.toString() ||
+        className !== this.currentClass)
+    ) {
+      return null;
+    }
     return undecideTypeParameters(typeInfo.type, typeInfo.typeParameters);
   }
 
   getClassMethodType(
+    moduleReference: ModuleReference,
     className: string,
     methodName: string,
     classTypeArguments: readonly Type[]
@@ -139,7 +148,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     | FunctionType
     | Readonly<{ type: 'UnresolvedName'; unresolvedName: string }>
     | Readonly<{ type: 'TypeParameterSizeMismatch'; expected: number; actual: number }> {
-    const relaventClass = this.classes[className];
+    const relaventClass = this.globalTypingContext.get(moduleReference)?.[className];
     if (relaventClass == null) {
       return { type: 'UnresolvedName', unresolvedName: className };
     }
@@ -170,7 +179,9 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
   getCurrentClassTypeDefinition(): TypeDefinition & {
     readonly classTypeParameters: readonly string[];
   } {
-    const classTypingContext = this.classes[this.currentClass];
+    const classTypingContext = this.globalTypingContext.get(this.currentModuleReference)?.[
+      this.currentClass
+    ];
     assertNotNull(classTypingContext);
     const definition = classTypingContext.typeDefinition;
     assertNotNull(definition);
@@ -183,7 +194,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
    * according to type checking rules.
    */
   resolveTypeDefinition(
-    { identifier, typeArguments }: IdentifierType,
+    { moduleReference, identifier, typeArguments }: IdentifierType,
     typeDefinitionType: 'object' | 'variant'
   ):
     | {
@@ -193,10 +204,14 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
       }
     | { readonly type: 'IllegalOtherClassMatch' }
     | { readonly type: 'UnsupportedClassTypeDefinition' } {
-    if (identifier !== this.currentClass && typeDefinitionType === 'variant') {
+    if (
+      (moduleReference.toString() !== this.currentModuleReference.toString() ||
+        identifier !== this.currentClass) &&
+      typeDefinitionType === 'variant'
+    ) {
       return { type: 'IllegalOtherClassMatch' };
     }
-    const relaventClass = this.classes[identifier];
+    const relaventClass = this.globalTypingContext.get(moduleReference)?.[identifier];
     if (
       relaventClass == null ||
       relaventClass.typeDefinition == null ||
@@ -238,7 +253,9 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
   }
 
   get thisType(): IdentifierType {
-    const currentClassTypingContext = this.classes[this.currentClass];
+    const currentClassTypingContext = this.globalTypingContext.get(this.currentModuleReference)?.[
+      this.currentClass
+    ];
     assertNotNull(currentClassTypingContext);
     return identifierType(
       this.currentModuleReference,
@@ -249,18 +266,22 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     );
   }
 
-  identifierTypeIsWellDefined(name: string, typeArgumentLength: number): boolean {
+  identifierTypeIsWellDefined(
+    moduleReference: ModuleReference,
+    name: string,
+    typeArgumentLength: number
+  ): boolean {
     if (this.typeParameters.has(name)) {
       return typeArgumentLength === 0;
     }
-    const typeParameters = this.classes[name]?.typeParameters;
+    const typeParameters = this.globalTypingContext.get(moduleReference)?.[name]?.typeParameters;
     return typeParameters != null && typeParameters.length === typeArgumentLength;
   }
 
   withAdditionalTypeParameters(typeParameters: Iterable<string>): AccessibleGlobalTypingContext {
     return new AccessibleGlobalTypingContext(
       this.currentModuleReference,
-      this.classes,
+      this.globalTypingContext,
       new Set([...this.typeParameters, ...typeParameters]),
       this.currentClass
     );
