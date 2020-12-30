@@ -46,10 +46,7 @@ export const binaryOperatorValues: readonly BinaryOperator[] = [
   CONCAT,
 ];
 
-export const binaryOperatorSymbolTable: Record<
-  string,
-  BinaryOperator | undefined
-> = Object.fromEntries(
+export const binaryOperatorSymbolTable: Record<string, BinaryOperator> = Object.fromEntries(
   binaryOperatorValues.map((operator) => [operator.symbol, operator] as const)
 );
 

@@ -110,10 +110,10 @@ const operator: DataflowAnalysisGraphOperator<MidIRStatement, ReadonlyHashSet<Av
 
 const analyzeAvailableCopies = (
   statements: readonly MidIRStatement[]
-): readonly Readonly<Record<string, string | undefined>>[] =>
+): readonly Readonly<Record<string, string>>[] =>
   runForwardDataflowAnalysis(statements, operator).inEdges.map((copies) => {
     const tempMapping = new Map(copies.toArray().map((it) => [it.destination, it.source]));
-    const rootDestinationSourceMapping: Record<string, string | undefined> = {};
+    const rootDestinationSourceMapping: Record<string, string> = {};
     copies.forEach(({ destination }) => {
       let rootSource = destination;
       // eslint-disable-next-line no-constant-condition

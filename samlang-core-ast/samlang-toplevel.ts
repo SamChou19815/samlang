@@ -28,7 +28,7 @@ export interface TypeDefinition extends Node {
   readonly type: 'object' | 'variant';
   /** A list of fields. Used for ordering during codegen. */
   readonly names: readonly string[];
-  readonly mappings: Readonly<Record<string, FieldType | undefined>>;
+  readonly mappings: Readonly<Record<string, FieldType>>;
 }
 
 export interface ClassDefinition extends Node {

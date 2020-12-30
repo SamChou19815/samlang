@@ -180,10 +180,10 @@ export class SamlangExpressionLocationLookupBuilder {
             case 'TuplePattern': {
               const assignedTupleTypeMappings = (assignedExpressionType as TupleType).mappings;
               pattern.destructedNames.forEach(([name, range], index) => {
-                const type = assignedTupleTypeMappings[index];
+                const type = checkNotNull(assignedTupleTypeMappings[index]);
                 this.buildSingleExpression(
                   moduleReference,
-                  EXPRESSION_VARIABLE({ range, name: name ?? '_', type: checkNotNull(type) })
+                  EXPRESSION_VARIABLE({ range, name: name ?? '_', type })
                 );
               });
               return;

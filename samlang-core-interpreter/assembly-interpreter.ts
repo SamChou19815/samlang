@@ -43,13 +43,13 @@ class AssemblyInterpreter {
   private readonly instructions: readonly AssemblyInstruction[];
 
   /** The mapping between label and instruction number. Useful for jump. */
-  private readonly labelInstructionNumberMapping: Readonly<Record<string, number | undefined>>;
+  private readonly labelInstructionNumberMapping: Readonly<Record<string, number>>;
 
   /** The mapping from names to actual memory address. */
-  private readonly nameToMemoryAddress: Readonly<Record<string, bigint | undefined>>;
+  private readonly nameToMemoryAddress: Readonly<Record<string, bigint>>;
 
   /** Current register values. It will only be lazily provisioned. */
-  private readonly registers: Record<string, bigint | undefined> = {
+  private readonly registers: Record<string, bigint> = {
     [RSP.id]: BigInt(0x780000000),
   };
 
@@ -73,8 +73,8 @@ class AssemblyInterpreter {
 
   constructor(program: AssemblyProgram) {
     this.instructions = program.instructions;
-    const labelInstructionNumberMapping: Record<string, number | undefined> = {};
-    const nameToMemoryAddress: Record<string, bigint | undefined> = {};
+    const labelInstructionNumberMapping: Record<string, number> = {};
+    const nameToMemoryAddress: Record<string, bigint> = {};
     let globalVarsTotalSize = BigInt(10000);
     program.globalVariables.forEach(({ name, content }) => {
       // Setup content variable size

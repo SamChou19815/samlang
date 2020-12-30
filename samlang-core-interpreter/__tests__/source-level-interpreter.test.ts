@@ -161,8 +161,8 @@ it('empty context equality check', () => {
 });
 
 it('non-empty context equality check', () => {
-  const testFunctions: Record<string, FunctionValue | undefined> = {};
-  const testMethods: Record<string, FunctionValue | undefined> = {};
+  const testFunctions: Record<string, FunctionValue> = {};
+  const testMethods: Record<string, FunctionValue> = {};
   const samlangExpression = EXPRESSION_TRUE(new Range(new Position(1, 2), new Position(3, 4)));
   const functionValue: FunctionValue = {
     type: 'functionValue',
@@ -173,9 +173,9 @@ it('non-empty context equality check', () => {
   testFunctions.function1 = functionValue;
   testMethods.method1 = functionValue;
   const testClassValue = { functions: testFunctions, methods: testMethods };
-  const testClasses: Record<string, ClassValue | undefined> = {};
+  const testClasses: Record<string, ClassValue> = {};
   testClasses.class1 = testClassValue;
-  const testLocalValues: Record<string, Value | undefined> = {};
+  const testLocalValues: Record<string, Value> = {};
   testLocalValues.v1 = { type: 'unit' };
   const testContext = { classes: testClasses, localValues: testLocalValues };
 

@@ -147,7 +147,7 @@ export interface LambdaExpression extends BaseExpression {
   readonly __type__: 'LambdaExpression';
   readonly type: FunctionType;
   readonly parameters: readonly (readonly [string, Type])[];
-  readonly captured: Record<string, Type | undefined>;
+  readonly captured: Record<string, Type>;
   readonly body: SamlangExpression;
 }
 

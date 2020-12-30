@@ -2,7 +2,7 @@ import { Type, identifierType, tupleType, functionType } from 'samlang-core-ast/
 
 const replaceTypeIdentifier = (
   type: Type,
-  replacementMap: Readonly<Record<string, Type | undefined>>
+  replacementMap: Readonly<Record<string, Type>>
 ): Type => {
   switch (type.type) {
     case 'PrimitiveType':

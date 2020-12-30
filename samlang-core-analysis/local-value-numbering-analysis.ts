@@ -28,8 +28,8 @@ export interface ReadonlyLocalNumberingInformation {
 /** EXPOSED FOR TESTING. DO NOT RELY ON IMPLEMENTATION DETAIL. */
 export class LocalNumberingInformation implements ReadonlyLocalNumberingInformation {
   constructor(
-    readonly expressionToNumberMapping: Record<string, number | undefined>,
-    readonly numberToTemporaryMapping: Record<number, string | undefined>
+    readonly expressionToNumberMapping: Record<string, number>,
+    readonly numberToTemporaryMapping: Record<number, string>
   ) {}
 
   copy(): LocalNumberingInformation {
