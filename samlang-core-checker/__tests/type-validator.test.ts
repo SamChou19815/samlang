@@ -40,54 +40,94 @@ const expectToHaveBadIdentifier = (embeddedType: IdentifierType, badIdentifier: 
   expect(withEmbeddedType(embeddedType)).toBe(badIdentifier);
 
 it('good types are told to be good', () => {
-  expectToBeGood(identifierType('Good', [unitType]));
-  expectToBeGood(identifierType('Good', [boolType]));
-  expectToBeGood(identifierType('Good', [intType]));
-  expectToBeGood(identifierType('Good', [stringType]));
+  expectToBeGood(identifierType(ModuleReference.ROOT, 'Good', [unitType]));
+  expectToBeGood(identifierType(ModuleReference.ROOT, 'Good', [boolType]));
+  expectToBeGood(identifierType(ModuleReference.ROOT, 'Good', [intType]));
+  expectToBeGood(identifierType(ModuleReference.ROOT, 'Good', [stringType]));
 });
 
 it('bad types are told to be bad', () => {
-  expectToHaveBadIdentifier(identifierType('Good', [unitType, unitType]), 'Good');
-  expectToHaveBadIdentifier(identifierType('Good', [boolType, unitType]), 'Good');
-  expectToHaveBadIdentifier(identifierType('Good', [intType, unitType]), 'Good');
-  expectToHaveBadIdentifier(identifierType('Good', [stringType, unitType]), 'Good');
-
-  expectToHaveBadIdentifier(identifierType('Bad', [unitType, unitType]), 'Bad');
-  expectToHaveBadIdentifier(identifierType('Bad', [boolType, unitType]), 'Bad');
-  expectToHaveBadIdentifier(identifierType('Bad', [intType, unitType]), 'Bad');
-  expectToHaveBadIdentifier(identifierType('Bad', [stringType, unitType]), 'Bad');
-
   expectToHaveBadIdentifier(
-    identifierType('Good', [identifierType('Good', [unitType, unitType])]),
+    identifierType(ModuleReference.ROOT, 'Good', [unitType, unitType]),
     'Good'
   );
   expectToHaveBadIdentifier(
-    identifierType('Good', [identifierType('Good', [boolType, unitType])]),
+    identifierType(ModuleReference.ROOT, 'Good', [boolType, unitType]),
     'Good'
   );
   expectToHaveBadIdentifier(
-    identifierType('Good', [identifierType('Good', [intType, unitType])]),
+    identifierType(ModuleReference.ROOT, 'Good', [intType, unitType]),
     'Good'
   );
   expectToHaveBadIdentifier(
-    identifierType('Good', [identifierType('Good', [stringType, unitType])]),
+    identifierType(ModuleReference.ROOT, 'Good', [stringType, unitType]),
     'Good'
   );
 
   expectToHaveBadIdentifier(
-    identifierType('Good', [identifierType('Bad', [unitType, unitType])]),
+    identifierType(ModuleReference.ROOT, 'Bad', [unitType, unitType]),
     'Bad'
   );
   expectToHaveBadIdentifier(
-    identifierType('Good', [identifierType('Bad', [boolType, unitType])]),
+    identifierType(ModuleReference.ROOT, 'Bad', [boolType, unitType]),
     'Bad'
   );
   expectToHaveBadIdentifier(
-    identifierType('Good', [identifierType('Bad', [intType, unitType])]),
+    identifierType(ModuleReference.ROOT, 'Bad', [intType, unitType]),
     'Bad'
   );
   expectToHaveBadIdentifier(
-    identifierType('Good', [identifierType('Bad', [stringType, unitType])]),
+    identifierType(ModuleReference.ROOT, 'Bad', [stringType, unitType]),
+    'Bad'
+  );
+
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.ROOT, 'Good', [
+      identifierType(ModuleReference.ROOT, 'Good', [unitType, unitType]),
+    ]),
+    'Good'
+  );
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.ROOT, 'Good', [
+      identifierType(ModuleReference.ROOT, 'Good', [boolType, unitType]),
+    ]),
+    'Good'
+  );
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.ROOT, 'Good', [
+      identifierType(ModuleReference.ROOT, 'Good', [intType, unitType]),
+    ]),
+    'Good'
+  );
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.ROOT, 'Good', [
+      identifierType(ModuleReference.ROOT, 'Good', [stringType, unitType]),
+    ]),
+    'Good'
+  );
+
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.ROOT, 'Good', [
+      identifierType(ModuleReference.ROOT, 'Bad', [unitType, unitType]),
+    ]),
+    'Bad'
+  );
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.ROOT, 'Good', [
+      identifierType(ModuleReference.ROOT, 'Bad', [boolType, unitType]),
+    ]),
+    'Bad'
+  );
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.ROOT, 'Good', [
+      identifierType(ModuleReference.ROOT, 'Bad', [intType, unitType]),
+    ]),
+    'Bad'
+  );
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.ROOT, 'Good', [
+      identifierType(ModuleReference.ROOT, 'Bad', [stringType, unitType]),
+    ]),
     'Bad'
   );
 });
@@ -103,7 +143,9 @@ it('validateType integration test', () => {
 
   expect(
     validateType(
-      identifierType('Good', [identifierType('Bad', [boolType, unitType])]),
+      identifierType(ModuleReference.ROOT, 'Good', [
+        identifierType(ModuleReference.ROOT, 'Bad', [boolType, unitType]),
+      ]),
       identifierTypeValidatorForTesting,
       moduleErrorCollector,
       Range.DUMMY

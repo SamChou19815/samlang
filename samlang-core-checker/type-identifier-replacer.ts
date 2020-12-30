@@ -12,6 +12,7 @@ const replaceTypeIdentifier = (
         return replacementMap[type.identifier] ?? type;
       }
       return identifierType(
+        type.moduleReference,
         type.identifier,
         type.typeArguments.map((it) => replaceTypeIdentifier(it, replacementMap))
       );

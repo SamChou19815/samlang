@@ -29,6 +29,7 @@ const getExpression = (rawSourceWithTypeAnnotation: string): SamlangExpression =
   const errorCollector = createGlobalErrorCollector();
   const expression = parseSamlangExpressionFromText(
     rawSourceWithTypeAnnotation,
+    ModuleReference.ROOT,
     errorCollector.getModuleErrorCollector(ModuleReference.ROOT)
   );
   assertNotNull(expression);
@@ -50,6 +51,7 @@ const interpretModule = (rawSourceWithTypeAnnotation: string): string => {
   const errorCollector = createGlobalErrorCollector();
   const samlangModule = parseSamlangModuleFromText(
     rawSourceWithTypeAnnotation,
+    ModuleReference.ROOT,
     errorCollector.getModuleErrorCollector(ModuleReference.ROOT)
   );
   expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
@@ -255,10 +257,10 @@ it('field access expression evaluates correctly', () => {
 it('method access expression evaluates correctly', () => {
   const methodAccessExpression = EXPRESSION_METHOD_ACCESS({
     range: Range.DUMMY,
-    type: identifierType('C', []),
+    type: identifierType(ModuleReference.ROOT, 'C', []),
     expression: {
       ...(getExpression('Tag(5)') as VariantConstructorExpression),
-      type: identifierType('C', []),
+      type: identifierType(ModuleReference.ROOT, 'C', []),
     },
     methodName: 'method',
   });

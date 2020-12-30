@@ -15,6 +15,7 @@ const resolveType = (
       return type;
     case 'IdentifierType':
       return identifierType(
+        type.moduleReference,
         type.identifier,
         type.typeArguments.map((it) => resolveType(it, undecidedTypeResolver))
       );

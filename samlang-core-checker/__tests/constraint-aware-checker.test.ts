@@ -21,7 +21,9 @@ it('t1=primitive type', () => {
   expect(checkAndInfer(unitType, boolType, resolution).type).toBe('FAILED_MEET');
   expect(checkAndInfer(unitType, intType, resolution).type).toBe('FAILED_MEET');
   expect(checkAndInfer(unitType, stringType, resolution).type).toBe('FAILED_MEET');
-  expect(checkAndInfer(unitType, identifierType('A'), resolution).type).toBe('FAILED_MEET');
+  expect(checkAndInfer(unitType, identifierType(ModuleReference.ROOT, 'A'), resolution).type).toBe(
+    'FAILED_MEET'
+  );
 
   expect(checkAndInfer(unitType, { type: 'UndecidedType', index: 0 }, resolution)).toEqual(
     unitType
@@ -34,38 +36,54 @@ it('t1=primitive type', () => {
 it('t1=identifier type', () => {
   const resolution = new TypeResolution();
 
-  expect(checkAndInfer(identifierType('A'), unitType, resolution).type).toBe('FAILED_MEET');
-  expect(checkAndInfer(identifierType('A'), identifierType('B'), resolution).type).toBe(
-    'FAILED_MEET'
-  );
-  expect(checkAndInfer(identifierType('A'), identifierType('A', [intType]), resolution).type).toBe(
+  expect(checkAndInfer(identifierType(ModuleReference.ROOT, 'A'), unitType, resolution).type).toBe(
     'FAILED_MEET'
   );
   expect(
     checkAndInfer(
-      identifierType('A', [identifierType('B')]),
-      identifierType('A', [identifierType('B')]),
+      identifierType(ModuleReference.ROOT, 'A'),
+      identifierType(ModuleReference.ROOT, 'B'),
+      resolution
+    ).type
+  ).toBe('FAILED_MEET');
+  expect(
+    checkAndInfer(
+      identifierType(ModuleReference.ROOT, 'A'),
+      identifierType(ModuleReference.ROOT, 'A', [intType]),
+      resolution
+    ).type
+  ).toBe('FAILED_MEET');
+  expect(
+    checkAndInfer(
+      identifierType(ModuleReference.ROOT, 'A', [identifierType(ModuleReference.ROOT, 'B')]),
+      identifierType(ModuleReference.ROOT, 'A', [identifierType(ModuleReference.ROOT, 'B')]),
       resolution
     )
-  ).toEqual(identifierType('A', [identifierType('B')]));
+  ).toEqual(identifierType(ModuleReference.ROOT, 'A', [identifierType(ModuleReference.ROOT, 'B')]));
 
   expect(
     checkAndInfer(
-      identifierType('A', [identifierType('B')]),
-      identifierType('A', [{ type: 'UndecidedType', index: 0 }]),
+      identifierType(ModuleReference.ROOT, 'A', [identifierType(ModuleReference.ROOT, 'B')]),
+      identifierType(ModuleReference.ROOT, 'A', [{ type: 'UndecidedType', index: 0 }]),
       resolution
     )
-  ).toEqual(identifierType('A', [identifierType('B')]));
+  ).toEqual(identifierType(ModuleReference.ROOT, 'A', [identifierType(ModuleReference.ROOT, 'B')]));
   expect(
-    checkAndInfer(identifierType('B'), { type: 'UndecidedType', index: 0 }, resolution)
-  ).toEqual(identifierType('B'));
+    checkAndInfer(
+      identifierType(ModuleReference.ROOT, 'B'),
+      { type: 'UndecidedType', index: 0 },
+      resolution
+    )
+  ).toEqual(identifierType(ModuleReference.ROOT, 'B'));
 });
 
 it('t1=tuple type', () => {
   const resolution = new TypeResolution();
 
   expect(checkAndInfer(tupleType([]), unitType, resolution).type).toBe('FAILED_MEET');
-  expect(checkAndInfer(tupleType([]), identifierType('B'), resolution).type).toBe('FAILED_MEET');
+  expect(
+    checkAndInfer(tupleType([]), identifierType(ModuleReference.ROOT, 'B'), resolution).type
+  ).toBe('FAILED_MEET');
   expect(checkAndInfer(tupleType([]), tupleType([intType]), resolution).type).toBe('FAILED_MEET');
   expect(checkAndInfer(tupleType([intType]), tupleType([intType]), resolution)).toEqual(
     tupleType([intType])
@@ -90,9 +108,10 @@ it('t1=function type', () => {
   const resolution = new TypeResolution();
 
   expect(checkAndInfer(functionType([], intType), unitType, resolution).type).toBe('FAILED_MEET');
-  expect(checkAndInfer(functionType([], intType), identifierType('B'), resolution).type).toBe(
-    'FAILED_MEET'
-  );
+  expect(
+    checkAndInfer(functionType([], intType), identifierType(ModuleReference.ROOT, 'B'), resolution)
+      .type
+  ).toBe('FAILED_MEET');
   expect(
     checkAndInfer(functionType([], intType), functionType([intType], intType), resolution).type
   ).toBe('FAILED_MEET');

@@ -59,6 +59,7 @@ export class LanguageServiceState {
     sourceHandles.forEach(([moduleReference, sourceCode]) => {
       const rawModule = parseSamlangModuleFromText(
         sourceCode,
+        moduleReference,
         errorCollector.getModuleErrorCollector(moduleReference)
       );
       this.rawModules.set(moduleReference, rawModule);
@@ -129,6 +130,7 @@ export class LanguageServiceState {
     const errorCollector = createGlobalErrorCollector();
     const rawModule = parseSamlangModuleFromText(
       sourceCode,
+      moduleReference,
       errorCollector.getModuleErrorCollector(moduleReference)
     );
     this.rawModules.set(moduleReference, rawModule);

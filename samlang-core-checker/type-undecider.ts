@@ -29,6 +29,7 @@ const undecide = (type: Type, mapping: UndeciderMapping): Type => {
         return mapping[type.identifier] ?? type;
       }
       return identifierType(
+        type.moduleReference,
         type.identifier,
         type.typeArguments.map((it) => undecide(it, mapping))
       );

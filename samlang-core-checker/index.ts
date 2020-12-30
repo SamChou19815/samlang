@@ -87,10 +87,13 @@ const typeCheckModule = (
   checkUndefinedImportsError(sources, samlangModule, moduleErrorCollector);
   const moduleContext = globalTypingContext.get(moduleReference);
   assertNotNull(moduleContext);
-  const checkedModule = new ModuleTypeChecker(moduleErrorCollector).typeCheck(samlangModule, {
-    ...moduleContext.importedClasses,
-    ...moduleContext.definedClasses,
-  });
+  const checkedModule = new ModuleTypeChecker(moduleReference, moduleErrorCollector).typeCheck(
+    samlangModule,
+    {
+      ...moduleContext.importedClasses,
+      ...moduleContext.definedClasses,
+    }
+  );
   return checkedModule;
 };
 

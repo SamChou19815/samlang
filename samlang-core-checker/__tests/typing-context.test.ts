@@ -1,6 +1,12 @@
 import { LocalTypingContext, AccessibleGlobalTypingContext } from '../typing-context';
 
-import { intType, identifierType, functionType, Range } from 'samlang-core-ast/common-nodes';
+import {
+  intType,
+  identifierType,
+  functionType,
+  Range,
+  ModuleReference,
+} from 'samlang-core-ast/common-nodes';
 
 it('LocalTypingContext basic methods test.', () => {
   const context = new LocalTypingContext();
@@ -48,6 +54,7 @@ it('LocalTypingContext can compute captured values.', () => {
 
 it('AccessibleGlobalTypingContext tests', () => {
   const context = new AccessibleGlobalTypingContext(
+    ModuleReference.ROOT,
     {
       A: {
         typeParameters: ['A', 'B'],
@@ -56,8 +63,8 @@ it('AccessibleGlobalTypingContext tests', () => {
           type: 'variant',
           names: ['a', 'b'],
           mappings: {
-            a: { isPublic: true, type: identifierType('A') },
-            b: { isPublic: false, type: identifierType('B') },
+            a: { isPublic: true, type: identifierType(ModuleReference.ROOT, 'A') },
+            b: { isPublic: false, type: identifierType(ModuleReference.ROOT, 'B') },
           },
         },
         functions: {
@@ -76,7 +83,13 @@ it('AccessibleGlobalTypingContext tests', () => {
           m1: {
             isPublic: true,
             typeParameters: ['C'],
-            type: functionType([identifierType('A'), identifierType('B')], intType),
+            type: functionType(
+              [
+                identifierType(ModuleReference.ROOT, 'A'),
+                identifierType(ModuleReference.ROOT, 'B'),
+              ],
+              intType
+            ),
           },
           m2: {
             isPublic: false,
@@ -156,25 +169,44 @@ it('AccessibleGlobalTypingContext tests', () => {
   context.getCurrentClassTypeDefinition();
 
   expect(
-    context.resolveTypeDefinition(identifierType('A', [intType, intType]), 'object').type
+    context.resolveTypeDefinition(
+      identifierType(ModuleReference.ROOT, 'A', [intType, intType]),
+      'object'
+    ).type
   ).toBe('UnsupportedClassTypeDefinition');
-  expect(context.resolveTypeDefinition(identifierType('B', [intType, intType]), 'object')).toEqual({
+  expect(
+    context.resolveTypeDefinition(
+      identifierType(ModuleReference.ROOT, 'B', [intType, intType]),
+      'object'
+    )
+  ).toEqual({
     type: 'Resolved',
     names: [],
     mappings: {},
   });
   expect(
-    context.resolveTypeDefinition(identifierType('B', [intType, intType]), 'variant').type
+    context.resolveTypeDefinition(
+      identifierType(ModuleReference.ROOT, 'B', [intType, intType]),
+      'variant'
+    ).type
   ).toBe('IllegalOtherClassMatch');
-  expect(context.resolveTypeDefinition(identifierType('A', [intType, intType]), 'variant')).toEqual(
-    {
-      type: 'Resolved',
-      names: ['a', 'b'],
-      mappings: { a: { isPublic: true, type: intType }, b: { isPublic: false, type: intType } },
-    }
-  );
+  expect(
+    context.resolveTypeDefinition(
+      identifierType(ModuleReference.ROOT, 'A', [intType, intType]),
+      'variant'
+    )
+  ).toEqual({
+    type: 'Resolved',
+    names: ['a', 'b'],
+    mappings: { a: { isPublic: true, type: intType }, b: { isPublic: false, type: intType } },
+  });
 
-  expect(context.thisType).toEqual(identifierType('A', [identifierType('A'), identifierType('B')]));
+  expect(context.thisType).toEqual(
+    identifierType(ModuleReference.ROOT, 'A', [
+      identifierType(ModuleReference.ROOT, 'A'),
+      identifierType(ModuleReference.ROOT, 'B'),
+    ])
+  );
 
   expect(context.identifierTypeIsWellDefined('A', 2)).toBeTruthy();
   expect(context.identifierTypeIsWellDefined('B', 2)).toBeTruthy();

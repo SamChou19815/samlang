@@ -1,10 +1,10 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
 import ExpressionBuilder from './parser-expression-builder';
-import typeBuilder from './parser-type-builder';
+import TypeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';
 
-import { functionType, Range } from 'samlang-core-ast/common-nodes';
+import { functionType, ModuleReference, Range } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type {
   TypeDefinition,
@@ -57,7 +57,10 @@ const getTypeParameters = (context: TypeParametersDeclarationContext): readonly 
     .map((it) => it.symbol.text)
     .filter(isNotNull);
 
-const getAnnotatedVariable = (context: AnnotatedVariableContext): AnnotatedVariable => {
+const getAnnotatedVariable = (
+  context: AnnotatedVariableContext,
+  typeBuilder: TypeBuilder
+): AnnotatedVariable => {
   const parameterNameSymbol = context.LowerId().symbol;
   const variablename = parameterNameSymbol.text;
   const typeExpression = context.typeAnnotation().typeExpr();
@@ -79,7 +82,11 @@ type TypeDefinitionWithTypeParameters = TypeDefinition & {
 class TypeDefinitionBuilder
   extends AbstractParseTreeVisitor<TypeDefinitionWithTypeParameters | null>
   implements PLVisitor<TypeDefinitionWithTypeParameters | null> {
-  constructor(private readonly range: Range, private readonly typeParameters: readonly string[]) {
+  constructor(
+    private readonly range: Range,
+    private readonly typeParameters: readonly string[],
+    private readonly typeBuilder: TypeBuilder
+  ) {
     super();
   }
 
@@ -91,7 +98,7 @@ class TypeDefinitionBuilder
     const mappings = rawDeclarations
       .map((c) => {
         const name = c.LowerId().symbol.text;
-        const type = c.typeAnnotation().typeExpr().accept(typeBuilder);
+        const type = c.typeAnnotation().typeExpr().accept(this.typeBuilder);
         if (name == null || type == null) return null;
         const isPublic = c.PRIVATE() == null;
         return [name, { type, isPublic }] as const;
@@ -112,7 +119,7 @@ class TypeDefinitionBuilder
       .variantTypeConstructorDeclaration()
       .map((c) => {
         const name = c.UpperId().symbol.text;
-        const type = c.typeExpr().accept(typeBuilder);
+        const type = c.typeExpr().accept(this.typeBuilder);
         if (name == null || type == null) return null;
         return [name, { type, isPublic: false }] as const;
       })
@@ -131,6 +138,10 @@ class TypeDefinitionBuilder
 class ModuleTypeDefinitionBuilder
   extends AbstractParseTreeVisitor<TypeDefinitionWithTypeParameters | null>
   implements PLVisitor<TypeDefinition | null> {
+  constructor(private readonly typeBuilder: TypeBuilder) {
+    super();
+  }
+
   defaultResult = (): TypeDefinitionWithTypeParameters | null => null;
 
   visitClassHeader = (ctx: ClassHeaderContext): TypeDefinitionWithTypeParameters | null => {
@@ -141,7 +152,9 @@ class ModuleTypeDefinitionBuilder
       rawTypeParams != null
         ? contextRange(rawTypeParams).union(contextRange(rawTypeDeclaration))
         : contextRange(rawTypeDeclaration);
-    return rawTypeDeclaration.accept(new TypeDefinitionBuilder(range, typeParameters));
+    return rawTypeDeclaration.accept(
+      new TypeDefinitionBuilder(range, typeParameters, this.typeBuilder)
+    );
   };
 
   visitUtilClassHeader = (ctx: UtilClassHeaderContext): TypeDefinitionWithTypeParameters => ({
@@ -153,16 +166,21 @@ class ModuleTypeDefinitionBuilder
   });
 }
 
-const moduleTypeDefinitionBuilder = new ModuleTypeDefinitionBuilder();
-
 export default class ClassDefinitionBuilder
   extends AbstractParseTreeVisitor<ClassDefinition | null>
   implements PLVisitor<ClassDefinition | null> {
   private readonly expressionBuilder: ExpressionBuilder;
+  private readonly typeBuilder: TypeBuilder;
+  private readonly moduleTypeDefinitionBuilder: ModuleTypeDefinitionBuilder;
 
-  constructor(errorCollector: ModuleErrorCollector) {
+  constructor(
+    errorCollector: ModuleErrorCollector,
+    private readonly resolveClass: (className: string) => ModuleReference
+  ) {
     super();
-    this.expressionBuilder = new ExpressionBuilder(errorCollector);
+    this.expressionBuilder = new ExpressionBuilder(errorCollector, resolveClass);
+    this.typeBuilder = new TypeBuilder(resolveClass);
+    this.moduleTypeDefinitionBuilder = new ModuleTypeDefinitionBuilder(this.typeBuilder);
   }
 
   // istanbul ignore next
@@ -176,10 +194,12 @@ export default class ClassDefinitionBuilder
   ): ClassMemberDefinition | null => {
     const nameSymbol = ctx.LowerId().symbol;
     const name = nameSymbol.text;
-    const returnType = ctx.typeExpr()?.accept(typeBuilder);
+    const returnType = ctx.typeExpr()?.accept(this.typeBuilder);
     const body = this.buildExpression(ctx.expression());
     if (name == null || returnType == null || body == null) return null;
-    const parameters = ctx.annotatedVariable().map(getAnnotatedVariable);
+    const parameters = ctx
+      .annotatedVariable()
+      .map((it) => getAnnotatedVariable(it, this.typeBuilder));
     const type = functionType(
       parameters.map((it) => it.type),
       returnType
@@ -203,7 +223,7 @@ export default class ClassDefinitionBuilder
     const moduleName = ctx.classHeaderDeclaration().accept(moduleNameBuilder);
     const typeDefinitionWithTypeParameters = ctx
       .classHeaderDeclaration()
-      .accept(moduleTypeDefinitionBuilder);
+      .accept(this.moduleTypeDefinitionBuilder);
     if (moduleName == null || typeDefinitionWithTypeParameters == null) {
       return null;
     }

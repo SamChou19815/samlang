@@ -1,7 +1,7 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
 import StatementBlockBuilder from './parser-statement-block-builder';
-import typeBuilder from './parser-type-builder';
+import TypeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';
 
 import {
@@ -13,6 +13,7 @@ import {
   tupleType,
   functionType,
   Range,
+  ModuleReference,
 } from 'samlang-core-ast/common-nodes';
 import { binaryOperatorSymbolTable, AND, OR, CONCAT } from 'samlang-core-ast/common-operators';
 import {
@@ -125,8 +126,16 @@ export default class ExpressionBuilder
     expression: EXPRESSION_STRING(Range.DUMMY, 'dummy'),
   });
 
-  constructor(private readonly errorCollector: ModuleErrorCollector) {
+  private readonly typeBuilder: TypeBuilder;
+  private readonly statementBlockBuilder: StatementBlockBuilder;
+
+  constructor(
+    private readonly errorCollector: ModuleErrorCollector,
+    resolveClass: (className: string) => ModuleReference
+  ) {
     super();
+    this.typeBuilder = new TypeBuilder(resolveClass);
+    this.statementBlockBuilder = new StatementBlockBuilder(this.toExpression, this.typeBuilder);
   }
 
   private toExpression = (context?: ExpressionContext): SamlangExpression => {
@@ -137,8 +146,6 @@ export default class ExpressionBuilder
     }
     return ExpressionBuilder.DUMMY_EXPRESSION;
   };
-
-  private statementBlockBuilder = new StatementBlockBuilder(this.toExpression);
 
   private objectFieldDeclarationBuilder = new ObjectFieldDeclarationBuilder(this.toExpression);
 
@@ -387,7 +394,7 @@ export default class ExpressionBuilder
         const name = nameNode.text;
         assertNotNull(name);
         const type =
-          oneArg.typeAnnotation()?.typeExpr()?.accept(typeBuilder) ?? UndecidedTypes.next();
+          oneArg.typeAnnotation()?.typeExpr()?.accept(this.typeBuilder) ?? UndecidedTypes.next();
         return [name, type] as const;
       })
       .filter(isNotNull);

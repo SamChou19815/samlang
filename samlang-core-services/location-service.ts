@@ -75,7 +75,11 @@ export class SamlangExpressionLocationLookupBuilder {
     classes.forEach(({ name, nameRange, members }) => {
       this.buildSingleExpression(
         moduleReference,
-        EXPRESSION_VARIABLE({ range: nameRange, type: identifierType(`class ${name}`), name })
+        EXPRESSION_VARIABLE({
+          range: nameRange,
+          type: identifierType(moduleReference, `class ${name}`),
+          name,
+        })
       );
       members.forEach((member) => {
         this.buildSingleExpression(
@@ -100,7 +104,7 @@ export class SamlangExpressionLocationLookupBuilder {
           moduleReference,
           EXPRESSION_VARIABLE({
             range: classNameRange,
-            type: identifierType(`class ${className}`),
+            type: identifierType(moduleReference, `class ${className}`),
             name: className,
           })
         );

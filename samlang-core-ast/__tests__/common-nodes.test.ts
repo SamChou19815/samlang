@@ -31,10 +31,16 @@ it('prettyPrint is working.', () => {
   expect(prettyPrintType(boolType)).toBe('bool');
   expect(prettyPrintType(intType)).toBe('int');
   expect(prettyPrintType(stringType)).toBe('string');
-  expect(prettyPrintType(identifierType('Foo'))).toBe('Foo');
-  expect(prettyPrintType(identifierType('Foo', [unitType, intType, identifierType('Bar')]))).toBe(
-    'Foo<unit, int, Bar>'
-  );
+  expect(prettyPrintType(identifierType(ModuleReference.ROOT, 'Foo'))).toBe('Foo');
+  expect(
+    prettyPrintType(
+      identifierType(ModuleReference.ROOT, 'Foo', [
+        unitType,
+        intType,
+        identifierType(ModuleReference.ROOT, 'Bar'),
+      ])
+    )
+  ).toBe('Foo<unit, int, Bar>');
   expect(prettyPrintType(tupleType([unitType, intType]))).toBe('[unit * int]');
   expect(prettyPrintType(functionType([], unitType))).toBe('() -> unit');
   expect(prettyPrintType(functionType([intType], boolType))).toBe('(int) -> bool');
@@ -75,22 +81,43 @@ it('type equality test', () => {
   expect(isTheSameType(stringType, intType)).toBeFalsy();
   expect(isTheSameType(stringType, stringType)).toBeTruthy();
 
-  expect(isTheSameType(identifierType('A', [intType, boolType]), unitType)).toBeFalsy();
-  expect(isTheSameType(identifierType('A', [intType, boolType]), identifierType('B'))).toBeFalsy();
-  expect(isTheSameType(identifierType('A', [intType, boolType]), identifierType('A'))).toBeFalsy();
   expect(
-    isTheSameType(identifierType('A', [intType, boolType]), identifierType('A', [intType]))
+    isTheSameType(identifierType(ModuleReference.ROOT, 'A', [intType, boolType]), unitType)
   ).toBeFalsy();
   expect(
     isTheSameType(
-      identifierType('A', [boolType, intType]),
-      identifierType('A', [intType, boolType])
+      identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      identifierType(ModuleReference.ROOT, 'B')
     )
   ).toBeFalsy();
   expect(
     isTheSameType(
-      identifierType('A', [intType, boolType]),
-      identifierType('A', [intType, boolType])
+      identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      identifierType(ModuleReference.ROOT, 'A')
+    )
+  ).toBeFalsy();
+  expect(
+    isTheSameType(
+      identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      identifierType(ModuleReference.ROOT, 'A', [intType])
+    )
+  ).toBeFalsy();
+  expect(
+    isTheSameType(
+      identifierType(ModuleReference.ROOT, 'A', [boolType, intType]),
+      identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
+    )
+  ).toBeFalsy();
+  expect(
+    isTheSameType(
+      identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      identifierType(new ModuleReference(['AAA']), 'A', [intType, boolType])
+    )
+  ).toBeFalsy();
+  expect(
+    isTheSameType(
+      identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
     )
   ).toBeTruthy();
 

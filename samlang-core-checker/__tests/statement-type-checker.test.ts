@@ -54,6 +54,7 @@ const typeCheckInSandbox = (
 
   const checker = new StatementTypeChecker(
     new AccessibleGlobalTypingContext(
+      ModuleReference.ROOT,
       {
         A: {
           typeParameters: [],
@@ -172,7 +173,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
         { type: 'UndecidedType', index: 0 },
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
-          type: identifierType('A'),
+          type: identifierType(ModuleReference.ROOT, 'A'),
           name: 'foo',
         })
       ),
@@ -188,10 +189,10 @@ const passingTypeCheckerTestCases: readonly (readonly [
             { range: Range.DUMMY, fieldName: 'b', fieldOrder: 1, alias: 'c' },
           ],
         },
-        identifierType('A'),
+        identifierType(ModuleReference.ROOT, 'A'),
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
-          type: identifierType('A'),
+          type: identifierType(ModuleReference.ROOT, 'A'),
           name: 'foo',
         })
       ),
@@ -382,7 +383,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         { type: 'UndecidedType', index: 0 },
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
-          type: identifierType('B'),
+          type: identifierType(ModuleReference.ROOT, 'B'),
           name: 'foo',
         })
       ),
@@ -405,7 +406,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         { type: 'UndecidedType', index: 0 },
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
-          type: identifierType('C'),
+          type: identifierType(ModuleReference.ROOT, 'C'),
           name: 'foo',
         })
       ),
@@ -453,7 +454,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         { type: 'UndecidedType', index: 0 },
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
-          type: identifierType('A'),
+          type: identifierType(ModuleReference.ROOT, 'A'),
           name: 'foo',
         })
       ),
@@ -476,7 +477,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         { type: 'UndecidedType', index: 0 },
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
-          type: identifierType('A'),
+          type: identifierType(ModuleReference.ROOT, 'A'),
           name: 'foo',
         })
       ),

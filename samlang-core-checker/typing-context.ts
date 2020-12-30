@@ -118,6 +118,7 @@ export type ReadonlyGlobalTypingContext = ReadonlyHashMap<ModuleReference, Modul
 
 export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
   constructor(
+    public readonly currentModuleReference: ModuleReference,
     private readonly classes: Readonly<Record<string, ClassTypingContext>>,
     public readonly typeParameters: ReadonlySet<string>,
     public readonly currentClass: string
@@ -240,8 +241,11 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     const currentClassTypingContext = this.classes[this.currentClass];
     assertNotNull(currentClassTypingContext);
     return identifierType(
+      this.currentModuleReference,
       this.currentClass,
-      currentClassTypingContext.typeParameters.map((it) => identifierType(it))
+      currentClassTypingContext.typeParameters.map((it) =>
+        identifierType(this.currentModuleReference, it)
+      )
     );
   }
 
@@ -255,6 +259,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
 
   withAdditionalTypeParameters(typeParameters: Iterable<string>): AccessibleGlobalTypingContext {
     return new AccessibleGlobalTypingContext(
+      this.currentModuleReference,
       this.classes,
       new Set([...this.typeParameters, ...typeParameters]),
       this.currentClass
