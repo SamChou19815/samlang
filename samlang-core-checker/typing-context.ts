@@ -200,7 +200,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     | {
         readonly type: 'Resolved';
         readonly names: readonly string[];
-        readonly mappings: Readonly<Record<string, FieldType | undefined>>;
+        readonly mappings: Readonly<Record<string, FieldType>>;
       }
     | { readonly type: 'IllegalOtherClassMatch' }
     | { readonly type: 'UnsupportedClassTypeDefinition' } {

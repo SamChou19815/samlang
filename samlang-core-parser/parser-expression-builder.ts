@@ -376,11 +376,13 @@ export default class ExpressionBuilder
           if (tag == null) {
             return null;
           }
+          const dataVariableName = pattern2Expr.varOrWildCard()?.LowerId()?.symbol?.text;
           return {
             range: contextRange(pattern2Expr),
             tag,
             tagOrder: -1, // To be resolved during type checking
-            dataVariable: pattern2Expr.varOrWildCard()?.LowerId()?.symbol?.text,
+            dataVariable:
+              dataVariableName == null ? undefined : [dataVariableName, UndecidedTypes.next()],
             expression: this.toExpression(pattern2Expr.expression()),
           };
         })

@@ -646,11 +646,12 @@ class HighIRExpressionLoweringManager {
       ({ tagOrder, dataVariable, expression: patternExpression }) => {
         const localStatements: HighIRStatement[] = [];
         if (dataVariable != null) {
+          const [dataVariableName, dataVariableType] = dataVariable;
           localStatements.push(
             HIR_LET({
-              name: dataVariable,
+              name: dataVariableName,
               assignedExpression: HIR_INDEX_ACCESS({
-                type: intType,
+                type: dataVariableType,
                 expression: HIR_VARIABLE(variableForMatchedExpression, matchedExpression.type),
                 index: 1,
               }),

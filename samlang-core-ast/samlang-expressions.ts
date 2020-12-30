@@ -133,7 +133,7 @@ export interface VariantPatternToExpression {
   readonly range: Range;
   readonly tag: string;
   readonly tagOrder: number;
-  readonly dataVariable?: string;
+  readonly dataVariable?: readonly [string, Type];
   readonly expression: SamlangExpression;
 }
 

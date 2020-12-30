@@ -800,7 +800,13 @@ it('Match lowering works.', () => {
       type: DUMMY_IDENTIFIER_TYPE,
       matchedExpression: THIS,
       matchingList: [
-        { range: Range.DUMMY, tag: 'Foo', tagOrder: 0, dataVariable: 'bar', expression: THIS },
+        {
+          range: Range.DUMMY,
+          tag: 'Foo',
+          tagOrder: 0,
+          dataVariable: ['bar', stringType],
+          expression: THIS,
+        },
         {
           range: Range.DUMMY,
           tag: 'Bar',
@@ -831,7 +837,7 @@ it('Match lowering works.', () => {
             HIR_LET({
               name: 'bar',
               assignedExpression: HIR_INDEX_ACCESS({
-                type: intType,
+                type: stringType,
                 expression: HIR_VARIABLE('_t0', DUMMY_IDENTIFIER_TYPE),
                 index: 1,
               }),
