@@ -104,13 +104,13 @@ export interface MemberTypeInformation {
 export interface ClassTypingContext {
   readonly typeParameters: readonly string[];
   readonly typeDefinition?: TypeDefinition;
-  readonly functions: Readonly<Record<string, MemberTypeInformation | undefined>>;
-  readonly methods: Readonly<Record<string, MemberTypeInformation | undefined>>;
+  readonly functions: Readonly<Record<string, MemberTypeInformation>>;
+  readonly methods: Readonly<Record<string, MemberTypeInformation>>;
 }
 
 export interface ModuleTypingContext {
-  readonly importedClasses: Record<string, ClassTypingContext | undefined>;
-  readonly definedClasses: Record<string, ClassTypingContext | undefined>;
+  readonly importedClasses: Readonly<Record<string, ClassTypingContext>>;
+  readonly definedClasses: Readonly<Record<string, ClassTypingContext>>;
 }
 
 export type GlobalTypingContext = HashMap<ModuleReference, ModuleTypingContext>;
@@ -118,7 +118,7 @@ export type ReadonlyGlobalTypingContext = ReadonlyHashMap<ModuleReference, Modul
 
 export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
   constructor(
-    private readonly classes: Record<string, ClassTypingContext | undefined>,
+    private readonly classes: Readonly<Record<string, ClassTypingContext>>,
     public readonly typeParameters: ReadonlySet<string>,
     public readonly currentClass: string
   ) {}
