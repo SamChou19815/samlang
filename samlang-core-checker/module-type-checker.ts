@@ -4,7 +4,7 @@ import { validateType } from './type-validator';
 import {
   AccessibleGlobalTypingContext,
   LocalTypingContext,
-  ClassTypingContext,
+  ReadonlyGlobalTypingContext,
 } from './typing-context';
 
 import type { ModuleReference, Range } from 'samlang-core-ast/common-nodes';
@@ -24,7 +24,7 @@ export default class ModuleTypeChecker {
 
   typeCheck(
     samlangmodule: SamlangModule,
-    classes: Readonly<Record<string, ClassTypingContext>>
+    globalTypingContext: ReadonlyGlobalTypingContext
   ): SamlangModule {
     this.checkNameCollisionForCompoundList(
       samlangmodule.classes.map(({ name, nameRange }) => [name, nameRange])
@@ -34,7 +34,7 @@ export default class ModuleTypeChecker {
       const currentClass = classDefinition.name;
       const accessibleGlobalTypingContext = new AccessibleGlobalTypingContext(
         this.moduleReference,
-        classes,
+        globalTypingContext,
         new Set(classDefinition.typeParameters),
         currentClass
       );

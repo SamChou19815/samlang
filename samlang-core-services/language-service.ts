@@ -420,10 +420,10 @@ export class LanguageServices {
     // istanbul ignore next
     if (expression == null || classOfExpression == null) return [];
     if (expression.__type__ === 'ClassMemberExpression') {
-      const moduleContext = this.state.globalTypingContext.get(expression.moduleReference);
-      const className = expression.className;
       // istanbul ignore next
-      const relevantClassType = moduleContext?.definedClasses[className];
+      const relevantClassType = this.state.globalTypingContext.get(expression.moduleReference)?.[
+        expression.className
+      ];
       // istanbul ignore next
       if (relevantClassType == null) return [];
       return Object.entries(relevantClassType.functions).map(([name, typeInformation]) => {
@@ -450,7 +450,7 @@ export class LanguageServices {
     }
     const relevantClassType =
       // istanbul ignore next
-      this.state.globalTypingContext.get(type.moduleReference)?.definedClasses[type.identifier];
+      this.state.globalTypingContext.get(type.moduleReference)?.[type.identifier];
     // istanbul ignore next
     if (relevantClassType == null) return [];
     const completionResults: AutoCompletionItem[] = [];

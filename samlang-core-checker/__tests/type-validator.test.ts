@@ -20,8 +20,11 @@ import {
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 
 const identifierTypeValidatorForTesting: IdentifierTypeValidator = {
-  identifierTypeIsWellDefined: (name: string, typeArgumentLength: number) =>
-    name === 'Good' && typeArgumentLength === 1,
+  identifierTypeIsWellDefined: (
+    _moduleReference: ModuleReference,
+    name: string,
+    typeArgumentLength: number
+  ) => name === 'Good' && typeArgumentLength === 1,
 };
 
 const withEmbeddedType = (embeddedType: IdentifierType): string | null =>

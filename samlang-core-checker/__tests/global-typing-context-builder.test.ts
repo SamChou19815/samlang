@@ -89,32 +89,24 @@ it('can handle imports and definitions', () => {
   expect(actualGlobalTypingContext.size).toBe(2);
 
   expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
-    definedClasses: {
-      Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
-    },
-    importedClasses: {},
+    Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
   });
   expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
-    definedClasses: {
-      Class1: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {
-          f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
-        },
-        methods: {
-          m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
-        },
+    Class1: {
+      typeParameters: [],
+      typeDefinition,
+      functions: {
+        f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
       },
-      Class2: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {},
-        methods: {},
+      methods: {
+        m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
       },
     },
-    importedClasses: {
-      Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
+    Class2: {
+      typeParameters: [],
+      typeDefinition,
+      functions: {},
+      methods: {},
     },
   });
 });
@@ -133,28 +125,20 @@ it('can handle incremental add', () => {
   expect(actualGlobalTypingContext.size).toBe(2);
 
   expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
-    definedClasses: {
-      Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
-    },
-    importedClasses: {},
+    Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
   });
   expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
-    definedClasses: {
-      Class1: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {
-          f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
-        },
-        methods: {
-          m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
-        },
+    Class1: {
+      typeParameters: [],
+      typeDefinition,
+      functions: {
+        f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
       },
-      Class2: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
+      methods: {
+        m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
+      },
     },
-    importedClasses: {
-      Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
-    },
+    Class2: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
   });
 });
 
@@ -168,30 +152,24 @@ it('can handle incremental update', () => {
 
   expect(actualGlobalTypingContext.size).toBe(2);
 
-  expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
-    definedClasses: {},
-    importedClasses: {},
-  });
+  expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({});
   expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
-    definedClasses: {
-      Class1: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {
-          f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
-        },
-        methods: {
-          m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
-        },
+    Class1: {
+      typeParameters: [],
+      typeDefinition,
+      functions: {
+        f1: { isPublic: false, type: functionType([], intType), typeParameters: [] },
       },
-      Class2: {
-        typeParameters: [],
-        typeDefinition,
-        functions: {},
-        methods: {},
+      methods: {
+        m1: { isPublic: true, type: functionType([], intType), typeParameters: [] },
       },
     },
-    importedClasses: {},
+    Class2: {
+      typeParameters: [],
+      typeDefinition,
+      functions: {},
+      methods: {},
+    },
   });
 });
 

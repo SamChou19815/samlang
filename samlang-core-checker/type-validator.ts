@@ -1,4 +1,4 @@
-import type { Type, Range } from 'samlang-core-ast/common-nodes';
+import type { Type, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { checkNotNull } from 'samlang-core-utils';
 
@@ -7,7 +7,11 @@ export interface IdentifierTypeValidator {
    * Given the `name` of the identifier and the number of applied arguments, check the context to see whether it
    * matches any type definition in scope.
    */
-  identifierTypeIsWellDefined(name: string, typeArgumentLength: number): boolean;
+  identifierTypeIsWellDefined(
+    moduleReference: ModuleReference,
+    name: string,
+    typeArgumentLength: number
+  ): boolean;
 }
 
 /**
@@ -24,6 +28,7 @@ export const findInvalidTypeIdentifier_EXPOSED_FOR_TESTING = (
     case 'IdentifierType':
       if (
         !identifierTypeValidator.identifierTypeIsWellDefined(
+          type.moduleReference,
           type.identifier,
           type.typeArguments.length
         )

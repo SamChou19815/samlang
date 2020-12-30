@@ -235,6 +235,60 @@ it('typeCheckSources smoke test (failing case)', () => {
   ]);
 });
 
+it('typeCheckSources identifier resolution test.', () => {
+  // Test https://github.com/SamChou19815/samlang/issues/167 is resolved.
+  const sourceA = `
+  class SameName(val a: int) {
+    function create(): SameName = { a: 0 }
+  }`;
+  const sourceB = `import { SameName } from A
+  class Producer {
+    function produce(): SameName = SameName.create()
+  }`;
+  const sourceC = `import { Producer } from B
+
+  class SameName(val b: int) {
+    // Here, Producer.produce() produces a SameName class from module a, so the field a should exist.
+    function create(): SameName = { b: Producer.produce().a }
+  }`;
+
+  const moduleReferenceA = new ModuleReference(['A']);
+  const moduleReferenceB = new ModuleReference(['B']);
+  const moduleReferenceC = new ModuleReference(['C']);
+
+  const errorCollector = createGlobalErrorCollector();
+
+  const sources = mapOf(
+    [
+      moduleReferenceA,
+      parseSamlangModuleFromText(
+        sourceA,
+        moduleReferenceA,
+        errorCollector.getModuleErrorCollector(moduleReferenceA)
+      ),
+    ],
+    [
+      moduleReferenceB,
+      parseSamlangModuleFromText(
+        sourceB,
+        moduleReferenceB,
+        errorCollector.getModuleErrorCollector(moduleReferenceB)
+      ),
+    ],
+    [
+      moduleReferenceC,
+      parseSamlangModuleFromText(
+        sourceC,
+        moduleReferenceC,
+        errorCollector.getModuleErrorCollector(moduleReferenceC)
+      ),
+    ]
+  );
+
+  typeCheckSources(sources, errorCollector);
+  expect(errorCollector.getErrors().map((e) => e.toString())).toEqual([]);
+});
+
 it('typeCheckSingleModuleSource smoke test', () => {
   const errorCollector = createGlobalErrorCollector();
   const checkedModule = typeCheckSingleModuleSource_EXPOSED_FOR_TESTING(

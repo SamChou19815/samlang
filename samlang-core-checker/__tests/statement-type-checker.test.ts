@@ -23,6 +23,7 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 import type { Pattern } from 'samlang-core-ast/samlang-pattern';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
+import { hashMapOf } from 'samlang-core-utils';
 
 const STATEMENT = (
   pattern: Pattern,
@@ -55,50 +56,53 @@ const typeCheckInSandbox = (
   const checker = new StatementTypeChecker(
     new AccessibleGlobalTypingContext(
       ModuleReference.ROOT,
-      {
-        A: {
-          typeParameters: [],
-          typeDefinition: {
-            range: Range.DUMMY,
-            type: 'object',
-            names: ['a', 'b'],
-            mappings: {
-              a: { isPublic: true, type: intType },
-              b: { isPublic: false, type: boolType },
+      hashMapOf([
+        ModuleReference.ROOT,
+        {
+          A: {
+            typeParameters: [],
+            typeDefinition: {
+              range: Range.DUMMY,
+              type: 'object',
+              names: ['a', 'b'],
+              mappings: {
+                a: { isPublic: true, type: intType },
+                b: { isPublic: false, type: boolType },
+              },
             },
+            functions: {},
+            methods: {},
           },
-          functions: {},
-          methods: {},
-        },
-        B: {
-          typeParameters: [],
-          typeDefinition: {
-            range: Range.DUMMY,
-            type: 'object',
-            names: ['a', 'b'],
-            mappings: {
-              a: { isPublic: true, type: intType },
-              b: { isPublic: false, type: boolType },
+          B: {
+            typeParameters: [],
+            typeDefinition: {
+              range: Range.DUMMY,
+              type: 'object',
+              names: ['a', 'b'],
+              mappings: {
+                a: { isPublic: true, type: intType },
+                b: { isPublic: false, type: boolType },
+              },
             },
+            functions: {},
+            methods: {},
           },
-          functions: {},
-          methods: {},
-        },
-        C: {
-          typeParameters: [],
-          typeDefinition: {
-            range: Range.DUMMY,
-            type: 'variant',
-            names: ['a', 'b'],
-            mappings: {
-              a: { isPublic: true, type: intType },
-              b: { isPublic: true, type: boolType },
+          C: {
+            typeParameters: [],
+            typeDefinition: {
+              range: Range.DUMMY,
+              type: 'variant',
+              names: ['a', 'b'],
+              mappings: {
+                a: { isPublic: true, type: intType },
+                b: { isPublic: true, type: boolType },
+              },
             },
+            functions: {},
+            methods: {},
           },
-          functions: {},
-          methods: {},
         },
-      },
+      ]),
       new Set(),
       'A'
     ),
