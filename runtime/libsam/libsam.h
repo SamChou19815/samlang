@@ -18,15 +18,8 @@ typedef samlang_int *samlang_string;
 #define SAMLANG_EXPORT
 #endif
 
-#if !defined(__CYGWIN__) && !defined(__APPLE__)
-#define SAMLANG_BUILTIN(x) _builtin_ ## x
-#define SAMLANG_COMPILED_MAIN _compiled_program_main
-#else
 #define SAMLANG_BUILTIN(x) builtin_ ## x
 #define SAMLANG_COMPILED_MAIN compiled_program_main
-/* On Cygwin/Windows (and apparently OS X) the compiler adds _ itself to
-   everything; so we don't need one of our own */
-#endif
 
 // Main allocation hook
 SAMLANG_EXPORT void * SAMLANG_BUILTIN(malloc)(samlang_int);
