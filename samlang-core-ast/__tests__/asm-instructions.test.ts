@@ -90,5 +90,7 @@ it('assemblyInstructionToString test', () => {
   expect(toString(ASM_PUSH(RAX))).toBe('push rax');
   expect(toString(ASM_POP_RBP)).toBe('pop rbp');
   expect(toString(ASM_LABEL('l1'))).toBe('l1:');
+  expect(toString(ASM_LABEL('_l1'), true)).toBe('_l1:');
+  expect(toString(ASM_LABEL('_l1'), false)).toBe('__l1:');
   expect(toString(ASM_COMMENT('haha'))).toBe('## haha');
 });
