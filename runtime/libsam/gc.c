@@ -26,10 +26,8 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "gc.h"
 
@@ -99,25 +97,6 @@ static ssize_t gc_total_size = 0;               // Total size.
 static ssize_t gc_alloc_size = 0;               // Total allocation (since GC).
 static ssize_t gc_trigger_size = GC_MIN_TRIGGER;// GC trigger size.
 static ssize_t gc_used_size  = 0;               // Total used memory.
-
-/*
- * GC debugging.
- */
-#ifndef NODEBUG
-#include <stdarg.h>
-static void gc_debug(const char *format, ...)
-{
-    fprintf(stderr, "GC: ");
-    va_list args;
-    va_start(args, format);
-    vfprintf(stderr, format, args);
-    va_end(args);
-    if (format[0] == '\0' || format[strlen(format)-1] != '\n')
-        fputc('\n', stderr);
-}
-#else       /* NODEBUG */
-#define gc_debug(...)
-#endif      /* NODEBUG */
 
 /*
  * GC Prototypes.
@@ -407,16 +386,9 @@ extern void GC_handle_error(bool fatal, int err)
 {
     if (err != 0)
         errno = err;
-    gc_debug("error occured [fatal=%d, errno=%s]\n", fatal,
-        strerror(errno));
     gc_error_func_t func = gc_error_func;
-    if (func != NULL)
-        func();
-    if (fatal)
-    {
-        fprintf(stderr, "GC fatal error (%s)\n", strerror(errno));
-        abort();
-    }
+    if (func != NULL) func();
+    if (fatal) abort();
 }
 
 /*

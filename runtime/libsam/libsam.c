@@ -6,8 +6,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <sys/time.h>
-#include <inttypes.h>
 
 #include "./gc.h"
 #define WORDSIZE 8
@@ -117,6 +115,8 @@ samlang_string SAMLANG_BUILTIN(intToString)(samlang_int in) {
 
 #if defined(WINDOWS) || defined(WIN32)
     sprintf(buffer, "%I64d", in);
+#elif defined(__APPLE__)
+    sprintf(buffer, "%lld", in);
 #else
     sprintf(buffer, "%ld", in);
 #endif
