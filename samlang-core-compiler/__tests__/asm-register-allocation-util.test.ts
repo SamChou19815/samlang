@@ -9,7 +9,7 @@ import { assemblyInstructionToString } from 'samlang-core-ast/asm-instructions';
 it('rewriteAssemblyInstructionsWithCalleeSavedRegistersMoves test', () => {
   expect(
     rewriteAssemblyInstructionsWithCalleeSavedRegistersMoves([])
-      .map(assemblyInstructionToString)
+      .map((it) => assemblyInstructionToString(it))
       .join('\n')
   ).toBe(`mov RBX_CALLEE_SAVED_STORAGE, rbx
 mov R12_CALLEE_SAVED_STORAGE, r12

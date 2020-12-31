@@ -31,7 +31,7 @@ const compile = (
     checkInvariant,
     removeComments
   )
-    .instructions.map(assemblyInstructionToString)
+    .instructions.map((it) => assemblyInstructionToString(it))
     .join('\n');
 
 it('generateAssemblyInstructionsFromMidIRCompilationUnit test 0', () => {

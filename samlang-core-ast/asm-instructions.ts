@@ -5,7 +5,7 @@ import {
   AssemblyArgument,
   AssemblyConstOrRegister,
   AssemblyRegisterOrMemory,
-  assemblyArgumentToString as argToString,
+  assemblyArgumentToString,
 } from './asm-arguments';
 
 import { bigIntIsWithin32BitIntegerRange } from 'samlang-core-utils';
@@ -372,7 +372,11 @@ export const ASM_COMMENT = (comment: string): AssemblyComment => ({
   comment,
 });
 
-export const assemblyInstructionToString = (instruction: AssemblyInstruction): string => {
+export const assemblyInstructionToString = (
+  instruction: AssemblyInstruction,
+  isLinux = false
+): string => {
+  const argToString = (argument: AssemblyArgument) => assemblyArgumentToString(argument, isLinux);
   switch (instruction.__type__) {
     case 'AssemblyMoveFromLong':
       return `movabs ${argToString(instruction.destination)}, ${instruction.value}`;
