@@ -14,18 +14,11 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@master
-      - name: Cache LLVM and Clang
-        id: cache-llvm
-        uses: actions/cache@v2
-        with:
-          path: ${{ runner.temp }}/llvm
-          key: llvm-11.0
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v1
         with:
           version: '11'
           directory: ${{ runner.temp }}/llvm
-          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
       - name: Build runtime
         run: cd runtime && make
       - name: Build example
