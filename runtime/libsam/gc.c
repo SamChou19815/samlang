@@ -274,8 +274,6 @@ extern bool GC_init(void)
     if (gc_inited)
         return true;    // Already initialised.
 
-    gc_debug("initializing");
-
     // Check that we are in a 64-bit environment.
     if (sizeof(void *) != sizeof(uint64_t) ||
         sizeof(double) != sizeof(uint64_t))
@@ -513,7 +511,6 @@ nonempty_freelist:
             protectlen);
         if (gc_protect_memory(protectptr, protectlen) != 0)
         {
-            gc_debug("protect failed");
             gc_handle_error(false, 0);
             return NULL;
         }
@@ -570,10 +567,8 @@ extern void GC_collect(void)
         return;
 
     // Initialize marking
-    gc_debug("collect [stage=init_marks]");
     gc_mark_init();
 
-    gc_debug("collect [stage=mark]");
     struct gc_root_s root_0;
     gc_root_t root = &root_0;
     root->ptr = (void *)gc_stacktop();
@@ -669,19 +664,15 @@ static void gc_mark(gc_root_t roots)
     {
         void **ptrptr = stack->startptr;
         void **endptr = stack->endptr;
-        if (ptrptr == NULL)
-        {
+        if (ptrptr == NULL) {
             // Attempt to find some work from the root list.
-            if (roots != NULL)
-            {
+            if (roots != NULL) {
                 ptrptr = (void **)*roots->ptrptr;
                 size_t size = (*roots->sizeptr)*roots->elemsize;
                 endptr = ptrptr + size/sizeof(void *);
                 roots = roots->next;
                 goto gc_mark_loop_inner;
             }
-
-            gc_debug("collect [stage=sweep]");
             return;
         }
         else
