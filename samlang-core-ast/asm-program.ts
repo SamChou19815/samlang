@@ -31,12 +31,12 @@ ${Array.from(content)
 
 export const assemblyProgramToString = (
   program: AssemblyProgram,
-  isLinux = false
+  isLinux = true
 ): string => `    .text
     .intel_syntax noprefix
     .p2align 4, 0x90
     .align 8
-    .globl ${isLinux ? ENCODED_COMPILED_PROGRAM_MAIN.substring(1) : ENCODED_COMPILED_PROGRAM_MAIN}
+    .globl ${isLinux ? ENCODED_COMPILED_PROGRAM_MAIN : `_${ENCODED_COMPILED_PROGRAM_MAIN}`}
 ${program.instructions.map((it) => instructionToString(it, isLinux)).join('\n')}
 ${program.globalVariables.map(globalVariableToString).join('\n')}
 `;

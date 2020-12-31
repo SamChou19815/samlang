@@ -374,7 +374,7 @@ export const ASM_COMMENT = (comment: string): AssemblyComment => ({
 
 export const assemblyInstructionToString = (
   instruction: AssemblyInstruction,
-  isLinux = false
+  isLinux = true
 ): string => {
   const argToString = (argument: AssemblyArgument) => assemblyArgumentToString(argument, isLinux);
   switch (instruction.__type__) {
@@ -475,7 +475,9 @@ export const assemblyInstructionToString = (
     case 'AssemblyPopRBP':
       return 'pop rbp';
     case 'AssemblyLabel':
-      return `${instruction.label}:`;
+      return `${
+        !isLinux && instruction.label.startsWith('_') ? `_${instruction.label}` : instruction.label
+      }:`;
     case 'AssemblyComment':
       return `## ${instruction.comment}`;
   }

@@ -101,13 +101,13 @@ export const ASM_MEM = (
 
 export const assemblyArgumentToString = (
   assemblyArgument: AssemblyArgument,
-  isLinux = false
+  isLinux = true
 ): string => {
   switch (assemblyArgument.__type__) {
     case 'AssemblyConst':
       if (typeof assemblyArgument.value === 'string') {
         const name = assemblyArgument.value;
-        return isLinux && name.startsWith('_') ? name.substring(1) : name;
+        return !isLinux && name.startsWith('_') ? `_${name}` : name;
       }
       return String(assemblyArgument.value);
     case 'AssemblyRegister':
@@ -127,7 +127,7 @@ export const assemblyArgumentToString = (
       if (displacementConstant != null) {
         const { value } = displacementConstant;
         if (typeof value === 'string') {
-          const prefixFixed = isLinux && value.startsWith('_') ? value.substring(1) : value;
+          const prefixFixed = !isLinux && value.startsWith('_') ? `_${value}` : value;
           string += string.length > 0 ? `+${prefixFixed}` : prefixFixed;
         } else {
           // eslint-disable-next-line no-lonely-if
