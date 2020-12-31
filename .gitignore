@@ -1,7 +1,7 @@
 # GCC/LLVM output
 *.o
 runtime/*.a
-runtime/libsam/*.bc
+*.bc
 
 # Node
 node_modules
