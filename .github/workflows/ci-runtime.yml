@@ -1,5 +1,10 @@
 name: Runtime
 on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'runtime/**'
   pull_request:
     paths:
       - 'runtime/**'
