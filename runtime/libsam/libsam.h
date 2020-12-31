@@ -18,8 +18,8 @@ typedef samlang_int *samlang_string;
 #define SAMLANG_EXPORT
 #endif
 
-#define SAMLANG_BUILTIN(x) builtin_ ## x
-#define SAMLANG_COMPILED_MAIN compiled_program_main
+#define SAMLANG_BUILTIN(x) _builtin_ ## x
+#define SAMLANG_COMPILED_MAIN _compiled_program_main
 
 // Main allocation hook
 SAMLANG_EXPORT void * SAMLANG_BUILTIN(malloc)(samlang_int);

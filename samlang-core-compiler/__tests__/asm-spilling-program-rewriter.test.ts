@@ -38,7 +38,10 @@ const rewrite = (
     0
   );
   expect(rewriter.getNewTemps().length).toBeGreaterThan(-1);
-  return rewriter.getNewInstructions().map(assemblyInstructionToString).join('\n');
+  return rewriter
+    .getNewInstructions()
+    .map((it) => assemblyInstructionToString(it))
+    .join('\n');
 };
 
 const REG = ASM_REG('reg');

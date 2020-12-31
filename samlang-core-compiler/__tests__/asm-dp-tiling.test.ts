@@ -25,7 +25,7 @@ const tileStatements = (statements: readonly MidIRStatement[]): string => {
     'functionName',
     statements,
     new AssemblyFunctionAbstractRegisterAllocator()
-  ).map(assemblyInstructionToString);
+  ).map((it) => assemblyInstructionToString(it));
   return lines.slice(0, lines.length - 1).join('\n');
 };
 

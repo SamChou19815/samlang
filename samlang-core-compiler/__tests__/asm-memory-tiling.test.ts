@@ -46,7 +46,7 @@ const tile = (expression: MidIRExpression): string | null => {
   const { instructions, assemblyArgument } = result;
   const memoryString = assemblyArgumentToString(assemblyArgument);
   if (instructions.length === 0) return memoryString;
-  const instructionsString = instructions.map(assemblyInstructionToString).join('\n');
+  const instructionsString = instructions.map((it) => assemblyInstructionToString(it)).join('\n');
   return `${instructionsString}\n${memoryString}`;
 };
 

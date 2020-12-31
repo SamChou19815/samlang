@@ -65,7 +65,10 @@ const compileToX86Assembly = (
   programs.forEach((program, moduleReference) => {
     const outputAssemblyFilePath = join(outputDirectory, `${moduleReference}.s`);
     mkdirSync(dirname(outputAssemblyFilePath), { recursive: true });
-    writeFileSync(outputAssemblyFilePath, assemblyProgramToString(program));
+    writeFileSync(
+      outputAssemblyFilePath,
+      assemblyProgramToString(program, process.platform === 'linux')
+    );
     paths.push(outputAssemblyFilePath);
   });
   return paths;

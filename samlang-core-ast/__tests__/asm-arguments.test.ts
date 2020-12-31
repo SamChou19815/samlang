@@ -17,10 +17,18 @@ import {
 it('assemblyArgumentToString tests', () => {
   expect(assemblyArgumentToString(ASM_CONST(1))).toBe('1');
   expect(assemblyArgumentToString(ASM_NAME('hi'))).toBe('hi');
+  expect(assemblyArgumentToString(ASM_NAME('hi'), true)).toBe('hi');
+  expect(assemblyArgumentToString(ASM_NAME('hi'), false)).toBe('hi');
+  expect(assemblyArgumentToString(ASM_NAME('_hi'), true)).toBe('_hi');
+  expect(assemblyArgumentToString(ASM_NAME('_hi'), false)).toBe('__hi');
   expect(assemblyArgumentToString(RIP)).toBe('rip');
 
   expect(assemblyArgumentToString(ASM_MEM_CONST(ASM_CONST(1)))).toBe('qword ptr [1]');
   expect(assemblyArgumentToString(ASM_MEM_CONST(ASM_NAME('foo')))).toBe('qword ptr [foo]');
+  expect(assemblyArgumentToString(ASM_MEM_CONST(ASM_NAME('_foo')))).toBe('qword ptr [_foo]');
+  expect(assemblyArgumentToString(ASM_MEM_CONST(ASM_NAME('_foo')), false)).toBe(
+    'qword ptr [__foo]'
+  );
   expect(assemblyArgumentToString(ASM_MEM_REG(ASM_REG('foo')))).toBe('qword ptr [foo]');
   expect(assemblyArgumentToString(ASM_MEM_MUL({ baseRegister: RIP, multipliedConstant: 2 }))).toBe(
     'qword ptr [rip*2]'

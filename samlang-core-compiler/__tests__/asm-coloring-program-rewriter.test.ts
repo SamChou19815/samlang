@@ -43,7 +43,7 @@ mockMemoryMapping.set(ASM_MEM_CONST(ASM_CONST(1)), ASM_MEM_CONST(ASM_CONST(2)));
 
 const rewrite = (instructions: readonly AssemblyInstruction[]): string =>
   assemblyInstructionColoringRewrite(mockColors, mockMemoryMapping, new Set(['rbx']), instructions)
-    .map(assemblyInstructionToString)
+    .map((it) => assemblyInstructionToString(it))
     .join('\n');
 
 const A = ASM_REG('a');

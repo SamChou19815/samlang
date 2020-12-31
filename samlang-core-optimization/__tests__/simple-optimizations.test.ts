@@ -32,7 +32,7 @@ const optimizeASMAndConvertToString = (
   removeComments = true
 ): string =>
   optimizeAssemblyWithSimpleOptimization(instructions, removeComments)
-    .map(assemblyInstructionToString)
+    .map((it) => assemblyInstructionToString(it))
     .join('\n');
 
 it('optimizeIrWithSimpleOptimization test.', () => {
