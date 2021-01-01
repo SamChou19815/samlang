@@ -8,6 +8,7 @@ import {
   functionType,
   Range,
   ModuleReference,
+  tupleType,
 } from 'samlang-core-ast/common-nodes';
 import { MUL, MINUS, EQ } from 'samlang-core-ast/common-operators';
 import { HIR_WHILE_TRUE, HIR_FUNCTION_CALL, HIR_NAME } from 'samlang-core-ast/hir-expressions';
@@ -80,8 +81,8 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
         typeDefinition: {
           range: Range.DUMMY,
           type: 'object',
-          names: [],
-          mappings: {},
+          names: ['a'],
+          mappings: { a: { isPublic: true, type: intType } },
         },
         members: [
           {
@@ -179,10 +180,63 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
           },
         ],
       },
+      {
+        range: Range.DUMMY,
+        name: 'Class2',
+        nameRange: Range.DUMMY,
+        typeParameters: [],
+        typeDefinition: { range: Range.DUMMY, type: 'variant', names: [], mappings: {} },
+        members: [],
+      },
+      {
+        range: Range.DUMMY,
+        name: 'Class3',
+        nameRange: Range.DUMMY,
+        typeParameters: ['T'],
+        typeDefinition: {
+          range: Range.DUMMY,
+          type: 'object',
+          names: ['a'],
+          mappings: {
+            a: {
+              isPublic: true,
+              type: functionType(
+                [
+                  tupleType([
+                    identifierType(ModuleReference.ROOT, 'T', [intType]),
+                    identifierType(ModuleReference.ROOT, 'T'),
+                  ]),
+                ],
+                intType
+              ),
+            },
+          },
+        },
+        members: [],
+      },
     ],
   };
 
   const expectedCompiledModule: HighIRModule = {
+    typeDefinitions: [
+      {
+        moduleReference: ModuleReference.ROOT,
+        identifier: 'Class1',
+        mappings: [intType],
+      },
+      {
+        moduleReference: ModuleReference.ROOT,
+        identifier: 'Class2',
+        mappings: [intType, intType],
+      },
+      {
+        moduleReference: ModuleReference.ROOT,
+        identifier: 'Class3',
+        mappings: [
+          functionType([tupleType([identifierType(ModuleReference.ROOT, 'T'), intType])], intType),
+        ],
+      },
+    ],
     functions: [
       {
         name: '_module__class_Main_function_main',

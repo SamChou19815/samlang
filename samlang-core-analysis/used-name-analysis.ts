@@ -1,6 +1,6 @@
 import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
 import type { HighIRExpression, HighIRStatement } from 'samlang-core-ast/hir-expressions';
-import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
+import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { assertNotNull } from 'samlang-core-utils';
 
 const collectUsedNamesFromExpression = (set: Set<string>, expression: HighIRExpression): void => {
@@ -57,7 +57,7 @@ const getOtherFunctionsUsedByGivenFunction = (
   return set;
 };
 
-const analyzeUsedFunctionNames = ({ functions }: HighIRModule): ReadonlySet<string> => {
+const analyzeUsedFunctionNames = (functions: readonly HighIRFunction[]): ReadonlySet<string> => {
   const usedFunctionMap = new Map(
     functions.map((it) => [it.name, getOtherFunctionsUsedByGivenFunction(it)])
   );
