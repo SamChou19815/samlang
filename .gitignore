@@ -13,7 +13,6 @@ node_modules
 *.vsix
 out
 **/bin/**
-!bin/monorail
 !bin/repo-codegen-services
 build
 
@@ -30,7 +29,6 @@ build
 ## Cache
 .eslintcache
 tsconfig.tsbuildinfo
-.monorail
 .codegen
 
 ## Converage

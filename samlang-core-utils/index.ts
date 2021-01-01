@@ -1,8 +1,10 @@
 import Long from 'long';
 export { Long };
 
-export const MIN_I32_VALUE = Long.fromInt(-2147483648);
-export const MAX_I32_VALUE = Long.fromInt(2147483647);
+// haha
+
+export const MIN_I32_VALUE: Long = Long.fromInt(-2147483648);
+export const MAX_I32_VALUE: Long = Long.fromInt(2147483647);
 
 export const bigIntIsWithin32BitIntegerRange = (value: Long): boolean =>
   value.greaterThanOrEqual(MIN_I32_VALUE) && value.lessThanOrEqual(MAX_I32_VALUE);

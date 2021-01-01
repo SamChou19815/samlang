@@ -110,3 +110,5 @@ help: Show this message.`);
 };
 
 cliMainRunner(runners, process.argv.slice(2));
+
+export default cliMainRunner;
