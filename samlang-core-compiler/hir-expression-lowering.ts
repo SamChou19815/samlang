@@ -71,6 +71,7 @@ class HighIRExpressionLoweringManager {
   private nextSyntheticFunctionId = 0;
 
   depth = 0;
+  blockID = 0;
 
   // The variable rewrite is introduced to resolve https://github.com/SamChou19815/samlang/issues/36
   private nestedVariableRewriteMap = new Map<string, string>();
@@ -843,11 +844,13 @@ class HighIRExpressionLoweringManager {
       }
     });
     if (finalExpression == null) {
+      this.blockID += 1;
       this.depth -= 1;
       blockLocalVariables.forEach((variable) => this.nestedVariableRewriteMap.delete(variable));
       return { statements: loweredStatements, expression: HIR_ZERO };
     }
     const loweredFinalExpression = this.loweredAndAddStatements(finalExpression, loweredStatements);
+    this.blockID += 1;
     this.depth -= 1;
     blockLocalVariables.forEach((variable) => this.nestedVariableRewriteMap.delete(variable));
     return { statements: loweredStatements, expression: loweredFinalExpression };
@@ -860,7 +863,7 @@ class HighIRExpressionLoweringManager {
     if (this.depth === 0) {
       return name;
     }
-    const renamed = `${name}__depth_${this.depth}`;
+    const renamed = `${name}__depth_${this.depth}__block_${this.blockID}`;
     this.nestedVariableRewriteMap.set(name, renamed);
     blockLocalVariables.add(name);
     return renamed;
