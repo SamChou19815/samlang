@@ -62,14 +62,21 @@ const expectCorrectlyLowered = (
     statements = [],
     expression = HIR_ZERO,
   }: Partial<ReturnType<typeof lowerSamlangExpression>>
-): void =>
+): void => {
+  const serialize = (json: unknown): string =>
+    JSON.stringify(json, (_, value) => (typeof value === 'bigint' ? value.toString() : value), 4);
   expect(
-    lowerSamlangExpression(ModuleReference.ROOT, 'ENCODED_FUNCTION_NAME', samlangExpression)
-  ).toEqual({
-    syntheticFunctions,
-    statements,
-    expression,
-  });
+    serialize(
+      lowerSamlangExpression(ModuleReference.ROOT, 'ENCODED_FUNCTION_NAME', samlangExpression)
+    )
+  ).toEqual(
+    serialize({
+      statements,
+      expression,
+      syntheticFunctions,
+    })
+  );
+};
 
 it('Literal lowering works.', () => {
   expectCorrectlyLowered(EXPRESSION_FALSE(Range.DUMMY), { expression: HIR_ZERO });
@@ -571,8 +578,8 @@ it('Lambda lowering works (1/n).', () => {
       syntheticFunctions: [
         {
           name: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
-          hasReturn: false,
           parameters: ['_context', 'a'],
+          hasReturn: false,
           body: [
             HIR_LET({
               name: 'a',
@@ -619,8 +626,8 @@ it('Lambda lowering works (2/n).', () => {
       syntheticFunctions: [
         {
           name: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
-          hasReturn: true,
           parameters: ['_context', 'a'],
+          hasReturn: true,
           body: [
             HIR_LET({
               name: 'a',
@@ -668,8 +675,8 @@ it('Lambda lowering works (3/n).', () => {
       syntheticFunctions: [
         {
           name: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
-          hasReturn: true,
           parameters: ['_context', 'a'],
+          hasReturn: true,
           body: [
             HIR_LET({
               name: 'a',
@@ -720,8 +727,8 @@ it('Lambda lowering works (4/n).', () => {
       syntheticFunctions: [
         {
           name: '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
-          hasReturn: true,
           parameters: ['_context', 'a'],
+          hasReturn: true,
           body: [HIR_RETURN(IR_THIS)],
         },
       ],
@@ -935,7 +942,7 @@ it('StatementBlockExpression lowering works.', () => {
       statements: [
         HIR_LET({ name: '_t0', assignedExpression: IR_THIS }),
         HIR_LET({
-          name: 'a__depth_1',
+          name: 'a__depth_1__block_0',
           assignedExpression: HIR_INDEX_ACCESS({
             type: intType,
             expression: HIR_VARIABLE('_t0', DUMMY_IDENTIFIER_TYPE),
@@ -944,7 +951,7 @@ it('StatementBlockExpression lowering works.', () => {
         }),
         HIR_LET({ name: '_t1', assignedExpression: IR_THIS }),
         HIR_LET({
-          name: 'a__depth_1',
+          name: 'a__depth_1__block_0',
           assignedExpression: HIR_INDEX_ACCESS({
             type: intType,
             expression: HIR_VARIABLE('_t1', DUMMY_IDENTIFIER_TYPE),
@@ -952,7 +959,7 @@ it('StatementBlockExpression lowering works.', () => {
           }),
         }),
         HIR_LET({
-          name: 'c__depth_1',
+          name: 'c__depth_1__block_0',
           assignedExpression: HIR_INDEX_ACCESS({
             type: intType,
             expression: HIR_VARIABLE('_t1', DUMMY_IDENTIFIER_TYPE),
@@ -960,7 +967,7 @@ it('StatementBlockExpression lowering works.', () => {
           }),
         }),
         HIR_LET({ name: '_t2', assignedExpression: IR_THIS }),
-        HIR_LET({ name: 'a', assignedExpression: HIR_VARIABLE('a__depth_1', unitType) }),
+        HIR_LET({ name: 'a', assignedExpression: HIR_VARIABLE('a__depth_1__block_0', unitType) }),
       ],
     }
   );
@@ -999,7 +1006,7 @@ it('shadowing statement block lowering works.', () => {
     }),
     {
       statements: [
-        HIR_LET({ name: 'a__depth_1', assignedExpression: HIR_ONE }),
+        HIR_LET({ name: 'a__depth_1__block_0', assignedExpression: HIR_ONE }),
         HIR_LET({ name: 'a', assignedExpression: HIR_ZERO }),
       ],
     }
