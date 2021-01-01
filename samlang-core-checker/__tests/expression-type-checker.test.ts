@@ -11,7 +11,6 @@ import {
   identifierType,
   tupleType,
   functionType,
-  Position,
   Range,
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
@@ -28,23 +27,9 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText } from 'samlang-core-parser';
-import { assertNotNull, hashMapOf } from 'samlang-core-utils';
+import { Long, assertNotNull, hashMapOf } from 'samlang-core-utils';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
-
-const position = (p: string): Position => {
-  const [line, column] = p.split(':').map((part) => parseInt(part, 10) - 1);
-  assertNotNull(line);
-  assertNotNull(column);
-  return new Position(line, column);
-};
-
-const range = (r: string): Range => {
-  const [start, end] = r.split('-').map(position);
-  assertNotNull(start);
-  assertNotNull(end);
-  return new Range(start, end);
-};
 
 const typeCheckInSandbox = (
   source: string,
@@ -174,9 +159,21 @@ const assertTypeChecks = (
     currentClass
   );
   if (expectedExpression) {
-    const serialize = (json: unknown): string =>
-      JSON.stringify(json, (_, value) => (typeof value === 'bigint' ? value.toString() : value), 4);
-    expect(serialize(actualExpression)).toStrictEqual(serialize(expectedExpression));
+    const standardize = (json: unknown): unknown =>
+      JSON.parse(
+        JSON.stringify(
+          json,
+          (_, value) => {
+            if (value instanceof Range) return '';
+            if (value instanceof Long || value instanceof ModuleReference) {
+              return value.toString();
+            }
+            return value;
+          },
+          4
+        )
+      );
+    expect(standardize(actualExpression)).toStrictEqual(standardize(expectedExpression));
   }
   expect(errors).toEqual([]);
 };
@@ -661,17 +658,17 @@ it('IfElse integration test', () => {
     '{ val _ = (b, t, f: int) -> if b then t else f }',
     unit,
     EXPRESSION_STATEMENT_BLOCK({
-      range: range('1:1-1:49'),
+      range: Range.DUMMY,
       type: unit,
       block: {
-        range: range('1:1-1:49'),
+        range: Range.DUMMY,
         statements: [
           {
-            range: range('1:3-1:47'),
-            pattern: { type: 'WildCardPattern', range: range('1:7-1:8') },
+            range: Range.DUMMY,
+            pattern: { type: 'WildCardPattern', range: Range.DUMMY },
             typeAnnotation: functionType([bool, int, int], int),
             assignedExpression: EXPRESSION_LAMBDA({
-              range: range('1:11-1:47'),
+              range: Range.DUMMY,
               type: functionType([bool, int, int], int),
               parameters: [
                 ['b', bool],
@@ -680,19 +677,19 @@ it('IfElse integration test', () => {
               ],
               captured: {},
               body: EXPRESSION_IF_ELSE({
-                range: range('1:29-1:47'),
+                range: Range.DUMMY,
                 type: int,
                 boolExpression: EXPRESSION_VARIABLE({
-                  range: range('1:32-1:33'),
+                  range: Range.DUMMY,
                   type: bool,
                   name: 'b',
                 }),
                 e1: EXPRESSION_VARIABLE({
-                  range: range('1:39-1:40'),
+                  range: Range.DUMMY,
                   type: int,
                   name: 't',
                 }),
-                e2: EXPRESSION_VARIABLE({ range: range('1:46-1:47'), type: int, name: 'f' }),
+                e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: int, name: 'f' }),
               }),
             }),
           },
@@ -712,17 +709,17 @@ it('Lambda integration test', () => {
 }
 `;
   const expectedExpression = EXPRESSION_STATEMENT_BLOCK({
-    range: range('1:1-7:2'),
+    range: Range.DUMMY,
     type: int,
     block: {
-      range: range('1:1-7:2'),
+      range: Range.DUMMY,
       statements: [
         {
-          range: range('2:5-5:7'),
-          pattern: { type: 'VariablePattern', range: range('2:9-2:10'), name: 'f' },
+          range: Range.DUMMY,
+          pattern: { type: 'VariablePattern', range: Range.DUMMY, name: 'f' },
           typeAnnotation: functionType([int, int, int], int),
           assignedExpression: EXPRESSION_LAMBDA({
-            range: range('2:13-5:6'),
+            range: Range.DUMMY,
             type: functionType([int, int, int], int),
             parameters: [
               ['a', int],
@@ -731,17 +728,17 @@ it('Lambda integration test', () => {
             ],
             captured: {},
             body: EXPRESSION_STATEMENT_BLOCK({
-              range: range('2:26-5:6'),
+              range: Range.DUMMY,
               type: int,
               block: {
-                range: range('2:26-5:6'),
+                range: Range.DUMMY,
                 statements: [
                   {
-                    range: range('3:9-3:45'),
-                    pattern: { type: 'VariablePattern', range: range('3:13-3:14'), name: 'f' },
+                    range: Range.DUMMY,
+                    pattern: { type: 'VariablePattern', range: Range.DUMMY, name: 'f' },
                     typeAnnotation: functionType([int, int], int),
                     assignedExpression: EXPRESSION_LAMBDA({
-                      range: range('3:17-3:44'),
+                      range: Range.DUMMY,
                       type: functionType([int, int], int),
                       parameters: [
                         ['d', int],
@@ -749,46 +746,46 @@ it('Lambda integration test', () => {
                       ],
                       captured: { a: int, b: int, c: int },
                       body: EXPRESSION_BINARY({
-                        range: range('3:27-3:44'),
+                        range: Range.DUMMY,
                         type: int,
                         operator: PLUS,
                         e1: EXPRESSION_BINARY({
-                          range: range('3:27-3:40'),
+                          range: Range.DUMMY,
                           type: int,
                           operator: PLUS,
                           e1: EXPRESSION_BINARY({
-                            range: range('3:27-3:36'),
+                            range: Range.DUMMY,
                             type: int,
                             operator: PLUS,
                             e1: EXPRESSION_BINARY({
-                              range: range('3:27-3:32'),
+                              range: Range.DUMMY,
                               type: int,
                               operator: PLUS,
                               e1: EXPRESSION_VARIABLE({
-                                range: range('3:27-3:28'),
+                                range: Range.DUMMY,
                                 type: int,
                                 name: 'a',
                               }),
                               e2: EXPRESSION_VARIABLE({
-                                range: range('3:31-3:32'),
+                                range: Range.DUMMY,
                                 type: int,
                                 name: 'b',
                               }),
                             }),
                             e2: EXPRESSION_VARIABLE({
-                              range: range('3:35-3:36'),
+                              range: Range.DUMMY,
                               type: int,
                               name: 'c',
                             }),
                           }),
                           e2: EXPRESSION_VARIABLE({
-                            range: range('3:39-3:40'),
+                            range: Range.DUMMY,
                             type: int,
                             name: 'd',
                           }),
                         }),
                         e2: EXPRESSION_VARIABLE({
-                          range: range('3:43-3:44'),
+                          range: Range.DUMMY,
                           type: int,
                           name: 'e',
                         }),
@@ -797,16 +794,16 @@ it('Lambda integration test', () => {
                   },
                 ],
                 expression: EXPRESSION_FUNCTION_CALL({
-                  range: range('4:9-4:16'),
+                  range: Range.DUMMY,
                   type: int,
                   functionExpression: EXPRESSION_VARIABLE({
-                    range: range('4:9-4:10'),
+                    range: Range.DUMMY,
                     type: functionType([int, int], int),
                     name: 'f',
                   }),
                   functionArguments: [
-                    EXPRESSION_INT(range('4:11-4:12'), 1),
-                    EXPRESSION_INT(range('4:14-4:15'), 2),
+                    EXPRESSION_INT(Range.DUMMY, 1),
+                    EXPRESSION_INT(Range.DUMMY, 2),
                   ],
                 }),
               },
@@ -815,17 +812,17 @@ it('Lambda integration test', () => {
         },
       ],
       expression: EXPRESSION_FUNCTION_CALL({
-        range: range('6:5-6:15'),
+        range: Range.DUMMY,
         type: int,
         functionExpression: EXPRESSION_VARIABLE({
-          range: range('6:5-6:6'),
+          range: Range.DUMMY,
           type: functionType([int, int, int], int),
           name: 'f',
         }),
         functionArguments: [
-          EXPRESSION_INT(range('6:7-6:8'), 3),
-          EXPRESSION_INT(range('6:10-6:11'), 4),
-          EXPRESSION_INT(range('6:13-6:14'), 5),
+          EXPRESSION_INT(Range.DUMMY, 3),
+          EXPRESSION_INT(Range.DUMMY, 4),
+          EXPRESSION_INT(Range.DUMMY, 5),
         ],
       }),
     },
