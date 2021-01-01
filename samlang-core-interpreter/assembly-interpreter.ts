@@ -24,14 +24,14 @@ import {
   ENCODED_FUNCTION_NAME_MALLOC,
   ENCODED_FUNCTION_NAME_THROW,
 } from 'samlang-core-ast/common-names';
-import { assertNotNull, checkNotNull } from 'samlang-core-utils';
+import { Long, assertNotNull, checkNotNull } from 'samlang-core-utils';
 
 // istanbul ignore next
-const checkMemoryLocation = (location: bigint): void => {
-  if (location % BigInt(8) !== BigInt(0)) {
+const checkMemoryLocation = (location: Long): void => {
+  if (location.mod(8).notEquals(Long.ZERO)) {
     throw new Error(`Unaligned memory access: ${location} (word size=8)`);
   }
-  if (location < 0 || location > BigInt(0x780000000)) {
+  if (location.lessThan(0) || location.greaterThan(0x78000000)) {
     throw new Error(`Segmentation fault: ${location}.`);
   }
 };
@@ -46,15 +46,15 @@ class AssemblyInterpreter {
   private readonly labelInstructionNumberMapping: Readonly<Record<string, number>>;
 
   /** The mapping from names to actual memory address. */
-  private readonly nameToMemoryAddress: Readonly<Record<string, bigint>>;
+  private readonly nameToMemoryAddress: Readonly<Record<string, Long>>;
 
   /** Current register values. It will only be lazily provisioned. */
-  private readonly registers: Record<string, bigint> = {
-    [RSP.id]: BigInt(0x780000000),
+  private readonly registers: Record<string, Long> = {
+    [RSP.id]: Long.fromInt(0x78000000),
   };
 
   /** Current memory content. It will only be lazily provisioned. */
-  private readonly memory: Map<bigint, bigint> = new Map();
+  private readonly memory: Map<string, Long> = new Map();
 
   /**
    * Current flags.
@@ -74,18 +74,21 @@ class AssemblyInterpreter {
   constructor(program: AssemblyProgram) {
     this.instructions = program.instructions;
     const labelInstructionNumberMapping: Record<string, number> = {};
-    const nameToMemoryAddress: Record<string, bigint> = {};
-    let globalVarsTotalSize = BigInt(10000);
+    const nameToMemoryAddress: Record<string, Long> = {};
+    let globalVarsTotalSize = Long.fromInt(10000);
     program.globalVariables.forEach(({ name, content }) => {
       // Setup content variable size
       const contentStart = globalVarsTotalSize;
       nameToMemoryAddress[name] = contentStart;
-      globalVarsTotalSize += BigInt(content.length * 8 + 8);
+      globalVarsTotalSize = globalVarsTotalSize.add(content.length * 8 + 8);
       // Setup content
-      this.memory.set(contentStart, BigInt(content.length));
-      const characterStart = contentStart + BigInt(8);
+      this.memory.set(contentStart.toString(), Long.fromInt(content.length));
+      const characterStart = contentStart.add(8);
       Array.from(content).forEach((characterString, index) => {
-        this.memory.set(characterStart + BigInt(8 * index), BigInt(characterString.charCodeAt(0)));
+        this.memory.set(
+          characterStart.add(8 * index).toString(),
+          Long.fromInt(characterString.charCodeAt(0))
+        );
       });
     });
     this.calloc(globalVarsTotalSize);
@@ -129,66 +132,67 @@ class AssemblyInterpreter {
     }
   }
 
-  private getRegister = (id: string): bigint => {
+  private getRegister = (id: string): Long => {
     const value = this.registers[id];
     // istanbul ignore next
     if (value != null) return value;
     // istanbul ignore next
-    this.registers[id] = BigInt(0);
+    this.registers[id] = Long.ZERO;
     // istanbul ignore next
-    return BigInt(0);
+    return Long.ZERO;
   };
 
-  private setRegister = (id: string, value: bigint): void => {
+  private setRegister = (id: string, value: Long): void => {
     this.registers[id] = value;
   };
 
-  private getMemory = (location: bigint): bigint => {
+  private getMemory = (location: Long): Long => {
     checkMemoryLocation(location);
-    const value = this.memory.get(location);
+    const value = this.memory.get(location.toString());
     // istanbul ignore next
     if (value != null) return value;
     // istanbul ignore next
-    this.memory.set(location, BigInt(0));
+    this.memory.set(location.toString(), Long.ZERO);
     // istanbul ignore next
-    return BigInt(0);
+    return Long.ZERO;
   };
 
-  private setMemory = (location: bigint, value: bigint): void => {
+  private setMemory = (location: Long, value: Long): void => {
     checkMemoryLocation(location);
-    this.memory.set(location, value);
+    this.memory.set(location.toString(), value);
   };
 
-  private getConstValue = (constant: AssemblyConst): bigint => {
+  private getConstValue = (constant: AssemblyConst): Long => {
     const valueOrName = constant.value;
-    if (typeof valueOrName === 'number') return BigInt(valueOrName);
+    if (typeof valueOrName === 'number') return Long.fromInt(valueOrName);
     const nameValue = this.nameToMemoryAddress[valueOrName];
     if (nameValue != null) return nameValue;
     const instructionNumber = this.labelInstructionNumberMapping[valueOrName];
     assertNotNull(instructionNumber);
-    return BigInt(instructionNumber);
+    return Long.fromInt(instructionNumber);
   };
 
   private getMemoryLocation = ({
     baseRegister,
     multipleOf,
     displacementConstant,
-  }: AssemblyMemory): bigint => {
-    let memoryLocation = BigInt(0);
+  }: AssemblyMemory): Long => {
+    let memoryLocation = Long.ZERO;
     if (baseRegister != null) {
-      memoryLocation += this.getRegister(baseRegister.id);
+      memoryLocation = memoryLocation.add(this.getRegister(baseRegister.id));
     }
     if (multipleOf != null) {
-      memoryLocation +=
-        this.getRegister(multipleOf.baseRegister.id) * BigInt(multipleOf.multipliedConstant);
+      memoryLocation = memoryLocation.add(
+        this.getRegister(multipleOf.baseRegister.id).multiply(multipleOf.multipliedConstant)
+      );
     }
     if (displacementConstant != null) {
-      memoryLocation += this.getConstValue(displacementConstant);
+      memoryLocation = memoryLocation.add(this.getConstValue(displacementConstant));
     }
     return memoryLocation;
   };
 
-  private getValue = (assemblyArgument: AssemblyArgument): bigint => {
+  private getValue = (assemblyArgument: AssemblyArgument): Long => {
     switch (assemblyArgument.__type__) {
       case 'AssemblyConst':
         return this.getConstValue(assemblyArgument);
@@ -199,7 +203,7 @@ class AssemblyInterpreter {
     }
   };
 
-  private setValue = (target: AssemblyRegisterOrMemory, value: bigint): void => {
+  private setValue = (target: AssemblyRegisterOrMemory, value: Long): void => {
     switch (target.__type__) {
       case 'AssemblyRegister':
         this.setRegister(target.id, value);
@@ -210,15 +214,15 @@ class AssemblyInterpreter {
     }
   };
 
-  private calloc = (size: bigint): bigint => {
+  private calloc = (size: Long): Long => {
     // istanbul ignore next
-    if (size < 0) throw new Error('Invalid size');
+    if (size.lessThan(Long.ZERO)) throw new Error('Invalid size');
     // istanbul ignore next
-    if (size % BigInt(8) !== BigInt(0)) {
+    if (size.mod(8).notEquals(Long.ZERO)) {
       // istanbul ignore next
       throw new Error(`Can only allocate in chunks of 8 bytes!: bad size: ${size}`);
     }
-    const pointerToBeReturned = BigInt(this.currentHeapEndPointer);
+    const pointerToBeReturned = Long.fromInt(this.currentHeapEndPointer);
     this.currentHeapEndPointer += Number(size);
     return pointerToBeReturned;
   };
@@ -242,10 +246,10 @@ class AssemblyInterpreter {
       case 'AssemblyCompareConstOrRegister': {
         const m = this.getValue(node.minuend);
         const s = this.getValue(node.subtrahend);
-        this.flags.set('eq', m === s);
-        this.flags.set('le', m <= s);
-        this.flags.set('lt', m < s);
-        this.flags.set('z', m - s === BigInt(0));
+        this.flags.set('eq', m.equals(s));
+        this.flags.set('le', m.lessThanOrEqual(s));
+        this.flags.set('lt', m.lessThan(s));
+        this.flags.set('z', m.subtract(s).equals(Long.ZERO));
         return;
       }
       case 'AssemblySetOnFlag': {
@@ -279,7 +283,7 @@ class AssemblyInterpreter {
         }
         assertNotNull(doesSetFlag);
         // istanbul ignore next
-        this.setValue(node.register, doesSetFlag ? BigInt(1) : BigInt(0));
+        this.setValue(node.register, doesSetFlag ? Long.ONE : Long.ZERO);
         return;
       }
       case 'AssemblyJump': {
@@ -332,17 +336,16 @@ class AssemblyInterpreter {
       case 'AssemblyArithmeticBinaryRegisterDestination': {
         const sourceValue = this.getValue(node.source);
         const destinationValue = this.getValue(node.destination);
-        let newValue: bigint;
+        let newValue: Long;
         switch (node.type) {
           case 'add':
-            newValue = destinationValue + sourceValue;
+            newValue = destinationValue.add(sourceValue);
             break;
           case 'sub':
-            newValue = destinationValue - sourceValue;
+            newValue = destinationValue.subtract(sourceValue);
             break;
           case 'xor':
-            // eslint-disable-next-line no-bitwise
-            newValue = destinationValue ^ sourceValue;
+            newValue = destinationValue.xor(sourceValue);
             break;
         }
         this.setValue(node.destination, newValue);
@@ -351,59 +354,62 @@ class AssemblyInterpreter {
       case 'AssemblyIMulTwoArgs':
         this.setValue(
           node.destination,
-          this.getValue(node.destination) * this.getValue(node.source)
+          this.getValue(node.destination).multiply(this.getValue(node.source))
         );
         return;
       // istanbul ignore next
       case 'AssemblyIMulThreeArgs':
-        this.setValue(node.destination, this.getValue(node.source) * this.getValue(node.immediate));
+        this.setValue(
+          node.destination,
+          this.getValue(node.source).multiply(this.getValue(node.immediate))
+        );
         return;
       // istanbul ignore next
       case 'AssemblyCqo':
-        if (this.getValue(RAX) >= 0) {
-          this.setValue(RDX, BigInt(0));
+        if (this.getValue(RAX).greaterThanOrEqual(Long.ZERO)) {
+          this.setValue(RDX, Long.ZERO);
         } else {
-          this.setValue(RDX, BigInt(-1));
+          this.setValue(RDX, Long.NEG_ONE);
         }
         return;
       case 'AssemblyIDiv': {
         const raxValue = this.getValue(RAX);
         const argumentValue = this.getValue(node.divisor);
         // istanbul ignore next
-        if (argumentValue === BigInt(0)) throw new PanicException('Division by zero!');
-        this.setValue(RAX, raxValue / argumentValue);
-        this.setValue(RDX, raxValue % argumentValue);
+        if (argumentValue.equals(Long.ZERO)) throw new PanicException('Division by zero!');
+        this.setValue(RAX, raxValue.divide(argumentValue));
+        this.setValue(RDX, raxValue.mod(argumentValue));
         return;
       }
       // istanbul ignore next
       case 'AssemblyNeg':
-        this.setValue(node.destination, -this.getValue(node.destination));
+        this.setValue(node.destination, this.getValue(node.destination).negate());
         return;
       // istanbul ignore next
       case 'AssemblyShiftLeft':
         // eslint-disable-next-line no-bitwise
-        this.setValue(node.destination, this.getValue(node.destination) << BigInt(node.count));
+        this.setValue(node.destination, this.getValue(node.destination).shiftLeft(node.count));
         return;
       case 'AssemblyPush': {
         const value = this.getValue(node.pushArgument);
-        this.setValue(RSP, this.getValue(RSP) - BigInt(8));
+        this.setValue(RSP, this.getValue(RSP).subtract(8));
         this.setValue(ASM_MEM_REG(RSP), value);
         return;
       }
       case 'AssemblyPopRBP':
         this.setValue(RBP, this.getValue(ASM_MEM_REG(RSP)));
-        this.setValue(RSP, this.getValue(RSP) + BigInt(8));
+        this.setValue(RSP, this.getValue(RSP).add(8));
         break;
       case 'AssemblyLabel':
       case 'AssemblyComment':
     }
   };
 
-  private readArray = (arrayPointer: bigint): string => {
-    const len = Number(this.getMemory(arrayPointer - BigInt(8)));
+  private readArray = (arrayPointer: Long): string => {
+    const len = Number(this.getMemory(arrayPointer.subtract(8)));
     const array: number[] = [];
     for (let i = 0; i < len; i += 1) {
-      array.push(Number(this.getMemory(arrayPointer + BigInt(i * 8))));
+      array.push(Number(this.getMemory(arrayPointer.add(i * 8))));
     }
     return String.fromCharCode(...array);
   };
@@ -424,15 +430,14 @@ class AssemblyInterpreter {
         }
         case ENCODED_FUNCTION_NAME_INT_TO_STRING: {
           const argument = this.getValue(RDI);
-          const resultArray = Array.from(String(argument)).map((it) => BigInt(it.charCodeAt(0)));
-          const memoryStartPointer = this.calloc(BigInt(resultArray.length * 8 + 8));
-          const unparsedStringStartingPointer = memoryStartPointer + BigInt(8);
-          this.setMemory(memoryStartPointer, BigInt(resultArray.length));
+          const resultArray = Array.from(String(argument)).map((it) =>
+            Long.fromInt(it.charCodeAt(0))
+          );
+          const memoryStartPointer = this.calloc(Long.fromInt(resultArray.length * 8 + 8));
+          const unparsedStringStartingPointer = memoryStartPointer.add(8);
+          this.setMemory(memoryStartPointer, Long.fromInt(resultArray.length));
           for (let i = 0; i < resultArray.length; i += 1) {
-            this.setMemory(
-              unparsedStringStartingPointer + BigInt(i * 8),
-              checkNotNull(resultArray[i])
-            );
+            this.setMemory(unparsedStringStartingPointer.add(i * 8), checkNotNull(resultArray[i]));
           }
           this.setValue(RAX, unparsedStringStartingPointer);
           return;
@@ -440,7 +445,8 @@ class AssemblyInterpreter {
         case ENCODED_FUNCTION_NAME_STRING_TO_INT: {
           const stringToParse = this.readArray(this.getValue(RDI));
           try {
-            this.setValue(RAX, BigInt(stringToParse));
+            BigInt(stringToParse);
+            this.setValue(RAX, Long.fromString(stringToParse));
             return;
             // istanbul ignore next
           } catch {
@@ -451,12 +457,12 @@ class AssemblyInterpreter {
         case ENCODED_FUNCTION_NAME_STRING_CONCAT: {
           const concatString = Array.from(
             this.readArray(this.getValue(RDI)) + this.readArray(this.getValue(RSI))
-          ).map((it) => BigInt(it.charCodeAt(0)));
-          const memoryStartPointer = this.calloc(BigInt(concatString.length * 8 + 8));
-          this.setMemory(memoryStartPointer, BigInt(concatString.length));
-          const stringStartPointer = memoryStartPointer + BigInt(8);
+          ).map((it) => Long.fromInt(it.charCodeAt(0)));
+          const memoryStartPointer = this.calloc(Long.fromInt(concatString.length * 8 + 8));
+          this.setMemory(memoryStartPointer, Long.fromInt(concatString.length));
+          const stringStartPointer = memoryStartPointer.add(8);
           for (let i = 0; i < concatString.length; i += 1) {
-            this.setMemory(stringStartPointer + BigInt(i * 8), checkNotNull(concatString[i]));
+            this.setMemory(stringStartPointer.add(i * 8), checkNotNull(concatString[i]));
           }
           this.setValue(RAX, stringStartPointer);
           return;

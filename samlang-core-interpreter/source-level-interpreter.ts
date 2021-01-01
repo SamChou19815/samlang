@@ -89,7 +89,7 @@ export class ExpressionInterpreter {
       case 'LiteralExpression': {
         switch (expression.literal.type) {
           case 'IntLiteral':
-            return BigInt(expression.literal.value);
+            return BigInt(expression.literal.value.toString());
           case 'StringLiteral':
           case 'BoolLiteral':
             return expression.literal.value;

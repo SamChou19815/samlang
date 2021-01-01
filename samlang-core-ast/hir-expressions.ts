@@ -1,6 +1,8 @@
 import { intType, stringType, Type } from './common-nodes';
 import type { IROperator } from './common-operators';
 
+import { Long } from 'samlang-core-utils';
+
 interface BaseHighIRExpression {
   readonly __type__: string;
   readonly type: Type;
@@ -8,7 +10,7 @@ interface BaseHighIRExpression {
 
 export interface HighIRIntLiteralExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRIntLiteralExpression';
-  readonly value: bigint;
+  readonly value: Long;
 }
 
 export interface HighIRStringLiteralExpression extends BaseHighIRExpression {
@@ -105,10 +107,10 @@ type ConstructorArgumentObject<E extends BaseHighIRExpression | BaseHighIRStatem
   '__type__' | 'precedence'
 >;
 
-export const HIR_INT = (value: bigint): HighIRIntLiteralExpression => ({
+export const HIR_INT = (value: number | Long): HighIRIntLiteralExpression => ({
   __type__: 'HighIRIntLiteralExpression',
   type: intType,
-  value,
+  value: typeof value === 'number' ? Long.fromInt(value) : value,
 });
 
 export const HIR_STRING = (value: string): HighIRStringLiteralExpression => ({
@@ -117,8 +119,8 @@ export const HIR_STRING = (value: string): HighIRStringLiteralExpression => ({
   value,
 });
 
-export const HIR_ZERO: HighIRIntLiteralExpression = HIR_INT(BigInt(0));
-export const HIR_ONE: HighIRIntLiteralExpression = HIR_INT(BigInt(1));
+export const HIR_ZERO: HighIRIntLiteralExpression = HIR_INT(0);
+export const HIR_ONE: HighIRIntLiteralExpression = HIR_INT(1);
 
 export const HIR_NAME = (name: string, type: Type): HighIRNameExpression => ({
   __type__: 'HighIRNameExpression',

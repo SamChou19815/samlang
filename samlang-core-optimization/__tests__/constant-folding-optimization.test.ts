@@ -53,14 +53,14 @@ it('optimizeIRWithConstantFolding normal tests', () => {
                   '-',
                   MIR_OP(
                     '*',
-                    MIR_OP('/', MIR_OP('%', MIR_EIGHT, MIR_CONST(BigInt(3))), MIR_ONE),
+                    MIR_OP('/', MIR_OP('%', MIR_EIGHT, MIR_CONST(3)), MIR_ONE),
                     MIR_EIGHT
                   ),
                   MIR_EIGHT
                 ),
-                MIR_CONST(BigInt(3))
+                MIR_CONST(3)
               ),
-              MIR_CONST(BigInt(4))
+              MIR_CONST(4)
             )
           )
         )

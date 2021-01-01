@@ -143,9 +143,9 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                 type: boolType,
                 operator: EQ,
                 e1: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: 'n' }),
-                e2: EXPRESSION_INT(Range.DUMMY, BigInt(0)),
+                e2: EXPRESSION_INT(Range.DUMMY, 0),
               }),
-              e1: EXPRESSION_INT(Range.DUMMY, BigInt(1)),
+              e1: EXPRESSION_INT(Range.DUMMY, 1),
               e2: EXPRESSION_FUNCTION_CALL({
                 range: Range.DUMMY,
                 type: intType,
@@ -165,7 +165,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                     type: intType,
                     operator: MINUS,
                     e1: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: 'n' }),
-                    e2: EXPRESSION_INT(Range.DUMMY, BigInt(1)),
+                    e2: EXPRESSION_INT(Range.DUMMY, 1),
                   }),
                   EXPRESSION_BINARY({
                     range: Range.DUMMY,
@@ -280,8 +280,5 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
     mapOf([ModuleReference.ROOT, sourceModule])
   ).get(ModuleReference.ROOT);
 
-  const serialize = (json: unknown): string =>
-    JSON.stringify(json, (_, value) => (typeof value === 'bigint' ? value.toString() : value), 4);
-
-  expect(serialize(actualCompiledModule)).toEqual(serialize(expectedCompiledModule));
+  expect(actualCompiledModule).toEqual(expectedCompiledModule);
 });

@@ -805,8 +805,8 @@ it('Lambda integration test', () => {
                     name: 'f',
                   }),
                   functionArguments: [
-                    EXPRESSION_INT(range('4:11-4:12'), BigInt(1)),
-                    EXPRESSION_INT(range('4:14-4:15'), BigInt(2)),
+                    EXPRESSION_INT(range('4:11-4:12'), 1),
+                    EXPRESSION_INT(range('4:14-4:15'), 2),
                   ],
                 }),
               },
@@ -823,9 +823,9 @@ it('Lambda integration test', () => {
           name: 'f',
         }),
         functionArguments: [
-          EXPRESSION_INT(range('6:7-6:8'), BigInt(3)),
-          EXPRESSION_INT(range('6:10-6:11'), BigInt(4)),
-          EXPRESSION_INT(range('6:13-6:14'), BigInt(5)),
+          EXPRESSION_INT(range('6:7-6:8'), 3),
+          EXPRESSION_INT(range('6:10-6:11'), 4),
+          EXPRESSION_INT(range('6:13-6:14'), 5),
         ],
       }),
     },

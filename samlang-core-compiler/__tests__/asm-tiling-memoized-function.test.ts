@@ -11,13 +11,13 @@ it('function returned by getMemoizedAssemblyExpressionTilingFunction is correctl
     called += 1;
     return expression.__type__.length;
   });
-  const C0 = MIR_CONST(BigInt(0));
+  const C0 = MIR_CONST(0);
   expect(f(C0)).toBe(23);
   expect(f(C0)).toBe(23);
-  expect(f(MIR_CONST(BigInt(1)))).toBe(23);
-  expect(f(MIR_CONST(BigInt(1)))).toBe(23);
-  expect(f(MIR_CONST(BigInt(2)))).toBe(23);
-  expect(f(MIR_CONST(BigInt(3)))).toBe(23);
+  expect(f(MIR_CONST(1))).toBe(23);
+  expect(f(MIR_CONST(1))).toBe(23);
+  expect(f(MIR_CONST(2))).toBe(23);
+  expect(f(MIR_CONST(3))).toBe(23);
   expect(called).toBe(5);
 });
 

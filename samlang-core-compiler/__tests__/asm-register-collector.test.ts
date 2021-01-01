@@ -23,6 +23,7 @@ import {
   ASM_LABEL,
   ASM_COMMENT,
 } from 'samlang-core-ast/asm-instructions';
+import { Long } from 'samlang-core-utils';
 
 const REG = ASM_REG('reg');
 const FORTY_TWO = ASM_CONST(42);
@@ -32,7 +33,7 @@ it('collectAssemblyRegistersFromAssemblyInstructions test', () => {
   expect(
     Array.from(
       collectAssemblyRegistersFromAssemblyInstructions([
-        ASM_MOVE_CONST_TO_REG(REG, BigInt(10000000000)),
+        ASM_MOVE_CONST_TO_REG(REG, Long.fromString('222342342234234')),
         ASM_MOVE_REG(REG, FORTY_TWO),
         ASM_MOVE_REG(REG, REG),
         ASM_MOVE_REG(REG, ASM_MEM_CONST(FORTY_TWO)),

@@ -22,7 +22,7 @@ it('optimizeIRWithConstantPropagation test 1', () => {
   expect(
     optimizeIRWithConstantPropagation([
       MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_ONE),
-      MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), MIR_CONST(BigInt(2))), 'true'),
+      MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), MIR_CONST(2)), 'true'),
       MIR_CALL_FUNCTION('f', [], 'y'),
       MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('+', MIR_ONE, MIR_ZERO)),
       MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('!=', MIR_ONE, MIR_ZERO)),
@@ -62,7 +62,7 @@ it('optimizeIRWithConstantPropagation test 2', () => {
   expect(
     optimizeIRWithConstantPropagation([
       MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_ONE),
-      MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_CONST(BigInt(2)), MIR_TEMP('x')), 'true'),
+      MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_CONST(2), MIR_TEMP('x')), 'true'),
       MIR_CALL_FUNCTION('f', [], 'y'),
       MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('+', MIR_ONE, MIR_ZERO)),
       MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('!=', MIR_ONE, MIR_ZERO)),

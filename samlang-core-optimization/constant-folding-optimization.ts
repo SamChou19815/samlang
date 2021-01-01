@@ -14,7 +14,7 @@ import {
   MIR_JUMP,
   MIR_CJUMP_FALLTHROUGH,
 } from 'samlang-core-ast/mir-nodes';
-import { isNotNull } from 'samlang-core-utils';
+import { Long, isNotNull } from 'samlang-core-utils';
 
 export const constantFoldExpression = (expression: MidIRExpression): MidIRExpression => {
   switch (expression.__type__) {
@@ -34,36 +34,35 @@ export const constantFoldExpression = (expression: MidIRExpression): MidIRExpres
       const v2 = e2.value;
       switch (expression.operator) {
         case '+':
-          return MIR_CONST(v1 + v2);
+          return MIR_CONST(v1.add(v2));
         case '-':
-          return MIR_CONST(v1 - v2);
+          return MIR_CONST(v1.subtract(v2));
         case '*':
-          return MIR_CONST(v1 * v2);
+          return MIR_CONST(v1.multiply(v2));
         case '/':
-          if (v2 === BigInt(0)) {
+          if (v2.equals(Long.ZERO)) {
             return MIR_OP(expression.operator, e1, e2);
           }
-          return MIR_CONST(v1 / v2);
+          return MIR_CONST(v1.divide(v2));
         case '%':
-          if (v2 === BigInt(0)) {
+          if (v2.equals(Long.ZERO)) {
             return MIR_OP(expression.operator, e1, e2);
           }
-          return MIR_CONST(v1 % v2);
+          return MIR_CONST(v1.mod(v2));
         case '^':
-          // eslint-disable-next-line no-bitwise
-          return MIR_CONST(v1 ^ v2);
+          return MIR_CONST(v1.xor(v2));
         case '<':
-          return v1 < v2 ? MIR_ONE : MIR_ZERO;
+          return v1.lessThan(v2) ? MIR_ONE : MIR_ZERO;
         case '<=':
-          return v1 <= v2 ? MIR_ONE : MIR_ZERO;
+          return v1.lessThanOrEqual(v2) ? MIR_ONE : MIR_ZERO;
         case '>':
-          return v1 > v2 ? MIR_ONE : MIR_ZERO;
+          return v1.greaterThan(v2) ? MIR_ONE : MIR_ZERO;
         case '>=':
-          return v1 >= v2 ? MIR_ONE : MIR_ZERO;
+          return v1.greaterThanOrEqual(v2) ? MIR_ONE : MIR_ZERO;
         case '==':
-          return v1 === v2 ? MIR_ONE : MIR_ZERO;
+          return v1.equals(v2) ? MIR_ONE : MIR_ZERO;
         case '!=':
-          return v1 === v2 ? MIR_ZERO : MIR_ONE;
+          return v1.equals(v2) ? MIR_ZERO : MIR_ONE;
       }
     }
   }
@@ -102,7 +101,7 @@ const constantFoldStatement = (statement: MidIRStatement): MidIRStatement | null
         return MIR_CJUMP_FALLTHROUGH(condition, statement.label1);
       }
       // Directly fallthrough.
-      if (condition.value === BigInt(0)) return null;
+      if (condition.value.equals(Long.ZERO)) return null;
       // Directly go to true label.
       return MIR_JUMP(statement.label1);
     }

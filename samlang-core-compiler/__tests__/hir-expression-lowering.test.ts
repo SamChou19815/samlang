@@ -81,7 +81,7 @@ const expectCorrectlyLowered = (
 it('Literal lowering works.', () => {
   expectCorrectlyLowered(EXPRESSION_FALSE(Range.DUMMY), { expression: HIR_ZERO });
   expectCorrectlyLowered(EXPRESSION_TRUE(Range.DUMMY), { expression: HIR_ONE });
-  expectCorrectlyLowered(EXPRESSION_INT(Range.DUMMY, BigInt(0)), { expression: HIR_ZERO });
+  expectCorrectlyLowered(EXPRESSION_INT(Range.DUMMY, 0), { expression: HIR_ZERO });
   expectCorrectlyLowered(EXPRESSION_STRING(Range.DUMMY, 'foo'), { expression: HIR_STRING('foo') });
 });
 
@@ -166,7 +166,7 @@ it('Lowering to StructConstructor works.', () => {
       statements: [
         HIR_STRUCT_INITIALIZATION({
           structVariableName: '_t0',
-          expressionList: [HIR_INT(BigInt(1)), IR_THIS],
+          expressionList: [HIR_ONE, IR_THIS],
         }),
       ],
       expression: HIR_VARIABLE('_t0', tupleType([intType, DUMMY_IDENTIFIER_TYPE])),
@@ -740,7 +740,7 @@ it('Lambda lowering works (4/n).', () => {
               '_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0',
               functionType([], DUMMY_IDENTIFIER_TYPE)
             ),
-            HIR_INT(BigInt(1)),
+            HIR_ONE,
           ],
         }),
       ],
@@ -854,7 +854,7 @@ it('Match lowering works.', () => {
               booleanExpression: HIR_BINARY({
                 operator: '==',
                 e1: HIR_VARIABLE('_t1', intType),
-                e2: HIR_INT(BigInt(1)),
+                e2: HIR_ONE,
               }),
               s1: [
                 HIR_FUNCTION_CALL({
@@ -995,7 +995,7 @@ it('shadowing statement block lowering works.', () => {
                     range: Range.DUMMY,
                     typeAnnotation: intType,
                     pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-                    assignedExpression: EXPRESSION_INT(Range.DUMMY, BigInt(1)),
+                    assignedExpression: EXPRESSION_INT(Range.DUMMY, 1),
                   },
                 ],
               },

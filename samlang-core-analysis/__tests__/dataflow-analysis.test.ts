@@ -22,7 +22,7 @@ import {
 
 const exampleProgram: readonly MidIRStatement[] = [
   /* 00 */ MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_ONE),
-  /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), MIR_CONST(BigInt(2))), 'true'),
+  /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), MIR_CONST(2)), 'true'),
   /* 02 */ MIR_CALL_FUNCTION('f', [], 'y'),
   /* 03 */ MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('+', MIR_ONE, MIR_ZERO)),
   /* 04 */ MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('!=', MIR_ONE, MIR_ZERO)),

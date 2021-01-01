@@ -5,6 +5,7 @@ import {
   MIR_ONE,
   MIR_OP,
 } from 'samlang-core-ast/mir-nodes';
+import { Long } from 'samlang-core-utils';
 
 /**
  * Invert the condition in the most efficient way.
@@ -17,10 +18,10 @@ const invertMidIRConditionExpression = (expression: MidIRExpression): MidIRExpre
   switch (expression.__type__) {
     case 'MidIRConstantExpression': {
       const value = expression.value;
-      if (value === BigInt(0)) {
+      if (value.equals(Long.ZERO)) {
         return MIR_ONE;
       }
-      if (value === BigInt(1)) {
+      if (value.equals(Long.ONE)) {
         return MIR_ZERO;
       }
       throw new Error(`Bad node: ${midIRExpressionToString(expression)}`);

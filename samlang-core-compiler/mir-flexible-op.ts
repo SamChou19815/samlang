@@ -1,5 +1,6 @@
 import type { IROperator } from 'samlang-core-ast/common-operators';
 import { MidIRExpression, MIR_OP } from 'samlang-core-ast/mir-nodes';
+import { Long } from 'samlang-core-utils';
 
 /**
  * Compare two Mid IR expression.
@@ -11,11 +12,11 @@ const compareMidIR = (e1: MidIRExpression, e2: MidIRExpression): number => {
     case 'MidIRConstantExpression':
       switch (e2.__type__) {
         case 'MidIRConstantExpression': {
-          const diff = e1.value - e2.value;
-          if (diff === BigInt(0)) {
+          const diff = e1.value.subtract(e2.value);
+          if (diff.equals(Long.ZERO)) {
             return 0;
           }
-          return diff > BigInt(0) ? 1 : -1;
+          return diff.greaterThan(Long.ZERO) ? 1 : -1;
         }
         case 'MidIRNameExpression':
         case 'MidIRTemporaryExpression':

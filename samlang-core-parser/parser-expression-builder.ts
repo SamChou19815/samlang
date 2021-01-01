@@ -75,7 +75,7 @@ import type {
   StatementBlockExprContext,
 } from 'samlang-core-parser-generated/PLParser';
 import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
-import { isNotNull, assertNotNull } from 'samlang-core-utils';
+import { Long, isNotNull, assertNotNull } from 'samlang-core-utils';
 
 const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');
 
@@ -164,7 +164,7 @@ export default class ExpressionBuilder
       return EXPRESSION_FALSE(range);
     }
     if (literalNode.MinInt() != null) {
-      return EXPRESSION_INT(range, BigInt('-9223372036854775808'));
+      return EXPRESSION_INT(range, Long.MIN_VALUE);
     }
     const intLiteralNode = literalNode.IntLiteral();
     if (intLiteralNode != null) {
@@ -174,7 +174,7 @@ export default class ExpressionBuilder
       if (parsedBigInt > BigInt('9223372036854775807')) {
         this.errorCollector.reportSyntaxError(range, 'Not a 64-bit integer.');
       }
-      return EXPRESSION_INT(range, parsedBigInt);
+      return EXPRESSION_INT(range, Long.fromString(text));
     }
     const stringLiteralNode = literalNode.StrLiteral();
     assertNotNull(stringLiteralNode);

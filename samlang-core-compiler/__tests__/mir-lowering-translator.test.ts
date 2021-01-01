@@ -17,6 +17,7 @@ import {
   HIR_STRUCT_INITIALIZATION,
   HIR_WHILE_TRUE,
   HIR_ZERO,
+  HIR_ONE,
 } from 'samlang-core-ast/hir-expressions';
 import { midIRStatementToString, MIR_ZERO } from 'samlang-core-ast/mir-nodes';
 
@@ -35,7 +36,7 @@ it('midIRTranslateStatementsAndCollectGlobalStrings test', () => {
   assertCorrectlyLoweredWithPreConfiguredSetup(
     HIR_FUNCTION_CALL({
       functionExpression: HIR_NAME('foo', intType),
-      functionArguments: [HIR_INT(BigInt(1)), HIR_STRING('bar'), HIR_VARIABLE('baz', intType)],
+      functionArguments: [HIR_ONE, HIR_STRING('bar'), HIR_VARIABLE('baz', intType)],
       returnCollector: 'bar',
     }),
     `_bar = foo(1, (GLOBAL_STRING_0 + 8), _baz);`
@@ -43,24 +44,24 @@ it('midIRTranslateStatementsAndCollectGlobalStrings test', () => {
   assertCorrectlyLoweredWithPreConfiguredSetup(
     HIR_FUNCTION_CALL({
       functionExpression: HIR_NAME('foo', intType),
-      functionArguments: [HIR_INT(BigInt(1)), HIR_STRING('bar'), HIR_VARIABLE('baz', intType)],
+      functionArguments: [HIR_ONE, HIR_STRING('bar'), HIR_VARIABLE('baz', intType)],
     }),
     `foo(1, (GLOBAL_STRING_0 + 8), _baz);`
   );
 
   assertCorrectlyLoweredWithPreConfiguredSetup(
     HIR_IF_ELSE({
-      booleanExpression: HIR_INT(BigInt(1)),
+      booleanExpression: HIR_ONE,
       s1: [
         HIR_RETURN(
           HIR_BINARY({
             operator: '+',
-            e1: HIR_INT(BigInt(2)),
-            e2: HIR_INT(BigInt(2)),
+            e1: HIR_INT(2),
+            e2: HIR_INT(2),
           })
         ),
       ],
-      s2: [HIR_RETURN(HIR_INT(BigInt(2)))],
+      s2: [HIR_RETURN(HIR_INT(2))],
     }),
     `if (1) goto LABEL__0_PURPOSE_TRUE_BRANCH; else goto LABEL__1_PURPOSE_FALSE_BRANCH;
 LABEL__0_PURPOSE_TRUE_BRANCH:
@@ -72,7 +73,7 @@ LABEL__2_PURPOSE_IF_ELSE_END:`
   );
 
   assertCorrectlyLoweredWithPreConfiguredSetup(
-    HIR_WHILE_TRUE([HIR_RETURN(HIR_INT(BigInt(2)))]),
+    HIR_WHILE_TRUE([HIR_RETURN(HIR_INT(2))]),
     `LABEL__0_PURPOSE_WHILE_TRUE_START:
 return 2;
 goto LABEL__0_PURPOSE_WHILE_TRUE_START;`

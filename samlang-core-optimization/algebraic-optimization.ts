@@ -10,6 +10,7 @@ import {
   MIR_RETURN,
   MIR_CJUMP_FALLTHROUGH,
 } from 'samlang-core-ast/mir-nodes';
+import { Long } from 'samlang-core-utils';
 
 const algebraicallyOptimizeExpression = (expression: MidIRExpression): MidIRExpression => {
   switch (expression.__type__) {
@@ -24,25 +25,25 @@ const algebraicallyOptimizeExpression = (expression: MidIRExpression): MidIRExpr
       const e2 = algebraicallyOptimizeExpression(expression.e2);
       if (e1.__type__ === 'MidIRConstantExpression') {
         const v1 = e1.value;
-        if (v1 === BigInt(0)) {
+        if (v1.equals(Long.ZERO)) {
           switch (expression.operator) {
             case '+':
             case '^':
               return e2;
           }
-        } else if (v1 === BigInt(1) && expression.operator === '*') {
+        } else if (v1.equals(Long.ONE) && expression.operator === '*') {
           return e2;
         }
       }
       if (e2.__type__ === 'MidIRConstantExpression') {
         const v2 = e2.value;
-        if (v2 === BigInt(0)) {
+        if (v2.equals(Long.ZERO)) {
           switch (expression.operator) {
             case '+':
             case '^':
               return e1;
           }
-        } else if (v2 === BigInt(1) && expression.operator === '*') {
+        } else if (v2.equals(Long.ONE) && expression.operator === '*') {
           return e1;
         }
       }

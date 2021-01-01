@@ -16,26 +16,26 @@ import type {
   MidIRFunction,
   MidIRCompilationUnit,
 } from 'samlang-core-ast/mir-nodes';
-import { assertNotNull, checkNotNull } from 'samlang-core-utils';
+import { Long, assertNotNull, checkNotNull } from 'samlang-core-utils';
 
 class StackFrame {
-  private variables = new Map<string, bigint>();
+  private variables = new Map<string, Long>();
 
-  private _returnValue: bigint | null = null;
+  private _returnValue: Long | null = null;
 
-  get returnValue(): bigint | null {
+  get returnValue(): Long | null {
     return this._returnValue;
   }
 
-  setReturnValue(value: bigint): void {
+  setReturnValue(value: Long): void {
     this._returnValue = value;
   }
 
-  getLocalValue(name: string): bigint {
-    return this.variables.get(name) ?? BigInt(0);
+  getLocalValue(name: string): Long {
+    return this.variables.get(name) ?? Long.ZERO;
   }
 
-  setLocalValue(name: string, value: bigint) {
+  setLocalValue(name: string, value: Long) {
     this.variables.set(name, value);
   }
 }
@@ -44,23 +44,25 @@ type MidIRInterpreterMutableGlobalEnvironment = {
   // A collection of all available functions.
   readonly functions: ReadonlyMap<string, MidIRFunction>;
   // Global variable name to fake address mapping.
-  readonly globalVariables: ReadonlyMap<string, bigint>;
+  readonly globalVariables: ReadonlyMap<string, Long>;
   // Fake function address to function name mapping.
-  readonly functionsGlobals: ReadonlyMap<bigint, string>;
+  readonly functionsGlobals: ReadonlyMap<string, string>;
   // Strings generated at compile time and runtime.
-  readonly strings: Map<bigint, string>;
+  readonly strings: Map<string, string>;
   // Address to value mapping of heap.
-  readonly heap: Map<bigint, bigint>;
-  heapPointer: bigint;
+  readonly heap: Map<string, Long>;
+  heapPointer: Long;
   // A collection of already printed stuff.
   printed: string;
 };
+
+const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
 
 const interpretMidIRExpression = (
   environment: MidIRInterpreterMutableGlobalEnvironment,
   stackFrame: StackFrame,
   expression: MidIRExpression
-): bigint => {
+): Long => {
   switch (expression.__type__) {
     case 'MidIRConstantExpression':
       return expression.value;
@@ -74,7 +76,7 @@ const interpretMidIRExpression = (
       return stackFrame.getLocalValue(expression.temporaryID);
     case 'MidIRImmutableMemoryExpression': {
       const value = environment.heap.get(
-        interpretMidIRExpression(environment, stackFrame, expression.indexExpression)
+        interpretMidIRExpression(environment, stackFrame, expression.indexExpression).toString()
       );
       // istanbul ignore next
       if (value == null) throw new Error();
@@ -85,32 +87,31 @@ const interpretMidIRExpression = (
       const value2 = interpretMidIRExpression(environment, stackFrame, expression.e2);
       switch (expression.operator) {
         case '+':
-          return value1 + value2;
+          return value1.add(value2);
         case '-':
-          return value1 - value2;
+          return value1.subtract(value2);
         case '*':
-          return value1 * value2;
+          return value1.multiply(value2);
         case '/':
-          if (value2 === BigInt(0)) throw new PanicException('Division by zero!');
-          return value1 / value2;
+          if (value2.equals(Long.ZERO)) throw new PanicException('Division by zero!');
+          return value1.divide(value2);
         case '%':
-          if (value2 === BigInt(0)) throw new PanicException('Mod by zero!');
-          return value1 % value2;
+          if (value2.equals(Long.ZERO)) throw new PanicException('Mod by zero!');
+          return value1.mod(value2);
         case '^':
-          // eslint-disable-next-line no-bitwise
-          return value1 ^ value2;
+          return value1.xor(value2);
         case '<':
-          return BigInt(value1 < value2);
+          return longOfBool(value1.lessThan(value2));
         case '<=':
-          return BigInt(value1 <= value2);
+          return longOfBool(value1.lessThanOrEqual(value2));
         case '>':
-          return BigInt(value1 > value2);
+          return longOfBool(value1.greaterThan(value2));
         case '>=':
-          return BigInt(value1 >= value2);
+          return longOfBool(value1.greaterThanOrEqual(value2));
         case '==':
-          return BigInt(value1 === value2);
+          return longOfBool(value1.equals(value2));
         case '!=':
-          return BigInt(value1 !== value2);
+          return longOfBool(value1.notEquals(value2));
       }
     }
   }
@@ -119,8 +120,8 @@ const interpretMidIRExpression = (
 const interpretMidIRFunction = (
   environment: MidIRInterpreterMutableGlobalEnvironment,
   midIRFunction: MidIRFunction,
-  functionArguments: readonly bigint[]
-): bigint => {
+  functionArguments: readonly Long[]
+): Long => {
   // istanbul ignore next
   if (functionArguments.length !== midIRFunction.argumentNames.length) throw new Error();
   const stackFrame = new StackFrame();
@@ -136,7 +137,7 @@ const interpretMidIRFunction = (
     }
   });
 
-  let returnedValue: bigint | null = null;
+  let returnedValue: Long | null = null;
   while (returnedValue == null) {
     const statementToInterpret = midIRFunction.mainBodyStatements[programCounter];
     assertNotNull(statementToInterpret);
@@ -156,7 +157,7 @@ const interpretMidIRFunction = (
             environment,
             stackFrame,
             statementToInterpret.memoryIndexExpression
-          ),
+          ).toString(),
           interpretMidIRExpression(environment, stackFrame, statementToInterpret.source)
         );
         programCounter += 1;
@@ -180,7 +181,7 @@ const interpretMidIRFunction = (
             environment,
             stackFrame,
             statementToInterpret.conditionExpression
-          ) !== BigInt(0)
+          ).notEquals(Long.ZERO)
         ) {
           const target = labelMapping.get(statementToInterpret.label1);
           // istanbul ignore next
@@ -199,7 +200,7 @@ const interpretMidIRFunction = (
                 stackFrame,
                 statementToInterpret.returnedExpression
               )
-            : BigInt(0)
+            : Long.ZERO
         );
         break;
 
@@ -211,26 +212,33 @@ const interpretMidIRFunction = (
         let functionName: string;
         if (functionExpression.__type__ === 'MidIRNameExpression') {
           functionName = functionExpression.name;
-          let result: bigint | null;
+          let result: Long | null;
           switch (functionName) {
             case ENCODED_FUNCTION_NAME_MALLOC: {
               const start = environment.heapPointer;
-              environment.heapPointer += checkNotNull(functionArgumentValues[0]);
+              environment.heapPointer = environment.heapPointer.add(
+                checkNotNull(functionArgumentValues[0])
+              );
               result = start;
               break;
             }
             case ENCODED_FUNCTION_NAME_THROW: {
-              const string = environment.strings.get(checkNotNull(functionArgumentValues[0]));
+              const string = environment.strings.get(
+                checkNotNull(functionArgumentValues[0]).toString()
+              );
               // istanbul ignore next
               if (string == null) throw new Error('Bad string!');
               throw new PanicException(string);
             }
             case ENCODED_FUNCTION_NAME_STRING_TO_INT: {
-              const string = environment.strings.get(checkNotNull(functionArgumentValues[0]));
+              const string = environment.strings.get(
+                checkNotNull(functionArgumentValues[0]).toString()
+              );
               // istanbul ignore next
               if (string == null) throw new Error('Bad string!');
               try {
-                result = BigInt(string);
+                BigInt(string);
+                result = Long.fromString(string);
                 break;
               } catch {
                 throw new PanicException(`Bad string: ${string}`);
@@ -239,28 +247,34 @@ const interpretMidIRFunction = (
             case ENCODED_FUNCTION_NAME_INT_TO_STRING: {
               const string = String(functionArgumentValues[0]);
               const location = environment.heapPointer;
-              environment.heapPointer += BigInt(8);
-              environment.strings.set(location, string);
+              environment.heapPointer = environment.heapPointer.add(8);
+              environment.strings.set(location.toString(), string);
               result = location;
               break;
             }
             case ENCODED_FUNCTION_NAME_STRING_CONCAT: {
-              const string1 = environment.strings.get(checkNotNull(functionArgumentValues[0]));
-              const string2 = environment.strings.get(checkNotNull(functionArgumentValues[1]));
+              const string1 = environment.strings.get(
+                checkNotNull(functionArgumentValues[0]).toString()
+              );
+              const string2 = environment.strings.get(
+                checkNotNull(functionArgumentValues[1]).toString()
+              );
               // istanbul ignore next
               if (string1 == null || string2 == null) throw new Error('Bad string');
               const location = environment.heapPointer;
-              environment.heapPointer += BigInt(8);
-              environment.strings.set(location, string1 + string2);
+              environment.heapPointer = environment.heapPointer.add(8);
+              environment.strings.set(location.toString(), string1 + string2);
               result = location;
               break;
             }
             case ENCODED_FUNCTION_NAME_PRINTLN: {
-              const string = environment.strings.get(checkNotNull(functionArgumentValues[0]));
+              const string = environment.strings.get(
+                checkNotNull(functionArgumentValues[0]).toString()
+              );
               // istanbul ignore next
               if (string == null) throw new Error('Bad string!');
               environment.printed += `${string}\n`;
-              result = BigInt(0);
+              result = Long.ZERO;
               break;
             }
             default:
@@ -279,7 +293,7 @@ const interpretMidIRFunction = (
             stackFrame,
             functionExpression
           );
-          const nullableName = environment.functionsGlobals.get(functionAddress);
+          const nullableName = environment.functionsGlobals.get(functionAddress.toString());
           // istanbul ignore next
           if (nullableName == null) throw new Error(`Undefined function at ${functionAddress}!`);
           functionName = nullableName;
@@ -307,21 +321,21 @@ const setupMidIRCompilationUnitIntepretationEnvironment = (
   compilationUnit: MidIRCompilationUnit
 ): MidIRInterpreterMutableGlobalEnvironment => {
   const functions = new Map(compilationUnit.functions.map((it) => [it.functionName, it]));
-  const globalVariables = new Map<string, bigint>();
-  const strings = new Map<bigint, string>();
-  let heapPointer = BigInt(10000);
+  const globalVariables = new Map<string, Long>();
+  const strings = new Map<string, string>();
+  let heapPointer = Long.fromInt(10000);
   compilationUnit.globalVariables.forEach(({ name, content }) => {
     const location = heapPointer;
     globalVariables.set(name, location);
-    strings.set(location + BigInt(8), content);
-    heapPointer += BigInt(8);
+    strings.set(location.add(Long.fromInt(8)).toString(), content);
+    heapPointer = heapPointer.add(Long.fromInt(8));
   });
-  const functionsGlobals = new Map<bigint, string>();
+  const functionsGlobals = new Map<string, string>();
   compilationUnit.functions.forEach(({ functionName }) => {
     const location = heapPointer;
     globalVariables.set(functionName, location);
-    functionsGlobals.set(location, functionName);
-    heapPointer += BigInt(8);
+    functionsGlobals.set(location.toString(), functionName);
+    heapPointer = heapPointer.add(Long.fromInt(8));
   });
   return {
     functions,

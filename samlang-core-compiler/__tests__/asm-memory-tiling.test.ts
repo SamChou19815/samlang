@@ -16,6 +16,7 @@ import {
   MIR_IMMUTABLE_MEM,
   MIR_OP,
 } from 'samlang-core-ast/mir-nodes';
+import { Long } from 'samlang-core-utils';
 
 const mockedService: AssemblyTilingServiceBasic = {
   tileExpression(expression) {
@@ -60,7 +61,7 @@ it('getAssemblyMemoryTilingForMidIRExpression memory test', () => {
 
 it('getAssemblyMemoryTilingForMidIRExpression case 1 test', () => {
   expect(tile(MIR_ONE)).toBe('qword ptr [1]');
-  expect(tile(MIR_CONST(BigInt(10000000000000)))).toBeNull();
+  expect(tile(MIR_CONST(Long.fromString('10000000000000')))).toBeNull();
 });
 
 it('getAssemblyMemoryTilingForMidIRExpression case 2 test', () => {
@@ -89,10 +90,10 @@ it('getAssemblyMemoryTilingForMidIRExpression case 3 test', () => {
 
 it('getAssemblyMemoryTilingForMidIRExpression case 4 test', () => {
   expect(tile(MIR_OP('*', MIR_TEMP('a'), MIR_ONE))).toBe('qword ptr [a*1]');
-  expect(tile(MIR_OP('*', MIR_TEMP('a'), MIR_CONST(BigInt(2))))).toBe('qword ptr [a*2]');
-  expect(tile(MIR_OP('*', MIR_TEMP('a'), MIR_CONST(BigInt(4))))).toBe('qword ptr [a*4]');
+  expect(tile(MIR_OP('*', MIR_TEMP('a'), MIR_CONST(2)))).toBe('qword ptr [a*2]');
+  expect(tile(MIR_OP('*', MIR_TEMP('a'), MIR_CONST(4)))).toBe('qword ptr [a*4]');
   expect(tile(MIR_OP('*', MIR_TEMP('a'), MIR_EIGHT))).toBe('qword ptr [a*8]');
-  expect(tile(MIR_OP('*', MIR_TEMP('a'), MIR_CONST(BigInt(9))))).toBeNull();
+  expect(tile(MIR_OP('*', MIR_TEMP('a'), MIR_CONST(9)))).toBeNull();
   expect(tile(MIR_OP('*', MIR_TEMP('a'), MIR_TEMP('a')))).toBeNull();
 });
 

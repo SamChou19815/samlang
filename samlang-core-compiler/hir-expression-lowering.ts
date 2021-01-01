@@ -241,7 +241,7 @@ class HighIRExpressionLoweringManager {
         ...result.statements,
         HIR_STRUCT_INITIALIZATION({
           structVariableName,
-          expressionList: [HIR_INT(BigInt(expression.tagOrder)), result.expression],
+          expressionList: [HIR_INT(expression.tagOrder), result.expression],
         }),
       ],
       expression: HIR_VARIABLE(structVariableName, tupleType([intType, result.expression.type])),
@@ -297,7 +297,7 @@ class HighIRExpressionLoweringManager {
           expression: HIR_BINARY({
             operator: '^',
             e1: result.expression,
-            e2: HIR_INT(BigInt(1)),
+            e2: HIR_ONE,
           }),
         };
       case '-':
@@ -305,7 +305,7 @@ class HighIRExpressionLoweringManager {
           statements: result.statements,
           expression: HIR_BINARY({
             operator: '-',
-            e1: HIR_INT(BigInt(0)),
+            e1: HIR_ZERO,
             e2: result.expression,
           }),
         };
@@ -669,9 +669,7 @@ class HighIRExpressionLoweringManager {
       booleanExpression: HIR_BINARY({
         operator: '==',
         e1: HIR_VARIABLE(variableForTag, intType),
-        e2: HIR_INT(
-          BigInt(checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).tagOrder)
-        ),
+        e2: HIR_INT(checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).tagOrder),
       }),
       s1: checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).statements,
       s2: [],
@@ -682,7 +680,7 @@ class HighIRExpressionLoweringManager {
         booleanExpression: HIR_BINARY({
           operator: '==',
           e1: HIR_VARIABLE(variableForTag, intType),
-          e2: HIR_INT(BigInt(tagOrder)),
+          e2: HIR_INT(tagOrder),
         }),
         s1: localStatements,
         s2: [ifElse],
@@ -705,7 +703,7 @@ class HighIRExpressionLoweringManager {
     let context: HighIRExpression;
     if (captured.length === 0) {
       // 1: A dummy value that is not zero, used to indicate nonnull context
-      context = HIR_INT(BigInt(1));
+      context = HIR_ONE;
     } else {
       const contextName = this.allocateTemporaryVariable();
       loweredStatements.push(

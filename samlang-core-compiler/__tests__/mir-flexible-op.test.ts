@@ -1,7 +1,8 @@
 import createMidIRFlexibleOrderOperatorNode from '../mir-flexible-op';
 
 import {
-  MIR_CONST,
+  MIR_ZERO,
+  MIR_ONE,
   MIR_NAME,
   MIR_TEMP,
   MIR_IMMUTABLE_MEM,
@@ -9,34 +10,30 @@ import {
 } from 'samlang-core-ast/mir-nodes';
 
 it('createMidIRFlexibleOrderOperatorNode test', () => {
-  expect(
-    createMidIRFlexibleOrderOperatorNode('+', MIR_CONST(BigInt(0)), MIR_CONST(BigInt(1)))
-  ).toEqual(MIR_OP('+', MIR_CONST(BigInt(1)), MIR_CONST(BigInt(0))));
-  expect(
-    createMidIRFlexibleOrderOperatorNode('+', MIR_CONST(BigInt(0)), MIR_CONST(BigInt(0)))
-  ).toEqual(MIR_OP('+', MIR_CONST(BigInt(0)), MIR_CONST(BigInt(0))));
-  expect(
-    createMidIRFlexibleOrderOperatorNode('+', MIR_CONST(BigInt(1)), MIR_CONST(BigInt(0)))
-  ).toEqual(MIR_OP('+', MIR_CONST(BigInt(1)), MIR_CONST(BigInt(0))));
-  expect(createMidIRFlexibleOrderOperatorNode('+', MIR_CONST(BigInt(0)), MIR_NAME(''))).toEqual(
-    MIR_OP('+', MIR_NAME(''), MIR_CONST(BigInt(0)))
+  expect(createMidIRFlexibleOrderOperatorNode('+', MIR_ZERO, MIR_ONE)).toEqual(
+    MIR_OP('+', MIR_ONE, MIR_ZERO)
   );
-  expect(createMidIRFlexibleOrderOperatorNode('+', MIR_CONST(BigInt(0)), MIR_TEMP(''))).toEqual(
-    MIR_OP('+', MIR_TEMP(''), MIR_CONST(BigInt(0)))
+  expect(createMidIRFlexibleOrderOperatorNode('+', MIR_ZERO, MIR_ZERO)).toEqual(
+    MIR_OP('+', MIR_ZERO, MIR_ZERO)
+  );
+  expect(createMidIRFlexibleOrderOperatorNode('+', MIR_ONE, MIR_ZERO)).toEqual(
+    MIR_OP('+', MIR_ONE, MIR_ZERO)
+  );
+  expect(createMidIRFlexibleOrderOperatorNode('+', MIR_ZERO, MIR_NAME(''))).toEqual(
+    MIR_OP('+', MIR_NAME(''), MIR_ZERO)
+  );
+  expect(createMidIRFlexibleOrderOperatorNode('+', MIR_ZERO, MIR_TEMP(''))).toEqual(
+    MIR_OP('+', MIR_TEMP(''), MIR_ZERO)
   );
   expect(
-    createMidIRFlexibleOrderOperatorNode('+', MIR_CONST(BigInt(0)), MIR_IMMUTABLE_MEM(MIR_TEMP('')))
-  ).toEqual(MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_TEMP('')), MIR_CONST(BigInt(0))));
+    createMidIRFlexibleOrderOperatorNode('+', MIR_ZERO, MIR_IMMUTABLE_MEM(MIR_TEMP('')))
+  ).toEqual(MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_TEMP('')), MIR_ZERO));
   expect(
-    createMidIRFlexibleOrderOperatorNode(
-      '+',
-      MIR_CONST(BigInt(0)),
-      MIR_OP('+', MIR_TEMP(''), MIR_TEMP(''))
-    )
-  ).toEqual(MIR_OP('+', MIR_OP('+', MIR_TEMP(''), MIR_TEMP('')), MIR_CONST(BigInt(0))));
+    createMidIRFlexibleOrderOperatorNode('+', MIR_ZERO, MIR_OP('+', MIR_TEMP(''), MIR_TEMP('')))
+  ).toEqual(MIR_OP('+', MIR_OP('+', MIR_TEMP(''), MIR_TEMP('')), MIR_ZERO));
 
-  expect(createMidIRFlexibleOrderOperatorNode('+', MIR_NAME(''), MIR_CONST(BigInt(0)))).toEqual(
-    MIR_OP('+', MIR_NAME(''), MIR_CONST(BigInt(0)))
+  expect(createMidIRFlexibleOrderOperatorNode('+', MIR_NAME(''), MIR_ZERO)).toEqual(
+    MIR_OP('+', MIR_NAME(''), MIR_ZERO)
   );
   expect(createMidIRFlexibleOrderOperatorNode('+', MIR_NAME('a'), MIR_NAME('b'))).toEqual(
     MIR_OP('+', MIR_NAME('b'), MIR_NAME('a'))
@@ -51,8 +48,8 @@ it('createMidIRFlexibleOrderOperatorNode test', () => {
     createMidIRFlexibleOrderOperatorNode('+', MIR_NAME(''), MIR_OP('+', MIR_TEMP(''), MIR_TEMP('')))
   ).toEqual(MIR_OP('+', MIR_OP('+', MIR_TEMP(''), MIR_TEMP('')), MIR_NAME('')));
 
-  expect(createMidIRFlexibleOrderOperatorNode('+', MIR_TEMP(''), MIR_CONST(BigInt(0)))).toEqual(
-    MIR_OP('+', MIR_TEMP(''), MIR_CONST(BigInt(0)))
+  expect(createMidIRFlexibleOrderOperatorNode('+', MIR_TEMP(''), MIR_ZERO)).toEqual(
+    MIR_OP('+', MIR_TEMP(''), MIR_ZERO)
   );
   expect(createMidIRFlexibleOrderOperatorNode('+', MIR_TEMP('a'), MIR_NAME('b'))).toEqual(
     MIR_OP('+', MIR_TEMP('a'), MIR_NAME('b'))
@@ -68,8 +65,8 @@ it('createMidIRFlexibleOrderOperatorNode test', () => {
   ).toEqual(MIR_OP('+', MIR_OP('+', MIR_TEMP(''), MIR_TEMP('')), MIR_TEMP('')));
 
   expect(
-    createMidIRFlexibleOrderOperatorNode('+', MIR_IMMUTABLE_MEM(MIR_TEMP('')), MIR_CONST(BigInt(0)))
-  ).toEqual(MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_TEMP('')), MIR_CONST(BigInt(0))));
+    createMidIRFlexibleOrderOperatorNode('+', MIR_IMMUTABLE_MEM(MIR_TEMP('')), MIR_ZERO)
+  ).toEqual(MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_TEMP('')), MIR_ZERO));
   expect(
     createMidIRFlexibleOrderOperatorNode('+', MIR_IMMUTABLE_MEM(MIR_TEMP('')), MIR_NAME('b'))
   ).toEqual(MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_TEMP('')), MIR_NAME('b')));
@@ -92,12 +89,8 @@ it('createMidIRFlexibleOrderOperatorNode test', () => {
   ).toEqual(MIR_OP('+', MIR_OP('+', MIR_TEMP(''), MIR_TEMP('')), MIR_IMMUTABLE_MEM(MIR_TEMP(''))));
 
   expect(
-    createMidIRFlexibleOrderOperatorNode(
-      '+',
-      MIR_OP('+', MIR_TEMP(''), MIR_TEMP('')),
-      MIR_CONST(BigInt(0))
-    )
-  ).toEqual(MIR_OP('+', MIR_OP('+', MIR_TEMP(''), MIR_TEMP('')), MIR_CONST(BigInt(0))));
+    createMidIRFlexibleOrderOperatorNode('+', MIR_OP('+', MIR_TEMP(''), MIR_TEMP('')), MIR_ZERO)
+  ).toEqual(MIR_OP('+', MIR_OP('+', MIR_TEMP(''), MIR_TEMP('')), MIR_ZERO));
   expect(
     createMidIRFlexibleOrderOperatorNode(
       '+',
@@ -126,7 +119,7 @@ it('createMidIRFlexibleOrderOperatorNode test', () => {
     MIR_OP('+', MIR_OP('+', MIR_TEMP('a'), MIR_TEMP('')), MIR_OP('+', MIR_TEMP(''), MIR_TEMP('')))
   );
 
-  expect(
-    createMidIRFlexibleOrderOperatorNode('-', MIR_CONST(BigInt(0)), MIR_CONST(BigInt(1)))
-  ).toEqual(MIR_OP('-', MIR_CONST(BigInt(0)), MIR_CONST(BigInt(1))));
+  expect(createMidIRFlexibleOrderOperatorNode('-', MIR_ZERO, MIR_ONE)).toEqual(
+    MIR_OP('-', MIR_ZERO, MIR_ONE)
+  );
 });
