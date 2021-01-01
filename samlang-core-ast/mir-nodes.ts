@@ -5,6 +5,8 @@
 import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
 
+import { Long } from 'samlang-core-utils';
+
 /** Part 2: Expressions */
 
 interface BaseMidIRExpression {
@@ -13,7 +15,7 @@ interface BaseMidIRExpression {
 
 export interface MidIRConstantExpression extends BaseMidIRExpression {
   readonly __type__: 'MidIRConstantExpression';
-  readonly value: bigint;
+  readonly value: Long;
 }
 
 export interface MidIRNameExpression extends BaseMidIRExpression {
@@ -133,15 +135,15 @@ export interface MidIRCompilationUnit {
 
 /** Part 5: Constructors */
 
-export const MIR_CONST = (value: bigint): MidIRConstantExpression => ({
+export const MIR_CONST = (value: number | Long): MidIRConstantExpression => ({
   __type__: 'MidIRConstantExpression',
-  value,
+  value: typeof value === 'number' ? Long.fromInt(value) : value,
 });
 
-export const MIR_ZERO: MidIRConstantExpression = MIR_CONST(BigInt(0));
-export const MIR_ONE: MidIRConstantExpression = MIR_CONST(BigInt(1));
-export const MIR_MINUS_ONE: MidIRConstantExpression = MIR_CONST(BigInt(-1));
-export const MIR_EIGHT: MidIRConstantExpression = MIR_CONST(BigInt(8));
+export const MIR_ZERO: MidIRConstantExpression = MIR_CONST(0);
+export const MIR_ONE: MidIRConstantExpression = MIR_CONST(1);
+export const MIR_MINUS_ONE: MidIRConstantExpression = MIR_CONST(-1);
+export const MIR_EIGHT: MidIRConstantExpression = MIR_CONST(8);
 
 export const MIR_NAME = (name: string): MidIRNameExpression => ({
   __type__: 'MidIRNameExpression',

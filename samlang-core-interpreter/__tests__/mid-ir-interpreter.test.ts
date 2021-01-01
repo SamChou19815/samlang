@@ -149,11 +149,11 @@ it('interpretMidIRCompilationUnit setup tuple and print test', () => {
           argumentNames: [],
           hasReturn: false,
           mainBodyStatements: [
-            MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_MALLOC, [MIR_CONST(BigInt(16))], 'tuple'),
+            MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_MALLOC, [MIR_CONST(16)], 'tuple'),
             MIR_MOVE_IMMUTABLE_MEM(MIR_IMMUTABLE_MEM(MIR_TEMP('tuple')), MIR_EIGHT),
             MIR_MOVE_IMMUTABLE_MEM(
               MIR_IMMUTABLE_MEM(MIR_OP('+', MIR_TEMP('tuple'), MIR_EIGHT)),
-              MIR_CONST(BigInt(42))
+              MIR_CONST(42)
             ),
             MIR_MOVE_TEMP(
               MIR_TEMP('sum'),
@@ -296,7 +296,7 @@ it('interpretMidIRCompilationUnit factorial function call integration test', () 
           argumentNames: [],
           hasReturn: false,
           mainBodyStatements: [
-            MIR_CALL_FUNCTION('factorial', [MIR_CONST(BigInt(4)), MIR_ONE], 'a'),
+            MIR_CALL_FUNCTION('factorial', [MIR_CONST(4), MIR_ONE], 'a'),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('a')], 'b'),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_PRINTLN, [MIR_TEMP('b')]),
             MIR_RETURN(),
@@ -334,7 +334,7 @@ it('interpretMidIRCompilationUnit factorial function reference call integration 
           hasReturn: false,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('name'), MIR_NAME('factorial')),
-            MIR_CALL_FUNCTION(MIR_TEMP('name'), [MIR_CONST(BigInt(4)), MIR_ONE], 'a'),
+            MIR_CALL_FUNCTION(MIR_TEMP('name'), [MIR_CONST(4), MIR_ONE], 'a'),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('a')], 'b'),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_PRINTLN, [MIR_TEMP('b')]),
             MIR_RETURN(),

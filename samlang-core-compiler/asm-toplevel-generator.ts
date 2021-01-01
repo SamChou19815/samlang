@@ -88,7 +88,7 @@ const getArgPlaceInsideFunction = (argId: number): MidIRExpression => {
     default: {
       // -4 because -6 for reg arg place and +2 for the RIP and saved RBP.
       const offsetUnit = argId - 4;
-      return MIR_IMMUTABLE_MEM(MIR_OP('+', MIR_TEMP(RBP.id), MIR_CONST(BigInt(8 * offsetUnit))));
+      return MIR_IMMUTABLE_MEM(MIR_OP('+', MIR_TEMP(RBP.id), MIR_CONST(8 * offsetUnit)));
     }
   }
 };

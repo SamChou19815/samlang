@@ -5,6 +5,10 @@
   "scripts": {
     "compile": "tsc --incremental --noEmit"
   },
+  "dependencies": {
+    "@types/long": "^4.0.1",
+    "long": "^4.0.0"
+  },
   "devDependencies": {
     "@types/jest": "^26.0.19",
     "typescript": "^4.1.3"

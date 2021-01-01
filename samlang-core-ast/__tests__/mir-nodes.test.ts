@@ -21,19 +21,23 @@ import {
   midIRCompilationUnitToString,
 } from '../mir-nodes';
 
+import { Long } from 'samlang-core-utils';
+
 it('midIRExpressionToString tests', () => {
   expect(midIRExpressionToString(MIR_ZERO)).toBe('0');
   expect(midIRExpressionToString(MIR_ONE)).toBe('1');
   expect(midIRExpressionToString(MIR_MINUS_ONE)).toBe('-1');
   expect(midIRExpressionToString(MIR_EIGHT)).toBe('8');
-  expect(midIRExpressionToString(MIR_CONST(BigInt(42)))).toBe('42');
+  expect(midIRExpressionToString(MIR_CONST(42))).toBe('42');
   expect(midIRExpressionToString(MIR_NAME('global_str'))).toBe('global_str');
   expect(midIRExpressionToString(MIR_TEMP('variableName'))).toBe('variableName');
   expect(midIRExpressionToString(MIR_IMMUTABLE_MEM(MIR_ZERO))).toBe('MEM[0]');
   expect(midIRExpressionToString(MIR_OP('+', MIR_EIGHT, MIR_ONE))).toBe('(8 + 1)');
   expect(midIRExpressionToString(MIR_OP('-', MIR_EIGHT, MIR_ONE))).toBe('(8 + -1)');
   expect(
-    midIRExpressionToString(MIR_OP('-', MIR_EIGHT, MIR_CONST(BigInt('-9223372036854775808'))))
+    midIRExpressionToString(
+      MIR_OP('-', MIR_EIGHT, MIR_CONST(Long.fromString('-9223372036854775808')))
+    )
   ).toBe('(8 - -9223372036854775808)');
 });
 

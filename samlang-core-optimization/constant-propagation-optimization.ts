@@ -10,11 +10,11 @@ import {
   MIR_JUMP,
   MIR_RETURN,
 } from 'samlang-core-ast/mir-nodes';
-import { checkNotNull, isNotNull } from 'samlang-core-utils';
+import { Long, checkNotNull, isNotNull } from 'samlang-core-utils';
 
 const optimizeExpressionWithConstantPropagationInformation = (
   expression: MidIRExpression,
-  constantPropagationInformation: ReadonlyMap<string, bigint>
+  constantPropagationInformation: ReadonlyMap<string, Long>
 ): MidIRExpression => {
   switch (expression.__type__) {
     case 'MidIRConstantExpression':
@@ -51,7 +51,7 @@ const optimizeExpressionWithConstantPropagationInformation = (
 
 const optimizeExpression = (
   expression: MidIRExpression,
-  constantPropagationInformation: ReadonlyMap<string, bigint>
+  constantPropagationInformation: ReadonlyMap<string, Long>
 ): MidIRExpression =>
   constantFoldExpression(
     optimizeExpressionWithConstantPropagationInformation(expression, constantPropagationInformation)
@@ -59,7 +59,7 @@ const optimizeExpression = (
 
 const optimizeStatement = (
   statement: MidIRStatement,
-  constantPropagationInformation: ReadonlyMap<string, bigint>
+  constantPropagationInformation: ReadonlyMap<string, Long>
 ): MidIRStatement | null => {
   switch (statement.__type__) {
     case 'MidIRMoveTempStatement':
@@ -96,7 +96,7 @@ const optimizeStatement = (
         constantPropagationInformation
       );
       if (optimizedCondition.__type__ === 'MidIRConstantExpression') {
-        if (optimizedCondition.value === BigInt(0)) {
+        if (optimizedCondition.value.equals(Long.ZERO)) {
           // Directly fall through
           return null;
         }

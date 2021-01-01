@@ -8,7 +8,7 @@ import {
   assemblyArgumentToString,
 } from './asm-arguments';
 
-import { bigIntIsWithin32BitIntegerRange } from 'samlang-core-utils';
+import { Long, bigIntIsWithin32BitIntegerRange } from 'samlang-core-utils';
 
 /*
  * --------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ import { bigIntIsWithin32BitIntegerRange } from 'samlang-core-utils';
 export type AssemblyMoveFromLong = {
   readonly __type__: 'AssemblyMoveFromLong';
   readonly destination: AssemblyRegister;
-  readonly value: bigint;
+  readonly value: Long;
 };
 
 /** mov instruction. */
@@ -227,7 +227,7 @@ export type AssemblyInstruction =
 
 export const ASM_MOVE_CONST_TO_REG = (
   destination: AssemblyRegister,
-  value: bigint
+  value: Long
 ): AssemblyMoveFromLong | AssemblyMoveToRegister => {
   if (!bigIntIsWithin32BitIntegerRange(value)) {
     return { __type__: 'AssemblyMoveFromLong', destination, value };

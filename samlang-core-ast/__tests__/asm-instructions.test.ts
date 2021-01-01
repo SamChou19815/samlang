@@ -44,13 +44,15 @@ import {
   ASM_COMMENT,
 } from '../asm-instructions';
 
+import { Long } from 'samlang-core-utils';
+
 const MEM_1 = ASM_MEM_CONST(ASM_CONST(1));
 
 it('assemblyInstructionToString test', () => {
-  expect(toString(ASM_MOVE_CONST_TO_REG(RAX, BigInt(2000000000000)))).toBe(
+  expect(toString(ASM_MOVE_CONST_TO_REG(RAX, Long.fromString('2000000000000')))).toBe(
     'movabs rax, 2000000000000'
   );
-  expect(toString(ASM_MOVE_CONST_TO_REG(RAX, BigInt(2)))).toBe('mov rax, 2');
+  expect(toString(ASM_MOVE_CONST_TO_REG(RAX, Long.fromInt(2)))).toBe('mov rax, 2');
   expect(toString(ASM_MOVE_MEM(MEM_1, RAX))).toBe('mov qword ptr [1], rax');
   expect(toString(ASM_MOVE_REG(RAX, MEM_1))).toBe('mov rax, qword ptr [1]');
   expect(toString(ASM_LEA(RAX, MEM_1))).toBe('lea rax, qword ptr [1]');

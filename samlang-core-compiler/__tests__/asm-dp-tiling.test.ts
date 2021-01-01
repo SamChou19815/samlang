@@ -19,6 +19,7 @@ import {
   MIR_CJUMP_FALLTHROUGH,
   MIR_RETURN,
 } from 'samlang-core-ast/mir-nodes';
+import { Long } from 'samlang-core-utils';
 
 const tileStatements = (statements: readonly MidIRStatement[]): string => {
   const lines = getAssemblyTilingForMidIRStatements(
@@ -37,7 +38,10 @@ it('assembly simple statement tiling tests', () => {
   );
   expect(
     tileStatements([
-      MIR_MOVE_IMMUTABLE_MEM(MIR_IMMUTABLE_MEM(MIR_ONE), MIR_CONST(BigInt(1000000000000))),
+      MIR_MOVE_IMMUTABLE_MEM(
+        MIR_IMMUTABLE_MEM(MIR_ONE),
+        MIR_CONST(Long.fromString('1000000000000'))
+      ),
     ])
   ).toBe(`movabs _ABSTRACT_REG_0, 1000000000000
 mov qword ptr [1], _ABSTRACT_REG_0`);
@@ -233,9 +237,9 @@ add rsp, 16
 
 it('assembly constant tiling test', () => {
   expect(tileStatements([MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_ONE)])).toBe('mov a, 1');
-  expect(tileStatements([MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_CONST(BigInt(1000000000000)))])).toBe(
-    'movabs _ABSTRACT_REG_0, 1000000000000\nmov a, _ABSTRACT_REG_0'
-  );
+  expect(
+    tileStatements([MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_CONST(Long.fromString('1000000000000')))])
+  ).toBe('movabs _ABSTRACT_REG_0, 1000000000000\nmov a, _ABSTRACT_REG_0');
 });
 
 it('assembly name tiling test', () => {
@@ -310,9 +314,8 @@ mov _, _ABSTRACT_REG_0`);
 });
 
 it('assembly multiply by power of 2 tiling test', () => {
-  expect(
-    tileStatements([MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_OP('*', MIR_ONE, MIR_CONST(BigInt(65536))))])
-  ).toBe(`## multiplyPowerOfTwoBinaryExpressionTiler (1 * 65536)
+  expect(tileStatements([MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_OP('*', MIR_ONE, MIR_CONST(65536)))]))
+    .toBe(`## multiplyPowerOfTwoBinaryExpressionTiler (1 * 65536)
 mov _ABSTRACT_REG_6, 1
 shl _ABSTRACT_REG_6, 16
 mov a, _ABSTRACT_REG_6`);

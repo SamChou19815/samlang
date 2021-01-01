@@ -33,6 +33,7 @@ import {
   ASM_COMMENT,
   assemblyInstructionToString,
 } from 'samlang-core-ast/asm-instructions';
+import { Long } from 'samlang-core-utils';
 
 const mockColors = new Map([
   ['a', 'rax'],
@@ -54,7 +55,7 @@ const MEM_COMPLEX = ASM_MEM(A, { baseRegister: B, multipliedConstant: 2 }, FORTY
 it('assemblyInstructionColoringRewrite test 1', () => {
   expect(
     rewrite([
-      ASM_MOVE_CONST_TO_REG(A, BigInt(10000000000)),
+      ASM_MOVE_CONST_TO_REG(A, Long.fromString('10000000000')),
       ASM_MOVE_REG(B, FORTY_TWO),
       ASM_MOVE_REG(RAX, A),
       ASM_MOVE_REG(A, MEM_COMPLEX),

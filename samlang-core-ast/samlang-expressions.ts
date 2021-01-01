@@ -17,6 +17,8 @@ import {
 import type { BinaryOperator } from './common-operators';
 import type { Pattern } from './samlang-pattern';
 
+import { Long } from 'samlang-core-utils';
+
 interface BaseExpression extends Node {
   /** Identity of the object used for pattern matching. */
   readonly __type__: string;
@@ -203,12 +205,12 @@ export const EXPRESSION_FALSE = (range: Range): LiteralExpression => ({
   literal: FALSE,
 });
 
-export const EXPRESSION_INT = (range: Range, value: bigint): LiteralExpression => ({
+export const EXPRESSION_INT = (range: Range, value: number | Long): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
   type: intType,
   precedence: 0,
-  literal: intLiteralOf(value),
+  literal: intLiteralOf(typeof value === 'number' ? Long.fromInt(value) : value),
 });
 
 export const EXPRESSION_STRING = (range: Range, value: string): LiteralExpression => ({

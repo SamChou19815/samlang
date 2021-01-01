@@ -51,7 +51,7 @@ class MidIRLoweringManager {
           MIR_OP(
             '+',
             this.lowerHIRExpressionToMIRExpression(expression.expression),
-            MIR_CONST(BigInt(expression.index * 8))
+            MIR_CONST(expression.index * 8)
           )
         );
       case 'HighIRBinaryExpression':
@@ -131,14 +131,14 @@ class MidIRLoweringManager {
         statements.push(
           MIR_CALL_FUNCTION(
             ENCODED_FUNCTION_NAME_MALLOC,
-            [MIR_CONST(BigInt(statement.expressionList.length * 8))],
+            [MIR_CONST(statement.expressionList.length * 8)],
             structTemporaryName
           )
         );
         statement.expressionList.forEach((subExpression, index) => {
           statements.push(
             MIR_MOVE_IMMUTABLE_MEM(
-              MIR_IMMUTABLE_MEM(MIR_OP('+', structTemporary, MIR_CONST(BigInt(index * 8)))),
+              MIR_IMMUTABLE_MEM(MIR_OP('+', structTemporary, MIR_CONST(index * 8))),
               this.lowerHIRExpressionToMIRExpression(subExpression)
             )
           );

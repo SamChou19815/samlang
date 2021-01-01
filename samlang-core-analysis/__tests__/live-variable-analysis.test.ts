@@ -37,6 +37,7 @@ import {
   ASM_LABEL,
   ASM_COMMENT,
 } from 'samlang-core-ast/asm-instructions';
+import { Long } from 'samlang-core-utils';
 
 const analyze = (
   instructions: readonly AssemblyInstruction[],
@@ -49,7 +50,7 @@ const analyze = (
 it('analyzeLiveVariablesAtTheEndOfEachInstruction test 1', () => {
   expect(
     analyze([
-      /* 00 */ ASM_MOVE_CONST_TO_REG(ASM_REG('x'), BigInt(100000000000)),
+      /* 00 */ ASM_MOVE_CONST_TO_REG(ASM_REG('x'), Long.fromString('100000000000')),
       /* 01 */ ASM_CMP_CONST_OR_REG(ASM_REG('x'), ASM_CONST(2)),
       /* 02 */ ASM_JUMP('jle', 'true'),
       /* 03 */ ASM_CALL(ASM_NAME('f')),

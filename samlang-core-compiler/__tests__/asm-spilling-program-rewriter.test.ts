@@ -26,6 +26,7 @@ import {
   ASM_COMMENT,
   assemblyInstructionToString,
 } from 'samlang-core-ast/asm-instructions';
+import { Long } from 'samlang-core-utils';
 
 const rewrite = (
   instructions: readonly AssemblyInstruction[],
@@ -52,7 +53,7 @@ it('AssemblySpillingProgramWriter test 1', () => {
   expect(
     rewrite(
       [
-        ASM_MOVE_CONST_TO_REG(REG, BigInt(10000000000)),
+        ASM_MOVE_CONST_TO_REG(REG, Long.fromString('10000000000')),
         ASM_MOVE_REG(REG, FORTY_TWO),
         ASM_MOVE_REG(REG, REG),
         ASM_MOVE_REG(REG, MEM_COMPLEX),
@@ -116,7 +117,7 @@ it('AssemblySpillingProgramWriter test 2', () => {
   expect(
     rewrite(
       [
-        ASM_MOVE_CONST_TO_REG(REG, BigInt(10000000000)),
+        ASM_MOVE_CONST_TO_REG(REG, Long.fromString('10000000000')),
         ASM_MOVE_REG(REG, FORTY_TWO),
         ASM_MOVE_MEM(MEM_COMPLEX, REG),
         ASM_LEA(REG, MEM_COMPLEX),

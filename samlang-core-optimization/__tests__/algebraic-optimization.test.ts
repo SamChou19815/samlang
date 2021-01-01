@@ -24,10 +24,7 @@ const optimizeAndDumpToString = (statements: readonly MidIRStatement[]): string 
 it('optimizeIRWithConstantFolding normal tests', () => {
   expect(
     optimizeAndDumpToString([
-      MIR_MOVE_TEMP(
-        MIR_TEMP('a'),
-        MIR_IMMUTABLE_MEM(MIR_OP('+', MIR_NAME('foo'), MIR_CONST(BigInt(3))))
-      ),
+      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_IMMUTABLE_MEM(MIR_OP('+', MIR_NAME('foo'), MIR_CONST(3)))),
     ])
   ).toBe('a = MEM[(foo + 3)];');
 

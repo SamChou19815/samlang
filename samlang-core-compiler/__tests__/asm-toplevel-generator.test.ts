@@ -337,7 +337,7 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 7', () => {
             MIR_CALL_FUNCTION('factorial', [MIR_OP('-', MIR_TEMP('n'), MIR_ONE)], 'dummy'),
             MIR_RETURN(MIR_OP('*', MIR_TEMP('n'), MIR_TEMP('dummy'))),
             MIR_LABEL('LABEL_RETURN_1'),
-            MIR_RETURN(MIR_CONST(BigInt(1))),
+            MIR_RETURN(MIR_ONE),
           ],
         },
       ],
