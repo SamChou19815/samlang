@@ -92,6 +92,9 @@ hi
 3
 OK
 
+#./out/test.if-else-same-variable-name
+3
+
 #./out/test.if-else-unreachable-1
 success
 
