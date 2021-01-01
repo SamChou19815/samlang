@@ -58,6 +58,7 @@ const highIRModuleToJSString = (
 
 it('compile hello world to JS integration test', () => {
   const hirModule: HighIRModule = {
+    typeDefinitions: [],
     functions: [
       {
         name: '_module_Test_class_Main_function_main',
@@ -117,6 +118,7 @@ const setupHIRIntegration = (hirModule: HighIRModule): string => {
 it('confirm samlang & equivalent JS have same print output', () => {
   expect(
     setupHIRIntegration({
+      typeDefinitions: [],
       functions: [
         {
           name: '_compiled_program_main',
@@ -141,6 +143,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
 
   expect(
     setupHIRIntegration({
+      typeDefinitions: [],
       functions: [
         {
           name: '_compiled_program_main',
@@ -154,6 +157,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
 
   expect(
     setupHIRIntegration({
+      typeDefinitions: [],
       functions: [
         {
           name: 'sum',
@@ -197,6 +201,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
 
   expect(
     setupHIRIntegration({
+      typeDefinitions: [],
       functions: [
         {
           name: 'MeaningOfLifeConditional',
@@ -256,6 +261,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
 
   expect(
     setupHIRIntegration({
+      typeDefinitions: [],
       functions: [
         {
           name: 'dummyStudent',
@@ -311,6 +317,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
 
   expect(() =>
     setupHIRIntegration({
+      typeDefinitions: [],
       functions: [
         {
           name: 'sum',

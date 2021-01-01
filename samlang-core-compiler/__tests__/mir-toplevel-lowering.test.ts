@@ -5,7 +5,9 @@ import { midIRCompilationUnitToString } from 'samlang-core-ast/mir-nodes';
 
 it('compileHighIrModuleToMidIRCompilationUnit dummy source test', () => {
   expect(
-    midIRCompilationUnitToString(compileHighIrModuleToMidIRCompilationUnit({ functions: [] }))
+    midIRCompilationUnitToString(
+      compileHighIrModuleToMidIRCompilationUnit({ typeDefinitions: [], functions: [] })
+    )
   ).toBe('\n');
 });
 
@@ -13,6 +15,7 @@ it('compileHighIrModuleToMidIRCompilationUnit full integration test', () => {
   expect(
     midIRCompilationUnitToString(
       compileHighIrModuleToMidIRCompilationUnit({
+        typeDefinitions: [],
         functions: [
           {
             name: '_module__class_Main_function_main',

@@ -7,15 +7,72 @@ import {
   encodeFunctionNameGlobally,
   encodeMainFunctionName,
 } from 'samlang-core-ast/common-names';
-import { ModuleReference, unitType, functionType, Sources } from 'samlang-core-ast/common-nodes';
+import {
+  ModuleReference,
+  Sources,
+  Type,
+  unitType,
+  intType,
+  tupleType,
+  identifierType,
+  functionType,
+} from 'samlang-core-ast/common-nodes';
 import { HIR_FUNCTION_CALL, HIR_NAME, HIR_RETURN } from 'samlang-core-ast/hir-expressions';
-import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
-import type { ClassMemberDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { HashMap, hashMapOf } from 'samlang-core-utils';
+import type {
+  HighIRTypeDefinition,
+  HighIRFunction,
+  HighIRModule,
+} from 'samlang-core-ast/hir-toplevel';
+import type {
+  ClassMemberDefinition,
+  SamlangModule,
+  TypeDefinition,
+} from 'samlang-core-ast/samlang-toplevel';
+import { checkNotNull, HashMap, hashMapOf } from 'samlang-core-utils';
+
+const genericTypeErasure = (type: Type, genericTypes: ReadonlySet<string>): Type => {
+  // istanbul ignore next
+  if (type.type === 'UndecidedType') throw new Error('Unreachable!');
+  switch (type.type) {
+    case 'PrimitiveType':
+      return type;
+    case 'TupleType':
+      return tupleType(type.mappings.map((it) => genericTypeErasure(it, genericTypes)));
+    case 'IdentifierType': {
+      if (type.typeArguments.length === 0 && genericTypes.has(type.identifier)) return intType;
+      return identifierType(type.moduleReference, type.identifier);
+    }
+    case 'FunctionType':
+      return functionType(
+        type.argumentTypes.map((it) => genericTypeErasure(it, genericTypes)),
+        genericTypeErasure(type.returnType, genericTypes)
+      );
+  }
+};
+
+const compileTypeDefinition = (
+  moduleReference: ModuleReference,
+  identifier: string,
+  typeParameters: ReadonlySet<string>,
+  typeDefinition: TypeDefinition
+): HighIRTypeDefinition | null => {
+  if (typeDefinition.type === 'variant') {
+    // LLVM can't understand variant, so the second type is always int.
+    // We will rely on bitcast during LLVM translation.
+    return { moduleReference, identifier, mappings: [intType, intType] };
+  }
+  if (typeDefinition.names.length === 0) return null;
+  return {
+    moduleReference,
+    identifier,
+    mappings: typeDefinition.names.map((name) =>
+      genericTypeErasure(checkNotNull(typeDefinition.mappings[name]).type, typeParameters)
+    ),
+  };
+};
 
 const compileFunction = (
   moduleReference: ModuleReference,
-  samlangModule: SamlangModule,
   className: string,
   classMember: ClassMemberDefinition
 ): readonly HighIRFunction[] => {
@@ -36,15 +93,23 @@ const compileFunction = (
 const compileSamlangSourcesToHighIRSources = (
   sources: Sources<SamlangModule>
 ): Sources<HighIRModule> => {
+  const compiledTypeDefinitions: HighIRTypeDefinition[] = [];
   const compiledFunctions: HighIRFunction[] = [];
   sources.forEach((samlangModule, moduleReference) =>
-    samlangModule.classes.map(({ name: className, members }) =>
+    samlangModule.classes.map(({ name: className, typeParameters, typeDefinition, members }) => {
+      const compiledTypeDefinition = compileTypeDefinition(
+        moduleReference,
+        className,
+        new Set(typeParameters),
+        typeDefinition
+      );
+      if (compiledTypeDefinition != null) compiledTypeDefinitions.push(compiledTypeDefinition);
       members.forEach((member) =>
-        compileFunction(moduleReference, samlangModule, className, member).forEach((it) =>
+        compileFunction(moduleReference, className, member).forEach((it) =>
           compiledFunctions.push(performTailRecursiveCallTransformationOnHighIRFunction(it))
         )
-      )
-    )
+      );
+    })
   );
 
   const irSources: HashMap<ModuleReference, HighIRModule> = hashMapOf();
@@ -67,8 +132,9 @@ const compileSamlangSourcesToHighIRSources = (
         ],
       },
     ];
-    const usedNames = analyzeUsedFunctionNames({ functions: allFunctions });
+    const usedNames = analyzeUsedFunctionNames(allFunctions);
     irSources.set(moduleReference, {
+      typeDefinitions: compiledTypeDefinitions,
       functions: allFunctions.filter((it) => usedNames.has(it.name)),
     });
   });
