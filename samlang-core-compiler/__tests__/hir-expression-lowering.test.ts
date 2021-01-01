@@ -63,19 +63,13 @@ const expectCorrectlyLowered = (
     expression = HIR_ZERO,
   }: Partial<ReturnType<typeof lowerSamlangExpression>>
 ): void => {
-  const serialize = (json: unknown): string =>
-    JSON.stringify(json, (_, value) => (typeof value === 'bigint' ? value.toString() : value), 4);
   expect(
-    serialize(
-      lowerSamlangExpression(ModuleReference.ROOT, 'ENCODED_FUNCTION_NAME', samlangExpression)
-    )
-  ).toEqual(
-    serialize({
-      statements,
-      expression,
-      syntheticFunctions,
-    })
-  );
+    lowerSamlangExpression(ModuleReference.ROOT, 'ENCODED_FUNCTION_NAME', samlangExpression)
+  ).toEqual({
+    statements,
+    expression,
+    syntheticFunctions,
+  });
 };
 
 it('Literal lowering works.', () => {
