@@ -165,6 +165,26 @@
       "dependencyChain": [
         "samlang-core-utils"
       ]
+    },
+    "samlang-dummy": {
+      "workspaceLocation": "samlang-dummy",
+      "dependencyChain": [
+        "samlang-core-utils",
+        "samlang-core-ast",
+        "samlang-core-analysis",
+        "samlang-core-optimization",
+        "samlang-core-compiler",
+        "samlang-core-errors",
+        "samlang-core-parser-generated",
+        "samlang-core-parser",
+        "samlang-core-printer",
+        "samlang-core-checker",
+        "samlang-core-services",
+        "@dev-sam/samlang-cli",
+        "samlang-core-interpreter",
+        "@dev-sam/samlang-demo",
+        "samlang-dummy"
+      ]
     }
   },
   "topologicallyOrdered": [
@@ -182,6 +202,7 @@
     "@dev-sam/samlang-cli",
     "samlang-core-interpreter",
     "samlang-core-integration-tests",
-    "@dev-sam/samlang-demo"
+    "@dev-sam/samlang-demo",
+    "samlang-dummy"
   ]
 }

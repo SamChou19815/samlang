@@ -3,7 +3,8 @@
   "workspaces": [
     "samlang-cli",
     "samlang-core-*",
-    "samlang-demo"
+    "samlang-demo",
+    "samlang-dummy"
   ],
   "scripts": {
     "lint": "eslint . --cache",
@@ -11,8 +12,8 @@
     "format:generatedDTS": "prettier --write samlang-core-parser-generated/*.d.ts",
     "format:check": "prettier --check '**/*.ts'",
     "codegen": "yarn bundle && ./samlang-dev format",
-    "compile": "./bin/monorail compile",
-    "bundle": "./bin/monorail bundle",
+    "compile": "yarn workspace samlang-dummy compile",
+    "bundle": "yarn workspaces foreach run bundle",
     "test": "jest --coverage",
     "test:single": "jest -t",
     "test:integration": "ts-node-script scripts/compile-repository.ts",
