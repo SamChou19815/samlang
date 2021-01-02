@@ -14,6 +14,14 @@ import { MUL, MINUS, EQ } from 'samlang-core-ast/common-operators';
 import { HIR_WHILE_TRUE, HIR_FUNCTION_CALL, HIR_NAME } from 'samlang-core-ast/hir-expressions';
 import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import {
+  HIR_INT_TYPE,
+  HIR_ANY_TYPE,
+  HIR_IDENTIFIER_TYPE,
+  HIR_POINTER_TYPE,
+  HIR_STRUCT_TYPE,
+  HIR_FUNCTION_TYPE,
+} from 'samlang-core-ast/hir-types';
+import {
   EXPRESSION_INT,
   EXPRESSION_VARIABLE,
   EXPRESSION_THIS,
@@ -203,7 +211,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
               type: functionType(
                 [
                   tupleType([
-                    identifierType(ModuleReference.ROOT, 'T', [intType]),
+                    identifierType(ModuleReference.ROOT, 'A', [intType]),
                     identifierType(ModuleReference.ROOT, 'T'),
                   ]),
                 ],
@@ -220,20 +228,22 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
   const expectedCompiledModule: HighIRModule = {
     typeDefinitions: [
       {
-        moduleReference: ModuleReference.ROOT,
-        identifier: 'Class1',
-        mappings: [intType],
+        identifier: '_Class1',
+        mappings: [HIR_INT_TYPE],
       },
       {
-        moduleReference: ModuleReference.ROOT,
-        identifier: 'Class2',
-        mappings: [intType, intType],
+        identifier: '_Class2',
+        mappings: [HIR_INT_TYPE, HIR_ANY_TYPE],
       },
       {
-        moduleReference: ModuleReference.ROOT,
-        identifier: 'Class3',
+        identifier: '_Class3',
         mappings: [
-          functionType([tupleType([identifierType(ModuleReference.ROOT, 'T'), intType])], intType),
+          HIR_POINTER_TYPE(
+            HIR_FUNCTION_TYPE(
+              [HIR_POINTER_TYPE(HIR_STRUCT_TYPE([HIR_IDENTIFIER_TYPE('_A'), HIR_ANY_TYPE]))],
+              HIR_INT_TYPE
+            )
+          ),
         ],
       },
     ],

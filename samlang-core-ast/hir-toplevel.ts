@@ -1,10 +1,9 @@
-import type { ModuleReference, Type } from './common-nodes';
 import type { HighIRStatement } from './hir-expressions';
+import type { HighIRType } from './hir-types';
 
 export interface HighIRTypeDefinition {
-  readonly moduleReference: ModuleReference;
   readonly identifier: string;
-  readonly mappings: readonly Type[];
+  readonly mappings: readonly HighIRType[];
 }
 
 export interface HighIRFunction {
