@@ -1,5 +1,5 @@
 import type { IROperator } from './common-operators';
-import { HighIRType, HIR_INT_TYPE, HIR_POINTER_TYPE } from './hir-types';
+import { HighIRType, HIR_INT_TYPE, HIR_STRING_TYPE } from './hir-types';
 
 import { Long } from 'samlang-core-utils';
 
@@ -117,7 +117,7 @@ export const HIR_INT = (value: number | Long): HighIRIntLiteralExpression => ({
 
 export const HIR_STRING = (value: string): HighIRStringLiteralExpression => ({
   __type__: 'HighIRStringLiteralExpression',
-  type: HIR_POINTER_TYPE(HIR_INT_TYPE),
+  type: HIR_STRING_TYPE,
   value,
 });
 

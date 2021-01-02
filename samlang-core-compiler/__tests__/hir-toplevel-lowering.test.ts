@@ -17,7 +17,6 @@ import {
   HIR_INT_TYPE,
   HIR_ANY_TYPE,
   HIR_IDENTIFIER_TYPE,
-  HIR_POINTER_TYPE,
   HIR_STRUCT_TYPE,
   HIR_FUNCTION_TYPE,
   HIR_VOID_TYPE,
@@ -239,11 +238,9 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
       {
         identifier: '_Class3',
         mappings: [
-          HIR_POINTER_TYPE(
-            HIR_FUNCTION_TYPE(
-              [HIR_POINTER_TYPE(HIR_STRUCT_TYPE([HIR_IDENTIFIER_TYPE('_A'), HIR_ANY_TYPE]))],
-              HIR_INT_TYPE
-            )
+          HIR_FUNCTION_TYPE(
+            [HIR_STRUCT_TYPE([HIR_IDENTIFIER_TYPE('_A'), HIR_ANY_TYPE])],
+            HIR_INT_TYPE
           ),
         ],
       },
@@ -258,7 +255,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
               '_module__class_Class1_function_infiniteLoop',
-              HIR_POINTER_TYPE(HIR_FUNCTION_TYPE([], HIR_INT_TYPE))
+              HIR_FUNCTION_TYPE([], HIR_INT_TYPE)
             ),
             functionArguments: [],
             returnCollector: '_t0',
@@ -281,7 +278,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
               '_module__class_Main_function_main',
-              HIR_POINTER_TYPE(HIR_FUNCTION_TYPE([], HIR_VOID_TYPE))
+              HIR_FUNCTION_TYPE([], HIR_VOID_TYPE)
             ),
             functionArguments: [],
           }),

@@ -33,7 +33,6 @@ import {
   HIR_INT_TYPE,
   HIR_ANY_TYPE,
   HIR_VOID_TYPE,
-  HIR_POINTER_TYPE,
   HIR_STRUCT_TYPE,
   HIR_FUNCTION_TYPE,
   HIR_STRING_TYPE,
@@ -327,7 +326,7 @@ class HighIRExpressionLoweringManager {
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME(
             ENCODED_FUNCTION_NAME_THROW,
-            HIR_POINTER_TYPE(HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_VOID_TYPE))
+            HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_VOID_TYPE)
           ),
           functionArguments: [result.expression],
           returnCollector: this.allocateTemporaryVariable(),
@@ -364,7 +363,7 @@ class HighIRExpressionLoweringManager {
     }
     loweredStatements.push(
       HIR_FUNCTION_CALL({
-        functionExpression: HIR_NAME(functionName, HIR_POINTER_TYPE(calledFunctionType)),
+        functionExpression: HIR_NAME(functionName, calledFunctionType),
         functionArguments: [loweredArgument],
         returnCollector,
       })
@@ -409,14 +408,12 @@ class HighIRExpressionLoweringManager {
               (functionExpression.expression.type as IdentifierType).identifier,
               functionExpression.methodName
             ),
-            HIR_POINTER_TYPE(
-              HIR_FUNCTION_TYPE(
-                [
-                  this.lowerType(functionExpression.expression.type),
-                  ...expression.functionArguments.map((it) => this.lowerType(it.type)),
-                ],
-                this.lowerType(expression.type)
-              )
+            HIR_FUNCTION_TYPE(
+              [
+                this.lowerType(functionExpression.expression.type),
+                ...expression.functionArguments.map((it) => this.lowerType(it.type)),
+              ],
+              this.lowerType(expression.type)
             )
           ),
           functionArguments: [
@@ -583,9 +580,7 @@ class HighIRExpressionLoweringManager {
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
               ENCODED_FUNCTION_NAME_STRING_CONCAT,
-              HIR_POINTER_TYPE(
-                HIR_FUNCTION_TYPE([HIR_STRING_TYPE, HIR_STRING_TYPE], HIR_STRING_TYPE)
-              )
+              HIR_FUNCTION_TYPE([HIR_STRING_TYPE, HIR_STRING_TYPE], HIR_STRING_TYPE)
             ),
             functionArguments: [loweredE1, loweredE2],
             returnCollector,
@@ -754,7 +749,7 @@ class HighIRExpressionLoweringManager {
       const expressionList = captured.map(([variableName, variableType]) =>
         HIR_VARIABLE(variableName, this.lowerType(variableType))
       );
-      const contextType = HIR_POINTER_TYPE(HIR_STRUCT_TYPE(expressionList.map((it) => it.type)));
+      const contextType = HIR_STRUCT_TYPE(expressionList.map((it) => it.type));
       loweredStatements.push(
         HIR_STRUCT_INITIALIZATION({
           structVariableName: contextName,
@@ -768,10 +763,7 @@ class HighIRExpressionLoweringManager {
       HIR_STRUCT_INITIALIZATION({
         structVariableName,
         type: HIR_CLOSURE_TYPE,
-        expressionList: [
-          HIR_NAME(syntheticLambda.name, HIR_POINTER_TYPE(syntheticLambda.type)),
-          context,
-        ],
+        expressionList: [HIR_NAME(syntheticLambda.name, syntheticLambda.type), context],
       })
     );
     return {
@@ -783,8 +775,8 @@ class HighIRExpressionLoweringManager {
   private createSyntheticLambdaFunction(expression: LambdaExpression): HighIRFunction {
     const loweringResult = this.lower(expression.body);
     const lambdaStatements: HighIRStatement[] = [];
-    const contextType = HIR_POINTER_TYPE(
-      HIR_STRUCT_TYPE(Object.values(expression.captured).map((it) => this.lowerType(it)))
+    const contextType = HIR_STRUCT_TYPE(
+      Object.values(expression.captured).map((it) => this.lowerType(it))
     );
     Object.entries(expression.captured).forEach(([variable, variableType], index) => {
       lambdaStatements.push(
