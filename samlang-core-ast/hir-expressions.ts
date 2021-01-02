@@ -1,11 +1,11 @@
-import { intType, stringType, Type } from './common-nodes';
 import type { IROperator } from './common-operators';
+import { HighIRType, HIR_INT_TYPE, HIR_POINTER_TYPE } from './hir-types';
 
 import { Long } from 'samlang-core-utils';
 
 interface BaseHighIRExpression {
   readonly __type__: string;
-  readonly type: Type;
+  readonly type: HighIRType;
 }
 
 export interface HighIRIntLiteralExpression extends BaseHighIRExpression {
@@ -80,12 +80,14 @@ export interface HighIRVariantPatternToStatement {
 export interface HighIRLetDefinitionStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRLetDefinitionStatement';
   readonly name: string;
+  readonly type: HighIRType;
   readonly assignedExpression: HighIRExpression;
 }
 
 export interface HighIRStructInitializationStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRStructInitializationStatement';
   readonly structVariableName: string;
+  readonly type: HighIRType;
   readonly expressionList: readonly HighIRExpression[];
 }
 
@@ -109,26 +111,26 @@ type ConstructorArgumentObject<E extends BaseHighIRExpression | BaseHighIRStatem
 
 export const HIR_INT = (value: number | Long): HighIRIntLiteralExpression => ({
   __type__: 'HighIRIntLiteralExpression',
-  type: intType,
+  type: HIR_INT_TYPE,
   value: typeof value === 'number' ? Long.fromInt(value) : value,
 });
 
 export const HIR_STRING = (value: string): HighIRStringLiteralExpression => ({
   __type__: 'HighIRStringLiteralExpression',
-  type: stringType,
+  type: HIR_POINTER_TYPE(HIR_INT_TYPE),
   value,
 });
 
 export const HIR_ZERO: HighIRIntLiteralExpression = HIR_INT(0);
 export const HIR_ONE: HighIRIntLiteralExpression = HIR_INT(1);
 
-export const HIR_NAME = (name: string, type: Type): HighIRNameExpression => ({
+export const HIR_NAME = (name: string, type: HighIRType): HighIRNameExpression => ({
   __type__: 'HighIRNameExpression',
   type,
   name,
 });
 
-export const HIR_VARIABLE = (name: string, type: Type): HighIRVariableExpression => ({
+export const HIR_VARIABLE = (name: string, type: HighIRType): HighIRVariableExpression => ({
   __type__: 'HighIRVariableExpression',
   type,
   name,
@@ -151,7 +153,7 @@ export const HIR_BINARY = ({
   e2,
 }: Omit<ConstructorArgumentObject<HighIRBinaryExpression>, 'type'>): HighIRBinaryExpression => ({
   __type__: 'HighIRBinaryExpression',
-  type: intType,
+  type: HIR_INT_TYPE,
   operator,
   e1,
   e2,
@@ -188,19 +190,23 @@ export const HIR_WHILE_TRUE = (
 
 export const HIR_LET = ({
   name,
+  type,
   assignedExpression,
 }: ConstructorArgumentObject<HighIRLetDefinitionStatement>): HighIRLetDefinitionStatement => ({
   __type__: 'HighIRLetDefinitionStatement',
   name,
+  type,
   assignedExpression,
 });
 
 export const HIR_STRUCT_INITIALIZATION = ({
   structVariableName,
+  type,
   expressionList,
 }: ConstructorArgumentObject<HighIRStructInitializationStatement>): HighIRStructInitializationStatement => ({
   __type__: 'HighIRStructInitializationStatement',
   structVariableName,
+  type,
   expressionList,
 });
 
