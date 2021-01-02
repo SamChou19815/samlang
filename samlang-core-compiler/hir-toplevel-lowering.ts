@@ -1,5 +1,6 @@
 import lowerSamlangExpression from './hir-expression-lowering';
 import performTailRecursiveCallTransformationOnHighIRFunction from './hir-tail-recursion-transformation-hir';
+import lowerSamlangType from './hir-types-lowering';
 
 import analyzeUsedFunctionNames from 'samlang-core-analysis/used-name-analysis';
 import {
@@ -7,48 +8,20 @@ import {
   encodeFunctionNameGlobally,
   encodeMainFunctionName,
 } from 'samlang-core-ast/common-names';
-import {
-  ModuleReference,
-  Sources,
-  Type,
-  unitType,
-  intType,
-  tupleType,
-  identifierType,
-  functionType,
-} from 'samlang-core-ast/common-nodes';
+import { ModuleReference, Sources, unitType, functionType } from 'samlang-core-ast/common-nodes';
 import { HIR_FUNCTION_CALL, HIR_NAME, HIR_RETURN } from 'samlang-core-ast/hir-expressions';
 import type {
   HighIRTypeDefinition,
   HighIRFunction,
   HighIRModule,
 } from 'samlang-core-ast/hir-toplevel';
+import { HIR_ANY_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import type {
   ClassMemberDefinition,
   SamlangModule,
   TypeDefinition,
 } from 'samlang-core-ast/samlang-toplevel';
 import { checkNotNull, HashMap, hashMapOf } from 'samlang-core-utils';
-
-const genericTypeErasure = (type: Type, genericTypes: ReadonlySet<string>): Type => {
-  // istanbul ignore next
-  if (type.type === 'UndecidedType') throw new Error('Unreachable!');
-  switch (type.type) {
-    case 'PrimitiveType':
-      return type;
-    case 'TupleType':
-      return tupleType(type.mappings.map((it) => genericTypeErasure(it, genericTypes)));
-    case 'IdentifierType': {
-      if (type.typeArguments.length === 0 && genericTypes.has(type.identifier)) return intType;
-      return identifierType(type.moduleReference, type.identifier);
-    }
-    case 'FunctionType':
-      return functionType(
-        type.argumentTypes.map((it) => genericTypeErasure(it, genericTypes)),
-        genericTypeErasure(type.returnType, genericTypes)
-      );
-  }
-};
 
 const compileTypeDefinition = (
   moduleReference: ModuleReference,
@@ -57,16 +30,18 @@ const compileTypeDefinition = (
   typeDefinition: TypeDefinition
 ): HighIRTypeDefinition | null => {
   if (typeDefinition.type === 'variant') {
-    // LLVM can't understand variant, so the second type is always int.
+    // LLVM can't understand variant, so the second type is always any.
     // We will rely on bitcast during LLVM translation.
-    return { moduleReference, identifier, mappings: [intType, intType] };
+    return {
+      identifier: `${moduleReference.parts.join('_')}_${identifier}`,
+      mappings: [HIR_INT_TYPE, HIR_ANY_TYPE],
+    };
   }
   if (typeDefinition.names.length === 0) return null;
   return {
-    moduleReference,
-    identifier,
+    identifier: `${moduleReference.parts.join('_')}_${identifier}`,
     mappings: typeDefinition.names.map((name) =>
-      genericTypeErasure(checkNotNull(typeDefinition.mappings[name]).type, typeParameters)
+      lowerSamlangType(checkNotNull(typeDefinition.mappings[name]).type, typeParameters)
     ),
   };
 };
