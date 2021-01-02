@@ -40,7 +40,7 @@ jobs:
           restore-keys: "yarn-berry-"
       - name: Yarn Install
         run: yarn install --immutable
-      - name: Build
+      - name: Compile
         run: yarn compile
   validate:
     runs-on: ubuntu-latest
@@ -56,8 +56,6 @@ jobs:
           restore-keys: "yarn-berry-"
       - name: Yarn Install
         run: yarn install --immutable
-      - name: Check Codegen
-        run: yarn codegen
       - name: Check changed
         run: if [[ `git status --porcelain` ]]; then exit 1; fi
   test:
