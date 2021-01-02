@@ -54,6 +54,12 @@ export const HIR_FUNCTION_TYPE = (
   returnType: HighIRType
 ): HighIRFunctionType => ({ __type__: 'FunctionType', argumentTypes, returnType });
 
+export const HIR_STRING_TYPE: HighIRPointerType = HIR_POINTER_TYPE(HIR_INT_TYPE);
+
+export const HIR_CLOSURE_TYPE: HighIRPointerType = HIR_POINTER_TYPE(
+  HIR_STRUCT_TYPE([HIR_ANY_TYPE, HIR_ANY_TYPE])
+);
+
 export const prettyPrintHighIRType = (type: HighIRType): string => {
   switch (type.__type__) {
     case 'PrimitiveType':

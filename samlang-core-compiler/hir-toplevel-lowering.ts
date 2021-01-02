@@ -8,14 +8,21 @@ import {
   encodeFunctionNameGlobally,
   encodeMainFunctionName,
 } from 'samlang-core-ast/common-names';
-import { ModuleReference, Sources, unitType, functionType } from 'samlang-core-ast/common-nodes';
+import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import { HIR_FUNCTION_CALL, HIR_NAME, HIR_RETURN } from 'samlang-core-ast/hir-expressions';
 import type {
   HighIRTypeDefinition,
   HighIRFunction,
   HighIRModule,
 } from 'samlang-core-ast/hir-toplevel';
-import { HIR_ANY_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
+import {
+  HIR_INT_TYPE,
+  HIR_ANY_TYPE,
+  HIR_VOID_TYPE,
+  HIR_POINTER_TYPE,
+  HIR_FUNCTION_TYPE,
+  HIR_IDENTIFIER_TYPE,
+} from 'samlang-core-ast/hir-types';
 import type {
   ClassMemberDefinition,
   SamlangModule,
@@ -49,10 +56,21 @@ const compileTypeDefinition = (
 const compileFunction = (
   moduleReference: ModuleReference,
   className: string,
+  classTypeParameters: readonly string[],
   classMember: ClassMemberDefinition
 ): readonly HighIRFunction[] => {
   const encodedName = encodeFunctionNameGlobally(moduleReference, className, classMember.name);
-  const bodyLoweringResult = lowerSamlangExpression(moduleReference, encodedName, classMember.body);
+  const typeParametersSet = new Set(
+    classMember.isMethod
+      ? [...classTypeParameters, ...classMember.typeParameters]
+      : classMember.typeParameters
+  );
+  const bodyLoweringResult = lowerSamlangExpression(
+    moduleReference,
+    encodedName,
+    typeParametersSet,
+    classMember.body
+  );
   const parameters = classMember.parameters.map(({ name }) => name);
   const parametersWithThis = classMember.isMethod ? ['_this', ...parameters] : parameters;
   const statements = bodyLoweringResult.statements;
@@ -61,7 +79,23 @@ const compileFunction = (
   const body = hasReturn ? [...statements, HIR_RETURN(bodyLoweringResult.expression)] : statements;
   return [
     ...bodyLoweringResult.syntheticFunctions,
-    { name: encodedName, parameters: parametersWithThis, hasReturn, body },
+    {
+      name: encodedName,
+      parameters: parametersWithThis,
+      hasReturn,
+      type: HIR_FUNCTION_TYPE(
+        classMember.isMethod
+          ? [
+              HIR_IDENTIFIER_TYPE(`${moduleReference.parts.join('_')}_${className}`),
+              ...classMember.parameters.map(({ type }) =>
+                lowerSamlangType(type, typeParametersSet)
+              ),
+            ]
+          : classMember.parameters.map(({ type }) => lowerSamlangType(type, typeParametersSet)),
+        lowerSamlangType(returnType, typeParametersSet)
+      ),
+      body,
+    },
   ];
 };
 
@@ -80,7 +114,7 @@ const compileSamlangSourcesToHighIRSources = (
       );
       if (compiledTypeDefinition != null) compiledTypeDefinitions.push(compiledTypeDefinition);
       members.forEach((member) =>
-        compileFunction(moduleReference, className, member).forEach((it) =>
+        compileFunction(moduleReference, className, typeParameters, member).forEach((it) =>
           compiledFunctions.push(performTailRecursiveCallTransformationOnHighIRFunction(it))
         )
       );
@@ -99,9 +133,13 @@ const compileSamlangSourcesToHighIRSources = (
         name: ENCODED_COMPILED_PROGRAM_MAIN,
         parameters: [],
         hasReturn: false,
+        type: HIR_FUNCTION_TYPE([], HIR_VOID_TYPE),
         body: [
           HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME(entryPointFunctionName, functionType([], unitType)),
+            functionExpression: HIR_NAME(
+              entryPointFunctionName,
+              HIR_POINTER_TYPE(HIR_FUNCTION_TYPE([], HIR_VOID_TYPE))
+            ),
             functionArguments: [],
           }),
         ],

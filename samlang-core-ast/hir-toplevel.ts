@@ -1,5 +1,5 @@
 import type { HighIRStatement } from './hir-expressions';
-import type { HighIRType } from './hir-types';
+import type { HighIRType, HighIRFunctionType } from './hir-types';
 
 export interface HighIRTypeDefinition {
   readonly identifier: string;
@@ -10,6 +10,7 @@ export interface HighIRFunction {
   readonly name: string;
   readonly parameters: readonly string[];
   readonly hasReturn: boolean;
+  readonly type: HighIRFunctionType;
   readonly body: readonly HighIRStatement[];
 }
 

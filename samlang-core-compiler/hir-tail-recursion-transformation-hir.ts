@@ -39,11 +39,16 @@ const performTailRecursiveCallTransformationOnLinearStatementsWithFinalReturn = 
   return [
     ...statements.slice(0, statements.length - 2),
     ...functionArguments.map((functionArgument, i) =>
-      HIR_LET({ name: `_tailRecTransformationArgument${i}`, assignedExpression: functionArgument })
+      HIR_LET({
+        name: `_tailRecTransformationArgument${i}`,
+        type: functionArgument.type,
+        assignedExpression: functionArgument,
+      })
     ),
     ...highIRFunction.parameters.map((name, i) =>
       HIR_LET({
         name,
+        type: checkNotNull(functionArguments[i]).type,
         assignedExpression: HIR_VARIABLE(
           `_tailRecTransformationArgument${i}`,
           checkNotNull(functionArguments[i]).type
@@ -74,11 +79,16 @@ const performTailRecursiveCallTransformationOnLinearStatementsWithoutFinalReturn
   return [
     ...statements.slice(0, statements.length - 2),
     ...functionArguments.map((functionArgument, i) =>
-      HIR_LET({ name: `_tailRecTransformationArgument${i}`, assignedExpression: functionArgument })
+      HIR_LET({
+        name: `_tailRecTransformationArgument${i}`,
+        type: functionArgument.type,
+        assignedExpression: functionArgument,
+      })
     ),
     ...highIRFunction.parameters.map((name, i) =>
       HIR_LET({
         name,
+        type: checkNotNull(functionArguments[i]).type,
         assignedExpression: HIR_VARIABLE(
           `_tailRecTransformationArgument${i}`,
           checkNotNull(functionArguments[i]).type

@@ -20,6 +20,7 @@ import {
   HIR_POINTER_TYPE,
   HIR_STRUCT_TYPE,
   HIR_FUNCTION_TYPE,
+  HIR_VOID_TYPE,
 } from 'samlang-core-ast/hir-types';
 import {
   EXPRESSION_INT,
@@ -252,11 +253,12 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
         name: '_module__class_Main_function_main',
         parameters: [],
         hasReturn: false,
+        type: HIR_FUNCTION_TYPE([], HIR_VOID_TYPE),
         body: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
               '_module__class_Class1_function_infiniteLoop',
-              functionType([], intType)
+              HIR_POINTER_TYPE(HIR_FUNCTION_TYPE([], HIR_INT_TYPE))
             ),
             functionArguments: [],
             returnCollector: '_t0',
@@ -267,17 +269,19 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
         name: '_module__class_Class1_function_infiniteLoop',
         parameters: [],
         hasReturn: false,
+        type: HIR_FUNCTION_TYPE([], HIR_VOID_TYPE),
         body: [HIR_WHILE_TRUE([])],
       },
       {
         name: '_compiled_program_main',
         parameters: [],
         hasReturn: false,
+        type: HIR_FUNCTION_TYPE([], HIR_VOID_TYPE),
         body: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
               '_module__class_Main_function_main',
-              functionType([], unitType)
+              HIR_POINTER_TYPE(HIR_FUNCTION_TYPE([], HIR_VOID_TYPE))
             ),
             functionArguments: [],
           }),
