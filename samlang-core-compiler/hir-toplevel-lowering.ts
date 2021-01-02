@@ -19,7 +19,6 @@ import {
   HIR_INT_TYPE,
   HIR_ANY_TYPE,
   HIR_VOID_TYPE,
-  HIR_POINTER_TYPE,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
 } from 'samlang-core-ast/hir-types';
@@ -138,7 +137,7 @@ const compileSamlangSourcesToHighIRSources = (
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
               entryPointFunctionName,
-              HIR_POINTER_TYPE(HIR_FUNCTION_TYPE([], HIR_VOID_TYPE))
+              HIR_FUNCTION_TYPE([], HIR_VOID_TYPE)
             ),
             functionArguments: [],
           }),

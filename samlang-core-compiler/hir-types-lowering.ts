@@ -1,11 +1,11 @@
 import type { Type } from 'samlang-core-ast/common-nodes';
 import {
   HighIRType,
-  HIR_INT_TYPE,
   HIR_VOID_TYPE,
+  HIR_INT_TYPE,
+  HIR_STRING_TYPE,
   HIR_ANY_TYPE,
   HIR_IDENTIFIER_TYPE,
-  HIR_POINTER_TYPE,
   HIR_STRUCT_TYPE,
   HIR_FUNCTION_TYPE,
 } from 'samlang-core-ast/hir-types';
@@ -22,7 +22,7 @@ const lowerSamlangType = (type: Type, genericTypes: ReadonlySet<string>): HighIR
         case 'unit':
           return HIR_VOID_TYPE;
         case 'string':
-          return HIR_POINTER_TYPE(HIR_INT_TYPE);
+          return HIR_STRING_TYPE;
       }
     // eslint-disable-next-line no-fallthrough
     case 'IdentifierType': {
@@ -30,15 +30,11 @@ const lowerSamlangType = (type: Type, genericTypes: ReadonlySet<string>): HighIR
       return HIR_IDENTIFIER_TYPE(`${type.moduleReference.parts.join('_')}_${type.identifier}`);
     }
     case 'TupleType':
-      return HIR_POINTER_TYPE(
-        HIR_STRUCT_TYPE(type.mappings.map((it) => lowerSamlangType(it, genericTypes)))
-      );
+      return HIR_STRUCT_TYPE(type.mappings.map((it) => lowerSamlangType(it, genericTypes)));
     case 'FunctionType':
-      return HIR_POINTER_TYPE(
-        HIR_FUNCTION_TYPE(
-          type.argumentTypes.map((it) => lowerSamlangType(it, genericTypes)),
-          lowerSamlangType(type.returnType, genericTypes)
-        )
+      return HIR_FUNCTION_TYPE(
+        type.argumentTypes.map((it) => lowerSamlangType(it, genericTypes)),
+        lowerSamlangType(type.returnType, genericTypes)
       );
   }
 };

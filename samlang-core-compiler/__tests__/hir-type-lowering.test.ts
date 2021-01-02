@@ -14,8 +14,8 @@ import {
   HIR_INT_TYPE,
   HIR_VOID_TYPE,
   HIR_ANY_TYPE,
+  HIR_STRING_TYPE,
   HIR_IDENTIFIER_TYPE,
-  HIR_POINTER_TYPE,
   HIR_STRUCT_TYPE,
   HIR_FUNCTION_TYPE,
 } from 'samlang-core-ast/hir-types';
@@ -24,7 +24,7 @@ it('lowerSamlangType works', () => {
   expect(lowerSamlangType(intType, new Set())).toEqual(HIR_INT_TYPE);
   expect(lowerSamlangType(boolType, new Set())).toEqual(HIR_INT_TYPE);
   expect(lowerSamlangType(unitType, new Set())).toEqual(HIR_VOID_TYPE);
-  expect(lowerSamlangType(stringType, new Set([]))).toEqual(HIR_POINTER_TYPE(HIR_INT_TYPE));
+  expect(lowerSamlangType(stringType, new Set([]))).toEqual(HIR_STRING_TYPE);
 
   expect(lowerSamlangType(identifierType(ModuleReference.ROOT, 'A'), new Set())).toEqual(
     HIR_IDENTIFIER_TYPE('_A')
@@ -34,10 +34,10 @@ it('lowerSamlangType works', () => {
   );
 
   expect(lowerSamlangType(tupleType([intType, boolType]), new Set())).toEqual(
-    HIR_POINTER_TYPE(HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_INT_TYPE]))
+    HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_INT_TYPE])
   );
   expect(lowerSamlangType(functionType([intType, boolType], unitType), new Set())).toEqual(
-    HIR_POINTER_TYPE(HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_VOID_TYPE))
+    HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_VOID_TYPE)
   );
 
   expect(() => lowerSamlangType({ type: 'UndecidedType', index: 0 }, new Set())).toThrow();
