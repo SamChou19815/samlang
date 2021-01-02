@@ -58,18 +58,6 @@ export type UndecidedType = { readonly type: 'UndecidedType'; readonly index: nu
 
 export type Type = PrimitiveType | IdentifierType | TupleType | FunctionType | UndecidedType;
 
-export type HighIRType =
-  | 'void'
-  | 'int'
-  | 'unknown' // placeholder type for generics and variant data
-  | { readonly __type__: 'PointerType'; readonly boxed: HighIRType }
-  | { readonly __type__: 'StructType'; readonly mappings: readonly HighIRType[] }
-  | {
-      readonly __type__: 'FunctionType';
-      readonly argumentTypes: readonly HighIRType[];
-      readonly returnTypes: HighIRType;
-    };
-
 export const unitType: PrimitiveType = { type: 'PrimitiveType', name: 'unit' };
 export const boolType: PrimitiveType = { type: 'PrimitiveType', name: 'bool' };
 export const intType: PrimitiveType = { type: 'PrimitiveType', name: 'int' };
