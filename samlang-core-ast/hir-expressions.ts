@@ -1,5 +1,5 @@
 import type { IROperator } from './common-operators';
-import { HighIRType, HIR_INT_TYPE, HIR_STRING_TYPE } from './hir-types';
+import { HighIRType, HIR_INT_TYPE, HIR_STRING_TYPE, prettyPrintHighIRType } from './hir-types';
 
 import { Long } from 'samlang-core-utils';
 
@@ -214,3 +214,88 @@ export const HIR_RETURN = (expression: HighIRExpression): HighIRReturnStatement 
   __type__: 'HighIRReturnStatement',
   expression,
 });
+
+const debugPrintHighIRExpression = (expression: HighIRExpression): string => {
+  switch (expression.__type__) {
+    case 'HighIRIntLiteralExpression':
+      return expression.value.toString();
+    case 'HighIRStringLiteralExpression':
+      return `'${expression.value}'`;
+    case 'HighIRVariableExpression':
+      return `(${expression.name}: ${prettyPrintHighIRType(expression.type)})`;
+    case 'HighIRNameExpression':
+      return expression.name;
+    case 'HighIRIndexAccessExpression':
+      return `(${debugPrintHighIRExpression(expression.expression)}[${
+        expression.index
+      }]: ${prettyPrintHighIRType(expression.type)})`;
+    case 'HighIRBinaryExpression':
+      return `(${debugPrintHighIRExpression(expression.e1)} ${
+        expression.operator
+      } ${debugPrintHighIRExpression(expression.e2)})`;
+  }
+};
+
+export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel = 0): string => {
+  const collector: string[] = [];
+  let level = startLevel;
+
+  const printer = (s: HighIRStatement) => {
+    switch (s.__type__) {
+      case 'HighIRFunctionCallStatement': {
+        const functionString = debugPrintHighIRExpression(s.functionExpression);
+        const argumentString = s.functionArguments.map(debugPrintHighIRExpression).join(', ');
+        collector.push(
+          '  '.repeat(level),
+          `let ${s.returnCollector ?? '_'} = ${functionString}(${argumentString});\n`
+        );
+        break;
+      }
+      case 'HighIRIfElseStatement':
+        collector.push(
+          '  '.repeat(level),
+          `if ${debugPrintHighIRExpression(s.booleanExpression)} {\n`
+        );
+        level += 1;
+        s.s1.forEach(printer);
+        level -= 1;
+        collector.push('  '.repeat(level), `} else {\n`);
+        level += 1;
+        s.s2.forEach(printer);
+        level -= 1;
+        collector.push('  '.repeat(level), `}\n`);
+        break;
+      case 'HighIRWhileTrueStatement':
+        collector.push('  '.repeat(level), `while true {\n`);
+        level += 1;
+        s.statements.forEach(printer);
+        level -= 1;
+        collector.push('  '.repeat(level), `}\n`);
+        break;
+      case 'HighIRLetDefinitionStatement':
+        collector.push(
+          '  '.repeat(level),
+          `let ${s.name}: ${prettyPrintHighIRType(s.type)} = ${debugPrintHighIRExpression(
+            s.assignedExpression
+          )};\n`
+        );
+        break;
+      case 'HighIRStructInitializationStatement': {
+        const expressionString = s.expressionList.map(debugPrintHighIRExpression).join(', ');
+        collector.push(
+          '  '.repeat(level),
+          `let ${s.structVariableName}: ${prettyPrintHighIRType(s.type)} = [${expressionString}];\n`
+        );
+        break;
+      }
+      case 'HighIRReturnStatement': {
+        collector.push('  '.repeat(level), `return ${debugPrintHighIRExpression(s.expression)};\n`);
+        break;
+      }
+    }
+  };
+
+  printer(statement);
+
+  return collector.join('').trimEnd();
+};
