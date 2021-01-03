@@ -1,6 +1,5 @@
 import eliminateUselessEndingMoveForHighIRStatements from '../hir-eliminate-useless-ending-moves';
 
-import { functionType, intType } from 'samlang-core-ast/common-nodes';
 import {
   HIR_ZERO,
   HIR_ONE,
@@ -11,7 +10,9 @@ import {
   HIR_LET,
   HIR_NAME,
   HIR_STRUCT_INITIALIZATION,
+  debugPrintHighIRStatement,
 } from 'samlang-core-ast/hir-expressions';
+import { HIR_INT_TYPE, HIR_STRUCT_TYPE, HIR_FUNCTION_TYPE } from 'samlang-core-ast/hir-types';
 
 it('eliminateUselessEndingMoveForHighIRStatements empty array test', () => {
   expect(eliminateUselessEndingMoveForHighIRStatements([])).toEqual([]);
@@ -20,14 +21,36 @@ it('eliminateUselessEndingMoveForHighIRStatements empty array test', () => {
 it('eliminateUselessEndingMoveForHighIRStatements useless linear sequence test', () => {
   expect(
     eliminateUselessEndingMoveForHighIRStatements([
-      HIR_LET({ name: 'one_const_value', assignedExpression: HIR_ONE }),
-      HIR_LET({ name: 'one2', assignedExpression: HIR_VARIABLE('one_const_value', intType) }),
-      HIR_LET({ name: 'one1', assignedExpression: HIR_VARIABLE('one2', intType) }),
-      HIR_LET({ name: 'one', assignedExpression: HIR_VARIABLE('one1', intType) }),
-      HIR_LET({ name: '_t1', assignedExpression: HIR_VARIABLE('one', intType) }),
-      HIR_STRUCT_INITIALIZATION({ structVariableName: 'useless', expressionList: [] }),
+      HIR_LET({ name: 'one_const_value', type: HIR_INT_TYPE, assignedExpression: HIR_ONE }),
+      HIR_LET({
+        name: 'one2',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('one_const_value', HIR_INT_TYPE),
+      }),
+      HIR_LET({
+        name: 'one1',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('one2', HIR_INT_TYPE),
+      }),
+      HIR_LET({
+        name: 'one',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('one1', HIR_INT_TYPE),
+      }),
+      HIR_LET({
+        name: '_t1',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('one', HIR_INT_TYPE),
+      }),
+      HIR_STRUCT_INITIALIZATION({
+        structVariableName: 'useless',
+        type: HIR_STRUCT_TYPE([]),
+        expressionList: [],
+      }),
     ])
-  ).toEqual([]);
+      .map((it) => debugPrintHighIRStatement(it))
+      .join('\n')
+  ).toBe('');
 });
 
 it('eliminateUselessEndingMoveForHighIRStatements if-else test 1', () => {
@@ -36,92 +59,115 @@ it('eliminateUselessEndingMoveForHighIRStatements if-else test 1', () => {
       HIR_IF_ELSE({
         booleanExpression: HIR_BINARY({
           operator: '==',
-          e1: HIR_VARIABLE('n', intType),
+          e1: HIR_VARIABLE('n', HIR_INT_TYPE),
           e2: HIR_ZERO,
         }),
         s1: [
-          HIR_LET({ name: 'one_const_value', assignedExpression: HIR_ONE }),
-          HIR_LET({ name: 'one2', assignedExpression: HIR_VARIABLE('one_const_value', intType) }),
-          HIR_LET({ name: 'one1', assignedExpression: HIR_VARIABLE('one2', intType) }),
-          HIR_LET({ name: 'one', assignedExpression: HIR_VARIABLE('one1', intType) }),
-          HIR_LET({ name: '_t1', assignedExpression: HIR_VARIABLE('one', intType) }),
+          HIR_LET({ name: 'one_const_value', type: HIR_INT_TYPE, assignedExpression: HIR_ONE }),
+          HIR_LET({
+            name: 'one2',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('one_const_value', HIR_INT_TYPE),
+          }),
+          HIR_LET({
+            name: 'one1',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('one2', HIR_INT_TYPE),
+          }),
+          HIR_LET({
+            name: 'one',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('one1', HIR_INT_TYPE),
+          }),
+          HIR_LET({
+            name: '_t1',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('one', HIR_INT_TYPE),
+          }),
         ],
         s2: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
               '_module__class_Class1_function_factorial',
-              functionType([intType], intType)
+              HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
             ),
             functionArguments: [
               HIR_BINARY({
                 operator: '-',
-                e1: HIR_VARIABLE('n', intType),
+                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
                 e2: HIR_ONE,
               }),
               HIR_BINARY({
                 operator: '*',
-                e1: HIR_VARIABLE('n', intType),
-                e2: HIR_VARIABLE('acc', intType),
+                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+                e2: HIR_VARIABLE('acc', HIR_INT_TYPE),
               }),
             ],
             returnCollector: '_t0',
           }),
-          HIR_LET({ name: '_t1', assignedExpression: HIR_VARIABLE('_t0', intType) }),
+          HIR_LET({
+            name: '_t1',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('_t0', HIR_INT_TYPE),
+          }),
         ],
       }),
     ])
-  ).toEqual([
-    HIR_IF_ELSE({
-      booleanExpression: HIR_BINARY({
-        operator: '==',
-        e1: HIR_VARIABLE('n', intType),
-        e2: HIR_ZERO,
-      }),
-      s1: [],
-      s2: [
-        HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME(
-            '_module__class_Class1_function_factorial',
-            functionType([intType], intType)
-          ),
-          functionArguments: [
-            HIR_BINARY({
-              operator: '-',
-              e1: HIR_VARIABLE('n', intType),
-              e2: HIR_ONE,
-            }),
-            HIR_BINARY({
-              operator: '*',
-              e1: HIR_VARIABLE('n', intType),
-              e2: HIR_VARIABLE('acc', intType),
-            }),
-          ],
-          returnCollector: '_t0',
-        }),
-      ],
-    }),
-  ]);
+      .map((it) => debugPrintHighIRStatement(it))
+      .join('\n')
+  ).toBe(`if ((n: int) == 0) {
+} else {
+  let _t0 = _module__class_Class1_function_factorial(((n: int) - 1), ((n: int) * (acc: int)));
+}`);
 });
 
 it('eliminateUselessEndingMoveForHighIRStatements if-else test 2', () => {
   expect(
     eliminateUselessEndingMoveForHighIRStatements([
-      HIR_STRUCT_INITIALIZATION({ structVariableName: 'useless', expressionList: [] }),
+      HIR_STRUCT_INITIALIZATION({
+        structVariableName: 'useless',
+        type: HIR_STRUCT_TYPE([]),
+        expressionList: [],
+      }),
       HIR_IF_ELSE({
         booleanExpression: HIR_BINARY({
           operator: '==',
-          e1: HIR_VARIABLE('n', intType),
+          e1: HIR_VARIABLE('n', HIR_INT_TYPE),
           e2: HIR_ZERO,
         }),
         s1: [
-          HIR_LET({ name: 'one_const_value', assignedExpression: HIR_ONE }),
-          HIR_LET({ name: 'one2', assignedExpression: HIR_VARIABLE('one_const_value', intType) }),
-          HIR_LET({ name: 'one1', assignedExpression: HIR_VARIABLE('one2', intType) }),
-          HIR_LET({ name: 'one', assignedExpression: HIR_VARIABLE('one1', intType) }),
-          HIR_LET({ name: '_t1', assignedExpression: HIR_VARIABLE('one', intType) }),
+          HIR_LET({ name: 'one_const_value', type: HIR_INT_TYPE, assignedExpression: HIR_ONE }),
+          HIR_LET({
+            name: 'one2',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('one_const_value', HIR_INT_TYPE),
+          }),
+          HIR_LET({
+            name: 'one1',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('one2', HIR_INT_TYPE),
+          }),
+          HIR_LET({
+            name: 'one',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('one1', HIR_INT_TYPE),
+          }),
+          HIR_LET({
+            name: '_t1',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('one', HIR_INT_TYPE),
+          }),
         ],
-        s2: [HIR_LET({ name: '_t1', assignedExpression: HIR_VARIABLE('_t0', intType) })],
+        s2: [
+          HIR_LET({
+            name: '_t1',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('_t0', HIR_INT_TYPE),
+          }),
+        ],
       }),
     ])
-  ).toEqual([]);
+      .map((it) => debugPrintHighIRStatement(it))
+      .join('\n')
+  ).toBe('');
 });

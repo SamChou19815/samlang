@@ -1,7 +1,8 @@
 import coalesceMoveAndReturnForHighIRStatements from '../hir-move-return-coalescing';
 
-import { intType, functionType } from 'samlang-core-ast/common-nodes';
 import {
+  HighIRStatement,
+  debugPrintHighIRStatement,
   HIR_ZERO,
   HIR_ONE,
   HIR_VARIABLE,
@@ -14,120 +15,168 @@ import {
   HIR_RETURN,
   HIR_STRUCT_INITIALIZATION,
 } from 'samlang-core-ast/hir-expressions';
+import { HIR_INT_TYPE, HIR_STRUCT_TYPE, HIR_FUNCTION_TYPE } from 'samlang-core-ast/hir-types';
+
+const assertCoalesceMoveAndReturnWithForHighIRStatements = (
+  statements: readonly HighIRStatement[],
+  expected: string | null
+) => {
+  const result = coalesceMoveAndReturnForHighIRStatements(statements);
+  if (expected == null) {
+    expect(result).toBeNull();
+  } else expect(result?.map((it) => debugPrintHighIRStatement(it)).join('\n')).toBe(expected);
+};
 
 it('coalesceMoveAndReturnWithForHighIRStatements empty array test', () => {
-  expect(coalesceMoveAndReturnForHighIRStatements([])).toBeNull();
+  assertCoalesceMoveAndReturnWithForHighIRStatements([], null);
 });
 
 it('coalesceMoveAndReturnWithForHighIRStatements not end with return test', () => {
-  expect(coalesceMoveAndReturnForHighIRStatements([HIR_WHILE_TRUE([])])).toBeNull();
+  assertCoalesceMoveAndReturnWithForHighIRStatements([HIR_WHILE_TRUE([])], null);
 });
 
 it('coalesceMoveAndReturnWithForHighIRStatements not end with return variable test', () => {
-  expect(coalesceMoveAndReturnForHighIRStatements([HIR_RETURN(HIR_ZERO)])).toBeNull();
+  assertCoalesceMoveAndReturnWithForHighIRStatements([HIR_RETURN(HIR_ZERO)], null);
 });
 
 it('coalesceMoveAndReturnWithForHighIRStatements linear sequence test', () => {
-  expect(
-    coalesceMoveAndReturnForHighIRStatements([
+  assertCoalesceMoveAndReturnWithForHighIRStatements(
+    [
       HIR_WHILE_TRUE([]),
-      HIR_LET({ name: 'one_const_value', assignedExpression: HIR_ONE }),
-      HIR_LET({ name: 'one2', assignedExpression: HIR_VARIABLE('one_const_value', intType) }),
-      HIR_LET({ name: 'one1', assignedExpression: HIR_VARIABLE('one2', intType) }),
-      HIR_LET({ name: 'one', assignedExpression: HIR_VARIABLE('one1', intType) }),
-      HIR_LET({ name: '_t1', assignedExpression: HIR_VARIABLE('one', intType) }),
-      HIR_STRUCT_INITIALIZATION({ structVariableName: 'useless', expressionList: [] }),
-      HIR_RETURN(HIR_VARIABLE('_t1', intType)),
-    ])
-  ).toEqual([HIR_WHILE_TRUE([]), HIR_RETURN(HIR_ONE)]);
+      HIR_LET({ name: 'one_const_value', type: HIR_INT_TYPE, assignedExpression: HIR_ONE }),
+      HIR_LET({
+        name: 'one2',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('one_const_value', HIR_INT_TYPE),
+      }),
+      HIR_LET({
+        name: 'one1',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('one2', HIR_INT_TYPE),
+      }),
+      HIR_LET({
+        name: 'one',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('one1', HIR_INT_TYPE),
+      }),
+      HIR_LET({
+        name: '_t1',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('one', HIR_INT_TYPE),
+      }),
+      HIR_STRUCT_INITIALIZATION({
+        structVariableName: 'useless',
+        type: HIR_STRUCT_TYPE([]),
+        expressionList: [],
+      }),
+      HIR_RETURN(HIR_VARIABLE('_t1', HIR_INT_TYPE)),
+    ],
+    'while true {\n}\nreturn 1;'
+  );
 });
 
 it('coalesceMoveAndReturnWithForHighIRStatements failed linear sequence test', () => {
-  expect(
-    coalesceMoveAndReturnForHighIRStatements([
+  assertCoalesceMoveAndReturnWithForHighIRStatements(
+    [
       HIR_WHILE_TRUE([]),
-      HIR_LET({ name: 'one_const_value', assignedExpression: HIR_ONE }),
-      HIR_LET({ name: 'one2', assignedExpression: HIR_VARIABLE('one_const_value', intType) }),
-      HIR_LET({ name: 'one1', assignedExpression: HIR_VARIABLE('one2', intType) }),
-      HIR_LET({ name: 'one', assignedExpression: HIR_VARIABLE('one1', intType) }),
-      HIR_LET({ name: '_t1', assignedExpression: HIR_VARIABLE('one', intType) }),
-      HIR_LET({ name: 'garbage', assignedExpression: HIR_VARIABLE('garbage', intType) }),
-      HIR_RETURN(HIR_VARIABLE('_t1', intType)),
-    ])
-  ).toBeNull();
+      HIR_LET({ name: 'one_const_value', type: HIR_INT_TYPE, assignedExpression: HIR_ONE }),
+      HIR_LET({
+        name: 'one2',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('one_const_value', HIR_INT_TYPE),
+      }),
+      HIR_LET({
+        name: 'one1',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('one2', HIR_INT_TYPE),
+      }),
+      HIR_LET({
+        name: 'one',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('one1', HIR_INT_TYPE),
+      }),
+      HIR_LET({
+        name: '_t1',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('one', HIR_INT_TYPE),
+      }),
+      HIR_LET({
+        name: 'garbage',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('garbage', HIR_INT_TYPE),
+      }),
+      HIR_RETURN(HIR_VARIABLE('_t1', HIR_INT_TYPE)),
+    ],
+    null
+  );
 });
 
 it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
-  expect(
-    coalesceMoveAndReturnForHighIRStatements([
+  assertCoalesceMoveAndReturnWithForHighIRStatements(
+    [
       HIR_IF_ELSE({
         booleanExpression: HIR_BINARY({
           operator: '==',
-          e1: HIR_VARIABLE('n', intType),
+          e1: HIR_VARIABLE('n', HIR_INT_TYPE),
           e2: HIR_ZERO,
         }),
         s1: [
-          HIR_LET({ name: 'one_const_value', assignedExpression: HIR_ONE }),
-          HIR_LET({ name: 'one2', assignedExpression: HIR_VARIABLE('one_const_value', intType) }),
-          HIR_LET({ name: 'one1', assignedExpression: HIR_VARIABLE('one2', intType) }),
-          HIR_LET({ name: 'one', assignedExpression: HIR_VARIABLE('one1', intType) }),
-          HIR_LET({ name: '_t1', assignedExpression: HIR_VARIABLE('one', intType) }),
+          HIR_LET({ name: 'one_const_value', type: HIR_INT_TYPE, assignedExpression: HIR_ONE }),
+          HIR_LET({
+            name: 'one2',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('one_const_value', HIR_INT_TYPE),
+          }),
+          HIR_LET({
+            name: 'one1',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('one2', HIR_INT_TYPE),
+          }),
+          HIR_LET({
+            name: 'one',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('one1', HIR_INT_TYPE),
+          }),
+          HIR_LET({
+            name: '_t1',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('one', HIR_INT_TYPE),
+          }),
         ],
         s2: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
               '_module__class_Class1_function_factorial',
-              functionType([intType, intType], intType)
+              HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE)
             ),
             functionArguments: [
               HIR_BINARY({
                 operator: '-',
-                e1: HIR_VARIABLE('n', intType),
+                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
                 e2: HIR_ONE,
               }),
               HIR_BINARY({
                 operator: '*',
-                e1: HIR_VARIABLE('n', intType),
-                e2: HIR_VARIABLE('acc', intType),
+                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+                e2: HIR_VARIABLE('acc', HIR_INT_TYPE),
               }),
             ],
             returnCollector: '_t0',
           }),
-          HIR_LET({ name: '_t1', assignedExpression: HIR_VARIABLE('_t0', intType) }),
+          HIR_LET({
+            name: '_t1',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('_t0', HIR_INT_TYPE),
+          }),
         ],
       }),
-      HIR_RETURN(HIR_VARIABLE('_t1', intType)),
-    ])
-  ).toEqual([
-    HIR_IF_ELSE({
-      booleanExpression: HIR_BINARY({
-        operator: '==',
-        e1: HIR_VARIABLE('n', intType),
-        e2: HIR_ZERO,
-      }),
-      s1: [HIR_RETURN(HIR_ONE)],
-      s2: [
-        HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME(
-            '_module__class_Class1_function_factorial',
-            functionType([intType, intType], intType)
-          ),
-          functionArguments: [
-            HIR_BINARY({
-              operator: '-',
-              e1: HIR_VARIABLE('n', intType),
-              e2: HIR_ONE,
-            }),
-            HIR_BINARY({
-              operator: '*',
-              e1: HIR_VARIABLE('n', intType),
-              e2: HIR_VARIABLE('acc', intType),
-            }),
-          ],
-          returnCollector: '_t0',
-        }),
-        HIR_RETURN(HIR_VARIABLE('_t0', intType)),
-      ],
-    }),
-  ]);
+      HIR_RETURN(HIR_VARIABLE('_t1', HIR_INT_TYPE)),
+    ],
+    `if ((n: int) == 0) {
+  return 1;
+} else {
+  let _t0 = _module__class_Class1_function_factorial(((n: int) - 1), ((n: int) * (acc: int)));
+  return (_t0: int);
+}`
+  );
 });
