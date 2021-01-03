@@ -1,5 +1,12 @@
-import type { HighIRStatement } from './hir-expressions';
-import type { HighIRType, HighIRFunctionType } from './hir-types';
+import { debugPrintHighIRStatement, HighIRStatement } from './hir-expressions';
+import {
+  HighIRType,
+  HighIRFunctionType,
+  prettyPrintHighIRType,
+  HIR_STRUCT_TYPE,
+} from './hir-types';
+
+import { checkNotNull } from 'samlang-core-utils';
 
 export interface HighIRTypeDefinition {
   readonly identifier: string;
@@ -18,3 +25,29 @@ export interface HighIRModule {
   readonly typeDefinitions: readonly HighIRTypeDefinition[];
   readonly functions: readonly HighIRFunction[];
 }
+
+export const debugPrintHighIRFunction = ({
+  name,
+  parameters,
+  type: { argumentTypes, returnType },
+  body: bodyStatements,
+}: HighIRFunction): string => {
+  const typedParameters = parameters
+    .map(
+      (parameter, index) =>
+        `${parameter}: ${prettyPrintHighIRType(checkNotNull(argumentTypes[index]))}`
+    )
+    .join(', ');
+  const header = `function ${name}(${typedParameters}): ${prettyPrintHighIRType(returnType)} {`;
+  const body = bodyStatements.map((it) => debugPrintHighIRStatement(it, 1)).join('\n');
+  return `${header}\n${body}\n}\n`;
+};
+
+export const debugPrintHighIRModule = ({ typeDefinitions, functions }: HighIRModule): string =>
+  [
+    ...typeDefinitions.map(
+      ({ identifier, mappings }) =>
+        `type ${identifier} = ${prettyPrintHighIRType(HIR_STRUCT_TYPE(mappings))};\n`
+    ),
+    ...functions.map((it) => debugPrintHighIRFunction(it)),
+  ].join('\n');
