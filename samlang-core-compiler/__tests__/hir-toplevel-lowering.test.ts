@@ -11,16 +11,7 @@ import {
   tupleType,
 } from 'samlang-core-ast/common-nodes';
 import { MUL, MINUS, EQ } from 'samlang-core-ast/common-operators';
-import { HIR_WHILE_TRUE, HIR_FUNCTION_CALL, HIR_NAME } from 'samlang-core-ast/hir-expressions';
-import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
-import {
-  HIR_INT_TYPE,
-  HIR_ANY_TYPE,
-  HIR_IDENTIFIER_TYPE,
-  HIR_STRUCT_TYPE,
-  HIR_FUNCTION_TYPE,
-  HIR_VOID_TYPE,
-} from 'samlang-core-ast/hir-types';
+import { debugPrintHighIRModule } from 'samlang-core-ast/hir-toplevel';
 import {
   EXPRESSION_INT,
   EXPRESSION_VARIABLE,
@@ -31,7 +22,7 @@ import {
   EXPRESSION_CLASS_MEMBER,
 } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { mapOf } from 'samlang-core-utils';
+import { assertNotNull, mapOf } from 'samlang-core-utils';
 
 const THIS = EXPRESSION_THIS({
   range: Range.DUMMY,
@@ -225,71 +216,28 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
     ],
   };
 
-  const expectedCompiledModule: HighIRModule = {
-    typeDefinitions: [
-      {
-        identifier: '_Class1',
-        mappings: [HIR_INT_TYPE],
-      },
-      {
-        identifier: '_Class2',
-        mappings: [HIR_INT_TYPE, HIR_ANY_TYPE],
-      },
-      {
-        identifier: '_Class3',
-        mappings: [
-          HIR_FUNCTION_TYPE(
-            [HIR_STRUCT_TYPE([HIR_IDENTIFIER_TYPE('_A'), HIR_ANY_TYPE])],
-            HIR_INT_TYPE
-          ),
-        ],
-      },
-    ],
-    functions: [
-      {
-        name: '_module__class_Main_function_main',
-        parameters: [],
-        hasReturn: false,
-        type: HIR_FUNCTION_TYPE([], HIR_VOID_TYPE),
-        body: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME(
-              '_module__class_Class1_function_infiniteLoop',
-              HIR_FUNCTION_TYPE([], HIR_INT_TYPE)
-            ),
-            functionArguments: [],
-            returnCollector: '_t0',
-          }),
-        ],
-      },
-      {
-        name: '_module__class_Class1_function_infiniteLoop',
-        parameters: [],
-        hasReturn: false,
-        type: HIR_FUNCTION_TYPE([], HIR_VOID_TYPE),
-        body: [HIR_WHILE_TRUE([])],
-      },
-      {
-        name: '_compiled_program_main',
-        parameters: [],
-        hasReturn: false,
-        type: HIR_FUNCTION_TYPE([], HIR_VOID_TYPE),
-        body: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME(
-              '_module__class_Main_function_main',
-              HIR_FUNCTION_TYPE([], HIR_VOID_TYPE)
-            ),
-            functionArguments: [],
-          }),
-        ],
-      },
-    ],
-  };
-
   const actualCompiledModule = compileSamlangSourcesToHighIRSources(
     mapOf([ModuleReference.ROOT, sourceModule])
   ).get(ModuleReference.ROOT);
+  assertNotNull(actualCompiledModule);
 
-  expect(actualCompiledModule).toEqual(expectedCompiledModule);
+  expect(debugPrintHighIRModule(actualCompiledModule)).toEqual(`type _Class1 = (int);
+
+type _Class2 = (int, any);
+
+type _Class3 = (((_A, any)) -> int);
+
+function _module__class_Main_function_main(): void {
+  let _t0 = _module__class_Class1_function_infiniteLoop();
+}
+
+function _module__class_Class1_function_infiniteLoop(): void {
+  while true {
+  }
+}
+
+function _compiled_program_main(): void {
+  let _ = _module__class_Main_function_main();
+}
+`);
 });

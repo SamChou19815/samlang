@@ -47,7 +47,7 @@ export const HIR_FUNCTION_TYPE = (
   returnType: HighIRType
 ): HighIRFunctionType => ({ __type__: 'FunctionType', argumentTypes, returnType });
 
-export const HIR_CLOSURE_TYPE: HighIRStructType = HIR_STRUCT_TYPE([HIR_ANY_TYPE, HIR_ANY_TYPE]);
+export const HIR_CLOSURE_TYPE: HighIRIdentifierType = HIR_IDENTIFIER_TYPE('_builtin_Closure');
 
 export const prettyPrintHighIRType = (type: HighIRType): string => {
   switch (type.__type__) {
