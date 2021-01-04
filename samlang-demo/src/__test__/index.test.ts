@@ -11,7 +11,7 @@ const _builtin_intToString = (v) => String(v);
 const _builtin_throw = (v) => { throw Error(v); };
 
 const _module_Demo_class_Main_function_main = () => {
-  var _t0 = _builtin_println("hello world");
+  _builtin_println("hello world");
 };
 const _compiled_program_main = () => {
   _module_Demo_class_Main_function_main();

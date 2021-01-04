@@ -161,7 +161,7 @@ it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
                 e2: HIR_VARIABLE('acc', HIR_INT_TYPE),
               }),
             ],
-            returnCollector: '_t0',
+            returnCollector: { name: '_t0', type: HIR_INT_TYPE },
           }),
           HIR_LET({
             name: '_t1',
@@ -175,7 +175,7 @@ it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
     `if ((n: int) == 0) {
   return 1;
 } else {
-  let _t0 = _module__class_Class1_function_factorial(((n: int) - 1), ((n: int) * (acc: int)));
+  let _t0: int = _module__class_Class1_function_factorial(((n: int) - 1), ((n: int) * (acc: int)));
   return (_t0: int);
 }`
   );

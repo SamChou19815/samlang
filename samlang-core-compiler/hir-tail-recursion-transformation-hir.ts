@@ -31,7 +31,7 @@ const performTailRecursiveCallTransformationOnLinearStatementsWithFinalReturn = 
   if (
     functionExpression.__type__ !== 'HighIRNameExpression' ||
     returnStatement.expression.__type__ !== 'HighIRVariableExpression' ||
-    returnCollector !== returnStatement.expression.name ||
+    returnCollector?.name !== returnStatement.expression.name ||
     functionExpression.name !== highIRFunction.name
   ) {
     return null;

@@ -171,7 +171,7 @@ it('Unary lowering works.', () => {
       operator: '!',
       expression: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
     }),
-    'let _t0 = _builtin_throw((_this: _Dummy));\nreturn (0 ^ 1);'
+    '_builtin_throw((_this: _Dummy));\nreturn (0 ^ 1);'
   );
 
   expectCorrectlyLowered(
@@ -181,7 +181,7 @@ it('Unary lowering works.', () => {
       operator: '-',
       expression: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
     }),
-    'let _t0 = _builtin_throw((_this: _Dummy));\nreturn (0 - 0);'
+    '_builtin_throw((_this: _Dummy));\nreturn (0 - 0);'
   );
 });
 
@@ -193,7 +193,7 @@ it('FunctionCall family lowering works 1/n.', () => {
       functionName: 'intToString',
       argumentExpression: THIS,
     }),
-    'let _t0 = _builtin_intToString((_this: _Dummy));\nreturn (_t0: string);'
+    'let _t0: string = _builtin_intToString((_this: _Dummy));\nreturn (_t0: string);'
   );
 });
 
@@ -205,7 +205,7 @@ it('FunctionCall family lowering works 2/n.', () => {
       functionName: 'stringToInt',
       argumentExpression: THIS,
     }),
-    'let _t0 = _builtin_stringToInt((_this: _Dummy));\nreturn (_t0: int);'
+    'let _t0: int = _builtin_stringToInt((_this: _Dummy));\nreturn (_t0: int);'
   );
 });
 
@@ -217,7 +217,7 @@ it('FunctionCall family lowering works 3/n.', () => {
       functionName: 'println',
       argumentExpression: THIS,
     }),
-    'let _t0 = _builtin_println((_this: _Dummy));\nreturn (_t0: void);'
+    '_builtin_println((_this: _Dummy));\nreturn 0;'
   );
 });
 
@@ -238,7 +238,7 @@ it('FunctionCall family lowering works 4/n.', () => {
       }),
       functionArguments: [THIS, THIS],
     }),
-    `let _t0 = _module_ModuleModule_class_ImportedClass_function_bar((_this: _Dummy), (_this: _Dummy));
+    `let _t0: int = _module_ModuleModule_class_ImportedClass_function_bar((_this: _Dummy), (_this: _Dummy));
 return (_t0: int);`
   );
 });
@@ -256,7 +256,7 @@ it('FunctionCall family lowering works 5/n.', () => {
       }),
       functionArguments: [THIS, THIS],
     }),
-    `let _t0 = _module__class_Dummy_function_fooBar((_this: _Dummy), (_this: _Dummy), (_this: _Dummy));
+    `let _t0: int = _module__class_Dummy_function_fooBar((_this: _Dummy), (_this: _Dummy), (_this: _Dummy));
 return (_t0: int);`
   );
 });
@@ -272,9 +272,9 @@ it('FunctionCall family lowering works 6/n.', () => {
     `let _t1: _builtin_Closure = (_this: _Dummy);
 let _t2: any = ((_t1: _builtin_Closure)[1]: any);
 if ((_t2: any) == 0) {
-  let _t0 = ((_t1: _builtin_Closure)[0]: any)((_this: _Dummy), (_this: _Dummy));
+  let _t0: int = ((_t1: _builtin_Closure)[0]: any)((_this: _Dummy), (_this: _Dummy));
 } else {
-  let _t0 = ((_t1: _builtin_Closure)[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
+  let _t0: int = ((_t1: _builtin_Closure)[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
 }
 return (_t0: int);`
   );
@@ -291,9 +291,9 @@ it('FunctionCall family lowering works 7/n.', () => {
     `let _t1: _builtin_Closure = (_this: _Dummy);
 let _t2: any = ((_t1: _builtin_Closure)[1]: any);
 if ((_t2: any) == 0) {
-  let _t0 = ((_t1: _builtin_Closure)[0]: any)((_this: _Dummy), (_this: _Dummy));
+  let _t0: void = ((_t1: _builtin_Closure)[0]: any)((_this: _Dummy), (_this: _Dummy));
 } else {
-  let _t0 = ((_t1: _builtin_Closure)[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
+  let _t0: void = ((_t1: _builtin_Closure)[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
 }
 return (_t0: void);`
   );
@@ -315,7 +315,7 @@ it('String concat binary lowering works.', () => {
       e1: THIS,
       e2: THIS,
     }),
-    `let _t0 = _builtin_stringConcat((_this: _Dummy), (_this: _Dummy));
+    `let _t0: string = _builtin_stringConcat((_this: _Dummy), (_this: _Dummy));
 return (_t0: string);`
   );
 });
@@ -430,7 +430,7 @@ return (_t0: _builtin_Closure);`
 it('Panic lowering works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
-    `let _t0 = _builtin_throw((_this: _Dummy));\nreturn 0;`
+    `_builtin_throw((_this: _Dummy));\nreturn 0;`
   );
 });
 
@@ -444,12 +444,12 @@ it('IfElse lowering works.', () => {
       e2: THIS,
     }),
     `if (_this: _Dummy) {
-  let _t0 = _builtin_throw((_this: _Dummy));
-  let _t1: _Dummy = 0;
+  _builtin_throw((_this: _Dummy));
+  let _t0: _Dummy = 0;
 } else {
-  let _t1: _Dummy = (_this: _Dummy);
+  let _t0: _Dummy = (_this: _Dummy);
 }
-return (_t1: _Dummy);`
+return (_t0: _Dummy);`
   );
 });
 
@@ -482,7 +482,7 @@ if ((_t1: int) == 0) {
   let _t2: _Dummy = (_this: _Dummy);
 } else {
   if ((_t1: int) == 1) {
-    let _t3 = _builtin_throw((_this: _Dummy));
+    _builtin_throw((_this: _Dummy));
     let _t2: _Dummy = 0;
   } else {
   }

@@ -228,7 +228,7 @@ type _Class2 = (int, any);
 type _Class3 = (((_A, any)) -> int);
 
 function _module__class_Main_function_main(): void {
-  let _t0 = _module__class_Class1_function_infiniteLoop();
+  let _t0: void = _module__class_Class1_function_infiniteLoop();
 }
 
 function _module__class_Class1_function_infiniteLoop(): void {
@@ -237,7 +237,7 @@ function _module__class_Class1_function_infiniteLoop(): void {
 }
 
 function _compiled_program_main(): void {
-  let _ = _module__class_Main_function_main();
+  _module__class_Main_function_main();
 }
 `);
 });

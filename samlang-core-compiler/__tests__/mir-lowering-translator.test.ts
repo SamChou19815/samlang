@@ -1,7 +1,6 @@
 import midIRTranslateStatementsAndCollectGlobalStrings from '../mir-lowering-translator';
 import MidIRResourceAllocator from '../mir-resource-allocator';
 
-import { intType } from 'samlang-core-ast/common-nodes';
 import {
   HighIRStatement,
   HIR_INT,
@@ -19,7 +18,8 @@ import {
   HIR_ZERO,
   HIR_ONE,
 } from 'samlang-core-ast/hir-expressions';
-import { midIRStatementToString, MIR_ZERO } from 'samlang-core-ast/mir-nodes';
+import { HIR_INT_TYPE, HIR_STRING_TYPE } from 'samlang-core-ast/hir-types';
+import { midIRStatementToString } from 'samlang-core-ast/mir-nodes';
 
 const assertCorrectlyLoweredWithPreConfiguredSetup = (
   statement: HighIRStatement,
@@ -35,16 +35,16 @@ const assertCorrectlyLoweredWithPreConfiguredSetup = (
 it('midIRTranslateStatementsAndCollectGlobalStrings test', () => {
   assertCorrectlyLoweredWithPreConfiguredSetup(
     HIR_FUNCTION_CALL({
-      functionExpression: HIR_NAME('foo', intType),
-      functionArguments: [HIR_ONE, HIR_STRING('bar'), HIR_VARIABLE('baz', intType)],
-      returnCollector: 'bar',
+      functionExpression: HIR_NAME('foo', HIR_INT_TYPE),
+      functionArguments: [HIR_ONE, HIR_STRING('bar'), HIR_VARIABLE('baz', HIR_INT_TYPE)],
+      returnCollector: { name: 'bar', type: HIR_STRING_TYPE },
     }),
     `_bar = foo(1, (GLOBAL_STRING_0 + 8), _baz);`
   );
   assertCorrectlyLoweredWithPreConfiguredSetup(
     HIR_FUNCTION_CALL({
-      functionExpression: HIR_NAME('foo', intType),
-      functionArguments: [HIR_ONE, HIR_STRING('bar'), HIR_VARIABLE('baz', intType)],
+      functionExpression: HIR_NAME('foo', HIR_INT_TYPE),
+      functionArguments: [HIR_ONE, HIR_STRING('bar'), HIR_VARIABLE('baz', HIR_INT_TYPE)],
     }),
     `foo(1, (GLOBAL_STRING_0 + 8), _baz);`
   );
@@ -82,9 +82,10 @@ goto LABEL__0_PURPOSE_WHILE_TRUE_START;`
   assertCorrectlyLoweredWithPreConfiguredSetup(
     HIR_LET({
       name: 'foo',
+      type: HIR_INT_TYPE,
       assignedExpression: HIR_INDEX_ACCESS({
-        type: intType,
-        expression: HIR_VARIABLE('this', intType),
+        type: HIR_INT_TYPE,
+        expression: HIR_VARIABLE('this', HIR_INT_TYPE),
         index: 2,
       }),
     }),
@@ -94,7 +95,8 @@ goto LABEL__0_PURPOSE_WHILE_TRUE_START;`
   assertCorrectlyLoweredWithPreConfiguredSetup(
     HIR_STRUCT_INITIALIZATION({
       structVariableName: 'struct',
-      expressionList: [HIR_VARIABLE('this', intType), HIR_VARIABLE('that', intType)],
+      type: HIR_INT_TYPE,
+      expressionList: [HIR_VARIABLE('this', HIR_INT_TYPE), HIR_VARIABLE('that', HIR_INT_TYPE)],
     }),
     `_struct = _builtin_malloc(16);
 MEM[(_struct + 0)] = _this;

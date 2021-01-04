@@ -75,12 +75,12 @@ it('compile hello world to JS integration test', () => {
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('_builtin_stringConcat', HIR_VOID_TYPE),
             functionArguments: [HIR_STRING('Hello '), HIR_STRING('World!')],
-            returnCollector: '_t0',
+            returnCollector: { name: '_t0', type: HIR_STRING_TYPE },
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('_builtin_println', HIR_VOID_TYPE),
             functionArguments: [HIR_VARIABLE('_t0', HIR_VOID_TYPE)],
-            returnCollector: '_t1',
+            returnCollector: { name: '_t1', type: HIR_STRING_TYPE },
           }),
         ],
       },
@@ -137,12 +137,12 @@ it('confirm samlang & equivalent JS have same print output', () => {
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('_builtin_stringConcat', HIR_VOID_TYPE),
               functionArguments: [HIR_STRING('Hello '), HIR_STRING('World!')],
-              returnCollector: '_t0',
+              returnCollector: { name: '_t0', type: HIR_STRING_TYPE },
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('_builtin_println', HIR_VOID_TYPE),
               functionArguments: [HIR_VARIABLE('_t0', HIR_VOID_TYPE)],
-              returnCollector: '_t1',
+              returnCollector: { name: '_t1', type: HIR_STRING_TYPE },
             }),
           ],
         },
@@ -193,17 +193,17 @@ it('confirm samlang & equivalent JS have same print output', () => {
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('sum', HIR_VOID_TYPE),
               functionArguments: [HIR_INT(42), HIR_INT(7)],
-              returnCollector: '_t0',
+              returnCollector: { name: '_t0', type: HIR_INT_TYPE },
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('_builtin_intToString', HIR_VOID_TYPE),
               functionArguments: [HIR_VARIABLE('_t0', HIR_VOID_TYPE)],
-              returnCollector: '_t1',
+              returnCollector: { name: '_t1', type: HIR_INT_TYPE },
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('_builtin_println', HIR_VOID_TYPE),
               functionArguments: [HIR_VARIABLE('_t1', HIR_VOID_TYPE)],
-              returnCollector: '_t2',
+              returnCollector: { name: '_t2', type: HIR_INT_TYPE },
             }),
           ],
         },
@@ -256,17 +256,17 @@ it('confirm samlang & equivalent JS have same print output', () => {
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('sum', HIR_VOID_TYPE),
               functionArguments: [HIR_INT(42), HIR_INT(7)],
-              returnCollector: '_t0',
+              returnCollector: { name: '_t0', type: HIR_INT_TYPE },
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('MeaningOfLifeConditional', HIR_VOID_TYPE),
               functionArguments: [HIR_VARIABLE('_t0', HIR_VOID_TYPE)],
-              returnCollector: '_t1',
+              returnCollector: { name: '_t1', type: HIR_INT_TYPE },
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('_builtin_println', HIR_VOID_TYPE),
               functionArguments: [HIR_VARIABLE('_t1', HIR_VOID_TYPE)],
-              returnCollector: '_t2',
+              returnCollector: { name: '_t2', type: HIR_INT_TYPE },
             }),
           ],
         },
@@ -316,17 +316,16 @@ it('confirm samlang & equivalent JS have same print output', () => {
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('dummyStudent', HIR_VOID_TYPE),
               functionArguments: [],
-              returnCollector: '_t0',
+              returnCollector: { name: '_t0', type: HIR_VOID_TYPE },
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('getName', HIR_VOID_TYPE),
               functionArguments: [HIR_VARIABLE('_t0', HIR_VOID_TYPE)],
-              returnCollector: '_t1',
+              returnCollector: { name: '_t1', type: HIR_VOID_TYPE },
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('_builtin_println', HIR_VOID_TYPE),
               functionArguments: [HIR_VARIABLE('_t1', HIR_VOID_TYPE)],
-              returnCollector: '_t2',
             }),
           ],
         },
@@ -452,7 +451,7 @@ it('HIR statements to JS string test', () => {
         HIR_FUNCTION_CALL({
           functionArguments: [],
           functionExpression: HIR_NAME('func', HIR_VOID_TYPE),
-          returnCollector: 'val',
+          returnCollector: { name: 'val', type: HIR_STRING_TYPE },
         }),
       ])
     )
@@ -464,7 +463,7 @@ it('HIR statements to JS string test', () => {
       HIR_FUNCTION_CALL({
         functionArguments: [],
         functionExpression: HIR_NAME('func', HIR_VOID_TYPE),
-        returnCollector: 'val',
+        returnCollector: { name: 'val', type: HIR_STRING_TYPE },
       })
     )
   ).toBe('var val = func();');
@@ -481,7 +480,7 @@ it('HIR statements to JS string test', () => {
       HIR_FUNCTION_CALL({
         functionArguments: [HIR_STRING('Hello, world')],
         functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, HIR_VOID_TYPE),
-        returnCollector: 'res',
+        returnCollector: { name: 'res', type: HIR_VOID_TYPE },
       })
     )
   ).toBe(`var res = ${ENCODED_FUNCTION_NAME_PRINTLN}("Hello, world");`);
@@ -490,7 +489,7 @@ it('HIR statements to JS string test', () => {
       HIR_FUNCTION_CALL({
         functionArguments: [HIR_STRING('5')],
         functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_TO_INT, HIR_VOID_TYPE),
-        returnCollector: 'res',
+        returnCollector: { name: 'res', type: HIR_INT_TYPE },
       })
     )
   ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_TO_INT}("5");`);
@@ -499,7 +498,7 @@ it('HIR statements to JS string test', () => {
       HIR_FUNCTION_CALL({
         functionArguments: [HIR_INT(5)],
         functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_INT_TO_STRING, HIR_VOID_TYPE),
-        returnCollector: 'res',
+        returnCollector: { name: 'res', type: HIR_STRING_TYPE },
       })
     )
   ).toBe(`var res = ${ENCODED_FUNCTION_NAME_INT_TO_STRING}(5);`);
@@ -508,7 +507,7 @@ it('HIR statements to JS string test', () => {
       HIR_FUNCTION_CALL({
         functionArguments: [HIR_STRING('5'), HIR_STRING('4')],
         functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_CONCAT, HIR_VOID_TYPE),
-        returnCollector: 'res',
+        returnCollector: { name: 'res', type: HIR_STRING_TYPE },
       })
     )
   ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}("5", "4");`);
@@ -517,7 +516,7 @@ it('HIR statements to JS string test', () => {
       HIR_FUNCTION_CALL({
         functionArguments: [HIR_STRING('panik')],
         functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_THROW, HIR_VOID_TYPE),
-        returnCollector: 'panik',
+        returnCollector: { name: 'panik', type: HIR_VOID_TYPE },
       })
     )
   ).toBe(`var panik = ${ENCODED_FUNCTION_NAME_THROW}("panik");`);
