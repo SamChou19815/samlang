@@ -92,7 +92,7 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
     case 'HighIRFunctionCallStatement': {
       const segments: PrettierDocument[] = [];
       if (highIRStatement.returnCollector != null) {
-        segments.push(PRETTIER_TEXT(`var ${highIRStatement.returnCollector} = `));
+        segments.push(PRETTIER_TEXT(`var ${highIRStatement.returnCollector.name} = `));
       }
       segments.push(
         createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(

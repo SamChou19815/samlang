@@ -329,7 +329,6 @@ class HighIRExpressionLoweringManager {
             HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_VOID_TYPE)
           ),
           functionArguments: [result.expression],
-          returnCollector: this.allocateTemporaryVariable(),
         }),
       ],
       expression: HIR_ZERO,
@@ -344,21 +343,29 @@ class HighIRExpressionLoweringManager {
       expression.argumentExpression,
       loweredStatements
     );
-    const returnCollector = this.allocateTemporaryVariable();
     let functionName: string;
     let calledFunctionType: HighIRFunctionType;
+    let returnCollector:
+      | { readonly name: string; readonly type: HighIRType }
+      | undefined = undefined;
+    let finalExpression: HighIRExpression;
     switch (expression.functionName) {
       case 'intToString':
         functionName = ENCODED_FUNCTION_NAME_INT_TO_STRING;
         calledFunctionType = HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_STRING_TYPE);
+        returnCollector = { name: this.allocateTemporaryVariable(), type: HIR_STRING_TYPE };
+        finalExpression = HIR_VARIABLE(returnCollector.name, HIR_STRING_TYPE);
         break;
       case 'stringToInt':
         functionName = ENCODED_FUNCTION_NAME_STRING_TO_INT;
         calledFunctionType = HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE);
+        returnCollector = { name: this.allocateTemporaryVariable(), type: HIR_INT_TYPE };
+        finalExpression = HIR_VARIABLE(returnCollector.name, HIR_INT_TYPE);
         break;
       case 'println':
         functionName = ENCODED_FUNCTION_NAME_PRINTLN;
         calledFunctionType = HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_VOID_TYPE);
+        finalExpression = HIR_ZERO;
         break;
     }
     loweredStatements.push(
@@ -370,18 +377,15 @@ class HighIRExpressionLoweringManager {
     );
     return {
       statements: loweredStatements,
-      expression: HIR_VARIABLE(returnCollector, calledFunctionType.returnType),
+      expression: finalExpression,
     };
   }
 
   private lowerFunctionCall(expression: FunctionCallExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
     const functionExpression = expression.functionExpression;
-    // This indirection is necessary.
-    // We want to force a function call to fall into a statement.
-    // In this way, the final expression can be safely ignored,
-    // while side effect of function still preserved.
-    const returnCollector = this.allocateTemporaryVariable();
+    const loweredReturnType = this.lowerType(expression.type);
+    const returnCollectorName = this.allocateTemporaryVariable();
     let functionCall: HighIRStatement;
     switch (functionExpression.__type__) {
       case 'ClassMemberExpression':
@@ -397,7 +401,7 @@ class HighIRExpressionLoweringManager {
           functionArguments: expression.functionArguments.map((oneArgument) =>
             this.loweredAndAddStatements(oneArgument, loweredStatements)
           ),
-          returnCollector,
+          returnCollector: { name: returnCollectorName, type: loweredReturnType },
         });
         break;
       case 'MethodAccessExpression':
@@ -413,7 +417,7 @@ class HighIRExpressionLoweringManager {
                 this.lowerType(functionExpression.expression.type),
                 ...expression.functionArguments.map((it) => this.lowerType(it.type)),
               ],
-              this.lowerType(expression.type)
+              loweredReturnType
             )
           ),
           functionArguments: [
@@ -422,7 +426,7 @@ class HighIRExpressionLoweringManager {
               this.loweredAndAddStatements(oneArgument, loweredStatements)
             ),
           ],
-          returnCollector,
+          returnCollector: { name: returnCollectorName, type: loweredReturnType },
         });
         break;
       default: {
@@ -479,7 +483,7 @@ class HighIRExpressionLoweringManager {
                 index: 0,
               }),
               functionArguments: loweredFunctionArguments,
-              returnCollector,
+              returnCollector: { name: returnCollectorName, type: loweredReturnType },
             }),
           ],
           s2: [
@@ -493,7 +497,7 @@ class HighIRExpressionLoweringManager {
                 HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
                 ...loweredFunctionArguments,
               ],
-              returnCollector,
+              returnCollector: { name: returnCollectorName, type: loweredReturnType },
             }),
           ],
         });
@@ -503,7 +507,7 @@ class HighIRExpressionLoweringManager {
     loweredStatements.push(functionCall);
     return {
       statements: loweredStatements,
-      expression: HIR_VARIABLE(returnCollector, this.lowerType(expression.type)),
+      expression: HIR_VARIABLE(returnCollectorName, loweredReturnType),
     };
   }
 
@@ -575,7 +579,7 @@ class HighIRExpressionLoweringManager {
         const loweredStatements: HighIRStatement[] = [];
         const loweredE1 = this.loweredAndAddStatements(expression.e1, loweredStatements);
         const loweredE2 = this.loweredAndAddStatements(expression.e2, loweredStatements);
-        const returnCollector = this.allocateTemporaryVariable();
+        const returnCollectorName = this.allocateTemporaryVariable();
         loweredStatements.push(
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
@@ -583,12 +587,12 @@ class HighIRExpressionLoweringManager {
               HIR_FUNCTION_TYPE([HIR_STRING_TYPE, HIR_STRING_TYPE], HIR_STRING_TYPE)
             ),
             functionArguments: [loweredE1, loweredE2],
-            returnCollector,
+            returnCollector: { name: returnCollectorName, type: HIR_STRING_TYPE },
           })
         );
         return {
           statements: loweredStatements,
-          expression: HIR_VARIABLE(returnCollector, HIR_STRING_TYPE),
+          expression: HIR_VARIABLE(returnCollectorName, HIR_STRING_TYPE),
         };
       }
       default: {

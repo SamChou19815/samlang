@@ -103,7 +103,7 @@ it('eliminateUselessEndingMoveForHighIRStatements if-else test 1', () => {
                 e2: HIR_VARIABLE('acc', HIR_INT_TYPE),
               }),
             ],
-            returnCollector: '_t0',
+            returnCollector: { name: '_t0', type: HIR_INT_TYPE },
           }),
           HIR_LET({
             name: '_t1',
@@ -117,7 +117,7 @@ it('eliminateUselessEndingMoveForHighIRStatements if-else test 1', () => {
       .join('\n')
   ).toBe(`if ((n: int) == 0) {
 } else {
-  let _t0 = _module__class_Class1_function_factorial(((n: int) - 1), ((n: int) * (acc: int)));
+  let _t0: int = _module__class_Class1_function_factorial(((n: int) - 1), ((n: int) * (acc: int)));
 }`);
 });
 

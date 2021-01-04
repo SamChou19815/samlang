@@ -65,7 +65,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
               HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
             ),
             functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
-            returnCollector: 'collector',
+            returnCollector: { name: 'collector', type: HIR_INT_TYPE },
           }),
           HIR_RETURN(HIR_VARIABLE('collector', HIR_INT_TYPE)),
         ],
@@ -95,14 +95,14 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow mismatch 
               HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
             ),
             functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
-            returnCollector: 'collector',
+            returnCollector: { name: 'collector', type: HIR_INT_TYPE },
           }),
           HIR_RETURN(HIR_VARIABLE('collector', HIR_INT_TYPE)),
         ],
       })
     )
   ).toBe(`function tailRec(n: int): int {
-  let collector = tailRec1((n: int));
+  let collector: int = tailRec1((n: int));
   return (collector: int);
 }
 `);
@@ -123,14 +123,14 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow mismatch 
               HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
             ),
             functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
-            returnCollector: 'collector1',
+            returnCollector: { name: 'collector1', type: HIR_INT_TYPE },
           }),
           HIR_RETURN(HIR_VARIABLE('collector', HIR_INT_TYPE)),
         ],
       })
     )
   ).toBe(`function tailRec(n: int): int {
-  let collector1 = tailRec((n: int));
+  let collector1: int = tailRec((n: int));
   return (collector: int);
 }
 `);
@@ -154,7 +154,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
                   HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
                 ),
                 functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
-                returnCollector: 'collector',
+                returnCollector: { name: 'collector', type: HIR_INT_TYPE },
               }),
               HIR_RETURN(HIR_VARIABLE('collector', HIR_INT_TYPE)),
             ],
@@ -195,7 +195,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
                   HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
                 ),
                 functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
-                returnCollector: 'collector',
+                returnCollector: { name: 'collector', type: HIR_INT_TYPE },
               }),
               HIR_RETURN(HIR_VARIABLE('collector', HIR_INT_TYPE)),
             ],
@@ -267,7 +267,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
                           HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
                         ),
                         functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
-                        returnCollector: 'collector',
+                        returnCollector: { name: 'collector', type: HIR_INT_TYPE },
                       }),
                       HIR_RETURN(HIR_VARIABLE('collector', HIR_INT_TYPE)),
                     ],
@@ -327,7 +327,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
                           HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
                         ),
                         functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
-                        returnCollector: 'collector',
+                        returnCollector: { name: 'collector', type: HIR_INT_TYPE },
                       }),
                     ],
                     s2: [
@@ -337,7 +337,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
                           HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
                         ),
                         functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
-                        returnCollector: 'collector',
+                        returnCollector: { name: 'collector', type: HIR_INT_TYPE },
                       }),
                     ],
                   }),
@@ -356,7 +356,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
                       HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
                     ),
                     functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
-                    returnCollector: 'collector',
+                    returnCollector: { name: 'collector', type: HIR_INT_TYPE },
                   }),
                 ],
               }),
@@ -373,7 +373,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
           let _tailRecTransformationArgument0: int = (n: int);
           let n: int = (_tailRecTransformationArgument0: int);
         } else {
-          let collector = tailRec1((n: int));
+          let collector: int = tailRec1((n: int));
           return 0;
         }
       } else {

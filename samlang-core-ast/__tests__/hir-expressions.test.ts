@@ -48,7 +48,7 @@ it('debugPrintHighIRStatement works', () => {
                   index: 0,
                 }),
               ],
-              returnCollector: 'vibez',
+              returnCollector: { name: 'vibez', type: HIR_INT_TYPE },
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('h', HIR_INT_TYPE),
@@ -64,8 +64,8 @@ it('debugPrintHighIRStatement works', () => {
     return (foo: Bar);
   } else {
     let baz: (int, string) = [(0 + 0), 'meggo'];
-    let vibez = h(((d: (int, int))[0]: int));
-    let _ = h((d: int));
+    let vibez: int = h(((d: (int, int))[0]: int));
+    h((d: int));
   }
 }`);
 });
