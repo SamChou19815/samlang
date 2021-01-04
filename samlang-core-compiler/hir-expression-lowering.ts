@@ -716,7 +716,15 @@ class HighIRExpressionLoweringManager {
         e2: HIR_INT(checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).tagOrder),
       }),
       s1: checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).statements,
-      s2: [],
+      s2: [
+        HIR_FUNCTION_CALL({
+          functionExpression: HIR_NAME(
+            ENCODED_FUNCTION_NAME_THROW,
+            HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_VOID_TYPE)
+          ),
+          functionArguments: [HIR_STRING('Unreachable branch in match!')],
+        }),
+      ],
     });
     for (let i = loweredMatchingList.length - 2; i >= 0; i -= 1) {
       const { tagOrder, statements: localStatements } = checkNotNull(loweredMatchingList[i]);
