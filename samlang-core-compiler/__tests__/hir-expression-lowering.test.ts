@@ -485,6 +485,7 @@ if ((_t1: int) == 0) {
     _builtin_throw((_this: _Dummy));
     let _t2: _Dummy = 0;
   } else {
+    _builtin_throw('Unreachable branch in match!');
   }
 }
 return (_t2: _Dummy);`
