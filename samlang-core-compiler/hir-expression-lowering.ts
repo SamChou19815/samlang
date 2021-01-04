@@ -896,13 +896,6 @@ class HighIRExpressionLoweringManager {
           );
           break;
         case 'WildCardPattern':
-          loweredStatements.push(
-            HIR_LET({
-              name: this.allocateTemporaryVariable(),
-              type: this.lowerType(typeAnnotation),
-              assignedExpression: loweredAssignedExpression,
-            })
-          );
           break;
       }
     });

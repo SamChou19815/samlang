@@ -554,7 +554,6 @@ let a__depth_1__block_0: any = ((_t0: _Dummy)[0]: any);
 let _t1: _Dummy = (_this: _Dummy);
 let a__depth_1__block_0: any = ((_t1: _Dummy)[0]: any);
 let c__depth_1__block_0: any = ((_t1: _Dummy)[1]: any);
-let _t2: _Dummy = (_this: _Dummy);
 let a: void = (a__depth_1__block_0: void);
 return 0;`
   );
