@@ -62,6 +62,7 @@ export interface HighIRFunctionCallStatement extends BaseHighIRStatement {
 
 export interface HighIRIfElseStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRIfElseStatement';
+  readonly multiAssignedVariable?: string;
   readonly booleanExpression: HighIRExpression;
   readonly s1: readonly HighIRStatement[];
   readonly s2: readonly HighIRStatement[];
@@ -171,11 +172,13 @@ export const HIR_FUNCTION_CALL = ({
 });
 
 export const HIR_IF_ELSE = ({
+  multiAssignedVariable,
   booleanExpression,
   s1,
   s2,
 }: ConstructorArgumentObject<HighIRIfElseStatement>): HighIRIfElseStatement => ({
   __type__: 'HighIRIfElseStatement',
+  multiAssignedVariable,
   booleanExpression,
   s1,
   s2,
@@ -268,6 +271,9 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         s.s2.forEach(printer);
         level -= 1;
         collector.push('  '.repeat(level), `}\n`);
+        if (s.multiAssignedVariable != null) {
+          collector.push('  '.repeat(level), `// phi(${s.multiAssignedVariable})\n`);
+        }
         break;
       case 'HighIRWhileTrueStatement':
         collector.push('  '.repeat(level), `while true {\n`);

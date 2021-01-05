@@ -470,6 +470,7 @@ class HighIRExpressionLoweringManager {
         );
 
         functionCall = HIR_IF_ELSE({
+          multiAssignedVariable: returnCollectorName,
           booleanExpression: HIR_BINARY({
             operator: '==',
             e1: HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
@@ -537,6 +538,7 @@ class HighIRExpressionLoweringManager {
           statements: [
             ...e1Result.statements,
             HIR_IF_ELSE({
+              multiAssignedVariable: temp,
               booleanExpression: e1Result.expression,
               s1: [
                 ...e2Result.statements,
@@ -560,6 +562,7 @@ class HighIRExpressionLoweringManager {
           statements: [
             ...e1Result.statements,
             HIR_IF_ELSE({
+              multiAssignedVariable: temp,
               booleanExpression: e1Result.expression,
               s1: [HIR_LET({ name: temp, type: HIR_INT_TYPE, assignedExpression: HIR_ONE })],
               s2: [
@@ -626,6 +629,7 @@ class HighIRExpressionLoweringManager {
     const variableForIfElseAssign = this.allocateTemporaryVariable();
     loweredStatements.push(
       HIR_IF_ELSE({
+        multiAssignedVariable: variableForIfElseAssign,
         booleanExpression: loweredBoolExpression,
         s1: [
           ...e1LoweringResult.statements,
@@ -710,6 +714,7 @@ class HighIRExpressionLoweringManager {
     // istanbul ignore next
     if (loweredMatchingList.length < 1) throw new Error();
     let ifElse = HIR_IF_ELSE({
+      multiAssignedVariable: temporaryVariable,
       booleanExpression: HIR_BINARY({
         operator: '==',
         e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
@@ -729,6 +734,7 @@ class HighIRExpressionLoweringManager {
     for (let i = loweredMatchingList.length - 2; i >= 0; i -= 1) {
       const { tagOrder, statements: localStatements } = checkNotNull(loweredMatchingList[i]);
       ifElse = HIR_IF_ELSE({
+        multiAssignedVariable: temporaryVariable,
         booleanExpression: HIR_BINARY({
           operator: '==',
           e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
