@@ -54,23 +54,26 @@ it('analyzeUsedFunctionNames test', () => {
               functionArguments: [HIR_NAME('haha', HIR_VOID_TYPE)],
             }),
             HIR_RETURN(HIR_NAME('bar', HIR_VOID_TYPE)),
-            HIR_WHILE_TRUE([
-              HIR_IF_ELSE({
-                booleanExpression: HIR_ZERO,
-                s1: [
-                  HIR_LET({
-                    name: '',
-                    type: HIR_INT_TYPE,
-                    assignedExpression: HIR_BINARY({
-                      operator: '+',
-                      e1: HIR_NAME('foo', HIR_INT_TYPE),
-                      e2: HIR_NAME('bar', HIR_INT_TYPE),
+            HIR_WHILE_TRUE(
+              [],
+              [
+                HIR_IF_ELSE({
+                  booleanExpression: HIR_ZERO,
+                  s1: [
+                    HIR_LET({
+                      name: '',
+                      type: HIR_INT_TYPE,
+                      assignedExpression: HIR_BINARY({
+                        operator: '+',
+                        e1: HIR_NAME('foo', HIR_INT_TYPE),
+                        e2: HIR_NAME('bar', HIR_INT_TYPE),
+                      }),
                     }),
-                  }),
-                ],
-                s2: [HIR_LET({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
-              }),
-            ]),
+                  ],
+                  s2: [HIR_LET({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
+                }),
+              ]
+            ),
           ],
         },
         {

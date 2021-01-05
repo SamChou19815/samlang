@@ -190,7 +190,15 @@ const performTailRecursiveCallTransformationOnHighIRFunction = (
     : recursivelyPerformTailRecursiveCallTransformationOnStatementsWithoutFinalReturn;
   const potentialRewrittenStatements = optimizer(highIRFunction, optimizedStatements);
   if (potentialRewrittenStatements == null) return { ...highIRFunction, body: optimizedStatements };
-  return { ...highIRFunction, body: [HIR_WHILE_TRUE(potentialRewrittenStatements)] };
+  return {
+    ...highIRFunction,
+    body: [
+      HIR_WHILE_TRUE(
+        highIRFunction.parameters.map((_, i) => `_tailRecTransformationArgument${i}`),
+        potentialRewrittenStatements
+      ),
+    ],
+  };
 };
 
 export default performTailRecursiveCallTransformationOnHighIRFunction;

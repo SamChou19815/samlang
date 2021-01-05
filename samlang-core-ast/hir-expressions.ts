@@ -70,6 +70,7 @@ export interface HighIRIfElseStatement extends BaseHighIRStatement {
 
 export interface HighIRWhileTrueStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRWhileTrueStatement';
+  readonly multiAssignedVariables: readonly string[];
   readonly statements: readonly HighIRStatement[];
 }
 
@@ -185,9 +186,11 @@ export const HIR_IF_ELSE = ({
 });
 
 export const HIR_WHILE_TRUE = (
+  multiAssignedVariables: readonly string[],
   statements: readonly HighIRStatement[]
 ): HighIRWhileTrueStatement => ({
   __type__: 'HighIRWhileTrueStatement',
+  multiAssignedVariables,
   statements,
 });
 
@@ -276,6 +279,7 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         }
         break;
       case 'HighIRWhileTrueStatement':
+        collector.push('  '.repeat(level), `// phi(${s.multiAssignedVariables.join(', ')})\n`);
         collector.push('  '.repeat(level), `while true {\n`);
         level += 1;
         s.statements.forEach(printer);

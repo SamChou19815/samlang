@@ -19,47 +19,51 @@ import { HIR_INT_TYPE, HIR_STRING_TYPE, HIR_IDENTIFIER_TYPE, HIR_STRUCT_TYPE } f
 it('debugPrintHighIRStatement works', () => {
   expect(
     debugPrintHighIRStatement(
-      HIR_WHILE_TRUE([
-        HIR_IF_ELSE({
-          booleanExpression: HIR_ZERO,
-          multiAssignedVariable: 'bar',
-          s1: [
-            HIR_LET({
-              name: 'foo',
-              type: HIR_IDENTIFIER_TYPE('Bar'),
-              assignedExpression: HIR_VARIABLE('dev', HIR_IDENTIFIER_TYPE('Bar')),
-            }),
-            HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar'))),
-          ],
-          s2: [
-            HIR_STRUCT_INITIALIZATION({
-              structVariableName: 'baz',
-              type: HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_STRING_TYPE]),
-              expressionList: [
-                HIR_BINARY({ operator: '+', e1: HIR_INT(0), e2: HIR_INT(0) }),
-                HIR_STRING('meggo'),
-              ],
-            }),
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('h', HIR_INT_TYPE),
-              functionArguments: [
-                HIR_INDEX_ACCESS({
-                  type: HIR_INT_TYPE,
-                  expression: HIR_VARIABLE('d', HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_INT_TYPE])),
-                  index: 0,
-                }),
-              ],
-              returnCollector: { name: 'vibez', type: HIR_INT_TYPE },
-            }),
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('h', HIR_INT_TYPE),
-              functionArguments: [HIR_VARIABLE('d', HIR_INT_TYPE)],
-            }),
-          ],
-        }),
-      ])
+      HIR_WHILE_TRUE(
+        ['meggo', 'big', 'stresso'],
+        [
+          HIR_IF_ELSE({
+            booleanExpression: HIR_ZERO,
+            multiAssignedVariable: 'bar',
+            s1: [
+              HIR_LET({
+                name: 'foo',
+                type: HIR_IDENTIFIER_TYPE('Bar'),
+                assignedExpression: HIR_VARIABLE('dev', HIR_IDENTIFIER_TYPE('Bar')),
+              }),
+              HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar'))),
+            ],
+            s2: [
+              HIR_STRUCT_INITIALIZATION({
+                structVariableName: 'baz',
+                type: HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_STRING_TYPE]),
+                expressionList: [
+                  HIR_BINARY({ operator: '+', e1: HIR_INT(0), e2: HIR_INT(0) }),
+                  HIR_STRING('meggo'),
+                ],
+              }),
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('h', HIR_INT_TYPE),
+                functionArguments: [
+                  HIR_INDEX_ACCESS({
+                    type: HIR_INT_TYPE,
+                    expression: HIR_VARIABLE('d', HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_INT_TYPE])),
+                    index: 0,
+                  }),
+                ],
+                returnCollector: { name: 'vibez', type: HIR_INT_TYPE },
+              }),
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('h', HIR_INT_TYPE),
+                functionArguments: [HIR_VARIABLE('d', HIR_INT_TYPE)],
+              }),
+            ],
+          }),
+        ]
+      )
     )
-  ).toBe(`while true {
+  ).toBe(`// phi(meggo, big, stresso)
+while true {
   if 0 {
     let foo: Bar = (dev: Bar);
     return (foo: Bar);

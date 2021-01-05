@@ -73,7 +73,7 @@ LABEL__2_PURPOSE_IF_ELSE_END:`
   );
 
   assertCorrectlyLoweredWithPreConfiguredSetup(
-    HIR_WHILE_TRUE([HIR_RETURN(HIR_INT(2))]),
+    HIR_WHILE_TRUE([], [HIR_RETURN(HIR_INT(2))]),
     `LABEL__0_PURPOSE_WHILE_TRUE_START:
 return 2;
 goto LABEL__0_PURPOSE_WHILE_TRUE_START;`
