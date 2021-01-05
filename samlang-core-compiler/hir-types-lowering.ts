@@ -2,6 +2,7 @@ import type { Type } from 'samlang-core-ast/common-nodes';
 import {
   HighIRType,
   HIR_VOID_TYPE,
+  HIR_BOOL_TYPE,
   HIR_INT_TYPE,
   HIR_STRING_TYPE,
   HIR_ANY_TYPE,
@@ -17,6 +18,7 @@ const lowerSamlangType = (type: Type, genericTypes: ReadonlySet<string>): HighIR
     case 'PrimitiveType':
       switch (type.name) {
         case 'bool':
+          return HIR_BOOL_TYPE;
         case 'int':
           return HIR_INT_TYPE;
         case 'unit':

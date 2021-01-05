@@ -332,12 +332,12 @@ it('Short circuiting binary lowering works.', () => {
       e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
     }),
     `if 1 {
-  let _t0: int = (foo: int);
+  let _t0: bool = (foo: bool);
 } else {
-  let _t0: int = 0;
+  let _t0: bool = 0;
 }
 // phi(_t0)
-return (_t0: int);`
+return (_t0: bool);`
   );
 
   expectCorrectlyLowered(
@@ -349,12 +349,12 @@ return (_t0: int);`
       e2: EXPRESSION_FALSE(Range.DUMMY),
     }),
     `if 1 {
-  let _t0: int = 1;
+  let _t0: bool = 1;
 } else {
-  let _t0: int = 0;
+  let _t0: bool = 0;
 }
 // phi(_t0)
-return (_t0: int);`
+return (_t0: bool);`
   );
 });
 

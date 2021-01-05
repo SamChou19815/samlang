@@ -1,5 +1,11 @@
 import type { IROperator } from './common-operators';
-import { HighIRType, HIR_INT_TYPE, HIR_STRING_TYPE, prettyPrintHighIRType } from './hir-types';
+import {
+  HighIRType,
+  HIR_BOOL_TYPE,
+  HIR_INT_TYPE,
+  HIR_STRING_TYPE,
+  prettyPrintHighIRType,
+} from './hir-types';
 
 import { Long } from 'samlang-core-utils';
 
@@ -111,6 +117,18 @@ type ConstructorArgumentObject<E extends BaseHighIRExpression | BaseHighIRStatem
   '__type__' | 'precedence'
 >;
 
+export const HIR_FALSE: HighIRIntLiteralExpression = {
+  __type__: 'HighIRIntLiteralExpression',
+  type: HIR_BOOL_TYPE,
+  value: Long.ZERO,
+};
+
+export const HIR_TRUE: HighIRIntLiteralExpression = {
+  __type__: 'HighIRIntLiteralExpression',
+  type: HIR_BOOL_TYPE,
+  value: Long.ONE,
+};
+
 export const HIR_INT = (value: number | Long): HighIRIntLiteralExpression => ({
   __type__: 'HighIRIntLiteralExpression',
   type: HIR_INT_TYPE,
@@ -153,13 +171,28 @@ export const HIR_BINARY = ({
   operator,
   e1,
   e2,
-}: Omit<ConstructorArgumentObject<HighIRBinaryExpression>, 'type'>): HighIRBinaryExpression => ({
-  __type__: 'HighIRBinaryExpression',
-  type: HIR_INT_TYPE,
-  operator,
-  e1,
-  e2,
-});
+}: Omit<ConstructorArgumentObject<HighIRBinaryExpression>, 'type'>): HighIRBinaryExpression => {
+  let type: HighIRType;
+  switch (operator) {
+    case '*':
+    case '/':
+    case '%':
+    case '+':
+    case '-':
+      type = HIR_INT_TYPE;
+      break;
+    case '^':
+    case '<':
+    case '>':
+    case '<=':
+    case '>=':
+    case '==':
+    case '!=':
+      type = HIR_BOOL_TYPE;
+      break;
+  }
+  return { __type__: 'HighIRBinaryExpression', type, operator, e1, e2 };
+};
 
 export const HIR_FUNCTION_CALL = ({
   functionExpression,
