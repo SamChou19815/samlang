@@ -57,6 +57,7 @@ it('eliminateUselessEndingMoveForHighIRStatements if-else test 1', () => {
   expect(
     eliminateUselessEndingMoveForHighIRStatements([
       HIR_IF_ELSE({
+        multiAssignedVariable: '_t1',
         booleanExpression: HIR_BINARY({
           operator: '==',
           e1: HIR_VARIABLE('n', HIR_INT_TYPE),
@@ -130,6 +131,7 @@ it('eliminateUselessEndingMoveForHighIRStatements if-else test 2', () => {
         expressionList: [],
       }),
       HIR_IF_ELSE({
+        multiAssignedVariable: '_t1',
         booleanExpression: HIR_BINARY({
           operator: '==',
           e1: HIR_VARIABLE('n', HIR_INT_TYPE),

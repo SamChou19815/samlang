@@ -9,9 +9,10 @@ import {
   HIR_LET,
   HIR_NAME,
   HIR_RETURN,
+  HIR_BINARY,
 } from 'samlang-core-ast/hir-expressions';
 import { debugPrintHighIRFunction } from 'samlang-core-ast/hir-toplevel';
-import { HIR_FUNCTION_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
+import { HIR_FUNCTION_TYPE, HIR_INT_TYPE, HIR_VOID_TYPE } from 'samlang-core-ast/hir-types';
 
 it('performTailRecursiveCallTransformationOnHighIRFunction failed coalescing test', () => {
   expect(
@@ -216,6 +217,47 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
 `);
 });
 
+it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 3', () => {
+  expect(
+    debugPrintHighIRFunction(
+      performTailRecursiveCallTransformationOnHighIRFunction({
+        name: 'tailRec',
+        parameters: ['n'],
+        hasReturn: false,
+        type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_VOID_TYPE),
+        body: [
+          HIR_IF_ELSE({
+            booleanExpression: HIR_VARIABLE('n', HIR_INT_TYPE),
+            s1: [],
+            s2: [
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME(
+                  'tailRec',
+                  HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_VOID_TYPE)
+                ),
+                functionArguments: [
+                  HIR_BINARY({ operator: '-', e1: HIR_VARIABLE('n', HIR_INT_TYPE), e2: HIR_ONE }),
+                ],
+                returnCollector: { name: 'collector', type: HIR_INT_TYPE },
+              }),
+            ],
+          }),
+        ],
+      })
+    )
+  ).toBe(`function tailRec(n: int): void {
+  while true {
+    if (n: int) {
+      return 0;
+    } else {
+      let _tailRecTransformationArgument0: int = ((n: int) - 1);
+      let n: int = (_tailRecTransformationArgument0: int);
+    }
+  }
+}
+`);
+});
+
 it('performTailRecursiveCallTransformationOnHighIRFunction 1-level no transform test', () => {
   expect(
     debugPrintHighIRFunction(
@@ -226,6 +268,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level no transform 
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_IF_ELSE({
+            multiAssignedVariable: 'none',
             booleanExpression: HIR_ONE,
             s1: [HIR_RETURN(HIR_ZERO)],
             s2: [HIR_RETURN(HIR_ZERO)],
@@ -239,6 +282,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level no transform 
   } else {
     return 0;
   }
+  // phi(none)
 }
 `);
 });
@@ -253,6 +297,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_IF_ELSE({
+            multiAssignedVariable: 'none',
             booleanExpression: HIR_ONE,
             s1: [
               HIR_IF_ELSE({
@@ -298,6 +343,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
     } else {
       return 0;
     }
+    // phi(none)
   }
 }
 `);
@@ -313,12 +359,15 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_IF_ELSE({
+            multiAssignedVariable: 'none',
             booleanExpression: HIR_ONE,
             s1: [
               HIR_IF_ELSE({
+                multiAssignedVariable: 'none',
                 booleanExpression: HIR_ONE,
                 s1: [
                   HIR_IF_ELSE({
+                    multiAssignedVariable: 'none',
                     booleanExpression: HIR_ONE,
                     s1: [
                       HIR_FUNCTION_CALL({
@@ -347,6 +396,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
             ],
             s2: [
               HIR_IF_ELSE({
+                multiAssignedVariable: 'none',
                 booleanExpression: HIR_ONE,
                 s1: [],
                 s2: [

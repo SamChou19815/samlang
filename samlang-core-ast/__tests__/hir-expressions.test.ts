@@ -22,6 +22,7 @@ it('debugPrintHighIRStatement works', () => {
       HIR_WHILE_TRUE([
         HIR_IF_ELSE({
           booleanExpression: HIR_ZERO,
+          multiAssignedVariable: 'bar',
           s1: [
             HIR_LET({
               name: 'foo',
@@ -67,5 +68,6 @@ it('debugPrintHighIRStatement works', () => {
     let vibez: int = h(((d: (int, int))[0]: int));
     h((d: int));
   }
+  // phi(bar)
 }`);
 });

@@ -276,6 +276,7 @@ if ((_t2: any) == 0) {
 } else {
   let _t0: int = ((_t1: _builtin_Closure)[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
 }
+// phi(_t0)
 return (_t0: int);`
   );
 });
@@ -295,6 +296,7 @@ if ((_t2: any) == 0) {
 } else {
   let _t0: void = ((_t1: _builtin_Closure)[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
 }
+// phi(_t0)
 return (_t0: void);`
   );
 });
@@ -334,6 +336,7 @@ it('Short circuiting binary lowering works.', () => {
 } else {
   let _t0: int = 0;
 }
+// phi(_t0)
 return (_t0: int);`
   );
 
@@ -350,6 +353,7 @@ return (_t0: int);`
 } else {
   let _t0: int = 0;
 }
+// phi(_t0)
 return (_t0: int);`
   );
 });
@@ -449,6 +453,7 @@ it('IfElse lowering works.', () => {
 } else {
   let _t0: _Dummy = (_this: _Dummy);
 }
+// phi(_t0)
 return (_t0: _Dummy);`
   );
 });
@@ -487,7 +492,9 @@ if ((_t1: int) == 0) {
   } else {
     _builtin_throw('Unreachable branch in match!');
   }
+  // phi(_t2)
 }
+// phi(_t2)
 return (_t2: _Dummy);`
   );
 });
