@@ -14,6 +14,8 @@ import {
   HighIRExpression,
   HIR_NAME,
   HIR_VARIABLE,
+  HIR_FALSE,
+  HIR_TRUE,
   HIR_ZERO,
   HIR_ONE,
   HIR_INT,
@@ -30,6 +32,7 @@ import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import {
   HighIRType,
   HighIRFunctionType,
+  HIR_BOOL_TYPE,
   HIR_INT_TYPE,
   HIR_ANY_TYPE,
   HIR_VOID_TYPE,
@@ -122,7 +125,7 @@ class HighIRExpressionLoweringManager {
       case 'LiteralExpression':
         switch (expression.literal.type) {
           case 'BoolLiteral':
-            return { statements: [], expression: expression.literal.value ? HIR_ONE : HIR_ZERO };
+            return { statements: [], expression: expression.literal.value ? HIR_TRUE : HIR_FALSE };
           case 'IntLiteral':
             return { statements: [], expression: HIR_INT(expression.literal.value) };
           case 'StringLiteral':
@@ -308,7 +311,7 @@ class HighIRExpressionLoweringManager {
       case '!':
         return {
           statements: result.statements,
-          expression: HIR_BINARY({ operator: '^', e1: result.expression, e2: HIR_ONE }),
+          expression: HIR_BINARY({ operator: '^', e1: result.expression, e2: HIR_TRUE }),
         };
       case '-':
         return {
@@ -516,10 +519,7 @@ class HighIRExpressionLoweringManager {
     expression: SamlangExpression
   ): HighIRExpressionLoweringResult {
     if (expression.__type__ === 'LiteralExpression' && expression.literal.type === 'BoolLiteral') {
-      return {
-        statements: [],
-        expression: expression.literal.value ? HIR_ONE : HIR_ZERO,
-      };
+      return { statements: [], expression: expression.literal.value ? HIR_TRUE : HIR_FALSE };
     }
     if (expression.__type__ !== 'BinaryExpression') {
       return this.lower(expression);
@@ -544,14 +544,14 @@ class HighIRExpressionLoweringManager {
                 ...e2Result.statements,
                 HIR_LET({
                   name: temp,
-                  type: HIR_INT_TYPE,
+                  type: HIR_BOOL_TYPE,
                   assignedExpression: e2Result.expression,
                 }),
               ],
-              s2: [HIR_LET({ name: temp, type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
+              s2: [HIR_LET({ name: temp, type: HIR_BOOL_TYPE, assignedExpression: HIR_FALSE })],
             }),
           ],
-          expression: HIR_VARIABLE(temp, HIR_INT_TYPE),
+          expression: HIR_VARIABLE(temp, HIR_BOOL_TYPE),
         };
       }
       case '||': {
@@ -564,18 +564,18 @@ class HighIRExpressionLoweringManager {
             HIR_IF_ELSE({
               multiAssignedVariable: temp,
               booleanExpression: e1Result.expression,
-              s1: [HIR_LET({ name: temp, type: HIR_INT_TYPE, assignedExpression: HIR_ONE })],
+              s1: [HIR_LET({ name: temp, type: HIR_BOOL_TYPE, assignedExpression: HIR_TRUE })],
               s2: [
                 ...e2Result.statements,
                 HIR_LET({
                   name: temp,
-                  type: HIR_INT_TYPE,
+                  type: HIR_BOOL_TYPE,
                   assignedExpression: e2Result.expression,
                 }),
               ],
             }),
           ],
-          expression: HIR_VARIABLE(temp, HIR_INT_TYPE),
+          expression: HIR_VARIABLE(temp, HIR_BOOL_TYPE),
         };
       }
       case '::': {
