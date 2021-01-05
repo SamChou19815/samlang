@@ -73,6 +73,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
       })
     )
   ).toBe(`function tailRec(n: int): int {
+  // phi(_tailRecTransformationArgument0)
   while true {
     let _tailRecTransformationArgument0: int = (n: int);
     let n: int = (_tailRecTransformationArgument0: int);
@@ -165,6 +166,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
       })
     )
   ).toBe(`function tailRec(n: int): int {
+  // phi(_tailRecTransformationArgument0)
   while true {
     if 1 {
       let _tailRecTransformationArgument0: int = (n: int);
@@ -205,6 +207,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
       })
     )
   ).toBe(`function tailRec(n: int): int {
+  // phi(_tailRecTransformationArgument0)
   while true {
     if 1 {
       return 0;
@@ -246,6 +249,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
       })
     )
   ).toBe(`function tailRec(n: int): void {
+  // phi(_tailRecTransformationArgument0)
   while true {
     if (n: int) {
       return 0;
@@ -328,6 +332,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
       })
     )
   ).toBe(`function tailRec(n: int): int {
+  // phi(_tailRecTransformationArgument0)
   while true {
     if 1 {
       if 1 {
@@ -416,6 +421,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
       })
     )
   ).toBe(`function tailRec(n: int): int {
+  // phi(_tailRecTransformationArgument0)
   while true {
     if 1 {
       if 1 {
