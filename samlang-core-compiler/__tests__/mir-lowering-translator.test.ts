@@ -39,14 +39,14 @@ it('midIRTranslateStatementsAndCollectGlobalStrings test', () => {
       functionArguments: [HIR_ONE, HIR_STRING('bar'), HIR_VARIABLE('baz', HIR_INT_TYPE)],
       returnCollector: { name: 'bar', type: HIR_STRING_TYPE },
     }),
-    `_bar = foo(1, (GLOBAL_STRING_0 + 8), _baz);`
+    `_bar = foo(1, GLOBAL_STRING_0, _baz);`
   );
   assertCorrectlyLoweredWithPreConfiguredSetup(
     HIR_FUNCTION_CALL({
       functionExpression: HIR_NAME('foo', HIR_INT_TYPE),
       functionArguments: [HIR_ONE, HIR_STRING('bar'), HIR_VARIABLE('baz', HIR_INT_TYPE)],
     }),
-    `foo(1, (GLOBAL_STRING_0 + 8), _baz);`
+    `foo(1, GLOBAL_STRING_0, _baz);`
   );
 
   assertCorrectlyLoweredWithPreConfiguredSetup(

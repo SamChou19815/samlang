@@ -42,7 +42,7 @@ function _module__class_Main_function_main {
   let _bar = _ARG1;
   let _baz = _ARG2;
 
-  return (GLOBAL_STRING_0 + 8);
+  return GLOBAL_STRING_0;
 }
 
 function fooBar {
@@ -50,7 +50,7 @@ function fooBar {
   let _bar = _ARG1;
   let _baz = _ARG2;
 
-  return (GLOBAL_STRING_0 + 8);
+  return GLOBAL_STRING_0;
 }
 `);
 });

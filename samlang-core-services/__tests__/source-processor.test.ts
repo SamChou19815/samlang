@@ -34,10 +34,8 @@ it('hello world processor test', () => {
 _module_Test_class_Main_function_main:
     push rbp
     mov rbp, rsp
-    lea rax, qword ptr [rip+GLOBAL_STRING_0]
-    lea rdi, qword ptr [rax+8]
-    lea rax, qword ptr [rip+GLOBAL_STRING_1]
-    lea rsi, qword ptr [rax+8]
+    lea rdi, qword ptr [rip+GLOBAL_STRING_0]
+    lea rsi, qword ptr [rip+GLOBAL_STRING_1]
     call _builtin_stringConcat
     mov rdi, rax
     call _builtin_println
@@ -47,7 +45,11 @@ _module_Test_class_Main_function_main:
 _compiled_program_main:
     push rbp
     mov rbp, rsp
-    call _module_Test_class_Main_function_main
+    lea rdi, qword ptr [rip+GLOBAL_STRING_0]
+    lea rsi, qword ptr [rip+GLOBAL_STRING_1]
+    call _builtin_stringConcat
+    mov rdi, rax
+    call _builtin_println
     mov rsp, rbp
     pop rbp
     ret

@@ -40,7 +40,7 @@ class MidIRLoweringManager {
       case 'HighIRStringLiteralExpression': {
         const contentVariable = this.allocator.allocateStringArrayGlobalVariable(expression.value);
         this.stringGlobalVariableCollectors.push(contentVariable);
-        return MIR_OP('+', MIR_NAME(contentVariable.name), MIR_EIGHT);
+        return MIR_NAME(contentVariable.name);
       }
       case 'HighIRNameExpression':
         return MIR_NAME(expression.name);

@@ -26,8 +26,7 @@ _compiled_program_main();`,
 _module_Demo_class_Main_function_main:
     push rbp
     mov rbp, rsp
-    lea rax, qword ptr [rip+GLOBAL_STRING_0]
-    lea rdi, qword ptr [rax+8]
+    lea rdi, qword ptr [rip+GLOBAL_STRING_0]
     call _builtin_println
     mov rsp, rbp
     pop rbp
@@ -35,8 +34,7 @@ _module_Demo_class_Main_function_main:
 _compiled_program_main:
     push rbp
     mov rbp, rsp
-    lea rax, qword ptr [rip+GLOBAL_STRING_0]
-    lea rdi, qword ptr [rax+8]
+    lea rdi, qword ptr [rip+GLOBAL_STRING_0]
     call _builtin_println
     mov rsp, rbp
     pop rbp

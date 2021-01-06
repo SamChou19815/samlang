@@ -406,9 +406,9 @@ class AssemblyInterpreter {
   };
 
   private readArray = (arrayPointer: Long): string => {
-    const len = Number(this.getMemory(arrayPointer.subtract(8)));
+    const len = Number(this.getMemory(arrayPointer));
     const array: number[] = [];
-    for (let i = 0; i < len; i += 1) {
+    for (let i = 1; i <= len; i += 1) {
       array.push(Number(this.getMemory(arrayPointer.add(i * 8))));
     }
     return String.fromCharCode(...array);
@@ -439,7 +439,7 @@ class AssemblyInterpreter {
           for (let i = 0; i < resultArray.length; i += 1) {
             this.setMemory(unparsedStringStartingPointer.add(i * 8), checkNotNull(resultArray[i]));
           }
-          this.setValue(RAX, unparsedStringStartingPointer);
+          this.setValue(RAX, memoryStartPointer);
           return;
         }
         case ENCODED_FUNCTION_NAME_STRING_TO_INT: {
@@ -464,7 +464,7 @@ class AssemblyInterpreter {
           for (let i = 0; i < concatString.length; i += 1) {
             this.setMemory(stringStartPointer.add(i * 8), checkNotNull(concatString[i]));
           }
-          this.setValue(RAX, stringStartPointer);
+          this.setValue(RAX, memoryStartPointer);
           return;
         }
         case ENCODED_FUNCTION_NAME_MALLOC:

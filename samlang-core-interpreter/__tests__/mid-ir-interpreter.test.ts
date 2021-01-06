@@ -37,9 +37,7 @@ it('interpretMidIRCompilationUnit hello world test', () => {
           argumentNames: [],
           hasReturn: false,
           mainBodyStatements: [
-            MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_PRINTLN, [
-              MIR_OP('+', MIR_NAME('HW'), MIR_EIGHT),
-            ]),
+            MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_PRINTLN, [MIR_NAME('HW')]),
             MIR_RETURN(),
           ],
         },
@@ -80,9 +78,7 @@ it('interpretMidIRCompilationUnit failed string-int conversion test', () => {
           argumentNames: [],
           hasReturn: false,
           mainBodyStatements: [
-            MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_STRING_TO_INT, [
-              MIR_OP('+', MIR_NAME('HW'), MIR_EIGHT),
-            ]),
+            MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_STRING_TO_INT, [MIR_NAME('HW')]),
           ],
         },
       ],
@@ -105,7 +101,7 @@ it('interpretMidIRCompilationUnit string concat test', () => {
           mainBodyStatements: [
             MIR_CALL_FUNCTION(
               ENCODED_FUNCTION_NAME_STRING_CONCAT,
-              [MIR_OP('+', MIR_NAME('HW1'), MIR_EIGHT), MIR_OP('+', MIR_NAME('HW2'), MIR_EIGHT)],
+              [MIR_NAME('HW1'), MIR_NAME('HW2')],
               'a'
             ),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_PRINTLN, [MIR_TEMP('a')]),
@@ -127,11 +123,7 @@ it('interpretMidIRCompilationUnit panic test', () => {
           argumentNames: [],
           hasReturn: false,
           mainBodyStatements: [
-            MIR_CALL_FUNCTION(
-              ENCODED_FUNCTION_NAME_THROW,
-              [MIR_OP('+', MIR_NAME('Ahh'), MIR_EIGHT)],
-              'a'
-            ),
+            MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_THROW, [MIR_NAME('Ahh')], 'a'),
           ],
         },
       ],
