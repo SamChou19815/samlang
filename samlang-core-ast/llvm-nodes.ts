@@ -5,14 +5,9 @@ import { Long } from 'samlang-core-utils';
 
 export type LLVMPrimitiveType = {
   readonly __type__: 'PrimitiveType';
-  readonly type: 'i1' | 'i64' | 'void';
+  readonly type: 'i1' | 'i64' | 'void' | 'i64*';
 };
 export type LLVMIdentifierType = HighIRIdentifierType;
-
-export type LLVMPointerType = {
-  readonly __type__: 'PointerType';
-  readonly boxed: LLVMType;
-};
 
 export type LLVMStructType = {
   readonly __type__: 'StructType';
@@ -25,25 +20,16 @@ export type LLVMFunctionType = {
   readonly returnType: LLVMType;
 };
 
-export type LLVMType =
-  | LLVMPrimitiveType
-  | LLVMIdentifierType
-  | LLVMPointerType
-  | LLVMStructType
-  | LLVMFunctionType;
+export type LLVMType = LLVMPrimitiveType | LLVMIdentifierType | LLVMStructType | LLVMFunctionType;
 
 export const LLVM_BOOL_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i1' };
 export const LLVM_INT_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i64' };
 export const LLVM_VOID_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'void' };
+export const LLVM_STRING_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i64*' };
 
 export const LLVM_IDENTIFIER_TYPE = (name: string): LLVMIdentifierType => ({
   __type__: 'IdentifierType',
   name,
-});
-
-export const LLVM_POINTER_TYPE = (boxed: LLVMType): LLVMPointerType => ({
-  __type__: 'PointerType',
-  boxed,
 });
 
 export const LLVM_STRUCT_TYPE = (mappings: readonly LLVMType[]): LLVMStructType => ({
@@ -61,15 +47,13 @@ export const prettyPrintLLVMType = (type: LLVMType): string => {
     case 'PrimitiveType':
       return type.type;
     case 'IdentifierType':
-      return `%${type.name}`;
-    case 'PointerType':
-      return `${prettyPrintLLVMType(type.boxed)} *`;
+      return `%${type.name}*`;
     case 'StructType':
-      return `{ ${type.mappings.map(prettyPrintLLVMType).join(', ')} }`;
+      return `{ ${type.mappings.map(prettyPrintLLVMType).join(', ')} }*`;
     case 'FunctionType':
       return `${prettyPrintLLVMType(type.returnType)} (${type.argumentTypes
         .map(prettyPrintLLVMType)
-        .join(', ')})`;
+        .join(', ')})*`;
   }
 };
 
@@ -148,6 +132,11 @@ export type LLVMFunctionCallInstruction = {
   readonly functionArguments: readonly LLVMAnnotatedValue[];
 };
 
+export type LLVMLabelInstruction = {
+  readonly __type__: 'LLVMLabelInstruction';
+  readonly name: string;
+};
+
 export type LLVMJumpInstruction = {
   readonly __type__: 'LLVMJumpInstruction';
   readonly branch: string;
@@ -172,6 +161,7 @@ export type LLVMInstruction =
   | LLVMStoreInstruction
   | LLVMPhiInstruction
   | LLVMFunctionCallInstruction
+  | LLVMLabelInstruction
   | LLVMJumpInstruction
   | LLVMConditionalJumpInstruction
   | LLVMReturnInstruction;
@@ -256,6 +246,11 @@ export const LLVM_CALL = ({
   resultVariable,
   functionName,
   functionArguments,
+});
+
+export const LLVM_LABEL = (name: string): LLVMLabelInstruction => ({
+  __type__: 'LLVMLabelInstruction',
+  name,
 });
 
 export const LLVM_JUMP = (branch: string): LLVMJumpInstruction => ({
@@ -361,6 +356,8 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
         .join(', ');
       return `${assignedTo}call ${resultType} ${functionName}(${functionArguments}) nounwind`;
     }
+    case 'LLVMLabelInstruction':
+      return `${instruction.name}:`;
     case 'LLVMJumpInstruction':
       return `br label %${instruction.branch}`;
     case 'LLVMConditionalJumpInstruction': {

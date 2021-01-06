@@ -5,8 +5,8 @@ import {
   LLVM_BOOL_TYPE,
   LLVM_INT_TYPE,
   LLVM_VOID_TYPE,
+  LLVM_STRING_TYPE,
   LLVM_IDENTIFIER_TYPE,
-  LLVM_POINTER_TYPE,
   LLVM_STRUCT_TYPE,
   LLVM_FUNCTION_TYPE,
   LLVM_INT,
@@ -18,10 +18,11 @@ import {
   LLVM_STORE,
   LLVM_PHI,
   LLVM_CALL,
+  LLVM_LABEL,
+  LLVM_JUMP,
   LLVM_CJUMP,
   LLVM_RETURN,
   LLVM_RETURN_VOID,
-  LLVM_JUMP,
 } from '../llvm-nodes';
 
 import { Long } from 'samlang-core-utils';
@@ -30,14 +31,14 @@ it('prettyPrintLLVMType works.', () => {
   expect(prettyPrintLLVMType(LLVM_BOOL_TYPE)).toBe('i1');
   expect(prettyPrintLLVMType(LLVM_INT_TYPE)).toBe('i64');
   expect(prettyPrintLLVMType(LLVM_VOID_TYPE)).toBe('void');
-  expect(prettyPrintLLVMType(LLVM_IDENTIFIER_TYPE('Foo'))).toBe('%Foo');
-  expect(prettyPrintLLVMType(LLVM_POINTER_TYPE(LLVM_INT_TYPE))).toBe('i64 *');
+  expect(prettyPrintLLVMType(LLVM_STRING_TYPE)).toBe('i64*');
+  expect(prettyPrintLLVMType(LLVM_IDENTIFIER_TYPE('Foo'))).toBe('%Foo*');
   expect(prettyPrintLLVMType(LLVM_STRUCT_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE]))).toBe(
-    '{ i64, i1 }'
+    '{ i64, i1 }*'
   );
   expect(
     prettyPrintLLVMType(LLVM_FUNCTION_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE], LLVM_VOID_TYPE))
-  ).toBe('void (i64, i1)');
+  ).toBe('void (i64, i1)*');
 });
 
 it('prettyPrintLLVMValue works.', () => {
@@ -57,7 +58,7 @@ it('prettyPrintLLVMInstruction works for LLVM_GET_ELEMENT_PTR.', () => {
         offset: 3,
       })
     )
-  ).toBe('%foo = getelementptr %Foo, %Foo %bar, i64 3');
+  ).toBe('%foo = getelementptr %Foo*, %Foo* %bar, i64 3');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
@@ -204,7 +205,7 @@ it('prettyPrintLLVMInstruction works for LLVM_LOAD.', () => {
         sourceType: LLVM_IDENTIFIER_TYPE('Foo'),
       })
     )
-  ).toBe('%foo = load %Foo, %Foo %bar');
+  ).toBe('%foo = load %Foo*, %Foo* %bar');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_STORE.', () => {
@@ -217,7 +218,7 @@ it('prettyPrintLLVMInstruction works for LLVM_STORE.', () => {
         sourceType: LLVM_IDENTIFIER_TYPE('Foo'),
       })
     )
-  ).toBe('store %Foo %@bar, %Foo %foo');
+  ).toBe('store %Foo* %@bar, %Foo* %foo');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_PHI.', () => {
@@ -261,6 +262,10 @@ it('prettyPrintLLVMInstruction works for LLVM_CALL.', () => {
       })
     )
   ).toBe('call i64 @plusPlus(i64 %bar, i64 1) nounwind');
+});
+
+it('prettyPrintLLVMInstruction works for LLVM_LABEL.', () => {
+  expect(prettyPrintLLVMInstruction(LLVM_LABEL('bb'))).toBe('bb:');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_JUMP.', () => {
