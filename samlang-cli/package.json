@@ -3,8 +3,7 @@
   "version": "0.3.1",
   "license": "AGPLv3",
   "files": [
-    "bin/index.js",
-    "samlang-runtime"
+    "bin"
   ],
   "scripts": {
     "compile": "tsc --incremental",

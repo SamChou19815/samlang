@@ -15,12 +15,6 @@
 int GC_ready = 0;
 void* SAMLANG_BUILTIN(malloc)(samlang_int size) {
     if (!GC_ready) {
-        /*
-         * This check unfortunately needs to be here, since
-         * GC_malloc() could be called from static initialization
-         * code written in Xi (in other words, we can't rely
-         * on main() to do the initialization)
-         */
         gc_init();
         GC_ready = 1;
     }
@@ -30,9 +24,9 @@ void* SAMLANG_BUILTIN(malloc)(samlang_int size) {
 
 // Internal helper for making arrays
 static void* mkArray(int bytes, int cells) {
-    samlang_int* memory = SAMLANG_BUILTIN(malloc)(bytes + sizeof(samlang_int));
+    samlang_int* memory = SAMLANG_BUILTIN(malloc)(bytes + 8);
     memory[0] = cells;
-    return memory + 1;
+    return memory;
 }
 
 // Helper: C string to samlang string
@@ -40,10 +34,7 @@ static samlang_string mkString(const char* in) {
     int c;
     int len = strlen(in);
     samlang_string out = mkArray(len * sizeof(samlang_int), len);
-
-    for (c = 0; c < len; ++c) {
-        out[c] = in[c];
-    }
+    for (c = 0; c < len; ++c) out[c + 1] = in[c];
     return out;
 }
 
@@ -53,9 +44,7 @@ int main(int argc, char *argv[]) {
     // Create arguments array.
     samlang_string* args = mkArray(sizeof(samlang_int *) * argc, argc);
     int c;
-    for (c = 0; c < argc; ++c)
-        args[c] = mkString(argv[c]);
-
+    for (c = 0; c < argc; ++c) args[c] = mkString(argv[c]);
     // transfer to program's main
     SAMLANG_COMPILED_MAIN(args);
     return 0;
@@ -63,8 +52,8 @@ int main(int argc, char *argv[]) {
 
 static void SAMLANG_BUILTIN(print)(samlang_string str) {
     int c;
-    int len = str[-1];
-    for (c = 0; c < len; ++c) {
+    int len = str[0];
+    for (c = 1; c <= len; ++c) {
         printUcs4char(str[c], stdout);
     }
 }
@@ -76,7 +65,8 @@ void SAMLANG_BUILTIN(println)(samlang_string str) {
 
 samlang_int SAMLANG_BUILTIN(stringToInt)(samlang_string str) {
     // ### should this worry about overflow?
-    int len = str[-1];
+    int len = str[0];
+    str = &str[1];
     int neg = 0;
     samlang_int num = 0;
 
@@ -125,19 +115,19 @@ samlang_string SAMLANG_BUILTIN(intToString)(samlang_int in) {
 }
 
 samlang_string SAMLANG_BUILTIN(stringConcat)(samlang_string s1, samlang_string s2) {
-    samlang_int l1 = samlang_length(s1);
-    samlang_int l2 = samlang_length(s2);
+    samlang_int l1 = s1[0];
+    samlang_int l2 = s2[0];
     samlang_int total_length = l1 + l2;
-    samlang_int* stringArray = (samlang_int*) SAMLANG_BUILTIN(malloc)(total_length * 8);
+    samlang_int* stringArray = (samlang_int*) SAMLANG_BUILTIN(malloc)((total_length + 1) * 8);
     stringArray[0] = total_length;
     samlang_string string = &stringArray[1];
     for (samlang_int i = 0; i < l1; i++) {
-        string[i] = s1[i];
+        string[i] = s1[i+1];
     }
     for (samlang_int i = 0; i < l2; i++) {
-        string[l1 + i] = s2[i];
+        string[l1 + i] = s2[i+1];
     }
-    return string;
+    return stringArray;
 }
 
 void SAMLANG_BUILTIN(throw)(samlang_string in) {

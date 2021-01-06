@@ -10,8 +10,6 @@
 typedef int64_t samlang_int;
 typedef samlang_int *samlang_string;
 
-#define samlang_length(a) *(samlang_int *)((a)-1)
-
 #ifdef __cplusplus
 #define SAMLANG_EXPORT extern "C"
 #else

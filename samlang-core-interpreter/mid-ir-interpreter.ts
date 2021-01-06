@@ -327,7 +327,7 @@ const setupMidIRCompilationUnitIntepretationEnvironment = (
   compilationUnit.globalVariables.forEach(({ name, content }) => {
     const location = heapPointer;
     globalVariables.set(name, location);
-    strings.set(location.add(Long.fromInt(8)).toString(), content);
+    strings.set(location.toString(), content);
     heapPointer = heapPointer.add(Long.fromInt(8));
   });
   const functionsGlobals = new Map<string, string>();
