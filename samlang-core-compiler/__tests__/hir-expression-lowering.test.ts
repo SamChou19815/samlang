@@ -302,12 +302,11 @@ it('FunctionCall family lowering works 7/n.', () => {
     `let _t1: _builtin_Closure = (_this: _Dummy);
 let _t2: any = ((_t1: _builtin_Closure)[1]: any);
 if ((_t2: any) == 0) {
-  let _t0: void = ((_t1: _builtin_Closure)[0]: any)((_this: _Dummy), (_this: _Dummy));
+  ((_t1: _builtin_Closure)[0]: any)((_this: _Dummy), (_this: _Dummy));
 } else {
-  let _t0: void = ((_t1: _builtin_Closure)[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
+  ((_t1: _builtin_Closure)[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
 }
-// phi(_t0)
-return (_t0: void);`
+return 0;`
   );
 });
 
