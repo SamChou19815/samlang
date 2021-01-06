@@ -10,11 +10,7 @@
 typedef int64_t samlang_int;
 typedef samlang_int *samlang_string;
 
-#ifdef __cplusplus
-#define SAMLANG_EXPORT extern "C"
-#else
 #define SAMLANG_EXPORT
-#endif
 
 #define SAMLANG_BUILTIN(x) _builtin_ ## x
 #define SAMLANG_COMPILED_MAIN _compiled_program_main
@@ -22,15 +18,11 @@ typedef samlang_int *samlang_string;
 // Main allocation hook
 SAMLANG_EXPORT void * SAMLANG_BUILTIN(malloc)(samlang_int);
 
-// Registers a finalizer for a given object
-typedef void Finalizer(void*, void*);
-SAMLANG_EXPORT void registerFinalizer(void*, Finalizer*);
-
 extern samlang_int SAMLANG_BUILTIN(stringToInt)(samlang_string);
 extern samlang_string SAMLANG_BUILTIN(intToString)(samlang_int);
 extern samlang_string SAMLANG_BUILTIN(stringConcat)(samlang_string, samlang_string);
-extern void SAMLANG_BUILTIN(println)(samlang_string);
-extern void SAMLANG_BUILTIN(throw)(samlang_string);
+extern samlang_int SAMLANG_BUILTIN(println)(samlang_string);
+extern samlang_int SAMLANG_BUILTIN(throw)(samlang_string);
 
 static void printUcs4char(long int c, FILE *stream);
 

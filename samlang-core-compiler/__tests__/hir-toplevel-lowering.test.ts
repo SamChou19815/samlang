@@ -227,18 +227,20 @@ type _Class2 = (int, any);
 
 type _Class3 = (((_A, any)) -> int);
 
-function _module__class_Main_function_main(): void {
-  let _t0: void = _module__class_Class1_function_infiniteLoop();
+function _module__class_Main_function_main(): int {
+  _module__class_Class1_function_infiniteLoop();
+  return 0;
 }
 
-function _module__class_Class1_function_infiniteLoop(): void {
+function _module__class_Class1_function_infiniteLoop(): int {
   // phi()
   while true {
   }
 }
 
-function _compiled_program_main(): void {
+function _compiled_program_main(): int {
   _module__class_Main_function_main();
+  return 0;
 }
 `);
 });

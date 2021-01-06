@@ -17,7 +17,6 @@ export interface HighIRTypeDefinition {
 export interface HighIRFunction {
   readonly name: string;
   readonly parameters: readonly string[];
-  readonly hasReturn: boolean;
   readonly type: HighIRFunctionType;
   readonly body: readonly HighIRStatement[];
 }

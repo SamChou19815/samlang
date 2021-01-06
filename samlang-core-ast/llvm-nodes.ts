@@ -160,8 +160,7 @@ export type LLVMConditionalJumpInstruction = {
 
 export type LLVMReturnInstruction = {
   readonly __type__: 'LLVMReturnInstruction';
-  readonly value?: LLVMAnnotatedValue;
-};
+} & LLVMAnnotatedValue;
 
 export type LLVMInstruction =
   | LLVMBitcastInstruction
@@ -292,11 +291,10 @@ export const LLVM_CJUMP = (
   b2,
 });
 
-export const LLVM_RETURN_VOID: LLVMReturnInstruction = { __type__: 'LLVMReturnInstruction' };
-
 export const LLVM_RETURN = (value: LLVMValue, type: LLVMType): LLVMReturnInstruction => ({
   __type__: 'LLVMReturnInstruction',
-  value: { value, type },
+  value,
+  type,
 });
 
 export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string => {
@@ -394,8 +392,7 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       return `br i1 ${prettyPrintLLVMValue(condition)}, label %${b1}, label %${b2}`;
     }
     case 'LLVMReturnInstruction': {
-      if (instruction.value == null) return 'ret void';
-      const { value, type } = instruction.value;
+      const { value, type } = instruction;
       return `ret ${prettyPrintLLVMType(type)} ${prettyPrintLLVMValue(value)}`;
     }
   }

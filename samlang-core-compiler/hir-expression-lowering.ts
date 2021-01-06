@@ -35,7 +35,6 @@ import {
   HIR_BOOL_TYPE,
   HIR_INT_TYPE,
   HIR_ANY_TYPE,
-  HIR_VOID_TYPE,
   HIR_STRUCT_TYPE,
   HIR_FUNCTION_TYPE,
   HIR_STRING_TYPE,
@@ -337,7 +336,7 @@ class HighIRExpressionLoweringManager {
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME(
             ENCODED_FUNCTION_NAME_THROW,
-            HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_VOID_TYPE)
+            HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE)
           ),
           functionArguments: [result.expression],
         }),
@@ -375,7 +374,7 @@ class HighIRExpressionLoweringManager {
         break;
       case 'println':
         functionName = ENCODED_FUNCTION_NAME_PRINTLN;
-        calledFunctionType = HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_VOID_TYPE);
+        calledFunctionType = HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE);
         finalExpression = HIR_ZERO;
         break;
     }
@@ -414,7 +413,9 @@ class HighIRExpressionLoweringManager {
           functionArguments: expression.functionArguments.map((oneArgument) =>
             this.loweredAndAddStatements(oneArgument, loweredStatements)
           ),
-          returnCollector: { name: returnCollectorName, type: loweredReturnType },
+          returnCollector: isVoidReturn
+            ? undefined
+            : { name: returnCollectorName, type: loweredReturnType },
         });
         break;
       case 'MethodAccessExpression':
@@ -439,7 +440,9 @@ class HighIRExpressionLoweringManager {
               this.loweredAndAddStatements(oneArgument, loweredStatements)
             ),
           ],
-          returnCollector: { name: returnCollectorName, type: loweredReturnType },
+          returnCollector: isVoidReturn
+            ? undefined
+            : { name: returnCollectorName, type: loweredReturnType },
         });
         break;
       default: {
@@ -753,7 +756,7 @@ class HighIRExpressionLoweringManager {
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME(
             ENCODED_FUNCTION_NAME_THROW,
-            HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_VOID_TYPE)
+            HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE)
           ),
           functionArguments: [
             HIR_NAME(
@@ -843,19 +846,13 @@ class HighIRExpressionLoweringManager {
         })
       );
     });
-    lambdaStatements.push(...loweringResult.statements);
-    const returnType = expression.type.returnType;
-    const hasReturn = returnType.type !== 'PrimitiveType' || returnType.name !== 'unit';
-    if (hasReturn) {
-      lambdaStatements.push(HIR_RETURN(loweringResult.expression));
-    }
+    lambdaStatements.push(...loweringResult.statements, HIR_RETURN(loweringResult.expression));
     return {
       name: this.allocateSyntheticFunctionName(),
       parameters: ['_context', ...expression.parameters.map(([name]) => name)],
-      hasReturn,
       type: HIR_FUNCTION_TYPE(
         [contextType, ...expression.parameters.map(([, type]) => this.lowerType(type))],
-        this.lowerType(returnType)
+        this.lowerType(expression.type.returnType)
       ),
       body: lambdaStatements,
     };

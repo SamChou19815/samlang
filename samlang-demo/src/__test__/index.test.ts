@@ -13,9 +13,11 @@ const _builtin_throw = (v) => { throw Error(v); };
 const GLOBAL_STRING_0 = "hello world";
 const _module_Demo_class_Main_function_main = () => {
   _builtin_println(GLOBAL_STRING_0);
+  return 0;
 };
 const _compiled_program_main = () => {
   _module_Demo_class_Main_function_main();
+  return 0;
 };
 
 _compiled_program_main();`,
@@ -29,6 +31,7 @@ _module_Demo_class_Main_function_main:
     mov rbp, rsp
     lea rdi, qword ptr [rip+GLOBAL_STRING_0]
     call _builtin_println
+    mov rax, 0
     mov rsp, rbp
     pop rbp
     ret
@@ -37,6 +40,7 @@ _compiled_program_main:
     mov rbp, rsp
     lea rdi, qword ptr [rip+GLOBAL_STRING_0]
     call _builtin_println
+    mov rax, 0
     mov rsp, rbp
     pop rbp
     ret

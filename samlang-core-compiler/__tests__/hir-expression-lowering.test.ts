@@ -85,7 +85,7 @@ it('This lowering works.', () => {
 it('Variable lowering works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_VARIABLE({ range: Range.DUMMY, type: unitType, name: 'foo' }),
-    'return (foo: void);'
+    'return (foo: int);'
   );
 });
 
@@ -128,7 +128,7 @@ it('Lowering to StructConstructor works (2/n).', () => {
         { range: Range.DUMMY, type: unitType, name: 'bar' },
       ],
     }),
-    `let _t0: _Foo = [(_this: _Dummy), (bar: void)];
+    `let _t0: _Foo = [(_this: _Dummy), (bar: int)];
 return (_t0: _Foo);`
   );
 });
@@ -156,7 +156,7 @@ it('FieldAccess lowering works.', () => {
       fieldName: 'foo',
       fieldOrder: 0,
     }),
-    'return ((_this: _Dummy)[0]: void);'
+    'return ((_this: _Dummy)[0]: int);'
   );
 });
 
@@ -376,11 +376,12 @@ it('Lambda lowering works (1/n).', () => {
       captured: { a: unitType },
       body: THIS,
     }),
-    `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (void), a: void): void {
-  let a: void = ((_context: (void))[0]: void);
+    `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (int), a: int): int {
+  let a: int = ((_context: (int))[0]: int);
+  return (_this: _Dummy);
 }
-let _t1: (void) = [(a: void)];
-let _t0: _builtin_Closure = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, (_t1: (void))];
+let _t1: (int) = [(a: int)];
+let _t0: _builtin_Closure = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, (_t1: (int))];
 return (_t0: _builtin_Closure);`
   );
 });
@@ -394,12 +395,12 @@ it('Lambda lowering works (2/n).', () => {
       captured: { a: unitType },
       body: THIS,
     }),
-    `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (void), a: void): int {
-  let a: void = ((_context: (void))[0]: void);
+    `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (int), a: int): int {
+  let a: int = ((_context: (int))[0]: int);
   return (_this: _Dummy);
 }
-let _t1: (void) = [(a: void)];
-let _t0: _builtin_Closure = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, (_t1: (void))];
+let _t1: (int) = [(a: int)];
+let _t0: _builtin_Closure = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, (_t1: (int))];
 return (_t0: _builtin_Closure);`
   );
 });
@@ -413,12 +414,12 @@ it('Lambda lowering works (3/n).', () => {
       captured: { a: unitType },
       body: THIS,
     }),
-    `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (void), a: void): _Dummy {
-  let a: void = ((_context: (void))[0]: void);
+    `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (int), a: int): _Dummy {
+  let a: int = ((_context: (int))[0]: int);
   return (_this: _Dummy);
 }
-let _t1: (void) = [(a: void)];
-let _t0: _builtin_Closure = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, (_t1: (void))];
+let _t1: (int) = [(a: int)];
+let _t0: _builtin_Closure = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, (_t1: (int))];
 return (_t0: _builtin_Closure);`
   );
 });
@@ -432,7 +433,7 @@ it('Lambda lowering works (4/n).', () => {
       captured: {},
       body: THIS,
     }),
-    `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (), a: void): _Dummy {
+    `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (), a: int): _Dummy {
   return (_this: _Dummy);
 }
 let _t0: _builtin_Closure = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, 1];
@@ -627,7 +628,7 @@ let a__depth_1__block_0: any = ((_t0: _Dummy)[0]: any);
 let _t1: _Dummy = (_this: _Dummy);
 let a__depth_1__block_0: any = ((_t1: _Dummy)[0]: any);
 let c__depth_1__block_0: any = ((_t1: _Dummy)[1]: any);
-let a: void = (a__depth_1__block_0: void);
+let a: int = (a__depth_1__block_0: int);
 return 0;`
   );
 });
@@ -664,7 +665,7 @@ it('shadowing statement block lowering works.', () => {
       },
     }),
     `let a__depth_1__block_0: int = 1;
-let a: void = 0;
+let a: int = 0;
 return 0;`
   );
 });

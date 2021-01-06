@@ -13,7 +13,7 @@ import {
   HIR_IF_ELSE,
   HIR_BINARY,
 } from 'samlang-core-ast/hir-expressions';
-import { HIR_INT_TYPE, HIR_VOID_TYPE, HIR_FUNCTION_TYPE } from 'samlang-core-ast/hir-types';
+import { HIR_INT_TYPE, HIR_FUNCTION_TYPE } from 'samlang-core-ast/hir-types';
 
 it('analyzeUsedFunctionNames test', () => {
   expect(
@@ -22,11 +22,10 @@ it('analyzeUsedFunctionNames test', () => {
         {
           name: ENCODED_COMPILED_PROGRAM_MAIN,
           parameters: [],
-          hasReturn: false,
-          type: HIR_FUNCTION_TYPE([], HIR_VOID_TYPE),
+          type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('foo', HIR_VOID_TYPE),
+              functionExpression: HIR_NAME('foo', HIR_INT_TYPE),
               functionArguments: [],
             }),
           ],
@@ -34,26 +33,25 @@ it('analyzeUsedFunctionNames test', () => {
         {
           name: 'foo',
           parameters: [],
-          hasReturn: false,
-          type: HIR_FUNCTION_TYPE([], HIR_VOID_TYPE),
+          type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_LET({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO }),
             HIR_STRUCT_INITIALIZATION({
               structVariableName: '',
-              type: HIR_VOID_TYPE,
+              type: HIR_INT_TYPE,
               expressionList: [
                 HIR_INDEX_ACCESS({
-                  type: HIR_VOID_TYPE,
-                  expression: HIR_NAME('bar', HIR_VOID_TYPE),
+                  type: HIR_INT_TYPE,
+                  expression: HIR_NAME('bar', HIR_INT_TYPE),
                   index: 0,
                 }),
               ],
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('baz', HIR_FUNCTION_TYPE([], HIR_VOID_TYPE)),
-              functionArguments: [HIR_NAME('haha', HIR_VOID_TYPE)],
+              functionExpression: HIR_NAME('baz', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+              functionArguments: [HIR_NAME('haha', HIR_INT_TYPE)],
             }),
-            HIR_RETURN(HIR_NAME('bar', HIR_VOID_TYPE)),
+            HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE)),
             HIR_WHILE_TRUE(
               [],
               [
@@ -79,11 +77,10 @@ it('analyzeUsedFunctionNames test', () => {
         {
           name: 'bar',
           parameters: [],
-          hasReturn: false,
-          type: HIR_FUNCTION_TYPE([], HIR_VOID_TYPE),
+          type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('foo', HIR_VOID_TYPE),
+              functionExpression: HIR_NAME('foo', HIR_INT_TYPE),
               functionArguments: [],
             }),
           ],
@@ -91,8 +88,7 @@ it('analyzeUsedFunctionNames test', () => {
         {
           name: 'baz',
           parameters: [],
-          hasReturn: false,
-          type: HIR_FUNCTION_TYPE([], HIR_VOID_TYPE),
+          type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [],
         },
       ]).values()

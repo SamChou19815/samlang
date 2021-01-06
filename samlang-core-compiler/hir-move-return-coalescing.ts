@@ -47,6 +47,13 @@ const coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable = (
       ];
     }
     case 'HighIRLetDefinitionStatement': {
+      if (possibleVariablesToBeReturned.length === 0) {
+        return coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable(
+          statements,
+          indexOfFinalReturnStatement - 1,
+          []
+        );
+      }
       const { name, assignedExpression } = statementBeforeReturn;
       if (!possibleVariablesToBeReturned.includes(name)) return null;
       // We can coalesce! We hit the case: `let a = <some stuff>; return a;`
@@ -133,12 +140,22 @@ const coalesceMoveAndReturnForHighIRStatements = (
   // If the last statement is return, then it must be the only return.
   // This is guaranteed by the implementation of HIR compiler.
   const returnedExpression = lastStatement.expression;
-  if (returnedExpression.__type__ !== 'HighIRVariableExpression') return null;
-  return coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable(
-    statements,
-    statements.length - 1,
-    [returnedExpression.name]
-  );
+  switch (returnedExpression.__type__) {
+    case 'HighIRIntLiteralExpression':
+      return coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable(
+        statements,
+        statements.length - 1,
+        []
+      );
+    case 'HighIRVariableExpression':
+      return coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable(
+        statements,
+        statements.length - 1,
+        [returnedExpression.name]
+      );
+    default:
+      return null;
+  }
 };
 
 export default coalesceMoveAndReturnForHighIRStatements;
