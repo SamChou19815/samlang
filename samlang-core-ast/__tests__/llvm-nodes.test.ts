@@ -12,6 +12,7 @@ import {
   LLVM_INT,
   LLVM_VARIABLE,
   LLVM_NAME,
+  LLVM_BITCAST,
   LLVM_GET_ELEMENT_PTR,
   LLVM_BINARY,
   LLVM_LOAD,
@@ -46,6 +47,19 @@ it('prettyPrintLLVMValue works.', () => {
   expect(prettyPrintLLVMValue(LLVM_INT(Long.fromInt(3)))).toBe('3');
   expect(prettyPrintLLVMValue(LLVM_VARIABLE('foo'))).toBe('%foo');
   expect(prettyPrintLLVMValue(LLVM_NAME('foo'))).toBe('@foo');
+});
+
+it('prettyPrintLLVMInstruction works for LLVM_BITCAST.', () => {
+  expect(
+    prettyPrintLLVMInstruction(
+      LLVM_BITCAST({
+        targetType: LLVM_IDENTIFIER_TYPE('Foo'),
+        targetVariable: 'foo',
+        sourceValue: LLVM_VARIABLE('bar'),
+        sourceType: LLVM_INT_TYPE,
+      })
+    )
+  ).toBe('%foo = bitcast i64 %bar to %Foo*');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_GET_ELEMENT_PTR.', () => {
@@ -218,7 +232,7 @@ it('prettyPrintLLVMInstruction works for LLVM_STORE.', () => {
         sourceType: LLVM_IDENTIFIER_TYPE('Foo'),
       })
     )
-  ).toBe('store %Foo* %@bar, %Foo* %foo');
+  ).toBe('store %Foo* @bar, %Foo* %foo');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_PHI.', () => {
