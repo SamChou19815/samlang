@@ -1,4 +1,4 @@
-declare void @_builtin_malloc(i64) nounwind
+declare i8* @_builtin_malloc(i64) nounwind
 declare void @_builtin_println(i64*) nounwind
 declare void @_builtin_throw(i64*) nounwind
 declare i64* @_builtin_intToString(i64) nounwind
@@ -24,7 +24,11 @@ loop_end:
 }
 
 define void @_compiled_program_main(i64** %0) local_unnamed_addr nounwind {
-  %t0 = call i64 @_factorial(i64 10) nounwind
+  %_closure_raw = call i8* @_builtin_malloc(i64 8) nounwind
+  %_closure_typed = bitcast i8* %_closure_raw to i64 (i64)**
+  store i64 (i64)* @_factorial, i64 (i64)** %_closure_typed
+  %_fun_ref = load i64 (i64)*, i64 (i64)** %_closure_typed
+  %t0 = call i64 %_fun_ref(i64 10) nounwind
   %t1 = call i64* @_builtin_intToString(i64 %t0) nounwind
   call void @_builtin_println(i64* %t1) nounwind
   ret void
