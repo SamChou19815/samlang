@@ -39,13 +39,8 @@ import {
 } from 'samlang-core-ast/asm-instructions';
 import { Long } from 'samlang-core-utils';
 
-const analyze = (
-  instructions: readonly AssemblyInstruction[],
-  hasReturn = true
-): readonly (readonly string[])[] =>
-  analyzeLiveVariablesAtTheEndOfEachInstruction(instructions, hasReturn).out.map((it) =>
-    Array.from(it)
-  );
+const analyze = (instructions: readonly AssemblyInstruction[]): readonly (readonly string[])[] =>
+  analyzeLiveVariablesAtTheEndOfEachInstruction(instructions).out.map((it) => Array.from(it));
 
 it('analyzeLiveVariablesAtTheEndOfEachInstruction test 1', () => {
   expect(
@@ -89,8 +84,6 @@ it('analyzeLiveVariablesAtTheEndOfEachInstruction test 1', () => {
 
 it('analyzeLiveVariablesAtTheEndOfEachInstruction test 2', () => {
   expect(analyze([ASM_SET('je', RAX), ASM_RET])).toEqual([['rax'], []]);
-
-  expect(analyze([ASM_SET('je', RAX), ASM_RET], false)).toEqual([[], []]);
 });
 
 it('analyzeLiveVariablesAtTheEndOfEachInstruction test 3', () => {
