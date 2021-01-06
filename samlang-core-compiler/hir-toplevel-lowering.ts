@@ -1,4 +1,5 @@
 import lowerSamlangExpression from './hir-expression-lowering';
+import HighIRStringManager from './hir-string-manager';
 import performTailRecursiveCallTransformationOnHighIRFunction from './hir-tail-recursion-transformation-hir';
 import lowerSamlangType from './hir-types-lowering';
 
@@ -56,6 +57,7 @@ const compileFunction = (
   moduleReference: ModuleReference,
   className: string,
   classTypeParameters: readonly string[],
+  stringManager: HighIRStringManager,
   classMember: ClassMemberDefinition
 ): readonly HighIRFunction[] => {
   const encodedName = encodeFunctionNameGlobally(moduleReference, className, classMember.name);
@@ -68,6 +70,7 @@ const compileFunction = (
     moduleReference,
     encodedName,
     typeParametersSet,
+    stringManager,
     classMember.body
   );
   const parameters = classMember.parameters.map(({ name }) => name);
@@ -103,6 +106,7 @@ const compileSamlangSourcesToHighIRSources = (
 ): Sources<HighIRModule> => {
   const compiledTypeDefinitions: HighIRTypeDefinition[] = [];
   const compiledFunctions: HighIRFunction[] = [];
+  const stringManager = new HighIRStringManager();
   sources.forEach((samlangModule, moduleReference) =>
     samlangModule.classes.map(({ name: className, typeParameters, typeDefinition, members }) => {
       const compiledTypeDefinition = compileTypeDefinition(
@@ -113,7 +117,13 @@ const compileSamlangSourcesToHighIRSources = (
       );
       if (compiledTypeDefinition != null) compiledTypeDefinitions.push(compiledTypeDefinition);
       members.forEach((member) =>
-        compileFunction(moduleReference, className, typeParameters, member).forEach((it) =>
+        compileFunction(
+          moduleReference,
+          className,
+          typeParameters,
+          stringManager,
+          member
+        ).forEach((it) =>
           compiledFunctions.push(performTailRecursiveCallTransformationOnHighIRFunction(it))
         )
       );
@@ -146,6 +156,7 @@ const compileSamlangSourcesToHighIRSources = (
     ];
     const usedNames = analyzeUsedFunctionNames(allFunctions);
     irSources.set(moduleReference, {
+      globalVariables: stringManager.globalVariables.filter((it) => usedNames.has(it.name)),
       typeDefinitions: compiledTypeDefinitions,
       functions: allFunctions.filter((it) => usedNames.has(it.name)),
     });

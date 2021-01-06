@@ -1,11 +1,5 @@
 import type { IROperator } from './common-operators';
-import {
-  HighIRType,
-  HIR_BOOL_TYPE,
-  HIR_INT_TYPE,
-  HIR_STRING_TYPE,
-  prettyPrintHighIRType,
-} from './hir-types';
+import { HighIRType, HIR_BOOL_TYPE, HIR_INT_TYPE, prettyPrintHighIRType } from './hir-types';
 
 import { Long } from 'samlang-core-utils';
 
@@ -49,7 +43,6 @@ export interface HighIRBinaryExpression extends BaseHighIRExpression {
 
 export type HighIRExpression =
   | HighIRIntLiteralExpression
-  | HighIRStringLiteralExpression
   | HighIRNameExpression
   | HighIRVariableExpression
   | HighIRIndexAccessExpression
@@ -133,12 +126,6 @@ export const HIR_INT = (value: number | Long): HighIRIntLiteralExpression => ({
   __type__: 'HighIRIntLiteralExpression',
   type: HIR_INT_TYPE,
   value: typeof value === 'number' ? Long.fromInt(value) : value,
-});
-
-export const HIR_STRING = (value: string): HighIRStringLiteralExpression => ({
-  __type__: 'HighIRStringLiteralExpression',
-  type: HIR_STRING_TYPE,
-  value,
 });
 
 export const HIR_ZERO: HighIRIntLiteralExpression = HIR_INT(0);
@@ -258,8 +245,6 @@ const debugPrintHighIRExpression = (expression: HighIRExpression): string => {
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
       return expression.value.toString();
-    case 'HighIRStringLiteralExpression':
-      return `'${expression.value}'`;
     case 'HighIRVariableExpression':
       return `(${expression.name}: ${prettyPrintHighIRType(expression.type)})`;
     case 'HighIRNameExpression':

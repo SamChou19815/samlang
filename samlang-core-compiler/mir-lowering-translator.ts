@@ -2,13 +2,11 @@ import createMidIRFlexibleOrderOperatorNode from './mir-flexible-op';
 import type MidIRResourceAllocator from './mir-resource-allocator';
 
 import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
-import type { GlobalVariable } from 'samlang-core-ast/common-nodes';
 import type { HighIRExpression, HighIRStatement } from 'samlang-core-ast/hir-expressions';
 import {
   MidIRExpression,
   // eslint-disable-next-line camelcase
   MidIRStatement_DANGEROUSLY_NON_CANONICAL,
-  MIR_EIGHT,
   MIR_CONST,
   MIR_NAME,
   MIR_TEMP,
@@ -26,8 +24,6 @@ import {
 const mangleVariableForMIR = (variable: string): string => `_${variable}`;
 
 class MidIRLoweringManager {
-  readonly stringGlobalVariableCollectors: GlobalVariable[] = [];
-
   constructor(
     private readonly allocator: MidIRResourceAllocator,
     private readonly functionName: string
@@ -37,11 +33,6 @@ class MidIRLoweringManager {
     switch (expression.__type__) {
       case 'HighIRIntLiteralExpression':
         return MIR_CONST(expression.value);
-      case 'HighIRStringLiteralExpression': {
-        const contentVariable = this.allocator.allocateStringArrayGlobalVariable(expression.value);
-        this.stringGlobalVariableCollectors.push(contentVariable);
-        return MIR_NAME(contentVariable.name);
-      }
       case 'HighIRNameExpression':
         return MIR_NAME(expression.name);
       case 'HighIRVariableExpression':
@@ -155,16 +146,10 @@ const midIRTranslateStatementsAndCollectGlobalStrings = (
   allocator: MidIRResourceAllocator,
   functionName: string,
   statements: readonly HighIRStatement[]
-): {
-  // eslint-disable-next-line camelcase
-  readonly loweredStatements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[];
-  readonly stringGlobalVariables: GlobalVariable[];
-} => {
+): // eslint-disable-next-line camelcase
+readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[] => {
   const manager = new MidIRLoweringManager(allocator, functionName);
-  const loweredStatements = statements
-    .map(manager.lowerHIRStatementToMIRNonCanonicalStatements)
-    .flat();
-  return { loweredStatements, stringGlobalVariables: manager.stringGlobalVariableCollectors };
+  return statements.map(manager.lowerHIRStatementToMIRNonCanonicalStatements).flat();
 };
 
 export default midIRTranslateStatementsAndCollectGlobalStrings;

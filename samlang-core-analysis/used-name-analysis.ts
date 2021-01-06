@@ -6,7 +6,6 @@ import { assertNotNull } from 'samlang-core-utils';
 const collectUsedNamesFromExpression = (set: Set<string>, expression: HighIRExpression): void => {
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
-    case 'HighIRStringLiteralExpression':
     case 'HighIRVariableExpression':
       break;
     case 'HighIRNameExpression':

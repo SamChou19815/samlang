@@ -23,7 +23,6 @@ import {
   HIR_RETURN,
   HIR_ZERO,
   HIR_STRUCT_INITIALIZATION,
-  HIR_STRING,
   HIR_INDEX_ACCESS,
   HIR_VARIABLE,
   HIR_WHILE_TRUE,
@@ -64,6 +63,12 @@ const highIRModuleToJSString = (
 
 it('compile hello world to JS integration test', () => {
   const hirModule: HighIRModule = {
+    globalVariables: [
+      { name: 'h', content: 'Hello ' },
+      { name: 'w', content: 'World!' },
+      { name: 'f1', content: '"foo' },
+      { name: 'f2', content: "'foo" },
+    ],
     typeDefinitions: [],
     functions: [
       {
@@ -74,7 +79,7 @@ it('compile hello world to JS integration test', () => {
         body: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('_builtin_stringConcat', HIR_VOID_TYPE),
-            functionArguments: [HIR_STRING('Hello '), HIR_STRING('World!')],
+            functionArguments: [HIR_NAME('h', HIR_STRING_TYPE), HIR_NAME('w', HIR_STRING_TYPE)],
             returnCollector: { name: '_t0', type: HIR_STRING_TYPE },
           }),
           HIR_FUNCTION_CALL({
@@ -106,8 +111,12 @@ const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);
 const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
 const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
 
+const h = "Hello ";
+const w = "World!";
+const f1 = "\\"foo";
+const f2 = "'foo";
 const _module_Test_class_Main_function_main = () => {
-  var _t0 = _builtin_stringConcat("Hello ", "World!");
+  var _t0 = _builtin_stringConcat(h, w);
   var _t1 = _builtin_println(_t0);
 };
 const _compiled_program_main = () => {
@@ -126,6 +135,10 @@ const setupHIRIntegration = (hirModule: HighIRModule): string => {
 it('confirm samlang & equivalent JS have same print output', () => {
   expect(
     setupHIRIntegration({
+      globalVariables: [
+        { name: 'h', content: 'Hello ' },
+        { name: 'w', content: 'World!' },
+      ],
       typeDefinitions: [],
       functions: [
         {
@@ -136,7 +149,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
           body: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('_builtin_stringConcat', HIR_VOID_TYPE),
-              functionArguments: [HIR_STRING('Hello '), HIR_STRING('World!')],
+              functionArguments: [HIR_NAME('h', HIR_STRING_TYPE), HIR_NAME('w', HIR_STRING_TYPE)],
               returnCollector: { name: '_t0', type: HIR_STRING_TYPE },
             }),
             HIR_FUNCTION_CALL({
@@ -152,6 +165,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
 
   expect(
     setupHIRIntegration({
+      globalVariables: [],
       typeDefinitions: [],
       functions: [
         {
@@ -167,6 +181,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
 
   expect(
     setupHIRIntegration({
+      globalVariables: [],
       typeDefinitions: [],
       functions: [
         {
@@ -213,6 +228,10 @@ it('confirm samlang & equivalent JS have same print output', () => {
 
   expect(
     setupHIRIntegration({
+      globalVariables: [
+        { name: 'y', content: 'Meaning of life' },
+        { name: 'n', content: 'Not the meaning of life... keep looking' },
+      ],
       typeDefinitions: [],
       functions: [
         {
@@ -227,8 +246,8 @@ it('confirm samlang & equivalent JS have same print output', () => {
                 e1: HIR_VARIABLE('sum', HIR_INT_TYPE),
                 e2: HIR_INT(42),
               }),
-              s1: [HIR_RETURN(HIR_STRING('Meaning of life'))],
-              s2: [HIR_RETURN(HIR_STRING('Not the meaning of life... keep looking'))],
+              s1: [HIR_RETURN(HIR_NAME('y', HIR_STRING_TYPE))],
+              s2: [HIR_RETURN(HIR_NAME('n', HIR_STRING_TYPE))],
             }),
           ],
         },
@@ -276,6 +295,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
 
   expect(
     setupHIRIntegration({
+      globalVariables: [{ name: 'rb', content: 'RANDOM_BABY' }],
       typeDefinitions: [],
       functions: [
         {
@@ -287,7 +307,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
             HIR_STRUCT_INITIALIZATION({
               structVariableName: 't0',
               type: HIR_VOID_TYPE,
-              expressionList: [HIR_STRING('RANDOM_BABY')],
+              expressionList: [HIR_NAME('rb', HIR_STRING_TYPE)],
             }),
             HIR_RETURN(HIR_VARIABLE('t0', HIR_VOID_TYPE)),
           ],
@@ -335,6 +355,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
 
   expect(() =>
     setupHIRIntegration({
+      globalVariables: [{ name: 'illegal', content: 'Division by zero is illegal!' }],
       typeDefinitions: [],
       functions: [
         {
@@ -367,7 +388,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
               s1: [
                 HIR_FUNCTION_CALL({
                   functionExpression: HIR_NAME('_builtin_throw', HIR_VOID_TYPE),
-                  functionArguments: [HIR_STRING('Division by zero is illegal!')],
+                  functionArguments: [HIR_NAME('illegal', HIR_STRING_TYPE)],
                 }),
               ],
               s2: [],
@@ -481,21 +502,21 @@ it('HIR statements to JS string test', () => {
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
-        functionArguments: [HIR_STRING('Hello, world')],
+        functionArguments: [HIR_ZERO],
         functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, HIR_VOID_TYPE),
         returnCollector: { name: 'res', type: HIR_VOID_TYPE },
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_PRINTLN}("Hello, world");`);
+  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_PRINTLN}(0);`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
-        functionArguments: [HIR_STRING('5')],
+        functionArguments: [HIR_ZERO],
         functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_TO_INT, HIR_VOID_TYPE),
         returnCollector: { name: 'res', type: HIR_INT_TYPE },
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_TO_INT}("5");`);
+  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_TO_INT}(0);`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -508,21 +529,21 @@ it('HIR statements to JS string test', () => {
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
-        functionArguments: [HIR_STRING('5'), HIR_STRING('4')],
+        functionArguments: [HIR_ZERO, HIR_ZERO],
         functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_CONCAT, HIR_VOID_TYPE),
         returnCollector: { name: 'res', type: HIR_STRING_TYPE },
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}("5", "4");`);
+  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}(0, 0);`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
-        functionArguments: [HIR_STRING('panik')],
+        functionArguments: [HIR_ZERO],
         functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_THROW, HIR_VOID_TYPE),
         returnCollector: { name: 'panik', type: HIR_VOID_TYPE },
       })
     )
-  ).toBe(`var panik = ${ENCODED_FUNCTION_NAME_THROW}("panik");`);
+  ).toBe(`var panik = ${ENCODED_FUNCTION_NAME_THROW}(0);`);
   expect(
     highIRStatementToString(
       HIR_LET({
@@ -538,10 +559,10 @@ it('HIR statements to JS string test', () => {
       HIR_STRUCT_INITIALIZATION({
         structVariableName: 'st',
         type: HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_STRING_TYPE, HIR_INT_TYPE]),
-        expressionList: [HIR_ZERO, HIR_STRING('bar'), HIR_INT(13)],
+        expressionList: [HIR_ZERO, HIR_ZERO, HIR_INT(13)],
       })
     )
-  ).toBe(`var st = [0, "bar", 13];`);
+  ).toBe(`var st = [0, 0, 13];`);
 });
 
 it('HIR function to JS string test 1', () => {
@@ -588,9 +609,6 @@ it('HIR function to JS string test 2', () => {
 
 it('HIR expression to JS string test', () => {
   expect(highIRExpressionToString(HIR_INT(1305))).toBe('1305');
-  expect(highIRExpressionToString(HIR_STRING('bloop'))).toBe(`"bloop"`);
-  expect(highIRExpressionToString(HIR_STRING('"foo'))).toBe(`"\\"foo"`);
-  expect(highIRExpressionToString(HIR_STRING("'foo"))).toBe(`"'foo"`);
   expect(
     highIRExpressionToString(
       HIR_INDEX_ACCESS({
@@ -619,13 +637,13 @@ it('HIR expression to JS string test', () => {
         type: HIR_VOID_TYPE,
         expression: HIR_BINARY({
           operator: '+',
-          e1: HIR_STRING('a'),
-          e2: HIR_STRING('b'),
+          e1: HIR_ZERO,
+          e2: HIR_ZERO,
         }),
         index: 0,
       })
     )
-  ).toBe('("a" + "b")[0]');
+  ).toBe('(0 + 0)[0]');
   expect(highIRExpressionToString(HIR_VARIABLE('ts', HIR_VOID_TYPE))).toBe('ts');
   expect(highIRExpressionToString(HIR_NAME('key', HIR_VOID_TYPE))).toBe('key');
   expect(
