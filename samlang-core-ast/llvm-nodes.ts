@@ -1,4 +1,7 @@
+import type { IROperator } from './common-operators';
 import type { HighIRIdentifierType } from './hir-types';
+
+import type { Long } from 'samlang-core-utils';
 
 export type LLVMPrimitiveType = {
   readonly __type__: 'PrimitiveType';
@@ -69,3 +72,77 @@ export const prettyPrintLLVMType = (type: LLVMType): string => {
         .join(', ')})`;
   }
 };
+
+export type LLVMValue = Long | string;
+
+export type LLVMAnnotatedValue = { readonly value: LLVMValue; readonly type: LLVMType };
+
+export type LLVMGetElementAddressInstruction = {
+  readonly __type__: 'LLVMGetElementAddressInstruction';
+  readonly pointerType: LLVMType;
+  readonly value: LLVMValue;
+  readonly offset: number;
+};
+
+export type LLVMBinaryInstruction = {
+  readonly __type__: 'LLVMBinaryInstruction';
+  readonly resultVariable: string;
+  readonly operator: IROperator;
+  readonly e1: LLVMValue;
+  readonly e2: LLVMValue;
+};
+
+export type LLVMLoadInstruction = {
+  readonly __type__: 'LLVMBinaryInstruction';
+  readonly resultVariable: string;
+  readonly resultType: LLVMType;
+  readonly sourceVariable: string;
+  readonly sourceType: LLVMType;
+};
+
+export type LLVMStoreInstruction = {
+  readonly __type__: 'LLVMStoreInstruction';
+  readonly targetVariable: string;
+  readonly targetType: LLVMType;
+  readonly sourceVariable: string;
+  readonly sourceType: LLVMType;
+};
+
+export type LLVMPhiInstruction = {
+  readonly __type__: 'LLVMPhiInstruction';
+  readonly variableType: LLVMType;
+  readonly v1: string;
+  readonly b1: string;
+  readonly v2: string;
+  readonly b2: string;
+};
+
+export type LLVMFunctionCallInstruction = {
+  readonly __type__: 'LLVMFunctionCallInstruction';
+  readonly resultType: LLVMType;
+  readonly resultVariable?: string;
+  readonly functionName: LLVMValue; // ???
+  readonly functionArguments: readonly LLVMAnnotatedValue[];
+};
+
+export type LLVMConditionalJumpInstruction = {
+  readonly __type__: 'LLVMBranchInstruction';
+  readonly condition: LLVMValue;
+  readonly b1: string;
+  readonly b2: string;
+};
+
+export type LLVMReturnInstruction = {
+  readonly __type__: 'LLVMReturnInstruction';
+  readonly value?: LLVMAnnotatedValue;
+};
+
+export type LLVMInstruction =
+  | LLVMGetElementAddressInstruction
+  | LLVMBinaryInstruction
+  | LLVMLoadInstruction
+  | LLVMStoreInstruction
+  | LLVMPhiInstruction
+  | LLVMFunctionCallInstruction
+  | LLVMConditionalJumpInstruction
+  | LLVMReturnInstruction;
