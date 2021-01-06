@@ -1,6 +1,6 @@
 declare i64* @_builtin_malloc(i64) nounwind
-declare void @_builtin_println(i64*) nounwind
-declare void @_builtin_throw(i64*) nounwind
+declare i64 @_builtin_println(i64*) nounwind
+declare i64 @_builtin_throw(i64*) nounwind
 declare i64* @_builtin_intToString(i64) nounwind
 declare i64 @_builtin_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
@@ -32,8 +32,8 @@ define void @_compiled_program_main(i64** %0) local_unnamed_addr nounwind {
   %_fun_ref = load i64 (i64)*, i64 (i64)** %_closure_typed
   %t0 = call i64 %_fun_ref(i64 10) nounwind
   %t1 = call i64* @_builtin_intToString(i64 %t0) nounwind
-  call void @_builtin_println(i64* %t1) nounwind
+  call i64 @_builtin_println(i64* %t1) nounwind
   %t2 = bitcast [3 x i64]* @GLOBAL_STRING_0 to i64*
-  call void @_builtin_println(i64* %t2) nounwind
+  call i64 @_builtin_println(i64* %t2) nounwind
   ret void
 }

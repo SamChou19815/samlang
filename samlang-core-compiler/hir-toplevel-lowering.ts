@@ -10,7 +10,12 @@ import {
   encodeMainFunctionName,
 } from 'samlang-core-ast/common-names';
 import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
-import { HIR_FUNCTION_CALL, HIR_NAME, HIR_RETURN } from 'samlang-core-ast/hir-expressions';
+import {
+  HIR_FUNCTION_CALL,
+  HIR_NAME,
+  HIR_RETURN,
+  HIR_ZERO,
+} from 'samlang-core-ast/hir-expressions';
 import type {
   HighIRTypeDefinition,
   HighIRFunction,
@@ -19,7 +24,6 @@ import type {
 import {
   HIR_INT_TYPE,
   HIR_ANY_TYPE,
-  HIR_VOID_TYPE,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
 } from 'samlang-core-ast/hir-types';
@@ -76,15 +80,11 @@ const compileFunction = (
   const parameters = classMember.parameters.map(({ name }) => name);
   const parametersWithThis = classMember.isMethod ? ['_this', ...parameters] : parameters;
   const statements = bodyLoweringResult.statements;
-  const returnType = classMember.type.returnType;
-  const hasReturn = returnType.type !== 'PrimitiveType' || returnType.name !== 'unit';
-  const body = hasReturn ? [...statements, HIR_RETURN(bodyLoweringResult.expression)] : statements;
   return [
     ...bodyLoweringResult.syntheticFunctions,
     {
       name: encodedName,
       parameters: parametersWithThis,
-      hasReturn,
       type: HIR_FUNCTION_TYPE(
         classMember.isMethod
           ? [
@@ -94,9 +94,9 @@ const compileFunction = (
               ),
             ]
           : classMember.parameters.map(({ type }) => lowerSamlangType(type, typeParametersSet)),
-        lowerSamlangType(returnType, typeParametersSet)
+        lowerSamlangType(classMember.type.returnType, typeParametersSet)
       ),
-      body,
+      body: [...statements, HIR_RETURN(bodyLoweringResult.expression)],
     },
   ];
 };
@@ -141,16 +141,16 @@ const compileSamlangSourcesToHighIRSources = (
       {
         name: ENCODED_COMPILED_PROGRAM_MAIN,
         parameters: [],
-        hasReturn: false,
-        type: HIR_FUNCTION_TYPE([], HIR_VOID_TYPE),
+        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
         body: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
               entryPointFunctionName,
-              HIR_FUNCTION_TYPE([], HIR_VOID_TYPE)
+              HIR_FUNCTION_TYPE([], HIR_INT_TYPE)
             ),
             functionArguments: [],
           }),
+          HIR_RETURN(HIR_ZERO),
         ],
       },
     ];

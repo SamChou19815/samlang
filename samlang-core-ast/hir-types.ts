@@ -2,7 +2,7 @@ import { checkNotNull } from 'samlang-core-utils';
 
 export type HighIRPrimitiveType = {
   readonly __type__: 'PrimitiveType';
-  readonly type: 'bool' | 'void' | 'int' | 'any' | 'string';
+  readonly type: 'bool' | 'int' | 'any' | 'string';
 };
 
 export type HighIRIdentifierType = { readonly __type__: 'IdentifierType'; readonly name: string };
@@ -25,7 +25,6 @@ export type HighIRType =
   | HighIRFunctionType;
 
 export const HIR_BOOL_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'bool' };
-export const HIR_VOID_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'void' };
 export const HIR_INT_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'int' };
 export const HIR_ANY_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'any' };
 export const HIR_STRING_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'string' };

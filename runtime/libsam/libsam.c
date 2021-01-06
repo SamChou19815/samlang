@@ -38,7 +38,7 @@ static samlang_string mkString(const char* in) {
     return out;
 }
 
-extern void SAMLANG_COMPILED_MAIN(samlang_string[]);
+extern samlang_int SAMLANG_COMPILED_MAIN(samlang_string[]);
 
 int main(int argc, char *argv[]) {
     // Create arguments array.
@@ -58,9 +58,10 @@ static void SAMLANG_BUILTIN(print)(samlang_string str) {
     }
 }
 
-void SAMLANG_BUILTIN(println)(samlang_string str) {
+samlang_int SAMLANG_BUILTIN(println)(samlang_string str) {
     SAMLANG_BUILTIN(print)(str);
     fputc('\n', stdout);
+    return 0;
 }
 
 samlang_int SAMLANG_BUILTIN(stringToInt)(samlang_string str) {
@@ -130,9 +131,10 @@ samlang_string SAMLANG_BUILTIN(stringConcat)(samlang_string s1, samlang_string s
     return stringArray;
 }
 
-void SAMLANG_BUILTIN(throw)(samlang_string in) {
+samlang_int SAMLANG_BUILTIN(throw)(samlang_string in) {
     SAMLANG_BUILTIN(println)(in);
     exit(1);
+    return 0;
 }
 
 /* converting UTF-16 to UTF-8 */

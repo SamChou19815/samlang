@@ -11,7 +11,6 @@ it('debugPrintHighIRModule works', () => {
         {
           name: 'Bar',
           parameters: ['f'],
-          hasReturn: true,
           type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
           body: [HIR_RETURN(HIR_ZERO)],
         },

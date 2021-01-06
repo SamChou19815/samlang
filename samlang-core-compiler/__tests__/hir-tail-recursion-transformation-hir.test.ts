@@ -9,10 +9,9 @@ import {
   HIR_LET,
   HIR_NAME,
   HIR_RETURN,
-  HIR_BINARY,
 } from 'samlang-core-ast/hir-expressions';
 import { debugPrintHighIRFunction } from 'samlang-core-ast/hir-toplevel';
-import { HIR_FUNCTION_TYPE, HIR_INT_TYPE, HIR_VOID_TYPE } from 'samlang-core-ast/hir-types';
+import { HIR_FUNCTION_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 
 it('performTailRecursiveCallTransformationOnHighIRFunction failed coalescing test', () => {
   expect(
@@ -20,7 +19,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction failed coalescing tes
       performTailRecursiveCallTransformationOnHighIRFunction({
         name: '',
         parameters: [],
-        hasReturn: true,
         type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
         body: [],
       })
@@ -37,7 +35,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction no tailrec call test'
       performTailRecursiveCallTransformationOnHighIRFunction({
         name: '',
         parameters: [],
-        hasReturn: true,
         type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
         body: [
           HIR_LET({ name: '_t1', type: HIR_INT_TYPE, assignedExpression: HIR_ONE }),
@@ -57,7 +54,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
       performTailRecursiveCallTransformationOnHighIRFunction({
         name: 'tailRec',
         parameters: ['n'],
-        hasReturn: true,
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_FUNCTION_CALL({
@@ -88,7 +84,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow mismatch 
       performTailRecursiveCallTransformationOnHighIRFunction({
         name: 'tailRec',
         parameters: ['n'],
-        hasReturn: true,
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_FUNCTION_CALL({
@@ -116,7 +111,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow mismatch 
       performTailRecursiveCallTransformationOnHighIRFunction({
         name: 'tailRec',
         parameters: ['n'],
-        hasReturn: true,
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_FUNCTION_CALL({
@@ -144,7 +138,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
       performTailRecursiveCallTransformationOnHighIRFunction({
         name: 'tailRec',
         parameters: ['n'],
-        hasReturn: true,
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_IF_ELSE({
@@ -185,7 +178,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
       performTailRecursiveCallTransformationOnHighIRFunction({
         name: 'tailRec',
         parameters: ['n'],
-        hasReturn: true,
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_IF_ELSE({
@@ -220,55 +212,12 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
 `);
 });
 
-it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 3', () => {
-  expect(
-    debugPrintHighIRFunction(
-      performTailRecursiveCallTransformationOnHighIRFunction({
-        name: 'tailRec',
-        parameters: ['n'],
-        hasReturn: false,
-        type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_VOID_TYPE),
-        body: [
-          HIR_IF_ELSE({
-            booleanExpression: HIR_VARIABLE('n', HIR_INT_TYPE),
-            s1: [],
-            s2: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME(
-                  'tailRec',
-                  HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_VOID_TYPE)
-                ),
-                functionArguments: [
-                  HIR_BINARY({ operator: '-', e1: HIR_VARIABLE('n', HIR_INT_TYPE), e2: HIR_ONE }),
-                ],
-                returnCollector: { name: 'collector', type: HIR_INT_TYPE },
-              }),
-            ],
-          }),
-        ],
-      })
-    )
-  ).toBe(`function tailRec(n: int): void {
-  // phi(_tailRecTransformationArgument0)
-  while true {
-    if (n: int) {
-      return 0;
-    } else {
-      let _tailRecTransformationArgument0: int = ((n: int) - 1);
-      let n: int = (_tailRecTransformationArgument0: int);
-    }
-  }
-}
-`);
-});
-
 it('performTailRecursiveCallTransformationOnHighIRFunction 1-level no transform test', () => {
   expect(
     debugPrintHighIRFunction(
       performTailRecursiveCallTransformationOnHighIRFunction({
         name: 'tailRec',
         parameters: ['n'],
-        hasReturn: true,
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_IF_ELSE({
@@ -297,7 +246,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
       performTailRecursiveCallTransformationOnHighIRFunction({
         name: 'tailRec',
         parameters: ['n'],
-        hasReturn: true,
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_IF_ELSE({
@@ -349,100 +297,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
       return 0;
     }
     // phi(none)
-  }
-}
-`);
-});
-
-it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 2', () => {
-  expect(
-    debugPrintHighIRFunction(
-      performTailRecursiveCallTransformationOnHighIRFunction({
-        name: 'tailRec',
-        parameters: ['n'],
-        hasReturn: false,
-        type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
-        body: [
-          HIR_IF_ELSE({
-            multiAssignedVariable: 'none',
-            booleanExpression: HIR_ONE,
-            s1: [
-              HIR_IF_ELSE({
-                multiAssignedVariable: 'none',
-                booleanExpression: HIR_ONE,
-                s1: [
-                  HIR_IF_ELSE({
-                    multiAssignedVariable: 'none',
-                    booleanExpression: HIR_ONE,
-                    s1: [
-                      HIR_FUNCTION_CALL({
-                        functionExpression: HIR_NAME(
-                          'tailRec',
-                          HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
-                        ),
-                        functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
-                        returnCollector: { name: 'collector', type: HIR_INT_TYPE },
-                      }),
-                    ],
-                    s2: [
-                      HIR_FUNCTION_CALL({
-                        functionExpression: HIR_NAME(
-                          'tailRec1',
-                          HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
-                        ),
-                        functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
-                        returnCollector: { name: 'collector', type: HIR_INT_TYPE },
-                      }),
-                    ],
-                  }),
-                ],
-                s2: [],
-              }),
-            ],
-            s2: [
-              HIR_IF_ELSE({
-                multiAssignedVariable: 'none',
-                booleanExpression: HIR_ONE,
-                s1: [],
-                s2: [
-                  HIR_FUNCTION_CALL({
-                    functionExpression: HIR_NAME(
-                      'tailRec',
-                      HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
-                    ),
-                    functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
-                    returnCollector: { name: 'collector', type: HIR_INT_TYPE },
-                  }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      })
-    )
-  ).toBe(`function tailRec(n: int): int {
-  // phi(_tailRecTransformationArgument0)
-  while true {
-    if 1 {
-      if 1 {
-        if 1 {
-          let _tailRecTransformationArgument0: int = (n: int);
-          let n: int = (_tailRecTransformationArgument0: int);
-        } else {
-          let collector: int = tailRec1((n: int));
-          return 0;
-        }
-      } else {
-        return 0;
-      }
-    } else {
-      if 1 {
-        return 0;
-      } else {
-        let _tailRecTransformationArgument0: int = (n: int);
-        let n: int = (_tailRecTransformationArgument0: int);
-      }
-    }
   }
 }
 `);

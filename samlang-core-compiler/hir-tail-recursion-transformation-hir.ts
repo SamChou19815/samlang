@@ -1,19 +1,16 @@
-import eliminateUselessEndingMoveForHighIRStatements from './hir-eliminate-useless-ending-moves';
 import coalesceMoveAndReturnForHighIRStatements from './hir-move-return-coalescing';
 
 import {
   HighIRStatement,
-  HIR_ZERO,
   HIR_VARIABLE,
   HIR_LET,
   HIR_IF_ELSE,
   HIR_WHILE_TRUE,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { checkNotNull } from 'samlang-core-utils';
 
-const performTailRecursiveCallTransformationOnLinearStatementsWithFinalReturn = (
+const performTailRecursiveCallTransformationOnLinearStatements = (
   highIRFunction: HighIRFunction,
   statements: readonly HighIRStatement[]
 ): readonly HighIRStatement[] | null => {
@@ -30,86 +27,53 @@ const performTailRecursiveCallTransformationOnLinearStatementsWithFinalReturn = 
   const { functionExpression, functionArguments, returnCollector } = functionCallStatement;
   if (
     functionExpression.__type__ !== 'HighIRNameExpression' ||
-    returnStatement.expression.__type__ !== 'HighIRVariableExpression' ||
-    returnCollector?.name !== returnStatement.expression.name ||
     functionExpression.name !== highIRFunction.name
   ) {
     return null;
   }
-  return [
-    ...statements.slice(0, statements.length - 2),
-    ...functionArguments.map((functionArgument, i) =>
-      HIR_LET({
-        name: `_tailRecTransformationArgument${i}`,
-        type: functionArgument.type,
-        assignedExpression: functionArgument,
-      })
-    ),
-    ...highIRFunction.parameters.map((name, i) =>
-      HIR_LET({
-        name,
-        type: checkNotNull(functionArguments[i]).type,
-        assignedExpression: HIR_VARIABLE(
-          `_tailRecTransformationArgument${i}`,
-          checkNotNull(functionArguments[i]).type
-        ),
-      })
-    ),
-  ];
+  if (
+    (returnStatement.expression.__type__ === 'HighIRVariableExpression' &&
+      returnCollector?.name === returnStatement.expression.name) ||
+    (returnStatement.expression.__type__ === 'HighIRIntLiteralExpression' &&
+      returnCollector == null)
+  ) {
+    return [
+      ...statements.slice(0, statements.length - 2),
+      // TODO: prepare for SSA
+      ...functionArguments.map((functionArgument, i) =>
+        HIR_LET({
+          name: `_tailRecTransformationArgument${i}`,
+          type: functionArgument.type,
+          assignedExpression: functionArgument,
+        })
+      ),
+      ...highIRFunction.parameters.map((name, i) =>
+        HIR_LET({
+          name,
+          type: checkNotNull(functionArguments[i]).type,
+          assignedExpression: HIR_VARIABLE(
+            `_tailRecTransformationArgument${i}`,
+            checkNotNull(functionArguments[i]).type
+          ),
+        })
+      ),
+    ];
+  }
+  return null;
 };
 
-const performTailRecursiveCallTransformationOnLinearStatementsWithoutFinalReturn = (
-  highIRFunction: HighIRFunction,
-  statements: readonly HighIRStatement[]
-): readonly HighIRStatement[] | null => {
-  const functionCallStatement = statements[statements.length - 1];
-  if (
-    functionCallStatement == null ||
-    functionCallStatement.__type__ !== 'HighIRFunctionCallStatement'
-  ) {
-    return null;
-  }
-  const { functionExpression, functionArguments } = functionCallStatement;
-  if (
-    functionExpression.__type__ !== 'HighIRNameExpression' ||
-    functionExpression.name !== highIRFunction.name
-  ) {
-    return null;
-  }
-  return [
-    ...statements.slice(0, statements.length - 2),
-    ...functionArguments.map((functionArgument, i) =>
-      HIR_LET({
-        name: `_tailRecTransformationArgument${i}`,
-        type: functionArgument.type,
-        assignedExpression: functionArgument,
-      })
-    ),
-    ...highIRFunction.parameters.map((name, i) =>
-      HIR_LET({
-        name,
-        type: checkNotNull(functionArguments[i]).type,
-        assignedExpression: HIR_VARIABLE(
-          `_tailRecTransformationArgument${i}`,
-          checkNotNull(functionArguments[i]).type
-        ),
-      })
-    ),
-  ];
-};
-
-const performTailRecursiveCallTransformationOnIfElseEndedStatementsWithFinalReturn = (
+const performTailRecursiveCallTransformationOnIfElseEndedStatements = (
   highIRFunction: HighIRFunction,
   statements: readonly HighIRStatement[]
 ): readonly HighIRStatement[] | null => {
   const lastStatement = statements[statements.length - 1];
   if (lastStatement == null || lastStatement.__type__ !== 'HighIRIfElseStatement') return null;
 
-  const s1 = recursivelyPerformTailRecursiveCallTransformationOnStatementsWithFinalReturn(
+  const s1 = recursivelyPerformTailRecursiveCallTransformationOnStatements(
     highIRFunction,
     lastStatement.s1
   );
-  const s2 = recursivelyPerformTailRecursiveCallTransformationOnStatementsWithFinalReturn(
+  const s2 = recursivelyPerformTailRecursiveCallTransformationOnStatements(
     highIRFunction,
     lastStatement.s2
   );
@@ -125,70 +89,22 @@ const performTailRecursiveCallTransformationOnIfElseEndedStatementsWithFinalRetu
   ];
 };
 
-const performTailRecursiveCallTransformationOnIfElseEndedStatementsWithoutFinalReturn = (
-  highIRFunction: HighIRFunction,
-  statements: readonly HighIRStatement[]
-): readonly HighIRStatement[] | null => {
-  const lastStatement = statements[statements.length - 1];
-  if (lastStatement == null || lastStatement.__type__ !== 'HighIRIfElseStatement') return null;
-
-  const s1 = recursivelyPerformTailRecursiveCallTransformationOnStatementsWithoutFinalReturn(
-    highIRFunction,
-    lastStatement.s1
-  );
-  const s2 = recursivelyPerformTailRecursiveCallTransformationOnStatementsWithoutFinalReturn(
-    highIRFunction,
-    lastStatement.s2
-  );
-  // istanbul ignore next
-  if (s1 == null && s2 == null) return null;
-  return [
-    ...statements.slice(0, statements.length - 1),
-    HIR_IF_ELSE({
-      multiAssignedVariable: lastStatement.multiAssignedVariable,
-      booleanExpression: lastStatement.booleanExpression,
-      s1: s1 ?? [...lastStatement.s1, HIR_RETURN(HIR_ZERO)],
-      s2: s2 ?? [...lastStatement.s2, HIR_RETURN(HIR_ZERO)],
-    }),
-  ];
-};
-
-const recursivelyPerformTailRecursiveCallTransformationOnStatementsWithFinalReturn = (
+const recursivelyPerformTailRecursiveCallTransformationOnStatements = (
   highIRFunction: HighIRFunction,
   statements: readonly HighIRStatement[]
 ): readonly HighIRStatement[] | null =>
-  performTailRecursiveCallTransformationOnLinearStatementsWithFinalReturn(
-    highIRFunction,
-    statements
-  ) ??
-  performTailRecursiveCallTransformationOnIfElseEndedStatementsWithFinalReturn(
-    highIRFunction,
-    statements
-  );
-
-const recursivelyPerformTailRecursiveCallTransformationOnStatementsWithoutFinalReturn = (
-  highIRFunction: HighIRFunction,
-  statements: readonly HighIRStatement[]
-): readonly HighIRStatement[] | null =>
-  performTailRecursiveCallTransformationOnLinearStatementsWithoutFinalReturn(
-    highIRFunction,
-    statements
-  ) ??
-  performTailRecursiveCallTransformationOnIfElseEndedStatementsWithoutFinalReturn(
-    highIRFunction,
-    statements
-  );
+  performTailRecursiveCallTransformationOnLinearStatements(highIRFunction, statements) ??
+  performTailRecursiveCallTransformationOnIfElseEndedStatements(highIRFunction, statements);
 
 const performTailRecursiveCallTransformationOnHighIRFunction = (
   highIRFunction: HighIRFunction
 ): HighIRFunction => {
-  const optimizedStatements = highIRFunction.hasReturn
-    ? coalesceMoveAndReturnForHighIRStatements(highIRFunction.body) ?? highIRFunction.body
-    : eliminateUselessEndingMoveForHighIRStatements(highIRFunction.body);
-  const optimizer = highIRFunction.hasReturn
-    ? recursivelyPerformTailRecursiveCallTransformationOnStatementsWithFinalReturn
-    : recursivelyPerformTailRecursiveCallTransformationOnStatementsWithoutFinalReturn;
-  const potentialRewrittenStatements = optimizer(highIRFunction, optimizedStatements);
+  const optimizedStatements =
+    coalesceMoveAndReturnForHighIRStatements(highIRFunction.body) ?? highIRFunction.body;
+  const potentialRewrittenStatements = recursivelyPerformTailRecursiveCallTransformationOnStatements(
+    highIRFunction,
+    optimizedStatements
+  );
   if (potentialRewrittenStatements == null) return { ...highIRFunction, body: optimizedStatements };
   return {
     ...highIRFunction,

@@ -25,7 +25,6 @@ import {
   LLVM_JUMP,
   LLVM_CJUMP,
   LLVM_RETURN,
-  LLVM_RETURN_VOID,
 } from '../llvm-nodes';
 
 import { Long } from 'samlang-core-utils';
@@ -295,8 +294,6 @@ it('prettyPrintLLVMInstruction works for LLVM_CJUMP.', () => {
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_RETURN.', () => {
-  expect(prettyPrintLLVMInstruction(LLVM_RETURN_VOID)).toBe('ret void');
-
   expect(prettyPrintLLVMInstruction(LLVM_RETURN(LLVM_VARIABLE('bar'), LLVM_BOOL_TYPE))).toBe(
     'ret i1 %bar'
   );

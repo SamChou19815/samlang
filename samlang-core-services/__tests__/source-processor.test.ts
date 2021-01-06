@@ -39,6 +39,7 @@ _module_Test_class_Main_function_main:
     call _builtin_stringConcat
     mov rdi, rax
     call _builtin_println
+    mov rax, 0
     mov rsp, rbp
     pop rbp
     ret
@@ -50,6 +51,7 @@ _compiled_program_main:
     call _builtin_stringConcat
     mov rdi, rax
     call _builtin_println
+    mov rax, 0
     mov rsp, rbp
     pop rbp
     ret
