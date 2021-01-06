@@ -1,3 +1,4 @@
+import type { GlobalVariable } from './common-nodes';
 import { debugPrintHighIRStatement, HighIRStatement } from './hir-expressions';
 import {
   HighIRType,
@@ -22,6 +23,7 @@ export interface HighIRFunction {
 }
 
 export interface HighIRModule {
+  readonly globalVariables: readonly GlobalVariable[];
   readonly typeDefinitions: readonly HighIRTypeDefinition[];
   readonly functions: readonly HighIRFunction[];
 }
@@ -43,8 +45,13 @@ export const debugPrintHighIRFunction = ({
   return `${header}\n${body}\n}\n`;
 };
 
-export const debugPrintHighIRModule = ({ typeDefinitions, functions }: HighIRModule): string =>
+export const debugPrintHighIRModule = ({
+  globalVariables,
+  typeDefinitions,
+  functions,
+}: HighIRModule): string =>
   [
+    ...globalVariables.map(({ name, content }) => `const ${name} = '${content}';\n`),
     ...typeDefinitions.map(
       ({ identifier, mappings }) =>
         `type ${identifier} = ${prettyPrintHighIRType(HIR_STRUCT_TYPE(mappings))};\n`

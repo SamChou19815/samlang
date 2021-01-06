@@ -32,8 +32,6 @@ export const createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING = (
   switch (highIRExpression.__type__) {
     case 'HighIRIntLiteralExpression':
       return PRETTIER_TEXT(String(highIRExpression.value));
-    case 'HighIRStringLiteralExpression':
-      return PRETTIER_TEXT(`"${escapeDoubleQuotes(highIRExpression.value)}"`);
     case 'HighIRVariableExpression':
     case 'HighIRNameExpression':
       return PRETTIER_TEXT(highIRExpression.name);
@@ -189,6 +187,12 @@ export const createPrettierDocumentFromHighIRModule = (
     PRETTIER_LINE,
     PRETTIER_LINE,
   ];
+  highIRModule.globalVariables.forEach(({ name, content }) => {
+    segments.push(
+      PRETTIER_TEXT(`const ${name} = "${escapeDoubleQuotes(content)}";`),
+      PRETTIER_LINE
+    );
+  });
   highIRModule.functions.forEach((highIRFunction) =>
     segments.push(
       createPrettierDocumentFromHighIRFunction_EXPOSED_FOR_TESTING(highIRFunction),

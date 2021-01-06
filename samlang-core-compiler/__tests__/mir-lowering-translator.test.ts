@@ -9,7 +9,6 @@ import {
   HIR_IF_ELSE,
   HIR_RETURN,
   HIR_BINARY,
-  HIR_STRING,
   HIR_FUNCTION_CALL,
   HIR_LET,
   HIR_INDEX_ACCESS,
@@ -27,7 +26,7 @@ const assertCorrectlyLoweredWithPreConfiguredSetup = (
 ): void => {
   expect(
     midIRTranslateStatementsAndCollectGlobalStrings(new MidIRResourceAllocator(), '', [statement])
-      .loweredStatements.map(midIRStatementToString)
+      .map(midIRStatementToString)
       .join('\n')
   ).toBe(expectedMirStatementsString);
 };
@@ -36,7 +35,11 @@ it('midIRTranslateStatementsAndCollectGlobalStrings test', () => {
   assertCorrectlyLoweredWithPreConfiguredSetup(
     HIR_FUNCTION_CALL({
       functionExpression: HIR_NAME('foo', HIR_INT_TYPE),
-      functionArguments: [HIR_ONE, HIR_STRING('bar'), HIR_VARIABLE('baz', HIR_INT_TYPE)],
+      functionArguments: [
+        HIR_ONE,
+        HIR_NAME('GLOBAL_STRING_0', HIR_STRING_TYPE),
+        HIR_VARIABLE('baz', HIR_INT_TYPE),
+      ],
       returnCollector: { name: 'bar', type: HIR_STRING_TYPE },
     }),
     `_bar = foo(1, GLOBAL_STRING_0, _baz);`
@@ -44,7 +47,11 @@ it('midIRTranslateStatementsAndCollectGlobalStrings test', () => {
   assertCorrectlyLoweredWithPreConfiguredSetup(
     HIR_FUNCTION_CALL({
       functionExpression: HIR_NAME('foo', HIR_INT_TYPE),
-      functionArguments: [HIR_ONE, HIR_STRING('bar'), HIR_VARIABLE('baz', HIR_INT_TYPE)],
+      functionArguments: [
+        HIR_ONE,
+        HIR_NAME('GLOBAL_STRING_0', HIR_STRING_TYPE),
+        HIR_VARIABLE('baz', HIR_INT_TYPE),
+      ],
     }),
     `foo(1, GLOBAL_STRING_0, _baz);`
   );

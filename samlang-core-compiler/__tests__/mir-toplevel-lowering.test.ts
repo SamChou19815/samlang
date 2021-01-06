@@ -1,13 +1,17 @@
 import compileHighIrModuleToMidIRCompilationUnit from '../mir-toplevel-lowering';
 
-import { HIR_RETURN, HIR_STRING } from 'samlang-core-ast/hir-expressions';
+import { HIR_NAME, HIR_RETURN } from 'samlang-core-ast/hir-expressions';
 import { HIR_STRING_TYPE, HIR_VOID_TYPE, HIR_FUNCTION_TYPE } from 'samlang-core-ast/hir-types';
 import { midIRCompilationUnitToString } from 'samlang-core-ast/mir-nodes';
 
 it('compileHighIrModuleToMidIRCompilationUnit dummy source test', () => {
   expect(
     midIRCompilationUnitToString(
-      compileHighIrModuleToMidIRCompilationUnit({ typeDefinitions: [], functions: [] })
+      compileHighIrModuleToMidIRCompilationUnit({
+        globalVariables: [],
+        typeDefinitions: [],
+        functions: [],
+      })
     )
   ).toBe('\n');
 });
@@ -16,6 +20,7 @@ it('compileHighIrModuleToMidIRCompilationUnit full integration test', () => {
   expect(
     midIRCompilationUnitToString(
       compileHighIrModuleToMidIRCompilationUnit({
+        globalVariables: [{ name: 'GLOBAL_STRING_0', content: 'hello world' }],
         typeDefinitions: [],
         functions: [
           {
@@ -23,14 +28,14 @@ it('compileHighIrModuleToMidIRCompilationUnit full integration test', () => {
             parameters: ['foo', 'bar', 'baz'],
             hasReturn: true,
             type: HIR_FUNCTION_TYPE([HIR_VOID_TYPE, HIR_VOID_TYPE, HIR_VOID_TYPE], HIR_STRING_TYPE),
-            body: [HIR_RETURN(HIR_STRING('hello world'))],
+            body: [HIR_RETURN(HIR_NAME('GLOBAL_STRING_0', HIR_STRING_TYPE))],
           },
           {
             name: 'fooBar',
             parameters: ['foo', 'bar', 'baz'],
             hasReturn: true,
             type: HIR_FUNCTION_TYPE([HIR_VOID_TYPE, HIR_VOID_TYPE, HIR_VOID_TYPE], HIR_STRING_TYPE),
-            body: [HIR_RETURN(HIR_STRING('hello world'))],
+            body: [HIR_RETURN(HIR_NAME('GLOBAL_STRING_0', HIR_STRING_TYPE))],
           },
         ],
       })

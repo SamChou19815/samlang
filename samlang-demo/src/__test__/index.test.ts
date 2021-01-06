@@ -10,8 +10,9 @@ const _builtin_stringToInt = (v) => BigInt(v);
 const _builtin_intToString = (v) => String(v);
 const _builtin_throw = (v) => { throw Error(v); };
 
+const GLOBAL_STRING_0 = "hello world";
 const _module_Demo_class_Main_function_main = () => {
-  _builtin_println("hello world");
+  _builtin_println(GLOBAL_STRING_0);
 };
 const _compiled_program_main = () => {
   _module_Demo_class_Main_function_main();

@@ -1,3 +1,4 @@
+import type HighIRStringManager from './hir-string-manager';
 import lowerSamlangType from './hir-types-lowering';
 
 import {
@@ -19,7 +20,6 @@ import {
   HIR_ZERO,
   HIR_ONE,
   HIR_INT,
-  HIR_STRING,
   HIR_INDEX_ACCESS,
   HIR_FUNCTION_CALL,
   HIR_BINARY,
@@ -88,7 +88,8 @@ class HighIRExpressionLoweringManager {
   constructor(
     private readonly moduleReference: ModuleReference,
     private readonly encodedFunctionName: string,
-    private readonly typeParameters: ReadonlySet<string>
+    private readonly typeParameters: ReadonlySet<string>,
+    private readonly stringManager: HighIRStringManager
   ) {}
 
   private allocateTemporaryVariable(): string {
@@ -128,8 +129,15 @@ class HighIRExpressionLoweringManager {
             return { statements: [], expression: expression.literal.value ? HIR_TRUE : HIR_FALSE };
           case 'IntLiteral':
             return { statements: [], expression: HIR_INT(expression.literal.value) };
-          case 'StringLiteral':
-            return { statements: [], expression: HIR_STRING(expression.literal.value) };
+          case 'StringLiteral': {
+            return {
+              statements: [],
+              expression: HIR_NAME(
+                this.stringManager.allocateStringArrayGlobalVariable(expression.literal.value).name,
+                HIR_STRING_TYPE
+              ),
+            };
+          }
         }
       // eslint-disable-next-line no-fallthrough
       case 'ThisExpression':
@@ -727,7 +735,13 @@ class HighIRExpressionLoweringManager {
             ENCODED_FUNCTION_NAME_THROW,
             HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_VOID_TYPE)
           ),
-          functionArguments: [HIR_STRING('Unreachable branch in match!')],
+          functionArguments: [
+            HIR_NAME(
+              this.stringManager.allocateStringArrayGlobalVariable('Unreachable branch in match!')
+                .name,
+              HIR_STRING_TYPE
+            ),
+          ],
         }),
       ],
     });
@@ -944,12 +958,14 @@ const lowerSamlangExpression = (
   moduleReference: ModuleReference,
   encodedFunctionName: string,
   typeParameters: ReadonlySet<string>,
+  stringManager: HighIRStringManager,
   expression: SamlangExpression
 ): HighIRExpressionLoweringResultWithSyntheticFunctions => {
   const manager = new HighIRExpressionLoweringManager(
     moduleReference,
     encodedFunctionName,
-    typeParameters
+    typeParameters,
+    stringManager
   );
   if (expression.__type__ === 'StatementBlockExpression') {
     manager.depth = -1;

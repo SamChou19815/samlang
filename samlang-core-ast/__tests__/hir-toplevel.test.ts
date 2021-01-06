@@ -5,6 +5,7 @@ import { HIR_ANY_TYPE, HIR_INT_TYPE, HIR_FUNCTION_TYPE } from '../hir-types';
 it('debugPrintHighIRModule works', () => {
   expect(
     debugPrintHighIRModule({
+      globalVariables: [{ name: 'dev_meggo', content: 'vibez' }],
       typeDefinitions: [{ identifier: 'Foo', mappings: [HIR_INT_TYPE, HIR_ANY_TYPE] }],
       functions: [
         {
@@ -16,7 +17,9 @@ it('debugPrintHighIRModule works', () => {
         },
       ],
     })
-  ).toBe(`type Foo = (int, any);
+  ).toBe(`const dev_meggo = 'vibez';
+
+type Foo = (int, any);
 
 function Bar(f: int): int {
   return 0;

@@ -1,4 +1,5 @@
 import lowerSamlangExpression from '../hir-expression-lowering';
+import HighIRStringManager from '../hir-string-manager';
 
 import {
   unitType,
@@ -46,13 +47,19 @@ const expectCorrectlyLowered = (
   samlangExpression: SamlangExpression,
   expectedString: string
 ): void => {
+  const stringManager = new HighIRStringManager();
   const { statements, expression, syntheticFunctions } = lowerSamlangExpression(
     ModuleReference.ROOT,
     'ENCODED_FUNCTION_NAME',
     new Set(),
+    stringManager,
     samlangExpression
   );
-  const syntheticModule: HighIRModule = { typeDefinitions: [], functions: syntheticFunctions };
+  const syntheticModule: HighIRModule = {
+    globalVariables: stringManager.globalVariables,
+    typeDefinitions: [],
+    functions: syntheticFunctions,
+  };
   const syntheticStatements = [...statements, HIR_RETURN(expression)];
   expect(
     `${debugPrintHighIRModule(syntheticModule)}${syntheticStatements
@@ -65,7 +72,10 @@ it('Literal lowering works.', () => {
   expectCorrectlyLowered(EXPRESSION_FALSE(Range.DUMMY), 'return 0;');
   expectCorrectlyLowered(EXPRESSION_TRUE(Range.DUMMY), 'return 1;');
   expectCorrectlyLowered(EXPRESSION_INT(Range.DUMMY, 0), 'return 0;');
-  expectCorrectlyLowered(EXPRESSION_STRING(Range.DUMMY, 'foo'), "return 'foo';");
+  expectCorrectlyLowered(
+    EXPRESSION_STRING(Range.DUMMY, 'foo'),
+    "const GLOBAL_STRING_0 = 'foo';\nreturn GLOBAL_STRING_0;"
+  );
 });
 
 it('This lowering works.', () => {
@@ -480,7 +490,8 @@ it('Match lowering works.', () => {
         },
       ],
     }),
-    `let _t0: _Dummy = (_this: _Dummy);
+    `const GLOBAL_STRING_0 = 'Unreachable branch in match!';
+let _t0: _Dummy = (_this: _Dummy);
 let _t1: int = ((_t0: _Dummy)[0]: int);
 if ((_t1: int) == 0) {
   let bar: string = ((_t0: _Dummy)[1]: any);
@@ -490,7 +501,7 @@ if ((_t1: int) == 0) {
     _builtin_throw((_this: _Dummy));
     let _t2: _Dummy = 0;
   } else {
-    _builtin_throw('Unreachable branch in match!');
+    _builtin_throw(GLOBAL_STRING_0);
   }
   // phi(_t2)
 }

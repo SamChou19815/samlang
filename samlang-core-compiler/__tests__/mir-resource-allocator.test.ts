@@ -1,21 +1,5 @@
 import MidIRResourceAllocator from '../mir-resource-allocator';
 
-it('allocate string global variable test', () => {
-  const allocator = new MidIRResourceAllocator();
-  expect(allocator.allocateStringArrayGlobalVariable('foobar')).toEqual({
-    name: 'GLOBAL_STRING_0',
-    content: 'foobar',
-  });
-  expect(allocator.allocateStringArrayGlobalVariable('foobar2')).toEqual({
-    name: 'GLOBAL_STRING_1',
-    content: 'foobar2',
-  });
-  expect(allocator.allocateStringArrayGlobalVariable('foobar')).toEqual({
-    name: 'GLOBAL_STRING_0',
-    content: 'foobar',
-  });
-});
-
 it('allocate label test', () => {
   const allocator = new MidIRResourceAllocator();
   expect(allocator.allocateLabel('fooBar')).toBe('LABEL_fooBar_0');

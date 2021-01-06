@@ -9,7 +9,6 @@ import {
   HIR_RETURN,
   HIR_ZERO,
   HIR_INT,
-  HIR_STRING,
   HIR_NAME,
   HIR_VARIABLE,
   HIR_BINARY,
@@ -39,7 +38,7 @@ it('debugPrintHighIRStatement works', () => {
                 type: HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_STRING_TYPE]),
                 expressionList: [
                   HIR_BINARY({ operator: '+', e1: HIR_INT(0), e2: HIR_INT(0) }),
-                  HIR_STRING('meggo'),
+                  HIR_NAME('meggo', HIR_STRING_TYPE),
                 ],
               }),
               HIR_FUNCTION_CALL({
@@ -68,7 +67,7 @@ while true {
     let foo: Bar = (dev: Bar);
     return (foo: Bar);
   } else {
-    let baz: (int, string) = [(0 + 0), 'meggo'];
+    let baz: (int, string) = [(0 + 0), meggo];
     let vibez: int = h(((d: (int, int))[0]: int));
     h((d: int));
   }
