@@ -1,4 +1,5 @@
 import lowerSamlangExpression from './hir-expression-lowering';
+import coalesceMoveAndReturnForHighIRStatements from './hir-move-return-coalescing';
 import HighIRStringManager from './hir-string-manager';
 import performTailRecursiveCallTransformationOnHighIRFunction from './hir-tail-recursion-transformation-hir';
 import lowerSamlangType from './hir-types-lowering';
@@ -117,14 +118,14 @@ const compileSamlangSourcesToHighIRSources = (
       );
       if (compiledTypeDefinition != null) compiledTypeDefinitions.push(compiledTypeDefinition);
       members.forEach((member) =>
-        compileFunction(
-          moduleReference,
-          className,
-          typeParameters,
-          stringManager,
-          member
-        ).forEach((it) =>
-          compiledFunctions.push(performTailRecursiveCallTransformationOnHighIRFunction(it))
+        compileFunction(moduleReference, className, typeParameters, stringManager, member).forEach(
+          (it) =>
+            compiledFunctions.push(
+              performTailRecursiveCallTransformationOnHighIRFunction({
+                ...it,
+                body: coalesceMoveAndReturnForHighIRStatements(it.body) ?? it.body,
+              })
+            )
         )
       );
     })

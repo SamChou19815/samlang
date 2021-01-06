@@ -1,5 +1,3 @@
-import coalesceMoveAndReturnForHighIRStatements from './hir-move-return-coalescing';
-
 import {
   HighIRStatement,
   HIR_VARIABLE,
@@ -99,13 +97,11 @@ const recursivelyPerformTailRecursiveCallTransformationOnStatements = (
 const performTailRecursiveCallTransformationOnHighIRFunction = (
   highIRFunction: HighIRFunction
 ): HighIRFunction => {
-  const optimizedStatements =
-    coalesceMoveAndReturnForHighIRStatements(highIRFunction.body) ?? highIRFunction.body;
   const potentialRewrittenStatements = recursivelyPerformTailRecursiveCallTransformationOnStatements(
     highIRFunction,
-    optimizedStatements
+    highIRFunction.body
   );
-  if (potentialRewrittenStatements == null) return { ...highIRFunction, body: optimizedStatements };
+  if (potentialRewrittenStatements == null) return highIRFunction;
   return {
     ...highIRFunction,
     body: [
