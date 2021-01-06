@@ -397,7 +397,7 @@ class HighIRExpressionLoweringManager {
     const functionExpression = expression.functionExpression;
     const loweredReturnType = this.lowerType(expression.type);
     const isVoidReturn =
-      loweredReturnType.__type__ === 'PrimitiveType' && loweredReturnType.type === 'void';
+      expression.type.type === 'PrimitiveType' && expression.type.name === 'unit';
     const returnCollectorName = this.allocateTemporaryVariable();
     let functionCall: HighIRStatement;
     switch (functionExpression.__type__) {
@@ -634,6 +634,9 @@ class HighIRExpressionLoweringManager {
 
   private lowerIfElse(expression: IfElseExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
+    const loweredReturnType = this.lowerType(expression.type);
+    const isVoidReturn =
+      expression.type.type === 'PrimitiveType' && expression.type.name === 'unit';
     const loweredBoolExpression = this.loweredAndAddStatements(
       expression.boolExpression,
       loweredStatements
@@ -643,34 +646,43 @@ class HighIRExpressionLoweringManager {
     const variableForIfElseAssign = this.allocateTemporaryVariable();
     loweredStatements.push(
       HIR_IF_ELSE({
-        multiAssignedVariable: variableForIfElseAssign,
+        multiAssignedVariable: isVoidReturn ? undefined : variableForIfElseAssign,
         booleanExpression: loweredBoolExpression,
-        s1: [
-          ...e1LoweringResult.statements,
-          HIR_LET({
-            name: variableForIfElseAssign,
-            type: this.lowerType(expression.type),
-            assignedExpression: e1LoweringResult.expression,
-          }),
-        ],
-        s2: [
-          ...e2LoweringResult.statements,
-          HIR_LET({
-            name: variableForIfElseAssign,
-            type: this.lowerType(expression.type),
-            assignedExpression: e2LoweringResult.expression,
-          }),
-        ],
+        s1: isVoidReturn
+          ? e1LoweringResult.statements
+          : [
+              ...e1LoweringResult.statements,
+              HIR_LET({
+                name: variableForIfElseAssign,
+                type: loweredReturnType,
+                assignedExpression: e1LoweringResult.expression,
+              }),
+            ],
+        s2: isVoidReturn
+          ? e2LoweringResult.statements
+          : [
+              ...e2LoweringResult.statements,
+              HIR_LET({
+                name: variableForIfElseAssign,
+                type: loweredReturnType,
+                assignedExpression: e2LoweringResult.expression,
+              }),
+            ],
       })
     );
     return {
       statements: loweredStatements,
-      expression: HIR_VARIABLE(variableForIfElseAssign, this.lowerType(expression.type)),
+      expression: isVoidReturn
+        ? HIR_ZERO
+        : HIR_VARIABLE(variableForIfElseAssign, loweredReturnType),
     };
   }
 
   private lowerMatch(expression: MatchExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
+    const loweredReturnType = this.lowerType(expression.type);
+    const isVoidReturn =
+      expression.type.type === 'PrimitiveType' && expression.type.name === 'unit';
     const matchedExpression = this.loweredAndAddStatements(
       expression.matchedExpression,
       loweredStatements
@@ -715,20 +727,22 @@ class HighIRExpressionLoweringManager {
         }
         const result = this.lower(patternExpression);
         localStatements.push(...result.statements);
-        localStatements.push(
-          HIR_LET({
-            name: temporaryVariable,
-            type: this.lowerType(expression.type),
-            assignedExpression: result.expression,
-          })
-        );
+        if (!isVoidReturn) {
+          localStatements.push(
+            HIR_LET({
+              name: temporaryVariable,
+              type: loweredReturnType,
+              assignedExpression: result.expression,
+            })
+          );
+        }
         return { tagOrder, statements: localStatements };
       }
     );
     // istanbul ignore next
     if (loweredMatchingList.length < 1) throw new Error();
     let ifElse = HIR_IF_ELSE({
-      multiAssignedVariable: temporaryVariable,
+      multiAssignedVariable: isVoidReturn ? undefined : temporaryVariable,
       booleanExpression: HIR_BINARY({
         operator: '==',
         e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
@@ -754,7 +768,7 @@ class HighIRExpressionLoweringManager {
     for (let i = loweredMatchingList.length - 2; i >= 0; i -= 1) {
       const { tagOrder, statements: localStatements } = checkNotNull(loweredMatchingList[i]);
       ifElse = HIR_IF_ELSE({
-        multiAssignedVariable: temporaryVariable,
+        multiAssignedVariable: isVoidReturn ? undefined : temporaryVariable,
         booleanExpression: HIR_BINARY({
           operator: '==',
           e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
@@ -767,7 +781,7 @@ class HighIRExpressionLoweringManager {
     loweredStatements.push(ifElse);
     return {
       statements: loweredStatements,
-      expression: HIR_VARIABLE(temporaryVariable, this.lowerType(expression.type)),
+      expression: isVoidReturn ? HIR_ZERO : HIR_VARIABLE(temporaryVariable, loweredReturnType),
     };
   }
 

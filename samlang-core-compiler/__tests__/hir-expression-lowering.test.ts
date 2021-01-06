@@ -447,7 +447,7 @@ it('Panic lowering works.', () => {
   );
 });
 
-it('IfElse lowering works.', () => {
+it('IfElse lowering works 1/2.', () => {
   expectCorrectlyLowered(
     EXPRESSION_IF_ELSE({
       range: Range.DUMMY,
@@ -467,7 +467,24 @@ return (_t0: _Dummy);`
   );
 });
 
-it('Match lowering works.', () => {
+it('IfElse lowering works 2/2.', () => {
+  expectCorrectlyLowered(
+    EXPRESSION_IF_ELSE({
+      range: Range.DUMMY,
+      type: unitType,
+      boolExpression: THIS,
+      e1: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
+      e2: THIS,
+    }),
+    `if (_this: _Dummy) {
+  _builtin_throw((_this: _Dummy));
+} else {
+}
+return 0;`
+  );
+});
+
+it('Match lowering works 1/2.', () => {
   expectCorrectlyLowered(
     EXPRESSION_MATCH({
       range: Range.DUMMY,
@@ -506,6 +523,44 @@ if ((_t1: int) == 0) {
 }
 // phi(_t2)
 return (_t2: _Dummy);`
+  );
+});
+
+it('Match lowering works 2/2.', () => {
+  expectCorrectlyLowered(
+    EXPRESSION_MATCH({
+      range: Range.DUMMY,
+      type: unitType,
+      matchedExpression: THIS,
+      matchingList: [
+        {
+          range: Range.DUMMY,
+          tag: 'Foo',
+          tagOrder: 0,
+          dataVariable: ['bar', stringType],
+          expression: THIS,
+        },
+        {
+          range: Range.DUMMY,
+          tag: 'Bar',
+          tagOrder: 1,
+          expression: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
+        },
+      ],
+    }),
+    `const GLOBAL_STRING_0 = 'Unreachable branch in match!';
+let _t0: _Dummy = (_this: _Dummy);
+let _t1: int = ((_t0: _Dummy)[0]: int);
+if ((_t1: int) == 0) {
+  let bar: string = ((_t0: _Dummy)[1]: any);
+} else {
+  if ((_t1: int) == 1) {
+    _builtin_throw((_this: _Dummy));
+  } else {
+    _builtin_throw(GLOBAL_STRING_0);
+  }
+}
+return 0;`
   );
 });
 
