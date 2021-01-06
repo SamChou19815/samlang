@@ -148,8 +148,13 @@ export type LLVMFunctionCallInstruction = {
   readonly functionArguments: readonly LLVMAnnotatedValue[];
 };
 
+export type LLVMJumpInstruction = {
+  readonly __type__: 'LLVMJumpInstruction';
+  readonly branch: string;
+};
+
 export type LLVMConditionalJumpInstruction = {
-  readonly __type__: 'LLVMBranchInstruction';
+  readonly __type__: 'LLVMConditionalJumpInstruction';
   readonly condition: LLVMValue;
   readonly b1: string;
   readonly b2: string;
@@ -167,6 +172,7 @@ export type LLVMInstruction =
   | LLVMStoreInstruction
   | LLVMPhiInstruction
   | LLVMFunctionCallInstruction
+  | LLVMJumpInstruction
   | LLVMConditionalJumpInstruction
   | LLVMReturnInstruction;
 
@@ -252,12 +258,17 @@ export const LLVM_CALL = ({
   functionArguments,
 });
 
-export const LLVM_CJUMP = ({
-  condition,
-  b1,
-  b2,
-}: ConstructorArgumentObject<LLVMConditionalJumpInstruction>): LLVMConditionalJumpInstruction => ({
-  __type__: 'LLVMBranchInstruction',
+export const LLVM_JUMP = (branch: string): LLVMJumpInstruction => ({
+  __type__: 'LLVMJumpInstruction',
+  branch,
+});
+
+export const LLVM_CJUMP = (
+  condition: LLVMValue,
+  b1: string,
+  b2: string
+): LLVMConditionalJumpInstruction => ({
+  __type__: 'LLVMConditionalJumpInstruction',
   condition,
   b1,
   b2,
@@ -338,7 +349,7 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       const v1 = prettyPrintLLVMValue(instruction.v1);
       const v2 = prettyPrintLLVMValue(instruction.v2);
       const type = prettyPrintLLVMType(instruction.variableType);
-      return `phi ${type} [ %${v1}, %${instruction.b1} ], [ %${v2}, %${instruction.b2} ]`;
+      return `phi ${type} [ ${v1}, %${instruction.b1} ], [ ${v2}, %${instruction.b2} ]`;
     }
     case 'LLVMFunctionCallInstruction': {
       const assignedTo =
@@ -350,7 +361,9 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
         .join(', ');
       return `${assignedTo}call ${resultType} ${functionName}(${functionArguments}) nounwind`;
     }
-    case 'LLVMBranchInstruction': {
+    case 'LLVMJumpInstruction':
+      return `br label %${instruction.branch}`;
+    case 'LLVMConditionalJumpInstruction': {
       const { condition, b1, b2 } = instruction;
       return `br i1 ${prettyPrintLLVMValue(condition)}, label %${b1}, label %${b2}`;
     }

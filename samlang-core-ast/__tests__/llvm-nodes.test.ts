@@ -21,6 +21,7 @@ import {
   LLVM_CJUMP,
   LLVM_RETURN,
   LLVM_RETURN_VOID,
+  LLVM_JUMP,
 } from '../llvm-nodes';
 
 import { Long } from 'samlang-core-utils';
@@ -230,7 +231,7 @@ it('prettyPrintLLVMInstruction works for LLVM_PHI.', () => {
         b2: 'b2',
       })
     )
-  ).toBe('phi i64 [ %%bar, %b1 ], [ %1, %b2 ]');
+  ).toBe('phi i64 [ %bar, %b1 ], [ 1, %b2 ]');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_CALL.', () => {
@@ -262,16 +263,14 @@ it('prettyPrintLLVMInstruction works for LLVM_CALL.', () => {
   ).toBe('call i64 @plusPlus(i64 %bar, i64 1) nounwind');
 });
 
-it('prettyPrintLLVMInstruction works for LLVM_PHI.', () => {
-  expect(
-    prettyPrintLLVMInstruction(
-      LLVM_CJUMP({
-        condition: LLVM_VARIABLE('c'),
-        b1: 'b1',
-        b2: 'b2',
-      })
-    )
-  ).toBe('br i1 %c, label %b1, label %b2');
+it('prettyPrintLLVMInstruction works for LLVM_JUMP.', () => {
+  expect(prettyPrintLLVMInstruction(LLVM_JUMP('bb'))).toBe('br label %bb');
+});
+
+it('prettyPrintLLVMInstruction works for LLVM_CJUMP.', () => {
+  expect(prettyPrintLLVMInstruction(LLVM_CJUMP(LLVM_VARIABLE('c'), 'b1', 'b2'))).toBe(
+    'br i1 %c, label %b1, label %b2'
+  );
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_RETURN.', () => {
