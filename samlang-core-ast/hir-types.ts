@@ -5,10 +5,7 @@ export type HighIRPrimitiveType = {
   readonly type: 'bool' | 'void' | 'int' | 'any' | 'string';
 };
 
-export type HighIRIdentifierType = {
-  readonly __type__: 'IdentifierType';
-  readonly name: string;
-};
+export type HighIRIdentifierType = { readonly __type__: 'IdentifierType'; readonly name: string };
 
 export type HighIRStructType = {
   readonly __type__: 'StructType';
