@@ -1,3 +1,4 @@
+import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
 import type { HighIRIdentifierType } from './hir-types';
 
@@ -398,4 +399,77 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       return `ret ${prettyPrintLLVMType(type)} ${prettyPrintLLVMValue(value)}`;
     }
   }
+};
+
+export interface LLVMTypeDefinition {
+  readonly identifier: string;
+  readonly mappings: readonly LLVMType[];
+}
+
+export interface LLVMFunction {
+  readonly name: string;
+  readonly parameters: readonly {
+    readonly parameterName: string;
+    readonly parameterType: LLVMType;
+  }[];
+  readonly returnType: LLVMType;
+  readonly body: readonly LLVMInstruction[];
+}
+
+export const prettyPrintLLVMFunction = ({
+  name,
+  parameters,
+  returnType,
+  body,
+}: LLVMFunction): string => {
+  const returnTypeString = prettyPrintLLVMType(returnType);
+  const parametersString = parameters
+    .map(
+      ({ parameterName, parameterType }) =>
+        `${prettyPrintLLVMType(parameterType)} %${parameterName}`
+    )
+    .join(', ');
+  return `define ${returnTypeString} @${name}(${parametersString}) local_unnamed_addr nounwind {
+${body
+  .map((instruction) =>
+    instruction.__type__ === 'LLVMLabelInstruction'
+      ? prettyPrintLLVMInstruction(instruction)
+      : `  ${prettyPrintLLVMInstruction(instruction)}`
+  )
+  .join('\n')}
+}`;
+};
+
+export interface LLVMModule {
+  readonly globalVariables: readonly GlobalVariable[];
+  readonly typeDefinitions: readonly LLVMTypeDefinition[];
+  readonly functions: readonly LLVMFunction[];
+}
+
+export const prettyPrintLLVMModule = ({
+  globalVariables,
+  typeDefinitions,
+  functions,
+}: LLVMModule): string => {
+  return [
+    `declare i64* @_builtin_malloc(i64) nounwind
+declare void @_builtin_println(i64*) nounwind
+declare void @_builtin_throw(i64*) nounwind
+declare i64* @_builtin_intToString(i64) nounwind
+declare i64 @_builtin_stringToInt(i64*) nounwind
+declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
+`,
+    ...globalVariables.map(({ name, content }) => {
+      const size = content.length;
+      const ints = Array.from(content)
+        .map((it) => `i64 ${it.charCodeAt(0)}`)
+        .join(', ');
+      return `@${name} = private unnamed_addr constant [${size} x i64] [i64 ${size}, ${ints}], align 8`;
+    }),
+    ...typeDefinitions.map(
+      ({ identifier, mappings }) =>
+        `%${identifier} = { ${mappings.map(prettyPrintLLVMType).join(', ')} }`
+    ),
+    ...functions.map(prettyPrintLLVMFunction),
+  ].join('\n');
 };

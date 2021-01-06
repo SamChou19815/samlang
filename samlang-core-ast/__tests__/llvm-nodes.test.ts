@@ -2,6 +2,8 @@ import {
   prettyPrintLLVMType,
   prettyPrintLLVMValue,
   prettyPrintLLVMInstruction,
+  prettyPrintLLVMFunction,
+  prettyPrintLLVMModule,
   LLVM_BOOL_TYPE,
   LLVM_INT_TYPE,
   LLVM_VOID_TYPE,
@@ -298,4 +300,49 @@ it('prettyPrintLLVMInstruction works for LLVM_RETURN.', () => {
   expect(prettyPrintLLVMInstruction(LLVM_RETURN(LLVM_VARIABLE('bar'), LLVM_BOOL_TYPE))).toBe(
     'ret i1 %bar'
   );
+});
+
+it('prettyPrintLLVMFunction works', () => {
+  expect(
+    prettyPrintLLVMFunction({
+      name: 'fact',
+      parameters: [{ parameterName: 'n', parameterType: LLVM_INT_TYPE }],
+      returnType: LLVM_INT_TYPE,
+      body: [LLVM_LABEL('start'), LLVM_RETURN(LLVM_VARIABLE('n'), LLVM_INT_TYPE)],
+    })
+  ).toBe(`define i64 @fact(i64 %n) local_unnamed_addr nounwind {
+start:
+  ret i64 %n
+}`);
+});
+
+it('prettyPrintLLVMModule works', () => {
+  expect(
+    prettyPrintLLVMModule({
+      globalVariables: [{ name: 'hw', content: 'AA' }],
+      typeDefinitions: [
+        { identifier: 'Foo', mappings: [LLVM_INT_TYPE, LLVM_IDENTIFIER_TYPE('Bar')] },
+      ],
+      functions: [
+        {
+          name: 'fact',
+          parameters: [{ parameterName: 'n', parameterType: LLVM_INT_TYPE }],
+          returnType: LLVM_INT_TYPE,
+          body: [LLVM_LABEL('start'), LLVM_RETURN(LLVM_VARIABLE('n'), LLVM_INT_TYPE)],
+        },
+      ],
+    })
+  ).toBe(`declare i64* @_builtin_malloc(i64) nounwind
+declare void @_builtin_println(i64*) nounwind
+declare void @_builtin_throw(i64*) nounwind
+declare i64* @_builtin_intToString(i64) nounwind
+declare i64 @_builtin_stringToInt(i64*) nounwind
+declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
+
+@hw = private unnamed_addr constant [2 x i64] [i64 2, i64 65, i64 65], align 8
+%Foo = { i64, %Bar* }
+define i64 @fact(i64 %n) local_unnamed_addr nounwind {
+start:
+  ret i64 %n
+}`);
 });
