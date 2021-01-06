@@ -1,7 +1,7 @@
 import type { IROperator } from './common-operators';
 import type { HighIRIdentifierType } from './hir-types';
 
-import type { Long } from 'samlang-core-utils';
+import { Long } from 'samlang-core-utils';
 
 export type LLVMPrimitiveType = {
   readonly __type__: 'PrimitiveType';
@@ -73,7 +73,29 @@ export const prettyPrintLLVMType = (type: LLVMType): string => {
   }
 };
 
-export type LLVMValue = Long | string;
+export type LLVMLiteral = { readonly __type__: 'LLVMLiteral'; readonly value: Long };
+export type LLVMVariable = { readonly __type__: 'LLVMVariable'; readonly name: string };
+export type LLVMName = { readonly __type__: 'LLVMName'; readonly name: string };
+export type LLVMValue = LLVMLiteral | LLVMVariable | LLVMName;
+
+export const LLVM_INT = (value: Long | number): LLVMLiteral => ({
+  __type__: 'LLVMLiteral',
+  value: typeof value === 'number' ? Long.fromInt(value) : value,
+});
+
+export const LLVM_VARIABLE = (name: string): LLVMVariable => ({ __type__: 'LLVMVariable', name });
+export const LLVM_NAME = (name: string): LLVMName => ({ __type__: 'LLVMName', name });
+
+export const prettyPrintLLVMValue = (value: LLVMValue): string => {
+  switch (value.__type__) {
+    case 'LLVMLiteral':
+      return value.value.toString();
+    case 'LLVMVariable':
+      return `%${value.name}`;
+    case 'LLVMName':
+      return `@${value.name}`;
+  }
+};
 
 export type LLVMAnnotatedValue = { readonly value: LLVMValue; readonly type: LLVMType };
 
@@ -121,7 +143,7 @@ export type LLVMFunctionCallInstruction = {
   readonly __type__: 'LLVMFunctionCallInstruction';
   readonly resultType: LLVMType;
   readonly resultVariable?: string;
-  readonly functionName: LLVMValue; // ???
+  readonly functionName: LLVMValue;
   readonly functionArguments: readonly LLVMAnnotatedValue[];
 };
 
