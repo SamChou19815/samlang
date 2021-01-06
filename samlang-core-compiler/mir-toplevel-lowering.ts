@@ -32,7 +32,6 @@ const compileHighIrModuleToMidIRCompilationUnit = (
           )
         )
       ),
-      hasReturn: highIRFunction.hasReturn,
     });
   });
   return { globalVariables: highIRModule.globalVariables, functions };

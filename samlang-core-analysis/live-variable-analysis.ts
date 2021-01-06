@@ -40,8 +40,7 @@ type MutableUsesAndDefs = { readonly uses: Set<string>; readonly defs: Set<strin
 type UsesAndDefs = { readonly uses: ReadonlySet<string>; readonly defs: ReadonlySet<string> };
 
 const collectDefAndUsesFromAssemblyInstruction = (
-  instruction: AssemblyInstruction,
-  hasReturn: boolean
+  instruction: AssemblyInstruction
 ): MutableUsesAndDefs => {
   const uses = new Set<string>();
 
@@ -80,9 +79,7 @@ const collectDefAndUsesFromAssemblyInstruction = (
         uses,
       };
     case 'AssemblyReturn':
-      if (hasReturn) {
-        uses.add(RAX.id);
-      }
+      uses.add(RAX.id);
       return { defs: new Set(), uses };
     case 'AssemblyArithmeticBinaryMemoryDestination':
       collectUsesFromAssemblyArgument(uses, instruction.destination);
@@ -130,20 +127,15 @@ export type LiveVariableAnalysisResult = {
 };
 
 const analyzeLiveVariablesAtTheEndOfEachInstruction = (
-  instructions: readonly AssemblyInstruction[],
-  hasReturn: boolean
+  instructions: readonly AssemblyInstruction[]
 ): LiveVariableAnalysisResult => {
-  const useAndDefs = instructions.map((it) =>
-    collectDefAndUsesFromAssemblyInstruction(it, hasReturn)
-  );
+  const useAndDefs = instructions.map(collectDefAndUsesFromAssemblyInstruction);
   // istanbul ignore next
   if (instructions.length > 0) {
     // last instruction is the epilogue label. It can be seen as the exit node.
     const useSetOfLastInstruction = checkNotNull(useAndDefs[instructions.length - 1]).uses;
-    // we also want to use rax if they are return values.
-    if (hasReturn) {
-      useSetOfLastInstruction.add(RAX.id);
-    }
+    // we also want to use rax since there are return values.
+    useSetOfLastInstruction.add(RAX.id);
   }
 
   const operator: DataflowAnalysisGraphOperator<AssemblyInstruction, Set<string>> = {

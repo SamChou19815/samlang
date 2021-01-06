@@ -35,7 +35,6 @@ it('interpretMidIRCompilationUnit hello world test', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_PRINTLN, [MIR_NAME('HW')]),
             MIR_RETURN(),
@@ -54,7 +53,6 @@ it('interpretMidIRCompilationUnit string-int conversion test', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_EIGHT], 'a'),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_STRING_TO_INT, [MIR_TEMP('a')], 'b'),
@@ -76,7 +74,6 @@ it('interpretMidIRCompilationUnit failed string-int conversion test', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_STRING_TO_INT, [MIR_NAME('HW')]),
           ],
@@ -97,7 +94,6 @@ it('interpretMidIRCompilationUnit string concat test', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_CALL_FUNCTION(
               ENCODED_FUNCTION_NAME_STRING_CONCAT,
@@ -121,7 +117,6 @@ it('interpretMidIRCompilationUnit panic test', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_THROW, [MIR_NAME('Ahh')], 'a'),
           ],
@@ -139,7 +134,6 @@ it('interpretMidIRCompilationUnit setup tuple and print test', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_MALLOC, [MIR_CONST(16)], 'tuple'),
             MIR_MOVE_IMMUTABLE_MEM(MIR_IMMUTABLE_MEM(MIR_TEMP('tuple')), MIR_EIGHT),
@@ -173,7 +167,6 @@ it('interpretMidIRCompilationUnit jump test', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_JUMP('foo'),
             MIR_CALL_FUNCTION(
@@ -198,7 +191,6 @@ it('interpretMidIRCompilationUnit cjump test 1', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_CJUMP_FALLTHROUGH(MIR_EIGHT, 'foo'),
             MIR_CALL_FUNCTION(
@@ -223,7 +215,6 @@ it('interpretMidIRCompilationUnit cjump test 2', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_CJUMP_FALLTHROUGH(MIR_ZERO, 'foo'),
             MIR_RETURN(),
@@ -248,13 +239,11 @@ it('interpretMidIRCompilationUnit dummy function call integration test', () => {
         {
           functionName: 'dummy',
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [MIR_RETURN()],
         },
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [MIR_CALL_FUNCTION('dummy', []), MIR_RETURN()],
         },
       ],
@@ -270,7 +259,6 @@ it('interpretMidIRCompilationUnit factorial function call integration test', () 
         {
           functionName: 'factorial',
           argumentNames: ['n', 'acc'],
-          hasReturn: true,
           mainBodyStatements: [
             MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), MIR_ZERO), 'LABEL_RETURN_ACC'),
             MIR_CALL_FUNCTION(
@@ -286,7 +274,6 @@ it('interpretMidIRCompilationUnit factorial function call integration test', () 
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_CALL_FUNCTION('factorial', [MIR_CONST(4), MIR_ONE], 'a'),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('a')], 'b'),
@@ -307,7 +294,6 @@ it('interpretMidIRCompilationUnit factorial function reference call integration 
         {
           functionName: 'factorial',
           argumentNames: ['n', 'acc'],
-          hasReturn: true,
           mainBodyStatements: [
             MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), MIR_ZERO), 'LABEL_RETURN_ACC'),
             MIR_CALL_FUNCTION(
@@ -323,7 +309,6 @@ it('interpretMidIRCompilationUnit factorial function reference call integration 
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('name'), MIR_NAME('factorial')),
             MIR_CALL_FUNCTION(MIR_TEMP('name'), [MIR_CONST(4), MIR_ONE], 'a'),
@@ -345,7 +330,6 @@ it('interpretMidIRCompilationUnit binary expression test 1', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('one'), MIR_ONE),
             MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('-', MIR_ONE, MIR_TEMP('one'))),
@@ -365,7 +349,6 @@ it('interpretMidIRCompilationUnit binary expression test 1', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('/', MIR_ONE, MIR_ONE)),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('v')], 's'),
@@ -384,7 +367,6 @@ it('interpretMidIRCompilationUnit binary expression test 1', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('%', MIR_ONE, MIR_EIGHT)),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('v')], 's'),
@@ -403,7 +385,6 @@ it('interpretMidIRCompilationUnit binary expression test 1', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('^', MIR_ONE, MIR_ZERO)),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('v')], 's'),
@@ -422,7 +403,6 @@ it('interpretMidIRCompilationUnit binary expression test 1', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('<', MIR_ONE, MIR_ZERO)),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('v')], 's'),
@@ -441,7 +421,6 @@ it('interpretMidIRCompilationUnit binary expression test 1', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('<=', MIR_ONE, MIR_ZERO)),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('v')], 's'),
@@ -460,7 +439,6 @@ it('interpretMidIRCompilationUnit binary expression test 1', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('>', MIR_ONE, MIR_ZERO)),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('v')], 's'),
@@ -479,7 +457,6 @@ it('interpretMidIRCompilationUnit binary expression test 1', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('>=', MIR_ONE, MIR_ZERO)),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('v')], 's'),
@@ -498,7 +475,6 @@ it('interpretMidIRCompilationUnit binary expression test 1', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('!=', MIR_ONE, MIR_TEMP('undefined_default_to_0'))),
             MIR_CALL_FUNCTION(ENCODED_FUNCTION_NAME_INT_TO_STRING, [MIR_TEMP('v')], 's'),
@@ -517,7 +493,6 @@ it('interpretMidIRCompilationUnit binary expression test 1', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('/', MIR_ONE, MIR_ZERO))],
         },
       ],
@@ -531,7 +506,6 @@ it('interpretMidIRCompilationUnit binary expression test 1', () => {
         {
           functionName: ENCODED_COMPILED_PROGRAM_MAIN,
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [MIR_MOVE_TEMP(MIR_TEMP('v'), MIR_OP('%', MIR_ONE, MIR_ZERO))],
         },
       ],

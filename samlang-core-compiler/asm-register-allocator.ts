@@ -154,7 +154,6 @@ export default class AssemblyRegisterAllocator {
 
   constructor(
     private readonly allocator: AssemblyFunctionAbstractRegisterAllocator,
-    private readonly hasReturn: boolean,
     private readonly checkInvaraint: boolean,
     tiledInstructions: readonly AssemblyInstruction[]
   ) {
@@ -198,8 +197,7 @@ export default class AssemblyRegisterAllocator {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const liveVariableAnalysisResult = analyzeLiveVariablesAtTheEndOfEachInstruction(
-        this.instructions,
-        this.hasReturn
+        this.instructions
       );
       this.build(liveVariableAnalysisResult);
       const useCount = AssemblyRegisterAllocator.buildUseCount(liveVariableAnalysisResult);

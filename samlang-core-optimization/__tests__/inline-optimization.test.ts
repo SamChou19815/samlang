@@ -25,7 +25,6 @@ it('estimateMidIRFunctionInlineCost test', () => {
     estimateMidIRFunctionInlineCost_EXPOSED_FOR_TESTING({
       functionName: '',
       argumentNames: [],
-      hasReturn: true,
       mainBodyStatements: [
         MIR_MOVE_TEMP(MIR_TEMP(''), MIR_TEMP('')), // 0,
         MIR_MOVE_IMMUTABLE_MEM(MIR_IMMUTABLE_MEM(MIR_TEMP('')), MIR_IMMUTABLE_MEM(MIR_TEMP(''))), // 2
@@ -50,7 +49,6 @@ it('optimizeMidIRCompilationUnitByInlining test 1', () => {
             {
               functionName: 'factorial',
               argumentNames: ['n', 'acc'],
-              hasReturn: true,
               mainBodyStatements: [
                 MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), MIR_ZERO), 'LABEL_RETURN_ACC'),
                 MIR_CALL_FUNCTION(
@@ -69,13 +67,11 @@ it('optimizeMidIRCompilationUnitByInlining test 1', () => {
             {
               functionName: 'infiniteLoop',
               argumentNames: [],
-              hasReturn: false,
               mainBodyStatements: [MIR_CALL_FUNCTION('infiniteLoop', []), MIR_RETURN()],
             },
             {
               functionName: 'insanelyBigFunction',
               argumentNames: ['a'],
-              hasReturn: false,
               mainBodyStatements: [
                 MIR_CALL_FUNCTION('moveMove', [MIR_TEMP('a')]),
                 MIR_CALL_FUNCTION(MIR_TEMP('a'), []),
@@ -87,7 +83,6 @@ it('optimizeMidIRCompilationUnitByInlining test 1', () => {
             {
               functionName: 'moveMove',
               argumentNames: ['a'],
-              hasReturn: false,
               mainBodyStatements: [
                 MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
                 MIR_MOVE_IMMUTABLE_MEM(
@@ -183,13 +178,11 @@ it('optimizeMidIRCompilationUnitByInlining test 3', () => {
             {
               functionName: 'emptyFunction',
               argumentNames: [],
-              hasReturn: true,
               mainBodyStatements: [MIR_RETURN()],
             },
             {
               functionName: 'insanelyBigFunction',
               argumentNames: ['a'],
-              hasReturn: false,
               mainBodyStatements: [
                 ...Array.from(new Array(105).keys()).map(() =>
                   MIR_CALL_FUNCTION('non-existing-function', [])

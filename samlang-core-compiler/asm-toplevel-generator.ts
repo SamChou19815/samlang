@@ -125,7 +125,6 @@ const generateInstructionsForFunction = (
   );
   const allocator = new AssemblyRegisterAllocator(
     functionAbstractRegisterAllocator,
-    midIRFunction.hasReturn,
     checkInvaraint,
     tiledInstructions
   );
@@ -151,10 +150,7 @@ const generateAssemblyInstructionsFromMidIRCompilationUnit = (
   compilationUnit.functions.forEach((it) =>
     generateInstructionsForFunction(it, instructions, checkInvaraint, removeComments)
   );
-  return {
-    globalVariables: compilationUnit.globalVariables,
-    instructions,
-  };
+  return { globalVariables: compilationUnit.globalVariables, instructions };
 };
 
 export default generateAssemblyInstructionsFromMidIRCompilationUnit;

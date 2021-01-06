@@ -80,13 +80,11 @@ it('midIRCompilationUnitToString test', () => {
       functions: [
         {
           functionName: 'fooBar',
-          hasReturn: true,
           argumentNames: ['foo', 'bar'],
           mainBodyStatements: [MIR_RETURN()],
         },
         {
           functionName: 'barFoo',
-          hasReturn: true,
           argumentNames: ['bar', 'foo'],
           mainBodyStatements: [MIR_RETURN()],
         },

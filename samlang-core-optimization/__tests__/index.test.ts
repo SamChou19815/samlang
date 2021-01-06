@@ -22,7 +22,6 @@ const compilationUnit: MidIRCompilationUnit = {
     {
       functionName: 'fooBar',
       argumentNames: [],
-      hasReturn: true,
       mainBodyStatements: [
         MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_ONE),
         MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), MIR_ONE), 'true'),

@@ -42,14 +42,13 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 0', () => {
         {
           functionName: 'emptyFunction',
           argumentNames: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-          hasReturn: false,
           mainBodyStatements: [MIR_RETURN()],
         },
       ],
     })
   ).toBe(`emptyFunction:
-mov rax, qword ptr [rbp+16]
-mov rax, qword ptr [rbp+24]
+mov rcx, qword ptr [rbp+16]
+mov rcx, qword ptr [rbp+24]
 ret`);
 });
 
@@ -62,7 +61,6 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 1', () => {
           {
             functionName: 'emptyFunction',
             argumentNames: ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
-            hasReturn: false,
             mainBodyStatements: [MIR_RETURN()],
           },
         ],
@@ -84,7 +82,7 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 1', () => {
 ## 'mov rcx, rcx' is optimized away.
 ## 'mov r8, r8' is optimized away.
 ## 'mov r9, r9' is optimized away.
-mov rax, qword ptr [rbp+16]
+mov rcx, qword ptr [rbp+16]
 ## return;
 ## 'mov rbx, rbx' is optimized away.
 ## 'mov r12, r12' is optimized away.
@@ -105,7 +103,6 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 2', () => {
         {
           functionName: 'moveMove',
           argumentNames: ['a'],
-          hasReturn: false,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
             MIR_MOVE_IMMUTABLE_MEM(
@@ -118,8 +115,8 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 2', () => {
       ],
     })
   ).toBe(`moveMove:
-mov rax, qword ptr [rdi]
-mov qword ptr [rdi], rax
+mov rcx, qword ptr [rdi]
+mov qword ptr [rdi], rcx
 ret`);
 });
 
@@ -131,7 +128,6 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 3', () => {
         {
           functionName: 'infiniteLoop',
           argumentNames: [],
-          hasReturn: false,
           mainBodyStatements: [MIR_CALL_FUNCTION('infiniteLoop', []), MIR_RETURN()],
         },
       ],
@@ -153,7 +149,6 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 4', () => {
         {
           functionName: 'factorial',
           argumentNames: ['n', 'acc'],
-          hasReturn: true,
           mainBodyStatements: [
             MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), MIR_ZERO), 'LABEL_RETURN_ACC'),
             MIR_CALL_FUNCTION(
@@ -201,7 +196,6 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 5', () => {
         {
           functionName: 'tooMuchInterference',
           argumentNames: [],
-          hasReturn: true,
           mainBodyStatements: [
             ...temps.map((temp) => MIR_MOVE_TEMP(temp, MIR_ZERO)),
             MIR_RETURN(op),
@@ -295,7 +289,6 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 6', () => {
         {
           functionName: 'factorial',
           argumentNames: ['n'],
-          hasReturn: true,
           mainBodyStatements: [
             MIR_MOVE_TEMP(MIR_TEMP('acc'), MIR_ONE),
             MIR_LABEL('begin'),
@@ -331,7 +324,6 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 7', () => {
         {
           functionName: 'factorial',
           argumentNames: ['n'],
-          hasReturn: true,
           mainBodyStatements: [
             MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), MIR_ZERO), 'LABEL_RETURN_1'),
             MIR_CALL_FUNCTION('factorial', [MIR_OP('-', MIR_TEMP('n'), MIR_ONE)], 'dummy'),
