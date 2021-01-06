@@ -396,6 +396,8 @@ class HighIRExpressionLoweringManager {
     const loweredStatements: HighIRStatement[] = [];
     const functionExpression = expression.functionExpression;
     const loweredReturnType = this.lowerType(expression.type);
+    const isVoidReturn =
+      loweredReturnType.__type__ === 'PrimitiveType' && loweredReturnType.type === 'void';
     const returnCollectorName = this.allocateTemporaryVariable();
     let functionCall: HighIRStatement;
     switch (functionExpression.__type__) {
@@ -481,7 +483,7 @@ class HighIRExpressionLoweringManager {
         );
 
         functionCall = HIR_IF_ELSE({
-          multiAssignedVariable: returnCollectorName,
+          multiAssignedVariable: isVoidReturn ? undefined : returnCollectorName,
           booleanExpression: HIR_BINARY({
             operator: '==',
             e1: HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
@@ -495,7 +497,9 @@ class HighIRExpressionLoweringManager {
                 index: 0,
               }),
               functionArguments: loweredFunctionArguments,
-              returnCollector: { name: returnCollectorName, type: loweredReturnType },
+              returnCollector: isVoidReturn
+                ? undefined
+                : { name: returnCollectorName, type: loweredReturnType },
             }),
           ],
           s2: [
@@ -509,7 +513,9 @@ class HighIRExpressionLoweringManager {
                 HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
                 ...loweredFunctionArguments,
               ],
-              returnCollector: { name: returnCollectorName, type: loweredReturnType },
+              returnCollector: isVoidReturn
+                ? undefined
+                : { name: returnCollectorName, type: loweredReturnType },
             }),
           ],
         });
@@ -519,7 +525,7 @@ class HighIRExpressionLoweringManager {
     loweredStatements.push(functionCall);
     return {
       statements: loweredStatements,
-      expression: HIR_VARIABLE(returnCollectorName, loweredReturnType),
+      expression: isVoidReturn ? HIR_ZERO : HIR_VARIABLE(returnCollectorName, loweredReturnType),
     };
   }
 
