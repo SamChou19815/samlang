@@ -43,7 +43,8 @@ it('performTailRecursiveCallTransformationOnHighIRFunction no tailrec call test'
       })
     )
   ).toBe(`function (): int {
-  return 1;
+  let _t1: int = 1;
+  return (_t1: int);
 }
 `);
 });
