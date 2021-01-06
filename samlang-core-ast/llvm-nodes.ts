@@ -83,6 +83,14 @@ export const prettyPrintLLVMValue = (value: LLVMValue): string => {
 
 export type LLVMAnnotatedValue = { readonly value: LLVMValue; readonly type: LLVMType };
 
+export type LLVMBitcastInstruction = {
+  readonly __type__: 'LLVMBitcastInstruction';
+  readonly targetVariable: string;
+  readonly targetType: LLVMType;
+  readonly sourceValue: LLVMValue;
+  readonly sourceType: LLVMType;
+};
+
 export type LLVMGetElementPointerInstruction = {
   readonly __type__: 'LLVMGetElementPointerInstruction';
   readonly resultVariable: string;
@@ -155,6 +163,7 @@ export type LLVMReturnInstruction = {
 };
 
 export type LLVMInstruction =
+  | LLVMBitcastInstruction
   | LLVMGetElementPointerInstruction
   | LLVMBinaryInstruction
   | LLVMLoadInstruction
@@ -167,6 +176,19 @@ export type LLVMInstruction =
   | LLVMReturnInstruction;
 
 type ConstructorArgumentObject<E extends LLVMInstruction> = Omit<E, '__type__'>;
+
+export const LLVM_BITCAST = ({
+  targetVariable,
+  targetType,
+  sourceValue,
+  sourceType,
+}: ConstructorArgumentObject<LLVMBitcastInstruction>): LLVMBitcastInstruction => ({
+  __type__: 'LLVMBitcastInstruction',
+  targetVariable,
+  targetType,
+  sourceValue,
+  sourceType,
+});
 
 export const LLVM_GET_ELEMENT_PTR = ({
   resultVariable,
@@ -278,6 +300,12 @@ export const LLVM_RETURN = (value: LLVMValue, type: LLVMType): LLVMReturnInstruc
 
 export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string => {
   switch (instruction.__type__) {
+    case 'LLVMBitcastInstruction': {
+      const sourceValue = prettyPrintLLVMValue(instruction.sourceValue);
+      const targetType = prettyPrintLLVMType(instruction.targetType);
+      const sourceType = prettyPrintLLVMType(instruction.sourceType);
+      return `%${instruction.targetVariable} = bitcast ${sourceType} ${sourceValue} to ${targetType}`;
+    }
     case 'LLVMGetElementPointerInstruction': {
       const { resultVariable, pointerType, sourceVariable, offset } = instruction;
       const type = prettyPrintLLVMType(pointerType);
@@ -338,7 +366,7 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       const sourceValue = prettyPrintLLVMValue(instruction.sourceValue);
       const targetType = prettyPrintLLVMType(instruction.targetType);
       const sourceType = prettyPrintLLVMType(instruction.sourceType);
-      return `store ${sourceType} %${sourceValue}, ${targetType} %${instruction.targetVariable}`;
+      return `store ${sourceType} ${sourceValue}, ${targetType} %${instruction.targetVariable}`;
     }
     case 'LLVMPhiInstruction': {
       const v1 = prettyPrintLLVMValue(instruction.v1);
