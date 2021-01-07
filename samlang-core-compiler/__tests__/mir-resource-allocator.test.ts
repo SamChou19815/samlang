@@ -1,5 +1,11 @@
 import MidIRResourceAllocator from '../mir-resource-allocator';
 
+it('allocate temp test', () => {
+  const allocator = new MidIRResourceAllocator();
+  expect(allocator.allocateTemp('fun')).toBe('_temp_0_fun');
+  expect(allocator.allocateTemp('octocat')).toBe('_temp_1_octocat');
+});
+
 it('allocate label test', () => {
   const allocator = new MidIRResourceAllocator();
   expect(allocator.allocateLabel('fooBar')).toBe('LABEL_fooBar_0');
