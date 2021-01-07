@@ -4,6 +4,7 @@ import reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath from './mir-basic-bloc
 import midIRTranslateStatementsAndCollectGlobalStrings from './mir-lowering-translator';
 import MidIRResourceAllocator from './mir-resource-allocator';
 
+import { HIR_ZERO } from 'samlang-core-ast/hir-expressions';
 import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import { MidIRCompilationUnit, MidIRFunction, MIR_RETURN } from 'samlang-core-ast/mir-nodes';
 import { optimizeIrWithSimpleOptimization } from 'samlang-core-optimization/simple-optimizations';
@@ -27,7 +28,7 @@ const compileHighIrModuleToMidIRCompilationUnit = (
           reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath(
             createMidIRBasicBlocks(allocator, highIRFunction.name, [
               ...loweredStatements,
-              MIR_RETURN(),
+              MIR_RETURN(HIR_ZERO),
             ])
           )
         )

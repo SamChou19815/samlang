@@ -9,6 +9,7 @@ import {
   MidIRReturnStatement,
   MIR_LABEL,
   MIR_JUMP,
+  midIRStatementToString,
 } from 'samlang-core-ast/mir-nodes';
 import { assertNotNull, checkNotNull } from 'samlang-core-utils';
 
@@ -111,7 +112,9 @@ export const createMidIRBasicBlocks = (
   // If the block list is not empty,
   // then it means that the last statement is not JUMP/CJUMP/RETURN.
   // It's not going to happen, because the caller should synthetic a final return for us.
-  if (tempBlockList.length > 0) throw new Error();
+  if (tempBlockList.length > 0) {
+    throw new Error(`${tempBlockList.map(midIRStatementToString).join(',')}`);
+  }
 
   // Add synthetic jump
   const basicBlocks = tempBasicBlocks.map((tempBlock, index) => {

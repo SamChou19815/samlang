@@ -1,24 +1,27 @@
 import ControlFlowGraph from '../control-flow-graph';
 
 import { ASM_JUMP, ASM_RET, ASM_LABEL } from 'samlang-core-ast/asm-instructions';
+import { HIR_ONE, HIR_VARIABLE } from 'samlang-core-ast/hir-expressions';
+import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   MIR_MOVE_TEMP,
   MIR_JUMP,
   MIR_CJUMP_FALLTHROUGH,
   MIR_LABEL,
   MIR_RETURN,
-  MIR_TEMP,
 } from 'samlang-core-ast/mir-nodes';
+
+const MIR_TEMP = (n: string) => HIR_VARIABLE(n, HIR_INT_TYPE);
 
 const statements = [
   MIR_LABEL('foo'),
   MIR_LABEL('bar'),
-  MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('b')),
+  MIR_MOVE_TEMP('a', MIR_TEMP('b')),
   MIR_CJUMP_FALLTHROUGH(MIR_TEMP(''), 'baz'),
   MIR_JUMP('baz'),
   MIR_LABEL('baz'),
-  MIR_RETURN(),
-  MIR_RETURN(),
+  MIR_RETURN(HIR_ONE),
+  MIR_RETURN(HIR_ONE),
 ];
 const graph = ControlFlowGraph.fromMidIRStatements(statements);
 

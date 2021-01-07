@@ -178,6 +178,18 @@ export const HIR_BINARY = ({
       type = HIR_BOOL_TYPE;
       break;
   }
+  if (operator === '-' && e2.__type__ === 'HighIRIntLiteralExpression') {
+    const negOfE2Constant = e2.value.neg();
+    if (negOfE2Constant.notEquals(e2.value)) {
+      return {
+        __type__: 'HighIRBinaryExpression',
+        type,
+        operator: '+',
+        e1,
+        e2: HIR_INT(negOfE2Constant),
+      };
+    }
+  }
   return { __type__: 'HighIRBinaryExpression', type, operator, e1, e2 };
 };
 
@@ -241,7 +253,7 @@ export const HIR_RETURN = (expression: HighIRExpression): HighIRReturnStatement 
   expression,
 });
 
-const debugPrintHighIRExpression = (expression: HighIRExpression): string => {
+export const debugPrintHighIRExpression = (expression: HighIRExpression): string => {
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
       return expression.value.toString();
@@ -257,6 +269,23 @@ const debugPrintHighIRExpression = (expression: HighIRExpression): string => {
       return `(${debugPrintHighIRExpression(expression.e1)} ${
         expression.operator
       } ${debugPrintHighIRExpression(expression.e2)})`;
+  }
+};
+
+export const debugPrintHighIRExpressionUntyped = (expression: HighIRExpression): string => {
+  switch (expression.__type__) {
+    case 'HighIRIntLiteralExpression':
+      return expression.value.toString();
+    case 'HighIRVariableExpression':
+      return expression.name;
+    case 'HighIRNameExpression':
+      return expression.name;
+    case 'HighIRIndexAccessExpression':
+      return `${debugPrintHighIRExpressionUntyped(expression.expression)}[${expression.index}]`;
+    case 'HighIRBinaryExpression':
+      return `(${debugPrintHighIRExpressionUntyped(expression.e1)} ${
+        expression.operator
+      } ${debugPrintHighIRExpressionUntyped(expression.e2)})`;
   }
 };
 

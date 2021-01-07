@@ -719,7 +719,7 @@ it('HIR expression to JS string test', () => {
         }),
       })
     )
-  ).toBe('(1 - 2) + 3 % 4');
+  ).toBe('(1 + -2) + 3 % 4');
   expect(
     highIRExpressionToString(
       HIR_BINARY({
@@ -732,7 +732,7 @@ it('HIR expression to JS string test', () => {
         }),
       })
     )
-  ).toBe('somevar + (3 - 4)');
+  ).toBe('somevar + (3 + -4)');
   expect(
     highIRExpressionToString(
       HIR_BINARY({

@@ -101,30 +101,36 @@ mirBaseTestCases.forEach((testCase) => {
       expect(result).toBe(testCase.expectedStandardOut);
     });
 
-    it(`IR[copy]: ${testCase.testCaseName}`, () =>
+    it(`IR[copy]: ${testCase.testCaseName}`, () => {
       testMidIROptimizerResult(testCase, (it) =>
         optimizeIRCompilationUnit(it, { doesPerformCopyPropagation: true })
-      ));
+      );
+    });
 
-    it(`IR[vn]: ${testCase.testCaseName}`, () =>
+    it(`IR[vn]: ${testCase.testCaseName}`, () => {
       testMidIROptimizerResult(testCase, (it) =>
         optimizeIRCompilationUnit(it, { doesPerformLocalValueNumbering: true })
-      ));
+      );
+    });
 
-    it(`IR[cse]: ${testCase.testCaseName}`, () =>
+    it(`IR[cse]: ${testCase.testCaseName}`, () => {
       testMidIROptimizerResult(testCase, (it) =>
         optimizeIRCompilationUnit(it, { doesPerformCommonSubExpressionElimination: true })
-      ));
+      );
+    });
 
-    it(`IR[inl]: ${testCase.testCaseName}`, () =>
+    it(`IR[inl]: ${testCase.testCaseName}`, () => {
       testMidIROptimizerResult(testCase, (it) =>
         optimizeIRCompilationUnit(it, { doesPerformInlining: true })
-      ));
+      );
+    });
 
-    it(`IR[all]: ${testCase.testCaseName}`, () =>
-      testMidIROptimizerResult(testCase, (it) => optimizeIRCompilationUnit(it)));
+    it(`IR[all]: ${testCase.testCaseName}`, () => {
+      testMidIROptimizerResult(testCase, (it) => optimizeIRCompilationUnit(it));
+    });
   }
 
-  it(`ASM[all]: ${testCase.testCaseName}`, () =>
-    testAssemblyResult(testCase, (it) => optimizeIRCompilationUnit(it)));
+  it(`ASM[all]: ${testCase.testCaseName}`, () => {
+    testAssemblyResult(testCase, (it) => optimizeIRCompilationUnit(it));
+  });
 });

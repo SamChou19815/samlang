@@ -15,6 +15,7 @@ import {
   createAssemblyMidIRExpressionTilingResult,
   createAssemblyMemoryTilingResult,
 } from './asm-tiling-results';
+import createHighIRFlexibleOrderOperatorNode from './hir-flexible-op';
 
 import {
   RIP,
@@ -54,14 +55,15 @@ import {
   AssemblyConditionalJumpType,
 } from 'samlang-core-ast/asm-instructions';
 import {
-  MidIRExpression,
-  MidIRImmutableMemoryExpression,
-  MidIRBinaryExpression,
-  MidIRStatement,
-  MIR_IMMUTABLE_MEM,
-  midIRExpressionToString,
-  midIRStatementToString,
-} from 'samlang-core-ast/mir-nodes';
+  HighIRExpression,
+  HighIRIndexAccessExpression,
+  HighIRBinaryExpression,
+  debugPrintHighIRExpressionUntyped,
+  HIR_INT,
+  HIR_INDEX_ACCESS,
+} from 'samlang-core-ast/hir-expressions';
+import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
+import { MidIRStatement, midIRStatementToString } from 'samlang-core-ast/mir-nodes';
 import {
   bigIntIsWithin32BitIntegerRange,
   isPowerOfTwo,
@@ -70,11 +72,13 @@ import {
   checkNotNull,
 } from 'samlang-core-utils';
 
+const midIRExpressionToString = debugPrintHighIRExpressionUntyped;
+
 type MidIRBinaryExpressionTiler = (
-  expression: MidIRBinaryExpression,
+  expression: HighIRBinaryExpression,
   service: AssemblyTilingService,
   memoryTilerForExpression: (
-    expressionToTile: MidIRBinaryExpression,
+    expressionToTile: HighIRBinaryExpression,
     serviceForTiling: AssemblyTilingService
   ) => AssemblyMemoryTilingResult | null
 ) => AssemblyMidIRExpressionTilingResult | null;
@@ -265,7 +269,7 @@ const imul3ArgumentBinaryExpressionTiler: MidIRBinaryExpressionTiler = (expressi
   const { operator, e1, e2 } = expression;
   if (
     operator !== '*' ||
-    e2.__type__ !== 'MidIRConstantExpression' ||
+    e2.__type__ !== 'HighIRIntLiteralExpression' ||
     !bigIntIsWithin32BitIntegerRange(e2.value)
   ) {
     return null;
@@ -287,7 +291,7 @@ const multiplyPowerOfTwoBinaryExpressionTiler: MidIRBinaryExpressionTiler = (
   service
 ) => {
   const { operator, e1, e2 } = expression;
-  if (operator !== '*' || e2.__type__ !== 'MidIRConstantExpression' || !isPowerOfTwo(e2.value)) {
+  if (operator !== '*' || e2.__type__ !== 'HighIRIntLiteralExpression' || !isPowerOfTwo(e2.value)) {
     return null;
   }
   const resultRegister = service.allocator.nextReg();
@@ -316,7 +320,7 @@ class AssemblyDpTiling implements AssemblyTilingService {
     private readonly functionName: string,
     readonly allocator: AssemblyFunctionAbstractRegisterAllocator,
     private readonly tileMemoryForExpression: (
-      expression: MidIRExpression,
+      expression: HighIRExpression,
       service: AssemblyTilingService
     ) => AssemblyMemoryTilingResult | null
   ) {}
@@ -337,7 +341,13 @@ class AssemblyDpTiling implements AssemblyTilingService {
           const {
             instructions: memoryLocationInstructions,
             assemblyArgument: memoryLocation,
-          } = this.tileMemory(MIR_IMMUTABLE_MEM(statement.memoryIndexExpression));
+          } = this.tileMemory(
+            HIR_INDEX_ACCESS({
+              type: HIR_INT_TYPE,
+              expression: statement.memoryIndexExpression,
+              index: 0,
+            })
+          );
           const sourceTilingResult = this.tileConstantOrRegister(statement.source);
           return [
             ...memoryLocationInstructions,
@@ -353,7 +363,7 @@ class AssemblyDpTiling implements AssemblyTilingService {
           ];
           // preparation: we till the function.
           let assemblyFunctionExpression: AssemblyArgument;
-          if (functionExpression.__type__ === 'MidIRNameExpression') {
+          if (functionExpression.__type__ === 'HighIRNameExpression') {
             assemblyFunctionExpression = ASM_NAME(functionExpression.name);
           } else {
             const functionExpressionTilingResult = this.tileAssemblyArgument(functionExpression);
@@ -431,7 +441,7 @@ class AssemblyDpTiling implements AssemblyTilingService {
         case 'MidIRConditionalJumpFallThrough': {
           const { conditionExpression, label1 } = statement;
           const comment = ASM_COMMENT(midIRStatementToString(statement));
-          if (conditionExpression.__type__ === 'MidIRBinaryExpression') {
+          if (conditionExpression.__type__ === 'HighIRBinaryExpression') {
             const { operator, e1, e2 } = conditionExpression;
             let jumpType: AssemblyConditionalJumpType | null;
             switch (operator) {
@@ -486,13 +496,11 @@ class AssemblyDpTiling implements AssemblyTilingService {
             ASM_COMMENT(midIRStatementToString(statement)),
           ];
           const { returnedExpression } = statement;
-          if (returnedExpression != null) {
-            const tilingResult = this.tileAssemblyArgument(returnedExpression);
-            instructions.push(
-              ...tilingResult.instructions,
-              ASM_MOVE_REG(RAX, tilingResult.assemblyArgument)
-            );
-          }
+          const tilingResult = this.tileAssemblyArgument(returnedExpression);
+          instructions.push(
+            ...tilingResult.instructions,
+            ASM_MOVE_REG(RAX, tilingResult.assemblyArgument)
+          );
           instructions.push(
             ASM_JUMP('jmp', `LABEL_FUNCTION_CALL_EPILOGUE_FOR_${this.functionName}`)
           );
@@ -503,16 +511,16 @@ class AssemblyDpTiling implements AssemblyTilingService {
   );
 
   tileExpression = getMemoizedAssemblyExpressionTilingFunction(
-    (expression: MidIRExpression): AssemblyMidIRExpressionTilingResult => {
+    (expression: HighIRExpression): AssemblyMidIRExpressionTilingResult => {
       switch (expression.__type__) {
-        case 'MidIRConstantExpression': {
+        case 'HighIRIntLiteralExpression': {
           const register = this.allocator.nextReg();
           return createAssemblyMidIRExpressionTilingResult(
             [ASM_MOVE_CONST_TO_REG(register, expression.value)],
             register
           );
         }
-        case 'MidIRNameExpression': {
+        case 'HighIRNameExpression': {
           const register = this.allocator.nextReg();
           // In general, a name cannot stand on its own.
           // We need this lea trick to associate it with rip
@@ -522,9 +530,9 @@ class AssemblyDpTiling implements AssemblyTilingService {
             register
           );
         }
-        case 'MidIRTemporaryExpression':
-          return createAssemblyMidIRExpressionTilingResult([], ASM_REG(expression.temporaryID));
-        case 'MidIRImmutableMemoryExpression': {
+        case 'HighIRVariableExpression':
+          return createAssemblyMidIRExpressionTilingResult([], ASM_REG(expression.name));
+        case 'HighIRIndexAccessExpression': {
           const memoryTilingResult = this.tileMemory(expression);
           const resultRegister = this.allocator.nextReg();
           return createAssemblyMidIRExpressionTilingResult(
@@ -536,7 +544,7 @@ class AssemblyDpTiling implements AssemblyTilingService {
             resultRegister
           );
         }
-        case 'MidIRBinaryExpression': {
+        case 'HighIRBinaryExpression': {
           let bestCost = Number.MAX_SAFE_INTEGER;
           let bestTilingResult: AssemblyMidIRExpressionTilingResult | null = null;
           const results = midIRBinaryExpressionTilers.map((tiler) =>
@@ -559,8 +567,10 @@ class AssemblyDpTiling implements AssemblyTilingService {
     }
   );
 
-  private tileConstantOrRegister(expression: MidIRExpression): AssemblyConstOrRegisterTilingResult {
-    if (expression.__type__ === 'MidIRConstantExpression') {
+  private tileConstantOrRegister(
+    expression: HighIRExpression
+  ): AssemblyConstOrRegisterTilingResult {
+    if (expression.__type__ === 'HighIRIntLiteralExpression') {
       const value = expression.value;
       if (bigIntIsWithin32BitIntegerRange(value)) {
         return createAssemblyConstantTilingResult(ASM_CONST(Number(value)));
@@ -569,29 +579,36 @@ class AssemblyDpTiling implements AssemblyTilingService {
     return this.tileExpression(expression);
   }
 
-  tileRegisterOrMemory(expression: MidIRExpression): AssemblyRegisterOrMemoryTilingResult {
-    if (expression.__type__ === 'MidIRImmutableMemoryExpression') {
+  tileRegisterOrMemory(expression: HighIRExpression): AssemblyRegisterOrMemoryTilingResult {
+    if (expression.__type__ === 'HighIRIndexAccessExpression') {
       return this.tileMemory(expression);
     }
     return this.tileExpression(expression);
   }
 
-  tileAssemblyArgument(expression: MidIRExpression): AssemblyArgumentTilingResult {
-    if (expression.__type__ === 'MidIRConstantExpression') {
+  tileAssemblyArgument(expression: HighIRExpression): AssemblyArgumentTilingResult {
+    if (expression.__type__ === 'HighIRIntLiteralExpression') {
       const value = expression.value;
       if (bigIntIsWithin32BitIntegerRange(value)) {
         return createAssemblyConstantTilingResult(ASM_CONST(Number(value)));
       }
     }
-    if (expression.__type__ === 'MidIRImmutableMemoryExpression') {
+    if (expression.__type__ === 'HighIRIndexAccessExpression') {
       return this.tileMemory(expression);
     }
     return this.tileExpression(expression);
   }
 
-  private tileMemory = (expression: MidIRImmutableMemoryExpression): AssemblyMemoryTilingResult => {
-    const innerExpression = expression.indexExpression;
-    if (innerExpression.__type__ === 'MidIRNameExpression') {
+  private tileMemory = (expression: HighIRIndexAccessExpression): AssemblyMemoryTilingResult => {
+    const innerExpression =
+      expression.index === 0
+        ? expression.expression
+        : createHighIRFlexibleOrderOperatorNode(
+            '+',
+            expression.expression,
+            HIR_INT(expression.index * 8)
+          );
+    if (innerExpression.__type__ === 'HighIRNameExpression') {
       return createAssemblyMemoryTilingResult(
         [],
         ASM_MEM_REG_WITH_CONST(RIP, ASM_NAME(innerExpression.name))

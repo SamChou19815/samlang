@@ -13,6 +13,8 @@ import {
   ASM_LABEL,
   ASM_COMMENT,
 } from 'samlang-core-ast/asm-instructions';
+import { HIR_VARIABLE, HIR_ZERO } from 'samlang-core-ast/hir-expressions';
+import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   MidIRStatement,
   midIRStatementToString,
@@ -21,8 +23,9 @@ import {
   MIR_JUMP,
   MIR_CJUMP_FALLTHROUGH,
   MIR_RETURN,
-  MIR_TEMP,
 } from 'samlang-core-ast/mir-nodes';
+
+const MIR_TEMP = (n: string) => HIR_VARIABLE(n, HIR_INT_TYPE);
 
 const optimizeIRAndConvertToString = (midIRStatements: readonly MidIRStatement[]): string =>
   optimizeIrWithSimpleOptimization(midIRStatements).map(midIRStatementToString).join('\n');
@@ -36,27 +39,27 @@ const optimizeASMAndConvertToString = (
     .join('\n');
 
 it('optimizeIrWithSimpleOptimization test.', () => {
-  expect(optimizeIRAndConvertToString([MIR_RETURN()])).toBe('return;');
+  expect(optimizeIRAndConvertToString([MIR_RETURN(HIR_ZERO)])).toBe('return 0;');
 
   expect(
     optimizeIRAndConvertToString([
       MIR_CJUMP_FALLTHROUGH(MIR_TEMP('boolVar'), 'A'),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('b')),
+      MIR_MOVE_TEMP('a', MIR_TEMP('b')),
       MIR_LABEL('A'),
-      MIR_RETURN(),
+      MIR_RETURN(HIR_ZERO),
     ])
   ).toBe(`if (boolVar) goto A;
 a = b;
 A:
-return;`);
+return 0;`);
 
   expect(
     optimizeIRAndConvertToString([
       MIR_CJUMP_FALLTHROUGH(MIR_TEMP('boolVar'), 'A'),
       MIR_LABEL('A'),
-      MIR_RETURN(),
+      MIR_RETURN(HIR_ZERO),
     ])
-  ).toBe(`return;`);
+  ).toBe(`return 0;`);
 
   expect(optimizeIRAndConvertToString([MIR_JUMP('A'), MIR_LABEL('A'), MIR_JUMP('A')])).toBe(
     'A:\ngoto A;'
@@ -67,9 +70,9 @@ return;`);
       MIR_LABEL('A'),
       MIR_CJUMP_FALLTHROUGH(MIR_TEMP('boolVar'), 'A'),
       MIR_LABEL('B'),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('b')),
+      MIR_MOVE_TEMP('a', MIR_TEMP('b')),
       MIR_JUMP('B'),
-      MIR_MOVE_TEMP(MIR_TEMP('c'), MIR_TEMP('d')),
+      MIR_MOVE_TEMP('c', MIR_TEMP('d')),
     ])
   ).toBe(`A:
 if (boolVar) goto A;
@@ -82,7 +85,7 @@ goto B;`);
       MIR_CJUMP_FALLTHROUGH(MIR_TEMP('boolVar'), 'A'),
       MIR_JUMP('B'),
       MIR_LABEL('A'),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('b')),
+      MIR_MOVE_TEMP('a', MIR_TEMP('b')),
       MIR_LABEL('B'),
     ])
   ).toBe(`if (boolVar) goto A;
@@ -94,8 +97,8 @@ B:`);
   expect(
     optimizeIRAndConvertToString([
       MIR_JUMP('C'),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('b')),
-      MIR_MOVE_TEMP(MIR_TEMP('c'), MIR_TEMP('d')),
+      MIR_MOVE_TEMP('a', MIR_TEMP('b')),
+      MIR_MOVE_TEMP('c', MIR_TEMP('d')),
       MIR_LABEL('C'),
     ])
   ).toBe('');
@@ -103,10 +106,10 @@ B:`);
   expect(
     optimizeIRAndConvertToString([
       MIR_CJUMP_FALLTHROUGH(MIR_TEMP('boolVar'), 'A'),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('b')),
+      MIR_MOVE_TEMP('a', MIR_TEMP('b')),
       MIR_LABEL('A'),
       MIR_LABEL('B'),
-      MIR_MOVE_TEMP(MIR_TEMP('c'), MIR_TEMP('d')),
+      MIR_MOVE_TEMP('c', MIR_TEMP('d')),
     ])
   ).toBe(`if (boolVar) goto B;
 a = b;
@@ -119,8 +122,8 @@ c = d;`);
       MIR_LABEL('A'),
       MIR_LABEL('B'),
       MIR_LABEL('C'),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('b')),
-      MIR_MOVE_TEMP(MIR_TEMP('c'), MIR_TEMP('d')),
+      MIR_MOVE_TEMP('a', MIR_TEMP('b')),
+      MIR_MOVE_TEMP('c', MIR_TEMP('d')),
       MIR_LABEL('D'),
       MIR_LABEL('E'),
       MIR_LABEL('F'),
@@ -128,9 +131,7 @@ c = d;`);
       MIR_CJUMP_FALLTHROUGH(MIR_TEMP('boolVar'), 'G'),
       MIR_LABEL('G'),
       MIR_JUMP('C'),
-      MIR_RETURN(),
-      MIR_RETURN(),
-      MIR_RETURN(),
+      MIR_RETURN(HIR_ZERO),
     ])
   ).toBe(`C:
 a = b;

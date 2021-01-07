@@ -2,13 +2,15 @@ import type OptimizationResourceAllocator from './optimization-resource-allocato
 import { optimizeIrWithSimpleOptimization } from './simple-optimizations';
 
 import {
-  MidIRExpression,
+  HighIRExpression,
+  HIR_BINARY,
+  HIR_INDEX_ACCESS,
+  HIR_VARIABLE,
+} from 'samlang-core-ast/hir-expressions';
+import {
   MidIRStatement,
   MidIRFunction,
   MidIRCompilationUnit,
-  MIR_TEMP,
-  MIR_IMMUTABLE_MEM,
-  MIR_OP,
   MIR_MOVE_TEMP,
   MIR_MOVE_IMMUTABLE_MEM,
   MIR_CALL_FUNCTION,
@@ -23,15 +25,15 @@ const INLINE_THRESHOLD = 25;
 /** The threshold max tolerable cost of performing inlining.  */
 const PERFORM_INLINE_THRESHOLD = 1000;
 
-const estimateMidIRExpressionInlineCost = (expression: MidIRExpression): number => {
+const estimateMidIRExpressionInlineCost = (expression: HighIRExpression): number => {
   switch (expression.__type__) {
-    case 'MidIRConstantExpression':
-    case 'MidIRNameExpression':
-    case 'MidIRTemporaryExpression':
+    case 'HighIRIntLiteralExpression':
+    case 'HighIRNameExpression':
+    case 'HighIRVariableExpression':
       return 0;
-    case 'MidIRImmutableMemoryExpression':
-      return 1 + estimateMidIRExpressionInlineCost(expression.indexExpression);
-    case 'MidIRBinaryExpression':
+    case 'HighIRIndexAccessExpression':
+      return 1 + estimateMidIRExpressionInlineCost(expression.expression);
+    case 'HighIRBinaryExpression':
       return (
         1 +
         estimateMidIRExpressionInlineCost(expression.e1) +
@@ -64,12 +66,7 @@ const estimateMidIRStatementInlineCost = (statement: MidIRStatement): number => 
     case 'MidIRConditionalJumpFallThrough':
       return 1 + estimateMidIRExpressionInlineCost(statement.conditionExpression);
     case 'MidIRReturnStatement':
-      return (
-        1 +
-        (statement.returnedExpression == null
-          ? 0
-          : estimateMidIRExpressionInlineCost(statement.returnedExpression))
-      );
+      return 1 + estimateMidIRExpressionInlineCost(statement.returnedExpression);
   }
 };
 
@@ -108,22 +105,26 @@ const getFunctionsToInline = ({
 
 const inlineRewriteForMidIRExpression = (
   prefix: string,
-  expression: MidIRExpression
-): MidIRExpression => {
+  expression: HighIRExpression
+): HighIRExpression => {
   switch (expression.__type__) {
-    case 'MidIRConstantExpression':
-    case 'MidIRNameExpression':
+    case 'HighIRIntLiteralExpression':
+    case 'HighIRNameExpression':
       return expression;
-    case 'MidIRTemporaryExpression':
-      return MIR_TEMP(`${prefix}${expression.temporaryID}`);
-    case 'MidIRImmutableMemoryExpression':
-      return MIR_IMMUTABLE_MEM(inlineRewriteForMidIRExpression(prefix, expression.indexExpression));
-    case 'MidIRBinaryExpression':
-      return MIR_OP(
-        expression.operator,
-        inlineRewriteForMidIRExpression(prefix, expression.e1),
-        inlineRewriteForMidIRExpression(prefix, expression.e2)
-      );
+    case 'HighIRVariableExpression':
+      return HIR_VARIABLE(`${prefix}${expression.name}`, expression.type);
+    case 'HighIRIndexAccessExpression':
+      return HIR_INDEX_ACCESS({
+        type: expression.type,
+        expression: inlineRewriteForMidIRExpression(prefix, expression.expression),
+        index: expression.index,
+      });
+    case 'HighIRBinaryExpression':
+      return HIR_BINARY({
+        operator: expression.operator,
+        e1: inlineRewriteForMidIRExpression(prefix, expression.e1),
+        e2: inlineRewriteForMidIRExpression(prefix, expression.e2),
+      });
   }
 };
 
@@ -137,16 +138,14 @@ const inlineRewriteForMidIRStatement = (
     case 'MidIRMoveTempStatement':
       return [
         MIR_MOVE_TEMP(
-          MIR_TEMP(`${temporaryPrefix}${statement.temporaryID}`),
+          `${temporaryPrefix}${statement.temporaryID}`,
           inlineRewriteForMidIRExpression(temporaryPrefix, statement.source)
         ),
       ];
     case 'MidIRMoveMemStatement':
       return [
         MIR_MOVE_IMMUTABLE_MEM(
-          MIR_IMMUTABLE_MEM(
-            inlineRewriteForMidIRExpression(temporaryPrefix, statement.memoryIndexExpression)
-          ),
+          inlineRewriteForMidIRExpression(temporaryPrefix, statement.memoryIndexExpression),
           inlineRewriteForMidIRExpression(temporaryPrefix, statement.source)
         ),
       ];
@@ -180,7 +179,7 @@ const inlineRewriteForMidIRStatement = (
       }
       return [
         MIR_MOVE_TEMP(
-          MIR_TEMP(returnCollectorTemporaryID),
+          returnCollectorTemporaryID,
           inlineRewriteForMidIRExpression(temporaryPrefix, statement.returnedExpression)
         ),
         MIR_JUMP(`${labelPrefix}__INLINING_END`),
@@ -206,7 +205,7 @@ const performInlineRewriteOnFunction = (
       functionArguments,
       returnCollectorTemporaryID,
     } = oldMainBodyStatement;
-    if (functionExpression.__type__ !== 'MidIRNameExpression') {
+    if (functionExpression.__type__ !== 'HighIRNameExpression') {
       newMainBodyStatements.push(oldMainBodyStatement);
       return;
     }
@@ -225,10 +224,7 @@ const performInlineRewriteOnFunction = (
     newMainBodyStatements.push(
       // inline step 1: move args to args temp
       ...argumentNamesOfFunctionToBeInlined.map((parameter, index) =>
-        MIR_MOVE_TEMP(
-          MIR_TEMP(`${temporaryPrefix}${parameter}`),
-          checkNotNull(functionArguments[index])
-        )
+        MIR_MOVE_TEMP(`${temporaryPrefix}${parameter}`, checkNotNull(functionArguments[index]))
       ),
       // inline step 2: add in body code and change return statements and label prefix
       ...mainBodyStatementsOfFunctionToBeInlined

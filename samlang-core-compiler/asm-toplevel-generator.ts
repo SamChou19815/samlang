@@ -14,16 +14,13 @@ import {
   ASM_LABEL,
 } from 'samlang-core-ast/asm-instructions';
 import type { AssemblyProgram } from 'samlang-core-ast/asm-program';
+import { HighIRExpression, HIR_INDEX_ACCESS, HIR_VARIABLE } from 'samlang-core-ast/hir-expressions';
+import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   MidIRCompilationUnit,
   MidIRFunction,
   MidIRStatement,
-  MidIRExpression,
   MIR_MOVE_TEMP,
-  MIR_CONST,
-  MIR_TEMP,
-  MIR_IMMUTABLE_MEM,
-  MIR_OP,
 } from 'samlang-core-ast/mir-nodes';
 import { optimizeAssemblyWithSimpleOptimization } from 'samlang-core-optimization/simple-optimizations';
 
@@ -71,24 +68,28 @@ const fixCallingConvention = (
   return fixedInstructions;
 };
 
-const getArgPlaceInsideFunction = (argId: number): MidIRExpression => {
+const getArgPlaceInsideFunction = (argId: number): HighIRExpression => {
   switch (argId) {
     case 0:
-      return MIR_TEMP(RDI.id);
+      return HIR_VARIABLE(RDI.id, HIR_INT_TYPE);
     case 1:
-      return MIR_TEMP(RSI.id);
+      return HIR_VARIABLE(RSI.id, HIR_INT_TYPE);
     case 2:
-      return MIR_TEMP(RDX.id);
+      return HIR_VARIABLE(RDX.id, HIR_INT_TYPE);
     case 3:
-      return MIR_TEMP(RCX.id);
+      return HIR_VARIABLE(RCX.id, HIR_INT_TYPE);
     case 4:
-      return MIR_TEMP(R8.id);
+      return HIR_VARIABLE(R8.id, HIR_INT_TYPE);
     case 5:
-      return MIR_TEMP(R9.id);
+      return HIR_VARIABLE(R9.id, HIR_INT_TYPE);
     default: {
       // -4 because -6 for reg arg place and +2 for the RIP and saved RBP.
       const offsetUnit = argId - 4;
-      return MIR_IMMUTABLE_MEM(MIR_OP('+', MIR_TEMP(RBP.id), MIR_CONST(8 * offsetUnit)));
+      return HIR_INDEX_ACCESS({
+        type: HIR_INT_TYPE,
+        expression: HIR_VARIABLE(RBP.id, HIR_INT_TYPE),
+        index: offsetUnit,
+      });
     }
   }
 };
@@ -97,9 +98,7 @@ const getStatementsToTile = ({
   argumentNames,
   mainBodyStatements,
 }: MidIRFunction): readonly MidIRStatement[] => [
-  ...argumentNames.map((name, index) =>
-    MIR_MOVE_TEMP(MIR_TEMP(name), getArgPlaceInsideFunction(index))
-  ),
+  ...argumentNames.map((name, index) => MIR_MOVE_TEMP(name, getArgPlaceInsideFunction(index))),
   ...mainBodyStatements,
 ];
 

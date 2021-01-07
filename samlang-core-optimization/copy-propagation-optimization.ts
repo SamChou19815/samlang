@@ -1,37 +1,38 @@
 import analyzeAvailableCopies from 'samlang-core-analysis/available-copy-analysis';
 import {
-  MidIRStatement,
-  MidIRExpression,
-  MIR_TEMP,
-  MIR_IMMUTABLE_MEM,
-  MIR_OP,
-  MIR_RETURN,
-} from 'samlang-core-ast/mir-nodes';
+  HighIRExpression,
+  HIR_VARIABLE,
+  HIR_INDEX_ACCESS,
+  HIR_BINARY,
+} from 'samlang-core-ast/hir-expressions';
+import { MidIRStatement, MIR_RETURN } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
 const replaceMidIRExpressionAccordingToAvailableCopies = (
   availableCopies: Readonly<Record<string, string>>,
-  expression: MidIRExpression
-): MidIRExpression => {
+  expression: HighIRExpression
+): HighIRExpression => {
   switch (expression.__type__) {
-    case 'MidIRConstantExpression':
-    case 'MidIRNameExpression':
+    case 'HighIRIntLiteralExpression':
+    case 'HighIRNameExpression':
       return expression;
-    case 'MidIRTemporaryExpression':
-      return MIR_TEMP(availableCopies[expression.temporaryID] ?? expression.temporaryID);
-    case 'MidIRImmutableMemoryExpression':
-      return MIR_IMMUTABLE_MEM(
-        replaceMidIRExpressionAccordingToAvailableCopies(
+    case 'HighIRVariableExpression':
+      return HIR_VARIABLE(availableCopies[expression.name] ?? expression.name, expression.type);
+    case 'HighIRIndexAccessExpression':
+      return HIR_INDEX_ACCESS({
+        type: expression.type,
+        expression: replaceMidIRExpressionAccordingToAvailableCopies(
           availableCopies,
-          expression.indexExpression
-        )
-      );
-    case 'MidIRBinaryExpression':
-      return MIR_OP(
-        expression.operator,
-        replaceMidIRExpressionAccordingToAvailableCopies(availableCopies, expression.e1),
-        replaceMidIRExpressionAccordingToAvailableCopies(availableCopies, expression.e2)
-      );
+          expression.expression
+        ),
+        index: expression.index,
+      });
+    case 'HighIRBinaryExpression':
+      return HIR_BINARY({
+        operator: expression.operator,
+        e1: replaceMidIRExpressionAccordingToAvailableCopies(availableCopies, expression.e1),
+        e2: replaceMidIRExpressionAccordingToAvailableCopies(availableCopies, expression.e2),
+      });
   }
 };
 
@@ -77,9 +78,6 @@ const rewriteMidIRStatementAccordingToAvailableCopies = (
         ),
       };
     case 'MidIRReturnStatement':
-      if (statement.returnedExpression == null) {
-        return MIR_RETURN();
-      }
       return MIR_RETURN(
         replaceMidIRExpressionAccordingToAvailableCopies(
           availableCopies,

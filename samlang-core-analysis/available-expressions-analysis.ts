@@ -2,10 +2,10 @@ import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
 
 import {
-  MidIRExpression,
-  MidIRStatement,
-  midIRExpressionToString,
-} from 'samlang-core-ast/mir-nodes';
+  debugPrintHighIRExpressionUntyped,
+  HighIRExpression,
+} from 'samlang-core-ast/hir-expressions';
+import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
 import {
   Hashable,
   ReadonlyHashMap,
@@ -19,29 +19,29 @@ import {
   checkNotNull,
 } from 'samlang-core-utils';
 
-export class MidIRExpressionWrapper implements Hashable {
-  constructor(public readonly expression: MidIRExpression) {}
+export class HighIRExpressionWrapper implements Hashable {
+  constructor(public readonly expression: HighIRExpression) {}
 
   uniqueHash(): string {
-    return midIRExpressionToString(this.expression);
+    return debugPrintHighIRExpressionUntyped(this.expression);
   }
 }
 
 const collectSubExpressionsFromMidIRExpression = (
-  set: HashSet<MidIRExpressionWrapper>,
-  expression: MidIRExpression
-): HashSet<MidIRExpressionWrapper> => {
+  set: HashSet<HighIRExpressionWrapper>,
+  expression: HighIRExpression
+): HashSet<HighIRExpressionWrapper> => {
   switch (expression.__type__) {
-    case 'MidIRConstantExpression':
-    case 'MidIRNameExpression':
-    case 'MidIRTemporaryExpression':
+    case 'HighIRIntLiteralExpression':
+    case 'HighIRNameExpression':
+    case 'HighIRVariableExpression':
       return set;
-    case 'MidIRImmutableMemoryExpression':
-      set.add(new MidIRExpressionWrapper(expression));
-      collectSubExpressionsFromMidIRExpression(set, expression.indexExpression);
+    case 'HighIRIndexAccessExpression':
+      set.add(new HighIRExpressionWrapper(expression));
+      collectSubExpressionsFromMidIRExpression(set, expression.expression);
       return set;
-    case 'MidIRBinaryExpression':
-      set.add(new MidIRExpressionWrapper(expression));
+    case 'HighIRBinaryExpression':
+      set.add(new HighIRExpressionWrapper(expression));
       collectSubExpressionsFromMidIRExpression(set, expression.e1);
       collectSubExpressionsFromMidIRExpression(set, expression.e2);
       return set;
@@ -50,8 +50,8 @@ const collectSubExpressionsFromMidIRExpression = (
 
 const collectSubExpressionsFromMidIRStatement = (
   statement: MidIRStatement
-): ReadonlyHashSet<MidIRExpressionWrapper> => {
-  const set = hashSetOf<MidIRExpressionWrapper>();
+): ReadonlyHashSet<HighIRExpressionWrapper> => {
+  const set = hashSetOf<HighIRExpressionWrapper>();
 
   switch (statement.__type__) {
     case 'MidIRMoveTempStatement':
@@ -72,16 +72,14 @@ const collectSubExpressionsFromMidIRStatement = (
     case 'MidIRConditionalJumpFallThrough':
       return collectSubExpressionsFromMidIRExpression(set, statement.conditionExpression);
     case 'MidIRReturnStatement':
-      if (statement.returnedExpression != null) {
-        collectSubExpressionsFromMidIRExpression(set, statement.returnedExpression);
-      }
+      collectSubExpressionsFromMidIRExpression(set, statement.returnedExpression);
       return set;
   }
 };
 
 /** String of expression => statement ids where the expression first appear. */
 type AvailableExpressionToSourceMapping = ReadonlyHashMap<
-  MidIRExpressionWrapper,
+  HighIRExpressionWrapper,
   readonly number[]
 >;
 
@@ -95,7 +93,7 @@ const operator: DataflowAnalysisGraphOperator<
     if (parentOutEdges.length === 0 || nodeID === 0) {
       return hashMapOf();
     }
-    const newInEdgeMapping = hashMapOf<MidIRExpressionWrapper, number[]>();
+    const newInEdgeMapping = hashMapOf<HighIRExpressionWrapper, number[]>();
     const otherParents = parentOutEdges.slice(1);
     checkNotNull(parentOutEdges[0]).forEach((statementIds, availableExpression) => {
       const appearIdsFromOtherParentsWithNull = otherParents.map((map) =>

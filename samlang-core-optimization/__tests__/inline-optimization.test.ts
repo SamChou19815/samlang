@@ -4,6 +4,17 @@ import optimizeMidIRCompilationUnitByInlining, {
 } from '../inline-optimization';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
+import type { IROperator } from 'samlang-core-ast/common-operators';
+import {
+  HighIRExpression,
+  HIR_ZERO,
+  HIR_ONE,
+  HIR_NAME,
+  HIR_VARIABLE,
+  HIR_INDEX_ACCESS,
+  HIR_BINARY,
+} from 'samlang-core-ast/hir-expressions';
+import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   MIR_MOVE_TEMP,
   MIR_MOVE_IMMUTABLE_MEM,
@@ -12,13 +23,18 @@ import {
   MIR_LABEL,
   MIR_CJUMP_FALLTHROUGH,
   MIR_RETURN,
-  MIR_ZERO,
-  MIR_TEMP,
-  MIR_IMMUTABLE_MEM,
-  MIR_OP,
   midIRCompilationUnitToString,
-  MIR_ONE,
 } from 'samlang-core-ast/mir-nodes';
+
+const MIR_TEMP = (n: string) => HIR_VARIABLE(n, HIR_INT_TYPE);
+const MIR_NAME = (n: string) => HIR_NAME(n, HIR_INT_TYPE);
+const MIR_IMMUTABLE_MEM = (e: HighIRExpression, index = 0): HighIRExpression =>
+  HIR_INDEX_ACCESS({ type: HIR_INT_TYPE, expression: e, index });
+const MIR_OP = (
+  operator: IROperator,
+  e1: HighIRExpression,
+  e2: HighIRExpression
+): HighIRExpression => HIR_BINARY({ operator, e1, e2 });
 
 it('estimateMidIRFunctionInlineCost test', () => {
   expect(
@@ -26,14 +42,14 @@ it('estimateMidIRFunctionInlineCost test', () => {
       functionName: '',
       argumentNames: [],
       mainBodyStatements: [
-        MIR_MOVE_TEMP(MIR_TEMP(''), MIR_TEMP('')), // 0,
-        MIR_MOVE_IMMUTABLE_MEM(MIR_IMMUTABLE_MEM(MIR_TEMP('')), MIR_IMMUTABLE_MEM(MIR_TEMP(''))), // 2
+        MIR_MOVE_TEMP('', MIR_TEMP('')), // 0,
+        MIR_MOVE_IMMUTABLE_MEM(MIR_TEMP(''), MIR_IMMUTABLE_MEM(MIR_TEMP(''))), // 2
         MIR_JUMP(''), // 1
         MIR_LABEL(''), // 1
-        MIR_RETURN(), // 1,
+        MIR_RETURN(HIR_ZERO), // 1,
         MIR_CJUMP_FALLTHROUGH(MIR_TEMP(''), ''), // 1
-        MIR_RETURN(MIR_OP('+', MIR_ZERO, MIR_ZERO)), // 2
-        MIR_CALL_FUNCTION('f', [MIR_TEMP('')]), // 10 + 1 = 11
+        MIR_RETURN(MIR_OP('+', HIR_ZERO, HIR_ZERO)), // 2
+        MIR_CALL_FUNCTION(MIR_NAME('f'), [MIR_TEMP('')]), // 10 + 1 = 11
       ],
     })
   ).toBe(19);
@@ -50,11 +66,11 @@ it('optimizeMidIRCompilationUnitByInlining test 1', () => {
               functionName: 'factorial',
               argumentNames: ['n', 'acc'],
               mainBodyStatements: [
-                MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), MIR_ZERO), 'LABEL_RETURN_ACC'),
+                MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'LABEL_RETURN_ACC'),
                 MIR_CALL_FUNCTION(
-                  'factorial',
+                  MIR_NAME('factorial'),
                   [
-                    MIR_OP('-', MIR_TEMP('n'), MIR_ONE),
+                    MIR_OP('-', MIR_TEMP('n'), HIR_ONE),
                     MIR_OP('*', MIR_TEMP('acc'), MIR_TEMP('n')),
                   ],
                   'dummy'
@@ -67,16 +83,19 @@ it('optimizeMidIRCompilationUnitByInlining test 1', () => {
             {
               functionName: 'infiniteLoop',
               argumentNames: [],
-              mainBodyStatements: [MIR_CALL_FUNCTION('infiniteLoop', []), MIR_RETURN()],
+              mainBodyStatements: [
+                MIR_CALL_FUNCTION(MIR_NAME('infiniteLoop'), []),
+                MIR_RETURN(HIR_ZERO),
+              ],
             },
             {
               functionName: 'insanelyBigFunction',
               argumentNames: ['a'],
               mainBodyStatements: [
-                MIR_CALL_FUNCTION('moveMove', [MIR_TEMP('a')]),
+                MIR_CALL_FUNCTION(MIR_NAME('moveMove'), [MIR_TEMP('a')]),
                 MIR_CALL_FUNCTION(MIR_TEMP('a'), []),
                 ...Array.from(new Array(10).keys()).map(() =>
-                  MIR_CALL_FUNCTION('non-existing-function', [])
+                  MIR_CALL_FUNCTION(MIR_NAME('non-existing-function'), [])
                 ),
               ],
             },
@@ -84,14 +103,11 @@ it('optimizeMidIRCompilationUnitByInlining test 1', () => {
               functionName: 'moveMove',
               argumentNames: ['a'],
               mainBodyStatements: [
-                MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-                MIR_MOVE_IMMUTABLE_MEM(
-                  MIR_IMMUTABLE_MEM(MIR_TEMP('a')),
-                  MIR_IMMUTABLE_MEM(MIR_TEMP('a'))
-                ),
+                MIR_MOVE_TEMP('a', MIR_TEMP('a')),
+                MIR_MOVE_IMMUTABLE_MEM(MIR_TEMP('a'), MIR_IMMUTABLE_MEM(MIR_TEMP('a'))),
                 MIR_JUMP('lll'),
                 MIR_LABEL('lll'),
-                MIR_RETURN(),
+                MIR_RETURN(HIR_ZERO),
               ],
             },
           ],
@@ -122,7 +138,7 @@ function factorial {
 function infiniteLoop {
 
   infiniteLoop();
-  return;
+  return 0;
 }
 
 function insanelyBigFunction {
@@ -130,7 +146,7 @@ function insanelyBigFunction {
 
   _INLINING_5_a = a;
   _INLINING_5_a = _INLINING_5_a;
-  MEM[_INLINING_5_a] = MEM[_INLINING_5_a];
+  MEM[_INLINING_5_a] = _INLINING_5_a[0];
   a();
   non-existing-function();
   non-existing-function();
@@ -148,8 +164,8 @@ function moveMove {
   let a = _ARG0;
 
   a = a;
-  MEM[a] = MEM[a];
-  return;
+  MEM[a] = a[0];
+  return 0;
 }
 `);
 });
@@ -178,16 +194,16 @@ it('optimizeMidIRCompilationUnitByInlining test 3', () => {
             {
               functionName: 'emptyFunction',
               argumentNames: [],
-              mainBodyStatements: [MIR_RETURN()],
+              mainBodyStatements: [MIR_RETURN(HIR_ZERO)],
             },
             {
               functionName: 'insanelyBigFunction',
               argumentNames: ['a'],
               mainBodyStatements: [
                 ...Array.from(new Array(105).keys()).map(() =>
-                  MIR_CALL_FUNCTION('non-existing-function', [])
+                  MIR_CALL_FUNCTION(MIR_NAME('non-existing-function'), [])
                 ),
-                MIR_RETURN(),
+                MIR_RETURN(HIR_ZERO),
               ],
             },
           ],
@@ -198,13 +214,13 @@ it('optimizeMidIRCompilationUnitByInlining test 3', () => {
   ).toBe(`
 function emptyFunction {
 
-  return;
+  return 0;
 }
 
 function insanelyBigFunction {
   let a = _ARG0;
 
-${'  non-existing-function();\n'.repeat(105)}  return;
+${'  non-existing-function();\n'.repeat(105)}  return 0;
 }
 `);
 });

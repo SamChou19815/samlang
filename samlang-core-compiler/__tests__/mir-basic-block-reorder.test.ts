@@ -4,6 +4,8 @@ import createMidIRBasicBlocks from '../mir-basic-block';
 import reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath from '../mir-basic-block-reorder';
 import MidIRResourceAllocator from '../mir-resource-allocator';
 
+import { HIR_VARIABLE, HIR_ZERO } from 'samlang-core-ast/hir-expressions';
+import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   MidIRStatement_DANGEROUSLY_NON_CANONICAL,
   midIRStatementToString,
@@ -12,8 +14,9 @@ import {
   MIR_LABEL,
   MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
   MIR_RETURN,
-  MIR_TEMP,
 } from 'samlang-core-ast/mir-nodes';
+
+const TEMP = (n: string) => HIR_VARIABLE(n, HIR_INT_TYPE);
 
 const reorderAndDumpToString = (
   statements: readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[]
@@ -31,8 +34,8 @@ it('reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath empty test', () => {
 });
 
 it('reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath single statement self-consistency test', () => {
-  expect(reorderAndDumpToString([MIR_RETURN()])).toBe(
-    'LABEL__0_PURPOSE_BASIC_BLOCK_1ST_STMT:\nreturn;'
+  expect(reorderAndDumpToString([MIR_RETURN(HIR_ZERO)])).toBe(
+    'LABEL__0_PURPOSE_BASIC_BLOCK_1ST_STMT:\nreturn 0;'
   );
 });
 
@@ -43,7 +46,7 @@ it('reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath simple stream test.', () 
       MIR_LABEL('b'),
       MIR_LABEL('c'),
       MIR_LABEL('d'),
-      MIR_RETURN(),
+      MIR_RETURN(HIR_ZERO),
     ])
   ).toBe(`a:
 goto b;
@@ -52,27 +55,27 @@ goto c;
 c:
 goto d;
 d:
-return;`);
+return 0;`);
 });
 
 it('reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath heavy true branch test.', () => {
   expect(
     reorderAndDumpToString([
-      MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL(MIR_TEMP(''), 'a', 'end'),
+      MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL(TEMP(''), 'a', 'end'),
       MIR_LABEL('end'),
       MIR_JUMP('program_end'),
       MIR_LABEL('a'),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
       MIR_JUMP('end'),
       MIR_LABEL('program_end'),
-      MIR_RETURN(),
+      MIR_RETURN(HIR_ZERO),
     ])
   ).toBe(`LABEL__0_PURPOSE_BASIC_BLOCK_1ST_STMT:
 if () goto a; else goto end;
@@ -89,27 +92,27 @@ goto end;
 end:
 goto program_end;
 program_end:
-return;`);
+return 0;`);
 });
 
 it('reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath heavy false branch test.', () => {
   expect(
     reorderAndDumpToString([
-      MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL(MIR_TEMP(''), 'end', 'a'),
+      MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL(TEMP(''), 'end', 'a'),
       MIR_LABEL('end'),
       MIR_JUMP('program_end'),
       MIR_LABEL('a'),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
-      MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
+      MIR_MOVE_TEMP('a', TEMP('a')),
       MIR_JUMP('end'),
       MIR_LABEL('program_end'),
-      MIR_RETURN(),
+      MIR_RETURN(HIR_ZERO),
     ])
   ).toBe(`LABEL__0_PURPOSE_BASIC_BLOCK_1ST_STMT:
 if () goto end; else goto a;
@@ -126,5 +129,5 @@ goto end;
 end:
 goto program_end;
 program_end:
-return;`);
+return 0;`);
 });

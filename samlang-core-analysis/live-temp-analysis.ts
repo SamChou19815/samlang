@@ -1,24 +1,25 @@
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runBackwardDataflowAnalysis } from './dataflow-analysis';
 
-import type { MidIRExpression, MidIRStatement } from 'samlang-core-ast/mir-nodes';
+import type { HighIRExpression } from 'samlang-core-ast/hir-expressions';
+import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
 import { setEquals } from 'samlang-core-utils';
 
 const collectUsesFromMidIRExpression = (
   uses: Set<string>,
-  expression: MidIRExpression
+  expression: HighIRExpression
 ): Set<string> => {
   switch (expression.__type__) {
-    case 'MidIRConstantExpression':
-    case 'MidIRNameExpression':
+    case 'HighIRIntLiteralExpression':
+    case 'HighIRNameExpression':
       return uses;
-    case 'MidIRTemporaryExpression':
-      uses.add(expression.temporaryID);
+    case 'HighIRVariableExpression':
+      uses.add(expression.name);
       return uses;
-    case 'MidIRImmutableMemoryExpression':
-      collectUsesFromMidIRExpression(uses, expression.indexExpression);
+    case 'HighIRIndexAccessExpression':
+      collectUsesFromMidIRExpression(uses, expression.expression);
       return uses;
-    case 'MidIRBinaryExpression':
+    case 'HighIRBinaryExpression':
       collectUsesFromMidIRExpression(uses, expression.e1);
       collectUsesFromMidIRExpression(uses, expression.e2);
       return uses;
@@ -53,9 +54,6 @@ const collectDefAndUsesFromMidIRStatement = (
     case 'MidIRConditionalJumpFallThrough':
       return { uses: collectUsesFromMidIRExpression(new Set(), statement.conditionExpression) };
     case 'MidIRReturnStatement':
-      if (statement.returnedExpression == null) {
-        return { uses: new Set() };
-      }
       return { uses: collectUsesFromMidIRExpression(new Set(), statement.returnedExpression) };
   }
 };

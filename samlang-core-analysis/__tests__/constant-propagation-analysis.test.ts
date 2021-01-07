@@ -1,12 +1,17 @@
 import analyzePropagatedConstants from '../constant-propagation-analysis';
 
+import type { IROperator } from 'samlang-core-ast/common-operators';
 import {
-  MIR_ZERO,
-  MIR_ONE,
-  MIR_CONST,
-  MIR_TEMP,
-  MIR_NAME,
-  MIR_OP,
+  HighIRExpression,
+  HIR_ZERO,
+  HIR_ONE,
+  HIR_INT,
+  HIR_NAME,
+  HIR_VARIABLE,
+  HIR_BINARY,
+} from 'samlang-core-ast/hir-expressions';
+import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
+import {
   MIR_MOVE_TEMP,
   MIR_CALL_FUNCTION,
   MIR_CJUMP_FALLTHROUGH,
@@ -15,21 +20,29 @@ import {
 } from 'samlang-core-ast/mir-nodes';
 import { Long } from 'samlang-core-utils';
 
+const MIR_NAME = (n: string) => HIR_NAME(n, HIR_INT_TYPE);
+const MIR_TEMP = (n: string) => HIR_VARIABLE(n, HIR_INT_TYPE);
+const MIR_OP = (
+  operator: IROperator,
+  e1: HighIRExpression,
+  e2: HighIRExpression
+): HighIRExpression => HIR_BINARY({ operator, e1, e2 });
+
 it('analyzePropagatedConstants test 1', () => {
   expect(
     analyzePropagatedConstants([
-      /* 00 */ MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_ONE),
-      /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), MIR_CONST(2)), 'true'),
-      /* 02 */ MIR_CALL_FUNCTION('f', [], 'y'),
-      /* 03 */ MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('+', MIR_ONE, MIR_ZERO)),
-      /* 04 */ MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('!=', MIR_ONE, MIR_ZERO)),
+      /* 00 */ MIR_MOVE_TEMP('x', HIR_ONE),
+      /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), HIR_INT(2)), 'true'),
+      /* 02 */ MIR_CALL_FUNCTION(HIR_ONE, [], 'y'),
+      /* 03 */ MIR_MOVE_TEMP('z1', MIR_OP('+', HIR_ONE, HIR_ZERO)),
+      /* 04 */ MIR_MOVE_TEMP('z2', MIR_OP('!=', HIR_ONE, HIR_ZERO)),
       /* 05 */ MIR_JUMP('end'),
       /* 06 */ MIR_LABEL('true'),
-      /* 07 */ MIR_MOVE_TEMP(MIR_TEMP('y'), MIR_OP('+', MIR_ONE, MIR_TEMP('x'))),
-      /* 08 */ MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('*', MIR_ONE, MIR_ONE)),
-      /* 09 */ MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('/', MIR_ONE, MIR_ZERO)),
+      /* 07 */ MIR_MOVE_TEMP('y', MIR_OP('+', HIR_ONE, MIR_TEMP('x'))),
+      /* 08 */ MIR_MOVE_TEMP('z1', MIR_OP('*', HIR_ONE, HIR_ONE)),
+      /* 09 */ MIR_MOVE_TEMP('z2', MIR_OP('/', HIR_ONE, HIR_ZERO)),
       /* 10 */ MIR_LABEL('end'),
-      /* 11 */ MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_OP('!=', MIR_TEMP('y'), MIR_TEMP('y'))),
+      /* 11 */ MIR_MOVE_TEMP('a', MIR_OP('!=', MIR_TEMP('y'), MIR_TEMP('y'))),
     ]).map((it) => Object.fromEntries(it.entries()))
   ).toEqual([
     /* 00 */ {},
@@ -50,18 +63,18 @@ it('analyzePropagatedConstants test 1', () => {
 it('analyzePropagatedConstants test 2', () => {
   expect(
     analyzePropagatedConstants([
-      /* 00 */ MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_OP('^', MIR_ZERO, MIR_ONE)),
-      /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), MIR_CONST(2)), 'true'),
-      /* 02 */ MIR_MOVE_TEMP(MIR_TEMP('y'), MIR_OP('-', MIR_CONST(3), MIR_TEMP('x'))),
-      /* 03 */ MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('<', MIR_ZERO, MIR_ONE)),
-      /* 04 */ MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('%', MIR_ONE, MIR_ZERO)),
+      /* 00 */ MIR_MOVE_TEMP('x', MIR_OP('^', HIR_ZERO, HIR_ONE)),
+      /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), HIR_INT(2)), 'true'),
+      /* 02 */ MIR_MOVE_TEMP('y', MIR_OP('-', HIR_INT(3), MIR_TEMP('x'))),
+      /* 03 */ MIR_MOVE_TEMP('z1', MIR_OP('<', HIR_ZERO, HIR_ONE)),
+      /* 04 */ MIR_MOVE_TEMP('z2', MIR_OP('%', HIR_ONE, HIR_ZERO)),
       /* 05 */ MIR_JUMP('end'),
       /* 06 */ MIR_LABEL('true'),
-      /* 07 */ MIR_MOVE_TEMP(MIR_TEMP('y'), MIR_NAME('foo')),
-      /* 08 */ MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('/', MIR_ONE, MIR_ONE)),
-      /* 09 */ MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('%', MIR_ONE, MIR_CONST(2))),
+      /* 07 */ MIR_MOVE_TEMP('y', MIR_NAME('foo')),
+      /* 08 */ MIR_MOVE_TEMP('z1', MIR_OP('/', HIR_ONE, HIR_ONE)),
+      /* 09 */ MIR_MOVE_TEMP('z2', MIR_OP('%', HIR_ONE, HIR_INT(2))),
       /* 10 */ MIR_LABEL('end'),
-      /* 11 */ MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_OP('==', MIR_TEMP('y'), MIR_TEMP('x'))),
+      /* 11 */ MIR_MOVE_TEMP('a', MIR_OP('==', MIR_TEMP('y'), MIR_TEMP('x'))),
     ]).map((it) => Object.fromEntries(it.entries()))
   ).toEqual([
     /* 00 */ {},
@@ -82,18 +95,18 @@ it('analyzePropagatedConstants test 2', () => {
 it('analyzePropagatedConstants test 3', () => {
   expect(
     analyzePropagatedConstants([
-      /* 00 */ MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_OP('<=', MIR_ZERO, MIR_ONE)),
-      /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), MIR_CONST(2)), 'true'),
-      /* 02 */ MIR_MOVE_TEMP(MIR_TEMP('y'), MIR_OP('-', MIR_CONST(3), MIR_TEMP('x'))),
-      /* 03 */ MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('>', MIR_ONE, MIR_ZERO)),
-      /* 04 */ MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('%', MIR_ONE, MIR_ONE)),
+      /* 00 */ MIR_MOVE_TEMP('x', MIR_OP('<=', HIR_ZERO, HIR_ONE)),
+      /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), HIR_INT(2)), 'true'),
+      /* 02 */ MIR_MOVE_TEMP('y', MIR_OP('-', HIR_INT(3), MIR_TEMP('x'))),
+      /* 03 */ MIR_MOVE_TEMP('z1', MIR_OP('>', HIR_ONE, HIR_ZERO)),
+      /* 04 */ MIR_MOVE_TEMP('z2', MIR_OP('%', HIR_ONE, HIR_ONE)),
       /* 05 */ MIR_JUMP('end'),
       /* 06 */ MIR_LABEL('true'),
-      /* 07 */ MIR_CALL_FUNCTION('f', []),
-      /* 08 */ MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('>=', MIR_ONE, MIR_ONE)),
-      /* 09 */ MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('==', MIR_ONE, MIR_ONE)),
+      /* 07 */ MIR_CALL_FUNCTION(HIR_ONE, []),
+      /* 08 */ MIR_MOVE_TEMP('z1', MIR_OP('>=', HIR_ONE, HIR_ONE)),
+      /* 09 */ MIR_MOVE_TEMP('z2', MIR_OP('==', HIR_ONE, HIR_ONE)),
       /* 10 */ MIR_LABEL('end'),
-      /* 11 */ MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_OP('*', MIR_ONE, MIR_NAME('y'))),
+      /* 11 */ MIR_MOVE_TEMP('a', MIR_OP('*', HIR_ONE, MIR_NAME('y'))),
     ]).map((it) => Object.fromEntries(it.entries()))
   ).toEqual([
     /* 00 */ {},
@@ -114,18 +127,18 @@ it('analyzePropagatedConstants test 3', () => {
 it('analyzePropagatedConstants test 4', () => {
   expect(
     analyzePropagatedConstants([
-      /* 00 */ MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_OP('<=', MIR_ZERO, MIR_ONE)),
-      /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_CONST(2), MIR_TEMP('x')), 'true'),
-      /* 02 */ MIR_MOVE_TEMP(MIR_TEMP('y'), MIR_OP('-', MIR_CONST(3), MIR_TEMP('x'))),
-      /* 03 */ MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('>', MIR_ONE, MIR_ONE)),
-      /* 04 */ MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('<', MIR_ONE, MIR_ZERO)),
+      /* 00 */ MIR_MOVE_TEMP('x', MIR_OP('<=', HIR_ZERO, HIR_ONE)),
+      /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', HIR_INT(2), MIR_TEMP('x')), 'true'),
+      /* 02 */ MIR_MOVE_TEMP('y', MIR_OP('-', HIR_INT(3), MIR_TEMP('x'))),
+      /* 03 */ MIR_MOVE_TEMP('z1', MIR_OP('>', HIR_ONE, HIR_ONE)),
+      /* 04 */ MIR_MOVE_TEMP('z2', MIR_OP('<', HIR_ONE, HIR_ZERO)),
       /* 05 */ MIR_JUMP('end'),
       /* 06 */ MIR_LABEL('true'),
-      /* 07 */ MIR_CALL_FUNCTION('f', []),
-      /* 08 */ MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('>=', MIR_ZERO, MIR_ONE)),
-      /* 09 */ MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('<=', MIR_ONE, MIR_ZERO)),
+      /* 07 */ MIR_CALL_FUNCTION(HIR_ONE, []),
+      /* 08 */ MIR_MOVE_TEMP('z1', MIR_OP('>=', HIR_ZERO, HIR_ONE)),
+      /* 09 */ MIR_MOVE_TEMP('z2', MIR_OP('<=', HIR_ONE, HIR_ZERO)),
       /* 10 */ MIR_LABEL('end'),
-      /* 11 */ MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_OP('*', MIR_ONE, MIR_TEMP('zucc'))),
+      /* 11 */ MIR_MOVE_TEMP('a', MIR_OP('*', HIR_ONE, MIR_TEMP('zucc'))),
     ]).map((it) => Object.fromEntries(it.entries()))
   ).toEqual([
     /* 00 */ {},
@@ -146,18 +159,18 @@ it('analyzePropagatedConstants test 4', () => {
 it('analyzePropagatedConstants test 5', () => {
   expect(
     analyzePropagatedConstants([
-      /* 00 */ MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_OP('<=', MIR_ZERO, MIR_ONE)),
-      /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_CONST(2), MIR_TEMP('x')), 'true'),
-      /* 02 */ MIR_MOVE_TEMP(MIR_TEMP('y'), MIR_OP('-', MIR_CONST(3), MIR_TEMP('x'))),
-      /* 03 */ MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('==', MIR_ONE, MIR_ZERO)),
-      /* 04 */ MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('<', MIR_ONE, MIR_ZERO)),
+      /* 00 */ MIR_MOVE_TEMP('x', MIR_OP('<=', HIR_ZERO, HIR_ONE)),
+      /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', HIR_INT(2), MIR_TEMP('x')), 'true'),
+      /* 02 */ MIR_MOVE_TEMP('y', MIR_OP('-', HIR_INT(3), MIR_TEMP('x'))),
+      /* 03 */ MIR_MOVE_TEMP('z1', MIR_OP('==', HIR_ONE, HIR_ZERO)),
+      /* 04 */ MIR_MOVE_TEMP('z2', MIR_OP('<', HIR_ONE, HIR_ZERO)),
       /* 05 */ MIR_JUMP('end'),
       /* 06 */ MIR_LABEL('true'),
-      /* 07 */ MIR_CALL_FUNCTION('f', []),
-      /* 08 */ MIR_MOVE_TEMP(MIR_TEMP('z1'), MIR_OP('>=', MIR_ZERO, MIR_ONE)),
-      /* 09 */ MIR_MOVE_TEMP(MIR_TEMP('z2'), MIR_OP('!=', MIR_ONE, MIR_ONE)),
+      /* 07 */ MIR_CALL_FUNCTION(HIR_ONE, []),
+      /* 08 */ MIR_MOVE_TEMP('z1', MIR_OP('>=', HIR_ZERO, HIR_ONE)),
+      /* 09 */ MIR_MOVE_TEMP('z2', MIR_OP('!=', HIR_ONE, HIR_ONE)),
       /* 10 */ MIR_LABEL('end'),
-      /* 11 */ MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_OP('*', MIR_ONE, MIR_TEMP('zucc'))),
+      /* 11 */ MIR_MOVE_TEMP('a', MIR_OP('*', HIR_ONE, MIR_TEMP('zucc'))),
     ]).map((it) => Object.fromEntries(it.entries()))
   ).toEqual([
     /* 00 */ {},

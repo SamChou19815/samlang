@@ -1,5 +1,5 @@
+import invertHighIRConditionExpression from './hir-condition-inverter';
 import type { ReadonlyMidIRBasicBlockWithoutPointers } from './mir-basic-block';
-import invertMidIRConditionExpression from './mir-condition-inverter';
 
 import { MidIRStatement, MIR_CJUMP_FALLTHROUGH, MIR_JUMP } from 'samlang-core-ast/mir-nodes';
 
@@ -30,7 +30,7 @@ const emitCanonicalMidIRStatementsFromReorderedBasicBlocks = (
         const immediateTraceNext = reorderedBlocks[index + 1]?.label;
         if (immediateTraceNext === trueLabel) {
           canonicalStatements.push(
-            MIR_CJUMP_FALLTHROUGH(invertMidIRConditionExpression(conditionExpression), falseLabel)
+            MIR_CJUMP_FALLTHROUGH(invertHighIRConditionExpression(conditionExpression), falseLabel)
           );
         } else if (immediateTraceNext === falseLabel) {
           canonicalStatements.push(MIR_CJUMP_FALLTHROUGH(conditionExpression, trueLabel));

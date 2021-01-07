@@ -9,7 +9,7 @@ import type {
   AssemblyArgument,
 } from 'samlang-core-ast/asm-arguments';
 import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
-import type { MidIRExpression } from 'samlang-core-ast/mir-nodes';
+import type { HighIRExpression } from 'samlang-core-ast/hir-expressions';
 
 const estimateCostFromInstructions = (instructions: readonly AssemblyInstruction[]): number => {
   let cost = 0;
@@ -79,11 +79,11 @@ export const createAssemblyMidIRExpressionTilingResult = (
 });
 
 export interface AssemblyTilingServiceBasic {
-  tileExpression(midIRExpression: MidIRExpression): AssemblyMidIRExpressionTilingResult;
+  tileExpression(midIRExpression: HighIRExpression): AssemblyMidIRExpressionTilingResult;
 }
 
 export interface AssemblyTilingService extends AssemblyTilingServiceBasic {
   readonly allocator: AssemblyFunctionAbstractRegisterAllocator;
-  tileRegisterOrMemory(expression: MidIRExpression): AssemblyRegisterOrMemoryTilingResult;
-  tileAssemblyArgument(expression: MidIRExpression): AssemblyArgumentTilingResult;
+  tileRegisterOrMemory(expression: HighIRExpression): AssemblyRegisterOrMemoryTilingResult;
+  tileAssemblyArgument(expression: HighIRExpression): AssemblyArgumentTilingResult;
 }
