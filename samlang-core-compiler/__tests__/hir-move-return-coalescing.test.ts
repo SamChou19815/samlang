@@ -71,7 +71,7 @@ it('coalesceMoveAndReturnWithForHighIRStatements linear sequence test', () => {
       }),
       HIR_RETURN(HIR_VARIABLE('_t1', HIR_INT_TYPE)),
     ],
-    '// phi()\nwhile true {\n}\nreturn 1;'
+    'while true {\n}\nreturn 1;'
   );
 });
 

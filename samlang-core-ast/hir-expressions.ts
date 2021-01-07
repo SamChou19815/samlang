@@ -326,7 +326,12 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         }
         break;
       case 'HighIRWhileTrueStatement':
-        collector.push('  '.repeat(level), `// phi(${s.multiAssignedVariables.join(', ')})\n`);
+        s.multiAssignedVariables.forEach((name) => {
+          collector.push(
+            '  '.repeat(level),
+            `// _param_${name} = phi([${name}, start], [_param_${name}_loop, loop])\n`
+          );
+        });
         collector.push('  '.repeat(level), `while true {\n`);
         level += 1;
         s.statements.forEach(printer);
