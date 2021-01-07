@@ -96,7 +96,7 @@ goto LABEL__0_PURPOSE_WHILE_TRUE_START;`
         index: 2,
       }),
     }),
-    '_foo = MEM[(_this + 16)];'
+    '_foo = _this[2];'
   );
 
   assertCorrectlyLoweredWithPreConfiguredSetup(

@@ -1,4 +1,5 @@
-import type { MidIRStatement, MidIRExpression } from 'samlang-core-ast/mir-nodes';
+import type { HighIRExpression } from 'samlang-core-ast/hir-expressions';
+import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
 
 /** The utility class used to memoize function application. */
 class AssemblyTilingMemoizedFunction<T, R> {
@@ -23,8 +24,8 @@ export const getMemoizedAssemblyStatementTilingFunction = <R>(
 };
 
 export const getMemoizedAssemblyExpressionTilingFunction = <R>(
-  computeFreshResult: (expression: MidIRExpression) => R
-): ((expression: MidIRExpression) => R) => {
+  computeFreshResult: (expression: HighIRExpression) => R
+): ((expression: HighIRExpression) => R) => {
   const memorizedFunction = new AssemblyTilingMemoizedFunction(computeFreshResult);
   return memorizedFunction.invoke;
 };

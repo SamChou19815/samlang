@@ -1,17 +1,20 @@
-import createMidIRFlexibleOrderOperatorNode from './mir-flexible-op';
+import createHighIRFlexibleOrderOperatorNode from './hir-flexible-op';
 import type MidIRResourceAllocator from './mir-resource-allocator';
 
 import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
-import type { HighIRExpression, HighIRStatement } from 'samlang-core-ast/hir-expressions';
 import {
-  MidIRExpression,
+  HighIRExpression,
+  HighIRStatement,
+  HIR_INT,
+  HIR_NAME,
+  HIR_VARIABLE,
+  HIR_INDEX_ACCESS,
+  HIR_BINARY,
+} from 'samlang-core-ast/hir-expressions';
+import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
+import {
   // eslint-disable-next-line camelcase
   MidIRStatement_DANGEROUSLY_NON_CANONICAL,
-  MIR_CONST,
-  MIR_NAME,
-  MIR_TEMP,
-  MIR_IMMUTABLE_MEM,
-  MIR_OP,
   MIR_CALL_FUNCTION,
   MIR_MOVE_TEMP,
   MIR_MOVE_IMMUTABLE_MEM,
@@ -29,28 +32,25 @@ class MidIRLoweringManager {
     private readonly functionName: string
   ) {}
 
-  lowerHIRExpressionToMIRExpression = (expression: HighIRExpression): MidIRExpression => {
+  lowerHIRExpressionToMIRExpression = (expression: HighIRExpression): HighIRExpression => {
     switch (expression.__type__) {
       case 'HighIRIntLiteralExpression':
-        return MIR_CONST(expression.value);
       case 'HighIRNameExpression':
-        return MIR_NAME(expression.name);
+        return expression;
       case 'HighIRVariableExpression':
-        return MIR_TEMP(mangleVariableForMIR(expression.name));
+        return HIR_VARIABLE(mangleVariableForMIR(expression.name), expression.type);
       case 'HighIRIndexAccessExpression':
-        return MIR_IMMUTABLE_MEM(
-          MIR_OP(
-            '+',
-            this.lowerHIRExpressionToMIRExpression(expression.expression),
-            MIR_CONST(expression.index * 8)
-          )
-        );
+        return HIR_INDEX_ACCESS({
+          type: expression.type,
+          expression: this.lowerHIRExpressionToMIRExpression(expression.expression),
+          index: expression.index,
+        });
       case 'HighIRBinaryExpression':
-        return createMidIRFlexibleOrderOperatorNode(
-          expression.operator,
-          this.lowerHIRExpressionToMIRExpression(expression.e1),
-          this.lowerHIRExpressionToMIRExpression(expression.e2)
-        );
+        return HIR_BINARY({
+          operator: expression.operator,
+          e1: this.lowerHIRExpressionToMIRExpression(expression.e1),
+          e2: this.lowerHIRExpressionToMIRExpression(expression.e2),
+        });
     }
   };
 
@@ -110,26 +110,26 @@ class MidIRLoweringManager {
       case 'HighIRLetDefinitionStatement':
         return [
           MIR_MOVE_TEMP(
-            MIR_TEMP(mangleVariableForMIR(statement.name)),
+            mangleVariableForMIR(statement.name),
             this.lowerHIRExpressionToMIRExpression(statement.assignedExpression)
           ),
         ];
       case 'HighIRStructInitializationStatement': {
         const structTemporaryName = mangleVariableForMIR(statement.structVariableName);
-        const structTemporary = MIR_TEMP(structTemporaryName);
+        const structTemporary = HIR_VARIABLE(structTemporaryName, statement.type);
         // eslint-disable-next-line camelcase
         const statements: MidIRStatement_DANGEROUSLY_NON_CANONICAL[] = [];
         statements.push(
           MIR_CALL_FUNCTION(
-            ENCODED_FUNCTION_NAME_MALLOC,
-            [MIR_CONST(statement.expressionList.length * 8)],
+            HIR_NAME(ENCODED_FUNCTION_NAME_MALLOC, HIR_INT_TYPE),
+            [HIR_INT(statement.expressionList.length * 8)],
             structTemporaryName
           )
         );
         statement.expressionList.forEach((subExpression, index) => {
           statements.push(
             MIR_MOVE_IMMUTABLE_MEM(
-              MIR_IMMUTABLE_MEM(MIR_OP('+', structTemporary, MIR_CONST(index * 8))),
+              createHighIRFlexibleOrderOperatorNode('+', structTemporary, HIR_INT(index * 8)),
               this.lowerHIRExpressionToMIRExpression(subExpression)
             )
           );

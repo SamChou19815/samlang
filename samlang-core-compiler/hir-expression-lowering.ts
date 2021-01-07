@@ -1,3 +1,4 @@
+import createHighIRFlexibleOrderOperatorNode from './hir-flexible-op';
 import type HighIRStringManager from './hir-string-manager';
 import lowerSamlangType from './hir-types-lowering';
 
@@ -22,7 +23,6 @@ import {
   HIR_INT,
   HIR_INDEX_ACCESS,
   HIR_FUNCTION_CALL,
-  HIR_BINARY,
   HIR_IF_ELSE,
   HIR_LET,
   HIR_STRUCT_INITIALIZATION,
@@ -318,12 +318,12 @@ class HighIRExpressionLoweringManager {
       case '!':
         return {
           statements: result.statements,
-          expression: HIR_BINARY({ operator: '^', e1: result.expression, e2: HIR_TRUE }),
+          expression: createHighIRFlexibleOrderOperatorNode('^', result.expression, HIR_TRUE),
         };
       case '-':
         return {
           statements: result.statements,
-          expression: HIR_BINARY({ operator: '-', e1: HIR_ZERO, e2: result.expression }),
+          expression: createHighIRFlexibleOrderOperatorNode('-', HIR_ZERO, result.expression),
         };
     }
   }
@@ -487,11 +487,11 @@ class HighIRExpressionLoweringManager {
 
         functionCall = HIR_IF_ELSE({
           multiAssignedVariable: isVoidReturn ? undefined : returnCollectorName,
-          booleanExpression: HIR_BINARY({
-            operator: '==',
-            e1: HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
-            e2: HIR_ZERO,
-          }),
+          booleanExpression: createHighIRFlexibleOrderOperatorNode(
+            '==',
+            HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
+            HIR_ZERO
+          ),
           s1: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_INDEX_ACCESS({
@@ -621,11 +621,7 @@ class HighIRExpressionLoweringManager {
         const loweredE2 = this.loweredAndAddStatements(expression.e2, loweredStatements);
         return {
           statements: loweredStatements,
-          expression: HIR_BINARY({
-            operator: operatorSymbol,
-            e1: loweredE1,
-            e2: loweredE2,
-          }),
+          expression: createHighIRFlexibleOrderOperatorNode(operatorSymbol, loweredE1, loweredE2),
         };
       }
     }
@@ -746,11 +742,11 @@ class HighIRExpressionLoweringManager {
     if (loweredMatchingList.length < 1) throw new Error();
     let ifElse = HIR_IF_ELSE({
       multiAssignedVariable: isVoidReturn ? undefined : temporaryVariable,
-      booleanExpression: HIR_BINARY({
-        operator: '==',
-        e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
-        e2: HIR_INT(checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).tagOrder),
-      }),
+      booleanExpression: createHighIRFlexibleOrderOperatorNode(
+        '==',
+        HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
+        HIR_INT(checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).tagOrder)
+      ),
       s1: checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).statements,
       s2: [
         HIR_FUNCTION_CALL({
@@ -772,11 +768,11 @@ class HighIRExpressionLoweringManager {
       const { tagOrder, statements: localStatements } = checkNotNull(loweredMatchingList[i]);
       ifElse = HIR_IF_ELSE({
         multiAssignedVariable: isVoidReturn ? undefined : temporaryVariable,
-        booleanExpression: HIR_BINARY({
-          operator: '==',
-          e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
-          e2: HIR_INT(tagOrder),
-        }),
+        booleanExpression: createHighIRFlexibleOrderOperatorNode(
+          '==',
+          HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
+          HIR_INT(tagOrder)
+        ),
         s1: localStatements,
         s2: [ifElse],
       });

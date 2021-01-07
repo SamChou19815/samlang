@@ -1,9 +1,16 @@
 import analyzeAvailableExpressionsComingOutAtEachStatement from '../available-expressions-analysis';
 
+import type { IROperator } from 'samlang-core-ast/common-operators';
 import {
-  MIR_ONE,
-  MIR_TEMP,
-  MIR_OP,
+  HighIRExpression,
+  HIR_ONE,
+  HIR_VARIABLE,
+  HIR_INDEX_ACCESS,
+  HIR_BINARY,
+  HIR_ZERO,
+} from 'samlang-core-ast/hir-expressions';
+import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
+import {
   MIR_MOVE_TEMP,
   MIR_MOVE_IMMUTABLE_MEM,
   MIR_CALL_FUNCTION,
@@ -11,38 +18,43 @@ import {
   MIR_JUMP,
   MIR_LABEL,
   MIR_RETURN,
-  MIR_IMMUTABLE_MEM,
 } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
-it('analyzeLocalValueNumberingAssignment test 1', () => {
+const MIR_TEMP = (n: string) => HIR_VARIABLE(n, HIR_INT_TYPE);
+const MIR_IMMUTABLE_MEM = (e: HighIRExpression, index = 0): HighIRExpression =>
+  HIR_INDEX_ACCESS({ type: HIR_INT_TYPE, expression: e, index });
+const MIR_OP = (
+  operator: IROperator,
+  e1: HighIRExpression,
+  e2: HighIRExpression
+): HighIRExpression => HIR_BINARY({ operator, e1, e2 });
+
+it('analyzeAvailableExpressionsComingOutAtEachStatement test 1', () => {
   const localValueNumberingResults = analyzeAvailableExpressionsComingOutAtEachStatement([
-    /* 00 */ MIR_MOVE_TEMP(MIR_TEMP('x'), MIR_ONE),
-    /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), MIR_ONE), 'true'),
-    /* 02 */ MIR_CALL_FUNCTION('f', [MIR_ONE], 'z2'),
-    /* 03 */ MIR_MOVE_IMMUTABLE_MEM(
-      MIR_IMMUTABLE_MEM(MIR_TEMP('z2')),
-      MIR_OP('+', MIR_ONE, MIR_TEMP('x'))
-    ),
+    /* 00 */ MIR_MOVE_TEMP('x', HIR_ONE),
+    /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), HIR_ONE), 'true'),
+    /* 02 */ MIR_CALL_FUNCTION(HIR_ONE, [HIR_ONE], 'z2'),
+    /* 03 */ MIR_MOVE_IMMUTABLE_MEM(MIR_TEMP('z2'), MIR_OP('+', HIR_ONE, MIR_TEMP('x'))),
     /* 04 */ MIR_JUMP('r'),
     /* 05 */ MIR_LABEL('r'),
     /* 06 */ MIR_JUMP('end'),
     /* 07 */ MIR_LABEL('true'),
-    /* 08 */ MIR_MOVE_TEMP(MIR_TEMP('y'), MIR_OP('+', MIR_ONE, MIR_TEMP('x'))),
+    /* 08 */ MIR_MOVE_TEMP('y', MIR_OP('+', HIR_ONE, MIR_TEMP('x'))),
     /* 09 */ MIR_MOVE_TEMP(
-      MIR_TEMP('z1'),
-      MIR_OP('*', MIR_OP('+', MIR_ONE, MIR_TEMP('x')), MIR_IMMUTABLE_MEM(MIR_ONE))
+      'z1',
+      MIR_OP('*', MIR_OP('+', HIR_ONE, MIR_TEMP('x')), MIR_IMMUTABLE_MEM(HIR_ONE))
     ),
     /* 10 */ MIR_MOVE_TEMP(
-      MIR_TEMP('z2'),
+      'z2',
       MIR_OP(
         '/',
-        MIR_OP('*', MIR_OP('+', MIR_ONE, MIR_TEMP('x')), MIR_IMMUTABLE_MEM(MIR_ONE)),
-        MIR_OP('+', MIR_ONE, MIR_TEMP('x'))
+        MIR_OP('*', MIR_OP('+', HIR_ONE, MIR_TEMP('x')), MIR_IMMUTABLE_MEM(HIR_ONE)),
+        MIR_OP('+', HIR_ONE, MIR_TEMP('x'))
       )
     ),
     /* 11 */ MIR_LABEL('end'),
-    /* 12 */ MIR_MOVE_TEMP(MIR_TEMP('a'), MIR_OP('!=', MIR_TEMP('y'), MIR_TEMP('z2'))),
+    /* 12 */ MIR_MOVE_TEMP('a', MIR_OP('!=', MIR_TEMP('y'), MIR_TEMP('z2'))),
     /* 13 */ MIR_RETURN(MIR_TEMP('a')),
   ]).map((it) =>
     Object.fromEntries(it.entries().map((entry) => [entry[0].uniqueHash(), entry[1]]))
@@ -57,13 +69,13 @@ it('analyzeLocalValueNumberingAssignment test 1', () => {
     /* 06 */ { '(1 + x)': [3], '(x < 1)': [1] },
     /* 07 */ { '(x < 1)': [1] },
     /* 08 */ { '(1 + x)': [8], '(x < 1)': [1] },
-    /* 09 */ { '((1 + x) * MEM[1])': [9], '(1 + x)': [8], '(x < 1)': [1], 'MEM[1]': [9] },
+    /* 09 */ { '((1 + x) * 1[0])': [9], '(1 + x)': [8], '(x < 1)': [1], '1[0]': [9] },
     /* 10 */ {
-      '(((1 + x) * MEM[1]) / (1 + x))': [10],
-      '((1 + x) * MEM[1])': [9],
+      '(((1 + x) * 1[0]) / (1 + x))': [10],
+      '((1 + x) * 1[0])': [9],
       '(1 + x)': [8],
       '(x < 1)': [1],
-      'MEM[1]': [9],
+      '1[0]': [9],
     },
     /* 11 */ { '(1 + x)': [8, 3], '(x < 1)': [1] },
     /* 12 */ { '(1 + x)': [8, 3], '(x < 1)': [1], '(y != z2)': [12] },
@@ -71,8 +83,9 @@ it('analyzeLocalValueNumberingAssignment test 1', () => {
   ]);
 });
 
-it('analyzeLocalValueNumberingAssignment test 2', () => {
+it('analyzeAvailableExpressionsComingOutAtEachStatement test 2', () => {
   expect(
-    checkNotNull(analyzeAvailableExpressionsComingOutAtEachStatement([MIR_RETURN()])[0]).size
+    checkNotNull(analyzeAvailableExpressionsComingOutAtEachStatement([MIR_RETURN(HIR_ZERO)])[0])
+      .size
   ).toBe(0);
 });

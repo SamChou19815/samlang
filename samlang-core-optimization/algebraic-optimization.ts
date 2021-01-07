@@ -1,9 +1,6 @@
+import { HighIRExpression, HIR_BINARY, HIR_INDEX_ACCESS } from 'samlang-core-ast/hir-expressions';
 import {
   MidIRStatement,
-  MidIRExpression,
-  MIR_TEMP,
-  MIR_IMMUTABLE_MEM,
-  MIR_OP,
   MIR_MOVE_TEMP,
   MIR_MOVE_IMMUTABLE_MEM,
   MIR_CALL_FUNCTION,
@@ -12,18 +9,22 @@ import {
 } from 'samlang-core-ast/mir-nodes';
 import { Long } from 'samlang-core-utils';
 
-const algebraicallyOptimizeExpression = (expression: MidIRExpression): MidIRExpression => {
+const algebraicallyOptimizeExpression = (expression: HighIRExpression): HighIRExpression => {
   switch (expression.__type__) {
-    case 'MidIRConstantExpression':
-    case 'MidIRNameExpression':
-    case 'MidIRTemporaryExpression':
+    case 'HighIRIntLiteralExpression':
+    case 'HighIRNameExpression':
+    case 'HighIRVariableExpression':
       return expression;
-    case 'MidIRImmutableMemoryExpression':
-      return MIR_IMMUTABLE_MEM(algebraicallyOptimizeExpression(expression.indexExpression));
-    case 'MidIRBinaryExpression': {
+    case 'HighIRIndexAccessExpression':
+      return HIR_INDEX_ACCESS({
+        type: expression.type,
+        expression: algebraicallyOptimizeExpression(expression.expression),
+        index: expression.index,
+      });
+    case 'HighIRBinaryExpression': {
       const e1 = algebraicallyOptimizeExpression(expression.e1);
       const e2 = algebraicallyOptimizeExpression(expression.e2);
-      if (e1.__type__ === 'MidIRConstantExpression') {
+      if (e1.__type__ === 'HighIRIntLiteralExpression') {
         const v1 = e1.value;
         if (v1.equals(Long.ZERO)) {
           switch (expression.operator) {
@@ -35,7 +36,7 @@ const algebraicallyOptimizeExpression = (expression: MidIRExpression): MidIRExpr
           return e2;
         }
       }
-      if (e2.__type__ === 'MidIRConstantExpression') {
+      if (e2.__type__ === 'HighIRIntLiteralExpression') {
         const v2 = e2.value;
         if (v2.equals(Long.ZERO)) {
           switch (expression.operator) {
@@ -47,7 +48,7 @@ const algebraicallyOptimizeExpression = (expression: MidIRExpression): MidIRExpr
           return e1;
         }
       }
-      return MIR_OP(expression.operator, e1, e2);
+      return HIR_BINARY({ operator: expression.operator, e1, e2 });
     }
   }
 };
@@ -56,12 +57,12 @@ const algebraicallyOptimizeStatement = (statement: MidIRStatement): MidIRStateme
   switch (statement.__type__) {
     case 'MidIRMoveTempStatement':
       return MIR_MOVE_TEMP(
-        MIR_TEMP(statement.temporaryID),
+        statement.temporaryID,
         algebraicallyOptimizeExpression(statement.source)
       );
     case 'MidIRMoveMemStatement':
       return MIR_MOVE_IMMUTABLE_MEM(
-        MIR_IMMUTABLE_MEM(algebraicallyOptimizeExpression(statement.memoryIndexExpression)),
+        algebraicallyOptimizeExpression(statement.memoryIndexExpression),
         algebraicallyOptimizeExpression(statement.source)
       );
     case 'MidIRCallFunctionStatement':
@@ -79,11 +80,7 @@ const algebraicallyOptimizeStatement = (statement: MidIRStatement): MidIRStateme
         statement.label1
       );
     case 'MidIRReturnStatement':
-      return MIR_RETURN(
-        statement.returnedExpression == null
-          ? undefined
-          : algebraicallyOptimizeExpression(statement.returnedExpression)
-      );
+      return MIR_RETURN(algebraicallyOptimizeExpression(statement.returnedExpression));
   }
 };
 

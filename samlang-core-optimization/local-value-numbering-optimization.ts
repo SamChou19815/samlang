@@ -1,39 +1,37 @@
 import analyzeLocalValueNumberingAssignment, {
   ReadonlyLocalNumberingInformation,
 } from 'samlang-core-analysis/local-value-numbering-analysis';
-import {
-  MidIRStatement,
-  MidIRExpression,
-  MIR_IMMUTABLE_MEM,
-  MIR_OP,
-} from 'samlang-core-ast/mir-nodes';
+import { HighIRExpression, HIR_INDEX_ACCESS, HIR_BINARY } from 'samlang-core-ast/hir-expressions';
+import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
 const rewriteMidIRExpressionWithLocalValueNumberingInformation = (
   information: ReadonlyLocalNumberingInformation,
-  expression: MidIRExpression
-): MidIRExpression => {
+  expression: HighIRExpression
+): HighIRExpression => {
   const replacement = information.getTemporaryReplacementForExpression(expression);
   if (replacement != null) return replacement;
 
   switch (expression.__type__) {
-    case 'MidIRConstantExpression':
-    case 'MidIRNameExpression':
-    case 'MidIRTemporaryExpression':
+    case 'HighIRIntLiteralExpression':
+    case 'HighIRNameExpression':
+    case 'HighIRVariableExpression':
       return expression;
-    case 'MidIRImmutableMemoryExpression':
-      return MIR_IMMUTABLE_MEM(
-        rewriteMidIRExpressionWithLocalValueNumberingInformation(
+    case 'HighIRIndexAccessExpression':
+      return HIR_INDEX_ACCESS({
+        type: expression.type,
+        expression: rewriteMidIRExpressionWithLocalValueNumberingInformation(
           information,
-          expression.indexExpression
-        )
-      );
-    case 'MidIRBinaryExpression':
-      return MIR_OP(
-        expression.operator,
-        rewriteMidIRExpressionWithLocalValueNumberingInformation(information, expression.e1),
-        rewriteMidIRExpressionWithLocalValueNumberingInformation(information, expression.e2)
-      );
+          expression.expression
+        ),
+        index: expression.index,
+      });
+    case 'HighIRBinaryExpression':
+      return HIR_BINARY({
+        operator: expression.operator,
+        e1: rewriteMidIRExpressionWithLocalValueNumberingInformation(information, expression.e1),
+        e2: rewriteMidIRExpressionWithLocalValueNumberingInformation(information, expression.e2),
+      });
   }
 };
 
@@ -85,7 +83,6 @@ const rewriteMidIRStatementWithLocalValueNumberingInformation = (
         ),
       };
     case 'MidIRReturnStatement':
-      if (statement.returnedExpression == null) return statement;
       return {
         ...statement,
         returnedExpression: rewriteMidIRExpressionWithLocalValueNumberingInformation(
