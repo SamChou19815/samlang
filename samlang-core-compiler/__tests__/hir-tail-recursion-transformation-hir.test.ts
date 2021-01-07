@@ -9,6 +9,11 @@ import {
   HIR_LET,
   HIR_NAME,
   HIR_RETURN,
+  HIR_INDEX_ACCESS,
+  HIR_BINARY,
+  HIR_WHILE_TRUE,
+  HIR_INT,
+  HIR_STRUCT_INITIALIZATION,
 } from 'samlang-core-ast/hir-expressions';
 import { debugPrintHighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { HIR_FUNCTION_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
@@ -57,12 +62,37 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
         parameters: ['n'],
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
+          HIR_WHILE_TRUE(
+            [],
+            [
+              HIR_STRUCT_INITIALIZATION({
+                structVariableName: 's',
+                type: HIR_INT_TYPE,
+                expressionList: [HIR_INT(3)],
+              }),
+              HIR_IF_ELSE({
+                booleanExpression: HIR_ONE,
+                s1: [HIR_LET({ name: 'aaa', type: HIR_INT_TYPE, assignedExpression: HIR_INT(3) })],
+                s2: [HIR_RETURN(HIR_INT(3))],
+              }),
+            ]
+          ),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
               'tailRec',
               HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
             ),
-            functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
+            functionArguments: [
+              HIR_INDEX_ACCESS({
+                type: HIR_INT_TYPE,
+                expression: HIR_BINARY({
+                  operator: '+',
+                  e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+                  e2: HIR_VARIABLE('n', HIR_INT_TYPE),
+                }),
+                index: 0,
+              }),
+            ],
             returnCollector: { name: 'collector', type: HIR_INT_TYPE },
           }),
           HIR_RETURN(HIR_VARIABLE('collector', HIR_INT_TYPE)),
@@ -70,10 +100,19 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
       })
     )
   ).toBe(`function tailRec(n: int): int {
-  // phi(_tailRecTransformationArgument0)
+  let _param_n: int = (n: int);
+  // _param_n = phi([n, start], [_param_n_loop, loop])
   while true {
-    let _tailRecTransformationArgument0: int = (n: int);
-    let n: int = (_tailRecTransformationArgument0: int);
+    while true {
+      let s: int = [3];
+      if 1 {
+        let aaa: int = 3;
+      } else {
+        return 3;
+      }
+    }
+    let n: int = (((_param_n: int) + (_param_n: int))[0]: int);
+    let _param_n: int = (n: int);
   }
 }
 `);
@@ -160,11 +199,12 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
       })
     )
   ).toBe(`function tailRec(n: int): int {
-  // phi(_tailRecTransformationArgument0)
+  let _param_n: int = (n: int);
+  // _param_n = phi([n, start], [_param_n_loop, loop])
   while true {
     if 1 {
-      let _tailRecTransformationArgument0: int = (n: int);
-      let n: int = (_tailRecTransformationArgument0: int);
+      let n: int = (_param_n: int);
+      let _param_n: int = (n: int);
     } else {
       return 0;
     }
@@ -200,13 +240,14 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
       })
     )
   ).toBe(`function tailRec(n: int): int {
-  // phi(_tailRecTransformationArgument0)
+  let _param_n: int = (n: int);
+  // _param_n = phi([n, start], [_param_n_loop, loop])
   while true {
     if 1 {
       return 0;
     } else {
-      let _tailRecTransformationArgument0: int = (n: int);
-      let n: int = (_tailRecTransformationArgument0: int);
+      let n: int = (_param_n: int);
+      let _param_n: int = (n: int);
     }
   }
 }
@@ -281,13 +322,14 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
       })
     )
   ).toBe(`function tailRec(n: int): int {
-  // phi(_tailRecTransformationArgument0)
+  let _param_n: int = (n: int);
+  // _param_n = phi([n, start], [_param_n_loop, loop])
   while true {
     if 1 {
       if 1 {
         if 1 {
-          let _tailRecTransformationArgument0: int = (n: int);
-          let n: int = (_tailRecTransformationArgument0: int);
+          let n: int = (_param_n: int);
+          let _param_n: int = (n: int);
         } else {
           return 0;
         }
