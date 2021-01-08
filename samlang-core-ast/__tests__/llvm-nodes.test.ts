@@ -6,7 +6,6 @@ import {
   prettyPrintLLVMModule,
   LLVM_BOOL_TYPE,
   LLVM_INT_TYPE,
-  LLVM_VOID_TYPE,
   LLVM_STRING_TYPE,
   LLVM_IDENTIFIER_TYPE,
   LLVM_STRUCT_TYPE,
@@ -32,15 +31,15 @@ import { Long } from 'samlang-core-utils';
 it('prettyPrintLLVMType works.', () => {
   expect(prettyPrintLLVMType(LLVM_BOOL_TYPE)).toBe('i1');
   expect(prettyPrintLLVMType(LLVM_INT_TYPE)).toBe('i64');
-  expect(prettyPrintLLVMType(LLVM_VOID_TYPE)).toBe('void');
-  expect(prettyPrintLLVMType(LLVM_STRING_TYPE)).toBe('i64*');
+  expect(prettyPrintLLVMType(LLVM_STRING_TYPE())).toBe('i64*');
+  expect(prettyPrintLLVMType(LLVM_STRING_TYPE(3))).toBe('[3 x i64]*');
   expect(prettyPrintLLVMType(LLVM_IDENTIFIER_TYPE('Foo'))).toBe('%Foo*');
   expect(prettyPrintLLVMType(LLVM_STRUCT_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE]))).toBe(
     '{ i64, i1 }*'
   );
   expect(
-    prettyPrintLLVMType(LLVM_FUNCTION_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE], LLVM_VOID_TYPE))
-  ).toBe('void (i64, i1)*');
+    prettyPrintLLVMType(LLVM_FUNCTION_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE], LLVM_INT_TYPE))
+  ).toBe('i64 (i64, i1)*');
 });
 
 it('prettyPrintLLVMValue works.', () => {
@@ -68,12 +67,13 @@ it('prettyPrintLLVMInstruction works for LLVM_GET_ELEMENT_PTR.', () => {
     prettyPrintLLVMInstruction(
       LLVM_GET_ELEMENT_PTR({
         resultVariable: 'foo',
-        pointerType: LLVM_IDENTIFIER_TYPE('Foo'),
-        sourceVariable: 'bar',
+        resultType: LLVM_INT_TYPE,
+        sourceValue: LLVM_VARIABLE('bar'),
+        sourcePointerType: LLVM_IDENTIFIER_TYPE('Bar'),
         offset: 3,
       })
     )
-  ).toBe('%foo = getelementptr %Foo*, %Foo* %bar, i64 3');
+  ).toBe('%foo = getelementptr i64*, %Bar* %bar, i64 3');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
@@ -215,12 +215,11 @@ it('prettyPrintLLVMInstruction works for LLVM_LOAD.', () => {
     prettyPrintLLVMInstruction(
       LLVM_LOAD({
         resultVariable: 'foo',
-        resultType: LLVM_IDENTIFIER_TYPE('Foo'),
         sourceVariable: 'bar',
-        sourceType: LLVM_IDENTIFIER_TYPE('Foo'),
+        valueType: LLVM_INT_TYPE,
       })
     )
-  ).toBe('%foo = load %Foo*, %Foo* %bar');
+  ).toBe('%foo = load i64, i64* %bar');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_STORE.', () => {
@@ -228,12 +227,11 @@ it('prettyPrintLLVMInstruction works for LLVM_STORE.', () => {
     prettyPrintLLVMInstruction(
       LLVM_STORE({
         targetVariable: 'foo',
-        targetType: LLVM_IDENTIFIER_TYPE('Foo'),
         sourceValue: LLVM_NAME('bar'),
-        sourceType: LLVM_IDENTIFIER_TYPE('Foo'),
+        valueType: LLVM_INT_TYPE,
       })
     )
-  ).toBe('store %Foo* @bar, %Foo* %foo');
+  ).toBe('store i64 @bar, i64* %foo');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_PHI.', () => {

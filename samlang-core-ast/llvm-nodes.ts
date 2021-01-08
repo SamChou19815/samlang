@@ -4,10 +4,8 @@ import type { HighIRIdentifierType } from './hir-types';
 
 import { Long } from 'samlang-core-utils';
 
-export type LLVMPrimitiveType = {
-  readonly __type__: 'PrimitiveType';
-  readonly type: 'i1' | 'i64' | 'void' | 'i64*';
-};
+export type LLVMPrimitiveType = { readonly __type__: 'PrimitiveType'; readonly type: 'i1' | 'i64' };
+export type LLVMStringType = { readonly __type__: 'StringType'; readonly length?: number };
 export type LLVMIdentifierType = HighIRIdentifierType;
 
 export type LLVMStructType = {
@@ -21,12 +19,20 @@ export type LLVMFunctionType = {
   readonly returnType: LLVMType;
 };
 
-export type LLVMType = LLVMPrimitiveType | LLVMIdentifierType | LLVMStructType | LLVMFunctionType;
+export type LLVMType =
+  | LLVMPrimitiveType
+  | LLVMIdentifierType
+  | LLVMStringType
+  | LLVMStructType
+  | LLVMFunctionType;
 
 export const LLVM_BOOL_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i1' };
 export const LLVM_INT_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i64' };
-export const LLVM_VOID_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'void' };
-export const LLVM_STRING_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i64*' };
+
+export const LLVM_STRING_TYPE = (length?: number): LLVMStringType => ({
+  __type__: 'StringType',
+  length,
+});
 
 export const LLVM_IDENTIFIER_TYPE = (name: string): LLVMIdentifierType => ({
   __type__: 'IdentifierType',
@@ -47,6 +53,8 @@ export const prettyPrintLLVMType = (type: LLVMType): string => {
   switch (type.__type__) {
     case 'PrimitiveType':
       return type.type;
+    case 'StringType':
+      return type.length == null ? 'i64*' : `[${type.length} x i64]*`;
     case 'IdentifierType':
       return `%${type.name}*`;
     case 'StructType':
@@ -95,8 +103,9 @@ export type LLVMBitcastInstruction = {
 export type LLVMGetElementPointerInstruction = {
   readonly __type__: 'LLVMGetElementPointerInstruction';
   readonly resultVariable: string;
-  readonly pointerType: LLVMType;
-  readonly sourceVariable: string;
+  readonly resultType: LLVMType;
+  readonly sourceValue: LLVMValue;
+  readonly sourcePointerType: LLVMType;
   readonly offset: number;
 };
 
@@ -111,17 +120,15 @@ export type LLVMBinaryInstruction = {
 export type LLVMLoadInstruction = {
   readonly __type__: 'LLVMLoadInstruction';
   readonly resultVariable: string;
-  readonly resultType: LLVMType;
   readonly sourceVariable: string;
-  readonly sourceType: LLVMType;
+  readonly valueType: LLVMType;
 };
 
 export type LLVMStoreInstruction = {
   readonly __type__: 'LLVMStoreInstruction';
   readonly targetVariable: string;
-  readonly targetType: LLVMType;
   readonly sourceValue: LLVMValue;
-  readonly sourceType: LLVMType;
+  readonly valueType: LLVMType;
 };
 
 export type LLVMPhiInstruction = {
@@ -192,14 +199,16 @@ export const LLVM_BITCAST = ({
 
 export const LLVM_GET_ELEMENT_PTR = ({
   resultVariable,
-  pointerType,
-  sourceVariable,
+  resultType,
+  sourceValue,
+  sourcePointerType,
   offset,
 }: ConstructorArgumentObject<LLVMGetElementPointerInstruction>): LLVMGetElementPointerInstruction => ({
   __type__: 'LLVMGetElementPointerInstruction',
   resultVariable,
-  pointerType,
-  sourceVariable,
+  resultType,
+  sourceValue,
+  sourcePointerType,
   offset,
 });
 
@@ -218,28 +227,24 @@ export const LLVM_BINARY = ({
 
 export const LLVM_LOAD = ({
   resultVariable,
-  resultType,
   sourceVariable,
-  sourceType,
+  valueType,
 }: ConstructorArgumentObject<LLVMLoadInstruction>): LLVMLoadInstruction => ({
   __type__: 'LLVMLoadInstruction',
   resultVariable,
-  resultType,
   sourceVariable,
-  sourceType,
+  valueType,
 });
 
 export const LLVM_STORE = ({
   targetVariable,
-  targetType,
   sourceValue,
-  sourceType,
+  valueType,
 }: ConstructorArgumentObject<LLVMStoreInstruction>): LLVMStoreInstruction => ({
   __type__: 'LLVMStoreInstruction',
   targetVariable,
-  targetType,
   sourceValue,
-  sourceType,
+  valueType,
 });
 
 export const LLVM_PHI = ({
@@ -306,9 +311,11 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       return `%${instruction.targetVariable} = bitcast ${sourceType} ${sourceValue} to ${targetType}`;
     }
     case 'LLVMGetElementPointerInstruction': {
-      const { resultVariable, pointerType, sourceVariable, offset } = instruction;
-      const type = prettyPrintLLVMType(pointerType);
-      return `%${resultVariable} = getelementptr ${type}, ${type} %${sourceVariable}, i64 ${offset}`;
+      const { resultVariable, offset } = instruction;
+      const value = prettyPrintLLVMValue(instruction.sourceValue);
+      const resultType = prettyPrintLLVMType(instruction.resultType);
+      const sourceType = prettyPrintLLVMType(instruction.sourcePointerType);
+      return `%${resultVariable} = getelementptr ${resultType}*, ${sourceType} ${value}, i64 ${offset}`;
     }
     case 'LLVMBinaryInstruction': {
       const result = `%${instruction.resultVariable}`;
@@ -357,15 +364,13 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
     }
     case 'LLVMLoadInstruction': {
       const { resultVariable, sourceVariable } = instruction;
-      const resultType = prettyPrintLLVMType(instruction.resultType);
-      const sourceType = prettyPrintLLVMType(instruction.sourceType);
-      return `%${resultVariable} = load ${resultType}, ${sourceType} %${sourceVariable}`;
+      const type = prettyPrintLLVMType(instruction.valueType);
+      return `%${resultVariable} = load ${type}, ${type}* %${sourceVariable}`;
     }
     case 'LLVMStoreInstruction': {
       const sourceValue = prettyPrintLLVMValue(instruction.sourceValue);
-      const targetType = prettyPrintLLVMType(instruction.targetType);
-      const sourceType = prettyPrintLLVMType(instruction.sourceType);
-      return `store ${sourceType} ${sourceValue}, ${targetType} %${instruction.targetVariable}`;
+      const type = prettyPrintLLVMType(instruction.valueType);
+      return `store ${type} ${sourceValue}, ${type}* %${instruction.targetVariable}`;
     }
     case 'LLVMPhiInstruction': {
       const v1 = prettyPrintLLVMValue(instruction.v1);
