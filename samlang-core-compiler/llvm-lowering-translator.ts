@@ -7,7 +7,15 @@ import lowerHighIRTypeToLLVMType from './llvm-types-lowering';
 import MidIRResourceAllocator from './mir-resource-allocator';
 
 import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
-import type { HighIRExpression, HighIRStatement } from 'samlang-core-ast/hir-expressions';
+import type {
+  HighIRExpression,
+  HighIRStatement,
+  HighIRFunctionCallStatement,
+  HighIRIfElseStatement,
+  HighIRWhileTrueStatement,
+  HighIRLetDefinitionStatement,
+  HighIRStructInitializationStatement,
+} from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
@@ -62,156 +70,175 @@ class LLVMLoweringManager {
 
   lowerHighIRStatement(s: HighIRStatement): void {
     switch (s.__type__) {
-      case 'HighIRFunctionCallStatement': {
-        const functionName = this.lowerHighIRExpression(s.functionExpression).value;
-        const functionArguments = s.functionArguments.map((it) => this.lowerHighIRExpression(it));
-        this.llvmInstructionCollector.push(
-          LLVM_CALL({
-            resultType: lowerHighIRTypeToLLVMType(s.returnCollector?.type ?? HIR_INT_TYPE),
-            resultVariable: s.returnCollector?.name,
-            functionName,
-            functionArguments,
-          })
-        );
-        break;
-      }
-      case 'HighIRIfElseStatement': {
-        const loweredCondition = this.lowerHighIRExpression(s.booleanExpression).value;
-        const trueLabel = this.allocator.allocateLabelWithAnnotation(
-          this.functionName,
-          'if_else_true_label'
-        );
-        const falseLabel = this.allocator.allocateLabelWithAnnotation(
-          this.functionName,
-          'if_else_false_label'
-        );
-        const endLabel = this.allocator.allocateLabelWithAnnotation(
-          this.functionName,
-          'if_else_end_label'
-        );
-        this.llvmInstructionCollector.push(
-          LLVM_CJUMP(loweredCondition, trueLabel, falseLabel),
-          LLVM_LABEL(trueLabel)
-        );
-        this.llvmConstantPropagationContext.withNestedScope(() => {
-          s.s1.forEach((it) => this.lowerHighIRStatement(it));
-        });
-        this.llvmInstructionCollector.push(LLVM_JUMP(endLabel), LLVM_LABEL(falseLabel));
-        this.llvmConstantPropagationContext.withNestedScope(() => {
-          s.s2.forEach((it) => this.lowerHighIRStatement(it));
-        });
-        this.llvmInstructionCollector.push(LLVM_LABEL(endLabel));
-        // TODO: handle phi variables!
-        break;
-      }
-      case 'HighIRWhileTrueStatement': {
-        const startLabel = this.allocator.allocateLabelWithAnnotation(
-          this.functionName,
-          'while_true_start'
-        );
-        this.llvmInstructionCollector.push(LLVM_LABEL(startLabel));
-        s.multiAssignedVariables.forEach((name) => {
-          this.llvmInstructionCollector.push(
-            LLVM_PHI({
-              variableType: checkNotNull(this.parameters[name]),
-              valueBranchTuples: [
-                { value: LLVM_VARIABLE(name), branch: this.functionStartLabel },
-                { value: LLVM_VARIABLE(getFunctionParameterCollector(name)), branch: startLabel },
-              ],
-            })
-          );
-        });
-        this.withNestedScope(
-          s.multiAssignedVariables.map((name) => ({
-            target: renameFunctionParameterReadForSSA(name),
-            source: getFunctionParameterCollector(name),
-          })),
-          () => {
-            s.statements.forEach((it) => this.lowerHighIRStatement(it));
-          }
-        );
-        this.llvmInstructionCollector.push(LLVM_JUMP(startLabel));
-        break;
-      }
-      case 'HighIRLetDefinitionStatement': {
-        const { value: sourceValue, type: actualType } = this.lowerHighIRExpression(
-          s.assignedExpression
-        );
-        const expectedType = lowerHighIRTypeToLLVMType(s.type);
-        if (isTheSameLLVMType(expectedType, actualType)) {
-          this.llvmConstantPropagationContext.bind(s.name, sourceValue);
-        } else {
-          this.llvmInstructionCollector.push(
-            LLVM_CAST({
-              targetVariable: s.name,
-              targetType: expectedType,
-              sourceValue,
-              sourceType: actualType,
-            })
-          );
-        }
-        // TODO: handle phi variables!
-        break;
-      }
-      case 'HighIRStructInitializationStatement': {
-        const rawPointerTemp = this.allocator.allocateTemp('struct_pointer_raw');
-        const structType = lowerHighIRTypeToLLVMType(s.type);
-        this.llvmInstructionCollector.push(
-          LLVM_CALL({
-            resultVariable: rawPointerTemp,
-            resultType: LLVM_STRING_TYPE(),
-            functionName: LLVM_NAME(ENCODED_FUNCTION_NAME_MALLOC),
-            functionArguments: [
-              { value: LLVM_INT(s.expressionList.length * 8), type: LLVM_INT_TYPE },
-            ],
-          }),
-          LLVM_CAST({
-            targetVariable: s.structVariableName,
-            targetType: structType,
-            sourceValue: LLVM_VARIABLE(rawPointerTemp),
-            sourceType: LLVM_STRING_TYPE(),
-          })
-        );
-        s.expressionList.forEach((e, i) => {
-          const { value, type } = this.lowerHighIRExpression(e);
-          let valueToStore = value;
-          let valueType = type;
-          if (structType.__type__ === 'StructType') {
-            const expectedValueType = checkNotNull(structType.mappings[i]);
-            if (!isTheSameLLVMType(expectedValueType, type)) {
-              const castedValueTemp = this.allocator.allocateTemp(`struct_value_casted_${i}`);
-              this.llvmInstructionCollector.push(
-                LLVM_CAST({
-                  targetVariable: castedValueTemp,
-                  targetType: expectedValueType,
-                  sourceValue: value,
-                  sourceType: type,
-                })
-              );
-              valueToStore = LLVM_VARIABLE(castedValueTemp);
-              valueType = expectedValueType;
-            }
-          }
-          const storePointerTemp = this.allocator.allocateTemp(`struct_value_pointer_${i}`);
-          this.llvmInstructionCollector.push(
-            LLVM_GET_ELEMENT_PTR({
-              resultVariable: storePointerTemp,
-              resultType: valueType,
-              sourceValue: LLVM_VARIABLE(s.structVariableName),
-              sourcePointerType: structType,
-              offset: i,
-            }),
-            LLVM_STORE({ targetVariable: storePointerTemp, sourceValue: valueToStore, valueType })
-          );
-        });
-        break;
-      }
+      case 'HighIRFunctionCallStatement':
+        this.lowerHighIRFunctionCallStatement(s);
+        return;
+      case 'HighIRIfElseStatement':
+        this.lowerHighIRIfElseStatement(s);
+        return;
+      case 'HighIRWhileTrueStatement':
+        this.lowerHighIRWhileTrueStatement(s);
+        return;
+      case 'HighIRLetDefinitionStatement':
+        this.lowerHighIRLetDefinitionStatement(s);
+        return;
+      case 'HighIRStructInitializationStatement':
+        this.lowerHighIRStructInitializationStatement(s);
+        return;
       case 'HighIRReturnStatement': {
         const { value, type } = this.lowerHighIRExpression(s.expression);
         this.llvmInstructionCollector.push(LLVM_RETURN(value, type));
-        break;
+        // eslint-disable-next-line no-useless-return
+        return;
       }
     }
+  }
+
+  private lowerHighIRFunctionCallStatement(s: HighIRFunctionCallStatement): void {
+    const functionName = this.lowerHighIRExpression(s.functionExpression).value;
+    const functionArguments = s.functionArguments.map((it) => this.lowerHighIRExpression(it));
+    this.llvmInstructionCollector.push(
+      LLVM_CALL({
+        resultType: lowerHighIRTypeToLLVMType(s.returnCollector?.type ?? HIR_INT_TYPE),
+        resultVariable: s.returnCollector?.name,
+        functionName,
+        functionArguments,
+      })
+    );
+  }
+
+  private lowerHighIRIfElseStatement(s: HighIRIfElseStatement): void {
+    const loweredCondition = this.lowerHighIRExpression(s.booleanExpression).value;
+    const trueLabel = this.allocator.allocateLabelWithAnnotation(
+      this.functionName,
+      'if_else_true_label'
+    );
+    const falseLabel = this.allocator.allocateLabelWithAnnotation(
+      this.functionName,
+      'if_else_false_label'
+    );
+    const endLabel = this.allocator.allocateLabelWithAnnotation(
+      this.functionName,
+      'if_else_end_label'
+    );
+    this.llvmInstructionCollector.push(
+      LLVM_CJUMP(loweredCondition, trueLabel, falseLabel),
+      LLVM_LABEL(trueLabel)
+    );
+    this.llvmConstantPropagationContext.withNestedScope(() => {
+      s.s1.forEach((it) => this.lowerHighIRStatement(it));
+    });
+    this.llvmInstructionCollector.push(LLVM_JUMP(endLabel), LLVM_LABEL(falseLabel));
+    this.llvmConstantPropagationContext.withNestedScope(() => {
+      s.s2.forEach((it) => this.lowerHighIRStatement(it));
+    });
+    this.llvmInstructionCollector.push(LLVM_LABEL(endLabel));
+    // TODO: handle phi variables!
+  }
+
+  private lowerHighIRWhileTrueStatement(s: HighIRWhileTrueStatement): void {
+    const startLabel = this.allocator.allocateLabelWithAnnotation(
+      this.functionName,
+      'while_true_start'
+    );
+    this.llvmInstructionCollector.push(LLVM_LABEL(startLabel));
+    s.multiAssignedVariables.forEach((name) => {
+      this.llvmInstructionCollector.push(
+        LLVM_PHI({
+          variableType: checkNotNull(this.parameters[name]),
+          valueBranchTuples: [
+            { value: LLVM_VARIABLE(name), branch: this.functionStartLabel },
+            { value: LLVM_VARIABLE(getFunctionParameterCollector(name)), branch: startLabel },
+          ],
+        })
+      );
+    });
+    this.withNestedScope(
+      s.multiAssignedVariables.map((name) => ({
+        target: renameFunctionParameterReadForSSA(name),
+        source: getFunctionParameterCollector(name),
+      })),
+      () => {
+        s.statements.forEach((it) => this.lowerHighIRStatement(it));
+      }
+    );
+    this.llvmInstructionCollector.push(LLVM_JUMP(startLabel));
+  }
+
+  private lowerHighIRLetDefinitionStatement(s: HighIRLetDefinitionStatement): void {
+    if (
+      s.assignedExpression.__type__ === 'HighIRVariableExpression' &&
+      this.phiMoveSet.has(`${s.name} = ${s.assignedExpression.name}`)
+    ) {
+      return;
+    }
+    const { value: sourceValue, type: actualType } = this.lowerHighIRExpression(
+      s.assignedExpression
+    );
+    const expectedType = lowerHighIRTypeToLLVMType(s.type);
+    if (isTheSameLLVMType(expectedType, actualType)) {
+      this.llvmConstantPropagationContext.bind(s.name, sourceValue);
+    } else {
+      this.llvmInstructionCollector.push(
+        LLVM_CAST({
+          targetVariable: s.name,
+          targetType: expectedType,
+          sourceValue,
+          sourceType: actualType,
+        })
+      );
+    }
+  }
+
+  private lowerHighIRStructInitializationStatement(s: HighIRStructInitializationStatement): void {
+    const rawPointerTemp = this.allocator.allocateTemp('struct_pointer_raw');
+    const structType = lowerHighIRTypeToLLVMType(s.type);
+    this.llvmInstructionCollector.push(
+      LLVM_CALL({
+        resultVariable: rawPointerTemp,
+        resultType: LLVM_STRING_TYPE(),
+        functionName: LLVM_NAME(ENCODED_FUNCTION_NAME_MALLOC),
+        functionArguments: [{ value: LLVM_INT(s.expressionList.length * 8), type: LLVM_INT_TYPE }],
+      }),
+      LLVM_CAST({
+        targetVariable: s.structVariableName,
+        targetType: structType,
+        sourceValue: LLVM_VARIABLE(rawPointerTemp),
+        sourceType: LLVM_STRING_TYPE(),
+      })
+    );
+    s.expressionList.forEach((e, i) => {
+      const { value, type } = this.lowerHighIRExpression(e);
+      let valueToStore = value;
+      let valueType = type;
+      if (structType.__type__ === 'StructType') {
+        const expectedValueType = checkNotNull(structType.mappings[i]);
+        if (!isTheSameLLVMType(expectedValueType, type)) {
+          const castedValueTemp = this.allocator.allocateTemp(`struct_value_casted_${i}`);
+          this.llvmInstructionCollector.push(
+            LLVM_CAST({
+              targetVariable: castedValueTemp,
+              targetType: expectedValueType,
+              sourceValue: value,
+              sourceType: type,
+            })
+          );
+          valueToStore = LLVM_VARIABLE(castedValueTemp);
+          valueType = expectedValueType;
+        }
+      }
+      const storePointerTemp = this.allocator.allocateTemp(`struct_value_pointer_${i}`);
+      this.llvmInstructionCollector.push(
+        LLVM_GET_ELEMENT_PTR({
+          resultVariable: storePointerTemp,
+          resultType: valueType,
+          sourceValue: LLVM_VARIABLE(s.structVariableName),
+          sourcePointerType: structType,
+          offset: i,
+        }),
+        LLVM_STORE({ targetVariable: storePointerTemp, sourceValue: valueToStore, valueType })
+      );
+    });
   }
 
   private lowerHighIRExpression(e: HighIRExpression): LLVMAnnotatedValue {
