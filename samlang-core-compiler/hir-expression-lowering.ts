@@ -58,7 +58,7 @@ import type {
   LambdaExpression,
   StatementBlockExpression,
 } from 'samlang-core-ast/samlang-expressions';
-import { checkNotNull } from 'samlang-core-utils';
+import { checkNotNull, isNotNull } from 'samlang-core-utils';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -467,6 +467,8 @@ class HighIRExpressionLoweringManager {
         const closureTemp = this.allocateTemporaryVariable();
         const contextTemp = this.allocateTemporaryVariable();
         const contextTempForZeroComparison = this.allocateTemporaryVariable();
+        const resultTempB1 = this.allocateTemporaryVariable();
+        const resultTempB2 = this.allocateTemporaryVariable();
         loweredStatements.push(
           HIR_LET({
             name: closureTemp,
@@ -492,7 +494,14 @@ class HighIRExpressionLoweringManager {
         );
 
         functionCall = HIR_IF_ELSE({
-          multiAssignedVariable: isVoidReturn ? undefined : returnCollectorName,
+          multiAssignedVariable: isVoidReturn
+            ? undefined
+            : {
+                name: returnCollectorName,
+                type: loweredReturnType,
+                branch1Variable: resultTempB1,
+                branch2Variable: resultTempB2,
+              },
           booleanExpression: createHighIRFlexibleOrderOperatorNode(
             '==',
             HIR_VARIABLE(contextTempForZeroComparison, HIR_INT_TYPE),
@@ -508,9 +517,16 @@ class HighIRExpressionLoweringManager {
               functionArguments: loweredFunctionArguments,
               returnCollector: isVoidReturn
                 ? undefined
-                : { name: returnCollectorName, type: loweredReturnType },
+                : { name: resultTempB1, type: loweredReturnType },
             }),
-          ],
+            isVoidReturn
+              ? null
+              : HIR_LET({
+                  name: returnCollectorName,
+                  type: loweredReturnType,
+                  assignedExpression: HIR_VARIABLE(resultTempB1, loweredReturnType),
+                }),
+          ].filter(isNotNull),
           s2: [
             HIR_FUNCTION_CALL({
               functionExpression: HIR_INDEX_ACCESS({
@@ -524,9 +540,16 @@ class HighIRExpressionLoweringManager {
               ],
               returnCollector: isVoidReturn
                 ? undefined
-                : { name: returnCollectorName, type: loweredReturnType },
+                : { name: resultTempB2, type: loweredReturnType },
             }),
-          ],
+            isVoidReturn
+              ? null
+              : HIR_LET({
+                  name: returnCollectorName,
+                  type: loweredReturnType,
+                  assignedExpression: HIR_VARIABLE(resultTempB2, loweredReturnType),
+                }),
+          ].filter(isNotNull),
         });
         break;
       }
@@ -555,23 +578,42 @@ class HighIRExpressionLoweringManager {
     switch (operatorSymbol) {
       case '&&': {
         const temp = this.allocateTemporaryVariable();
+        const tempB1 = this.allocateTemporaryVariable();
+        const tempB2 = this.allocateTemporaryVariable();
         const e1Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e1);
         const e2Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e2);
         return {
           statements: [
             ...e1Result.statements,
             HIR_IF_ELSE({
-              multiAssignedVariable: temp,
+              multiAssignedVariable: {
+                name: temp,
+                type: HIR_BOOL_TYPE,
+                branch1Variable: tempB1,
+                branch2Variable: tempB2,
+              },
               booleanExpression: e1Result.expression,
               s1: [
                 ...e2Result.statements,
                 HIR_LET({
-                  name: temp,
+                  name: tempB1,
                   type: HIR_BOOL_TYPE,
                   assignedExpression: e2Result.expression,
                 }),
+                HIR_LET({
+                  name: temp,
+                  type: HIR_BOOL_TYPE,
+                  assignedExpression: HIR_VARIABLE(tempB1, HIR_BOOL_TYPE),
+                }),
               ],
-              s2: [HIR_LET({ name: temp, type: HIR_BOOL_TYPE, assignedExpression: HIR_FALSE })],
+              s2: [
+                HIR_LET({ name: tempB2, type: HIR_BOOL_TYPE, assignedExpression: HIR_FALSE }),
+                HIR_LET({
+                  name: temp,
+                  type: HIR_BOOL_TYPE,
+                  assignedExpression: HIR_VARIABLE(tempB2, HIR_BOOL_TYPE),
+                }),
+              ],
             }),
           ],
           expression: HIR_VARIABLE(temp, HIR_BOOL_TYPE),
@@ -579,21 +621,40 @@ class HighIRExpressionLoweringManager {
       }
       case '||': {
         const temp = this.allocateTemporaryVariable();
+        const tempB1 = this.allocateTemporaryVariable();
+        const tempB2 = this.allocateTemporaryVariable();
         const e1Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e1);
         const e2Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e2);
         return {
           statements: [
             ...e1Result.statements,
             HIR_IF_ELSE({
-              multiAssignedVariable: temp,
+              multiAssignedVariable: {
+                name: temp,
+                type: HIR_BOOL_TYPE,
+                branch1Variable: tempB1,
+                branch2Variable: tempB2,
+              },
               booleanExpression: e1Result.expression,
-              s1: [HIR_LET({ name: temp, type: HIR_BOOL_TYPE, assignedExpression: HIR_TRUE })],
-              s2: [
-                ...e2Result.statements,
+              s1: [
+                HIR_LET({ name: tempB1, type: HIR_BOOL_TYPE, assignedExpression: HIR_TRUE }),
                 HIR_LET({
                   name: temp,
                   type: HIR_BOOL_TYPE,
+                  assignedExpression: HIR_VARIABLE(tempB1, HIR_BOOL_TYPE),
+                }),
+              ],
+              s2: [
+                ...e2Result.statements,
+                HIR_LET({
+                  name: tempB2,
+                  type: HIR_BOOL_TYPE,
                   assignedExpression: e2Result.expression,
+                }),
+                HIR_LET({
+                  name: temp,
+                  type: HIR_BOOL_TYPE,
+                  assignedExpression: HIR_VARIABLE(tempB2, HIR_BOOL_TYPE),
                 }),
               ],
             }),
@@ -649,18 +710,32 @@ class HighIRExpressionLoweringManager {
     const e1LoweringResult = this.lower(expression.e1);
     const e2LoweringResult = this.lower(expression.e2);
     const variableForIfElseAssign = this.allocateTemporaryVariable();
+    const branch1Variable = this.allocateTemporaryVariable();
+    const branch2Variable = this.allocateTemporaryVariable();
     loweredStatements.push(
       HIR_IF_ELSE({
-        multiAssignedVariable: isVoidReturn ? undefined : variableForIfElseAssign,
+        multiAssignedVariable: isVoidReturn
+          ? undefined
+          : {
+              name: variableForIfElseAssign,
+              type: loweredReturnType,
+              branch1Variable,
+              branch2Variable,
+            },
         booleanExpression: loweredBoolExpression,
         s1: isVoidReturn
           ? e1LoweringResult.statements
           : [
               ...e1LoweringResult.statements,
               HIR_LET({
-                name: variableForIfElseAssign,
+                name: branch1Variable,
                 type: loweredReturnType,
                 assignedExpression: e1LoweringResult.expression,
+              }),
+              HIR_LET({
+                name: variableForIfElseAssign,
+                type: loweredReturnType,
+                assignedExpression: HIR_VARIABLE(branch1Variable, loweredReturnType),
               }),
             ],
         s2: isVoidReturn
@@ -668,9 +743,14 @@ class HighIRExpressionLoweringManager {
           : [
               ...e2LoweringResult.statements,
               HIR_LET({
-                name: variableForIfElseAssign,
+                name: branch2Variable,
                 type: loweredReturnType,
                 assignedExpression: e2LoweringResult.expression,
+              }),
+              HIR_LET({
+                name: variableForIfElseAssign,
+                type: loweredReturnType,
+                assignedExpression: HIR_VARIABLE(branch2Variable, loweredReturnType),
               }),
             ],
       })
@@ -732,48 +812,60 @@ class HighIRExpressionLoweringManager {
         }
         const result = this.lower(patternExpression);
         localStatements.push(...result.statements);
+        let branchVariable: string | undefined = undefined;
         if (!isVoidReturn) {
+          branchVariable = this.allocateTemporaryVariable();
           localStatements.push(
+            HIR_LET({
+              name: branchVariable,
+              type: loweredReturnType,
+              assignedExpression: result.expression,
+            }),
             HIR_LET({
               name: temporaryVariable,
               type: loweredReturnType,
-              assignedExpression: result.expression,
+              assignedExpression: HIR_VARIABLE(branchVariable, loweredReturnType),
             })
           );
         }
-        return { tagOrder, statements: localStatements };
+        return { tagOrder, branchVariable, statements: localStatements };
       }
     );
     // istanbul ignore next
-    if (loweredMatchingList.length < 1) throw new Error();
+    if (loweredMatchingList.length < 2) throw new Error();
     let ifElse = HIR_IF_ELSE({
-      multiAssignedVariable: isVoidReturn ? undefined : temporaryVariable,
+      multiAssignedVariable: isVoidReturn
+        ? undefined
+        : {
+            name: temporaryVariable,
+            type: loweredReturnType,
+            branch1Variable: checkNotNull(
+              loweredMatchingList[loweredMatchingList.length - 2]?.branchVariable
+            ),
+            branch2Variable: checkNotNull(
+              loweredMatchingList[loweredMatchingList.length - 1]?.branchVariable
+            ),
+          },
       booleanExpression: createHighIRFlexibleOrderOperatorNode(
         '==',
         HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
-        HIR_INT(checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).tagOrder)
+        HIR_INT(checkNotNull(loweredMatchingList[loweredMatchingList.length - 2]).tagOrder)
       ),
-      s1: checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).statements,
-      s2: [
-        HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME(
-            ENCODED_FUNCTION_NAME_THROW,
-            HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE)
-          ),
-          functionArguments: [
-            HIR_NAME(
-              this.stringManager.allocateStringArrayGlobalVariable('Unreachable branch in match!')
-                .name,
-              HIR_STRING_TYPE
-            ),
-          ],
-        }),
-      ],
+      s1: checkNotNull(loweredMatchingList[loweredMatchingList.length - 2]).statements,
+      s2: checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).statements,
     });
-    for (let i = loweredMatchingList.length - 2; i >= 0; i -= 1) {
+    for (let i = loweredMatchingList.length - 3; i >= 0; i -= 1) {
       const { tagOrder, statements: localStatements } = checkNotNull(loweredMatchingList[i]);
       ifElse = HIR_IF_ELSE({
-        multiAssignedVariable: isVoidReturn ? undefined : temporaryVariable,
+        multiAssignedVariable: isVoidReturn
+          ? undefined
+          : {
+              name: temporaryVariable,
+              type: loweredReturnType,
+              branch1Variable: checkNotNull(loweredMatchingList[i]?.branchVariable),
+              // Marker for the existence of nested if-else for match
+              branch2Variable: temporaryVariable,
+            },
         booleanExpression: createHighIRFlexibleOrderOperatorNode(
           '==',
           HIR_VARIABLE(variableForTag, HIR_INT_TYPE),

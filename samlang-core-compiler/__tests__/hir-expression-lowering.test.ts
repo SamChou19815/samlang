@@ -283,11 +283,13 @@ it('FunctionCall family lowering works 6/n.', () => {
 let _t2: any = ((_t1: (any, any))[1]: any);
 let _t3: int = (_t1: any);
 if ((_t3: int) == 0) {
-  let _t0: int = ((_t1: (any, any))[0]: any)((_this: _Dummy), (_this: _Dummy));
+  let _t4: int = ((_t1: (any, any))[0]: any)((_this: _Dummy), (_this: _Dummy));
+  let _t0: int = (_t4: int);
 } else {
-  let _t0: int = ((_t1: (any, any))[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
+  let _t5: int = ((_t1: (any, any))[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
+  let _t0: int = (_t5: int);
 }
-// phi(_t0)
+// _t0: int = phi(_t4, _t5)
 return (_t0: int);`
   );
 });
@@ -343,11 +345,13 @@ it('Short circuiting binary lowering works.', () => {
       e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
     }),
     `if 1 {
-  let _t0: bool = (foo: bool);
+  let _t1: bool = (foo: bool);
+  let _t0: bool = (_t1: bool);
 } else {
-  let _t0: bool = 0;
+  let _t2: bool = 0;
+  let _t0: bool = (_t2: bool);
 }
-// phi(_t0)
+// _t0: bool = phi(_t1, _t2)
 return (_t0: bool);`
   );
 
@@ -360,11 +364,13 @@ return (_t0: bool);`
       e2: EXPRESSION_FALSE(Range.DUMMY),
     }),
     `if 1 {
-  let _t0: bool = 1;
+  let _t1: bool = 1;
+  let _t0: bool = (_t1: bool);
 } else {
-  let _t0: bool = 0;
+  let _t2: bool = 0;
+  let _t0: bool = (_t2: bool);
 }
-// phi(_t0)
+// _t0: bool = phi(_t1, _t2)
 return (_t0: bool);`
   );
 });
@@ -461,11 +467,13 @@ it('IfElse lowering works 1/2.', () => {
     }),
     `if (_this: _Dummy) {
   _builtin_throw((_this: _Dummy));
-  let _t0: _Dummy = 0;
+  let _t1: _Dummy = 0;
+  let _t0: _Dummy = (_t1: _Dummy);
 } else {
-  let _t0: _Dummy = (_this: _Dummy);
+  let _t2: _Dummy = (_this: _Dummy);
+  let _t0: _Dummy = (_t2: _Dummy);
 }
-// phi(_t0)
+// _t0: _Dummy = phi(_t1, _t2)
 return (_t0: _Dummy);`
   );
 });
@@ -487,7 +495,7 @@ return 0;`
   );
 });
 
-it('Match lowering works 1/2.', () => {
+it('Match lowering works 1/3.', () => {
   expectCorrectlyLowered(
     EXPRESSION_MATCH({
       range: Range.DUMMY,
@@ -509,27 +517,23 @@ it('Match lowering works 1/2.', () => {
         },
       ],
     }),
-    `const GLOBAL_STRING_0 = 'Unreachable branch in match!';
-let _t0: _Dummy = (_this: _Dummy);
+    `let _t0: _Dummy = (_this: _Dummy);
 let _t1: int = ((_t0: _Dummy)[0]: int);
 if ((_t1: int) == 0) {
   let bar: string = ((_t0: _Dummy)[1]: any);
-  let _t2: _Dummy = (_this: _Dummy);
+  let _t3: _Dummy = (_this: _Dummy);
+  let _t2: _Dummy = (_t3: _Dummy);
 } else {
-  if ((_t1: int) == 1) {
-    _builtin_throw((_this: _Dummy));
-    let _t2: _Dummy = 0;
-  } else {
-    _builtin_throw(GLOBAL_STRING_0);
-  }
-  // phi(_t2)
+  _builtin_throw((_this: _Dummy));
+  let _t4: _Dummy = 0;
+  let _t2: _Dummy = (_t4: _Dummy);
 }
-// phi(_t2)
+// _t2: _Dummy = phi(_t3, _t4)
 return (_t2: _Dummy);`
   );
 });
 
-it('Match lowering works 2/2.', () => {
+it('Match lowering works 2/3.', () => {
   expectCorrectlyLowered(
     EXPRESSION_MATCH({
       range: Range.DUMMY,
@@ -549,10 +553,15 @@ it('Match lowering works 2/2.', () => {
           tagOrder: 1,
           expression: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
         },
+        {
+          range: Range.DUMMY,
+          tag: 'Baz',
+          tagOrder: 2,
+          expression: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
+        },
       ],
     }),
-    `const GLOBAL_STRING_0 = 'Unreachable branch in match!';
-let _t0: _Dummy = (_this: _Dummy);
+    `let _t0: _Dummy = (_this: _Dummy);
 let _t1: int = ((_t0: _Dummy)[0]: int);
 if ((_t1: int) == 0) {
   let bar: string = ((_t0: _Dummy)[1]: any);
@@ -560,10 +569,59 @@ if ((_t1: int) == 0) {
   if ((_t1: int) == 1) {
     _builtin_throw((_this: _Dummy));
   } else {
-    _builtin_throw(GLOBAL_STRING_0);
+    _builtin_throw((_this: _Dummy));
   }
 }
 return 0;`
+  );
+});
+
+it('Match lowering works 3/3.', () => {
+  expectCorrectlyLowered(
+    EXPRESSION_MATCH({
+      range: Range.DUMMY,
+      type: DUMMY_IDENTIFIER_TYPE,
+      matchedExpression: THIS,
+      matchingList: [
+        {
+          range: Range.DUMMY,
+          tag: 'Foo',
+          tagOrder: 0,
+          dataVariable: ['bar', stringType],
+          expression: THIS,
+        },
+        {
+          range: Range.DUMMY,
+          tag: 'Bar',
+          tagOrder: 1,
+          expression: THIS,
+        },
+        {
+          range: Range.DUMMY,
+          tag: 'Baz',
+          tagOrder: 2,
+          expression: THIS,
+        },
+      ],
+    }),
+    `let _t0: _Dummy = (_this: _Dummy);
+let _t1: int = ((_t0: _Dummy)[0]: int);
+if ((_t1: int) == 0) {
+  let bar: string = ((_t0: _Dummy)[1]: any);
+  let _t3: _Dummy = (_this: _Dummy);
+  let _t2: _Dummy = (_t3: _Dummy);
+} else {
+  if ((_t1: int) == 1) {
+    let _t4: _Dummy = (_this: _Dummy);
+    let _t2: _Dummy = (_t4: _Dummy);
+  } else {
+    let _t5: _Dummy = (_this: _Dummy);
+    let _t2: _Dummy = (_t5: _Dummy);
+  }
+  // _t2: _Dummy = phi(_t4, _t5)
+}
+// _t2: _Dummy = phi(_t3, _t2)
+return (_t2: _Dummy);`
   );
 });
 

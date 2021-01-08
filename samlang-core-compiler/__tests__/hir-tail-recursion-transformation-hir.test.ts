@@ -265,7 +265,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level no transform 
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_IF_ELSE({
-            multiAssignedVariable: 'none',
             booleanExpression: HIR_ONE,
             s1: [HIR_RETURN(HIR_ZERO)],
             s2: [HIR_RETURN(HIR_ZERO)],
@@ -279,7 +278,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level no transform 
   } else {
     return 0;
   }
-  // phi(none)
 }
 `);
 });
@@ -293,7 +291,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_IF_ELSE({
-            multiAssignedVariable: 'none',
             booleanExpression: HIR_ONE,
             s1: [
               HIR_IF_ELSE({
@@ -341,7 +338,6 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
     } else {
       return 0;
     }
-    // phi(none)
   }
 }
 `);
