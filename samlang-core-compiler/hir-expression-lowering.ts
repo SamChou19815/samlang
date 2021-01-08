@@ -466,6 +466,7 @@ class HighIRExpressionLoweringManager {
         );
         const closureTemp = this.allocateTemporaryVariable();
         const contextTemp = this.allocateTemporaryVariable();
+        const contextTempForZeroComparison = this.allocateTemporaryVariable();
         loweredStatements.push(
           HIR_LET({
             name: closureTemp,
@@ -482,6 +483,11 @@ class HighIRExpressionLoweringManager {
               expression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
               index: 1,
             }),
+          }),
+          HIR_LET({
+            name: contextTempForZeroComparison,
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE(closureTemp, HIR_ANY_TYPE),
           })
         );
 
@@ -489,7 +495,7 @@ class HighIRExpressionLoweringManager {
           multiAssignedVariable: isVoidReturn ? undefined : returnCollectorName,
           booleanExpression: createHighIRFlexibleOrderOperatorNode(
             '==',
-            HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
+            HIR_VARIABLE(contextTempForZeroComparison, HIR_INT_TYPE),
             HIR_ZERO
           ),
           s1: [

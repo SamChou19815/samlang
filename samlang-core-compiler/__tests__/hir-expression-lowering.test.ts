@@ -281,7 +281,8 @@ it('FunctionCall family lowering works 6/n.', () => {
     }),
     `let _t1: (any, any) = (_this: _Dummy);
 let _t2: any = ((_t1: (any, any))[1]: any);
-if ((_t2: any) == 0) {
+let _t3: int = (_t1: any);
+if ((_t3: int) == 0) {
   let _t0: int = ((_t1: (any, any))[0]: any)((_this: _Dummy), (_this: _Dummy));
 } else {
   let _t0: int = ((_t1: (any, any))[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
@@ -301,7 +302,8 @@ it('FunctionCall family lowering works 7/n.', () => {
     }),
     `let _t1: (any, any) = (_this: _Dummy);
 let _t2: any = ((_t1: (any, any))[1]: any);
-if ((_t2: any) == 0) {
+let _t3: int = (_t1: any);
+if ((_t3: int) == 0) {
   ((_t1: (any, any))[0]: any)((_this: _Dummy), (_this: _Dummy));
 } else {
   ((_t1: (any, any))[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
