@@ -504,7 +504,6 @@ declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
         .join(', ');
       return `@${name} = private unnamed_addr constant [${size} x i64] [i64 ${size}, ${ints}], align 8`;
     }),
-    '%_builtin_Closure = { i64*, i64* }',
     ...typeDefinitions.map(
       ({ identifier, mappings }) =>
         `%${identifier} = { ${mappings.map(prettyPrintLLVMType).join(', ')} }`
