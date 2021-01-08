@@ -209,6 +209,87 @@ export const setEquals = <E>(set1: ReadonlySet<E>, set2: ReadonlySet<E>): boolea
   return Array.from(set1).every((value) => set2.has(value));
 };
 
+/** One layer of the context. We should stack a new layer when encounter a new nested scope. */
+class ContextLayer<V> {
+  private readonly localValues: Map<string, V> = new Map();
+
+  readonly capturedValues: Map<string, V> = new Map();
+
+  getLocalValue(name: string): V | undefined {
+    return this.localValues.get(name);
+  }
+
+  addLocalValue(name: string, value: V, onCollision: () => void): void {
+    if (this.localValues.has(name)) {
+      onCollision();
+      return;
+    }
+    this.localValues.set(name, value);
+  }
+
+  removeLocalValue(name: string): void {
+    if (!this.localValues.delete(name)) {
+      throw new Error(`${name} is not found in this layer!`);
+    }
+  }
+}
+
+export class LocalStackedContext<V> {
+  private readonly stacks: ContextLayer<V>[] = [new ContextLayer<V>()];
+
+  getLocalValueType(name: string): V | undefined {
+    const closestStackType = checkNotNull(this.stacks[this.stacks.length - 1]).getLocalValue(name);
+    if (closestStackType != null) {
+      return closestStackType;
+    }
+    for (let level = this.stacks.length - 2; level >= 0; level -= 1) {
+      const stack = this.stacks[level];
+      assertNotNull(stack);
+      const type = stack.getLocalValue(name);
+      if (type != null) {
+        for (
+          let capturedLevel = level + 1;
+          capturedLevel < this.stacks.length;
+          capturedLevel += 1
+        ) {
+          checkNotNull(this.stacks[capturedLevel]).capturedValues.set(name, type);
+        }
+        return type;
+      }
+    }
+    return undefined;
+  }
+
+  addLocalValueType(name: string, value: V, onCollision: () => void): void {
+    for (let level = 0; level < this.stacks.length - 1; level += 1) {
+      const previousLevelType = checkNotNull(this.stacks[level]).getLocalValue(name);
+      if (previousLevelType != null) {
+        onCollision();
+      }
+    }
+    checkNotNull(this.stacks[this.stacks.length - 1]).addLocalValue(name, value, onCollision);
+  }
+
+  removeLocalValue(name: string): void {
+    checkNotNull(this.stacks[this.stacks.length - 1]).removeLocalValue(name);
+  }
+
+  withNestedScope<T>(block: () => T): T {
+    this.stacks.push(new ContextLayer());
+    const result = block();
+    this.stacks.pop();
+    return result;
+  }
+
+  withNestedScopeReturnCaptured<T>(block: () => T): readonly [T, ReadonlyMap<string, V>] {
+    this.stacks.push(new ContextLayer());
+    const result = block();
+    const removedStack = this.stacks.pop();
+    assertNotNull(removedStack);
+    return [result, removedStack.capturedValues];
+  }
+}
+
 /** An lazily allocated union find data structure. */
 export class UnionFind {
   private readonly parent: Map<number, number> = new Map();

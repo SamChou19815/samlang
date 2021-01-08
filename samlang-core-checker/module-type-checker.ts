@@ -1,20 +1,16 @@
 import typeCheckExpression from './expression-type-checker';
 import TypeResolution from './type-resolution';
 import { validateType } from './type-validator';
-import {
-  AccessibleGlobalTypingContext,
-  LocalTypingContext,
-  ReadonlyGlobalTypingContext,
-} from './typing-context';
+import { AccessibleGlobalTypingContext, ReadonlyGlobalTypingContext } from './typing-context';
 
-import type { ModuleReference, Range } from 'samlang-core-ast/common-nodes';
+import type { ModuleReference, Range, Type } from 'samlang-core-ast/common-nodes';
 import type {
   ClassMemberDefinition,
   TypeDefinition,
   SamlangModule,
 } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { assertNotNull, isNotNull } from 'samlang-core-utils';
+import { assertNotNull, isNotNull, LocalStackedContext } from 'samlang-core-utils';
 
 export default class ModuleTypeChecker {
   constructor(
@@ -114,7 +110,7 @@ export default class ModuleTypeChecker {
     memberDefinition: ClassMemberDefinition,
     accessibleGlobalTypingContext: AccessibleGlobalTypingContext
   ): ClassMemberDefinition | null {
-    const localTypingContext = new LocalTypingContext();
+    const localTypingContext = new LocalStackedContext<Type>();
     const { isMethod, typeParameters, type, parameters, body } = memberDefinition;
     if (isMethod) {
       // istanbul ignore next
