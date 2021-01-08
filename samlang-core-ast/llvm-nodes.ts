@@ -120,8 +120,8 @@ export const prettyPrintLLVMValue = (value: LLVMValue): string => {
 
 export type LLVMAnnotatedValue = { readonly value: LLVMValue; readonly type: LLVMType };
 
-export type LLVMBitcastInstruction = {
-  readonly __type__: 'LLVMBitcastInstruction';
+export type LLVMCastInstruction = {
+  readonly __type__: 'LLVMCastInstruction';
   readonly targetVariable: string;
   readonly targetType: LLVMType;
   readonly sourceValue: LLVMValue;
@@ -162,10 +162,7 @@ export type LLVMStoreInstruction = {
 export type LLVMPhiInstruction = {
   readonly __type__: 'LLVMPhiInstruction';
   readonly variableType: LLVMType;
-  readonly v1: LLVMValue;
-  readonly b1: string;
-  readonly v2: LLVMValue;
-  readonly b2: string;
+  readonly valueBranchTuples: readonly { readonly value: LLVMValue; readonly branch: string }[];
 };
 
 export type LLVMFunctionCallInstruction = {
@@ -198,7 +195,7 @@ export type LLVMReturnInstruction = {
 } & LLVMAnnotatedValue;
 
 export type LLVMInstruction =
-  | LLVMBitcastInstruction
+  | LLVMCastInstruction
   | LLVMGetElementPointerInstruction
   | LLVMBinaryInstruction
   | LLVMLoadInstruction
@@ -212,13 +209,13 @@ export type LLVMInstruction =
 
 type ConstructorArgumentObject<E extends LLVMInstruction> = Omit<E, '__type__'>;
 
-export const LLVM_BITCAST = ({
+export const LLVM_CAST = ({
   targetVariable,
   targetType,
   sourceValue,
   sourceType,
-}: ConstructorArgumentObject<LLVMBitcastInstruction>): LLVMBitcastInstruction => ({
-  __type__: 'LLVMBitcastInstruction',
+}: ConstructorArgumentObject<LLVMCastInstruction>): LLVMCastInstruction => ({
+  __type__: 'LLVMCastInstruction',
   targetVariable,
   targetType,
   sourceValue,
@@ -277,17 +274,11 @@ export const LLVM_STORE = ({
 
 export const LLVM_PHI = ({
   variableType,
-  v1,
-  b1,
-  v2,
-  b2,
+  valueBranchTuples,
 }: ConstructorArgumentObject<LLVMPhiInstruction>): LLVMPhiInstruction => ({
   __type__: 'LLVMPhiInstruction',
   variableType,
-  v1,
-  b1,
-  v2,
-  b2,
+  valueBranchTuples,
 });
 
 export const LLVM_CALL = ({
@@ -332,11 +323,28 @@ export const LLVM_RETURN = (value: LLVMValue, type: LLVMType): LLVMReturnInstruc
 
 export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string => {
   switch (instruction.__type__) {
-    case 'LLVMBitcastInstruction': {
+    case 'LLVMCastInstruction': {
       const sourceValue = prettyPrintLLVMValue(instruction.sourceValue);
       const targetType = prettyPrintLLVMType(instruction.targetType);
       const sourceType = prettyPrintLLVMType(instruction.sourceType);
-      return `%${instruction.targetVariable} = bitcast ${sourceType} ${sourceValue} to ${targetType}`;
+      if (targetType === sourceType) throw new Error();
+      let command: string;
+      if (
+        instruction.targetType.__type__ !== 'PrimitiveType' &&
+        instruction.sourceType.__type__ !== 'PrimitiveType'
+      ) {
+        command = 'bitcast';
+      } else if (
+        instruction.targetType.__type__ === 'PrimitiveType' &&
+        instruction.sourceType.__type__ === 'PrimitiveType'
+      ) {
+        throw new Error('Should not cast between primitive types!');
+      } else if (instruction.targetType.__type__ === 'PrimitiveType') {
+        command = 'ptrtoint';
+      } else {
+        command = 'inttoptr';
+      }
+      return `%${instruction.targetVariable} = ${command} ${sourceType} ${sourceValue} to ${targetType}`;
     }
     case 'LLVMGetElementPointerInstruction': {
       const { resultVariable, offset } = instruction;
@@ -401,10 +409,10 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       return `store ${type} ${sourceValue}, ${type}* %${instruction.targetVariable}`;
     }
     case 'LLVMPhiInstruction': {
-      const v1 = prettyPrintLLVMValue(instruction.v1);
-      const v2 = prettyPrintLLVMValue(instruction.v2);
-      const type = prettyPrintLLVMType(instruction.variableType);
-      return `phi ${type} [ ${v1}, %${instruction.b1} ], [ ${v2}, %${instruction.b2} ]`;
+      const valueBranchTuplesString = instruction.valueBranchTuples
+        .map(({ value, branch }) => `[ ${prettyPrintLLVMValue(value)}, %${branch} ]`)
+        .join(', ');
+      return `phi ${prettyPrintLLVMType(instruction.variableType)} ${valueBranchTuplesString}`;
     }
     case 'LLVMFunctionCallInstruction': {
       const assignedTo =
@@ -496,6 +504,7 @@ declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
         .join(', ');
       return `@${name} = private unnamed_addr constant [${size} x i64] [i64 ${size}, ${ints}], align 8`;
     }),
+    '%_builtin_Closure = { i64*, i64* }',
     ...typeDefinitions.map(
       ({ identifier, mappings }) =>
         `%${identifier} = { ${mappings.map(prettyPrintLLVMType).join(', ')} }`

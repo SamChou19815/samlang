@@ -10,7 +10,7 @@ import {
   LLVM_INT,
   LLVM_NAME,
   LLVM_VARIABLE,
-  LLVM_BITCAST,
+  LLVM_CAST,
   LLVM_GET_ELEMENT_PTR,
   LLVM_BINARY,
   LLVM_LOAD,
@@ -74,7 +74,7 @@ export default class LLVMLoweringManager {
         }
         const castedTempName = this.allocator.allocateTemp('string-name-cast');
         this.llvmInstructionCollector.push(
-          LLVM_BITCAST({
+          LLVM_CAST({
             targetVariable: castedTempName,
             targetType: LLVM_STRING_TYPE(),
             sourceValue: LLVM_NAME(e.name),
