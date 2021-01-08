@@ -101,8 +101,8 @@ it('ClassMember lowering works.', () => {
       memberName: 'b',
       memberNameRange: Range.DUMMY,
     }),
-    `let _t0: _builtin_Closure = [_module__class_A_function_b, 0];
-return (_t0: _builtin_Closure);`
+    `let _t0: (any, any) = [_module__class_A_function_b, 0];
+return (_t0: (any, any));`
   );
 });
 
@@ -168,8 +168,8 @@ it('MethodAccess lowering works.', () => {
       expression: THIS,
       methodName: 'foo',
     }),
-    `let _t0: _builtin_Closure = [_module__class_Dummy_function_foo, (_this: _Dummy)];
-return (_t0: _builtin_Closure);`
+    `let _t0: (any, any) = [_module__class_Dummy_function_foo, (_this: _Dummy)];
+return (_t0: (any, any));`
   );
 });
 
@@ -279,12 +279,12 @@ it('FunctionCall family lowering works 6/n.', () => {
       functionExpression: THIS,
       functionArguments: [THIS, THIS],
     }),
-    `let _t1: _builtin_Closure = (_this: _Dummy);
-let _t2: any = ((_t1: _builtin_Closure)[1]: any);
+    `let _t1: (any, any) = (_this: _Dummy);
+let _t2: any = ((_t1: (any, any))[1]: any);
 if ((_t2: any) == 0) {
-  let _t0: int = ((_t1: _builtin_Closure)[0]: any)((_this: _Dummy), (_this: _Dummy));
+  let _t0: int = ((_t1: (any, any))[0]: any)((_this: _Dummy), (_this: _Dummy));
 } else {
-  let _t0: int = ((_t1: _builtin_Closure)[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
+  let _t0: int = ((_t1: (any, any))[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
 }
 // phi(_t0)
 return (_t0: int);`
@@ -299,12 +299,12 @@ it('FunctionCall family lowering works 7/n.', () => {
       functionExpression: THIS,
       functionArguments: [THIS, THIS],
     }),
-    `let _t1: _builtin_Closure = (_this: _Dummy);
-let _t2: any = ((_t1: _builtin_Closure)[1]: any);
+    `let _t1: (any, any) = (_this: _Dummy);
+let _t2: any = ((_t1: (any, any))[1]: any);
 if ((_t2: any) == 0) {
-  ((_t1: _builtin_Closure)[0]: any)((_this: _Dummy), (_this: _Dummy));
+  ((_t1: (any, any))[0]: any)((_this: _Dummy), (_this: _Dummy));
 } else {
-  ((_t1: _builtin_Closure)[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
+  ((_t1: (any, any))[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
 }
 return 0;`
   );
@@ -381,8 +381,8 @@ it('Lambda lowering works (1/n).', () => {
   return (_this: _Dummy);
 }
 let _t1: (int) = [(a: int)];
-let _t0: _builtin_Closure = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, (_t1: (int))];
-return (_t0: _builtin_Closure);`
+let _t0: (any, any) = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, (_t1: (int))];
+return (_t0: (any, any));`
   );
 });
 
@@ -400,8 +400,8 @@ it('Lambda lowering works (2/n).', () => {
   return (_this: _Dummy);
 }
 let _t1: (int) = [(a: int)];
-let _t0: _builtin_Closure = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, (_t1: (int))];
-return (_t0: _builtin_Closure);`
+let _t0: (any, any) = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, (_t1: (int))];
+return (_t0: (any, any));`
   );
 });
 
@@ -419,8 +419,8 @@ it('Lambda lowering works (3/n).', () => {
   return (_this: _Dummy);
 }
 let _t1: (int) = [(a: int)];
-let _t0: _builtin_Closure = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, (_t1: (int))];
-return (_t0: _builtin_Closure);`
+let _t0: (any, any) = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, (_t1: (int))];
+return (_t0: (any, any));`
   );
 });
 
@@ -436,8 +436,8 @@ it('Lambda lowering works (4/n).', () => {
     `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (), a: int): _Dummy {
   return (_this: _Dummy);
 }
-let _t0: _builtin_Closure = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, 1];
-return (_t0: _builtin_Closure);`
+let _t0: (any, any) = [_module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0, 1];
+return (_t0: (any, any));`
   );
 });
 
