@@ -1,0 +1,10 @@
+class Dev(Sam(unit), Megan(string)) {
+  private method getName(): string = match (this) { | Sam _ -> "sam" | Megan n -> n }
+
+  function meggo(): Dev = Megan("meggo")
+
+  method vibez(): unit = println(("dev" :: this.getName()) :: "vibez")
+
+}
+
+class Main { function main(): unit = (Dev.meggo()).vibez()  }
