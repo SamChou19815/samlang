@@ -1,6 +1,7 @@
 import lowerHighIRTypeToLLVMType from './llvm-types-lowering';
 import type MidIRResourceAllocator from './mir-resource-allocator';
 
+import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
 import type { HighIRExpression, HighIRStatement } from 'samlang-core-ast/hir-expressions';
 import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
@@ -14,9 +15,13 @@ import {
   LLVM_GET_ELEMENT_PTR,
   LLVM_BINARY,
   LLVM_LOAD,
+  LLVM_STORE,
   LLVM_CALL,
   LLVM_RETURN,
+  LLVM_INT_TYPE,
+  isTheSameLLVMType,
 } from 'samlang-core-ast/llvm-nodes';
+import { checkNotNull } from 'samlang-core-utils';
 
 export default class LLVMLoweringManager {
   private readonly llvmInstructionCollector: LLVMInstruction[] = [];
@@ -52,6 +57,56 @@ export default class LLVMLoweringManager {
         break;
       }
       case 'HighIRStructInitializationStatement': {
+        const rawPointerTemp = this.allocator.allocateTemp('struct-pointer-raw');
+        const structType = lowerHighIRTypeToLLVMType(s.type);
+        this.llvmInstructionCollector.push(
+          LLVM_CALL({
+            resultVariable: rawPointerTemp,
+            resultType: LLVM_STRING_TYPE(),
+            functionName: LLVM_NAME(ENCODED_FUNCTION_NAME_MALLOC),
+            functionArguments: [
+              { value: LLVM_INT(s.expressionList.length * 8), type: LLVM_INT_TYPE },
+            ],
+          }),
+          LLVM_CAST({
+            targetVariable: s.structVariableName,
+            targetType: structType,
+            sourceValue: LLVM_VARIABLE(rawPointerTemp),
+            sourceType: LLVM_STRING_TYPE(),
+          })
+        );
+        s.expressionList.forEach((e, i) => {
+          const { value, type } = this.lowerHighIRExpression(e);
+          let valueToStore = value;
+          let valueType = type;
+          if (structType.__type__ === 'StructType') {
+            const expectedValueType = checkNotNull(structType.mappings[i]);
+            if (!isTheSameLLVMType(expectedValueType, type)) {
+              const castedValueTemp = this.allocator.allocateTemp(`struct-value-casted-${i}`);
+              this.llvmInstructionCollector.push(
+                LLVM_CAST({
+                  targetVariable: castedValueTemp,
+                  targetType: expectedValueType,
+                  sourceValue: value,
+                  sourceType: type,
+                })
+              );
+              valueToStore = LLVM_VARIABLE(castedValueTemp);
+              valueType = expectedValueType;
+            }
+          }
+          const storePointerTemp = this.allocator.allocateTemp(`struct-value-pointer-${i}`);
+          this.llvmInstructionCollector.push(
+            LLVM_GET_ELEMENT_PTR({
+              resultVariable: storePointerTemp,
+              resultType: valueType,
+              sourceValue: LLVM_VARIABLE(s.structVariableName),
+              sourcePointerType: structType,
+              offset: i,
+            }),
+            LLVM_STORE({ targetVariable: storePointerTemp, sourceValue: valueToStore, valueType })
+          );
+        });
         break;
       }
       case 'HighIRReturnStatement': {
@@ -91,7 +146,7 @@ export default class LLVMLoweringManager {
           value: loweredPointerValue,
           type: loweredPointerType,
         } = loweredPointerAnnotatedValue;
-        const pointerTemp = this.allocator.allocateTemp('pointer-temp');
+        const pointerTemp = this.allocator.allocateTemp('index-pointer-temp');
         const valueTemp = this.allocator.allocateTemp('value-temp-loaded');
         const valueType = lowerHighIRTypeToLLVMType(e.type);
         this.llvmInstructionCollector.push(
