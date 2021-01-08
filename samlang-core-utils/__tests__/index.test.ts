@@ -1,4 +1,5 @@
 import {
+  error,
   Long,
   MIN_I32_VALUE,
   MAX_I32_VALUE,
@@ -20,6 +21,10 @@ import {
   UnionFind,
   LocalStackedContext,
 } from '..';
+
+it('error test', () => {
+  expect(error).toThrow();
+});
 
 it('bigIntIsWithin32BitIntegerRange test', () => {
   expect(bigIntIsWithin32BitIntegerRange(Long.fromString('-21474836480'))).toBeFalsy();
