@@ -1,5 +1,5 @@
 import StatementTypeChecker from '../statement-type-checker';
-import { AccessibleGlobalTypingContext, LocalTypingContext } from '../typing-context';
+import { AccessibleGlobalTypingContext } from '../typing-context';
 
 import {
   Type,
@@ -23,7 +23,7 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 import type { Pattern } from 'samlang-core-ast/samlang-pattern';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
-import { hashMapOf } from 'samlang-core-utils';
+import { hashMapOf, LocalStackedContext } from 'samlang-core-utils';
 
 const STATEMENT = (
   pattern: Pattern,
@@ -110,7 +110,7 @@ const typeCheckInSandbox = (
     dummyExpressionTypeChecker
   );
   return [
-    checker.typeCheck(block, expectedType, new LocalTypingContext()),
+    checker.typeCheck(block, expectedType, new LocalStackedContext<Type>()),
     globalErrorCollector.getErrors().map((it) => it.toString()),
   ];
 };

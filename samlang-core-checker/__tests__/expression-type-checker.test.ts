@@ -1,6 +1,6 @@
 import typeCheckExpression from '../expression-type-checker';
 import TypeResolution from '../type-resolution';
-import { AccessibleGlobalTypingContext, LocalTypingContext } from '../typing-context';
+import { AccessibleGlobalTypingContext } from '../typing-context';
 
 import {
   Type,
@@ -27,7 +27,7 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText } from 'samlang-core-parser';
-import { Long, assertNotNull, hashMapOf } from 'samlang-core-utils';
+import { Long, assertNotNull, hashMapOf, LocalStackedContext } from 'samlang-core-utils';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
 
@@ -129,7 +129,7 @@ const typeCheckInSandbox = (
     moduleErrorCollector,
     accessibleGlobalTypingContext,
     (() => {
-      const context = new LocalTypingContext();
+      const context = new LocalStackedContext<Type>();
       additionalBindings.forEach(([name, type]) => context.addLocalValueType(name, type, () => {}));
       return context;
     })(),

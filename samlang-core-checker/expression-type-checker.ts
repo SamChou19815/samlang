@@ -4,7 +4,7 @@ import StatementTypeChecker from './statement-type-checker';
 import type TypeResolution from './type-resolution';
 import { undecideFieldTypeParameters, undecideTypeParameters } from './type-undecider';
 import { validateType } from './type-validator';
-import type { LocalTypingContext, AccessibleGlobalTypingContext } from './typing-context';
+import type { AccessibleGlobalTypingContext } from './typing-context';
 
 import {
   Type,
@@ -48,7 +48,13 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { listShallowEquals, assertNotNull, isNotNull, checkNotNull } from 'samlang-core-utils';
+import {
+  listShallowEquals,
+  assertNotNull,
+  isNotNull,
+  checkNotNull,
+  LocalStackedContext,
+} from 'samlang-core-utils';
 
 class ExpressionTypeChecker {
   private readonly constraintAwareTypeChecker: ConstraintAwareChecker;
@@ -57,7 +63,7 @@ class ExpressionTypeChecker {
 
   constructor(
     private readonly accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-    private readonly localTypingContext: LocalTypingContext,
+    private readonly localTypingContext: LocalStackedContext<Type>,
     private readonly resolution: TypeResolution,
     public readonly errorCollector: ModuleErrorCollector
   ) {
@@ -765,7 +771,7 @@ const typeCheckExpression = (
   expression: SamlangExpression,
   errorCollector: ModuleErrorCollector,
   accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
-  localTypingContext: LocalTypingContext,
+  localTypingContext: LocalStackedContext<Type>,
   resolution: TypeResolution,
   expectedType: Type
 ): SamlangExpression => {

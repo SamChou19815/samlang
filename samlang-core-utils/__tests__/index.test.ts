@@ -18,6 +18,7 @@ import {
   hashMapEquals,
   setEquals,
   UnionFind,
+  LocalStackedContext,
 } from '..';
 
 it('bigIntIsWithin32BitIntegerRange test', () => {
@@ -190,7 +191,51 @@ it('setEquals tests', () => {
   expect(setEquals(new Set([1]), new Set([1]))).toBeTruthy();
 });
 
-it('basic methods test', () => {
+it('LocalStackedContext basic methods test.', () => {
+  const context = new LocalStackedContext<number>();
+  expect(context.getLocalValueType('b')).toBeUndefined();
+  context.addLocalValueType('a', 3, fail);
+  expect(context.getLocalValueType('a')).toBe(3);
+  context.removeLocalValue('a');
+  expect(() => context.removeLocalValue('a')).toThrow();
+  context.withNestedScope(() => {});
+});
+
+it('LocalStackedContext can find conflicts.', () => {
+  const context = new LocalStackedContext();
+  context.addLocalValueType('a', 3, fail);
+  let hasConflict = false;
+  context.addLocalValueType('a', 3, () => {
+    hasConflict = true;
+  });
+  expect(hasConflict).toBe(true);
+});
+
+it('LocalStackedContext can compute captured values.', () => {
+  const context = new LocalStackedContext();
+  context.addLocalValueType('a', 3, fail);
+  context.addLocalValueType('b', 3, fail);
+  const [_outer, capturedOuter] = context.withNestedScopeReturnCaptured(() => {
+    expect(() =>
+      context.addLocalValueType('a', 3, () => {
+        throw new Error();
+      })
+    ).toThrow();
+    context.addLocalValueType('c', 3, fail);
+    context.addLocalValueType('d', 3, fail);
+    context.getLocalValueType('a');
+    const [_inner, capturedInner] = context.withNestedScopeReturnCaptured(() => {
+      context.getLocalValueType('a');
+      context.getLocalValueType('b');
+      context.getLocalValueType('d');
+    });
+    expect(Array.from(capturedInner.keys())).toEqual(['a', 'b', 'd']);
+  });
+
+  expect(Array.from(capturedOuter.keys())).toEqual(['a', 'b']);
+});
+
+it('UnionFind basic methods test', () => {
   const unionFind = new UnionFind();
   unionFind.getParent(0);
   unionFind.getTreeSize(1);
@@ -199,7 +244,7 @@ it('basic methods test', () => {
   unionFind.link(1, 1);
 });
 
-it('disjoint test', () => {
+it('UnionFind disjoint test', () => {
   const unionFind = new UnionFind();
   unionFind.link(1, 2);
   unionFind.link(3, 4);
@@ -218,7 +263,7 @@ it('disjoint test', () => {
   expect(unionFind.isLinked(4, 2)).toBeFalsy();
 });
 
-it('chain test', () => {
+it('UnionFind chain test', () => {
   const unionFind = new UnionFind();
   unionFind.link(1, 2);
   unionFind.link(3, 4);
@@ -232,7 +277,7 @@ it('chain test', () => {
   expect(unionFind.isLinked(5, 1)).toBeFalsy();
 });
 
-it('stress test', () => {
+it('UnionFind stress test', () => {
   const unionFind = new UnionFind();
   for (let i = 0; i < 10000; i += 1) {
     unionFind.link(i, i + 1);

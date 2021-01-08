@@ -1,4 +1,4 @@
-import type { AccessibleGlobalTypingContext, LocalTypingContext } from './typing-context';
+import type { AccessibleGlobalTypingContext } from './typing-context';
 
 import { Type, unitType } from 'samlang-core-ast/common-nodes';
 import {
@@ -11,7 +11,7 @@ import {
 import type { Pattern, ObjectPatternDestucturedName } from 'samlang-core-ast/samlang-pattern';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { isNotNull, assertNotNull, checkNotNull } from 'samlang-core-utils';
+import { isNotNull, assertNotNull, checkNotNull, LocalStackedContext } from 'samlang-core-utils';
 
 export default class StatementTypeChecker {
   constructor(
@@ -26,7 +26,7 @@ export default class StatementTypeChecker {
   readonly typeCheck = (
     { range, statements, expression }: StatementBlock,
     expectedType: Type,
-    localContext: LocalTypingContext
+    localContext: LocalStackedContext<Type>
   ): StatementBlock =>
     localContext.withNestedScope(() => {
       const checkedStatements = statements.map((statement) =>
@@ -46,7 +46,7 @@ export default class StatementTypeChecker {
 
   private typeCheckValStatement(
     statement: SamlangValStatement,
-    localContext: LocalTypingContext
+    localContext: LocalStackedContext<Type>
   ): SamlangValStatement {
     const { range, pattern, typeAnnotation, assignedExpression } = statement;
     const checkedAssignedExpression = this.typeCheckExpression(assignedExpression, typeAnnotation);

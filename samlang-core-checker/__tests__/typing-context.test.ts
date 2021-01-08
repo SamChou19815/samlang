@@ -1,4 +1,4 @@
-import { LocalTypingContext, AccessibleGlobalTypingContext } from '../typing-context';
+import { AccessibleGlobalTypingContext } from '../typing-context';
 
 import {
   intType,
@@ -8,50 +8,6 @@ import {
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
 import { hashMapOf } from 'samlang-core-utils';
-
-it('LocalTypingContext basic methods test.', () => {
-  const context = new LocalTypingContext();
-  expect(context.getLocalValueType('b')).toBeUndefined();
-  context.addLocalValueType('a', intType, fail);
-  expect(context.getLocalValueType('a')).toBe(intType);
-  context.removeLocalValue('a');
-  expect(() => context.removeLocalValue('a')).toThrow();
-  context.withNestedScope(() => {});
-});
-
-it('LocalTypingContext can find conflicts.', () => {
-  const context = new LocalTypingContext();
-  context.addLocalValueType('a', intType, fail);
-  let hasConflict = false;
-  context.addLocalValueType('a', intType, () => {
-    hasConflict = true;
-  });
-  expect(hasConflict).toBe(true);
-});
-
-it('LocalTypingContext can compute captured values.', () => {
-  const context = new LocalTypingContext();
-  context.addLocalValueType('a', intType, fail);
-  context.addLocalValueType('b', intType, fail);
-  const [_outer, capturedOuter] = context.withNestedScopeReturnCaptured(() => {
-    expect(() =>
-      context.addLocalValueType('a', intType, () => {
-        throw new Error();
-      })
-    ).toThrow();
-    context.addLocalValueType('c', intType, fail);
-    context.addLocalValueType('d', intType, fail);
-    context.getLocalValueType('a');
-    const [_inner, capturedInner] = context.withNestedScopeReturnCaptured(() => {
-      context.getLocalValueType('a');
-      context.getLocalValueType('b');
-      context.getLocalValueType('d');
-    });
-    expect(Array.from(capturedInner.keys())).toEqual(['a', 'b', 'd']);
-  });
-
-  expect(Array.from(capturedOuter.keys())).toEqual(['a', 'b']);
-});
 
 it('AccessibleGlobalTypingContext tests', () => {
   const context = new AccessibleGlobalTypingContext(
