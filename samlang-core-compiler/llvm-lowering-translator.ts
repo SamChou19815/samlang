@@ -1,13 +1,21 @@
-import type LLVMConstantPropagationContext from './llvm-constant-propagation-context';
+import {
+  getFunctionParameterCollector,
+  renameFunctionParameterReadForSSA,
+} from './hir-tail-recursion-transformation-hir';
+import LLVMConstantPropagationContext from './llvm-constant-propagation-context';
 import lowerHighIRTypeToLLVMType from './llvm-types-lowering';
-import type MidIRResourceAllocator from './mir-resource-allocator';
+import MidIRResourceAllocator from './mir-resource-allocator';
 
 import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
 import type { HighIRExpression, HighIRStatement } from 'samlang-core-ast/hir-expressions';
+import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
+  isTheSameLLVMType,
+  LLVMType,
   LLVMAnnotatedValue,
   LLVMInstruction,
+  LLVMFunction,
   LLVM_STRING_TYPE,
   LLVM_INT,
   LLVM_NAME,
@@ -17,28 +25,42 @@ import {
   LLVM_BINARY,
   LLVM_LOAD,
   LLVM_STORE,
+  LLVM_PHI,
   LLVM_CALL,
+  LLVM_LABEL,
   LLVM_JUMP,
   LLVM_CJUMP,
   LLVM_RETURN,
   LLVM_INT_TYPE,
-  isTheSameLLVMType,
-  LLVM_LABEL,
 } from 'samlang-core-ast/llvm-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
-export default class LLVMLoweringManager {
-  private readonly llvmInstructionCollector: LLVMInstruction[] = [];
+class LLVMLoweringManager {
+  readonly llvmInstructionCollector: LLVMInstruction[] = [];
+  private readonly allocator = new MidIRResourceAllocator();
+  private readonly llvmConstantPropagationContext = new LLVMConstantPropagationContext();
+  private readonly phiMoveSet = new Set<string>();
+  private readonly functionStartLabel: string;
 
   constructor(
     private readonly functionName: string,
-    private readonly allocator: MidIRResourceAllocator,
-    private readonly llvmConstantPropagationContext: LLVMConstantPropagationContext,
-    /** Mapping between global variable name and their length */
+    private readonly parameters: Readonly<Record<string, LLVMType>>,
     private readonly globalVariables: Readonly<Record<string, number>>
-  ) {}
+  ) {
+    this.functionStartLabel = this.allocator.allocateLabelWithAnnotation(functionName, 'START');
+    this.llvmInstructionCollector.push(LLVM_LABEL(this.functionStartLabel));
+  }
 
-  private lowerHighIRStatement(s: HighIRStatement): void {
+  private withNestedScope(
+    newPhiMoveSet: readonly Readonly<{ target: string; source: string }>[],
+    statementLoweringCode: () => void
+  ) {
+    newPhiMoveSet.forEach(({ target, source }) => this.phiMoveSet.add(`${target} = ${source}`));
+    this.llvmConstantPropagationContext.withNestedScope(statementLoweringCode);
+    newPhiMoveSet.forEach(({ target, source }) => this.phiMoveSet.delete(`${target} = ${source}`));
+  }
+
+  lowerHighIRStatement(s: HighIRStatement): void {
     switch (s.__type__) {
       case 'HighIRFunctionCallStatement': {
         const functionName = this.lowerHighIRExpression(s.functionExpression).value;
@@ -88,10 +110,26 @@ export default class LLVMLoweringManager {
           'while_true_start'
         );
         this.llvmInstructionCollector.push(LLVM_LABEL(startLabel));
-        // TODO: handle phi variables!
-        this.llvmConstantPropagationContext.withNestedScope(() => {
-          s.statements.forEach((it) => this.lowerHighIRStatement(it));
+        s.multiAssignedVariables.forEach((name) => {
+          this.llvmInstructionCollector.push(
+            LLVM_PHI({
+              variableType: checkNotNull(this.parameters[name]),
+              valueBranchTuples: [
+                { value: LLVM_VARIABLE(name), branch: this.functionStartLabel },
+                { value: LLVM_VARIABLE(getFunctionParameterCollector(name)), branch: startLabel },
+              ],
+            })
+          );
         });
+        this.withNestedScope(
+          s.multiAssignedVariables.map((name) => ({
+            target: renameFunctionParameterReadForSSA(name),
+            source: getFunctionParameterCollector(name),
+          })),
+          () => {
+            s.statements.forEach((it) => this.lowerHighIRStatement(it));
+          }
+        );
         this.llvmInstructionCollector.push(LLVM_JUMP(startLabel));
         break;
       }
@@ -234,3 +272,30 @@ export default class LLVMLoweringManager {
     }
   }
 }
+
+const lowerHighIRToLLVMFunction = (
+  { name, type: { argumentTypes, returnType }, parameters, body }: HighIRFunction,
+  /** Mapping between global variable name and their length */
+  globalVariables: Readonly<Record<string, number>>
+): LLVMFunction => {
+  const annotatedParameters = parameters.map((parameterName, i) => ({
+    parameterName,
+    parameterType: lowerHighIRTypeToLLVMType(checkNotNull(argumentTypes[i])),
+  }));
+  const manager = new LLVMLoweringManager(
+    name,
+    Object.fromEntries(
+      annotatedParameters.map(({ parameterName, parameterType }) => [parameterName, parameterType])
+    ),
+    globalVariables
+  );
+  body.forEach((it) => manager.lowerHighIRStatement(it));
+  return {
+    name,
+    parameters: annotatedParameters,
+    returnType: lowerHighIRTypeToLLVMType(returnType),
+    body: manager.llvmInstructionCollector,
+  };
+};
+
+export default lowerHighIRToLLVMFunction;
