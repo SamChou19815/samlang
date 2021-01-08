@@ -44,6 +44,9 @@ OK
 #./out/test.cse-test-6
 OK
 
+#./out/test.dev-meggo
+devmeggovibez
+
 #./out/test.different-expr-demo
 42
 
