@@ -1,3 +1,4 @@
+import type LLVMConstantPropagationContext from './llvm-constant-propagation-context';
 import lowerHighIRTypeToLLVMType from './llvm-types-lowering';
 import type MidIRResourceAllocator from './mir-resource-allocator';
 
@@ -17,9 +18,12 @@ import {
   LLVM_LOAD,
   LLVM_STORE,
   LLVM_CALL,
+  LLVM_JUMP,
+  LLVM_CJUMP,
   LLVM_RETURN,
   LLVM_INT_TYPE,
   isTheSameLLVMType,
+  LLVM_LABEL,
 } from 'samlang-core-ast/llvm-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
@@ -27,7 +31,9 @@ export default class LLVMLoweringManager {
   private readonly llvmInstructionCollector: LLVMInstruction[] = [];
 
   constructor(
+    private readonly functionName: string,
     private readonly allocator: MidIRResourceAllocator,
+    private readonly llvmConstantPropagationContext: LLVMConstantPropagationContext,
     /** Mapping between global variable name and their length */
     private readonly globalVariables: Readonly<Record<string, number>>
   ) {}
@@ -48,12 +54,65 @@ export default class LLVMLoweringManager {
         break;
       }
       case 'HighIRIfElseStatement': {
+        const loweredCondition = this.lowerHighIRExpression(s.booleanExpression).value;
+        const trueLabel = this.allocator.allocateLabelWithAnnotation(
+          this.functionName,
+          'if-else-true-label'
+        );
+        const falseLabel = this.allocator.allocateLabelWithAnnotation(
+          this.functionName,
+          'if-else-false-label'
+        );
+        const endLabel = this.allocator.allocateLabelWithAnnotation(
+          this.functionName,
+          'if-else-end-label'
+        );
+        this.llvmInstructionCollector.push(
+          LLVM_CJUMP(loweredCondition, trueLabel, falseLabel),
+          LLVM_LABEL(trueLabel)
+        );
+        this.llvmConstantPropagationContext.withNestedScope(() => {
+          s.s1.forEach((it) => this.lowerHighIRStatement(it));
+        });
+        this.llvmInstructionCollector.push(LLVM_JUMP(endLabel), LLVM_LABEL(falseLabel));
+        this.llvmConstantPropagationContext.withNestedScope(() => {
+          s.s2.forEach((it) => this.lowerHighIRStatement(it));
+        });
+        this.llvmInstructionCollector.push(LLVM_LABEL(endLabel));
+        // TODO: handle phi variables!
         break;
       }
       case 'HighIRWhileTrueStatement': {
+        const startLabel = this.allocator.allocateLabelWithAnnotation(
+          this.functionName,
+          'while-true-start'
+        );
+        this.llvmInstructionCollector.push(LLVM_LABEL(startLabel));
+        // TODO: handle phi variables!
+        this.llvmConstantPropagationContext.withNestedScope(() => {
+          s.statements.forEach((it) => this.lowerHighIRStatement(it));
+        });
+        this.llvmInstructionCollector.push(LLVM_JUMP(startLabel));
         break;
       }
       case 'HighIRLetDefinitionStatement': {
+        const { value: sourceValue, type: actualType } = this.lowerHighIRExpression(
+          s.assignedExpression
+        );
+        const expectedType = lowerHighIRTypeToLLVMType(s.type);
+        if (isTheSameLLVMType(expectedType, actualType)) {
+          this.llvmConstantPropagationContext.bind(s.name, sourceValue);
+        } else {
+          this.llvmInstructionCollector.push(
+            LLVM_CAST({
+              targetVariable: s.name,
+              targetType: expectedType,
+              sourceValue,
+              sourceType: actualType,
+            })
+          );
+        }
+        // TODO: handle phi variables!
         break;
       }
       case 'HighIRStructInitializationStatement': {
@@ -139,13 +198,15 @@ export default class LLVMLoweringManager {
         return { value: LLVM_VARIABLE(castedTempName), type: lowerHighIRTypeToLLVMType(e.type) };
       }
       case 'HighIRVariableExpression':
-        return { value: LLVM_VARIABLE(e.name), type: lowerHighIRTypeToLLVMType(e.type) };
+        return {
+          value:
+            this.llvmConstantPropagationContext.getLocalValueType(e.name) ?? LLVM_VARIABLE(e.name),
+          type: lowerHighIRTypeToLLVMType(e.type),
+        };
       case 'HighIRIndexAccessExpression': {
-        const loweredPointerAnnotatedValue = this.lowerHighIRExpression(e.expression);
-        const {
-          value: loweredPointerValue,
-          type: loweredPointerType,
-        } = loweredPointerAnnotatedValue;
+        const { value: loweredPointerValue, type: loweredPointerType } = this.lowerHighIRExpression(
+          e.expression
+        );
         const pointerTemp = this.allocator.allocateTemp('index-pointer-temp');
         const valueTemp = this.allocator.allocateTemp('value-temp-loaded');
         const valueType = lowerHighIRTypeToLLVMType(e.type);
