@@ -115,7 +115,12 @@ it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
   assertCoalesceMoveAndReturnWithForHighIRStatements(
     [
       HIR_IF_ELSE({
-        multiAssignedVariable: '_t1',
+        multiAssignedVariable: {
+          name: '_t1',
+          type: HIR_INT_TYPE,
+          branch1Variable: 'one',
+          branch2Variable: '_t0',
+        },
         booleanExpression: HIR_BINARY({
           operator: '==',
           e1: HIR_VARIABLE('n', HIR_INT_TYPE),
