@@ -1,5 +1,3 @@
-import { checkNotNull } from 'samlang-core-utils';
-
 export type HighIRPrimitiveType = {
   readonly __type__: 'PrimitiveType';
   readonly type: 'bool' | 'int' | 'any' | 'string';
@@ -58,31 +56,5 @@ export const prettyPrintHighIRType = (type: HighIRType): string => {
       return `(${type.argumentTypes
         .map(prettyPrintHighIRType)
         .join(', ')}) -> ${prettyPrintHighIRType(type.returnType)}`;
-  }
-};
-
-export const isTheSameHighIRType = (t1: HighIRType, t2: HighIRType): boolean => {
-  switch (t1.__type__) {
-    case 'PrimitiveType':
-      return t2.__type__ === 'PrimitiveType' && t1.type === t2.type;
-    case 'IdentifierType':
-      return t2.__type__ === 'IdentifierType' && t1.name === t2.name;
-    case 'StructType':
-      return (
-        t2.__type__ === 'StructType' &&
-        t1.mappings.length === t2.mappings.length &&
-        t1.mappings.every((t1Element, index) =>
-          isTheSameHighIRType(t1Element, checkNotNull(t2.mappings[index]))
-        )
-      );
-    case 'FunctionType':
-      return (
-        t2.__type__ === 'FunctionType' &&
-        isTheSameHighIRType(t1.returnType, t2.returnType) &&
-        t1.argumentTypes.length === t2.argumentTypes.length &&
-        t1.argumentTypes.every((t1Argument, index) =>
-          isTheSameHighIRType(t1Argument, checkNotNull(t2.argumentTypes[index]))
-        )
-      );
   }
 };

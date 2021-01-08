@@ -2,7 +2,7 @@ import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
 import type { HighIRIdentifierType } from './hir-types';
 
-import { Long } from 'samlang-core-utils';
+import { checkNotNull, Long } from 'samlang-core-utils';
 
 export type LLVMPrimitiveType = { readonly __type__: 'PrimitiveType'; readonly type: 'i1' | 'i64' };
 export type LLVMStringType = { readonly __type__: 'StringType'; readonly length?: number };
@@ -48,6 +48,34 @@ export const LLVM_FUNCTION_TYPE = (
   argumentTypes: readonly LLVMType[],
   returnType: LLVMType
 ): LLVMFunctionType => ({ __type__: 'FunctionType', argumentTypes, returnType });
+
+export const isTheSameLLVMType = (t1: LLVMType, t2: LLVMType): boolean => {
+  switch (t1.__type__) {
+    case 'PrimitiveType':
+      return t2.__type__ === 'PrimitiveType' && t1.type === t2.type;
+    case 'StringType':
+      return t2.__type__ === 'StringType' && t1.length === t2.length;
+    case 'IdentifierType':
+      return t2.__type__ === 'IdentifierType' && t1.name === t2.name;
+    case 'StructType':
+      return (
+        t2.__type__ === 'StructType' &&
+        t1.mappings.length === t2.mappings.length &&
+        t1.mappings.every((t1Element, index) =>
+          isTheSameLLVMType(t1Element, checkNotNull(t2.mappings[index]))
+        )
+      );
+    case 'FunctionType':
+      return (
+        t2.__type__ === 'FunctionType' &&
+        isTheSameLLVMType(t1.returnType, t2.returnType) &&
+        t1.argumentTypes.length === t2.argumentTypes.length &&
+        t1.argumentTypes.every((t1Argument, index) =>
+          isTheSameLLVMType(t1Argument, checkNotNull(t2.argumentTypes[index]))
+        )
+      );
+  }
+};
 
 export const prettyPrintLLVMType = (type: LLVMType): string => {
   switch (type.__type__) {
