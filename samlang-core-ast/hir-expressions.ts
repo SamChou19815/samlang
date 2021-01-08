@@ -329,7 +329,7 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         s.multiAssignedVariables.forEach((name) => {
           collector.push(
             '  '.repeat(level),
-            `// _param_${name} = phi([${name}, start], [_param_${name}_loop, loop])\n`
+            `// _param_${name} = phi([${name}, start], [_param_${name}_temp_collector, loop])\n`
           );
         });
         collector.push('  '.repeat(level), `while true {\n`);

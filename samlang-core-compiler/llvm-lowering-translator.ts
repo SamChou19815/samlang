@@ -57,15 +57,15 @@ export default class LLVMLoweringManager {
         const loweredCondition = this.lowerHighIRExpression(s.booleanExpression).value;
         const trueLabel = this.allocator.allocateLabelWithAnnotation(
           this.functionName,
-          'if-else-true-label'
+          'if_else_true_label'
         );
         const falseLabel = this.allocator.allocateLabelWithAnnotation(
           this.functionName,
-          'if-else-false-label'
+          'if_else_false_label'
         );
         const endLabel = this.allocator.allocateLabelWithAnnotation(
           this.functionName,
-          'if-else-end-label'
+          'if_else_end_label'
         );
         this.llvmInstructionCollector.push(
           LLVM_CJUMP(loweredCondition, trueLabel, falseLabel),
@@ -85,7 +85,7 @@ export default class LLVMLoweringManager {
       case 'HighIRWhileTrueStatement': {
         const startLabel = this.allocator.allocateLabelWithAnnotation(
           this.functionName,
-          'while-true-start'
+          'while_true_start'
         );
         this.llvmInstructionCollector.push(LLVM_LABEL(startLabel));
         // TODO: handle phi variables!
@@ -116,7 +116,7 @@ export default class LLVMLoweringManager {
         break;
       }
       case 'HighIRStructInitializationStatement': {
-        const rawPointerTemp = this.allocator.allocateTemp('struct-pointer-raw');
+        const rawPointerTemp = this.allocator.allocateTemp('struct_pointer_raw');
         const structType = lowerHighIRTypeToLLVMType(s.type);
         this.llvmInstructionCollector.push(
           LLVM_CALL({
@@ -141,7 +141,7 @@ export default class LLVMLoweringManager {
           if (structType.__type__ === 'StructType') {
             const expectedValueType = checkNotNull(structType.mappings[i]);
             if (!isTheSameLLVMType(expectedValueType, type)) {
-              const castedValueTemp = this.allocator.allocateTemp(`struct-value-casted-${i}`);
+              const castedValueTemp = this.allocator.allocateTemp(`struct_value_casted_${i}`);
               this.llvmInstructionCollector.push(
                 LLVM_CAST({
                   targetVariable: castedValueTemp,
@@ -154,7 +154,7 @@ export default class LLVMLoweringManager {
               valueType = expectedValueType;
             }
           }
-          const storePointerTemp = this.allocator.allocateTemp(`struct-value-pointer-${i}`);
+          const storePointerTemp = this.allocator.allocateTemp(`struct_value_pointer_${i}`);
           this.llvmInstructionCollector.push(
             LLVM_GET_ELEMENT_PTR({
               resultVariable: storePointerTemp,
@@ -207,8 +207,8 @@ export default class LLVMLoweringManager {
         const { value: loweredPointerValue, type: loweredPointerType } = this.lowerHighIRExpression(
           e.expression
         );
-        const pointerTemp = this.allocator.allocateTemp('index-pointer-temp');
-        const valueTemp = this.allocator.allocateTemp('value-temp-loaded');
+        const pointerTemp = this.allocator.allocateTemp('index_pointer_temp');
+        const valueTemp = this.allocator.allocateTemp('value_temp_loaded');
         const valueType = lowerHighIRTypeToLLVMType(e.type);
         this.llvmInstructionCollector.push(
           LLVM_GET_ELEMENT_PTR({
@@ -225,7 +225,7 @@ export default class LLVMLoweringManager {
       case 'HighIRBinaryExpression': {
         const v1 = this.lowerHighIRExpression(e.e1).value;
         const v2 = this.lowerHighIRExpression(e.e2).value;
-        const binaryTemp = this.allocator.allocateTemp('binary-temp');
+        const binaryTemp = this.allocator.allocateTemp('binary_temp');
         this.llvmInstructionCollector.push(
           LLVM_BINARY({ resultVariable: binaryTemp, operator: e.operator, v1, v2 })
         );

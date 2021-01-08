@@ -61,9 +61,9 @@ it('debugPrintHighIRStatement works', () => {
         ]
       )
     )
-  ).toBe(`// _param_meggo = phi([meggo, start], [_param_meggo_loop, loop])
-// _param_big = phi([big, start], [_param_big_loop, loop])
-// _param_stresso = phi([stresso, start], [_param_stresso_loop, loop])
+  ).toBe(`// _param_meggo = phi([meggo, start], [_param_meggo_temp_collector, loop])
+// _param_big = phi([big, start], [_param_big_temp_collector, loop])
+// _param_stresso = phi([stresso, start], [_param_stresso_temp_collector, loop])
 while true {
   if 0 {
     let foo: Bar = (dev: Bar);
