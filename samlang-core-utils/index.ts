@@ -1,7 +1,9 @@
 import Long from 'long';
 export { Long };
 
-// haha
+export const error = (message?: string): never => {
+  throw new Error(message);
+};
 
 export const MIN_I32_VALUE: Long = Long.fromInt(-2147483648);
 export const MAX_I32_VALUE: Long = Long.fromInt(2147483647);
