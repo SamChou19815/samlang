@@ -15,7 +15,7 @@ import {
   LLVM_INT,
   LLVM_VARIABLE,
   LLVM_NAME,
-  LLVM_BITCAST,
+  LLVM_CAST,
   LLVM_GET_ELEMENT_PTR,
   LLVM_BINARY,
   LLVM_LOAD,
@@ -121,17 +121,61 @@ it('prettyPrintLLVMValue works.', () => {
   expect(prettyPrintLLVMValue(LLVM_NAME('foo'))).toBe('@foo');
 });
 
-it('prettyPrintLLVMInstruction works for LLVM_BITCAST.', () => {
+it('prettyPrintLLVMInstruction works for LLVM_CAST.', () => {
+  expect(() =>
+    prettyPrintLLVMInstruction(
+      LLVM_CAST({
+        targetType: LLVM_INT_TYPE,
+        targetVariable: 'foo',
+        sourceValue: LLVM_VARIABLE('bar'),
+        sourceType: LLVM_INT_TYPE,
+      })
+    )
+  ).toThrow();
+
   expect(
     prettyPrintLLVMInstruction(
-      LLVM_BITCAST({
+      LLVM_CAST({
+        targetType: LLVM_IDENTIFIER_TYPE('Foo'),
+        targetVariable: 'foo',
+        sourceValue: LLVM_VARIABLE('bar'),
+        sourceType: LLVM_IDENTIFIER_TYPE('Bar'),
+      })
+    )
+  ).toBe('%foo = bitcast %Bar* %bar to %Foo*');
+
+  expect(() =>
+    prettyPrintLLVMInstruction(
+      LLVM_CAST({
+        targetType: LLVM_BOOL_TYPE,
+        targetVariable: 'foo',
+        sourceValue: LLVM_VARIABLE('bar'),
+        sourceType: LLVM_INT_TYPE,
+      })
+    )
+  ).toThrow();
+
+  expect(
+    prettyPrintLLVMInstruction(
+      LLVM_CAST({
         targetType: LLVM_IDENTIFIER_TYPE('Foo'),
         targetVariable: 'foo',
         sourceValue: LLVM_VARIABLE('bar'),
         sourceType: LLVM_INT_TYPE,
       })
     )
-  ).toBe('%foo = bitcast i64 %bar to %Foo*');
+  ).toBe('%foo = inttoptr i64 %bar to %Foo*');
+
+  expect(
+    prettyPrintLLVMInstruction(
+      LLVM_CAST({
+        targetType: LLVM_INT_TYPE,
+        targetVariable: 'foo',
+        sourceValue: LLVM_VARIABLE('bar'),
+        sourceType: LLVM_IDENTIFIER_TYPE('Bar'),
+      })
+    )
+  ).toBe('%foo = ptrtoint %Bar* %bar to i64');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_GET_ELEMENT_PTR.', () => {
@@ -311,13 +355,14 @@ it('prettyPrintLLVMInstruction works for LLVM_PHI.', () => {
     prettyPrintLLVMInstruction(
       LLVM_PHI({
         variableType: LLVM_INT_TYPE,
-        v1: LLVM_VARIABLE('bar'),
-        b1: 'b1',
-        v2: LLVM_INT(1),
-        b2: 'b2',
+        valueBranchTuples: [
+          { value: LLVM_VARIABLE('bar'), branch: 'b1' },
+          { value: LLVM_INT(1), branch: 'b2' },
+          { value: LLVM_INT(42), branch: 'b3' },
+        ],
       })
     )
-  ).toBe('phi i64 [ %bar, %b1 ], [ 1, %b2 ]');
+  ).toBe('phi i64 [ %bar, %b1 ], [ 1, %b2 ], [ 42, %b3 ]');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_CALL.', () => {
@@ -407,6 +452,7 @@ declare i64 @_builtin_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 
 @hw = private unnamed_addr constant [2 x i64] [i64 2, i64 65, i64 65], align 8
+%_builtin_Closure = { i64*, i64* }
 %Foo = { i64, %Bar* }
 define i64 @fact(i64 %n) local_unnamed_addr nounwind {
 start:
