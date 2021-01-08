@@ -101,7 +101,7 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
     )
   ).toBe(`function tailRec(n: int): int {
   let _param_n: int = (n: int);
-  // _param_n = phi([n, start], [_param_n_loop, loop])
+  // _param_n = phi([n, start], [_param_n_temp_collector, loop])
   while true {
     while true {
       let s: int = [3];
@@ -111,8 +111,8 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
         return 3;
       }
     }
-    let n: int = (((_param_n: int) + (_param_n: int))[0]: int);
-    let _param_n: int = (n: int);
+    let _param_n_temp_collector: int = (((_param_n: int) + (_param_n: int))[0]: int);
+    let _param_n: int = (_param_n_temp_collector: int);
   }
 }
 `);
@@ -181,14 +181,16 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
           HIR_IF_ELSE({
-            booleanExpression: HIR_ONE,
+            booleanExpression: HIR_VARIABLE('n', HIR_INT_TYPE),
             s1: [
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME(
                   'tailRec',
                   HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
                 ),
-                functionArguments: [HIR_VARIABLE('n', HIR_INT_TYPE)],
+                functionArguments: [
+                  HIR_BINARY({ operator: '-', e1: HIR_VARIABLE('n', HIR_INT_TYPE), e2: HIR_ONE }),
+                ],
                 returnCollector: { name: 'collector', type: HIR_INT_TYPE },
               }),
               HIR_RETURN(HIR_VARIABLE('collector', HIR_INT_TYPE)),
@@ -200,11 +202,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
     )
   ).toBe(`function tailRec(n: int): int {
   let _param_n: int = (n: int);
-  // _param_n = phi([n, start], [_param_n_loop, loop])
+  // _param_n = phi([n, start], [_param_n_temp_collector, loop])
   while true {
-    if 1 {
-      let n: int = (_param_n: int);
-      let _param_n: int = (n: int);
+    if (_param_n: int) {
+      let _param_n_temp_collector: int = ((_param_n: int) + -1);
+      let _param_n: int = (_param_n_temp_collector: int);
     } else {
       return 0;
     }
@@ -241,13 +243,13 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
     )
   ).toBe(`function tailRec(n: int): int {
   let _param_n: int = (n: int);
-  // _param_n = phi([n, start], [_param_n_loop, loop])
+  // _param_n = phi([n, start], [_param_n_temp_collector, loop])
   while true {
     if 1 {
       return 0;
     } else {
-      let n: int = (_param_n: int);
-      let _param_n: int = (n: int);
+      let _param_n_temp_collector: int = (_param_n: int);
+      let _param_n: int = (_param_n_temp_collector: int);
     }
   }
 }
@@ -323,13 +325,13 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 3-level if-else test 
     )
   ).toBe(`function tailRec(n: int): int {
   let _param_n: int = (n: int);
-  // _param_n = phi([n, start], [_param_n_loop, loop])
+  // _param_n = phi([n, start], [_param_n_temp_collector, loop])
   while true {
     if 1 {
       if 1 {
         if 1 {
-          let n: int = (_param_n: int);
-          let _param_n: int = (n: int);
+          let _param_n_temp_collector: int = (_param_n: int);
+          let _param_n: int = (_param_n_temp_collector: int);
         } else {
           return 0;
         }
