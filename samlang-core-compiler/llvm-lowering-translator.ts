@@ -41,6 +41,7 @@ import {
   LLVM_SWITCH,
   LLVM_RETURN,
   LLVM_INT_TYPE,
+  LLVMValue,
 } from 'samlang-core-ast/llvm-nodes';
 import { Long, checkNotNull } from 'samlang-core-utils';
 
@@ -68,7 +69,6 @@ const detectChainedIfElseFromMatch = (
   const detectChainedIfElseFromMatchHelper = (s: HighIRIfElseStatement, index: number): boolean => {
     if (
       s.multiAssignedVariable == null ||
-      s.s2.length !== 1 ||
       s.booleanExpression.__type__ !== 'HighIRBinaryExpression' ||
       s.booleanExpression.operator !== '==' ||
       s.booleanExpression.e1.__type__ !== 'HighIRVariableExpression' ||
@@ -77,8 +77,6 @@ const detectChainedIfElseFromMatch = (
     ) {
       return false;
     }
-    const elseBranchOnlyStatement = checkNotNull(s.s2[0]);
-    if (elseBranchOnlyStatement.__type__ !== 'HighIRIfElseStatement') return false;
 
     const currentCase = {
       phiVariable: s.multiAssignedVariable.name,
@@ -87,17 +85,24 @@ const detectChainedIfElseFromMatch = (
       statements: s.s1,
     };
     cases.push(currentCase);
-    if (s.multiAssignedVariable.branch2Variable !== s.multiAssignedVariable.name) {
-      cases.push({
-        phiVariable: s.multiAssignedVariable.name,
-        tagVariable: s.booleanExpression.e1.name,
-        branchVariable: s.multiAssignedVariable.branch1Variable,
-        statements: s.s2,
-      });
-      return true;
-    }
 
-    return detectChainedIfElseFromMatchHelper(elseBranchOnlyStatement, index + 1);
+    if (s.s2.length === 1) {
+      const elseBranchOnlyStatement = checkNotNull(s.s2[0]);
+      // istanbul ignore next
+      if (
+        elseBranchOnlyStatement.__type__ === 'HighIRIfElseStatement' &&
+        s.multiAssignedVariable.branch2Variable === s.multiAssignedVariable.name
+      ) {
+        return detectChainedIfElseFromMatchHelper(elseBranchOnlyStatement, index + 1);
+      }
+    }
+    cases.push({
+      phiVariable: s.multiAssignedVariable.name,
+      tagVariable: s.booleanExpression.e1.name,
+      branchVariable: s.multiAssignedVariable.branch2Variable,
+      statements: s.s2,
+    });
+    return true;
   };
 
   if (!detectChainedIfElseFromMatchHelper(statement, 0)) return null;
@@ -206,11 +211,16 @@ class LLVMLoweringManager {
         phiMovesWithLabels.map((it) => it.label)
       )
     );
-    cases.forEach(({ statements }, i) => {
+    const values: LLVMValue[] = [];
+    cases.forEach(({ branchVariable, statements }, i) => {
       this.withNestedScope(phiMovesWithLabels, () => {
         this.llvmInstructionCollector.push(LLVM_LABEL(checkNotNull(phiMovesWithLabels[i]).label));
         this.withNestedScope(phiMovesWithLabels, () => {
           statements.forEach((it) => this.lowerHighIRStatement(it));
+          const assignedValue = checkNotNull(
+            this.llvmConstantPropagationContext.getLocalValueType(branchVariable)
+          );
+          values.push(assignedValue);
         });
         this.llvmInstructionCollector.push(LLVM_JUMP(finalEndLabel));
       });
@@ -220,8 +230,8 @@ class LLVMLoweringManager {
       LLVM_PHI({
         name: phiVariable,
         variableType: LLVM_INT_TYPE,
-        valueBranchTuples: phiMovesWithLabels.map(({ source, label: branch }) => ({
-          value: LLVM_VARIABLE(source),
+        valueBranchTuples: phiMovesWithLabels.map(({ label: branch }, i) => ({
+          value: checkNotNull(values[i]),
           branch,
         })),
       })
@@ -248,35 +258,48 @@ class LLVMLoweringManager {
       LLVM_CJUMP(loweredCondition, trueLabel, falseLabel),
       LLVM_LABEL(trueLabel)
     );
-    this.withNestedScope(
-      multiAssignedVariable != null
-        ? [{ target: multiAssignedVariable.name, source: multiAssignedVariable.branch1Variable }]
-        : [],
-      () => {
-        s1.forEach((it) => this.lowerHighIRStatement(it));
-      }
-    );
-    this.llvmInstructionCollector.push(LLVM_JUMP(endLabel), LLVM_LABEL(falseLabel));
-    this.withNestedScope(
-      multiAssignedVariable != null
-        ? [{ target: multiAssignedVariable.name, source: multiAssignedVariable.branch2Variable }]
-        : [],
-      () => {
-        s2.forEach((it) => this.lowerHighIRStatement(it));
-      }
-    );
-    this.llvmInstructionCollector.push(LLVM_LABEL(endLabel));
     if (multiAssignedVariable != null) {
+      let v1: LLVMValue = LLVM_VARIABLE(multiAssignedVariable.branch1Variable);
+      let v2: LLVMValue = LLVM_VARIABLE(multiAssignedVariable.branch2Variable);
+      this.withNestedScope(
+        [{ target: multiAssignedVariable.name, source: multiAssignedVariable.branch1Variable }],
+        () => {
+          s1.forEach((it) => this.lowerHighIRStatement(it));
+          v1 = checkNotNull(
+            this.llvmConstantPropagationContext.getLocalValueType(
+              multiAssignedVariable.branch1Variable
+            )
+          );
+        }
+      );
+      this.llvmInstructionCollector.push(LLVM_JUMP(endLabel), LLVM_LABEL(falseLabel));
+      this.withNestedScope(
+        [{ target: multiAssignedVariable.name, source: multiAssignedVariable.branch2Variable }],
+        () => {
+          s2.forEach((it) => this.lowerHighIRStatement(it));
+          v2 = checkNotNull(
+            this.llvmConstantPropagationContext.getLocalValueType(
+              multiAssignedVariable.branch2Variable
+            )
+          );
+        }
+      );
+      this.llvmInstructionCollector.push(LLVM_LABEL(endLabel));
       this.llvmInstructionCollector.push(
         LLVM_PHI({
           name: multiAssignedVariable.name,
           variableType: lowerHighIRTypeToLLVMType(multiAssignedVariable.type),
           valueBranchTuples: [
-            { value: LLVM_VARIABLE(multiAssignedVariable.branch1Variable), branch: trueLabel },
-            { value: LLVM_VARIABLE(multiAssignedVariable.branch2Variable), branch: falseLabel },
+            { value: v1, branch: trueLabel },
+            { value: v2, branch: falseLabel },
           ],
         })
       );
+    } else {
+      this.withNestedScope([], () => s1.forEach((it) => this.lowerHighIRStatement(it)));
+      this.llvmInstructionCollector.push(LLVM_JUMP(endLabel), LLVM_LABEL(falseLabel));
+      this.withNestedScope([], () => s2.forEach((it) => this.lowerHighIRStatement(it)));
+      this.llvmInstructionCollector.push(LLVM_LABEL(endLabel));
     }
   }
 
@@ -356,6 +379,7 @@ class LLVMLoweringManager {
       const { value, type } = this.lowerHighIRExpression(e);
       let valueToStore = value;
       let valueType = type;
+      // istanbul ignore next
       if (structType.__type__ === 'StructType') {
         const expectedValueType = checkNotNull(structType.mappings[i]);
         if (!isTheSameLLVMType(expectedValueType, type)) {
@@ -396,7 +420,7 @@ class LLVMLoweringManager {
           // must be a function name
           return { value: LLVM_NAME(e.name), type: lowerHighIRTypeToLLVMType(e.type) };
         }
-        const castedTempName = this.allocator.allocateTemp('string-name-cast');
+        const castedTempName = this.allocator.allocateTemp('string_name_cast');
         this.llvmInstructionCollector.push(
           LLVM_CAST({
             targetVariable: castedTempName,
