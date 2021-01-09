@@ -28,6 +28,7 @@ const collectUsedNamesFromStatement = (set: Set<string>, statement: HighIRStatem
       statement.functionArguments.forEach((it) => collectUsedNamesFromExpression(set, it));
       break;
     case 'HighIRWhileTrueStatement':
+      // istanbul ignore next
       statement.statements.forEach((it) => collectUsedNamesFromStatement(set, it));
       break;
     case 'HighIRIfElseStatement':

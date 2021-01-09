@@ -453,16 +453,13 @@ it('HIR statements to JS string test', () => {
 }`);
   expect(
     highIRStatementToString(
-      HIR_WHILE_TRUE(
-        [],
-        [
-          HIR_FUNCTION_CALL({
-            functionArguments: [],
-            functionExpression: HIR_NAME('func', HIR_INT_TYPE),
-            returnCollector: { name: 'val', type: HIR_STRING_TYPE },
-          }),
-        ]
-      )
+      HIR_WHILE_TRUE([
+        HIR_FUNCTION_CALL({
+          functionArguments: [],
+          functionExpression: HIR_NAME('func', HIR_INT_TYPE),
+          returnCollector: { name: 'val', type: HIR_STRING_TYPE },
+        }),
+      ])
     )
   ).toBe(`while (true) {
   var val = func();

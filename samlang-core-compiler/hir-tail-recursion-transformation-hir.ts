@@ -1,93 +1,14 @@
 import {
   HighIRStatement,
   HIR_VARIABLE,
-  HIR_INDEX_ACCESS,
-  HIR_BINARY,
   HIR_LET,
   HIR_IF_ELSE,
   HIR_WHILE_TRUE,
-  HighIRExpression,
-  HIR_FUNCTION_CALL,
-  HIR_STRUCT_INITIALIZATION,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { checkNotNull } from 'samlang-core-utils';
 
-export const renameFunctionParameterReadForSSA = (name: string): string => `_param_${name}`;
-
-export const getFunctionParameterCollector = (name: string): string =>
-  `_param_${name}_temp_collector`;
-
-const renameExpressionForSSA = (
-  expression: HighIRExpression,
-  parameters: ReadonlySet<string>
-): HighIRExpression => {
-  switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRNameExpression':
-      return expression;
-    case 'HighIRVariableExpression':
-      if (!parameters.has(expression.name)) return expression;
-      return HIR_VARIABLE(renameFunctionParameterReadForSSA(expression.name), expression.type);
-    case 'HighIRIndexAccessExpression':
-      return HIR_INDEX_ACCESS({
-        type: expression.type,
-        expression: renameExpressionForSSA(expression.expression, parameters),
-        index: expression.index,
-      });
-    case 'HighIRBinaryExpression':
-      return HIR_BINARY({
-        operator: expression.operator,
-        e1: renameExpressionForSSA(expression.e1, parameters),
-        e2: renameExpressionForSSA(expression.e2, parameters),
-      });
-  }
-};
-
-const renameStatementForSSA = (
-  statement: HighIRStatement,
-  parameters: ReadonlySet<string>
-): HighIRStatement => {
-  switch (statement.__type__) {
-    case 'HighIRFunctionCallStatement':
-      return HIR_FUNCTION_CALL({
-        functionExpression: renameExpressionForSSA(statement.functionExpression, parameters),
-        functionArguments: statement.functionArguments.map((it) =>
-          renameExpressionForSSA(it, parameters)
-        ),
-        returnCollector: statement.returnCollector,
-      });
-    case 'HighIRIfElseStatement':
-      return HIR_IF_ELSE({
-        multiAssignedVariable: statement.multiAssignedVariable,
-        booleanExpression: renameExpressionForSSA(statement.booleanExpression, parameters),
-        s1: statement.s1.map((it) => renameStatementForSSA(it, parameters)),
-        s2: statement.s2.map((it) => renameStatementForSSA(it, parameters)),
-      });
-    case 'HighIRWhileTrueStatement':
-      return HIR_WHILE_TRUE(
-        statement.multiAssignedVariables,
-        statement.statements.map((it) => renameStatementForSSA(it, parameters))
-      );
-    case 'HighIRLetDefinitionStatement':
-      return HIR_LET({
-        name: statement.name,
-        type: statement.type,
-        assignedExpression: renameExpressionForSSA(statement.assignedExpression, parameters),
-      });
-    case 'HighIRStructInitializationStatement':
-      return HIR_STRUCT_INITIALIZATION({
-        structVariableName: statement.structVariableName,
-        type: statement.type,
-        expressionList: statement.expressionList.map((it) =>
-          renameExpressionForSSA(it, parameters)
-        ),
-      });
-    case 'HighIRReturnStatement':
-      return HIR_RETURN(renameExpressionForSSA(statement.expression, parameters));
-  }
-};
+const getFunctionParameterCollector = (name: string): string => `_param_${name}_temp_collector`;
 
 const performTailRecursiveCallTransformationOnLinearStatements = (
   highIRFunction: HighIRFunction,
@@ -127,7 +48,7 @@ const performTailRecursiveCallTransformationOnLinearStatements = (
       ),
       ...highIRFunction.parameters.map((name, i) =>
         HIR_LET({
-          name: renameFunctionParameterReadForSSA(name),
+          name,
           type: checkNotNull(highIRFunction.type.argumentTypes[i]),
           assignedExpression: HIR_VARIABLE(
             getFunctionParameterCollector(name),
@@ -177,7 +98,6 @@ const recursivelyPerformTailRecursiveCallTransformationOnStatements = (
 const performTailRecursiveCallTransformationOnHighIRFunction = (
   highIRFunction: HighIRFunction
 ): HighIRFunction => {
-  const parameters = new Set(highIRFunction.parameters);
   const potentialRewrittenStatements = recursivelyPerformTailRecursiveCallTransformationOnStatements(
     highIRFunction,
     highIRFunction.body
@@ -185,21 +105,7 @@ const performTailRecursiveCallTransformationOnHighIRFunction = (
   if (potentialRewrittenStatements == null) return highIRFunction;
   return {
     ...highIRFunction,
-    parameters: highIRFunction.parameters,
-    body: [
-      ...highIRFunction.parameters.map((name, i) => {
-        const type = checkNotNull(highIRFunction.type.argumentTypes[i]);
-        return HIR_LET({
-          name: renameFunctionParameterReadForSSA(name),
-          type,
-          assignedExpression: HIR_VARIABLE(name, type),
-        });
-      }),
-      HIR_WHILE_TRUE(
-        highIRFunction.parameters,
-        potentialRewrittenStatements.map((it) => renameStatementForSSA(it, parameters))
-      ),
-    ],
+    body: [HIR_WHILE_TRUE(potentialRewrittenStatements)],
   };
 };
 
