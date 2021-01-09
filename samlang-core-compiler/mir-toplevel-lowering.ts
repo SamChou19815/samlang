@@ -1,3 +1,5 @@
+import coalesceMoveAndReturnForHighIRStatements from './hir-move-return-coalescing';
+import performTailRecursiveCallTransformationOnHighIRFunction from './hir-tail-recursion-transformation-hir';
 import createMidIRBasicBlocks from './mir-basic-block';
 import emitCanonicalMidIRStatementsFromReorderedBasicBlocks from './mir-basic-block-optimized-emitter';
 import reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath from './mir-basic-block-reorder';
@@ -15,18 +17,22 @@ const compileHighIrModuleToMidIRCompilationUnit = (
   const allocator = new MidIRResourceAllocator();
   const functions: MidIRFunction[] = [];
   highIRModule.functions.forEach((highIRFunction) => {
+    const slightlyOptimizedHighIRFUnction = performTailRecursiveCallTransformationOnHighIRFunction({
+      ...highIRFunction,
+      body: coalesceMoveAndReturnForHighIRStatements(highIRFunction.body) ?? highIRFunction.body,
+    });
     const loweredStatements = midIRTranslateStatementsAndCollectGlobalStrings(
       allocator,
-      highIRFunction.name,
-      highIRFunction.body
+      slightlyOptimizedHighIRFUnction.name,
+      slightlyOptimizedHighIRFUnction.body
     );
     functions.push({
-      functionName: highIRFunction.name,
-      argumentNames: highIRFunction.parameters.map((it) => `_${it}`),
+      functionName: slightlyOptimizedHighIRFUnction.name,
+      argumentNames: slightlyOptimizedHighIRFUnction.parameters.map((it) => `_${it}`),
       mainBodyStatements: optimizeIrWithSimpleOptimization(
         emitCanonicalMidIRStatementsFromReorderedBasicBlocks(
           reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath(
-            createMidIRBasicBlocks(allocator, highIRFunction.name, [
+            createMidIRBasicBlocks(allocator, slightlyOptimizedHighIRFUnction.name, [
               ...loweredStatements,
               MIR_RETURN(HIR_ZERO),
             ])
