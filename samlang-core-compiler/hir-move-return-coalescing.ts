@@ -75,7 +75,6 @@ const coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable = (
       ];
     }
     default:
-      // HighIRWhileTrueStatement: The return statement will be unreachable, so no point to check this.
       // Others: a statement with no side effect, which can be safely eliminated.
       return coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable(
         statements,

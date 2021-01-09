@@ -96,17 +96,6 @@ class MidIRLoweringManager {
           MIR_LABEL(endLabel),
         ];
       }
-      case 'HighIRWhileTrueStatement': {
-        const whileTrueStartLabel = this.allocator.allocateLabelWithAnnotation(
-          this.functionName,
-          'WHILE_TRUE_START'
-        );
-        return [
-          MIR_LABEL(whileTrueStartLabel),
-          ...statement.statements.map(this.lowerHIRStatementToMIRNonCanonicalStatements).flat(),
-          MIR_JUMP(whileTrueStartLabel),
-        ];
-      }
       case 'HighIRLetDefinitionStatement':
         return [
           MIR_MOVE_TEMP(

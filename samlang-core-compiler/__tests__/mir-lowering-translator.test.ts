@@ -13,7 +13,6 @@ import {
   HIR_LET,
   HIR_INDEX_ACCESS,
   HIR_STRUCT_INITIALIZATION,
-  HIR_WHILE_TRUE,
   HIR_ZERO,
   HIR_ONE,
 } from 'samlang-core-ast/hir-expressions';
@@ -77,13 +76,6 @@ goto LABEL__2_PURPOSE_IF_ELSE_END;
 LABEL__1_PURPOSE_FALSE_BRANCH:
 return 2;
 LABEL__2_PURPOSE_IF_ELSE_END:`
-  );
-
-  assertCorrectlyLoweredWithPreConfiguredSetup(
-    HIR_WHILE_TRUE([], [HIR_RETURN(HIR_INT(2))]),
-    `LABEL__0_PURPOSE_WHILE_TRUE_START:
-return 2;
-goto LABEL__0_PURPOSE_WHILE_TRUE_START;`
   );
 
   assertCorrectlyLoweredWithPreConfiguredSetup(

@@ -18,7 +18,6 @@ import {
   HIR_STRUCT_INITIALIZATION,
   HIR_TRUE,
   HIR_VARIABLE,
-  HIR_WHILE_TRUE,
   HIR_ZERO,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
@@ -95,6 +94,21 @@ it('prettyPrintLLVMFunction works for base expressions 2/n', () => {
     ],
     '  ret i64 %bar'
   );
+  assertLoweringWorks(
+    {
+      name: 'foo',
+      parameters: ['bar'],
+      type: HIR_FUNCTION_TYPE([INT], INT),
+      body: [
+        HIR_LET({ name: 'foo', type: INT, assignedExpression: HIR_VARIABLE('bar', INT) }),
+        HIR_RETURN(HIR_VARIABLE('foo', INT)),
+      ],
+    },
+    `define i64 @foo(i64 %bar) local_unnamed_addr nounwind {
+LABEL_foo_0_PURPOSE_START:
+  ret i64 %bar
+}`
+  );
 });
 
 it('prettyPrintLLVMFunction works for base expressions 3/n', () => {
@@ -134,20 +148,6 @@ it('prettyPrintLLVMFunction works for base expressions 4/n', () => {
     `  %_temp_0_binary_temp = sdiv i64 %bar, %baz
   ret i64 %_temp_0_binary_temp`
   );
-});
-
-it('prettyPrintLLVMFunction does not expect while true.', () => {
-  expect(() =>
-    lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(
-      {
-        name: 'tailRec',
-        parameters: ['n'],
-        type: HIR_FUNCTION_TYPE([INT], INT),
-        body: [HIR_WHILE_TRUE([], [])],
-      },
-      {}
-    )
-  ).toThrow();
 });
 
 it('prettyPrintLLVMFunction works for statements 1/n', () => {

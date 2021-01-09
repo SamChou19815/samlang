@@ -72,12 +72,6 @@ export interface HighIRIfElseStatement extends BaseHighIRStatement {
   readonly s2: readonly HighIRStatement[];
 }
 
-export interface HighIRWhileTrueStatement extends BaseHighIRStatement {
-  readonly __type__: 'HighIRWhileTrueStatement';
-  readonly multiAssignedVariables: readonly string[];
-  readonly statements: readonly HighIRStatement[];
-}
-
 export interface HighIRVariantPatternToStatement {
   readonly tagOrder: number;
   readonly statements: readonly HighIRStatement[];
@@ -105,7 +99,6 @@ export interface HighIRReturnStatement extends BaseHighIRStatement {
 export type HighIRStatement =
   | HighIRFunctionCallStatement
   | HighIRIfElseStatement
-  | HighIRWhileTrueStatement
   | HighIRLetDefinitionStatement
   | HighIRStructInitializationStatement
   | HighIRReturnStatement;
@@ -222,15 +215,6 @@ export const HIR_IF_ELSE = ({
   s2,
 });
 
-export const HIR_WHILE_TRUE = (
-  multiAssignedVariables: readonly string[],
-  statements: readonly HighIRStatement[]
-): HighIRWhileTrueStatement => ({
-  __type__: 'HighIRWhileTrueStatement',
-  multiAssignedVariables,
-  statements,
-});
-
 export const HIR_LET = ({
   name,
   type,
@@ -334,19 +318,6 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
             `// ${name}: ${type} = phi(${branch1Variable}, ${branch2Variable})\n`
           );
         }
-        break;
-      case 'HighIRWhileTrueStatement':
-        s.multiAssignedVariables.forEach((name) => {
-          collector.push(
-            '  '.repeat(level),
-            `// _param_${name} = phi([${name}, start], [_param_${name}_temp_collector, loop])\n`
-          );
-        });
-        collector.push('  '.repeat(level), `while true {\n`);
-        level += 1;
-        s.statements.forEach(printer);
-        level -= 1;
-        collector.push('  '.repeat(level), `}\n`);
         break;
       case 'HighIRLetDefinitionStatement':
         collector.push(
