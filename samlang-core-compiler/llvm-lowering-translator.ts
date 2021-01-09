@@ -16,7 +16,7 @@ import type {
   HighIRLetDefinitionStatement,
   HighIRStructInitializationStatement,
 } from 'samlang-core-ast/hir-expressions';
-import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
+import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   isTheSameLLVMType,
@@ -42,6 +42,7 @@ import {
   LLVM_RETURN,
   LLVM_INT_TYPE,
   LLVMValue,
+  LLVMModule,
 } from 'samlang-core-ast/llvm-nodes';
 import { Long, checkNotNull } from 'samlang-core-utils';
 
@@ -469,7 +470,7 @@ class LLVMLoweringManager {
   }
 }
 
-const lowerHighIRToLLVMFunction = (
+export const lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING = (
   { name, type: { argumentTypes, returnType }, parameters, body }: HighIRFunction,
   /** Mapping between global variable name and their length */
   globalVariables: Readonly<Record<string, number>>
@@ -494,4 +495,21 @@ const lowerHighIRToLLVMFunction = (
   };
 };
 
-export default lowerHighIRToLLVMFunction;
+const lowerHighIRModuleToLLVMModule = (highIRModule: HighIRModule): LLVMModule => {
+  const globalVariablesMapping = Object.fromEntries(
+    highIRModule.globalVariables.map((it) => [it.name, it.content.length])
+  );
+
+  return {
+    globalVariables: highIRModule.globalVariables,
+    typeDefinitions: highIRModule.typeDefinitions.map((it) => ({
+      identifier: it.identifier,
+      mappings: it.mappings.map(lowerHighIRTypeToLLVMType),
+    })),
+    functions: highIRModule.functions.map((it) =>
+      lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(it, globalVariablesMapping)
+    ),
+  };
+};
+
+export default lowerHighIRModuleToLLVMModule;
