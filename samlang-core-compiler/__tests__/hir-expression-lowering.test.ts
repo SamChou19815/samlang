@@ -283,10 +283,12 @@ it('FunctionCall family lowering works 6/n.', () => {
 let _t2: any = ((_t1: (any, any))[1]: any);
 let _t3: int = (_t1: any);
 if ((_t3: int) == 0) {
-  let _t4: int = ((_t1: (any, any))[0]: any)((_this: _Dummy), (_this: _Dummy));
+  let _t6: (_Dummy, _Dummy) -> int = ((_t1: (any, any))[0]: any);
+  let _t4: int = (_t6: (_Dummy, _Dummy) -> int)((_this: _Dummy), (_this: _Dummy));
   let _t0: int = (_t4: int);
 } else {
-  let _t5: int = ((_t1: (any, any))[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
+  let _t7: (any, _Dummy, _Dummy) -> int = ((_t1: (any, any))[0]: any);
+  let _t5: int = (_t7: (any, _Dummy, _Dummy) -> int)((_t2: any), (_this: _Dummy), (_this: _Dummy));
   let _t0: int = (_t5: int);
 }
 // _t0: int = phi(_t4, _t5)
@@ -306,9 +308,11 @@ it('FunctionCall family lowering works 7/n.', () => {
 let _t2: any = ((_t1: (any, any))[1]: any);
 let _t3: int = (_t1: any);
 if ((_t3: int) == 0) {
-  ((_t1: (any, any))[0]: any)((_this: _Dummy), (_this: _Dummy));
+  let _t6: (_Dummy, _Dummy) -> int = ((_t1: (any, any))[0]: any);
+  (_t6: (_Dummy, _Dummy) -> int)((_this: _Dummy), (_this: _Dummy));
 } else {
-  ((_t1: (any, any))[0]: any)((_t2: any), (_this: _Dummy), (_this: _Dummy));
+  let _t7: (any, _Dummy, _Dummy) -> int = ((_t1: (any, any))[0]: any);
+  (_t7: (any, _Dummy, _Dummy) -> int)((_t2: any), (_this: _Dummy), (_this: _Dummy));
 }
 return 0;`
   );
