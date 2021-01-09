@@ -136,6 +136,20 @@ it('prettyPrintLLVMFunction works for base expressions 4/n', () => {
   );
 });
 
+it('prettyPrintLLVMFunction does not expect while true.', () => {
+  expect(() =>
+    lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(
+      {
+        name: 'tailRec',
+        parameters: ['n'],
+        type: HIR_FUNCTION_TYPE([INT], INT),
+        body: [HIR_WHILE_TRUE([], [])],
+      },
+      {}
+    )
+  ).toThrow();
+});
+
 it('prettyPrintLLVMFunction works for statements 1/n', () => {
   assertStatementLoweringWorks(
     [
@@ -158,54 +172,36 @@ it('prettyPrintLLVMFunction works for statements 1/n', () => {
 });
 
 it('prettyPrintLLVMFunction works for statements 2/n', () => {
-  assertLoweringWorks(
-    {
-      name: 'tailRec',
-      parameters: ['n'],
-      type: HIR_FUNCTION_TYPE([INT], INT),
-      body: [
-        HIR_LET({ name: '_param_n', type: INT, assignedExpression: HIR_VARIABLE('n', INT) }),
-        HIR_WHILE_TRUE(
-          ['n'],
-          [
-            HIR_IF_ELSE({
-              booleanExpression: HIR_VARIABLE('_param_n', INT),
-              s1: [
-                HIR_LET({
-                  name: '_param_n_temp_collector',
-                  type: INT,
-                  assignedExpression: HIR_BINARY({
-                    operator: '-',
-                    e1: HIR_VARIABLE('_param_n', INT),
-                    e2: HIR_ONE,
-                  }),
-                }),
-                HIR_LET({
-                  name: '_param_n',
-                  type: INT,
-                  assignedExpression: HIR_VARIABLE('n', INT),
-                }),
-              ],
-              s2: [HIR_RETURN(HIR_ZERO)],
-            }),
-          ]
-        ),
-      ],
-    },
-    // TODO: this is wrong, we need more precise analysis to show which basic block _param_n is from!
-    `define i64 @tailRec(i64 %n) local_unnamed_addr nounwind {
-LABEL_tailRec_0_PURPOSE_START:
-LABEL_tailRec_1_PURPOSE_while_true_start:
-  %_param_n = phi i64 [ %n, %LABEL_tailRec_0_PURPOSE_START ], [ %_param_n_temp_collector, %LABEL_tailRec_1_PURPOSE_while_true_start ]
-  br i1 %n, label %LABEL_tailRec_2_PURPOSE_if_else_true_label, label %LABEL_tailRec_3_PURPOSE_if_else_false_label
-LABEL_tailRec_2_PURPOSE_if_else_true_label:
-  %_temp_0_binary_temp = add i64 %n, -1
-  br label %LABEL_tailRec_4_PURPOSE_if_else_end_label
-LABEL_tailRec_3_PURPOSE_if_else_false_label:
-  ret i64 0
-LABEL_tailRec_4_PURPOSE_if_else_end_label:
-  br label %LABEL_tailRec_1_PURPOSE_while_true_start
-}`
+  assertStatementLoweringWorks(
+    [
+      HIR_IF_ELSE({
+        booleanExpression: HIR_BINARY({
+          operator: '==',
+          e1: HIR_VARIABLE('t', INT),
+          e2: HIR_INT(2),
+        }),
+        s1: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+            functionArguments: [],
+          }),
+        ],
+        s2: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
+            functionArguments: [],
+          }),
+        ],
+      }),
+    ],
+    `  %_temp_0_binary_temp = icmp eq i1 %t, 2
+  br i1 %_temp_0_binary_temp, label %LABEL_testFunction_1_PURPOSE_if_else_true_label, label %LABEL_testFunction_2_PURPOSE_if_else_false_label
+LABEL_testFunction_1_PURPOSE_if_else_true_label:
+  call i64 @foo() nounwind
+  br label %LABEL_testFunction_3_PURPOSE_if_else_end_label
+LABEL_testFunction_2_PURPOSE_if_else_false_label:
+  call i64 @bar() nounwind
+LABEL_testFunction_3_PURPOSE_if_else_end_label:`
   );
 });
 

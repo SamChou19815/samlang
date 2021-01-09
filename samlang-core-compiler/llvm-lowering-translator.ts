@@ -1,7 +1,3 @@
-import {
-  getFunctionParameterCollector,
-  renameFunctionParameterReadForSSA,
-} from './hir-tail-recursion-transformation-hir';
 import LLVMConstantPropagationContext from './llvm-constant-propagation-context';
 import lowerHighIRTypeToLLVMType from './llvm-types-lowering';
 import MidIRResourceAllocator from './mir-resource-allocator';
@@ -12,7 +8,6 @@ import type {
   HighIRStatement,
   HighIRFunctionCallStatement,
   HighIRIfElseStatement,
-  HighIRWhileTrueStatement,
   HighIRLetDefinitionStatement,
   HighIRStructInitializationStatement,
 } from 'samlang-core-ast/hir-expressions';
@@ -161,8 +156,7 @@ class LLVMLoweringManager {
         return;
       }
       case 'HighIRWhileTrueStatement':
-        this.lowerHighIRWhileTrueStatement(s);
-        return;
+        throw new Error('WHILE_TRUE should never reach LLVM!');
       case 'HighIRLetDefinitionStatement':
         this.lowerHighIRLetDefinitionStatement(s);
         return;
@@ -302,36 +296,6 @@ class LLVMLoweringManager {
       this.withNestedScope([], () => s2.forEach((it) => this.lowerHighIRStatement(it)));
       this.llvmInstructionCollector.push(LLVM_LABEL(endLabel));
     }
-  }
-
-  private lowerHighIRWhileTrueStatement(s: HighIRWhileTrueStatement): void {
-    const startLabel = this.allocator.allocateLabelWithAnnotation(
-      this.functionName,
-      'while_true_start'
-    );
-    this.llvmInstructionCollector.push(LLVM_LABEL(startLabel));
-    s.multiAssignedVariables.forEach((name) => {
-      this.llvmInstructionCollector.push(
-        LLVM_PHI({
-          name: renameFunctionParameterReadForSSA(name),
-          variableType: checkNotNull(this.parameters[name]),
-          valueBranchTuples: [
-            { value: LLVM_VARIABLE(name), branch: this.functionStartLabel },
-            { value: LLVM_VARIABLE(getFunctionParameterCollector(name)), branch: startLabel },
-          ],
-        })
-      );
-    });
-    this.withNestedScope(
-      s.multiAssignedVariables.map((name) => ({
-        target: renameFunctionParameterReadForSSA(name),
-        source: getFunctionParameterCollector(name),
-      })),
-      () => {
-        s.statements.forEach((it) => this.lowerHighIRStatement(it));
-      }
-    );
-    this.llvmInstructionCollector.push(LLVM_JUMP(startLabel));
   }
 
   private lowerHighIRLetDefinitionStatement(s: HighIRLetDefinitionStatement): void {
