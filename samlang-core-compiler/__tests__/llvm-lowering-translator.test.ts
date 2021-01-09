@@ -1,4 +1,6 @@
-import lowerHighIRToLLVMFunction from '../llvm-lowering-translator';
+import lowerHighIRModuleToLLVMModule, {
+  lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING,
+} from '../llvm-lowering-translator';
 
 import {
   HighIRExpression,
@@ -28,16 +30,18 @@ import {
   HIR_CLOSURE_TYPE,
   HIR_STRUCT_TYPE,
 } from 'samlang-core-ast/hir-types';
-import { prettyPrintLLVMFunction } from 'samlang-core-ast/llvm-nodes';
+import { prettyPrintLLVMFunction, prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 
 const assertLoweringWorks = (
   highIRFunction: HighIRFunction,
   expectedString: string,
   globalStrings: Readonly<Record<string, number>> = {}
 ): void => {
-  expect(prettyPrintLLVMFunction(lowerHighIRToLLVMFunction(highIRFunction, globalStrings))).toBe(
-    expectedString
-  );
+  expect(
+    prettyPrintLLVMFunction(
+      lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(highIRFunction, globalStrings)
+    )
+  ).toBe(expectedString);
 };
 
 const assertStatementLoweringWorks = (
@@ -374,4 +378,51 @@ it('prettyPrintLLVMFunction works for statements 8/n', () => {
     [HIR_LET({ name: 's', type: HIR_STRING_TYPE, assignedExpression: HIR_ZERO })],
     '  %s = inttoptr i64 0 to i64*'
   );
+});
+
+it('lowerHighIRModuleToLLVMModule works', () => {
+  expect(
+    prettyPrintLLVMModule(
+      lowerHighIRModuleToLLVMModule({
+        globalVariables: [{ name: 'ss', content: 'S' }],
+        typeDefinitions: [{ identifier: 'A', mappings: [INT, INT] }],
+        functions: [
+          {
+            name: 'test',
+            parameters: [],
+            type: HIR_FUNCTION_TYPE([], INT),
+            body: [
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('println', HIR_FUNCTION_TYPE([HIR_STRING_TYPE], INT)),
+                functionArguments: [HIR_NAME('ss', HIR_STRING_TYPE)],
+              }),
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME(
+                  'stringToInt',
+                  HIR_FUNCTION_TYPE([HIR_STRING_TYPE], INT)
+                ),
+                functionArguments: [HIR_NAME('ss', HIR_STRING_TYPE)],
+                returnCollector: { name: 'r', type: INT },
+              }),
+            ],
+          },
+        ],
+      })
+    )
+  ).toEqual(`declare i64* @_builtin_malloc(i64) nounwind
+declare void @_builtin_println(i64*) nounwind
+declare void @_builtin_throw(i64*) nounwind
+declare i64* @_builtin_intToString(i64) nounwind
+declare i64 @_builtin_stringToInt(i64*) nounwind
+declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
+
+@ss = private unnamed_addr constant [1 x i64] [i64 1, i64 83], align 8
+%A = { i64, i64 }
+define i64 @test() local_unnamed_addr nounwind {
+LABEL_test_0_PURPOSE_START:
+  %_temp_0_string_name_cast = bitcast [1 x i64]* @ss to i64*
+  call i64 @println(i64* %_temp_0_string_name_cast) nounwind
+  %_temp_1_string_name_cast = bitcast [1 x i64]* @ss to i64*
+  %r = call i64 @stringToInt(i64* %_temp_1_string_name_cast) nounwind
+}`);
 });
