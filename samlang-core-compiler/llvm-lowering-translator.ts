@@ -38,10 +38,82 @@ import {
   LLVM_LABEL,
   LLVM_JUMP,
   LLVM_CJUMP,
+  LLVM_SWITCH,
   LLVM_RETURN,
   LLVM_INT_TYPE,
 } from 'samlang-core-ast/llvm-nodes';
-import { checkNotNull } from 'samlang-core-utils';
+import { Long, checkNotNull } from 'samlang-core-utils';
+
+type ChainedIfElseFromMatchCase = {
+  readonly branchVariable: string;
+  readonly statements: readonly HighIRStatement[];
+};
+
+type DetectedChainedIfElseFromMatch = {
+  readonly phiVariable: string;
+  readonly phiType: LLVMType;
+  readonly tagVariable: string;
+  readonly cases: readonly ChainedIfElseFromMatchCase[];
+};
+
+const detectChainedIfElseFromMatch = (
+  statement: HighIRIfElseStatement
+): DetectedChainedIfElseFromMatch | null => {
+  type ChainedIfElseFromMatchCaseAugmented = ChainedIfElseFromMatchCase & {
+    readonly phiVariable: string;
+    readonly tagVariable: string;
+  };
+  const cases: ChainedIfElseFromMatchCaseAugmented[] = [];
+
+  const detectChainedIfElseFromMatchHelper = (s: HighIRIfElseStatement, index: number): boolean => {
+    if (
+      s.multiAssignedVariable == null ||
+      s.s2.length !== 1 ||
+      s.booleanExpression.__type__ !== 'HighIRBinaryExpression' ||
+      s.booleanExpression.operator !== '==' ||
+      s.booleanExpression.e1.__type__ !== 'HighIRVariableExpression' ||
+      s.booleanExpression.e2.__type__ !== 'HighIRIntLiteralExpression' ||
+      s.booleanExpression.e2.value.notEquals(Long.fromInt(index))
+    ) {
+      return false;
+    }
+    const elseBranchOnlyStatement = checkNotNull(s.s2[0]);
+    if (elseBranchOnlyStatement.__type__ !== 'HighIRIfElseStatement') return false;
+
+    const currentCase = {
+      phiVariable: s.multiAssignedVariable.name,
+      tagVariable: s.booleanExpression.e1.name,
+      branchVariable: s.multiAssignedVariable.branch1Variable,
+      statements: s.s1,
+    };
+    cases.push(currentCase);
+    if (s.multiAssignedVariable.branch2Variable !== s.multiAssignedVariable.name) {
+      cases.push({
+        phiVariable: s.multiAssignedVariable.name,
+        tagVariable: s.booleanExpression.e1.name,
+        branchVariable: s.multiAssignedVariable.branch1Variable,
+        statements: s.s2,
+      });
+      return true;
+    }
+
+    return detectChainedIfElseFromMatchHelper(elseBranchOnlyStatement, index + 1);
+  };
+
+  if (!detectChainedIfElseFromMatchHelper(statement, 0)) return null;
+  const phiVariable = checkNotNull(cases[0]?.phiVariable);
+  const tagVariable = checkNotNull(cases[0]?.tagVariable);
+  return {
+    phiVariable,
+    phiType: lowerHighIRTypeToLLVMType(checkNotNull(statement?.multiAssignedVariable?.type)),
+    tagVariable,
+    cases: cases.map(({ phiVariable: p, tagVariable: t, branchVariable, statements }) => {
+      // istanbul ignore next
+      if (phiVariable !== p || tagVariable !== t) throw new Error();
+      return { branchVariable, statements };
+    }),
+  };
+};
 
 class LLVMLoweringManager {
   readonly llvmInstructionCollector: LLVMInstruction[] = [];
@@ -73,9 +145,15 @@ class LLVMLoweringManager {
       case 'HighIRFunctionCallStatement':
         this.lowerHighIRFunctionCallStatement(s);
         return;
-      case 'HighIRIfElseStatement':
-        this.lowerHighIRIfElseStatement(s);
+      case 'HighIRIfElseStatement': {
+        const result = detectChainedIfElseFromMatch(s);
+        if (result == null) {
+          this.lowerNormalHighIRIfElseStatement(s);
+        } else {
+          this.lowerChainedIfElseFromMatch(result);
+        }
         return;
+      }
       case 'HighIRWhileTrueStatement':
         this.lowerHighIRWhileTrueStatement(s);
         return;
@@ -107,8 +185,52 @@ class LLVMLoweringManager {
     );
   }
 
-  private lowerHighIRIfElseStatement(s: HighIRIfElseStatement): void {
-    const loweredCondition = this.lowerHighIRExpression(s.booleanExpression).value;
+  private lowerChainedIfElseFromMatch({
+    phiVariable,
+    tagVariable,
+    cases,
+  }: DetectedChainedIfElseFromMatch): void {
+    const finalEndLabel = this.allocator.allocateLabelWithAnnotation(
+      this.functionName,
+      `match_end`
+    );
+    const phiMovesWithLabels = cases.map(({ branchVariable }, i) => ({
+      target: phiVariable,
+      source: branchVariable,
+      label: this.allocator.allocateLabelWithAnnotation(this.functionName, `match_case_${i}`),
+    }));
+    this.llvmInstructionCollector.push(
+      LLVM_SWITCH(
+        LLVM_VARIABLE(tagVariable),
+        finalEndLabel,
+        phiMovesWithLabels.map((it) => it.label)
+      )
+    );
+    cases.forEach(({ statements }, i) => {
+      this.withNestedScope(phiMovesWithLabels, () => {
+        this.llvmInstructionCollector.push(LLVM_LABEL(checkNotNull(phiMovesWithLabels[i]).label));
+        this.withNestedScope(phiMovesWithLabels, () => {
+          statements.forEach((it) => this.lowerHighIRStatement(it));
+        });
+        this.llvmInstructionCollector.push(LLVM_JUMP(finalEndLabel));
+      });
+    });
+    this.llvmInstructionCollector.push(
+      LLVM_LABEL(finalEndLabel),
+      LLVM_PHI({
+        name: phiVariable,
+        variableType: LLVM_INT_TYPE,
+        valueBranchTuples: phiMovesWithLabels.map(({ source, label: branch }) => ({
+          value: LLVM_VARIABLE(source),
+          branch,
+        })),
+      })
+    );
+  }
+
+  private lowerNormalHighIRIfElseStatement(s: HighIRIfElseStatement): void {
+    const { multiAssignedVariable, booleanExpression, s1, s2 } = s;
+    const loweredCondition = this.lowerHighIRExpression(booleanExpression).value;
     const trueLabel = this.allocator.allocateLabelWithAnnotation(
       this.functionName,
       'if_else_true_label'
@@ -121,19 +243,41 @@ class LLVMLoweringManager {
       this.functionName,
       'if_else_end_label'
     );
+
     this.llvmInstructionCollector.push(
       LLVM_CJUMP(loweredCondition, trueLabel, falseLabel),
       LLVM_LABEL(trueLabel)
     );
-    this.llvmConstantPropagationContext.withNestedScope(() => {
-      s.s1.forEach((it) => this.lowerHighIRStatement(it));
-    });
+    this.withNestedScope(
+      multiAssignedVariable != null
+        ? [{ target: multiAssignedVariable.name, source: multiAssignedVariable.branch1Variable }]
+        : [],
+      () => {
+        s1.forEach((it) => this.lowerHighIRStatement(it));
+      }
+    );
     this.llvmInstructionCollector.push(LLVM_JUMP(endLabel), LLVM_LABEL(falseLabel));
-    this.llvmConstantPropagationContext.withNestedScope(() => {
-      s.s2.forEach((it) => this.lowerHighIRStatement(it));
-    });
+    this.withNestedScope(
+      multiAssignedVariable != null
+        ? [{ target: multiAssignedVariable.name, source: multiAssignedVariable.branch2Variable }]
+        : [],
+      () => {
+        s2.forEach((it) => this.lowerHighIRStatement(it));
+      }
+    );
     this.llvmInstructionCollector.push(LLVM_LABEL(endLabel));
-    // TODO: handle phi variables!
+    if (multiAssignedVariable != null) {
+      this.llvmInstructionCollector.push(
+        LLVM_PHI({
+          name: multiAssignedVariable.name,
+          variableType: lowerHighIRTypeToLLVMType(multiAssignedVariable.type),
+          valueBranchTuples: [
+            { value: LLVM_VARIABLE(multiAssignedVariable.branch1Variable), branch: trueLabel },
+            { value: LLVM_VARIABLE(multiAssignedVariable.branch2Variable), branch: falseLabel },
+          ],
+        })
+      );
+    }
   }
 
   private lowerHighIRWhileTrueStatement(s: HighIRWhileTrueStatement): void {
@@ -145,6 +289,7 @@ class LLVMLoweringManager {
     s.multiAssignedVariables.forEach((name) => {
       this.llvmInstructionCollector.push(
         LLVM_PHI({
+          name: renameFunctionParameterReadForSSA(name),
           variableType: checkNotNull(this.parameters[name]),
           valueBranchTuples: [
             { value: LLVM_VARIABLE(name), branch: this.functionStartLabel },

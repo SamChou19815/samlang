@@ -25,6 +25,7 @@ import {
   LLVM_LABEL,
   LLVM_JUMP,
   LLVM_CJUMP,
+  LLVM_SWITCH,
   LLVM_RETURN,
 } from '../llvm-nodes';
 
@@ -354,6 +355,7 @@ it('prettyPrintLLVMInstruction works for LLVM_PHI.', () => {
   expect(
     prettyPrintLLVMInstruction(
       LLVM_PHI({
+        name: 'f',
         variableType: LLVM_INT_TYPE,
         valueBranchTuples: [
           { value: LLVM_VARIABLE('bar'), branch: 'b1' },
@@ -362,7 +364,7 @@ it('prettyPrintLLVMInstruction works for LLVM_PHI.', () => {
         ],
       })
     )
-  ).toBe('phi i64 [ %bar, %b1 ], [ 1, %b2 ], [ 42, %b3 ]');
+  ).toBe('%f = phi i64 [ %bar, %b1 ], [ 1, %b2 ], [ 42, %b3 ]');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_CALL.', () => {
@@ -405,6 +407,12 @@ it('prettyPrintLLVMInstruction works for LLVM_JUMP.', () => {
 it('prettyPrintLLVMInstruction works for LLVM_CJUMP.', () => {
   expect(prettyPrintLLVMInstruction(LLVM_CJUMP(LLVM_VARIABLE('c'), 'b1', 'b2'))).toBe(
     'br i1 %c, label %b1, label %b2'
+  );
+});
+
+it('prettyPrintLLVMInstruction works for LLVM_SWITCH.', () => {
+  expect(prettyPrintLLVMInstruction(LLVM_SWITCH(LLVM_VARIABLE('c'), 'd', ['b1', 'b2', 'b3']))).toBe(
+    'switch i64 %c, label %d [ i64 0, label %b1 i64 1, label %b2 i64 2, label %b3 ]'
   );
 });
 

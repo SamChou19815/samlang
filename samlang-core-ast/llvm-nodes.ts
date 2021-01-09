@@ -161,6 +161,7 @@ export type LLVMStoreInstruction = {
 
 export type LLVMPhiInstruction = {
   readonly __type__: 'LLVMPhiInstruction';
+  readonly name: string;
   readonly variableType: LLVMType;
   readonly valueBranchTuples: readonly { readonly value: LLVMValue; readonly branch: string }[];
 };
@@ -190,6 +191,13 @@ export type LLVMConditionalJumpInstruction = {
   readonly b2: string;
 };
 
+export type LLVMSwitchInstruction = {
+  readonly __type__: 'LLVMSwitchInstruction';
+  readonly condition: LLVMValue;
+  readonly defaultBranchName: string;
+  readonly otherBranchNames: readonly string[];
+};
+
 export type LLVMReturnInstruction = {
   readonly __type__: 'LLVMReturnInstruction';
 } & LLVMAnnotatedValue;
@@ -205,6 +213,7 @@ export type LLVMInstruction =
   | LLVMLabelInstruction
   | LLVMJumpInstruction
   | LLVMConditionalJumpInstruction
+  | LLVMSwitchInstruction
   | LLVMReturnInstruction;
 
 type ConstructorArgumentObject<E extends LLVMInstruction> = Omit<E, '__type__'>;
@@ -273,10 +282,12 @@ export const LLVM_STORE = ({
 });
 
 export const LLVM_PHI = ({
+  name,
   variableType,
   valueBranchTuples,
 }: ConstructorArgumentObject<LLVMPhiInstruction>): LLVMPhiInstruction => ({
   __type__: 'LLVMPhiInstruction',
+  name,
   variableType,
   valueBranchTuples,
 });
@@ -313,6 +324,17 @@ export const LLVM_CJUMP = (
   condition,
   b1,
   b2,
+});
+
+export const LLVM_SWITCH = (
+  condition: LLVMValue,
+  defaultBranchName: string,
+  otherBranchNames: readonly string[]
+): LLVMSwitchInstruction => ({
+  __type__: 'LLVMSwitchInstruction',
+  condition,
+  defaultBranchName,
+  otherBranchNames,
 });
 
 export const LLVM_RETURN = (value: LLVMValue, type: LLVMType): LLVMReturnInstruction => ({
@@ -409,10 +431,12 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       return `store ${type} ${sourceValue}, ${type}* %${instruction.targetVariable}`;
     }
     case 'LLVMPhiInstruction': {
+      const name = instruction.name;
+      const type = prettyPrintLLVMType(instruction.variableType);
       const valueBranchTuplesString = instruction.valueBranchTuples
         .map(({ value, branch }) => `[ ${prettyPrintLLVMValue(value)}, %${branch} ]`)
         .join(', ');
-      return `phi ${prettyPrintLLVMType(instruction.variableType)} ${valueBranchTuplesString}`;
+      return `%${name} = phi ${type} ${valueBranchTuplesString}`;
     }
     case 'LLVMFunctionCallInstruction': {
       const assignedTo =
@@ -431,6 +455,14 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
     case 'LLVMConditionalJumpInstruction': {
       const { condition, b1, b2 } = instruction;
       return `br i1 ${prettyPrintLLVMValue(condition)}, label %${b1}, label %${b2}`;
+    }
+    case 'LLVMSwitchInstruction': {
+      const { defaultBranchName, otherBranchNames } = instruction;
+      const condition = prettyPrintLLVMValue(instruction.condition);
+      const otherBranchMappings = otherBranchNames
+        .map((name, i) => `i64 ${i}, label %${name}`)
+        .join(' ');
+      return `switch i64 ${condition}, label %${defaultBranchName} [ ${otherBranchMappings} ]`;
     }
     case 'LLVMReturnInstruction': {
       const { value, type } = instruction;
