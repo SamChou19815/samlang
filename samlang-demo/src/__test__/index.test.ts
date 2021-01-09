@@ -21,6 +21,26 @@ const _compiled_program_main = () => {
 };
 
 _compiled_program_main();`,
+    llvmString: `declare i64* @_builtin_malloc(i64) nounwind
+declare void @_builtin_println(i64*) nounwind
+declare void @_builtin_throw(i64*) nounwind
+declare i64* @_builtin_intToString(i64) nounwind
+declare i64 @_builtin_stringToInt(i64*) nounwind
+declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
+
+; @GLOBAL_STRING_0 = 'hello world'
+@GLOBAL_STRING_0 = private unnamed_addr constant [11 x i64] [i64 11, i64 104, i64 101, i64 108, i64 108, i64 111, i64 32, i64 119, i64 111, i64 114, i64 108, i64 100], align 8
+define i64 @_module_Demo_class_Main_function_main() local_unnamed_addr nounwind {
+LABEL__module_Demo_class_Main_function_main_0_PURPOSE_START:
+  %_temp_0_string_name_cast = bitcast [11 x i64]* @GLOBAL_STRING_0 to i64*
+  call i64 @_builtin_println(i64* %_temp_0_string_name_cast) nounwind
+  ret i64 0
+}
+define i64 @_compiled_program_main() local_unnamed_addr nounwind {
+LABEL__compiled_program_main_0_PURPOSE_START:
+  call i64 @_module_Demo_class_Main_function_main() nounwind
+  ret i64 0
+}`,
     assemblyString: `    .text
     .intel_syntax noprefix
     .p2align 4, 0x90

@@ -1,10 +1,12 @@
 import type { AssemblyProgram } from 'samlang-core-ast/asm-program';
 import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import type { LLVMModule } from 'samlang-core-ast/llvm-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { typeCheckSources, GlobalTypingContext } from 'samlang-core-checker';
 import {
   compileSamlangSourcesToHighIRSources,
   compileHighIrModuleToMidIRCompilationUnit,
+  lowerHighIRModuleToLLVMModule,
   generateAssemblyInstructionsFromMidIRCompilationUnit,
 } from 'samlang-core-compiler';
 import { CompileTimeError, createGlobalErrorCollector } from 'samlang-core-errors';
@@ -55,6 +57,16 @@ export const checkSources = (
   const [checkedSources, globalTypingContext] = typeCheckSources(moduleMappings, errorCollector);
   return { checkedSources, globalTypingContext, compileTimeErrors: errorCollector.getErrors() };
 };
+
+export const lowerSourcesToLLVMModules = (sources: Sources<SamlangModule>): Sources<LLVMModule> =>
+  hashMapOf(
+    ...compileSamlangSourcesToHighIRSources(sources)
+      .entries()
+      .map(
+        ([moduleReference, highIRModule]) =>
+          [moduleReference, lowerHighIRModuleToLLVMModule(highIRModule)] as const
+      )
+  );
 
 export const lowerSourcesToAssemblyPrograms = (
   sources: Sources<SamlangModule>
