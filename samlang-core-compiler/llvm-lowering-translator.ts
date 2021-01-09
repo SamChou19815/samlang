@@ -155,8 +155,6 @@ class LLVMLoweringManager {
         }
         return;
       }
-      case 'HighIRWhileTrueStatement':
-        throw new Error('WHILE_TRUE should never reach LLVM!');
       case 'HighIRLetDefinitionStatement':
         this.lowerHighIRLetDefinitionStatement(s);
         return;

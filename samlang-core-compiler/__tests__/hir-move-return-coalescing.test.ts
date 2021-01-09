@@ -9,7 +9,6 @@ import {
   HIR_BINARY,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
-  HIR_WHILE_TRUE,
   HIR_LET,
   HIR_NAME,
   HIR_RETURN,
@@ -32,7 +31,16 @@ it('coalesceMoveAndReturnWithForHighIRStatements empty array test', () => {
 });
 
 it('coalesceMoveAndReturnWithForHighIRStatements not end with return test', () => {
-  assertCoalesceMoveAndReturnWithForHighIRStatements([HIR_WHILE_TRUE([], [])], null);
+  assertCoalesceMoveAndReturnWithForHighIRStatements(
+    [
+      HIR_LET({
+        name: 'a',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('b', HIR_INT_TYPE),
+      }),
+    ],
+    null
+  );
 });
 
 it('coalesceMoveAndReturnWithForHighIRStatements not end with return variable test', () => {
@@ -42,7 +50,6 @@ it('coalesceMoveAndReturnWithForHighIRStatements not end with return variable te
 it('coalesceMoveAndReturnWithForHighIRStatements linear sequence test', () => {
   assertCoalesceMoveAndReturnWithForHighIRStatements(
     [
-      HIR_WHILE_TRUE([], []),
       HIR_LET({ name: 'one_const_value', type: HIR_INT_TYPE, assignedExpression: HIR_ONE }),
       HIR_LET({
         name: 'one2',
@@ -71,14 +78,13 @@ it('coalesceMoveAndReturnWithForHighIRStatements linear sequence test', () => {
       }),
       HIR_RETURN(HIR_VARIABLE('_t1', HIR_INT_TYPE)),
     ],
-    'while true {\n}\nreturn 1;'
+    'return 1;'
   );
 });
 
 it('coalesceMoveAndReturnWithForHighIRStatements failed linear sequence test', () => {
   assertCoalesceMoveAndReturnWithForHighIRStatements(
     [
-      HIR_WHILE_TRUE([], []),
       HIR_LET({ name: 'one_const_value', type: HIR_INT_TYPE, assignedExpression: HIR_ONE }),
       HIR_LET({
         name: 'one2',

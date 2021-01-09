@@ -25,7 +25,6 @@ import {
   HIR_STRUCT_INITIALIZATION,
   HIR_INDEX_ACCESS,
   HIR_VARIABLE,
-  HIR_WHILE_TRUE,
   HighIRExpression,
   HighIRStatement,
 } from 'samlang-core-ast/hir-expressions';
@@ -450,19 +449,6 @@ it('HIR statements to JS string test', () => {
   } else {
     return 0;
   }
-}`);
-  expect(
-    highIRStatementToString(
-      HIR_WHILE_TRUE([
-        HIR_FUNCTION_CALL({
-          functionArguments: [],
-          functionExpression: HIR_NAME('func', HIR_INT_TYPE),
-          returnCollector: { name: 'val', type: HIR_STRING_TYPE },
-        }),
-      ])
-    )
-  ).toBe(`while (true) {
-  var val = func();
 }`);
   expect(
     highIRStatementToString(

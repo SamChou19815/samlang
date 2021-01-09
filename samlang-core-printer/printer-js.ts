@@ -119,11 +119,6 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
         PRETTIER_TEXT(' else '),
         createBracesSurroundedBlockDocument(concatStatements(highIRStatement.s2))
       );
-    case 'HighIRWhileTrueStatement':
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT('while (true) '),
-        createBracesSurroundedBlockDocument(concatStatements(highIRStatement.statements))
-      );
     case 'HighIRLetDefinitionStatement':
       return PRETTIER_CONCAT(
         PRETTIER_TEXT(`var ${highIRStatement.name} = `),

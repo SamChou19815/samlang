@@ -11,7 +11,6 @@ import {
   HIR_RETURN,
   HIR_INDEX_ACCESS,
   HIR_BINARY,
-  HIR_WHILE_TRUE,
   HIR_INT,
   HIR_STRUCT_INITIALIZATION,
   debugPrintHighIRStatement,
@@ -106,18 +105,16 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
         body: [],
       },
       [
-        HIR_WHILE_TRUE([
-          HIR_STRUCT_INITIALIZATION({
-            structVariableName: 's',
-            type: HIR_INT_TYPE,
-            expressionList: [HIR_INT(3)],
-          }),
-          HIR_IF_ELSE({
-            booleanExpression: HIR_ONE,
-            s1: [HIR_LET({ name: 'aaa', type: HIR_INT_TYPE, assignedExpression: HIR_INT(3) })],
-            s2: [HIR_RETURN(HIR_INT(3))],
-          }),
-        ]),
+        HIR_STRUCT_INITIALIZATION({
+          structVariableName: 's',
+          type: HIR_INT_TYPE,
+          expressionList: [HIR_INT(3)],
+        }),
+        HIR_IF_ELSE({
+          booleanExpression: HIR_ONE,
+          s1: [HIR_LET({ name: 'aaa', type: HIR_INT_TYPE, assignedExpression: HIR_INT(3) })],
+          s2: [HIR_RETURN(HIR_INT(3))],
+        }),
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME('tailRec', HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)),
           functionArguments: [
@@ -138,13 +135,11 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
     )
       ?.map((it) => debugPrintHighIRStatement(it))
       .join('\n')
-  ).toBe(`while true {
-  let s: int = [3];
-  if 1 {
-    let aaa: int = 3;
-  } else {
-    return 3;
-  }
+  ).toBe(`let s: int = [3];
+if 1 {
+  let aaa: int = 3;
+} else {
+  return 3;
 }
 let _param_n_temp_collector: int = (((n: int) + (n: int))[0]: int);
 let n: int = (_param_n_temp_collector: int);`);
