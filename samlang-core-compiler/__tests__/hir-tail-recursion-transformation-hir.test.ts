@@ -54,6 +54,59 @@ it('performTailRecursiveCallTransformationOnHighIRFunction no tailrec call test'
 `);
 });
 
+it('performTailRecursiveCallTransformationOnHighIRFunction simple flow test 1/2', () => {
+  expect(
+    debugPrintHighIRFunction(
+      performTailRecursiveCallTransformationOnHighIRFunction({
+        name: 'infiniteLoop',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME(
+              'infiniteLoop',
+              HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
+            ),
+            functionArguments: [],
+          }),
+          HIR_RETURN(HIR_ZERO),
+        ],
+      })
+    )
+  ).toBe(`function infiniteLoop(): int {
+  while true {
+  }
+}
+`);
+});
+
+it('performTailRecursiveCallTransformationOnHighIRFunction simple flow test 2/2', () => {
+  expect(
+    debugPrintHighIRFunction(
+      performTailRecursiveCallTransformationOnHighIRFunction({
+        name: 'infiniteLoop',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME(
+              'infiniteLoop',
+              HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
+            ),
+            functionArguments: [],
+            returnCollector: { name: 'r', type: HIR_INT_TYPE },
+          }),
+          HIR_RETURN(HIR_VARIABLE('r', HIR_INT_TYPE)),
+        ],
+      })
+    )
+  ).toBe(`function infiniteLoop(): int {
+  while true {
+  }
+}
+`);
+});
+
 it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', () => {
   expect(
     debugPrintHighIRFunction(

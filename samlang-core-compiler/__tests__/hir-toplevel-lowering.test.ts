@@ -233,8 +233,8 @@ function _module__class_Main_function_main(): int {
 }
 
 function _module__class_Class1_function_infiniteLoop(): int {
-  while true {
-  }
+  _module__class_Class1_function_infiniteLoop();
+  return 0;
 }
 
 function _compiled_program_main(): int {
