@@ -459,6 +459,7 @@ declare i64* @_builtin_intToString(i64) nounwind
 declare i64 @_builtin_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 
+; @hw = 'AA'
 @hw = private unnamed_addr constant [2 x i64] [i64 2, i64 65, i64 65], align 8
 %Foo = { i64, %Bar* }
 define i64 @fact(i64 %n) local_unnamed_addr nounwind {

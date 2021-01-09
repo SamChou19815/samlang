@@ -6,10 +6,11 @@ import type { SamlangProjectConfiguration } from './configuration';
 
 import { assemblyProgramToString } from 'samlang-core-ast/asm-program';
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { compileSamlangSourcesToHighIRSources } from 'samlang-core-compiler';
 import { prettyPrintHighIRModuleAsJS } from 'samlang-core-printer';
-import { lowerSourcesToAssemblyPrograms } from 'samlang-core-services';
+import { lowerSourcesToLLVMModules, lowerSourcesToAssemblyPrograms } from 'samlang-core-services';
 
 const walk = (startPath: string, visitor: (file: string) => void): void => {
   const recursiveVisit = (path: string): void => {
@@ -54,6 +55,21 @@ export const compileToJS = (sources: Sources<SamlangModule>, outputDirectory: st
     writeFileSync(outputJSFilePath, prettyPrintHighIRModuleAsJS(/* availableWidth */ 100, program));
     paths.push(outputJSFilePath);
   });
+};
+
+export const compileToLLVMModules = (
+  sources: Sources<SamlangModule>,
+  outputDirectory: string
+): readonly string[] => {
+  const modules = lowerSourcesToLLVMModules(sources);
+  const paths: string[] = [];
+  modules.forEach((llvmModule, moduleReference) => {
+    const outputLLVMModuleFilePath = join(outputDirectory, `${moduleReference}.ll`);
+    mkdirSync(dirname(outputLLVMModuleFilePath), { recursive: true });
+    writeFileSync(outputLLVMModuleFilePath, prettyPrintLLVMModule(llvmModule));
+    paths.push(outputLLVMModuleFilePath);
+  });
+  return paths;
 };
 
 const compileToX86Assembly = (

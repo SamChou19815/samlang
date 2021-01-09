@@ -529,12 +529,15 @@ declare i64* @_builtin_intToString(i64) nounwind
 declare i64 @_builtin_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 `,
-    ...globalVariables.map(({ name, content }) => {
+    ...globalVariables.flatMap(({ name, content }) => {
       const size = content.length;
       const ints = Array.from(content)
         .map((it) => `i64 ${it.charCodeAt(0)}`)
         .join(', ');
-      return `@${name} = private unnamed_addr constant [${size} x i64] [i64 ${size}, ${ints}], align 8`;
+      return [
+        `; @${name} = '${content}'`,
+        `@${name} = private unnamed_addr constant [${size} x i64] [i64 ${size}, ${ints}], align 8`,
+      ];
     }),
     ...typeDefinitions.map(
       ({ identifier, mappings }) =>
