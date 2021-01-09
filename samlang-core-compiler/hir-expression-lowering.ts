@@ -469,6 +469,8 @@ class HighIRExpressionLoweringManager {
         const contextTempForZeroComparison = this.allocateTemporaryVariable();
         const resultTempB1 = this.allocateTemporaryVariable();
         const resultTempB2 = this.allocateTemporaryVariable();
+        const functionTempB1 = this.allocateTemporaryVariable();
+        const functionTempB2 = this.allocateTemporaryVariable();
         loweredStatements.push(
           HIR_LET({
             name: closureTemp,
@@ -508,12 +510,26 @@ class HighIRExpressionLoweringManager {
             HIR_ZERO
           ),
           s1: [
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_INDEX_ACCESS({
+            HIR_LET({
+              name: functionTempB1,
+              type: HIR_FUNCTION_TYPE(
+                loweredFunctionArguments.map((it) => it.type),
+                loweredReturnType
+              ),
+              assignedExpression: HIR_INDEX_ACCESS({
                 type: HIR_ANY_TYPE,
                 expression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
                 index: 0,
               }),
+            }),
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_VARIABLE(
+                functionTempB1,
+                HIR_FUNCTION_TYPE(
+                  loweredFunctionArguments.map((it) => it.type),
+                  loweredReturnType
+                )
+              ),
               functionArguments: loweredFunctionArguments,
               returnCollector: isVoidReturn
                 ? undefined
@@ -528,12 +544,26 @@ class HighIRExpressionLoweringManager {
                 }),
           ].filter(isNotNull),
           s2: [
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_INDEX_ACCESS({
+            HIR_LET({
+              name: functionTempB2,
+              type: HIR_FUNCTION_TYPE(
+                [HIR_ANY_TYPE, ...loweredFunctionArguments.map((it) => it.type)],
+                loweredReturnType
+              ),
+              assignedExpression: HIR_INDEX_ACCESS({
                 type: HIR_ANY_TYPE,
                 expression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
                 index: 0,
               }),
+            }),
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_VARIABLE(
+                functionTempB2,
+                HIR_FUNCTION_TYPE(
+                  [HIR_ANY_TYPE, ...loweredFunctionArguments.map((it) => it.type)],
+                  loweredReturnType
+                )
+              ),
               functionArguments: [
                 HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
                 ...loweredFunctionArguments,
