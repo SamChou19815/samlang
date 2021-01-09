@@ -3,7 +3,6 @@ import {
   HIR_VARIABLE,
   HIR_LET,
   HIR_IF_ELSE,
-  HIR_WHILE_TRUE,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { checkNotNull } from 'samlang-core-utils';
@@ -95,18 +94,4 @@ const recursivelyPerformTailRecursiveCallTransformationOnStatements = (
   performTailRecursiveCallTransformationOnLinearStatements(highIRFunction, statements) ??
   performTailRecursiveCallTransformationOnIfElseEndedStatements(highIRFunction, statements);
 
-const performTailRecursiveCallTransformationOnHighIRFunction = (
-  highIRFunction: HighIRFunction
-): HighIRFunction => {
-  const potentialRewrittenStatements = recursivelyPerformTailRecursiveCallTransformationOnStatements(
-    highIRFunction,
-    highIRFunction.body
-  );
-  if (potentialRewrittenStatements == null) return highIRFunction;
-  return {
-    ...highIRFunction,
-    body: [HIR_WHILE_TRUE(potentialRewrittenStatements)],
-  };
-};
-
-export default performTailRecursiveCallTransformationOnHighIRFunction;
+export default recursivelyPerformTailRecursiveCallTransformationOnStatements;
