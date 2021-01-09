@@ -6,7 +6,7 @@
     "compile": "tsc --incremental --noEmit"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.19",
+    "@types/jest": "^26.0.20",
     "typescript": "^4.1.3"
   },
   "dependencies": {
