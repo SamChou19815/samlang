@@ -210,9 +210,9 @@ class LLVMLoweringManager {
         this.llvmInstructionCollector.push(LLVM_LABEL(checkNotNull(phiMovesWithLabels[i]).label));
         this.withNestedScope(phiMovesWithLabels, () => {
           statements.forEach((it) => this.lowerHighIRStatement(it));
-          const assignedValue = checkNotNull(
-            this.llvmConstantPropagationContext.getLocalValueType(branchVariable)
-          );
+          const assignedValue =
+            this.llvmConstantPropagationContext.getLocalValueType(branchVariable) ??
+            LLVM_VARIABLE(branchVariable);
           values.push(assignedValue);
         });
         this.llvmInstructionCollector.push(LLVM_JUMP(finalEndLabel));
@@ -258,11 +258,10 @@ class LLVMLoweringManager {
         [{ target: multiAssignedVariable.name, source: multiAssignedVariable.branch1Variable }],
         () => {
           s1.forEach((it) => this.lowerHighIRStatement(it));
-          v1 = checkNotNull(
+          v1 =
             this.llvmConstantPropagationContext.getLocalValueType(
               multiAssignedVariable.branch1Variable
-            )
-          );
+            ) ?? LLVM_VARIABLE(multiAssignedVariable.branch1Variable);
         }
       );
       this.llvmInstructionCollector.push(LLVM_JUMP(endLabel), LLVM_LABEL(falseLabel));
@@ -270,11 +269,10 @@ class LLVMLoweringManager {
         [{ target: multiAssignedVariable.name, source: multiAssignedVariable.branch2Variable }],
         () => {
           s2.forEach((it) => this.lowerHighIRStatement(it));
-          v2 = checkNotNull(
+          v2 =
             this.llvmConstantPropagationContext.getLocalValueType(
               multiAssignedVariable.branch2Variable
-            )
-          );
+            ) ?? LLVM_VARIABLE(multiAssignedVariable.branch2Variable);
         }
       );
       this.llvmInstructionCollector.push(LLVM_LABEL(endLabel));

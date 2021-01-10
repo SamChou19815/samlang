@@ -6,6 +6,7 @@ import { MidIRCompilationUnit, midIRCompilationUnitToString } from 'samlang-core
 import {
   compileSamlangSourcesToHighIRSources,
   compileHighIrModuleToMidIRCompilationUnit,
+  lowerHighIRModuleToLLVMModule,
   generateAssemblyInstructionsFromMidIRCompilationUnit,
 } from 'samlang-core-compiler';
 import interpretAssemblyProgram from 'samlang-core-interpreter/assembly-interpreter';
@@ -39,10 +40,18 @@ if (process.env.CI) {
   });
 }
 
+const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
+
+runnableSamlangProgramTestCases.forEach(({ testCaseName }) => {
+  const highIRModule = hirSources.get(new ModuleReference([testCaseName]));
+  assertNotNull(highIRModule);
+  it(`LLVM[no-opt]: ${testCaseName}`, () => {
+    lowerHighIRModuleToLLVMModule(highIRModule);
+  });
+});
+
 const mirBaseTestCases: readonly MidIRTestCase[] = (() => {
   expect(compileTimeErrors).toEqual([]);
-
-  const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
 
   return runnableSamlangProgramTestCases.map(({ testCaseName, expectedStandardOut }) => {
     const highIRModule = hirSources.get(new ModuleReference([testCaseName]));

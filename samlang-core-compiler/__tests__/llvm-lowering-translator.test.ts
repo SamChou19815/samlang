@@ -150,7 +150,7 @@ it('prettyPrintLLVMFunction works for base expressions 4/n', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for statements 1/n', () => {
+it('prettyPrintLLVMFunction works for HIR_FUNCTION_CALL', () => {
   assertStatementLoweringWorks(
     [
       HIR_FUNCTION_CALL({
@@ -171,7 +171,7 @@ it('prettyPrintLLVMFunction works for statements 1/n', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for statements 2/n', () => {
+it('prettyPrintLLVMFunction works for HIR_IF_ELSE 1/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_IF_ELSE({
@@ -205,7 +205,52 @@ LABEL_testFunction_3_PURPOSE_if_else_end_label:`
   );
 });
 
-it('prettyPrintLLVMFunction works for statements 3/n', () => {
+it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_IF_ELSE({
+        multiAssignedVariable: {
+          name: 'ma',
+          type: INT,
+          branch1Variable: 'b1',
+          branch2Variable: 'b2',
+        },
+        booleanExpression: HIR_BINARY({
+          operator: '==',
+          e1: HIR_VARIABLE('t', INT),
+          e2: HIR_INT(2),
+        }),
+        s1: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+            functionArguments: [],
+            returnCollector: { name: 'b1', type: INT },
+          }),
+          HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b1', INT) }),
+        ],
+        s2: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
+            functionArguments: [],
+            returnCollector: { name: 'b2', type: INT },
+          }),
+          HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b2', INT) }),
+        ],
+      }),
+    ],
+    `  %_temp_0_binary_temp = icmp eq i1 %t, 2
+  br i1 %_temp_0_binary_temp, label %LABEL_testFunction_1_PURPOSE_if_else_true_label, label %LABEL_testFunction_2_PURPOSE_if_else_false_label
+LABEL_testFunction_1_PURPOSE_if_else_true_label:
+  %b1 = call i64 @foo() nounwind
+  br label %LABEL_testFunction_3_PURPOSE_if_else_end_label
+LABEL_testFunction_2_PURPOSE_if_else_false_label:
+  %b2 = call i64 @bar() nounwind
+LABEL_testFunction_3_PURPOSE_if_else_end_label:
+  %ma = phi i64 [ %b1, %LABEL_testFunction_1_PURPOSE_if_else_true_label ], [ %b2, %LABEL_testFunction_2_PURPOSE_if_else_false_label ]`
+  );
+});
+
+it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_IF_ELSE({
@@ -278,7 +323,7 @@ LABEL_testFunction_1_PURPOSE_match_end:
   );
 });
 
-it('prettyPrintLLVMFunction works for statements 4/n', () => {
+it('prettyPrintLLVMFunction works for HIR_IF_ELSE 4/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_IF_ELSE({
@@ -313,7 +358,7 @@ LABEL_testFunction_3_PURPOSE_if_else_end_label:
   );
 });
 
-it('prettyPrintLLVMFunction works for statements 5/n', () => {
+it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 1/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_STRUCT_INITIALIZATION({
@@ -333,7 +378,7 @@ it('prettyPrintLLVMFunction works for statements 5/n', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for statements 6/n', () => {
+it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 2/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_STRUCT_INITIALIZATION({
@@ -351,7 +396,7 @@ it('prettyPrintLLVMFunction works for statements 6/n', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for statements 7/n', () => {
+it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 3/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_STRUCT_INITIALIZATION({
@@ -369,7 +414,7 @@ it('prettyPrintLLVMFunction works for statements 7/n', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for statements 8/n', () => {
+it('prettyPrintLLVMFunction works for HIR_LET with type conversion', () => {
   assertStatementLoweringWorks(
     [HIR_LET({ name: 's', type: HIR_STRING_TYPE, assignedExpression: HIR_ZERO })],
     '  %s = inttoptr i64 0 to i64*'
