@@ -27,6 +27,7 @@ import {
   HIR_LET,
   HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
+  HIR_BINARY,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import {
@@ -324,12 +325,12 @@ class HighIRExpressionLoweringManager {
       case '!':
         return {
           statements: result.statements,
-          expression: createHighIRFlexibleOrderOperatorNode('^', result.expression, HIR_TRUE),
+          expression: HIR_BINARY({ operator: '^', e1: result.expression, e2: HIR_TRUE }),
         };
       case '-':
         return {
           statements: result.statements,
-          expression: createHighIRFlexibleOrderOperatorNode('-', HIR_ZERO, result.expression),
+          expression: HIR_BINARY({ operator: '-', e1: HIR_ZERO, e2: result.expression }),
         };
     }
   }
@@ -509,11 +510,11 @@ class HighIRExpressionLoweringManager {
                 branch1Variable: resultTempB1,
                 branch2Variable: resultTempB2,
               },
-          booleanExpression: createHighIRFlexibleOrderOperatorNode(
-            '==',
-            HIR_VARIABLE(contextTempForZeroComparison, HIR_INT_TYPE),
-            HIR_ZERO
-          ),
+          booleanExpression: HIR_BINARY({
+            operator: '==',
+            e1: HIR_VARIABLE(contextTempForZeroComparison, HIR_INT_TYPE),
+            e2: HIR_ZERO,
+          }),
           s1: [
             HIR_INDEX_ACCESS({
               name: functionTempRawB1,
@@ -885,11 +886,11 @@ class HighIRExpressionLoweringManager {
               loweredMatchingList[loweredMatchingList.length - 1]?.branchVariable
             ),
           },
-      booleanExpression: createHighIRFlexibleOrderOperatorNode(
-        '==',
-        HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
-        HIR_INT(checkNotNull(loweredMatchingList[loweredMatchingList.length - 2]).tagOrder)
-      ),
+      booleanExpression: HIR_BINARY({
+        operator: '==',
+        e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
+        e2: HIR_INT(checkNotNull(loweredMatchingList[loweredMatchingList.length - 2]).tagOrder),
+      }),
       s1: checkNotNull(loweredMatchingList[loweredMatchingList.length - 2]).statements,
       s2: checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).statements,
     });
@@ -905,11 +906,11 @@ class HighIRExpressionLoweringManager {
               // Marker for the existence of nested if-else for match
               branch2Variable: temporaryVariable,
             },
-        booleanExpression: createHighIRFlexibleOrderOperatorNode(
-          '==',
-          HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
-          HIR_INT(tagOrder)
-        ),
+        booleanExpression: HIR_BINARY({
+          operator: '==',
+          e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
+          e2: HIR_INT(tagOrder),
+        }),
         s1: localStatements,
         s2: [ifElse],
       });
