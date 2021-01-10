@@ -20,20 +20,9 @@ it('debugPrintHighIRStatement works', () => {
     debugPrintHighIRStatement(
       HIR_IF_ELSE({
         booleanExpression: HIR_ZERO,
-        multiAssignedVariable: {
-          name: 'bar',
-          type: HIR_INT_TYPE,
-          branch1Variable: 'b1',
-          branch2Variable: 'b2',
-        },
         s1: [
           HIR_SWITCH({ caseVariable: 'f', cases: [] }),
           HIR_SWITCH({
-            multiAssignedVariable: {
-              name: 'ma',
-              type: HIR_INT_TYPE,
-              branchVariables: ['b1', 'b2'],
-            },
             caseVariable: 'f',
             cases: [
               {
@@ -45,6 +34,11 @@ it('debugPrintHighIRStatement works', () => {
                 statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar')))],
               },
             ],
+            finalAssignment: {
+              name: 'ma',
+              type: HIR_INT_TYPE,
+              branchValues: [HIR_VARIABLE('b1', HIR_INT_TYPE), HIR_VARIABLE('b2', HIR_INT_TYPE)],
+            },
           }),
           HIR_LET({
             name: 'foo',
@@ -76,28 +70,38 @@ it('debugPrintHighIRStatement works', () => {
             index: 0,
           }),
         ],
+        finalAssignment: {
+          name: 'bar',
+          type: HIR_INT_TYPE,
+          branch1Value: HIR_VARIABLE('b1', HIR_INT_TYPE),
+          branch2Value: HIR_VARIABLE('b2', HIR_INT_TYPE),
+        },
       })
     )
-  ).toBe(`if 0 {
-  switch (f)} {
+  ).toBe(`let bar: int;
+if 0 {
+  switch (f) {
   }
-  switch (f)} {
+  let ma: int;
+  switch (f) {
     case 1: {
       return (foo: Bar);
+      ma = (b1: int);
     }
     case 2: {
       return (foo: Bar);
+      ma = (b2: int);
     }
   }
-  // ma: int = phi(b1, b2)
   let foo: Bar = (dev: Bar);
   return (foo: Bar);
+  bar = (b1: int);
 } else {
   let dd: int = 0 + 0;
   let baz: (int, string) = [meggo];
   let vibez: int = h((big: (int, int)));
   stresso((d: int));
   let f: int = (big: (int, int))[0];
-}
-// bar: int = phi(b1, b2)`);
+  bar = (b2: int);
+}`);
 });

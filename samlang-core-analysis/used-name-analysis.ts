@@ -31,11 +31,20 @@ const collectUsedNamesFromStatement = (set: Set<string>, statement: HighIRStatem
       collectUsedNamesFromExpression(set, statement.booleanExpression);
       statement.s1.forEach((it) => collectUsedNamesFromStatement(set, it));
       statement.s2.forEach((it) => collectUsedNamesFromStatement(set, it));
+      if (statement.finalAssignment != null) {
+        collectUsedNamesFromExpression(set, statement.finalAssignment.branch1Value);
+        collectUsedNamesFromExpression(set, statement.finalAssignment.branch2Value);
+      }
       break;
     case 'HighIRSwitchStatement':
       statement.cases
         .flatMap((it) => it.statements)
         .forEach((it) => collectUsedNamesFromStatement(set, it));
+      if (statement.finalAssignment != null) {
+        statement.finalAssignment.branchValues.forEach((it) =>
+          collectUsedNamesFromExpression(set, it)
+        );
+      }
       break;
     case 'HighIRLetDefinitionStatement':
       collectUsedNamesFromExpression(set, statement.assignedExpression);

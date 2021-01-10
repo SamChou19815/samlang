@@ -24,7 +24,7 @@ const coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable = (
       // We cannot safely ignore a function call.
       return null;
     case 'HighIRIfElseStatement': {
-      const { booleanExpression, s1, s2 } = statementBeforeReturn;
+      const { booleanExpression, s1, s2, finalAssignment } = statementBeforeReturn;
       const trueBranchResult = coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable(
         s1,
         s1.length,
@@ -40,6 +40,7 @@ const coalesceMoveAndReturnWithForHighIRStatementsWithKnownReturnedVariable = (
       return [
         ...statements.slice(0, indexOfFinalReturnStatement - 1),
         HIR_IF_ELSE({
+          finalAssignment,
           booleanExpression,
           s1: trueBranchResult,
           s2: falseBranchResult,

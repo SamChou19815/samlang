@@ -11,6 +11,7 @@ import {
   HIR_RETURN,
   HIR_IF_ELSE,
   HIR_BINARY,
+  HIR_SWITCH,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_INT_TYPE, HIR_FUNCTION_TYPE } from 'samlang-core-ast/hir-types';
 
@@ -51,6 +52,7 @@ it('analyzeUsedFunctionNames test', () => {
               functionArguments: [HIR_NAME('haha', HIR_INT_TYPE)],
             }),
             HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE)),
+            HIR_SWITCH({ caseVariable: 'a', cases: [] }),
             HIR_IF_ELSE({
               booleanExpression: HIR_ZERO,
               s1: [
