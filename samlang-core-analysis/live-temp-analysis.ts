@@ -1,25 +1,24 @@
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runBackwardDataflowAnalysis } from './dataflow-analysis';
 
-import type { HighIRExpression } from 'samlang-core-ast/hir-expressions';
-import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
+import type { MidIRExpression, MidIRStatement } from 'samlang-core-ast/mir-nodes';
 import { setEquals } from 'samlang-core-utils';
 
 const collectUsesFromMidIRExpression = (
   uses: Set<string>,
-  expression: HighIRExpression
+  expression: MidIRExpression
 ): Set<string> => {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRNameExpression':
+    case 'MidIRConstantExpression':
+    case 'MidIRNameExpression':
       return uses;
-    case 'HighIRVariableExpression':
+    case 'MidIRTemporaryExpression':
       uses.add(expression.name);
       return uses;
-    case 'HighIRIndexAccessExpression':
-      collectUsesFromMidIRExpression(uses, expression.expression);
+    case 'MidIRImmutableMemoryExpression':
+      collectUsesFromMidIRExpression(uses, expression.indexExpression);
       return uses;
-    case 'HighIRBinaryExpression':
+    case 'MidIRBinaryExpression':
       collectUsesFromMidIRExpression(uses, expression.e1);
       collectUsesFromMidIRExpression(uses, expression.e2);
       return uses;

@@ -11,8 +11,11 @@ import {
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_COMPILED_PROGRAM_MAIN,
 } from 'samlang-core-ast/common-names';
-import type { HighIRExpression } from 'samlang-core-ast/hir-expressions';
-import type { MidIRFunction, MidIRCompilationUnit } from 'samlang-core-ast/mir-nodes';
+import type {
+  MidIRFunction,
+  MidIRCompilationUnit,
+  MidIRExpression,
+} from 'samlang-core-ast/mir-nodes';
 import { Long, assertNotNull, checkNotNull } from 'samlang-core-utils';
 
 class StackFrame {
@@ -58,30 +61,28 @@ const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
 const interpretMidIRExpression = (
   environment: MidIRInterpreterMutableGlobalEnvironment,
   stackFrame: StackFrame,
-  expression: HighIRExpression
+  expression: MidIRExpression
 ): Long => {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
+    case 'MidIRConstantExpression':
       return expression.value;
-    case 'HighIRNameExpression': {
+    case 'MidIRNameExpression': {
       const value = environment.globalVariables.get(expression.name);
       // istanbul ignore next
       if (value == null) throw new Error(`Referencing undefined global ${expression.name}.`);
       return value;
     }
-    case 'HighIRVariableExpression':
+    case 'MidIRTemporaryExpression':
       return stackFrame.getLocalValue(expression.name);
-    case 'HighIRIndexAccessExpression': {
+    case 'MidIRImmutableMemoryExpression': {
       const value = environment.heap.get(
-        interpretMidIRExpression(environment, stackFrame, expression.expression)
-          .add(expression.index * 8)
-          .toString()
+        interpretMidIRExpression(environment, stackFrame, expression.indexExpression).toString()
       );
       // istanbul ignore next
       if (value == null) throw new Error();
       return value;
     }
-    case 'HighIRBinaryExpression': {
+    case 'MidIRBinaryExpression': {
       const value1 = interpretMidIRExpression(environment, stackFrame, expression.e1);
       const value2 = interpretMidIRExpression(environment, stackFrame, expression.e2);
       switch (expression.operator) {
@@ -203,7 +204,7 @@ const interpretMidIRFunction = (
         );
         const functionExpression = statementToInterpret.functionExpression;
         let functionName: string;
-        if (functionExpression.__type__ === 'HighIRNameExpression') {
+        if (functionExpression.__type__ === 'MidIRNameExpression') {
           functionName = functionExpression.name;
           let result: Long | null;
           switch (functionName) {

@@ -1,20 +1,14 @@
 import generateAssemblyInstructionsFromMidIRCompilationUnit from '../asm-toplevel-generator';
 
 import { assemblyInstructionToString } from 'samlang-core-ast/asm-instructions';
-import type { IROperator } from 'samlang-core-ast/common-operators';
-import {
-  HighIRExpression,
-  HighIRVariableExpression,
-  HIR_ZERO,
-  HIR_ONE,
-  HIR_NAME,
-  HIR_VARIABLE,
-  HIR_INDEX_ACCESS,
-  HIR_BINARY,
-} from 'samlang-core-ast/hir-expressions';
-import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   MidIRCompilationUnit,
+  MIR_ZERO,
+  MIR_ONE,
+  MIR_TEMP,
+  MIR_NAME,
+  MIR_OP,
+  MIR_IMMUTABLE_MEM,
   MIR_MOVE_TEMP,
   MIR_MOVE_IMMUTABLE_MEM,
   MIR_CALL_FUNCTION,
@@ -22,15 +16,10 @@ import {
   MIR_CJUMP_FALLTHROUGH,
   MIR_RETURN,
   MIR_JUMP,
+  MidIRTemporaryExpression,
+  MidIRExpression,
 } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
-
-const MIR_TEMP = (n: string) => HIR_VARIABLE(n, HIR_INT_TYPE);
-const MIR_OP = (
-  operator: IROperator,
-  e1: HighIRExpression,
-  e2: HighIRExpression
-): HighIRExpression => HIR_BINARY({ operator, e1, e2 });
 
 const compile = (
   compilationUnit: MidIRCompilationUnit,
@@ -53,13 +42,13 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 0', () => {
         {
           functionName: 'emptyFunction',
           argumentNames: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'],
-          mainBodyStatements: [MIR_RETURN(HIR_ZERO)],
+          mainBodyStatements: [MIR_RETURN(MIR_ZERO)],
         },
       ],
     })
   ).toBe(`emptyFunction:
-mov rax, qword ptr [rbp+16]
-mov rax, qword ptr [rbp+24]
+lea rax, qword ptr [rbp+16]
+lea rax, qword ptr [rbp+24]
 mov rax, 0
 ret`);
 });
@@ -73,7 +62,7 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 1', () => {
           {
             functionName: 'emptyFunction',
             argumentNames: ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
-            mainBodyStatements: [MIR_RETURN(HIR_ZERO)],
+            mainBodyStatements: [MIR_RETURN(MIR_ZERO)],
           },
         ],
       },
@@ -94,7 +83,9 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 1', () => {
 ## 'mov rcx, rcx' is optimized away.
 ## 'mov r8, r8' is optimized away.
 ## 'mov r9, r9' is optimized away.
-mov rax, qword ptr [rbp+16]
+## leaMidIRComparisonBinaryExpressionTiler (rbp + 16)
+lea rax, qword ptr [rbp+16]
+## 'mov rax, rax' is optimized away.
 ## return 0;
 mov rax, 0
 ## 'mov rbx, rbx' is optimized away.
@@ -118,11 +109,8 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 2', () => {
           argumentNames: ['a'],
           mainBodyStatements: [
             MIR_MOVE_TEMP('a', MIR_TEMP('a')),
-            MIR_MOVE_IMMUTABLE_MEM(
-              MIR_TEMP('a'),
-              HIR_INDEX_ACCESS({ type: HIR_INT_TYPE, expression: MIR_TEMP('a'), index: 0 })
-            ),
-            MIR_RETURN(HIR_ZERO),
+            MIR_MOVE_IMMUTABLE_MEM(MIR_TEMP('a'), MIR_IMMUTABLE_MEM(MIR_TEMP('a'))),
+            MIR_RETURN(MIR_ZERO),
           ],
         },
       ],
@@ -143,8 +131,8 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 3', () => {
           functionName: 'infiniteLoop',
           argumentNames: [],
           mainBodyStatements: [
-            MIR_CALL_FUNCTION(HIR_NAME('infiniteLoop', HIR_INT_TYPE), []),
-            MIR_RETURN(HIR_ZERO),
+            MIR_CALL_FUNCTION(MIR_NAME('infiniteLoop'), []),
+            MIR_RETURN(MIR_ZERO),
           ],
         },
       ],
@@ -168,10 +156,10 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 4', () => {
           functionName: 'factorial',
           argumentNames: ['n', 'acc'],
           mainBodyStatements: [
-            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'l_RETURN_ACC'),
+            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), MIR_ZERO), 'l_RETURN_ACC'),
             MIR_CALL_FUNCTION(
-              HIR_NAME('factorial', HIR_INT_TYPE),
-              [MIR_OP('-', MIR_TEMP('n'), HIR_ONE), MIR_OP('*', MIR_TEMP('acc'), MIR_TEMP('n'))],
+              MIR_NAME('factorial'),
+              [MIR_OP('-', MIR_TEMP('n'), MIR_ONE), MIR_OP('*', MIR_TEMP('acc'), MIR_TEMP('n'))],
               'dummy'
             ),
             MIR_RETURN(MIR_TEMP('dummy')),
@@ -199,11 +187,11 @@ ret`);
 });
 
 it('generateAssemblyInstructionsFromMidIRCompilationUnit test 5', () => {
-  const temps: HighIRVariableExpression[] = [];
+  const temps: MidIRTemporaryExpression[] = [];
   for (let i = 0; i < 30; i += 1) {
     temps.push(MIR_TEMP(`v${i}`));
   }
-  let op: HighIRExpression = checkNotNull(temps[0]);
+  let op: MidIRExpression = checkNotNull(temps[0]);
   for (let i = 1; i < 30; i += 1) {
     op = MIR_OP('+', op, checkNotNull(temps[i]));
   }
@@ -215,7 +203,7 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 5', () => {
           functionName: 'tooMuchInterference',
           argumentNames: [],
           mainBodyStatements: [
-            ...temps.map((temp) => MIR_MOVE_TEMP(temp.name, HIR_ZERO)),
+            ...temps.map((temp) => MIR_MOVE_TEMP(temp.name, MIR_ZERO)),
             MIR_RETURN(op),
           ],
         },
@@ -308,10 +296,10 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 6', () => {
           functionName: 'factorial',
           argumentNames: ['n'],
           mainBodyStatements: [
-            MIR_MOVE_TEMP('acc', HIR_ONE),
+            MIR_MOVE_TEMP('acc', MIR_ONE),
             MIR_LABEL('begin'),
-            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'l_RETURN_ACC'),
-            MIR_MOVE_TEMP('n1', MIR_OP('-', MIR_TEMP('n'), HIR_ONE)),
+            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), MIR_ZERO), 'l_RETURN_ACC'),
+            MIR_MOVE_TEMP('n1', MIR_OP('-', MIR_TEMP('n'), MIR_ONE)),
             MIR_MOVE_TEMP('acc', MIR_OP('*', MIR_TEMP('acc'), MIR_TEMP('n'))),
             MIR_MOVE_TEMP('n', MIR_TEMP('n1')),
             MIR_JUMP('begin'),
@@ -343,15 +331,15 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 7', () => {
           functionName: 'factorial',
           argumentNames: ['n'],
           mainBodyStatements: [
-            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'l_RETURN_1'),
+            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), MIR_ZERO), 'l_RETURN_1'),
             MIR_CALL_FUNCTION(
-              HIR_NAME('factorial', HIR_INT_TYPE),
-              [MIR_OP('-', MIR_TEMP('n'), HIR_ONE)],
+              MIR_NAME('factorial'),
+              [MIR_OP('-', MIR_TEMP('n'), MIR_ONE)],
               'dummy'
             ),
             MIR_RETURN(MIR_OP('*', MIR_TEMP('n'), MIR_TEMP('dummy'))),
             MIR_LABEL('l_RETURN_1'),
-            MIR_RETURN(HIR_ONE),
+            MIR_RETURN(MIR_ONE),
           ],
         },
       ],

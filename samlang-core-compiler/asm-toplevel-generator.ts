@@ -14,13 +14,15 @@ import {
   ASM_LABEL,
 } from 'samlang-core-ast/asm-instructions';
 import type { AssemblyProgram } from 'samlang-core-ast/asm-program';
-import { HighIRExpression, HIR_INDEX_ACCESS, HIR_VARIABLE } from 'samlang-core-ast/hir-expressions';
-import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   MidIRCompilationUnit,
+  MidIRExpression,
   MidIRFunction,
   MidIRStatement,
+  MIR_CONST,
   MIR_MOVE_TEMP,
+  MIR_OP,
+  MIR_TEMP,
 } from 'samlang-core-ast/mir-nodes';
 import { optimizeAssemblyWithSimpleOptimization } from 'samlang-core-optimization/simple-optimizations';
 
@@ -68,28 +70,24 @@ const fixCallingConvention = (
   return fixedInstructions;
 };
 
-const getArgPlaceInsideFunction = (argId: number): HighIRExpression => {
+const getArgPlaceInsideFunction = (argId: number): MidIRExpression => {
   switch (argId) {
     case 0:
-      return HIR_VARIABLE(RDI.id, HIR_INT_TYPE);
+      return MIR_TEMP(RDI.id);
     case 1:
-      return HIR_VARIABLE(RSI.id, HIR_INT_TYPE);
+      return MIR_TEMP(RSI.id);
     case 2:
-      return HIR_VARIABLE(RDX.id, HIR_INT_TYPE);
+      return MIR_TEMP(RDX.id);
     case 3:
-      return HIR_VARIABLE(RCX.id, HIR_INT_TYPE);
+      return MIR_TEMP(RCX.id);
     case 4:
-      return HIR_VARIABLE(R8.id, HIR_INT_TYPE);
+      return MIR_TEMP(R8.id);
     case 5:
-      return HIR_VARIABLE(R9.id, HIR_INT_TYPE);
+      return MIR_TEMP(R9.id);
     default: {
       // -4 because -6 for reg arg place and +2 for the RIP and saved RBP.
       const offsetUnit = argId - 4;
-      return HIR_INDEX_ACCESS({
-        type: HIR_INT_TYPE,
-        expression: HIR_VARIABLE(RBP.id, HIR_INT_TYPE),
-        index: offsetUnit,
-      });
+      return MIR_OP('+', MIR_TEMP(RBP.id), MIR_CONST(offsetUnit * 8));
     }
   }
 };

@@ -1,37 +1,39 @@
 import analyzeLocalValueNumberingAssignment, {
   ReadonlyLocalNumberingInformation,
 } from 'samlang-core-analysis/local-value-numbering-analysis';
-import { HighIRExpression, HIR_INDEX_ACCESS, HIR_BINARY } from 'samlang-core-ast/hir-expressions';
-import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
+import {
+  MidIRExpression,
+  MidIRStatement,
+  MIR_IMMUTABLE_MEM,
+  MIR_OP,
+} from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
 const rewriteMidIRExpressionWithLocalValueNumberingInformation = (
   information: ReadonlyLocalNumberingInformation,
-  expression: HighIRExpression
-): HighIRExpression => {
+  expression: MidIRExpression
+): MidIRExpression => {
   const replacement = information.getTemporaryReplacementForExpression(expression);
   if (replacement != null) return replacement;
 
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRNameExpression':
-    case 'HighIRVariableExpression':
+    case 'MidIRConstantExpression':
+    case 'MidIRNameExpression':
+    case 'MidIRTemporaryExpression':
       return expression;
-    case 'HighIRIndexAccessExpression':
-      return HIR_INDEX_ACCESS({
-        type: expression.type,
-        expression: rewriteMidIRExpressionWithLocalValueNumberingInformation(
+    case 'MidIRImmutableMemoryExpression':
+      return MIR_IMMUTABLE_MEM(
+        rewriteMidIRExpressionWithLocalValueNumberingInformation(
           information,
-          expression.expression
-        ),
-        index: expression.index,
-      });
-    case 'HighIRBinaryExpression':
-      return HIR_BINARY({
-        operator: expression.operator,
-        e1: rewriteMidIRExpressionWithLocalValueNumberingInformation(information, expression.e1),
-        e2: rewriteMidIRExpressionWithLocalValueNumberingInformation(information, expression.e2),
-      });
+          expression.indexExpression
+        )
+      );
+    case 'MidIRBinaryExpression':
+      return MIR_OP(
+        expression.operator,
+        rewriteMidIRExpressionWithLocalValueNumberingInformation(information, expression.e1),
+        rewriteMidIRExpressionWithLocalValueNumberingInformation(information, expression.e2)
+      );
   }
 };
 

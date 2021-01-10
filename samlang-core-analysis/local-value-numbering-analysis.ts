@@ -1,16 +1,13 @@
 import ControlFlowGraph, { ControlFlowGraphNode } from './control-flow-graph';
 
 import {
-  HighIRExpression,
-  HighIRVariableExpression,
-  debugPrintHighIRExpressionUntyped,
-  HIR_VARIABLE,
-} from 'samlang-core-ast/hir-expressions';
-import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
-import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
+  MidIRExpression,
+  MidIRTemporaryExpression,
+  MidIRStatement,
+  midIRExpressionToString,
+  MIR_TEMP,
+} from 'samlang-core-ast/mir-nodes';
 import { assertNotNull } from 'samlang-core-utils';
-
-const MIR_TEMP = (n: string) => HIR_VARIABLE(n, HIR_INT_TYPE);
 
 class LocalNumberingAllocator {
   private id = 0;
@@ -24,8 +21,8 @@ class LocalNumberingAllocator {
 
 export interface ReadonlyLocalNumberingInformation {
   getTemporaryReplacementForExpression(
-    midIrExpression: HighIRExpression
-  ): HighIRVariableExpression | null;
+    midIrExpression: MidIRExpression
+  ): MidIRTemporaryExpression | null;
 }
 
 /** EXPOSED FOR TESTING. DO NOT RELY ON IMPLEMENTATION DETAIL. */
@@ -44,27 +41,23 @@ export class LocalNumberingInformation implements ReadonlyLocalNumberingInformat
 
   addExpressionToNumberBinding(
     allocator: LocalNumberingAllocator,
-    midIrExpression: HighIRExpression
+    midIrExpression: MidIRExpression
   ): void {
-    const key = debugPrintHighIRExpressionUntyped(midIrExpression);
+    const key = midIRExpressionToString(midIrExpression);
     if (this.expressionToNumberMapping[key] == null) {
       this.expressionToNumberMapping[key] = allocator.allocateNextID();
     }
   }
 
   addNumberToTemporaryBinding(number: number, nameOfTemporary: string): void {
-    this.expressionToNumberMapping[
-      debugPrintHighIRExpressionUntyped(MIR_TEMP(nameOfTemporary))
-    ] = number;
+    this.expressionToNumberMapping[midIRExpressionToString(MIR_TEMP(nameOfTemporary))] = number;
     this.numberToTemporaryMapping[number] = nameOfTemporary;
   }
 
   getTemporaryReplacementForExpression(
-    midIrExpression: HighIRExpression
-  ): HighIRVariableExpression | null {
-    const number = this.expressionToNumberMapping[
-      debugPrintHighIRExpressionUntyped(midIrExpression)
-    ];
+    midIrExpression: MidIRExpression
+  ): MidIRTemporaryExpression | null {
+    const number = this.expressionToNumberMapping[midIRExpressionToString(midIrExpression)];
     if (number == null) return null;
     const temporary = this.numberToTemporaryMapping[number];
     return temporary == null ? null : MIR_TEMP(temporary);
@@ -78,19 +71,19 @@ const createNewLocalNumberingInformation = (
 ): LocalNumberingInformation => {
   const newMutableLocalNumberingInformation = oldLocalNumberingInformation.copy();
 
-  const collectInformationFromAllSubExpressions = (expression: HighIRExpression): void => {
+  const collectInformationFromAllSubExpressions = (expression: MidIRExpression): void => {
     switch (expression.__type__) {
-      case 'HighIRIntLiteralExpression':
-      case 'HighIRNameExpression':
+      case 'MidIRConstantExpression':
+      case 'MidIRNameExpression':
         return;
-      case 'HighIRVariableExpression':
+      case 'MidIRTemporaryExpression':
         newMutableLocalNumberingInformation.addExpressionToNumberBinding(allocator, expression);
         return;
-      case 'HighIRIndexAccessExpression':
-        collectInformationFromAllSubExpressions(expression.expression);
+      case 'MidIRImmutableMemoryExpression':
+        collectInformationFromAllSubExpressions(expression.indexExpression);
         newMutableLocalNumberingInformation.addExpressionToNumberBinding(allocator, expression);
         return;
-      case 'HighIRBinaryExpression':
+      case 'MidIRBinaryExpression':
         collectInformationFromAllSubExpressions(expression.e1);
         collectInformationFromAllSubExpressions(expression.e2);
         newMutableLocalNumberingInformation.addExpressionToNumberBinding(allocator, expression);
@@ -103,7 +96,7 @@ const createNewLocalNumberingInformation = (
       collectInformationFromAllSubExpressions(source);
       const sourceNumber =
         newMutableLocalNumberingInformation.expressionToNumberMapping[
-          debugPrintHighIRExpressionUntyped(source)
+          midIRExpressionToString(source)
         ];
       newMutableLocalNumberingInformation.addNumberToTemporaryBinding(
         sourceNumber ?? allocator.allocateNextID(),

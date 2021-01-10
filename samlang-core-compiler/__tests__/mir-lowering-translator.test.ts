@@ -88,7 +88,7 @@ l__2_IF_ELSE_END:`
         index: 2,
       }),
     }),
-    '_foo = _this[2];'
+    '_foo = MEM[(_this + 16)];'
   );
 
   assertCorrectlyLoweredWithPreConfiguredSetup(

@@ -6,7 +6,6 @@ import reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath from './mir-basic-bloc
 import midIRTranslateStatementsAndCollectGlobalStrings from './mir-lowering-translator';
 import MidIRResourceAllocator from './mir-resource-allocator';
 
-import { HIR_ZERO } from 'samlang-core-ast/hir-expressions';
 import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import {
   MidIRCompilationUnit,
@@ -14,6 +13,7 @@ import {
   MIR_JUMP,
   MIR_LABEL,
   MIR_RETURN,
+  MIR_ZERO,
 } from 'samlang-core-ast/mir-nodes';
 import { optimizeIrWithSimpleOptimization } from 'samlang-core-optimization/simple-optimizations';
 
@@ -36,7 +36,7 @@ const compileHighIrModuleToMidIRCompilationUnit = (
     );
     let finalStatements: typeof loweredStatements;
     if (tailRecursionRewrittenStatements == null) {
-      finalStatements = [...loweredStatements, MIR_RETURN(HIR_ZERO)];
+      finalStatements = [...loweredStatements, MIR_RETURN(MIR_ZERO)];
     } else {
       const whileTrueStartLabel = allocator.allocateLabelWithAnnotation(
         highIRFunction.name,
@@ -46,7 +46,7 @@ const compileHighIrModuleToMidIRCompilationUnit = (
         MIR_LABEL(whileTrueStartLabel),
         ...loweredStatements,
         MIR_JUMP(whileTrueStartLabel),
-        MIR_RETURN(HIR_ZERO),
+        MIR_RETURN(MIR_ZERO),
       ];
     }
     functions.push({

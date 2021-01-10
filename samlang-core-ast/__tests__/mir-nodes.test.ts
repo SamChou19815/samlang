@@ -1,6 +1,13 @@
-import { HIR_NAME, HIR_ONE, HIR_VARIABLE, HIR_ZERO } from '../hir-expressions';
-import { HIR_INT_TYPE } from '../hir-types';
 import {
+  MIR_ZERO,
+  MIR_ONE,
+  MIR_MINUS_ONE,
+  MIR_EIGHT,
+  MIR_CONST,
+  MIR_NAME,
+  MIR_TEMP,
+  MIR_IMMUTABLE_MEM,
+  MIR_OP,
   MIR_MOVE_TEMP,
   MIR_MOVE_IMMUTABLE_MEM,
   MIR_JUMP,
@@ -9,41 +16,56 @@ import {
   MIR_RETURN,
   MIR_CJUMP_FALLTHROUGH,
   MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
+  midIRExpressionToString,
   midIRStatementToString,
   midIRCompilationUnitToString,
 } from '../mir-nodes';
 
-const TEMP = (n: string) => HIR_VARIABLE(n, HIR_INT_TYPE);
+import { Long } from 'samlang-core-utils';
+
+it('midIRExpressionToString tests', () => {
+  expect(midIRExpressionToString(MIR_ZERO)).toBe('0');
+  expect(midIRExpressionToString(MIR_ONE)).toBe('1');
+  expect(midIRExpressionToString(MIR_MINUS_ONE)).toBe('-1');
+  expect(midIRExpressionToString(MIR_EIGHT)).toBe('8');
+  expect(midIRExpressionToString(MIR_CONST(42))).toBe('42');
+  expect(midIRExpressionToString(MIR_NAME('global_str'))).toBe('global_str');
+  expect(midIRExpressionToString(MIR_TEMP('variableName'))).toBe('variableName');
+  expect(midIRExpressionToString(MIR_IMMUTABLE_MEM(MIR_ZERO))).toBe('MEM[0]');
+  expect(midIRExpressionToString(MIR_OP('+', MIR_EIGHT, MIR_ONE))).toBe('(8 + 1)');
+  expect(midIRExpressionToString(MIR_OP('-', MIR_EIGHT, MIR_ONE))).toBe('(8 + -1)');
+  expect(
+    midIRExpressionToString(
+      MIR_OP('-', MIR_EIGHT, MIR_CONST(Long.fromString('-9223372036854775808')))
+    )
+  ).toBe('(8 - -9223372036854775808)');
+});
 
 it('midIRStatementToString tests', () => {
-  expect(midIRStatementToString(MIR_MOVE_TEMP('foo', TEMP('bar')))).toBe('foo = bar;');
+  expect(midIRStatementToString(MIR_MOVE_TEMP('foo', MIR_TEMP('bar')))).toBe('foo = bar;');
 
-  expect(midIRStatementToString(MIR_MOVE_IMMUTABLE_MEM(HIR_ZERO, TEMP('foo')))).toBe(
+  expect(midIRStatementToString(MIR_MOVE_IMMUTABLE_MEM(MIR_ZERO, MIR_TEMP('foo')))).toBe(
     'MEM[0] = foo;'
   );
 
   expect(midIRStatementToString(MIR_JUMP('l1'))).toBe('goto l1;');
   expect(midIRStatementToString(MIR_LABEL('l1'))).toBe('l1:');
 
+  expect(midIRStatementToString(MIR_CALL_FUNCTION(MIR_NAME('foo'), [MIR_ZERO, MIR_ONE]))).toBe(
+    'foo(0, 1);'
+  );
   expect(
-    midIRStatementToString(MIR_CALL_FUNCTION(HIR_NAME('foo', HIR_INT_TYPE), [HIR_ZERO, HIR_ONE]))
-  ).toBe('foo(0, 1);');
-  expect(
-    midIRStatementToString(
-      MIR_CALL_FUNCTION(HIR_NAME('foo', HIR_INT_TYPE), [HIR_ZERO, HIR_ONE], 'bar')
-    )
+    midIRStatementToString(MIR_CALL_FUNCTION(MIR_NAME('foo'), [MIR_ZERO, MIR_ONE], 'bar'))
   ).toBe('bar = foo(0, 1);');
   expect(
-    midIRStatementToString(
-      MIR_CALL_FUNCTION(HIR_NAME('foo', HIR_INT_TYPE), [HIR_ZERO, HIR_ONE], 'bar')
-    )
+    midIRStatementToString(MIR_CALL_FUNCTION(MIR_NAME('foo'), [MIR_ZERO, MIR_ONE], 'bar'))
   ).toBe('bar = foo(0, 1);');
 
-  expect(midIRStatementToString(MIR_RETURN(HIR_ZERO))).toBe('return 0;');
+  expect(midIRStatementToString(MIR_RETURN(MIR_ZERO))).toBe('return 0;');
 
-  expect(midIRStatementToString(MIR_CJUMP_FALLTHROUGH(HIR_ZERO, 'l1'))).toBe('if (0) goto l1;');
+  expect(midIRStatementToString(MIR_CJUMP_FALLTHROUGH(MIR_ZERO, 'l1'))).toBe('if (0) goto l1;');
   expect(
-    midIRStatementToString(MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL(HIR_ZERO, 'l1', 'l2'))
+    midIRStatementToString(MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL(MIR_ZERO, 'l1', 'l2'))
   ).toBe('if (0) goto l1; else goto l2;');
 });
 
@@ -58,12 +80,12 @@ it('midIRCompilationUnitToString test', () => {
         {
           functionName: 'fooBar',
           argumentNames: ['foo', 'bar'],
-          mainBodyStatements: [MIR_RETURN(HIR_ZERO)],
+          mainBodyStatements: [MIR_RETURN(MIR_ZERO)],
         },
         {
           functionName: 'barFoo',
           argumentNames: ['bar', 'foo'],
-          mainBodyStatements: [MIR_RETURN(HIR_ZERO)],
+          mainBodyStatements: [MIR_RETURN(MIR_ZERO)],
         },
       ],
     })
