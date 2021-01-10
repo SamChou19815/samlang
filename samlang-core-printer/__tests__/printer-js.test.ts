@@ -114,8 +114,8 @@ const w = "World!";
 const f1 = "\\"foo";
 const f2 = "'foo";
 const _module_Test_class_Main_function_main = () => {
-  var _t0 = _builtin_stringConcat(h, w);
-  var _t1 = _builtin_println(_t0);
+  let _t0 = _builtin_stringConcat(h, w);
+  let _t1 = _builtin_println(_t0);
 };
 const _compiled_program_main = () => {
   _module_Test_class_Main_function_main();
@@ -394,7 +394,7 @@ it('HIR statements to JS string test', () => {
         index: 3,
       })
     )
-  ).toBe(`var foo = samlang[3];`);
+  ).toBe(`let foo = samlang[3];`);
   expect(
     highIRStatementToString(
       HIR_BINARY({
@@ -404,7 +404,7 @@ it('HIR statements to JS string test', () => {
         e2: HIR_INT(2),
       })
     )
-  ).toBe(`var foo = Math.floor(3 / 2);`);
+  ).toBe(`let foo = Math.floor(3 / 2);`);
   expect(
     highIRStatementToString(
       HIR_IF_ELSE({
@@ -527,7 +527,7 @@ switch (f) {
         returnCollector: { name: 'val', type: HIR_STRING_TYPE },
       })
     )
-  ).toBe('var val = func();');
+  ).toBe('let val = func();');
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -544,7 +544,7 @@ switch (f) {
         returnCollector: { name: 'res', type: HIR_INT_TYPE },
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_PRINTLN}(0);`);
+  ).toBe(`let res = ${ENCODED_FUNCTION_NAME_PRINTLN}(0);`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -553,7 +553,7 @@ switch (f) {
         returnCollector: { name: 'res', type: HIR_INT_TYPE },
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_TO_INT}(0);`);
+  ).toBe(`let res = ${ENCODED_FUNCTION_NAME_STRING_TO_INT}(0);`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -562,7 +562,7 @@ switch (f) {
         returnCollector: { name: 'res', type: HIR_STRING_TYPE },
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_INT_TO_STRING}(5);`);
+  ).toBe(`let res = ${ENCODED_FUNCTION_NAME_INT_TO_STRING}(5);`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -571,7 +571,7 @@ switch (f) {
         returnCollector: { name: 'res', type: HIR_STRING_TYPE },
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}(0, 0);`);
+  ).toBe(`let res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}(0, 0);`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -580,7 +580,7 @@ switch (f) {
         returnCollector: { name: 'panik', type: HIR_INT_TYPE },
       })
     )
-  ).toBe(`var panik = ${ENCODED_FUNCTION_NAME_THROW}(0);`);
+  ).toBe(`let panik = ${ENCODED_FUNCTION_NAME_THROW}(0);`);
   expect(
     highIRStatementToString(
       HIR_LET({
@@ -589,7 +589,7 @@ switch (f) {
         assignedExpression: HIR_INT(19815),
       })
     )
-  ).toBe(`var foo = 19815;`);
+  ).toBe(`let foo = 19815;`);
   expect(highIRStatementToString(HIR_RETURN(HIR_ZERO))).toBe('return 0;');
   expect(
     highIRStatementToString(
@@ -599,7 +599,7 @@ switch (f) {
         expressionList: [HIR_ZERO, HIR_ZERO, HIR_INT(13)],
       })
     )
-  ).toBe(`var st = [0, 0, 13];`);
+  ).toBe(`let st = [0, 0, 13];`);
 });
 
 it('HIR function to JS string test 1', () => {
@@ -620,7 +620,7 @@ it('HIR function to JS string test 1', () => {
       })
     )
   ).toBe(`const baz = (d, t, i) => {
-  var b = 1857;
+  let b = 1857;
 };
 `);
 });
