@@ -1,12 +1,10 @@
 import {
-  HighIRExpression,
-  HIR_BINARY,
-  HIR_FALSE,
-  HIR_INDEX_ACCESS,
-  HIR_INT,
-  HIR_TRUE,
-} from 'samlang-core-ast/hir-expressions';
-import {
+  MidIRExpression,
+  MIR_ZERO,
+  MIR_ONE,
+  MIR_CONST,
+  MIR_IMMUTABLE_MEM,
+  MIR_OP,
   MidIRStatement,
   MIR_MOVE_TEMP,
   MIR_MOVE_IMMUTABLE_MEM,
@@ -17,60 +15,53 @@ import {
 } from 'samlang-core-ast/mir-nodes';
 import { Long, isNotNull } from 'samlang-core-utils';
 
-export const constantFoldExpression = (expression: HighIRExpression): HighIRExpression => {
+export const constantFoldExpression = (expression: MidIRExpression): MidIRExpression => {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRNameExpression':
-    case 'HighIRVariableExpression':
+    case 'MidIRConstantExpression':
+    case 'MidIRNameExpression':
+    case 'MidIRTemporaryExpression':
       return expression;
-    case 'HighIRIndexAccessExpression':
-      return HIR_INDEX_ACCESS({
-        type: expression.type,
-        expression: constantFoldExpression(expression.expression),
-        index: expression.index,
-      });
-    case 'HighIRBinaryExpression': {
+    case 'MidIRImmutableMemoryExpression':
+      return MIR_IMMUTABLE_MEM(constantFoldExpression(expression.indexExpression));
+    case 'MidIRBinaryExpression': {
       const e1 = constantFoldExpression(expression.e1);
       const e2 = constantFoldExpression(expression.e2);
-      if (
-        e1.__type__ !== 'HighIRIntLiteralExpression' ||
-        e2.__type__ !== 'HighIRIntLiteralExpression'
-      ) {
-        return HIR_BINARY({ operator: expression.operator, e1, e2 });
+      if (e1.__type__ !== 'MidIRConstantExpression' || e2.__type__ !== 'MidIRConstantExpression') {
+        return MIR_OP(expression.operator, e1, e2);
       }
       const v1 = e1.value;
       const v2 = e2.value;
       switch (expression.operator) {
         case '+':
-          return HIR_INT(v1.add(v2));
+          return MIR_CONST(v1.add(v2));
         case '-':
-          return HIR_INT(v1.subtract(v2));
+          return MIR_CONST(v1.subtract(v2));
         case '*':
-          return HIR_INT(v1.multiply(v2));
+          return MIR_CONST(v1.multiply(v2));
         case '/':
           if (v2.equals(Long.ZERO)) {
-            return HIR_BINARY({ operator: expression.operator, e1, e2 });
+            return MIR_OP(expression.operator, e1, e2);
           }
-          return HIR_INT(v1.divide(v2));
+          return MIR_CONST(v1.divide(v2));
         case '%':
           if (v2.equals(Long.ZERO)) {
-            return HIR_BINARY({ operator: expression.operator, e1, e2 });
+            return MIR_OP(expression.operator, e1, e2);
           }
-          return HIR_INT(v1.mod(v2));
+          return MIR_CONST(v1.mod(v2));
         case '^':
-          return HIR_INT(v1.xor(v2));
+          return MIR_CONST(v1.xor(v2));
         case '<':
-          return v1.lessThan(v2) ? HIR_TRUE : HIR_FALSE;
+          return v1.lessThan(v2) ? MIR_ONE : MIR_ZERO;
         case '<=':
-          return v1.lessThanOrEqual(v2) ? HIR_TRUE : HIR_FALSE;
+          return v1.lessThanOrEqual(v2) ? MIR_ONE : MIR_ZERO;
         case '>':
-          return v1.greaterThan(v2) ? HIR_TRUE : HIR_FALSE;
+          return v1.greaterThan(v2) ? MIR_ONE : MIR_ZERO;
         case '>=':
-          return v1.greaterThanOrEqual(v2) ? HIR_TRUE : HIR_FALSE;
+          return v1.greaterThanOrEqual(v2) ? MIR_ONE : MIR_ZERO;
         case '==':
-          return v1.equals(v2) ? HIR_TRUE : HIR_FALSE;
+          return v1.equals(v2) ? MIR_ONE : MIR_ZERO;
         case '!=':
-          return v1.notEquals(v2) ? HIR_TRUE : HIR_FALSE;
+          return v1.notEquals(v2) ? MIR_ONE : MIR_ZERO;
       }
     }
   }
@@ -98,7 +89,7 @@ const constantFoldStatement = (statement: MidIRStatement): MidIRStatement | null
       return MIR_RETURN(constantFoldExpression(statement.returnedExpression));
     case 'MidIRConditionalJumpFallThrough': {
       const condition = constantFoldExpression(statement.conditionExpression);
-      if (condition.__type__ !== 'HighIRIntLiteralExpression') {
+      if (condition.__type__ !== 'MidIRConstantExpression') {
         return MIR_CJUMP_FALLTHROUGH(condition, statement.label1);
       }
       // Directly fallthrough.

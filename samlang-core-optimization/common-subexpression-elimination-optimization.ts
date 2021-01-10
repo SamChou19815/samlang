@@ -1,11 +1,14 @@
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
 import analyzeAvailableExpressionsComingOutAtEachStatement, {
-  HighIRExpressionWrapper,
+  MidIRExpressionWrapper,
 } from 'samlang-core-analysis/available-expressions-analysis';
-import { HighIRExpression, HIR_VARIABLE } from 'samlang-core-ast/hir-expressions';
-import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
-import { MidIRStatement, MIR_MOVE_TEMP } from 'samlang-core-ast/mir-nodes';
+import {
+  MidIRExpression,
+  MidIRStatement,
+  MIR_MOVE_TEMP,
+  MIR_TEMP,
+} from 'samlang-core-ast/mir-nodes';
 import {
   ReadonlyHashMap,
   ReadonlyHashSet,
@@ -15,15 +18,15 @@ import {
   checkNotNull,
 } from 'samlang-core-utils';
 
-const expressionIsPrimitive = (expression: HighIRExpression): boolean =>
-  expression.__type__ === 'HighIRIntLiteralExpression' ||
-  expression.__type__ === 'HighIRNameExpression' ||
-  expression.__type__ === 'HighIRVariableExpression';
+const expressionIsPrimitive = (expression: MidIRExpression): boolean =>
+  expression.__type__ === 'MidIRConstantExpression' ||
+  expression.__type__ === 'MidIRNameExpression' ||
+  expression.__type__ === 'MidIRTemporaryExpression';
 
 /** @returns whether the given expression is primitive or a simple add, sub, xor. */
-const expressionIsSimple = (expression: HighIRExpression): boolean => {
+const expressionIsSimple = (expression: MidIRExpression): boolean => {
   if (expressionIsPrimitive(expression)) return true;
-  if (expression.__type__ !== 'HighIRBinaryExpression') return false;
+  if (expression.__type__ !== 'MidIRBinaryExpression') return false;
   const { operator, e1, e2 } = expression;
   switch (operator) {
     case '+':
@@ -37,20 +40,20 @@ const expressionIsSimple = (expression: HighIRExpression): boolean => {
 
 const collectExpressionUsages = (
   statement: MidIRStatement
-): ReadonlyHashSet<HighIRExpressionWrapper> => {
-  const collector = hashSetOf<HighIRExpressionWrapper>();
+): ReadonlyHashSet<MidIRExpressionWrapper> => {
+  const collector = hashSetOf<MidIRExpressionWrapper>();
 
-  const searchAndCollect = (expressionToSearch: HighIRExpression): void => {
+  const searchAndCollect = (expressionToSearch: MidIRExpression): void => {
     if (expressionIsSimple(expressionToSearch)) {
       return;
     }
-    collector.add(new HighIRExpressionWrapper(expressionToSearch));
+    collector.add(new MidIRExpressionWrapper(expressionToSearch));
 
     switch (expressionToSearch.__type__) {
-      case 'HighIRIndexAccessExpression':
-        searchAndCollect(expressionToSearch.expression);
+      case 'MidIRImmutableMemoryExpression':
+        searchAndCollect(expressionToSearch.indexExpression);
         break;
-      case 'HighIRBinaryExpression':
+      case 'MidIRBinaryExpression':
         searchAndCollect(expressionToSearch.e1);
         searchAndCollect(expressionToSearch.e2);
         break;
@@ -91,12 +94,12 @@ type ExpressionUsageAndFirstAppears = {
 // eslint-disable-next-line camelcase
 export const computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING = (
   statements: readonly MidIRStatement[]
-): ReadonlyHashMap<HighIRExpressionWrapper, ExpressionUsageAndFirstAppears> => {
+): ReadonlyHashMap<MidIRExpressionWrapper, ExpressionUsageAndFirstAppears> => {
   const availableExpressionAnalysisResult = analyzeAvailableExpressionsComingOutAtEachStatement(
     statements
   );
 
-  const map = hashMapOf<HighIRExpressionWrapper, { appears: Set<number>; usage: Set<number> }>();
+  const map = hashMapOf<MidIRExpressionWrapper, { appears: Set<number>; usage: Set<number> }>();
   statements.forEach((statement, index) => {
     const analysisResultForStatement = availableExpressionAnalysisResult[index];
     assertNotNull(analysisResultForStatement);
@@ -127,29 +130,30 @@ export const computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING = (
 };
 
 const replaceExpressionByHoistedTemporary = (
-  expression: HighIRExpression,
-  replacementMap: ReadonlyHashMap<HighIRExpressionWrapper, string>
-): HighIRExpression => {
+  expression: MidIRExpression,
+  replacementMap: ReadonlyHashMap<MidIRExpressionWrapper, string>
+): MidIRExpression => {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRNameExpression':
-    case 'HighIRVariableExpression':
+    case 'MidIRConstantExpression':
+    case 'MidIRNameExpression':
+    case 'MidIRTemporaryExpression':
       return expression;
-    case 'HighIRIndexAccessExpression': {
-      const replacement = replacementMap.get(new HighIRExpressionWrapper(expression));
+    case 'MidIRImmutableMemoryExpression': {
+      const replacement = replacementMap.get(new MidIRExpressionWrapper(expression));
       if (replacement != null) {
-        return HIR_VARIABLE(replacement, HIR_INT_TYPE);
+        return MIR_TEMP(replacement);
       }
       return {
         ...expression,
-        expression: replaceExpressionByHoistedTemporary(expression.expression, replacementMap),
+        indexExpression: replaceExpressionByHoistedTemporary(
+          expression.indexExpression,
+          replacementMap
+        ),
       };
     }
-    case 'HighIRBinaryExpression': {
-      const replacement = replacementMap.get(new HighIRExpressionWrapper(expression));
-      if (replacement != null) {
-        return HIR_VARIABLE(replacement, HIR_INT_TYPE);
-      }
+    case 'MidIRBinaryExpression': {
+      const replacement = replacementMap.get(new MidIRExpressionWrapper(expression));
+      if (replacement != null) return MIR_TEMP(replacement);
       return {
         ...expression,
         e1: replaceExpressionByHoistedTemporary(expression.e1, replacementMap),
@@ -161,7 +165,7 @@ const replaceExpressionByHoistedTemporary = (
 
 const rewriteStatementByReplacingExpressionByHoistedTemporary = (
   statement: MidIRStatement,
-  replacementMap: ReadonlyHashMap<HighIRExpressionWrapper, string>
+  replacementMap: ReadonlyHashMap<MidIRExpressionWrapper, string>
 ): MidIRStatement => {
   switch (statement.__type__) {
     case 'MidIRMoveTempStatement':
@@ -212,18 +216,18 @@ const rewriteStatementByReplacingExpressionByHoistedTemporary = (
 };
 
 const expressionContainsTemporary = (
-  expression: HighIRExpression,
+  expression: MidIRExpression,
   temporaryName: string
 ): boolean => {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRNameExpression':
+    case 'MidIRConstantExpression':
+    case 'MidIRNameExpression':
       return false;
-    case 'HighIRVariableExpression':
+    case 'MidIRTemporaryExpression':
       return expression.name === temporaryName;
-    case 'HighIRIndexAccessExpression':
-      return expressionContainsTemporary(expression.expression, temporaryName);
-    case 'HighIRBinaryExpression':
+    case 'MidIRImmutableMemoryExpression':
+      return expressionContainsTemporary(expression.indexExpression, temporaryName);
+    case 'MidIRBinaryExpression':
       return (
         expressionContainsTemporary(expression.e1, temporaryName) ||
         expressionContainsTemporary(expression.e2, temporaryName)
@@ -232,8 +236,8 @@ const expressionContainsTemporary = (
 };
 
 type HoistingListAndReplacementMap = {
-  readonly hoistingLists: readonly (readonly [string, HighIRExpression])[][];
-  readonly replacementMaps: readonly ReadonlyHashMap<HighIRExpressionWrapper, string>[];
+  readonly hoistingLists: readonly (readonly [string, MidIRExpression])[][];
+  readonly replacementMaps: readonly ReadonlyHashMap<MidIRExpressionWrapper, string>[];
 };
 
 const computeHoistingListAndReplacementMap = (
@@ -243,8 +247,8 @@ const computeHoistingListAndReplacementMap = (
   const globalUsageAndAppearMap = computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING(
     statements
   );
-  const hoistingMaps = new Map<number, Map<string, HighIRExpression>>();
-  const replacementMaps = statements.map(() => hashMapOf<HighIRExpressionWrapper, string>());
+  const hoistingMaps = new Map<number, Map<string, MidIRExpression>>();
+  const replacementMaps = statements.map(() => hashMapOf<MidIRExpressionWrapper, string>());
 
   globalUsageAndAppearMap.forEach((usageAndAppearance, expressionToReplaceWrapper) => {
     if (usageAndAppearance.appears.size < usageAndAppearance.usage.size) {
@@ -271,23 +275,23 @@ const computeHoistingListAndReplacementMap = (
   });
 
   const hoistingLists = statements.map((_, index) => {
-    const hoistingMap = hoistingMaps.get(index) ?? new Map<string, HighIRExpression>();
+    const hoistingMap = hoistingMaps.get(index) ?? new Map<string, MidIRExpression>();
     // cleanup hoisting map to avoid repeated computation of sub expressions.
     const replacementMapForHoistingMap = hashMapOf(
       ...Array.from(hoistingMap.entries()).map(
-        ([temporary, expression]) => [new HighIRExpressionWrapper(expression), temporary] as const
+        ([temporary, expression]) => [new MidIRExpressionWrapper(expression), temporary] as const
       )
     );
     return Array.from(hoistingMap.entries())
       .map(([newTemporary, hoistedExpression]) => {
         // Delete mapping to self temporary to avoid trivial replacement.
-        replacementMapForHoistingMap.delete(new HighIRExpressionWrapper(hoistedExpression));
+        replacementMapForHoistingMap.delete(new MidIRExpressionWrapper(hoistedExpression));
         const simplifiedHoistedExpression = replaceExpressionByHoistedTemporary(
           hoistedExpression,
           replacementMapForHoistingMap
         );
         replacementMapForHoistingMap.set(
-          new HighIRExpressionWrapper(hoistedExpression),
+          new MidIRExpressionWrapper(hoistedExpression),
           newTemporary
         );
         return [newTemporary, simplifiedHoistedExpression] as const;

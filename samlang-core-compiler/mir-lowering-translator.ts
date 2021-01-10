@@ -1,18 +1,9 @@
-import createHighIRFlexibleOrderOperatorNode from './hir-flexible-op';
 import type MidIRResourceAllocator from './mir-resource-allocator';
 
 import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
+import type { HighIRExpression, HighIRStatement } from 'samlang-core-ast/hir-expressions';
 import {
-  HighIRExpression,
-  HighIRStatement,
-  HIR_INT,
-  HIR_NAME,
-  HIR_VARIABLE,
-  HIR_INDEX_ACCESS,
-  HIR_BINARY,
-} from 'samlang-core-ast/hir-expressions';
-import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
-import {
+  MidIRExpression,
   // eslint-disable-next-line camelcase
   MidIRStatement_DANGEROUSLY_NON_CANONICAL,
   MIR_CALL_FUNCTION,
@@ -22,6 +13,11 @@ import {
   MIR_LABEL,
   MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL,
   MIR_RETURN,
+  MIR_CONST,
+  MIR_NAME,
+  MIR_TEMP,
+  MIR_IMMUTABLE_MEM,
+  MIR_OP,
 } from 'samlang-core-ast/mir-nodes';
 
 const mangleVariableForMIR = (variable: string): string => `_${variable}`;
@@ -32,25 +28,28 @@ class MidIRLoweringManager {
     private readonly functionName: string
   ) {}
 
-  lowerHIRExpressionToMIRExpression = (expression: HighIRExpression): HighIRExpression => {
+  lowerHIRExpressionToMIRExpression = (expression: HighIRExpression): MidIRExpression => {
     switch (expression.__type__) {
       case 'HighIRIntLiteralExpression':
+        return MIR_CONST(expression.value);
       case 'HighIRNameExpression':
-        return expression;
+        return MIR_NAME(expression.name);
       case 'HighIRVariableExpression':
-        return HIR_VARIABLE(mangleVariableForMIR(expression.name), expression.type);
+        return MIR_TEMP(mangleVariableForMIR(expression.name));
       case 'HighIRIndexAccessExpression':
-        return HIR_INDEX_ACCESS({
-          type: expression.type,
-          expression: this.lowerHIRExpressionToMIRExpression(expression.expression),
-          index: expression.index,
-        });
+        return MIR_IMMUTABLE_MEM(
+          MIR_OP(
+            '+',
+            this.lowerHIRExpressionToMIRExpression(expression.expression),
+            MIR_CONST(expression.index * 8)
+          )
+        );
       case 'HighIRBinaryExpression':
-        return HIR_BINARY({
-          operator: expression.operator,
-          e1: this.lowerHIRExpressionToMIRExpression(expression.e1),
-          e2: this.lowerHIRExpressionToMIRExpression(expression.e2),
-        });
+        return MIR_OP(
+          expression.operator,
+          this.lowerHIRExpressionToMIRExpression(expression.e1),
+          this.lowerHIRExpressionToMIRExpression(expression.e2)
+        );
     }
   };
 
@@ -105,20 +104,23 @@ class MidIRLoweringManager {
         ];
       case 'HighIRStructInitializationStatement': {
         const structTemporaryName = mangleVariableForMIR(statement.structVariableName);
-        const structTemporary = HIR_VARIABLE(structTemporaryName, statement.type);
         // eslint-disable-next-line camelcase
         const statements: MidIRStatement_DANGEROUSLY_NON_CANONICAL[] = [];
         statements.push(
           MIR_CALL_FUNCTION(
-            HIR_NAME(ENCODED_FUNCTION_NAME_MALLOC, HIR_INT_TYPE),
-            [HIR_INT(statement.expressionList.length * 8)],
+            MIR_NAME(ENCODED_FUNCTION_NAME_MALLOC),
+            [MIR_CONST(statement.expressionList.length * 8)],
             structTemporaryName
           )
         );
         statement.expressionList.forEach((subExpression, index) => {
           statements.push(
             MIR_MOVE_IMMUTABLE_MEM(
-              createHighIRFlexibleOrderOperatorNode('+', structTemporary, HIR_INT(index * 8)),
+              MIR_OP(
+                '+',
+                MIR_TEMP(mangleVariableForMIR(statement.structVariableName)),
+                MIR_CONST(index * 8)
+              ),
               this.lowerHIRExpressionToMIRExpression(subExpression)
             )
           );

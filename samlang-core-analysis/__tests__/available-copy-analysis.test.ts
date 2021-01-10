@@ -1,8 +1,10 @@
 import analyzeAvailableCopies from '../available-copy-analysis';
 
-import { HIR_ZERO, HIR_ONE, HIR_INT, HIR_VARIABLE } from 'samlang-core-ast/hir-expressions';
-import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
+  MIR_ZERO,
+  MIR_ONE,
+  MIR_EIGHT,
+  MIR_TEMP,
   MIR_MOVE_TEMP,
   MIR_MOVE_IMMUTABLE_MEM,
   MIR_CALL_FUNCTION,
@@ -12,22 +14,20 @@ import {
   MIR_RETURN,
 } from 'samlang-core-ast/mir-nodes';
 
-const MIR_TEMP = (n: string) => HIR_VARIABLE(n, HIR_INT_TYPE);
-
 it('analyzeAvailableCopies test 1', () => {
   expect(
     analyzeAvailableCopies([
-      /* 00 */ MIR_MOVE_TEMP('a', HIR_ONE),
-      /* 01 */ MIR_MOVE_TEMP('b', HIR_ZERO),
-      /* 02 */ MIR_MOVE_TEMP('c', HIR_INT(8)),
+      /* 00 */ MIR_MOVE_TEMP('a', MIR_ONE),
+      /* 01 */ MIR_MOVE_TEMP('b', MIR_ZERO),
+      /* 02 */ MIR_MOVE_TEMP('c', MIR_EIGHT),
       /* 03 */ MIR_MOVE_TEMP('x', MIR_TEMP('a')),
       /* 04 */ MIR_MOVE_TEMP('y', MIR_TEMP('b')),
       /* 05 */ MIR_MOVE_TEMP('z', MIR_TEMP('c')),
       /* 06 */ MIR_MOVE_TEMP('x', MIR_TEMP('b')),
-      /* 07 */ MIR_CALL_FUNCTION(HIR_ONE, [], 'y'),
+      /* 07 */ MIR_CALL_FUNCTION(MIR_ONE, [], 'y'),
       /* 08 */ MIR_MOVE_TEMP('z', MIR_TEMP('x')),
-      /* 09 */ MIR_CALL_FUNCTION(HIR_ZERO, []),
-      /* 10 */ MIR_RETURN(HIR_ONE),
+      /* 09 */ MIR_CALL_FUNCTION(MIR_ZERO, []),
+      /* 10 */ MIR_RETURN(MIR_ONE),
     ])
   ).toEqual([
     /* 00 */ {},
@@ -47,8 +47,8 @@ it('analyzeAvailableCopies test 1', () => {
 it('analyzeAvailableCopies test 2', () => {
   expect(
     analyzeAvailableCopies([
-      /* 00 */ MIR_MOVE_TEMP('a', HIR_ONE),
-      /* 01 */ MIR_MOVE_TEMP('b', HIR_ZERO),
+      /* 00 */ MIR_MOVE_TEMP('a', MIR_ONE),
+      /* 01 */ MIR_MOVE_TEMP('b', MIR_ZERO),
       /* 02 */ MIR_CJUMP_FALLTHROUGH(MIR_TEMP('a'), 'true'),
       /* 03 */ MIR_MOVE_TEMP('x', MIR_TEMP('a')),
       /* 04 */ MIR_JUMP('end'),
@@ -79,7 +79,7 @@ it('analyzeAvailableCopies test 3', () => {
   expect(
     analyzeAvailableCopies([
       /* 00 */ MIR_LABEL('loop_start'),
-      /* 01 */ MIR_CJUMP_FALLTHROUGH(HIR_ZERO, 'loop_end'),
+      /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_ZERO, 'loop_end'),
       /* 02 */ MIR_MOVE_TEMP('t0', MIR_TEMP('i')),
       /* 03 */ MIR_MOVE_TEMP('t1', MIR_TEMP('j')),
       /* 04 */ MIR_MOVE_TEMP('i', MIR_TEMP('t1')),

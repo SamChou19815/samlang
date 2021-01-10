@@ -261,23 +261,6 @@ export const debugPrintHighIRExpression = (expression: HighIRExpression): string
   }
 };
 
-export const debugPrintHighIRExpressionUntyped = (expression: HighIRExpression): string => {
-  switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-      return expression.value.toString();
-    case 'HighIRVariableExpression':
-      return expression.name;
-    case 'HighIRNameExpression':
-      return expression.name;
-    case 'HighIRIndexAccessExpression':
-      return `${debugPrintHighIRExpressionUntyped(expression.expression)}[${expression.index}]`;
-    case 'HighIRBinaryExpression':
-      return `(${debugPrintHighIRExpressionUntyped(expression.e1)} ${
-        expression.operator
-      } ${debugPrintHighIRExpressionUntyped(expression.e2)})`;
-  }
-};
-
 export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel = 0): string => {
   const collector: string[] = [];
   let level = startLevel;

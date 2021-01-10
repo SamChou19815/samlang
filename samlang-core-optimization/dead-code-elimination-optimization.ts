@@ -1,16 +1,15 @@
 import analyzeLiveTemporariesAtTheEndOfEachStatement from 'samlang-core-analysis/live-temp-analysis';
-import type { HighIRExpression } from 'samlang-core-ast/hir-expressions';
-import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
+import type { MidIRExpression, MidIRStatement } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
 /** Some expressions might trigger exceptions, removing them changes the behavior of programs. */
-const isMidIRExpressionUnsafeToRemove = (expression: HighIRExpression): boolean => {
+const isMidIRExpressionUnsafeToRemove = (expression: MidIRExpression): boolean => {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRNameExpression':
-    case 'HighIRVariableExpression':
+    case 'MidIRConstantExpression':
+    case 'MidIRNameExpression':
+    case 'MidIRTemporaryExpression':
       return false;
-    case 'HighIRBinaryExpression':
+    case 'MidIRBinaryExpression':
       switch (expression.operator) {
         case '/':
         case '%':
@@ -21,8 +20,8 @@ const isMidIRExpressionUnsafeToRemove = (expression: HighIRExpression): boolean 
             isMidIRExpressionUnsafeToRemove(expression.e2)
           );
       }
-    case 'HighIRIndexAccessExpression':
-      return isMidIRExpressionUnsafeToRemove(expression.expression);
+    case 'MidIRImmutableMemoryExpression':
+      return isMidIRExpressionUnsafeToRemove(expression.indexExpression);
   }
 };
 

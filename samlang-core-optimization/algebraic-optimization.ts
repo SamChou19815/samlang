@@ -1,4 +1,3 @@
-import { HighIRExpression, HIR_BINARY, HIR_INDEX_ACCESS } from 'samlang-core-ast/hir-expressions';
 import {
   MidIRStatement,
   MIR_MOVE_TEMP,
@@ -6,25 +5,24 @@ import {
   MIR_CALL_FUNCTION,
   MIR_RETURN,
   MIR_CJUMP_FALLTHROUGH,
+  MidIRExpression,
+  MIR_IMMUTABLE_MEM,
+  MIR_OP,
 } from 'samlang-core-ast/mir-nodes';
 import { Long } from 'samlang-core-utils';
 
-const algebraicallyOptimizeExpression = (expression: HighIRExpression): HighIRExpression => {
+const algebraicallyOptimizeExpression = (expression: MidIRExpression): MidIRExpression => {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRNameExpression':
-    case 'HighIRVariableExpression':
+    case 'MidIRConstantExpression':
+    case 'MidIRNameExpression':
+    case 'MidIRTemporaryExpression':
       return expression;
-    case 'HighIRIndexAccessExpression':
-      return HIR_INDEX_ACCESS({
-        type: expression.type,
-        expression: algebraicallyOptimizeExpression(expression.expression),
-        index: expression.index,
-      });
-    case 'HighIRBinaryExpression': {
+    case 'MidIRImmutableMemoryExpression':
+      return MIR_IMMUTABLE_MEM(algebraicallyOptimizeExpression(expression.indexExpression));
+    case 'MidIRBinaryExpression': {
       const e1 = algebraicallyOptimizeExpression(expression.e1);
       const e2 = algebraicallyOptimizeExpression(expression.e2);
-      if (e1.__type__ === 'HighIRIntLiteralExpression') {
+      if (e1.__type__ === 'MidIRConstantExpression') {
         const v1 = e1.value;
         if (v1.equals(Long.ZERO)) {
           switch (expression.operator) {
@@ -36,7 +34,7 @@ const algebraicallyOptimizeExpression = (expression: HighIRExpression): HighIREx
           return e2;
         }
       }
-      if (e2.__type__ === 'HighIRIntLiteralExpression') {
+      if (e2.__type__ === 'MidIRConstantExpression') {
         const v2 = e2.value;
         if (v2.equals(Long.ZERO)) {
           switch (expression.operator) {
@@ -48,7 +46,7 @@ const algebraicallyOptimizeExpression = (expression: HighIRExpression): HighIREx
           return e1;
         }
       }
-      return HIR_BINARY({ operator: expression.operator, e1, e2 });
+      return MIR_OP(expression.operator, e1, e2);
     }
   }
 };

@@ -1,38 +1,37 @@
 import analyzeAvailableCopies from 'samlang-core-analysis/available-copy-analysis';
 import {
-  HighIRExpression,
-  HIR_VARIABLE,
-  HIR_INDEX_ACCESS,
-  HIR_BINARY,
-} from 'samlang-core-ast/hir-expressions';
-import { MidIRStatement, MIR_RETURN } from 'samlang-core-ast/mir-nodes';
+  MidIRExpression,
+  MidIRStatement,
+  MIR_TEMP,
+  MIR_IMMUTABLE_MEM,
+  MIR_OP,
+  MIR_RETURN,
+} from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
 const replaceMidIRExpressionAccordingToAvailableCopies = (
   availableCopies: Readonly<Record<string, string>>,
-  expression: HighIRExpression
-): HighIRExpression => {
+  expression: MidIRExpression
+): MidIRExpression => {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRNameExpression':
+    case 'MidIRConstantExpression':
+    case 'MidIRNameExpression':
       return expression;
-    case 'HighIRVariableExpression':
-      return HIR_VARIABLE(availableCopies[expression.name] ?? expression.name, expression.type);
-    case 'HighIRIndexAccessExpression':
-      return HIR_INDEX_ACCESS({
-        type: expression.type,
-        expression: replaceMidIRExpressionAccordingToAvailableCopies(
+    case 'MidIRTemporaryExpression':
+      return MIR_TEMP(availableCopies[expression.name] ?? expression.name);
+    case 'MidIRImmutableMemoryExpression':
+      return MIR_IMMUTABLE_MEM(
+        replaceMidIRExpressionAccordingToAvailableCopies(
           availableCopies,
-          expression.expression
-        ),
-        index: expression.index,
-      });
-    case 'HighIRBinaryExpression':
-      return HIR_BINARY({
-        operator: expression.operator,
-        e1: replaceMidIRExpressionAccordingToAvailableCopies(availableCopies, expression.e1),
-        e2: replaceMidIRExpressionAccordingToAvailableCopies(availableCopies, expression.e2),
-      });
+          expression.indexExpression
+        )
+      );
+    case 'MidIRBinaryExpression':
+      return MIR_OP(
+        expression.operator,
+        replaceMidIRExpressionAccordingToAvailableCopies(availableCopies, expression.e1),
+        replaceMidIRExpressionAccordingToAvailableCopies(availableCopies, expression.e2)
+      );
   }
 };
 

@@ -19,7 +19,7 @@ import {
   ASM_MEM,
 } from 'samlang-core-ast/asm-arguments';
 import { AssemblyInstruction, ASM_COMMENT } from 'samlang-core-ast/asm-instructions';
-import type { HighIRExpression, HighIRBinaryExpression } from 'samlang-core-ast/hir-expressions';
+import type { MidIRExpression, MidIRBinaryExpression } from 'samlang-core-ast/mir-nodes';
 import { bigIntIsWithin32BitIntegerRange, assertNotNull } from 'samlang-core-utils';
 
 const getTilingResultWithLowerCost = (
@@ -30,13 +30,13 @@ const getTilingResultWithLowerCost = (
   return result1.cost <= result2.cost ? result1 : result2;
 };
 
-const getConstantValue = (expression: HighIRExpression): number | null =>
-  expression.__type__ === 'HighIRIntLiteralExpression' &&
+const getConstantValue = (expression: MidIRExpression): number | null =>
+  expression.__type__ === 'MidIRConstantExpression' &&
   bigIntIsWithin32BitIntegerRange(expression.value)
     ? Number(expression.value)
     : null;
 
-const getMultipleOfConstant = (expression: HighIRExpression): 1 | 2 | 4 | 8 | null => {
+const getMultipleOfConstant = (expression: MidIRExpression): 1 | 2 | 4 | 8 | null => {
   const value = getConstantValue(expression);
   if (value == null) return null;
   switch (value) {
@@ -56,16 +56,16 @@ type MultipleOfTilingResult = {
 };
 
 const tryTileMultipleOf = (
-  expression: HighIRExpression,
+  expression: MidIRExpression,
   service: AssemblyTilingServiceBasic
 ): MultipleOfTilingResult | null => {
-  if (expression.__type__ === 'HighIRVariableExpression') {
+  if (expression.__type__ === 'MidIRTemporaryExpression') {
     return {
       item: { baseRegister: ASM_REG(expression.name), multipliedConstant: 1 },
       instructions: [],
     };
   }
-  if (expression.__type__ !== 'HighIRBinaryExpression') return null;
+  if (expression.__type__ !== 'MidIRBinaryExpression') return null;
   const { operator, e1, e2 } = expression;
   const e2Constant = getMultipleOfConstant(e2);
   if (operator !== '*' || e2Constant == null) return null;
@@ -77,7 +77,7 @@ const tryTileMultipleOf = (
 };
 
 const tryTileRegisterWithDisplacement = (
-  { operator, e1, e2 }: HighIRBinaryExpression,
+  { operator, e1, e2 }: MidIRBinaryExpression,
   service: AssemblyTilingServiceBasic
 ): AssemblyMemoryTilingResult | null => {
   if (operator === '+') {
@@ -93,7 +93,7 @@ const tryTileRegisterWithDisplacement = (
 };
 
 const tryTileRegisterWithMultipleOf = (
-  { operator, e1, e2 }: HighIRBinaryExpression,
+  { operator, e1, e2 }: MidIRBinaryExpression,
   service: AssemblyTilingServiceBasic
 ): AssemblyMemoryTilingResult | null => {
   if (operator !== '+') return null;
@@ -118,7 +118,7 @@ const tryTileRegisterWithMultipleOf = (
 };
 
 const tryTileMultipleOfWithDisplacement = (
-  { operator, e1, e2 }: HighIRBinaryExpression,
+  { operator, e1, e2 }: MidIRBinaryExpression,
   service: AssemblyTilingServiceBasic
 ): AssemblyMemoryTilingResult | null => {
   if (operator !== '+') return null;
@@ -134,14 +134,14 @@ const tryTileMultipleOfWithDisplacement = (
 };
 
 const tryTileCompleteMemory = (
-  expression: HighIRBinaryExpression,
+  expression: MidIRBinaryExpression,
   service: AssemblyTilingServiceBasic
 ): AssemblyMemoryTilingResult | null => {
   const { operator, e1, e2 } = expression;
   if (operator !== '+') return null;
   // case 1: one side is constant
   const e2Constant = getConstantValue(e2);
-  if (e2Constant != null && e1.__type__ === 'HighIRBinaryExpression') {
+  if (e2Constant != null && e1.__type__ === 'MidIRBinaryExpression') {
     const e1TilingResult = tryTileRegisterWithMultipleOf(e1, service);
     if (e1TilingResult == null) return null;
     return createAssemblyMemoryTilingResult(
@@ -154,13 +154,13 @@ const tryTileCompleteMemory = (
     );
   }
   // case 2: one side is multiple of
-  let potentialOpWithMultipleOf: HighIRBinaryExpression | null = null;
+  let potentialOpWithMultipleOf: MidIRBinaryExpression | null = null;
   let potentialMultipleOf = tryTileMultipleOf(e1, service);
-  if (potentialMultipleOf != null && e2.__type__ === 'HighIRBinaryExpression') {
+  if (potentialMultipleOf != null && e2.__type__ === 'MidIRBinaryExpression') {
     potentialOpWithMultipleOf = e2;
   } else {
     potentialMultipleOf = tryTileMultipleOf(e2, service);
-    if (potentialMultipleOf != null && e1.__type__ === 'HighIRBinaryExpression') {
+    if (potentialMultipleOf != null && e1.__type__ === 'MidIRBinaryExpression') {
       potentialOpWithMultipleOf = e1;
     }
   }
@@ -183,16 +183,16 @@ const tryTileCompleteMemory = (
     }
   }
   // case 3: one side is reg (i.e. other side is multipleOf + constant)
-  let potentialRegister: HighIRExpression;
+  let potentialRegister: MidIRExpression;
   let potentialMultipleOfWithDisplacement: AssemblyMemoryTilingResult | null = null;
-  if (e1.__type__ === 'HighIRBinaryExpression') {
+  if (e1.__type__ === 'MidIRBinaryExpression') {
     potentialMultipleOfWithDisplacement = tryTileMultipleOfWithDisplacement(e1, service);
     if (potentialMultipleOfWithDisplacement != null) {
       potentialRegister = e2;
     } else {
       return result;
     }
-  } else if (e2.__type__ === 'HighIRBinaryExpression') {
+  } else if (e2.__type__ === 'MidIRBinaryExpression') {
     potentialMultipleOfWithDisplacement = tryTileMultipleOfWithDisplacement(e2, service);
     if (potentialMultipleOfWithDisplacement != null) {
       potentialRegister = e1;
@@ -221,28 +221,28 @@ const tryTileCompleteMemory = (
 };
 
 const getAssemblyMemoryTilingForMidIRExpression = (
-  expression: HighIRExpression,
+  expression: MidIRExpression,
   service: AssemblyTilingServiceBasic
 ): AssemblyMemoryTilingResult | null => {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression': {
+    case 'MidIRConstantExpression': {
       // good case 1: only displacement
       const value = expression.value;
       if (!bigIntIsWithin32BitIntegerRange(value)) return null;
       return createAssemblyMemoryTilingResult([], ASM_MEM_CONST(ASM_CONST(Number(value))));
     }
-    case 'HighIRNameExpression':
+    case 'MidIRNameExpression':
       // special case: force name with rip
       return createAssemblyMemoryTilingResult(
         [ASM_COMMENT(`force named address with rip: ${expression.name}`)],
         ASM_MEM_REG_WITH_CONST(RIP, ASM_NAME(expression.name))
       );
-    case 'HighIRVariableExpression':
+    case 'MidIRTemporaryExpression':
       // good case 2: only base reg
       return createAssemblyMemoryTilingResult([], ASM_MEM_REG(ASM_REG(expression.name)));
-    case 'HighIRIndexAccessExpression':
+    case 'MidIRImmutableMemoryExpression':
       return null;
-    case 'HighIRBinaryExpression': {
+    case 'MidIRBinaryExpression': {
       // good case 3: all three components!
       let result = tryTileCompleteMemory(expression, service);
       // good case 4: only multiple of

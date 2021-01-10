@@ -13,19 +13,17 @@ import {
   ASM_LABEL,
   ASM_COMMENT,
 } from 'samlang-core-ast/asm-instructions';
-import { HIR_VARIABLE, HIR_ZERO } from 'samlang-core-ast/hir-expressions';
-import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   MidIRStatement,
   midIRStatementToString,
+  MIR_ZERO,
+  MIR_TEMP,
   MIR_MOVE_TEMP,
   MIR_LABEL,
   MIR_JUMP,
   MIR_CJUMP_FALLTHROUGH,
   MIR_RETURN,
 } from 'samlang-core-ast/mir-nodes';
-
-const MIR_TEMP = (n: string) => HIR_VARIABLE(n, HIR_INT_TYPE);
 
 const optimizeIRAndConvertToString = (midIRStatements: readonly MidIRStatement[]): string =>
   optimizeIrWithSimpleOptimization(midIRStatements).map(midIRStatementToString).join('\n');
@@ -39,14 +37,14 @@ const optimizeASMAndConvertToString = (
     .join('\n');
 
 it('optimizeIrWithSimpleOptimization test.', () => {
-  expect(optimizeIRAndConvertToString([MIR_RETURN(HIR_ZERO)])).toBe('return 0;');
+  expect(optimizeIRAndConvertToString([MIR_RETURN(MIR_ZERO)])).toBe('return 0;');
 
   expect(
     optimizeIRAndConvertToString([
       MIR_CJUMP_FALLTHROUGH(MIR_TEMP('boolVar'), 'A'),
       MIR_MOVE_TEMP('a', MIR_TEMP('b')),
       MIR_LABEL('A'),
-      MIR_RETURN(HIR_ZERO),
+      MIR_RETURN(MIR_ZERO),
     ])
   ).toBe(`if (boolVar) goto A;
 a = b;
@@ -57,7 +55,7 @@ return 0;`);
     optimizeIRAndConvertToString([
       MIR_CJUMP_FALLTHROUGH(MIR_TEMP('boolVar'), 'A'),
       MIR_LABEL('A'),
-      MIR_RETURN(HIR_ZERO),
+      MIR_RETURN(MIR_ZERO),
     ])
   ).toBe(`return 0;`);
 
@@ -131,7 +129,7 @@ c = d;`);
       MIR_CJUMP_FALLTHROUGH(MIR_TEMP('boolVar'), 'G'),
       MIR_LABEL('G'),
       MIR_JUMP('C'),
-      MIR_RETURN(HIR_ZERO),
+      MIR_RETURN(MIR_ZERO),
     ])
   ).toBe(`C:
 a = b;

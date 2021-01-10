@@ -4,18 +4,13 @@ import optimizeIRWithCommonSubExpressionElimination, {
 } from '../common-subexpression-elimination-optimization';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
-import type { IROperator } from 'samlang-core-ast/common-operators';
 import {
-  HighIRExpression,
-  HIR_ZERO,
-  HIR_ONE,
-  HIR_NAME,
-  HIR_VARIABLE,
-  HIR_INDEX_ACCESS,
-  HIR_BINARY,
-} from 'samlang-core-ast/hir-expressions';
-import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
-import {
+  MIR_ZERO,
+  MIR_ONE,
+  MIR_TEMP,
+  MIR_NAME,
+  MIR_IMMUTABLE_MEM,
+  MIR_OP,
   MidIRStatement,
   MIR_MOVE_TEMP,
   MIR_MOVE_IMMUTABLE_MEM,
@@ -27,36 +22,26 @@ import {
   midIRStatementToString,
 } from 'samlang-core-ast/mir-nodes';
 
-const MIR_TEMP = (n: string) => HIR_VARIABLE(n, HIR_INT_TYPE);
-const MIR_NAME = (n: string) => HIR_NAME(n, HIR_INT_TYPE);
-const MIR_IMMUTABLE_MEM = (e: HighIRExpression, index = 0): HighIRExpression =>
-  HIR_INDEX_ACCESS({ type: HIR_INT_TYPE, expression: e, index });
-const MIR_OP = (
-  operator: IROperator,
-  e1: HighIRExpression,
-  e2: HighIRExpression
-): HighIRExpression => HIR_BINARY({ operator, e1, e2 });
-
 const statements: readonly MidIRStatement[] = [
-  /* 00 */ MIR_MOVE_TEMP('x', HIR_ONE),
-  /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), HIR_ONE), 'true'),
-  /* 02 */ MIR_CALL_FUNCTION(MIR_NAME('f'), [HIR_ONE], 'z2'),
-  /* 03 */ MIR_MOVE_IMMUTABLE_MEM(MIR_TEMP('z2'), MIR_OP('+', HIR_ONE, MIR_TEMP('x'))),
+  /* 00 */ MIR_MOVE_TEMP('x', MIR_ONE),
+  /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), MIR_ONE), 'true'),
+  /* 02 */ MIR_CALL_FUNCTION(MIR_NAME('f'), [MIR_ONE], 'z2'),
+  /* 03 */ MIR_MOVE_IMMUTABLE_MEM(MIR_TEMP('z2'), MIR_OP('+', MIR_ONE, MIR_TEMP('x'))),
   /* 04 */ MIR_JUMP('r'),
   /* 05 */ MIR_LABEL('r'),
   /* 06 */ MIR_JUMP('end'),
   /* 07 */ MIR_LABEL('true'),
-  /* 08 */ MIR_MOVE_TEMP('y', MIR_OP('+', HIR_ONE, MIR_TEMP('x'))),
+  /* 08 */ MIR_MOVE_TEMP('y', MIR_OP('+', MIR_ONE, MIR_TEMP('x'))),
   /* 09 */ MIR_MOVE_TEMP(
     'z1',
-    MIR_OP('*', MIR_OP('+', HIR_ONE, MIR_TEMP('x')), MIR_IMMUTABLE_MEM(HIR_ONE))
+    MIR_OP('*', MIR_OP('+', MIR_ONE, MIR_TEMP('x')), MIR_IMMUTABLE_MEM(MIR_ONE))
   ),
   /* 10 */ MIR_MOVE_TEMP(
     'z2',
     MIR_OP(
       '/',
-      MIR_OP('*', MIR_OP('+', HIR_ONE, MIR_TEMP('x')), MIR_IMMUTABLE_MEM(HIR_ONE)),
-      MIR_OP('+', HIR_ONE, MIR_TEMP('x'))
+      MIR_OP('*', MIR_OP('+', MIR_ONE, MIR_TEMP('x')), MIR_IMMUTABLE_MEM(MIR_ONE)),
+      MIR_OP('+', MIR_ONE, MIR_TEMP('x'))
     )
   ),
   /* 11 */ MIR_LABEL('end'),
@@ -75,11 +60,11 @@ it('computeGlobalExpressionUsageAndAppearMap test 1', () => {
       ])
     )
   ).toEqual({
-    '(((1 + x) * 1[0]) / (1 + x))': {
+    '(((1 + x) * MEM[1]) / (1 + x))': {
       appears: [10],
       usage: [10],
     },
-    '((1 + x) * 1[0])': {
+    '((1 + x) * MEM[1])': {
       appears: [9],
       usage: [9, 10],
     },
@@ -95,7 +80,7 @@ it('computeGlobalExpressionUsageAndAppearMap test 1', () => {
       appears: [12],
       usage: [12],
     },
-    '1[0]': {
+    'MEM[1]': {
       appears: [9],
       usage: [9, 10],
     },
@@ -104,7 +89,7 @@ it('computeGlobalExpressionUsageAndAppearMap test 1', () => {
 
 it('computeGlobalExpressionUsageAndAppearMap test 2', () => {
   expect(
-    computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING([MIR_RETURN(HIR_ONE)]).size
+    computeGlobalExpressionUsageAndAppearMap_EXPOSED_FOR_TESTING([MIR_RETURN(MIR_ONE)]).size
   ).toBe(0);
 });
 
@@ -122,7 +107,7 @@ r:
 goto end;
 true:
 y = (1 + x);
-_CSE_HOISTING_1_ = 1[0];
+_CSE_HOISTING_1_ = MEM[1];
 _CSE_HOISTING_0_ = ((1 + x) * _CSE_HOISTING_1_);
 z1 = _CSE_HOISTING_0_;
 z2 = (_CSE_HOISTING_0_ / (1 + x));
@@ -134,7 +119,7 @@ return a;`);
 it('optimizeIRWithCommonSubExpressionElimination test 2', () => {
   expect(
     optimizeIRWithCommonSubExpressionElimination(
-      [MIR_RETURN(HIR_ONE)],
+      [MIR_RETURN(MIR_ONE)],
       new OptimizationResourceAllocator()
     )
       .map(midIRStatementToString)
@@ -152,22 +137,22 @@ it('optimizeIRWithCommonSubExpressionElimination test 3', () => {
             '*',
             MIR_OP(
               '*',
-              MIR_OP('+', MIR_IMMUTABLE_MEM(HIR_ONE), MIR_IMMUTABLE_MEM(HIR_ONE)),
-              MIR_OP('+', MIR_IMMUTABLE_MEM(HIR_ONE), MIR_IMMUTABLE_MEM(HIR_ONE))
+              MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE)),
+              MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE))
             ),
-            MIR_OP('+', MIR_IMMUTABLE_MEM(HIR_ONE), MIR_IMMUTABLE_MEM(HIR_ONE))
+            MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE))
           )
         ),
-        MIR_MOVE_TEMP('y', MIR_OP('+', MIR_IMMUTABLE_MEM(HIR_ONE), MIR_IMMUTABLE_MEM(HIR_ONE))),
+        MIR_MOVE_TEMP('y', MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE))),
         MIR_RETURN(
           MIR_OP(
             '/',
             MIR_OP(
               '*',
-              MIR_OP('+', MIR_IMMUTABLE_MEM(HIR_ONE), MIR_IMMUTABLE_MEM(HIR_ONE)),
-              MIR_OP('+', MIR_IMMUTABLE_MEM(HIR_ONE), MIR_IMMUTABLE_MEM(HIR_ONE))
+              MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE)),
+              MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE))
             ),
-            MIR_OP('+', MIR_IMMUTABLE_MEM(HIR_ONE), MIR_IMMUTABLE_MEM(HIR_ONE))
+            MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ONE), MIR_IMMUTABLE_MEM(MIR_ONE))
           )
         ),
       ],
@@ -175,7 +160,7 @@ it('optimizeIRWithCommonSubExpressionElimination test 3', () => {
     )
       .map(midIRStatementToString)
       .join('\n')
-  ).toBe(`_CSE_HOISTING_2_ = 1[0];
+  ).toBe(`_CSE_HOISTING_2_ = MEM[1];
 _CSE_HOISTING_1_ = (_CSE_HOISTING_2_ + _CSE_HOISTING_2_);
 _CSE_HOISTING_0_ = (_CSE_HOISTING_1_ * _CSE_HOISTING_1_);
 x = (_CSE_HOISTING_0_ * _CSE_HOISTING_1_);
@@ -187,15 +172,15 @@ it('optimizeIRWithCommonSubExpressionElimination test 4', () => {
   expect(
     optimizeIRWithCommonSubExpressionElimination(
       [
-        MIR_MOVE_TEMP('x', MIR_OP('+', MIR_IMMUTABLE_MEM(HIR_ZERO), MIR_IMMUTABLE_MEM(HIR_ONE))),
-        MIR_RETURN(MIR_OP('-', MIR_IMMUTABLE_MEM(HIR_ZERO), MIR_IMMUTABLE_MEM(HIR_ONE))),
+        MIR_MOVE_TEMP('x', MIR_OP('+', MIR_IMMUTABLE_MEM(MIR_ZERO), MIR_IMMUTABLE_MEM(MIR_ONE))),
+        MIR_RETURN(MIR_OP('-', MIR_IMMUTABLE_MEM(MIR_ZERO), MIR_IMMUTABLE_MEM(MIR_ONE))),
       ],
       new OptimizationResourceAllocator()
     )
       .map(midIRStatementToString)
       .join('\n')
-  ).toBe(`_CSE_HOISTING_0_ = 0[0];
-_CSE_HOISTING_1_ = 1[0];
+  ).toBe(`_CSE_HOISTING_0_ = MEM[0];
+_CSE_HOISTING_1_ = MEM[1];
 x = (_CSE_HOISTING_0_ + _CSE_HOISTING_1_);
 return (_CSE_HOISTING_0_ - _CSE_HOISTING_1_);`);
 });

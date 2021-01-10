@@ -1,8 +1,7 @@
 import ControlFlowGraph from './control-flow-graph';
 import { DataflowAnalysisGraphOperator, runForwardDataflowAnalysis } from './dataflow-analysis';
 
-import type { HighIRExpression } from 'samlang-core-ast/hir-expressions';
-import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
+import type { MidIRExpression, MidIRStatement } from 'samlang-core-ast/mir-nodes';
 import { Long, checkNotNull, mapEquals } from 'samlang-core-utils';
 
 type KnownConstant = { readonly __type__: 'known'; readonly value: Long };
@@ -52,17 +51,17 @@ const constantStatusMeet = (s1: ConstantStatus, s2: ConstantStatus): ConstantSta
 
 const propagatedConstantsOnExpression = (
   inData: ReadonlyMap<string, ConstantStatus>,
-  expression: HighIRExpression
+  expression: MidIRExpression
 ): ConstantStatus => {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
+    case 'MidIRConstantExpression':
       return { __type__: 'known', value: expression.value };
-    case 'HighIRNameExpression':
-    case 'HighIRIndexAccessExpression':
+    case 'MidIRNameExpression':
+    case 'MidIRImmutableMemoryExpression':
       return { __type__: 'unknown' };
-    case 'HighIRVariableExpression':
+    case 'MidIRTemporaryExpression':
       return inData.get(expression.name) ?? { __type__: 'unknown' };
-    case 'HighIRBinaryExpression': {
+    case 'MidIRBinaryExpression': {
       const status1 = propagatedConstantsOnExpression(inData, expression.e1);
       const status2 = propagatedConstantsOnExpression(inData, expression.e2);
       switch (expression.operator) {

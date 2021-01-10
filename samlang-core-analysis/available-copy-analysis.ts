@@ -74,7 +74,7 @@ const operator: DataflowAnalysisGraphOperator<MidIRStatement, ReadonlyHashSet<Av
           }
           newOutEdge.add(copy);
         });
-        if (source.__type__ === 'HighIRVariableExpression') {
+        if (source.__type__ === 'MidIRTemporaryExpression') {
           newOutEdge.add(COPY(temporaryID, source.name));
         }
         return newOutEdge;

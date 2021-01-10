@@ -2,57 +2,57 @@ import { constantFoldExpression } from './constant-folding-optimization';
 
 import analyzePropagatedConstants from 'samlang-core-analysis/constant-propagation-analysis';
 import {
-  HighIRExpression,
-  HIR_BINARY,
-  HIR_INDEX_ACCESS,
-  HIR_INT,
-} from 'samlang-core-ast/hir-expressions';
-import { MidIRStatement, MIR_JUMP, MIR_RETURN } from 'samlang-core-ast/mir-nodes';
+  MidIRExpression,
+  MidIRStatement,
+  MIR_CONST,
+  MIR_IMMUTABLE_MEM,
+  MIR_OP,
+  MIR_JUMP,
+  MIR_RETURN,
+} from 'samlang-core-ast/mir-nodes';
 import { Long, checkNotNull, isNotNull } from 'samlang-core-utils';
 
 const optimizeExpressionWithConstantPropagationInformation = (
-  expression: HighIRExpression,
+  expression: MidIRExpression,
   constantPropagationInformation: ReadonlyMap<string, Long>
-): HighIRExpression => {
+): MidIRExpression => {
   switch (expression.__type__) {
-    case 'HighIRIntLiteralExpression':
-    case 'HighIRNameExpression':
+    case 'MidIRConstantExpression':
+    case 'MidIRNameExpression':
       return expression;
-    case 'HighIRVariableExpression': {
+    case 'MidIRTemporaryExpression': {
       const value = constantPropagationInformation.get(expression.name);
       if (value == null) {
         return expression;
       }
-      return HIR_INT(value);
+      return MIR_CONST(value);
     }
-    case 'HighIRIndexAccessExpression':
-      return HIR_INDEX_ACCESS({
-        type: expression.type,
-        expression: optimizeExpressionWithConstantPropagationInformation(
-          expression.expression,
+    case 'MidIRImmutableMemoryExpression':
+      return MIR_IMMUTABLE_MEM(
+        optimizeExpressionWithConstantPropagationInformation(
+          expression.indexExpression,
           constantPropagationInformation
-        ),
-        index: expression.index,
-      });
-    case 'HighIRBinaryExpression':
-      return HIR_BINARY({
-        operator: expression.operator,
-        e1: optimizeExpressionWithConstantPropagationInformation(
+        )
+      );
+    case 'MidIRBinaryExpression':
+      return MIR_OP(
+        expression.operator,
+        optimizeExpressionWithConstantPropagationInformation(
           expression.e1,
           constantPropagationInformation
         ),
-        e2: optimizeExpressionWithConstantPropagationInformation(
+        optimizeExpressionWithConstantPropagationInformation(
           expression.e2,
           constantPropagationInformation
-        ),
-      });
+        )
+      );
   }
 };
 
 const optimizeExpression = (
-  expression: HighIRExpression,
+  expression: MidIRExpression,
   constantPropagationInformation: ReadonlyMap<string, Long>
-): HighIRExpression =>
+): MidIRExpression =>
   constantFoldExpression(
     optimizeExpressionWithConstantPropagationInformation(expression, constantPropagationInformation)
   );
@@ -95,7 +95,7 @@ const optimizeStatement = (
         statement.conditionExpression,
         constantPropagationInformation
       );
-      if (optimizedCondition.__type__ === 'HighIRIntLiteralExpression') {
+      if (optimizedCondition.__type__ === 'MidIRConstantExpression') {
         if (optimizedCondition.value.equals(Long.ZERO)) {
           // Directly fall through
           return null;
