@@ -36,14 +36,6 @@ class MidIRLoweringManager {
         return MIR_NAME(expression.name);
       case 'HighIRVariableExpression':
         return MIR_TEMP(mangleVariableForMIR(expression.name));
-      case 'HighIRIndexAccessExpression':
-        return MIR_IMMUTABLE_MEM(
-          MIR_OP(
-            '+',
-            this.lowerHIRExpressionToMIRExpression(expression.expression),
-            MIR_CONST(expression.index * 8)
-          )
-        );
       case 'HighIRBinaryExpression':
         return MIR_OP(
           expression.operator,
@@ -58,6 +50,20 @@ class MidIRLoweringManager {
     // eslint-disable-next-line camelcase
   ): readonly MidIRStatement_DANGEROUSLY_NON_CANONICAL[] => {
     switch (statement.__type__) {
+      case 'HighIRIndexAccessStatement': {
+        return [
+          MIR_MOVE_TEMP(
+            mangleVariableForMIR(statement.name),
+            MIR_IMMUTABLE_MEM(
+              MIR_OP(
+                '+',
+                this.lowerHIRExpressionToMIRExpression(statement.pointerExpression),
+                MIR_CONST(statement.index * 8)
+              )
+            )
+          ),
+        ];
+      }
       case 'HighIRFunctionCallStatement':
         return [
           MIR_CALL_FUNCTION(

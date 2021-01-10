@@ -28,12 +28,6 @@ export interface HighIRVariableExpression extends BaseHighIRExpression {
   readonly name: string;
 }
 
-export interface HighIRIndexAccessExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRIndexAccessExpression';
-  readonly expression: HighIRExpression;
-  readonly index: number;
-}
-
 export interface HighIRBinaryExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRBinaryExpression';
   readonly e1: HighIRExpression;
@@ -45,11 +39,18 @@ export type HighIRExpression =
   | HighIRIntLiteralExpression
   | HighIRNameExpression
   | HighIRVariableExpression
-  | HighIRIndexAccessExpression
   | HighIRBinaryExpression;
 
 interface BaseHighIRStatement {
   readonly __type__: string;
+}
+
+export interface HighIRIndexAccessStatement extends BaseHighIRExpression {
+  readonly __type__: 'HighIRIndexAccessStatement';
+  readonly name: string;
+  readonly type: HighIRType;
+  readonly pointerExpression: HighIRExpression;
+  readonly index: number;
 }
 
 export interface HighIRFunctionCallStatement extends BaseHighIRStatement {
@@ -97,6 +98,7 @@ export interface HighIRReturnStatement extends BaseHighIRStatement {
 }
 
 export type HighIRStatement =
+  | HighIRIndexAccessStatement
   | HighIRFunctionCallStatement
   | HighIRIfElseStatement
   | HighIRLetDefinitionStatement
@@ -141,17 +143,6 @@ export const HIR_VARIABLE = (name: string, type: HighIRType): HighIRVariableExpr
   name,
 });
 
-export const HIR_INDEX_ACCESS = ({
-  type,
-  expression,
-  index,
-}: ConstructorArgumentObject<HighIRIndexAccessExpression>): HighIRIndexAccessExpression => ({
-  __type__: 'HighIRIndexAccessExpression',
-  type,
-  expression,
-  index,
-});
-
 export const HIR_BINARY = ({
   operator,
   e1,
@@ -190,6 +181,19 @@ export const HIR_BINARY = ({
   }
   return { __type__: 'HighIRBinaryExpression', type, operator, e1, e2 };
 };
+
+export const HIR_INDEX_ACCESS = ({
+  name,
+  type,
+  pointerExpression,
+  index,
+}: ConstructorArgumentObject<HighIRIndexAccessStatement>): HighIRIndexAccessStatement => ({
+  __type__: 'HighIRIndexAccessStatement',
+  name,
+  type,
+  pointerExpression,
+  index,
+});
 
 export const HIR_FUNCTION_CALL = ({
   functionExpression,
@@ -250,10 +254,6 @@ export const debugPrintHighIRExpression = (expression: HighIRExpression): string
       return `(${expression.name}: ${prettyPrintHighIRType(expression.type)})`;
     case 'HighIRNameExpression':
       return expression.name;
-    case 'HighIRIndexAccessExpression':
-      return `(${debugPrintHighIRExpression(expression.expression)}[${
-        expression.index
-      }]: ${prettyPrintHighIRType(expression.type)})`;
     case 'HighIRBinaryExpression':
       return `(${debugPrintHighIRExpression(expression.e1)} ${
         expression.operator
@@ -267,6 +267,15 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
 
   const printer = (s: HighIRStatement) => {
     switch (s.__type__) {
+      case 'HighIRIndexAccessStatement': {
+        const type = prettyPrintHighIRType(s.type);
+        const pointerExpression = debugPrintHighIRExpression(s.pointerExpression);
+        collector.push(
+          '  '.repeat(level),
+          `let ${s.name}: ${type} = ${pointerExpression}[${s.index}];\n`
+        );
+        break;
+      }
       case 'HighIRFunctionCallStatement': {
         const functionString = debugPrintHighIRExpression(s.functionExpression);
         const argumentString = s.functionArguments.map(debugPrintHighIRExpression).join(', ');

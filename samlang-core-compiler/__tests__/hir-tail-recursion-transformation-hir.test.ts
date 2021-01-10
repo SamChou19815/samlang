@@ -115,17 +115,19 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
           s1: [HIR_LET({ name: 'aaa', type: HIR_INT_TYPE, assignedExpression: HIR_INT(3) })],
           s2: [HIR_RETURN(HIR_INT(3))],
         }),
+        HIR_INDEX_ACCESS({
+          name: 'a',
+          type: HIR_INT_TYPE,
+          pointerExpression: HIR_VARIABLE('n', HIR_INT_TYPE),
+          index: 0,
+        }),
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME('tailRec', HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)),
           functionArguments: [
-            HIR_INDEX_ACCESS({
-              type: HIR_INT_TYPE,
-              expression: HIR_BINARY({
-                operator: '+',
-                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-                e2: HIR_VARIABLE('n', HIR_INT_TYPE),
-              }),
-              index: 0,
+            HIR_BINARY({
+              operator: '+',
+              e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+              e2: HIR_VARIABLE('n', HIR_INT_TYPE),
             }),
           ],
           returnCollector: { name: 'collector', type: HIR_INT_TYPE },
@@ -141,7 +143,8 @@ if 1 {
 } else {
   return 3;
 }
-let _param_n_temp_collector: int = (((n: int) + (n: int))[0]: int);
+let a: int = (n: int)[0];
+let _param_n_temp_collector: int = ((n: int) + (n: int));
 let n: int = (_param_n_temp_collector: int);`);
 });
 

@@ -20,7 +20,6 @@ const compareMidIR = (e1: HighIRExpression, e2: HighIRExpression): number => {
         }
         case 'HighIRNameExpression':
         case 'HighIRVariableExpression':
-        case 'HighIRIndexAccessExpression':
         case 'HighIRBinaryExpression':
           return -1;
       }
@@ -32,7 +31,6 @@ const compareMidIR = (e1: HighIRExpression, e2: HighIRExpression): number => {
         case 'HighIRNameExpression':
           return e1.name.localeCompare(e2.name);
         case 'HighIRVariableExpression':
-        case 'HighIRIndexAccessExpression':
         case 'HighIRBinaryExpression':
           return -1;
       }
@@ -44,22 +42,6 @@ const compareMidIR = (e1: HighIRExpression, e2: HighIRExpression): number => {
           return 1;
         case 'HighIRVariableExpression':
           return e1.name.localeCompare(e2.name);
-        case 'HighIRIndexAccessExpression':
-          return -1;
-        case 'HighIRBinaryExpression':
-          return -1;
-      }
-    // eslint-disable-next-line no-fallthrough
-    case 'HighIRIndexAccessExpression':
-      switch (e2.__type__) {
-        case 'HighIRIntLiteralExpression':
-        case 'HighIRNameExpression':
-        case 'HighIRVariableExpression':
-          return 1;
-        case 'HighIRIndexAccessExpression': {
-          const c = compareMidIR(e1.expression, e2.expression);
-          return c === 0 ? e1.index - e2.index : c;
-        }
         case 'HighIRBinaryExpression':
           return -1;
       }
@@ -69,7 +51,6 @@ const compareMidIR = (e1: HighIRExpression, e2: HighIRExpression): number => {
         case 'HighIRIntLiteralExpression':
         case 'HighIRNameExpression':
         case 'HighIRVariableExpression':
-        case 'HighIRIndexAccessExpression':
           return 1;
         case 'HighIRBinaryExpression': {
           const operatorCompareResult = e1.operator.localeCompare(e2.operator);

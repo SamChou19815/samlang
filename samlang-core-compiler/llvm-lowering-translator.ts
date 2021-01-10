@@ -6,6 +6,7 @@ import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
 import type {
   HighIRExpression,
   HighIRStatement,
+  HighIRIndexAccessStatement,
   HighIRFunctionCallStatement,
   HighIRIfElseStatement,
   HighIRLetDefinitionStatement,
@@ -148,6 +149,9 @@ class LLVMLoweringManager {
 
   lowerHighIRStatement(s: HighIRStatement): void {
     switch (s.__type__) {
+      case 'HighIRIndexAccessStatement':
+        this.lowerHighIRIndexAccessStatement(s);
+        return;
       case 'HighIRFunctionCallStatement':
         this.lowerHighIRFunctionCallStatement(s);
         return;
@@ -173,6 +177,24 @@ class LLVMLoweringManager {
         return;
       }
     }
+  }
+
+  private lowerHighIRIndexAccessStatement(s: HighIRIndexAccessStatement): void {
+    const { value: loweredPointerValue, type: loweredPointerType } = this.lowerHighIRExpression(
+      s.pointerExpression
+    );
+    const pointerTemp = this.allocator.allocateTemp('index_pointer_temp');
+    const valueType = lowerHighIRTypeToLLVMType(s.type);
+    this.llvmInstructionCollector.push(
+      LLVM_GET_ELEMENT_PTR({
+        resultVariable: pointerTemp,
+        resultType: valueType,
+        sourcePointerType: loweredPointerType,
+        sourceValue: loweredPointerValue,
+        offset: s.index,
+      }),
+      LLVM_LOAD({ resultVariable: s.name, sourceVariable: pointerTemp, valueType })
+    );
   }
 
   private lowerHighIRFunctionCallStatement(s: HighIRFunctionCallStatement): void {
@@ -422,25 +444,6 @@ class LLVMLoweringManager {
             this.llvmConstantPropagationContext.getLocalValueType(e.name) ?? LLVM_VARIABLE(e.name),
           type: lowerHighIRTypeToLLVMType(e.type),
         };
-      case 'HighIRIndexAccessExpression': {
-        const { value: loweredPointerValue, type: loweredPointerType } = this.lowerHighIRExpression(
-          e.expression
-        );
-        const pointerTemp = this.allocator.allocateTemp('index_pointer_temp');
-        const valueTemp = this.allocator.allocateTemp('value_temp_loaded');
-        const valueType = lowerHighIRTypeToLLVMType(e.type);
-        this.llvmInstructionCollector.push(
-          LLVM_GET_ELEMENT_PTR({
-            resultVariable: pointerTemp,
-            resultType: valueType,
-            sourcePointerType: loweredPointerType,
-            sourceValue: loweredPointerValue,
-            offset: e.index,
-          }),
-          LLVM_LOAD({ resultVariable: valueTemp, sourceVariable: pointerTemp, valueType })
-        );
-        return { value: LLVM_VARIABLE(valueTemp), type: lowerHighIRTypeToLLVMType(e.type) };
-      }
       case 'HighIRBinaryExpression': {
         const v1 = this.lowerHighIRExpression(e.e1).value;
         const v2 = this.lowerHighIRExpression(e.e2).value;
