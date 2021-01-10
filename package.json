@@ -18,7 +18,7 @@
     "test:single": "jest -t",
     "test:integration": "ts-node-script scripts/compile-repository.ts",
     "test:new-linter-config:dev-sam-local": "eslint --config configurations/latest-local-linter-config.js .",
-    "bump": "yarn up @types/jest @types/node typescript prettier jest babel-jest husky lint-staged @babel/core eslint \"@typescript-eslint/*\" \"eslint-*\""
+    "bump": "yarn up @types/jest @types/node @vercel/ncc typescript prettier jest babel-jest husky lint-staged @babel/core eslint \"@typescript-eslint/*\" \"eslint-*\""
   },
   "devDependencies": {
     "@babel/core": "^7.12.10",
