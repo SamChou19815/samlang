@@ -424,12 +424,21 @@ it('HIR statements to JS string test', () => {
         booleanExpression: HIR_INT(5),
         s1: [HIR_RETURN(HIR_ZERO)],
         s2: [HIR_RETURN(HIR_ZERO)],
+        finalAssignment: {
+          name: 'f',
+          type: HIR_INT_TYPE,
+          branch1Value: HIR_ZERO,
+          branch2Value: HIR_ZERO,
+        },
       })
     )
-  ).toBe(`if (5) {
+  ).toBe(`let f;
+if (5) {
   return 0;
+  f = 0;
 } else {
   return 0;
+  f = 0;
 }`);
   expect(
     highIRStatementToString(
@@ -457,11 +466,6 @@ it('HIR statements to JS string test', () => {
   expect(
     highIRStatementToString(
       HIR_SWITCH({
-        multiAssignedVariable: {
-          name: 'ma',
-          type: HIR_INT_TYPE,
-          branchVariables: ['b1', 'd1'],
-        },
         caseVariable: 'f',
         cases: [
           {
@@ -481,6 +485,38 @@ it('HIR statements to JS string test', () => {
   }
   case 2: {
     return foo;
+  }
+}`);
+  expect(
+    highIRStatementToString(
+      HIR_SWITCH({
+        caseVariable: 'f',
+        cases: [
+          {
+            caseNumber: 1,
+            statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_INT_TYPE))],
+          },
+          {
+            caseNumber: 2,
+            statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_INT_TYPE))],
+          },
+        ],
+        finalAssignment: {
+          name: 'ma',
+          type: HIR_INT_TYPE,
+          branchValues: [HIR_ZERO, HIR_ZERO],
+        },
+      })
+    )
+  ).toBe(`let ma;
+switch (f) {
+  case 1: {
+    return foo;
+    ma = 0;
+  }
+  case 2: {
+    return foo;
+    ma = 0;
   }
 }`);
   expect(

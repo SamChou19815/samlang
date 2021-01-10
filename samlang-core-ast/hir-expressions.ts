@@ -1,7 +1,7 @@
 import type { IROperator } from './common-operators';
 import { HighIRType, HIR_BOOL_TYPE, HIR_INT_TYPE, prettyPrintHighIRType } from './hir-types';
 
-import { Long } from 'samlang-core-utils';
+import { checkNotNull, Long } from 'samlang-core-utils';
 
 interface BaseHighIRExpression {
   readonly __type__: string;
@@ -63,29 +63,29 @@ export interface HighIRFunctionCallStatement extends BaseHighIRStatement {
 
 export interface HighIRIfElseStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRIfElseStatement';
-  readonly multiAssignedVariable?: {
-    readonly name: string;
-    readonly type: HighIRType;
-    readonly branch1Variable: string;
-    readonly branch2Variable: string;
-  };
   readonly booleanExpression: HighIRExpression;
   readonly s1: readonly HighIRStatement[];
   readonly s2: readonly HighIRStatement[];
+  readonly finalAssignment?: {
+    readonly name: string;
+    readonly type: HighIRType;
+    readonly branch1Value: HighIRExpression;
+    readonly branch2Value: HighIRExpression;
+  };
 }
 
 export interface HighIRSwitchStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRSwitchStatement';
-  readonly multiAssignedVariable?: {
-    readonly name: string;
-    readonly type: HighIRType;
-    readonly branchVariables: readonly string[];
-  };
   readonly caseVariable: string;
   readonly cases: readonly {
     readonly caseNumber: number;
     readonly statements: readonly HighIRStatement[];
   }[];
+  readonly finalAssignment?: {
+    readonly name: string;
+    readonly type: HighIRType;
+    readonly branchValues: readonly HighIRExpression[];
+  };
 }
 
 export interface HighIRVariantPatternToStatement {
@@ -226,27 +226,27 @@ export const HIR_FUNCTION_CALL = ({
 });
 
 export const HIR_IF_ELSE = ({
-  multiAssignedVariable,
   booleanExpression,
   s1,
   s2,
+  finalAssignment,
 }: ConstructorArgumentObject<HighIRIfElseStatement>): HighIRIfElseStatement => ({
   __type__: 'HighIRIfElseStatement',
-  multiAssignedVariable,
   booleanExpression,
   s1,
   s2,
+  finalAssignment,
 });
 
 export const HIR_SWITCH = ({
-  multiAssignedVariable,
   caseVariable,
   cases,
+  finalAssignment,
 }: ConstructorArgumentObject<HighIRSwitchStatement>): HighIRSwitchStatement => ({
   __type__: 'HighIRSwitchStatement',
-  multiAssignedVariable,
   caseVariable,
   cases,
+  finalAssignment,
 });
 
 export const HIR_LET = ({
@@ -323,47 +323,53 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         break;
       }
       case 'HighIRIfElseStatement':
+        if (s.finalAssignment != null) {
+          const type = prettyPrintHighIRType(s.finalAssignment.type);
+          collector.push('  '.repeat(level), `let ${s.finalAssignment.name}: ${type};\n`);
+        }
         collector.push(
           '  '.repeat(level),
           `if ${debugPrintHighIRExpression(s.booleanExpression)} {\n`
         );
         level += 1;
         s.s1.forEach(printer);
+        if (s.finalAssignment != null) {
+          const v1 = debugPrintHighIRExpression(s.finalAssignment.branch1Value);
+          collector.push('  '.repeat(level), `${s.finalAssignment.name} = ${v1};\n`);
+        }
         level -= 1;
         collector.push('  '.repeat(level), `} else {\n`);
         level += 1;
         s.s2.forEach(printer);
+        if (s.finalAssignment != null) {
+          const v2 = debugPrintHighIRExpression(s.finalAssignment.branch2Value);
+          collector.push('  '.repeat(level), `${s.finalAssignment.name} = ${v2};\n`);
+        }
         level -= 1;
         collector.push('  '.repeat(level), `}\n`);
-        if (s.multiAssignedVariable != null) {
-          const type = prettyPrintHighIRType(s.multiAssignedVariable.type);
-          const { name, branch1Variable, branch2Variable } = s.multiAssignedVariable;
-          collector.push(
-            '  '.repeat(level),
-            `// ${name}: ${type} = phi(${branch1Variable}, ${branch2Variable})\n`
-          );
-        }
         break;
       case 'HighIRSwitchStatement': {
-        collector.push('  '.repeat(level), `switch (${s.caseVariable})} {\n`);
+        if (s.finalAssignment != null) {
+          const type = prettyPrintHighIRType(s.finalAssignment.type);
+          collector.push('  '.repeat(level), `let ${s.finalAssignment.name}: ${type};\n`);
+        }
+        collector.push('  '.repeat(level), `switch (${s.caseVariable}) {\n`);
         level += 1;
-        s.cases.forEach(({ caseNumber, statements }) => {
+        s.cases.forEach(({ caseNumber, statements }, i) => {
           collector.push('  '.repeat(level), `case ${caseNumber}: {\n`);
           level += 1;
           statements.forEach(printer);
+          if (s.finalAssignment != null) {
+            const value = debugPrintHighIRExpression(
+              checkNotNull(s.finalAssignment.branchValues[i])
+            );
+            collector.push('  '.repeat(level), `${s.finalAssignment.name} = ${value};\n`);
+          }
           level -= 1;
           collector.push('  '.repeat(level), `}\n`);
         });
         level -= 1;
         collector.push('  '.repeat(level), `}\n`);
-        if (s.multiAssignedVariable != null) {
-          const type = prettyPrintHighIRType(s.multiAssignedVariable.type);
-          const { name, branchVariables } = s.multiAssignedVariable;
-          collector.push(
-            '  '.repeat(level),
-            `// ${name}: ${type} = phi(${branchVariables.join(', ')})\n`
-          );
-        }
         break;
       }
       case 'HighIRLetDefinitionStatement':

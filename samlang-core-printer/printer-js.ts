@@ -3,6 +3,7 @@ import {
   PRETTIER_CONCAT,
   PRETTIER_TEXT,
   PRETTIER_LINE,
+  PRETTIER_NIL,
 } from './printer-prettier-core';
 import {
   createCommaSeparatedList,
@@ -21,6 +22,7 @@ import {
 } from 'samlang-core-ast/common-names';
 import type { HighIRStatement, HighIRExpression } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
+import { checkNotNull } from 'samlang-core-utils';
 
 // Thanks https://gist.github.com/getify/3667624
 const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
@@ -101,6 +103,12 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
     }
     case 'HighIRIfElseStatement':
       return PRETTIER_CONCAT(
+        highIRStatement.finalAssignment == null
+          ? PRETTIER_NIL
+          : PRETTIER_CONCAT(
+              PRETTIER_TEXT(`let ${highIRStatement.finalAssignment.name};`),
+              PRETTIER_LINE
+            ),
         PRETTIER_TEXT('if '),
         createParenthesisSurroundedDocument(
           createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
@@ -108,17 +116,59 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
           )
         ),
         PRETTIER_TEXT(' '),
-        createBracesSurroundedBlockDocument(concatStatements(highIRStatement.s1)),
+        createBracesSurroundedBlockDocument(
+          highIRStatement.finalAssignment == null
+            ? concatStatements(highIRStatement.s1)
+            : [
+                ...concatStatements(highIRStatement.s1),
+                PRETTIER_LINE,
+                PRETTIER_TEXT(`${highIRStatement.finalAssignment.name} = `),
+                createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+                  highIRStatement.finalAssignment.branch1Value
+                ),
+                PRETTIER_TEXT(';'),
+              ]
+        ),
         PRETTIER_TEXT(' else '),
-        createBracesSurroundedBlockDocument(concatStatements(highIRStatement.s2))
+        createBracesSurroundedBlockDocument(
+          highIRStatement.finalAssignment == null
+            ? concatStatements(highIRStatement.s2)
+            : [
+                ...concatStatements(highIRStatement.s2),
+                PRETTIER_LINE,
+                PRETTIER_TEXT(`${highIRStatement.finalAssignment.name} = `),
+                createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+                  highIRStatement.finalAssignment.branch2Value
+                ),
+                PRETTIER_TEXT(';'),
+              ]
+        )
       );
     case 'HighIRSwitchStatement': {
-      const docs = highIRStatement.cases.flatMap(({ caseNumber, statements }) => [
+      const docs = highIRStatement.cases.flatMap(({ caseNumber, statements }, i) => [
         PRETTIER_TEXT(`case ${caseNumber}: `),
-        createBracesSurroundedBlockDocument(concatStatements(statements)),
+        createBracesSurroundedBlockDocument(
+          highIRStatement.finalAssignment == null
+            ? concatStatements(statements)
+            : [
+                ...concatStatements(statements),
+                PRETTIER_LINE,
+                PRETTIER_TEXT(`${highIRStatement.finalAssignment.name} = `),
+                createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+                  checkNotNull(highIRStatement.finalAssignment.branchValues[i])
+                ),
+                PRETTIER_TEXT(';'),
+              ]
+        ),
         PRETTIER_LINE,
       ]);
       return PRETTIER_CONCAT(
+        highIRStatement.finalAssignment == null
+          ? PRETTIER_NIL
+          : PRETTIER_CONCAT(
+              PRETTIER_TEXT(`let ${highIRStatement.finalAssignment.name};`),
+              PRETTIER_LINE
+            ),
         PRETTIER_TEXT(`switch (${highIRStatement.caseVariable}) `),
         createBracesSurroundedBlockDocument(docs.slice(0, docs.length - 1))
       );

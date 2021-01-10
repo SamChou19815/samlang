@@ -121,12 +121,6 @@ it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
   assertCoalesceMoveAndReturnWithForHighIRStatements(
     [
       HIR_IF_ELSE({
-        multiAssignedVariable: {
-          name: '_t1',
-          type: HIR_INT_TYPE,
-          branch1Variable: 'one',
-          branch2Variable: '_t0',
-        },
         booleanExpression: HIR_VARIABLE('n', HIR_INT_TYPE),
         s1: [
           HIR_LET({ name: 'one_const_value', type: HIR_INT_TYPE, assignedExpression: HIR_ONE }),
@@ -181,16 +175,25 @@ it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
             assignedExpression: HIR_VARIABLE('_t0', HIR_INT_TYPE),
           }),
         ],
+        finalAssignment: {
+          name: '_t1',
+          type: HIR_INT_TYPE,
+          branch1Value: HIR_VARIABLE('one', HIR_INT_TYPE),
+          branch2Value: HIR_VARIABLE('_t0', HIR_INT_TYPE),
+        },
       }),
       HIR_RETURN(HIR_VARIABLE('_t1', HIR_INT_TYPE)),
     ],
-    `if (n: int) {
+    `let _t1: int;
+if (n: int) {
   return 1;
+  _t1 = (one: int);
 } else {
   let nn: int = (n: int) + -1;
   let accc: int = (n: int) * (acc: int);
   let _t0: int = _module__class_Class1_function_factorial((nn: int), (accc: int));
   return (_t0: int);
+  _t1 = (_t0: int);
 }`
   );
 });

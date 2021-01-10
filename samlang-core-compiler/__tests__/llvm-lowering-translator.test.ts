@@ -207,12 +207,6 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_IF_ELSE({
-        multiAssignedVariable: {
-          name: 'ma',
-          type: INT,
-          branch1Variable: 'b1',
-          branch2Variable: 'b2',
-        },
         booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
         s1: [
           HIR_FUNCTION_CALL({
@@ -220,7 +214,6 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
             functionArguments: [],
             returnCollector: { name: 'b1', type: INT },
           }),
-          HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b1', INT) }),
         ],
         s2: [
           HIR_FUNCTION_CALL({
@@ -228,8 +221,13 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
             functionArguments: [],
             returnCollector: { name: 'b2', type: INT },
           }),
-          HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b2', INT) }),
         ],
+        finalAssignment: {
+          name: 'ma',
+          type: INT,
+          branch1Value: HIR_VARIABLE('b1', INT),
+          branch2Value: HIR_VARIABLE('b2', INT),
+        },
       }),
     ],
     `  br i1 %bbb, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
@@ -247,31 +245,13 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 1/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_SWITCH({
-        multiAssignedVariable: { name: 'ma', type: INT, branchVariables: ['b1', 'b2', 'b3'] },
         caseVariable: 'c',
         cases: [
-          {
-            caseNumber: 1,
-            statements: [
-              HIR_LET({ name: 'b1', type: INT, assignedExpression: HIR_ZERO }),
-              HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b1', INT) }),
-            ],
-          },
-          {
-            caseNumber: 0,
-            statements: [
-              HIR_LET({ name: 'b2', type: INT, assignedExpression: HIR_ZERO }),
-              HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b2', INT) }),
-            ],
-          },
-          {
-            caseNumber: 2,
-            statements: [
-              HIR_LET({ name: 'b3', type: INT, assignedExpression: HIR_ZERO }),
-              HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b3', INT) }),
-            ],
-          },
+          { caseNumber: 1, statements: [] },
+          { caseNumber: 0, statements: [] },
+          { caseNumber: 2, statements: [] },
         ],
+        finalAssignment: { name: 'ma', type: INT, branchValues: [HIR_ZERO, HIR_ZERO, HIR_ZERO] },
       }),
     ],
     `  switch i64 %c, label %l_testFunction_1_match_end [ i64 1, label %l_testFunction_2_match_case_0 i64 0, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]

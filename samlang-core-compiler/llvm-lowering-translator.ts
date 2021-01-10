@@ -7,8 +7,6 @@ import type {
   HighIRExpression,
   HighIRStatement,
   HighIRIndexAccessStatement,
-  HighIRBinaryStatement,
-  HighIRFunctionCallStatement,
   HighIRIfElseStatement,
   HighIRSwitchStatement,
   HighIRLetDefinitionStatement,
@@ -18,7 +16,6 @@ import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel
 import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   isTheSameLLVMType,
-  LLVMType,
   LLVMAnnotatedValue,
   LLVMInstruction,
   LLVMFunction,
@@ -48,25 +45,14 @@ class LLVMLoweringManager {
   readonly llvmInstructionCollector: LLVMInstruction[] = [];
   private readonly allocator = new MidIRResourceAllocator();
   private readonly llvmConstantPropagationContext = new LLVMConstantPropagationContext();
-  private readonly phiMoveSet = new Set<string>();
   private readonly functionStartLabel: string;
 
   constructor(
     private readonly functionName: string,
-    private readonly parameters: Readonly<Record<string, LLVMType>>,
     private readonly globalVariables: Readonly<Record<string, number>>
   ) {
     this.functionStartLabel = this.allocator.allocateLabelWithAnnotation(functionName, 'START');
     this.llvmInstructionCollector.push(LLVM_LABEL(this.functionStartLabel));
-  }
-
-  private withNestedScope(
-    newPhiMoveSet: readonly Readonly<{ target: string; source: string }>[],
-    statementLoweringCode: () => void
-  ) {
-    newPhiMoveSet.forEach(({ target, source }) => this.phiMoveSet.add(`${target} = ${source}`));
-    this.llvmConstantPropagationContext.withNestedScope(statementLoweringCode);
-    newPhiMoveSet.forEach(({ target, source }) => this.phiMoveSet.delete(`${target} = ${source}`));
   }
 
   lowerHighIRStatement(s: HighIRStatement): void {
@@ -75,10 +61,24 @@ class LLVMLoweringManager {
         this.lowerHighIRIndexAccessStatement(s);
         return;
       case 'HighIRBinaryStatement':
-        this.lowerHighIRBinaryStatement(s);
+        this.llvmInstructionCollector.push(
+          LLVM_BINARY({
+            resultVariable: s.name,
+            operator: s.operator,
+            v1: this.lowerHighIRExpression(s.e1).value,
+            v2: this.lowerHighIRExpression(s.e2).value,
+          })
+        );
         return;
       case 'HighIRFunctionCallStatement':
-        this.lowerHighIRFunctionCallStatement(s);
+        this.llvmInstructionCollector.push(
+          LLVM_CALL({
+            resultType: lowerHighIRTypeToLLVMType(s.returnCollector?.type ?? HIR_INT_TYPE),
+            resultVariable: s.returnCollector?.name,
+            functionName: this.lowerHighIRExpression(s.functionExpression).value,
+            functionArguments: s.functionArguments.map((it) => this.lowerHighIRExpression(it)),
+          })
+        );
         return;
       case 'HighIRIfElseStatement':
         this.lowerNormalHighIRIfElseStatement(s);
@@ -119,32 +119,8 @@ class LLVMLoweringManager {
     );
   }
 
-  private lowerHighIRBinaryStatement(s: HighIRBinaryStatement): void {
-    this.llvmInstructionCollector.push(
-      LLVM_BINARY({
-        resultVariable: s.name,
-        operator: s.operator,
-        v1: this.lowerHighIRExpression(s.e1).value,
-        v2: this.lowerHighIRExpression(s.e2).value,
-      })
-    );
-  }
-
-  private lowerHighIRFunctionCallStatement(s: HighIRFunctionCallStatement): void {
-    const functionName = this.lowerHighIRExpression(s.functionExpression).value;
-    const functionArguments = s.functionArguments.map((it) => this.lowerHighIRExpression(it));
-    this.llvmInstructionCollector.push(
-      LLVM_CALL({
-        resultType: lowerHighIRTypeToLLVMType(s.returnCollector?.type ?? HIR_INT_TYPE),
-        resultVariable: s.returnCollector?.name,
-        functionName,
-        functionArguments,
-      })
-    );
-  }
-
   private lowerNormalHighIRIfElseStatement(s: HighIRIfElseStatement): void {
-    const { multiAssignedVariable, booleanExpression, s1, s2 } = s;
+    const { booleanExpression, s1, s2, finalAssignment } = s;
     const loweredCondition = this.lowerHighIRExpression(booleanExpression).value;
     const trueLabel = this.allocator.allocateLabelWithAnnotation(
       this.functionName,
@@ -163,35 +139,21 @@ class LLVMLoweringManager {
       LLVM_CJUMP(loweredCondition, trueLabel, falseLabel),
       LLVM_LABEL(trueLabel)
     );
-    if (multiAssignedVariable != null) {
-      let v1: LLVMValue = LLVM_VARIABLE(multiAssignedVariable.branch1Variable);
-      let v2: LLVMValue = LLVM_VARIABLE(multiAssignedVariable.branch2Variable);
-      this.withNestedScope(
-        [{ target: multiAssignedVariable.name, source: multiAssignedVariable.branch1Variable }],
-        () => {
-          s1.forEach((it) => this.lowerHighIRStatement(it));
-          v1 =
-            this.llvmConstantPropagationContext.getLocalValueType(
-              multiAssignedVariable.branch1Variable
-            ) ?? LLVM_VARIABLE(multiAssignedVariable.branch1Variable);
-        }
-      );
+    if (finalAssignment != null) {
+      const v1 = this.llvmConstantPropagationContext.withNestedScope(() => {
+        s1.forEach((it) => this.lowerHighIRStatement(it));
+        return this.lowerHighIRExpression(finalAssignment.branch1Value).value;
+      });
       this.llvmInstructionCollector.push(LLVM_JUMP(endLabel), LLVM_LABEL(falseLabel));
-      this.withNestedScope(
-        [{ target: multiAssignedVariable.name, source: multiAssignedVariable.branch2Variable }],
-        () => {
-          s2.forEach((it) => this.lowerHighIRStatement(it));
-          v2 =
-            this.llvmConstantPropagationContext.getLocalValueType(
-              multiAssignedVariable.branch2Variable
-            ) ?? LLVM_VARIABLE(multiAssignedVariable.branch2Variable);
-        }
-      );
+      const v2 = this.llvmConstantPropagationContext.withNestedScope(() => {
+        s2.forEach((it) => this.lowerHighIRStatement(it));
+        return this.lowerHighIRExpression(finalAssignment.branch2Value).value;
+      });
       this.llvmInstructionCollector.push(LLVM_LABEL(endLabel));
       this.llvmInstructionCollector.push(
         LLVM_PHI({
-          name: multiAssignedVariable.name,
-          variableType: lowerHighIRTypeToLLVMType(multiAssignedVariable.type),
+          name: finalAssignment.name,
+          variableType: lowerHighIRTypeToLLVMType(finalAssignment.type),
           valueBranchTuples: [
             { value: v1, branch: trueLabel },
             { value: v2, branch: falseLabel },
@@ -199,9 +161,13 @@ class LLVMLoweringManager {
         })
       );
     } else {
-      this.withNestedScope([], () => s1.forEach((it) => this.lowerHighIRStatement(it)));
+      this.llvmConstantPropagationContext.withNestedScope(() =>
+        s1.forEach((it) => this.lowerHighIRStatement(it))
+      );
       this.llvmInstructionCollector.push(LLVM_JUMP(endLabel), LLVM_LABEL(falseLabel));
-      this.withNestedScope([], () => s2.forEach((it) => this.lowerHighIRStatement(it)));
+      this.llvmConstantPropagationContext.withNestedScope(() =>
+        s2.forEach((it) => this.lowerHighIRStatement(it))
+      );
       this.llvmInstructionCollector.push(LLVM_LABEL(endLabel));
     }
   }
@@ -224,9 +190,9 @@ class LLVMLoweringManager {
       )
     );
 
-    if (s.multiAssignedVariable == null) {
+    if (s.finalAssignment == null) {
       caseWithLabels.forEach(({ label, statements }) => {
-        this.withNestedScope([], () => {
+        this.llvmConstantPropagationContext.withNestedScope(() => {
           this.llvmInstructionCollector.push(LLVM_LABEL(label));
           statements.forEach((it) => this.lowerHighIRStatement(it));
           this.llvmInstructionCollector.push(LLVM_JUMP(finalEndLabel));
@@ -235,17 +201,14 @@ class LLVMLoweringManager {
       this.llvmInstructionCollector.push(LLVM_LABEL(finalEndLabel));
       return;
     }
-    const { name: phiVariable, type: phiType, branchVariables } = s.multiAssignedVariable;
+    const { name: phiVariable, type: phiType, branchValues } = s.finalAssignment;
     const values: LLVMValue[] = [];
     caseWithLabels.forEach(({ label, statements }, i) => {
-      const branchVariable = checkNotNull(branchVariables[i]);
-      this.withNestedScope([{ target: phiVariable, source: branchVariable }], () => {
+      this.llvmConstantPropagationContext.withNestedScope(() => {
         this.llvmInstructionCollector.push(LLVM_LABEL(label));
         statements.forEach((it) => this.lowerHighIRStatement(it));
-        const assignedValue =
-          this.llvmConstantPropagationContext.getLocalValueType(branchVariable) ??
-          LLVM_VARIABLE(branchVariable);
-        values.push(assignedValue);
+        const branchValue = this.lowerHighIRExpression(checkNotNull(branchValues[i])).value;
+        values.push(branchValue);
         this.llvmInstructionCollector.push(LLVM_JUMP(finalEndLabel));
       });
     });
@@ -263,12 +226,6 @@ class LLVMLoweringManager {
   }
 
   private lowerHighIRLetDefinitionStatement(s: HighIRLetDefinitionStatement): void {
-    if (
-      s.assignedExpression.__type__ === 'HighIRVariableExpression' &&
-      this.phiMoveSet.has(`${s.name} = ${s.assignedExpression.name}`)
-    ) {
-      return;
-    }
     const { value: sourceValue, type: actualType } = this.lowerHighIRExpression(
       s.assignedExpression
     );
@@ -379,13 +336,7 @@ export const lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING = (
     parameterName,
     parameterType: lowerHighIRTypeToLLVMType(checkNotNull(argumentTypes[i])),
   }));
-  const manager = new LLVMLoweringManager(
-    name,
-    Object.fromEntries(
-      annotatedParameters.map(({ parameterName, parameterType }) => [parameterName, parameterType])
-    ),
-    globalVariables
-  );
+  const manager = new LLVMLoweringManager(name, globalVariables);
   body.forEach((it) => manager.lowerHighIRStatement(it));
   return {
     name,

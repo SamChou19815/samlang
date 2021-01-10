@@ -28,10 +28,10 @@ const recursivelyPerformTailRecursiveCallTransformationOnStatements = (
     return [
       ...statements.slice(0, statements.length - 1),
       HIR_IF_ELSE({
-        multiAssignedVariable: lastStatement.multiAssignedVariable,
         booleanExpression: lastStatement.booleanExpression,
         s1: s1 ?? lastStatement.s1,
         s2: s2 ?? lastStatement.s2,
+        finalAssignment: lastStatement.finalAssignment,
       }),
     ];
   }

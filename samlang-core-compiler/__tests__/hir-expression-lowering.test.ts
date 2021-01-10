@@ -283,18 +283,18 @@ it('FunctionCall family lowering works 6/n.', () => {
 let _t2: any = (_t1: (any, any))[1];
 let _t3: int = (_t1: any);
 let _t10: bool = (_t3: int) == 0;
+let _t0: int;
 if (_t10: bool) {
   let _t6: any = (_t1: (any, any))[0];
   let _t8: (_Dummy, _Dummy) -> int = (_t6: any);
   let _t4: int = (_t8: (_Dummy, _Dummy) -> int)((_this: _Dummy), (_this: _Dummy));
-  let _t0: int = (_t4: int);
+  _t0 = (_t4: int);
 } else {
   let _t7: any = (_t1: (any, any))[0];
   let _t9: (any, _Dummy, _Dummy) -> int = (_t7: any);
   let _t5: int = (_t9: (any, _Dummy, _Dummy) -> int)((_t2: any), (_this: _Dummy), (_this: _Dummy));
-  let _t0: int = (_t5: int);
+  _t0 = (_t5: int);
 }
-// _t0: int = phi(_t4, _t5)
 return (_t0: int);`
   );
 });
@@ -354,14 +354,12 @@ it('Short circuiting binary lowering works.', () => {
       e1: EXPRESSION_TRUE(Range.DUMMY),
       e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
     }),
-    `if 1 {
-  let _t1: bool = (foo: bool);
-  let _t0: bool = (_t1: bool);
+    `let _t0: bool;
+if 1 {
+  _t0 = (foo: bool);
 } else {
-  let _t2: bool = 0;
-  let _t0: bool = (_t2: bool);
+  _t0 = 0;
 }
-// _t0: bool = phi(_t1, _t2)
 return (_t0: bool);`
   );
 
@@ -373,14 +371,12 @@ return (_t0: bool);`
       e1: EXPRESSION_TRUE(Range.DUMMY),
       e2: EXPRESSION_FALSE(Range.DUMMY),
     }),
-    `if 1 {
-  let _t1: bool = 1;
-  let _t0: bool = (_t1: bool);
+    `let _t0: bool;
+if 1 {
+  _t0 = 1;
 } else {
-  let _t2: bool = 0;
-  let _t0: bool = (_t2: bool);
+  _t0 = 0;
 }
-// _t0: bool = phi(_t1, _t2)
 return (_t0: bool);`
   );
 });
@@ -475,15 +471,13 @@ it('IfElse lowering works 1/2.', () => {
       e1: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
       e2: THIS,
     }),
-    `if (_this: _Dummy) {
+    `let _t0: _Dummy;
+if (_this: _Dummy) {
   _builtin_throw((_this: _Dummy));
-  let _t1: _Dummy = 0;
-  let _t0: _Dummy = (_t1: _Dummy);
+  _t0 = 0;
 } else {
-  let _t2: _Dummy = (_this: _Dummy);
-  let _t0: _Dummy = (_t2: _Dummy);
+  _t0 = (_this: _Dummy);
 }
-// _t0: _Dummy = phi(_t1, _t2)
 return (_t0: _Dummy);`
   );
 });
@@ -528,20 +522,18 @@ it('Match lowering works 1/3.', () => {
       ],
     }),
     `let _t0: int = (_this: _Dummy)[0];
-switch (_t0)} {
+let _t1: _Dummy;
+switch (_t0) {
   case 0: {
     let _t2: any = (_this: _Dummy)[1];
     let bar: string = (_t2: any);
-    let _t3: _Dummy = (_this: _Dummy);
-    let _t1: _Dummy = (_t3: _Dummy);
+    _t1 = (_this: _Dummy);
   }
   case 1: {
     _builtin_throw((_this: _Dummy));
-    let _t4: _Dummy = 0;
-    let _t1: _Dummy = (_t4: _Dummy);
+    _t1 = 0;
   }
 }
-// _t1: _Dummy = phi(_t3, _t4)
 return (_t1: _Dummy);`
   );
 });
@@ -575,7 +567,7 @@ it('Match lowering works 2/3.', () => {
       ],
     }),
     `let _t0: int = (_this: _Dummy)[0];
-switch (_t0)} {
+switch (_t0) {
   case 0: {
     let _t2: any = (_this: _Dummy)[1];
     let bar: string = (_t2: any);
@@ -620,23 +612,20 @@ it('Match lowering works 3/3.', () => {
       ],
     }),
     `let _t0: int = (_this: _Dummy)[0];
-switch (_t0)} {
+let _t1: _Dummy;
+switch (_t0) {
   case 0: {
     let _t2: any = (_this: _Dummy)[1];
     let bar: string = (_t2: any);
-    let _t3: _Dummy = (_this: _Dummy);
-    let _t1: _Dummy = (_t3: _Dummy);
+    _t1 = (_this: _Dummy);
   }
   case 1: {
-    let _t4: _Dummy = (_this: _Dummy);
-    let _t1: _Dummy = (_t4: _Dummy);
+    _t1 = (_this: _Dummy);
   }
   case 2: {
-    let _t5: _Dummy = (_this: _Dummy);
-    let _t1: _Dummy = (_t5: _Dummy);
+    _t1 = (_this: _Dummy);
   }
 }
-// _t1: _Dummy = phi(_t3, _t4, _t5)
 return (_t1: _Dummy);`
   );
 });

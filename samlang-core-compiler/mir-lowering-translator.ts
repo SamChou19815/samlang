@@ -19,25 +19,26 @@ import {
   MIR_IMMUTABLE_MEM,
   MIR_OP,
 } from 'samlang-core-ast/mir-nodes';
+import { checkNotNull } from 'samlang-core-utils';
 
 const mangleVariableForMIR = (variable: string): string => `_${variable}`;
+
+const lowerHIRExpressionToMIRExpression = (expression: HighIRExpression): MidIRExpression => {
+  switch (expression.__type__) {
+    case 'HighIRIntLiteralExpression':
+      return MIR_CONST(expression.value);
+    case 'HighIRNameExpression':
+      return MIR_NAME(expression.name);
+    case 'HighIRVariableExpression':
+      return MIR_TEMP(mangleVariableForMIR(expression.name));
+  }
+};
 
 class MidIRLoweringManager {
   constructor(
     private readonly allocator: MidIRResourceAllocator,
     private readonly functionName: string
   ) {}
-
-  lowerHIRExpressionToMIRExpression = (expression: HighIRExpression): MidIRExpression => {
-    switch (expression.__type__) {
-      case 'HighIRIntLiteralExpression':
-        return MIR_CONST(expression.value);
-      case 'HighIRNameExpression':
-        return MIR_NAME(expression.name);
-      case 'HighIRVariableExpression':
-        return MIR_TEMP(mangleVariableForMIR(expression.name));
-    }
-  };
 
   lowerHIRStatementToMIRNonCanonicalStatements = (
     statement: HighIRStatement
@@ -51,7 +52,7 @@ class MidIRLoweringManager {
             MIR_IMMUTABLE_MEM(
               MIR_OP(
                 '+',
-                this.lowerHIRExpressionToMIRExpression(statement.pointerExpression),
+                lowerHIRExpressionToMIRExpression(statement.pointerExpression),
                 MIR_CONST(statement.index * 8)
               )
             )
@@ -64,16 +65,16 @@ class MidIRLoweringManager {
             mangleVariableForMIR(statement.name),
             MIR_OP(
               statement.operator,
-              this.lowerHIRExpressionToMIRExpression(statement.e1),
-              this.lowerHIRExpressionToMIRExpression(statement.e2)
+              lowerHIRExpressionToMIRExpression(statement.e1),
+              lowerHIRExpressionToMIRExpression(statement.e2)
             )
           ),
         ];
       case 'HighIRFunctionCallStatement':
         return [
           MIR_CALL_FUNCTION(
-            this.lowerHIRExpressionToMIRExpression(statement.functionExpression),
-            statement.functionArguments.map(this.lowerHIRExpressionToMIRExpression),
+            lowerHIRExpressionToMIRExpression(statement.functionExpression),
+            statement.functionArguments.map(lowerHIRExpressionToMIRExpression),
             statement.returnCollector != null
               ? mangleVariableForMIR(statement.returnCollector.name)
               : undefined
@@ -94,15 +95,31 @@ class MidIRLoweringManager {
         );
         return [
           MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL(
-            this.lowerHIRExpressionToMIRExpression(statement.booleanExpression),
+            lowerHIRExpressionToMIRExpression(statement.booleanExpression),
             ifBranchLabel,
             elseBranchLabel
           ),
           MIR_LABEL(ifBranchLabel),
           ...statement.s1.map(this.lowerHIRStatementToMIRNonCanonicalStatements).flat(),
+          ...(statement.finalAssignment != null
+            ? [
+                MIR_MOVE_TEMP(
+                  mangleVariableForMIR(statement.finalAssignment.name),
+                  lowerHIRExpressionToMIRExpression(statement.finalAssignment.branch1Value)
+                ),
+              ]
+            : []),
           MIR_JUMP(endLabel),
           MIR_LABEL(elseBranchLabel),
           ...statement.s2.map(this.lowerHIRStatementToMIRNonCanonicalStatements).flat(),
+          ...(statement.finalAssignment != null
+            ? [
+                MIR_MOVE_TEMP(
+                  mangleVariableForMIR(statement.finalAssignment.name),
+                  lowerHIRExpressionToMIRExpression(statement.finalAssignment.branch2Value)
+                ),
+              ]
+            : []),
           MIR_LABEL(endLabel),
         ];
       }
@@ -133,6 +150,17 @@ class MidIRLoweringManager {
           statements
             .map(this.lowerHIRStatementToMIRNonCanonicalStatements)
             .forEach((it) => loweredStatements.push(...it));
+          // istanbul ignore next
+          if (statement.finalAssignment != null) {
+            loweredStatements.push(
+              MIR_MOVE_TEMP(
+                mangleVariableForMIR(statement.finalAssignment.name),
+                lowerHIRExpressionToMIRExpression(
+                  checkNotNull(statement.finalAssignment.branchValues[i])
+                )
+              )
+            );
+          }
           loweredStatements.push(MIR_JUMP(endLabel), MIR_LABEL(caseEndLabel));
         });
         loweredStatements.push(MIR_LABEL(endLabel));
@@ -142,7 +170,7 @@ class MidIRLoweringManager {
         return [
           MIR_MOVE_TEMP(
             mangleVariableForMIR(statement.name),
-            this.lowerHIRExpressionToMIRExpression(statement.assignedExpression)
+            lowerHIRExpressionToMIRExpression(statement.assignedExpression)
           ),
         ];
       case 'HighIRStructInitializationStatement': {
@@ -164,14 +192,14 @@ class MidIRLoweringManager {
                 MIR_TEMP(mangleVariableForMIR(statement.structVariableName)),
                 MIR_CONST(index * 8)
               ),
-              this.lowerHIRExpressionToMIRExpression(subExpression)
+              lowerHIRExpressionToMIRExpression(subExpression)
             )
           );
         });
         return statements;
       }
       case 'HighIRReturnStatement':
-        return [MIR_RETURN(this.lowerHIRExpressionToMIRExpression(statement.expression))];
+        return [MIR_RETURN(lowerHIRExpressionToMIRExpression(statement.expression))];
     }
   };
 }
