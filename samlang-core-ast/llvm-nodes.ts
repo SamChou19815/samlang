@@ -195,7 +195,10 @@ export type LLVMSwitchInstruction = {
   readonly __type__: 'LLVMSwitchInstruction';
   readonly condition: LLVMValue;
   readonly defaultBranchName: string;
-  readonly otherBranchNames: readonly string[];
+  readonly otherBranchNameWithValues: readonly {
+    readonly value: number;
+    readonly branch: string;
+  }[];
 };
 
 export type LLVMReturnInstruction = {
@@ -329,12 +332,12 @@ export const LLVM_CJUMP = (
 export const LLVM_SWITCH = (
   condition: LLVMValue,
   defaultBranchName: string,
-  otherBranchNames: readonly string[]
+  otherBranchNameWithValues: readonly { readonly value: number; readonly branch: string }[]
 ): LLVMSwitchInstruction => ({
   __type__: 'LLVMSwitchInstruction',
   condition,
   defaultBranchName,
-  otherBranchNames,
+  otherBranchNameWithValues,
 });
 
 export const LLVM_RETURN = (value: LLVMValue, type: LLVMType): LLVMReturnInstruction => ({
@@ -457,10 +460,10 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       return `br i1 ${prettyPrintLLVMValue(condition)}, label %${b1}, label %${b2}`;
     }
     case 'LLVMSwitchInstruction': {
-      const { defaultBranchName, otherBranchNames } = instruction;
+      const { defaultBranchName, otherBranchNameWithValues } = instruction;
       const condition = prettyPrintLLVMValue(instruction.condition);
-      const otherBranchMappings = otherBranchNames
-        .map((name, i) => `i64 ${i}, label %${name}`)
+      const otherBranchMappings = otherBranchNameWithValues
+        .map((it) => `i64 ${it.value}, label %${it.branch}`)
         .join(' ');
       return `switch i64 ${condition}, label %${defaultBranchName} [ ${otherBranchMappings} ]`;
     }

@@ -38,6 +38,12 @@ it('optimizeIRWithConstantFolding div/mod by zero tests.', () => {
 it('optimizeIRWithConstantFolding normal tests', () => {
   expect(
     optimizeAndDumpToString([
+      MIR_MOVE_TEMP('a', MIR_OP('-', MIR_ONE, MIR_OP('-', MIR_EIGHT, MIR_EIGHT))),
+    ])
+  ).toBe('a = 1;');
+
+  expect(
+    optimizeAndDumpToString([
       MIR_MOVE_TEMP(
         'a',
         MIR_IMMUTABLE_MEM(

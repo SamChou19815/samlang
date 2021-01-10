@@ -36,12 +36,6 @@ class MidIRLoweringManager {
         return MIR_NAME(expression.name);
       case 'HighIRVariableExpression':
         return MIR_TEMP(mangleVariableForMIR(expression.name));
-      case 'HighIRBinaryExpression':
-        return MIR_OP(
-          expression.operator,
-          this.lowerHIRExpressionToMIRExpression(expression.e1),
-          this.lowerHIRExpressionToMIRExpression(expression.e2)
-        );
     }
   };
 
@@ -64,6 +58,17 @@ class MidIRLoweringManager {
           ),
         ];
       }
+      case 'HighIRBinaryStatement':
+        return [
+          MIR_MOVE_TEMP(
+            mangleVariableForMIR(statement.name),
+            MIR_OP(
+              statement.operator,
+              this.lowerHIRExpressionToMIRExpression(statement.e1),
+              this.lowerHIRExpressionToMIRExpression(statement.e2)
+            )
+          ),
+        ];
       case 'HighIRFunctionCallStatement':
         return [
           MIR_CALL_FUNCTION(
@@ -100,6 +105,38 @@ class MidIRLoweringManager {
           ...statement.s2.map(this.lowerHIRStatementToMIRNonCanonicalStatements).flat(),
           MIR_LABEL(endLabel),
         ];
+      }
+      case 'HighIRSwitchStatement': {
+        const { caseVariable, cases } = statement;
+        const loweredStatements: MidIRStatement_DANGEROUSLY_NON_CANONICAL[] = [];
+        const endLabel = this.allocator.allocateLabelWithAnnotation(
+          this.functionName,
+          'SWITCH_END'
+        );
+        cases.forEach(({ caseNumber, statements }, i) => {
+          const caseStartLabel = this.allocator.allocateLabelWithAnnotation(
+            this.functionName,
+            `CASE_${i}_START`
+          );
+          const caseEndLabel = this.allocator.allocateLabelWithAnnotation(
+            this.functionName,
+            `CASE_${i}_END`
+          );
+          loweredStatements.push(
+            MIR_CJUMP_NON_FALLTHROUGH_NON_CANONICAL(
+              MIR_OP('==', MIR_TEMP(mangleVariableForMIR(caseVariable)), MIR_CONST(caseNumber)),
+              caseStartLabel,
+              caseEndLabel
+            ),
+            MIR_LABEL(caseStartLabel)
+          );
+          statements
+            .map(this.lowerHIRStatementToMIRNonCanonicalStatements)
+            .forEach((it) => loweredStatements.push(...it));
+          loweredStatements.push(MIR_JUMP(endLabel), MIR_LABEL(caseEndLabel));
+        });
+        loweredStatements.push(MIR_LABEL(endLabel));
+        return loweredStatements;
       }
       case 'HighIRLetDefinitionStatement':
         return [

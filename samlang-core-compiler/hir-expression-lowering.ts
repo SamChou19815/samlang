@@ -28,6 +28,7 @@ import {
   HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
   HIR_BINARY,
+  HIR_SWITCH,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import {
@@ -321,16 +322,23 @@ class HighIRExpressionLoweringManager {
 
   private lowerUnary(expression: UnaryExpression): HighIRExpressionLoweringResult {
     const result = this.lower(expression.expression);
+    const valueName = this.allocateTemporaryVariable();
     switch (expression.operator) {
       case '!':
         return {
-          statements: result.statements,
-          expression: HIR_BINARY({ operator: '^', e1: result.expression, e2: HIR_TRUE }),
+          statements: [
+            ...result.statements,
+            HIR_BINARY({ name: valueName, operator: '^', e1: result.expression, e2: HIR_TRUE }),
+          ],
+          expression: HIR_VARIABLE(valueName, HIR_BOOL_TYPE),
         };
       case '-':
         return {
-          statements: result.statements,
-          expression: HIR_BINARY({ operator: '-', e1: HIR_ZERO, e2: result.expression }),
+          statements: [
+            ...result.statements,
+            HIR_BINARY({ name: valueName, operator: '-', e1: HIR_ZERO, e2: result.expression }),
+          ],
+          expression: HIR_VARIABLE(valueName, HIR_INT_TYPE),
         };
     }
   }
@@ -480,6 +488,7 @@ class HighIRExpressionLoweringManager {
         const functionTempRawB2 = this.allocateTemporaryVariable();
         const functionTempTypedB1 = this.allocateTemporaryVariable();
         const functionTempTypedB2 = this.allocateTemporaryVariable();
+        const comparisonTemp = this.allocateTemporaryVariable();
         loweredStatements.push(
           HIR_LET({
             name: closureTemp,
@@ -498,6 +507,12 @@ class HighIRExpressionLoweringManager {
             name: contextTempForZeroComparison,
             type: HIR_INT_TYPE,
             assignedExpression: HIR_VARIABLE(closureTemp, HIR_ANY_TYPE),
+          }),
+          HIR_BINARY({
+            name: comparisonTemp,
+            operator: '==',
+            e1: HIR_VARIABLE(contextTempForZeroComparison, HIR_INT_TYPE),
+            e2: HIR_ZERO,
           })
         );
 
@@ -510,11 +525,7 @@ class HighIRExpressionLoweringManager {
                 branch1Variable: resultTempB1,
                 branch2Variable: resultTempB2,
               },
-          booleanExpression: HIR_BINARY({
-            operator: '==',
-            e1: HIR_VARIABLE(contextTempForZeroComparison, HIR_INT_TYPE),
-            e2: HIR_ZERO,
-          }),
+          booleanExpression: HIR_VARIABLE(comparisonTemp, HIR_BOOL_TYPE),
           s1: [
             HIR_INDEX_ACCESS({
               name: functionTempRawB1,
@@ -726,9 +737,15 @@ class HighIRExpressionLoweringManager {
         const loweredStatements: HighIRStatement[] = [];
         const loweredE1 = this.loweredAndAddStatements(expression.e1, loweredStatements);
         const loweredE2 = this.loweredAndAddStatements(expression.e2, loweredStatements);
+        const valueTemp = this.allocateTemporaryVariable();
+        const binaryStatement = HIR_BINARY({
+          name: valueTemp,
+          ...createHighIRFlexibleOrderOperatorNode(operatorSymbol, loweredE1, loweredE2),
+        });
+        loweredStatements.push(binaryStatement);
         return {
           statements: loweredStatements,
-          expression: createHighIRFlexibleOrderOperatorNode(operatorSymbol, loweredE1, loweredE2),
+          expression: HIR_VARIABLE(valueTemp, binaryStatement.type),
         };
       }
     }
@@ -871,51 +888,32 @@ class HighIRExpressionLoweringManager {
         return { tagOrder, branchVariable, statements: localStatements };
       }
     );
-    // istanbul ignore next
-    if (loweredMatchingList.length < 2) throw new Error();
-    let ifElse = HIR_IF_ELSE({
-      multiAssignedVariable: isVoidReturn
-        ? undefined
-        : {
+    if (isVoidReturn) {
+      loweredStatements.push(
+        HIR_SWITCH({
+          caseVariable: variableForTag,
+          cases: loweredMatchingList.map((it) => ({
+            caseNumber: it.tagOrder,
+            statements: it.statements,
+          })),
+        })
+      );
+    } else {
+      loweredStatements.push(
+        HIR_SWITCH({
+          multiAssignedVariable: {
             name: temporaryVariable,
             type: loweredReturnType,
-            branch1Variable: checkNotNull(
-              loweredMatchingList[loweredMatchingList.length - 2]?.branchVariable
-            ),
-            branch2Variable: checkNotNull(
-              loweredMatchingList[loweredMatchingList.length - 1]?.branchVariable
-            ),
+            branchVariables: loweredMatchingList.map((it) => checkNotNull(it.branchVariable)),
           },
-      booleanExpression: HIR_BINARY({
-        operator: '==',
-        e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
-        e2: HIR_INT(checkNotNull(loweredMatchingList[loweredMatchingList.length - 2]).tagOrder),
-      }),
-      s1: checkNotNull(loweredMatchingList[loweredMatchingList.length - 2]).statements,
-      s2: checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]).statements,
-    });
-    for (let i = loweredMatchingList.length - 3; i >= 0; i -= 1) {
-      const { tagOrder, statements: localStatements } = checkNotNull(loweredMatchingList[i]);
-      ifElse = HIR_IF_ELSE({
-        multiAssignedVariable: isVoidReturn
-          ? undefined
-          : {
-              name: temporaryVariable,
-              type: loweredReturnType,
-              branch1Variable: checkNotNull(loweredMatchingList[i]?.branchVariable),
-              // Marker for the existence of nested if-else for match
-              branch2Variable: temporaryVariable,
-            },
-        booleanExpression: HIR_BINARY({
-          operator: '==',
-          e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
-          e2: HIR_INT(tagOrder),
-        }),
-        s1: localStatements,
-        s2: [ifElse],
-      });
+          caseVariable: variableForTag,
+          cases: loweredMatchingList.map(({ tagOrder: caseNumber, statements }) => ({
+            caseNumber,
+            statements,
+          })),
+        })
+      );
     }
-    loweredStatements.push(ifElse);
     return {
       statements: loweredStatements,
       expression: isVoidReturn ? HIR_ZERO : HIR_VARIABLE(temporaryVariable, loweredReturnType),

@@ -9,6 +9,7 @@ import {
   HIR_FALSE,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
+  HIR_SWITCH,
   HIR_INDEX_ACCESS,
   HIR_INT,
   HIR_LET,
@@ -28,6 +29,7 @@ import {
   HIR_STRING_TYPE,
   HIR_CLOSURE_TYPE,
   HIR_STRUCT_TYPE,
+  HIR_BOOL_TYPE,
 } from 'samlang-core-ast/hir-types';
 import { prettyPrintLLVMFunction, prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 
@@ -131,19 +133,16 @@ it('prettyPrintLLVMFunction works for base expressions 3/n', () => {
 it('prettyPrintLLVMFunction works for base expressions 4/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_LET({
+      HIR_BINARY({
         name: 'foo',
-        type: INT,
-        assignedExpression: HIR_BINARY({
-          operator: '/',
-          e1: HIR_VARIABLE('bar', INT),
-          e2: HIR_VARIABLE('baz', INT),
-        }),
+        operator: '/',
+        e1: HIR_VARIABLE('bar', INT),
+        e2: HIR_VARIABLE('baz', INT),
       }),
       HIR_RETURN(HIR_VARIABLE('foo', INT)),
     ],
-    `  %_temp_0_binary_temp = sdiv i64 %bar, %baz
-  ret i64 %_temp_0_binary_temp`
+    `  %foo = sdiv i64 %bar, %baz
+  ret i64 %foo`
   );
 });
 
@@ -171,12 +170,14 @@ it('prettyPrintLLVMFunction works for HIR_FUNCTION_CALL', () => {
 it('prettyPrintLLVMFunction works for HIR_IF_ELSE 1/n', () => {
   assertStatementLoweringWorks(
     [
+      HIR_BINARY({
+        name: 'bb',
+        operator: '==',
+        e1: HIR_VARIABLE('t', INT),
+        e2: HIR_INT(2),
+      }),
       HIR_IF_ELSE({
-        booleanExpression: HIR_BINARY({
-          operator: '==',
-          e1: HIR_VARIABLE('t', INT),
-          e2: HIR_INT(2),
-        }),
+        booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
         s1: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
@@ -191,8 +192,8 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 1/n', () => {
         ],
       }),
     ],
-    `  %_temp_0_binary_temp = icmp eq i1 %t, 2
-  br i1 %_temp_0_binary_temp, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
+    `  %bb = icmp eq i1 %t, 2
+  br i1 %bb, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
 l_testFunction_1_if_else_true_label:
   call i64 @foo() nounwind
   br label %l_testFunction_3_if_else_end_label
@@ -212,11 +213,7 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
           branch1Variable: 'b1',
           branch2Variable: 'b2',
         },
-        booleanExpression: HIR_BINARY({
-          operator: '==',
-          e1: HIR_VARIABLE('t', INT),
-          e2: HIR_INT(2),
-        }),
+        booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
         s1: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
@@ -235,8 +232,7 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
         ],
       }),
     ],
-    `  %_temp_0_binary_temp = icmp eq i1 %t, 2
-  br i1 %_temp_0_binary_temp, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
+    `  br i1 %bbb, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
 l_testFunction_1_if_else_true_label:
   %b1 = call i64 @foo() nounwind
   br label %l_testFunction_3_if_else_end_label
@@ -247,111 +243,78 @@ l_testFunction_3_if_else_end_label:
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
+it('prettyPrintLLVMFunction works for HIR_SWITCH 1/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_IF_ELSE({
-        multiAssignedVariable: {
-          name: 'ma',
-          type: INT,
-          branch1Variable: 'b1',
-          branch2Variable: 'ma',
-        },
-        booleanExpression: HIR_BINARY({ operator: '==', e1: HIR_VARIABLE('t', INT), e2: HIR_ZERO }),
-        s1: [
-          HIR_LET({ name: 'b1', type: INT, assignedExpression: HIR_ZERO }),
-          HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b1', INT) }),
-        ],
-        s2: [
-          HIR_IF_ELSE({
-            multiAssignedVariable: {
-              name: 'ma',
-              type: INT,
-              branch1Variable: 'b2',
-              branch2Variable: 'ma',
-            },
-            booleanExpression: HIR_BINARY({
-              operator: '==',
-              e1: HIR_VARIABLE('t', INT),
-              e2: HIR_ONE,
-            }),
-            s1: [
+      HIR_SWITCH({
+        multiAssignedVariable: { name: 'ma', type: INT, branchVariables: ['b1', 'b2', 'b3'] },
+        caseVariable: 'c',
+        cases: [
+          {
+            caseNumber: 1,
+            statements: [
+              HIR_LET({ name: 'b1', type: INT, assignedExpression: HIR_ZERO }),
+              HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b1', INT) }),
+            ],
+          },
+          {
+            caseNumber: 0,
+            statements: [
               HIR_LET({ name: 'b2', type: INT, assignedExpression: HIR_ZERO }),
               HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b2', INT) }),
             ],
-            s2: [
-              HIR_IF_ELSE({
-                multiAssignedVariable: {
-                  name: 'ma',
-                  type: INT,
-                  branch1Variable: 'b3',
-                  branch2Variable: 'b4',
-                },
-                booleanExpression: HIR_BINARY({
-                  operator: '==',
-                  e1: HIR_VARIABLE('t', INT),
-                  e2: HIR_INT(2),
-                }),
-                s1: [
-                  HIR_LET({ name: 'b3', type: INT, assignedExpression: HIR_ZERO }),
-                  HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b3', INT) }),
-                ],
-                s2: [
-                  HIR_LET({ name: 'b4', type: INT, assignedExpression: HIR_ZERO }),
-                  HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b4', INT) }),
-                ],
-              }),
+          },
+          {
+            caseNumber: 2,
+            statements: [
+              HIR_LET({ name: 'b3', type: INT, assignedExpression: HIR_ZERO }),
+              HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b3', INT) }),
             ],
-          }),
+          },
         ],
       }),
     ],
-    `  switch i64 %t, label %l_testFunction_5_match_case_default [ i64 0, label %l_testFunction_2_match_case_0 i64 1, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]
+    `  switch i64 %c, label %l_testFunction_1_match_end [ i64 1, label %l_testFunction_2_match_case_0 i64 0, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]
 l_testFunction_2_match_case_0:
   br label %l_testFunction_1_match_end
 l_testFunction_3_match_case_1:
   br label %l_testFunction_1_match_end
 l_testFunction_4_match_case_2:
   br label %l_testFunction_1_match_end
-l_testFunction_5_match_case_default:
-  br label %l_testFunction_1_match_end
 l_testFunction_1_match_end:
-  %ma = phi i64 [ 0, %l_testFunction_2_match_case_0 ], [ 0, %l_testFunction_3_match_case_1 ], [ 0, %l_testFunction_4_match_case_2 ], [ 0, %l_testFunction_5_match_case_default ]`
+  %ma = phi i64 [ 0, %l_testFunction_2_match_case_0 ], [ 0, %l_testFunction_3_match_case_1 ], [ 0, %l_testFunction_4_match_case_2 ]`
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_IF_ELSE 4/n', () => {
+it('prettyPrintLLVMFunction works for HIR_SWITCH 2/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_IF_ELSE({
-        multiAssignedVariable: {
-          name: 'ma',
-          type: INT,
-          branch1Variable: 'b1',
-          branch2Variable: 'b2',
-        },
-        booleanExpression: HIR_BINARY({
-          operator: '==',
-          e1: HIR_VARIABLE('t', INT),
-          e2: HIR_INT(2),
-        }),
-        s1: [
-          HIR_LET({ name: 'b1', type: INT, assignedExpression: HIR_ZERO }),
-          HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b1', INT) }),
-        ],
-        s2: [
-          HIR_LET({ name: 'b2', type: INT, assignedExpression: HIR_ZERO }),
-          HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b2', INT) }),
+      HIR_SWITCH({
+        caseVariable: 'c',
+        cases: [
+          {
+            caseNumber: 2,
+            statements: [
+              HIR_LET({ name: 'b1', type: INT, assignedExpression: HIR_ZERO }),
+              HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b1', INT) }),
+            ],
+          },
+          {
+            caseNumber: 2,
+            statements: [
+              HIR_LET({ name: 'b2', type: INT, assignedExpression: HIR_ZERO }),
+              HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b2', INT) }),
+            ],
+          },
         ],
       }),
     ],
-    `  %_temp_0_binary_temp = icmp eq i1 %t, 2
-  br i1 %_temp_0_binary_temp, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
-l_testFunction_1_if_else_true_label:
-  br label %l_testFunction_3_if_else_end_label
-l_testFunction_2_if_else_false_label:
-l_testFunction_3_if_else_end_label:
-  %ma = phi i64 [ 0, %l_testFunction_1_if_else_true_label ], [ 0, %l_testFunction_2_if_else_false_label ]`
+    `  switch i64 %c, label %l_testFunction_1_match_end [ i64 2, label %l_testFunction_2_match_case_0 i64 2, label %l_testFunction_3_match_case_1 ]
+l_testFunction_2_match_case_0:
+  br label %l_testFunction_1_match_end
+l_testFunction_3_match_case_1:
+  br label %l_testFunction_1_match_end
+l_testFunction_1_match_end:`
   );
 });
 

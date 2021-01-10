@@ -127,11 +127,7 @@ it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
           branch1Variable: 'one',
           branch2Variable: '_t0',
         },
-        booleanExpression: HIR_BINARY({
-          operator: '==',
-          e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-          e2: HIR_ZERO,
-        }),
+        booleanExpression: HIR_VARIABLE('n', HIR_INT_TYPE),
         s1: [
           HIR_LET({ name: 'one_const_value', type: HIR_INT_TYPE, assignedExpression: HIR_ONE }),
           HIR_LET({
@@ -156,22 +152,26 @@ it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
           }),
         ],
         s2: [
+          HIR_BINARY({
+            name: 'nn',
+            operator: '-',
+            e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+            e2: HIR_ONE,
+          }),
+          HIR_BINARY({
+            name: 'accc',
+            operator: '*',
+            e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+            e2: HIR_VARIABLE('acc', HIR_INT_TYPE),
+          }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
               '_module__class_Class1_function_factorial',
               HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE)
             ),
             functionArguments: [
-              HIR_BINARY({
-                operator: '-',
-                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-                e2: HIR_ONE,
-              }),
-              HIR_BINARY({
-                operator: '*',
-                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-                e2: HIR_VARIABLE('acc', HIR_INT_TYPE),
-              }),
+              HIR_VARIABLE('nn', HIR_INT_TYPE),
+              HIR_VARIABLE('accc', HIR_INT_TYPE),
             ],
             returnCollector: { name: '_t0', type: HIR_INT_TYPE },
           }),
@@ -184,10 +184,12 @@ it('coalesceMoveAndReturnWithForHighIRStatements if-else test', () => {
       }),
       HIR_RETURN(HIR_VARIABLE('_t1', HIR_INT_TYPE)),
     ],
-    `if ((n: int) == 0) {
+    `if (n: int) {
   return 1;
 } else {
-  let _t0: int = _module__class_Class1_function_factorial(((n: int) + -1), ((n: int) * (acc: int)));
+  let nn: int = (n: int) + -1;
+  let accc: int = (n: int) * (acc: int);
+  let _t0: int = _module__class_Class1_function_factorial((nn: int), (accc: int));
   return (_t0: int);
 }`
   );
