@@ -1,4 +1,5 @@
 import lowerHighIRModuleToLLVMModule, {
+  LLVMConstantPropagationContext,
   lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING,
 } from '../llvm-lowering-translator';
 
@@ -14,7 +15,6 @@ import {
   HIR_INT,
   HIR_LET,
   HIR_NAME,
-  HIR_ONE,
   HIR_RETURN,
   HIR_STRUCT_INITIALIZATION,
   HIR_TRUE,
@@ -31,7 +31,27 @@ import {
   HIR_STRUCT_TYPE,
   HIR_BOOL_TYPE,
 } from 'samlang-core-ast/hir-types';
-import { prettyPrintLLVMFunction, prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
+import {
+  LLVM_INT,
+  LLVM_VARIABLE,
+  prettyPrintLLVMFunction,
+  prettyPrintLLVMModule,
+} from 'samlang-core-ast/llvm-nodes';
+
+it('LLVMConstantPropagationContext works', () => {
+  const context = new LLVMConstantPropagationContext();
+  context.bind('foo', LLVM_INT(3));
+  context.bind('bar', LLVM_INT(3));
+  context.bind('baz', LLVM_VARIABLE('bar'));
+  context.bind('dev', LLVM_VARIABLE('meggo'));
+  context.bind('megan', LLVM_VARIABLE('dev'));
+
+  expect(context.getLocalValueType('foo')).toEqual(LLVM_INT(3));
+  expect(context.getLocalValueType('bar')).toEqual(LLVM_INT(3));
+  expect(context.getLocalValueType('baz')).toEqual(LLVM_INT(3));
+  expect(context.getLocalValueType('dev')).toEqual(LLVM_VARIABLE('meggo'));
+  expect(context.getLocalValueType('megan')).toEqual(LLVM_VARIABLE('meggo'));
+});
 
 const assertLoweringWorks = (
   highIRFunction: HighIRFunction,

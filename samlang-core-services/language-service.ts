@@ -371,7 +371,7 @@ export class LanguageServices {
       switch (statement.pattern.type) {
         case 'TuplePattern':
           // istanbul ignore next
-          return statement.pattern.destructedNames.some((it) => it[0] === variableName);
+          return statement.pattern.destructedNames.some((it) => it.name === variableName);
         case 'ObjectPattern':
           // istanbul ignore next
           return statement.pattern.destructedNames.some(

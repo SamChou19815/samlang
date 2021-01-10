@@ -11,7 +11,7 @@ import {
 import type { Pattern, ObjectPatternDestucturedName } from 'samlang-core-ast/samlang-pattern';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { isNotNull, assertNotNull, checkNotNull, LocalStackedContext } from 'samlang-core-utils';
+import { assertNotNull, checkNotNull, LocalStackedContext } from 'samlang-core-utils';
 
 export default class StatementTypeChecker {
   constructor(
@@ -75,23 +75,18 @@ export default class StatementTypeChecker {
             actualSize
           );
         }
-        pattern.destructedNames
-          .map(([name, nameRange], index) => {
-            return name == null
-              ? null
-              : ([
-                  name,
-                  nameRange,
-                  checkNotNull(checkedAssignedExpressionType.mappings[index]),
-                ] as const);
-          })
-          .filter(isNotNull)
-          .forEach(([name, nameRange, elementType]) => {
-            localContext.addLocalValueType(name, elementType, () =>
-              this.errorCollector.reportCollisionError(nameRange, name)
-            );
-          });
-        checkedPattern = pattern;
+        const checkedDestructedNames = pattern.destructedNames.map(
+          ({ name, range: nameRange }, index) => {
+            const elementType = checkNotNull(checkedAssignedExpressionType.mappings[index]);
+            if (name != null) {
+              localContext.addLocalValueType(name, elementType, () =>
+                this.errorCollector.reportCollisionError(nameRange, name)
+              );
+            }
+            return { name, type: elementType, range: nameRange };
+          }
+        );
+        checkedPattern = { ...pattern, destructedNames: checkedDestructedNames };
         break;
       }
 
@@ -176,7 +171,7 @@ export default class StatementTypeChecker {
           );
           const fieldOrder = fieldOrderMapping[originalName];
           assertNotNull(fieldOrder);
-          destructedNames.push({ ...destructedName, fieldOrder });
+          destructedNames.push({ ...destructedName, type: fieldType, fieldOrder });
         }
         checkedPattern = { range, type: 'ObjectPattern', destructedNames };
         break;

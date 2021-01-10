@@ -129,8 +129,8 @@ const passingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'TuplePattern',
           destructedNames: [
-            ['a', Range.DUMMY],
-            [null, Range.DUMMY],
+            { name: 'a', type: { type: 'UndecidedType', index: 0 }, range: Range.DUMMY },
+            { type: { type: 'UndecidedType', index: 0 }, range: Range.DUMMY },
           ],
         },
         { type: 'UndecidedType', index: 0 },
@@ -148,8 +148,8 @@ const passingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'TuplePattern',
           destructedNames: [
-            ['a', Range.DUMMY],
-            [null, Range.DUMMY],
+            { name: 'a', type: intType, range: Range.DUMMY },
+            { name: undefined, type: boolType, range: Range.DUMMY },
           ],
         },
         tupleType([intType, boolType]),
@@ -170,8 +170,19 @@ const passingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'ObjectPattern',
           destructedNames: [
-            { range: Range.DUMMY, fieldName: 'a', fieldOrder: 0 },
-            { range: Range.DUMMY, fieldName: 'b', fieldOrder: 1, alias: 'c' },
+            {
+              range: Range.DUMMY,
+              fieldName: 'a',
+              type: { type: 'UndecidedType', index: 0 },
+              fieldOrder: 0,
+            },
+            {
+              range: Range.DUMMY,
+              fieldName: 'b',
+              type: { type: 'UndecidedType', index: 0 },
+              fieldOrder: 1,
+              alias: 'c',
+            },
           ],
         },
         { type: 'UndecidedType', index: 0 },
@@ -189,8 +200,8 @@ const passingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'ObjectPattern',
           destructedNames: [
-            { range: Range.DUMMY, fieldName: 'a', fieldOrder: 0 },
-            { range: Range.DUMMY, fieldName: 'b', fieldOrder: 1, alias: 'c' },
+            { range: Range.DUMMY, fieldName: 'a', type: intType, fieldOrder: 0 },
+            { range: Range.DUMMY, fieldName: 'b', type: boolType, fieldOrder: 1, alias: 'c' },
           ],
         },
         identifierType(ModuleReference.ROOT, 'A'),
@@ -315,7 +326,9 @@ const failingTypeCheckerTestCases: readonly (readonly [
         {
           range: Range.DUMMY,
           type: 'TuplePattern',
-          destructedNames: [['a', Range.DUMMY]],
+          destructedNames: [
+            { name: 'a', type: { type: 'UndecidedType', index: 0 }, range: Range.DUMMY },
+          ],
         },
         { type: 'UndecidedType', index: 0 },
         EXPRESSION_VARIABLE({
@@ -335,7 +348,9 @@ const failingTypeCheckerTestCases: readonly (readonly [
         {
           range: Range.DUMMY,
           type: 'TuplePattern',
-          destructedNames: [['a', Range.DUMMY]],
+          destructedNames: [
+            { name: 'a', type: { type: 'UndecidedType', index: 0 }, range: Range.DUMMY },
+          ],
         },
         { type: 'UndecidedType', index: 0 },
         EXPRESSION_VARIABLE({
@@ -356,8 +371,8 @@ const failingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'TuplePattern',
           destructedNames: [
-            ['a', Range.DUMMY],
-            ['a', Range.DUMMY],
+            { name: 'a', type: { type: 'UndecidedType', index: 0 }, range: Range.DUMMY },
+            { name: 'a', type: { type: 'UndecidedType', index: 0 }, range: Range.DUMMY },
           ],
         },
         { type: 'UndecidedType', index: 0 },
@@ -380,8 +395,19 @@ const failingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'ObjectPattern',
           destructedNames: [
-            { range: Range.DUMMY, fieldName: 'a', fieldOrder: 0 },
-            { range: Range.DUMMY, fieldName: 'b', fieldOrder: 1, alias: 'c' },
+            {
+              range: Range.DUMMY,
+              fieldName: 'a',
+              type: { type: 'UndecidedType', index: 0 },
+              fieldOrder: 0,
+            },
+            {
+              range: Range.DUMMY,
+              fieldName: 'b',
+              type: { type: 'UndecidedType', index: 0 },
+              fieldOrder: 1,
+              alias: 'c',
+            },
           ],
         },
         { type: 'UndecidedType', index: 0 },
@@ -403,8 +429,19 @@ const failingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'ObjectPattern',
           destructedNames: [
-            { range: Range.DUMMY, fieldName: 'a', fieldOrder: 0 },
-            { range: Range.DUMMY, fieldName: 'b', fieldOrder: 1, alias: 'c' },
+            {
+              range: Range.DUMMY,
+              fieldName: 'a',
+              type: { type: 'UndecidedType', index: 0 },
+              fieldOrder: 0,
+            },
+            {
+              range: Range.DUMMY,
+              fieldName: 'b',
+              type: { type: 'UndecidedType', index: 0 },
+              fieldOrder: 1,
+              alias: 'c',
+            },
           ],
         },
         { type: 'UndecidedType', index: 0 },
@@ -428,8 +465,19 @@ const failingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'ObjectPattern',
           destructedNames: [
-            { range: Range.DUMMY, fieldName: 'a', fieldOrder: 0 },
-            { range: Range.DUMMY, fieldName: 'b', fieldOrder: 1, alias: 'c' },
+            {
+              range: Range.DUMMY,
+              fieldName: 'a',
+              type: { type: 'UndecidedType', index: 0 },
+              fieldOrder: 0,
+            },
+            {
+              range: Range.DUMMY,
+              fieldName: 'b',
+              type: { type: 'UndecidedType', index: 0 },
+              fieldOrder: 1,
+              alias: 'c',
+            },
           ],
         },
         { type: 'UndecidedType', index: 0 },
@@ -451,8 +499,19 @@ const failingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'ObjectPattern',
           destructedNames: [
-            { range: Range.DUMMY, fieldName: 'a', fieldOrder: 0 },
-            { range: Range.DUMMY, fieldName: 'd', fieldOrder: 1, alias: 'c' },
+            {
+              range: Range.DUMMY,
+              fieldName: 'a',
+              type: { type: 'UndecidedType', index: 0 },
+              fieldOrder: 0,
+            },
+            {
+              range: Range.DUMMY,
+              fieldName: 'd',
+              type: { type: 'UndecidedType', index: 0 },
+              fieldOrder: 1,
+              alias: 'c',
+            },
           ],
         },
         { type: 'UndecidedType', index: 0 },
@@ -474,8 +533,19 @@ const failingTypeCheckerTestCases: readonly (readonly [
           range: Range.DUMMY,
           type: 'ObjectPattern',
           destructedNames: [
-            { range: Range.DUMMY, fieldName: 'a', fieldOrder: 0 },
-            { range: Range.DUMMY, fieldName: 'b', fieldOrder: 1, alias: 'a' },
+            {
+              range: Range.DUMMY,
+              fieldName: 'a',
+              type: { type: 'UndecidedType', index: 0 },
+              fieldOrder: 0,
+            },
+            {
+              range: Range.DUMMY,
+              fieldName: 'b',
+              type: { type: 'UndecidedType', index: 0 },
+              fieldOrder: 1,
+              alias: 'a',
+            },
           ],
         },
         { type: 'UndecidedType', index: 0 },

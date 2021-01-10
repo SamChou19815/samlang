@@ -1,6 +1,5 @@
 import {
   identifierType,
-  TupleType,
   Position,
   Range,
   ModuleReference,
@@ -8,7 +7,7 @@ import {
 } from 'samlang-core-ast/common-nodes';
 import { SamlangExpression, EXPRESSION_VARIABLE } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { HashMap, hashMapOf, assertNotNull, checkNotNull } from 'samlang-core-utils';
+import { HashMap, hashMapOf, assertNotNull } from 'samlang-core-utils';
 
 export interface ReadOnlyLocationLookup<E> {
   get(moduleReference: ModuleReference, position: Position): E | null;
@@ -178,9 +177,7 @@ export class SamlangExpressionLocationLookupBuilder {
           const assignedExpressionType = assignedExpression.type;
           switch (pattern.type) {
             case 'TuplePattern': {
-              const assignedTupleTypeMappings = (assignedExpressionType as TupleType).mappings;
-              pattern.destructedNames.forEach(([name, range], index) => {
-                const type = checkNotNull(assignedTupleTypeMappings[index]);
+              pattern.destructedNames.forEach(({ name, type, range }) => {
                 this.buildSingleExpression(
                   moduleReference,
                   EXPRESSION_VARIABLE({ range, name: name ?? '_', type })

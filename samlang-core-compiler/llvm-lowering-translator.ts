@@ -1,4 +1,3 @@
-import LLVMConstantPropagationContext from './llvm-constant-propagation-context';
 import lowerHighIRTypeToLLVMType from './llvm-types-lowering';
 import MidIRResourceAllocator from './mir-resource-allocator';
 
@@ -39,7 +38,22 @@ import {
   LLVMValue,
   LLVMModule,
 } from 'samlang-core-ast/llvm-nodes';
-import { checkNotNull } from 'samlang-core-utils';
+import { checkNotNull, LocalStackedContext } from 'samlang-core-utils';
+
+export class LLVMConstantPropagationContext extends LocalStackedContext<LLVMValue> {
+  addLocalValueType(name: string, value: LLVMValue, onCollision: () => void): void {
+    if (value.__type__ !== 'LLVMVariable') {
+      super.addLocalValueType(name, value, onCollision);
+      return;
+    }
+    super.addLocalValueType(name, this.getLocalValueType(value.name) ?? value, onCollision);
+  }
+
+  bind(name: string, value: LLVMValue): void {
+    // istanbul ignore next
+    this.addLocalValueType(name, value, () => {});
+  }
+}
 
 class LLVMLoweringManager {
   readonly llvmInstructionCollector: LLVMInstruction[] = [];
@@ -71,6 +85,7 @@ class LLVMLoweringManager {
         );
         return;
       case 'HighIRFunctionCallStatement':
+        // TODO: handle potential type cast due to type erasure
         this.llvmInstructionCollector.push(
           LLVM_CALL({
             resultType: lowerHighIRTypeToLLVMType(s.returnCollector?.type ?? HIR_INT_TYPE),
