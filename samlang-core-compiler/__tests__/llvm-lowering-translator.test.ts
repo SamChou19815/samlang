@@ -309,17 +309,17 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
         ],
       }),
     ],
-    `  switch i64 %t, label %LABEL_testFunction_1_PURPOSE_match_end [ i64 0, label %LABEL_testFunction_2_PURPOSE_match_case_0 i64 1, label %LABEL_testFunction_3_PURPOSE_match_case_1 i64 2, label %LABEL_testFunction_4_PURPOSE_match_case_2 i64 3, label %LABEL_testFunction_5_PURPOSE_match_case_3 ]
+    `  switch i64 %t, label %LABEL_testFunction_5_PURPOSE_match_case_default [ i64 0, label %LABEL_testFunction_2_PURPOSE_match_case_0 i64 1, label %LABEL_testFunction_3_PURPOSE_match_case_1 i64 2, label %LABEL_testFunction_4_PURPOSE_match_case_2 ]
 LABEL_testFunction_2_PURPOSE_match_case_0:
   br label %LABEL_testFunction_1_PURPOSE_match_end
 LABEL_testFunction_3_PURPOSE_match_case_1:
   br label %LABEL_testFunction_1_PURPOSE_match_end
 LABEL_testFunction_4_PURPOSE_match_case_2:
   br label %LABEL_testFunction_1_PURPOSE_match_end
-LABEL_testFunction_5_PURPOSE_match_case_3:
+LABEL_testFunction_5_PURPOSE_match_case_default:
   br label %LABEL_testFunction_1_PURPOSE_match_end
 LABEL_testFunction_1_PURPOSE_match_end:
-  %ma = phi i64 [ 0, %LABEL_testFunction_2_PURPOSE_match_case_0 ], [ 0, %LABEL_testFunction_3_PURPOSE_match_case_1 ], [ 0, %LABEL_testFunction_4_PURPOSE_match_case_2 ], [ 0, %LABEL_testFunction_5_PURPOSE_match_case_3 ]`
+  %ma = phi i64 [ 0, %LABEL_testFunction_2_PURPOSE_match_case_0 ], [ 0, %LABEL_testFunction_3_PURPOSE_match_case_1 ], [ 0, %LABEL_testFunction_4_PURPOSE_match_case_2 ], [ 0, %LABEL_testFunction_5_PURPOSE_match_case_default ]`
   );
 });
 

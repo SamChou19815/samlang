@@ -43,6 +43,7 @@ import { Long, checkNotNull } from 'samlang-core-utils';
 
 type ChainedIfElseFromMatchCase = {
   readonly branchVariable: string;
+  readonly tagOrder: number;
   readonly statements: readonly HighIRStatement[];
 };
 
@@ -51,6 +52,10 @@ type DetectedChainedIfElseFromMatch = {
   readonly phiType: LLVMType;
   readonly tagVariable: string;
   readonly cases: readonly ChainedIfElseFromMatchCase[];
+  readonly defaultCase: {
+    readonly branchVariable: string;
+    readonly statements: readonly HighIRStatement[];
+  };
 };
 
 const detectChainedIfElseFromMatch = (
@@ -62,7 +67,10 @@ const detectChainedIfElseFromMatch = (
   };
   const cases: ChainedIfElseFromMatchCaseAugmented[] = [];
 
-  const detectChainedIfElseFromMatchHelper = (s: HighIRIfElseStatement, index: number): boolean => {
+  const detectChainedIfElseFromMatchHelper = (
+    s: HighIRIfElseStatement,
+    index: number
+  ): DetectedChainedIfElseFromMatch | null => {
     if (
       s.multiAssignedVariable == null ||
       s.booleanExpression.__type__ !== 'HighIRBinaryExpression' ||
@@ -71,7 +79,7 @@ const detectChainedIfElseFromMatch = (
       s.booleanExpression.e2.__type__ !== 'HighIRIntLiteralExpression' ||
       s.booleanExpression.e2.value.notEquals(Long.fromInt(index))
     ) {
-      return false;
+      return null;
     }
 
     const currentCase = {
@@ -79,6 +87,7 @@ const detectChainedIfElseFromMatch = (
       tagVariable: s.booleanExpression.e1.name,
       branchVariable: s.multiAssignedVariable.branch1Variable,
       statements: s.s1,
+      tagOrder: s.booleanExpression.e2.value.toInt(),
     };
     cases.push(currentCase);
 
@@ -92,28 +101,24 @@ const detectChainedIfElseFromMatch = (
         return detectChainedIfElseFromMatchHelper(elseBranchOnlyStatement, index + 1);
       }
     }
-    cases.push({
-      phiVariable: s.multiAssignedVariable.name,
-      tagVariable: s.booleanExpression.e1.name,
-      branchVariable: s.multiAssignedVariable.branch2Variable,
-      statements: s.s2,
-    });
-    return true;
+    const phiVariable = checkNotNull(cases[0]?.phiVariable);
+    const tagVariable = checkNotNull(cases[0]?.tagVariable);
+    return {
+      phiVariable,
+      phiType: lowerHighIRTypeToLLVMType(checkNotNull(statement?.multiAssignedVariable?.type)),
+      tagVariable,
+      cases: cases.map(
+        ({ phiVariable: p, tagVariable: t, branchVariable, tagOrder, statements }) => {
+          // istanbul ignore next
+          if (phiVariable !== p || tagVariable !== t) throw new Error();
+          return { branchVariable, tagOrder, statements };
+        }
+      ),
+      defaultCase: { branchVariable: s.multiAssignedVariable.branch2Variable, statements: s.s2 },
+    };
   };
 
-  if (!detectChainedIfElseFromMatchHelper(statement, 0)) return null;
-  const phiVariable = checkNotNull(cases[0]?.phiVariable);
-  const tagVariable = checkNotNull(cases[0]?.tagVariable);
-  return {
-    phiVariable,
-    phiType: lowerHighIRTypeToLLVMType(checkNotNull(statement?.multiAssignedVariable?.type)),
-    tagVariable,
-    cases: cases.map(({ phiVariable: p, tagVariable: t, branchVariable, statements }) => {
-      // istanbul ignore next
-      if (phiVariable !== p || tagVariable !== t) throw new Error();
-      return { branchVariable, statements };
-    }),
-  };
+  return detectChainedIfElseFromMatchHelper(statement, 0);
 };
 
 class LLVMLoweringManager {
@@ -187,6 +192,7 @@ class LLVMLoweringManager {
     phiVariable,
     tagVariable,
     cases,
+    defaultCase,
   }: DetectedChainedIfElseFromMatch): void {
     const finalEndLabel = this.allocator.allocateLabelWithAnnotation(
       this.functionName,
@@ -197,10 +203,14 @@ class LLVMLoweringManager {
       source: branchVariable,
       label: this.allocator.allocateLabelWithAnnotation(this.functionName, `match_case_${i}`),
     }));
+    const defaultCaseLabel = this.allocator.allocateLabelWithAnnotation(
+      this.functionName,
+      `match_case_default`
+    );
     this.llvmInstructionCollector.push(
       LLVM_SWITCH(
         LLVM_VARIABLE(tagVariable),
-        finalEndLabel,
+        defaultCaseLabel,
         phiMovesWithLabels.map((it) => it.label)
       )
     );
@@ -218,15 +228,29 @@ class LLVMLoweringManager {
         this.llvmInstructionCollector.push(LLVM_JUMP(finalEndLabel));
       });
     });
+    this.withNestedScope([{ target: phiVariable, source: defaultCase.branchVariable }], () => {
+      this.llvmInstructionCollector.push(LLVM_LABEL(defaultCaseLabel));
+      this.withNestedScope(phiMovesWithLabels, () => {
+        defaultCase.statements.forEach((it) => this.lowerHighIRStatement(it));
+        const assignedValue =
+          this.llvmConstantPropagationContext.getLocalValueType(defaultCase.branchVariable) ??
+          LLVM_VARIABLE(defaultCase.branchVariable);
+        values.push(assignedValue);
+      });
+      this.llvmInstructionCollector.push(LLVM_JUMP(finalEndLabel));
+    });
     this.llvmInstructionCollector.push(
       LLVM_LABEL(finalEndLabel),
       LLVM_PHI({
         name: phiVariable,
         variableType: LLVM_INT_TYPE,
-        valueBranchTuples: phiMovesWithLabels.map(({ label: branch }, i) => ({
-          value: checkNotNull(values[i]),
-          branch,
-        })),
+        valueBranchTuples: [
+          ...phiMovesWithLabels.map(({ label: branch }, i) => ({
+            value: checkNotNull(values[i]),
+            branch,
+          })),
+          { value: checkNotNull(values[values.length - 1]), branch: defaultCaseLabel },
+        ],
       })
     );
   }
