@@ -527,23 +527,22 @@ it('Match lowering works 1/3.', () => {
         },
       ],
     }),
-    `let _t0: _Dummy = (_this: _Dummy);
-let _t1: int = (_t0: _Dummy)[0];
-switch (_t1)} {
+    `let _t0: int = (_this: _Dummy)[0];
+switch (_t0)} {
   case 0: {
-    let _t3: any = (_t0: _Dummy)[1];
-    let bar: string = (_t3: any);
-    let _t4: _Dummy = (_this: _Dummy);
-    let _t2: _Dummy = (_t4: _Dummy);
+    let _t2: any = (_this: _Dummy)[1];
+    let bar: string = (_t2: any);
+    let _t3: _Dummy = (_this: _Dummy);
+    let _t1: _Dummy = (_t3: _Dummy);
   }
   case 1: {
     _builtin_throw((_this: _Dummy));
-    let _t5: _Dummy = 0;
-    let _t2: _Dummy = (_t5: _Dummy);
+    let _t4: _Dummy = 0;
+    let _t1: _Dummy = (_t4: _Dummy);
   }
 }
-// _t2: _Dummy = phi(_t4, _t5)
-return (_t2: _Dummy);`
+// _t1: _Dummy = phi(_t3, _t4)
+return (_t1: _Dummy);`
   );
 });
 
@@ -575,12 +574,11 @@ it('Match lowering works 2/3.', () => {
         },
       ],
     }),
-    `let _t0: _Dummy = (_this: _Dummy);
-let _t1: int = (_t0: _Dummy)[0];
-switch (_t1)} {
+    `let _t0: int = (_this: _Dummy)[0];
+switch (_t0)} {
   case 0: {
-    let _t3: any = (_t0: _Dummy)[1];
-    let bar: string = (_t3: any);
+    let _t2: any = (_this: _Dummy)[1];
+    let bar: string = (_t2: any);
   }
   case 1: {
     _builtin_throw((_this: _Dummy));
@@ -621,26 +619,25 @@ it('Match lowering works 3/3.', () => {
         },
       ],
     }),
-    `let _t0: _Dummy = (_this: _Dummy);
-let _t1: int = (_t0: _Dummy)[0];
-switch (_t1)} {
+    `let _t0: int = (_this: _Dummy)[0];
+switch (_t0)} {
   case 0: {
-    let _t3: any = (_t0: _Dummy)[1];
-    let bar: string = (_t3: any);
-    let _t4: _Dummy = (_this: _Dummy);
-    let _t2: _Dummy = (_t4: _Dummy);
+    let _t2: any = (_this: _Dummy)[1];
+    let bar: string = (_t2: any);
+    let _t3: _Dummy = (_this: _Dummy);
+    let _t1: _Dummy = (_t3: _Dummy);
   }
   case 1: {
-    let _t5: _Dummy = (_this: _Dummy);
-    let _t2: _Dummy = (_t5: _Dummy);
+    let _t4: _Dummy = (_this: _Dummy);
+    let _t1: _Dummy = (_t4: _Dummy);
   }
   case 2: {
-    let _t6: _Dummy = (_this: _Dummy);
-    let _t2: _Dummy = (_t6: _Dummy);
+    let _t5: _Dummy = (_this: _Dummy);
+    let _t1: _Dummy = (_t5: _Dummy);
   }
 }
-// _t2: _Dummy = phi(_t4, _t5, _t6)
-return (_t2: _Dummy);`
+// _t1: _Dummy = phi(_t3, _t4, _t5)
+return (_t1: _Dummy);`
   );
 });
 
@@ -702,11 +699,9 @@ it('StatementBlockExpression lowering works.', () => {
         ],
       },
     }),
-    `let _t0: _Dummy = (_this: _Dummy);
-let a__depth_1__block_0: any = (_t0: _Dummy)[0];
-let _t1: _Dummy = (_this: _Dummy);
-let a__depth_1__block_0: any = (_t1: _Dummy)[0];
-let c__depth_1__block_0: any = (_t1: _Dummy)[1];
+    `let a__depth_1__block_0: any = (_this: _Dummy)[0];
+let a__depth_1__block_0: any = (_this: _Dummy)[0];
+let c__depth_1__block_0: any = (_this: _Dummy)[1];
 return 0;`
   );
 });

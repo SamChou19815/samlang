@@ -507,6 +507,7 @@ class HighIRExpressionLoweringManager {
         const functionTempTypedB1 = this.allocateTemporaryVariable();
         const functionTempTypedB2 = this.allocateTemporaryVariable();
         const comparisonTemp = this.allocateTemporaryVariable();
+        // NOTE: cast can happen here!
         loweredStatements.push(
           HIR_LET({
             name: closureTemp,
@@ -521,6 +522,7 @@ class HighIRExpressionLoweringManager {
             pointerExpression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
             index: 1,
           }),
+          // NOTE: cast happens here!
           HIR_LET({
             name: contextTempForZeroComparison,
             type: HIR_INT_TYPE,
@@ -551,6 +553,7 @@ class HighIRExpressionLoweringManager {
               pointerExpression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
               index: 0,
             }),
+            // NOTE: cast happens here!
             HIR_LET({
               name: functionTempTypedB1,
               type: HIR_FUNCTION_TYPE(
@@ -587,6 +590,7 @@ class HighIRExpressionLoweringManager {
               pointerExpression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
               index: 0,
             }),
+            // NOTE: cast happens here!
             HIR_LET({
               name: functionTempTypedB2,
               type: HIR_FUNCTION_TYPE(
@@ -847,21 +851,13 @@ class HighIRExpressionLoweringManager {
       expression.matchedExpression,
       loweredStatements
     );
-    const variableForMatchedExpression = this.allocateTemporaryVariable();
     const variableForTag = this.allocateTemporaryVariable();
     const temporaryVariable = this.allocateTemporaryVariable();
-    loweredStatements.push(
-      HIR_LET({
-        name: variableForMatchedExpression,
-        type: matchedExpression.type,
-        assignedExpression: matchedExpression,
-      })
-    );
     loweredStatements.push(
       HIR_INDEX_ACCESS({
         name: variableForTag,
         type: HIR_INT_TYPE,
-        pointerExpression: HIR_VARIABLE(variableForMatchedExpression, matchedExpression.type),
+        pointerExpression: matchedExpression,
         index: 0,
       })
     );
@@ -875,7 +871,7 @@ class HighIRExpressionLoweringManager {
             HIR_INDEX_ACCESS({
               name: dataVariableRawTemp,
               type: HIR_ANY_TYPE,
-              pointerExpression: HIR_VARIABLE(variableForMatchedExpression, matchedExpression.type),
+              pointerExpression: matchedExpression,
               index: 1,
             }),
             HIR_LET({
@@ -1011,21 +1007,13 @@ class HighIRExpressionLoweringManager {
     const loweredStatements: HighIRStatement[] = [];
     this.depth += 1;
     const loweredFinalExpression = this.varibleContext.withNestedScope(() => {
-      blockStatements.forEach(({ pattern, typeAnnotation, assignedExpression }) => {
+      blockStatements.forEach(({ pattern, assignedExpression }) => {
         const loweredAssignedExpression = this.loweredAndAddStatements(
           assignedExpression,
           loweredStatements
         );
         switch (pattern.type) {
           case 'TuplePattern': {
-            const variableForDestructedExpression = this.allocateTemporaryVariable();
-            loweredStatements.push(
-              HIR_LET({
-                name: variableForDestructedExpression,
-                type: this.lowerType(typeAnnotation),
-                assignedExpression: loweredAssignedExpression,
-              })
-            );
             pattern.destructedNames.forEach(([name], index) => {
               if (name == null) {
                 return;
@@ -1035,10 +1023,7 @@ class HighIRExpressionLoweringManager {
                   name: this.getRenamedVariableForNesting(name, HIR_ANY_TYPE),
                   // TODO: update type checker and AST to provide better type here.
                   type: HIR_ANY_TYPE,
-                  pointerExpression: HIR_VARIABLE(
-                    variableForDestructedExpression,
-                    loweredAssignedExpression.type
-                  ),
+                  pointerExpression: loweredAssignedExpression,
                   index,
                 })
               );
@@ -1046,24 +1031,13 @@ class HighIRExpressionLoweringManager {
             break;
           }
           case 'ObjectPattern': {
-            const variableForDestructedExpression = this.allocateTemporaryVariable();
-            loweredStatements.push(
-              HIR_LET({
-                name: variableForDestructedExpression,
-                type: this.lowerType(typeAnnotation),
-                assignedExpression: loweredAssignedExpression,
-              })
-            );
             pattern.destructedNames.forEach(({ fieldName, fieldOrder, alias }) => {
               loweredStatements.push(
                 HIR_INDEX_ACCESS({
                   name: this.getRenamedVariableForNesting(alias ?? fieldName, HIR_ANY_TYPE),
                   // TODO: update type checker and AST to provide better type here.
                   type: HIR_ANY_TYPE,
-                  pointerExpression: HIR_VARIABLE(
-                    variableForDestructedExpression,
-                    loweredAssignedExpression.type
-                  ),
+                  pointerExpression: loweredAssignedExpression,
                   index: fieldOrder,
                 })
               );
