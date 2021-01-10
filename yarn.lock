@@ -1758,7 +1758,7 @@ __metadata:
   dependencies:
     "@types/jest": ^26.0.20
     "@types/node": ^14.14.20
-    "@vercel/ncc": ^0.24.0
+    "@vercel/ncc": ^0.26.2
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
@@ -1775,7 +1775,7 @@ __metadata:
   resolution: "@dev-sam/samlang-demo@workspace:samlang-demo"
   dependencies:
     "@types/jest": ^26.0.20
-    "@vercel/ncc": ^0.24.0
+    "@vercel/ncc": ^0.26.2
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
@@ -2347,14 +2347,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vercel/ncc@npm:^0.24.0":
-  version: 0.24.0
-  resolution: "@vercel/ncc@npm:0.24.0"
+"@vercel/ncc@npm:^0.26.2":
+  version: 0.26.2
+  resolution: "@vercel/ncc@npm:0.26.2"
   dependencies:
     node-gyp: latest
   bin:
     ncc: dist/ncc/cli.js
-  checksum: 46b04944fed95223d66a576240d3ee997a13827d81fbc91965af1173f705fac8f071e92d86ceaa031b7c42e4aaef2e5286a91b3a648694889336aaa130f8856e
+  checksum: 0e3449b2cf780604c16cb1edb084a91fc1c72257d47b5cd89d6a355fcb4faa64a805eb4dd188592fef697a7c788de2905f7375dcd7fbf88cb9cb18f8beb38b4a
   languageName: node
   linkType: hard
 
