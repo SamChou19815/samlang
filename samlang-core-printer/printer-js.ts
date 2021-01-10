@@ -35,16 +35,6 @@ export const createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING = (
     case 'HighIRVariableExpression':
     case 'HighIRNameExpression':
       return PRETTIER_TEXT(highIRExpression.name);
-    case 'HighIRIndexAccessExpression': {
-      const { expression: subExpression, index } = highIRExpression;
-      let subExpressionDocument = createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
-        subExpression
-      );
-      if (subExpression.__type__ === 'HighIRBinaryExpression') {
-        subExpressionDocument = createParenthesisSurroundedDocument(subExpressionDocument);
-      }
-      return PRETTIER_CONCAT(subExpressionDocument, PRETTIER_TEXT(`[${index}]`));
-    }
     case 'HighIRBinaryExpression': {
       const { e1, e2, operator } = highIRExpression;
       const withParenthesisWhenNecesasry = (subExpression: HighIRExpression): PrettierDocument => {
@@ -87,6 +77,20 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
   highIRStatement: HighIRStatement
 ): PrettierDocument => {
   switch (highIRStatement.__type__) {
+    case 'HighIRIndexAccessStatement': {
+      const { pointerExpression, index } = highIRStatement;
+      let subExpressionDocument = createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+        pointerExpression
+      );
+      if (pointerExpression.__type__ === 'HighIRBinaryExpression') {
+        subExpressionDocument = createParenthesisSurroundedDocument(subExpressionDocument);
+      }
+      return PRETTIER_CONCAT(
+        PRETTIER_TEXT(`var ${highIRStatement.name} = `),
+        subExpressionDocument,
+        PRETTIER_TEXT(`[${index}];`)
+      );
+    }
     case 'HighIRFunctionCallStatement': {
       const segments: PrettierDocument[] = [];
       if (highIRStatement.returnCollector != null) {

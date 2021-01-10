@@ -114,20 +114,17 @@ l_foo_0_START:
 it('prettyPrintLLVMFunction works for base expressions 3/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_LET({
+      HIR_INDEX_ACCESS({
         name: 'foo',
         type: INT,
-        assignedExpression: HIR_INDEX_ACCESS({
-          type: INT,
-          expression: HIR_VARIABLE('bar', HIR_IDENTIFIER_TYPE('Bar')),
-          index: 3,
-        }),
+        pointerExpression: HIR_VARIABLE('bar', HIR_IDENTIFIER_TYPE('Bar')),
+        index: 3,
       }),
       HIR_RETURN(HIR_VARIABLE('foo', INT)),
     ],
     `  %_temp_0_index_pointer_temp = getelementptr i64*, %Bar* %bar, i64 3
-  %_temp_1_value_temp_loaded = load i64, i64* %_temp_0_index_pointer_temp
-  ret i64 %_temp_1_value_temp_loaded`
+  %foo = load i64, i64* %_temp_0_index_pointer_temp
+  ret i64 %foo`
   );
 });
 

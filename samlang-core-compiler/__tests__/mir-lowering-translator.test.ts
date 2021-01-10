@@ -79,14 +79,11 @@ l__2_IF_ELSE_END:`
   );
 
   assertCorrectlyLoweredWithPreConfiguredSetup(
-    HIR_LET({
+    HIR_INDEX_ACCESS({
       name: 'foo',
       type: HIR_INT_TYPE,
-      assignedExpression: HIR_INDEX_ACCESS({
-        type: HIR_INT_TYPE,
-        expression: HIR_VARIABLE('this', HIR_INT_TYPE),
-        index: 2,
-      }),
+      pointerExpression: HIR_VARIABLE('this', HIR_INT_TYPE),
+      index: 2,
     }),
     '_foo = MEM[(_this + 16)];'
   );

@@ -44,18 +44,18 @@ it('debugPrintHighIRStatement works', () => {
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('h', HIR_INT_TYPE),
-            functionArguments: [
-              HIR_INDEX_ACCESS({
-                type: HIR_INT_TYPE,
-                expression: HIR_VARIABLE('big', HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_INT_TYPE])),
-                index: 0,
-              }),
-            ],
+            functionArguments: [HIR_VARIABLE('big', HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_INT_TYPE]))],
             returnCollector: { name: 'vibez', type: HIR_INT_TYPE },
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('stresso', HIR_INT_TYPE),
             functionArguments: [HIR_VARIABLE('d', HIR_INT_TYPE)],
+          }),
+          HIR_INDEX_ACCESS({
+            name: 'f',
+            type: HIR_INT_TYPE,
+            pointerExpression: HIR_VARIABLE('big', HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_INT_TYPE])),
+            index: 0,
           }),
         ],
       })
@@ -65,8 +65,9 @@ it('debugPrintHighIRStatement works', () => {
   return (foo: Bar);
 } else {
   let baz: (int, string) = [(0 + 0), meggo];
-  let vibez: int = h(((big: (int, int))[0]: int));
+  let vibez: int = h((big: (int, int)));
   stresso((d: int));
+  let f: int = (big: (int, int))[0];
 }
 // bar: int = phi(b1, b2)`);
 });

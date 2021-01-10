@@ -276,13 +276,19 @@ class HighIRExpressionLoweringManager {
 
   private lowerFieldAccess(expression: FieldAccessExpression): HighIRExpressionLoweringResult {
     const result = this.lower(expression.expression);
+    const type = this.lowerType(expression.type);
+    const valueName = this.allocateTemporaryVariable();
     return {
-      statements: result.statements,
-      expression: HIR_INDEX_ACCESS({
-        type: this.lowerType(expression.type),
-        expression: result.expression,
-        index: expression.fieldOrder,
-      }),
+      statements: [
+        ...result.statements,
+        HIR_INDEX_ACCESS({
+          name: valueName,
+          type,
+          pointerExpression: result.expression,
+          index: expression.fieldOrder,
+        }),
+      ],
+      expression: HIR_VARIABLE(valueName, type),
     };
   }
 
@@ -469,8 +475,10 @@ class HighIRExpressionLoweringManager {
         const contextTempForZeroComparison = this.allocateTemporaryVariable();
         const resultTempB1 = this.allocateTemporaryVariable();
         const resultTempB2 = this.allocateTemporaryVariable();
-        const functionTempB1 = this.allocateTemporaryVariable();
-        const functionTempB2 = this.allocateTemporaryVariable();
+        const functionTempRawB1 = this.allocateTemporaryVariable();
+        const functionTempRawB2 = this.allocateTemporaryVariable();
+        const functionTempTypedB1 = this.allocateTemporaryVariable();
+        const functionTempTypedB2 = this.allocateTemporaryVariable();
         loweredStatements.push(
           HIR_LET({
             name: closureTemp,
@@ -479,14 +487,11 @@ class HighIRExpressionLoweringManager {
           })
         );
         loweredStatements.push(
-          HIR_LET({
+          HIR_INDEX_ACCESS({
             name: contextTemp,
             type: HIR_ANY_TYPE,
-            assignedExpression: HIR_INDEX_ACCESS({
-              type: HIR_ANY_TYPE,
-              expression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
-              index: 1,
-            }),
+            pointerExpression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
+            index: 1,
           }),
           HIR_LET({
             name: contextTempForZeroComparison,
@@ -510,21 +515,23 @@ class HighIRExpressionLoweringManager {
             HIR_ZERO
           ),
           s1: [
+            HIR_INDEX_ACCESS({
+              name: functionTempRawB1,
+              type: HIR_ANY_TYPE,
+              pointerExpression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
+              index: 0,
+            }),
             HIR_LET({
-              name: functionTempB1,
+              name: functionTempTypedB1,
               type: HIR_FUNCTION_TYPE(
                 loweredFunctionArguments.map((it) => it.type),
                 loweredReturnType
               ),
-              assignedExpression: HIR_INDEX_ACCESS({
-                type: HIR_ANY_TYPE,
-                expression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
-                index: 0,
-              }),
+              assignedExpression: HIR_VARIABLE(functionTempRawB1, HIR_ANY_TYPE),
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_VARIABLE(
-                functionTempB1,
+                functionTempTypedB1,
                 HIR_FUNCTION_TYPE(
                   loweredFunctionArguments.map((it) => it.type),
                   loweredReturnType
@@ -544,21 +551,23 @@ class HighIRExpressionLoweringManager {
                 }),
           ].filter(isNotNull),
           s2: [
+            HIR_INDEX_ACCESS({
+              name: functionTempRawB2,
+              type: HIR_ANY_TYPE,
+              pointerExpression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
+              index: 0,
+            }),
             HIR_LET({
-              name: functionTempB2,
+              name: functionTempTypedB2,
               type: HIR_FUNCTION_TYPE(
                 [HIR_ANY_TYPE, ...loweredFunctionArguments.map((it) => it.type)],
                 loweredReturnType
               ),
-              assignedExpression: HIR_INDEX_ACCESS({
-                type: HIR_ANY_TYPE,
-                expression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
-                index: 0,
-              }),
+              assignedExpression: HIR_VARIABLE(functionTempRawB2, HIR_ANY_TYPE),
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_VARIABLE(
-                functionTempB2,
+                functionTempTypedB2,
                 HIR_FUNCTION_TYPE(
                   [HIR_ANY_TYPE, ...loweredFunctionArguments.map((it) => it.type)],
                   loweredReturnType
@@ -813,30 +822,30 @@ class HighIRExpressionLoweringManager {
       })
     );
     loweredStatements.push(
-      HIR_LET({
+      HIR_INDEX_ACCESS({
         name: variableForTag,
         type: HIR_INT_TYPE,
-        assignedExpression: HIR_INDEX_ACCESS({
-          type: HIR_INT_TYPE,
-          expression: HIR_VARIABLE(variableForMatchedExpression, matchedExpression.type),
-          index: 0,
-        }),
+        pointerExpression: HIR_VARIABLE(variableForMatchedExpression, matchedExpression.type),
+        index: 0,
       })
     );
     const loweredMatchingList = expression.matchingList.map(
       ({ tagOrder, dataVariable, expression: patternExpression }) => {
         const localStatements: HighIRStatement[] = [];
         if (dataVariable != null) {
+          const dataVariableRawTemp = this.allocateTemporaryVariable();
           const [dataVariableName, dataVariableType] = dataVariable;
           localStatements.push(
+            HIR_INDEX_ACCESS({
+              name: dataVariableRawTemp,
+              type: HIR_ANY_TYPE,
+              pointerExpression: HIR_VARIABLE(variableForMatchedExpression, matchedExpression.type),
+              index: 1,
+            }),
             HIR_LET({
               name: dataVariableName,
               type: this.lowerType(dataVariableType),
-              assignedExpression: HIR_INDEX_ACCESS({
-                type: HIR_ANY_TYPE,
-                expression: HIR_VARIABLE(variableForMatchedExpression, matchedExpression.type),
-                index: 1,
-              }),
+              assignedExpression: HIR_VARIABLE(dataVariableRawTemp, HIR_ANY_TYPE),
             })
           );
         }
@@ -959,14 +968,11 @@ class HighIRExpressionLoweringManager {
     );
     Object.entries(expression.captured).forEach(([variable, variableType], index) => {
       lambdaStatements.push(
-        HIR_LET({
+        HIR_INDEX_ACCESS({
           name: variable,
           type: this.lowerType(variableType),
-          assignedExpression: HIR_INDEX_ACCESS({
-            type: this.lowerType(variableType),
-            expression: HIR_VARIABLE('_context', contextType),
-            index,
-          }),
+          pointerExpression: HIR_VARIABLE('_context', contextType),
+          index,
         })
       );
     });
@@ -1008,19 +1014,15 @@ class HighIRExpressionLoweringManager {
               return;
             }
             loweredStatements.push(
-              HIR_LET({
+              HIR_INDEX_ACCESS({
                 name: this.getRenamedVariableForNesting(name, blockLocalVariables),
                 // TODO: update type checker and AST to provide better type here.
                 type: HIR_ANY_TYPE,
-                assignedExpression: HIR_INDEX_ACCESS({
-                  // TODO: update type checker and AST to provide better type here.
-                  type: HIR_ANY_TYPE,
-                  expression: HIR_VARIABLE(
-                    variableForDestructedExpression,
-                    loweredAssignedExpression.type
-                  ),
-                  index,
-                }),
+                pointerExpression: HIR_VARIABLE(
+                  variableForDestructedExpression,
+                  loweredAssignedExpression.type
+                ),
+                index,
               })
             );
           });
@@ -1037,19 +1039,15 @@ class HighIRExpressionLoweringManager {
           );
           pattern.destructedNames.forEach(({ fieldName, fieldOrder, alias }) => {
             loweredStatements.push(
-              HIR_LET({
+              HIR_INDEX_ACCESS({
                 name: this.getRenamedVariableForNesting(alias ?? fieldName, blockLocalVariables),
                 // TODO: update type checker and AST to provide better type here.
                 type: HIR_ANY_TYPE,
-                assignedExpression: HIR_INDEX_ACCESS({
-                  // TODO: update type checker and AST to provide better type here.
-                  type: HIR_ANY_TYPE,
-                  expression: HIR_VARIABLE(
-                    variableForDestructedExpression,
-                    loweredAssignedExpression.type
-                  ),
-                  index: fieldOrder,
-                }),
+                pointerExpression: HIR_VARIABLE(
+                  variableForDestructedExpression,
+                  loweredAssignedExpression.type
+                ),
+                index: fieldOrder,
               })
             );
           });

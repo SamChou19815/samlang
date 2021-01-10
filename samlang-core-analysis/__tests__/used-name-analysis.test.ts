@@ -38,13 +38,13 @@ it('analyzeUsedFunctionNames test', () => {
             HIR_STRUCT_INITIALIZATION({
               structVariableName: '',
               type: HIR_INT_TYPE,
-              expressionList: [
-                HIR_INDEX_ACCESS({
-                  type: HIR_INT_TYPE,
-                  expression: HIR_NAME('bar', HIR_INT_TYPE),
-                  index: 0,
-                }),
-              ],
+              expressionList: [HIR_NAME('bar', HIR_INT_TYPE)],
+            }),
+            HIR_INDEX_ACCESS({
+              name: 'd',
+              type: HIR_INT_TYPE,
+              pointerExpression: HIR_NAME('bar', HIR_INT_TYPE),
+              index: 0,
             }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('baz', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),

@@ -11,9 +11,6 @@ const collectUsedNamesFromExpression = (set: Set<string>, expression: HighIRExpr
     case 'HighIRNameExpression':
       set.add(expression.name);
       break;
-    case 'HighIRIndexAccessExpression':
-      collectUsedNamesFromExpression(set, expression.expression);
-      break;
     case 'HighIRBinaryExpression':
       collectUsedNamesFromExpression(set, expression.e1);
       collectUsedNamesFromExpression(set, expression.e2);
@@ -23,6 +20,9 @@ const collectUsedNamesFromExpression = (set: Set<string>, expression: HighIRExpr
 
 const collectUsedNamesFromStatement = (set: Set<string>, statement: HighIRStatement): void => {
   switch (statement.__type__) {
+    case 'HighIRIndexAccessStatement':
+      collectUsedNamesFromExpression(set, statement.pointerExpression);
+      break;
     case 'HighIRFunctionCallStatement':
       collectUsedNamesFromExpression(set, statement.functionExpression);
       statement.functionArguments.forEach((it) => collectUsedNamesFromExpression(set, it));

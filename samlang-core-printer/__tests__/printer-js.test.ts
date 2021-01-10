@@ -305,13 +305,13 @@ it('confirm samlang & equivalent JS have same print output', () => {
           parameters: ['s'],
           type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
           body: [
-            HIR_RETURN(
-              HIR_INDEX_ACCESS({
-                type: HIR_INT_TYPE,
-                expression: HIR_VARIABLE('s', HIR_INT_TYPE),
-                index: 0,
-              })
-            ),
+            HIR_INDEX_ACCESS({
+              name: 'aa',
+              type: HIR_INT_TYPE,
+              pointerExpression: HIR_VARIABLE('s', HIR_INT_TYPE),
+              index: 0,
+            }),
+            HIR_RETURN(HIR_VARIABLE('aa', HIR_INT_TYPE)),
           ],
         },
         {
@@ -385,6 +385,30 @@ it('confirm samlang & equivalent JS have same print output', () => {
 });
 
 it('HIR statements to JS string test', () => {
+  expect(
+    highIRStatementToString(
+      HIR_INDEX_ACCESS({
+        name: 'foo',
+        type: HIR_INT_TYPE,
+        pointerExpression: HIR_VARIABLE('samlang', HIR_INT_TYPE),
+        index: 3,
+      })
+    )
+  ).toBe(`var foo = samlang[3];`);
+  expect(
+    highIRStatementToString(
+      HIR_INDEX_ACCESS({
+        name: 'foo',
+        type: HIR_INT_TYPE,
+        pointerExpression: HIR_BINARY({
+          operator: '+',
+          e1: HIR_VARIABLE('samlang', HIR_INT_TYPE),
+          e2: HIR_VARIABLE('samlang', HIR_INT_TYPE),
+        }),
+        index: 3,
+      })
+    )
+  ).toBe(`var foo = (samlang + samlang)[3];`);
   expect(
     highIRStatementToString(
       HIR_IF_ELSE({
@@ -575,41 +599,6 @@ it('HIR function to JS string test 2', () => {
 
 it('HIR expression to JS string test', () => {
   expect(highIRExpressionToString(HIR_INT(1305))).toBe('1305');
-  expect(
-    highIRExpressionToString(
-      HIR_INDEX_ACCESS({
-        type: HIR_INT_TYPE,
-        expression: HIR_VARIABLE('samlang', HIR_INT_TYPE),
-        index: 3,
-      })
-    )
-  ).toBe(`samlang[3]`);
-  expect(
-    highIRExpressionToString(
-      HIR_INDEX_ACCESS({
-        type: HIR_INT_TYPE,
-        expression: HIR_INDEX_ACCESS({
-          type: HIR_INT_TYPE,
-          expression: HIR_VARIABLE('a', HIR_INT_TYPE),
-          index: 4,
-        }),
-        index: 3,
-      })
-    )
-  ).toBe('a[4][3]');
-  expect(
-    highIRExpressionToString(
-      HIR_INDEX_ACCESS({
-        type: HIR_INT_TYPE,
-        expression: HIR_BINARY({
-          operator: '+',
-          e1: HIR_ZERO,
-          e2: HIR_ZERO,
-        }),
-        index: 0,
-      })
-    )
-  ).toBe('(0 + 0)[0]');
   expect(highIRExpressionToString(HIR_VARIABLE('ts', HIR_INT_TYPE))).toBe('ts');
   expect(highIRExpressionToString(HIR_NAME('key', HIR_INT_TYPE))).toBe('key');
   expect(
@@ -716,17 +705,4 @@ it('HIR expression to JS string test', () => {
       })
     )
   ).toBe('somevar + (3 + -4)');
-  expect(
-    highIRExpressionToString(
-      HIR_BINARY({
-        operator: '+',
-        e1: HIR_INDEX_ACCESS({
-          type: HIR_INT_TYPE,
-          expression: HIR_VARIABLE('a', HIR_INT_TYPE),
-          index: 2,
-        }),
-        e2: HIR_INT(1),
-      })
-    )
-  ).toBe('a[2] + 1');
 });
