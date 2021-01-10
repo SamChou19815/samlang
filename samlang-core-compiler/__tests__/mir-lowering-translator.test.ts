@@ -59,19 +59,20 @@ it('midIRTranslateStatementsAndCollectGlobalStrings test', () => {
     HIR_IF_ELSE({
       booleanExpression: HIR_ONE,
       s1: [
-        HIR_RETURN(
-          HIR_BINARY({
-            operator: '+',
-            e1: HIR_INT(2),
-            e2: HIR_INT(2),
-          })
-        ),
+        HIR_BINARY({
+          name: 'a',
+          operator: '+',
+          e1: HIR_INT(2),
+          e2: HIR_INT(2),
+        }),
+        HIR_RETURN(HIR_VARIABLE('a', HIR_INT_TYPE)),
       ],
       s2: [HIR_RETURN(HIR_INT(2))],
     }),
     `if (1) goto l__0_TRUE_BRANCH; else goto l__1_FALSE_BRANCH;
 l__0_TRUE_BRANCH:
-return (2 + 2);
+_a = (2 + 2);
+return _a;
 goto l__2_IF_ELSE_END;
 l__1_FALSE_BRANCH:
 return 2;

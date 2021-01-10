@@ -1,5 +1,5 @@
 import type { IROperator } from 'samlang-core-ast/common-operators';
-import { HighIRExpression, HIR_BINARY } from 'samlang-core-ast/hir-expressions';
+import type { HighIRExpression } from 'samlang-core-ast/hir-expressions';
 import { Long } from 'samlang-core-utils';
 
 /**
@@ -20,7 +20,6 @@ const compareMidIR = (e1: HighIRExpression, e2: HighIRExpression): number => {
         }
         case 'HighIRNameExpression':
         case 'HighIRVariableExpression':
-        case 'HighIRBinaryExpression':
           return -1;
       }
     // eslint-disable-next-line no-fallthrough
@@ -31,7 +30,6 @@ const compareMidIR = (e1: HighIRExpression, e2: HighIRExpression): number => {
         case 'HighIRNameExpression':
           return e1.name.localeCompare(e2.name);
         case 'HighIRVariableExpression':
-        case 'HighIRBinaryExpression':
           return -1;
       }
     // eslint-disable-next-line no-fallthrough
@@ -42,27 +40,6 @@ const compareMidIR = (e1: HighIRExpression, e2: HighIRExpression): number => {
           return 1;
         case 'HighIRVariableExpression':
           return e1.name.localeCompare(e2.name);
-        case 'HighIRBinaryExpression':
-          return -1;
-      }
-    // eslint-disable-next-line no-fallthrough
-    case 'HighIRBinaryExpression':
-      switch (e2.__type__) {
-        case 'HighIRIntLiteralExpression':
-        case 'HighIRNameExpression':
-        case 'HighIRVariableExpression':
-          return 1;
-        case 'HighIRBinaryExpression': {
-          const operatorCompareResult = e1.operator.localeCompare(e2.operator);
-          if (operatorCompareResult !== 0) {
-            return operatorCompareResult;
-          }
-          const e1CompareResult = compareMidIR(e1.e1, e2.e1);
-          if (e1CompareResult !== 0) {
-            return e1CompareResult;
-          }
-          return compareMidIR(e1.e2, e2.e2);
-        }
       }
   }
 };
@@ -76,17 +53,15 @@ const createHighIRFlexibleOrderOperatorNode = (
   operator: IROperator,
   e1: HighIRExpression,
   e2: HighIRExpression
-): HighIRExpression => {
+): Readonly<{ operator: IROperator; e1: HighIRExpression; e2: HighIRExpression }> => {
   switch (operator) {
     case '+':
     case '*':
     case '==':
     case '!=':
-      return compareMidIR(e1, e2) > 0
-        ? HIR_BINARY({ operator, e1, e2 })
-        : HIR_BINARY({ operator, e2: e1, e1: e2 });
+      return compareMidIR(e1, e2) > 0 ? { operator, e1, e2 } : { operator, e2: e1, e1: e2 };
     default:
-      return HIR_BINARY({ operator, e1, e2 });
+      return { operator, e1, e2 };
   }
 };
 

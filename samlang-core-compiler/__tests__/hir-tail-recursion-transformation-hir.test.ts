@@ -121,15 +121,15 @@ it('performTailRecursiveCallTransformationOnHighIRFunction linear flow test', ()
           pointerExpression: HIR_VARIABLE('n', HIR_INT_TYPE),
           index: 0,
         }),
+        HIR_BINARY({
+          name: 'nn',
+          operator: '+',
+          e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+          e2: HIR_VARIABLE('n', HIR_INT_TYPE),
+        }),
         HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME('tailRec', HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)),
-          functionArguments: [
-            HIR_BINARY({
-              operator: '+',
-              e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-              e2: HIR_VARIABLE('n', HIR_INT_TYPE),
-            }),
-          ],
+          functionArguments: [HIR_VARIABLE('nn', HIR_INT_TYPE)],
           returnCollector: { name: 'collector', type: HIR_INT_TYPE },
         }),
         HIR_RETURN(HIR_VARIABLE('collector', HIR_INT_TYPE)),
@@ -144,7 +144,8 @@ if 1 {
   return 3;
 }
 let a: int = (n: int)[0];
-let _param_n_temp_collector: int = ((n: int) + (n: int));
+let nn: int = (n: int) + (n: int);
+let _param_n_temp_collector: int = (nn: int);
 let n: int = (_param_n_temp_collector: int);`);
 });
 
@@ -203,14 +204,18 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
         HIR_IF_ELSE({
           booleanExpression: HIR_VARIABLE('n', HIR_INT_TYPE),
           s1: [
+            HIR_BINARY({
+              name: 'v',
+              operator: '-',
+              e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+              e2: HIR_ONE,
+            }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME(
                 'tailRec',
                 HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
               ),
-              functionArguments: [
-                HIR_BINARY({ operator: '-', e1: HIR_VARIABLE('n', HIR_INT_TYPE), e2: HIR_ONE }),
-              ],
+              functionArguments: [HIR_VARIABLE('v', HIR_INT_TYPE)],
               returnCollector: { name: 'collector', type: HIR_INT_TYPE },
             }),
             HIR_RETURN(HIR_VARIABLE('collector', HIR_INT_TYPE)),
@@ -222,7 +227,8 @@ it('performTailRecursiveCallTransformationOnHighIRFunction 1-level if-else test 
       ?.map((it) => debugPrintHighIRStatement(it))
       .join('\n')
   ).toBe(`if (n: int) {
-  let _param_n_temp_collector: int = ((n: int) + -1);
+  let v: int = (n: int) + -1;
+  let _param_n_temp_collector: int = (v: int);
   let n: int = (_param_n_temp_collector: int);
 } else {
   return 0;

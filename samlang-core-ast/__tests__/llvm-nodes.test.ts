@@ -411,9 +411,15 @@ it('prettyPrintLLVMInstruction works for LLVM_CJUMP.', () => {
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_SWITCH.', () => {
-  expect(prettyPrintLLVMInstruction(LLVM_SWITCH(LLVM_VARIABLE('c'), 'd', ['b1', 'b2', 'b3']))).toBe(
-    'switch i64 %c, label %d [ i64 0, label %b1 i64 1, label %b2 i64 2, label %b3 ]'
-  );
+  expect(
+    prettyPrintLLVMInstruction(
+      LLVM_SWITCH(LLVM_VARIABLE('c'), 'd', [
+        { value: 0, branch: 'b1' },
+        { value: 1, branch: 'b2' },
+        { value: 2, branch: 'b3' },
+      ])
+    )
+  ).toBe('switch i64 %c, label %d [ i64 0, label %b1 i64 1, label %b2 i64 2, label %b3 ]');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_RETURN.', () => {

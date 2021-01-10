@@ -28,29 +28,30 @@ export interface HighIRVariableExpression extends BaseHighIRExpression {
   readonly name: string;
 }
 
-export interface HighIRBinaryExpression extends BaseHighIRExpression {
-  readonly __type__: 'HighIRBinaryExpression';
-  readonly e1: HighIRExpression;
-  readonly operator: IROperator;
-  readonly e2: HighIRExpression;
-}
-
 export type HighIRExpression =
   | HighIRIntLiteralExpression
   | HighIRNameExpression
-  | HighIRVariableExpression
-  | HighIRBinaryExpression;
+  | HighIRVariableExpression;
 
 interface BaseHighIRStatement {
   readonly __type__: string;
 }
 
-export interface HighIRIndexAccessStatement extends BaseHighIRExpression {
+export interface HighIRIndexAccessStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRIndexAccessStatement';
   readonly name: string;
   readonly type: HighIRType;
   readonly pointerExpression: HighIRExpression;
   readonly index: number;
+}
+
+export interface HighIRBinaryStatement extends BaseHighIRExpression {
+  readonly __type__: 'HighIRBinaryStatement';
+  readonly name: string;
+  readonly type: HighIRType;
+  readonly operator: IROperator;
+  readonly e1: HighIRExpression;
+  readonly e2: HighIRExpression;
 }
 
 export interface HighIRFunctionCallStatement extends BaseHighIRStatement {
@@ -71,6 +72,20 @@ export interface HighIRIfElseStatement extends BaseHighIRStatement {
   readonly booleanExpression: HighIRExpression;
   readonly s1: readonly HighIRStatement[];
   readonly s2: readonly HighIRStatement[];
+}
+
+export interface HighIRSwitchStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRSwitchStatement';
+  readonly multiAssignedVariable?: {
+    readonly name: string;
+    readonly type: HighIRType;
+    readonly branchVariables: readonly string[];
+  };
+  readonly caseVariable: string;
+  readonly cases: readonly {
+    readonly caseNumber: number;
+    readonly statements: readonly HighIRStatement[];
+  }[];
 }
 
 export interface HighIRVariantPatternToStatement {
@@ -98,9 +113,11 @@ export interface HighIRReturnStatement extends BaseHighIRStatement {
 }
 
 export type HighIRStatement =
+  | HighIRBinaryStatement
   | HighIRIndexAccessStatement
   | HighIRFunctionCallStatement
   | HighIRIfElseStatement
+  | HighIRSwitchStatement
   | HighIRLetDefinitionStatement
   | HighIRStructInitializationStatement
   | HighIRReturnStatement;
@@ -144,10 +161,11 @@ export const HIR_VARIABLE = (name: string, type: HighIRType): HighIRVariableExpr
 });
 
 export const HIR_BINARY = ({
+  name,
   operator,
   e1,
   e2,
-}: Omit<ConstructorArgumentObject<HighIRBinaryExpression>, 'type'>): HighIRBinaryExpression => {
+}: Omit<ConstructorArgumentObject<HighIRBinaryStatement>, 'type'>): HighIRBinaryStatement => {
   let type: HighIRType;
   switch (operator) {
     case '*':
@@ -171,7 +189,8 @@ export const HIR_BINARY = ({
     const negOfE2Constant = e2.value.neg();
     if (negOfE2Constant.notEquals(e2.value)) {
       return {
-        __type__: 'HighIRBinaryExpression',
+        __type__: 'HighIRBinaryStatement',
+        name,
         type,
         operator: '+',
         e1,
@@ -179,7 +198,7 @@ export const HIR_BINARY = ({
       };
     }
   }
-  return { __type__: 'HighIRBinaryExpression', type, operator, e1, e2 };
+  return { __type__: 'HighIRBinaryStatement', name, type, operator, e1, e2 };
 };
 
 export const HIR_INDEX_ACCESS = ({
@@ -219,6 +238,17 @@ export const HIR_IF_ELSE = ({
   s2,
 });
 
+export const HIR_SWITCH = ({
+  multiAssignedVariable,
+  caseVariable,
+  cases,
+}: ConstructorArgumentObject<HighIRSwitchStatement>): HighIRSwitchStatement => ({
+  __type__: 'HighIRSwitchStatement',
+  multiAssignedVariable,
+  caseVariable,
+  cases,
+});
+
 export const HIR_LET = ({
   name,
   type,
@@ -254,10 +284,6 @@ export const debugPrintHighIRExpression = (expression: HighIRExpression): string
       return `(${expression.name}: ${prettyPrintHighIRType(expression.type)})`;
     case 'HighIRNameExpression':
       return expression.name;
-    case 'HighIRBinaryExpression':
-      return `(${debugPrintHighIRExpression(expression.e1)} ${
-        expression.operator
-      } ${debugPrintHighIRExpression(expression.e2)})`;
   }
 };
 
@@ -274,6 +300,13 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
           '  '.repeat(level),
           `let ${s.name}: ${type} = ${pointerExpression}[${s.index}];\n`
         );
+        break;
+      }
+      case 'HighIRBinaryStatement': {
+        const type = prettyPrintHighIRType(s.type);
+        const e1 = debugPrintHighIRExpression(s.e1);
+        const e2 = debugPrintHighIRExpression(s.e2);
+        collector.push('  '.repeat(level), `let ${s.name}: ${type} = ${e1} ${s.operator} ${e2};\n`);
         break;
       }
       case 'HighIRFunctionCallStatement': {
@@ -311,6 +344,28 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
           );
         }
         break;
+      case 'HighIRSwitchStatement': {
+        collector.push('  '.repeat(level), `switch (${s.caseVariable})} {\n`);
+        level += 1;
+        s.cases.forEach(({ caseNumber, statements }) => {
+          collector.push('  '.repeat(level), `case ${caseNumber}: {\n`);
+          level += 1;
+          statements.forEach(printer);
+          level -= 1;
+          collector.push('  '.repeat(level), `}\n`);
+        });
+        level -= 1;
+        collector.push('  '.repeat(level), `}\n`);
+        if (s.multiAssignedVariable != null) {
+          const type = prettyPrintHighIRType(s.multiAssignedVariable.type);
+          const { name, branchVariables } = s.multiAssignedVariable;
+          collector.push(
+            '  '.repeat(level),
+            `// ${name}: ${type} = phi(${branchVariables.join(', ')})\n`
+          );
+        }
+        break;
+      }
       case 'HighIRLetDefinitionStatement':
         collector.push(
           '  '.repeat(level),

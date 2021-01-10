@@ -27,6 +27,7 @@ import {
   HIR_VARIABLE,
   HighIRExpression,
   HighIRStatement,
+  HIR_SWITCH,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import {
@@ -34,6 +35,7 @@ import {
   HIR_STRING_TYPE,
   HIR_STRUCT_TYPE,
   HIR_FUNCTION_TYPE,
+  HIR_BOOL_TYPE,
 } from 'samlang-core-ast/hir-types';
 import { assertNotNull } from 'samlang-core-utils';
 
@@ -183,13 +185,13 @@ it('confirm samlang & equivalent JS have same print output', () => {
           parameters: ['a', 'b'],
           type: HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
           body: [
-            HIR_RETURN(
-              HIR_BINARY({
-                operator: '+',
-                e1: HIR_VARIABLE('a', HIR_INT_TYPE),
-                e2: HIR_VARIABLE('b', HIR_INT_TYPE),
-              })
-            ),
+            HIR_BINARY({
+              name: 'aaa',
+              operator: '+',
+              e1: HIR_VARIABLE('a', HIR_INT_TYPE),
+              e2: HIR_VARIABLE('b', HIR_INT_TYPE),
+            }),
+            HIR_RETURN(HIR_VARIABLE('aaa', HIR_INT_TYPE)),
           ],
         },
         {
@@ -231,12 +233,14 @@ it('confirm samlang & equivalent JS have same print output', () => {
           parameters: ['sum'],
           type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_STRING_TYPE),
           body: [
+            HIR_BINARY({
+              name: 'bb',
+              operator: '==',
+              e1: HIR_VARIABLE('sum', HIR_INT_TYPE),
+              e2: HIR_INT(42),
+            }),
             HIR_IF_ELSE({
-              booleanExpression: HIR_BINARY({
-                operator: '==',
-                e1: HIR_VARIABLE('sum', HIR_INT_TYPE),
-                e2: HIR_INT(42),
-              }),
+              booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
               s1: [HIR_RETURN(HIR_NAME('y', HIR_STRING_TYPE))],
               s2: [HIR_RETURN(HIR_NAME('n', HIR_STRING_TYPE))],
             }),
@@ -247,13 +251,13 @@ it('confirm samlang & equivalent JS have same print output', () => {
           parameters: ['a', 'b'],
           type: HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
           body: [
-            HIR_RETURN(
-              HIR_BINARY({
-                operator: '+',
-                e1: HIR_VARIABLE('a', HIR_INT_TYPE),
-                e2: HIR_VARIABLE('b', HIR_INT_TYPE),
-              })
-            ),
+            HIR_BINARY({
+              name: 'aaa',
+              operator: '+',
+              e1: HIR_VARIABLE('a', HIR_INT_TYPE),
+              e2: HIR_VARIABLE('b', HIR_INT_TYPE),
+            }),
+            HIR_RETURN(HIR_VARIABLE('aaa', HIR_INT_TYPE)),
           ],
         },
         {
@@ -349,13 +353,13 @@ it('confirm samlang & equivalent JS have same print output', () => {
           parameters: ['a', 'b'],
           type: HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
           body: [
-            HIR_RETURN(
-              HIR_BINARY({
-                operator: '+',
-                e1: HIR_VARIABLE('a', HIR_INT_TYPE),
-                e2: HIR_VARIABLE('b', HIR_INT_TYPE),
-              })
-            ),
+            HIR_BINARY({
+              name: 'aaa',
+              operator: '+',
+              e1: HIR_VARIABLE('a', HIR_INT_TYPE),
+              e2: HIR_VARIABLE('b', HIR_INT_TYPE),
+            }),
+            HIR_RETURN(HIR_VARIABLE('aaa', HIR_INT_TYPE)),
           ],
         },
         {
@@ -364,11 +368,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
             HIR_IF_ELSE({
-              booleanExpression: HIR_BINARY({
-                operator: '==',
-                e1: HIR_INT(0),
-                e2: HIR_INT(0),
-              }),
+              booleanExpression: HIR_INT(1),
               s1: [
                 HIR_FUNCTION_CALL({
                   functionExpression: HIR_NAME('_builtin_throw', HIR_INT_TYPE),
@@ -397,31 +397,23 @@ it('HIR statements to JS string test', () => {
   ).toBe(`var foo = samlang[3];`);
   expect(
     highIRStatementToString(
-      HIR_INDEX_ACCESS({
+      HIR_BINARY({
         name: 'foo',
-        type: HIR_INT_TYPE,
-        pointerExpression: HIR_BINARY({
-          operator: '+',
-          e1: HIR_VARIABLE('samlang', HIR_INT_TYPE),
-          e2: HIR_VARIABLE('samlang', HIR_INT_TYPE),
-        }),
-        index: 3,
+        operator: '/',
+        e1: HIR_INT(3),
+        e2: HIR_INT(2),
       })
     )
-  ).toBe(`var foo = (samlang + samlang)[3];`);
+  ).toBe(`var foo = Math.floor(3 / 2);`);
   expect(
     highIRStatementToString(
       HIR_IF_ELSE({
-        booleanExpression: HIR_BINARY({
-          operator: '==',
-          e1: HIR_INT(5),
-          e2: HIR_INT(5),
-        }),
+        booleanExpression: HIR_INT(5),
         s1: [],
         s2: [HIR_RETURN(HIR_ZERO)],
       })
     )
-  ).toBe(`if (5 == 5) {
+  ).toBe(`if (5) {
 
 } else {
   return 0;
@@ -429,16 +421,12 @@ it('HIR statements to JS string test', () => {
   expect(
     highIRStatementToString(
       HIR_IF_ELSE({
-        booleanExpression: HIR_BINARY({
-          operator: '==',
-          e1: HIR_INT(5),
-          e2: HIR_INT(5),
-        }),
+        booleanExpression: HIR_INT(5),
         s1: [HIR_RETURN(HIR_ZERO)],
         s2: [HIR_RETURN(HIR_ZERO)],
       })
     )
-  ).toBe(`if (5 == 5) {
+  ).toBe(`if (5) {
   return 0;
 } else {
   return 0;
@@ -446,32 +434,53 @@ it('HIR statements to JS string test', () => {
   expect(
     highIRStatementToString(
       HIR_IF_ELSE({
-        booleanExpression: HIR_BINARY({
-          operator: '==',
-          e1: HIR_INT(5),
-          e2: HIR_INT(5),
-        }),
+        booleanExpression: HIR_INT(5),
         s1: [HIR_RETURN(HIR_ZERO)],
         s2: [
           HIR_IF_ELSE({
-            booleanExpression: HIR_BINARY({
-              operator: '==',
-              e1: HIR_INT(5),
-              e2: HIR_INT(5),
-            }),
+            booleanExpression: HIR_INT(5),
             s1: [HIR_RETURN(HIR_ZERO)],
             s2: [HIR_RETURN(HIR_ZERO)],
           }),
         ],
       })
     )
-  ).toBe(`if (5 == 5) {
+  ).toBe(`if (5) {
   return 0;
 } else {
-  if (5 == 5) {
+  if (5) {
     return 0;
   } else {
     return 0;
+  }
+}`);
+  expect(
+    highIRStatementToString(
+      HIR_SWITCH({
+        multiAssignedVariable: {
+          name: 'ma',
+          type: HIR_INT_TYPE,
+          branchVariables: ['b1', 'd1'],
+        },
+        caseVariable: 'f',
+        cases: [
+          {
+            caseNumber: 1,
+            statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_INT_TYPE))],
+          },
+          {
+            caseNumber: 2,
+            statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_INT_TYPE))],
+          },
+        ],
+      })
+    )
+  ).toBe(`switch (f) {
+  case 1: {
+    return foo;
+  }
+  case 2: {
+    return foo;
   }
 }`);
   expect(
@@ -601,108 +610,4 @@ it('HIR expression to JS string test', () => {
   expect(highIRExpressionToString(HIR_INT(1305))).toBe('1305');
   expect(highIRExpressionToString(HIR_VARIABLE('ts', HIR_INT_TYPE))).toBe('ts');
   expect(highIRExpressionToString(HIR_NAME('key', HIR_INT_TYPE))).toBe('key');
-  expect(
-    highIRExpressionToString(
-      HIR_BINARY({
-        operator: '!=',
-        e1: HIR_INT(7),
-        e2: HIR_INT(7),
-      })
-    )
-  ).toBe('7 != 7');
-  expect(
-    highIRExpressionToString(
-      HIR_BINARY({
-        operator: '/',
-        e1: HIR_INT(7),
-        e2: HIR_INT(8),
-      })
-    )
-  ).toBe('Math.floor(7 / 8)');
-  expect(
-    highIRExpressionToString(
-      HIR_BINARY({
-        operator: '+',
-        e1: HIR_INT(7),
-        e2: HIR_BINARY({
-          operator: '*',
-          e1: HIR_INT(4),
-          e2: HIR_INT(4),
-        }),
-      })
-    )
-  ).toBe('7 + 4 * 4');
-  expect(
-    highIRExpressionToString(
-      HIR_BINARY({
-        operator: '*',
-        e1: HIR_INT(7),
-        e2: HIR_BINARY({
-          operator: '+',
-          e1: HIR_INT(4),
-          e2: HIR_INT(4),
-        }),
-      })
-    )
-  ).toBe('7 * (4 + 4)');
-  expect(
-    highIRExpressionToString(
-      HIR_BINARY({
-        operator: '*',
-        e1: HIR_INT(7),
-        e2: HIR_BINARY({
-          operator: '*',
-          e1: HIR_INT(4),
-          e2: HIR_INT(4),
-        }),
-      })
-    )
-  ).toBe('7 * (4 * 4)');
-  expect(
-    highIRExpressionToString(
-      HIR_BINARY({
-        operator: '*',
-        e1: HIR_BINARY({
-          operator: '*',
-          e1: HIR_INT(1),
-          e2: HIR_INT(2),
-        }),
-        e2: HIR_BINARY({
-          operator: '*',
-          e1: HIR_INT(3),
-          e2: HIR_INT(4),
-        }),
-      })
-    )
-  ).toBe('(1 * 2) * (3 * 4)');
-  expect(
-    highIRExpressionToString(
-      HIR_BINARY({
-        operator: '+',
-        e1: HIR_BINARY({
-          operator: '-',
-          e1: HIR_INT(1),
-          e2: HIR_INT(2),
-        }),
-        e2: HIR_BINARY({
-          operator: '%',
-          e1: HIR_INT(3),
-          e2: HIR_INT(4),
-        }),
-      })
-    )
-  ).toBe('(1 + -2) + 3 % 4');
-  expect(
-    highIRExpressionToString(
-      HIR_BINARY({
-        operator: '+',
-        e1: HIR_NAME('somevar', HIR_INT_TYPE),
-        e2: HIR_BINARY({
-          operator: '-',
-          e1: HIR_INT(3),
-          e2: HIR_INT(4),
-        }),
-      })
-    )
-  ).toBe('somevar + (3 + -4)');
 });

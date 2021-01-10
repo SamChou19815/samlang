@@ -19,7 +19,6 @@ import {
   ENCODED_FUNCTION_NAME_THROW,
   ENCODED_COMPILED_PROGRAM_MAIN,
 } from 'samlang-core-ast/common-names';
-import { binaryOperatorSymbolTable } from 'samlang-core-ast/common-operators';
 import type { HighIRStatement, HighIRExpression } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
 
@@ -35,33 +34,6 @@ export const createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING = (
     case 'HighIRVariableExpression':
     case 'HighIRNameExpression':
       return PRETTIER_TEXT(highIRExpression.name);
-    case 'HighIRBinaryExpression': {
-      const { e1, e2, operator } = highIRExpression;
-      const withParenthesisWhenNecesasry = (subExpression: HighIRExpression): PrettierDocument => {
-        const subExpressionDocument = createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
-          subExpression
-        );
-        if (subExpression.__type__ === 'HighIRBinaryExpression') {
-          const p1 = binaryOperatorSymbolTable[operator]?.precedence;
-          const p2 = binaryOperatorSymbolTable[subExpression.operator]?.precedence;
-          if (p1 != null && p2 != null && p2 >= p1) {
-            return createParenthesisSurroundedDocument(subExpressionDocument);
-          }
-        }
-        return subExpressionDocument;
-      };
-      const binaryExpressionDocument = PRETTIER_CONCAT(
-        withParenthesisWhenNecesasry(e1),
-        PRETTIER_TEXT(` ${operator} `),
-        withParenthesisWhenNecesasry(e2)
-      );
-      return operator === '/'
-        ? PRETTIER_CONCAT(
-            PRETTIER_TEXT('Math.floor'),
-            createParenthesisSurroundedDocument(binaryExpressionDocument)
-          )
-        : binaryExpressionDocument;
-    }
   }
 };
 
@@ -79,16 +51,33 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
   switch (highIRStatement.__type__) {
     case 'HighIRIndexAccessStatement': {
       const { pointerExpression, index } = highIRStatement;
-      let subExpressionDocument = createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+      const subExpressionDocument = createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
         pointerExpression
       );
-      if (pointerExpression.__type__ === 'HighIRBinaryExpression') {
-        subExpressionDocument = createParenthesisSurroundedDocument(subExpressionDocument);
-      }
       return PRETTIER_CONCAT(
         PRETTIER_TEXT(`var ${highIRStatement.name} = `),
         subExpressionDocument,
         PRETTIER_TEXT(`[${index}];`)
+      );
+    }
+    case 'HighIRBinaryStatement': {
+      const { e1, e2, operator } = highIRStatement;
+      const binaryExpressionDocument = PRETTIER_CONCAT(
+        createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(e1),
+        PRETTIER_TEXT(` ${operator} `),
+        createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(e2)
+      );
+      const wrapped =
+        operator === '/'
+          ? PRETTIER_CONCAT(
+              PRETTIER_TEXT('Math.floor'),
+              createParenthesisSurroundedDocument(binaryExpressionDocument)
+            )
+          : binaryExpressionDocument;
+      return PRETTIER_CONCAT(
+        PRETTIER_TEXT(`var ${highIRStatement.name} = `),
+        wrapped,
+        PRETTIER_TEXT(';')
       );
     }
     case 'HighIRFunctionCallStatement': {
@@ -123,6 +112,17 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
         PRETTIER_TEXT(' else '),
         createBracesSurroundedBlockDocument(concatStatements(highIRStatement.s2))
       );
+    case 'HighIRSwitchStatement': {
+      const docs = highIRStatement.cases.flatMap(({ caseNumber, statements }) => [
+        PRETTIER_TEXT(`case ${caseNumber}: `),
+        createBracesSurroundedBlockDocument(concatStatements(statements)),
+        PRETTIER_LINE,
+      ]);
+      return PRETTIER_CONCAT(
+        PRETTIER_TEXT(`switch (${highIRStatement.caseVariable}) `),
+        createBracesSurroundedBlockDocument(docs.slice(0, docs.length - 1))
+      );
+    }
     case 'HighIRLetDefinitionStatement':
       return PRETTIER_CONCAT(
         PRETTIER_TEXT(`var ${highIRStatement.name} = `),
