@@ -8,7 +8,7 @@ import cliMainRunner, { CLIRunners } from './cli';
 import {
   collectSources,
   compileToJS,
-  // compileToLLVMModules,
+  compileToLLVMModules,
   compileToX86Executables,
 } from './cli-service';
 import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './configuration';
@@ -82,8 +82,7 @@ const runners: CLIRunners = {
         configuration: { outputDirectory },
       } = typeCheck();
       compileToJS(checkedSources, outputDirectory);
-      // TODO: uncomment when things can run on integration tests!
-      // compileToLLVMModules(checkedSources, outputDirectory);
+      compileToLLVMModules(checkedSources, outputDirectory);
       const successful = compileToX86Executables(checkedSources, outputDirectory);
       if (!successful) {
         console.error('Failed to link some programs.');
