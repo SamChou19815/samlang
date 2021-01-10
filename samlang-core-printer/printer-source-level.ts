@@ -178,7 +178,7 @@ const createPrettierDocumentFromSamlangExpression = (
             case 'TuplePattern':
               patternDocument = createBracketSurroundedDocument(
                 createCommaSeparatedList(pattern.destructedNames, (it) =>
-                  PRETTIER_TEXT(it[0] ?? '_')
+                  PRETTIER_TEXT(it.name ?? '_')
                 )
               );
               break;

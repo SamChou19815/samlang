@@ -654,8 +654,8 @@ it('StatementBlockExpression lowering works.', () => {
                       range: Range.DUMMY,
                       type: 'TuplePattern',
                       destructedNames: [
-                        ['a', Range.DUMMY],
-                        [null, Range.DUMMY],
+                        { name: 'a', type: intType, range: Range.DUMMY },
+                        { type: intType, range: Range.DUMMY },
                       ],
                     },
                     typeAnnotation: DUMMY_IDENTIFIER_TYPE,
@@ -667,8 +667,14 @@ it('StatementBlockExpression lowering works.', () => {
                       range: Range.DUMMY,
                       type: 'ObjectPattern',
                       destructedNames: [
-                        { range: Range.DUMMY, fieldName: 'a', fieldOrder: 0 },
-                        { range: Range.DUMMY, fieldName: 'b', fieldOrder: 1, alias: 'c' },
+                        { range: Range.DUMMY, fieldName: 'a', type: intType, fieldOrder: 0 },
+                        {
+                          range: Range.DUMMY,
+                          fieldName: 'b',
+                          type: intType,
+                          fieldOrder: 1,
+                          alias: 'c',
+                        },
                       ],
                     },
                     typeAnnotation: DUMMY_IDENTIFIER_TYPE,
@@ -688,9 +694,9 @@ it('StatementBlockExpression lowering works.', () => {
         ],
       },
     }),
-    `let a__depth_1__block_0: any = (_this: _Dummy)[0];
-let a__depth_1__block_0: any = (_this: _Dummy)[0];
-let c__depth_1__block_0: any = (_this: _Dummy)[1];
+    `let a__depth_1__block_0: int = (_this: _Dummy)[0];
+let a__depth_1__block_0: int = (_this: _Dummy)[0];
+let c__depth_1__block_0: int = (_this: _Dummy)[1];
 return 0;`
   );
 });

@@ -1,13 +1,18 @@
-import type { Range, Node } from './common-nodes';
+import type { Range, Node, Type } from './common-nodes';
 
 export interface TuplePattern extends Node {
   readonly type: 'TuplePattern';
-  readonly destructedNames: readonly (readonly [string | null, Range])[];
+  readonly destructedNames: readonly {
+    readonly name?: string;
+    readonly type: Type;
+    readonly range: Range;
+  }[];
 }
 
 export interface ObjectPatternDestucturedName {
   readonly fieldName: string;
   readonly fieldOrder: number;
+  readonly type: Type;
   readonly alias?: string;
   readonly range: Range;
 }

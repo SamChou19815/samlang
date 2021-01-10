@@ -2,6 +2,7 @@ import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor
 
 import { tokenRange, contextRange } from './parser-util';
 
+import { UndecidedTypes } from 'samlang-core-ast/common-nodes';
 import type {
   Pattern,
   TuplePattern,
@@ -31,7 +32,7 @@ class FieldNameBuilder
     const symbol = ctx.LowerId().symbol;
     const fieldName = symbol.text;
     assertNotNull(fieldName);
-    return { fieldName, fieldOrder: -1, range: tokenRange(symbol) };
+    return { fieldName, fieldOrder: -1, type: UndecidedTypes.next(), range: tokenRange(symbol) };
   };
 
   visitRenamedVar = (ctx: RenamedVarContext): ObjectPatternDestucturedName | null => {
@@ -43,6 +44,7 @@ class FieldNameBuilder
     return {
       fieldName,
       fieldOrder: -1,
+      type: UndecidedTypes.next(),
       alias,
       range: contextRange(ctx),
     };
@@ -59,9 +61,11 @@ class PatternBuilder
   visitTuplePattern = (ctx: TuplePatternContext): TuplePattern => ({
     type: 'TuplePattern',
     range: contextRange(ctx),
-    destructedNames: ctx
-      .varOrWildCard()
-      .map((c) => [c.LowerId()?.symbol?.text ?? null, contextRange(c)] as const),
+    destructedNames: ctx.varOrWildCard().map((c) => ({
+      name: c.LowerId()?.symbol?.text,
+      type: UndecidedTypes.next(),
+      range: contextRange(c),
+    })),
   });
 
   visitObjectPattern = (ctx: ObjectPatternContext): ObjectPattern => ({

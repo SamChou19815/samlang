@@ -914,15 +914,14 @@ class HighIRExpressionLoweringManager {
         );
         switch (pattern.type) {
           case 'TuplePattern': {
-            pattern.destructedNames.forEach(([name], index) => {
+            pattern.destructedNames.forEach(({ name, type }, index) => {
               if (name == null) {
                 return;
               }
               loweredStatements.push(
                 HIR_INDEX_ACCESS({
-                  name: this.getRenamedVariableForNesting(name, HIR_ANY_TYPE),
-                  // TODO: update type checker and AST to provide better type here.
-                  type: HIR_ANY_TYPE,
+                  name: this.getRenamedVariableForNesting(name, this.lowerType(type)),
+                  type: this.lowerType(type),
                   pointerExpression: loweredAssignedExpression,
                   index,
                 })
@@ -931,12 +930,11 @@ class HighIRExpressionLoweringManager {
             break;
           }
           case 'ObjectPattern': {
-            pattern.destructedNames.forEach(({ fieldName, fieldOrder, alias }) => {
+            pattern.destructedNames.forEach(({ fieldName, fieldOrder, type, alias }) => {
               loweredStatements.push(
                 HIR_INDEX_ACCESS({
-                  name: this.getRenamedVariableForNesting(alias ?? fieldName, HIR_ANY_TYPE),
-                  // TODO: update type checker and AST to provide better type here.
-                  type: HIR_ANY_TYPE,
+                  name: this.getRenamedVariableForNesting(alias ?? fieldName, this.lowerType(type)),
+                  type: this.lowerType(type),
                   pointerExpression: loweredAssignedExpression,
                   index: fieldOrder,
                 })
