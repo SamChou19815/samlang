@@ -62,10 +62,10 @@ mov qword ptr [1], _ABSTRACT_REG_0`);
 
   expect(tileStatements([MIR_RETURN(HIR_ONE)])).toBe(`## return 1;
 mov rax, 1
-jmp LABEL_FUNCTION_CALL_EPILOGUE_FOR_functionName`);
+jmp l_FUNCTION_CALL_EPILOGUE_FOR_functionName`);
   expect(tileStatements([MIR_RETURN(MIR_IMMUTABLE_MEM(NAME('a')))])).toBe(`## return a[0];
 mov rax, qword ptr [rip+a]
-jmp LABEL_FUNCTION_CALL_EPILOGUE_FOR_functionName`);
+jmp l_FUNCTION_CALL_EPILOGUE_FOR_functionName`);
 });
 
 it('assembly cjump statement tiling tests', () => {

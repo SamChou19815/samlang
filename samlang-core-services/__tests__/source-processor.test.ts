@@ -45,7 +45,7 @@ declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 ; @GLOBAL_STRING_1 = 'World!'
 @GLOBAL_STRING_1 = private unnamed_addr constant [6 x i64] [i64 6, i64 87, i64 111, i64 114, i64 108, i64 100, i64 33], align 8
 define i64 @_module_Test_class_Main_function_main() local_unnamed_addr nounwind {
-LABEL__module_Test_class_Main_function_main_0_PURPOSE_START:
+l__module_Test_class_Main_function_main_0_START:
   %_temp_0_string_name_cast = bitcast [6 x i64]* @GLOBAL_STRING_0 to i64*
   %_temp_1_string_name_cast = bitcast [6 x i64]* @GLOBAL_STRING_1 to i64*
   %_t0 = call i64* @_builtin_stringConcat(i64* %_temp_0_string_name_cast, i64* %_temp_1_string_name_cast) nounwind
@@ -53,7 +53,7 @@ LABEL__module_Test_class_Main_function_main_0_PURPOSE_START:
   ret i64 0
 }
 define i64 @_compiled_program_main() local_unnamed_addr nounwind {
-LABEL__compiled_program_main_0_PURPOSE_START:
+l__compiled_program_main_0_START:
   call i64 @_module_Test_class_Main_function_main() nounwind
   ret i64 0
 }`);

@@ -276,14 +276,14 @@ it('interpretMidIRCompilationUnit factorial function call integration test', () 
           functionName: 'factorial',
           argumentNames: ['n', 'acc'],
           mainBodyStatements: [
-            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'LABEL_RETURN_ACC'),
+            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'l_RETURN_ACC'),
             MIR_CALL_FUNCTION(
               MIR_NAME('factorial'),
               [MIR_OP('-', MIR_TEMP('n'), HIR_ONE), MIR_OP('*', MIR_TEMP('acc'), MIR_TEMP('n'))],
               'dummy'
             ),
             MIR_RETURN(MIR_TEMP('dummy')),
-            MIR_LABEL('LABEL_RETURN_ACC'),
+            MIR_LABEL('l_RETURN_ACC'),
             MIR_RETURN(MIR_TEMP('acc')),
           ],
         },
@@ -311,14 +311,14 @@ it('interpretMidIRCompilationUnit factorial function reference call integration 
           functionName: 'factorial',
           argumentNames: ['n', 'acc'],
           mainBodyStatements: [
-            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'LABEL_RETURN_ACC'),
+            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'l_RETURN_ACC'),
             MIR_CALL_FUNCTION(
               MIR_NAME('factorial'),
               [MIR_OP('-', MIR_TEMP('n'), HIR_ONE), MIR_OP('*', MIR_TEMP('acc'), MIR_TEMP('n'))],
               'dummy'
             ),
             MIR_RETURN(MIR_TEMP('dummy')),
-            MIR_LABEL('LABEL_RETURN_ACC'),
+            MIR_LABEL('l_RETURN_ACC'),
             MIR_RETURN(MIR_TEMP('acc')),
           ],
         },

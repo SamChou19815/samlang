@@ -51,7 +51,7 @@ const assertStatementLoweringWorks = (
   assertLoweringWorks(
     { name: 'testFunction', parameters: [], type: HIR_FUNCTION_TYPE([], INT), body: statements },
     `define i64 @testFunction() local_unnamed_addr nounwind {
-LABEL_testFunction_0_PURPOSE_START:
+l_testFunction_0_START:
 ${expectedString}
 }`,
     globalStrings
@@ -105,7 +105,7 @@ it('prettyPrintLLVMFunction works for base expressions 2/n', () => {
       ],
     },
     `define i64 @foo(i64 %bar) local_unnamed_addr nounwind {
-LABEL_foo_0_PURPOSE_START:
+l_foo_0_START:
   ret i64 %bar
 }`
   );
@@ -195,13 +195,13 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 1/n', () => {
       }),
     ],
     `  %_temp_0_binary_temp = icmp eq i1 %t, 2
-  br i1 %_temp_0_binary_temp, label %LABEL_testFunction_1_PURPOSE_if_else_true_label, label %LABEL_testFunction_2_PURPOSE_if_else_false_label
-LABEL_testFunction_1_PURPOSE_if_else_true_label:
+  br i1 %_temp_0_binary_temp, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
+l_testFunction_1_if_else_true_label:
   call i64 @foo() nounwind
-  br label %LABEL_testFunction_3_PURPOSE_if_else_end_label
-LABEL_testFunction_2_PURPOSE_if_else_false_label:
+  br label %l_testFunction_3_if_else_end_label
+l_testFunction_2_if_else_false_label:
   call i64 @bar() nounwind
-LABEL_testFunction_3_PURPOSE_if_else_end_label:`
+l_testFunction_3_if_else_end_label:`
   );
 });
 
@@ -239,14 +239,14 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
       }),
     ],
     `  %_temp_0_binary_temp = icmp eq i1 %t, 2
-  br i1 %_temp_0_binary_temp, label %LABEL_testFunction_1_PURPOSE_if_else_true_label, label %LABEL_testFunction_2_PURPOSE_if_else_false_label
-LABEL_testFunction_1_PURPOSE_if_else_true_label:
+  br i1 %_temp_0_binary_temp, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
+l_testFunction_1_if_else_true_label:
   %b1 = call i64 @foo() nounwind
-  br label %LABEL_testFunction_3_PURPOSE_if_else_end_label
-LABEL_testFunction_2_PURPOSE_if_else_false_label:
+  br label %l_testFunction_3_if_else_end_label
+l_testFunction_2_if_else_false_label:
   %b2 = call i64 @bar() nounwind
-LABEL_testFunction_3_PURPOSE_if_else_end_label:
-  %ma = phi i64 [ %b1, %LABEL_testFunction_1_PURPOSE_if_else_true_label ], [ %b2, %LABEL_testFunction_2_PURPOSE_if_else_false_label ]`
+l_testFunction_3_if_else_end_label:
+  %ma = phi i64 [ %b1, %l_testFunction_1_if_else_true_label ], [ %b2, %l_testFunction_2_if_else_false_label ]`
   );
 });
 
@@ -309,17 +309,17 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
         ],
       }),
     ],
-    `  switch i64 %t, label %LABEL_testFunction_5_PURPOSE_match_case_default [ i64 0, label %LABEL_testFunction_2_PURPOSE_match_case_0 i64 1, label %LABEL_testFunction_3_PURPOSE_match_case_1 i64 2, label %LABEL_testFunction_4_PURPOSE_match_case_2 ]
-LABEL_testFunction_2_PURPOSE_match_case_0:
-  br label %LABEL_testFunction_1_PURPOSE_match_end
-LABEL_testFunction_3_PURPOSE_match_case_1:
-  br label %LABEL_testFunction_1_PURPOSE_match_end
-LABEL_testFunction_4_PURPOSE_match_case_2:
-  br label %LABEL_testFunction_1_PURPOSE_match_end
-LABEL_testFunction_5_PURPOSE_match_case_default:
-  br label %LABEL_testFunction_1_PURPOSE_match_end
-LABEL_testFunction_1_PURPOSE_match_end:
-  %ma = phi i64 [ 0, %LABEL_testFunction_2_PURPOSE_match_case_0 ], [ 0, %LABEL_testFunction_3_PURPOSE_match_case_1 ], [ 0, %LABEL_testFunction_4_PURPOSE_match_case_2 ], [ 0, %LABEL_testFunction_5_PURPOSE_match_case_default ]`
+    `  switch i64 %t, label %l_testFunction_5_match_case_default [ i64 0, label %l_testFunction_2_match_case_0 i64 1, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]
+l_testFunction_2_match_case_0:
+  br label %l_testFunction_1_match_end
+l_testFunction_3_match_case_1:
+  br label %l_testFunction_1_match_end
+l_testFunction_4_match_case_2:
+  br label %l_testFunction_1_match_end
+l_testFunction_5_match_case_default:
+  br label %l_testFunction_1_match_end
+l_testFunction_1_match_end:
+  %ma = phi i64 [ 0, %l_testFunction_2_match_case_0 ], [ 0, %l_testFunction_3_match_case_1 ], [ 0, %l_testFunction_4_match_case_2 ], [ 0, %l_testFunction_5_match_case_default ]`
   );
 });
 
@@ -349,12 +349,12 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 4/n', () => {
       }),
     ],
     `  %_temp_0_binary_temp = icmp eq i1 %t, 2
-  br i1 %_temp_0_binary_temp, label %LABEL_testFunction_1_PURPOSE_if_else_true_label, label %LABEL_testFunction_2_PURPOSE_if_else_false_label
-LABEL_testFunction_1_PURPOSE_if_else_true_label:
-  br label %LABEL_testFunction_3_PURPOSE_if_else_end_label
-LABEL_testFunction_2_PURPOSE_if_else_false_label:
-LABEL_testFunction_3_PURPOSE_if_else_end_label:
-  %ma = phi i64 [ 0, %LABEL_testFunction_1_PURPOSE_if_else_true_label ], [ 0, %LABEL_testFunction_2_PURPOSE_if_else_false_label ]`
+  br i1 %_temp_0_binary_temp, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
+l_testFunction_1_if_else_true_label:
+  br label %l_testFunction_3_if_else_end_label
+l_testFunction_2_if_else_false_label:
+l_testFunction_3_if_else_end_label:
+  %ma = phi i64 [ 0, %l_testFunction_1_if_else_true_label ], [ 0, %l_testFunction_2_if_else_false_label ]`
   );
 });
 
@@ -461,7 +461,7 @@ declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 @ss = private unnamed_addr constant [1 x i64] [i64 1, i64 83], align 8
 %A = { i64, i64 }
 define i64 @test() local_unnamed_addr nounwind {
-LABEL_test_0_PURPOSE_START:
+l_test_0_START:
   %_temp_0_string_name_cast = bitcast [1 x i64]* @ss to i64*
   call i64 @println(i64* %_temp_0_string_name_cast) nounwind
   %_temp_1_string_name_cast = bitcast [1 x i64]* @ss to i64*

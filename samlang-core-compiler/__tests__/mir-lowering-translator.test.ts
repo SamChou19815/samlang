@@ -69,13 +69,13 @@ it('midIRTranslateStatementsAndCollectGlobalStrings test', () => {
       ],
       s2: [HIR_RETURN(HIR_INT(2))],
     }),
-    `if (1) goto LABEL__0_PURPOSE_TRUE_BRANCH; else goto LABEL__1_PURPOSE_FALSE_BRANCH;
-LABEL__0_PURPOSE_TRUE_BRANCH:
+    `if (1) goto l__0_TRUE_BRANCH; else goto l__1_FALSE_BRANCH;
+l__0_TRUE_BRANCH:
 return (2 + 2);
-goto LABEL__2_PURPOSE_IF_ELSE_END;
-LABEL__1_PURPOSE_FALSE_BRANCH:
+goto l__2_IF_ELSE_END;
+l__1_FALSE_BRANCH:
 return 2;
-LABEL__2_PURPOSE_IF_ELSE_END:`
+l__2_IF_ELSE_END:`
   );
 
   assertCorrectlyLoweredWithPreConfiguredSetup(

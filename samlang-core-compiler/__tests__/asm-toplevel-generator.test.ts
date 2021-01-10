@@ -168,14 +168,14 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 4', () => {
           functionName: 'factorial',
           argumentNames: ['n', 'acc'],
           mainBodyStatements: [
-            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'LABEL_RETURN_ACC'),
+            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'l_RETURN_ACC'),
             MIR_CALL_FUNCTION(
               HIR_NAME('factorial', HIR_INT_TYPE),
               [MIR_OP('-', MIR_TEMP('n'), HIR_ONE), MIR_OP('*', MIR_TEMP('acc'), MIR_TEMP('n'))],
               'dummy'
             ),
             MIR_RETURN(MIR_TEMP('dummy')),
-            MIR_LABEL('LABEL_RETURN_ACC'),
+            MIR_LABEL('l_RETURN_ACC'),
             MIR_RETURN(MIR_TEMP('acc')),
           ],
         },
@@ -187,12 +187,12 @@ mov rbp, rsp
 mov r10, rdi
 mov rax, rsi
 cmp r10, 0
-je LABEL_FUNCTION_CALL_EPILOGUE_FOR_factorial
+je l_FUNCTION_CALL_EPILOGUE_FOR_factorial
 lea rdi, qword ptr [r10-1]
 mov rsi, rax
 imul rsi, r10
 call factorial
-LABEL_FUNCTION_CALL_EPILOGUE_FOR_factorial:
+l_FUNCTION_CALL_EPILOGUE_FOR_factorial:
 mov rsp, rbp
 pop rbp
 ret`);
@@ -310,12 +310,12 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 6', () => {
           mainBodyStatements: [
             MIR_MOVE_TEMP('acc', HIR_ONE),
             MIR_LABEL('begin'),
-            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'LABEL_RETURN_ACC'),
+            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'l_RETURN_ACC'),
             MIR_MOVE_TEMP('n1', MIR_OP('-', MIR_TEMP('n'), HIR_ONE)),
             MIR_MOVE_TEMP('acc', MIR_OP('*', MIR_TEMP('acc'), MIR_TEMP('n'))),
             MIR_MOVE_TEMP('n', MIR_TEMP('n1')),
             MIR_JUMP('begin'),
-            MIR_LABEL('LABEL_RETURN_ACC'),
+            MIR_LABEL('l_RETURN_ACC'),
             MIR_RETURN(MIR_TEMP('acc')),
           ],
         },
@@ -325,12 +325,12 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 6', () => {
 mov rax, 1
 begin:
 cmp rdi, 0
-je LABEL_RETURN_ACC
+je l_RETURN_ACC
 lea rcx, qword ptr [rdi-1]
 imul rax, rdi
 mov rdi, rcx
 jmp begin
-LABEL_RETURN_ACC:
+l_RETURN_ACC:
 ret`);
 });
 
@@ -343,14 +343,14 @@ it('generateAssemblyInstructionsFromMidIRCompilationUnit test 7', () => {
           functionName: 'factorial',
           argumentNames: ['n'],
           mainBodyStatements: [
-            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'LABEL_RETURN_1'),
+            MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'l_RETURN_1'),
             MIR_CALL_FUNCTION(
               HIR_NAME('factorial', HIR_INT_TYPE),
               [MIR_OP('-', MIR_TEMP('n'), HIR_ONE)],
               'dummy'
             ),
             MIR_RETURN(MIR_OP('*', MIR_TEMP('n'), MIR_TEMP('dummy'))),
-            MIR_LABEL('LABEL_RETURN_1'),
+            MIR_LABEL('l_RETURN_1'),
             MIR_RETURN(HIR_ONE),
           ],
         },
@@ -363,16 +363,16 @@ sub rsp, 16
 mov qword ptr [rbp-8], rbx
 mov rbx, rdi
 cmp rbx, 0
-je LABEL_RETURN_1
+je l_RETURN_1
 lea rdi, qword ptr [rbx-1]
 call factorial
 mov rcx, rax
 mov rax, rbx
 imul rax, rcx
-jmp LABEL_FUNCTION_CALL_EPILOGUE_FOR_factorial
-LABEL_RETURN_1:
+jmp l_FUNCTION_CALL_EPILOGUE_FOR_factorial
+l_RETURN_1:
 mov rax, 1
-LABEL_FUNCTION_CALL_EPILOGUE_FOR_factorial:
+l_FUNCTION_CALL_EPILOGUE_FOR_factorial:
 mov rbx, qword ptr [rbp-8]
 mov rsp, rbp
 pop rbp

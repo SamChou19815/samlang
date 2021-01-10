@@ -11,12 +11,12 @@ export default class MidIRResourceAllocator {
   allocateLabel(functionName: string): string {
     const temp = this.nextLabelId;
     this.nextLabelId += 1;
-    return `LABEL_${functionName}_${temp}`;
+    return `l_${functionName}_${temp}`;
   }
 
   allocateLabelWithAnnotation(functionName: string, annotation: string): string {
     const temp = this.nextLabelId;
     this.nextLabelId += 1;
-    return `LABEL_${functionName}_${temp}_PURPOSE_${annotation}`;
+    return `l_${functionName}_${temp}_${annotation}`;
   }
 }
