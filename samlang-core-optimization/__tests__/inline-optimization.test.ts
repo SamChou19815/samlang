@@ -66,7 +66,7 @@ it('optimizeMidIRCompilationUnitByInlining test 1', () => {
               functionName: 'factorial',
               argumentNames: ['n', 'acc'],
               mainBodyStatements: [
-                MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'LABEL_RETURN_ACC'),
+                MIR_CJUMP_FALLTHROUGH(MIR_OP('==', MIR_TEMP('n'), HIR_ZERO), 'l_RETURN_ACC'),
                 MIR_CALL_FUNCTION(
                   MIR_NAME('factorial'),
                   [
@@ -76,7 +76,7 @@ it('optimizeMidIRCompilationUnitByInlining test 1', () => {
                   'dummy'
                 ),
                 MIR_RETURN(MIR_TEMP('dummy')),
-                MIR_LABEL('LABEL_RETURN_ACC'),
+                MIR_LABEL('l_RETURN_ACC'),
                 MIR_RETURN(MIR_TEMP('acc')),
               ],
             },
@@ -120,18 +120,18 @@ function factorial {
   let n = _ARG0;
   let acc = _ARG1;
 
-  if ((n == 0)) goto LABEL_RETURN_ACC;
+  if ((n == 0)) goto l_RETURN_ACC;
   _INLINING_1_n = (n + -1);
   _INLINING_1_acc = (acc * n);
-  if ((_INLINING_1_n == 0)) goto INLINING_0_LABEL_RETURN_ACC;
+  if ((_INLINING_1_n == 0)) goto INLINING_0_l_RETURN_ACC;
   _INLINING_1_dummy = factorial((_INLINING_1_n + -1), (_INLINING_1_acc * _INLINING_1_n));
   dummy = _INLINING_1_dummy;
   goto INLINING_0___INLINING_END;
-  INLINING_0_LABEL_RETURN_ACC:
+  INLINING_0_l_RETURN_ACC:
   dummy = _INLINING_1_acc;
   INLINING_0___INLINING_END:
   return dummy;
-  LABEL_RETURN_ACC:
+  l_RETURN_ACC:
   return acc;
 }
 

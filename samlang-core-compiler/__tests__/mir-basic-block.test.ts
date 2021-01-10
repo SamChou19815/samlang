@@ -53,7 +53,7 @@ it('MidIRBasicBlock end with return cases.', () => {
     [
       {
         targets: [],
-        statements: [MIR_LABEL('LABEL__0_PURPOSE_BASIC_BLOCK_1ST_STMT'), MIR_RETURN(HIR_ZERO)],
+        statements: [MIR_LABEL('l__0_BASIC_BLOCK_1ST_STMT'), MIR_RETURN(HIR_ZERO)],
       },
     ]
   );
@@ -82,7 +82,7 @@ it('MidIRBasicBlock will correctly segment label blocks', () => {
       },
       {
         targets: ['baz'],
-        statements: [MIR_LABEL('LABEL__0_PURPOSE_BASIC_BLOCK_1ST_STMT'), MIR_JUMP('baz')],
+        statements: [MIR_LABEL('l__0_BASIC_BLOCK_1ST_STMT'), MIR_JUMP('baz')],
       },
       {
         targets: [],

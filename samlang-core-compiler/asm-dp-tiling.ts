@@ -501,9 +501,7 @@ class AssemblyDpTiling implements AssemblyTilingService {
             ...tilingResult.instructions,
             ASM_MOVE_REG(RAX, tilingResult.assemblyArgument)
           );
-          instructions.push(
-            ASM_JUMP('jmp', `LABEL_FUNCTION_CALL_EPILOGUE_FOR_${this.functionName}`)
-          );
+          instructions.push(ASM_JUMP('jmp', `l_FUNCTION_CALL_EPILOGUE_FOR_${this.functionName}`));
           return instructions;
         }
       }
@@ -636,7 +634,7 @@ const getAssemblyTilingForMidIRStatements = (
     getAssemblyMemoryTilingForMidIRExpression
   );
   statements.forEach((statement) => instructions.push(...tiler.tileStatement(statement)));
-  instructions.push(ASM_LABEL(`LABEL_FUNCTION_CALL_EPILOGUE_FOR_${functionName}`));
+  instructions.push(ASM_LABEL(`l_FUNCTION_CALL_EPILOGUE_FOR_${functionName}`));
   return instructions;
 };
 

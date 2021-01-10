@@ -35,7 +35,7 @@ it('reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath empty test', () => {
 
 it('reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath single statement self-consistency test', () => {
   expect(reorderAndDumpToString([MIR_RETURN(HIR_ZERO)])).toBe(
-    'LABEL__0_PURPOSE_BASIC_BLOCK_1ST_STMT:\nreturn 0;'
+    'l__0_BASIC_BLOCK_1ST_STMT:\nreturn 0;'
   );
 });
 
@@ -77,7 +77,7 @@ it('reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath heavy true branch test.',
       MIR_LABEL('program_end'),
       MIR_RETURN(HIR_ZERO),
     ])
-  ).toBe(`LABEL__0_PURPOSE_BASIC_BLOCK_1ST_STMT:
+  ).toBe(`l__0_BASIC_BLOCK_1ST_STMT:
 if () goto a; else goto end;
 a:
 a = a;
@@ -114,7 +114,7 @@ it('reorderMidIRBasicBlocksToMaximizeLongestNoJumpPath heavy false branch test.'
       MIR_LABEL('program_end'),
       MIR_RETURN(HIR_ZERO),
     ])
-  ).toBe(`LABEL__0_PURPOSE_BASIC_BLOCK_1ST_STMT:
+  ).toBe(`l__0_BASIC_BLOCK_1ST_STMT:
 if () goto end; else goto a;
 a:
 a = a;
