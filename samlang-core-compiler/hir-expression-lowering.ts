@@ -60,7 +60,7 @@ import type {
   LambdaExpression,
   StatementBlockExpression,
 } from 'samlang-core-ast/samlang-expressions';
-import { checkNotNull, isNotNull } from 'samlang-core-utils';
+import { checkNotNull, isNotNull, LocalStackedContext } from 'samlang-core-utils';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -73,6 +73,21 @@ type HighIRExpressionLoweringResultWithSyntheticFunctions = {
   readonly expression: HighIRExpression;
 };
 
+class HighIRLoweringVariableContext extends LocalStackedContext<HighIRExpression> {
+  addLocalValueType(name: string, value: HighIRExpression, onCollision: () => void): void {
+    if (value.__type__ !== 'HighIRVariableExpression') {
+      super.addLocalValueType(name, value, onCollision);
+      return;
+    }
+    super.addLocalValueType(name, this.getLocalValueType(value.name) ?? value, onCollision);
+  }
+
+  bind(name: string, value: HighIRExpression): void {
+    // istanbul ignore next
+    this.addLocalValueType(name, value, () => {});
+  }
+}
+
 class HighIRExpressionLoweringManager {
   private nextTemporaryVariableId = 0;
 
@@ -81,8 +96,7 @@ class HighIRExpressionLoweringManager {
   depth = 0;
   blockID = 0;
 
-  // The variable rewrite is introduced to resolve https://github.com/SamChou19815/samlang/issues/36
-  private nestedVariableRewriteMap = new Map<string, string>();
+  private readonly varibleContext = new HighIRLoweringVariableContext();
 
   readonly syntheticFunctions: HighIRFunction[] = [];
 
@@ -147,8 +161,12 @@ class HighIRExpressionLoweringManager {
           expression: HIR_VARIABLE('_this', this.lowerType(expression.type)),
         };
       case 'VariableExpression': {
-        const name = this.nestedVariableRewriteMap.get(expression.name) ?? expression.name;
-        return { statements: [], expression: HIR_VARIABLE(name, this.lowerType(expression.type)) };
+        const stored = this.varibleContext.getLocalValueType(expression.name);
+        if (stored != null) return { statements: [], expression: stored };
+        return {
+          statements: [],
+          expression: HIR_VARIABLE(expression.name, this.lowerType(expression.type)),
+        };
       }
       case 'ClassMemberExpression':
         return this.lowerClassMember(expression);
@@ -991,103 +1009,89 @@ class HighIRExpressionLoweringManager {
     block: { statements: blockStatements, expression: finalExpression },
   }: StatementBlockExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
-    const blockLocalVariables = new Set<string>();
     this.depth += 1;
-    blockStatements.forEach(({ pattern, typeAnnotation, assignedExpression }) => {
-      const loweredAssignedExpression = this.loweredAndAddStatements(
-        assignedExpression,
-        loweredStatements
-      );
-      switch (pattern.type) {
-        case 'TuplePattern': {
-          const variableForDestructedExpression = this.allocateTemporaryVariable();
-          loweredStatements.push(
-            HIR_LET({
-              name: variableForDestructedExpression,
-              type: this.lowerType(typeAnnotation),
-              assignedExpression: loweredAssignedExpression,
-            })
-          );
-          pattern.destructedNames.forEach(([name], index) => {
-            if (name == null) {
-              return;
-            }
+    const loweredFinalExpression = this.varibleContext.withNestedScope(() => {
+      blockStatements.forEach(({ pattern, typeAnnotation, assignedExpression }) => {
+        const loweredAssignedExpression = this.loweredAndAddStatements(
+          assignedExpression,
+          loweredStatements
+        );
+        switch (pattern.type) {
+          case 'TuplePattern': {
+            const variableForDestructedExpression = this.allocateTemporaryVariable();
             loweredStatements.push(
-              HIR_INDEX_ACCESS({
-                name: this.getRenamedVariableForNesting(name, blockLocalVariables),
-                // TODO: update type checker and AST to provide better type here.
-                type: HIR_ANY_TYPE,
-                pointerExpression: HIR_VARIABLE(
-                  variableForDestructedExpression,
-                  loweredAssignedExpression.type
-                ),
-                index,
+              HIR_LET({
+                name: variableForDestructedExpression,
+                type: this.lowerType(typeAnnotation),
+                assignedExpression: loweredAssignedExpression,
               })
             );
-          });
-          break;
-        }
-        case 'ObjectPattern': {
-          const variableForDestructedExpression = this.allocateTemporaryVariable();
-          loweredStatements.push(
-            HIR_LET({
-              name: variableForDestructedExpression,
-              type: this.lowerType(typeAnnotation),
-              assignedExpression: loweredAssignedExpression,
-            })
-          );
-          pattern.destructedNames.forEach(({ fieldName, fieldOrder, alias }) => {
+            pattern.destructedNames.forEach(([name], index) => {
+              if (name == null) {
+                return;
+              }
+              loweredStatements.push(
+                HIR_INDEX_ACCESS({
+                  name: this.getRenamedVariableForNesting(name, HIR_ANY_TYPE),
+                  // TODO: update type checker and AST to provide better type here.
+                  type: HIR_ANY_TYPE,
+                  pointerExpression: HIR_VARIABLE(
+                    variableForDestructedExpression,
+                    loweredAssignedExpression.type
+                  ),
+                  index,
+                })
+              );
+            });
+            break;
+          }
+          case 'ObjectPattern': {
+            const variableForDestructedExpression = this.allocateTemporaryVariable();
             loweredStatements.push(
-              HIR_INDEX_ACCESS({
-                name: this.getRenamedVariableForNesting(alias ?? fieldName, blockLocalVariables),
-                // TODO: update type checker and AST to provide better type here.
-                type: HIR_ANY_TYPE,
-                pointerExpression: HIR_VARIABLE(
-                  variableForDestructedExpression,
-                  loweredAssignedExpression.type
-                ),
-                index: fieldOrder,
+              HIR_LET({
+                name: variableForDestructedExpression,
+                type: this.lowerType(typeAnnotation),
+                assignedExpression: loweredAssignedExpression,
               })
             );
-          });
-          break;
+            pattern.destructedNames.forEach(({ fieldName, fieldOrder, alias }) => {
+              loweredStatements.push(
+                HIR_INDEX_ACCESS({
+                  name: this.getRenamedVariableForNesting(alias ?? fieldName, HIR_ANY_TYPE),
+                  // TODO: update type checker and AST to provide better type here.
+                  type: HIR_ANY_TYPE,
+                  pointerExpression: HIR_VARIABLE(
+                    variableForDestructedExpression,
+                    loweredAssignedExpression.type
+                  ),
+                  index: fieldOrder,
+                })
+              );
+            });
+            break;
+          }
+          case 'VariablePattern': {
+            this.varibleContext.bind(pattern.name, loweredAssignedExpression);
+            break;
+          }
+          case 'WildCardPattern':
+            break;
         }
-        case 'VariablePattern':
-          loweredStatements.push(
-            HIR_LET({
-              name: this.getRenamedVariableForNesting(pattern.name, blockLocalVariables),
-              type: this.lowerType(typeAnnotation),
-              assignedExpression: loweredAssignedExpression,
-            })
-          );
-          break;
-        case 'WildCardPattern':
-          break;
-      }
+      });
+      if (finalExpression == null) return HIR_ZERO;
+      return this.loweredAndAddStatements(finalExpression, loweredStatements);
     });
-    if (finalExpression == null) {
-      this.blockID += 1;
-      this.depth -= 1;
-      blockLocalVariables.forEach((variable) => this.nestedVariableRewriteMap.delete(variable));
-      return { statements: loweredStatements, expression: HIR_ZERO };
-    }
-    const loweredFinalExpression = this.loweredAndAddStatements(finalExpression, loweredStatements);
     this.blockID += 1;
     this.depth -= 1;
-    blockLocalVariables.forEach((variable) => this.nestedVariableRewriteMap.delete(variable));
     return { statements: loweredStatements, expression: loweredFinalExpression };
   }
 
-  private getRenamedVariableForNesting = (
-    name: string,
-    blockLocalVariables: Set<string>
-  ): string => {
+  private getRenamedVariableForNesting = (name: string, type: HighIRType): string => {
     if (this.depth === 0) {
       return name;
     }
     const renamed = `${name}__depth_${this.depth}__block_${this.blockID}`;
-    this.nestedVariableRewriteMap.set(name, renamed);
-    blockLocalVariables.add(name);
+    this.varibleContext.bind(name, HIR_VARIABLE(renamed, type));
     return renamed;
   };
 }

@@ -707,7 +707,6 @@ let a__depth_1__block_0: any = (_t0: _Dummy)[0];
 let _t1: _Dummy = (_this: _Dummy);
 let a__depth_1__block_0: any = (_t1: _Dummy)[0];
 let c__depth_1__block_0: any = (_t1: _Dummy)[1];
-let a: int = (a__depth_1__block_0: int);
 return 0;`
   );
 });
@@ -716,13 +715,13 @@ it('shadowing statement block lowering works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
-      type: unitType,
+      type: stringType,
       block: {
         range: Range.DUMMY,
         statements: [
           {
             range: Range.DUMMY,
-            typeAnnotation: unitType,
+            typeAnnotation: stringType,
             pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
             assignedExpression: EXPRESSION_STATEMENT_BLOCK({
               range: Range.DUMMY,
@@ -734,17 +733,31 @@ it('shadowing statement block lowering works.', () => {
                     range: Range.DUMMY,
                     typeAnnotation: intType,
                     pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-                    assignedExpression: EXPRESSION_INT(Range.DUMMY, 1),
+                    assignedExpression: EXPRESSION_BUILTIN_FUNCTION_CALL({
+                      range: Range.DUMMY,
+                      type: stringType,
+                      functionName: 'intToString',
+                      argumentExpression: THIS,
+                    }),
                   },
                 ],
+                expression: EXPRESSION_VARIABLE({
+                  range: Range.DUMMY,
+                  type: stringType,
+                  name: 'a',
+                }),
               },
             }),
           },
         ],
+        expression: EXPRESSION_VARIABLE({
+          range: Range.DUMMY,
+          type: stringType,
+          name: 'a',
+        }),
       },
     }),
-    `let a__depth_1__block_0: int = 1;
-let a: int = 0;
-return 0;`
+    `let _t0: string = _builtin_intToString((_this: _Dummy));
+return (_t0: string);`
   );
 });
