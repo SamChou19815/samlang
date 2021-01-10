@@ -57,7 +57,7 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
         pointerExpression
       );
       return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`var ${highIRStatement.name} = `),
+        PRETTIER_TEXT(`let ${highIRStatement.name} = `),
         subExpressionDocument,
         PRETTIER_TEXT(`[${index}];`)
       );
@@ -77,7 +77,7 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
             )
           : binaryExpressionDocument;
       return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`var ${highIRStatement.name} = `),
+        PRETTIER_TEXT(`let ${highIRStatement.name} = `),
         wrapped,
         PRETTIER_TEXT(';')
       );
@@ -85,7 +85,7 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
     case 'HighIRFunctionCallStatement': {
       const segments: PrettierDocument[] = [];
       if (highIRStatement.returnCollector != null) {
-        segments.push(PRETTIER_TEXT(`var ${highIRStatement.returnCollector.name} = `));
+        segments.push(PRETTIER_TEXT(`let ${highIRStatement.returnCollector.name} = `));
       }
       segments.push(
         createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
@@ -175,7 +175,7 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
     }
     case 'HighIRLetDefinitionStatement':
       return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`var ${highIRStatement.name} = `),
+        PRETTIER_TEXT(`let ${highIRStatement.name} = `),
         createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
           highIRStatement.assignedExpression
         ),
@@ -183,7 +183,7 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
       );
     case 'HighIRStructInitializationStatement':
       return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`var ${highIRStatement.structVariableName} = `),
+        PRETTIER_TEXT(`let ${highIRStatement.structVariableName} = `),
         createBracketSurroundedDocument(
           createCommaSeparatedList(
             highIRStatement.expressionList,
