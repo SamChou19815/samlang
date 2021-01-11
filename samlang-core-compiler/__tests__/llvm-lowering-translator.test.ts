@@ -26,16 +26,10 @@ import {
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_STRING_TYPE,
-  HIR_CLOSURE_TYPE,
   HIR_STRUCT_TYPE,
   HIR_BOOL_TYPE,
 } from 'samlang-core-ast/hir-types';
-import {
-  LLVM_INT,
-  LLVM_VARIABLE,
-  prettyPrintLLVMFunction,
-  prettyPrintLLVMModule,
-} from 'samlang-core-ast/llvm-nodes';
+import { prettyPrintLLVMFunction, prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 
 const assertLoweringWorks = (
   highIRFunction: HighIRFunction,
@@ -230,31 +224,6 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 1/n', () => {
       HIR_SWITCH({
         caseVariable: 'c',
         cases: [
-          { caseNumber: 1, statements: [] },
-          { caseNumber: 0, statements: [] },
-          { caseNumber: 2, statements: [] },
-        ],
-        finalAssignment: { name: 'ma', type: INT, branchValues: [HIR_ZERO, HIR_ZERO, HIR_ZERO] },
-      }),
-    ],
-    `  switch i64 %c, label %l_testFunction_1_match_end [ i64 1, label %l_testFunction_2_match_case_0 i64 0, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]
-l_testFunction_2_match_case_0:
-  br label %l_testFunction_1_match_end
-l_testFunction_3_match_case_1:
-  br label %l_testFunction_1_match_end
-l_testFunction_4_match_case_2:
-  br label %l_testFunction_1_match_end
-l_testFunction_1_match_end:
-  %ma = phi i64 [ 0, %l_testFunction_2_match_case_0 ], [ 0, %l_testFunction_3_match_case_1 ], [ 0, %l_testFunction_4_match_case_2 ]`
-  );
-});
-
-it('prettyPrintLLVMFunction works for HIR_SWITCH 2/n', () => {
-  assertStatementLoweringWorks(
-    [
-      HIR_SWITCH({
-        caseVariable: 'c',
-        cases: [
           {
             caseNumber: 2,
             statements: [
@@ -284,6 +253,70 @@ l_testFunction_3_match_case_1:
   call i64 @bar() nounwind
   br label %l_testFunction_1_match_end
 l_testFunction_1_match_end:`
+  );
+});
+
+it('prettyPrintLLVMFunction works for HIR_SWITCH 2/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_SWITCH({
+        caseVariable: 'c',
+        cases: [
+          { caseNumber: 1, statements: [] },
+          { caseNumber: 0, statements: [] },
+          { caseNumber: 2, statements: [] },
+        ],
+        finalAssignment: { name: 'ma', type: INT, branchValues: [HIR_ZERO, HIR_ZERO, HIR_ZERO] },
+      }),
+    ],
+    `  switch i64 %c, label %l_testFunction_1_match_end [ i64 1, label %l_testFunction_2_match_case_0 i64 0, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]
+l_testFunction_2_match_case_0:
+  br label %l_testFunction_1_match_end
+l_testFunction_3_match_case_1:
+  br label %l_testFunction_1_match_end
+l_testFunction_4_match_case_2:
+  br label %l_testFunction_1_match_end
+l_testFunction_1_match_end:
+  %ma = phi i64 [ 0, %l_testFunction_0_START ], [ 0, %l_testFunction_0_START ], [ 0, %l_testFunction_0_START ]`
+  );
+});
+
+it('prettyPrintLLVMFunction works for HIR_SWITCH 3/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_SWITCH({
+        caseVariable: 'c',
+        cases: [
+          { caseNumber: 1, statements: [] },
+          { caseNumber: 0, statements: [] },
+          {
+            caseNumber: 2,
+            statements: [
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('foo', INT),
+                functionArguments: [],
+                returnCollector: { name: 'b2', type: INT },
+              }),
+            ],
+          },
+        ],
+        finalAssignment: {
+          name: 'ma',
+          type: INT,
+          branchValues: [HIR_ZERO, HIR_ZERO, HIR_VARIABLE('b2', INT)],
+        },
+      }),
+    ],
+    `  switch i64 %c, label %l_testFunction_1_match_end [ i64 1, label %l_testFunction_2_match_case_0 i64 0, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]
+l_testFunction_2_match_case_0:
+  br label %l_testFunction_1_match_end
+l_testFunction_3_match_case_1:
+  br label %l_testFunction_1_match_end
+l_testFunction_4_match_case_2:
+  %b2 = call i64 @foo() nounwind
+  br label %l_testFunction_1_match_end
+l_testFunction_1_match_end:
+  %ma = phi i64 [ 0, %l_testFunction_0_START ], [ 0, %l_testFunction_0_START ], [ %b2, %l_testFunction_4_match_case_2 ]`
   );
 });
 

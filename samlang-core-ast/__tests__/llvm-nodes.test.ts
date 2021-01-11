@@ -126,8 +126,8 @@ it('prettyPrintLLVMInstruction works for LLVM_CAST.', () => {
   expect(() =>
     prettyPrintLLVMInstruction(
       LLVM_CAST({
-        targetType: LLVM_INT_TYPE,
-        targetVariable: 'foo',
+        resultVariable: 'foo',
+        resultType: LLVM_INT_TYPE,
         sourceValue: LLVM_VARIABLE('bar'),
         sourceType: LLVM_INT_TYPE,
       })
@@ -137,8 +137,8 @@ it('prettyPrintLLVMInstruction works for LLVM_CAST.', () => {
   expect(
     prettyPrintLLVMInstruction(
       LLVM_CAST({
-        targetType: LLVM_IDENTIFIER_TYPE('Foo'),
-        targetVariable: 'foo',
+        resultVariable: 'foo',
+        resultType: LLVM_IDENTIFIER_TYPE('Foo'),
         sourceValue: LLVM_VARIABLE('bar'),
         sourceType: LLVM_IDENTIFIER_TYPE('Bar'),
       })
@@ -148,8 +148,8 @@ it('prettyPrintLLVMInstruction works for LLVM_CAST.', () => {
   expect(() =>
     prettyPrintLLVMInstruction(
       LLVM_CAST({
-        targetType: LLVM_BOOL_TYPE,
-        targetVariable: 'foo',
+        resultVariable: 'foo',
+        resultType: LLVM_BOOL_TYPE,
         sourceValue: LLVM_VARIABLE('bar'),
         sourceType: LLVM_INT_TYPE,
       })
@@ -159,8 +159,8 @@ it('prettyPrintLLVMInstruction works for LLVM_CAST.', () => {
   expect(
     prettyPrintLLVMInstruction(
       LLVM_CAST({
-        targetType: LLVM_IDENTIFIER_TYPE('Foo'),
-        targetVariable: 'foo',
+        resultVariable: 'foo',
+        resultType: LLVM_IDENTIFIER_TYPE('Foo'),
         sourceValue: LLVM_VARIABLE('bar'),
         sourceType: LLVM_INT_TYPE,
       })
@@ -170,8 +170,8 @@ it('prettyPrintLLVMInstruction works for LLVM_CAST.', () => {
   expect(
     prettyPrintLLVMInstruction(
       LLVM_CAST({
-        targetType: LLVM_INT_TYPE,
-        targetVariable: 'foo',
+        resultVariable: 'foo',
+        resultType: LLVM_INT_TYPE,
         sourceValue: LLVM_VARIABLE('bar'),
         sourceType: LLVM_IDENTIFIER_TYPE('Bar'),
       })
@@ -355,7 +355,7 @@ it('prettyPrintLLVMInstruction works for LLVM_PHI.', () => {
   expect(
     prettyPrintLLVMInstruction(
       LLVM_PHI({
-        name: 'f',
+        resultVariable: 'f',
         variableType: LLVM_INT_TYPE,
         valueBranchTuples: [
           { value: LLVM_VARIABLE('bar'), branch: 'b1' },
