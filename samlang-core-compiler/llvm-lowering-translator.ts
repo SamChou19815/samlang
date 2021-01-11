@@ -317,7 +317,7 @@ export const lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING = (
 
 const lowerHighIRModuleToLLVMModule = (highIRModule: HighIRModule): LLVMModule => {
   const globalVariablesMapping = Object.fromEntries(
-    highIRModule.globalVariables.map((it) => [it.name, it.content.length])
+    highIRModule.globalVariables.map((it) => [it.name, it.content.length + 1])
   );
 
   return {
