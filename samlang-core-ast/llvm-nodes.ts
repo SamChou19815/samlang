@@ -122,8 +122,8 @@ export type LLVMAnnotatedValue = { readonly value: LLVMValue; readonly type: LLV
 
 export type LLVMCastInstruction = {
   readonly __type__: 'LLVMCastInstruction';
-  readonly targetVariable: string;
-  readonly targetType: LLVMType;
+  readonly resultVariable: string;
+  readonly resultType: LLVMType;
   readonly sourceValue: LLVMValue;
   readonly sourceType: LLVMType;
 };
@@ -161,7 +161,7 @@ export type LLVMStoreInstruction = {
 
 export type LLVMPhiInstruction = {
   readonly __type__: 'LLVMPhiInstruction';
-  readonly name: string;
+  readonly resultVariable: string;
   readonly variableType: LLVMType;
   readonly valueBranchTuples: readonly { readonly value: LLVMValue; readonly branch: string }[];
 };
@@ -222,14 +222,14 @@ export type LLVMInstruction =
 type ConstructorArgumentObject<E extends LLVMInstruction> = Omit<E, '__type__'>;
 
 export const LLVM_CAST = ({
-  targetVariable,
-  targetType,
+  resultVariable,
+  resultType,
   sourceValue,
   sourceType,
 }: ConstructorArgumentObject<LLVMCastInstruction>): LLVMCastInstruction => ({
   __type__: 'LLVMCastInstruction',
-  targetVariable,
-  targetType,
+  resultVariable,
+  resultType,
   sourceValue,
   sourceType,
 });
@@ -285,12 +285,12 @@ export const LLVM_STORE = ({
 });
 
 export const LLVM_PHI = ({
-  name,
+  resultVariable,
   variableType,
   valueBranchTuples,
 }: ConstructorArgumentObject<LLVMPhiInstruction>): LLVMPhiInstruction => ({
   __type__: 'LLVMPhiInstruction',
-  name,
+  resultVariable,
   variableType,
   valueBranchTuples,
 });
@@ -350,26 +350,26 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
   switch (instruction.__type__) {
     case 'LLVMCastInstruction': {
       const sourceValue = prettyPrintLLVMValue(instruction.sourceValue);
-      const targetType = prettyPrintLLVMType(instruction.targetType);
+      const targetType = prettyPrintLLVMType(instruction.resultType);
       const sourceType = prettyPrintLLVMType(instruction.sourceType);
       if (targetType === sourceType) throw new Error();
       let command: string;
       if (
-        instruction.targetType.__type__ !== 'PrimitiveType' &&
+        instruction.resultType.__type__ !== 'PrimitiveType' &&
         instruction.sourceType.__type__ !== 'PrimitiveType'
       ) {
         command = 'bitcast';
       } else if (
-        instruction.targetType.__type__ === 'PrimitiveType' &&
+        instruction.resultType.__type__ === 'PrimitiveType' &&
         instruction.sourceType.__type__ === 'PrimitiveType'
       ) {
         throw new Error('Should not cast between primitive types!');
-      } else if (instruction.targetType.__type__ === 'PrimitiveType') {
+      } else if (instruction.resultType.__type__ === 'PrimitiveType') {
         command = 'ptrtoint';
       } else {
         command = 'inttoptr';
       }
-      return `%${instruction.targetVariable} = ${command} ${sourceType} ${sourceValue} to ${targetType}`;
+      return `%${instruction.resultVariable} = ${command} ${sourceType} ${sourceValue} to ${targetType}`;
     }
     case 'LLVMGetElementPointerInstruction': {
       const { resultVariable, offset } = instruction;
@@ -434,7 +434,7 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       return `store ${type} ${sourceValue}, ${type}* %${instruction.targetVariable}`;
     }
     case 'LLVMPhiInstruction': {
-      const name = instruction.name;
+      const name = instruction.resultVariable;
       const type = prettyPrintLLVMType(instruction.variableType);
       const valueBranchTuplesString = instruction.valueBranchTuples
         .map(({ value, branch }) => `[ ${prettyPrintLLVMValue(value)}, %${branch} ]`)
