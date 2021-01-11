@@ -11,6 +11,7 @@ import {
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_COMPILED_PROGRAM_MAIN,
 } from 'samlang-core-ast/common-names';
+import type { IROperator } from 'samlang-core-ast/common-operators';
 import type {
   MidIRFunction,
   MidIRCompilationUnit,
@@ -120,6 +121,37 @@ export const handleBuiltInFunctionCall = (
 
 const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
 
+export const computeBinary = (operator: IROperator, value1: Long, value2: Long): Long => {
+  switch (operator) {
+    case '+':
+      return value1.add(value2);
+    case '-':
+      return value1.subtract(value2);
+    case '*':
+      return value1.multiply(value2);
+    case '/':
+      if (value2.equals(Long.ZERO)) throw new PanicException('Division by zero!');
+      return value1.divide(value2);
+    case '%':
+      if (value2.equals(Long.ZERO)) throw new PanicException('Mod by zero!');
+      return value1.mod(value2);
+    case '^':
+      return value1.xor(value2);
+    case '<':
+      return longOfBool(value1.lessThan(value2));
+    case '<=':
+      return longOfBool(value1.lessThanOrEqual(value2));
+    case '>':
+      return longOfBool(value1.greaterThan(value2));
+    case '>=':
+      return longOfBool(value1.greaterThanOrEqual(value2));
+    case '==':
+      return longOfBool(value1.equals(value2));
+    case '!=':
+      return longOfBool(value1.notEquals(value2));
+  }
+};
+
 const interpretMidIRExpression = (
   environment: MidIRInterpreterMutableGlobalEnvironment,
   stackFrame: StackFrame,
@@ -147,34 +179,7 @@ const interpretMidIRExpression = (
     case 'MidIRBinaryExpression': {
       const value1 = interpretMidIRExpression(environment, stackFrame, expression.e1);
       const value2 = interpretMidIRExpression(environment, stackFrame, expression.e2);
-      switch (expression.operator) {
-        case '+':
-          return value1.add(value2);
-        case '-':
-          return value1.subtract(value2);
-        case '*':
-          return value1.multiply(value2);
-        case '/':
-          if (value2.equals(Long.ZERO)) throw new PanicException('Division by zero!');
-          return value1.divide(value2);
-        case '%':
-          if (value2.equals(Long.ZERO)) throw new PanicException('Mod by zero!');
-          return value1.mod(value2);
-        case '^':
-          return value1.xor(value2);
-        case '<':
-          return longOfBool(value1.lessThan(value2));
-        case '<=':
-          return longOfBool(value1.lessThanOrEqual(value2));
-        case '>':
-          return longOfBool(value1.greaterThan(value2));
-        case '>=':
-          return longOfBool(value1.greaterThanOrEqual(value2));
-        case '==':
-          return longOfBool(value1.equals(value2));
-        case '!=':
-          return longOfBool(value1.notEquals(value2));
-      }
+      return computeBinary(expression.operator, value1, value2);
     }
   }
 };

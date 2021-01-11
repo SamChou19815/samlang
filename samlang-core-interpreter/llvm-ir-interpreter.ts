@@ -1,7 +1,9 @@
-/* eslint-disable no-param-reassign */
-
-import { StackFrame, GeneralIREnvironment, handleBuiltInFunctionCall } from './mid-ir-interpreter';
-import PanicException from './panic-exception';
+import {
+  StackFrame,
+  GeneralIREnvironment,
+  handleBuiltInFunctionCall,
+  computeBinary,
+} from './mid-ir-interpreter';
 
 import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
 import type {
@@ -16,8 +18,6 @@ type LLVMInterpreterMutableGlobalEnvironment = {
   // A collection of all available functions.
   readonly functions: ReadonlyMap<string, LLVMFunction>;
 } & GeneralIREnvironment;
-
-const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
 
 const interpretLLVMValue = (
   environment: LLVMInterpreterMutableGlobalEnvironment,
@@ -67,7 +67,7 @@ const interpretLLVMFunction = (
     switch (instructionToInterpret.__type__) {
       case 'LLVMCastInstruction':
         stackFrame.setLocalValue(
-          instructionToInterpret.targetVariable,
+          instructionToInterpret.resultVariable,
           interpretLLVMValue(environment, stackFrame, instructionToInterpret.sourceValue)
         );
         programCounter += 1;
@@ -84,54 +84,17 @@ const interpretLLVMFunction = (
         break;
       }
 
-      case 'LLVMBinaryInstruction': {
-        const value1 = interpretLLVMValue(environment, stackFrame, instructionToInterpret.v1);
-        const value2 = interpretLLVMValue(environment, stackFrame, instructionToInterpret.v2);
-        let computed: Long;
-        switch (instructionToInterpret.operator) {
-          case '+':
-            computed = value1.add(value2);
-            break;
-          case '-':
-            computed = value1.subtract(value2);
-            break;
-          case '*':
-            computed = value1.multiply(value2);
-            break;
-          case '/':
-            if (value2.equals(Long.ZERO)) throw new PanicException('Division by zero!');
-            computed = value1.divide(value2);
-            break;
-          case '%':
-            if (value2.equals(Long.ZERO)) throw new PanicException('Mod by zero!');
-            computed = value1.mod(value2);
-            break;
-          case '^':
-            computed = value1.xor(value2);
-            break;
-          case '<':
-            computed = longOfBool(value1.lessThan(value2));
-            break;
-          case '<=':
-            computed = longOfBool(value1.lessThanOrEqual(value2));
-            break;
-          case '>':
-            computed = longOfBool(value1.greaterThan(value2));
-            break;
-          case '>=':
-            computed = longOfBool(value1.greaterThanOrEqual(value2));
-            break;
-          case '==':
-            computed = longOfBool(value1.equals(value2));
-            break;
-          case '!=':
-            computed = longOfBool(value1.notEquals(value2));
-            break;
-        }
-        stackFrame.setLocalValue(instructionToInterpret.resultVariable, computed);
+      case 'LLVMBinaryInstruction':
+        stackFrame.setLocalValue(
+          instructionToInterpret.resultVariable,
+          computeBinary(
+            instructionToInterpret.operator,
+            interpretLLVMValue(environment, stackFrame, instructionToInterpret.v1),
+            interpretLLVMValue(environment, stackFrame, instructionToInterpret.v2)
+          )
+        );
         programCounter += 1;
         break;
-      }
 
       case 'LLVMLoadInstruction':
         stackFrame.setLocalValue(
@@ -155,7 +118,7 @@ const interpretLLVMFunction = (
 
       case 'LLVMPhiInstruction':
         stackFrame.setLocalValue(
-          instructionToInterpret.name,
+          instructionToInterpret.resultVariable,
           interpretLLVMValue(
             environment,
             stackFrame,
@@ -168,6 +131,7 @@ const interpretLLVMFunction = (
         break;
 
       case 'LLVMLabelInstruction':
+        lastFromLabel = currentLabel;
         currentLabel = instructionToInterpret.name;
         programCounter += 1;
         break;
@@ -176,23 +140,22 @@ const interpretLLVMFunction = (
         const target = labelMapping.get(instructionToInterpret.branch);
         // istanbul ignore next
         if (target == null) throw new Error(`Bad label ${instructionToInterpret.branch}!`);
-        lastFromLabel = currentLabel;
         programCounter = target;
         break;
       }
 
       case 'LLVMConditionalJumpInstruction': {
-        const labelToJump = interpretLLVMValue(
+        const condition = interpretLLVMValue(
           environment,
           stackFrame,
           instructionToInterpret.condition
-        ).notEquals(Long.ZERO)
+        );
+        const labelToJump = condition.notEquals(Long.ZERO)
           ? instructionToInterpret.b1
           : instructionToInterpret.b2;
         const target = labelMapping.get(labelToJump);
         // istanbul ignore next
         if (target == null) throw new Error(`Bad label ${labelToJump}!`);
-        lastFromLabel = currentLabel;
         programCounter = target;
         break;
       }
@@ -209,7 +172,6 @@ const interpretLLVMFunction = (
         const target = labelMapping.get(labelToJump);
         // istanbul ignore next
         if (target == null) throw new Error(`Bad label ${labelToJump}!`);
-        lastFromLabel = currentLabel;
         programCounter = target;
         break;
       }

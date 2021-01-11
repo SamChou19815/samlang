@@ -29,10 +29,10 @@ declare i64 @_builtin_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 
 ; @GLOBAL_STRING_0 = 'hello world'
-@GLOBAL_STRING_0 = private unnamed_addr constant [11 x i64] [i64 11, i64 104, i64 101, i64 108, i64 108, i64 111, i64 32, i64 119, i64 111, i64 114, i64 108, i64 100], align 8
+@GLOBAL_STRING_0 = private unnamed_addr constant [12 x i64] [i64 11, i64 104, i64 101, i64 108, i64 108, i64 111, i64 32, i64 119, i64 111, i64 114, i64 108, i64 100], align 8
 define i64 @_module_Demo_class_Main_function_main() local_unnamed_addr nounwind {
 l__module_Demo_class_Main_function_main_0_START:
-  %_temp_0_string_name_cast = bitcast [11 x i64]* @GLOBAL_STRING_0 to i64*
+  %_temp_0_string_name_cast = bitcast [12 x i64]* @GLOBAL_STRING_0 to i64*
   call i64 @_builtin_println(i64* %_temp_0_string_name_cast) nounwind
   ret i64 0
 }

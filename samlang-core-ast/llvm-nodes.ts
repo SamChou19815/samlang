@@ -539,7 +539,9 @@ declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
         .join(', ');
       return [
         `; @${name} = '${content}'`,
-        `@${name} = private unnamed_addr constant [${size} x i64] [i64 ${size}, ${ints}], align 8`,
+        `@${name} = private unnamed_addr constant [${
+          size + 1
+        } x i64] [i64 ${size}, ${ints}], align 8`,
       ];
     }),
     ...typeDefinitions.map(
