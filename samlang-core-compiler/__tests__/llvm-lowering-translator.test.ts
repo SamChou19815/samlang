@@ -101,7 +101,7 @@ it('prettyPrintLLVMFunction works for base expressions 3/n', () => {
       }),
       HIR_RETURN(HIR_VARIABLE('foo', INT)),
     ],
-    `  %_temp_0_index_pointer_temp = getelementptr i64*, %Bar* %bar, i64 3
+    `  %_temp_0_index_pointer_temp = getelementptr %Bar, %Bar* %bar, i32 0, i32 3
   %foo = load i64, i64* %_temp_0_index_pointer_temp
   ret i64 %foo`
   );
@@ -169,13 +169,14 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 1/n', () => {
         ],
       }),
     ],
-    `  %bb = icmp eq i1 %t, 2
+    `  %bb = icmp eq i64 %t, 2
   br i1 %bb, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
 l_testFunction_1_if_else_true_label:
   call i64 @foo() nounwind
   br label %l_testFunction_3_if_else_end_label
 l_testFunction_2_if_else_false_label:
   call i64 @bar() nounwind
+  br label %l_testFunction_3_if_else_end_label
 l_testFunction_3_if_else_end_label:`
   );
 });
@@ -213,6 +214,7 @@ l_testFunction_1_if_else_true_label:
   br label %l_testFunction_3_if_else_end_label
 l_testFunction_2_if_else_false_label:
   %b2 = call i64 @bar() nounwind
+  br label %l_testFunction_3_if_else_end_label
 l_testFunction_3_if_else_end_label:
   %ma = phi i64 [ %b1, %l_testFunction_1_if_else_true_label ], [ %b2, %l_testFunction_2_if_else_false_label ]`
   );
@@ -274,8 +276,10 @@ l_testFunction_4_if_else_true_label:
   br label %l_testFunction_6_if_else_end_label
 l_testFunction_5_if_else_false_label:
   %b3 = call i64 @bar() nounwind
+  br label %l_testFunction_6_if_else_end_label
 l_testFunction_6_if_else_end_label:
   %ma_nested = phi i64 [ %b2, %l_testFunction_4_if_else_true_label ], [ %b3, %l_testFunction_5_if_else_false_label ]
+  br label %l_testFunction_3_if_else_end_label
 l_testFunction_3_if_else_end_label:
   %ma = phi i64 [ %b1, %l_testFunction_1_if_else_true_label ], [ %ma_nested, %l_testFunction_6_if_else_end_label ]`
   );
@@ -394,9 +398,9 @@ it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 1/n', () => {
     ],
     `  %_temp_0_struct_pointer_raw = call i64* @_builtin_malloc(i64 16) nounwind
   %s = bitcast i64* %_temp_0_struct_pointer_raw to { i64, i64 }*
-  %_temp_1_struct_value_pointer_0 = getelementptr i64*, { i64, i64 }* %s, i64 0
+  %_temp_1_struct_value_pointer_0 = getelementptr { i64, i64 }, { i64, i64 }* %s, i32 0, i32 0
   store i64 0, i64* %_temp_1_struct_value_pointer_0
-  %_temp_2_struct_value_pointer_1 = getelementptr i64*, { i64, i64 }* %s, i64 1
+  %_temp_2_struct_value_pointer_1 = getelementptr { i64, i64 }, { i64, i64 }* %s, i32 0, i32 1
   store i64 0, i64* %_temp_2_struct_value_pointer_1`
   );
 });
@@ -412,9 +416,9 @@ it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 2/n', () => {
     ],
     `  %_temp_0_struct_pointer_raw = call i64* @_builtin_malloc(i64 16) nounwind
   %s = bitcast i64* %_temp_0_struct_pointer_raw to %Foo*
-  %_temp_1_struct_value_pointer_0 = getelementptr i64*, %Foo* %s, i64 0
+  %_temp_1_struct_value_pointer_0 = getelementptr %Foo, %Foo* %s, i32 0, i32 0
   store i64 0, i64* %_temp_1_struct_value_pointer_0
-  %_temp_2_struct_value_pointer_1 = getelementptr i64*, %Foo* %s, i64 1
+  %_temp_2_struct_value_pointer_1 = getelementptr %Foo, %Foo* %s, i32 0, i32 1
   store i64 0, i64* %_temp_2_struct_value_pointer_1`
   );
 });
@@ -456,15 +460,15 @@ it('lowerHighIRModuleToLLVMModule works', () => {
       })
     )
   ).toEqual(`declare i64* @_builtin_malloc(i64) nounwind
-declare void @_builtin_println(i64*) nounwind
-declare void @_builtin_throw(i64*) nounwind
+declare i64 @_builtin_println(i64*) nounwind
+declare i64 @_builtin_throw(i64*) nounwind
 declare i64* @_builtin_intToString(i64) nounwind
 declare i64 @_builtin_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 
 ; @ss = 'S'
 @ss = private unnamed_addr constant [2 x i64] [i64 1, i64 83], align 8
-%A = { i64, i64 }
+%A = type { i64, i64 }
 define i64 @test() local_unnamed_addr nounwind {
 l_test_0_START:
   %_temp_0_string_name_cast = bitcast [2 x i64]* @ss to i64*

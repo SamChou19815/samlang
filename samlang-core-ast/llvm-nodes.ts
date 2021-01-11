@@ -131,7 +131,6 @@ export type LLVMCastInstruction = {
 export type LLVMGetElementPointerInstruction = {
   readonly __type__: 'LLVMGetElementPointerInstruction';
   readonly resultVariable: string;
-  readonly resultType: LLVMType;
   readonly sourceValue: LLVMValue;
   readonly sourcePointerType: LLVMType;
   readonly offset: number;
@@ -236,14 +235,12 @@ export const LLVM_CAST = ({
 
 export const LLVM_GET_ELEMENT_PTR = ({
   resultVariable,
-  resultType,
   sourceValue,
   sourcePointerType,
   offset,
 }: ConstructorArgumentObject<LLVMGetElementPointerInstruction>): LLVMGetElementPointerInstruction => ({
   __type__: 'LLVMGetElementPointerInstruction',
   resultVariable,
-  resultType,
   sourceValue,
   sourcePointerType,
   offset,
@@ -374,9 +371,9 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
     case 'LLVMGetElementPointerInstruction': {
       const { resultVariable, offset } = instruction;
       const value = prettyPrintLLVMValue(instruction.sourceValue);
-      const resultType = prettyPrintLLVMType(instruction.resultType);
       const sourceType = prettyPrintLLVMType(instruction.sourcePointerType);
-      return `%${resultVariable} = getelementptr ${resultType}*, ${sourceType} ${value}, i64 ${offset}`;
+      const sourceTypeWithoutStar = sourceType.substring(0, sourceType.length - 1);
+      return `%${resultVariable} = getelementptr ${sourceTypeWithoutStar}, ${sourceType} ${value}, i32 0, i32 ${offset}`;
     }
     case 'LLVMBinaryInstruction': {
       const result = `%${instruction.resultVariable}`;
@@ -403,22 +400,22 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
           stringOperatorAndType = 'xor i1';
           break;
         case '<':
-          stringOperatorAndType = 'icmp slt i1';
+          stringOperatorAndType = 'icmp slt i64';
           break;
         case '<=':
-          stringOperatorAndType = 'icmp sle i1';
+          stringOperatorAndType = 'icmp sle i64';
           break;
         case '>':
-          stringOperatorAndType = 'icmp sgt i1';
+          stringOperatorAndType = 'icmp sgt i64';
           break;
         case '>=':
-          stringOperatorAndType = 'icmp sge i1';
+          stringOperatorAndType = 'icmp sge i64';
           break;
         case '==':
-          stringOperatorAndType = 'icmp eq i1';
+          stringOperatorAndType = 'icmp eq i64';
           break;
         case '!=':
-          stringOperatorAndType = 'icmp ne i1';
+          stringOperatorAndType = 'icmp ne i64';
           break;
       }
       return `${result} = ${stringOperatorAndType} ${v1}, ${v2}`;
@@ -526,27 +523,28 @@ export const prettyPrintLLVMModule = ({
 }: LLVMModule): string => {
   return [
     `declare i64* @_builtin_malloc(i64) nounwind
-declare void @_builtin_println(i64*) nounwind
-declare void @_builtin_throw(i64*) nounwind
+declare i64 @_builtin_println(i64*) nounwind
+declare i64 @_builtin_throw(i64*) nounwind
 declare i64* @_builtin_intToString(i64) nounwind
 declare i64 @_builtin_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 `,
     ...globalVariables.flatMap(({ name, content }) => {
       const size = content.length;
+      const structLength = size + 1;
       const ints = Array.from(content)
         .map((it) => `i64 ${it.charCodeAt(0)}`)
         .join(', ');
       return [
         `; @${name} = '${content}'`,
-        `@${name} = private unnamed_addr constant [${
-          size + 1
-        } x i64] [i64 ${size}, ${ints}], align 8`,
+        size === 0
+          ? `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 ${size}], align 8`
+          : `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 ${size}, ${ints}], align 8`,
       ];
     }),
     ...typeDefinitions.map(
       ({ identifier, mappings }) =>
-        `%${identifier} = { ${mappings.map(prettyPrintLLVMType).join(', ')} }`
+        `%${identifier} = type { ${mappings.map(prettyPrintLLVMType).join(', ')} }`
     ),
     ...functions.map(prettyPrintLLVMFunction),
   ].join('\n');

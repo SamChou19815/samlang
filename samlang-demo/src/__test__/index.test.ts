@@ -22,8 +22,8 @@ const _compiled_program_main = () => {
 
 _compiled_program_main();`,
     llvmString: `declare i64* @_builtin_malloc(i64) nounwind
-declare void @_builtin_println(i64*) nounwind
-declare void @_builtin_throw(i64*) nounwind
+declare i64 @_builtin_println(i64*) nounwind
+declare i64 @_builtin_throw(i64*) nounwind
 declare i64* @_builtin_intToString(i64) nounwind
 declare i64 @_builtin_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind

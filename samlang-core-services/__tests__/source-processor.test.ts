@@ -34,8 +34,8 @@ it('hello world processor test', () => {
   const llvmModule = lowerSourcesToLLVMModules(checkedSources).get(moduleReference);
   assertNotNull(llvmModule);
   expect(prettyPrintLLVMModule(llvmModule)).toBe(`declare i64* @_builtin_malloc(i64) nounwind
-declare void @_builtin_println(i64*) nounwind
-declare void @_builtin_throw(i64*) nounwind
+declare i64 @_builtin_println(i64*) nounwind
+declare i64 @_builtin_throw(i64*) nounwind
 declare i64* @_builtin_intToString(i64) nounwind
 declare i64 @_builtin_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind

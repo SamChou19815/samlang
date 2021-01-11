@@ -128,7 +128,6 @@ class LLVMLoweringManager {
     this.emitInstruction(
       LLVM_GET_ELEMENT_PTR({
         resultVariable: pointerTemp,
-        resultType: valueType,
         sourcePointerType: loweredPointerType,
         sourceValue: loweredPointerValue,
         offset: s.index,
@@ -166,6 +165,7 @@ class LLVMLoweringManager {
       s2.forEach((it) => this.lowerHighIRStatement(it));
       const v2 = this.lowerHighIRExpression(finalAssignment.branch2Value).value;
       const v2Label = this.currentLabel;
+      this.emitInstruction(LLVM_JUMP(endLabel));
       this.emitInstruction(LLVM_LABEL(endLabel));
       this.emitInstruction(
         LLVM_PHI({
@@ -182,6 +182,7 @@ class LLVMLoweringManager {
       this.emitInstruction(LLVM_JUMP(endLabel));
       this.emitInstruction(LLVM_LABEL(falseLabel));
       s2.forEach((it) => this.lowerHighIRStatement(it));
+      this.emitInstruction(LLVM_JUMP(endLabel));
       this.emitInstruction(LLVM_LABEL(endLabel));
     }
   }
@@ -257,7 +258,6 @@ class LLVMLoweringManager {
       this.emitInstruction(
         LLVM_GET_ELEMENT_PTR({
           resultVariable: storePointerTemp,
-          resultType: type,
           sourceValue: LLVM_VARIABLE(s.structVariableName),
           sourcePointerType: structType,
           offset: i,

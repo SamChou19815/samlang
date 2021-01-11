@@ -184,13 +184,12 @@ it('prettyPrintLLVMInstruction works for LLVM_GET_ELEMENT_PTR.', () => {
     prettyPrintLLVMInstruction(
       LLVM_GET_ELEMENT_PTR({
         resultVariable: 'foo',
-        resultType: LLVM_INT_TYPE,
         sourceValue: LLVM_VARIABLE('bar'),
         sourcePointerType: LLVM_IDENTIFIER_TYPE('Bar'),
         offset: 3,
       })
     )
-  ).toBe('%foo = getelementptr i64*, %Bar* %bar, i64 3');
+  ).toBe('%foo = getelementptr %Bar, %Bar* %bar, i32 0, i32 3');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
@@ -269,7 +268,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(1),
       })
     )
-  ).toBe('%foo = icmp slt i1 %bar, 1');
+  ).toBe('%foo = icmp slt i64 %bar, 1');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -280,7 +279,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(1),
       })
     )
-  ).toBe('%foo = icmp sle i1 %bar, 1');
+  ).toBe('%foo = icmp sle i64 %bar, 1');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -291,7 +290,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(1),
       })
     )
-  ).toBe('%foo = icmp sgt i1 %bar, 1');
+  ).toBe('%foo = icmp sgt i64 %bar, 1');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -302,7 +301,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(1),
       })
     )
-  ).toBe('%foo = icmp sge i1 %bar, 1');
+  ).toBe('%foo = icmp sge i64 %bar, 1');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -313,7 +312,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(1),
       })
     )
-  ).toBe('%foo = icmp eq i1 %bar, 1');
+  ).toBe('%foo = icmp eq i64 %bar, 1');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -324,7 +323,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(1),
       })
     )
-  ).toBe('%foo = icmp ne i1 %bar, 1');
+  ).toBe('%foo = icmp ne i64 %bar, 1');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_LOAD.', () => {
@@ -445,7 +444,10 @@ start:
 it('prettyPrintLLVMModule works', () => {
   expect(
     prettyPrintLLVMModule({
-      globalVariables: [{ name: 'hw', content: 'AA' }],
+      globalVariables: [
+        { name: 'hw', content: 'AA' },
+        { name: 'empty', content: '' },
+      ],
       typeDefinitions: [
         { identifier: 'Foo', mappings: [LLVM_INT_TYPE, LLVM_IDENTIFIER_TYPE('Bar')] },
       ],
@@ -459,15 +461,17 @@ it('prettyPrintLLVMModule works', () => {
       ],
     })
   ).toBe(`declare i64* @_builtin_malloc(i64) nounwind
-declare void @_builtin_println(i64*) nounwind
-declare void @_builtin_throw(i64*) nounwind
+declare i64 @_builtin_println(i64*) nounwind
+declare i64 @_builtin_throw(i64*) nounwind
 declare i64* @_builtin_intToString(i64) nounwind
 declare i64 @_builtin_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 
 ; @hw = 'AA'
 @hw = private unnamed_addr constant [3 x i64] [i64 2, i64 65, i64 65], align 8
-%Foo = { i64, %Bar* }
+; @empty = ''
+@empty = private unnamed_addr constant [1 x i64] [i64 0], align 8
+%Foo = type { i64, %Bar* }
 define i64 @fact(i64 %n) local_unnamed_addr nounwind {
 start:
   ret i64 %n
