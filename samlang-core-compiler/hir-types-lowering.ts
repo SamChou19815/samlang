@@ -8,6 +8,7 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_STRUCT_TYPE,
   HIR_FUNCTION_TYPE,
+  HIR_CLOSURE_TYPE,
 } from 'samlang-core-ast/hir-types';
 
 const lowerSamlangType = (type: Type, genericTypes: ReadonlySet<string>): HighIRType => {
@@ -32,10 +33,7 @@ const lowerSamlangType = (type: Type, genericTypes: ReadonlySet<string>): HighIR
     case 'TupleType':
       return HIR_STRUCT_TYPE(type.mappings.map((it) => lowerSamlangType(it, genericTypes)));
     case 'FunctionType':
-      return HIR_FUNCTION_TYPE(
-        type.argumentTypes.map((it) => lowerSamlangType(it, genericTypes)),
-        lowerSamlangType(type.returnType, genericTypes)
-      );
+      return HIR_CLOSURE_TYPE;
   }
 };
 

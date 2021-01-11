@@ -225,7 +225,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
 
 type _Class2 = (int, any);
 
-type _Class3 = (((_A, any)) -> int);
+type _Class3 = ((any, any));
 
 function _module__class_Main_function_main(): int {
   _module__class_Class1_function_infiniteLoop();

@@ -10,7 +10,12 @@ import {
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
 } from 'samlang-core-ast/common-names';
-import type { Type, IdentifierType, ModuleReference } from 'samlang-core-ast/common-nodes';
+import type {
+  Type,
+  IdentifierType,
+  ModuleReference,
+  FunctionType,
+} from 'samlang-core-ast/common-nodes';
 import {
   HighIRStatement,
   HighIRExpression,
@@ -34,6 +39,7 @@ import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import {
   HighIRType,
   HighIRFunctionType,
+  isTheSameHighIRType,
   HIR_BOOL_TYPE,
   HIR_INT_TYPE,
   HIR_ANY_TYPE,
@@ -60,7 +66,7 @@ import type {
   LambdaExpression,
   StatementBlockExpression,
 } from 'samlang-core-ast/samlang-expressions';
-import { checkNotNull, LocalStackedContext } from 'samlang-core-utils';
+import { assertNotNull, checkNotNull, LocalStackedContext } from 'samlang-core-utils';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -136,6 +142,20 @@ class HighIRExpressionLoweringManager {
     return lowerSamlangType(type, this.typeParameters);
   }
 
+  private lowerBindWithPotentialCast(
+    name: string,
+    type: HighIRType,
+    assignedExpression: HighIRExpression,
+    mutableStatementCollector: HighIRStatement[]
+  ): HighIRExpression {
+    if (isTheSameHighIRType(type, assignedExpression.type)) {
+      this.varibleContext.bind(name, assignedExpression);
+      return assignedExpression;
+    }
+    mutableStatementCollector.push(HIR_CAST({ name, type, assignedExpression }));
+    return HIR_VARIABLE(name, type);
+  }
+
   readonly lower = (expression: SamlangExpression): HighIRExpressionLoweringResult => {
     switch (expression.__type__) {
       case 'LiteralExpression':
@@ -203,26 +223,30 @@ class HighIRExpressionLoweringManager {
 
   private lowerClassMember(expression: ClassMemberExpression): HighIRExpressionLoweringResult {
     const structVariableName = this.allocateTemporaryVariable();
-    return {
-      statements: [
-        HIR_STRUCT_INITIALIZATION({
-          structVariableName,
-          type: HIR_CLOSURE_TYPE,
-          expressionList: [
-            HIR_NAME(
-              encodeFunctionNameGlobally(
-                expression.moduleReference,
-                expression.className,
-                expression.memberName
-              ),
-              this.lowerType(expression.type)
+    const statements: HighIRStatement[] = [];
+    statements.push(
+      HIR_STRUCT_INITIALIZATION({
+        structVariableName,
+        type: HIR_CLOSURE_TYPE,
+        expressionList: [
+          HIR_NAME(
+            encodeFunctionNameGlobally(
+              expression.moduleReference,
+              expression.className,
+              expression.memberName
             ),
+            this.lowerType(expression.type)
+          ),
+          this.lowerBindWithPotentialCast(
+            this.allocateTemporaryVariable(),
+            HIR_ANY_TYPE,
             HIR_ZERO,
-          ],
-        }),
-      ],
-      expression: HIR_VARIABLE(structVariableName, HIR_CLOSURE_TYPE),
-    };
+            statements
+          ),
+        ],
+      })
+    );
+    return { statements, expression: HIR_VARIABLE(structVariableName, HIR_CLOSURE_TYPE) };
   }
 
   private lowerTupleConstructor(
@@ -280,17 +304,27 @@ class HighIRExpressionLoweringManager {
     expression: VariantConstructorExpression
   ): HighIRExpressionLoweringResult {
     const structVariableName = this.allocateTemporaryVariable();
-    const result = this.lower(expression.data);
+    const statements: HighIRStatement[] = [];
+    const variantType = this.lowerType(expression.type);
+    const dataExpression = this.loweredAndAddStatements(expression.data, statements);
+    statements.push(
+      HIR_STRUCT_INITIALIZATION({
+        structVariableName,
+        type: variantType,
+        expressionList: [
+          HIR_INT(expression.tagOrder),
+          this.lowerBindWithPotentialCast(
+            this.allocateTemporaryVariable(),
+            HIR_ANY_TYPE,
+            dataExpression,
+            statements
+          ),
+        ],
+      })
+    );
     return {
-      statements: [
-        ...result.statements,
-        HIR_STRUCT_INITIALIZATION({
-          structVariableName,
-          type: this.lowerType(expression.type),
-          expressionList: [HIR_INT(expression.tagOrder), result.expression],
-        }),
-      ],
-      expression: HIR_VARIABLE(structVariableName, this.lowerType(expression.type)),
+      statements,
+      expression: HIR_VARIABLE(structVariableName, variantType),
     };
   }
 
@@ -427,6 +461,13 @@ class HighIRExpressionLoweringManager {
   private lowerFunctionCall(expression: FunctionCallExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
     const functionExpression = expression.functionExpression;
+    const sourceLevelFunctionTypeWithoutContext = functionExpression.type as FunctionType;
+    const functionTypeWithoutContext = HIR_FUNCTION_TYPE(
+      sourceLevelFunctionTypeWithoutContext.argumentTypes.map((it) => this.lowerType(it)),
+      this.lowerType(sourceLevelFunctionTypeWithoutContext.returnType)
+    );
+    assertNotNull(functionTypeWithoutContext.argumentTypes);
+    assertNotNull(functionTypeWithoutContext.returnType);
     const loweredReturnType = this.lowerType(expression.type);
     const isVoidReturn =
       expression.type.type === 'PrimitiveType' && expression.type.name === 'unit';
@@ -441,14 +482,20 @@ class HighIRExpressionLoweringManager {
               functionExpression.className,
               functionExpression.memberName
             ),
-            this.lowerType(functionExpression.type)
+            functionTypeWithoutContext
           ),
-          functionArguments: expression.functionArguments.map((oneArgument) =>
-            this.loweredAndAddStatements(oneArgument, loweredStatements)
-          ),
+          functionArguments: expression.functionArguments.map((oneArgument, i) => {
+            const loweredArgument = this.loweredAndAddStatements(oneArgument, loweredStatements);
+            return this.lowerBindWithPotentialCast(
+              this.allocateTemporaryVariable(),
+              checkNotNull(functionTypeWithoutContext.argumentTypes[i]),
+              loweredArgument,
+              loweredStatements
+            );
+          }),
           returnCollector: isVoidReturn
             ? undefined
-            : { name: returnCollectorName, type: loweredReturnType },
+            : { name: returnCollectorName, type: functionTypeWithoutContext.returnType },
         });
         break;
       case 'MethodAccessExpression':
@@ -462,20 +509,26 @@ class HighIRExpressionLoweringManager {
             HIR_FUNCTION_TYPE(
               [
                 this.lowerType(functionExpression.expression.type),
-                ...expression.functionArguments.map((it) => this.lowerType(it.type)),
+                ...functionTypeWithoutContext.argumentTypes,
               ],
               loweredReturnType
             )
           ),
           functionArguments: [
             this.loweredAndAddStatements(functionExpression.expression, loweredStatements),
-            ...expression.functionArguments.map((oneArgument) =>
-              this.loweredAndAddStatements(oneArgument, loweredStatements)
-            ),
+            ...expression.functionArguments.map((oneArgument, i) => {
+              const loweredArgument = this.loweredAndAddStatements(oneArgument, loweredStatements);
+              return this.lowerBindWithPotentialCast(
+                this.allocateTemporaryVariable(),
+                checkNotNull(functionTypeWithoutContext.argumentTypes[i]),
+                loweredArgument,
+                loweredStatements
+              );
+            }),
           ],
           returnCollector: isVoidReturn
             ? undefined
-            : { name: returnCollectorName, type: loweredReturnType },
+            : { name: returnCollectorName, type: functionTypeWithoutContext.returnType },
         });
         break;
       default: {
@@ -494,129 +547,121 @@ class HighIRExpressionLoweringManager {
           functionExpression,
           loweredStatements
         );
-        const loweredFunctionArguments = expression.functionArguments.map((oneArgument) =>
-          this.loweredAndAddStatements(oneArgument, loweredStatements)
+        const closureExpression = this.lowerBindWithPotentialCast(
+          this.allocateTemporaryVariable(),
+          HIR_CLOSURE_TYPE,
+          loweredFunctionExpression,
+          loweredStatements
         );
-        const closureTemp = this.allocateTemporaryVariable();
+        const loweredFunctionArguments = expression.functionArguments.map((oneArgument, i) => {
+          const loweredArgument = this.loweredAndAddStatements(oneArgument, loweredStatements);
+          return this.lowerBindWithPotentialCast(
+            this.allocateTemporaryVariable(),
+            checkNotNull(functionTypeWithoutContext.argumentTypes[i]),
+            loweredArgument,
+            loweredStatements
+          );
+        });
+        const functionTempRaw = this.allocateTemporaryVariable();
         const contextTemp = this.allocateTemporaryVariable();
-        const contextTempForZeroComparison = this.allocateTemporaryVariable();
         const resultTempB1 = this.allocateTemporaryVariable();
         const resultTempB2 = this.allocateTemporaryVariable();
-        const functionTempRawB1 = this.allocateTemporaryVariable();
-        const functionTempRawB2 = this.allocateTemporaryVariable();
-        const functionTempTypedB1 = this.allocateTemporaryVariable();
-        const functionTempTypedB2 = this.allocateTemporaryVariable();
         const comparisonTemp = this.allocateTemporaryVariable();
-        // NOTE: cast can happen here!
+
         loweredStatements.push(
-          HIR_CAST({
-            name: closureTemp,
-            type: HIR_CLOSURE_TYPE,
-            assignedExpression: loweredFunctionExpression,
-          })
-        );
-        loweredStatements.push(
+          HIR_INDEX_ACCESS({
+            name: functionTempRaw,
+            type: HIR_ANY_TYPE,
+            pointerExpression: closureExpression,
+            index: 0,
+          }),
           HIR_INDEX_ACCESS({
             name: contextTemp,
             type: HIR_ANY_TYPE,
-            pointerExpression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
+            pointerExpression: closureExpression,
             index: 1,
-          }),
-          // NOTE: cast happens here!
-          HIR_CAST({
-            name: contextTempForZeroComparison,
-            type: HIR_INT_TYPE,
-            assignedExpression: HIR_VARIABLE(closureTemp, HIR_ANY_TYPE),
-          }),
+          })
+        );
+        loweredStatements.push(
           HIR_BINARY({
             name: comparisonTemp,
             operator: '==',
-            e1: HIR_VARIABLE(contextTempForZeroComparison, HIR_INT_TYPE),
+            e1: this.lowerBindWithPotentialCast(
+              this.allocateTemporaryVariable(),
+              HIR_INT_TYPE,
+              HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
+              loweredStatements
+            ),
             e2: HIR_ZERO,
           })
         );
+        const booleanExpression = HIR_VARIABLE(comparisonTemp, HIR_BOOL_TYPE);
+        const functionTypeWithContext = HIR_FUNCTION_TYPE(
+          [HIR_ANY_TYPE, ...functionTypeWithoutContext.argumentTypes],
+          functionTypeWithoutContext.returnType
+        );
 
-        functionCall = HIR_IF_ELSE({
-          booleanExpression: HIR_VARIABLE(comparisonTemp, HIR_BOOL_TYPE),
-          s1: [
-            HIR_INDEX_ACCESS({
-              name: functionTempRawB1,
-              type: HIR_ANY_TYPE,
-              pointerExpression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
-              index: 0,
-            }),
-            // NOTE: cast happens here!
-            HIR_CAST({
-              name: functionTempTypedB1,
-              type: HIR_FUNCTION_TYPE(
-                loweredFunctionArguments.map((it) => it.type),
-                loweredReturnType
-              ),
-              assignedExpression: HIR_VARIABLE(functionTempRawB1, HIR_ANY_TYPE),
-            }),
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_VARIABLE(
-                functionTempTypedB1,
-                HIR_FUNCTION_TYPE(
-                  loweredFunctionArguments.map((it) => it.type),
-                  loweredReturnType
-                )
-              ),
-              functionArguments: loweredFunctionArguments,
-              returnCollector: isVoidReturn
-                ? undefined
-                : { name: resultTempB1, type: loweredReturnType },
-            }),
-          ],
-          s2: [
-            HIR_INDEX_ACCESS({
-              name: functionTempRawB2,
-              type: HIR_ANY_TYPE,
-              pointerExpression: HIR_VARIABLE(closureTemp, HIR_CLOSURE_TYPE),
-              index: 0,
-            }),
-            // NOTE: cast happens here!
-            HIR_CAST({
-              name: functionTempTypedB2,
-              type: HIR_FUNCTION_TYPE(
-                [HIR_ANY_TYPE, ...loweredFunctionArguments.map((it) => it.type)],
-                loweredReturnType
-              ),
-              assignedExpression: HIR_VARIABLE(functionTempRawB2, HIR_ANY_TYPE),
-            }),
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_VARIABLE(
-                functionTempTypedB2,
-                HIR_FUNCTION_TYPE(
-                  [HIR_ANY_TYPE, ...loweredFunctionArguments.map((it) => it.type)],
-                  loweredReturnType
-                )
-              ),
-              functionArguments: [
-                HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
-                ...loweredFunctionArguments,
-              ],
-              returnCollector: isVoidReturn
-                ? undefined
-                : { name: resultTempB2, type: loweredReturnType },
-            }),
-          ],
-          finalAssignment: isVoidReturn
-            ? undefined
-            : {
-                name: returnCollectorName,
-                type: loweredReturnType,
-                branch1Value: HIR_VARIABLE(resultTempB1, loweredReturnType),
-                branch2Value: HIR_VARIABLE(resultTempB2, loweredReturnType),
-              },
-        });
+        const s1: HighIRStatement[] = [];
+        const s1FunctionExpression = this.lowerBindWithPotentialCast(
+          this.allocateTemporaryVariable(),
+          functionTypeWithoutContext,
+          HIR_VARIABLE(functionTempRaw, HIR_ANY_TYPE),
+          s1
+        );
+        s1.push(
+          HIR_FUNCTION_CALL({
+            functionExpression: s1FunctionExpression,
+            functionArguments: loweredFunctionArguments,
+            returnCollector: isVoidReturn
+              ? undefined
+              : { name: resultTempB1, type: functionTypeWithoutContext.returnType },
+          })
+        );
+        const s2: HighIRStatement[] = [];
+        const s2FunctionExpression = this.lowerBindWithPotentialCast(
+          this.allocateTemporaryVariable(),
+          functionTypeWithContext,
+          HIR_VARIABLE(functionTempRaw, HIR_ANY_TYPE),
+          s2
+        );
+        s2.push(
+          HIR_FUNCTION_CALL({
+            functionExpression: s2FunctionExpression,
+            functionArguments: [
+              HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
+              ...loweredFunctionArguments,
+            ],
+            returnCollector: isVoidReturn
+              ? undefined
+              : { name: resultTempB2, type: functionTypeWithoutContext.returnType },
+          })
+        );
+        const finalAssignment = isVoidReturn
+          ? undefined
+          : {
+              name: returnCollectorName,
+              type: functionTypeWithoutContext.returnType,
+              branch1Value: HIR_VARIABLE(resultTempB1, functionTypeWithoutContext.returnType),
+              branch2Value: HIR_VARIABLE(resultTempB2, functionTypeWithoutContext.returnType),
+            };
+
+        functionCall = HIR_IF_ELSE({ booleanExpression, s1, s2, finalAssignment });
         break;
       }
     }
+    loweredReturnType;
+
     loweredStatements.push(functionCall);
     return {
       statements: loweredStatements,
-      expression: isVoidReturn ? HIR_ZERO : HIR_VARIABLE(returnCollectorName, loweredReturnType),
+      expression: isVoidReturn
+        ? HIR_ZERO
+        : this.lowerBindWithPotentialCast(
+            this.allocateTemporaryVariable(),
+            loweredReturnType,
+            HIR_VARIABLE(returnCollectorName, functionTypeWithoutContext.returnType),
+            loweredStatements
+          ),
     };
   }
 
@@ -778,28 +823,30 @@ class HighIRExpressionLoweringManager {
     const loweredMatchingList = expression.matchingList.map(
       ({ tagOrder, dataVariable, expression: patternExpression }) => {
         const localStatements: HighIRStatement[] = [];
-        if (dataVariable != null) {
-          const dataVariableRawTemp = this.allocateTemporaryVariable();
-          const [dataVariableName, dataVariableType] = dataVariable;
-          localStatements.push(
-            HIR_INDEX_ACCESS({
-              name: dataVariableRawTemp,
-              type: HIR_ANY_TYPE,
-              pointerExpression: matchedExpression,
-              index: 1,
-            }),
-            // NOTE: cast can happen here
-            HIR_CAST({
-              name: dataVariableName,
-              type: this.lowerType(dataVariableType),
-              assignedExpression: HIR_VARIABLE(dataVariableRawTemp, HIR_ANY_TYPE),
-            })
-          );
-        }
-        const result = this.lower(patternExpression);
-        localStatements.push(...result.statements);
-        const finalExpression = isVoidReturn ? undefined : result.expression;
-        return { tagOrder, finalExpression, statements: localStatements };
+        return this.varibleContext.withNestedScope(() => {
+          if (dataVariable != null) {
+            const dataVariableRawTemp = this.allocateTemporaryVariable();
+            const [dataVariableName, dataVariableType] = dataVariable;
+            localStatements.push(
+              HIR_INDEX_ACCESS({
+                name: dataVariableRawTemp,
+                type: HIR_ANY_TYPE,
+                pointerExpression: matchedExpression,
+                index: 1,
+              })
+            );
+            this.lowerBindWithPotentialCast(
+              dataVariableName,
+              this.lowerType(dataVariableType),
+              HIR_VARIABLE(dataVariableRawTemp, HIR_ANY_TYPE),
+              localStatements
+            );
+          }
+          const result = this.lower(patternExpression);
+          localStatements.push(...result.statements);
+          const finalExpression = isVoidReturn ? undefined : result.expression;
+          return { tagOrder, finalExpression, statements: localStatements };
+        });
       }
     );
     if (isVoidReturn) {
@@ -864,7 +911,20 @@ class HighIRExpressionLoweringManager {
       HIR_STRUCT_INITIALIZATION({
         structVariableName,
         type: HIR_CLOSURE_TYPE,
-        expressionList: [HIR_NAME(syntheticLambda.name, syntheticLambda.type), context],
+        expressionList: [
+          this.lowerBindWithPotentialCast(
+            this.allocateTemporaryVariable(),
+            HIR_ANY_TYPE,
+            HIR_NAME(syntheticLambda.name, syntheticLambda.type),
+            loweredStatements
+          ),
+          this.lowerBindWithPotentialCast(
+            this.allocateTemporaryVariable(),
+            HIR_ANY_TYPE,
+            context,
+            loweredStatements
+          ),
+        ],
       })
     );
     return {

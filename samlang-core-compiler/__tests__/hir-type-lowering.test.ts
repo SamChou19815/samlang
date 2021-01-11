@@ -18,6 +18,7 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_STRUCT_TYPE,
   HIR_FUNCTION_TYPE,
+  HIR_CLOSURE_TYPE,
 } from 'samlang-core-ast/hir-types';
 
 it('lowerSamlangType works', () => {
@@ -37,7 +38,7 @@ it('lowerSamlangType works', () => {
     HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_BOOL_TYPE])
   );
   expect(lowerSamlangType(functionType([intType, boolType], intType), new Set())).toEqual(
-    HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_BOOL_TYPE], HIR_INT_TYPE)
+    HIR_CLOSURE_TYPE
   );
 
   expect(() => lowerSamlangType({ type: 'UndecidedType', index: 0 }, new Set())).toThrow();

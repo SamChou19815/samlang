@@ -1,5 +1,4 @@
 import lowerHighIRModuleToLLVMModule, {
-  LLVMConstantPropagationContext,
   lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING,
 } from '../llvm-lowering-translator';
 
@@ -37,21 +36,6 @@ import {
   prettyPrintLLVMFunction,
   prettyPrintLLVMModule,
 } from 'samlang-core-ast/llvm-nodes';
-
-it('LLVMConstantPropagationContext works', () => {
-  const context = new LLVMConstantPropagationContext();
-  context.bind('foo', LLVM_INT(3));
-  context.bind('bar', LLVM_INT(3));
-  context.bind('baz', LLVM_VARIABLE('bar'));
-  context.bind('dev', LLVM_VARIABLE('meggo'));
-  context.bind('megan', LLVM_VARIABLE('dev'));
-
-  expect(context.getLocalValueType('foo')).toEqual(LLVM_INT(3));
-  expect(context.getLocalValueType('bar')).toEqual(LLVM_INT(3));
-  expect(context.getLocalValueType('baz')).toEqual(LLVM_INT(3));
-  expect(context.getLocalValueType('dev')).toEqual(LLVM_VARIABLE('meggo'));
-  expect(context.getLocalValueType('megan')).toEqual(LLVM_VARIABLE('meggo'));
-});
 
 const assertLoweringWorks = (
   highIRFunction: HighIRFunction,
@@ -308,26 +292,6 @@ it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 1/n', () => {
     [
       HIR_STRUCT_INITIALIZATION({
         structVariableName: 's',
-        type: HIR_CLOSURE_TYPE,
-        expressionList: [HIR_ZERO, HIR_ZERO],
-      }),
-    ],
-    `  %_temp_0_struct_pointer_raw = call i64* @_builtin_malloc(i64 16) nounwind
-  %s = bitcast i64* %_temp_0_struct_pointer_raw to { i64*, i64* }*
-  %_temp_1_struct_value_casted_0 = inttoptr i64 0 to i64*
-  %_temp_2_struct_value_pointer_0 = getelementptr i64**, { i64*, i64* }* %s, i64 0
-  store i64* %_temp_1_struct_value_casted_0, i64** %_temp_2_struct_value_pointer_0
-  %_temp_3_struct_value_casted_1 = inttoptr i64 0 to i64*
-  %_temp_4_struct_value_pointer_1 = getelementptr i64**, { i64*, i64* }* %s, i64 1
-  store i64* %_temp_3_struct_value_casted_1, i64** %_temp_4_struct_value_pointer_1`
-  );
-});
-
-it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 2/n', () => {
-  assertStatementLoweringWorks(
-    [
-      HIR_STRUCT_INITIALIZATION({
-        structVariableName: 's',
         type: HIR_STRUCT_TYPE([INT, INT]),
         expressionList: [HIR_ZERO, HIR_ZERO],
       }),
@@ -341,7 +305,7 @@ it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 2/n', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 3/n', () => {
+it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 2/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_STRUCT_INITIALIZATION({
