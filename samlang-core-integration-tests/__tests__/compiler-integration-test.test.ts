@@ -2,6 +2,7 @@ import { runnableSamlangProgramTestCases } from '../test-programs';
 
 import { assemblyProgramToString } from 'samlang-core-ast/asm-program';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
+import { LLVMModule, prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import { MidIRCompilationUnit, midIRCompilationUnitToString } from 'samlang-core-ast/mir-nodes';
 import {
   compileSamlangSourcesToHighIRSources,
@@ -10,11 +11,18 @@ import {
   generateAssemblyInstructionsFromMidIRCompilationUnit,
 } from 'samlang-core-compiler';
 import interpretAssemblyProgram from 'samlang-core-interpreter/assembly-interpreter';
+import interpretLLVMModule from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretMidIRCompilationUnit from 'samlang-core-interpreter/mid-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import optimizeIRCompilationUnit from 'samlang-core-optimization';
 import { checkSources } from 'samlang-core-services';
 import { assertNotNull } from 'samlang-core-utils';
+
+type LLVMIRTestCase = {
+  readonly testCaseName: string;
+  readonly expectedStandardOut: string;
+  readonly compilationUnit: LLVMModule;
+};
 
 type MidIRTestCase = {
   readonly testCaseName: string;
@@ -41,6 +49,33 @@ if (process.env.CI) {
 }
 
 const hirSources = compileSamlangSourcesToHighIRSources(checkedSources);
+
+const llvmBaseTestCases: readonly LLVMIRTestCase[] = (() => {
+  expect(compileTimeErrors).toEqual([]);
+
+  return runnableSamlangProgramTestCases.map(({ testCaseName, expectedStandardOut }) => {
+    const highIRModule = hirSources.get(new ModuleReference([testCaseName]));
+    assertNotNull(highIRModule);
+    const compilationUnit = lowerHighIRModuleToLLVMModule(highIRModule);
+    return {
+      testCaseName,
+      expectedStandardOut,
+      compilationUnit,
+    };
+  });
+})();
+
+llvmBaseTestCases.forEach((testCase) => {
+  it(`LLVM[no-opt]: ${testCase.testCaseName}`, () => {
+    let result: string;
+    try {
+      result = interpretLLVMModule(testCase.compilationUnit);
+    } catch {
+      fail(prettyPrintLLVMModule(testCase.compilationUnit));
+    }
+    expect(result).toBe(testCase.expectedStandardOut);
+  });
+});
 
 runnableSamlangProgramTestCases.forEach(({ testCaseName }) => {
   const highIRModule = hirSources.get(new ModuleReference([testCaseName]));
