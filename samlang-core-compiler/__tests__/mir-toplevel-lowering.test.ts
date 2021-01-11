@@ -2,7 +2,7 @@ import compileHighIrModuleToMidIRCompilationUnit from '../mir-toplevel-lowering'
 
 import {
   HIR_FUNCTION_CALL,
-  HIR_LET,
+  HIR_CAST,
   HIR_NAME,
   HIR_RETURN,
   HIR_VARIABLE,

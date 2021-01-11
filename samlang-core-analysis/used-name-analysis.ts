@@ -46,7 +46,7 @@ const collectUsedNamesFromStatement = (set: Set<string>, statement: HighIRStatem
         );
       }
       break;
-    case 'HighIRLetDefinitionStatement':
+    case 'HighIRCastStatement':
       collectUsedNamesFromExpression(set, statement.assignedExpression);
       break;
     case 'HighIRStructInitializationStatement':

@@ -19,7 +19,7 @@ import {
   HIR_INT,
   HIR_FUNCTION_CALL,
   HIR_NAME,
-  HIR_LET,
+  HIR_CAST,
   HIR_RETURN,
   HIR_ZERO,
   HIR_STRUCT_INITIALIZATION,
@@ -583,7 +583,7 @@ switch (f) {
   ).toBe(`let panik = ${ENCODED_FUNCTION_NAME_THROW}(0);`);
   expect(
     highIRStatementToString(
-      HIR_LET({
+      HIR_CAST({
         name: 'foo',
         type: HIR_INT_TYPE,
         assignedExpression: HIR_INT(19815),
@@ -611,7 +611,7 @@ it('HIR function to JS string test 1', () => {
         parameters: ['d', 't', 'i'],
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
         body: [
-          HIR_LET({
+          HIR_CAST({
             name: 'b',
             type: HIR_INT_TYPE,
             assignedExpression: HIR_INT(1857),

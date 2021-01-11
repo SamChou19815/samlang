@@ -93,8 +93,8 @@ export interface HighIRVariantPatternToStatement {
   readonly statements: readonly HighIRStatement[];
 }
 
-export interface HighIRLetDefinitionStatement extends BaseHighIRStatement {
-  readonly __type__: 'HighIRLetDefinitionStatement';
+export interface HighIRCastStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRCastStatement';
   readonly name: string;
   readonly type: HighIRType;
   readonly assignedExpression: HighIRExpression;
@@ -118,7 +118,7 @@ export type HighIRStatement =
   | HighIRFunctionCallStatement
   | HighIRIfElseStatement
   | HighIRSwitchStatement
-  | HighIRLetDefinitionStatement
+  | HighIRCastStatement
   | HighIRStructInitializationStatement
   | HighIRReturnStatement;
 
@@ -249,12 +249,12 @@ export const HIR_SWITCH = ({
   finalAssignment,
 });
 
-export const HIR_LET = ({
+export const HIR_CAST = ({
   name,
   type,
   assignedExpression,
-}: ConstructorArgumentObject<HighIRLetDefinitionStatement>): HighIRLetDefinitionStatement => ({
-  __type__: 'HighIRLetDefinitionStatement',
+}: ConstructorArgumentObject<HighIRCastStatement>): HighIRCastStatement => ({
+  __type__: 'HighIRCastStatement',
   name,
   type,
   assignedExpression,
@@ -372,7 +372,7 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         collector.push('  '.repeat(level), `}\n`);
         break;
       }
-      case 'HighIRLetDefinitionStatement':
+      case 'HighIRCastStatement':
         collector.push(
           '  '.repeat(level),
           `let ${s.name}: ${prettyPrintHighIRType(s.type)} = ${debugPrintHighIRExpression(

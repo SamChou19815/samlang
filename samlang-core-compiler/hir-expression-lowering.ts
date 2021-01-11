@@ -24,7 +24,7 @@ import {
   HIR_INDEX_ACCESS,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
-  HIR_LET,
+  HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
   HIR_BINARY,
@@ -509,7 +509,7 @@ class HighIRExpressionLoweringManager {
         const comparisonTemp = this.allocateTemporaryVariable();
         // NOTE: cast can happen here!
         loweredStatements.push(
-          HIR_LET({
+          HIR_CAST({
             name: closureTemp,
             type: HIR_CLOSURE_TYPE,
             assignedExpression: loweredFunctionExpression,
@@ -523,7 +523,7 @@ class HighIRExpressionLoweringManager {
             index: 1,
           }),
           // NOTE: cast happens here!
-          HIR_LET({
+          HIR_CAST({
             name: contextTempForZeroComparison,
             type: HIR_INT_TYPE,
             assignedExpression: HIR_VARIABLE(closureTemp, HIR_ANY_TYPE),
@@ -546,7 +546,7 @@ class HighIRExpressionLoweringManager {
               index: 0,
             }),
             // NOTE: cast happens here!
-            HIR_LET({
+            HIR_CAST({
               name: functionTempTypedB1,
               type: HIR_FUNCTION_TYPE(
                 loweredFunctionArguments.map((it) => it.type),
@@ -576,7 +576,7 @@ class HighIRExpressionLoweringManager {
               index: 0,
             }),
             // NOTE: cast happens here!
-            HIR_LET({
+            HIR_CAST({
               name: functionTempTypedB2,
               type: HIR_FUNCTION_TYPE(
                 [HIR_ANY_TYPE, ...loweredFunctionArguments.map((it) => it.type)],
@@ -789,7 +789,7 @@ class HighIRExpressionLoweringManager {
               index: 1,
             }),
             // NOTE: cast can happen here
-            HIR_LET({
+            HIR_CAST({
               name: dataVariableName,
               type: this.lowerType(dataVariableType),
               assignedExpression: HIR_VARIABLE(dataVariableRawTemp, HIR_ANY_TYPE),

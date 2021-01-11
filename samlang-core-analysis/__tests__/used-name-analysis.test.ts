@@ -5,7 +5,7 @@ import {
   HIR_ZERO,
   HIR_NAME,
   HIR_FUNCTION_CALL,
-  HIR_LET,
+  HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
   HIR_INDEX_ACCESS,
   HIR_RETURN,
@@ -35,7 +35,7 @@ it('analyzeUsedFunctionNames test', () => {
           parameters: [],
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [
-            HIR_LET({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO }),
+            HIR_CAST({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO }),
             HIR_STRUCT_INITIALIZATION({
               structVariableName: '',
               type: HIR_INT_TYPE,
@@ -63,7 +63,7 @@ it('analyzeUsedFunctionNames test', () => {
                   e2: HIR_NAME('bar', HIR_INT_TYPE),
                 }),
               ],
-              s2: [HIR_LET({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
+              s2: [HIR_CAST({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
             }),
           ],
         },
