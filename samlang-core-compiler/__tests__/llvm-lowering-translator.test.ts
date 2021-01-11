@@ -218,6 +218,69 @@ l_testFunction_3_if_else_end_label:
   );
 });
 
+it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_IF_ELSE({
+        booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
+        s1: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+            functionArguments: [],
+            returnCollector: { name: 'b1', type: INT },
+          }),
+        ],
+        s2: [
+          HIR_IF_ELSE({
+            booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
+            s1: [
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+                functionArguments: [],
+                returnCollector: { name: 'b2', type: INT },
+              }),
+            ],
+            s2: [
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
+                functionArguments: [],
+                returnCollector: { name: 'b3', type: INT },
+              }),
+            ],
+            finalAssignment: {
+              name: 'ma_nested',
+              type: INT,
+              branch1Value: HIR_VARIABLE('b2', INT),
+              branch2Value: HIR_VARIABLE('b3', INT),
+            },
+          }),
+        ],
+        finalAssignment: {
+          name: 'ma',
+          type: INT,
+          branch1Value: HIR_VARIABLE('b1', INT),
+          branch2Value: HIR_VARIABLE('ma_nested', INT),
+        },
+      }),
+    ],
+    `  br i1 %bbb, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
+l_testFunction_1_if_else_true_label:
+  %b1 = call i64 @foo() nounwind
+  br label %l_testFunction_3_if_else_end_label
+l_testFunction_2_if_else_false_label:
+  br i1 %bbb, label %l_testFunction_4_if_else_true_label, label %l_testFunction_5_if_else_false_label
+l_testFunction_4_if_else_true_label:
+  %b2 = call i64 @foo() nounwind
+  br label %l_testFunction_6_if_else_end_label
+l_testFunction_5_if_else_false_label:
+  %b3 = call i64 @bar() nounwind
+l_testFunction_6_if_else_end_label:
+  %ma_nested = phi i64 [ %b2, %l_testFunction_4_if_else_true_label ], [ %b3, %l_testFunction_5_if_else_false_label ]
+l_testFunction_3_if_else_end_label:
+  %ma = phi i64 [ %b1, %l_testFunction_1_if_else_true_label ], [ %ma_nested, %l_testFunction_6_if_else_end_label ]`
+  );
+});
+
 it('prettyPrintLLVMFunction works for HIR_SWITCH 1/n', () => {
   assertStatementLoweringWorks(
     [
@@ -277,7 +340,7 @@ l_testFunction_3_match_case_1:
 l_testFunction_4_match_case_2:
   br label %l_testFunction_1_match_end
 l_testFunction_1_match_end:
-  %ma = phi i64 [ 0, %l_testFunction_0_START ], [ 0, %l_testFunction_0_START ], [ 0, %l_testFunction_0_START ]`
+  %ma = phi i64 [ 0, %l_testFunction_2_match_case_0 ], [ 0, %l_testFunction_3_match_case_1 ], [ 0, %l_testFunction_4_match_case_2 ]`
   );
 });
 
@@ -316,7 +379,7 @@ l_testFunction_4_match_case_2:
   %b2 = call i64 @foo() nounwind
   br label %l_testFunction_1_match_end
 l_testFunction_1_match_end:
-  %ma = phi i64 [ 0, %l_testFunction_0_START ], [ 0, %l_testFunction_0_START ], [ %b2, %l_testFunction_4_match_case_2 ]`
+  %ma = phi i64 [ 0, %l_testFunction_2_match_case_0 ], [ 0, %l_testFunction_3_match_case_1 ], [ %b2, %l_testFunction_4_match_case_2 ]`
   );
 });
 
