@@ -13,12 +13,9 @@ import {
   boolType,
 } from 'samlang-core-ast/common-nodes';
 import { PLUS, AND, OR, CONCAT } from 'samlang-core-ast/common-operators';
-import {
-  HIR_RETURN,
-  debugPrintHighIRStatement,
-  HIR_VARIABLE,
-} from 'samlang-core-ast/hir-expressions';
+import { HIR_RETURN, debugPrintHighIRStatement } from 'samlang-core-ast/hir-expressions';
 import { debugPrintHighIRModule, HighIRModule } from 'samlang-core-ast/hir-toplevel';
+import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   SamlangExpression,
   EXPRESSION_FALSE,
@@ -55,6 +52,7 @@ const expectCorrectlyLowered = (
   const { statements, expression, syntheticFunctions } = lowerSamlangExpression(
     ModuleReference.ROOT,
     'ENCODED_FUNCTION_NAME',
+    { _Foo: [HIR_INT_TYPE, HIR_INT_TYPE], _Dummy: [HIR_INT_TYPE, HIR_INT_TYPE] },
     new Set(),
     stringManager,
     samlangExpression
@@ -129,12 +127,14 @@ it('Lowering to StructConstructor works (2/n).', () => {
       range: Range.DUMMY,
       type: identifierType(ModuleReference.ROOT, 'Foo'),
       fieldDeclarations: [
-        { range: Range.DUMMY, type: unitType, name: 'foo', expression: THIS },
-        { range: Range.DUMMY, type: unitType, name: 'bar' },
+        { range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE, name: 'foo', expression: THIS },
+        { range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE, name: 'bar' },
       ],
     }),
-    `let _t0: _Foo = [(_this: _Dummy), (bar: int)];
-return (_t0: _Foo);`
+    `let _t0: int = (_this: _Dummy);
+let _t1: int = (bar: _Dummy);
+let _t2: _Foo = [(_t0: int), (_t1: int)];
+return (_t2: _Foo);`
   );
 });
 
@@ -756,8 +756,8 @@ it('StatementBlockExpression lowering works.', () => {
                         { type: intType, range: Range.DUMMY },
                       ],
                     },
-                    typeAnnotation: DUMMY_IDENTIFIER_TYPE,
-                    assignedExpression: THIS,
+                    typeAnnotation: tupleType([intType, intType]),
+                    assignedExpression: { ...THIS, type: tupleType([intType, intType]) },
                   },
                   {
                     range: Range.DUMMY,
@@ -792,7 +792,7 @@ it('StatementBlockExpression lowering works.', () => {
         ],
       },
     }),
-    `let a__depth_1__block_0: int = (_this: _Dummy)[0];
+    `let a__depth_1__block_0: int = (_this: (int, int))[0];
 let a__depth_1__block_0: int = (_this: _Dummy)[0];
 let c__depth_1__block_0: int = (_this: _Dummy)[1];
 return 0;`
