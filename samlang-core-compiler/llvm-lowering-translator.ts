@@ -8,7 +8,7 @@ import type {
   HighIRIndexAccessStatement,
   HighIRIfElseStatement,
   HighIRSwitchStatement,
-  HighIRLetDefinitionStatement,
+  HighIRCastStatement,
   HighIRStructInitializationStatement,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
@@ -101,8 +101,8 @@ class LLVMLoweringManager {
       case 'HighIRSwitchStatement':
         this.lowerHighIRSwitchStatement(s);
         return;
-      case 'HighIRLetDefinitionStatement':
-        this.lowerHighIRLetDefinitionStatement(s);
+      case 'HighIRCastStatement':
+        this.lowerHighIRCastStatement(s);
         return;
       case 'HighIRStructInitializationStatement':
         this.lowerHighIRStructInitializationStatement(s);
@@ -240,7 +240,7 @@ class LLVMLoweringManager {
     );
   }
 
-  private lowerHighIRLetDefinitionStatement(s: HighIRLetDefinitionStatement): void {
+  private lowerHighIRCastStatement(s: HighIRCastStatement): void {
     const { value: sourceValue, type: actualType } = this.lowerHighIRExpression(
       s.assignedExpression
     );

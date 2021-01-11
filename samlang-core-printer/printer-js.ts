@@ -173,7 +173,7 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
         createBracesSurroundedBlockDocument(docs.slice(0, docs.length - 1))
       );
     }
-    case 'HighIRLetDefinitionStatement':
+    case 'HighIRCastStatement':
       return PRETTIER_CONCAT(
         PRETTIER_TEXT(`let ${highIRStatement.name} = `),
         createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(

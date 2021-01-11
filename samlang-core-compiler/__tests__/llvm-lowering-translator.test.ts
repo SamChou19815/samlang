@@ -13,7 +13,7 @@ import {
   HIR_SWITCH,
   HIR_INDEX_ACCESS,
   HIR_INT,
-  HIR_LET,
+  HIR_CAST,
   HIR_NAME,
   HIR_RETURN,
   HIR_STRUCT_INITIALIZATION,
@@ -95,36 +95,15 @@ it('prettyPrintLLVMFunction works for base expressions 1/n', () => {
 });
 
 it('prettyPrintLLVMFunction works for base expressions 2/n', () => {
-  assertStatementLoweringWorks(
-    [
-      HIR_LET({ name: 'foo', type: INT, assignedExpression: HIR_INT(42) }),
-      HIR_RETURN(HIR_VARIABLE('foo', INT)),
-    ],
-    '  ret i64 42'
-  );
-  assertStatementLoweringWorks(
-    [
-      HIR_LET({ name: 'foo', type: INT, assignedExpression: HIR_NAME('bar', INT) }),
-      HIR_RETURN(HIR_VARIABLE('foo', INT)),
-    ],
-    '  ret i64 @bar'
-  );
-  assertStatementLoweringWorks(
-    [
-      HIR_LET({ name: 'foo', type: INT, assignedExpression: HIR_VARIABLE('bar', INT) }),
-      HIR_RETURN(HIR_VARIABLE('foo', INT)),
-    ],
-    '  ret i64 %bar'
-  );
+  assertStatementLoweringWorks([HIR_RETURN(HIR_INT(42))], '  ret i64 42');
+  assertStatementLoweringWorks([HIR_RETURN(HIR_NAME('bar', INT))], '  ret i64 @bar');
+  assertStatementLoweringWorks([HIR_RETURN(HIR_VARIABLE('bar', INT))], '  ret i64 %bar');
   assertLoweringWorks(
     {
       name: 'foo',
       parameters: ['bar'],
       type: HIR_FUNCTION_TYPE([INT], INT),
-      body: [
-        HIR_LET({ name: 'foo', type: INT, assignedExpression: HIR_VARIABLE('bar', INT) }),
-        HIR_RETURN(HIR_VARIABLE('foo', INT)),
-      ],
+      body: [HIR_RETURN(HIR_VARIABLE('bar', INT))],
     },
     `define i64 @foo(i64 %bar) local_unnamed_addr nounwind {
 l_foo_0_START:
@@ -295,15 +274,19 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 2/n', () => {
           {
             caseNumber: 2,
             statements: [
-              HIR_LET({ name: 'b1', type: INT, assignedExpression: HIR_ZERO }),
-              HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b1', INT) }),
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
+                functionArguments: [],
+              }),
             ],
           },
           {
             caseNumber: 2,
             statements: [
-              HIR_LET({ name: 'b2', type: INT, assignedExpression: HIR_ZERO }),
-              HIR_LET({ name: 'ma', type: INT, assignedExpression: HIR_VARIABLE('b2', INT) }),
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
+                functionArguments: [],
+              }),
             ],
           },
         ],
@@ -311,8 +294,10 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 2/n', () => {
     ],
     `  switch i64 %c, label %l_testFunction_1_match_end [ i64 2, label %l_testFunction_2_match_case_0 i64 2, label %l_testFunction_3_match_case_1 ]
 l_testFunction_2_match_case_0:
+  call i64 @bar() nounwind
   br label %l_testFunction_1_match_end
 l_testFunction_3_match_case_1:
+  call i64 @bar() nounwind
   br label %l_testFunction_1_match_end
 l_testFunction_1_match_end:`
   );
@@ -374,9 +359,9 @@ it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 3/n', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_LET with type conversion', () => {
+it('prettyPrintLLVMFunction works for HIR_CAST with type conversion', () => {
   assertStatementLoweringWorks(
-    [HIR_LET({ name: 's', type: HIR_STRING_TYPE, assignedExpression: HIR_ZERO })],
+    [HIR_CAST({ name: 's', type: HIR_STRING_TYPE, assignedExpression: HIR_ZERO })],
     '  %s = inttoptr i64 0 to i64*'
   );
 });

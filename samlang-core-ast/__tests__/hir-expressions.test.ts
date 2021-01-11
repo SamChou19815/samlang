@@ -4,7 +4,7 @@ import {
   HIR_IF_ELSE,
   HIR_SWITCH,
   HIR_INDEX_ACCESS,
-  HIR_LET,
+  HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
   HIR_ZERO,
@@ -40,7 +40,7 @@ it('debugPrintHighIRStatement works', () => {
               branchValues: [HIR_VARIABLE('b1', HIR_INT_TYPE), HIR_VARIABLE('b2', HIR_INT_TYPE)],
             },
           }),
-          HIR_LET({
+          HIR_CAST({
             name: 'foo',
             type: HIR_IDENTIFIER_TYPE('Bar'),
             assignedExpression: HIR_VARIABLE('dev', HIR_IDENTIFIER_TYPE('Bar')),

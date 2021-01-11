@@ -166,7 +166,7 @@ class MidIRLoweringManager {
         loweredStatements.push(MIR_LABEL(endLabel));
         return loweredStatements;
       }
-      case 'HighIRLetDefinitionStatement':
+      case 'HighIRCastStatement':
         return [
           MIR_MOVE_TEMP(
             mangleVariableForMIR(statement.name),
