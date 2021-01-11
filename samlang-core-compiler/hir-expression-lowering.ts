@@ -142,6 +142,19 @@ class HighIRExpressionLoweringManager {
     return lowerSamlangType(type, this.typeParameters);
   }
 
+  private lowerWithPotentialCast(
+    type: HighIRType,
+    assignedExpression: HighIRExpression,
+    mutableStatementCollector: HighIRStatement[]
+  ): HighIRExpression {
+    if (isTheSameHighIRType(type, assignedExpression.type)) {
+      return assignedExpression;
+    }
+    const name = this.allocateTemporaryVariable();
+    mutableStatementCollector.push(HIR_CAST({ name, type, assignedExpression }));
+    return HIR_VARIABLE(name, type);
+  }
+
   private lowerBindWithPotentialCast(
     name: string,
     type: HighIRType,
@@ -237,12 +250,7 @@ class HighIRExpressionLoweringManager {
             ),
             this.lowerType(expression.type)
           ),
-          this.lowerBindWithPotentialCast(
-            this.allocateTemporaryVariable(),
-            HIR_ANY_TYPE,
-            HIR_ZERO,
-            statements
-          ),
+          this.lowerWithPotentialCast(HIR_ANY_TYPE, HIR_ZERO, statements),
         ],
       })
     );
@@ -313,12 +321,7 @@ class HighIRExpressionLoweringManager {
         type: variantType,
         expressionList: [
           HIR_INT(expression.tagOrder),
-          this.lowerBindWithPotentialCast(
-            this.allocateTemporaryVariable(),
-            HIR_ANY_TYPE,
-            dataExpression,
-            statements
-          ),
+          this.lowerWithPotentialCast(HIR_ANY_TYPE, dataExpression, statements),
         ],
       })
     );
@@ -486,8 +489,7 @@ class HighIRExpressionLoweringManager {
           ),
           functionArguments: expression.functionArguments.map((oneArgument, i) => {
             const loweredArgument = this.loweredAndAddStatements(oneArgument, loweredStatements);
-            return this.lowerBindWithPotentialCast(
-              this.allocateTemporaryVariable(),
+            return this.lowerWithPotentialCast(
               checkNotNull(functionTypeWithoutContext.argumentTypes[i]),
               loweredArgument,
               loweredStatements
@@ -518,8 +520,7 @@ class HighIRExpressionLoweringManager {
             this.loweredAndAddStatements(functionExpression.expression, loweredStatements),
             ...expression.functionArguments.map((oneArgument, i) => {
               const loweredArgument = this.loweredAndAddStatements(oneArgument, loweredStatements);
-              return this.lowerBindWithPotentialCast(
-                this.allocateTemporaryVariable(),
+              return this.lowerWithPotentialCast(
                 checkNotNull(functionTypeWithoutContext.argumentTypes[i]),
                 loweredArgument,
                 loweredStatements
@@ -547,16 +548,14 @@ class HighIRExpressionLoweringManager {
           functionExpression,
           loweredStatements
         );
-        const closureExpression = this.lowerBindWithPotentialCast(
-          this.allocateTemporaryVariable(),
+        const closureExpression = this.lowerWithPotentialCast(
           HIR_CLOSURE_TYPE,
           loweredFunctionExpression,
           loweredStatements
         );
         const loweredFunctionArguments = expression.functionArguments.map((oneArgument, i) => {
           const loweredArgument = this.loweredAndAddStatements(oneArgument, loweredStatements);
-          return this.lowerBindWithPotentialCast(
-            this.allocateTemporaryVariable(),
+          return this.lowerWithPotentialCast(
             checkNotNull(functionTypeWithoutContext.argumentTypes[i]),
             loweredArgument,
             loweredStatements
@@ -586,8 +585,7 @@ class HighIRExpressionLoweringManager {
           HIR_BINARY({
             name: comparisonTemp,
             operator: '==',
-            e1: this.lowerBindWithPotentialCast(
-              this.allocateTemporaryVariable(),
+            e1: this.lowerWithPotentialCast(
               HIR_INT_TYPE,
               HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
               loweredStatements
@@ -602,8 +600,7 @@ class HighIRExpressionLoweringManager {
         );
 
         const s1: HighIRStatement[] = [];
-        const s1FunctionExpression = this.lowerBindWithPotentialCast(
-          this.allocateTemporaryVariable(),
+        const s1FunctionExpression = this.lowerWithPotentialCast(
           functionTypeWithoutContext,
           HIR_VARIABLE(functionTempRaw, HIR_ANY_TYPE),
           s1
@@ -618,8 +615,7 @@ class HighIRExpressionLoweringManager {
           })
         );
         const s2: HighIRStatement[] = [];
-        const s2FunctionExpression = this.lowerBindWithPotentialCast(
-          this.allocateTemporaryVariable(),
+        const s2FunctionExpression = this.lowerWithPotentialCast(
           functionTypeWithContext,
           HIR_VARIABLE(functionTempRaw, HIR_ANY_TYPE),
           s2
@@ -656,8 +652,7 @@ class HighIRExpressionLoweringManager {
       statements: loweredStatements,
       expression: isVoidReturn
         ? HIR_ZERO
-        : this.lowerBindWithPotentialCast(
-            this.allocateTemporaryVariable(),
+        : this.lowerWithPotentialCast(
             loweredReturnType,
             HIR_VARIABLE(returnCollectorName, functionTypeWithoutContext.returnType),
             loweredStatements
@@ -912,18 +907,12 @@ class HighIRExpressionLoweringManager {
         structVariableName,
         type: HIR_CLOSURE_TYPE,
         expressionList: [
-          this.lowerBindWithPotentialCast(
-            this.allocateTemporaryVariable(),
+          this.lowerWithPotentialCast(
             HIR_ANY_TYPE,
             HIR_NAME(syntheticLambda.name, syntheticLambda.type),
             loweredStatements
           ),
-          this.lowerBindWithPotentialCast(
-            this.allocateTemporaryVariable(),
-            HIR_ANY_TYPE,
-            context,
-            loweredStatements
-          ),
+          this.lowerWithPotentialCast(HIR_ANY_TYPE, context, loweredStatements),
         ],
       })
     );

@@ -289,19 +289,19 @@ it('FunctionCall family lowering works 6/n.', () => {
       }),
       functionArguments: [THIS, THIS],
     }),
-    `let _t4: any = (closure: (any, any))[0];
-let _t5: any = (closure: (any, any))[1];
-let _t9: int = (_t5: any);
-let _t8: bool = (_t9: int) == 0;
+    `let _t1: any = (closure: (any, any))[0];
+let _t2: any = (closure: (any, any))[1];
+let _t6: int = (_t2: any);
+let _t5: bool = (_t6: int) == 0;
 let _t0: int;
-if (_t8: bool) {
-  let _t10: (_Dummy, _Dummy) -> int = (_t4: any);
-  let _t6: int = (_t10: (_Dummy, _Dummy) -> int)((_this: _Dummy), (_this: _Dummy));
-  _t0 = (_t6: int);
+if (_t5: bool) {
+  let _t7: (_Dummy, _Dummy) -> int = (_t1: any);
+  let _t3: int = (_t7: (_Dummy, _Dummy) -> int)((_this: _Dummy), (_this: _Dummy));
+  _t0 = (_t3: int);
 } else {
-  let _t11: (any, _Dummy, _Dummy) -> int = (_t4: any);
-  let _t7: int = (_t11: (any, _Dummy, _Dummy) -> int)((_t5: any), (_this: _Dummy), (_this: _Dummy));
-  _t0 = (_t7: int);
+  let _t8: (any, _Dummy, _Dummy) -> int = (_t1: any);
+  let _t4: int = (_t8: (any, _Dummy, _Dummy) -> int)((_t2: any), (_this: _Dummy), (_this: _Dummy));
+  _t0 = (_t4: int);
 }
 return (_t0: int);`
   );
@@ -319,16 +319,16 @@ it('FunctionCall family lowering works 7/n.', () => {
       }),
       functionArguments: [THIS, THIS],
     }),
-    `let _t4: any = (closure: (any, any))[0];
-let _t5: any = (closure: (any, any))[1];
-let _t9: int = (_t5: any);
-let _t8: bool = (_t9: int) == 0;
-if (_t8: bool) {
-  let _t10: (_Dummy, _Dummy) -> int = (_t4: any);
-  (_t10: (_Dummy, _Dummy) -> int)((_this: _Dummy), (_this: _Dummy));
+    `let _t1: any = (closure: (any, any))[0];
+let _t2: any = (closure: (any, any))[1];
+let _t6: int = (_t2: any);
+let _t5: bool = (_t6: int) == 0;
+if (_t5: bool) {
+  let _t7: (_Dummy, _Dummy) -> int = (_t1: any);
+  (_t7: (_Dummy, _Dummy) -> int)((_this: _Dummy), (_this: _Dummy));
 } else {
-  let _t11: (any, _Dummy, _Dummy) -> int = (_t4: any);
-  (_t11: (any, _Dummy, _Dummy) -> int)((_t5: any), (_this: _Dummy), (_this: _Dummy));
+  let _t8: (any, _Dummy, _Dummy) -> int = (_t1: any);
+  (_t8: (any, _Dummy, _Dummy) -> int)((_t2: any), (_this: _Dummy), (_this: _Dummy));
 }
 return 0;`
   );
@@ -375,8 +375,8 @@ it('FunctionCall family lowering works 9/n.', () => {
       functionArguments: [EXPRESSION_INT(Range.DUMMY, 0)],
     }),
     `let _t0: _Dummy = _module__class_C_function_m(0);
-let _t2: int = (_t0: _Dummy);
-return (_t2: int);`
+let _t1: int = (_t0: _Dummy);
+return (_t1: int);`
   );
 });
 
@@ -392,23 +392,23 @@ it('FunctionCall family lowering works 10/n.', () => {
       }),
       functionArguments: [EXPRESSION_INT(Range.DUMMY, 0)],
     }),
-    `let _t2: _Dummy = 0;
-let _t3: any = (closure: (any, any))[0];
-let _t4: any = (closure: (any, any))[1];
-let _t8: int = (_t4: any);
-let _t7: bool = (_t8: int) == 0;
+    `let _t1: _Dummy = 0;
+let _t2: any = (closure: (any, any))[0];
+let _t3: any = (closure: (any, any))[1];
+let _t7: int = (_t3: any);
+let _t6: bool = (_t7: int) == 0;
 let _t0: _Dummy;
-if (_t7: bool) {
-  let _t9: (_Dummy) -> _Dummy = (_t3: any);
-  let _t5: _Dummy = (_t9: (_Dummy) -> _Dummy)((_t2: _Dummy));
-  _t0 = (_t5: _Dummy);
+if (_t6: bool) {
+  let _t8: (_Dummy) -> _Dummy = (_t2: any);
+  let _t4: _Dummy = (_t8: (_Dummy) -> _Dummy)((_t1: _Dummy));
+  _t0 = (_t4: _Dummy);
 } else {
-  let _t10: (any, _Dummy) -> _Dummy = (_t3: any);
-  let _t6: _Dummy = (_t10: (any, _Dummy) -> _Dummy)((_t4: any), (_t2: _Dummy));
-  _t0 = (_t6: _Dummy);
+  let _t9: (any, _Dummy) -> _Dummy = (_t2: any);
+  let _t5: _Dummy = (_t9: (any, _Dummy) -> _Dummy)((_t3: any), (_t1: _Dummy));
+  _t0 = (_t5: _Dummy);
 }
-let _t11: int = (_t0: _Dummy);
-return (_t11: int);`
+let _t10: int = (_t0: _Dummy);
+return (_t10: int);`
   );
 });
 
