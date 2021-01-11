@@ -59,38 +59,7 @@ class LLVMLoweringManager {
 
   private emitInstruction(instruction: LLVMInstruction): void {
     this.llvmInstructionCollector.push(instruction);
-    switch (instruction.__type__) {
-      case 'LLVMLabelInstruction':
-        this.currentLabel = instruction.name;
-        return;
-      case 'LLVMStoreInstruction':
-      case 'LLVMJumpInstruction':
-      case 'LLVMConditionalJumpInstruction':
-      case 'LLVMSwitchInstruction':
-      case 'LLVMReturnInstruction':
-        return;
-      case 'LLVMCastInstruction':
-      case 'LLVMGetElementPointerInstruction':
-      case 'LLVMBinaryInstruction':
-      case 'LLVMLoadInstruction':
-      case 'LLVMPhiInstruction':
-      case 'LLVMFunctionCallInstruction':
-        if (instruction.resultVariable == null) return;
-        this.variableSourceMap.set(instruction.resultVariable, this.currentLabel);
-        // eslint-disable-next-line no-useless-return
-        return;
-    }
-  }
-
-  private getValueSourceLabel(value: LLVMValue): string {
-    switch (value.__type__) {
-      case 'LLVMLiteral':
-      case 'LLVMName':
-        // TODO: LLVM might not like this...
-        return this.functionStartLabel;
-      case 'LLVMVariable':
-        return checkNotNull(this.variableSourceMap.get(value.name));
-    }
+    if (instruction.__type__ === 'LLVMLabelInstruction') this.currentLabel = instruction.name;
   }
 
   lowerHighIRStatement(s: HighIRStatement): void {
@@ -191,18 +160,20 @@ class LLVMLoweringManager {
     if (finalAssignment != null) {
       s1.forEach((it) => this.lowerHighIRStatement(it));
       const v1 = this.lowerHighIRExpression(finalAssignment.branch1Value).value;
+      const v1Label = this.currentLabel;
       this.emitInstruction(LLVM_JUMP(endLabel));
       this.emitInstruction(LLVM_LABEL(falseLabel));
       s2.forEach((it) => this.lowerHighIRStatement(it));
       const v2 = this.lowerHighIRExpression(finalAssignment.branch2Value).value;
+      const v2Label = this.currentLabel;
       this.emitInstruction(LLVM_LABEL(endLabel));
       this.emitInstruction(
         LLVM_PHI({
           resultVariable: finalAssignment.name,
           variableType: lowerHighIRTypeToLLVMType(finalAssignment.type),
           valueBranchTuples: [
-            { value: v1, branch: this.getValueSourceLabel(v1) },
-            { value: v2, branch: this.getValueSourceLabel(v2) },
+            { value: v1, branch: v1Label },
+            { value: v2, branch: v2Label },
           ],
         })
       );
@@ -243,12 +214,12 @@ class LLVMLoweringManager {
       return;
     }
     const { name: phiVariable, type: phiType, branchValues } = s.finalAssignment;
-    const values: LLVMValue[] = [];
+    const valueBranchTuples: Readonly<{ value: LLVMValue; branch: string }>[] = [];
     caseWithLabels.forEach(({ label, statements }, i) => {
       this.emitInstruction(LLVM_LABEL(label));
       statements.forEach((it) => this.lowerHighIRStatement(it));
       const branchValue = this.lowerHighIRExpression(checkNotNull(branchValues[i])).value;
-      values.push(branchValue);
+      valueBranchTuples.push({ value: branchValue, branch: this.currentLabel });
       this.emitInstruction(LLVM_JUMP(finalEndLabel));
     });
     this.emitInstruction(LLVM_LABEL(finalEndLabel));
@@ -256,10 +227,7 @@ class LLVMLoweringManager {
       LLVM_PHI({
         resultVariable: phiVariable,
         variableType: lowerHighIRTypeToLLVMType(phiType),
-        valueBranchTuples: caseWithLabels.map((_, i) => {
-          const value = checkNotNull(values[i]);
-          return { value, branch: this.getValueSourceLabel(value) };
-        }),
+        valueBranchTuples,
       })
     );
   }
