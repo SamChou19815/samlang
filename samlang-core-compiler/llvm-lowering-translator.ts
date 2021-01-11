@@ -67,16 +67,20 @@ class LLVMLoweringManager {
       case 'HighIRIndexAccessStatement':
         this.lowerHighIRIndexAccessStatement(s);
         return;
-      case 'HighIRBinaryStatement':
+      case 'HighIRBinaryStatement': {
+        const loweredE1 = this.lowerHighIRExpression(s.e1);
+        const loweredE2 = this.lowerHighIRExpression(s.e2);
         this.emitInstruction(
           LLVM_BINARY({
             resultVariable: s.name,
             operator: s.operator,
-            v1: this.lowerHighIRExpression(s.e1).value,
-            v2: this.lowerHighIRExpression(s.e2).value,
+            operandType: loweredE1.type,
+            v1: loweredE1.value,
+            v2: loweredE2.value,
           })
         );
         return;
+      }
       case 'HighIRFunctionCallStatement':
         this.emitInstruction(
           LLVM_CALL({

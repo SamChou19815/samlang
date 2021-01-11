@@ -198,6 +198,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       LLVM_BINARY({
         resultVariable: 'foo',
         operator: '+',
+        operandType: LLVM_INT_TYPE,
         v1: LLVM_VARIABLE('bar'),
         v2: LLVM_INT(3),
       })
@@ -209,6 +210,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       LLVM_BINARY({
         resultVariable: 'foo',
         operator: '-',
+        operandType: LLVM_INT_TYPE,
         v1: LLVM_VARIABLE('bar'),
         v2: LLVM_INT(3),
       })
@@ -220,6 +222,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       LLVM_BINARY({
         resultVariable: 'foo',
         operator: '*',
+        operandType: LLVM_INT_TYPE,
         v1: LLVM_VARIABLE('bar'),
         v2: LLVM_INT(3),
       })
@@ -231,6 +234,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       LLVM_BINARY({
         resultVariable: 'foo',
         operator: '/',
+        operandType: LLVM_INT_TYPE,
         v1: LLVM_VARIABLE('bar'),
         v2: LLVM_INT(3),
       })
@@ -242,6 +246,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       LLVM_BINARY({
         resultVariable: 'foo',
         operator: '%',
+        operandType: LLVM_INT_TYPE,
         v1: LLVM_VARIABLE('bar'),
         v2: LLVM_INT(3),
       })
@@ -253,6 +258,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       LLVM_BINARY({
         resultVariable: 'foo',
         operator: '^',
+        operandType: LLVM_BOOL_TYPE,
         v1: LLVM_VARIABLE('bar'),
         v2: LLVM_INT(1),
       })
@@ -264,6 +270,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       LLVM_BINARY({
         resultVariable: 'foo',
         operator: '<',
+        operandType: LLVM_INT_TYPE,
         v1: LLVM_VARIABLE('bar'),
         v2: LLVM_INT(1),
       })
@@ -275,6 +282,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       LLVM_BINARY({
         resultVariable: 'foo',
         operator: '<=',
+        operandType: LLVM_INT_TYPE,
         v1: LLVM_VARIABLE('bar'),
         v2: LLVM_INT(1),
       })
@@ -286,6 +294,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       LLVM_BINARY({
         resultVariable: 'foo',
         operator: '>',
+        operandType: LLVM_INT_TYPE,
         v1: LLVM_VARIABLE('bar'),
         v2: LLVM_INT(1),
       })
@@ -297,6 +306,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       LLVM_BINARY({
         resultVariable: 'foo',
         operator: '>=',
+        operandType: LLVM_INT_TYPE,
         v1: LLVM_VARIABLE('bar'),
         v2: LLVM_INT(1),
       })
@@ -308,6 +318,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       LLVM_BINARY({
         resultVariable: 'foo',
         operator: '==',
+        operandType: LLVM_INT_TYPE,
         v1: LLVM_VARIABLE('bar'),
         v2: LLVM_INT(1),
       })
@@ -319,6 +330,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       LLVM_BINARY({
         resultVariable: 'foo',
         operator: '!=',
+        operandType: LLVM_INT_TYPE,
         v1: LLVM_VARIABLE('bar'),
         v2: LLVM_INT(1),
       })

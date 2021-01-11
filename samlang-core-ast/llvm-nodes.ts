@@ -140,6 +140,7 @@ export type LLVMBinaryInstruction = {
   readonly __type__: 'LLVMBinaryInstruction';
   readonly resultVariable: string;
   readonly operator: IROperator;
+  readonly operandType: LLVMType;
   readonly v1: LLVMValue;
   readonly v2: LLVMValue;
 };
@@ -249,12 +250,14 @@ export const LLVM_GET_ELEMENT_PTR = ({
 export const LLVM_BINARY = ({
   resultVariable,
   operator,
+  operandType,
   v1,
   v2,
 }: ConstructorArgumentObject<LLVMBinaryInstruction>): LLVMBinaryInstruction => ({
   __type__: 'LLVMBinaryInstruction',
   resultVariable,
   operator,
+  operandType,
   v1,
   v2,
 });
@@ -379,46 +382,47 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       const result = `%${instruction.resultVariable}`;
       const v1 = prettyPrintLLVMValue(instruction.v1);
       const v2 = prettyPrintLLVMValue(instruction.v2);
-      let stringOperatorAndType: string;
+      let operator: string;
       switch (instruction.operator) {
         case '+':
-          stringOperatorAndType = 'add i64';
+          operator = 'add';
           break;
         case '-':
-          stringOperatorAndType = 'sub i64';
+          operator = 'sub';
           break;
         case '*':
-          stringOperatorAndType = 'mul i64';
+          operator = 'mul';
           break;
         case '/':
-          stringOperatorAndType = 'sdiv i64';
+          operator = 'sdiv';
           break;
         case '%':
-          stringOperatorAndType = 'srem i64';
+          operator = 'srem';
           break;
         case '^':
-          stringOperatorAndType = 'xor i1';
+          operator = 'xor';
           break;
         case '<':
-          stringOperatorAndType = 'icmp slt i64';
+          operator = 'icmp slt';
           break;
         case '<=':
-          stringOperatorAndType = 'icmp sle i64';
+          operator = 'icmp sle';
           break;
         case '>':
-          stringOperatorAndType = 'icmp sgt i64';
+          operator = 'icmp sgt';
           break;
         case '>=':
-          stringOperatorAndType = 'icmp sge i64';
+          operator = 'icmp sge';
           break;
         case '==':
-          stringOperatorAndType = 'icmp eq i64';
+          operator = 'icmp eq';
           break;
         case '!=':
-          stringOperatorAndType = 'icmp ne i64';
+          operator = 'icmp ne';
           break;
       }
-      return `${result} = ${stringOperatorAndType} ${v1}, ${v2}`;
+      const type = prettyPrintLLVMType(instruction.operandType);
+      return `${result} = ${operator} ${type} ${v1}, ${v2}`;
     }
     case 'LLVMLoadInstruction': {
       const { resultVariable, sourceVariable } = instruction;

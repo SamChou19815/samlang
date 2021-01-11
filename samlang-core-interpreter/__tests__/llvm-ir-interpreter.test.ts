@@ -229,6 +229,7 @@ it('interpretLLVMModule setup tuple and print test', () => {
             LLVM_BINARY({
               resultVariable: 'sum',
               operator: '+',
+              operandType: LLVM_INT_TYPE,
               v1: LLVM_VARIABLE('v1'),
               v2: LLVM_VARIABLE('v2'),
             }),
@@ -379,6 +380,7 @@ it('interpretLLVMModule factorial function call integration test', () => {
             LLVM_BINARY({
               resultVariable: 'com',
               operator: '==',
+              operandType: LLVM_INT_TYPE,
               v1: LLVM_VARIABLE('n'),
               v2: ZERO,
             }),
@@ -387,12 +389,14 @@ it('interpretLLVMModule factorial function call integration test', () => {
             LLVM_BINARY({
               resultVariable: 'new_n',
               operator: '-',
+              operandType: LLVM_INT_TYPE,
               v1: LLVM_VARIABLE('n'),
               v2: ONE,
             }),
             LLVM_BINARY({
               resultVariable: 'new_acc',
               operator: '*',
+              operandType: LLVM_INT_TYPE,
               v1: LLVM_VARIABLE('acc'),
               v2: LLVM_VARIABLE('n'),
             }),
