@@ -43,29 +43,16 @@ it('compileHighIrModuleToMidIRCompilationUnit full integration test', () => {
             body: [HIR_RETURN(HIR_NAME('GLOBAL_STRING_0', HIR_STRING_TYPE))],
           },
           {
-            name: 'loop1',
+            name: 'loop',
             parameters: [],
             type: HIR_FUNCTION_TYPE([], HIR_STRING_TYPE),
             body: [
               HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('loop1', HIR_INT_TYPE),
+                functionExpression: HIR_NAME('loop', HIR_INT_TYPE),
                 functionArguments: [],
                 returnCollector: { name: 'n', type: HIR_INT_TYPE },
               }),
               HIR_RETURN(HIR_VARIABLE('n', HIR_INT_TYPE)),
-            ],
-          },
-          {
-            name: 'loop2',
-            parameters: [],
-            type: HIR_FUNCTION_TYPE([], HIR_STRING_TYPE),
-            body: [
-              HIR_LET({
-                name: 'n',
-                type: HIR_INT_TYPE,
-                assignedExpression: HIR_VARIABLE('n', HIR_INT_TYPE),
-              }),
-              HIR_RETURN(HIR_ZERO),
             ],
           },
         ],
@@ -89,16 +76,10 @@ function fooBar {
   return GLOBAL_STRING_0;
 }
 
-function loop1 {
+function loop {
 
-  l_loop1_4_WHILE_TRUE_START:
-  goto l_loop1_4_WHILE_TRUE_START;
-}
-
-function loop2 {
-
-  _n = _n;
-  return 0;
+  _n = loop();
+  return _n;
 }
 `);
 });
