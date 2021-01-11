@@ -18,7 +18,7 @@ import type {
 } from 'samlang-core-ast/mir-nodes';
 import { Long, assertNotNull, checkNotNull } from 'samlang-core-utils';
 
-class StackFrame {
+export class StackFrame {
   private variables = new Map<string, Long>();
 
   private _returnValue: Long | null = null;
@@ -35,14 +35,12 @@ class StackFrame {
     return this.variables.get(name) ?? Long.ZERO;
   }
 
-  setLocalValue(name: string, value: Long) {
+  setLocalValue(name: string, value: Long): void {
     this.variables.set(name, value);
   }
 }
 
-type MidIRInterpreterMutableGlobalEnvironment = {
-  // A collection of all available functions.
-  readonly functions: ReadonlyMap<string, MidIRFunction>;
+export type GeneralIREnvironment = {
   // Global variable name to fake address mapping.
   readonly globalVariables: ReadonlyMap<string, Long>;
   // Fake function address to function name mapping.
@@ -54,6 +52,70 @@ type MidIRInterpreterMutableGlobalEnvironment = {
   heapPointer: Long;
   // A collection of already printed stuff.
   printed: string;
+};
+
+type MidIRInterpreterMutableGlobalEnvironment = {
+  // A collection of all available functions.
+  readonly functions: ReadonlyMap<string, MidIRFunction>;
+} & GeneralIREnvironment;
+
+export const handleBuiltInFunctionCall = (
+  environment: GeneralIREnvironment,
+  functionName: string,
+  functionArgumentValues: readonly Long[]
+): Long | null => {
+  switch (functionName) {
+    case ENCODED_FUNCTION_NAME_MALLOC: {
+      const start = environment.heapPointer;
+      environment.heapPointer = environment.heapPointer.add(
+        checkNotNull(functionArgumentValues[0])
+      );
+      return start;
+    }
+    case ENCODED_FUNCTION_NAME_THROW: {
+      const string = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
+      // istanbul ignore next
+      if (string == null) throw new Error('Bad string!');
+      throw new PanicException(string);
+    }
+    case ENCODED_FUNCTION_NAME_STRING_TO_INT: {
+      const string = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
+      // istanbul ignore next
+      if (string == null) throw new Error('Bad string!');
+      try {
+        BigInt(string);
+        return Long.fromString(string);
+      } catch {
+        throw new PanicException(`Bad string: ${string}`);
+      }
+    }
+    case ENCODED_FUNCTION_NAME_INT_TO_STRING: {
+      const string = String(functionArgumentValues[0]);
+      const location = environment.heapPointer;
+      environment.heapPointer = environment.heapPointer.add(8);
+      environment.strings.set(location.toString(), string);
+      return location;
+    }
+    case ENCODED_FUNCTION_NAME_STRING_CONCAT: {
+      const string1 = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
+      const string2 = environment.strings.get(checkNotNull(functionArgumentValues[1]).toString());
+      // istanbul ignore next
+      if (string1 == null || string2 == null) throw new Error('Bad string');
+      const location = environment.heapPointer;
+      environment.heapPointer = environment.heapPointer.add(8);
+      environment.strings.set(location.toString(), string1 + string2);
+      return location;
+    }
+    case ENCODED_FUNCTION_NAME_PRINTLN: {
+      const string = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
+      // istanbul ignore next
+      if (string == null) throw new Error('Bad string!');
+      environment.printed += `${string}\n`;
+      return Long.ZERO;
+    }
+    default:
+      return null;
+  }
 };
 
 const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
@@ -206,74 +268,11 @@ const interpretMidIRFunction = (
         let functionName: string;
         if (functionExpression.__type__ === 'MidIRNameExpression') {
           functionName = functionExpression.name;
-          let result: Long | null;
-          switch (functionName) {
-            case ENCODED_FUNCTION_NAME_MALLOC: {
-              const start = environment.heapPointer;
-              environment.heapPointer = environment.heapPointer.add(
-                checkNotNull(functionArgumentValues[0])
-              );
-              result = start;
-              break;
-            }
-            case ENCODED_FUNCTION_NAME_THROW: {
-              const string = environment.strings.get(
-                checkNotNull(functionArgumentValues[0]).toString()
-              );
-              // istanbul ignore next
-              if (string == null) throw new Error('Bad string!');
-              throw new PanicException(string);
-            }
-            case ENCODED_FUNCTION_NAME_STRING_TO_INT: {
-              const string = environment.strings.get(
-                checkNotNull(functionArgumentValues[0]).toString()
-              );
-              // istanbul ignore next
-              if (string == null) throw new Error('Bad string!');
-              try {
-                BigInt(string);
-                result = Long.fromString(string);
-                break;
-              } catch {
-                throw new PanicException(`Bad string: ${string}`);
-              }
-            }
-            case ENCODED_FUNCTION_NAME_INT_TO_STRING: {
-              const string = String(functionArgumentValues[0]);
-              const location = environment.heapPointer;
-              environment.heapPointer = environment.heapPointer.add(8);
-              environment.strings.set(location.toString(), string);
-              result = location;
-              break;
-            }
-            case ENCODED_FUNCTION_NAME_STRING_CONCAT: {
-              const string1 = environment.strings.get(
-                checkNotNull(functionArgumentValues[0]).toString()
-              );
-              const string2 = environment.strings.get(
-                checkNotNull(functionArgumentValues[1]).toString()
-              );
-              // istanbul ignore next
-              if (string1 == null || string2 == null) throw new Error('Bad string');
-              const location = environment.heapPointer;
-              environment.heapPointer = environment.heapPointer.add(8);
-              environment.strings.set(location.toString(), string1 + string2);
-              result = location;
-              break;
-            }
-            case ENCODED_FUNCTION_NAME_PRINTLN: {
-              const string = environment.strings.get(
-                checkNotNull(functionArgumentValues[0]).toString()
-              );
-              // istanbul ignore next
-              if (string == null) throw new Error('Bad string!');
-              environment.printed += `${string}\n`;
-              result = Long.ZERO;
-              break;
-            }
-            default:
-              result = null;
-          }
+          const result = handleBuiltInFunctionCall(
+            environment,
+            functionName,
+            functionArgumentValues
+          );
           if (result != null) {
             if (statementToInterpret.returnCollectorTemporaryID != null) {
               stackFrame.setLocalValue(statementToInterpret.returnCollectorTemporaryID, result);
