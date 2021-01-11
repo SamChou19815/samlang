@@ -204,7 +204,7 @@ class LLVMLoweringManager {
     this.emitInstruction(
       LLVM_SWITCH(
         LLVM_VARIABLE(s.caseVariable),
-        finalEndLabel,
+        checkNotNull(caseWithLabels[caseWithLabels.length - 1]).label,
         caseWithLabels.map((it) => ({ value: it.caseNumber, branch: it.label }))
       )
     );
