@@ -25,6 +25,7 @@ import {
   HIR_ANY_TYPE,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
+  HighIRType,
 } from 'samlang-core-ast/hir-types';
 import type {
   ClassMemberDefinition,
@@ -59,6 +60,7 @@ const compileTypeDefinition = (
 const compileFunction = (
   moduleReference: ModuleReference,
   className: string,
+  typeDefinitionMapping: Readonly<Record<string, readonly HighIRType[]>>,
   classTypeParameters: readonly string[],
   stringManager: HighIRStringManager,
   classMember: ClassMemberDefinition
@@ -72,6 +74,7 @@ const compileFunction = (
   const bodyLoweringResult = lowerSamlangExpression(
     moduleReference,
     encodedName,
+    typeDefinitionMapping,
     typeParametersSet,
     stringManager,
     classMember.body
@@ -107,7 +110,7 @@ const compileSamlangSourcesToHighIRSources = (
   const compiledFunctions: HighIRFunction[] = [];
   const stringManager = new HighIRStringManager();
   sources.forEach((samlangModule, moduleReference) =>
-    samlangModule.classes.map(({ name: className, typeParameters, typeDefinition, members }) => {
+    samlangModule.classes.map(({ name: className, typeParameters, typeDefinition }) => {
       const compiledTypeDefinition = compileTypeDefinition(
         moduleReference,
         className,
@@ -115,10 +118,18 @@ const compileSamlangSourcesToHighIRSources = (
         typeDefinition
       );
       if (compiledTypeDefinition != null) compiledTypeDefinitions.push(compiledTypeDefinition);
+    })
+  );
+  const typeDefinitionMapping = Object.fromEntries(
+    compiledTypeDefinitions.map((it) => [it.identifier, it.mappings])
+  );
+  sources.forEach((samlangModule, moduleReference) =>
+    samlangModule.classes.map(({ name: className, typeParameters, members }) => {
       members.forEach((member) =>
         compileFunction(
           moduleReference,
           className,
+          typeDefinitionMapping,
           typeParameters,
           stringManager,
           member

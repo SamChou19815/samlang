@@ -38,6 +38,8 @@ import {
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import {
   HighIRType,
+  HighIRIdentifierType,
+  HighIRStructType,
   HighIRFunctionType,
   isTheSameHighIRType,
   HIR_BOOL_TYPE,
@@ -109,6 +111,7 @@ class HighIRExpressionLoweringManager {
   constructor(
     private readonly moduleReference: ModuleReference,
     private readonly encodedFunctionName: string,
+    private readonly typeDefinitionMapping: Readonly<Record<string, readonly HighIRType[]>>,
     private readonly typeParameters: ReadonlySet<string>,
     private readonly stringManager: HighIRStringManager
   ) {}
@@ -262,19 +265,24 @@ class HighIRExpressionLoweringManager {
   ): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
     const tupleVariableName = this.allocateTemporaryVariable();
-    const loweredExpressions = expression.expressions.map((subExpression) =>
-      this.loweredAndAddStatements(subExpression, loweredStatements)
+    const loweredTupleType = this.lowerType(expression.type) as HighIRStructType;
+    const loweredExpressions = expression.expressions.map((subExpression, i) =>
+      this.lowerWithPotentialCast(
+        checkNotNull(loweredTupleType.mappings[i]),
+        this.loweredAndAddStatements(subExpression, loweredStatements),
+        loweredStatements
+      )
     );
     return {
       statements: [
         ...loweredStatements,
         HIR_STRUCT_INITIALIZATION({
           structVariableName: tupleVariableName,
-          type: this.lowerType(expression.type),
+          type: loweredTupleType,
           expressionList: loweredExpressions,
         }),
       ],
-      expression: HIR_VARIABLE(tupleVariableName, this.lowerType(expression.type)),
+      expression: HIR_VARIABLE(tupleVariableName, loweredTupleType),
     };
   }
 
@@ -282,29 +290,35 @@ class HighIRExpressionLoweringManager {
     expression: ObjectConstructorExpression
   ): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
-    const loweredFields = expression.fieldDeclarations.map((fieldDeclaration) =>
-      this.loweredAndAddStatements(
-        fieldDeclaration.expression ?? {
-          __type__: 'VariableExpression',
-          range: fieldDeclaration.range,
-          precedence: 1,
-          type: fieldDeclaration.type,
-          name: fieldDeclaration.name,
-        },
-        loweredStatements
-      )
+    const loweredIdentifierType = this.lowerType(expression.type) as HighIRIdentifierType;
+    const mappingsForIdentifierType = checkNotNull(
+      this.typeDefinitionMapping[loweredIdentifierType.name]
     );
+    const loweredFields = expression.fieldDeclarations.map((fieldDeclaration, i) => {
+      const fieldExpression = fieldDeclaration.expression ?? {
+        __type__: 'VariableExpression',
+        range: fieldDeclaration.range,
+        precedence: 1,
+        type: fieldDeclaration.type,
+        name: fieldDeclaration.name,
+      };
+      return this.lowerWithPotentialCast(
+        checkNotNull(mappingsForIdentifierType[i]),
+        this.loweredAndAddStatements(fieldExpression, loweredStatements),
+        loweredStatements
+      );
+    });
     const structVariableName = this.allocateTemporaryVariable();
     loweredStatements.push(
       HIR_STRUCT_INITIALIZATION({
         structVariableName,
-        type: this.lowerType(expression.type),
+        type: loweredIdentifierType,
         expressionList: loweredFields,
       })
     );
     return {
       statements: loweredStatements,
-      expression: HIR_VARIABLE(structVariableName, this.lowerType(expression.type)),
+      expression: HIR_VARIABLE(structVariableName, loweredIdentifierType),
     };
   }
 
@@ -333,19 +347,30 @@ class HighIRExpressionLoweringManager {
 
   private lowerFieldAccess(expression: FieldAccessExpression): HighIRExpressionLoweringResult {
     const result = this.lower(expression.expression);
-    const type = this.lowerType(expression.type);
+    const mappingsForIdentifierType = checkNotNull(
+      this.typeDefinitionMapping[
+        (this.lowerType(expression.expression.type) as HighIRIdentifierType).name
+      ]
+    );
+    const expectedFieldType = this.lowerType(expression.type);
+    const extractedFieldType = checkNotNull(mappingsForIdentifierType[expression.fieldOrder]);
     const valueName = this.allocateTemporaryVariable();
+    const statements = [
+      ...result.statements,
+      HIR_INDEX_ACCESS({
+        name: valueName,
+        type: extractedFieldType,
+        pointerExpression: result.expression,
+        index: expression.fieldOrder,
+      }),
+    ];
     return {
-      statements: [
-        ...result.statements,
-        HIR_INDEX_ACCESS({
-          name: valueName,
-          type,
-          pointerExpression: result.expression,
-          index: expression.fieldOrder,
-        }),
-      ],
-      expression: HIR_VARIABLE(valueName, type),
+      statements,
+      expression: this.lowerWithPotentialCast(
+        expectedFieldType,
+        HIR_VARIABLE(valueName, extractedFieldType),
+        statements
+      ),
     };
   }
 
@@ -963,30 +988,56 @@ class HighIRExpressionLoweringManager {
         );
         switch (pattern.type) {
           case 'TuplePattern': {
+            const mappingsForTupleType = (loweredAssignedExpression.type as HighIRStructType)
+              .mappings;
             pattern.destructedNames.forEach(({ name, type }, index) => {
               if (name == null) {
                 return;
               }
+              const expectedFieldType = this.lowerType(type);
+              const extractedFieldType = checkNotNull(mappingsForTupleType[index]);
+              const mangledName = this.getRenamedVariableForNesting(name, extractedFieldType);
               loweredStatements.push(
                 HIR_INDEX_ACCESS({
-                  name: this.getRenamedVariableForNesting(name, this.lowerType(type)),
-                  type: this.lowerType(type),
+                  name: mangledName,
+                  type: extractedFieldType,
                   pointerExpression: loweredAssignedExpression,
                   index,
                 })
+              );
+              this.lowerWithPotentialCast(
+                expectedFieldType,
+                HIR_VARIABLE(mangledName, extractedFieldType),
+                loweredStatements
               );
             });
             break;
           }
           case 'ObjectPattern': {
+            const mappingsForIdentifierType = checkNotNull(
+              this.typeDefinitionMapping[
+                (loweredAssignedExpression.type as HighIRIdentifierType).name
+              ]
+            );
             pattern.destructedNames.forEach(({ fieldName, fieldOrder, type, alias }) => {
+              const expectedFieldType = this.lowerType(type);
+              const extractedFieldType = checkNotNull(mappingsForIdentifierType[fieldOrder]);
+              const mangledName = this.getRenamedVariableForNesting(
+                alias ?? fieldName,
+                extractedFieldType
+              );
               loweredStatements.push(
                 HIR_INDEX_ACCESS({
-                  name: this.getRenamedVariableForNesting(alias ?? fieldName, this.lowerType(type)),
-                  type: this.lowerType(type),
+                  name: mangledName,
+                  type: extractedFieldType,
                   pointerExpression: loweredAssignedExpression,
                   index: fieldOrder,
                 })
+              );
+              this.lowerWithPotentialCast(
+                expectedFieldType,
+                HIR_VARIABLE(mangledName, extractedFieldType),
+                loweredStatements
               );
             });
             break;
@@ -1020,6 +1071,7 @@ class HighIRExpressionLoweringManager {
 const lowerSamlangExpression = (
   moduleReference: ModuleReference,
   encodedFunctionName: string,
+  typeDefinitionMapping: Readonly<Record<string, readonly HighIRType[]>>,
   typeParameters: ReadonlySet<string>,
   stringManager: HighIRStringManager,
   expression: SamlangExpression
@@ -1027,6 +1079,7 @@ const lowerSamlangExpression = (
   const manager = new HighIRExpressionLoweringManager(
     moduleReference,
     encodedFunctionName,
+    typeDefinitionMapping,
     typeParameters,
     stringManager
   );
