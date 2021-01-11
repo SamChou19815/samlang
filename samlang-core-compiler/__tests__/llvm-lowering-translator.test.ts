@@ -312,7 +312,7 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 1/n', () => {
         ],
       }),
     ],
-    `  switch i64 %c, label %l_testFunction_1_match_end [ i64 2, label %l_testFunction_2_match_case_0 i64 2, label %l_testFunction_3_match_case_1 ]
+    `  switch i64 %c, label %l_testFunction_3_match_case_1 [ i64 2, label %l_testFunction_2_match_case_0 i64 2, label %l_testFunction_3_match_case_1 ]
 l_testFunction_2_match_case_0:
   call i64 @bar() nounwind
   br label %l_testFunction_1_match_end
@@ -336,7 +336,7 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 2/n', () => {
         finalAssignment: { name: 'ma', type: INT, branchValues: [HIR_ZERO, HIR_ZERO, HIR_ZERO] },
       }),
     ],
-    `  switch i64 %c, label %l_testFunction_1_match_end [ i64 1, label %l_testFunction_2_match_case_0 i64 0, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]
+    `  switch i64 %c, label %l_testFunction_4_match_case_2 [ i64 1, label %l_testFunction_2_match_case_0 i64 0, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]
 l_testFunction_2_match_case_0:
   br label %l_testFunction_1_match_end
 l_testFunction_3_match_case_1:
@@ -374,7 +374,7 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 3/n', () => {
         },
       }),
     ],
-    `  switch i64 %c, label %l_testFunction_1_match_end [ i64 1, label %l_testFunction_2_match_case_0 i64 0, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]
+    `  switch i64 %c, label %l_testFunction_4_match_case_2 [ i64 1, label %l_testFunction_2_match_case_0 i64 0, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]
 l_testFunction_2_match_case_0:
   br label %l_testFunction_1_match_end
 l_testFunction_3_match_case_1:
