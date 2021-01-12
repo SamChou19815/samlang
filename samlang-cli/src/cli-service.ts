@@ -118,11 +118,11 @@ export const compileToExecutablesViaLLVM = (
   const assembleResults = modulePaths.map((modulePath) => {
     const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
     const bitcodePath = `${outputProgramPath}.bc`;
-    const objectFilePath = `${outputProgramPath}.bc`;
+    const objectFilePath = `${outputProgramPath}.o`;
     return (
       shellOut('llvm-link', '-o', bitcodePath, modulePath, LLVM_LIBRARY_PATH) &&
       shellOut('llc', '-O3', '-filetype=obj', '--relocation-model=pic', bitcodePath) &&
-      spawnSync('gcc', ['-o', outputProgramPath, objectFilePath], { shell: true, stdio: 'ignore' })
+      spawnSync('gcc', ['-o', outputProgramPath, objectFilePath], { shell: true, stdio: 'inherit' })
         .status === 0
     );
   });
