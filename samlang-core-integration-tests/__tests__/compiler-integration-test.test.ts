@@ -127,12 +127,6 @@ mirBaseTestCases.forEach((testCase) => {
       expect(result).toBe(testCase.expectedStandardOut);
     });
 
-    it(`IR[copy]: ${testCase.testCaseName}`, () => {
-      testMidIROptimizerResult(testCase, (it) =>
-        optimizeIRCompilationUnit(it, { doesPerformCopyPropagation: true })
-      );
-    });
-
     it(`IR[vn]: ${testCase.testCaseName}`, () => {
       testMidIROptimizerResult(testCase, (it) =>
         optimizeIRCompilationUnit(it, { doesPerformLocalValueNumbering: true })
