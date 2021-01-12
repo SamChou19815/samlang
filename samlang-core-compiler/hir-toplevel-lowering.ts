@@ -26,6 +26,7 @@ import {
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HighIRType,
+  HighIRFunctionType,
 } from 'samlang-core-ast/hir-types';
 import type {
   ClassMemberDefinition,
@@ -61,6 +62,7 @@ const compileFunction = (
   moduleReference: ModuleReference,
   className: string,
   typeDefinitionMapping: Readonly<Record<string, readonly HighIRType[]>>,
+  functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
   classTypeParameters: readonly string[],
   stringManager: HighIRStringManager,
   classMember: ClassMemberDefinition
@@ -75,6 +77,7 @@ const compileFunction = (
     moduleReference,
     encodedName,
     typeDefinitionMapping,
+    functionTypeMapping,
     typeParametersSet,
     stringManager,
     classMember.body
@@ -109,8 +112,9 @@ const compileSamlangSourcesToHighIRSources = (
   const compiledTypeDefinitions: HighIRTypeDefinition[] = [];
   const compiledFunctions: HighIRFunction[] = [];
   const stringManager = new HighIRStringManager();
+  const functionTypeMapping: Record<string, HighIRFunctionType> = {};
   sources.forEach((samlangModule, moduleReference) =>
-    samlangModule.classes.map(({ name: className, typeParameters, typeDefinition }) => {
+    samlangModule.classes.map(({ name: className, typeParameters, typeDefinition, members }) => {
       const compiledTypeDefinition = compileTypeDefinition(
         moduleReference,
         className,
@@ -118,6 +122,19 @@ const compileSamlangSourcesToHighIRSources = (
         typeDefinition
       );
       if (compiledTypeDefinition != null) compiledTypeDefinitions.push(compiledTypeDefinition);
+      members.forEach((classMember) => {
+        const typeParametersSet = new Set(
+          classMember.isMethod
+            ? [...typeParameters, ...classMember.typeParameters]
+            : classMember.typeParameters
+        );
+        functionTypeMapping[
+          encodeFunctionNameGlobally(moduleReference, className, classMember.name)
+        ] = HIR_FUNCTION_TYPE(
+          classMember.parameters.map(({ type }) => lowerSamlangType(type, typeParametersSet)),
+          lowerSamlangType(classMember.type.returnType, typeParametersSet)
+        );
+      });
     })
   );
   const typeDefinitionMapping = Object.fromEntries(
@@ -130,6 +147,7 @@ const compileSamlangSourcesToHighIRSources = (
           moduleReference,
           className,
           typeDefinitionMapping,
+          functionTypeMapping,
           typeParameters,
           stringManager,
           member
