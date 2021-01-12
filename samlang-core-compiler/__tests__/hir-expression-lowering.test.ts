@@ -15,7 +15,7 @@ import {
 import { PLUS, AND, OR, CONCAT } from 'samlang-core-ast/common-operators';
 import { HIR_RETURN, debugPrintHighIRStatement } from 'samlang-core-ast/hir-expressions';
 import { debugPrintHighIRModule, HighIRModule } from 'samlang-core-ast/hir-toplevel';
-import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
+import { HIR_FUNCTION_TYPE, HIR_IDENTIFIER_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   SamlangExpression,
   EXPRESSION_FALSE,
@@ -53,6 +53,24 @@ const expectCorrectlyLowered = (
     ModuleReference.ROOT,
     'ENCODED_FUNCTION_NAME',
     { _Foo: [HIR_INT_TYPE, HIR_INT_TYPE], _Dummy: [HIR_INT_TYPE, HIR_INT_TYPE] },
+    {
+      _module_ModuleModule_class_ImportedClass_function_bar: HIR_FUNCTION_TYPE(
+        [HIR_IDENTIFIER_TYPE('_Dummy'), HIR_IDENTIFIER_TYPE('_Dummy')],
+        HIR_INT_TYPE
+      ),
+      _module__class_Dummy_function_fooBar: HIR_FUNCTION_TYPE(
+        [HIR_IDENTIFIER_TYPE('_Dummy'), HIR_IDENTIFIER_TYPE('_Dummy')],
+        HIR_INT_TYPE
+      ),
+      _module__class_C_function_m1: HIR_FUNCTION_TYPE(
+        [HIR_IDENTIFIER_TYPE('_Dummy')],
+        HIR_INT_TYPE
+      ),
+      _module__class_C_function_m2: HIR_FUNCTION_TYPE(
+        [HIR_INT_TYPE],
+        HIR_IDENTIFIER_TYPE('_Dummy')
+      ),
+    },
     new Set(),
     stringManager,
     samlangExpression
@@ -346,13 +364,13 @@ it('FunctionCall family lowering works 8/n.', () => {
         moduleReference: new ModuleReference(['']),
         className: 'C',
         classNameRange: Range.DUMMY,
-        memberName: 'm',
+        memberName: 'm1',
         memberNameRange: Range.DUMMY,
       }),
       functionArguments: [EXPRESSION_INT(Range.DUMMY, 0)],
     }),
     `let _t1: _Dummy = 0;
-_module__class_C_function_m((_t1: _Dummy));
+_module__class_C_function_m1((_t1: _Dummy));
 return 0;`
   );
 });
@@ -369,12 +387,12 @@ it('FunctionCall family lowering works 9/n.', () => {
         moduleReference: new ModuleReference(['']),
         className: 'C',
         classNameRange: Range.DUMMY,
-        memberName: 'm',
+        memberName: 'm2',
         memberNameRange: Range.DUMMY,
       }),
       functionArguments: [EXPRESSION_INT(Range.DUMMY, 0)],
     }),
-    `let _t0: _Dummy = _module__class_C_function_m(0);
+    `let _t0: _Dummy = _module__class_C_function_m2(0);
 let _t1: int = (_t0: _Dummy);
 return (_t1: int);`
   );

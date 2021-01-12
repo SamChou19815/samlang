@@ -112,6 +112,7 @@ class HighIRExpressionLoweringManager {
     private readonly moduleReference: ModuleReference,
     private readonly encodedFunctionName: string,
     private readonly typeDefinitionMapping: Readonly<Record<string, readonly HighIRType[]>>,
+    private readonly functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
     private readonly typeParameters: ReadonlySet<string>,
     private readonly stringManager: HighIRStringManager
   ) {}
@@ -489,29 +490,23 @@ class HighIRExpressionLoweringManager {
   private lowerFunctionCall(expression: FunctionCallExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
     const functionExpression = expression.functionExpression;
-    const sourceLevelFunctionTypeWithoutContext = functionExpression.type as FunctionType;
-    const functionTypeWithoutContext = HIR_FUNCTION_TYPE(
-      sourceLevelFunctionTypeWithoutContext.argumentTypes.map((it) => this.lowerType(it)),
-      this.lowerType(sourceLevelFunctionTypeWithoutContext.returnType)
-    );
-    assertNotNull(functionTypeWithoutContext.argumentTypes);
-    assertNotNull(functionTypeWithoutContext.returnType);
     const loweredReturnType = this.lowerType(expression.type);
     const isVoidReturn =
       expression.type.type === 'PrimitiveType' && expression.type.name === 'unit';
     const returnCollectorName = this.allocateTemporaryVariable();
+    let functionReturnCollectorType: HighIRType;
     let functionCall: HighIRStatement;
     switch (functionExpression.__type__) {
-      case 'ClassMemberExpression':
+      case 'ClassMemberExpression': {
+        const functionName = encodeFunctionNameGlobally(
+          functionExpression.moduleReference,
+          functionExpression.className,
+          functionExpression.memberName
+        );
+        const functionTypeWithoutContext = checkNotNull(this.functionTypeMapping[functionName]);
+        functionReturnCollectorType = functionTypeWithoutContext.returnType;
         functionCall = HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME(
-            encodeFunctionNameGlobally(
-              functionExpression.moduleReference,
-              functionExpression.className,
-              functionExpression.memberName
-            ),
-            functionTypeWithoutContext
-          ),
+          functionExpression: HIR_NAME(functionName, functionTypeWithoutContext),
           functionArguments: expression.functionArguments.map((oneArgument, i) => {
             const loweredArgument = this.loweredAndAddStatements(oneArgument, loweredStatements);
             return this.lowerWithPotentialCast(
@@ -525,14 +520,18 @@ class HighIRExpressionLoweringManager {
             : { name: returnCollectorName, type: functionTypeWithoutContext.returnType },
         });
         break;
-      case 'MethodAccessExpression':
+      }
+      case 'MethodAccessExpression': {
+        const functionName = encodeFunctionNameGlobally(
+          (functionExpression.expression.type as IdentifierType).moduleReference,
+          (functionExpression.expression.type as IdentifierType).identifier,
+          functionExpression.methodName
+        );
+        const functionTypeWithoutContext = checkNotNull(this.functionTypeMapping[functionName]);
+        functionReturnCollectorType = functionTypeWithoutContext.returnType;
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME(
-            encodeFunctionNameGlobally(
-              (functionExpression.expression.type as IdentifierType).moduleReference,
-              (functionExpression.expression.type as IdentifierType).identifier,
-              functionExpression.methodName
-            ),
+            functionName,
             HIR_FUNCTION_TYPE(
               [
                 this.lowerType(functionExpression.expression.type),
@@ -557,6 +556,7 @@ class HighIRExpressionLoweringManager {
             : { name: returnCollectorName, type: functionTypeWithoutContext.returnType },
         });
         break;
+      }
       default: {
         /**
          * Closure ABI:
@@ -569,6 +569,14 @@ class HighIRExpressionLoweringManager {
          * If context is NULL (0), then it will directly call the function like functionExpr(...restArguments).
          * If context is NONNULL, then it will call functionExpr(context, ...restArguments);
          */
+        const sourceLevelFunctionTypeWithoutContext = functionExpression.type as FunctionType;
+        const functionTypeWithoutContext = HIR_FUNCTION_TYPE(
+          sourceLevelFunctionTypeWithoutContext.argumentTypes.map((it) => this.lowerType(it)),
+          this.lowerType(sourceLevelFunctionTypeWithoutContext.returnType)
+        );
+        assertNotNull(functionTypeWithoutContext.argumentTypes);
+        assertNotNull(functionTypeWithoutContext.returnType);
+
         const loweredFunctionExpression = this.loweredAndAddStatements(
           functionExpression,
           loweredStatements
@@ -666,6 +674,7 @@ class HighIRExpressionLoweringManager {
               branch2Value: HIR_VARIABLE(resultTempB2, functionTypeWithoutContext.returnType),
             };
 
+        functionReturnCollectorType = functionTypeWithoutContext.returnType;
         functionCall = HIR_IF_ELSE({ booleanExpression, s1, s2, finalAssignment });
         break;
       }
@@ -679,7 +688,7 @@ class HighIRExpressionLoweringManager {
         ? HIR_ZERO
         : this.lowerWithPotentialCast(
             loweredReturnType,
-            HIR_VARIABLE(returnCollectorName, functionTypeWithoutContext.returnType),
+            HIR_VARIABLE(returnCollectorName, functionReturnCollectorType),
             loweredStatements
           ),
     };
@@ -1072,6 +1081,7 @@ const lowerSamlangExpression = (
   moduleReference: ModuleReference,
   encodedFunctionName: string,
   typeDefinitionMapping: Readonly<Record<string, readonly HighIRType[]>>,
+  functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
   typeParameters: ReadonlySet<string>,
   stringManager: HighIRStringManager,
   expression: SamlangExpression
@@ -1080,6 +1090,7 @@ const lowerSamlangExpression = (
     moduleReference,
     encodedFunctionName,
     typeDefinitionMapping,
+    functionTypeMapping,
     typeParameters,
     stringManager
   );
