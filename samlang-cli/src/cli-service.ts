@@ -57,7 +57,7 @@ export const compileToJS = (sources: Sources<SamlangModule>, outputDirectory: st
   });
 };
 
-export const compileToLLVMModules = (
+const compileToLLVMModules = (
   sources: Sources<SamlangModule>,
   outputDirectory: string
 ): readonly string[] => {
@@ -93,20 +93,31 @@ const compileToX86Assembly = (
 const RUNTIME_PATH = join(__dirname, '..', 'samlang-runtime');
 const LIBRARY_NAME = `sam-${process.platform}`;
 
+const shellOut = (program: string, ...programArguments: readonly string[]): boolean => {
+  return spawnSync(program, programArguments, { shell: true, stdio: 'inherit' }).status === 0;
+};
+
+const assembleWithLLVMAs = (inputFile: string): boolean => shellOut('llvm-as', inputFile);
+
 const linkWithGcc = (outputProgramFile: string, outputAssemblyFile: string): boolean => {
-  const gccProcess = spawnSync(
+  return shellOut(
     'gcc',
-    [
-      '-o',
-      outputProgramFile,
-      outputAssemblyFile,
-      `-L${RUNTIME_PATH}`,
-      `-l${LIBRARY_NAME}`,
-      '-lpthread',
-    ],
-    { shell: true, stdio: 'inherit' }
+    '-o',
+    outputProgramFile,
+    outputAssemblyFile,
+    `-L${RUNTIME_PATH}`,
+    `-l${LIBRARY_NAME}`,
+    '-lpthread'
   );
-  return gccProcess.status === 0;
+};
+
+export const compileToLLVMBitcode = (
+  sources: Sources<SamlangModule>,
+  outputDirectory: string
+): boolean => {
+  const modulePaths = compileToLLVMModules(sources, outputDirectory);
+  const assembleResults = modulePaths.map(assembleWithLLVMAs);
+  return assembleResults.every((it) => it);
 };
 
 export const compileToX86Executables = (
