@@ -107,9 +107,10 @@ export const LLVM_INT = (value: Long | number): LLVMLiteral => ({
 export const LLVM_VARIABLE = (name: string): LLVMVariable => ({ __type__: 'LLVMVariable', name });
 export const LLVM_NAME = (name: string): LLVMName => ({ __type__: 'LLVMName', name });
 
-export const prettyPrintLLVMValue = (value: LLVMValue): string => {
+export const prettyPrintLLVMValue = (value: LLVMValue, type: LLVMType): string => {
   switch (value.__type__) {
     case 'LLVMLiteral':
+      if (value.value.eq(Long.ZERO) && type.__type__ !== 'PrimitiveType') return 'null';
       return value.value.toString();
     case 'LLVMVariable':
       return `%${value.name}`;
@@ -349,7 +350,7 @@ export const LLVM_RETURN = (value: LLVMValue, type: LLVMType): LLVMReturnInstruc
 export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string => {
   switch (instruction.__type__) {
     case 'LLVMCastInstruction': {
-      const sourceValue = prettyPrintLLVMValue(instruction.sourceValue);
+      const sourceValue = prettyPrintLLVMValue(instruction.sourceValue, instruction.sourceType);
       const targetType = prettyPrintLLVMType(instruction.resultType);
       const sourceType = prettyPrintLLVMType(instruction.sourceType);
       if (targetType === sourceType) throw new Error();
@@ -373,15 +374,15 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
     }
     case 'LLVMGetElementPointerInstruction': {
       const { resultVariable, offset } = instruction;
-      const value = prettyPrintLLVMValue(instruction.sourceValue);
+      const value = prettyPrintLLVMValue(instruction.sourceValue, instruction.sourcePointerType);
       const sourceType = prettyPrintLLVMType(instruction.sourcePointerType);
       const sourceTypeWithoutStar = sourceType.substring(0, sourceType.length - 1);
       return `%${resultVariable} = getelementptr ${sourceTypeWithoutStar}, ${sourceType} ${value}, i32 0, i32 ${offset}`;
     }
     case 'LLVMBinaryInstruction': {
       const result = `%${instruction.resultVariable}`;
-      const v1 = prettyPrintLLVMValue(instruction.v1);
-      const v2 = prettyPrintLLVMValue(instruction.v2);
+      const v1 = prettyPrintLLVMValue(instruction.v1, instruction.operandType);
+      const v2 = prettyPrintLLVMValue(instruction.v2, instruction.operandType);
       let operator: string;
       switch (instruction.operator) {
         case '+':
@@ -430,7 +431,7 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       return `%${resultVariable} = load ${type}, ${type}* %${sourceVariable}`;
     }
     case 'LLVMStoreInstruction': {
-      const sourceValue = prettyPrintLLVMValue(instruction.sourceValue);
+      const sourceValue = prettyPrintLLVMValue(instruction.sourceValue, instruction.valueType);
       const type = prettyPrintLLVMType(instruction.valueType);
       return `store ${type} ${sourceValue}, ${type}* %${instruction.targetVariable}`;
     }
@@ -438,7 +439,10 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       const name = instruction.resultVariable;
       const type = prettyPrintLLVMType(instruction.variableType);
       const valueBranchTuplesString = instruction.valueBranchTuples
-        .map(({ value, branch }) => `[ ${prettyPrintLLVMValue(value)}, %${branch} ]`)
+        .map(
+          ({ value, branch }) =>
+            `[ ${prettyPrintLLVMValue(value, instruction.variableType)}, %${branch} ]`
+        )
         .join(', ');
       return `%${name} = phi ${type} ${valueBranchTuplesString}`;
     }
@@ -446,9 +450,11 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       const assignedTo =
         instruction.resultVariable != null ? `%${instruction.resultVariable} = ` : '';
       const resultType = prettyPrintLLVMType(instruction.resultType);
-      const functionName = prettyPrintLLVMValue(instruction.functionName);
+      const functionName = prettyPrintLLVMValue(instruction.functionName, LLVM_STRING_TYPE());
       const functionArguments = instruction.functionArguments
-        .map(({ value, type }) => `${prettyPrintLLVMType(type)} ${prettyPrintLLVMValue(value)}`)
+        .map(
+          ({ value, type }) => `${prettyPrintLLVMType(type)} ${prettyPrintLLVMValue(value, type)}`
+        )
         .join(', ');
       return `${assignedTo}call ${resultType} ${functionName}(${functionArguments}) nounwind`;
     }
@@ -458,11 +464,11 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       return `br label %${instruction.branch}`;
     case 'LLVMConditionalJumpInstruction': {
       const { condition, b1, b2 } = instruction;
-      return `br i1 ${prettyPrintLLVMValue(condition)}, label %${b1}, label %${b2}`;
+      return `br i1 ${prettyPrintLLVMValue(condition, LLVM_BOOL_TYPE)}, label %${b1}, label %${b2}`;
     }
     case 'LLVMSwitchInstruction': {
       const { defaultBranchName, otherBranchNameWithValues } = instruction;
-      const condition = prettyPrintLLVMValue(instruction.condition);
+      const condition = prettyPrintLLVMValue(instruction.condition, LLVM_INT_TYPE);
       const otherBranchMappings = otherBranchNameWithValues
         .map((it) => `i64 ${it.value}, label %${it.branch}`)
         .join(' ');
@@ -470,7 +476,7 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
     }
     case 'LLVMReturnInstruction': {
       const { value, type } = instruction;
-      return `ret ${prettyPrintLLVMType(type)} ${prettyPrintLLVMValue(value)}`;
+      return `ret ${prettyPrintLLVMType(type)} ${prettyPrintLLVMValue(value, type)}`;
     }
   }
 };

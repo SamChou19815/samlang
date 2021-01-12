@@ -116,10 +116,11 @@ it('prettyPrintLLVMType works.', () => {
 });
 
 it('prettyPrintLLVMValue works.', () => {
-  expect(prettyPrintLLVMValue(LLVM_INT(3))).toBe('3');
-  expect(prettyPrintLLVMValue(LLVM_INT(Long.fromInt(3)))).toBe('3');
-  expect(prettyPrintLLVMValue(LLVM_VARIABLE('foo'))).toBe('%foo');
-  expect(prettyPrintLLVMValue(LLVM_NAME('foo'))).toBe('@foo');
+  expect(prettyPrintLLVMValue(LLVM_INT(0), LLVM_STRING_TYPE())).toBe('null');
+  expect(prettyPrintLLVMValue(LLVM_INT(3), LLVM_INT_TYPE)).toBe('3');
+  expect(prettyPrintLLVMValue(LLVM_INT(Long.fromInt(3)), LLVM_INT_TYPE)).toBe('3');
+  expect(prettyPrintLLVMValue(LLVM_VARIABLE('foo'), LLVM_INT_TYPE)).toBe('%foo');
+  expect(prettyPrintLLVMValue(LLVM_NAME('foo'), LLVM_INT_TYPE)).toBe('@foo');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_CAST.', () => {
@@ -336,6 +337,18 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
       })
     )
   ).toBe('%foo = icmp ne i64 %bar, 1');
+
+  expect(
+    prettyPrintLLVMInstruction(
+      LLVM_BINARY({
+        resultVariable: 'foo',
+        operator: '!=',
+        operandType: LLVM_STRING_TYPE(),
+        v1: LLVM_VARIABLE('bar'),
+        v2: LLVM_INT(0),
+      })
+    )
+  ).toBe('%foo = icmp ne i64* %bar, null');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_LOAD.', () => {
