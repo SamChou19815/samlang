@@ -12,7 +12,7 @@ import {
   ModuleReference,
   boolType,
 } from 'samlang-core-ast/common-nodes';
-import { PLUS, AND, OR, CONCAT } from 'samlang-core-ast/common-operators';
+import { PLUS, AND, OR, CONCAT, MUL, DIV, MOD, MINUS } from 'samlang-core-ast/common-operators';
 import { HIR_RETURN, debugPrintHighIRStatement } from 'samlang-core-ast/hir-expressions';
 import { debugPrintHighIRModule, HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import { HIR_FUNCTION_TYPE, HIR_IDENTIFIER_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
@@ -205,7 +205,27 @@ it('Unary lowering works.', () => {
       operator: '!',
       expression: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
     }),
-    '_builtin_throw((_this: _Dummy));\nlet _t0: bool = 0 ^ 1;\nreturn (_t0: bool);'
+    '_builtin_throw((_this: _Dummy));\nreturn 1;'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_UNARY({
+      range: Range.DUMMY,
+      type: unitType,
+      operator: '!',
+      expression: THIS,
+    }),
+    'let _t0: bool = (_this: _Dummy) ^ 1;\nreturn (_t0: bool);'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_UNARY({
+      range: Range.DUMMY,
+      type: unitType,
+      operator: '-',
+      expression: THIS,
+    }),
+    'let _t0: int = 0 - (_this: _Dummy);\nreturn (_t0: int);'
   );
 
   expectCorrectlyLowered(
@@ -215,7 +235,7 @@ it('Unary lowering works.', () => {
       operator: '-',
       expression: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
     }),
-    '_builtin_throw((_this: _Dummy));\nlet _t0: int = 0 - 0;\nreturn (_t0: int);'
+    '_builtin_throw((_this: _Dummy));\nreturn 0;'
   );
 });
 
@@ -437,6 +457,155 @@ it('Normal binary lowering works.', () => {
   );
 });
 
+it('ConstantFolding binary lowering works 1/n.', () => {
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: PLUS,
+      e1: EXPRESSION_INT(Range.DUMMY, 2),
+      e2: EXPRESSION_INT(Range.DUMMY, 2),
+    }),
+    'return 4;'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: PLUS,
+      e1: EXPRESSION_INT(Range.DUMMY, 4),
+      e2: EXPRESSION_INT(Range.DUMMY, 0),
+    }),
+    'return 4;'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: MUL,
+      e1: EXPRESSION_INT(Range.DUMMY, 2),
+      e2: EXPRESSION_INT(Range.DUMMY, 2),
+    }),
+    'return 4;'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: MUL,
+      e1: EXPRESSION_INT(Range.DUMMY, 4),
+      e2: EXPRESSION_INT(Range.DUMMY, 1),
+    }),
+    'return 4;'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: MUL,
+      e1: EXPRESSION_INT(Range.DUMMY, 2),
+      e2: EXPRESSION_INT(Range.DUMMY, 0),
+    }),
+    'return 0;'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: DIV,
+      e1: EXPRESSION_INT(Range.DUMMY, 2),
+      e2: EXPRESSION_INT(Range.DUMMY, 2),
+    }),
+    'return 1;'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: MOD,
+      e1: EXPRESSION_INT(Range.DUMMY, 5),
+      e2: EXPRESSION_INT(Range.DUMMY, 2),
+    }),
+    'return 1;'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: MOD,
+      e1: EXPRESSION_INT(Range.DUMMY, 5),
+      e2: EXPRESSION_INT(Range.DUMMY, 1),
+    }),
+    'return 0;'
+  );
+});
+
+it('ConstantFolding binary lowering works 2/n.', () => {
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: MINUS,
+      e1: EXPRESSION_VARIABLE({ range: Range.DUMMY, name: 'a', type: intType }),
+      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, name: 'a', type: intType }),
+    }),
+    'return 0;'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: DIV,
+      e1: EXPRESSION_VARIABLE({ range: Range.DUMMY, name: 'a', type: intType }),
+      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, name: 'a', type: intType }),
+    }),
+    'return 1;'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: MOD,
+      e1: EXPRESSION_VARIABLE({ range: Range.DUMMY, name: 'a', type: intType }),
+      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, name: 'a', type: intType }),
+    }),
+    'return 0;'
+  );
+});
+
+it('ConstantFolding binary lowering works 3/n.', () => {
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: DIV,
+      e1: EXPRESSION_INT(Range.DUMMY, 2),
+      e2: EXPRESSION_INT(Range.DUMMY, 0),
+    }),
+    'let _t0: int = 2 / 0;\nreturn (_t0: int);'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      operator: MOD,
+      e1: EXPRESSION_INT(Range.DUMMY, 2),
+      e2: EXPRESSION_INT(Range.DUMMY, 0),
+    }),
+    'let _t0: int = 2 % 0;\nreturn (_t0: int);'
+  );
+});
+
 it('String concat binary lowering works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_BINARY({
@@ -457,12 +626,12 @@ it('Short circuiting binary lowering works.', () => {
       range: Range.DUMMY,
       type: boolType,
       operator: AND,
-      e1: EXPRESSION_TRUE(Range.DUMMY),
-      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
+      e1: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
+      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'bar' }),
     }),
     `let _t0: bool;
-if 1 {
-  _t0 = (foo: bool);
+if (foo: bool) {
+  _t0 = (bar: bool);
 } else {
   _t0 = 0;
 }
@@ -473,15 +642,59 @@ return (_t0: bool);`
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: boolType,
+      operator: AND,
+      e1: EXPRESSION_TRUE(Range.DUMMY),
+      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
+    }),
+    'return (foo: bool);'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: boolType,
+      operator: AND,
+      e1: EXPRESSION_FALSE(Range.DUMMY),
+      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
+    }),
+    'return 0;'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: boolType,
       operator: OR,
       e1: EXPRESSION_TRUE(Range.DUMMY),
-      e2: EXPRESSION_FALSE(Range.DUMMY),
+      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
+    }),
+    'return 1;'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: boolType,
+      operator: OR,
+      e1: EXPRESSION_FALSE(Range.DUMMY),
+      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
+    }),
+    'return (foo: bool);'
+  );
+
+  expectCorrectlyLowered(
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: boolType,
+      operator: OR,
+      e1: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
+      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'bar' }),
     }),
     `let _t0: bool;
-if 1 {
+if (foo: bool) {
   _t0 = 1;
 } else {
-  _t0 = 0;
+  _t0 = (bar: bool);
 }
 return (_t0: bool);`
   );

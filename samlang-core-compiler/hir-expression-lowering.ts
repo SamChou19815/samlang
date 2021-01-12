@@ -16,6 +16,7 @@ import type {
   ModuleReference,
   FunctionType,
 } from 'samlang-core-ast/common-nodes';
+import type { IROperator } from 'samlang-core-ast/common-operators';
 import {
   HighIRStatement,
   HighIRExpression,
@@ -68,7 +69,7 @@ import type {
   LambdaExpression,
   StatementBlockExpression,
 } from 'samlang-core-ast/samlang-expressions';
-import { assertNotNull, checkNotNull, LocalStackedContext } from 'samlang-core-utils';
+import { Long, assertNotNull, checkNotNull, LocalStackedContext } from 'samlang-core-utils';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -95,6 +96,37 @@ class HighIRLoweringVariableContext extends LocalStackedContext<HighIRExpression
     this.addLocalValueType(name, value, () => {});
   }
 }
+
+const evaluateBinaryExpression = (operator: IROperator, v1: Long, v2: Long): Long | null => {
+  // istanbul ignore next
+  switch (operator) {
+    case '+':
+      return v1.add(v2);
+    case '-':
+      return v1.subtract(v2);
+    case '*':
+      return v1.multiply(v2);
+    case '/':
+      return v2.equals(Long.ZERO) ? null : v1.divide(v2);
+    case '%':
+      return v2.equals(Long.ZERO) ? null : v1.mod(v2);
+    case '^':
+      // istanbul ignore next
+      return v1.xor(v2);
+    case '<':
+      return v1.lessThan(v2) ? Long.ONE : Long.ZERO;
+    case '<=':
+      return v1.lessThanOrEqual(v2) ? Long.ONE : Long.ZERO;
+    case '>':
+      return v1.greaterThan(v2) ? Long.ONE : Long.ZERO;
+    case '>=':
+      return v1.greaterThanOrEqual(v2) ? Long.ONE : Long.ZERO;
+    case '==':
+      return v1.equals(v2) ? Long.ONE : Long.ZERO;
+    case '!=':
+      return v1.notEquals(v2) ? Long.ONE : Long.ZERO;
+  }
+};
 
 class HighIRExpressionLoweringManager {
   private nextTemporaryVariableId = 0;
@@ -403,6 +435,18 @@ class HighIRExpressionLoweringManager {
 
   private lowerUnary(expression: UnaryExpression): HighIRExpressionLoweringResult {
     const result = this.lower(expression.expression);
+    if (result.expression.__type__ === 'HighIRIntLiteralExpression') {
+      const value = result.expression.value;
+      switch (expression.operator) {
+        case '!':
+          return {
+            statements: result.statements,
+            expression: value.equals(0) ? HIR_TRUE : HIR_FALSE,
+          };
+        case '-':
+          return { statements: result.statements, expression: HIR_INT(value.negate()) };
+      }
+    }
     const valueName = this.allocateTemporaryVariable();
     switch (expression.operator) {
       case '!':
@@ -698,6 +742,7 @@ class HighIRExpressionLoweringManager {
     expression: SamlangExpression
   ): HighIRExpressionLoweringResult {
     if (expression.__type__ === 'LiteralExpression' && expression.literal.type === 'BoolLiteral') {
+      // istanbul ignore next
       return { statements: [], expression: expression.literal.value ? HIR_TRUE : HIR_FALSE };
     }
     if (expression.__type__ !== 'BinaryExpression') {
@@ -713,6 +758,14 @@ class HighIRExpressionLoweringManager {
         const temp = this.allocateTemporaryVariable();
         const e1Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e1);
         const e2Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e2);
+        if (e1Result.expression.__type__ === 'HighIRIntLiteralExpression') {
+          return e1Result.expression.value.toInt()
+            ? {
+                statements: [...e1Result.statements, ...e2Result.statements],
+                expression: e2Result.expression,
+              }
+            : { statements: e1Result.statements, expression: HIR_FALSE };
+        }
         return {
           statements: [
             ...e1Result.statements,
@@ -735,6 +788,14 @@ class HighIRExpressionLoweringManager {
         const temp = this.allocateTemporaryVariable();
         const e1Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e1);
         const e2Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e2);
+        if (e1Result.expression.__type__ === 'HighIRIntLiteralExpression') {
+          return e1Result.expression.value.toInt()
+            ? { statements: e1Result.statements, expression: HIR_TRUE }
+            : {
+                statements: [...e1Result.statements, ...e2Result.statements],
+                expression: e2Result.expression,
+              };
+        }
         return {
           statements: [
             ...e1Result.statements,
@@ -754,6 +815,22 @@ class HighIRExpressionLoweringManager {
         };
       }
       case '::': {
+        if (
+          expression.e1.__type__ === 'LiteralExpression' &&
+          expression.e1.literal.type === 'StringLiteral' &&
+          expression.e2.__type__ === 'LiteralExpression' &&
+          expression.e2.literal.type === 'StringLiteral'
+        ) {
+          return {
+            statements: [],
+            expression: HIR_NAME(
+              this.stringManager.allocateStringArrayGlobalVariable(
+                expression.e1.literal.value + expression.e2.literal.value
+              ).name,
+              HIR_STRING_TYPE
+            ),
+          };
+        }
         const loweredStatements: HighIRStatement[] = [];
         const loweredE1 = this.loweredAndAddStatements(expression.e1, loweredStatements);
         const loweredE2 = this.loweredAndAddStatements(expression.e2, loweredStatements);
@@ -775,13 +852,55 @@ class HighIRExpressionLoweringManager {
       }
       default: {
         const loweredStatements: HighIRStatement[] = [];
-        const loweredE1 = this.loweredAndAddStatements(expression.e1, loweredStatements);
-        const loweredE2 = this.loweredAndAddStatements(expression.e2, loweredStatements);
+        const loweredE1Original = this.loweredAndAddStatements(expression.e1, loweredStatements);
+        const loweredE2Original = this.loweredAndAddStatements(expression.e2, loweredStatements);
         const valueTemp = this.allocateTemporaryVariable();
         const binaryStatement = HIR_BINARY({
           name: valueTemp,
-          ...createHighIRFlexibleOrderOperatorNode(operatorSymbol, loweredE1, loweredE2),
+          ...createHighIRFlexibleOrderOperatorNode(
+            operatorSymbol,
+            loweredE1Original,
+            loweredE2Original
+          ),
         });
+        const { operator, e1: loweredE1, e2: loweredE2 } = binaryStatement;
+        if (loweredE2.__type__ === 'HighIRIntLiteralExpression') {
+          const v2 = loweredE2.value;
+          if (v2.equals(0)) {
+            if (operator === '+') return { statements: loweredStatements, expression: loweredE1 };
+            if (operator === '*') return { statements: loweredStatements, expression: HIR_ZERO };
+          }
+          if (v2.equals(1)) {
+            if (operator === '%') return { statements: loweredStatements, expression: HIR_ZERO };
+            if (operator === '*' || operator === '/') {
+              return { statements: loweredStatements, expression: loweredE1 };
+            }
+          }
+          if (loweredE1.__type__ === 'HighIRIntLiteralExpression') {
+            const v1 = loweredE1.value;
+            const value = evaluateBinaryExpression(binaryStatement.operator, v1, v2);
+            if (value != null) {
+              return {
+                statements: loweredStatements,
+                expression: {
+                  __type__: 'HighIRIntLiteralExpression',
+                  value,
+                  type: binaryStatement.type,
+                },
+              };
+            }
+          }
+        }
+        if (
+          loweredE1.__type__ === 'HighIRVariableExpression' &&
+          loweredE2.__type__ === 'HighIRVariableExpression' &&
+          loweredE1.name === loweredE2.name
+        ) {
+          if (operator === '-' || operator === '%') {
+            return { statements: loweredStatements, expression: HIR_ZERO };
+          }
+          if (operator === '/') return { statements: loweredStatements, expression: HIR_ONE };
+        }
         loweredStatements.push(binaryStatement);
         return {
           statements: loweredStatements,
@@ -806,6 +925,20 @@ class HighIRExpressionLoweringManager {
     );
     const e1LoweringResult = this.lower(expression.e1);
     const e2LoweringResult = this.lower(expression.e2);
+    if (loweredBoolExpression.__type__ === 'HighIRIntLiteralExpression') {
+      if (loweredBoolExpression.value.toInt()) {
+        loweredStatements.push(...e1LoweringResult.statements);
+        return {
+          statements: loweredStatements,
+          expression: e1LoweringResult.expression,
+        };
+      }
+      loweredStatements.push(...e2LoweringResult.statements);
+      return {
+        statements: loweredStatements,
+        expression: e2LoweringResult.expression,
+      };
+    }
     const variableForIfElseAssign = this.allocateTemporaryVariable();
     loweredStatements.push(
       HIR_IF_ELSE({
