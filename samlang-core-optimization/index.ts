@@ -1,5 +1,4 @@
 import optimizeIRWithCommonSubExpressionElimination from './common-subexpression-elimination-optimization';
-import optimizeIRWithCopyPropagation from './copy-propagation-optimization';
 import optimizeIRWithDeadCodeElimination from './dead-code-elimination-optimization';
 import optimizeMidIRCompilationUnitByInlining from './inline-optimization';
 import optimizeIRWithLocalValueNumbering from './local-value-numbering-optimization';
@@ -9,14 +8,12 @@ import optimizeIrWithSimpleOptimization from './simple-optimizations';
 import type { MidIRStatement, MidIRCompilationUnit } from 'samlang-core-ast/mir-nodes';
 
 type OptimizationConfiguration = {
-  doesPerformCopyPropagation?: boolean;
   doesPerformLocalValueNumbering?: boolean;
   doesPerformCommonSubExpressionElimination?: boolean;
   doesPerformInlining?: boolean;
 };
 
 const allEnabledOptimizationConfiguration: OptimizationConfiguration = {
-  doesPerformCopyPropagation: true,
   doesPerformLocalValueNumbering: true,
   doesPerformCommonSubExpressionElimination: true,
   doesPerformInlining: true,
@@ -26,15 +23,11 @@ const optimizeMidIRStatementsForOneRound = (
   statements: readonly MidIRStatement[],
   allocator: OptimizationResourceAllocator,
   {
-    doesPerformCopyPropagation,
     doesPerformLocalValueNumbering,
     doesPerformCommonSubExpressionElimination,
   }: OptimizationConfiguration
 ): readonly MidIRStatement[] => {
   let optimized = statements;
-  if (doesPerformCopyPropagation) {
-    optimized = optimizeIRWithCopyPropagation(optimized);
-  }
   if (doesPerformLocalValueNumbering) {
     optimized = optimizeIrWithSimpleOptimization(optimized);
     optimized = optimizeIRWithLocalValueNumbering(optimized);
