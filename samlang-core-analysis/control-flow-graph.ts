@@ -1,4 +1,6 @@
+import type { LLVMInstruction } from 'samlang-core-ast/llvm-nodes';
 import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
+import { checkNotNull } from 'samlang-core-utils';
 
 interface Adapter<I> {
   /** @returns the label if the given instruction is the label instruction. */
@@ -6,7 +8,7 @@ interface Adapter<I> {
   /** @returns the jump label if the given instruction is the jump instruction. */
   getJumpLabel(instruction: I): string | null;
   /** @returns the first label of condition jump if the given instruction is the conditional jump (fall-through) instruction. */
-  getConditionalJumpLabel(instruction: I): string | null;
+  getConditionalJumpLabel(instruction: I): string | readonly string[] | null;
   /** @returns whether the instruction is a return statement. */
   isReturn(instruction: I): boolean;
 }
@@ -21,6 +23,29 @@ const midIRAdapter: Adapter<MidIRStatement> = {
   isReturn: (instruction) => instruction.__type__ === 'MidIRReturnStatement',
 };
 
+const LLVMIRAdapter: Adapter<LLVMInstruction> = {
+  getLabel: (instruction) =>
+    instruction.__type__ === 'LLVMLabelInstruction' ? instruction.name : null,
+  getJumpLabel: (instruction) =>
+    instruction.__type__ === 'LLVMJumpInstruction' ? instruction.branch : null,
+  getConditionalJumpLabel: (instruction) => {
+    switch (instruction.__type__) {
+      case 'LLVMConditionalJumpInstruction':
+        return [instruction.b1, instruction.b2];
+      case 'LLVMSwitchInstruction':
+        return Array.from(
+          new Set([
+            ...instruction.otherBranchNameWithValues.map((it) => it.branch),
+            instruction.defaultBranchName,
+          ])
+        );
+      default:
+        return null;
+    }
+  },
+  isReturn: (instruction) => instruction.__type__ === 'LLVMReturnInstruction',
+};
+
 export type ControlFlowGraphNode<I> = { readonly id: number; readonly instruction: I };
 
 export default class ControlFlowGraph<I> {
@@ -33,6 +58,10 @@ export default class ControlFlowGraph<I> {
   static readonly fromMidIRStatements = (
     statements: readonly MidIRStatement[]
   ): ControlFlowGraph<MidIRStatement> => new ControlFlowGraph(statements, midIRAdapter);
+
+  static readonly fromLLVMInstructions = (
+    instructions: readonly LLVMInstruction[]
+  ): ControlFlowGraph<LLVMInstruction> => new ControlFlowGraph(instructions, LLVMIRAdapter);
 
   private constructor(
     instructions: readonly I[],
@@ -51,22 +80,23 @@ export default class ControlFlowGraph<I> {
     instructions.forEach((instruction, id) => {
       const jumpLabel = getJumpLabel(instruction);
       if (jumpLabel != null) {
-        const nextID = labelIdMap.get(jumpLabel);
-        // istanbul ignore next
-        if (nextID == null) throw new Error(`Bad jump label: ${jumpLabel}`);
+        const nextID = checkNotNull(labelIdMap.get(jumpLabel));
         this.childrenMap.set(id, [nextID]);
         return;
       }
       const conditionalJumpLabel = getConditionalJumpLabel(instruction);
       if (conditionalJumpLabel != null) {
-        const jumpToId = labelIdMap.get(conditionalJumpLabel);
-        // istanbul ignore next
-        if (jumpToId == null) throw new Error(`Bad cjump label: ${jumpLabel}`);
+        if (typeof conditionalJumpLabel !== 'string') {
+          this.childrenMap.set(
+            id,
+            conditionalJumpLabel.map((it) => checkNotNull(labelIdMap.get(it)))
+          );
+          return;
+        }
+        const jumpToId = checkNotNull(labelIdMap.get(conditionalJumpLabel));
         const nextList = [jumpToId];
         // istanbul ignore next
-        if (id !== instructions.length - 1) {
-          nextList.push(id + 1);
-        }
+        if (id !== instructions.length - 1) nextList.push(id + 1);
         this.childrenMap.set(id, nextList);
         return;
       }
