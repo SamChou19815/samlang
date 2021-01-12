@@ -1,4 +1,3 @@
-import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
 import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
 
 interface Adapter<I> {
@@ -22,19 +21,6 @@ const midIRAdapter: Adapter<MidIRStatement> = {
   isReturn: (instruction) => instruction.__type__ === 'MidIRReturnStatement',
 };
 
-const assemblyInstructionAdapter: Adapter<AssemblyInstruction> = {
-  getLabel: (instruction) => (instruction.__type__ === 'AssemblyLabel' ? instruction.label : null),
-  getJumpLabel: (instruction) =>
-    instruction.__type__ === 'AssemblyJump' && instruction.type === 'jmp'
-      ? instruction.label
-      : null,
-  getConditionalJumpLabel: (instruction) =>
-    instruction.__type__ === 'AssemblyJump' && instruction.type !== 'jmp'
-      ? instruction.label
-      : null,
-  isReturn: (instruction) => instruction.__type__ === 'AssemblyReturn',
-};
-
 export type ControlFlowGraphNode<I> = { readonly id: number; readonly instruction: I };
 
 export default class ControlFlowGraph<I> {
@@ -47,11 +33,6 @@ export default class ControlFlowGraph<I> {
   static readonly fromMidIRStatements = (
     statements: readonly MidIRStatement[]
   ): ControlFlowGraph<MidIRStatement> => new ControlFlowGraph(statements, midIRAdapter);
-
-  static readonly fromAssemblyInstructions = (
-    instructions: readonly AssemblyInstruction[]
-  ): ControlFlowGraph<AssemblyInstruction> =>
-    new ControlFlowGraph(instructions, assemblyInstructionAdapter);
 
   private constructor(
     instructions: readonly I[],

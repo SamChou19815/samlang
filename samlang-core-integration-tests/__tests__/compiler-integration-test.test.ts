@@ -1,6 +1,5 @@
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
-import { assemblyProgramToString } from 'samlang-core-ast/asm-program';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { LLVMModule, prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import { MidIRCompilationUnit, midIRCompilationUnitToString } from 'samlang-core-ast/mir-nodes';
@@ -8,9 +7,7 @@ import {
   compileSamlangSourcesToHighIRSources,
   compileHighIrModuleToMidIRCompilationUnit,
   lowerHighIRModuleToLLVMModule,
-  generateAssemblyInstructionsFromMidIRCompilationUnit,
 } from 'samlang-core-compiler';
-import interpretAssemblyProgram from 'samlang-core-interpreter/assembly-interpreter';
 import interpretLLVMModule from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretMidIRCompilationUnit from 'samlang-core-interpreter/mid-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
@@ -117,21 +114,6 @@ const testMidIROptimizerResult = (
   }
 };
 
-const testAssemblyResult = (
-  testCase: MidIRTestCase,
-  optimizer: (compilationUnit: MidIRCompilationUnit) => MidIRCompilationUnit
-): void => {
-  const unoptimized = testCase.compilationUnit;
-  const optimized = optimizer(unoptimized);
-  const program = generateAssemblyInstructionsFromMidIRCompilationUnit(optimized);
-  const interpretationResult = interpretAssemblyProgram(program);
-  if (interpretationResult !== testCase.expectedStandardOut) {
-    const expected = testCase.expectedStandardOut;
-    const optimizedString = assemblyProgramToString(program);
-    fail(`Expected:\n${expected}\nActual:\n${interpretationResult}\nAssembly:${optimizedString}`);
-  }
-};
-
 mirBaseTestCases.forEach((testCase) => {
   // @ts-expect-error: process type is in @types/node, but we deliberatively excludes it to prevent core package depending on node.
   if (process.env.CI) {
@@ -168,13 +150,9 @@ mirBaseTestCases.forEach((testCase) => {
         optimizeIRCompilationUnit(it, { doesPerformInlining: true })
       );
     });
-
-    it(`IR[all]: ${testCase.testCaseName}`, () => {
-      testMidIROptimizerResult(testCase, (it) => optimizeIRCompilationUnit(it));
-    });
   }
 
-  it(`ASM[all]: ${testCase.testCaseName}`, () => {
-    testAssemblyResult(testCase, (it) => optimizeIRCompilationUnit(it));
+  it(`IR[all]: ${testCase.testCaseName}`, () => {
+    testMidIROptimizerResult(testCase, (it) => optimizeIRCompilationUnit(it));
   });
 });

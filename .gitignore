@@ -1,6 +1,7 @@
 # GCC/LLVM output
 *.o
 runtime/*.a
+runtime/example
 runtime/**/*.bc
 
 # Node

@@ -41,46 +41,6 @@ l__compiled_program_main_0_START:
   call i64 @_module_Demo_class_Main_function_main() nounwind
   ret i64 0
 }`,
-    assemblyString: `    .text
-    .intel_syntax noprefix
-    .p2align 4, 0x90
-    .align 8
-    .globl _compiled_program_main
-_module_Demo_class_Main_function_main:
-    push rbp
-    mov rbp, rsp
-    lea rdi, qword ptr [rip+GLOBAL_STRING_0]
-    call _builtin_println
-    mov rax, 0
-    mov rsp, rbp
-    pop rbp
-    ret
-_compiled_program_main:
-    push rbp
-    mov rbp, rsp
-    lea rdi, qword ptr [rip+GLOBAL_STRING_0]
-    call _builtin_println
-    mov rax, 0
-    mov rsp, rbp
-    pop rbp
-    ret
-    .data
-    .align 8
-GLOBAL_STRING_0:
-    .quad 11
-    .quad 104 ## h
-    .quad 101 ## e
-    .quad 108 ## l
-    .quad 108 ## l
-    .quad 111 ## o
-    .quad 32 ## ${' '}
-    .quad 119 ## w
-    .quad 111 ## o
-    .quad 114 ## r
-    .quad 108 ## l
-    .quad 100 ## d
-    .text
-`,
     errors: [],
   });
 });

@@ -1,18 +1,5 @@
-import {
-  optimizeIrWithSimpleOptimization,
-  optimizeAssemblyWithSimpleOptimization,
-} from '../simple-optimizations';
+import optimizeIrWithSimpleOptimization from '../simple-optimizations';
 
-import { RAX, RBX } from 'samlang-core-ast/asm-arguments';
-import {
-  AssemblyInstruction,
-  assemblyInstructionToString,
-  ASM_MOVE_REG,
-  ASM_JUMP,
-  ASM_RET,
-  ASM_LABEL,
-  ASM_COMMENT,
-} from 'samlang-core-ast/asm-instructions';
 import {
   MidIRStatement,
   midIRStatementToString,
@@ -27,14 +14,6 @@ import {
 
 const optimizeIRAndConvertToString = (midIRStatements: readonly MidIRStatement[]): string =>
   optimizeIrWithSimpleOptimization(midIRStatements).map(midIRStatementToString).join('\n');
-
-const optimizeASMAndConvertToString = (
-  instructions: readonly AssemblyInstruction[],
-  removeComments = true
-): string =>
-  optimizeAssemblyWithSimpleOptimization(instructions, removeComments)
-    .map((it) => assemblyInstructionToString(it))
-    .join('\n');
 
 it('optimizeIrWithSimpleOptimization test.', () => {
   expect(optimizeIRAndConvertToString([MIR_RETURN(MIR_ZERO)])).toBe('return 0;');
@@ -135,48 +114,4 @@ c = d;`);
 a = b;
 c = d;
 goto C;`);
-});
-
-it('optimizeAssemblyWithSimpleOptimization test', () => {
-  expect(optimizeASMAndConvertToString([])).toBe('');
-
-  expect(optimizeASMAndConvertToString([ASM_COMMENT('A'), ASM_MOVE_REG(RAX, RBX)])).toBe(
-    'mov rax, rbx'
-  );
-  expect(optimizeASMAndConvertToString([ASM_MOVE_REG(RAX, RBX)], false)).toBe('mov rax, rbx');
-
-  expect(
-    optimizeASMAndConvertToString([
-      ASM_JUMP('jl', 'A'),
-      ASM_LABEL('B'),
-      ASM_MOVE_REG(RAX, RBX),
-      ASM_LABEL('A'),
-    ])
-  ).toBe(`jl A
-mov rax, rbx
-A:`);
-
-  expect(
-    optimizeASMAndConvertToString([
-      ASM_JUMP('jmp', 'A'),
-      ASM_LABEL('A'),
-      ASM_LABEL('B'),
-      ASM_LABEL('C'),
-      ASM_MOVE_REG(RAX, RBX),
-      ASM_MOVE_REG(RAX, RBX),
-      ASM_LABEL('D'),
-      ASM_LABEL('E'),
-      ASM_LABEL('F'),
-      ASM_JUMP('jmp', 'G'),
-      ASM_JUMP('jl', 'G'),
-      ASM_LABEL('G'),
-      ASM_JUMP('jmp', 'C'),
-      ASM_RET,
-      ASM_RET,
-      ASM_RET,
-    ])
-  ).toBe(`C:
-mov rax, rbx
-mov rax, rbx
-jmp C`);
 });
