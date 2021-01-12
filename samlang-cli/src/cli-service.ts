@@ -92,12 +92,11 @@ const compileToX86Assembly = (
 
 const RUNTIME_PATH = join(__dirname, '..', 'samlang-runtime');
 const LIBRARY_NAME = `sam-${process.platform}`;
+const LLVM_LIBRARY_PATH = join(RUNTIME_PATH, `libsam-${process.platform}.bc`);
 
 const shellOut = (program: string, ...programArguments: readonly string[]): boolean => {
   return spawnSync(program, programArguments, { shell: true, stdio: 'inherit' }).status === 0;
 };
-
-const assembleWithLLVMAs = (inputFile: string): boolean => shellOut('llvm-as', inputFile);
 
 const linkWithGcc = (outputProgramFile: string, outputAssemblyFile: string): boolean => {
   return shellOut(
@@ -111,12 +110,22 @@ const linkWithGcc = (outputProgramFile: string, outputAssemblyFile: string): boo
   );
 };
 
-export const compileToLLVMBitcode = (
+export const compileToExecutablesViaLLVM = (
   sources: Sources<SamlangModule>,
   outputDirectory: string
 ): boolean => {
   const modulePaths = compileToLLVMModules(sources, outputDirectory);
-  const assembleResults = modulePaths.map(assembleWithLLVMAs);
+  const assembleResults = modulePaths.map((modulePath) => {
+    const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
+    const bitcodePath = `${outputProgramPath}.bc`;
+    const objectFilePath = `${outputProgramPath}.bc`;
+    return (
+      shellOut('llvm-link', '-o', bitcodePath, modulePath, LLVM_LIBRARY_PATH) &&
+      shellOut('llc', '-O3', '-filetype=obj', '--relocation-model=pic', bitcodePath) &&
+      spawnSync('gcc', ['-o', outputProgramPath, objectFilePath], { shell: true, stdio: 'ignore' })
+        .status === 0
+    );
+  });
   return assembleResults.every((it) => it);
 };
 

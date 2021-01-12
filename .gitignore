@@ -1,7 +1,7 @@
 # GCC/LLVM output
 *.o
 runtime/*.a
-*.bc
+runtime/**/*.bc
 
 # Node
 node_modules

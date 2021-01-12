@@ -2,3 +2,4 @@
 * text=auto
 .yarn/** linguist-generated=true
 samlang-core-parser/** linguist-generated=true
+samlang-cli/samlang-runtime/* linguist-generated=true

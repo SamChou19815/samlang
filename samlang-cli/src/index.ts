@@ -5,12 +5,7 @@
 import { writeFileSync } from 'fs';
 
 import cliMainRunner, { CLIRunners } from './cli';
-import {
-  collectSources,
-  compileToJS,
-  compileToLLVMBitcode,
-  compileToX86Executables,
-} from './cli-service';
+import { collectSources, compileToJS, compileToExecutablesViaLLVM } from './cli-service';
 import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './configuration';
 import ASCII_ART_SAMLANG_LOGO from './logo';
 import startSamlangLanguageServer from './lsp';
@@ -82,14 +77,9 @@ const runners: CLIRunners = {
         configuration: { outputDirectory },
       } = typeCheck();
       compileToJS(checkedSources, outputDirectory);
-      let successful = compileToLLVMBitcode(checkedSources, outputDirectory);
+      const successful = compileToExecutablesViaLLVM(checkedSources, outputDirectory);
       if (!successful) {
         console.error('Failed to compile some LLVM programs.');
-        process.exit(3);
-      }
-      successful = compileToX86Executables(checkedSources, outputDirectory);
-      if (!successful) {
-        console.error('Failed to link some programs.');
         process.exit(3);
       }
     }
