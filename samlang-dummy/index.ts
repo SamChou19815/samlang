@@ -3,9 +3,9 @@
 // so that we can run tsc on it to type check everything at once.
 
 // eslint-disable-next-line import/no-internal-modules
-import cliMainRunner from '@dev-sam/samlang-cli/src';
+import main from '@dev-sam/samlang-cli/src/main';
 // eslint-disable-next-line import/no-internal-modules
 import runSamlangDemo from '@dev-sam/samlang-demo/src';
 
 runSamlangDemo('');
-cliMainRunner({ format() {}, typeCheck() {}, compile() {}, lsp() {}, version() {}, help() {} }, []);
+main();
