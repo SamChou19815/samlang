@@ -1,7 +1,4 @@
-import optimizeIRWithAlgebraicSimplification from './algebraic-optimization';
 import optimizeIRWithCommonSubExpressionElimination from './common-subexpression-elimination-optimization';
-import optimizeIRWithConstantFolding from './constant-folding-optimization';
-import optimizeIRWithConstantPropagation from './constant-propagation-optimization';
 import optimizeIRWithCopyPropagation from './copy-propagation-optimization';
 import optimizeIRWithDeadCodeElimination from './dead-code-elimination-optimization';
 import optimizeMidIRCompilationUnitByInlining from './inline-optimization';
@@ -34,9 +31,7 @@ const optimizeMidIRStatementsForOneRound = (
     doesPerformCommonSubExpressionElimination,
   }: OptimizationConfiguration
 ): readonly MidIRStatement[] => {
-  let optimized = optimizeIRWithConstantFolding(
-    optimizeIRWithAlgebraicSimplification(optimizeIRWithConstantPropagation(statements))
-  );
+  let optimized = statements;
   if (doesPerformCopyPropagation) {
     optimized = optimizeIRWithCopyPropagation(optimized);
   }
