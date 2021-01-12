@@ -8,7 +8,7 @@ import cliMainRunner, { CLIRunners } from './cli';
 import {
   collectSources,
   compileToJS,
-  compileToLLVMModules,
+  compileToLLVMBitcode,
   compileToX86Executables,
 } from './cli-service';
 import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './configuration';
@@ -82,8 +82,12 @@ const runners: CLIRunners = {
         configuration: { outputDirectory },
       } = typeCheck();
       compileToJS(checkedSources, outputDirectory);
-      compileToLLVMModules(checkedSources, outputDirectory);
-      const successful = compileToX86Executables(checkedSources, outputDirectory);
+      let successful = compileToLLVMBitcode(checkedSources, outputDirectory);
+      if (!successful) {
+        console.error('Failed to compile some LLVM programs.');
+        process.exit(3);
+      }
+      successful = compileToX86Executables(checkedSources, outputDirectory);
       if (!successful) {
         console.error('Failed to link some programs.');
         process.exit(3);

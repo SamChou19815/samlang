@@ -23,5 +23,10 @@ jobs:
         run: yarn
       - name: Bundle
         run: yarn workspace @dev-sam/samlang-cli bundle
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: '11'
+          directory: ${{ runner.temp }}/llvm
       - name: Compile samlang Programs
         run: yarn test:integration
