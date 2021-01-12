@@ -10,11 +10,9 @@ import * as path from 'path';
 const read = (filename: string): string => fs.readFileSync(filename).toString();
 
 const runWithErrorCheck = (command: string, args: readonly string[] = []): string => {
-  const result = spawnSync(command, args);
+  const result = spawnSync(command, args, { shell: true, stdio: ['pipe', 'pipe', 'inherit'] });
   if (result.status !== 0) {
-    throw new Error(
-      `Command \`${command}\` failed with ${result.status}. Error: ${result.stderr.toString()}`
-    );
+    throw new Error(`Command \`${command}\` failed with ${result.status}.`);
   }
   return result.stdout.toString();
 };
@@ -57,11 +55,11 @@ const compare = (expected: string, actual: string): boolean => {
 console.error('Compiling...');
 runWithErrorCheck('./samlang-dev', ['compile']);
 console.error('Compiled!');
-console.error('Checking generated X86 code...');
+console.error('Checking generated machine code...');
 if (!compare(read('./scripts/snapshot.txt'), interpretPrograms(getX86Programs()))) {
   process.exit(1);
 }
-console.error('Generated X86 code is good.');
+console.error('Generated machine code is good.');
 console.error('Checking generated JS code...');
 if (!compare(read('./scripts/snapshot.txt'), interpretJSPrograms(getX86Programs()))) {
   process.exit(1);
