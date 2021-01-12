@@ -1,18 +1,17 @@
-all: libsam.a libsam.bc
+all: libsam.bc example
 
 libsam.bc: libsam/libsam.bc libsam/gc.bc
 	llvm-link -o $@ libsam/libsam.bc libsam/gc.bc
 
-libsam.a: libsam/libsam.o libsam/gc.o
-	ar rcs $@ libsam/libsam.o libsam/gc.o
-
-%.o: %.c
-	gcc -Wall -O2 -m64 -fno-stack-protector -fno-exceptions -c -o $@ $<
-
 %.bc: %.c
 	clang -O3 -m64 -fno-stack-protector -fno-exceptions -emit-llvm $< -c -o $@
 
+example: libsam/example.ll libsam/gc.bc libsam.bc
+	llvm-link -o example.bc libsam/example.ll libsam.bc
+	llc -O3 -filetype=obj --relocation-model=pic example.bc
+	gcc -o $@ example.o
+
 clean:
 	rm -f libsam.a libsam.bc example
-	rm -f libsam/*.o libsam/*.bc libsam/*.s *.o *.bc
+	rm -f libsam/*.bc *.o *.bc
 	rm -f *~

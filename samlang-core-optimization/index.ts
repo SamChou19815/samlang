@@ -7,7 +7,7 @@ import optimizeIRWithDeadCodeElimination from './dead-code-elimination-optimizat
 import optimizeMidIRCompilationUnitByInlining from './inline-optimization';
 import optimizeIRWithLocalValueNumbering from './local-value-numbering-optimization';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
-import { optimizeIrWithSimpleOptimization } from './simple-optimizations';
+import optimizeIrWithSimpleOptimization from './simple-optimizations';
 
 import type { MidIRStatement, MidIRCompilationUnit } from 'samlang-core-ast/mir-nodes';
 

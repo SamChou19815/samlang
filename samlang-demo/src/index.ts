@@ -1,14 +1,9 @@
-import { assemblyProgramToString } from 'samlang-core-ast/asm-program';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import { compileSamlangSourcesToHighIRSources } from 'samlang-core-compiler';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import { prettyPrintSamlangModule, prettyPrintHighIRModuleAsJS } from 'samlang-core-printer';
-import {
-  checkSources,
-  lowerSourcesToAssemblyPrograms,
-  lowerSourcesToLLVMModules,
-} from 'samlang-core-services';
+import { checkSources, lowerSourcesToLLVMModules } from 'samlang-core-services';
 
 type SamlangDemoResult = {
   readonly interpreterPrinted?: string;
@@ -39,9 +34,6 @@ const runSamlangDemo = (programString: string): SamlangDemoResult => {
   const demoSamlangModule = checkedSources.get(demoModuleReference);
   const jsProgram = compileSamlangSourcesToHighIRSources(checkedSources).get(demoModuleReference);
   const demoLLVMModule = lowerSourcesToLLVMModules(checkedSources).get(demoModuleReference);
-  const demoAssemblyProgram = lowerSourcesToAssemblyPrograms(checkedSources).get(
-    demoModuleReference
-  );
 
   // istanbul ignore next
   if (demoSamlangModule == null) throw new Error();
@@ -53,15 +45,12 @@ const runSamlangDemo = (programString: string): SamlangDemoResult => {
       ? prettyPrintHighIRModuleAsJS(100, jsProgram)
       : '// No JS output because there is no Main.main() function\n';
   const llvmString = demoLLVMModule != null ? prettyPrintLLVMModule(demoLLVMModule) : undefined;
-  const assemblyString =
-    demoAssemblyProgram != null ? assemblyProgramToString(demoAssemblyProgram) : undefined;
 
   return {
     interpreterPrinted,
     prettyPrintedProgram,
     jsString,
     llvmString,
-    assemblyString,
     errors: [],
   };
 };

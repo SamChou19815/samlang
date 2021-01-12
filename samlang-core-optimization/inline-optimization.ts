@@ -1,5 +1,5 @@
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
-import { optimizeIrWithSimpleOptimization } from './simple-optimizations';
+import optimizeIrWithSimpleOptimization from './simple-optimizations';
 
 import {
   MidIRStatement,
@@ -14,7 +14,6 @@ import {
   MidIRExpression,
   MIR_TEMP,
   MIR_IMMUTABLE_MEM,
-  MIR_ONE,
   MIR_OP,
 } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';

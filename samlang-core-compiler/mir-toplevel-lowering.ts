@@ -8,12 +8,10 @@ import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import {
   MidIRCompilationUnit,
   MidIRFunction,
-  MIR_JUMP,
-  MIR_LABEL,
-  MIR_RETURN,
   MIR_ZERO,
+  MIR_RETURN,
 } from 'samlang-core-ast/mir-nodes';
-import { optimizeIrWithSimpleOptimization } from 'samlang-core-optimization/simple-optimizations';
+import optimizeIrWithSimpleOptimization from 'samlang-core-optimization/simple-optimizations';
 
 const compileHighIrModuleToMidIRCompilationUnit = (
   highIRModule: HighIRModule

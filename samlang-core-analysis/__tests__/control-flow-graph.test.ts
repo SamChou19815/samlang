@@ -1,6 +1,5 @@
 import ControlFlowGraph from '../control-flow-graph';
 
-import { ASM_JUMP, ASM_RET, ASM_LABEL } from 'samlang-core-ast/asm-instructions';
 import {
   MIR_ONE,
   MIR_TEMP,
@@ -53,13 +52,4 @@ it('getParentIds is correct.', () => {
   expect(parentOf(4)).toEqual([3]);
   expect(parentOf(5)).toEqual([3, 4]);
   expect(parentOf(6)).toEqual([5]);
-});
-
-it('Can construct CFG from assembly instructions', () => {
-  ControlFlowGraph.fromAssemblyInstructions([
-    ASM_JUMP('jmp', ''),
-    ASM_LABEL(''),
-    ASM_JUMP('jl', ''),
-    ASM_RET,
-  ]);
 });

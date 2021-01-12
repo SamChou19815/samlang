@@ -1,5 +1,4 @@
 import ControlFlowGraph from 'samlang-core-analysis/control-flow-graph';
-import type { AssemblyInstruction } from 'samlang-core-ast/asm-instructions';
 import { MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from 'samlang-core-ast/mir-nodes';
 import { assertNotNull, checkNotNull, isNotNull } from 'samlang-core-utils';
 
@@ -183,7 +182,7 @@ const withoutUnusedLabelInIr = (
   );
 };
 
-export const optimizeIrWithSimpleOptimization = (
+const optimizeIrWithSimpleOptimization = (
   statements: readonly MidIRStatement[]
 ): readonly MidIRStatement[] =>
   pipe(
@@ -196,78 +195,4 @@ export const optimizeIrWithSimpleOptimization = (
     withoutUnusedLabelInIr
   );
 
-const withoutUnreachableAssemblyCode = (
-  instructions: readonly AssemblyInstruction[]
-): readonly AssemblyInstruction[] =>
-  withoutUnreachableCode(instructions, ControlFlowGraph.fromAssemblyInstructions);
-
-const coalesceConsecutiveLabelsForAsm = (
-  instructions: readonly AssemblyInstruction[]
-): readonly AssemblyInstruction[] => {
-  const optimizedNextEquivalentLabelMap = getCoalesceConsecutiveLabelsReplacementMap(
-    instructions,
-    (instruction) => (instruction.__type__ === 'AssemblyLabel' ? instruction.label : null)
-  );
-  if (optimizedNextEquivalentLabelMap == null) return instructions;
-
-  return instructions
-    .map((instruction) => {
-      switch (instruction.__type__) {
-        case 'AssemblyJump': {
-          const optimizedLabel = optimizedNextEquivalentLabelMap.get(instruction.label);
-          return optimizedLabel == null ? instruction : { ...instruction, label: optimizedLabel };
-        }
-        case 'AssemblyLabel':
-          return optimizedNextEquivalentLabelMap.has(instruction.label) ? null : instruction;
-        default:
-          return instruction;
-      }
-    })
-    .filter(isNotNull);
-};
-
-const withoutImmediateJumpInAsm = (
-  instructions: readonly AssemblyInstruction[]
-): readonly AssemblyInstruction[] =>
-  instructions.filter((instruction, index) => {
-    if (index < instructions.length - 1 && instruction.__type__ === 'AssemblyJump') {
-      const { label } = instruction;
-      const nextInstruction = instructions[index + 1];
-      assertNotNull(nextInstruction);
-      if (nextInstruction.__type__ === 'AssemblyLabel' && nextInstruction.label === label) {
-        return false;
-      }
-    }
-    return true;
-  });
-
-const withoutUnusedLabelInAsm = (
-  instructions: readonly AssemblyInstruction[]
-): readonly AssemblyInstruction[] => {
-  const usedLabels = new Set<string>();
-  instructions.forEach((instruction) => {
-    if (instruction.__type__ === 'AssemblyJump') {
-      usedLabels.add(instruction.label);
-    }
-  });
-  return instructions.filter(
-    (instruction) => instruction.__type__ !== 'AssemblyLabel' || usedLabels.has(instruction.label)
-  );
-};
-
-export const optimizeAssemblyWithSimpleOptimization = (
-  instructions: readonly AssemblyInstruction[],
-  removeComments: boolean
-): readonly AssemblyInstruction[] => {
-  const instructionsWithoutComments = removeComments
-    ? instructions.filter((it) => it.__type__ !== 'AssemblyComment')
-    : instructions;
-  if (instructionsWithoutComments.length === 0) return instructionsWithoutComments;
-  return pipe(
-    instructionsWithoutComments,
-    coalesceConsecutiveLabelsForAsm,
-    withoutUnreachableAssemblyCode,
-    withoutImmediateJumpInAsm,
-    withoutUnusedLabelInAsm
-  );
-};
+export default optimizeIrWithSimpleOptimization;
