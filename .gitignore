@@ -13,8 +13,7 @@ node_modules
 ## Compiled output
 *.vsix
 out
-**/bin/**
-!bin/repo-codegen-services
+bin
 build
 
 ## Yarn
@@ -30,7 +29,6 @@ build
 ## Cache
 .eslintcache
 tsconfig.tsbuildinfo
-.codegen
 
 ## Converage
 coverage
