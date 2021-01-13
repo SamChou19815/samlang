@@ -27,11 +27,11 @@ jobs:
         with:
           path: ${{ runner.temp }}/llvm
           key: llvm-11.0
-          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v1
         with:
           version: '11'
           directory: ${{ runner.temp }}/llvm
+          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
       - name: Compile samlang Programs
         run: yarn test:integration

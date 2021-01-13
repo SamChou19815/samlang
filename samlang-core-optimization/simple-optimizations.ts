@@ -1,4 +1,5 @@
 import ControlFlowGraph from 'samlang-core-analysis/control-flow-graph';
+import type { LLVMInstruction } from 'samlang-core-ast/llvm-nodes';
 import { MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from 'samlang-core-ast/mir-nodes';
 import { assertNotNull, checkNotNull, isNotNull } from 'samlang-core-utils';
 
@@ -18,6 +19,11 @@ const withoutUnreachableIRCode = (
   statements: readonly MidIRStatement[]
 ): readonly MidIRStatement[] =>
   withoutUnreachableCode(statements, ControlFlowGraph.fromMidIRStatements);
+
+export const withoutUnreachableLLVMCode = (
+  instructions: readonly LLVMInstruction[]
+): readonly LLVMInstruction[] =>
+  withoutUnreachableCode(instructions, ControlFlowGraph.fromLLVMInstructions);
 
 const getCoalesceConsecutiveLabelsReplacementMap = <I>(
   instructions: readonly I[],
