@@ -2,12 +2,7 @@ import optimizeHighIRStatementsByLocalValueNumbering from './hir-local-value-num
 import { BindedValue, bindedValueToString } from './hir-optimization-common';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
-import {
-  HighIRStatement,
-  HIR_INDEX_ACCESS,
-  HIR_BINARY,
-  HIR_SWITCH,
-} from 'samlang-core-ast/hir-expressions';
+import { HighIRStatement, HIR_INDEX_ACCESS, HIR_BINARY } from 'samlang-core-ast/hir-expressions';
 import {
   checkNotNull,
   Hashable,
