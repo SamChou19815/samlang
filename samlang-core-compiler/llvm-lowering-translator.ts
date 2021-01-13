@@ -36,6 +36,7 @@ import {
   LLVMValue,
   LLVMModule,
 } from 'samlang-core-ast/llvm-nodes';
+import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
 import { checkNotNull } from 'samlang-core-utils';
 
 class LLVMLoweringManager {
@@ -308,7 +309,7 @@ export const lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING = (
     name,
     parameters: annotatedParameters,
     returnType: lowerHighIRTypeToLLVMType(returnType),
-    body: manager.llvmInstructionCollector,
+    body: withoutUnreachableLLVMCode(manager.llvmInstructionCollector),
   };
 };
 
