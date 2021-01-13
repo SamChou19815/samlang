@@ -1,8 +1,8 @@
 # GCC/LLVM output
 *.o
-runtime/*.a
-runtime/example
-runtime/**/*.bc
+samlang-runtime/*.a
+samlang-runtime/example
+samlang-runtime/*.bc
 
 # Node
 node_modules
