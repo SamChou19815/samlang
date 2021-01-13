@@ -144,9 +144,9 @@ mirBaseTestCases.forEach((testCase) => {
         optimizeIRCompilationUnit(it, { doesPerformInlining: true })
       );
     });
-  }
 
-  it(`IR[all]: ${testCase.testCaseName}`, () => {
-    testMidIROptimizerResult(testCase, (it) => optimizeIRCompilationUnit(it));
-  });
+    it(`IR[all]: ${testCase.testCaseName}`, () => {
+      testMidIROptimizerResult(testCase, (it) => optimizeIRCompilationUnit(it));
+    });
+  }
 });
