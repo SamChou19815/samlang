@@ -21,6 +21,13 @@ jobs:
             yarn-berry-
       - name: Yarn Install
         run: yarn
+      - name: Cache LLVM and Clang
+        id: cache-llvm
+        uses: actions/cache@v2
+        with:
+          path: ${{ runner.temp }}/llvm
+          key: llvm-11.0
+          cached: ${{ steps.cache-llvm.outputs.cache-hit }}
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@v1
         with:
