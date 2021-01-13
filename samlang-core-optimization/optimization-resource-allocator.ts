@@ -4,19 +4,19 @@ export default class OptimizationResourceAllocator {
   private inliningPrefixID = 0;
 
   allocateCSEHoistedTemporary(): string {
-    const temporary = `_CSE_HOISTING_${this.cseHoistingTemporaryID}_`;
+    const temporary = `_cse_${this.cseHoistingTemporaryID}_`;
     this.cseHoistingTemporaryID += 1;
     return temporary;
   }
 
   allocateInliningTemporaryPrefix(): string {
-    const prefix = `_INLINING_${this.inliningPrefixID}_`;
+    const prefix = `_inline_${this.inliningPrefixID}_`;
     this.inliningPrefixID += 1;
     return prefix;
   }
 
   allocateInliningLabelPrefix(): string {
-    const prefix = `INLINING_${this.inliningPrefixID}_`;
+    const prefix = `inline_${this.inliningPrefixID}_`;
     this.inliningPrefixID += 1;
     return prefix;
   }

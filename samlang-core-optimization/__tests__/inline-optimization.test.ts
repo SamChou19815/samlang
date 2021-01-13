@@ -106,15 +106,15 @@ function factorial {
   let acc = _ARG1;
 
   if ((n == 0)) goto l_RETURN_ACC;
-  _INLINING_1_n = (n + -1);
-  _INLINING_1_acc = (acc * n);
-  if ((_INLINING_1_n == 0)) goto INLINING_0_l_RETURN_ACC;
-  _INLINING_1_dummy = factorial((_INLINING_1_n + -1), (_INLINING_1_acc * _INLINING_1_n));
-  dummy = _INLINING_1_dummy;
-  goto INLINING_0___INLINING_END;
-  INLINING_0_l_RETURN_ACC:
-  dummy = _INLINING_1_acc;
-  INLINING_0___INLINING_END:
+  _inline_1_n = (n + -1);
+  _inline_1_acc = (acc * n);
+  if ((_inline_1_n == 0)) goto inline_0_l_RETURN_ACC;
+  _inline_1_dummy = factorial((_inline_1_n + -1), (_inline_1_acc * _inline_1_n));
+  dummy = _inline_1_dummy;
+  goto inline_0___inline_END;
+  inline_0_l_RETURN_ACC:
+  dummy = _inline_1_acc;
+  inline_0___inline_END:
   return dummy;
   l_RETURN_ACC:
   return acc;
@@ -129,9 +129,9 @@ function infiniteLoop {
 function insanelyBigFunction {
   let a = _ARG0;
 
-  _INLINING_5_a = a;
-  _INLINING_5_a = _INLINING_5_a;
-  MEM[_INLINING_5_a] = MEM[_INLINING_5_a];
+  _inline_5_a = a;
+  _inline_5_a = _inline_5_a;
+  MEM[_inline_5_a] = MEM[_inline_5_a];
   a();
   non-existing-function();
   non-existing-function();
