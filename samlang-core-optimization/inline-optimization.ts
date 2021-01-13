@@ -169,14 +169,14 @@ const inlineRewriteForMidIRStatement = (
     case 'MidIRReturnStatement':
       // istanbul ignore next
       if (statement.returnedExpression == null || returnCollectorTemporaryID == null) {
-        return [MIR_JUMP(`${labelPrefix}__INLINING_END`)];
+        return [MIR_JUMP(`${labelPrefix}__inline_END`)];
       }
       return [
         MIR_MOVE_TEMP(
           returnCollectorTemporaryID,
           inlineRewriteForMidIRExpression(temporaryPrefix, statement.returnedExpression)
         ),
-        MIR_JUMP(`${labelPrefix}__INLINING_END`),
+        MIR_JUMP(`${labelPrefix}__inline_END`),
       ];
   }
 };
@@ -232,7 +232,7 @@ const performInlineRewriteOnFunction = (
         )
         .flat(),
       // inline step 3: mark the end of inlining for return
-      MIR_LABEL(`${labelPrefix}__INLINING_END`)
+      MIR_LABEL(`${labelPrefix}__inline_END`)
     );
   });
 

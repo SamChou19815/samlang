@@ -107,10 +107,10 @@ r:
 goto end;
 true:
 y = (1 + x);
-_CSE_HOISTING_1_ = MEM[1];
-_CSE_HOISTING_0_ = ((1 + x) * _CSE_HOISTING_1_);
-z1 = _CSE_HOISTING_0_;
-z2 = (_CSE_HOISTING_0_ / (1 + x));
+_cse_1_ = MEM[1];
+_cse_0_ = ((1 + x) * _cse_1_);
+z1 = _cse_0_;
+z2 = (_cse_0_ / (1 + x));
 end:
 a = (y != z2);
 return a;`);
@@ -160,12 +160,12 @@ it('optimizeIRWithCommonSubExpressionElimination test 3', () => {
     )
       .map(midIRStatementToString)
       .join('\n')
-  ).toBe(`_CSE_HOISTING_2_ = MEM[1];
-_CSE_HOISTING_1_ = (_CSE_HOISTING_2_ + _CSE_HOISTING_2_);
-_CSE_HOISTING_0_ = (_CSE_HOISTING_1_ * _CSE_HOISTING_1_);
-x = (_CSE_HOISTING_0_ * _CSE_HOISTING_1_);
-y = _CSE_HOISTING_1_;
-return (_CSE_HOISTING_0_ / _CSE_HOISTING_1_);`);
+  ).toBe(`_cse_2_ = MEM[1];
+_cse_1_ = (_cse_2_ + _cse_2_);
+_cse_0_ = (_cse_1_ * _cse_1_);
+x = (_cse_0_ * _cse_1_);
+y = _cse_1_;
+return (_cse_0_ / _cse_1_);`);
 });
 
 it('optimizeIRWithCommonSubExpressionElimination test 4', () => {
@@ -179,8 +179,8 @@ it('optimizeIRWithCommonSubExpressionElimination test 4', () => {
     )
       .map(midIRStatementToString)
       .join('\n')
-  ).toBe(`_CSE_HOISTING_0_ = MEM[0];
-_CSE_HOISTING_1_ = MEM[1];
-x = (_CSE_HOISTING_0_ + _CSE_HOISTING_1_);
-return (_CSE_HOISTING_0_ - _CSE_HOISTING_1_);`);
+  ).toBe(`_cse_0_ = MEM[0];
+_cse_1_ = MEM[1];
+x = (_cse_0_ + _cse_1_);
+return (_cse_0_ - _cse_1_);`);
 });
