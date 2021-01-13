@@ -187,6 +187,7 @@ export const HIR_BINARY = ({
   }
   if (operator === '-' && e2.__type__ === 'HighIRIntLiteralExpression') {
     const negOfE2Constant = e2.value.neg();
+    // istanbul ignore next
     if (negOfE2Constant.notEquals(e2.value)) {
       return {
         __type__: 'HighIRBinaryStatement',
