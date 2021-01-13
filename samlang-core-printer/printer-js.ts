@@ -149,7 +149,7 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
         PRETTIER_TEXT(`case ${caseNumber}: `),
         createBracesSurroundedBlockDocument(
           highIRStatement.finalAssignment == null
-            ? concatStatements(statements)
+            ? [...concatStatements(statements), PRETTIER_LINE, PRETTIER_TEXT('break;')]
             : [
                 ...concatStatements(statements),
                 PRETTIER_LINE,
@@ -158,6 +158,8 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
                   checkNotNull(highIRStatement.finalAssignment.branchValues[i])
                 ),
                 PRETTIER_TEXT(';'),
+                PRETTIER_LINE,
+                PRETTIER_TEXT('break;'),
               ]
         ),
         PRETTIER_LINE,

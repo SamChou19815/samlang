@@ -482,9 +482,11 @@ if (5) {
   ).toBe(`switch (f) {
   case 1: {
     return foo;
+    break;
   }
   case 2: {
     return foo;
+    break;
   }
 }`);
   expect(
@@ -513,10 +515,12 @@ switch (f) {
   case 1: {
     return foo;
     ma = 0;
+    break;
   }
   case 2: {
     return foo;
     ma = 0;
+    break;
   }
 }`);
   expect(
