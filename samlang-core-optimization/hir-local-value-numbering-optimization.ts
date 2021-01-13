@@ -1,8 +1,13 @@
-import type { IROperator } from 'samlang-core-ast/common-operators';
+import {
+  IndexAccessBindedValue,
+  BinaryBindedValue,
+  BindedValue,
+  bindedValueToString,
+} from './hir-optimization-common';
+
 import {
   HighIRExpression,
   HighIRStatement,
-  debugPrintHighIRExpression as expressionToString,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_SWITCH,
@@ -11,30 +16,6 @@ import {
   HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { checkNotNull, error, isNotNull, LocalStackedContext } from 'samlang-core-utils';
-
-type IndexAccessBindedValue = {
-  readonly __type__: 'IndexAccess';
-  readonly pointerExpression: HighIRExpression;
-  readonly index: number;
-};
-
-type BinaryBindedValue = {
-  readonly __type__: 'Binary';
-  readonly operator: IROperator;
-  readonly e1: HighIRExpression;
-  readonly e2: HighIRExpression;
-};
-
-type BindedValue = IndexAccessBindedValue | BinaryBindedValue;
-
-const bindedValueToString = (value: BindedValue): string => {
-  switch (value.__type__) {
-    case 'IndexAccess':
-      return `${expressionToString(value.pointerExpression)}[${value.index}]`;
-    case 'Binary':
-      return `(${expressionToString(value.e1)}${value.operator}${expressionToString(value.e2)})`;
-  }
-};
 
 class LocalVariableContext extends LocalStackedContext<string> {
   addLocalValueType(name: string, value: string, onCollision: () => void): void {
@@ -78,6 +59,7 @@ const optimizeHighIRStatement = (
       const pointerExpression = getExpressionUnderContext(statement.pointerExpression);
       const value: IndexAccessBindedValue = {
         __type__: 'IndexAccess',
+        type: statement.type,
         pointerExpression,
         index: statement.index,
       };

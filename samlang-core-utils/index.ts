@@ -213,7 +213,7 @@ export const setEquals = <E>(set1: ReadonlySet<E>, set2: ReadonlySet<E>): boolea
 
 /** One layer of the context. We should stack a new layer when encounter a new nested scope. */
 class ContextLayer<V> {
-  private readonly localValues: Map<string, V> = new Map();
+  readonly localValues: Map<string, V> = new Map();
 
   readonly capturedValues: Map<string, V> = new Map();
 
@@ -283,12 +283,20 @@ export class LocalStackedContext<V> {
     return result;
   }
 
-  withNestedScopeReturnCaptured<T>(block: () => T): readonly [T, ReadonlyMap<string, V>] {
-    this.stacks.push(new ContextLayer());
+  withNestedScopeReturnScoped<T>(block: () => T): readonly [T, ReadonlyMap<string, V>] {
+    const layer = new ContextLayer<V>();
+    this.stacks.push(layer);
     const result = block();
-    const removedStack = this.stacks.pop();
-    assertNotNull(removedStack);
-    return [result, removedStack.capturedValues];
+    this.stacks.pop();
+    return [result, layer.localValues];
+  }
+
+  withNestedScopeReturnCaptured<T>(block: () => T): readonly [T, ReadonlyMap<string, V>] {
+    const layer = new ContextLayer<V>();
+    this.stacks.push(layer);
+    const result = block();
+    this.stacks.pop();
+    return [result, layer.capturedValues];
   }
 }
 
