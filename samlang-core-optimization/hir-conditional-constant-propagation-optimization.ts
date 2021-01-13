@@ -1,8 +1,8 @@
+import { ifElseOrNull, switchOrNull } from './hir-optimization-common';
+
 import type { IROperator } from 'samlang-core-ast/common-operators';
 import {
   HighIRExpression,
-  HighIRIfElseStatement,
-  HighIRSwitchStatement,
   HighIRStatement,
   debugPrintHighIRExpression,
   HIR_ZERO,
@@ -52,23 +52,6 @@ class LocalValueContext extends LocalStackedContext<HighIRExpression> {
     this.addLocalValueType(name, expression, error);
   }
 }
-
-const ifElseOrNull = (ifElse: HighIRIfElseStatement): readonly HighIRStatement[] => {
-  if (ifElse.s1.length === 0 && ifElse.s2.length === 0 && ifElse.finalAssignment == null) {
-    return [];
-  }
-  return [ifElse];
-};
-
-const switchOrNull = (switchStatement: HighIRSwitchStatement): readonly HighIRStatement[] => {
-  if (
-    switchStatement.cases.every((it) => it.statements.length === 0) &&
-    switchStatement.finalAssignment == null
-  ) {
-    return [];
-  }
-  return [switchStatement];
-};
 
 const optimizeHighIRStatement = (
   statement: HighIRStatement,
