@@ -216,6 +216,17 @@ it('LocalStackedContext can find conflicts.', () => {
   expect(hasConflict).toBe(true);
 });
 
+it('LocalStackedContext can compute local values.', () => {
+  const context = new LocalStackedContext();
+  context.addLocalValueType('a', 3, fail);
+  context.addLocalValueType('b', 3, fail);
+  const [, local] = context.withNestedScopeReturnScoped(() => {
+    context.addLocalValueType('c', 3, fail);
+    context.addLocalValueType('d', 3, fail);
+  });
+  expect(Array.from(local.keys())).toEqual(['c', 'd']);
+});
+
 it('LocalStackedContext can compute captured values.', () => {
   const context = new LocalStackedContext();
   context.addLocalValueType('a', 3, fail);
