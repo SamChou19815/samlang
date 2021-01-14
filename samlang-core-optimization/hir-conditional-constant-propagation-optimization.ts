@@ -18,6 +18,7 @@ import {
   HIR_CAST,
   HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
+import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
 import { Long, checkNotNull } from 'samlang-core-utils';
 
 const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
@@ -126,7 +127,9 @@ const optimizeHighIRStatement = (
           return [];
         }
       }
-      return [{ ...statement, e1, e2 }];
+      return [
+        { ...statement, ...createHighIRFlexibleOrderOperatorNode(statement.operator, e1, e2) },
+      ];
     }
 
     case 'HighIRFunctionCallStatement':
