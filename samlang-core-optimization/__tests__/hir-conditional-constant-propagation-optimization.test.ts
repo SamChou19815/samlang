@@ -320,7 +320,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
 bar();
 let a1: int = foo();
 let a22: int = bar();
-let r1: bool = (a1: int) == (a22: int);
+let r1: bool = (a22: int) == (a1: int);
 return 1;`
   );
 });

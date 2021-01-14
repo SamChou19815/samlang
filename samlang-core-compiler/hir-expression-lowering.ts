@@ -1,4 +1,3 @@
-import createHighIRFlexibleOrderOperatorNode from './hir-flexible-op';
 import type HighIRStringManager from './hir-string-manager';
 import lowerSamlangType from './hir-types-lowering';
 
@@ -35,6 +34,7 @@ import {
   HIR_BINARY,
   HIR_SWITCH,
 } from 'samlang-core-ast/hir-expressions';
+import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import {
   HighIRType,

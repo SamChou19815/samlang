@@ -1,5 +1,6 @@
-import type { IROperator } from 'samlang-core-ast/common-operators';
-import type { HighIRExpression } from 'samlang-core-ast/hir-expressions';
+import type { IROperator } from './common-operators';
+import type { HighIRExpression } from './hir-expressions';
+
 import { Long } from 'samlang-core-utils';
 
 /**
