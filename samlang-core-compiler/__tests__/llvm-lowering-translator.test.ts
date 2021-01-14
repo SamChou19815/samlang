@@ -129,11 +129,13 @@ it('prettyPrintLLVMFunction works for HIR_FUNCTION_CALL', () => {
       HIR_FUNCTION_CALL({
         functionExpression: HIR_NAME('println', HIR_FUNCTION_TYPE([HIR_STRING_TYPE], INT)),
         functionArguments: [HIR_NAME('ss', HIR_STRING_TYPE)],
+        returnType: INT,
       }),
       HIR_FUNCTION_CALL({
         functionExpression: HIR_NAME('stringToInt', HIR_FUNCTION_TYPE([HIR_STRING_TYPE], INT)),
         functionArguments: [HIR_NAME('ss', HIR_STRING_TYPE)],
-        returnCollector: { name: 'r', type: INT },
+        returnType: INT,
+        returnCollector: 'r',
       }),
     ],
     `  %_temp_0_string_name_cast = bitcast [1 x i64]* @ss to i64*
@@ -159,12 +161,14 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 1/n', () => {
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
+            returnType: INT,
           }),
         ],
         s2: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
+            returnType: INT,
           }),
         ],
       }),
@@ -190,14 +194,16 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
-            returnCollector: { name: 'b1', type: INT },
+            returnType: INT,
+            returnCollector: 'b1',
           }),
         ],
         s2: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
-            returnCollector: { name: 'b2', type: INT },
+            returnType: INT,
+            returnCollector: 'b2',
           }),
         ],
         finalAssignment: {
@@ -229,7 +235,8 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
-            returnCollector: { name: 'b1', type: INT },
+            returnType: INT,
+            returnCollector: 'b1',
           }),
         ],
         s2: [
@@ -239,14 +246,16 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
                 functionArguments: [],
-                returnCollector: { name: 'b2', type: INT },
+                returnType: INT,
+                returnCollector: 'b2',
               }),
             ],
             s2: [
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
                 functionArguments: [],
-                returnCollector: { name: 'b3', type: INT },
+                returnType: INT,
+                returnCollector: 'b3',
               }),
             ],
             finalAssignment: {
@@ -297,6 +306,7 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 1/n', () => {
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
                 functionArguments: [],
+                returnType: INT,
               }),
             ],
           },
@@ -306,6 +316,7 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 1/n', () => {
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
                 functionArguments: [],
+                returnType: INT,
               }),
             ],
           },
@@ -362,7 +373,8 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 3/n', () => {
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('foo', INT),
                 functionArguments: [],
-                returnCollector: { name: 'b2', type: INT },
+                returnType: INT,
+                returnCollector: 'b2',
               }),
             ],
           },
@@ -445,6 +457,7 @@ it('lowerHighIRModuleToLLVMModule works', () => {
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('println', HIR_FUNCTION_TYPE([HIR_STRING_TYPE], INT)),
                 functionArguments: [HIR_NAME('ss', HIR_STRING_TYPE)],
+                returnType: INT,
               }),
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME(
@@ -452,7 +465,8 @@ it('lowerHighIRModuleToLLVMModule works', () => {
                   HIR_FUNCTION_TYPE([HIR_STRING_TYPE], INT)
                 ),
                 functionArguments: [HIR_NAME('ss', HIR_STRING_TYPE)],
-                returnCollector: { name: 'r', type: INT },
+                returnType: INT,
+                returnCollector: 'r',
               }),
             ],
           },

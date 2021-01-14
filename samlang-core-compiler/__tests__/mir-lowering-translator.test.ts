@@ -38,7 +38,8 @@ it('midIRTranslateStatementsAndCollectGlobalStrings test', () => {
         HIR_NAME('GLOBAL_STRING_0', HIR_STRING_TYPE),
         HIR_VARIABLE('baz', HIR_INT_TYPE),
       ],
-      returnCollector: { name: 'bar', type: HIR_STRING_TYPE },
+      returnType: HIR_INT_TYPE,
+      returnCollector: 'bar',
     }),
     `_bar = foo(1, GLOBAL_STRING_0, _baz);`
   );
@@ -50,6 +51,7 @@ it('midIRTranslateStatementsAndCollectGlobalStrings test', () => {
         HIR_NAME('GLOBAL_STRING_0', HIR_STRING_TYPE),
         HIR_VARIABLE('baz', HIR_INT_TYPE),
       ],
+      returnType: HIR_INT_TYPE,
     }),
     `foo(1, GLOBAL_STRING_0, _baz);`
   );

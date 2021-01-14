@@ -27,6 +27,7 @@ it('analyzeUsedFunctionNames test', () => {
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('foo', HIR_INT_TYPE),
               functionArguments: [],
+              returnType: HIR_INT_TYPE,
             }),
           ],
         },
@@ -50,6 +51,7 @@ it('analyzeUsedFunctionNames test', () => {
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('baz', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
               functionArguments: [HIR_NAME('haha', HIR_INT_TYPE)],
+              returnType: HIR_INT_TYPE,
             }),
             HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE)),
             HIR_SWITCH({ caseVariable: 'a', cases: [] }),
@@ -75,6 +77,7 @@ it('analyzeUsedFunctionNames test', () => {
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('foo', HIR_INT_TYPE),
               functionArguments: [],
+              returnType: HIR_INT_TYPE,
             }),
           ],
         },

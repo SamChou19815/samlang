@@ -47,6 +47,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
       HIR_FUNCTION_CALL({
         functionExpression: HIR_NAME('ff', HIR_INT_TYPE),
         functionArguments: [HIR_VARIABLE('s', HIR_INT_TYPE)],
+        returnType: HIR_INT_TYPE,
       }),
       HIR_CAST({
         name: 'ii',
@@ -87,6 +88,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
       HIR_FUNCTION_CALL({
         functionExpression: HIR_NAME('ff', HIR_INT_TYPE),
         functionArguments: [],
+        returnType: HIR_INT_TYPE,
       }),
     ],
     `let u1: int = 0 / 1;
@@ -105,12 +107,14 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('s1', HIR_INT_TYPE),
             functionArguments: [],
+            returnType: HIR_INT_TYPE,
           }),
         ],
         s2: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('s1', HIR_INT_TYPE),
             functionArguments: [],
+            returnType: HIR_INT_TYPE,
           }),
         ],
       }),
@@ -134,14 +138,16 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('s1', HIR_INT_TYPE),
             functionArguments: [],
-            returnCollector: { name: 'a1', type: HIR_INT_TYPE },
+            returnType: HIR_INT_TYPE,
+            returnCollector: 'a1',
           }),
         ],
         s2: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('s1', HIR_INT_TYPE),
             functionArguments: [],
-            returnCollector: { name: 'a2', type: HIR_INT_TYPE },
+            returnType: HIR_INT_TYPE,
+            returnCollector: 'a2',
           }),
         ],
         finalAssignment: {
@@ -176,12 +182,14 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('s1', HIR_INT_TYPE),
             functionArguments: [],
+            returnType: HIR_INT_TYPE,
           }),
         ],
         s2: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('s1', HIR_INT_TYPE),
             functionArguments: [],
+            returnType: HIR_INT_TYPE,
           }),
         ],
         finalAssignment: {
@@ -211,14 +219,16 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('s1', HIR_INT_TYPE),
             functionArguments: [],
-            returnCollector: { name: 'a1', type: HIR_INT_TYPE },
+            returnType: HIR_INT_TYPE,
+            returnCollector: 'a1',
           }),
         ],
         s2: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('s1', HIR_INT_TYPE),
             functionArguments: [],
-            returnCollector: { name: 'a2', type: HIR_INT_TYPE },
+            returnType: HIR_INT_TYPE,
+            returnCollector: 'a2',
           }),
         ],
         finalAssignment: {
@@ -283,7 +293,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('s1', HIR_INT_TYPE),
                 functionArguments: [],
-                returnCollector: { name: 'a1', type: HIR_INT_TYPE },
+                returnType: HIR_INT_TYPE,
+                returnCollector: 'a1',
               }),
             ],
           },
@@ -293,7 +304,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('s2', HIR_INT_TYPE),
                 functionArguments: [],
-                returnCollector: { name: 'a2', type: HIR_INT_TYPE },
+                returnType: HIR_INT_TYPE,
+                returnCollector: 'a2',
               }),
             ],
           },
@@ -330,7 +342,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('s1', HIR_INT_TYPE),
                 functionArguments: [],
-                returnCollector: { name: 'a1', type: HIR_INT_TYPE },
+                returnType: HIR_INT_TYPE,
+                returnCollector: 'a1',
               }),
             ],
           },
@@ -340,7 +353,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('s2', HIR_INT_TYPE),
                 functionArguments: [],
-                returnCollector: { name: 'a2', type: HIR_INT_TYPE },
+                returnType: HIR_INT_TYPE,
+                returnCollector: 'a2',
               }),
             ],
           },

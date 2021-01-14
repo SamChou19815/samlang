@@ -75,6 +75,7 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on a series of simple st
           HIR_VARIABLE('b1', HIR_INT_TYPE),
           HIR_VARIABLE('b3', HIR_INT_TYPE),
         ],
+        returnType: HIR_INT_TYPE,
       }),
       HIR_CAST({
         name: 'ss',

@@ -89,6 +89,7 @@ const optimizeHighIRStatement = (
       return HIR_FUNCTION_CALL({
         functionExpression: getExpressionUnderContext(statement.functionExpression),
         functionArguments: statement.functionArguments.map(getExpressionUnderContext),
+        returnType: statement.returnType,
         returnCollector: statement.returnCollector,
       });
 

@@ -2,11 +2,9 @@ import compileHighIrModuleToMidIRCompilationUnit from '../mir-toplevel-lowering'
 
 import {
   HIR_FUNCTION_CALL,
-  HIR_CAST,
   HIR_NAME,
   HIR_RETURN,
   HIR_VARIABLE,
-  HIR_ZERO,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_STRING_TYPE, HIR_INT_TYPE, HIR_FUNCTION_TYPE } from 'samlang-core-ast/hir-types';
 import { midIRCompilationUnitToString } from 'samlang-core-ast/mir-nodes';
@@ -50,7 +48,8 @@ it('compileHighIrModuleToMidIRCompilationUnit full integration test', () => {
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('loop', HIR_INT_TYPE),
                 functionArguments: [],
-                returnCollector: { name: 'n', type: HIR_INT_TYPE },
+                returnType: HIR_INT_TYPE,
+                returnCollector: 'n',
               }),
               HIR_RETURN(HIR_VARIABLE('n', HIR_INT_TYPE)),
             ],

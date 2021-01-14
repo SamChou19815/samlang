@@ -36,9 +36,11 @@ const optimizeHighIRStatementsForOneRound = (
   }: OptimizationConfiguration
 ): readonly HighIRStatement[] => {
   let optimized = optimizeHighIRStatementsByConditionalConstantPropagation(statements);
+  // istanbul ignore next
   if (doesPerformLocalValueNumbering) {
     optimized = optimizeHighIRStatementsByLocalValueNumbering(optimized);
   }
+  // istanbul ignore next
   if (doesPerformCommonSubExpressionElimination) {
     optimized = optimizeHighIRStatementsByCommonSubExpressionElimination(optimized, allocator);
   }
@@ -87,6 +89,7 @@ export const optimizeHighIRFunctions = (
         body: optimizeHighIRStatementsByConditionalConstantPropagation(statements),
       };
     });
+    // istanbul ignore next
     if (optimizationConfiguration.doesPerformInlining) {
       intermediate = optimizeHighIRFunctionsByInlining(intermediate, allocator);
     }

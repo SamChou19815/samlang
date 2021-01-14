@@ -175,6 +175,7 @@ const compileSamlangSourcesToHighIRSources = (
               HIR_FUNCTION_TYPE([], HIR_INT_TYPE)
             ),
             functionArguments: [],
+            returnType: HIR_INT_TYPE,
           }),
           HIR_RETURN(HIR_ZERO),
         ],

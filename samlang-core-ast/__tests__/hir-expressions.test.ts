@@ -57,11 +57,13 @@ it('debugPrintHighIRStatement works', () => {
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('h', HIR_INT_TYPE),
             functionArguments: [HIR_VARIABLE('big', HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_INT_TYPE]))],
-            returnCollector: { name: 'vibez', type: HIR_INT_TYPE },
+            returnType: HIR_INT_TYPE,
+            returnCollector: 'vibez',
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('stresso', HIR_INT_TYPE),
             functionArguments: [HIR_VARIABLE('d', HIR_INT_TYPE)],
+            returnType: HIR_INT_TYPE,
           }),
           HIR_INDEX_ACCESS({
             name: 'f',

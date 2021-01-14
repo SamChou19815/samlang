@@ -78,8 +78,8 @@ class LLVMLoweringManager {
       case 'HighIRFunctionCallStatement':
         this.emitInstruction(
           LLVM_CALL({
-            resultType: lowerHighIRTypeToLLVMType(s.returnCollector?.type ?? HIR_INT_TYPE),
-            resultVariable: s.returnCollector?.name,
+            resultType: lowerHighIRTypeToLLVMType(s.returnType),
+            resultVariable: s.returnCollector,
             functionName: this.lowerHighIRExpression(s.functionExpression).value,
             functionArguments: s.functionArguments.map((it) => this.lowerHighIRExpression(it)),
           })
