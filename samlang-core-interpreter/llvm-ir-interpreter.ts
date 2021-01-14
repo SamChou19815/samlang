@@ -1,11 +1,17 @@
-import {
-  StackFrame,
-  GeneralIREnvironment,
-  handleBuiltInFunctionCall,
-  computeBinary,
-} from './mid-ir-interpreter';
+/* eslint-disable no-param-reassign */
 
-import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
+import PanicException from './panic-exception';
+
+import {
+  ENCODED_FUNCTION_NAME_MALLOC,
+  ENCODED_FUNCTION_NAME_THROW,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
+  ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_STRING_CONCAT,
+  ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_COMPILED_PROGRAM_MAIN,
+} from 'samlang-core-ast/common-names';
+import type { IROperator } from 'samlang-core-ast/common-operators';
 import type {
   LLVMModule,
   LLVMFunction,
@@ -13,6 +19,138 @@ import type {
   LLVMLabelInstruction,
 } from 'samlang-core-ast/llvm-nodes';
 import { Long, checkNotNull } from 'samlang-core-utils';
+
+class StackFrame {
+  private variables = new Map<string, Long>();
+
+  private _returnValue: Long | null = null;
+
+  get returnValue(): Long | null {
+    return this._returnValue;
+  }
+
+  setReturnValue(value: Long): void {
+    this._returnValue = value;
+  }
+
+  getLocalValue(name: string): Long {
+    // istanbul ignore next
+    return this.variables.get(name) ?? Long.ZERO;
+  }
+
+  setLocalValue(name: string, value: Long): void {
+    this.variables.set(name, value);
+  }
+}
+
+type GeneralIREnvironment = {
+  // Global variable name to fake address mapping.
+  readonly globalVariables: ReadonlyMap<string, Long>;
+  // Fake function address to function name mapping.
+  readonly functionsGlobals: ReadonlyMap<string, string>;
+  // Strings generated at compile time and runtime.
+  readonly strings: Map<string, string>;
+  // Address to value mapping of heap.
+  readonly heap: Map<string, Long>;
+  heapPointer: Long;
+  // A collection of already printed stuff.
+  printed: string;
+};
+
+const handleBuiltInFunctionCall = (
+  environment: GeneralIREnvironment,
+  functionName: string,
+  functionArgumentValues: readonly Long[]
+): Long | null => {
+  switch (functionName) {
+    case ENCODED_FUNCTION_NAME_MALLOC: {
+      const start = environment.heapPointer;
+      environment.heapPointer = environment.heapPointer.add(
+        checkNotNull(functionArgumentValues[0])
+      );
+      return start;
+    }
+    case ENCODED_FUNCTION_NAME_THROW: {
+      const string = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
+      // istanbul ignore next
+      if (string == null) throw new Error('Bad string!');
+      throw new PanicException(string);
+    }
+    case ENCODED_FUNCTION_NAME_STRING_TO_INT: {
+      const string = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
+      // istanbul ignore next
+      if (string == null) throw new Error('Bad string!');
+      try {
+        BigInt(string);
+        return Long.fromString(string);
+      } catch {
+        throw new PanicException(`Bad string: ${string}`);
+      }
+    }
+    case ENCODED_FUNCTION_NAME_INT_TO_STRING: {
+      const string = String(functionArgumentValues[0]);
+      const location = environment.heapPointer;
+      environment.heapPointer = environment.heapPointer.add(8);
+      environment.strings.set(location.toString(), string);
+      return location;
+    }
+    case ENCODED_FUNCTION_NAME_STRING_CONCAT: {
+      const string1 = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
+      const string2 = environment.strings.get(checkNotNull(functionArgumentValues[1]).toString());
+      // istanbul ignore next
+      if (string1 == null || string2 == null) throw new Error('Bad string');
+      const location = environment.heapPointer;
+      environment.heapPointer = environment.heapPointer.add(8);
+      environment.strings.set(location.toString(), string1 + string2);
+      return location;
+    }
+    case ENCODED_FUNCTION_NAME_PRINTLN: {
+      const string = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
+      // istanbul ignore next
+      if (string == null) throw new Error('Bad string!');
+      environment.printed += `${string}\n`;
+      return Long.ZERO;
+    }
+    default:
+      return null;
+  }
+};
+
+const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
+
+const computeBinary = (operator: IROperator, value1: Long, value2: Long): Long => {
+  // istanbul ignore next
+  switch (operator) {
+    case '+':
+      return value1.add(value2);
+    case '-':
+      return value1.subtract(value2);
+    case '*':
+      return value1.multiply(value2);
+    case '/':
+      if (value2.equals(Long.ZERO)) throw new PanicException('Division by zero!');
+      return value1.divide(value2);
+    case '%':
+      if (value2.equals(Long.ZERO)) throw new PanicException('Mod by zero!');
+      return value1.mod(value2);
+    case '^':
+      return value1.xor(value2);
+    case '<':
+      // istanbul ignore next
+      return longOfBool(value1.lessThan(value2));
+    case '<=':
+      return longOfBool(value1.lessThanOrEqual(value2));
+    case '>':
+      // istanbul ignore next
+      return longOfBool(value1.greaterThan(value2));
+    case '>=':
+      return longOfBool(value1.greaterThanOrEqual(value2));
+    case '==':
+      return longOfBool(value1.equals(value2));
+    case '!=':
+      return longOfBool(value1.notEquals(value2));
+  }
+};
 
 type LLVMInterpreterMutableGlobalEnvironment = {
   // A collection of all available functions.
