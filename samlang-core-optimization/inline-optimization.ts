@@ -68,7 +68,6 @@ const estimateMidIRStatementInlineCost = (statement: MidIRStatement): number => 
   }
 };
 
-// eslint-disable-next-line camelcase, import/prefer-default-export
 export const estimateMidIRFunctionInlineCost_EXPOSED_FOR_TESTING = (
   midIRFunction: MidIRFunction
 ): number => {
