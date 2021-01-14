@@ -156,10 +156,41 @@ class LLVMLoweringManager {
     const trueLabel = this.allocator.allocateLabelWithAnnotation('if_else_true');
     const falseLabel = this.allocator.allocateLabelWithAnnotation('if_else_false');
     const endLabel = this.allocator.allocateLabelWithAnnotation('if_else_end');
+    const s1IsEmpty = s1.length === 0;
+    const s2IsEmpty = s2.length === 0;
+    if (s1IsEmpty && s2IsEmpty) {
+      if (finalAssignment == null) return;
+      this.emitInstruction(LLVM_CJUMP(loweredCondition, trueLabel, falseLabel));
+      this.emitInstruction(LLVM_LABEL(trueLabel));
+      this.emitInstruction(LLVM_JUMP(endLabel));
+      this.emitInstruction(LLVM_LABEL(falseLabel));
+      this.emitInstruction(LLVM_JUMP(endLabel));
+      this.emitInstruction(LLVM_LABEL(endLabel));
+      const v1 = this.lowerHighIRExpression(finalAssignment.branch1Value).value;
+      const v2 = this.lowerHighIRExpression(finalAssignment.branch2Value).value;
+      this.emitInstruction(
+        LLVM_PHI({
+          resultVariable: finalAssignment.name,
+          variableType: lowerHighIRTypeToLLVMType(finalAssignment.type),
+          valueBranchTuples: [
+            { value: v1, branch: trueLabel },
+            { value: v2, branch: falseLabel },
+          ],
+        })
+      );
+      return;
+    }
 
-    this.emitInstruction(LLVM_CJUMP(loweredCondition, trueLabel, falseLabel));
-    this.emitInstruction(LLVM_LABEL(trueLabel));
+    this.emitInstruction(
+      LLVM_CJUMP(
+        loweredCondition,
+        s1IsEmpty ? endLabel : trueLabel,
+        s2IsEmpty ? endLabel : falseLabel
+      )
+    );
+    const beforeConditionLabel = this.currentLabel;
     if (finalAssignment != null) {
+      this.emitInstruction(LLVM_LABEL(trueLabel));
       s1.forEach((it) => this.lowerHighIRStatement(it));
       const v1 = this.lowerHighIRExpression(finalAssignment.branch1Value).value;
       const v1Label = this.currentLabel;
@@ -175,12 +206,13 @@ class LLVMLoweringManager {
           resultVariable: finalAssignment.name,
           variableType: lowerHighIRTypeToLLVMType(finalAssignment.type),
           valueBranchTuples: [
-            { value: v1, branch: v1Label },
-            { value: v2, branch: v2Label },
+            { value: v1, branch: s1IsEmpty ? beforeConditionLabel : v1Label },
+            { value: v2, branch: s2IsEmpty ? beforeConditionLabel : v2Label },
           ],
         })
       );
     } else {
+      this.emitInstruction(LLVM_LABEL(trueLabel));
       s1.forEach((it) => this.lowerHighIRStatement(it));
       this.emitInstruction(LLVM_JUMP(endLabel));
       this.emitInstruction(LLVM_LABEL(falseLabel));

@@ -157,6 +157,110 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 1/n', () => {
       }),
       HIR_IF_ELSE({
         booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
+        s1: [],
+        s2: [],
+      }),
+    ],
+    `  %bb = icmp eq i64 %t, 2`
+  );
+});
+
+it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_IF_ELSE({
+        booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
+        s1: [],
+        s2: [],
+        finalAssignment: {
+          name: 'ma',
+          type: INT,
+          branch1Value: HIR_INT(2),
+          branch2Value: HIR_ZERO,
+        },
+      }),
+    ],
+    `  br i1 %bb, label %l1_if_else_true, label %l2_if_else_false
+l1_if_else_true:
+  br label %l3_if_else_end
+l2_if_else_false:
+  br label %l3_if_else_end
+l3_if_else_end:
+  %ma = phi i64 [ 2, %l1_if_else_true ], [ 0, %l2_if_else_false ]`
+  );
+});
+
+it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_IF_ELSE({
+        booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
+        s1: [],
+        s2: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
+            functionArguments: [],
+            returnType: INT,
+          }),
+        ],
+        finalAssignment: {
+          name: 'ma',
+          type: INT,
+          branch1Value: HIR_INT(2),
+          branch2Value: HIR_ZERO,
+        },
+      }),
+    ],
+    `  br i1 %bb, label %l3_if_else_end, label %l2_if_else_false
+l2_if_else_false:
+  call i64 @bar() nounwind
+  br label %l3_if_else_end
+l3_if_else_end:
+  %ma = phi i64 [ 2, %l0_start ], [ 0, %l2_if_else_false ]`
+  );
+});
+
+it('prettyPrintLLVMFunction works for HIR_IF_ELSE 4/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_IF_ELSE({
+        booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
+        s1: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
+            functionArguments: [],
+            returnType: INT,
+          }),
+        ],
+        s2: [],
+        finalAssignment: {
+          name: 'ma',
+          type: INT,
+          branch1Value: HIR_INT(2),
+          branch2Value: HIR_ZERO,
+        },
+      }),
+    ],
+    `  br i1 %bb, label %l1_if_else_true, label %l3_if_else_end
+l1_if_else_true:
+  call i64 @bar() nounwind
+  br label %l3_if_else_end
+l3_if_else_end:
+  %ma = phi i64 [ 2, %l1_if_else_true ], [ 0, %l0_start ]`
+  );
+});
+
+it('prettyPrintLLVMFunction works for HIR_IF_ELSE 5/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_BINARY({
+        name: 'bb',
+        operator: '==',
+        e1: HIR_VARIABLE('t', INT),
+        e2: HIR_INT(2),
+      }),
+      HIR_IF_ELSE({
+        booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
         s1: [
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
@@ -185,7 +289,7 @@ l3_if_else_end:`
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
+it('prettyPrintLLVMFunction works for HIR_IF_ELSE 6/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_IF_ELSE({
@@ -226,7 +330,7 @@ l3_if_else_end:
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
+it('prettyPrintLLVMFunction works for HIR_IF_ELSE 7/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_IF_ELSE({
