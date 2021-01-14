@@ -56,7 +56,6 @@
                 "**/samlang-core-analysis/*",
                 "**/samlang-core-ast/*",
                 "**/samlang-core-interpreter/*",
-                "**/samlang-core-optimization/hir-unused-name-elimination-optimization*",
                 "**/samlang-core-optimization/simple-optimizations*",
                 "**/samlang-core-parser-generated/*"
               ]
