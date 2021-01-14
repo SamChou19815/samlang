@@ -1,5 +1,4 @@
 import lowerHighIRTypeToLLVMType from './llvm-types-lowering';
-import MidIRResourceAllocator from './mir-resource-allocator';
 
 import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
 import type {
@@ -11,7 +10,6 @@ import type {
   HighIRStructInitializationStatement,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
-import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
   LLVMAnnotatedValue,
   LLVMInstruction,
@@ -39,20 +37,36 @@ import {
 import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
 import { checkNotNull } from 'samlang-core-utils';
 
+class LLVMResourceAllocator {
+  private nextTempId = 0;
+  private nextLabelId = 0;
+
+  allocateTemp(purpose: string): string {
+    const tempID = this.nextTempId;
+    this.nextTempId += 1;
+    return `_temp_${tempID}_${purpose}`;
+  }
+
+  allocateLabelWithAnnotation(annotation: string): string {
+    const temp = this.nextLabelId;
+    this.nextLabelId += 1;
+    return `l${temp}_${annotation}`;
+  }
+}
+
 class LLVMLoweringManager {
   readonly llvmInstructionCollector: LLVMInstruction[] = [];
-  private readonly allocator = new MidIRResourceAllocator();
+  private readonly allocator = new LLVMResourceAllocator();
   private readonly functionStartLabel: string;
   private currentLabel: string;
   // Keep track of under which label is a variable created.
   private readonly variableSourceMap = new Map<string, string>();
 
   constructor(
-    private readonly functionName: string,
     private readonly globalVariables: Readonly<Record<string, number>>,
     parameters: readonly string[]
   ) {
-    this.functionStartLabel = this.allocator.allocateLabelWithAnnotation(functionName, 'START');
+    this.functionStartLabel = this.allocator.allocateLabelWithAnnotation('start');
     this.currentLabel = this.functionStartLabel;
     this.emitInstruction(LLVM_LABEL(this.functionStartLabel));
     parameters.forEach((it) => this.variableSourceMap.set(it, this.functionStartLabel));
@@ -139,18 +153,9 @@ class LLVMLoweringManager {
   private lowerNormalHighIRIfElseStatement(s: HighIRIfElseStatement): void {
     const { booleanExpression, s1, s2, finalAssignment } = s;
     const loweredCondition = this.lowerHighIRExpression(booleanExpression).value;
-    const trueLabel = this.allocator.allocateLabelWithAnnotation(
-      this.functionName,
-      'if_else_true_label'
-    );
-    const falseLabel = this.allocator.allocateLabelWithAnnotation(
-      this.functionName,
-      'if_else_false_label'
-    );
-    const endLabel = this.allocator.allocateLabelWithAnnotation(
-      this.functionName,
-      'if_else_end_label'
-    );
+    const trueLabel = this.allocator.allocateLabelWithAnnotation('if_else_true');
+    const falseLabel = this.allocator.allocateLabelWithAnnotation('if_else_false');
+    const endLabel = this.allocator.allocateLabelWithAnnotation('if_else_end');
 
     this.emitInstruction(LLVM_CJUMP(loweredCondition, trueLabel, falseLabel));
     this.emitInstruction(LLVM_LABEL(trueLabel));
@@ -186,13 +191,10 @@ class LLVMLoweringManager {
   }
 
   private lowerHighIRSwitchStatement(s: HighIRSwitchStatement): void {
-    const finalEndLabel = this.allocator.allocateLabelWithAnnotation(
-      this.functionName,
-      `match_end`
-    );
+    const finalEndLabel = this.allocator.allocateLabelWithAnnotation('match_end');
     const caseWithLabels = s.cases.map((it, i) => ({
       ...it,
-      label: this.allocator.allocateLabelWithAnnotation(this.functionName, `match_case_${i}`),
+      label: this.allocator.allocateLabelWithAnnotation(`match_case_${i}`),
     }));
 
     this.emitInstruction(
@@ -232,7 +234,7 @@ class LLVMLoweringManager {
   }
 
   private lowerHighIRStructInitializationStatement(s: HighIRStructInitializationStatement): void {
-    const rawPointerTemp = this.allocator.allocateTemp('struct_pointer_raw');
+    const rawPointerTemp = this.allocator.allocateTemp('struct_ptr_raw');
     const structType = lowerHighIRTypeToLLVMType(s.type);
     this.emitInstruction(
       LLVM_CALL({
@@ -252,7 +254,7 @@ class LLVMLoweringManager {
     );
     s.expressionList.forEach((e, i) => {
       const { value, type } = this.lowerHighIRExpression(e);
-      const storePointerTemp = this.allocator.allocateTemp(`struct_value_pointer_${i}`);
+      const storePointerTemp = this.allocator.allocateTemp(`struct_ptr_${i}`);
       this.emitInstruction(
         LLVM_GET_ELEMENT_PTR({
           resultVariable: storePointerTemp,
@@ -303,7 +305,7 @@ export const lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING = (
     parameterName,
     parameterType: lowerHighIRTypeToLLVMType(checkNotNull(argumentTypes[i])),
   }));
-  const manager = new LLVMLoweringManager(name, globalVariables, parameters);
+  const manager = new LLVMLoweringManager(globalVariables, parameters);
   body.forEach((it) => manager.lowerHighIRStatement(it));
   return {
     name,
