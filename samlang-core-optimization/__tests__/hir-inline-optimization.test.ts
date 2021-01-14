@@ -1,4 +1,4 @@
-import optimizeFunctionsByInlining, {
+import optimizeHighIRFunctionsByInlining, {
   estimateFunctionInlineCost_EXPOSED_FOR_TESTING,
 } from '../hir-inline-optimization';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
@@ -133,7 +133,7 @@ it('estimateFunctionInlineCost test', () => {
 
 const assertCorrectlyInlined = (functions: readonly HighIRFunction[], expected: string): void => {
   expect(
-    optimizeFunctionsByInlining(functions, new OptimizationResourceAllocator())
+    optimizeHighIRFunctionsByInlining(functions, new OptimizationResourceAllocator())
       .map(debugPrintHighIRFunction)
       .join('\n')
   ).toBe(expected);

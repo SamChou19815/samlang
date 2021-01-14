@@ -300,7 +300,7 @@ const performInlineRewriteOnFunction = (
   };
 };
 
-const optimizeFunctionsByInlining = (
+const optimizeHighIRFunctionsByInlining = (
   highIRFunctions: readonly HighIRFunction[],
   allocator: OptimizationResourceAllocator
 ): readonly HighIRFunction[] => {
@@ -326,4 +326,4 @@ const optimizeFunctionsByInlining = (
   return tempFunctions;
 };
 
-export default optimizeFunctionsByInlining;
+export default optimizeHighIRFunctionsByInlining;

@@ -149,7 +149,10 @@ const optimizeHighIRStatement = (
         }
         const final = statement.finalAssignment;
         const statements = optimizeHighIRStatements(isTrue ? statement.s1 : statement.s2, context);
-        context.bind(final.name, isTrue ? final.branch1Value : final.branch2Value);
+        context.bind(
+          final.name,
+          isTrue ? optimizeExpression(final.branch1Value) : optimizeExpression(final.branch2Value)
+        );
         return statements;
       }
       if (statement.finalAssignment == null) {
