@@ -3,11 +3,11 @@ import optimizeHighIRStatementsByConditionalConstantPropagation from './hir-cond
 import optimizeHighIRStatementsByDeadCodeElimination from './hir-dead-code-elimination-optimization';
 import optimizeHighIRFunctionsByInlining from './hir-inline-optimization';
 import optimizeHighIRStatementsByLocalValueNumbering from './hir-local-value-numbering-optimization';
+import optimizeHighIRModuleByEliminatingUnusedOnes from './hir-unused-name-elimination-optimization';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
 
-import analyzeUsedFunctionNames from 'samlang-core-analysis/used-name-analysis';
 import type { HighIRStatement } from 'samlang-core-ast/hir-expressions';
-import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
+import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
 
 type OptimizationConfiguration = {
   doesPerformLocalValueNumbering?: boolean;
@@ -41,37 +41,41 @@ const optimizeHighIRStatementsForOneRound = (
   return optimizeHighIRStatementsByDeadCodeElimination(optimized);
 };
 
-const optimizeHighIRFunctions = (
-  functions: readonly HighIRFunction[],
+const optimizeHighIRModule = (
+  highIRModule: HighIRModule,
   optimizationConfiguration: OptimizationConfiguration = allEnabledOptimizationConfiguration
-): readonly HighIRFunction[] => {
+): HighIRModule => {
   const allocator = new OptimizationResourceAllocator();
 
-  let intermediate = functions;
+  let intermediate = highIRModule;
   for (let i = 0; i < 4; i += 1) {
-    intermediate = intermediate.map((highIRFunction) => {
-      let statements = highIRFunction.body;
-      for (let j = 0; j < 5; j += 1) {
-        statements = optimizeHighIRStatementsForOneRound(
-          statements,
-          allocator,
-          optimizationConfiguration
-        );
+    let optimizedFunctions: readonly HighIRFunction[] = intermediate.functions.map(
+      (highIRFunction) => {
+        let statements = highIRFunction.body;
+        for (let j = 0; j < 5; j += 1) {
+          statements = optimizeHighIRStatementsForOneRound(
+            statements,
+            allocator,
+            optimizationConfiguration
+          );
+        }
+        return {
+          ...highIRFunction,
+          body: optimizeHighIRStatementsByConditionalConstantPropagation(statements),
+        };
       }
-      return {
-        ...highIRFunction,
-        body: optimizeHighIRStatementsByConditionalConstantPropagation(statements),
-      };
-    });
+    );
     // istanbul ignore next
     if (optimizationConfiguration.doesPerformInlining) {
-      intermediate = optimizeHighIRFunctionsByInlining(intermediate, allocator);
+      optimizedFunctions = optimizeHighIRFunctionsByInlining(optimizedFunctions, allocator);
     }
-    const usedNames = analyzeUsedFunctionNames(intermediate);
-    intermediate = intermediate.filter((it) => usedNames.has(it.name));
+    intermediate = optimizeHighIRModuleByEliminatingUnusedOnes({
+      ...highIRModule,
+      functions: optimizedFunctions,
+    });
   }
 
   return intermediate;
 };
 
-export default optimizeHighIRFunctions;
+export default optimizeHighIRModule;

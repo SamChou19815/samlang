@@ -2,7 +2,6 @@ import lowerSamlangExpression from './hir-expression-lowering';
 import HighIRStringManager from './hir-string-manager';
 import lowerSamlangType from './hir-types-lowering';
 
-import analyzeUsedFunctionNames from 'samlang-core-analysis/used-name-analysis';
 import {
   ENCODED_COMPILED_PROGRAM_MAIN,
   encodeFunctionNameGlobally,
@@ -33,6 +32,7 @@ import type {
   SamlangModule,
   TypeDefinition,
 } from 'samlang-core-ast/samlang-toplevel';
+import optimizeHighIRModuleByEliminatingUnusedOnes from 'samlang-core-optimization/hir-unused-name-elimination-optimization';
 import { checkNotNull, HashMap, hashMapOf } from 'samlang-core-utils';
 
 const compileTypeDefinition = (
@@ -181,12 +181,14 @@ const compileSamlangSourcesToHighIRSources = (
         ],
       },
     ];
-    const usedNames = analyzeUsedFunctionNames(allFunctions);
-    irSources.set(moduleReference, {
-      globalVariables: stringManager.globalVariables.filter((it) => usedNames.has(it.name)),
-      typeDefinitions: compiledTypeDefinitions,
-      functions: allFunctions.filter((it) => usedNames.has(it.name)),
-    });
+    irSources.set(
+      moduleReference,
+      optimizeHighIRModuleByEliminatingUnusedOnes({
+        globalVariables: stringManager.globalVariables,
+        typeDefinitions: compiledTypeDefinitions,
+        functions: allFunctions,
+      })
+    );
   });
   return irSources;
 };

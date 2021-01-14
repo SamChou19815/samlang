@@ -221,12 +221,8 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
   ).get(ModuleReference.ROOT);
   assertNotNull(actualCompiledModule);
 
-  expect(debugPrintHighIRModule(actualCompiledModule)).toEqual(`type _Class1 = (int);
-
-type _Class2 = (int, any);
-
-type _Class3 = ((any, any));
-
+  expect(debugPrintHighIRModule(actualCompiledModule)).toEqual(
+    `
 function _module__class_Main_function_main(): int {
   _module__class_Class1_function_infiniteLoop();
   return 0;
@@ -241,5 +237,6 @@ function _compiled_program_main(): int {
   _module__class_Main_function_main();
   return 0;
 }
-`);
+`.trimLeft()
+  );
 });

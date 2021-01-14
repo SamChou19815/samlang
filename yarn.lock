@@ -7147,7 +7147,6 @@ resolve@^1.18.1:
   resolution: "samlang-core-compiler@workspace:samlang-core-compiler"
   dependencies:
     "@types/jest": ^26.0.20
-    samlang-core-analysis: "workspace:0.0.1"
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-optimization: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
