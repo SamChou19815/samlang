@@ -7,6 +7,7 @@ import {
   HighIRSwitchStatement,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRType } from 'samlang-core-ast/hir-types';
+import { error, LocalStackedContext } from 'samlang-core-utils';
 
 export type IndexAccessBindedValue = {
   readonly __type__: 'IndexAccess';
@@ -32,6 +33,12 @@ export const bindedValueToString = (value: BindedValue): string => {
       return `(${expressionToString(value.e1)}${value.operator}${expressionToString(value.e2)})`;
   }
 };
+
+export class LocalValueContextForOptimization extends LocalStackedContext<HighIRExpression> {
+  bind(name: string, expression: HighIRExpression): void {
+    this.addLocalValueType(name, expression, error);
+  }
+}
 
 export const ifElseOrNull = (ifElse: HighIRIfElseStatement): readonly HighIRStatement[] => {
   if (ifElse.s1.length === 0 && ifElse.s2.length === 0 && ifElse.finalAssignment == null) {

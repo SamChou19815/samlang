@@ -167,7 +167,7 @@ const inlineRewriteForMidIRStatement = (
       ];
     case 'MidIRReturnStatement':
       // istanbul ignore next
-      if (statement.returnedExpression == null || returnCollectorTemporaryID == null) {
+      if (returnCollectorTemporaryID == null) {
         return [MIR_JUMP(`${labelPrefix}__inline_END`)];
       }
       return [
