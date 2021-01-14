@@ -1,4 +1,8 @@
-import { ifElseOrNull, switchOrNull } from './hir-optimization-common';
+import {
+  ifElseOrNull,
+  switchOrNull,
+  LocalValueContextForOptimization,
+} from './hir-optimization-common';
 
 import type { IROperator } from 'samlang-core-ast/common-operators';
 import {
@@ -14,7 +18,7 @@ import {
   HIR_CAST,
   HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
-import { error, Long, checkNotNull, LocalStackedContext } from 'samlang-core-utils';
+import { Long, checkNotNull } from 'samlang-core-utils';
 
 const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
 
@@ -47,15 +51,9 @@ const evaluateBinaryExpression = (operator: IROperator, v1: Long, v2: Long): Lon
   }
 };
 
-class LocalValueContext extends LocalStackedContext<HighIRExpression> {
-  bind(name: string, expression: HighIRExpression) {
-    this.addLocalValueType(name, expression, error);
-  }
-}
-
 const optimizeHighIRStatement = (
   statement: HighIRStatement,
-  context: LocalValueContext
+  context: LocalValueContextForOptimization
 ): readonly HighIRStatement[] => {
   const optimizeExpression = (expression: HighIRExpression): HighIRExpression => {
     switch (expression.__type__) {
@@ -251,11 +249,12 @@ const optimizeHighIRStatement = (
 
 const optimizeHighIRStatements = (
   statements: readonly HighIRStatement[],
-  context: LocalValueContext
+  context: LocalValueContextForOptimization
 ): readonly HighIRStatement[] => statements.flatMap((it) => optimizeHighIRStatement(it, context));
 
 const optimizeHighIRStatementsByConditionalConstantPropagation = (
   statements: readonly HighIRStatement[]
-): readonly HighIRStatement[] => optimizeHighIRStatements(statements, new LocalValueContext());
+): readonly HighIRStatement[] =>
+  optimizeHighIRStatements(statements, new LocalValueContextForOptimization());
 
 export default optimizeHighIRStatementsByConditionalConstantPropagation;
