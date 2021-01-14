@@ -1,5 +1,4 @@
 import type { LLVMInstruction } from 'samlang-core-ast/llvm-nodes';
-import type { MidIRStatement } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
 interface Adapter<I> {
@@ -8,20 +7,10 @@ interface Adapter<I> {
   /** @returns the jump label if the given instruction is the jump instruction. */
   getJumpLabel(instruction: I): string | null;
   /** @returns the first label of condition jump if the given instruction is the conditional jump (fall-through) instruction. */
-  getConditionalJumpLabel(instruction: I): string | readonly string[] | null;
+  getConditionalJumpLabel(instruction: I): readonly string[] | null;
   /** @returns whether the instruction is a return statement. */
   isReturn(instruction: I): boolean;
 }
-
-const midIRAdapter: Adapter<MidIRStatement> = {
-  getLabel: (instruction) =>
-    instruction.__type__ === 'MidIRLabelStatement' ? instruction.name : null,
-  getJumpLabel: (instruction) =>
-    instruction.__type__ === 'MidIRJumpStatement' ? instruction.label : null,
-  getConditionalJumpLabel: (instruction) =>
-    instruction.__type__ === 'MidIRConditionalJumpFallThrough' ? instruction.label1 : null,
-  isReturn: (instruction) => instruction.__type__ === 'MidIRReturnStatement',
-};
 
 const LLVMIRAdapter: Adapter<LLVMInstruction> = {
   getLabel: (instruction) =>
@@ -55,10 +44,6 @@ export default class ControlFlowGraph<I> {
 
   private readonly parentMap: Map<number, Set<number>> = new Map();
 
-  static readonly fromMidIRStatements = (
-    statements: readonly MidIRStatement[]
-  ): ControlFlowGraph<MidIRStatement> => new ControlFlowGraph(statements, midIRAdapter);
-
   static readonly fromLLVMInstructions = (
     instructions: readonly LLVMInstruction[]
   ): ControlFlowGraph<LLVMInstruction> => new ControlFlowGraph(instructions, LLVMIRAdapter);
@@ -86,18 +71,10 @@ export default class ControlFlowGraph<I> {
       }
       const conditionalJumpLabel = getConditionalJumpLabel(instruction);
       if (conditionalJumpLabel != null) {
-        if (typeof conditionalJumpLabel !== 'string') {
-          this.childrenMap.set(
-            id,
-            conditionalJumpLabel.map((it) => checkNotNull(labelIdMap.get(it)))
-          );
-          return;
-        }
-        const jumpToId = checkNotNull(labelIdMap.get(conditionalJumpLabel));
-        const nextList = [jumpToId];
-        // istanbul ignore next
-        if (id !== instructions.length - 1) nextList.push(id + 1);
-        this.childrenMap.set(id, nextList);
+        this.childrenMap.set(
+          id,
+          conditionalJumpLabel.map((it) => checkNotNull(labelIdMap.get(it)))
+        );
         return;
       }
       if (!isReturn(instruction) && id !== instructions.length - 1) {

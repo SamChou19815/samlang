@@ -1,10 +1,5 @@
 import ControlFlowGraph from 'samlang-core-analysis/control-flow-graph';
 import type { LLVMInstruction } from 'samlang-core-ast/llvm-nodes';
-import { MidIRStatement, MIR_JUMP, MIR_CJUMP_FALLTHROUGH } from 'samlang-core-ast/mir-nodes';
-import { assertNotNull, checkNotNull, isNotNull } from 'samlang-core-utils';
-
-const pipe = <E>(element: E, ...functions: readonly ((e: E) => E)[]): E =>
-  functions.reduce((accumulator, f) => f(accumulator), element);
 
 const withoutUnreachableCode = <I>(
   instructions: readonly I[],
@@ -15,82 +10,13 @@ const withoutUnreachableCode = <I>(
   return instructions.filter((_, index) => reachableSet.has(index));
 };
 
-const withoutUnreachableIRCode = (
-  statements: readonly MidIRStatement[]
-): readonly MidIRStatement[] =>
-  withoutUnreachableCode(statements, ControlFlowGraph.fromMidIRStatements);
-
+// eslint-disable-next-line import/prefer-default-export
 export const withoutUnreachableLLVMCode = (
   instructions: readonly LLVMInstruction[]
 ): readonly LLVMInstruction[] =>
   withoutUnreachableCode(instructions, ControlFlowGraph.fromLLVMInstructions);
 
-const getCoalesceConsecutiveLabelsReplacementMap = <I>(
-  instructions: readonly I[],
-  getLabel: (instruction: I) => string | null
-): ReadonlyMap<string, string> | null => {
-  // If label A is immediately followed by label B, then A -> B should be in the mapping.
-  const nextEquivalentLabelMap = new Map<string, string>();
-  instructions.forEach((instruction, index) => {
-    if (index >= instructions.length - 1) return;
-    const label = getLabel(instruction);
-    if (label == null) return;
-    const nextLabel = getLabel(checkNotNull(instructions[index + 1]));
-    if (nextLabel == null) return;
-    nextEquivalentLabelMap.set(label, nextLabel);
-  });
-  if (nextEquivalentLabelMap.size === 0) {
-    return null;
-  }
-
-  // It might be the case that we find something like l1 -> l2, l2 -> l3.
-  // This pass standardized the map into l1 -> l3, l2 -> l3.
-  const optimizedNextEquivalentLabelMap = new Map<string, string>();
-  nextEquivalentLabelMap.forEach((target, source) => {
-    let finalTarget: string = target;
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const nextTarget = nextEquivalentLabelMap.get(finalTarget);
-      if (nextTarget == null) break;
-      finalTarget = nextTarget;
-    }
-    optimizedNextEquivalentLabelMap.set(source, finalTarget);
-  });
-
-  return optimizedNextEquivalentLabelMap;
-};
-
-const coalesceConsecutiveLabelsForIr = (
-  statements: readonly MidIRStatement[]
-): readonly MidIRStatement[] => {
-  const optimizedNextEquivalentLabelMap = getCoalesceConsecutiveLabelsReplacementMap(
-    statements,
-    (statement) => (statement.__type__ === 'MidIRLabelStatement' ? statement.name : null)
-  );
-  if (optimizedNextEquivalentLabelMap == null) return statements;
-
-  return statements
-    .map((statement) => {
-      switch (statement.__type__) {
-        case 'MidIRLabelStatement':
-          return optimizedNextEquivalentLabelMap.has(statement.name) ? null : statement;
-        case 'MidIRJumpStatement': {
-          const optimizedLabel = optimizedNextEquivalentLabelMap.get(statement.label);
-          return optimizedLabel == null ? statement : MIR_JUMP(optimizedLabel);
-        }
-        case 'MidIRConditionalJumpFallThrough': {
-          const optimizedLabel = optimizedNextEquivalentLabelMap.get(statement.label1);
-          return optimizedLabel == null
-            ? statement
-            : MIR_CJUMP_FALLTHROUGH(statement.conditionExpression, optimizedLabel);
-        }
-        default:
-          return statement;
-      }
-    })
-    .filter(isNotNull);
-};
-
+/*
 const withoutConsecutiveJumpsInIr = (
   statements: readonly MidIRStatement[]
 ): readonly MidIRStatement[] => {
@@ -127,47 +53,19 @@ const withoutConsecutiveJumpsInIr = (
     switch (statement.__type__) {
       case 'MidIRJumpStatement': {
         const optimizedLabel = optimizedJumpLabelMap.get(statement.label);
-        return optimizedLabel == null ? statement : MIR_JUMP(optimizedLabel);
+        return optimizedLabel == null ? statement : { ...statement, label: optimizedLabel };
       }
       case 'MidIRConditionalJumpFallThrough': {
         const optimizedLabel = optimizedJumpLabelMap.get(statement.label1);
         return optimizedLabel == null
           ? statement
-          : MIR_CJUMP_FALLTHROUGH(statement.conditionExpression, optimizedLabel);
+          : { ...statement, label1: optimizedLabel };
       }
       default:
         return statement;
     }
   });
 };
-
-const withoutImmediateJumpInIr = (
-  statements: readonly MidIRStatement[]
-): readonly MidIRStatement[] =>
-  statements
-    .map((statement, index) => {
-      if (index >= statements.length - 1) return statement;
-      const nextStatement = statements[index + 1];
-      assertNotNull(nextStatement);
-      if (nextStatement.__type__ !== 'MidIRLabelStatement') return statement;
-      const nextLabel = nextStatement.name;
-      if (statement.__type__ === 'MidIRJumpStatement') {
-        if (statement.label === nextLabel) {
-          // This is the case where we have JUMP A, LABEL A, we can omit the jump.
-          return null;
-        }
-      }
-      if (statement.__type__ === 'MidIRConditionalJumpFallThrough') {
-        if (statement.label1 === nextLabel) {
-          // This is the case where we have CJUMP(..., labelA); LABEL labelA.
-          // It seems to the case when the true label is the same as false label.
-          // Although unlikely, we can still optimize it away in case it happens.
-          return null;
-        }
-      }
-      return statement;
-    })
-    .filter(isNotNull);
 
 const withoutUnusedLabelInIr = (
   statements: readonly MidIRStatement[]
@@ -193,12 +91,9 @@ const optimizeIrWithSimpleOptimization = (
 ): readonly MidIRStatement[] =>
   pipe(
     statements,
-    coalesceConsecutiveLabelsForIr,
     withoutConsecutiveJumpsInIr,
-    withoutUnreachableIRCode,
-    withoutConsecutiveJumpsInIr,
-    withoutImmediateJumpInIr,
     withoutUnusedLabelInIr
   );
 
 export default optimizeIrWithSimpleOptimization;
+*/
