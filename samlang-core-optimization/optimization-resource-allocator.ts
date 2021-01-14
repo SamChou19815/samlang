@@ -14,10 +14,4 @@ export default class OptimizationResourceAllocator {
     this.inliningPrefixID += 1;
     return prefix;
   }
-
-  allocateInliningLabelPrefix(): string {
-    const prefix = `inline_${this.inliningPrefixID}_`;
-    this.inliningPrefixID += 1;
-    return prefix;
-  }
 }

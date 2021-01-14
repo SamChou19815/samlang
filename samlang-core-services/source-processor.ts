@@ -7,7 +7,7 @@ import {
   lowerHighIRModuleToLLVMModule,
 } from 'samlang-core-compiler';
 import { CompileTimeError, createGlobalErrorCollector } from 'samlang-core-errors';
-import { optimizeHighIRFunctions } from 'samlang-core-optimization';
+import optimizeHighIRFunctions from 'samlang-core-optimization';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import { hashMapOf, isNotNull } from 'samlang-core-utils';
 
