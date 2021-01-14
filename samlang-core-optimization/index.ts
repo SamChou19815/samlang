@@ -41,6 +41,25 @@ const optimizeHighIRStatementsForOneRound = (
   return optimizeHighIRStatementsByDeadCodeElimination(optimized);
 };
 
+const optimizeFunctionForRounds = (
+  highIRFunction: HighIRFunction,
+  allocator: OptimizationResourceAllocator,
+  optimizationConfiguration: OptimizationConfiguration
+): HighIRFunction => {
+  let statements = highIRFunction.body;
+  for (let j = 0; j < 5; j += 1) {
+    statements = optimizeHighIRStatementsForOneRound(
+      statements,
+      allocator,
+      optimizationConfiguration
+    );
+  }
+  return {
+    ...highIRFunction,
+    body: optimizeHighIRStatementsByConditionalConstantPropagation(statements),
+  };
+};
+
 const optimizeHighIRModule = (
   highIRModule: HighIRModule,
   optimizationConfiguration: OptimizationConfiguration = allEnabledOptimizationConfiguration
@@ -49,21 +68,8 @@ const optimizeHighIRModule = (
 
   let intermediate = highIRModule;
   for (let i = 0; i < 4; i += 1) {
-    let optimizedFunctions: readonly HighIRFunction[] = intermediate.functions.map(
-      (highIRFunction) => {
-        let statements = highIRFunction.body;
-        for (let j = 0; j < 5; j += 1) {
-          statements = optimizeHighIRStatementsForOneRound(
-            statements,
-            allocator,
-            optimizationConfiguration
-          );
-        }
-        return {
-          ...highIRFunction,
-          body: optimizeHighIRStatementsByConditionalConstantPropagation(statements),
-        };
-      }
+    let optimizedFunctions: readonly HighIRFunction[] = intermediate.functions.map((it) =>
+      optimizeFunctionForRounds(it, allocator, optimizationConfiguration)
     );
     // istanbul ignore next
     if (optimizationConfiguration.doesPerformInlining) {
@@ -75,7 +81,12 @@ const optimizeHighIRModule = (
     });
   }
 
-  return intermediate;
+  return {
+    ...intermediate,
+    functions: intermediate.functions.map((it) =>
+      optimizeFunctionForRounds(it, allocator, optimizationConfiguration)
+    ),
+  };
 };
 
 export default optimizeHighIRModule;
