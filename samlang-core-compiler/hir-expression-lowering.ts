@@ -435,6 +435,7 @@ class HighIRExpressionLoweringManager {
             HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE)
           ),
           functionArguments: [result.expression],
+          returnType: HIR_INT_TYPE,
         }),
       ],
       expression: HIR_ZERO,
@@ -451,22 +452,20 @@ class HighIRExpressionLoweringManager {
     );
     let functionName: string;
     let calledFunctionType: HighIRFunctionType;
-    let returnCollector:
-      | { readonly name: string; readonly type: HighIRType }
-      | undefined = undefined;
+    let returnCollector: string | undefined = undefined;
     let finalExpression: HighIRExpression;
     switch (expression.functionName) {
       case 'intToString':
         functionName = ENCODED_FUNCTION_NAME_INT_TO_STRING;
         calledFunctionType = HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_STRING_TYPE);
-        returnCollector = { name: this.allocateTemporaryVariable(), type: HIR_STRING_TYPE };
-        finalExpression = HIR_VARIABLE(returnCollector.name, HIR_STRING_TYPE);
+        returnCollector = this.allocateTemporaryVariable();
+        finalExpression = HIR_VARIABLE(returnCollector, HIR_STRING_TYPE);
         break;
       case 'stringToInt':
         functionName = ENCODED_FUNCTION_NAME_STRING_TO_INT;
         calledFunctionType = HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE);
-        returnCollector = { name: this.allocateTemporaryVariable(), type: HIR_INT_TYPE };
-        finalExpression = HIR_VARIABLE(returnCollector.name, HIR_INT_TYPE);
+        returnCollector = this.allocateTemporaryVariable();
+        finalExpression = HIR_VARIABLE(returnCollector, HIR_INT_TYPE);
         break;
       case 'println':
         functionName = ENCODED_FUNCTION_NAME_PRINTLN;
@@ -478,6 +477,7 @@ class HighIRExpressionLoweringManager {
       HIR_FUNCTION_CALL({
         functionExpression: HIR_NAME(functionName, calledFunctionType),
         functionArguments: [loweredArgument],
+        returnType: calledFunctionType.returnType,
         returnCollector,
       })
     );
@@ -515,9 +515,8 @@ class HighIRExpressionLoweringManager {
               loweredStatements
             );
           }),
-          returnCollector: isVoidReturn
-            ? undefined
-            : { name: returnCollectorName, type: functionTypeWithoutContext.returnType },
+          returnType: functionTypeWithoutContext.returnType,
+          returnCollector: isVoidReturn ? undefined : returnCollectorName,
         });
         break;
       }
@@ -551,9 +550,8 @@ class HighIRExpressionLoweringManager {
               );
             }),
           ],
-          returnCollector: isVoidReturn
-            ? undefined
-            : { name: returnCollectorName, type: functionTypeWithoutContext.returnType },
+          returnType: functionTypeWithoutContext.returnType,
+          returnCollector: returnCollectorName,
         });
         break;
       }
@@ -642,9 +640,8 @@ class HighIRExpressionLoweringManager {
           HIR_FUNCTION_CALL({
             functionExpression: s1FunctionExpression,
             functionArguments: loweredFunctionArguments,
-            returnCollector: isVoidReturn
-              ? undefined
-              : { name: resultTempB1, type: functionTypeWithoutContext.returnType },
+            returnType: functionTypeWithoutContext.returnType,
+            returnCollector: isVoidReturn ? undefined : resultTempB1,
           })
         );
         const s2: HighIRStatement[] = [];
@@ -660,9 +657,8 @@ class HighIRExpressionLoweringManager {
               HIR_VARIABLE(contextTemp, HIR_ANY_TYPE),
               ...loweredFunctionArguments,
             ],
-            returnCollector: isVoidReturn
-              ? undefined
-              : { name: resultTempB2, type: functionTypeWithoutContext.returnType },
+            returnType: functionTypeWithoutContext.returnType,
+            returnCollector: isVoidReturn ? undefined : resultTempB2,
           })
         );
         const finalAssignment = isVoidReturn
@@ -798,7 +794,8 @@ class HighIRExpressionLoweringManager {
               HIR_FUNCTION_TYPE([HIR_STRING_TYPE, HIR_STRING_TYPE], HIR_STRING_TYPE)
             ),
             functionArguments: [loweredE1, loweredE2],
-            returnCollector: { name: returnCollectorName, type: HIR_STRING_TYPE },
+            returnType: HIR_STRING_TYPE,
+            returnCollector: returnCollectorName,
           })
         );
         return {

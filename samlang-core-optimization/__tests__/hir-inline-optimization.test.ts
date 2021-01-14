@@ -56,6 +56,7 @@ it('estimateFunctionInlineCost test', () => {
             HIR_VARIABLE('b1', HIR_INT_TYPE),
             HIR_VARIABLE('b3', HIR_INT_TYPE),
           ],
+          returnType: HIR_INT_TYPE,
         }),
         HIR_CAST({
           name: 'ss',
@@ -178,7 +179,8 @@ it('optimizeFunctionsByInlining test 1', () => {
                   HIR_VARIABLE('n1', HIR_INT_TYPE),
                   HIR_VARIABLE('acc1', HIR_INT_TYPE),
                 ],
-                returnCollector: { name: 'v', type: HIR_INT_TYPE },
+                returnType: HIR_INT_TYPE,
+                returnCollector: 'v',
               }),
             ],
             finalAssignment: {
@@ -199,6 +201,7 @@ it('optimizeFunctionsByInlining test 1', () => {
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('loop', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
             functionArguments: [],
+            returnType: HIR_INT_TYPE,
           }),
           HIR_RETURN(HIR_ZERO),
         ],
@@ -211,6 +214,7 @@ it('optimizeFunctionsByInlining test 1', () => {
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('bb', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
             functionArguments: [],
+            returnType: HIR_INT_TYPE,
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME(
@@ -218,10 +222,12 @@ it('optimizeFunctionsByInlining test 1', () => {
               HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE)
             ),
             functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE)],
+            returnType: HIR_INT_TYPE,
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_VARIABLE('a', HIR_INT_TYPE),
             functionArguments: [],
+            returnType: HIR_INT_TYPE,
           }),
           ...Array.from(new Array(10).keys()).map(() =>
             HIR_FUNCTION_CALL({
@@ -230,6 +236,7 @@ it('optimizeFunctionsByInlining test 1', () => {
                 HIR_FUNCTION_TYPE([], HIR_INT_TYPE)
               ),
               functionArguments: [],
+              returnType: HIR_INT_TYPE,
             })
           ),
         ],
@@ -369,6 +376,7 @@ it('optimizeFunctionsByInlining test 2', () => {
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
                 functionArguments: [],
+                returnType: HIR_INT_TYPE,
               }),
             ],
           }),
@@ -428,6 +436,7 @@ it('optimizeFunctionsByInlining test 3', () => {
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
                 functionArguments: [],
+                returnType: HIR_INT_TYPE,
               }),
             ],
             s2: [HIR_CAST({ name: 'a', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
@@ -488,6 +497,7 @@ it('optimizeFunctionsByInlining test 4', () => {
               HIR_FUNCTION_CALL({
                 functionExpression: HIR_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
                 functionArguments: [],
+                returnType: HIR_INT_TYPE,
               }),
             ],
             s2: [HIR_CAST({ name: 'a', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
@@ -562,6 +572,7 @@ it('optimizeFunctionsByInlining test 5', () => {
               HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE)
             ),
             functionArguments: [HIR_ONE, HIR_ZERO],
+            returnType: HIR_INT_TYPE,
           }),
         ],
       },
@@ -594,6 +605,7 @@ it('optimizeFunctionsByInlining test 6', () => {
                   HIR_FUNCTION_CALL({
                     functionExpression: HIR_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
                     functionArguments: [],
+                    returnType: HIR_INT_TYPE,
                   }),
                 ],
               },
@@ -683,6 +695,7 @@ it('optimizeFunctionsByInlining test 7', () => {
                   HIR_FUNCTION_CALL({
                     functionExpression: HIR_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
                     functionArguments: [],
+                    returnType: HIR_INT_TYPE,
                   }),
                 ],
               },

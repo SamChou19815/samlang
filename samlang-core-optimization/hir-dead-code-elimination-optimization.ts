@@ -24,7 +24,7 @@ const optimizeHighIRStatement = (
       return [statement];
     case 'HighIRFunctionCallStatement': {
       const returnCollector =
-        statement.returnCollector != null && set.has(statement.returnCollector.name)
+        statement.returnCollector != null && set.has(statement.returnCollector)
           ? statement.returnCollector
           : undefined;
       collectUseFromExpression(statement.functionExpression);

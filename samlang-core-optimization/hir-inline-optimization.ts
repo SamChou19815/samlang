@@ -120,10 +120,8 @@ const inlineRewriteForStatement = (
         ...statement,
         functionExpression,
         functionArguments,
-        returnCollector: {
-          name: bindWithMangledName(statement.returnCollector.name, statement.returnCollector.type),
-          type: statement.returnCollector.type,
-        },
+        returnType: statement.returnType,
+        returnCollector: bindWithMangledName(statement.returnCollector, statement.returnType),
       };
     }
 
@@ -253,7 +251,7 @@ const performInlineRewriteOnFunction = (
   const rewrite = (statement: HighIRStatement): readonly HighIRStatement[] => {
     switch (statement.__type__) {
       case 'HighIRFunctionCallStatement': {
-        const { functionExpression, functionArguments, returnCollector } = statement;
+        const { functionExpression, functionArguments, returnType, returnCollector } = statement;
         if (functionExpression.__type__ !== 'HighIRNameExpression') return [statement];
         const functionName = functionExpression.name;
         if (!functionsThatCanBeInlined.has(functionName)) return [statement];
@@ -270,7 +268,14 @@ const performInlineRewriteOnFunction = (
         });
         // Inline step 2: Add in body code and change return statements
         return mainBodyStatementsOfFunctionToBeInlined
-          .map((it) => inlineRewriteForStatement(temporaryPrefix, context, returnCollector, it))
+          .map((it) =>
+            inlineRewriteForStatement(
+              temporaryPrefix,
+              context,
+              returnCollector != null ? { name: returnCollector, type: returnType } : undefined,
+              it
+            )
+          )
           .filter(isNotNull);
       }
       case 'HighIRIfElseStatement':

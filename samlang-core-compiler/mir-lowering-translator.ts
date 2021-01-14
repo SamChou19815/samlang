@@ -76,7 +76,7 @@ class MidIRLoweringManager {
             lowerHIRExpressionToMIRExpression(statement.functionExpression),
             statement.functionArguments.map(lowerHIRExpressionToMIRExpression),
             statement.returnCollector != null
-              ? mangleVariableForMIR(statement.returnCollector.name)
+              ? mangleVariableForMIR(statement.returnCollector)
               : undefined
           ),
         ];

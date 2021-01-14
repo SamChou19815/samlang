@@ -58,7 +58,8 @@ export interface HighIRFunctionCallStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRFunctionCallStatement';
   readonly functionExpression: HighIRExpression;
   readonly functionArguments: readonly HighIRExpression[];
-  readonly returnCollector?: { readonly name: string; readonly type: HighIRType };
+  readonly returnType: HighIRType;
+  readonly returnCollector?: string;
 }
 
 export interface HighIRIfElseStatement extends BaseHighIRStatement {
@@ -218,11 +219,13 @@ export const HIR_INDEX_ACCESS = ({
 export const HIR_FUNCTION_CALL = ({
   functionExpression,
   functionArguments,
+  returnType,
   returnCollector,
 }: ConstructorArgumentObject<HighIRFunctionCallStatement>): HighIRFunctionCallStatement => ({
   __type__: 'HighIRFunctionCallStatement',
   functionExpression,
   functionArguments,
+  returnType,
   returnCollector,
 });
 
@@ -315,7 +318,7 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         const argumentString = s.functionArguments.map(debugPrintHighIRExpression).join(', ');
         const collectorString =
           s.returnCollector != null
-            ? `let ${s.returnCollector.name}: ${prettyPrintHighIRType(s.returnCollector.type)} = `
+            ? `let ${s.returnCollector}: ${prettyPrintHighIRType(s.returnType)} = `
             : '';
         collector.push(
           '  '.repeat(level),

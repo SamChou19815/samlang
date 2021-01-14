@@ -6,7 +6,6 @@ import {
   debugPrintHighIRStatement,
   HIR_ZERO,
   HIR_ONE,
-  HIR_INT,
   HIR_NAME,
   HIR_VARIABLE,
   HIR_INDEX_ACCESS,
@@ -15,7 +14,6 @@ import {
   HIR_IF_ELSE,
   HIR_SWITCH,
   HIR_CAST,
-  HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_BOOL_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
@@ -48,6 +46,7 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on if-else st
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('fff', HIR_INT_TYPE),
             functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE), HIR_VARIABLE('ddd', HIR_INT_TYPE)],
+            returnType: HIR_INT_TYPE,
           }),
         ],
         s2: [
@@ -64,6 +63,7 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on if-else st
               HIR_VARIABLE('fd', HIR_INT_TYPE),
               HIR_VARIABLE('eee', HIR_INT_TYPE),
             ],
+            returnType: HIR_INT_TYPE,
           }),
           HIR_RETURN(HIR_ZERO),
         ],
@@ -105,6 +105,7 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on switch sta
                   HIR_VARIABLE('a', HIR_INT_TYPE),
                   HIR_VARIABLE('ddd', HIR_INT_TYPE),
                 ],
+                returnType: HIR_INT_TYPE,
               }),
             ],
           },
@@ -124,6 +125,7 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on switch sta
                   HIR_VARIABLE('fd', HIR_INT_TYPE),
                   HIR_VARIABLE('eee', HIR_INT_TYPE),
                 ],
+                returnType: HIR_INT_TYPE,
               }),
               HIR_RETURN(HIR_ZERO),
             ],
@@ -144,6 +146,7 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on switch sta
                   HIR_VARIABLE('gg', HIR_INT_TYPE),
                   HIR_VARIABLE('fff', HIR_INT_TYPE),
                 ],
+                returnType: HIR_INT_TYPE,
               }),
               HIR_RETURN(HIR_ZERO),
             ],
