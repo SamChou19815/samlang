@@ -51,7 +51,7 @@ const assertStatementLoweringWorks = (
   assertLoweringWorks(
     { name: 'testFunction', parameters: [], type: HIR_FUNCTION_TYPE([], INT), body: statements },
     `define i64 @testFunction() local_unnamed_addr nounwind {
-l_testFunction_0_START:
+l0_start:
 ${expectedString}
 }`,
     globalStrings
@@ -84,7 +84,7 @@ it('prettyPrintLLVMFunction works for base expressions 2/n', () => {
       body: [HIR_RETURN(HIR_VARIABLE('bar', INT))],
     },
     `define i64 @foo(i64 %bar) local_unnamed_addr nounwind {
-l_foo_0_START:
+l0_start:
   ret i64 %bar
 }`
   );
@@ -174,14 +174,14 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 1/n', () => {
       }),
     ],
     `  %bb = icmp eq i64 %t, 2
-  br i1 %bb, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
-l_testFunction_1_if_else_true_label:
+  br i1 %bb, label %l1_if_else_true, label %l2_if_else_false
+l1_if_else_true:
   call i64 @foo() nounwind
-  br label %l_testFunction_3_if_else_end_label
-l_testFunction_2_if_else_false_label:
+  br label %l3_if_else_end
+l2_if_else_false:
   call i64 @bar() nounwind
-  br label %l_testFunction_3_if_else_end_label
-l_testFunction_3_if_else_end_label:`
+  br label %l3_if_else_end
+l3_if_else_end:`
   );
 });
 
@@ -214,15 +214,15 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
         },
       }),
     ],
-    `  br i1 %bbb, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
-l_testFunction_1_if_else_true_label:
+    `  br i1 %bbb, label %l1_if_else_true, label %l2_if_else_false
+l1_if_else_true:
   %b1 = call i64 @foo() nounwind
-  br label %l_testFunction_3_if_else_end_label
-l_testFunction_2_if_else_false_label:
+  br label %l3_if_else_end
+l2_if_else_false:
   %b2 = call i64 @bar() nounwind
-  br label %l_testFunction_3_if_else_end_label
-l_testFunction_3_if_else_end_label:
-  %ma = phi i64 [ %b1, %l_testFunction_1_if_else_true_label ], [ %b2, %l_testFunction_2_if_else_false_label ]`
+  br label %l3_if_else_end
+l3_if_else_end:
+  %ma = phi i64 [ %b1, %l1_if_else_true ], [ %b2, %l2_if_else_false ]`
   );
 });
 
@@ -274,23 +274,23 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
         },
       }),
     ],
-    `  br i1 %bbb, label %l_testFunction_1_if_else_true_label, label %l_testFunction_2_if_else_false_label
-l_testFunction_1_if_else_true_label:
+    `  br i1 %bbb, label %l1_if_else_true, label %l2_if_else_false
+l1_if_else_true:
   %b1 = call i64 @foo() nounwind
-  br label %l_testFunction_3_if_else_end_label
-l_testFunction_2_if_else_false_label:
-  br i1 %bbb, label %l_testFunction_4_if_else_true_label, label %l_testFunction_5_if_else_false_label
-l_testFunction_4_if_else_true_label:
+  br label %l3_if_else_end
+l2_if_else_false:
+  br i1 %bbb, label %l4_if_else_true, label %l5_if_else_false
+l4_if_else_true:
   %b2 = call i64 @foo() nounwind
-  br label %l_testFunction_6_if_else_end_label
-l_testFunction_5_if_else_false_label:
+  br label %l6_if_else_end
+l5_if_else_false:
   %b3 = call i64 @bar() nounwind
-  br label %l_testFunction_6_if_else_end_label
-l_testFunction_6_if_else_end_label:
-  %ma_nested = phi i64 [ %b2, %l_testFunction_4_if_else_true_label ], [ %b3, %l_testFunction_5_if_else_false_label ]
-  br label %l_testFunction_3_if_else_end_label
-l_testFunction_3_if_else_end_label:
-  %ma = phi i64 [ %b1, %l_testFunction_1_if_else_true_label ], [ %ma_nested, %l_testFunction_6_if_else_end_label ]`
+  br label %l6_if_else_end
+l6_if_else_end:
+  %ma_nested = phi i64 [ %b2, %l4_if_else_true ], [ %b3, %l5_if_else_false ]
+  br label %l3_if_else_end
+l3_if_else_end:
+  %ma = phi i64 [ %b1, %l1_if_else_true ], [ %ma_nested, %l6_if_else_end ]`
   );
 });
 
@@ -323,14 +323,14 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 1/n', () => {
         ],
       }),
     ],
-    `  switch i64 %c, label %l_testFunction_3_match_case_1 [ i64 2, label %l_testFunction_2_match_case_0 i64 2, label %l_testFunction_3_match_case_1 ]
-l_testFunction_2_match_case_0:
+    `  switch i64 %c, label %l3_match_case_1 [ i64 2, label %l2_match_case_0 i64 2, label %l3_match_case_1 ]
+l2_match_case_0:
   call i64 @bar() nounwind
-  br label %l_testFunction_1_match_end
-l_testFunction_3_match_case_1:
+  br label %l1_match_end
+l3_match_case_1:
   call i64 @bar() nounwind
-  br label %l_testFunction_1_match_end
-l_testFunction_1_match_end:`
+  br label %l1_match_end
+l1_match_end:`
   );
 });
 
@@ -347,15 +347,15 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 2/n', () => {
         finalAssignment: { name: 'ma', type: INT, branchValues: [HIR_ZERO, HIR_ZERO, HIR_ZERO] },
       }),
     ],
-    `  switch i64 %c, label %l_testFunction_4_match_case_2 [ i64 1, label %l_testFunction_2_match_case_0 i64 0, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]
-l_testFunction_2_match_case_0:
-  br label %l_testFunction_1_match_end
-l_testFunction_3_match_case_1:
-  br label %l_testFunction_1_match_end
-l_testFunction_4_match_case_2:
-  br label %l_testFunction_1_match_end
-l_testFunction_1_match_end:
-  %ma = phi i64 [ 0, %l_testFunction_2_match_case_0 ], [ 0, %l_testFunction_3_match_case_1 ], [ 0, %l_testFunction_4_match_case_2 ]`
+    `  switch i64 %c, label %l4_match_case_2 [ i64 1, label %l2_match_case_0 i64 0, label %l3_match_case_1 i64 2, label %l4_match_case_2 ]
+l2_match_case_0:
+  br label %l1_match_end
+l3_match_case_1:
+  br label %l1_match_end
+l4_match_case_2:
+  br label %l1_match_end
+l1_match_end:
+  %ma = phi i64 [ 0, %l2_match_case_0 ], [ 0, %l3_match_case_1 ], [ 0, %l4_match_case_2 ]`
   );
 });
 
@@ -386,16 +386,16 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 3/n', () => {
         },
       }),
     ],
-    `  switch i64 %c, label %l_testFunction_4_match_case_2 [ i64 1, label %l_testFunction_2_match_case_0 i64 0, label %l_testFunction_3_match_case_1 i64 2, label %l_testFunction_4_match_case_2 ]
-l_testFunction_2_match_case_0:
-  br label %l_testFunction_1_match_end
-l_testFunction_3_match_case_1:
-  br label %l_testFunction_1_match_end
-l_testFunction_4_match_case_2:
+    `  switch i64 %c, label %l4_match_case_2 [ i64 1, label %l2_match_case_0 i64 0, label %l3_match_case_1 i64 2, label %l4_match_case_2 ]
+l2_match_case_0:
+  br label %l1_match_end
+l3_match_case_1:
+  br label %l1_match_end
+l4_match_case_2:
   %b2 = call i64 @foo() nounwind
-  br label %l_testFunction_1_match_end
-l_testFunction_1_match_end:
-  %ma = phi i64 [ 0, %l_testFunction_2_match_case_0 ], [ 0, %l_testFunction_3_match_case_1 ], [ %b2, %l_testFunction_4_match_case_2 ]`
+  br label %l1_match_end
+l1_match_end:
+  %ma = phi i64 [ 0, %l2_match_case_0 ], [ 0, %l3_match_case_1 ], [ %b2, %l4_match_case_2 ]`
   );
 });
 
@@ -408,12 +408,12 @@ it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 1/n', () => {
         expressionList: [HIR_ZERO, HIR_ZERO],
       }),
     ],
-    `  %_temp_0_struct_pointer_raw = call i64* @_builtin_malloc(i64 16) nounwind
-  %s = bitcast i64* %_temp_0_struct_pointer_raw to { i64, i64 }*
-  %_temp_1_struct_value_pointer_0 = getelementptr { i64, i64 }, { i64, i64 }* %s, i32 0, i32 0
-  store i64 0, i64* %_temp_1_struct_value_pointer_0
-  %_temp_2_struct_value_pointer_1 = getelementptr { i64, i64 }, { i64, i64 }* %s, i32 0, i32 1
-  store i64 0, i64* %_temp_2_struct_value_pointer_1`
+    `  %_temp_0_struct_ptr_raw = call i64* @_builtin_malloc(i64 16) nounwind
+  %s = bitcast i64* %_temp_0_struct_ptr_raw to { i64, i64 }*
+  %_temp_1_struct_ptr_0 = getelementptr { i64, i64 }, { i64, i64 }* %s, i32 0, i32 0
+  store i64 0, i64* %_temp_1_struct_ptr_0
+  %_temp_2_struct_ptr_1 = getelementptr { i64, i64 }, { i64, i64 }* %s, i32 0, i32 1
+  store i64 0, i64* %_temp_2_struct_ptr_1`
   );
 });
 
@@ -426,12 +426,12 @@ it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 2/n', () => {
         expressionList: [HIR_ZERO, HIR_ZERO],
       }),
     ],
-    `  %_temp_0_struct_pointer_raw = call i64* @_builtin_malloc(i64 16) nounwind
-  %s = bitcast i64* %_temp_0_struct_pointer_raw to %Foo*
-  %_temp_1_struct_value_pointer_0 = getelementptr %Foo, %Foo* %s, i32 0, i32 0
-  store i64 0, i64* %_temp_1_struct_value_pointer_0
-  %_temp_2_struct_value_pointer_1 = getelementptr %Foo, %Foo* %s, i32 0, i32 1
-  store i64 0, i64* %_temp_2_struct_value_pointer_1`
+    `  %_temp_0_struct_ptr_raw = call i64* @_builtin_malloc(i64 16) nounwind
+  %s = bitcast i64* %_temp_0_struct_ptr_raw to %Foo*
+  %_temp_1_struct_ptr_0 = getelementptr %Foo, %Foo* %s, i32 0, i32 0
+  store i64 0, i64* %_temp_1_struct_ptr_0
+  %_temp_2_struct_ptr_1 = getelementptr %Foo, %Foo* %s, i32 0, i32 1
+  store i64 0, i64* %_temp_2_struct_ptr_1`
   );
 });
 
@@ -484,7 +484,7 @@ declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 @ss = private unnamed_addr constant [2 x i64] [i64 1, i64 83], align 8
 %A = type { i64, i64 }
 define i64 @test() local_unnamed_addr nounwind {
-l_test_0_START:
+l0_start:
   %_temp_0_string_name_cast = bitcast [2 x i64]* @ss to i64*
   call i64 @println(i64* %_temp_0_string_name_cast) nounwind
   %_temp_1_string_name_cast = bitcast [2 x i64]* @ss to i64*
