@@ -30,7 +30,7 @@ code under the `out` directory.
 - Type Inference
 - First Class Functions
 - Pattern Matching
-- Produce Native X86 Machine Code
+- Produce Optimized LLVM IR
 
 ## Planned Language Features
 
