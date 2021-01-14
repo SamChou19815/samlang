@@ -1,7 +1,7 @@
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
-import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
+import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import { LLVMModule, prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import {
   compileSamlangSourcesToHighIRSources,
@@ -9,7 +9,7 @@ import {
 } from 'samlang-core-compiler';
 import interpretLLVMModule from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
-import optimizeHighIRFunctions from 'samlang-core-optimization';
+import optimizeHighIRModule from 'samlang-core-optimization';
 import { prettyPrintHighIRModuleAsJS } from 'samlang-core-printer';
 // eslint-disable-next-line import/no-internal-modules
 import { createPrettierDocumentFromHighIRModule } from 'samlang-core-printer/printer-js';
@@ -56,9 +56,7 @@ const highIRBaseTestCases: readonly HighIRTestCase[] = (() => {
 
   return runnableSamlangProgramTestCases.map(({ testCaseName, expectedStandardOut }) => {
     const highIRModule = checkNotNull(hirSources.get(new ModuleReference([testCaseName])));
-    const optimizedFunctions = optimizeHighIRFunctions(highIRModule.functions);
-    const compilationUnit = { ...highIRModule, functions: optimizedFunctions };
-    return { testCaseName, expectedStandardOut, compilationUnit };
+    return { testCaseName, expectedStandardOut, compilationUnit: highIRModule };
   });
 })();
 
@@ -70,10 +68,10 @@ const highIRModuleToJSCode = (highIRModule: HighIRModule): string =>
 
 const testHighIROptimizerResult = (
   testCase: HighIRTestCase,
-  optimizer: (compilationUnit: readonly HighIRFunction[]) => readonly HighIRFunction[]
+  optimizer: (compilationUnit: HighIRModule) => HighIRModule
 ): void => {
   const unoptimized = testCase.compilationUnit;
-  const optimized = { ...testCase.compilationUnit, functions: optimizer(unoptimized.functions) };
+  const optimized = optimizer(unoptimized);
   // eslint-disable-next-line no-eval
   const interpretationResult = eval(highIRModuleToJSCode(optimized));
   if (interpretationResult !== testCase.expectedStandardOut) {
@@ -95,25 +93,25 @@ highIRBaseTestCases.forEach((testCase) => {
 
     it(`HIR[lvn]: ${testCase.testCaseName}`, () => {
       testHighIROptimizerResult(testCase, (it) =>
-        optimizeHighIRFunctions(it, { doesPerformLocalValueNumbering: true })
+        optimizeHighIRModule(it, { doesPerformLocalValueNumbering: true })
       );
     });
 
     it(`HIR[cse]: ${testCase.testCaseName}`, () => {
       testHighIROptimizerResult(testCase, (it) =>
-        optimizeHighIRFunctions(it, { doesPerformCommonSubExpressionElimination: true })
+        optimizeHighIRModule(it, { doesPerformCommonSubExpressionElimination: true })
       );
     });
 
     it(`HIR[in]: ${testCase.testCaseName}`, () => {
       testHighIROptimizerResult(testCase, (it) =>
-        optimizeHighIRFunctions(it, { doesPerformInlining: true })
+        optimizeHighIRModule(it, { doesPerformInlining: true })
       );
     });
   }
 
   it(`HIR[all]: ${testCase.testCaseName}`, () => {
-    testHighIROptimizerResult(testCase, (it) => optimizeHighIRFunctions(it));
+    testHighIROptimizerResult(testCase, (it) => optimizeHighIRModule(it));
   });
 });
 
@@ -122,11 +120,7 @@ const llvmBaseTestCases: readonly LLVMIRTestCase[] = (() => {
 
   return runnableSamlangProgramTestCases.map(({ testCaseName, expectedStandardOut }) => {
     const highIRModule = checkNotNull(hirSources.get(new ModuleReference([testCaseName])));
-    const optimizedFunctions = optimizeHighIRFunctions(highIRModule.functions);
-    const compilationUnit = lowerHighIRModuleToLLVMModule({
-      ...highIRModule,
-      functions: optimizedFunctions,
-    });
+    const compilationUnit = lowerHighIRModuleToLLVMModule(optimizeHighIRModule(highIRModule));
     return { testCaseName, expectedStandardOut, compilationUnit };
   });
 })();
