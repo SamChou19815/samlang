@@ -32,7 +32,7 @@ import type {
   SamlangModule,
   TypeDefinition,
 } from 'samlang-core-ast/samlang-toplevel';
-import optimizeHighIRModuleByEliminatingUnusedOnes from 'samlang-core-optimization/hir-unused-name-elimination-optimization';
+import optimizeHighIRModule, { OptimizationConfiguration } from 'samlang-core-optimization';
 import { checkNotNull, HashMap, hashMapOf } from 'samlang-core-utils';
 
 const compileTypeDefinition = (
@@ -107,7 +107,8 @@ const compileFunction = (
 };
 
 const compileSamlangSourcesToHighIRSources = (
-  sources: Sources<SamlangModule>
+  sources: Sources<SamlangModule>,
+  optimizationConfiguration?: OptimizationConfiguration
 ): Sources<HighIRModule> => {
   const compiledTypeDefinitions: HighIRTypeDefinition[] = [];
   const compiledFunctions: HighIRFunction[] = [];
@@ -183,11 +184,14 @@ const compileSamlangSourcesToHighIRSources = (
     ];
     irSources.set(
       moduleReference,
-      optimizeHighIRModuleByEliminatingUnusedOnes({
-        globalVariables: stringManager.globalVariables,
-        typeDefinitions: compiledTypeDefinitions,
-        functions: allFunctions,
-      })
+      optimizeHighIRModule(
+        {
+          globalVariables: stringManager.globalVariables,
+          typeDefinitions: compiledTypeDefinitions,
+          functions: allFunctions,
+        },
+        optimizationConfiguration
+      )
     );
   });
   return irSources;

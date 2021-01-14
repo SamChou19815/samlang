@@ -9,7 +9,7 @@ import OptimizationResourceAllocator from './optimization-resource-allocator';
 import type { HighIRStatement } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
 
-type OptimizationConfiguration = {
+export type OptimizationConfiguration = {
   doesPerformLocalValueNumbering?: boolean;
   doesPerformCommonSubExpressionElimination?: boolean;
   doesPerformInlining?: boolean;
