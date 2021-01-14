@@ -5,11 +5,14 @@ import { join, normalize, dirname, resolve, relative, sep } from 'path';
 import type { SamlangProjectConfiguration } from './configuration';
 
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { compileSamlangSourcesToHighIRSources } from 'samlang-core-compiler';
+import {
+  compileSamlangSourcesToHighIRSources,
+  lowerHighIRModuleToLLVMModule,
+} from 'samlang-core-compiler';
 import { prettyPrintHighIRModuleAsJS } from 'samlang-core-printer';
-import { lowerSourcesToLLVMModules } from 'samlang-core-services';
 
 const walk = (startPath: string, visitor: (file: string) => void): void => {
   const recursiveVisit = (path: string): void => {
@@ -45,24 +48,21 @@ export const collectSources = ({
   return sources;
 };
 
-export const compileToJS = (sources: Sources<SamlangModule>, outputDirectory: string): void => {
-  const programs = compileSamlangSourcesToHighIRSources(sources);
-  const paths: string[] = [];
-  programs.forEach((program, moduleReference) => {
+const compileToJS = (sources: Sources<HighIRModule>, outputDirectory: string): void => {
+  sources.forEach((program, moduleReference) => {
     const outputJSFilePath = join(outputDirectory, `${moduleReference}.js`);
     mkdirSync(dirname(outputJSFilePath), { recursive: true });
     writeFileSync(outputJSFilePath, prettyPrintHighIRModuleAsJS(/* availableWidth */ 100, program));
-    paths.push(outputJSFilePath);
   });
 };
 
 const compileToLLVMModules = (
-  sources: Sources<SamlangModule>,
+  sources: Sources<HighIRModule>,
   outputDirectory: string
 ): readonly string[] => {
-  const modules = lowerSourcesToLLVMModules(sources);
   const paths: string[] = [];
-  modules.forEach((llvmModule, moduleReference) => {
+  sources.forEach((highIRModule, moduleReference) => {
+    const llvmModule = lowerHighIRModuleToLLVMModule(highIRModule);
     const outputLLVMModuleFilePath = join(outputDirectory, `${moduleReference}.ll`);
     mkdirSync(dirname(outputLLVMModuleFilePath), { recursive: true });
     writeFileSync(outputLLVMModuleFilePath, prettyPrintLLVMModule(llvmModule));
@@ -78,11 +78,15 @@ const shellOut = (program: string, ...programArguments: readonly string[]): bool
   return spawnSync(program, programArguments, { shell: true, stdio: 'inherit' }).status === 0;
 };
 
-export const compileToExecutablesViaLLVM = (
+export const compileEverything = (
   sources: Sources<SamlangModule>,
   outputDirectory: string
 ): boolean => {
-  const modulePaths = compileToLLVMModules(sources, outputDirectory);
+  const highIRSources = compileSamlangSourcesToHighIRSources(sources);
+
+  compileToJS(highIRSources, outputDirectory);
+
+  const modulePaths = compileToLLVMModules(highIRSources, outputDirectory);
   const assembleResults = modulePaths.map((modulePath) => {
     const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
     const bitcodePath = `${outputProgramPath}.bc`;
