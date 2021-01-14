@@ -6,44 +6,99 @@ import {
 } from '../dataflow-analysis';
 
 import {
-  MidIRStatement,
-  MIR_ONE,
-  MIR_ZERO,
-  MIR_CONST,
-  MIR_TEMP,
-  MIR_OP,
-  MIR_MOVE_TEMP,
-  MIR_CALL_FUNCTION,
-  MIR_CJUMP_FALLTHROUGH,
-  MIR_JUMP,
-  MIR_LABEL,
-  MIR_RETURN,
-} from 'samlang-core-ast/mir-nodes';
+  LLVMInstruction,
+  LLVM_INT,
+  LLVM_VARIABLE,
+  LLVM_BINARY,
+  LLVM_CAST,
+  LLVM_CALL,
+  LLVM_JUMP,
+  LLVM_CJUMP,
+  LLVM_LABEL,
+  LLVM_RETURN,
+  LLVM_INT_TYPE,
+} from 'samlang-core-ast/llvm-nodes';
 
-const exampleProgram: readonly MidIRStatement[] = [
-  /* 00 */ MIR_MOVE_TEMP('x', MIR_ONE),
-  /* 01 */ MIR_CJUMP_FALLTHROUGH(MIR_OP('<', MIR_TEMP('x'), MIR_CONST(2)), 'true'),
-  /* 02 */ MIR_CALL_FUNCTION(MIR_ONE, [], 'y'),
-  /* 03 */ MIR_MOVE_TEMP('z1', MIR_OP('+', MIR_ONE, MIR_ZERO)),
-  /* 04 */ MIR_MOVE_TEMP('z2', MIR_OP('!=', MIR_ONE, MIR_ZERO)),
-  /* 05 */ MIR_JUMP('end'),
-  /* 06 */ MIR_MOVE_TEMP('unreachable_statement', MIR_ONE),
-  /* 07 */ MIR_LABEL('true'),
-  /* 08 */ MIR_MOVE_TEMP('y', MIR_OP('+', MIR_ONE, MIR_TEMP('x'))),
-  /* 09 */ MIR_MOVE_TEMP('z1', MIR_OP('*', MIR_ONE, MIR_ONE)),
-  /* 10 */ MIR_MOVE_TEMP('z2', MIR_OP('/', MIR_ONE, MIR_ZERO)),
-  /* 11 */ MIR_LABEL('end'),
-  /* 12 */ MIR_MOVE_TEMP('a', MIR_OP('!=', MIR_TEMP('y'), MIR_TEMP('y'))),
-  /* 13 */ MIR_RETURN(MIR_ONE),
-  /* 14 */ MIR_RETURN(MIR_ONE),
+const ZERO = LLVM_INT(0);
+const ONE = LLVM_INT(1);
+
+const exampleProgram: readonly LLVMInstruction[] = [
+  /* 00 */ LLVM_CAST({
+    resultVariable: 'x',
+    resultType: LLVM_INT_TYPE,
+    sourceValue: ONE,
+    sourceType: LLVM_INT_TYPE,
+  }),
+  /* 01 */ LLVM_CJUMP(LLVM_VARIABLE('x'), 'fall', 'true'),
+  /* 02 */ LLVM_LABEL('fall'),
+  /* 03 */ LLVM_CALL({
+    functionName: ONE,
+    functionArguments: [],
+    resultType: LLVM_INT_TYPE,
+    resultVariable: 'y',
+  }),
+  /* 04 */ LLVM_BINARY({
+    resultVariable: 'z1',
+    operandType: LLVM_INT_TYPE,
+    operator: '+',
+    v1: ONE,
+    v2: ZERO,
+  }),
+  /* 05 */ LLVM_BINARY({
+    resultVariable: 'z2',
+    operandType: LLVM_INT_TYPE,
+    operator: '!=',
+    v1: ONE,
+    v2: ZERO,
+  }),
+  /* 06 */ LLVM_JUMP('end'),
+  /* 07 */ LLVM_CAST({
+    resultVariable: 'unreachable_statement',
+    resultType: LLVM_INT_TYPE,
+    sourceValue: ONE,
+    sourceType: LLVM_INT_TYPE,
+  }),
+  /* 08 */ LLVM_LABEL('true'),
+  /* 09 */ LLVM_BINARY({
+    resultVariable: 'y',
+    operandType: LLVM_INT_TYPE,
+    operator: '+',
+    v1: ONE,
+    v2: LLVM_VARIABLE('x'),
+  }),
+  /* 10 */ LLVM_BINARY({
+    resultVariable: 'z1',
+    operandType: LLVM_INT_TYPE,
+    operator: '*',
+    v1: ONE,
+    v2: ONE,
+  }),
+  /* 11 */ LLVM_BINARY({
+    resultVariable: 'z2',
+    operandType: LLVM_INT_TYPE,
+    operator: '/',
+    v1: ONE,
+    v2: ZERO,
+  }),
+  /* 12 */ LLVM_JUMP('end'),
+  /* 13 */ LLVM_LABEL('end'),
+  /* 14 */ LLVM_BINARY({
+    resultVariable: 'a',
+    operandType: LLVM_INT_TYPE,
+    operator: '!=',
+    v1: LLVM_VARIABLE('y'),
+    v2: LLVM_VARIABLE('y'),
+  }),
+  /* 15 */ LLVM_RETURN(ONE, LLVM_INT_TYPE),
+  /* 16 */ LLVM_RETURN(ONE, LLVM_INT_TYPE),
 ];
 
 /**
  * This operator only does one thing: make every node `true` (aka visited.),
  * except potentially the entry point.
  */
-const commonOperator: DataflowAnalysisGraphOperator<MidIRStatement, boolean> = {
-  graphConstructor: ControlFlowGraph.fromMidIRStatements,
+const commonOperator: DataflowAnalysisGraphOperator<LLVMInstruction, boolean> = {
+  graphConstructor: ControlFlowGraph.fromLLVMInstructions,
   edgeInitializer: () => false,
   joinEdges: (edges) => edges.some((it) => it),
   computeNewEdge: () => true,
@@ -53,14 +108,14 @@ const commonOperator: DataflowAnalysisGraphOperator<MidIRStatement, boolean> = {
 it('backward analysis runner test.', () => {
   expect(runBackwardDataflowAnalysis(exampleProgram, commonOperator)).toEqual({
     inEdges: (() => {
-      const result = Array.from(new Array(15).keys()).map(() => true);
-      result[14] = false;
+      const result = Array.from(new Array(17).keys()).map(() => true);
+      result[16] = false;
       return result;
     })(),
     outEdges: (() => {
-      const result = Array.from(new Array(15).keys()).map(() => true);
-      result[13] = false;
-      result[14] = false;
+      const result = Array.from(new Array(17).keys()).map(() => true);
+      result[15] = false;
+      result[16] = false;
       return result;
     })(),
   });
@@ -75,15 +130,17 @@ it('forward analysis runner test.', () => {
       /* 03 */ true,
       /* 04 */ true,
       /* 05 */ true,
-      /* 06 */ false,
-      /* 07 */ true,
+      /* 06 */ true,
+      /* 07 */ false,
       /* 08 */ true,
       /* 09 */ true,
       /* 10 */ true,
       /* 11 */ true,
       /* 12 */ true,
       /* 13 */ true,
-      /* 14 */ false,
+      /* 14 */ true,
+      /* 15 */ true,
+      /* 16 */ false,
     ],
     outEdges: [
       /* 00 */ true,
@@ -92,15 +149,17 @@ it('forward analysis runner test.', () => {
       /* 03 */ true,
       /* 04 */ true,
       /* 05 */ true,
-      /* 06 */ false,
-      /* 07 */ true,
+      /* 06 */ true,
+      /* 07 */ false,
       /* 08 */ true,
       /* 09 */ true,
       /* 10 */ true,
       /* 11 */ true,
       /* 12 */ true,
       /* 13 */ true,
-      /* 14 */ false,
+      /* 14 */ true,
+      /* 15 */ true,
+      /* 16 */ false,
     ],
   });
 });

@@ -12,28 +12,6 @@ import {
   LLVM_SWITCH,
   LLVM_RETURN,
 } from 'samlang-core-ast/llvm-nodes';
-import {
-  MidIRStatement,
-  MIR_ONE,
-  MIR_TEMP,
-  MIR_MOVE_TEMP,
-  MIR_JUMP,
-  MIR_CJUMP_FALLTHROUGH,
-  MIR_LABEL,
-  MIR_RETURN,
-} from 'samlang-core-ast/mir-nodes';
-
-const midIRStatements: readonly MidIRStatement[] = [
-  MIR_LABEL('foo'),
-  MIR_LABEL('bar'),
-  MIR_MOVE_TEMP('a', MIR_TEMP('b')),
-  MIR_CJUMP_FALLTHROUGH(MIR_TEMP(''), 'baz'),
-  MIR_JUMP('baz'),
-  MIR_LABEL('baz'),
-  MIR_RETURN(MIR_ONE),
-  MIR_RETURN(MIR_ONE),
-];
-const midIRGraph = ControlFlowGraph.fromMidIRStatements(midIRStatements);
 
 const llvmStatements: readonly LLVMInstruction[] = [
   LLVM_LABEL('foo'),
@@ -55,16 +33,7 @@ const llvmStatements: readonly LLVMInstruction[] = [
 const llvmGraph = ControlFlowGraph.fromLLVMInstructions(llvmStatements);
 
 it('Control flow graph should preserve order.', () => {
-  expect(midIRGraph.nodes.map((it) => it.instruction)).toEqual(midIRStatements);
   expect(llvmGraph.nodes.map((it) => it.instruction)).toEqual(llvmStatements);
-});
-
-it('DFS should hit all the reachable statements for midIRGraph.', () => {
-  const visited = new Set<number>();
-  midIRGraph.dfs((node) => {
-    visited.add(node.id);
-  });
-  expect(Array.from(visited.values()).sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6]);
 });
 
 it('DFS should hit all the reachable statements for llvmGraph.', () => {
@@ -76,28 +45,11 @@ it('DFS should hit all the reachable statements for llvmGraph.', () => {
 });
 
 it('DFS should not be able to get to unreachable statements.', () => {
-  midIRGraph.dfs((node) => {
-    if (node.id === 7) {
-      fail('We should not hit the final unreachable return.');
-    }
-  });
   llvmGraph.dfs((node) => {
     if (node.id > 7) {
       fail('We should not hit the final unreachable return.');
     }
   });
-});
-
-it('getParentIds is correct for midIRGraph.', () => {
-  const parentOf = (id: number) =>
-    Array.from(midIRGraph.getParentIds(id).values()).sort((a, b) => a - b);
-  expect(parentOf(0)).toEqual([]);
-  expect(parentOf(1)).toEqual([0]);
-  expect(parentOf(2)).toEqual([1]);
-  expect(parentOf(3)).toEqual([2]);
-  expect(parentOf(4)).toEqual([3]);
-  expect(parentOf(5)).toEqual([3, 4]);
-  expect(parentOf(6)).toEqual([5]);
 });
 
 it('getParentIds is correct for llvmGraph.', () => {
