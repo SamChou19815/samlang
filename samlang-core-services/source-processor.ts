@@ -7,6 +7,7 @@ import {
   lowerHighIRModuleToLLVMModule,
 } from 'samlang-core-compiler';
 import { CompileTimeError, createGlobalErrorCollector } from 'samlang-core-errors';
+import { optimizeHighIRFunctions } from 'samlang-core-optimization';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import { hashMapOf, isNotNull } from 'samlang-core-utils';
 
@@ -60,6 +61,12 @@ export const lowerSourcesToLLVMModules = (sources: Sources<SamlangModule>): Sour
       .entries()
       .map(
         ([moduleReference, highIRModule]) =>
-          [moduleReference, lowerHighIRModuleToLLVMModule(highIRModule)] as const
+          [
+            moduleReference,
+            lowerHighIRModuleToLLVMModule({
+              ...highIRModule,
+              functions: optimizeHighIRFunctions(highIRModule.functions),
+            }),
+          ] as const
       )
   );
