@@ -7,7 +7,10 @@ import {
 import type { IROperator } from 'samlang-core-ast/common-operators';
 import {
   HighIRExpression,
+  HighIRBinaryStatement,
   HighIRStatement,
+  HighIRVariableExpression,
+  HighIRIntLiteralExpression,
   debugPrintHighIRExpression,
   HIR_ZERO,
   HIR_ONE,
@@ -17,9 +20,10 @@ import {
   HIR_STRUCT_INITIALIZATION,
   HIR_CAST,
   HIR_RETURN,
+  HIR_INT,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
-import { Long, checkNotNull } from 'samlang-core-utils';
+import { error, Long, checkNotNull, LocalStackedContext } from 'samlang-core-utils';
 
 const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
 
@@ -52,9 +56,47 @@ const evaluateBinaryExpression = (operator: IROperator, v1: Long, v2: Long): Lon
   }
 };
 
+type BinaryExpression = {
+  readonly operator: IROperator;
+  readonly e1: HighIRVariableExpression;
+  readonly e2: HighIRIntLiteralExpression;
+};
+
+const mergeBinaryExpression = (
+  outerOperator: IROperator,
+  inner: BinaryExpression,
+  outerConstant: Long
+): BinaryExpression | null => {
+  switch (outerOperator) {
+    case '+':
+      if (inner.operator === '+') {
+        return {
+          operator: '+',
+          e1: inner.e1,
+          e2: HIR_INT(inner.e2.value.add(outerConstant)),
+        };
+      }
+      return null;
+    case '*':
+      if (inner.operator === '*') {
+        return {
+          operator: '*',
+          e1: inner.e1,
+          e2: HIR_INT(inner.e2.value.multiply(outerConstant)),
+        };
+      }
+      return null;
+    default:
+      return null;
+  }
+};
+
+class BinaryExpressionContext extends LocalStackedContext<BinaryExpression> {}
+
 const optimizeHighIRStatement = (
   statement: HighIRStatement,
-  context: LocalValueContextForOptimization
+  valueContext: LocalValueContextForOptimization,
+  binaryExpressionContext: BinaryExpressionContext
 ): readonly HighIRStatement[] => {
   const optimizeExpression = (expression: HighIRExpression): HighIRExpression => {
     switch (expression.__type__) {
@@ -62,11 +104,14 @@ const optimizeHighIRStatement = (
       case 'HighIRNameExpression':
         return expression;
       case 'HighIRVariableExpression': {
-        const binded = context.getLocalValueType(expression.name);
+        const binded = valueContext.getLocalValueType(expression.name);
         return binded ?? expression;
       }
     }
   };
+
+  const withNestedScope = <T>(block: () => T): T =>
+    valueContext.withNestedScope(() => binaryExpressionContext.withNestedScope(block));
 
   switch (statement.__type__) {
     case 'HighIRIndexAccessStatement': {
@@ -82,21 +127,21 @@ const optimizeHighIRStatement = (
         const v2 = e2.value;
         if (v2.equals(0)) {
           if (operator === '+') {
-            context.bind(name, e1);
+            valueContext.bind(name, e1);
             return [];
           }
           if (operator === '*') {
-            context.bind(name, HIR_ZERO);
+            valueContext.bind(name, HIR_ZERO);
             return [];
           }
         }
         if (v2.equals(1)) {
           if (operator === '%') {
-            context.bind(name, HIR_ZERO);
+            valueContext.bind(name, HIR_ZERO);
             return [];
           }
           if (operator === '*' || operator === '/') {
-            context.bind(name, e1);
+            valueContext.bind(name, e1);
             return [];
           }
         }
@@ -104,7 +149,7 @@ const optimizeHighIRStatement = (
           const v1 = e1.value;
           const value = evaluateBinaryExpression(operator, v1, v2);
           if (value != null) {
-            context.bind(name, {
+            valueContext.bind(name, {
               __type__: 'HighIRIntLiteralExpression',
               value,
               type: statement.type,
@@ -119,17 +164,44 @@ const optimizeHighIRStatement = (
         e1.name === e2.name
       ) {
         if (operator === '-' || operator === '%') {
-          context.bind(name, HIR_ZERO);
+          valueContext.bind(name, HIR_ZERO);
           return [];
         }
         if (operator === '/') {
-          context.bind(name, HIR_ONE);
+          valueContext.bind(name, HIR_ONE);
           return [];
         }
       }
-      return [
-        { ...statement, ...createHighIRFlexibleOrderOperatorNode(statement.operator, e1, e2) },
-      ];
+      const partiallyOptimizedStatement: HighIRBinaryStatement = {
+        ...statement,
+        ...createHighIRFlexibleOrderOperatorNode(statement.operator, e1, e2),
+      };
+      if (
+        partiallyOptimizedStatement.e1.__type__ === 'HighIRVariableExpression' &&
+        partiallyOptimizedStatement.e2.__type__ === 'HighIRIntLiteralExpression'
+      ) {
+        const existingBinaryForE1 = binaryExpressionContext.getLocalValueType(
+          partiallyOptimizedStatement.e1.name
+        );
+        if (existingBinaryForE1 != null) {
+          const merged = mergeBinaryExpression(
+            partiallyOptimizedStatement.operator,
+            existingBinaryForE1,
+            partiallyOptimizedStatement.e2.value
+          );
+          if (merged != null) return [{ ...partiallyOptimizedStatement, ...merged }];
+        }
+        binaryExpressionContext.addLocalValueType(
+          partiallyOptimizedStatement.name,
+          {
+            operator: partiallyOptimizedStatement.operator,
+            e1: partiallyOptimizedStatement.e1,
+            e2: partiallyOptimizedStatement.e2,
+          },
+          error
+        );
+      }
+      return [partiallyOptimizedStatement];
     }
 
     case 'HighIRFunctionCallStatement':
@@ -148,34 +220,50 @@ const optimizeHighIRStatement = (
         const isTrue = Boolean(booleanExpression.value.toInt());
         if (statement.finalAssignment == null) {
           return isTrue
-            ? optimizeHighIRStatements(statement.s1, context)
-            : optimizeHighIRStatements(statement.s2, context);
+            ? optimizeHighIRStatements(statement.s1, valueContext, binaryExpressionContext)
+            : optimizeHighIRStatements(statement.s2, valueContext, binaryExpressionContext);
         }
         const final = statement.finalAssignment;
-        const statements = optimizeHighIRStatements(isTrue ? statement.s1 : statement.s2, context);
-        context.bind(
+        const statements = optimizeHighIRStatements(
+          isTrue ? statement.s1 : statement.s2,
+          valueContext,
+          binaryExpressionContext
+        );
+        valueContext.bind(
           final.name,
           isTrue ? optimizeExpression(final.branch1Value) : optimizeExpression(final.branch2Value)
         );
         return statements;
       }
       if (statement.finalAssignment == null) {
-        const s1 = context.withNestedScope(() => optimizeHighIRStatements(statement.s1, context));
-        const s2 = context.withNestedScope(() => optimizeHighIRStatements(statement.s2, context));
+        const s1 = withNestedScope(() =>
+          optimizeHighIRStatements(statement.s1, valueContext, binaryExpressionContext)
+        );
+        const s2 = withNestedScope(() =>
+          optimizeHighIRStatements(statement.s2, valueContext, binaryExpressionContext)
+        );
         return ifElseOrNull(HIR_IF_ELSE({ booleanExpression, s1, s2 }));
       }
       const final = statement.finalAssignment;
-      const [s1, branch1Value] = context.withNestedScope(() => {
-        const statements = optimizeHighIRStatements(statement.s1, context);
+      const [s1, branch1Value] = withNestedScope(() => {
+        const statements = optimizeHighIRStatements(
+          statement.s1,
+          valueContext,
+          binaryExpressionContext
+        );
         return [statements, optimizeExpression(final.branch1Value)] as const;
       });
-      const [s2, branch2Value] = context.withNestedScope(() => {
-        const statements = optimizeHighIRStatements(statement.s2, context);
+      const [s2, branch2Value] = withNestedScope(() => {
+        const statements = optimizeHighIRStatements(
+          statement.s2,
+          valueContext,
+          binaryExpressionContext
+        );
         return [statements, optimizeExpression(final.branch2Value)] as const;
       });
       if (debugPrintHighIRExpression(branch1Value) === debugPrintHighIRExpression(branch2Value)) {
         const ifElse = ifElseOrNull(HIR_IF_ELSE({ booleanExpression, s1, s2 }));
-        context.bind(final.name, branch1Value);
+        valueContext.bind(final.name, branch1Value);
         return ifElse;
       }
       return [
@@ -193,13 +281,19 @@ const optimizeHighIRStatement = (
       if (final == null) {
         const cases = statement.cases.map(({ caseNumber, statements }) => ({
           caseNumber,
-          statements: context.withNestedScope(() => optimizeHighIRStatements(statements, context)),
+          statements: withNestedScope(() =>
+            optimizeHighIRStatements(statements, valueContext, binaryExpressionContext)
+          ),
         }));
         return switchOrNull(HIR_SWITCH({ caseVariable: statement.caseVariable, cases }));
       }
       const casesWithValue = statement.cases.map(({ caseNumber, statements }, i) =>
-        context.withNestedScope(() => {
-          const newStatements = optimizeHighIRStatements(statements, context);
+        withNestedScope(() => {
+          const newStatements = optimizeHighIRStatements(
+            statements,
+            valueContext,
+            binaryExpressionContext
+          );
           const finalValue = optimizeExpression(checkNotNull(final.branchValues[i]));
           return { caseNumber, newStatements, finalValue };
         })
@@ -216,7 +310,7 @@ const optimizeHighIRStatement = (
             })),
           })
         );
-        context.bind(final.name, checkNotNull(casesWithValue[0]).finalValue);
+        valueContext.bind(final.name, checkNotNull(casesWithValue[0]).finalValue);
         return switchStatement;
       }
       return [
@@ -256,12 +350,18 @@ const optimizeHighIRStatement = (
 
 const optimizeHighIRStatements = (
   statements: readonly HighIRStatement[],
-  context: LocalValueContextForOptimization
-): readonly HighIRStatement[] => statements.flatMap((it) => optimizeHighIRStatement(it, context));
+  valueContext: LocalValueContextForOptimization,
+  binaryExpressionContext: BinaryExpressionContext
+): readonly HighIRStatement[] =>
+  statements.flatMap((it) => optimizeHighIRStatement(it, valueContext, binaryExpressionContext));
 
 const optimizeHighIRStatementsByConditionalConstantPropagation = (
   statements: readonly HighIRStatement[]
 ): readonly HighIRStatement[] =>
-  optimizeHighIRStatements(statements, new LocalValueContextForOptimization());
+  optimizeHighIRStatements(
+    statements,
+    new LocalValueContextForOptimization(),
+    new LocalStackedContext()
+  );
 
 export default optimizeHighIRStatementsByConditionalConstantPropagation;

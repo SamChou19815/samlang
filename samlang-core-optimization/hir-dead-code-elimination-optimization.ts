@@ -59,6 +59,7 @@ const optimizeHighIRStatement = (
       return switchStatement;
     }
     case 'HighIRCastStatement':
+      if (!set.has(statement.name)) return [];
       collectUseFromExpression(statement.assignedExpression);
       return [statement];
     case 'HighIRStructInitializationStatement':
