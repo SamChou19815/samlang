@@ -56,7 +56,9 @@ const optimizeFunctionForRounds = (
   }
   return {
     ...highIRFunction,
-    body: optimizeHighIRStatementsByConditionalConstantPropagation(statements),
+    body: optimizeHighIRStatementsByDeadCodeElimination(
+      optimizeHighIRStatementsByConditionalConstantPropagation(statements)
+    ),
   };
 };
 

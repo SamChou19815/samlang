@@ -298,21 +298,21 @@ it('optimizeFunctionsByInlining test 1', () => {
     if (_inline_0_c: bool) {
       _inline_0_fa = (acc1: int);
     } else {
-      let _inline_0_n1: int = (n1: int) + -1;
+      let _inline_0_n1: int = (n: int) + -2;
       let _inline_0_acc1: int = (n1: int) * (acc1: int);
       let _inline_4_c: bool = (_inline_0_n1: int) == 0;
       let _inline_4_fa: int;
       if (_inline_4_c: bool) {
         _inline_4_fa = (_inline_0_acc1: int);
       } else {
-        let _inline_4_n1: int = (_inline_0_n1: int) + -1;
+        let _inline_4_n1: int = (n: int) + -3;
         let _inline_4_acc1: int = (_inline_0_n1: int) * (_inline_0_acc1: int);
         let _inline_4__inline_0_c: bool = (_inline_4_n1: int) == 0;
         let _inline_4__inline_0_fa: int;
         if (_inline_4__inline_0_c: bool) {
           _inline_4__inline_0_fa = (_inline_4_acc1: int);
         } else {
-          let _inline_4__inline_0_n1: int = (_inline_4_n1: int) + -1;
+          let _inline_4__inline_0_n1: int = (n: int) + -4;
           let _inline_4__inline_0_acc1: int = (_inline_4_n1: int) * (_inline_4_acc1: int);
           let _inline_4__inline_0_v: int = factorial((_inline_4__inline_0_n1: int), (_inline_4__inline_0_acc1: int));
           _inline_4__inline_0_fa = (_inline_4__inline_0_v: int);
