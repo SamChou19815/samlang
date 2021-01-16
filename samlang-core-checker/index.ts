@@ -17,7 +17,6 @@ import {
   mapOf,
   setOf,
   hashSetOf,
-  assertNotNull,
 } from 'samlang-core-utils';
 
 /**
@@ -53,10 +52,9 @@ export class DependencyTracker {
     const oldUsedModules = this.forwardDependency.get(moduleReference);
     if (oldUsedModules != null) {
       oldUsedModules.forEach((oldUsedModule) => {
-        const reverseDependencySet = this.reverseDependency.get(oldUsedModule);
+        const reverseDependencySet = this.reverseDependency.forceGet(oldUsedModule);
         // If things are consistent:
         //   then if B is A's forward dependency, then A must be B's reverse dependency.
-        assertNotNull(reverseDependencySet);
         reverseDependencySet.delete(moduleReference);
       });
     }
@@ -137,8 +135,7 @@ export const typeCheckSingleModuleSource_EXPOSED_FOR_TESTING = (
   const checkedModule = typeCheckSources(
     mapOf([moduleReference, samlangModule]),
     errorCollector
-  )[0].get(moduleReference);
-  assertNotNull(checkedModule);
+  )[0].forceGet(moduleReference);
   return checkedModule;
 };
 

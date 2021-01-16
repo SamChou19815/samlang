@@ -3,7 +3,6 @@ import { checkSources } from '../source-processor';
 
 import { Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
-import { assertNotNull } from 'samlang-core-utils';
 
 it('LocationLookupTest self consistent test', () => {
   const lookup = new LocationLookup<string>();
@@ -114,7 +113,6 @@ it('SamlangExpressionLocationLookupBuilder test', () => {
 
   const lookup = new LocationLookup<SamlangExpression>();
   const builder = new SamlangExpressionLocationLookupBuilder(lookup);
-  const samlangModule = checkedSources.get(moduleReference);
-  assertNotNull(samlangModule);
+  const samlangModule = checkedSources.forceGet(moduleReference);
   builder.rebuild(moduleReference, samlangModule);
 });

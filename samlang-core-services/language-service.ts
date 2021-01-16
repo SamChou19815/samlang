@@ -33,7 +33,7 @@ import {
   createGlobalErrorCollector,
 } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
-import { HashMap, hashMapOf, hashSetOf, assertNotNull, isNotNull } from 'samlang-core-utils';
+import { HashMap, hashMapOf, hashSetOf, isNotNull, checkNotNull } from 'samlang-core-utils';
 
 export class LanguageServiceState {
   private readonly dependencyTracker: DependencyTracker = new DependencyTracker();
@@ -338,19 +338,16 @@ export class LanguageServices {
     moduleReference: ModuleReference,
     className: string
   ): readonly [ModuleReference, ClassDefinition] {
-    const samlangModule = this.state.getCheckedModule(moduleReference);
-    assertNotNull(samlangModule);
+    const samlangModule = checkNotNull(this.state.getCheckedModule(moduleReference));
     const { imports, classes } = samlangModule;
     for (let i = 0; i < classes.length; i += 1) {
-      const samlangClass = classes[i];
-      assertNotNull(samlangClass);
+      const samlangClass = checkNotNull(classes[i]);
       if (samlangClass.name === className) {
         return [moduleReference, samlangClass];
       }
     }
     for (let i = 0; i < imports.length; i += 1) {
-      const oneImport = imports[i];
-      assertNotNull(oneImport);
+      const oneImport = checkNotNull(imports[i]);
       const { importedMembers, importedModule } = oneImport;
       if (importedMembers.some((it) => it[0] === className)) {
         return this.getClassDefinition(importedModule, className);
@@ -384,15 +381,16 @@ export class LanguageServices {
       }
     });
     if (definingStatement != null) return definingStatement.range;
-    const range = statements
-      .map((statement) =>
-        LanguageServices.findLocalVariableDefinitionDefiningStatementRange(
-          statement.assignedExpression,
-          variableName
+    const range = checkNotNull(
+      statements
+        .map((statement) =>
+          LanguageServices.findLocalVariableDefinitionDefiningStatementRange(
+            statement.assignedExpression,
+            variableName
+          )
         )
-      )
-      .filter(isNotNull)[0];
-    assertNotNull(range);
+        .filter(isNotNull)[0]
+    );
     return range;
   }
 
@@ -405,8 +403,9 @@ export class LanguageServices {
       moduleReference,
       className
     );
-    const matchingMember = classDefinition.members.find((it) => it.name === memberName);
-    assertNotNull(matchingMember);
+    const matchingMember = checkNotNull(
+      classDefinition.members.find((it) => it.name === memberName)
+    );
     return { moduleReference: moduleReferenceOfClass, range: matchingMember.range };
   }
 
@@ -428,7 +427,6 @@ export class LanguageServices {
       // istanbul ignore next
       if (relevantClassType == null) return [];
       return Object.entries(relevantClassType.functions).map(([name, typeInformation]) => {
-        assertNotNull(typeInformation);
         return LanguageServices.getCompletionResultFromTypeInformation(
           name,
           typeInformation,
@@ -458,7 +456,6 @@ export class LanguageServices {
     const isInsideClass = classOfExpression === type.identifier;
     if (isInsideClass && relevantClassType.typeDefinition?.type === 'object') {
       Object.entries(relevantClassType.typeDefinition.mappings).forEach(([name, fieldType]) => {
-        assertNotNull(fieldType);
         completionResults.push({
           name,
           text: name,
@@ -469,7 +466,6 @@ export class LanguageServices {
       });
     }
     Object.entries(relevantClassType.methods).forEach(([name, typeInformation]) => {
-      assertNotNull(typeInformation);
       // istanbul ignore next
       if (isInsideClass || typeInformation.isPublic) {
         completionResults.push(

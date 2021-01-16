@@ -20,7 +20,7 @@ import type {
   WildcardPatternContext,
 } from 'samlang-core-parser-generated/PLParser';
 import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
-import { isNotNull, assertNotNull } from 'samlang-core-utils';
+import { isNotNull, checkNotNull } from 'samlang-core-utils';
 
 class FieldNameBuilder
   extends AbstractParseTreeVisitor<ObjectPatternDestucturedName | null>
@@ -30,17 +30,14 @@ class FieldNameBuilder
 
   visitRawVar = (ctx: RawVarContext): ObjectPatternDestucturedName | null => {
     const symbol = ctx.LowerId().symbol;
-    const fieldName = symbol.text;
-    assertNotNull(fieldName);
+    const fieldName = checkNotNull(symbol.text);
     return { fieldName, fieldOrder: -1, type: UndecidedTypes.next(), range: tokenRange(symbol) };
   };
 
   visitRenamedVar = (ctx: RenamedVarContext): ObjectPatternDestucturedName | null => {
     const idList = ctx.LowerId();
-    const fieldName = idList[0]?.symbol.text;
-    assertNotNull(fieldName);
-    const alias = idList[1]?.symbol.text;
-    assertNotNull(alias);
+    const fieldName = checkNotNull(idList[0]?.symbol.text);
+    const alias = checkNotNull(idList[1]?.symbol.text);
     return {
       fieldName,
       fieldOrder: -1,

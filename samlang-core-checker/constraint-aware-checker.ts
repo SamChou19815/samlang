@@ -2,7 +2,7 @@ import type TypeResolution from './type-resolution';
 
 import { Type, UndecidedType, isTheSameType, Range } from 'samlang-core-ast/common-nodes';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { checkNotNull } from 'samlang-core-utils';
+import { zip } from 'samlang-core-utils';
 
 const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
   const meetWithResolution = (type1: Type, type2: Type): Type => meet(type1, type2, resolution);
@@ -36,8 +36,8 @@ const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
             type: 'IdentifierType',
             moduleReference: t1.moduleReference,
             identifier: t1.identifier,
-            typeArguments: t1.typeArguments.map((type, index) =>
-              meetWithResolution(type, checkNotNull(t2.typeArguments[index]))
+            typeArguments: zip(t1.typeArguments, t2.typeArguments).map(([type1, type2]) =>
+              meetWithResolution(type1, type2)
             ),
           };
         default:
@@ -53,8 +53,8 @@ const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
           }
           return {
             type: 'TupleType',
-            mappings: t1.mappings.map((type, index) =>
-              meetWithResolution(type, checkNotNull(t2.mappings[index]))
+            mappings: zip(t1.mappings, t2.mappings).map(([type1, type2]) =>
+              meetWithResolution(type1, type2)
             ),
           };
         default:
@@ -69,8 +69,8 @@ const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
           if (t1.argumentTypes.length !== t2.argumentTypes.length) {
             throw new Error();
           }
-          const argumentTypes = t1.argumentTypes.map((type, index) =>
-            meetWithResolution(type, checkNotNull(t2.argumentTypes[index]))
+          const argumentTypes = zip(t1.argumentTypes, t2.argumentTypes).map(([type1, type2]) =>
+            meetWithResolution(type1, type2)
           );
           return { type: 'FunctionType', argumentTypes, returnType };
         }

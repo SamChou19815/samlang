@@ -18,7 +18,7 @@ import type {
   LLVMValue,
   LLVMLabelInstruction,
 } from 'samlang-core-ast/llvm-nodes';
-import { Long, checkNotNull } from 'samlang-core-utils';
+import { Long, checkNotNull, zip } from 'samlang-core-utils';
 
 class StackFrame {
   private variables = new Map<string, Long>();
@@ -184,8 +184,8 @@ const interpretLLVMFunction = (
   // istanbul ignore next
   if (functionArguments.length !== llvmFunction.parameters.length) throw new Error();
   const stackFrame = new StackFrame();
-  llvmFunction.parameters.forEach(({ parameterName }, index) => {
-    stackFrame.setLocalValue(parameterName, checkNotNull(functionArguments[index]));
+  zip(llvmFunction.parameters, functionArguments).forEach(([{ parameterName }, argument]) => {
+    stackFrame.setLocalValue(parameterName, argument);
   });
 
   let programCounter = 0;

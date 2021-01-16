@@ -1,7 +1,7 @@
 import typeResolver from './type-resolver';
 
 import type { UndecidedType, Type } from 'samlang-core-ast/common-nodes';
-import { assertNotNull, UnionFind } from 'samlang-core-utils';
+import { checkNotNull, UnionFind } from 'samlang-core-utils';
 
 /** A provider of type resolution to previously undecided types. */
 export interface ReadOnlyTypeResolution {
@@ -90,8 +90,7 @@ export default class TypeResolution implements ReadOnlyTypeResolution {
       // We need to refresh because we have more information.
       this.refreshKnownMappings();
       // Return the best knowledge we have.
-      const resolved = this.knownResolutions.get(rootOfUndecidedTypeIndex);
-      assertNotNull(resolved);
+      const resolved = checkNotNull(this.knownResolutions.get(rootOfUndecidedTypeIndex));
       return resolved;
     }
     return existingMapping;

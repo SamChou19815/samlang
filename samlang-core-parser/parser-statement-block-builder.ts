@@ -16,7 +16,7 @@ import type {
   ValStatementContext,
 } from 'samlang-core-parser-generated/PLParser';
 import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
-import { isNotNull, assertNotNull } from 'samlang-core-utils';
+import { isNotNull, checkNotNull } from 'samlang-core-utils';
 
 class StatementBuilder
   extends AbstractParseTreeVisitor<SamlangValStatement | null>
@@ -33,8 +33,7 @@ class StatementBuilder
 
   visitValStatement = (ctx: ValStatementContext): SamlangValStatement | null => {
     const expressionContext = ctx.expression();
-    const assignedExpression = this.expressionBuilder(expressionContext);
-    assertNotNull(assignedExpression);
+    const assignedExpression = checkNotNull(this.expressionBuilder(expressionContext));
 
     const patternContext = ctx.pattern();
     const pattern = patternContext.accept(patternBuilder) ?? {

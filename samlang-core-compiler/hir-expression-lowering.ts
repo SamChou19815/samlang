@@ -68,7 +68,7 @@ import type {
   LambdaExpression,
   StatementBlockExpression,
 } from 'samlang-core-ast/samlang-expressions';
-import { assertNotNull, checkNotNull, LocalStackedContext } from 'samlang-core-utils';
+import { checkNotNull, LocalStackedContext, zip } from 'samlang-core-utils';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -267,9 +267,12 @@ class HighIRExpressionLoweringManager {
     const loweredStatements: HighIRStatement[] = [];
     const tupleVariableName = this.allocateTemporaryVariable();
     const loweredTupleType = this.lowerType(expression.type) as HighIRStructType;
-    const loweredExpressions = expression.expressions.map((subExpression, i) =>
+    const loweredExpressions = zip(
+      expression.expressions,
+      loweredTupleType.mappings
+    ).map(([subExpression, tupleElementType]) =>
       this.lowerWithPotentialCast(
-        checkNotNull(loweredTupleType.mappings[i]),
+        tupleElementType,
         this.loweredAndAddStatements(subExpression, loweredStatements),
         loweredStatements
       )
@@ -295,20 +298,22 @@ class HighIRExpressionLoweringManager {
     const mappingsForIdentifierType = checkNotNull(
       this.typeDefinitionMapping[loweredIdentifierType.name]
     );
-    const loweredFields = expression.fieldDeclarations.map((fieldDeclaration, i) => {
-      const fieldExpression = fieldDeclaration.expression ?? {
-        __type__: 'VariableExpression',
-        range: fieldDeclaration.range,
-        precedence: 1,
-        type: fieldDeclaration.type,
-        name: fieldDeclaration.name,
-      };
-      return this.lowerWithPotentialCast(
-        checkNotNull(mappingsForIdentifierType[i]),
-        this.loweredAndAddStatements(fieldExpression, loweredStatements),
-        loweredStatements
-      );
-    });
+    const loweredFields = zip(expression.fieldDeclarations, mappingsForIdentifierType).map(
+      ([fieldDeclaration, fieldType]) => {
+        const fieldExpression = fieldDeclaration.expression ?? {
+          __type__: 'VariableExpression',
+          range: fieldDeclaration.range,
+          precedence: 1,
+          type: fieldDeclaration.type,
+          name: fieldDeclaration.name,
+        };
+        return this.lowerWithPotentialCast(
+          fieldType,
+          this.loweredAndAddStatements(fieldExpression, loweredStatements),
+          loweredStatements
+        );
+      }
+    );
     const structVariableName = this.allocateTemporaryVariable();
     loweredStatements.push(
       HIR_STRUCT_INITIALIZATION({
@@ -507,13 +512,12 @@ class HighIRExpressionLoweringManager {
         functionReturnCollectorType = functionTypeWithoutContext.returnType;
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME(functionName, functionTypeWithoutContext),
-          functionArguments: expression.functionArguments.map((oneArgument, i) => {
+          functionArguments: zip(
+            expression.functionArguments,
+            functionTypeWithoutContext.argumentTypes
+          ).map(([oneArgument, argumentType]) => {
             const loweredArgument = this.loweredAndAddStatements(oneArgument, loweredStatements);
-            return this.lowerWithPotentialCast(
-              checkNotNull(functionTypeWithoutContext.argumentTypes[i]),
-              loweredArgument,
-              loweredStatements
-            );
+            return this.lowerWithPotentialCast(argumentType, loweredArgument, loweredStatements);
           }),
           returnType: functionTypeWithoutContext.returnType,
           returnCollector: isVoidReturn ? undefined : returnCollectorName,
@@ -541,14 +545,19 @@ class HighIRExpressionLoweringManager {
           ),
           functionArguments: [
             this.loweredAndAddStatements(functionExpression.expression, loweredStatements),
-            ...expression.functionArguments.map((oneArgument, i) => {
-              const loweredArgument = this.loweredAndAddStatements(oneArgument, loweredStatements);
-              return this.lowerWithPotentialCast(
-                checkNotNull(functionTypeWithoutContext.argumentTypes[i]),
-                loweredArgument,
-                loweredStatements
-              );
-            }),
+            ...zip(expression.functionArguments, functionTypeWithoutContext.argumentTypes).map(
+              ([oneArgument, argumentType]) => {
+                const loweredArgument = this.loweredAndAddStatements(
+                  oneArgument,
+                  loweredStatements
+                );
+                return this.lowerWithPotentialCast(
+                  argumentType,
+                  loweredArgument,
+                  loweredStatements
+                );
+              }
+            ),
           ],
           returnType: functionTypeWithoutContext.returnType,
           returnCollector: returnCollectorName,
@@ -572,8 +581,6 @@ class HighIRExpressionLoweringManager {
           sourceLevelFunctionTypeWithoutContext.argumentTypes.map((it) => this.lowerType(it)),
           this.lowerType(sourceLevelFunctionTypeWithoutContext.returnType)
         );
-        assertNotNull(functionTypeWithoutContext.argumentTypes);
-        assertNotNull(functionTypeWithoutContext.returnType);
 
         const loweredFunctionExpression = this.loweredAndAddStatements(
           functionExpression,
@@ -584,13 +591,12 @@ class HighIRExpressionLoweringManager {
           loweredFunctionExpression,
           loweredStatements
         );
-        const loweredFunctionArguments = expression.functionArguments.map((oneArgument, i) => {
+        const loweredFunctionArguments = zip(
+          expression.functionArguments,
+          functionTypeWithoutContext.argumentTypes
+        ).map(([oneArgument, argumentType]) => {
           const loweredArgument = this.loweredAndAddStatements(oneArgument, loweredStatements);
-          return this.lowerWithPotentialCast(
-            checkNotNull(functionTypeWithoutContext.argumentTypes[i]),
-            loweredArgument,
-            loweredStatements
-          );
+          return this.lowerWithPotentialCast(argumentType, loweredArgument, loweredStatements);
         });
         const functionTempRaw = this.allocateTemporaryVariable();
         const contextTemp = this.allocateTemporaryVariable();
@@ -1033,27 +1039,28 @@ class HighIRExpressionLoweringManager {
           case 'TuplePattern': {
             const mappingsForTupleType = (loweredAssignedExpression.type as HighIRStructType)
               .mappings;
-            pattern.destructedNames.forEach(({ name, type }, index) => {
-              if (name == null) {
-                return;
+            zip(pattern.destructedNames, mappingsForTupleType).forEach(
+              ([{ name, type }, extractedFieldType], index) => {
+                if (name == null) {
+                  return;
+                }
+                const expectedFieldType = this.lowerType(type);
+                const mangledName = this.getRenamedVariableForNesting(name, extractedFieldType);
+                loweredStatements.push(
+                  HIR_INDEX_ACCESS({
+                    name: mangledName,
+                    type: extractedFieldType,
+                    pointerExpression: loweredAssignedExpression,
+                    index,
+                  })
+                );
+                this.lowerWithPotentialCast(
+                  expectedFieldType,
+                  HIR_VARIABLE(mangledName, extractedFieldType),
+                  loweredStatements
+                );
               }
-              const expectedFieldType = this.lowerType(type);
-              const extractedFieldType = checkNotNull(mappingsForTupleType[index]);
-              const mangledName = this.getRenamedVariableForNesting(name, extractedFieldType);
-              loweredStatements.push(
-                HIR_INDEX_ACCESS({
-                  name: mangledName,
-                  type: extractedFieldType,
-                  pointerExpression: loweredAssignedExpression,
-                  index,
-                })
-              );
-              this.lowerWithPotentialCast(
-                expectedFieldType,
-                HIR_VARIABLE(mangledName, extractedFieldType),
-                loweredStatements
-              );
-            });
+            );
             break;
           }
           case 'ObjectPattern': {
@@ -1062,27 +1069,28 @@ class HighIRExpressionLoweringManager {
                 (loweredAssignedExpression.type as HighIRIdentifierType).name
               ]
             );
-            pattern.destructedNames.forEach(({ fieldName, fieldOrder, type, alias }) => {
-              const expectedFieldType = this.lowerType(type);
-              const extractedFieldType = checkNotNull(mappingsForIdentifierType[fieldOrder]);
-              const mangledName = this.getRenamedVariableForNesting(
-                alias ?? fieldName,
-                extractedFieldType
-              );
-              loweredStatements.push(
-                HIR_INDEX_ACCESS({
-                  name: mangledName,
-                  type: extractedFieldType,
-                  pointerExpression: loweredAssignedExpression,
-                  index: fieldOrder,
-                })
-              );
-              this.lowerWithPotentialCast(
-                expectedFieldType,
-                HIR_VARIABLE(mangledName, extractedFieldType),
-                loweredStatements
-              );
-            });
+            zip(pattern.destructedNames, mappingsForIdentifierType).forEach(
+              ([{ fieldName, fieldOrder, type, alias }, extractedFieldType]) => {
+                const expectedFieldType = this.lowerType(type);
+                const mangledName = this.getRenamedVariableForNesting(
+                  alias ?? fieldName,
+                  extractedFieldType
+                );
+                loweredStatements.push(
+                  HIR_INDEX_ACCESS({
+                    name: mangledName,
+                    type: extractedFieldType,
+                    pointerExpression: loweredAssignedExpression,
+                    index: fieldOrder,
+                  })
+                );
+                this.lowerWithPotentialCast(
+                  expectedFieldType,
+                  HIR_VARIABLE(mangledName, extractedFieldType),
+                  loweredStatements
+                );
+              }
+            );
             break;
           }
           case 'VariablePattern': {

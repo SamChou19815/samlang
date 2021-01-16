@@ -2,7 +2,7 @@
 
 import type ControlFlowGraph from './control-flow-graph';
 
-import { assertNotNull, checkNotNull } from 'samlang-core-utils';
+import { checkNotNull } from 'samlang-core-utils';
 
 /** Defines how to compute stuff on the graph. */
 export interface DataflowAnalysisGraphOperator<Instruction, DataEdge> {
@@ -41,15 +41,13 @@ export const runBackwardDataflowAnalysis = <Instruction, DataEdge>(
   });
 
   while (nodesStack.length > 0) {
-    const nodeId = nodesStack.pop();
-    assertNotNull(nodeId);
+    const nodeId = checkNotNull(nodesStack.pop());
     const newOutEdge = joinEdges(
       graph.getChildrenIds(nodeId).map((childId) => checkNotNull(inEdges[childId])),
       nodeId
     );
     outEdges[nodeId] = newOutEdge;
-    const oldInEdge = inEdges[nodeId];
-    assertNotNull(oldInEdge);
+    const oldInEdge = checkNotNull(inEdges[nodeId]);
     const newInEdge = computeNewEdge(newOutEdge, checkNotNull(instructions[nodeId]), nodeId);
     inEdges[nodeId] = newInEdge;
     if (!edgeDataEquals(oldInEdge, newInEdge)) {
@@ -84,15 +82,13 @@ export const runForwardDataflowAnalysis = <Instruction, DataEdge>(
   });
 
   while (nodesQueue.length > 0) {
-    const nodeId = nodesQueue.shift();
-    assertNotNull(nodeId);
+    const nodeId = checkNotNull(nodesQueue.shift());
     const newInEdge = joinEdges(
       Array.from(graph.getParentIds(nodeId)).map((parentId) => checkNotNull(outEdges[parentId])),
       nodeId
     );
     inEdges[nodeId] = newInEdge;
-    const oldOutEdge = outEdges[nodeId];
-    assertNotNull(oldOutEdge);
+    const oldOutEdge = checkNotNull(outEdges[nodeId]);
     const newOutEdge = computeNewEdge(newInEdge, checkNotNull(instructions[nodeId]), nodeId);
     outEdges[nodeId] = newOutEdge;
     if (!edgeDataEquals(oldOutEdge, newOutEdge)) {

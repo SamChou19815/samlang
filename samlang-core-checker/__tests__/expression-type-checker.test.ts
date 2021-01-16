@@ -27,7 +27,7 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText } from 'samlang-core-parser';
-import { Long, assertNotNull, hashMapOf, LocalStackedContext } from 'samlang-core-utils';
+import { Long, checkNotNull, hashMapOf, LocalStackedContext } from 'samlang-core-utils';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
 
@@ -115,12 +115,9 @@ const typeCheckInSandbox = (
   );
 
   // Parse
-  const parsedExpression = parseSamlangExpressionFromText(
-    source,
-    dummyModuleReference,
-    moduleErrorCollector
+  const parsedExpression = checkNotNull(
+    parseSamlangExpressionFromText(source, dummyModuleReference, moduleErrorCollector)
   );
-  assertNotNull(parsedExpression);
   expect(globalErrorCollector.getErrors()).toEqual([]);
 
   // Type Check

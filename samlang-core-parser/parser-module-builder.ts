@@ -8,7 +8,7 @@ import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import type { ModuleContext } from 'samlang-core-parser-generated/PLParser';
 import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
-import { isNotNull, assertNotNull } from 'samlang-core-utils';
+import { isNotNull, checkNotNull } from 'samlang-core-utils';
 
 export default class ModuleVisitor
   extends AbstractParseTreeVisitor<SamlangModule>
@@ -39,8 +39,7 @@ export default class ModuleVisitor
           .UpperId()
           .map((node) => {
             const symbol = node.symbol;
-            const name = symbol.text;
-            assertNotNull(name);
+            const name = checkNotNull(symbol.text);
             classSourceMap.set(name, importedModule);
             return [name, tokenRange(symbol)] as const;
           })

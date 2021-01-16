@@ -2,7 +2,7 @@ import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
 import type { HighIRIdentifierType } from './hir-types';
 
-import { checkNotNull, Long } from 'samlang-core-utils';
+import { Long, zip } from 'samlang-core-utils';
 
 export type LLVMPrimitiveType = { readonly __type__: 'PrimitiveType'; readonly type: 'i1' | 'i64' };
 export type LLVMStringType = { readonly __type__: 'StringType'; readonly length?: number };
@@ -61,8 +61,8 @@ export const isTheSameLLVMType = (t1: LLVMType, t2: LLVMType): boolean => {
       return (
         t2.__type__ === 'StructType' &&
         t1.mappings.length === t2.mappings.length &&
-        t1.mappings.every((t1Element, index) =>
-          isTheSameLLVMType(t1Element, checkNotNull(t2.mappings[index]))
+        zip(t1.mappings, t2.mappings).every(([t1Element, t2Element]) =>
+          isTheSameLLVMType(t1Element, t2Element)
         )
       );
     case 'FunctionType':
@@ -70,8 +70,8 @@ export const isTheSameLLVMType = (t1: LLVMType, t2: LLVMType): boolean => {
         t2.__type__ === 'FunctionType' &&
         isTheSameLLVMType(t1.returnType, t2.returnType) &&
         t1.argumentTypes.length === t2.argumentTypes.length &&
-        t1.argumentTypes.every((t1Argument, index) =>
-          isTheSameLLVMType(t1Argument, checkNotNull(t2.argumentTypes[index]))
+        zip(t1.argumentTypes, t2.argumentTypes).every(([t1Element, t2Element]) =>
+          isTheSameLLVMType(t1Element, t2Element)
         )
       );
   }

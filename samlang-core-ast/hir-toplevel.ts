@@ -7,7 +7,7 @@ import {
   HIR_STRUCT_TYPE,
 } from './hir-types';
 
-import { checkNotNull } from 'samlang-core-utils';
+import { zip } from 'samlang-core-utils';
 
 export interface HighIRTypeDefinition {
   readonly identifier: string;
@@ -33,11 +33,8 @@ export const debugPrintHighIRFunction = ({
   type: { argumentTypes, returnType },
   body: bodyStatements,
 }: HighIRFunction): string => {
-  const typedParameters = parameters
-    .map(
-      (parameter, index) =>
-        `${parameter}: ${prettyPrintHighIRType(checkNotNull(argumentTypes[index]))}`
-    )
+  const typedParameters = zip(parameters, argumentTypes)
+    .map(([parameter, parameterType]) => `${parameter}: ${prettyPrintHighIRType(parameterType)}`)
     .join(', ');
   const header = `function ${name}(${typedParameters}): ${prettyPrintHighIRType(returnType)} {`;
   const body = bodyStatements.map((it) => debugPrintHighIRStatement(it, 1)).join('\n');

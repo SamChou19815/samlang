@@ -10,7 +10,7 @@ import type {
   SamlangModule,
 } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { assertNotNull, isNotNull, LocalStackedContext } from 'samlang-core-utils';
+import { isNotNull, LocalStackedContext } from 'samlang-core-utils';
 
 export default class ModuleTypeChecker {
   constructor(
@@ -72,7 +72,6 @@ export default class ModuleTypeChecker {
       typeDefinition.range
     );
     Object.values(typeDefinition.mappings).forEach((type) => {
-      assertNotNull(type);
       validateType(
         type.type,
         accessibleGlobalTypingContext,

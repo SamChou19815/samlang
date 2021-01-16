@@ -10,7 +10,7 @@ import {
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
 import type { FieldType, TypeDefinition } from 'samlang-core-ast/samlang-toplevel';
-import { assertNotNull, checkNotNull, HashMap, ReadonlyHashMap } from 'samlang-core-utils';
+import { checkNotNull, HashMap, ReadonlyHashMap, zip } from 'samlang-core-utils';
 
 export interface MemberTypeInformation {
   readonly isPublic: boolean;
@@ -20,7 +20,7 @@ export interface MemberTypeInformation {
 
 export interface ClassTypingContext {
   readonly typeParameters: readonly string[];
-  readonly typeDefinition?: TypeDefinition;
+  readonly typeDefinition: TypeDefinition;
   readonly functions: Readonly<Record<string, MemberTypeInformation>>;
   readonly methods: Readonly<Record<string, MemberTypeInformation>>;
 }
@@ -89,11 +89,7 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
     }
     const fullyFixedType = replaceTypeIdentifier(
       partiallyFixedType,
-      Object.fromEntries(
-        classTypeParameters.map(
-          (parameter, index) => [parameter, checkNotNull(classTypeArguments[index])] as const
-        )
-      )
+      Object.fromEntries(zip(classTypeParameters, classTypeArguments))
     );
     return fullyFixedType as FunctionType;
   }
@@ -101,14 +97,13 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
   getCurrentClassTypeDefinition(): TypeDefinition & {
     readonly classTypeParameters: readonly string[];
   } {
-    const classTypingContext = this.getClassTypeInformation(
-      this.currentModuleReference,
-      this.currentClass
+    const classTypingContext = checkNotNull(
+      this.getClassTypeInformation(this.currentModuleReference, this.currentClass)
     );
-    assertNotNull(classTypingContext);
-    const definition = classTypingContext.typeDefinition;
-    assertNotNull(definition);
-    return { ...definition, classTypeParameters: classTypingContext.typeParameters };
+    return {
+      ...classTypingContext.typeDefinition,
+      classTypeParameters: classTypingContext.typeParameters,
+    };
   }
 
   /**
@@ -155,18 +150,13 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
       names,
       mappings: Object.fromEntries(
         Object.entries(nameMappings).map(([name, fieldType]) => {
-          assertNotNull(fieldType);
           return [
             name,
             {
               isPublic: fieldType.isPublic,
               type: replaceTypeIdentifier(
                 fieldType.type,
-                Object.fromEntries(
-                  classTypeParameters.map(
-                    (parameter, index) => [parameter, checkNotNull(typeArguments[index])] as const
-                  )
-                )
+                Object.fromEntries(zip(classTypeParameters, typeArguments))
               ),
             },
           ];
@@ -176,11 +166,9 @@ export class AccessibleGlobalTypingContext implements IdentifierTypeValidator {
   }
 
   get thisType(): IdentifierType {
-    const currentClassTypingContext = this.getClassTypeInformation(
-      this.currentModuleReference,
-      this.currentClass
+    const currentClassTypingContext = checkNotNull(
+      this.getClassTypeInformation(this.currentModuleReference, this.currentClass)
     );
-    assertNotNull(currentClassTypingContext);
     return identifierType(
       this.currentModuleReference,
       this.currentClass,

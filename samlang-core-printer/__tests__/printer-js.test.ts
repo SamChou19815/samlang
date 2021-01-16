@@ -37,7 +37,6 @@ import {
   HIR_FUNCTION_TYPE,
   HIR_BOOL_TYPE,
 } from 'samlang-core-ast/hir-types';
-import { assertNotNull } from 'samlang-core-utils';
 
 const highIRExpressionToString = (highIRExpression: HighIRExpression): string =>
   prettyPrintAccordingToPrettierAlgorithm(
@@ -104,7 +103,6 @@ it('compile hello world to JS integration test', () => {
       },
     ],
   };
-  assertNotNull(hirModule);
   expect(highIRModuleToJSString(100, hirModule)).toBe(
     `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
 const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => console.log(line);

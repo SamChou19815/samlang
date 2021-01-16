@@ -9,16 +9,17 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from 'samlang-core-parser';
-import { assertNotNull } from 'samlang-core-utils';
+import { checkNotNull } from 'samlang-core-utils';
 
 const reprintExpression = (rawSourceWithTypeAnnotation: string, width = 40): string => {
   const errorCollector = createGlobalErrorCollector();
-  const expression = parseSamlangExpressionFromText(
-    rawSourceWithTypeAnnotation,
-    ModuleReference.ROOT,
-    errorCollector.getModuleErrorCollector(ModuleReference.ROOT)
+  const expression = checkNotNull(
+    parseSamlangExpressionFromText(
+      rawSourceWithTypeAnnotation,
+      ModuleReference.ROOT,
+      errorCollector.getModuleErrorCollector(ModuleReference.ROOT)
+    )
   );
-  assertNotNull(expression);
   const errors = errorCollector.getErrors().map((it) => it.toString());
   expect(errors).toEqual([]);
   return prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(width, expression).trimEnd();

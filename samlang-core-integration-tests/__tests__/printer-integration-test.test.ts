@@ -4,7 +4,6 @@ import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { prettyPrintSamlangModule } from 'samlang-core-printer';
 import { checkSources } from 'samlang-core-services';
-import { assertNotNull } from 'samlang-core-utils';
 
 const getTypeCheckedModule = (code: string): SamlangModule => {
   const moduleReference = new ModuleReference(['test']);
@@ -13,8 +12,7 @@ const getTypeCheckedModule = (code: string): SamlangModule => {
   if (errors.length > 0) {
     fail(`Source: ${code}. Errors:\n${errors.join('\n')}`);
   }
-  const checkedModule = checkedSources.get(moduleReference);
-  assertNotNull(checkedModule);
+  const checkedModule = checkedSources.forceGet(moduleReference);
   return checkedModule;
 };
 

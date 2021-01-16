@@ -57,9 +57,7 @@ const findInvalidTypeIdentifierForList = (
       checkNotNull(types[i]),
       identifierTypeValidator
     );
-    if (invalidName != null) {
-      return invalidName;
-    }
+    if (invalidName != null) return invalidName;
   }
   return null;
 };

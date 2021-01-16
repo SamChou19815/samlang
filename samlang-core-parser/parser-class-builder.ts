@@ -25,7 +25,7 @@ import type {
   ExpressionContext,
 } from 'samlang-core-parser-generated/PLParser';
 import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
-import { isNotNull, assertNotNull } from 'samlang-core-utils';
+import { isNotNull, checkNotNull } from 'samlang-core-utils';
 
 type ModuleName = readonly [string, Range];
 
@@ -36,16 +36,12 @@ class ModuleNameBuilder
 
   visitClassHeader = (ctx: ClassHeaderContext): ModuleName | null => {
     const symbol = ctx.UpperId().symbol;
-    const name = symbol.text;
-    assertNotNull(name);
-    return [name, tokenRange(symbol)];
+    return [checkNotNull(symbol.text), tokenRange(symbol)];
   };
 
   visitUtilClassHeader = (ctx: UtilClassHeaderContext): ModuleName | null => {
     const symbol = ctx.UpperId().symbol;
-    const name = symbol.text;
-    assertNotNull(name);
-    return [name, tokenRange(symbol)];
+    return [checkNotNull(symbol.text), tokenRange(symbol)];
   };
 }
 
@@ -62,11 +58,9 @@ const getAnnotatedVariable = (
   typeBuilder: TypeBuilder
 ): AnnotatedVariable => {
   const parameterNameSymbol = context.LowerId().symbol;
-  const variablename = parameterNameSymbol.text;
+  const variablename = checkNotNull(parameterNameSymbol.text);
   const typeExpression = context.typeAnnotation().typeExpr();
-  const type = typeExpression.accept(typeBuilder);
-  assertNotNull(variablename);
-  assertNotNull(type);
+  const type = checkNotNull(typeExpression.accept(typeBuilder));
   return {
     name: variablename,
     nameRange: tokenRange(parameterNameSymbol),

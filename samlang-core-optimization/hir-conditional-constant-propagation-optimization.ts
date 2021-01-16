@@ -23,7 +23,7 @@ import {
   HIR_INT,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
-import { error, Long, checkNotNull, LocalStackedContext } from 'samlang-core-utils';
+import { error, Long, checkNotNull, LocalStackedContext, zip } from 'samlang-core-utils';
 
 const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
 
@@ -287,16 +287,17 @@ const optimizeHighIRStatement = (
         }));
         return switchOrNull(HIR_SWITCH({ caseVariable: statement.caseVariable, cases }));
       }
-      const casesWithValue = statement.cases.map(({ caseNumber, statements }, i) =>
-        withNestedScope(() => {
-          const newStatements = optimizeHighIRStatements(
-            statements,
-            valueContext,
-            binaryExpressionContext
-          );
-          const finalValue = optimizeExpression(checkNotNull(final.branchValues[i]));
-          return { caseNumber, newStatements, finalValue };
-        })
+      const casesWithValue = zip(statement.cases, final.branchValues).map(
+        ([{ caseNumber, statements }, branchValue]) =>
+          withNestedScope(() => {
+            const newStatements = optimizeHighIRStatements(
+              statements,
+              valueContext,
+              binaryExpressionContext
+            );
+            const finalValue = optimizeExpression(branchValue);
+            return { caseNumber, newStatements, finalValue };
+          })
       );
       const allValuesAreTheSame =
         new Set(casesWithValue.map((it) => debugPrintHighIRExpression(it.finalValue))).size === 1;

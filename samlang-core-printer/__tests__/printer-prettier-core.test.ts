@@ -8,7 +8,7 @@ import {
   prettyPrintAccordingToPrettierAlgorithm,
 } from '../printer-prettier-core';
 
-import { assertNotNull } from 'samlang-core-utils';
+import { checkNotNull } from 'samlang-core-utils';
 
 it('prettier concat constructor test', () => {
   expect(PRETTIER_CONCAT()).toEqual(PRETTIER_NIL);
@@ -24,9 +24,9 @@ it('prettier-core tree test', () => {
 
   const showTrees = (trees: readonly Tree[]): PrettierDocument => {
     const [first, ...rest] = trees;
-    assertNotNull(first);
-    if (rest.length === 0) return showTree(first);
-    return PRETTIER_CONCAT(showTree(first), PRETTIER_TEXT(','), PRETTIER_LINE, showTrees(rest));
+    const firstDocument = showTree(checkNotNull(first));
+    if (rest.length === 0) return firstDocument;
+    return PRETTIER_CONCAT(firstDocument, PRETTIER_TEXT(','), PRETTIER_LINE, showTrees(rest));
   };
 
   const showBracket = (trees: readonly Tree[]): PrettierDocument => {

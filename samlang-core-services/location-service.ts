@@ -7,7 +7,7 @@ import {
 } from 'samlang-core-ast/common-nodes';
 import { SamlangExpression, EXPRESSION_VARIABLE } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { HashMap, hashMapOf, assertNotNull } from 'samlang-core-utils';
+import { HashMap, hashMapOf } from 'samlang-core-utils';
 
 export interface ReadOnlyLocationLookup<E> {
   get(moduleReference: ModuleReference, position: Position): E | null;
@@ -20,10 +20,8 @@ export class LocationLookup<E> implements ReadOnlyLocationLookup<E> {
   get(moduleReference: ModuleReference, position: Position): E | null {
     const location = this.getBestLocation(moduleReference, position);
     if (location == null) return null;
-    const localTable = this.locationTable.get(location.moduleReference);
-    assertNotNull(localTable);
-    const entity = localTable.get(location.range);
-    assertNotNull(entity);
+    const localTable = this.locationTable.forceGet(location.moduleReference);
+    const entity = localTable.forceGet(location.range);
     return entity;
   }
 

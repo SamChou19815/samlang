@@ -19,16 +19,15 @@ export const isPowerOfTwo = (number: Long): boolean =>
 
 export const isNotNull = <V>(value: V | null | undefined): value is V => value != null;
 
-export function assertNotNull<V>(value: V | null | undefined): asserts value is V {
+export const checkNotNull = <V>(value: V | null | undefined): V => {
   if (value == null) {
     throw new Error(`Value is asserted to be not null, but it is ${value}.`);
   }
-}
-
-export const checkNotNull = <V>(value: V | null | undefined): V => {
-  assertNotNull(value);
   return value;
 };
+
+export const zip = <A, B>(list1: readonly A[], list2: readonly B[]): readonly (readonly [A, B])[] =>
+  list1.map((e1, i) => [e1, checkNotNull(list2[i])]);
 
 export interface Hashable {
   readonly uniqueHash: () => string | number;
@@ -36,6 +35,7 @@ export interface Hashable {
 
 export interface ReadonlyHashMap<K extends Hashable, V> {
   readonly get: (key: K) => V | undefined;
+  readonly forceGet: (key: K) => V;
   readonly has: (key: K) => boolean;
   readonly size: number;
   readonly forEach: (callbackFunction: (value: V, key: K) => void) => void;
@@ -83,6 +83,10 @@ class HashMapImpl<K extends Hashable, V> implements HashMap<K, V> {
 
   get(key: K): V | undefined {
     return this.backingMap.get(key.uniqueHash())?.[1];
+  }
+
+  forceGet(key: K): V {
+    return checkNotNull(this.get(key));
   }
 
   has(key: K): boolean {
@@ -245,8 +249,7 @@ export class LocalStackedContext<V> {
       return closestStackType;
     }
     for (let level = this.stacks.length - 2; level >= 0; level -= 1) {
-      const stack = this.stacks[level];
-      assertNotNull(stack);
+      const stack = checkNotNull(this.stacks[level]);
       const type = stack.getLocalValue(name);
       if (type != null) {
         for (
