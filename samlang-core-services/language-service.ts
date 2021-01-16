@@ -24,8 +24,10 @@ import {
   DependencyTracker,
   GlobalTypingContext,
   MemberTypeInformation,
+  collectModuleReferenceFromSamlangModule,
   typeCheckSources,
   typeCheckSourcesIncrementally,
+  typeCheckSingleModuleSource,
 } from 'samlang-core-checker';
 import {
   ReadonlyGlobalErrorCollector,
@@ -63,14 +65,14 @@ export class LanguageServiceState {
         errorCollector.getModuleErrorCollector(moduleReference)
       );
       this.rawModules.set(moduleReference, rawModule);
-      // TODO: update it to compute used module from type information instead.
-      this.dependencyTracker.update(
-        moduleReference,
-        rawModule.imports.map((it) => it.importedModule)
-      );
     });
     const [checkedModules, globalTypingContext] = typeCheckSources(this.rawModules, errorCollector);
     this.checkedModules = checkedModules as HashMap<ModuleReference, SamlangModule>;
+    checkedModules.forEach((checkedModule, moduleReference) => {
+      const dependencies = collectModuleReferenceFromSamlangModule(checkedModule);
+      dependencies.delete(moduleReference);
+      this.dependencyTracker.update(moduleReference, dependencies.toArray());
+    });
     this._globalTypingContext = globalTypingContext;
     this.updateErrors(errorCollector.getErrors());
 
@@ -170,16 +172,18 @@ export class LanguageServiceState {
     samlangModule: SamlangModule | null
   ): readonly ModuleReference[] {
     const affected = hashSetOf(moduleReference);
+
     this.dependencyTracker
       .getReverseDependencies(moduleReference)
       .forEach((it) => affected.add(it));
     if (samlangModule == null) {
       this.dependencyTracker.update(moduleReference);
     } else {
-      this.dependencyTracker.update(
-        moduleReference,
-        samlangModule.imports.map((it) => it.importedModule)
+      const dependencies = collectModuleReferenceFromSamlangModule(
+        typeCheckSingleModuleSource(samlangModule, createGlobalErrorCollector())
       );
+      dependencies.delete(moduleReference);
+      this.dependencyTracker.update(moduleReference, dependencies.toArray());
     }
     return affected.toArray();
   }
