@@ -2,6 +2,10 @@ import {
   buildGlobalTypingContext,
   updateGlobalTypingContext,
 } from './global-typing-context-builder';
+import {
+  collectModuleReferenceFromType,
+  collectModuleReferenceFromExpression,
+} from './module-references-collector';
 import ModuleTypeChecker from './module-type-checker';
 import type { GlobalTypingContext, MemberTypeInformation } from './typing-context';
 import checkUndefinedImportsError from './undefined-imports-checker';
@@ -18,6 +22,23 @@ import {
   setOf,
   hashSetOf,
 } from 'samlang-core-utils';
+
+export const collectModuleReferenceFromSamlangModule = (
+  samlangModule: SamlangModule
+): HashSet<ModuleReference> => {
+  const collector = hashSetOf<ModuleReference>();
+  samlangModule.imports.forEach((it) => collector.add(it.importedModule));
+  samlangModule.classes.forEach((samlangClass) => {
+    Object.values(samlangClass.typeDefinition.mappings).forEach((it) =>
+      collectModuleReferenceFromType(it.type, collector)
+    );
+    samlangClass.members.forEach((member) => {
+      collectModuleReferenceFromType(member.type, collector);
+      collectModuleReferenceFromExpression(member.body, collector);
+    });
+  });
+  return collector;
+};
 
 /**
  * A centralized place to manage up-to-date dependency relationship.

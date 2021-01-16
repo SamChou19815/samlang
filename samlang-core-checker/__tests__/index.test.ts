@@ -4,12 +4,59 @@ import {
   typeCheckSourcesIncrementally,
   // eslint-disable-next-line camelcase
   typeCheckSingleModuleSource_EXPOSED_FOR_TESTING,
+  collectModuleReferenceFromSamlangModule,
 } from '..';
 
-import { ModuleReference } from 'samlang-core-ast/common-nodes';
+import { Range, ModuleReference, functionType, intType } from 'samlang-core-ast/common-nodes';
+import { EXPRESSION_INT } from 'samlang-core-ast/samlang-expressions';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import { mapOf, hashMapOf } from 'samlang-core-utils';
+
+it('collectModuleReferenceFromSamlangModule works', () => {
+  expect(
+    collectModuleReferenceFromSamlangModule({
+      imports: [
+        {
+          range: Range.DUMMY,
+          importedMembers: [],
+          importedModule: new ModuleReference(['A']),
+          importedModuleRange: Range.DUMMY,
+        },
+      ],
+      classes: [
+        {
+          range: Range.DUMMY,
+          name: 'aa',
+          nameRange: Range.DUMMY,
+          typeParameters: [],
+          typeDefinition: {
+            type: 'object',
+            names: [''],
+            range: Range.DUMMY,
+            mappings: { d: { isPublic: true, type: intType } },
+          },
+          members: [
+            {
+              name: '',
+              range: Range.DUMMY,
+              nameRange: Range.DUMMY,
+              isMethod: true,
+              isPublic: true,
+              typeParameters: [],
+              parameters: [],
+              type: functionType([], intType),
+              body: EXPRESSION_INT(Range.DUMMY, 3),
+            },
+          ],
+        },
+      ],
+    })
+      .toArray()
+      .map((it) => it.toString())
+      .sort((a, b) => a.localeCompare(b))
+  ).toEqual(['A']);
+});
 
 it('can track and update dependencies', () => {
   const tracker = new DependencyTracker();
