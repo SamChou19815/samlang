@@ -7,7 +7,7 @@ import {
   EXPRESSION_LAMBDA,
 } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule, ClassDefinition } from 'samlang-core-ast/samlang-toplevel';
-import { checkNotNull } from 'samlang-core-utils';
+import { zip } from 'samlang-core-utils';
 
 export type Value =
   | UnitValue
@@ -185,8 +185,8 @@ export class ExpressionInterpreter {
         const ctx = functionVal.context;
         const argValues = expression.functionArguments.map((arg) => this.eval(arg, context));
         const bodyLocalValues = { ...ctx.localValues };
-        args.forEach((arg, i) => {
-          bodyLocalValues[arg] = checkNotNull(argValues[i]);
+        zip(args, argValues).forEach(([arg, value]) => {
+          bodyLocalValues[arg] = value;
         });
         const bodyContext = { classes: ctx.classes, localValues: { ...bodyLocalValues } };
         return this.eval(body, bodyContext);
@@ -323,9 +323,9 @@ export class ExpressionInterpreter {
           switch (p.type) {
             case 'TuplePattern': {
               const { tupleContent } = assignedValue as TupleValue;
-              p.destructedNames.forEach(({ name }, i) => {
+              zip(p.destructedNames, tupleContent).forEach(([{ name }, value]) => {
                 if (name != null) {
-                  contextForStatementBlock.localValues[name] = checkNotNull(tupleContent[i]);
+                  contextForStatementBlock.localValues[name] = value;
                 }
               });
               break;
@@ -436,11 +436,13 @@ class ModuleInterpreter {
       },
     };
     // patch the functions and methods with correct context.
-    Object.keys(functions).forEach((key) => {
-      checkNotNull(functions[key]).context = newContext;
+    Object.values(functions).forEach((f) => {
+      // eslint-disable-next-line no-param-reassign
+      f.context = newContext;
     });
-    Object.keys(methods).forEach((key) => {
-      checkNotNull(methods[key]).context = newContext;
+    Object.values(methods).forEach((m) => {
+      // eslint-disable-next-line no-param-reassign
+      m.context = newContext;
     });
     return newContext;
   };

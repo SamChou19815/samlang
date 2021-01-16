@@ -14,7 +14,6 @@ import { createPrettierDocumentFromHighIRModule } from 'samlang-core-printer/pri
 // eslint-disable-next-line import/no-internal-modules
 import { prettyPrintAccordingToPrettierAlgorithm } from 'samlang-core-printer/printer-prettier-core';
 import { checkSources } from 'samlang-core-services';
-import { checkNotNull } from 'samlang-core-utils';
 
 const { checkedSources, compileTimeErrors } = checkSources(
   runnableSamlangProgramTestCases.map((it) => [
@@ -28,9 +27,7 @@ if (process.env.CI) {
   expect(compileTimeErrors).toEqual([]);
   runnableSamlangProgramTestCases.forEach((testCase) => {
     it(`source-level: ${testCase.testCaseName}`, () => {
-      const samlangModule = checkNotNull(
-        checkedSources.get(new ModuleReference([testCase.testCaseName]))
-      );
+      const samlangModule = checkedSources.forceGet(new ModuleReference([testCase.testCaseName]));
       expect(interpretSamlangModule(samlangModule)).toBe(testCase.expectedStandardOut);
     });
   });
@@ -45,7 +42,7 @@ const highIRModuleToJSCode = (highIRModule: HighIRModule): string =>
   );
 
 runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) => {
-  const program = checkNotNull(hirSources.get(new ModuleReference([testCaseName])));
+  const program = hirSources.forceGet(new ModuleReference([testCaseName]));
 
   it(`HIR: ${testCaseName}`, () => {
     const jsCode = highIRModuleToJSCode(program);
@@ -60,7 +57,7 @@ runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) 
 runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) => {
   it(`LLVM: ${testCaseName}`, () => {
     const compilationUnit = lowerHighIRModuleToLLVMModule(
-      checkNotNull(hirSources.get(new ModuleReference([testCaseName])))
+      hirSources.forceGet(new ModuleReference([testCaseName]))
     );
 
     let result: string;

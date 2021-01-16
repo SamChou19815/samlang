@@ -22,7 +22,7 @@ import {
   EXPRESSION_CLASS_MEMBER,
 } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { assertNotNull, mapOf } from 'samlang-core-utils';
+import { mapOf } from 'samlang-core-utils';
 
 const THIS = EXPRESSION_THIS({
   range: Range.DUMMY,
@@ -218,8 +218,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
 
   const actualCompiledModule = compileSamlangSourcesToHighIRSources(
     mapOf([ModuleReference.ROOT, sourceModule])
-  ).get(ModuleReference.ROOT);
-  assertNotNull(actualCompiledModule);
+  ).forceGet(ModuleReference.ROOT);
 
   expect(debugPrintHighIRModule(actualCompiledModule)).toEqual(
     `

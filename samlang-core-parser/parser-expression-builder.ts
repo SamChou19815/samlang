@@ -75,7 +75,7 @@ import type {
   StatementBlockExprContext,
 } from 'samlang-core-parser-generated/PLParser';
 import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
-import { Long, isNotNull, assertNotNull } from 'samlang-core-utils';
+import { Long, isNotNull, checkNotNull } from 'samlang-core-utils';
 
 const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');
 
@@ -93,8 +93,7 @@ class ObjectFieldDeclarationBuilder
     ctx: NormalObjFieldDeclarationContext
   ): ObjectConstructorExpressionFieldConstructor | null => {
     const nameNode = ctx.LowerId().symbol;
-    const name = nameNode.text;
-    assertNotNull(name);
+    const name = checkNotNull(nameNode.text);
     return {
       range: tokenRange(nameNode),
       type: UndecidedTypes.next(),
@@ -107,8 +106,7 @@ class ObjectFieldDeclarationBuilder
     ctx: ShorthandObjFieldDeclarationContext
   ): ObjectConstructorExpressionFieldConstructor | null => {
     const nameNode = ctx.LowerId().symbol;
-    const name = nameNode.text;
-    assertNotNull(name);
+    const name = checkNotNull(nameNode.text);
     return {
       range: tokenRange(nameNode),
       type: UndecidedTypes.next(),
@@ -139,8 +137,7 @@ export default class ExpressionBuilder
   }
 
   private toExpression = (context?: ExpressionContext): SamlangExpression => {
-    assertNotNull(context);
-    const parsed = context.accept(this);
+    const parsed = checkNotNull(context).accept(this);
     if (parsed != null) {
       return parsed;
     }
@@ -168,16 +165,14 @@ export default class ExpressionBuilder
     }
     const intLiteralNode = literalNode.IntLiteral();
     if (intLiteralNode != null) {
-      const text = intLiteralNode.text;
-      assertNotNull(text);
+      const text = checkNotNull(intLiteralNode.text);
       const parsedBigInt = BigInt(text);
       if (parsedBigInt > BigInt('9223372036854775807')) {
         this.errorCollector.reportSyntaxError(range, 'Not a 64-bit integer.');
       }
       return EXPRESSION_INT(range, Long.fromString(text));
     }
-    const stringLiteralNode = literalNode.StrLiteral();
-    assertNotNull(stringLiteralNode);
+    const stringLiteralNode = checkNotNull(literalNode.StrLiteral());
     const literalText = stringLiteralNode.text;
     const unescaped = unescapeQuotes(literalText.substring(1, literalText.length - 1));
     return EXPRESSION_STRING(range, unescaped);
@@ -187,18 +182,15 @@ export default class ExpressionBuilder
     EXPRESSION_THIS({ range: tokenRange(ctx.THIS().symbol), type: UndecidedTypes.next() });
 
   visitVariableExpr = (ctx: VariableExprContext): SamlangExpression | null => {
-    const name = ctx.LowerId().symbol.text;
-    assertNotNull(name);
+    const name = checkNotNull(ctx.LowerId().symbol.text);
     return EXPRESSION_VARIABLE({ range: contextRange(ctx), type: UndecidedTypes.next(), name });
   };
 
   visitClassMemberExpr = (ctx: ClassMemberExprContext): SamlangExpression | null => {
     const classNameNode = ctx.UpperId().symbol;
     const memberNameNode = ctx.LowerId().symbol;
-    const className = classNameNode.text;
-    const memberName = memberNameNode.text;
-    assertNotNull(className);
-    assertNotNull(memberName);
+    const className = checkNotNull(classNameNode.text);
+    const memberName = checkNotNull(memberNameNode.text);
     return EXPRESSION_CLASS_MEMBER({
       range: contextRange(ctx),
       type: UndecidedTypes.next(),
@@ -230,8 +222,7 @@ export default class ExpressionBuilder
     });
 
   visitVariantConstructor = (ctx: VariantConstructorContext): SamlangExpression | null => {
-    const tag = ctx.UpperId().symbol.text;
-    assertNotNull(tag);
+    const tag = checkNotNull(ctx.UpperId().symbol.text);
     return EXPRESSION_VARIANT_CONSTRUCTOR({
       range: contextRange(ctx),
       type: UndecidedTypes.next(),
@@ -242,8 +233,7 @@ export default class ExpressionBuilder
   };
 
   visitFieldAccessExpr = (ctx: FieldAccessExprContext): SamlangExpression | null => {
-    const fieldName = ctx.LowerId().symbol.text;
-    assertNotNull(fieldName);
+    const fieldName = checkNotNull(ctx.LowerId().symbol.text);
     return EXPRESSION_FIELD_ACCESS({
       range: contextRange(ctx),
       type: UndecidedTypes.next(),
@@ -309,8 +299,7 @@ export default class ExpressionBuilder
     });
 
   visitFactorExpr = (ctx: FactorExprContext): SamlangExpression | null => {
-    const operator = binaryOperatorSymbolTable[ctx.factorOperator().text];
-    assertNotNull(operator);
+    const operator = checkNotNull(binaryOperatorSymbolTable[ctx.factorOperator().text]);
     const range = contextRange(ctx);
     const e1 = this.toExpression(ctx.expression(0));
     const e2 = this.toExpression(ctx.expression(1));
@@ -318,8 +307,7 @@ export default class ExpressionBuilder
   };
 
   visitTermExpr = (ctx: TermExprContext): SamlangExpression | null => {
-    const operator = binaryOperatorSymbolTable[ctx.termOperator().text];
-    assertNotNull(operator);
+    const operator = checkNotNull(binaryOperatorSymbolTable[ctx.termOperator().text]);
     const range = contextRange(ctx);
     const e1 = this.toExpression(ctx.expression(0));
     const e2 = this.toExpression(ctx.expression(1));
@@ -327,8 +315,7 @@ export default class ExpressionBuilder
   };
 
   visitComparisonExpr = (ctx: ComparisonExprContext): SamlangExpression | null => {
-    const operator = binaryOperatorSymbolTable[ctx.comparisonOperator().text];
-    assertNotNull(operator);
+    const operator = checkNotNull(binaryOperatorSymbolTable[ctx.comparisonOperator().text]);
     const range = contextRange(ctx);
     const e1 = this.toExpression(ctx.expression(0));
     const e2 = this.toExpression(ctx.expression(1));
@@ -394,8 +381,7 @@ export default class ExpressionBuilder
       .optionallyAnnotatedParameter()
       .map((oneArg) => {
         const nameNode = oneArg.LowerId().symbol;
-        const name = nameNode.text;
-        assertNotNull(name);
+        const name = checkNotNull(nameNode.text);
         const type =
           oneArg.typeAnnotation()?.typeExpr()?.accept(this.typeBuilder) ?? UndecidedTypes.next();
         return [name, type] as const;
@@ -424,8 +410,7 @@ export default class ExpressionBuilder
   };
 
   visitStatementBlockExpr = (ctx: StatementBlockExprContext): SamlangExpression | null => {
-    const block = ctx.statementBlock().accept(this.statementBlockBuilder);
-    assertNotNull(block);
+    const block = checkNotNull(ctx.statementBlock().accept(this.statementBlockBuilder));
     return EXPRESSION_STATEMENT_BLOCK({
       range: contextRange(ctx),
       type: UndecidedTypes.next(),

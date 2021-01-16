@@ -21,7 +21,7 @@ import type {
   FunctionTypeNoArgContext,
 } from 'samlang-core-parser-generated/PLParser';
 import type { PLVisitor } from 'samlang-core-parser-generated/PLVisitor';
-import { isNotNull, assertNotNull } from 'samlang-core-utils';
+import { isNotNull, checkNotNull } from 'samlang-core-utils';
 
 export default class TypeBuilder
   extends AbstractParseTreeVisitor<Type | null>
@@ -41,8 +41,7 @@ export default class TypeBuilder
   visitStrType = (): Type => stringType;
 
   visitSingleIdentifierType = (ctx: SingleIdentifierTypeContext): IdentifierType | null => {
-    const identifier = ctx.UpperId().symbol.text;
-    assertNotNull(identifier);
+    const identifier = checkNotNull(ctx.UpperId().symbol.text);
     const typeParametersContext = ctx.typeParameters();
     if (typeParametersContext == null) {
       return identifierType(this.resolveClass(identifier), identifier);

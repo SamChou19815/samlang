@@ -2,7 +2,6 @@ import { parseSources, checkSources, lowerSourcesToLLVMModules } from '../source
 
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
-import { assertNotNull } from 'samlang-core-utils';
 
 it('parseSources test', () => {
   expect(
@@ -25,8 +24,7 @@ it('hello world processor test', () => {
   const { checkedSources, compileTimeErrors } = checkSources([[moduleReference, sourceCode]]);
   expect(compileTimeErrors).toEqual([]);
 
-  const llvmModule = lowerSourcesToLLVMModules(checkedSources).get(moduleReference);
-  assertNotNull(llvmModule);
+  const llvmModule = lowerSourcesToLLVMModules(checkedSources).forceGet(moduleReference);
   expect(prettyPrintLLVMModule(llvmModule)).toBe(`declare i64* @_builtin_malloc(i64) nounwind
 declare i64 @_builtin_println(i64*) nounwind
 declare i64 @_builtin_throw(i64*) nounwind

@@ -11,7 +11,7 @@ import {
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import type { HighIRType } from 'samlang-core-ast/hir-types';
-import { checkNotNull, isNotNull } from 'samlang-core-utils';
+import { checkNotNull, isNotNull, zip } from 'samlang-core-utils';
 
 /** The threshold max tolerable cost of inlining.  */
 const INLINE_THRESHOLD = 25;
@@ -192,15 +192,17 @@ const inlineRewriteForStatement = (
           })),
         };
       }
-      const casesWithValues = statement.cases.map((oneCase, i) => ({
-        ...oneCase,
-        statements: context.withNestedScope(() => {
-          const statements = oneCase.statements
-            .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
-            .filter(isNotNull);
-          return [statements, rewrite(checkNotNull(final.branchValues[i]))] as const;
-        }),
-      }));
+      const casesWithValues = zip(statement.cases, final.branchValues).map(
+        ([oneCase, branchValue]) => ({
+          ...oneCase,
+          statements: context.withNestedScope(() => {
+            const statements = oneCase.statements
+              .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
+              .filter(isNotNull);
+            return [statements, rewrite(branchValue)] as const;
+          }),
+        })
+      );
       return {
         ...statement,
         caseVariable,
@@ -263,9 +265,11 @@ const performInlineRewriteOnFunction = (
         const temporaryPrefix = allocator.allocateInliningTemporaryPrefix();
         const context = new LocalValueContextForOptimization();
         // Inline step 1: Bind args to args temp
-        argumentNamesOfFunctionToBeInlined.forEach((parameter, index) => {
-          context.bind(parameter, checkNotNull(functionArguments[index]));
-        });
+        zip(argumentNamesOfFunctionToBeInlined, functionArguments).forEach(
+          ([parameter, functionArgument]) => {
+            context.bind(parameter, functionArgument);
+          }
+        );
         // Inline step 2: Add in body code and change return statements
         return mainBodyStatementsOfFunctionToBeInlined
           .map((it) =>

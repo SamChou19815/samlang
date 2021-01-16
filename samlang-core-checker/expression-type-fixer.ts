@@ -14,7 +14,7 @@ import {
   prettyPrintType,
 } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
-import { assertNotNull, checkNotNull } from 'samlang-core-utils';
+import { zip } from 'samlang-core-utils';
 
 const checkedZip = <E1, E2>(
   list1: readonly E1[],
@@ -22,7 +22,7 @@ const checkedZip = <E1, E2>(
 ): readonly (readonly [E1, E2])[] => {
   // istanbul ignore next
   if (list1.length !== list2.length) throw new Error('Slack type checker!');
-  return list1.map((e1, index) => [e1, checkNotNull(list2[index])]);
+  return zip(list1, list2);
 };
 
 const fixExpressionType = (
@@ -251,10 +251,7 @@ const fixExpressionType = (
           newType.argumentTypes
         ).map(([[parameter, originalT], t]) => [parameter, typeFixItself(originalT, t)]),
         captured: Object.fromEntries(
-          Object.entries(expression.captured).map(([name, t]) => {
-            assertNotNull(t);
-            return [name, typeFixItself(t, null)];
-          })
+          Object.entries(expression.captured).map(([name, t]) => [name, typeFixItself(t, null)])
         ),
         body: tryFixExpressionType(expression.body, newType.returnType),
       };

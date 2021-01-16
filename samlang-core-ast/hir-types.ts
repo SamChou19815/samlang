@@ -1,4 +1,4 @@
-import { checkNotNull } from 'samlang-core-utils';
+import { zip } from 'samlang-core-utils';
 
 export type HighIRPrimitiveType = {
   readonly __type__: 'PrimitiveType';
@@ -76,8 +76,8 @@ export const isTheSameHighIRType = (type1: HighIRType, type2: HighIRType): boole
       return (
         t2.__type__ === 'StructType' &&
         t1.mappings.length === t2.mappings.length &&
-        t1.mappings.every((t1Element, index) =>
-          isTheSameHighIRType(t1Element, checkNotNull(t2.mappings[index]))
+        zip(t1.mappings, t2.mappings).every(([t1Element, t2Element]) =>
+          isTheSameHighIRType(t1Element, t2Element)
         )
       );
     case 'FunctionType':
@@ -85,8 +85,8 @@ export const isTheSameHighIRType = (type1: HighIRType, type2: HighIRType): boole
         t2.__type__ === 'FunctionType' &&
         isTheSameHighIRType(t1.returnType, t2.returnType) &&
         t1.argumentTypes.length === t2.argumentTypes.length &&
-        t1.argumentTypes.every((t1Argument, index) =>
-          isTheSameHighIRType(t1Argument, checkNotNull(t2.argumentTypes[index]))
+        zip(t1.argumentTypes, t2.argumentTypes).every(([t1Element, t2Element]) =>
+          isTheSameHighIRType(t1Element, t2Element)
         )
       );
   }

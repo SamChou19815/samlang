@@ -15,7 +15,7 @@ import {
   HIR_CAST,
   HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
-import { checkNotNull, error, isNotNull, LocalStackedContext } from 'samlang-core-utils';
+import { error, isNotNull, LocalStackedContext, zip } from 'samlang-core-utils';
 
 class LocalVariableContext extends LocalStackedContext<string> {
   addLocalValueType(name: string, value: string, onCollision: () => void): void {
@@ -152,18 +152,19 @@ const optimizeHighIRStatement = (
         }));
         return HIR_SWITCH({ caseVariable, cases });
       }
-      const casesWithValue = statement.cases.map(({ caseNumber, statements }, i) =>
-        variableContext.withNestedScope(() =>
-          bindedValueContext.withNestedScope(() => {
-            const newStatements = optimizeHighIRStatements(
-              statements,
-              variableContext,
-              bindedValueContext
-            );
-            const finalValue = getExpressionUnderContext(checkNotNull(final.branchValues[i]));
-            return { caseNumber, newStatements, finalValue };
-          })
-        )
+      const casesWithValue = zip(statement.cases, final.branchValues).map(
+        ([{ caseNumber, statements }, branchValue]) =>
+          variableContext.withNestedScope(() =>
+            bindedValueContext.withNestedScope(() => {
+              const newStatements = optimizeHighIRStatements(
+                statements,
+                variableContext,
+                bindedValueContext
+              );
+              const finalValue = getExpressionUnderContext(branchValue);
+              return { caseNumber, newStatements, finalValue };
+            })
+          )
       );
       return HIR_SWITCH({
         caseVariable,

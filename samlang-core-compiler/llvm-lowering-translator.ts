@@ -35,7 +35,7 @@ import {
   LLVMModule,
 } from 'samlang-core-ast/llvm-nodes';
 import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
-import { checkNotNull } from 'samlang-core-utils';
+import { checkNotNull, zip } from 'samlang-core-utils';
 
 class LLVMResourceAllocator {
   private nextTempId = 0;
@@ -248,10 +248,10 @@ class LLVMLoweringManager {
     }
     const { name: phiVariable, type: phiType, branchValues } = s.finalAssignment;
     const valueBranchTuples: Readonly<{ value: LLVMValue; branch: string }>[] = [];
-    caseWithLabels.forEach(({ label, statements }, i) => {
+    zip(caseWithLabels, branchValues).forEach(([{ label, statements }, highIRBranchValue]) => {
       this.emitInstruction(LLVM_LABEL(label));
       statements.forEach((it) => this.lowerHighIRStatement(it));
-      const branchValue = this.lowerHighIRExpression(checkNotNull(branchValues[i])).value;
+      const branchValue = this.lowerHighIRExpression(highIRBranchValue).value;
       valueBranchTuples.push({ value: branchValue, branch: this.currentLabel });
       this.emitInstruction(LLVM_JUMP(finalEndLabel));
     });
@@ -333,9 +333,9 @@ export const lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING = (
   /** Mapping between global variable name and their length */
   globalVariables: Readonly<Record<string, number>>
 ): LLVMFunction => {
-  const annotatedParameters = parameters.map((parameterName, i) => ({
+  const annotatedParameters = zip(parameters, argumentTypes).map(([parameterName, type]) => ({
     parameterName,
-    parameterType: lowerHighIRTypeToLLVMType(checkNotNull(argumentTypes[i])),
+    parameterType: lowerHighIRTypeToLLVMType(type),
   }));
   const manager = new LLVMLoweringManager(globalVariables, parameters);
   body.forEach((it) => manager.lowerHighIRStatement(it));

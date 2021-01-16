@@ -7,8 +7,8 @@ import {
   logTwo,
   isPowerOfTwo,
   isNotNull,
-  assertNotNull,
   checkNotNull,
+  zip,
   Hashable,
   mapOf,
   setOf,
@@ -61,16 +61,16 @@ it('isNotNull tests', () => {
   expect(isNotNull(undefined)).toBeFalsy();
 });
 
-it('assertNotNull tests', () => {
-  assertNotNull(2);
-  assertNotNull('2');
-  assertNotNull([3]);
-  expect(() => assertNotNull(null)).toThrow();
-  expect(() => assertNotNull(undefined)).toThrow();
-});
-
 it('checkNotNull tests', () => {
   expect(checkNotNull(2)).toBe(2);
+  expect(() => checkNotNull(null)).toThrow();
+});
+
+it('zip test', () => {
+  expect(zip([1, 2], ['1', '2'])).toEqual([
+    [1, '1'],
+    [2, '2'],
+  ]);
 });
 
 it('ReadOnly map and set tests', () => {

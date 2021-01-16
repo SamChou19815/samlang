@@ -24,7 +24,6 @@ import type {
   ModuleMembersImport,
   SamlangModule,
 } from 'samlang-core-ast/samlang-toplevel';
-import { assertNotNull } from 'samlang-core-utils';
 
 const createPrettierDocumentFromSamlangExpression = (
   expression: SamlangExpression
@@ -306,7 +305,6 @@ const createPrettierDocumentsForClassDefinition = (
       ? PRETTIER_NIL
       : createParenthesisSurroundedDocument(
           createCommaSeparatedList(typeMappings, ([name, type]) => {
-            assertNotNull(type);
             if (classDefinition.typeDefinition.type === 'object') {
               // istanbul ignore next
               const modifier = type.isPublic ? '' : 'private ';
