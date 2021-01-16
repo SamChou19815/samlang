@@ -18,7 +18,7 @@ import type {
   LLVMValue,
   LLVMLabelInstruction,
 } from 'samlang-core-ast/llvm-nodes';
-import { Long, checkNotNull, zip } from 'samlang-core-utils';
+import { Long, checkNotNull, zip, assert } from 'samlang-core-utils';
 
 class StackFrame {
   private variables = new Map<string, Long>();
@@ -72,14 +72,12 @@ const handleBuiltInFunctionCall = (
     }
     case ENCODED_FUNCTION_NAME_THROW: {
       const string = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
-      // istanbul ignore next
-      if (string == null) throw new Error('Bad string!');
+      assert(string != null, 'Bad string!');
       throw new PanicException(string);
     }
     case ENCODED_FUNCTION_NAME_STRING_TO_INT: {
       const string = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
-      // istanbul ignore next
-      if (string == null) throw new Error('Bad string!');
+      assert(string != null, 'Bad string!');
       try {
         BigInt(string);
         return Long.fromString(string);
@@ -97,8 +95,7 @@ const handleBuiltInFunctionCall = (
     case ENCODED_FUNCTION_NAME_STRING_CONCAT: {
       const string1 = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
       const string2 = environment.strings.get(checkNotNull(functionArgumentValues[1]).toString());
-      // istanbul ignore next
-      if (string1 == null || string2 == null) throw new Error('Bad string');
+      assert(string1 != null && string2 != null, 'Bad string');
       const location = environment.heapPointer;
       environment.heapPointer = environment.heapPointer.add(8);
       environment.strings.set(location.toString(), string1 + string2);
@@ -106,8 +103,7 @@ const handleBuiltInFunctionCall = (
     }
     case ENCODED_FUNCTION_NAME_PRINTLN: {
       const string = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
-      // istanbul ignore next
-      if (string == null) throw new Error('Bad string!');
+      assert(string != null, 'Bad string!');
       environment.printed += `${string}\n`;
       return Long.ZERO;
     }
@@ -167,8 +163,7 @@ const interpretLLVMValue = (
       return expression.value;
     case 'LLVMName': {
       const value = environment.globalVariables.get(expression.name);
-      // istanbul ignore next
-      if (value == null) throw new Error(`Referencing undefined global ${expression.name}.`);
+      assert(value != null, `Referencing undefined global ${expression.name}.`);
       return value;
     }
     case 'LLVMVariable':
@@ -181,8 +176,7 @@ const interpretLLVMFunction = (
   llvmFunction: LLVMFunction,
   functionArguments: readonly Long[]
 ): Long => {
-  // istanbul ignore next
-  if (functionArguments.length !== llvmFunction.parameters.length) throw new Error();
+  assert(functionArguments.length === llvmFunction.parameters.length);
   const stackFrame = new StackFrame();
   zip(llvmFunction.parameters, functionArguments).forEach(([{ parameterName }, argument]) => {
     stackFrame.setLocalValue(parameterName, argument);
@@ -276,8 +270,7 @@ const interpretLLVMFunction = (
 
       case 'LLVMJumpInstruction': {
         const target = labelMapping.get(instructionToInterpret.branch);
-        // istanbul ignore next
-        if (target == null) throw new Error(`Bad label ${instructionToInterpret.branch}!`);
+        assert(target != null, `Bad label ${instructionToInterpret.branch}!`);
         programCounter = target;
         break;
       }
@@ -292,8 +285,7 @@ const interpretLLVMFunction = (
           ? instructionToInterpret.b1
           : instructionToInterpret.b2;
         const target = labelMapping.get(labelToJump);
-        // istanbul ignore next
-        if (target == null) throw new Error(`Bad label ${labelToJump}!`);
+        assert(target != null, `Bad label ${labelToJump}!`);
         programCounter = target;
         break;
       }
@@ -308,8 +300,7 @@ const interpretLLVMFunction = (
           instructionToInterpret.otherBranchNameWithValues.find((it) => it.value === caseNumber)
             ?.branch ?? instructionToInterpret.defaultBranchName;
         const target = labelMapping.get(labelToJump);
-        // istanbul ignore next
-        if (target == null) throw new Error(`Bad label ${labelToJump}!`);
+        assert(target != null, `Bad label ${labelToJump}!`);
         programCounter = target;
         break;
       }
@@ -343,14 +334,12 @@ const interpretLLVMFunction = (
         } else {
           const functionAddress = interpretLLVMValue(environment, stackFrame, functionExpression);
           const nullableName = environment.functionsGlobals.get(functionAddress.toString());
-          // istanbul ignore next
-          if (nullableName == null) throw new Error(`Undefined function at ${functionAddress}!`);
+          assert(nullableName != null, `Undefined function at ${functionAddress}!`);
           functionName = nullableName;
         }
 
         const functionToCall = environment.functions.get(functionName);
-        // istanbul ignore next
-        if (functionToCall == null) throw new Error(`Missing function ${functionName}`);
+        assert(functionToCall != null, `Missing function ${functionName}`);
         const result = interpretLLVMFunction(environment, functionToCall, functionArgumentValues);
         if (instructionToInterpret.resultVariable != null) {
           stackFrame.setLocalValue(instructionToInterpret.resultVariable, result);
@@ -400,8 +389,7 @@ const setupLLVMInterpretationEnvironment = (
 const interpretLLVMModule = (llvmModule: LLVMModule): string => {
   const environment = setupLLVMInterpretationEnvironment(llvmModule);
   const mainFunction = environment.functions.get(ENCODED_COMPILED_PROGRAM_MAIN);
-  // istanbul ignore next
-  if (mainFunction == null) throw new Error('Missing new function!');
+  assert(mainFunction != null, 'Missing new function!');
   interpretLLVMFunction(environment, mainFunction, []);
   return environment.printed;
 };

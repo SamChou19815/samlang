@@ -1,7 +1,7 @@
 import typeResolver from './type-resolver';
 
 import type { UndecidedType, Type } from 'samlang-core-ast/common-nodes';
-import { checkNotNull, UnionFind } from 'samlang-core-utils';
+import { assert, checkNotNull, UnionFind } from 'samlang-core-utils';
 
 /** A provider of type resolution to previously undecided types. */
 export interface ReadOnlyTypeResolution {
@@ -78,8 +78,7 @@ export default class TypeResolution implements ReadOnlyTypeResolution {
    * the best knowledge of the known type.
    */
   addTypeResolution(undecidedTypeIndex: number, decidedType: Type): Type {
-    // istanbul ignore next
-    if (decidedType.type === 'UndecidedType') throw new Error('Use establishAliasing() instead!');
+    assert(decidedType.type !== 'UndecidedType', 'Use establishAliasing() instead!');
 
     const rootOfUndecidedTypeIndex = this.indexAliasingUnionFind.findRoot(undecidedTypeIndex);
     const resolvedDecidedType = this.resolveType(decidedType);

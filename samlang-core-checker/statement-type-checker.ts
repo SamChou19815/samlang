@@ -11,7 +11,7 @@ import {
 import type { Pattern, ObjectPatternDestucturedName } from 'samlang-core-ast/samlang-pattern';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { checkNotNull, zip, LocalStackedContext } from 'samlang-core-utils';
+import { checkNotNull, zip, LocalStackedContext, assert } from 'samlang-core-utils';
 
 export default class StatementTypeChecker {
   constructor(
@@ -111,6 +111,10 @@ export default class StatementTypeChecker {
           readonly fieldNames: readonly string[];
           readonly fieldMappings: Readonly<Record<string, FieldType>>;
         };
+        assert(
+          fieldMappingsOrError.type !== 'IllegalOtherClassMatch',
+          'We match on objects here, so this case is impossible.'
+        );
         switch (fieldMappingsOrError.type) {
           case 'Resolved':
             fieldNamesMappings = {
@@ -118,10 +122,6 @@ export default class StatementTypeChecker {
               fieldMappings: fieldMappingsOrError.mappings,
             };
             break;
-          // istanbul ignore next
-          case 'IllegalOtherClassMatch':
-            // istanbul ignore next
-            throw new Error('We match on objects here, so this case is impossible.');
           case 'UnsupportedClassTypeDefinition':
             this.errorCollector.reportUnsupportedClassTypeDefinitionError(
               assignedExpression.range,

@@ -62,9 +62,7 @@ export function activate(): void {
   });
 
   const serverModule = vscode.workspace.getConfiguration().get('samlang.programPath');
-  if (typeof serverModule !== 'string') {
-    throw new Error(`Invalid program path: ${serverModule}.`);
-  }
+  if (typeof serverModule !== 'string') throw new Error(`Invalid program path: ${serverModule}.`);
   const serverOptions = {
     run: {
       module: serverModule,

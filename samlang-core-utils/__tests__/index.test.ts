@@ -8,6 +8,7 @@ import {
   isPowerOfTwo,
   isNotNull,
   checkNotNull,
+  assert,
   zip,
   Hashable,
   mapOf,
@@ -64,6 +65,11 @@ it('isNotNull tests', () => {
 it('checkNotNull tests', () => {
   expect(checkNotNull(2)).toBe(2);
   expect(() => checkNotNull(null)).toThrow();
+});
+
+it('assert test', () => {
+  assert(true);
+  expect(() => assert(false)).toThrow();
 });
 
 it('zip test', () => {
@@ -231,7 +237,7 @@ it('LocalStackedContext can compute captured values.', () => {
   const context = new LocalStackedContext();
   context.addLocalValueType('a', 3, fail);
   context.addLocalValueType('b', 3, fail);
-  const [_outer, capturedOuter] = context.withNestedScopeReturnCaptured(() => {
+  const [, capturedOuter] = context.withNestedScopeReturnCaptured(() => {
     expect(() =>
       context.addLocalValueType('a', 3, () => {
         throw new Error();
@@ -240,7 +246,7 @@ it('LocalStackedContext can compute captured values.', () => {
     context.addLocalValueType('c', 3, fail);
     context.addLocalValueType('d', 3, fail);
     context.getLocalValueType('a');
-    const [_inner, capturedInner] = context.withNestedScopeReturnCaptured(() => {
+    const [, capturedInner] = context.withNestedScopeReturnCaptured(() => {
       context.getLocalValueType('a');
       context.getLocalValueType('b');
       context.getLocalValueType('d');

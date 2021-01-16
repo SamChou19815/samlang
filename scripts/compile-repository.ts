@@ -11,9 +11,7 @@ const read = (filename: string): string => fs.readFileSync(filename).toString();
 
 const runWithErrorCheck = (command: string, args: readonly string[] = []): string => {
   const result = spawnSync(command, args, { shell: true, stdio: ['pipe', 'pipe', 'inherit'] });
-  if (result.status !== 0) {
-    throw new Error(`Command \`${command}\` failed with ${result.status}.`);
-  }
+  if (result.status !== 0) throw new Error(`Command \`${command}\` failed with ${result.status}.`);
   return result.stdout.toString();
 };
 

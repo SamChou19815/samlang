@@ -9,6 +9,7 @@ import {
   functionType,
   Type,
 } from 'samlang-core-ast/common-nodes';
+import { assert } from 'samlang-core-utils';
 
 it('can resolve basic disjoint types with sufficient information', () => {
   const resolution = new TypeResolution();
@@ -51,10 +52,8 @@ it('can link together different type set', () => {
   expect(resolution.addTypeResolution(0, intType)).toEqual(intType);
 
   const simpleMeet = (t1: Type, t2: Type) => {
-    if (t1 === t2) {
-      return t1;
-    }
-    throw new Error('Inconsistency detected');
+    assert(t1 === t2, 'Inconsistency detected');
+    return t1;
   };
 
   expect(
