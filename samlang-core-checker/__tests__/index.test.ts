@@ -3,7 +3,7 @@ import {
   typeCheckSources,
   typeCheckSourcesIncrementally,
   // eslint-disable-next-line camelcase
-  typeCheckSingleModuleSource_EXPOSED_FOR_TESTING,
+  typeCheckSingleModuleSource,
   collectModuleReferenceFromSamlangModule,
 } from '..';
 
@@ -338,7 +338,7 @@ it('typeCheckSources identifier resolution test.', () => {
 
 it('typeCheckSingleModuleSource smoke test', () => {
   const errorCollector = createGlobalErrorCollector();
-  const checkedModule = typeCheckSingleModuleSource_EXPOSED_FOR_TESTING(
+  const checkedModule = typeCheckSingleModuleSource(
     parseSamlangModuleFromText(
       'class Main {}',
       new ModuleReference(['Test']),
