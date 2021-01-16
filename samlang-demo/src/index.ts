@@ -31,12 +31,9 @@ const runSamlangDemo = (programString: string): SamlangDemoResult => {
     };
   }
 
-  const demoSamlangModule = checkedSources.get(demoModuleReference);
+  const demoSamlangModule = checkedSources.forceGet(demoModuleReference);
   const jsProgram = compileSamlangSourcesToHighIRSources(checkedSources).get(demoModuleReference);
   const demoLLVMModule = lowerSourcesToLLVMModules(checkedSources).get(demoModuleReference);
-
-  // istanbul ignore next
-  if (demoSamlangModule == null) throw new Error();
 
   const interpreterPrinted = interpretSamlangModule(demoSamlangModule);
   const prettyPrintedProgram = prettyPrintSamlangModule(100, demoSamlangModule);

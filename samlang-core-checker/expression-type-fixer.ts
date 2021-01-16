@@ -14,14 +14,13 @@ import {
   prettyPrintType,
 } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
-import { zip } from 'samlang-core-utils';
+import { assert, zip } from 'samlang-core-utils';
 
 const checkedZip = <E1, E2>(
   list1: readonly E1[],
   list2: readonly E2[]
 ): readonly (readonly [E1, E2])[] => {
-  // istanbul ignore next
-  if (list1.length !== list2.length) throw new Error('Slack type checker!');
+  assert(list1.length === list2.length, 'Slack type checker!');
   return zip(list1, list2);
 };
 
@@ -37,13 +36,12 @@ const fixExpressionType = (
     if (expected === null) {
       return resolvedType;
     }
-    if (!isTheSameType(expected, resolvedType)) {
-      throw new Error(
-        `resolvedType(${prettyPrintType(
-          resolvedType
-        )}) should be consistent with expectedType(${prettyPrintType(expected)})!`
-      );
-    }
+    assert(
+      isTheSameType(expected, resolvedType),
+      `resolvedType(${prettyPrintType(
+        resolvedType
+      )}) should be consistent with expectedType(${prettyPrintType(expected)})!`
+    );
     return expected;
   };
 
@@ -152,15 +150,12 @@ const fixExpressionType = (
         expression.functionExpression,
         null
       ) as FunctionType;
-      // istanbul ignore next
-      if (!isTheSameType(functionFixedType.returnType, expectedType)) {
-        // istanbul ignore next
-        throw new Error(
-          `Return type (${prettyPrintType(
-            functionFixedType.returnType
-          )}$ mismatches with expected type (${prettyPrintType(expectedType)}).`
-        );
-      }
+      assert(
+        isTheSameType(functionFixedType.returnType, expectedType),
+        `Return type (${prettyPrintType(
+          functionFixedType.returnType
+        )}$ mismatches with expected type (${prettyPrintType(expectedType)}).`
+      );
       return {
         ...expression,
         type: getExpressionFixedType(expression, expectedType),
@@ -200,13 +195,10 @@ const fixExpressionType = (
         case '!=': {
           const t1 = getExpressionFixedType(expression.e1, null);
           const t2 = getExpressionFixedType(expression.e2, null);
-          // istanbul ignore next
-          if (!isTheSameType(t1, t2)) {
-            // istanbul ignore next
-            throw new Error(
-              `Comparing non-equal types: ${prettyPrintType(t1)}, ${prettyPrintType(t2)}`
-            );
-          }
+          assert(
+            isTheSameType(t1, t2),
+            `Comparing non-equal types: ${prettyPrintType(t1)}, ${prettyPrintType(t2)}`
+          );
           e1 = tryFixExpressionType(expression.e1, t1);
           e2 = tryFixExpressionType(expression.e2, t2);
           break;
@@ -258,11 +250,10 @@ const fixExpressionType = (
     }
     case 'StatementBlockExpression': {
       const { block } = expression;
-      if (block.expression == null && !isTheSameType(expectedType, unitType)) {
-        throw new Error(
-          `block.expression == null && expectedType == ${prettyPrintType(expectedType)}`
-        );
-      }
+      assert(
+        block.expression != null || isTheSameType(expectedType, unitType),
+        `block.expression == null && expectedType == ${prettyPrintType(expectedType)}`
+      );
       const fixedStatements = block.statements.map((statement) => {
         const fixedAssignedExpression = tryFixExpressionType(
           statement.assignedExpression,

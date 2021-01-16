@@ -19,10 +19,14 @@ export const isPowerOfTwo = (number: Long): boolean =>
 
 export const isNotNull = <V>(value: V | null | undefined): value is V => value != null;
 
-export const checkNotNull = <V>(value: V | null | undefined): V => {
-  if (value == null) {
-    throw new Error(`Value is asserted to be not null, but it is ${value}.`);
+export function assert(condition: unknown, msg?: string): asserts condition {
+  if (!condition) {
+    throw new Error(msg);
   }
+}
+
+export const checkNotNull = <V>(value: V | null | undefined): V => {
+  assert(value != null, `Value is asserted to be not null, but it is ${value}.`);
   return value;
 };
 
@@ -234,9 +238,7 @@ class ContextLayer<V> {
   }
 
   removeLocalValue(name: string): void {
-    if (!this.localValues.delete(name)) {
-      throw new Error(`${name} is not found in this layer!`);
-    }
+    assert(this.localValues.delete(name), `${name} is not found in this layer!`);
   }
 }
 

@@ -7,7 +7,7 @@ import {
   functionType,
 } from 'samlang-core-ast/common-nodes';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
-import { zip } from 'samlang-core-utils';
+import { assert, zip } from 'samlang-core-utils';
 
 /**
  * This modules is useful for doing type inference constraint solving on constructors/functions with
@@ -21,6 +21,7 @@ import { zip } from 'samlang-core-utils';
 type UndeciderMapping = Record<string, UndecidedType>;
 
 const undecide = (type: Type, mapping: UndeciderMapping): Type => {
+  assert(type.type !== 'UndecidedType', 'Type expression should not contain undecided type!');
   switch (type.type) {
     case 'PrimitiveType':
       return type;
@@ -40,8 +41,6 @@ const undecide = (type: Type, mapping: UndeciderMapping): Type => {
         type.argumentTypes.map((it) => undecide(it, mapping)),
         undecide(type.returnType, mapping)
       );
-    case 'UndecidedType':
-      throw new Error('Type expression should not contain undecided type!');
   }
 };
 

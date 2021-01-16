@@ -54,6 +54,7 @@ import {
   checkNotNull,
   LocalStackedContext,
   zip,
+  assert,
 } from 'samlang-core-utils';
 
 class ExpressionTypeChecker {
@@ -76,6 +77,10 @@ class ExpressionTypeChecker {
   }
 
   readonly typeCheck = (expression: SamlangExpression, expectedType: Type): SamlangExpression => {
+    assert(
+      expression.__type__ !== 'MethodAccessExpression',
+      'Raw parsed expression does not contain this!'
+    );
     switch (expression.__type__) {
       case 'LiteralExpression':
         return this.typeCheckLiteral(expression, expectedType);
@@ -93,10 +98,6 @@ class ExpressionTypeChecker {
         return this.typeCheckVariantConstructor(expression, expectedType);
       case 'FieldAccessExpression':
         return this.typeCheckFieldAccess(expression, expectedType);
-      // istanbul ignore next
-      case 'MethodAccessExpression':
-        // istanbul ignore next
-        throw new Error('Should not be here!');
       case 'UnaryExpression':
         return this.typeCheckUnary(expression, expectedType);
       case 'PanicExpression':
@@ -357,8 +358,7 @@ class ExpressionTypeChecker {
       expression.range
     );
     const order = variantNames.findIndex((t) => t === expression.tag);
-    // istanbul ignore next
-    if (order === -1) throw new Error(`Bad tag: ${expression.tag}`);
+    assert(order !== -1, `Bad tag: ${expression.tag}`);
     return { ...expression, type: constraintInferredType, tagOrder: order, data: checkedData };
   }
 
@@ -436,15 +436,12 @@ class ExpressionTypeChecker {
     );
     let fieldNames: readonly string[];
     let fieldMappings: Readonly<Record<string, FieldType>>;
+    assert(fieldMappingsOrError.type !== 'IllegalOtherClassMatch', 'Impossible!');
     switch (fieldMappingsOrError.type) {
       case 'Resolved':
         fieldNames = fieldMappingsOrError.names;
         fieldMappings = fieldMappingsOrError.mappings;
         break;
-      // istanbul ignore next
-      case 'IllegalOtherClassMatch':
-        // istanbul ignore next
-        throw new Error('Impossible');
       case 'UnsupportedClassTypeDefinition':
         this.errorCollector.reportUnsupportedClassTypeDefinitionError(
           checkedObjectExpression.range,
@@ -470,8 +467,7 @@ class ExpressionTypeChecker {
       expression.range
     );
     const order = fieldNames.findIndex((name) => name === expression.fieldName);
-    // istanbul ignore next
-    if (order === -1) throw new Error(`Bad field: ${expression.fieldName}`);
+    assert(order !== -1, `Bad field: ${expression.fieldName}`);
     return {
       ...expression,
       type: constraintInferredFieldType,
@@ -680,8 +676,7 @@ class ExpressionTypeChecker {
           checkedDatadataVariable = [dataVariableName, mappingDataType];
         }
         const tagOrder = variantNames.findIndex((name) => name === tag);
-        // istanbul ignore next
-        if (tagOrder === -1) throw new Error(`Bad tag: ${tag}`);
+        assert(tagOrder !== -1, `Bad tag: ${tag}`);
         return {
           range,
           tag,
@@ -730,11 +725,10 @@ class ExpressionTypeChecker {
       locallyInferredType,
       expression.range
     );
-    // istanbul ignore next
-    if (constraintInferredType.type !== 'FunctionType') {
-      // istanbul ignore next
-      throw new Error('Should always be inferred as function type!');
-    }
+    assert(
+      constraintInferredType.type === 'FunctionType',
+      'Should always be inferred as function type!'
+    );
     return EXPRESSION_LAMBDA({
       range: expression.range,
       type: constraintInferredType,

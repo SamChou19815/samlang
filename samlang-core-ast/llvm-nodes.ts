@@ -2,7 +2,7 @@ import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
 import type { HighIRIdentifierType } from './hir-types';
 
-import { Long, zip } from 'samlang-core-utils';
+import { assert, Long, zip } from 'samlang-core-utils';
 
 export type LLVMPrimitiveType = { readonly __type__: 'PrimitiveType'; readonly type: 'i1' | 'i64' };
 export type LLVMStringType = { readonly __type__: 'StringType'; readonly length?: number };
@@ -353,7 +353,7 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       const sourceValue = prettyPrintLLVMValue(instruction.sourceValue, instruction.sourceType);
       const targetType = prettyPrintLLVMType(instruction.resultType);
       const sourceType = prettyPrintLLVMType(instruction.sourceType);
-      if (targetType === sourceType) throw new Error();
+      assert(targetType !== sourceType);
       let command: string;
       if (
         instruction.resultType.__type__ !== 'PrimitiveType' &&

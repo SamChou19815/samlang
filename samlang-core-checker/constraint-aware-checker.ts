@@ -2,7 +2,7 @@ import type TypeResolution from './type-resolution';
 
 import { Type, UndecidedType, isTheSameType, Range } from 'samlang-core-ast/common-nodes';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { zip } from 'samlang-core-utils';
+import { assert, zip } from 'samlang-core-utils';
 
 const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
   const meetWithResolution = (type1: Type, type2: Type): Type => meet(type1, type2, resolution);
@@ -13,10 +13,8 @@ const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
         case 'UndecidedType':
           return meetWithUndecidedType(t1, t2, resolution);
         case 'PrimitiveType':
-          if (isTheSameType(t1, t2)) {
-            return t1;
-          }
-          throw new Error();
+          assert(isTheSameType(t1, t2));
+          return t1;
         default:
           throw new Error();
       }

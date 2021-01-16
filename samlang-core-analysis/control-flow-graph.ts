@@ -1,5 +1,5 @@
 import type { LLVMInstruction } from 'samlang-core-ast/llvm-nodes';
-import { checkNotNull } from 'samlang-core-utils';
+import { assert, checkNotNull } from 'samlang-core-utils';
 
 interface Adapter<I> {
   /** @returns the label if the given instruction is the label instruction. */
@@ -100,8 +100,7 @@ export default class ControlFlowGraph<I> {
 
   get startNode(): ControlFlowGraphNode<I> {
     const node = this.nodeMap.get(0);
-    // istanbul ignore next
-    if (node == null) throw new Error('Empty instructions!');
+    assert(node != null, 'Empty instructions!');
     return node;
   }
 
@@ -115,9 +114,7 @@ export default class ControlFlowGraph<I> {
 
   getChildren(id: number): readonly ControlFlowGraphNode<I>[] {
     return this.getChildrenIds(id).map((childId) => {
-      const node = this.nodeMap.get(childId);
-      // istanbul ignore next
-      if (node == null) throw new Error();
+      const node = checkNotNull(this.nodeMap.get(childId));
       return node;
     });
   }
@@ -126,9 +123,7 @@ export default class ControlFlowGraph<I> {
     const stack = [this.startNode];
     const visited = new Set<number>();
     while (stack.length > 0) {
-      const node = stack.pop();
-      // istanbul ignore next
-      if (node == null) throw new Error();
+      const node = checkNotNull(stack.pop());
       if (!visited.has(node.id)) {
         visited.add(node.id);
         visitor(node);

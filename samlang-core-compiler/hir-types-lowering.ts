@@ -7,13 +7,12 @@ import {
   HIR_ANY_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_STRUCT_TYPE,
-  HIR_FUNCTION_TYPE,
   HIR_CLOSURE_TYPE,
 } from 'samlang-core-ast/hir-types';
+import { assert } from 'samlang-core-utils';
 
 const lowerSamlangType = (type: Type, genericTypes: ReadonlySet<string>): HighIRType => {
-  // istanbul ignore next
-  if (type.type === 'UndecidedType') throw new Error('Unreachable!');
+  assert(type.type !== 'UndecidedType', 'Unreachable!');
   switch (type.type) {
     case 'PrimitiveType':
       switch (type.name) {
