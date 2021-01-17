@@ -82,11 +82,11 @@ export interface HighIRSwitchStatement extends BaseHighIRStatement {
     readonly caseNumber: number;
     readonly statements: readonly HighIRStatement[];
   }[];
-  readonly finalAssignment?: {
+  readonly finalAssignments: readonly {
     readonly name: string;
     readonly type: HighIRType;
     readonly branchValues: readonly HighIRExpression[];
-  };
+  }[];
 }
 
 export interface HighIRVariantPatternToStatement {
@@ -245,12 +245,12 @@ export const HIR_IF_ELSE = ({
 export const HIR_SWITCH = ({
   caseVariable,
   cases,
-  finalAssignment,
+  finalAssignments,
 }: ConstructorArgumentObject<HighIRSwitchStatement>): HighIRSwitchStatement => ({
   __type__: 'HighIRSwitchStatement',
   caseVariable,
   cases,
-  finalAssignment,
+  finalAssignments,
 });
 
 export const HIR_CAST = ({
@@ -353,22 +353,20 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         collector.push('  '.repeat(level), `}\n`);
         break;
       case 'HighIRSwitchStatement': {
-        if (s.finalAssignment != null) {
-          const type = prettyPrintHighIRType(s.finalAssignment.type);
-          collector.push('  '.repeat(level), `let ${s.finalAssignment.name}: ${type};\n`);
-        }
+        s.finalAssignments.forEach((finalAssignment) => {
+          const type = prettyPrintHighIRType(finalAssignment.type);
+          collector.push('  '.repeat(level), `let ${finalAssignment.name}: ${type};\n`);
+        });
         collector.push('  '.repeat(level), `switch (${s.caseVariable}) {\n`);
         level += 1;
         s.cases.forEach(({ caseNumber, statements }, i) => {
           collector.push('  '.repeat(level), `case ${caseNumber}: {\n`);
           level += 1;
           statements.forEach(printer);
-          if (s.finalAssignment != null) {
-            const value = debugPrintHighIRExpression(
-              checkNotNull(s.finalAssignment.branchValues[i])
-            );
-            collector.push('  '.repeat(level), `${s.finalAssignment.name} = ${value};\n`);
-          }
+          s.finalAssignments.forEach((finalAssignment) => {
+            const value = debugPrintHighIRExpression(checkNotNull(finalAssignment.branchValues[i]));
+            collector.push('  '.repeat(level), `${finalAssignment.name} = ${value};\n`);
+          });
           level -= 1;
           collector.push('  '.repeat(level), `}\n`);
         });

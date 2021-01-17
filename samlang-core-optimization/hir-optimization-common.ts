@@ -52,7 +52,7 @@ export const switchOrNull = (
 ): readonly HighIRStatement[] => {
   if (
     switchStatement.cases.every((it) => it.statements.length === 0) &&
-    switchStatement.finalAssignment == null
+    switchStatement.finalAssignments.length === 0
   ) {
     return [];
   }

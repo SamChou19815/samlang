@@ -111,6 +111,7 @@ it('estimateFunctionInlineCost test', () => {
               ],
             },
           ],
+          finalAssignments: [],
         }),
         HIR_SWITCH({
           caseVariable: '',
@@ -127,12 +128,12 @@ it('estimateFunctionInlineCost test', () => {
               ],
             },
           ],
-          finalAssignment: { name: '', type: HIR_INT_TYPE, branchValues: [HIR_ZERO, HIR_ZERO] },
+          finalAssignments: [{ name: '', type: HIR_INT_TYPE, branchValues: [HIR_ZERO] }],
         }),
         HIR_RETURN(HIR_VARIABLE('ss', HIR_INT_TYPE)),
       ],
     })
-  ).toBe(31);
+  ).toBe(30);
 });
 
 const assertCorrectlyInlined = (functions: readonly HighIRFunction[], expected: string): void => {
@@ -626,11 +627,13 @@ it('optimizeFunctionsByInlining test 6', () => {
                 ],
               },
             ],
-            finalAssignment: {
-              name: 'b',
-              type: HIR_INT_TYPE,
-              branchValues: [HIR_ZERO, HIR_VARIABLE('a', HIR_INT_TYPE)],
-            },
+            finalAssignments: [
+              {
+                name: 'b',
+                type: HIR_INT_TYPE,
+                branchValues: [HIR_ZERO, HIR_VARIABLE('a', HIR_INT_TYPE)],
+              },
+            ],
           }),
         ],
       },
@@ -710,6 +713,7 @@ it('optimizeFunctionsByInlining test 7', () => {
                 ],
               },
             ],
+            finalAssignments: [],
           }),
         ],
       },

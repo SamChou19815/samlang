@@ -439,6 +439,7 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 1/n', () => {
             ],
           },
         ],
+        finalAssignments: [],
       }),
     ],
     `  switch i64 %c, label %l3_match_case_1 [ i64 2, label %l2_match_case_0 i64 2, label %l3_match_case_1 ]
@@ -462,7 +463,7 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 2/n', () => {
           { caseNumber: 0, statements: [] },
           { caseNumber: 2, statements: [] },
         ],
-        finalAssignment: { name: 'ma', type: INT, branchValues: [HIR_ZERO, HIR_ZERO, HIR_ZERO] },
+        finalAssignments: [{ name: 'ma', type: INT, branchValues: [HIR_ZERO, HIR_ZERO, HIR_ZERO] }],
       }),
     ],
     `  switch i64 %c, label %l4_match_case_2 [ i64 1, label %l2_match_case_0 i64 0, label %l3_match_case_1 i64 2, label %l4_match_case_2 ]
@@ -497,11 +498,13 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 3/n', () => {
             ],
           },
         ],
-        finalAssignment: {
-          name: 'ma',
-          type: INT,
-          branchValues: [HIR_ZERO, HIR_ZERO, HIR_VARIABLE('b2', INT)],
-        },
+        finalAssignments: [
+          {
+            name: 'ma',
+            type: INT,
+            branchValues: [HIR_ZERO, HIR_ZERO, HIR_VARIABLE('b2', INT)],
+          },
+        ],
       }),
     ],
     `  switch i64 %c, label %l4_match_case_2 [ i64 1, label %l2_match_case_0 i64 0, label %l3_match_case_1 i64 2, label %l4_match_case_2 ]

@@ -235,31 +235,33 @@ class LLVMLoweringManager {
       )
     );
 
-    if (s.finalAssignment == null) {
-      caseWithLabels.forEach(({ label, statements }) => {
-        this.emitInstruction(LLVM_LABEL(label));
-        statements.forEach((it) => this.lowerHighIRStatement(it));
-        this.emitInstruction(LLVM_JUMP(finalEndLabel));
-      });
-      this.emitInstruction(LLVM_LABEL(finalEndLabel));
-      return;
-    }
-    const { name: phiVariable, type: phiType, branchValues } = s.finalAssignment;
-    const valueBranchTuples: Readonly<{ value: LLVMValue; branch: string }>[] = [];
-    zip(caseWithLabels, branchValues).forEach(([{ label, statements }, highIRBranchValue]) => {
+    const valueBranchTuplesList: Readonly<{
+      value: LLVMValue;
+      branch: string;
+    }>[][] = s.finalAssignments.map(() => []);
+    caseWithLabels.forEach(({ label, statements }, i) => {
       this.emitInstruction(LLVM_LABEL(label));
       statements.forEach((it) => this.lowerHighIRStatement(it));
-      const branchValue = this.lowerHighIRExpression(highIRBranchValue).value;
-      valueBranchTuples.push({ value: branchValue, branch: this.currentLabel });
+      s.finalAssignments.forEach(({ branchValues }, j) => {
+        const branchValue = this.lowerHighIRExpression(checkNotNull(branchValues[i])).value;
+        checkNotNull(valueBranchTuplesList[j]).push({
+          value: branchValue,
+          branch: this.currentLabel,
+        });
+      });
       this.emitInstruction(LLVM_JUMP(finalEndLabel));
     });
     this.emitInstruction(LLVM_LABEL(finalEndLabel));
-    this.emitInstruction(
-      LLVM_PHI({
-        resultVariable: phiVariable,
-        variableType: lowerHighIRTypeToLLVMType(phiType),
-        valueBranchTuples,
-      })
+    zip(s.finalAssignments, valueBranchTuplesList).forEach(
+      ([{ name: phiVariable, type: phiType }, valueBranchTuples]) => {
+        this.emitInstruction(
+          LLVM_PHI({
+            resultVariable: phiVariable,
+            variableType: lowerHighIRTypeToLLVMType(phiType),
+            valueBranchTuples,
+          })
+        );
+      }
     );
   }
 

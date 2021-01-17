@@ -50,16 +50,20 @@ const optimizeHighIRStatement = (
       return ifElse;
     }
     case 'HighIRSwitchStatement': {
-      let finalAssignment: typeof statement.finalAssignment = undefined;
-      if (statement.finalAssignment != null && set.has(statement.finalAssignment.name)) {
-        statement.finalAssignment.branchValues.forEach(collectUseFromExpression);
-        finalAssignment = statement.finalAssignment;
-      }
+      const finalAssignments = statement.finalAssignments
+        .map((final) => {
+          if (set.has(final.name)) {
+            final.branchValues.forEach(collectUseFromExpression);
+            return final;
+          }
+          return null;
+        })
+        .filter(isNotNull);
       const cases = statement.cases.map((it) => ({
         ...it,
         statements: optimizeHighIRStatements(it.statements, set),
       }));
-      const switchStatement = switchOrNull({ ...statement, finalAssignment, cases });
+      const switchStatement = switchOrNull({ ...statement, cases, finalAssignments });
       if (switchStatement.length > 0) set.add(statement.caseVariable);
       return switchStatement;
     }

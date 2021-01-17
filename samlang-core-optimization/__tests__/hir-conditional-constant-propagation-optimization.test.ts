@@ -564,6 +564,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
             ],
           },
         ],
+        finalAssignments: [],
       }),
       HIR_SWITCH({
         caseVariable: 'a',
@@ -591,11 +592,13 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
             ],
           },
         ],
-        finalAssignment: {
-          name: 'ma1',
-          type: HIR_INT_TYPE,
-          branchValues: [HIR_VARIABLE('b1', HIR_INT_TYPE), HIR_VARIABLE('b2', HIR_INT_TYPE)],
-        },
+        finalAssignments: [
+          {
+            name: 'ma1',
+            type: HIR_INT_TYPE,
+            branchValues: [HIR_VARIABLE('b1', HIR_INT_TYPE), HIR_VARIABLE('b2', HIR_INT_TYPE)],
+          },
+        ],
       }),
       HIR_SWITCH({
         caseVariable: 'a',
@@ -616,11 +619,13 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
             ],
           },
         ],
-        finalAssignment: {
-          name: 'ma2',
-          type: HIR_INT_TYPE,
-          branchValues: [HIR_VARIABLE('a0', HIR_INT_TYPE), HIR_VARIABLE('a3', HIR_INT_TYPE)],
-        },
+        finalAssignments: [
+          {
+            name: 'ma2',
+            type: HIR_INT_TYPE,
+            branchValues: [HIR_VARIABLE('a0', HIR_INT_TYPE), HIR_VARIABLE('a3', HIR_INT_TYPE)],
+          },
+        ],
       }),
       HIR_RETURN(HIR_VARIABLE('ma2', HIR_INT_TYPE)),
     ],

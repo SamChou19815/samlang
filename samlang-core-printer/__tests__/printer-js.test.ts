@@ -497,6 +497,7 @@ if (5) {
             statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_INT_TYPE))],
           },
         ],
+        finalAssignments: [],
       })
     )
   ).toBe(`switch (f) {
@@ -523,11 +524,13 @@ if (5) {
             statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_INT_TYPE))],
           },
         ],
-        finalAssignment: {
-          name: 'ma',
-          type: HIR_INT_TYPE,
-          branchValues: [HIR_ZERO, HIR_ZERO],
-        },
+        finalAssignments: [
+          {
+            name: 'ma',
+            type: HIR_INT_TYPE,
+            branchValues: [HIR_ZERO, HIR_ZERO],
+          },
+        ],
       })
     )
   ).toBe(`let ma;

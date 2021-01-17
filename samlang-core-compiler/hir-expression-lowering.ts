@@ -934,6 +934,7 @@ class HighIRExpressionLoweringManager {
             caseNumber: it.tagOrder,
             statements: it.statements,
           })),
+          finalAssignments: [],
         })
       );
     } else {
@@ -944,11 +945,13 @@ class HighIRExpressionLoweringManager {
             caseNumber,
             statements,
           })),
-          finalAssignment: {
-            name: temporaryVariable,
-            type: loweredReturnType,
-            branchValues: loweredMatchingList.map((it) => checkNotNull(it.finalExpression)),
-          },
+          finalAssignments: [
+            {
+              name: temporaryVariable,
+              type: loweredReturnType,
+              branchValues: loweredMatchingList.map((it) => checkNotNull(it.finalExpression)),
+            },
+          ],
         })
       );
     }

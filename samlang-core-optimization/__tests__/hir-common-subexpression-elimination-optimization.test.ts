@@ -153,6 +153,7 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on switch sta
             ],
           },
         ],
+        finalAssignments: [],
       }),
     ],
     `let _cse_0_: int = 0[3];

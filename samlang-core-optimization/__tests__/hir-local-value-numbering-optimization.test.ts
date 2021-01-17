@@ -260,6 +260,7 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on switch 1/n', () => {
             ],
           },
         ],
+        finalAssignments: [],
       }),
       HIR_INDEX_ACCESS({
         name: 'i5',
@@ -328,11 +329,13 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on switch 2/n', () => {
             ],
           },
         ],
-        finalAssignment: {
-          name: 'bar',
-          type: HIR_INT_TYPE,
-          branchValues: [HIR_VARIABLE('i1', HIR_INT_TYPE), HIR_VARIABLE('i2', HIR_INT_TYPE)],
-        },
+        finalAssignments: [
+          {
+            name: 'bar',
+            type: HIR_INT_TYPE,
+            branchValues: [HIR_VARIABLE('i1', HIR_INT_TYPE), HIR_VARIABLE('i2', HIR_INT_TYPE)],
+          },
+        ],
       }),
     ],
     `let i0: int = (a: int)[2];
