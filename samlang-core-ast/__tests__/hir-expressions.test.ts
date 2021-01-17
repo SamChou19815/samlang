@@ -3,6 +3,7 @@ import {
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_SWITCH,
+  HIR_WHILE,
   HIR_INDEX_ACCESS,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
@@ -46,6 +47,59 @@ it('debugPrintHighIRStatement works', () => {
             name: 'foo',
             type: HIR_IDENTIFIER_TYPE('Bar'),
             assignedExpression: HIR_VARIABLE('dev', HIR_IDENTIFIER_TYPE('Bar')),
+          }),
+          HIR_WHILE({
+            loopVariables: [
+              {
+                name: 'n',
+                type: HIR_INT_TYPE,
+                initialValue: HIR_VARIABLE('_tail_rec_param_n', HIR_INT_TYPE),
+                loopValue: HIR_VARIABLE('_t0_n', HIR_INT_TYPE),
+              },
+              {
+                name: 'acc',
+                type: HIR_INT_TYPE,
+                initialValue: HIR_VARIABLE('_tail_rec_param_acc', HIR_INT_TYPE),
+                loopValue: HIR_VARIABLE('_t1_acc', HIR_INT_TYPE),
+              },
+            ],
+            statements: [
+              HIR_CAST({
+                name: 'foo',
+                type: HIR_IDENTIFIER_TYPE('Bar'),
+                assignedExpression: HIR_VARIABLE('dev', HIR_IDENTIFIER_TYPE('Bar')),
+              }),
+            ],
+            conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
+          }),
+          HIR_WHILE({
+            loopVariables: [
+              {
+                name: 'n',
+                type: HIR_INT_TYPE,
+                initialValue: HIR_VARIABLE('_tail_rec_param_n', HIR_INT_TYPE),
+                loopValue: HIR_VARIABLE('_t0_n', HIR_INT_TYPE),
+              },
+              {
+                name: 'acc',
+                type: HIR_INT_TYPE,
+                initialValue: HIR_VARIABLE('_tail_rec_param_acc', HIR_INT_TYPE),
+                loopValue: HIR_VARIABLE('_t1_acc', HIR_INT_TYPE),
+              },
+            ],
+            statements: [
+              HIR_CAST({
+                name: 'foo',
+                type: HIR_IDENTIFIER_TYPE('Bar'),
+                assignedExpression: HIR_VARIABLE('dev', HIR_IDENTIFIER_TYPE('Bar')),
+              }),
+            ],
+            conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
+            returnAssignment: {
+              name: 'v',
+              type: HIR_INT_TYPE,
+              value: HIR_VARIABLE('_t2_v', HIR_INT_TYPE),
+            },
           }),
           HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar'))),
         ],
@@ -100,6 +154,22 @@ if 0 {
     }
   }
   let foo: Bar = (dev: Bar);
+  let n: int = (_tail_rec_param_n: int);
+  let acc: int = (_tail_rec_param_acc: int);
+  do {
+    let foo: Bar = (dev: Bar);
+    n = (_t0_n: int);
+    acc = (_t1_acc: int);
+  } while ((c: int));
+  let n: int = (_tail_rec_param_n: int);
+  let acc: int = (_tail_rec_param_acc: int);
+  let v: int;
+  do {
+    let foo: Bar = (dev: Bar);
+    n = (_t0_n: int);
+    acc = (_t1_acc: int);
+    v = (_t2_v: int);
+  } while ((c: int));
   return (foo: Bar);
   bar = (b1: int);
 } else {

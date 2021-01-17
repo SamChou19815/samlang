@@ -46,6 +46,13 @@ const estimateStatementInlineCost = (statement: HighIRStatement): number => {
           0
         )
       );
+    case 'HighIRWhileStatement':
+      return (
+        1 +
+        statement.loopVariables.length * 2 +
+        (statement.returnAssignment == null ? 0 : 1) +
+        statement.statements.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0)
+      );
     case 'HighIRStructInitializationStatement':
       return 1 + statement.expressionList.length;
   }
@@ -195,6 +202,37 @@ const inlineRewriteForStatement = (
       };
     }
 
+    case 'HighIRWhileStatement': {
+      const loopVariablesWithoutLoopValue = statement.loopVariables.map(
+        ({ name, type, initialValue }) => ({
+          name: bindWithMangledName(name, type),
+          type,
+          initialValue: rewrite(initialValue),
+        })
+      );
+      const statements = statement.statements
+        .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
+        .filter(isNotNull);
+      const loopVariablesLoopValues = statement.loopVariables.map((it) => rewrite(it.loopValue));
+      const conditionValue = rewrite(statement.conditionValue);
+      const returnAssignment =
+        statement.returnAssignment == null
+          ? undefined
+          : {
+              name: bindWithMangledName(
+                statement.returnAssignment.name,
+                statement.returnAssignment.type
+              ),
+              type: statement.returnAssignment.type,
+              value: rewrite(statement.returnAssignment.value),
+            };
+      const loopVariables = zip(
+        loopVariablesWithoutLoopValue,
+        loopVariablesLoopValues
+      ).map(([rest, loopValue]) => ({ ...rest, loopValue }));
+      return { ...statement, loopVariables, statements, conditionValue, returnAssignment };
+    }
+
     case 'HighIRCastStatement':
       return {
         ...statement,
@@ -273,6 +311,8 @@ const performInlineRewriteOnFunction = (
             })),
           },
         ];
+      case 'HighIRWhileStatement':
+        return [{ ...statement, statements: statement.statements.flatMap(rewrite) }];
       default:
         return [statement];
     }

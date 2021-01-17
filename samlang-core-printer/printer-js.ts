@@ -162,6 +162,49 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
         createBracesSurroundedBlockDocument(docs.slice(0, docs.length - 1))
       );
     }
+    case 'HighIRWhileStatement': {
+      return PRETTIER_CONCAT(
+        ...highIRStatement.loopVariables.flatMap((loopVariable) => [
+          PRETTIER_TEXT(`let ${loopVariable.name} = `),
+          createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(loopVariable.initialValue),
+          PRETTIER_TEXT(';'),
+          PRETTIER_LINE,
+        ]),
+        highIRStatement.returnAssignment == null
+          ? PRETTIER_NIL
+          : PRETTIER_CONCAT(
+              PRETTIER_TEXT(`let ${highIRStatement.returnAssignment.name};`),
+              PRETTIER_LINE
+            ),
+        PRETTIER_TEXT('do '),
+        createBracesSurroundedBlockDocument([
+          ...concatStatements(highIRStatement.statements),
+          ...highIRStatement.loopVariables.flatMap((loopVariable) => [
+            PRETTIER_LINE,
+            PRETTIER_TEXT(`${loopVariable.name} = `),
+            createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(loopVariable.loopValue),
+            PRETTIER_TEXT(';'),
+          ]),
+          highIRStatement.returnAssignment == null
+            ? PRETTIER_NIL
+            : PRETTIER_CONCAT(
+                PRETTIER_LINE,
+                PRETTIER_TEXT(`${highIRStatement.returnAssignment.name} = `),
+                createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+                  highIRStatement.returnAssignment.value
+                ),
+                PRETTIER_TEXT(';')
+              ),
+        ]),
+        PRETTIER_TEXT(' while '),
+        createParenthesisSurroundedDocument(
+          createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+            highIRStatement.conditionValue
+          )
+        ),
+        PRETTIER_TEXT(';')
+      );
+    }
     case 'HighIRCastStatement':
       return PRETTIER_CONCAT(
         PRETTIER_TEXT(`let ${highIRStatement.name} = `),

@@ -65,6 +65,19 @@ const collectUsedNamesFromStatement = (
         collectForTypeSet(final.type, typeSet);
       });
       break;
+    case 'HighIRWhileStatement':
+      statement.loopVariables.forEach((it) => {
+        collectForTypeSet(it.type, typeSet);
+        collectUsedNamesFromExpression(nameSet, typeSet, it.initialValue);
+        collectUsedNamesFromExpression(nameSet, typeSet, it.loopValue);
+      });
+      statement.statements.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
+      collectUsedNamesFromExpression(nameSet, typeSet, statement.conditionValue);
+      if (statement.returnAssignment != null) {
+        collectForTypeSet(statement.returnAssignment.type, typeSet);
+        collectUsedNamesFromExpression(nameSet, typeSet, statement.returnAssignment.value);
+      }
+      break;
     case 'HighIRCastStatement':
       collectUsedNamesFromExpression(nameSet, typeSet, statement.assignedExpression);
       collectForTypeSet(statement.type, typeSet);

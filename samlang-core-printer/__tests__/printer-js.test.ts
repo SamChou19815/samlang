@@ -15,6 +15,8 @@ import {
 } from 'samlang-core-ast/common-names';
 import {
   HIR_IF_ELSE,
+  HIR_SWITCH,
+  HIR_WHILE,
   HIR_BINARY,
   HIR_INT,
   HIR_FUNCTION_CALL,
@@ -27,7 +29,6 @@ import {
   HIR_VARIABLE,
   HighIRExpression,
   HighIRStatement,
-  HIR_SWITCH,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import {
@@ -634,6 +635,82 @@ switch (f) {
       })
     )
   ).toBe(`let st = [0, 0, 13];`);
+
+  expect(
+    highIRStatementToString(
+      HIR_WHILE({
+        loopVariables: [
+          {
+            name: 'n',
+            type: HIR_INT_TYPE,
+            initialValue: HIR_VARIABLE('_tail_rec_param_n', HIR_INT_TYPE),
+            loopValue: HIR_VARIABLE('_t0_n', HIR_INT_TYPE),
+          },
+          {
+            name: 'acc',
+            type: HIR_INT_TYPE,
+            initialValue: HIR_VARIABLE('_tail_rec_param_acc', HIR_INT_TYPE),
+            loopValue: HIR_VARIABLE('_t1_acc', HIR_INT_TYPE),
+          },
+        ],
+        statements: [
+          HIR_CAST({
+            name: 'foo',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('dev', HIR_INT_TYPE),
+          }),
+        ],
+        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
+      })
+    )
+  ).toBe(`let n = _tail_rec_param_n;
+let acc = _tail_rec_param_acc;
+do {
+  let foo = dev;
+  n = _t0_n;
+  acc = _t1_acc;
+} while (c);`);
+  expect(
+    highIRStatementToString(
+      HIR_WHILE({
+        loopVariables: [
+          {
+            name: 'n',
+            type: HIR_INT_TYPE,
+            initialValue: HIR_VARIABLE('_tail_rec_param_n', HIR_INT_TYPE),
+            loopValue: HIR_VARIABLE('_t0_n', HIR_INT_TYPE),
+          },
+          {
+            name: 'acc',
+            type: HIR_INT_TYPE,
+            initialValue: HIR_VARIABLE('_tail_rec_param_acc', HIR_INT_TYPE),
+            loopValue: HIR_VARIABLE('_t1_acc', HIR_INT_TYPE),
+          },
+        ],
+        statements: [
+          HIR_CAST({
+            name: 'foo',
+            type: HIR_INT_TYPE,
+            assignedExpression: HIR_VARIABLE('dev', HIR_INT_TYPE),
+          }),
+        ],
+        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
+        returnAssignment: {
+          name: 'v',
+          type: HIR_INT_TYPE,
+          value: HIR_VARIABLE('_t2_v', HIR_INT_TYPE),
+        },
+      })
+    )
+  ).toBe(`let n = _tail_rec_param_n;
+let acc = _tail_rec_param_acc;
+let v;
+do {
+  let foo = dev;
+  n = _t0_n;
+  acc = _t1_acc;
+  v = _t2_v;
+} while (c);`);
 });
 
 it('HIR function to JS string test 1', () => {

@@ -11,11 +11,12 @@ import {
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_SWITCH,
+  HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CAST,
   HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
-import { checkNotNull, error, isNotNull, LocalStackedContext, zip3 } from 'samlang-core-utils';
+import { checkNotNull, error, isNotNull, LocalStackedContext, zip, zip3 } from 'samlang-core-utils';
 
 class LocalVariableContext extends LocalStackedContext<string> {
   addLocalValueType(name: string, value: string, onCollision: () => void): void {
@@ -168,6 +169,47 @@ const optimizeHighIRStatement = (
           branchValues: casesWithValue.map((it) => checkNotNull(it.finalValues[i])),
         })),
       });
+    }
+
+    case 'HighIRWhileStatement': {
+      const loopVariableWithoutLoopValues = statement.loopVariables.map(
+        ({ name, type, initialValue }) => ({
+          name,
+          type,
+          initialValue: getExpressionUnderContext(initialValue),
+        })
+      );
+      const [
+        statements,
+        loopVariableLoopValues,
+        conditionValue,
+        returnAssignment,
+      ] = variableContext.withNestedScope(() =>
+        bindedValueContext.withNestedScope(() => {
+          const newStatements = optimizeHighIRStatements(
+            statement.statements,
+            variableContext,
+            bindedValueContext
+          );
+          return [
+            newStatements,
+            statement.loopVariables.map((it) => getExpressionUnderContext(it.loopValue)),
+            getExpressionUnderContext(statement.conditionValue),
+            statement.returnAssignment == null
+              ? undefined
+              : {
+                  name: statement.returnAssignment.name,
+                  type: statement.returnAssignment.type,
+                  value: getExpressionUnderContext(statement.returnAssignment.value),
+                },
+          ];
+        })
+      );
+      const loopVariables = zip(
+        loopVariableWithoutLoopValues,
+        loopVariableLoopValues
+      ).map(([rest, loopValue]) => ({ ...rest, loopValue }));
+      return HIR_WHILE({ loopVariables, statements, conditionValue, returnAssignment });
     }
 
     case 'HighIRCastStatement':
