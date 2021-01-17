@@ -3,8 +3,11 @@ import optimizeHighIRStatementsByDeadCodeElimination from '../hir-dead-code-elim
 import {
   HighIRStatement,
   debugPrintHighIRStatement,
+  HIR_TRUE,
+  HIR_FALSE,
   HIR_ZERO,
   HIR_ONE,
+  HIR_INT,
   HIR_NAME,
   HIR_VARIABLE,
   HIR_INDEX_ACCESS,
@@ -12,6 +15,7 @@ import {
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_SWITCH,
+  HIR_WHILE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
@@ -397,5 +401,211 @@ switch (b) {
   }
 }
 return (ma: int);`
+  );
+});
+
+it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 1/n.', () => {
+  assertCorrectlyOptimized(
+    [
+      HIR_WHILE({
+        loopVariables: [
+          {
+            name: 'n',
+            type: HIR_INT_TYPE,
+            initialValue: HIR_INT(10),
+            loopValue: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
+          },
+        ],
+        statements: [
+          HIR_BINARY({
+            name: 'is_zero',
+            operator: '==',
+            e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+            e2: HIR_ZERO,
+          }),
+          HIR_IF_ELSE({
+            booleanExpression: HIR_VARIABLE('is_zero', HIR_BOOL_TYPE),
+            s1: [],
+            s2: [
+              HIR_BINARY({
+                name: 's2_n',
+                operator: '-',
+                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+                e2: HIR_ONE,
+              }),
+            ],
+            finalAssignments: [
+              { name: 'c', type: HIR_INT_TYPE, branch1Value: HIR_FALSE, branch2Value: HIR_TRUE },
+              {
+                name: '_tmp_n',
+                type: HIR_INT_TYPE,
+                branch1Value: HIR_VARIABLE('n', HIR_INT_TYPE),
+                branch2Value: HIR_VARIABLE('s2_n', HIR_INT_TYPE),
+              },
+            ],
+          }),
+        ],
+        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
+      }),
+    ],
+    `let n: int = 10;
+do {
+  let is_zero: bool = (n: int) == 0;
+  let c: int;
+  let _tmp_n: int;
+  if (is_zero: bool) {
+    c = 0;
+    _tmp_n = (n: int);
+  } else {
+    let s2_n: int = (n: int) + -1;
+    c = 1;
+    _tmp_n = (s2_n: int);
+  }
+  n = (_tmp_n: int);
+} while ((c: int));`
+  );
+});
+
+it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 2/n.', () => {
+  assertCorrectlyOptimized(
+    [
+      HIR_WHILE({
+        loopVariables: [
+          {
+            name: 'n',
+            type: HIR_INT_TYPE,
+            initialValue: HIR_INT(10),
+            loopValue: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
+          },
+          {
+            name: 'n1',
+            type: HIR_INT_TYPE,
+            initialValue: HIR_INT(10),
+            loopValue: HIR_INT(20),
+          },
+        ],
+        statements: [
+          HIR_BINARY({
+            name: 'is_zero',
+            operator: '==',
+            e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+            e2: HIR_ZERO,
+          }),
+          HIR_IF_ELSE({
+            booleanExpression: HIR_VARIABLE('is_zero', HIR_BOOL_TYPE),
+            s1: [],
+            s2: [
+              HIR_BINARY({
+                name: 's2_n',
+                operator: '-',
+                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+                e2: HIR_ONE,
+              }),
+            ],
+            finalAssignments: [
+              { name: 'c', type: HIR_INT_TYPE, branch1Value: HIR_FALSE, branch2Value: HIR_TRUE },
+              {
+                name: '_tmp_n',
+                type: HIR_INT_TYPE,
+                branch1Value: HIR_VARIABLE('n', HIR_INT_TYPE),
+                branch2Value: HIR_VARIABLE('s2_n', HIR_INT_TYPE),
+              },
+            ],
+          }),
+        ],
+        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
+        returnAssignment: {
+          name: 'v',
+          type: HIR_INT_TYPE,
+          value: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
+        },
+      }),
+    ],
+    `let n: int = 10;
+do {
+  let is_zero: bool = (n: int) == 0;
+  let c: int;
+  let _tmp_n: int;
+  if (is_zero: bool) {
+    c = 0;
+    _tmp_n = (n: int);
+  } else {
+    let s2_n: int = (n: int) + -1;
+    c = 1;
+    _tmp_n = (s2_n: int);
+  }
+  n = (_tmp_n: int);
+} while ((c: int));`
+  );
+});
+
+it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 3/n.', () => {
+  assertCorrectlyOptimized(
+    [
+      HIR_WHILE({
+        loopVariables: [
+          {
+            name: 'n',
+            type: HIR_INT_TYPE,
+            initialValue: HIR_INT(10),
+            loopValue: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
+          },
+        ],
+        statements: [
+          HIR_BINARY({
+            name: 'is_zero',
+            operator: '==',
+            e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+            e2: HIR_ZERO,
+          }),
+          HIR_IF_ELSE({
+            booleanExpression: HIR_VARIABLE('is_zero', HIR_BOOL_TYPE),
+            s1: [],
+            s2: [
+              HIR_BINARY({
+                name: 's2_n',
+                operator: '-',
+                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+                e2: HIR_ONE,
+              }),
+            ],
+            finalAssignments: [
+              { name: 'c', type: HIR_INT_TYPE, branch1Value: HIR_FALSE, branch2Value: HIR_TRUE },
+              {
+                name: '_tmp_n',
+                type: HIR_INT_TYPE,
+                branch1Value: HIR_VARIABLE('n', HIR_INT_TYPE),
+                branch2Value: HIR_VARIABLE('s2_n', HIR_INT_TYPE),
+              },
+            ],
+          }),
+        ],
+        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
+        returnAssignment: {
+          name: 'v',
+          type: HIR_INT_TYPE,
+          value: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
+        },
+      }),
+      HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
+    ],
+    `let n: int = 10;
+let v: int;
+do {
+  let is_zero: bool = (n: int) == 0;
+  let c: int;
+  let _tmp_n: int;
+  if (is_zero: bool) {
+    c = 0;
+    _tmp_n = (n: int);
+  } else {
+    let s2_n: int = (n: int) + -1;
+    c = 1;
+    _tmp_n = (s2_n: int);
+  }
+  n = (_tmp_n: int);
+  v = (_tmp_n: int);
+} while ((c: int));
+return (v: int);`
   );
 });

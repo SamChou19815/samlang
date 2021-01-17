@@ -80,6 +80,7 @@ const optimizeHighIRStatement = (
       return [statement];
 
     case 'HighIRFunctionCallStatement':
+    case 'HighIRWhileStatement': // handle similar optimization in loop-invariant code motion
     case 'HighIRCastStatement':
     case 'HighIRStructInitializationStatement':
     case 'HighIRReturnStatement':

@@ -4,6 +4,8 @@ import optimizeHighIRFunctionsByInlining, {
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 import {
+  HIR_FALSE,
+  HIR_TRUE,
   HIR_ZERO,
   HIR_ONE,
   HIR_INT,
@@ -14,6 +16,7 @@ import {
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_SWITCH,
+  HIR_WHILE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
@@ -130,10 +133,39 @@ it('estimateFunctionInlineCost test', () => {
           ],
           finalAssignments: [{ name: '', type: HIR_INT_TYPE, branchValues: [HIR_ZERO] }],
         }),
+        HIR_WHILE({
+          loopVariables: [
+            { name: '', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
+          ],
+          statements: [
+            HIR_BINARY({
+              name: '',
+              operator: '+',
+              e1: HIR_VARIABLE('', HIR_INT_TYPE),
+              e2: HIR_INT(3),
+            }),
+          ],
+          conditionValue: HIR_ZERO,
+        }),
+        HIR_WHILE({
+          loopVariables: [
+            { name: '', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
+          ],
+          statements: [
+            HIR_BINARY({
+              name: '',
+              operator: '+',
+              e1: HIR_VARIABLE('', HIR_INT_TYPE),
+              e2: HIR_INT(3),
+            }),
+          ],
+          conditionValue: HIR_ZERO,
+          returnAssignment: { name: '', type: HIR_INT_TYPE, value: HIR_ZERO },
+        }),
         HIR_RETURN(HIR_VARIABLE('ss', HIR_INT_TYPE)),
       ],
     })
-  ).toBe(30);
+  ).toBe(39);
 });
 
 const assertCorrectlyInlined = (functions: readonly HighIRFunction[], expected: string): void => {
@@ -776,6 +808,145 @@ it('optimizeFunctionsByInlining test 7', () => {
       }
     }
   }
+}
+`
+  );
+});
+
+it('optimizeFunctionsByInlining test 8', () => {
+  assertCorrectlyInlined(
+    [
+      {
+        name: 'fooBar',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        body: [
+          HIR_WHILE({
+            loopVariables: [
+              {
+                name: 'n',
+                type: HIR_INT_TYPE,
+                initialValue: HIR_INT(10),
+                loopValue: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
+              },
+            ],
+            statements: [
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+                functionArguments: [],
+                returnType: HIR_INT_TYPE,
+                returnCollector: '_tmp_n',
+              }),
+            ],
+            conditionValue: HIR_TRUE,
+            returnAssignment: {
+              name: 'v',
+              type: HIR_INT_TYPE,
+              value: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
+            },
+          }),
+          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
+        ],
+      },
+    ],
+    `function fooBar(): int {
+  let n: int = 10;
+  let v: int;
+  do {
+    let _inline_0_n: int = 10;
+    let _inline_0_v: int;
+    do {
+      let _inline_1_n: int = 10;
+      let _inline_1_v: int;
+      do {
+        let _inline_1__inline_0_n: int = 10;
+        let _inline_1__inline_0_v: int;
+        do {
+          let _inline_1__inline_0__tmp_n: int = fooBar();
+          _inline_1__inline_0_n = (_inline_1__inline_0__tmp_n: int);
+          _inline_1__inline_0_v = (_inline_1__inline_0__tmp_n: int);
+        } while (1);
+        _inline_1_n = (_inline_1__inline_0_v: int);
+        _inline_1_v = (_inline_1__inline_0_v: int);
+      } while (1);
+      _inline_0_n = (_inline_1_v: int);
+      _inline_0_v = (_inline_1_v: int);
+    } while (1);
+    n = (_inline_0_v: int);
+    v = (_inline_0_v: int);
+  } while (1);
+  return (v: int);
+}
+`
+  );
+});
+
+it('optimizeFunctionsByInlining test 9', () => {
+  assertCorrectlyInlined(
+    [
+      {
+        name: 'fooBar',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        body: [
+          HIR_WHILE({
+            loopVariables: [
+              {
+                name: 'n',
+                type: HIR_INT_TYPE,
+                initialValue: HIR_INT(10),
+                loopValue: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
+              },
+            ],
+            statements: [
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+                functionArguments: [],
+                returnType: HIR_INT_TYPE,
+                returnCollector: '_tmp_n',
+              }),
+            ],
+            conditionValue: HIR_TRUE,
+          }),
+          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
+        ],
+      },
+    ],
+    `function fooBar(): int {
+  let n: int = 10;
+  do {
+    let _inline_0_n: int = 10;
+    do {
+      let _inline_1_n: int = 10;
+      do {
+        let _inline_1__inline_0_n: int = 10;
+        do {
+          let _inline_2_n: int = 10;
+          do {
+            let _inline_2__inline_0_n: int = 10;
+            do {
+              let _inline_2__inline_1_n: int = 10;
+              do {
+                let _inline_2__inline_1__inline_0_n: int = 10;
+                do {
+                  let _inline_2__inline_1__inline_0__tmp_n: int = fooBar();
+                  _inline_2__inline_1__inline_0_n = (_inline_2__inline_1__inline_0__tmp_n: int);
+                } while (1);
+                _inline_2__inline_1_n = (v: int);
+              } while (1);
+              _inline_2__inline_0_n = (v: int);
+            } while (1);
+            _inline_2_n = (v: int);
+          } while (1);
+          _inline_1__inline_0_n = (v: int);
+        } while (1);
+        _inline_1_n = (v: int);
+      } while (1);
+      _inline_0_n = (v: int);
+    } while (1);
+    n = (v: int);
+  } while (1);
+  return (v: int);
 }
 `
   );

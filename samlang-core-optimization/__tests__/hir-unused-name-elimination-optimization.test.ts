@@ -12,6 +12,7 @@ import {
   HIR_IF_ELSE,
   HIR_BINARY,
   HIR_SWITCH,
+  HIR_WHILE,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_INT_TYPE, HIR_FUNCTION_TYPE, HIR_IDENTIFIER_TYPE } from 'samlang-core-ast/hir-types';
 
@@ -97,6 +98,28 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
                 branch2Value: HIR_ZERO,
               },
             ],
+          }),
+          HIR_WHILE({
+            loopVariables: [
+              { name: 'f', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
+            ],
+            statements: [
+              HIR_BINARY({
+                name: '',
+                operator: '+',
+                e1: HIR_NAME('foo', HIR_INT_TYPE),
+                e2: HIR_NAME('bar', HIR_INT_TYPE),
+              }),
+            ],
+            conditionValue: HIR_ZERO,
+          }),
+          HIR_WHILE({
+            loopVariables: [
+              { name: 'f', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
+            ],
+            statements: [],
+            conditionValue: HIR_ZERO,
+            returnAssignment: { name: 'd', type: HIR_INT_TYPE, value: HIR_ZERO },
           }),
         ],
       },

@@ -105,6 +105,11 @@ class LLVMLoweringManager {
       case 'HighIRSwitchStatement':
         this.lowerHighIRSwitchStatement(s);
         return;
+      // istanbul ignore next
+      case 'HighIRWhileStatement':
+        // TODO: implement this when the tailrec optimization is ready.
+        // istanbul ignore next
+        return;
       case 'HighIRCastStatement': {
         const { value: sourceValue, type: sourceType } = this.lowerHighIRExpression(
           s.assignedExpression

@@ -21,6 +21,7 @@ import {
   HIR_CAST,
   HIR_RETURN,
   HIR_INT,
+  HIR_WHILE,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
 import {
@@ -316,6 +317,74 @@ const optimizeHighIRStatement = (
           finalAssignments,
         })
       );
+    }
+
+    case 'HighIRWhileStatement': {
+      if (
+        statement.conditionValue.__type__ === 'HighIRIntLiteralExpression' &&
+        statement.conditionValue.value.equals(0)
+      ) {
+        // we now have do { ... } while (false)!
+        statement.loopVariables.forEach((it) =>
+          valueContext.bind(it.name, optimizeExpression(it.initialValue))
+        );
+        const statements = optimizeHighIRStatements(
+          statement.statements,
+          valueContext,
+          binaryExpressionContext
+        );
+        if (statement.returnAssignment != null) {
+          valueContext.bind(
+            statement.returnAssignment.name,
+            optimizeExpression(statement.returnAssignment.value)
+          );
+        }
+        return statements;
+      }
+      const filteredLoopVariables = statement.loopVariables
+        .map((it) => {
+          if (
+            debugPrintHighIRExpression(it.initialValue) === debugPrintHighIRExpression(it.loopValue)
+          ) {
+            valueContext.bind(it.name, it.initialValue);
+            return null;
+          }
+          return it;
+        })
+        .filter(isNotNull);
+      const loopVariableInitialValues = filteredLoopVariables.map((it) =>
+        optimizeExpression(it.initialValue)
+      );
+      const [
+        statements,
+        loopVariableLoopValues,
+        conditionValue,
+        returnAssignment,
+      ] = withNestedScope(() => {
+        const newStatements = optimizeHighIRStatements(
+          statement.statements,
+          valueContext,
+          binaryExpressionContext
+        );
+        return [
+          newStatements,
+          filteredLoopVariables.map((it) => optimizeExpression(it.loopValue)),
+          optimizeExpression(statement.conditionValue),
+          statement.returnAssignment == null
+            ? undefined
+            : {
+                name: statement.returnAssignment.name,
+                type: statement.returnAssignment.type,
+                value: optimizeExpression(statement.returnAssignment.value),
+              },
+        ] as const;
+      });
+      const loopVariables = zip3(
+        loopVariableInitialValues,
+        loopVariableLoopValues,
+        filteredLoopVariables
+      ).map(([initialValue, loopValue, variable]) => ({ ...variable, initialValue, loopValue }));
+      return [HIR_WHILE({ loopVariables, statements, conditionValue, returnAssignment })];
     }
 
     case 'HighIRCastStatement':

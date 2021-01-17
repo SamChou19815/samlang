@@ -89,6 +89,29 @@ export interface HighIRSwitchStatement extends BaseHighIRStatement {
   }[];
 }
 
+export interface AssignmentForHighIRWhileStatement {
+  readonly name: string;
+  readonly type: HighIRType;
+  readonly value: HighIRExpression;
+}
+
+export interface HighIRWhileStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRWhileStatement';
+  readonly loopVariables: readonly {
+    readonly name: string;
+    readonly type: HighIRType;
+    readonly initialValue: HighIRExpression;
+    readonly loopValue: HighIRExpression;
+  }[];
+  readonly statements: readonly HighIRStatement[];
+  readonly conditionValue: HighIRExpression;
+  readonly returnAssignment?: {
+    readonly name: string;
+    readonly type: HighIRType;
+    readonly value: HighIRExpression;
+  };
+}
+
 export interface HighIRVariantPatternToStatement {
   readonly tagOrder: number;
   readonly statements: readonly HighIRStatement[];
@@ -119,6 +142,7 @@ export type HighIRStatement =
   | HighIRFunctionCallStatement
   | HighIRIfElseStatement
   | HighIRSwitchStatement
+  | HighIRWhileStatement
   | HighIRCastStatement
   | HighIRStructInitializationStatement
   | HighIRReturnStatement;
@@ -253,6 +277,19 @@ export const HIR_SWITCH = ({
   finalAssignments,
 });
 
+export const HIR_WHILE = ({
+  loopVariables,
+  statements,
+  conditionValue,
+  returnAssignment,
+}: ConstructorArgumentObject<HighIRWhileStatement>): HighIRWhileStatement => ({
+  __type__: 'HighIRWhileStatement',
+  loopVariables,
+  statements,
+  conditionValue,
+  returnAssignment,
+});
+
 export const HIR_CAST = ({
   name,
   type,
@@ -372,6 +409,38 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         });
         level -= 1;
         collector.push('  '.repeat(level), `}\n`);
+        break;
+      }
+      case 'HighIRWhileStatement': {
+        s.loopVariables.forEach((v) => {
+          const type = prettyPrintHighIRType(v.type);
+          collector.push(
+            '  '.repeat(level),
+            `let ${v.name}: ${type} = ${debugPrintHighIRExpression(v.initialValue)};\n`
+          );
+        });
+        if (s.returnAssignment != null) {
+          const { name, type } = s.returnAssignment;
+          collector.push('  '.repeat(level), `let ${name}: ${prettyPrintHighIRType(type)};\n`);
+        }
+        collector.push('  '.repeat(level), `do {\n`);
+        level += 1;
+        s.statements.forEach(printer);
+        s.loopVariables.forEach((v) => {
+          collector.push(
+            '  '.repeat(level),
+            `${v.name} = ${debugPrintHighIRExpression(v.loopValue)};\n`
+          );
+        });
+        if (s.returnAssignment != null) {
+          const value = debugPrintHighIRExpression(s.returnAssignment.value);
+          collector.push('  '.repeat(level), `${s.returnAssignment.name} = ${value};\n`);
+        }
+        level -= 1;
+        collector.push(
+          '  '.repeat(level),
+          `} while (${debugPrintHighIRExpression(s.conditionValue)});\n`
+        );
         break;
       }
       case 'HighIRCastStatement':
