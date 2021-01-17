@@ -249,6 +249,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
               booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
               s1: [HIR_RETURN(HIR_NAME('y', HIR_STRING_TYPE))],
               s2: [HIR_RETURN(HIR_NAME('n', HIR_STRING_TYPE))],
+              finalAssignments: [],
             }),
           ],
         },
@@ -389,6 +390,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
                 }),
               ],
               s2: [],
+              finalAssignments: [],
             }),
           ],
         },
@@ -424,6 +426,7 @@ it('HIR statements to JS string test', () => {
         booleanExpression: HIR_INT(5),
         s1: [],
         s2: [HIR_RETURN(HIR_ZERO)],
+        finalAssignments: [],
       })
     )
   ).toBe(`if (5) {
@@ -437,12 +440,14 @@ it('HIR statements to JS string test', () => {
         booleanExpression: HIR_INT(5),
         s1: [HIR_RETURN(HIR_ZERO)],
         s2: [HIR_RETURN(HIR_ZERO)],
-        finalAssignment: {
-          name: 'f',
-          type: HIR_INT_TYPE,
-          branch1Value: HIR_ZERO,
-          branch2Value: HIR_ZERO,
-        },
+        finalAssignments: [
+          {
+            name: 'f',
+            type: HIR_INT_TYPE,
+            branch1Value: HIR_ZERO,
+            branch2Value: HIR_ZERO,
+          },
+        ],
       })
     )
   ).toBe(`let f;
@@ -463,8 +468,10 @@ if (5) {
             booleanExpression: HIR_INT(5),
             s1: [HIR_RETURN(HIR_ZERO)],
             s2: [HIR_RETURN(HIR_ZERO)],
+            finalAssignments: [],
           }),
         ],
+        finalAssignments: [],
       })
     )
   ).toBe(`if (5) {

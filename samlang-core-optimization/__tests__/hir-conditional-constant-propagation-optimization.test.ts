@@ -313,6 +313,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnType: HIR_INT_TYPE,
           }),
         ],
+        finalAssignments: [],
       }),
       HIR_BINARY({ name: 'b2', operator: '>', e1: HIR_ZERO, e2: HIR_ONE }),
       HIR_IF_ELSE({
@@ -331,6 +332,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnType: HIR_INT_TYPE,
           }),
         ],
+        finalAssignments: [],
       }),
       HIR_BINARY({ name: 'b3', operator: '<=', e1: HIR_ZERO, e2: HIR_ONE }),
       HIR_IF_ELSE({
@@ -351,12 +353,14 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnCollector: 'a2',
           }),
         ],
-        finalAssignment: {
-          name: 'ma1',
-          type: HIR_INT_TYPE,
-          branch1Value: HIR_VARIABLE('a1', HIR_INT_TYPE),
-          branch2Value: HIR_VARIABLE('a2', HIR_INT_TYPE),
-        },
+        finalAssignments: [
+          {
+            name: 'ma1',
+            type: HIR_INT_TYPE,
+            branch1Value: HIR_VARIABLE('a1', HIR_INT_TYPE),
+            branch2Value: HIR_VARIABLE('a2', HIR_INT_TYPE),
+          },
+        ],
       }),
       HIR_BINARY({ name: 'b4', operator: '>=', e1: HIR_ZERO, e2: HIR_ONE }),
       HIR_IF_ELSE({
@@ -377,12 +381,14 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnCollector: 'a22',
           }),
         ],
-        finalAssignment: {
-          name: 'ma2',
-          type: HIR_INT_TYPE,
-          branch1Value: HIR_VARIABLE('a11', HIR_INT_TYPE),
-          branch2Value: HIR_VARIABLE('a22', HIR_INT_TYPE),
-        },
+        finalAssignments: [
+          {
+            name: 'ma2',
+            type: HIR_INT_TYPE,
+            branch1Value: HIR_VARIABLE('a11', HIR_INT_TYPE),
+            branch2Value: HIR_VARIABLE('a22', HIR_INT_TYPE),
+          },
+        ],
       }),
       HIR_BINARY({
         name: 'r1',
@@ -456,6 +462,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnType: HIR_INT_TYPE,
           }),
         ],
+        finalAssignments: [],
       }),
       HIR_IF_ELSE({
         booleanExpression: HIR_VARIABLE('b', HIR_BOOL_TYPE),
@@ -475,24 +482,28 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnCollector: 'a2',
           }),
         ],
-        finalAssignment: {
-          name: 'ma1',
-          type: HIR_INT_TYPE,
-          branch1Value: HIR_VARIABLE('a1', HIR_INT_TYPE),
-          branch2Value: HIR_VARIABLE('a2', HIR_INT_TYPE),
-        },
+        finalAssignments: [
+          {
+            name: 'ma1',
+            type: HIR_INT_TYPE,
+            branch1Value: HIR_VARIABLE('a1', HIR_INT_TYPE),
+            branch2Value: HIR_VARIABLE('a2', HIR_INT_TYPE),
+          },
+        ],
       }),
       HIR_RETURN(HIR_VARIABLE('ma1', HIR_INT_TYPE)),
       HIR_IF_ELSE({
         booleanExpression: HIR_VARIABLE('b', HIR_BOOL_TYPE),
         s1: [],
         s2: [],
-        finalAssignment: {
-          name: 'ma2',
-          type: HIR_INT_TYPE,
-          branch1Value: HIR_VARIABLE('a0', HIR_INT_TYPE),
-          branch2Value: HIR_VARIABLE('a0', HIR_INT_TYPE),
-        },
+        finalAssignments: [
+          {
+            name: 'ma2',
+            type: HIR_INT_TYPE,
+            branch1Value: HIR_VARIABLE('a0', HIR_INT_TYPE),
+            branch2Value: HIR_VARIABLE('a0', HIR_INT_TYPE),
+          },
+        ],
       }),
       HIR_RETURN(HIR_VARIABLE('ma2', HIR_INT_TYPE)),
     ],

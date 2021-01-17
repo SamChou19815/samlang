@@ -151,7 +151,7 @@ class LLVMLoweringManager {
   }
 
   private lowerNormalHighIRIfElseStatement(s: HighIRIfElseStatement): void {
-    const { booleanExpression, s1, s2, finalAssignment } = s;
+    const { booleanExpression, s1, s2, finalAssignments } = s;
     const loweredCondition = this.lowerHighIRExpression(booleanExpression).value;
     const trueLabel = this.allocator.allocateLabelWithAnnotation('if_else_true');
     const falseLabel = this.allocator.allocateLabelWithAnnotation('if_else_false');
@@ -159,25 +159,27 @@ class LLVMLoweringManager {
     const s1IsEmpty = s1.length === 0;
     const s2IsEmpty = s2.length === 0;
     if (s1IsEmpty && s2IsEmpty) {
-      if (finalAssignment == null) return;
+      if (finalAssignments.length === 0) return;
       this.emitInstruction(LLVM_CJUMP(loweredCondition, trueLabel, falseLabel));
       this.emitInstruction(LLVM_LABEL(trueLabel));
       this.emitInstruction(LLVM_JUMP(endLabel));
       this.emitInstruction(LLVM_LABEL(falseLabel));
       this.emitInstruction(LLVM_JUMP(endLabel));
       this.emitInstruction(LLVM_LABEL(endLabel));
-      const v1 = this.lowerHighIRExpression(finalAssignment.branch1Value).value;
-      const v2 = this.lowerHighIRExpression(finalAssignment.branch2Value).value;
-      this.emitInstruction(
-        LLVM_PHI({
-          resultVariable: finalAssignment.name,
-          variableType: lowerHighIRTypeToLLVMType(finalAssignment.type),
-          valueBranchTuples: [
-            { value: v1, branch: trueLabel },
-            { value: v2, branch: falseLabel },
-          ],
-        })
-      );
+      finalAssignments.forEach((finalAssignment) => {
+        const v1 = this.lowerHighIRExpression(finalAssignment.branch1Value).value;
+        const v2 = this.lowerHighIRExpression(finalAssignment.branch2Value).value;
+        this.emitInstruction(
+          LLVM_PHI({
+            resultVariable: finalAssignment.name,
+            variableType: lowerHighIRTypeToLLVMType(finalAssignment.type),
+            valueBranchTuples: [
+              { value: v1, branch: trueLabel },
+              { value: v2, branch: falseLabel },
+            ],
+          })
+        );
+      });
       return;
     }
 
@@ -189,18 +191,22 @@ class LLVMLoweringManager {
       )
     );
     const beforeConditionLabel = this.currentLabel;
-    if (finalAssignment != null) {
-      this.emitInstruction(LLVM_LABEL(trueLabel));
-      s1.forEach((it) => this.lowerHighIRStatement(it));
-      const v1 = this.lowerHighIRExpression(finalAssignment.branch1Value).value;
-      const v1Label = this.currentLabel;
-      this.emitInstruction(LLVM_JUMP(endLabel));
-      this.emitInstruction(LLVM_LABEL(falseLabel));
-      s2.forEach((it) => this.lowerHighIRStatement(it));
-      const v2 = this.lowerHighIRExpression(finalAssignment.branch2Value).value;
-      const v2Label = this.currentLabel;
-      this.emitInstruction(LLVM_JUMP(endLabel));
-      this.emitInstruction(LLVM_LABEL(endLabel));
+    this.emitInstruction(LLVM_LABEL(trueLabel));
+    s1.forEach((it) => this.lowerHighIRStatement(it));
+    const v1List = finalAssignments.map(
+      (finalAssignment) => this.lowerHighIRExpression(finalAssignment.branch1Value).value
+    );
+    const v1Label = this.currentLabel;
+    this.emitInstruction(LLVM_JUMP(endLabel));
+    this.emitInstruction(LLVM_LABEL(falseLabel));
+    s2.forEach((it) => this.lowerHighIRStatement(it));
+    const v2List = finalAssignments.map(
+      (finalAssignment) => this.lowerHighIRExpression(finalAssignment.branch2Value).value
+    );
+    const v2Label = this.currentLabel;
+    this.emitInstruction(LLVM_JUMP(endLabel));
+    this.emitInstruction(LLVM_LABEL(endLabel));
+    zip(zip(v1List, v2List), finalAssignments).forEach(([[v1, v2], finalAssignment]) => {
       this.emitInstruction(
         LLVM_PHI({
           resultVariable: finalAssignment.name,
@@ -211,15 +217,7 @@ class LLVMLoweringManager {
           ],
         })
       );
-    } else {
-      this.emitInstruction(LLVM_LABEL(trueLabel));
-      s1.forEach((it) => this.lowerHighIRStatement(it));
-      this.emitInstruction(LLVM_JUMP(endLabel));
-      this.emitInstruction(LLVM_LABEL(falseLabel));
-      s2.forEach((it) => this.lowerHighIRStatement(it));
-      this.emitInstruction(LLVM_JUMP(endLabel));
-      this.emitInstruction(LLVM_LABEL(endLabel));
-    }
+    });
   }
 
   private lowerHighIRSwitchStatement(s: HighIRSwitchStatement): void {

@@ -33,7 +33,7 @@ const estimateStatementInlineCost = (statement: HighIRStatement): number => {
         1 +
         statement.s1.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0) +
         statement.s2.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0) +
-        (statement.finalAssignment == null ? 0 : 2)
+        statement.finalAssignments.length * 2
       );
     case 'HighIRSwitchStatement':
       return (
@@ -127,48 +127,37 @@ const inlineRewriteForStatement = (
 
     case 'HighIRIfElseStatement': {
       const booleanExpression = rewrite(statement.booleanExpression);
-      const final = statement.finalAssignment;
-      if (final == null) {
-        const s1 = context.withNestedScope(() =>
-          statement.s1
-            .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
-            .filter(isNotNull)
-        );
-        const s2 = context.withNestedScope(() =>
-          statement.s2
-            .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
-            .filter(isNotNull)
-        );
-        return {
-          ...statement,
-          booleanExpression,
-          s1,
-          s2,
-        };
-      }
-      const [s1, branch1Value] = context.withNestedScope(() => {
+      const [s1, branch1Values] = context.withNestedScope(() => {
         const statements = statement.s1
           .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
           .filter(isNotNull);
-        return [statements, rewrite(final.branch1Value)] as const;
+        return [
+          statements,
+          statement.finalAssignments.map((final) => rewrite(final.branch1Value)),
+        ] as const;
       });
-      const [s2, branch2Value] = context.withNestedScope(() => {
+      const [s2, branch2Values] = context.withNestedScope(() => {
         const statements = statement.s2
           .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
           .filter(isNotNull);
-        return [statements, rewrite(final.branch2Value)] as const;
+        return [
+          statements,
+          statement.finalAssignments.map((final) => rewrite(final.branch2Value)),
+        ] as const;
       });
       return {
         ...statement,
         booleanExpression,
         s1,
         s2,
-        finalAssignment: {
-          name: bindWithMangledName(final.name, final.type),
-          type: final.type,
-          branch1Value,
-          branch2Value,
-        },
+        finalAssignments: zip(zip(branch1Values, branch2Values), statement.finalAssignments).map(
+          ([[branch1Value, branch2Value], final]) => ({
+            name: bindWithMangledName(final.name, final.type),
+            type: final.type,
+            branch1Value,
+            branch2Value,
+          })
+        ),
       };
     }
 

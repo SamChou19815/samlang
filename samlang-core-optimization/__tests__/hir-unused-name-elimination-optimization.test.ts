@@ -82,17 +82,20 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
               }),
             ],
             s2: [HIR_CAST({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
+            finalAssignments: [],
           }),
           HIR_IF_ELSE({
             booleanExpression: HIR_ZERO,
             s1: [],
             s2: [],
-            finalAssignment: {
-              name: 'fff',
-              type: HIR_INT_TYPE,
-              branch1Value: HIR_ZERO,
-              branch2Value: HIR_ZERO,
-            },
+            finalAssignments: [
+              {
+                name: 'fff',
+                type: HIR_INT_TYPE,
+                branch1Value: HIR_ZERO,
+                branch2Value: HIR_ZERO,
+              },
+            ],
           }),
         ],
       },

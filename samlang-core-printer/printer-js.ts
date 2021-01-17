@@ -103,12 +103,9 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
     }
     case 'HighIRIfElseStatement':
       return PRETTIER_CONCAT(
-        highIRStatement.finalAssignment == null
-          ? PRETTIER_NIL
-          : PRETTIER_CONCAT(
-              PRETTIER_TEXT(`let ${highIRStatement.finalAssignment.name};`),
-              PRETTIER_LINE
-            ),
+        ...highIRStatement.finalAssignments.map((final) =>
+          PRETTIER_CONCAT(PRETTIER_TEXT(`let ${final.name};`), PRETTIER_LINE)
+        ),
         PRETTIER_TEXT('if '),
         createParenthesisSurroundedDocument(
           createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
@@ -116,33 +113,25 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
           )
         ),
         PRETTIER_TEXT(' '),
-        createBracesSurroundedBlockDocument(
-          highIRStatement.finalAssignment == null
-            ? concatStatements(highIRStatement.s1)
-            : [
-                ...concatStatements(highIRStatement.s1),
-                PRETTIER_LINE,
-                PRETTIER_TEXT(`${highIRStatement.finalAssignment.name} = `),
-                createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
-                  highIRStatement.finalAssignment.branch1Value
-                ),
-                PRETTIER_TEXT(';'),
-              ]
-        ),
+        createBracesSurroundedBlockDocument([
+          ...concatStatements(highIRStatement.s1),
+          ...highIRStatement.finalAssignments.flatMap((final) => [
+            PRETTIER_LINE,
+            PRETTIER_TEXT(`${final.name} = `),
+            createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(final.branch1Value),
+            PRETTIER_TEXT(';'),
+          ]),
+        ]),
         PRETTIER_TEXT(' else '),
-        createBracesSurroundedBlockDocument(
-          highIRStatement.finalAssignment == null
-            ? concatStatements(highIRStatement.s2)
-            : [
-                ...concatStatements(highIRStatement.s2),
-                PRETTIER_LINE,
-                PRETTIER_TEXT(`${highIRStatement.finalAssignment.name} = `),
-                createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
-                  highIRStatement.finalAssignment.branch2Value
-                ),
-                PRETTIER_TEXT(';'),
-              ]
-        )
+        createBracesSurroundedBlockDocument([
+          ...concatStatements(highIRStatement.s2),
+          ...highIRStatement.finalAssignments.flatMap((final) => [
+            PRETTIER_LINE,
+            PRETTIER_TEXT(`${final.name} = `),
+            createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(final.branch2Value),
+            PRETTIER_TEXT(';'),
+          ]),
+        ])
       );
     case 'HighIRSwitchStatement': {
       const final = highIRStatement.finalAssignment;

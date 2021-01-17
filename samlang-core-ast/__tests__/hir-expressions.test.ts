@@ -72,12 +72,14 @@ it('debugPrintHighIRStatement works', () => {
             index: 0,
           }),
         ],
-        finalAssignment: {
-          name: 'bar',
-          type: HIR_INT_TYPE,
-          branch1Value: HIR_VARIABLE('b1', HIR_INT_TYPE),
-          branch2Value: HIR_VARIABLE('b2', HIR_INT_TYPE),
-        },
+        finalAssignments: [
+          {
+            name: 'bar',
+            type: HIR_INT_TYPE,
+            branch1Value: HIR_VARIABLE('b1', HIR_INT_TYPE),
+            branch2Value: HIR_VARIABLE('b2', HIR_INT_TYPE),
+          },
+        ],
       })
     )
   ).toBe(`let bar: int;

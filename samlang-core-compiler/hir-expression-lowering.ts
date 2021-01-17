@@ -667,17 +667,19 @@ class HighIRExpressionLoweringManager {
             returnCollector: isVoidReturn ? undefined : resultTempB2,
           })
         );
-        const finalAssignment = isVoidReturn
-          ? undefined
-          : {
-              name: returnCollectorName,
-              type: functionTypeWithoutContext.returnType,
-              branch1Value: HIR_VARIABLE(resultTempB1, functionTypeWithoutContext.returnType),
-              branch2Value: HIR_VARIABLE(resultTempB2, functionTypeWithoutContext.returnType),
-            };
+        const finalAssignments = isVoidReturn
+          ? []
+          : [
+              {
+                name: returnCollectorName,
+                type: functionTypeWithoutContext.returnType,
+                branch1Value: HIR_VARIABLE(resultTempB1, functionTypeWithoutContext.returnType),
+                branch2Value: HIR_VARIABLE(resultTempB2, functionTypeWithoutContext.returnType),
+              },
+            ];
 
         functionReturnCollectorType = functionTypeWithoutContext.returnType;
-        functionCall = HIR_IF_ELSE({ booleanExpression, s1, s2, finalAssignment });
+        functionCall = HIR_IF_ELSE({ booleanExpression, s1, s2, finalAssignments });
         break;
       }
     }
@@ -731,12 +733,14 @@ class HighIRExpressionLoweringManager {
               booleanExpression: e1Result.expression,
               s1: e2Result.statements,
               s2: [],
-              finalAssignment: {
-                name: temp,
-                type: HIR_BOOL_TYPE,
-                branch1Value: e2Result.expression,
-                branch2Value: HIR_FALSE,
-              },
+              finalAssignments: [
+                {
+                  name: temp,
+                  type: HIR_BOOL_TYPE,
+                  branch1Value: e2Result.expression,
+                  branch2Value: HIR_FALSE,
+                },
+              ],
             }),
           ],
           expression: HIR_VARIABLE(temp, HIR_BOOL_TYPE),
@@ -761,12 +765,14 @@ class HighIRExpressionLoweringManager {
               booleanExpression: e1Result.expression,
               s1: [],
               s2: e2Result.statements,
-              finalAssignment: {
-                name: temp,
-                type: HIR_BOOL_TYPE,
-                branch1Value: HIR_TRUE,
-                branch2Value: e2Result.expression,
-              },
+              finalAssignments: [
+                {
+                  name: temp,
+                  type: HIR_BOOL_TYPE,
+                  branch1Value: HIR_TRUE,
+                  branch2Value: e2Result.expression,
+                },
+              ],
             }),
           ],
           expression: HIR_VARIABLE(temp, HIR_BOOL_TYPE),
@@ -852,14 +858,16 @@ class HighIRExpressionLoweringManager {
         booleanExpression: loweredBoolExpression,
         s1: e1LoweringResult.statements,
         s2: e2LoweringResult.statements,
-        finalAssignment: isVoidReturn
-          ? undefined
-          : {
-              name: variableForIfElseAssign,
-              type: loweredReturnType,
-              branch1Value: e1LoweringResult.expression,
-              branch2Value: e2LoweringResult.expression,
-            },
+        finalAssignments: isVoidReturn
+          ? []
+          : [
+              {
+                name: variableForIfElseAssign,
+                type: loweredReturnType,
+                branch1Value: e1LoweringResult.expression,
+                branch2Value: e2LoweringResult.expression,
+              },
+            ],
       })
     );
     return {
