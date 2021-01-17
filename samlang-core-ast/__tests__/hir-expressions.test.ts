@@ -21,7 +21,7 @@ it('debugPrintHighIRStatement works', () => {
       HIR_IF_ELSE({
         booleanExpression: HIR_ZERO,
         s1: [
-          HIR_SWITCH({ caseVariable: 'f', cases: [] }),
+          HIR_SWITCH({ caseVariable: 'f', cases: [], finalAssignments: [] }),
           HIR_SWITCH({
             caseVariable: 'f',
             cases: [
@@ -34,11 +34,13 @@ it('debugPrintHighIRStatement works', () => {
                 statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar')))],
               },
             ],
-            finalAssignment: {
-              name: 'ma',
-              type: HIR_INT_TYPE,
-              branchValues: [HIR_VARIABLE('b1', HIR_INT_TYPE), HIR_VARIABLE('b2', HIR_INT_TYPE)],
-            },
+            finalAssignments: [
+              {
+                name: 'ma',
+                type: HIR_INT_TYPE,
+                branchValues: [HIR_VARIABLE('b1', HIR_INT_TYPE), HIR_VARIABLE('b2', HIR_INT_TYPE)],
+              },
+            ],
           }),
           HIR_CAST({
             name: 'foo',

@@ -61,15 +61,16 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
             returnType: HIR_INT_TYPE,
           }),
           HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE)),
-          HIR_SWITCH({ caseVariable: 'a', cases: [] }),
           HIR_SWITCH({
             caseVariable: 'a',
             cases: [{ caseNumber: 0, statements: [HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE))] }],
-            finalAssignment: {
-              name: 'dff',
-              type: HIR_INT_TYPE,
-              branchValues: [HIR_NAME('bar', HIR_INT_TYPE)],
-            },
+            finalAssignments: [
+              {
+                name: 'dff',
+                type: HIR_INT_TYPE,
+                branchValues: [HIR_NAME('bar', HIR_INT_TYPE)],
+              },
+            ],
           }),
           HIR_IF_ELSE({
             booleanExpression: HIR_ZERO,

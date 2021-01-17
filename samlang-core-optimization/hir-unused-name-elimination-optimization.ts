@@ -60,12 +60,10 @@ const collectUsedNamesFromStatement = (
       statement.cases
         .flatMap((it) => it.statements)
         .forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
-      if (statement.finalAssignment != null) {
-        statement.finalAssignment.branchValues.forEach((it) =>
-          collectUsedNamesFromExpression(nameSet, typeSet, it)
-        );
-        collectForTypeSet(statement.finalAssignment.type, typeSet);
-      }
+      statement.finalAssignments.forEach((final) => {
+        final.branchValues.forEach((it) => collectUsedNamesFromExpression(nameSet, typeSet, it));
+        collectForTypeSet(final.type, typeSet);
+      });
       break;
     case 'HighIRCastStatement':
       collectUsedNamesFromExpression(nameSet, typeSet, statement.assignedExpression);

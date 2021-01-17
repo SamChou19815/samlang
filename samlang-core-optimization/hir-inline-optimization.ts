@@ -38,7 +38,7 @@ const estimateStatementInlineCost = (statement: HighIRStatement): number => {
     case 'HighIRSwitchStatement':
       return (
         1 +
-        (statement.finalAssignment == null ? 0 : statement.finalAssignment.branchValues.length) +
+        statement.finalAssignments.length * statement.cases.length +
         statement.cases.reduce(
           (caseAccumulator, { statements }) =>
             caseAccumulator +
@@ -166,32 +166,18 @@ const inlineRewriteForStatement = (
         // istanbul ignore next
         (context.getLocalValueType(statement.caseVariable) as HighIRVariableExpression | undefined)
           ?.name ?? statement.caseVariable;
-      const final = statement.finalAssignment;
-      if (final == null) {
-        return {
-          ...statement,
-          caseVariable,
-          cases: statement.cases.map((oneCase) => ({
-            ...oneCase,
-            statements: context.withNestedScope(() =>
-              oneCase.statements
-                .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
-                .filter(isNotNull)
-            ),
-          })),
-        };
-      }
-      const casesWithValues = zip(statement.cases, final.branchValues).map(
-        ([oneCase, branchValue]) => ({
-          ...oneCase,
-          statements: context.withNestedScope(() => {
-            const statements = oneCase.statements
-              .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
-              .filter(isNotNull);
-            return [statements, rewrite(branchValue)] as const;
-          }),
-        })
-      );
+      const casesWithValues = statement.cases.map((oneCase, i) => ({
+        ...oneCase,
+        statements: context.withNestedScope(() => {
+          const statements = oneCase.statements
+            .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
+            .filter(isNotNull);
+          return [
+            statements,
+            statement.finalAssignments.map((final) => rewrite(checkNotNull(final.branchValues[i]))),
+          ] as const;
+        }),
+      }));
       return {
         ...statement,
         caseVariable,
@@ -199,11 +185,13 @@ const inlineRewriteForStatement = (
           caseNumber,
           statements,
         })),
-        finalAssignment: {
+        finalAssignments: statement.finalAssignments.map((final, i) => ({
           name: bindWithMangledName(final.name, final.type),
           type: final.type,
-          branchValues: casesWithValues.map((it) => it.statements[1]),
-        },
+          branchValues: casesWithValues.map(({ statements: [, values] }) =>
+            checkNotNull(values[i])
+          ),
+        })),
       };
     }
 

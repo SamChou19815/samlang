@@ -15,7 +15,7 @@ import {
   HIR_CAST,
   HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
-import { error, isNotNull, LocalStackedContext, zip, zip3 } from 'samlang-core-utils';
+import { checkNotNull, error, isNotNull, LocalStackedContext, zip3 } from 'samlang-core-utils';
 
 class LocalVariableContext extends LocalStackedContext<string> {
   addLocalValueType(name: string, value: string, onCollision: () => void): void {
@@ -142,31 +142,20 @@ const optimizeHighIRStatement = (
     case 'HighIRSwitchStatement': {
       const caseVariable =
         variableContext.getLocalValueType(statement.caseVariable) ?? statement.caseVariable;
-      const final = statement.finalAssignment;
-      if (final == null) {
-        const cases = statement.cases.map(({ caseNumber, statements }) => ({
-          caseNumber,
-          statements: variableContext.withNestedScope(() =>
-            bindedValueContext.withNestedScope(() =>
-              optimizeHighIRStatements(statements, variableContext, bindedValueContext)
-            )
-          ),
-        }));
-        return HIR_SWITCH({ caseVariable, cases });
-      }
-      const casesWithValue = zip(statement.cases, final.branchValues).map(
-        ([{ caseNumber, statements }, branchValue]) =>
-          variableContext.withNestedScope(() =>
-            bindedValueContext.withNestedScope(() => {
-              const newStatements = optimizeHighIRStatements(
-                statements,
-                variableContext,
-                bindedValueContext
-              );
-              const finalValue = getExpressionUnderContext(branchValue);
-              return { caseNumber, newStatements, finalValue };
-            })
-          )
+      const casesWithValue = statement.cases.map(({ caseNumber, statements }, i) =>
+        variableContext.withNestedScope(() =>
+          bindedValueContext.withNestedScope(() => {
+            const newStatements = optimizeHighIRStatements(
+              statements,
+              variableContext,
+              bindedValueContext
+            );
+            const finalValues = statement.finalAssignments.map((it) =>
+              getExpressionUnderContext(checkNotNull(it.branchValues[i]))
+            );
+            return { caseNumber, newStatements, finalValues };
+          })
+        )
       );
       return HIR_SWITCH({
         caseVariable,
@@ -174,7 +163,10 @@ const optimizeHighIRStatement = (
           caseNumber: it.caseNumber,
           statements: it.newStatements,
         })),
-        finalAssignment: { ...final, branchValues: casesWithValue.map((it) => it.finalValue) },
+        finalAssignments: statement.finalAssignments.map((final, i) => ({
+          ...final,
+          branchValues: casesWithValue.map((it) => checkNotNull(it.finalValues[i])),
+        })),
       });
     }
 

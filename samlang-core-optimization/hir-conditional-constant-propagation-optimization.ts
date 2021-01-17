@@ -28,7 +28,6 @@ import {
   Long,
   isNotNull,
   checkNotNull,
-  zip,
   zip3,
   LocalStackedContext,
 } from 'samlang-core-utils';
@@ -276,53 +275,47 @@ const optimizeHighIRStatement = (
     }
 
     case 'HighIRSwitchStatement': {
-      const final = statement.finalAssignment;
-      if (final == null) {
-        const cases = statement.cases.map(({ caseNumber, statements }) => ({
-          caseNumber,
-          statements: withNestedScope(() =>
-            optimizeHighIRStatements(statements, valueContext, binaryExpressionContext)
-          ),
-        }));
-        return switchOrNull(HIR_SWITCH({ caseVariable: statement.caseVariable, cases }));
-      }
-      const casesWithValue = zip(statement.cases, final.branchValues).map(
-        ([{ caseNumber, statements }, branchValue]) =>
-          withNestedScope(() => {
-            const newStatements = optimizeHighIRStatements(
-              statements,
-              valueContext,
-              binaryExpressionContext
-            );
-            const finalValue = optimizeExpression(branchValue);
-            return { caseNumber, newStatements, finalValue };
-          })
+      const casesWithValues = statement.cases.map(({ caseNumber, statements }, i) =>
+        withNestedScope(() => {
+          const newStatements = optimizeHighIRStatements(
+            statements,
+            valueContext,
+            binaryExpressionContext
+          );
+          const finalValues = statement.finalAssignments.map((it) =>
+            optimizeExpression(checkNotNull(it.branchValues[i]))
+          );
+          return { caseNumber, newStatements, finalValues };
+        })
       );
-      const allValuesAreTheSame =
-        new Set(casesWithValue.map((it) => debugPrintHighIRExpression(it.finalValue))).size === 1;
-      if (allValuesAreTheSame) {
-        const switchStatement = switchOrNull(
-          HIR_SWITCH({
-            caseVariable: statement.caseVariable,
-            cases: casesWithValue.map((it) => ({
-              caseNumber: it.caseNumber,
-              statements: it.newStatements,
-            })),
-          })
-        );
-        valueContext.bind(final.name, checkNotNull(casesWithValue[0]).finalValue);
-        return switchStatement;
-      }
-      return [
+      const finalAssignments = statement.finalAssignments
+        .map((final, i) => {
+          const allValuesAreTheSame =
+            new Set(
+              casesWithValues.map((it) =>
+                debugPrintHighIRExpression(checkNotNull(it.finalValues[i]))
+              )
+            ).size === 1;
+          if (allValuesAreTheSame) {
+            valueContext.bind(final.name, checkNotNull(casesWithValues[0]?.finalValues[i]));
+            return null;
+          }
+          return {
+            ...final,
+            branchValues: casesWithValues.map((it) => checkNotNull(it.finalValues[i])),
+          };
+        })
+        .filter(isNotNull);
+      return switchOrNull(
         HIR_SWITCH({
           caseVariable: statement.caseVariable,
-          cases: casesWithValue.map((it) => ({
+          cases: casesWithValues.map((it) => ({
             caseNumber: it.caseNumber,
             statements: it.newStatements,
           })),
-          finalAssignment: { ...final, branchValues: casesWithValue.map((it) => it.finalValue) },
-        }),
-      ];
+          finalAssignments,
+        })
+      );
     }
 
     case 'HighIRCastStatement':

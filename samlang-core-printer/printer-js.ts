@@ -22,7 +22,7 @@ import {
 } from 'samlang-core-ast/common-names';
 import type { HighIRStatement, HighIRExpression } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
-import { zip } from 'samlang-core-utils';
+import { checkNotNull } from 'samlang-core-utils';
 
 // Thanks https://gist.github.com/getify/3667624
 const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
@@ -134,41 +134,30 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
         ])
       );
     case 'HighIRSwitchStatement': {
-      const final = highIRStatement.finalAssignment;
-      const docs =
-        final == null
-          ? highIRStatement.cases.flatMap(({ caseNumber, statements }) => [
-              PRETTIER_TEXT(`case ${caseNumber}: `),
-              createBracesSurroundedBlockDocument([
-                ...concatStatements(statements),
-                PRETTIER_LINE,
-                PRETTIER_TEXT('break;'),
-              ]),
+      const docs: PrettierDocument[] = highIRStatement.cases.flatMap(
+        ({ caseNumber, statements }, i) => [
+          PRETTIER_TEXT(`case ${caseNumber}: `),
+          createBracesSurroundedBlockDocument([
+            ...concatStatements(statements),
+            ...highIRStatement.finalAssignments.flatMap((final) => [
               PRETTIER_LINE,
-            ])
-          : zip(
-              highIRStatement.cases,
-              final.branchValues
-            ).flatMap(([{ caseNumber, statements }, branchValue]) => [
-              PRETTIER_TEXT(`case ${caseNumber}: `),
-              createBracesSurroundedBlockDocument([
-                ...concatStatements(statements),
-                PRETTIER_LINE,
-                PRETTIER_TEXT(`${final.name} = `),
-                createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(branchValue),
-                PRETTIER_TEXT(';'),
-                PRETTIER_LINE,
-                PRETTIER_TEXT('break;'),
-              ]),
-              PRETTIER_LINE,
-            ]);
+              PRETTIER_TEXT(`${final.name} = `),
+              createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+                checkNotNull(final.branchValues[i])
+              ),
+              PRETTIER_TEXT(';'),
+            ]),
+            PRETTIER_LINE,
+            PRETTIER_TEXT('break;'),
+          ]),
+          PRETTIER_LINE,
+        ]
+      );
       return PRETTIER_CONCAT(
-        highIRStatement.finalAssignment == null
-          ? PRETTIER_NIL
-          : PRETTIER_CONCAT(
-              PRETTIER_TEXT(`let ${highIRStatement.finalAssignment.name};`),
-              PRETTIER_LINE
-            ),
+        ...highIRStatement.finalAssignments.flatMap((final) => [
+          PRETTIER_TEXT(`let ${final.name};`),
+          PRETTIER_LINE,
+        ]),
         PRETTIER_TEXT(`switch (${highIRStatement.caseVariable}) `),
         createBracesSurroundedBlockDocument(docs.slice(0, docs.length - 1))
       );
