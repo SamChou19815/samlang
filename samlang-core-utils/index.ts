@@ -33,6 +33,13 @@ export const checkNotNull = <V>(value: V | null | undefined): V => {
 export const zip = <A, B>(list1: readonly A[], list2: readonly B[]): readonly (readonly [A, B])[] =>
   list1.map((e1, i) => [e1, checkNotNull(list2[i])]);
 
+export const zip3 = <A, B, C>(
+  list1: readonly A[],
+  list2: readonly B[],
+  list3: readonly C[]
+): readonly (readonly [A, B, C])[] =>
+  list1.map((e1, i) => [e1, checkNotNull(list2[i]), checkNotNull(list3[i])]);
+
 export interface Hashable {
   readonly uniqueHash: () => string | number;
 }

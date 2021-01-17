@@ -11,7 +11,7 @@ import {
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import type { HighIRType } from 'samlang-core-ast/hir-types';
-import { checkNotNull, isNotNull, zip } from 'samlang-core-utils';
+import { checkNotNull, isNotNull, zip, zip3 } from 'samlang-core-utils';
 
 /** The threshold max tolerable cost of inlining.  */
 const INLINE_THRESHOLD = 25;
@@ -150,8 +150,8 @@ const inlineRewriteForStatement = (
         booleanExpression,
         s1,
         s2,
-        finalAssignments: zip(zip(branch1Values, branch2Values), statement.finalAssignments).map(
-          ([[branch1Value, branch2Value], final]) => ({
+        finalAssignments: zip3(branch1Values, branch2Values, statement.finalAssignments).map(
+          ([branch1Value, branch2Value, final]) => ({
             name: bindWithMangledName(final.name, final.type),
             type: final.type,
             branch1Value,

@@ -15,7 +15,7 @@ import {
   HIR_CAST,
   HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
-import { error, isNotNull, LocalStackedContext, zip } from 'samlang-core-utils';
+import { error, isNotNull, LocalStackedContext, zip, zip3 } from 'samlang-core-utils';
 
 class LocalVariableContext extends LocalStackedContext<string> {
   addLocalValueType(name: string, value: string, onCollision: () => void): void {
@@ -129,8 +129,8 @@ const optimizeHighIRStatement = (
         booleanExpression,
         s1,
         s2,
-        finalAssignments: zip(zip(branch1Values, branch2Values), statement.finalAssignments).map(
-          ([[branch1Value, branch2Value], final]) => ({
+        finalAssignments: zip3(branch1Values, branch2Values, statement.finalAssignments).map(
+          ([branch1Value, branch2Value, final]) => ({
             ...final,
             branch1Value,
             branch2Value,

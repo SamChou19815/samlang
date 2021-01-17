@@ -35,7 +35,7 @@ import {
   LLVMModule,
 } from 'samlang-core-ast/llvm-nodes';
 import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
-import { checkNotNull, zip } from 'samlang-core-utils';
+import { checkNotNull, zip, zip3 } from 'samlang-core-utils';
 
 class LLVMResourceAllocator {
   private nextTempId = 0;
@@ -206,7 +206,7 @@ class LLVMLoweringManager {
     const v2Label = this.currentLabel;
     this.emitInstruction(LLVM_JUMP(endLabel));
     this.emitInstruction(LLVM_LABEL(endLabel));
-    zip(zip(v1List, v2List), finalAssignments).forEach(([[v1, v2], finalAssignment]) => {
+    zip3(v1List, v2List, finalAssignments).forEach(([v1, v2, finalAssignment]) => {
       this.emitInstruction(
         LLVM_PHI({
           resultVariable: finalAssignment.name,
