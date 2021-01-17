@@ -10,6 +10,7 @@ import {
   checkNotNull,
   assert,
   zip,
+  zip3,
   Hashable,
   mapOf,
   setOf,
@@ -76,6 +77,10 @@ it('zip test', () => {
   expect(zip([1, 2], ['1', '2'])).toEqual([
     [1, '1'],
     [2, '2'],
+  ]);
+  expect(zip3([1, 2], ['1', '2'], ['a', 'b'])).toEqual([
+    [1, '1', 'a'],
+    [2, '2', 'b'],
   ]);
 });
 

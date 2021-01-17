@@ -23,7 +23,15 @@ import {
   HIR_INT,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
-import { error, Long, isNotNull, checkNotNull, zip, LocalStackedContext } from 'samlang-core-utils';
+import {
+  error,
+  Long,
+  isNotNull,
+  checkNotNull,
+  zip,
+  zip3,
+  LocalStackedContext,
+} from 'samlang-core-utils';
 
 const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
 
@@ -253,8 +261,8 @@ const optimizeHighIRStatement = (
           statement.finalAssignments.map((final) => optimizeExpression(final.branch2Value)),
         ] as const;
       });
-      const finalAssignments = zip(zip(branch1Values, branch2Values), statement.finalAssignments)
-        .map(([[branch1Value, branch2Value], final]) => {
+      const finalAssignments = zip3(branch1Values, branch2Values, statement.finalAssignments)
+        .map(([branch1Value, branch2Value, final]) => {
           if (
             debugPrintHighIRExpression(branch1Value) === debugPrintHighIRExpression(branch2Value)
           ) {
