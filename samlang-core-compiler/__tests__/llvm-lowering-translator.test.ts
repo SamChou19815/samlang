@@ -159,6 +159,7 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 1/n', () => {
         booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
         s1: [],
         s2: [],
+        finalAssignments: [],
       }),
     ],
     `  %bb = icmp eq i64 %t, 2`
@@ -172,12 +173,14 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
         booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
         s1: [],
         s2: [],
-        finalAssignment: {
-          name: 'ma',
-          type: INT,
-          branch1Value: HIR_INT(2),
-          branch2Value: HIR_ZERO,
-        },
+        finalAssignments: [
+          {
+            name: 'ma',
+            type: INT,
+            branch1Value: HIR_INT(2),
+            branch2Value: HIR_ZERO,
+          },
+        ],
       }),
     ],
     `  br i1 %bb, label %l1_if_else_true, label %l2_if_else_false
@@ -203,12 +206,14 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
             returnType: INT,
           }),
         ],
-        finalAssignment: {
-          name: 'ma',
-          type: INT,
-          branch1Value: HIR_INT(2),
-          branch2Value: HIR_ZERO,
-        },
+        finalAssignments: [
+          {
+            name: 'ma',
+            type: INT,
+            branch1Value: HIR_INT(2),
+            branch2Value: HIR_ZERO,
+          },
+        ],
       }),
     ],
     `  br i1 %bb, label %l3_if_else_end, label %l2_if_else_false
@@ -233,12 +238,14 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 4/n', () => {
           }),
         ],
         s2: [],
-        finalAssignment: {
-          name: 'ma',
-          type: INT,
-          branch1Value: HIR_INT(2),
-          branch2Value: HIR_ZERO,
-        },
+        finalAssignments: [
+          {
+            name: 'ma',
+            type: INT,
+            branch1Value: HIR_INT(2),
+            branch2Value: HIR_ZERO,
+          },
+        ],
       }),
     ],
     `  br i1 %bb, label %l1_if_else_true, label %l3_if_else_end
@@ -275,6 +282,7 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 5/n', () => {
             returnType: INT,
           }),
         ],
+        finalAssignments: [],
       }),
     ],
     `  %bb = icmp eq i64 %t, 2
@@ -310,12 +318,14 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 6/n', () => {
             returnCollector: 'b2',
           }),
         ],
-        finalAssignment: {
-          name: 'ma',
-          type: INT,
-          branch1Value: HIR_VARIABLE('b1', INT),
-          branch2Value: HIR_VARIABLE('b2', INT),
-        },
+        finalAssignments: [
+          {
+            name: 'ma',
+            type: INT,
+            branch1Value: HIR_VARIABLE('b1', INT),
+            branch2Value: HIR_VARIABLE('b2', INT),
+          },
+        ],
       }),
     ],
     `  br i1 %bbb, label %l1_if_else_true, label %l2_if_else_false
@@ -362,20 +372,24 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 7/n', () => {
                 returnCollector: 'b3',
               }),
             ],
-            finalAssignment: {
-              name: 'ma_nested',
-              type: INT,
-              branch1Value: HIR_VARIABLE('b2', INT),
-              branch2Value: HIR_VARIABLE('b3', INT),
-            },
+            finalAssignments: [
+              {
+                name: 'ma_nested',
+                type: INT,
+                branch1Value: HIR_VARIABLE('b2', INT),
+                branch2Value: HIR_VARIABLE('b3', INT),
+              },
+            ],
           }),
         ],
-        finalAssignment: {
-          name: 'ma',
-          type: INT,
-          branch1Value: HIR_VARIABLE('b1', INT),
-          branch2Value: HIR_VARIABLE('ma_nested', INT),
-        },
+        finalAssignments: [
+          {
+            name: 'ma',
+            type: INT,
+            branch1Value: HIR_VARIABLE('b1', INT),
+            branch2Value: HIR_VARIABLE('ma_nested', INT),
+          },
+        ],
       }),
     ],
     `  br i1 %bbb, label %l1_if_else_true, label %l2_if_else_false

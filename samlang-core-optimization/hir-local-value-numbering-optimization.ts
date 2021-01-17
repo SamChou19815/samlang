@@ -95,45 +95,47 @@ const optimizeHighIRStatement = (
 
     case 'HighIRIfElseStatement': {
       const booleanExpression = getExpressionUnderContext(statement.booleanExpression);
-      if (statement.finalAssignment == null) {
-        const s1 = variableContext.withNestedScope(() =>
-          bindedValueContext.withNestedScope(() =>
-            optimizeHighIRStatements(statement.s1, variableContext, bindedValueContext)
-          )
-        );
-        const s2 = variableContext.withNestedScope(() =>
-          bindedValueContext.withNestedScope(() =>
-            optimizeHighIRStatements(statement.s2, variableContext, bindedValueContext)
-          )
-        );
-        return HIR_IF_ELSE({ booleanExpression, s1, s2 });
-      }
-      const final = statement.finalAssignment;
-      const [s1, branch1Value] = variableContext.withNestedScope(() =>
+      const [s1, branch1Values] = variableContext.withNestedScope(() =>
         bindedValueContext.withNestedScope(() => {
           const statements = optimizeHighIRStatements(
             statement.s1,
             variableContext,
             bindedValueContext
           );
-          return [statements, getExpressionUnderContext(final.branch1Value)] as const;
+          return [
+            statements,
+            statement.finalAssignments.map((final) =>
+              getExpressionUnderContext(final.branch1Value)
+            ),
+          ] as const;
         })
       );
-      const [s2, branch2Value] = variableContext.withNestedScope(() =>
+      const [s2, branch2Values] = variableContext.withNestedScope(() =>
         bindedValueContext.withNestedScope(() => {
           const statements = optimizeHighIRStatements(
             statement.s2,
             variableContext,
             bindedValueContext
           );
-          return [statements, getExpressionUnderContext(final.branch2Value)] as const;
+          return [
+            statements,
+            statement.finalAssignments.map((final) =>
+              getExpressionUnderContext(final.branch2Value)
+            ),
+          ] as const;
         })
       );
       return HIR_IF_ELSE({
         booleanExpression,
         s1,
         s2,
-        finalAssignment: { ...final, branch1Value, branch2Value },
+        finalAssignments: zip(zip(branch1Values, branch2Values), statement.finalAssignments).map(
+          ([[branch1Value, branch2Value], final]) => ({
+            ...final,
+            branch1Value,
+            branch2Value,
+          })
+        ),
       });
     }
 

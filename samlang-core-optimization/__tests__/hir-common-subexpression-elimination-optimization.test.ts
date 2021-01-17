@@ -67,6 +67,7 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on if-else st
           }),
           HIR_RETURN(HIR_ZERO),
         ],
+        finalAssignments: [],
       }),
     ],
     `let _cse_0_: int = 0[3];

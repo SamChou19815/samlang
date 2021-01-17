@@ -23,7 +23,7 @@ import {
   HIR_INT,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
-import { error, Long, checkNotNull, LocalStackedContext, zip } from 'samlang-core-utils';
+import { error, Long, isNotNull, checkNotNull, zip, LocalStackedContext } from 'samlang-core-utils';
 
 const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
 
@@ -218,62 +218,53 @@ const optimizeHighIRStatement = (
       const booleanExpression = optimizeExpression(statement.booleanExpression);
       if (booleanExpression.__type__ === 'HighIRIntLiteralExpression') {
         const isTrue = Boolean(booleanExpression.value.toInt());
-        if (statement.finalAssignment == null) {
-          return isTrue
-            ? optimizeHighIRStatements(statement.s1, valueContext, binaryExpressionContext)
-            : optimizeHighIRStatements(statement.s2, valueContext, binaryExpressionContext);
-        }
-        const final = statement.finalAssignment;
         const statements = optimizeHighIRStatements(
           isTrue ? statement.s1 : statement.s2,
           valueContext,
           binaryExpressionContext
         );
-        valueContext.bind(
-          final.name,
-          isTrue ? optimizeExpression(final.branch1Value) : optimizeExpression(final.branch2Value)
-        );
+        statement.finalAssignments.forEach((final) => {
+          valueContext.bind(
+            final.name,
+            isTrue ? optimizeExpression(final.branch1Value) : optimizeExpression(final.branch2Value)
+          );
+        });
         return statements;
       }
-      if (statement.finalAssignment == null) {
-        const s1 = withNestedScope(() =>
-          optimizeHighIRStatements(statement.s1, valueContext, binaryExpressionContext)
-        );
-        const s2 = withNestedScope(() =>
-          optimizeHighIRStatements(statement.s2, valueContext, binaryExpressionContext)
-        );
-        return ifElseOrNull(HIR_IF_ELSE({ booleanExpression, s1, s2 }));
-      }
-      const final = statement.finalAssignment;
-      const [s1, branch1Value] = withNestedScope(() => {
+      const [s1, branch1Values] = withNestedScope(() => {
         const statements = optimizeHighIRStatements(
           statement.s1,
           valueContext,
           binaryExpressionContext
         );
-        return [statements, optimizeExpression(final.branch1Value)] as const;
+        return [
+          statements,
+          statement.finalAssignments.map((final) => optimizeExpression(final.branch1Value)),
+        ] as const;
       });
-      const [s2, branch2Value] = withNestedScope(() => {
+      const [s2, branch2Values] = withNestedScope(() => {
         const statements = optimizeHighIRStatements(
           statement.s2,
           valueContext,
           binaryExpressionContext
         );
-        return [statements, optimizeExpression(final.branch2Value)] as const;
+        return [
+          statements,
+          statement.finalAssignments.map((final) => optimizeExpression(final.branch2Value)),
+        ] as const;
       });
-      if (debugPrintHighIRExpression(branch1Value) === debugPrintHighIRExpression(branch2Value)) {
-        const ifElse = ifElseOrNull(HIR_IF_ELSE({ booleanExpression, s1, s2 }));
-        valueContext.bind(final.name, branch1Value);
-        return ifElse;
-      }
-      return [
-        HIR_IF_ELSE({
-          booleanExpression,
-          s1,
-          s2,
-          finalAssignment: { ...final, branch1Value, branch2Value },
-        }),
-      ];
+      const finalAssignments = zip(zip(branch1Values, branch2Values), statement.finalAssignments)
+        .map(([[branch1Value, branch2Value], final]) => {
+          if (
+            debugPrintHighIRExpression(branch1Value) === debugPrintHighIRExpression(branch2Value)
+          ) {
+            valueContext.bind(final.name, branch1Value);
+            return null;
+          }
+          return { ...final, branch1Value, branch2Value };
+        })
+        .filter(isNotNull);
+      return ifElseOrNull(HIR_IF_ELSE({ booleanExpression, s1, s2, finalAssignments }));
     }
 
     case 'HighIRSwitchStatement': {

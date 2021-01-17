@@ -67,12 +67,12 @@ export interface HighIRIfElseStatement extends BaseHighIRStatement {
   readonly booleanExpression: HighIRExpression;
   readonly s1: readonly HighIRStatement[];
   readonly s2: readonly HighIRStatement[];
-  readonly finalAssignment?: {
+  readonly finalAssignments: readonly {
     readonly name: string;
     readonly type: HighIRType;
     readonly branch1Value: HighIRExpression;
     readonly branch2Value: HighIRExpression;
-  };
+  }[];
 }
 
 export interface HighIRSwitchStatement extends BaseHighIRStatement {
@@ -233,13 +233,13 @@ export const HIR_IF_ELSE = ({
   booleanExpression,
   s1,
   s2,
-  finalAssignment,
+  finalAssignments,
 }: ConstructorArgumentObject<HighIRIfElseStatement>): HighIRIfElseStatement => ({
   __type__: 'HighIRIfElseStatement',
   booleanExpression,
   s1,
   s2,
-  finalAssignment,
+  finalAssignments,
 });
 
 export const HIR_SWITCH = ({
@@ -327,28 +327,28 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         break;
       }
       case 'HighIRIfElseStatement':
-        if (s.finalAssignment != null) {
-          const type = prettyPrintHighIRType(s.finalAssignment.type);
-          collector.push('  '.repeat(level), `let ${s.finalAssignment.name}: ${type};\n`);
-        }
+        s.finalAssignments.forEach((finalAssignment) => {
+          const type = prettyPrintHighIRType(finalAssignment.type);
+          collector.push('  '.repeat(level), `let ${finalAssignment.name}: ${type};\n`);
+        });
         collector.push(
           '  '.repeat(level),
           `if ${debugPrintHighIRExpression(s.booleanExpression)} {\n`
         );
         level += 1;
         s.s1.forEach(printer);
-        if (s.finalAssignment != null) {
-          const v1 = debugPrintHighIRExpression(s.finalAssignment.branch1Value);
-          collector.push('  '.repeat(level), `${s.finalAssignment.name} = ${v1};\n`);
-        }
+        s.finalAssignments.forEach((finalAssignment) => {
+          const v1 = debugPrintHighIRExpression(finalAssignment.branch1Value);
+          collector.push('  '.repeat(level), `${finalAssignment.name} = ${v1};\n`);
+        });
         level -= 1;
         collector.push('  '.repeat(level), `} else {\n`);
         level += 1;
         s.s2.forEach(printer);
-        if (s.finalAssignment != null) {
-          const v2 = debugPrintHighIRExpression(s.finalAssignment.branch2Value);
-          collector.push('  '.repeat(level), `${s.finalAssignment.name} = ${v2};\n`);
-        }
+        s.finalAssignments.forEach((finalAssignment) => {
+          const v2 = debugPrintHighIRExpression(finalAssignment.branch2Value);
+          collector.push('  '.repeat(level), `${finalAssignment.name} = ${v2};\n`);
+        });
         level -= 1;
         collector.push('  '.repeat(level), `}\n`);
         break;

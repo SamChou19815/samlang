@@ -50,11 +50,11 @@ const collectUsedNamesFromStatement = (
       collectUsedNamesFromExpression(nameSet, typeSet, statement.booleanExpression);
       statement.s1.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
       statement.s2.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
-      if (statement.finalAssignment != null) {
-        collectUsedNamesFromExpression(nameSet, typeSet, statement.finalAssignment.branch1Value);
-        collectUsedNamesFromExpression(nameSet, typeSet, statement.finalAssignment.branch2Value);
-        collectForTypeSet(statement.finalAssignment.type, typeSet);
-      }
+      statement.finalAssignments.forEach((finalAssignment) => {
+        collectUsedNamesFromExpression(nameSet, typeSet, finalAssignment.branch1Value);
+        collectUsedNamesFromExpression(nameSet, typeSet, finalAssignment.branch2Value);
+        collectForTypeSet(finalAssignment.type, typeSet);
+      });
       break;
     case 'HighIRSwitchStatement':
       statement.cases
