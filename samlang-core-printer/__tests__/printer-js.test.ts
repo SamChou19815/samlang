@@ -660,7 +660,7 @@ switch (f) {
             assignedExpression: HIR_VARIABLE('dev', HIR_INT_TYPE),
           }),
         ],
-        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
+        conditionValue: HIR_ZERO,
       })
     )
   ).toBe(`let n = _tail_rec_param_n;
@@ -669,7 +669,7 @@ do {
   let foo = dev;
   n = _t0_n;
   acc = _t1_acc;
-} while (c);`);
+} while (0);`);
   expect(
     highIRStatementToString(
       HIR_WHILE({
@@ -710,7 +710,8 @@ do {
   n = _t0_n;
   acc = _t1_acc;
   v = _t2_v;
-} while (c);`);
+  var _loop_condition = c;
+} while (_loop_condition);`);
 });
 
 it('HIR function to JS string test 1', () => {

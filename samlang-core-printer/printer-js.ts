@@ -195,12 +195,20 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
                 ),
                 PRETTIER_TEXT(';')
               ),
+          highIRStatement.conditionValue.__type__ === 'HighIRVariableExpression'
+            ? PRETTIER_CONCAT(
+                PRETTIER_LINE,
+                PRETTIER_TEXT(`var _loop_condition = ${highIRStatement.conditionValue.name};`)
+              )
+            : PRETTIER_NIL,
         ]),
         PRETTIER_TEXT(' while '),
         createParenthesisSurroundedDocument(
-          createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
-            highIRStatement.conditionValue
-          )
+          highIRStatement.conditionValue.__type__ === 'HighIRVariableExpression'
+            ? PRETTIER_TEXT('_loop_condition')
+            : createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+                highIRStatement.conditionValue
+              )
         ),
         PRETTIER_TEXT(';')
       );
