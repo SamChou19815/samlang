@@ -29,10 +29,34 @@ it('debugPrintHighIRStatement works', () => {
               {
                 caseNumber: 1,
                 statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar')))],
+                breakValue: null,
               },
               {
                 caseNumber: 2,
                 statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar')))],
+                breakValue: null,
+              },
+            ],
+            finalAssignments: [
+              {
+                name: 'ma',
+                type: HIR_INT_TYPE,
+                branchValues: [HIR_VARIABLE('b1', HIR_INT_TYPE), HIR_VARIABLE('b2', HIR_INT_TYPE)],
+              },
+            ],
+          }),
+          HIR_SWITCH({
+            caseVariable: 'f',
+            cases: [
+              {
+                caseNumber: 1,
+                statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar')))],
+                breakValue: HIR_ZERO,
+              },
+              {
+                caseNumber: 2,
+                statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar')))],
+                breakValue: HIR_ZERO,
               },
             ],
             finalAssignments: [
@@ -70,7 +94,6 @@ it('debugPrintHighIRStatement works', () => {
                 assignedExpression: HIR_VARIABLE('dev', HIR_IDENTIFIER_TYPE('Bar')),
               }),
             ],
-            conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
           }),
           HIR_WHILE({
             loopVariables: [
@@ -94,12 +117,7 @@ it('debugPrintHighIRStatement works', () => {
                 assignedExpression: HIR_VARIABLE('dev', HIR_IDENTIFIER_TYPE('Bar')),
               }),
             ],
-            conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
-            returnAssignment: {
-              name: 'v',
-              type: HIR_INT_TYPE,
-              value: HIR_VARIABLE('_t2_v', HIR_INT_TYPE),
-            },
+            breakCollector: { name: 'v', type: HIR_INT_TYPE },
           }),
           HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar'))),
         ],
@@ -127,7 +145,17 @@ it('debugPrintHighIRStatement works', () => {
             pointerExpression: HIR_VARIABLE('big', HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_INT_TYPE])),
             index: 0,
           }),
+          HIR_IF_ELSE({
+            booleanExpression: HIR_ZERO,
+            s1: [],
+            s2: [],
+            s1BreakValue: HIR_ZERO,
+            s2BreakValue: HIR_ZERO,
+            finalAssignments: [],
+          }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'bar',
@@ -153,23 +181,35 @@ if 0 {
       ma = (b2: int);
     }
   }
+  let ma: int;
+  switch (f) {
+    case 1: {
+      return (foo: Bar);
+      undefined = 0;
+      break;
+    }
+    case 2: {
+      return (foo: Bar);
+      undefined = 0;
+      break;
+    }
+  }
   let foo: Bar = (dev: Bar);
   let n: int = (_tail_rec_param_n: int);
   let acc: int = (_tail_rec_param_acc: int);
-  do {
+  while (true) {
     let foo: Bar = (dev: Bar);
     n = (_t0_n: int);
     acc = (_t1_acc: int);
-  } while ((c: int));
+  }
   let n: int = (_tail_rec_param_n: int);
   let acc: int = (_tail_rec_param_acc: int);
   let v: int;
-  do {
+  while (true) {
     let foo: Bar = (dev: Bar);
     n = (_t0_n: int);
     acc = (_t1_acc: int);
-    v = (_t2_v: int);
-  } while ((c: int));
+  }
   return (foo: Bar);
   bar = (b1: int);
 } else {
@@ -178,6 +218,13 @@ if 0 {
   let vibez: int = h((big: (int, int)));
   stresso((d: int));
   let f: int = (big: (int, int))[0];
+  if 0 {
+    undefined = 0;
+    break;
+  } else {
+    undefined = 0;
+    break;
+  }
   bar = (b2: int);
 }`);
 });

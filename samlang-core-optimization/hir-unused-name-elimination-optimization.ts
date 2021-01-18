@@ -50,6 +50,12 @@ const collectUsedNamesFromStatement = (
       collectUsedNamesFromExpression(nameSet, typeSet, statement.booleanExpression);
       statement.s1.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
       statement.s2.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
+      if (statement.s1BreakValue != null) {
+        collectUsedNamesFromExpression(nameSet, typeSet, statement.s1BreakValue);
+      }
+      if (statement.s2BreakValue != null) {
+        collectUsedNamesFromExpression(nameSet, typeSet, statement.s2BreakValue);
+      }
       statement.finalAssignments.forEach((finalAssignment) => {
         collectUsedNamesFromExpression(nameSet, typeSet, finalAssignment.branch1Value);
         collectUsedNamesFromExpression(nameSet, typeSet, finalAssignment.branch2Value);
@@ -57,9 +63,12 @@ const collectUsedNamesFromStatement = (
       });
       break;
     case 'HighIRSwitchStatement':
-      statement.cases
-        .flatMap((it) => it.statements)
-        .forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
+      statement.cases.forEach((oneCase) => {
+        oneCase.statements.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
+        if (oneCase.breakValue != null) {
+          collectUsedNamesFromExpression(nameSet, typeSet, oneCase.breakValue);
+        }
+      });
       statement.finalAssignments.forEach((final) => {
         final.branchValues.forEach((it) => collectUsedNamesFromExpression(nameSet, typeSet, it));
         collectForTypeSet(final.type, typeSet);
@@ -72,10 +81,8 @@ const collectUsedNamesFromStatement = (
         collectUsedNamesFromExpression(nameSet, typeSet, it.loopValue);
       });
       statement.statements.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
-      collectUsedNamesFromExpression(nameSet, typeSet, statement.conditionValue);
-      if (statement.returnAssignment != null) {
-        collectForTypeSet(statement.returnAssignment.type, typeSet);
-        collectUsedNamesFromExpression(nameSet, typeSet, statement.returnAssignment.value);
+      if (statement.breakCollector != null) {
+        collectForTypeSet(statement.breakCollector.type, typeSet);
       }
       break;
     case 'HighIRCastStatement':

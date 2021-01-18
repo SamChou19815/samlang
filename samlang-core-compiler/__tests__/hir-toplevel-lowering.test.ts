@@ -223,8 +223,8 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
   expect(debugPrintHighIRModule(actualCompiledModule)).toEqual(
     `
 function _compiled_program_main(): int {
-  do {
-  } while (1);
+  while (true) {
+  }
   return 0;
 }
 `.trimLeft()

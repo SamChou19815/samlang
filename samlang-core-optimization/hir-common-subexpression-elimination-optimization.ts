@@ -103,8 +103,9 @@ const optimizeHighIRStatement = (
     }
 
     case 'HighIRSwitchStatement': {
-      const casesWithSets = statement.cases.map(({ caseNumber, statements }) => ({
+      const casesWithSets = statement.cases.map(({ caseNumber, statements, breakValue }) => ({
         caseNumber,
+        breakValue,
         ...optimizeHighIRStatementsWithSet(statements, allocator),
       }));
       const commonExpressions = intersectionOf(
@@ -117,7 +118,11 @@ const optimizeHighIRStatement = (
       return [
         {
           ...statement,
-          cases: casesWithSets.map(({ caseNumber, statements }) => ({ caseNumber, statements })),
+          cases: casesWithSets.map(({ caseNumber, statements, breakValue }) => ({
+            caseNumber,
+            statements,
+            breakValue,
+          })),
         },
         ...hoistedStatements.reverse(),
       ];

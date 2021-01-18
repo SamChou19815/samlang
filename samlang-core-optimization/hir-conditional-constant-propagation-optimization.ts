@@ -118,6 +118,10 @@ const optimizeHighIRStatement = (
     }
   };
 
+  const optimizeNullableExpression = (
+    expression: HighIRExpression | null
+  ): HighIRExpression | null => (expression == null ? null : optimizeExpression(expression));
+
   const withNestedScope = <T>(block: () => T): T =>
     valueContext.withNestedScope(() => binaryExpressionContext.withNestedScope(block));
 
@@ -224,7 +228,11 @@ const optimizeHighIRStatement = (
 
     case 'HighIRIfElseStatement': {
       const booleanExpression = optimizeExpression(statement.booleanExpression);
-      if (booleanExpression.__type__ === 'HighIRIntLiteralExpression') {
+      if (
+        booleanExpression.__type__ === 'HighIRIntLiteralExpression' &&
+        statement.s1BreakValue == null &&
+        statement.s2BreakValue == null
+      ) {
         const isTrue = Boolean(booleanExpression.value.toInt());
         const statements = optimizeHighIRStatements(
           isTrue ? statement.s1 : statement.s2,
@@ -239,7 +247,7 @@ const optimizeHighIRStatement = (
         });
         return statements;
       }
-      const [s1, branch1Values] = withNestedScope(() => {
+      const [s1, branch1Values, s1BreakValue] = withNestedScope(() => {
         const statements = optimizeHighIRStatements(
           statement.s1,
           valueContext,
@@ -248,9 +256,10 @@ const optimizeHighIRStatement = (
         return [
           statements,
           statement.finalAssignments.map((final) => optimizeExpression(final.branch1Value)),
+          optimizeNullableExpression(statement.s1BreakValue),
         ] as const;
       });
-      const [s2, branch2Values] = withNestedScope(() => {
+      const [s2, branch2Values, s2BreakValue] = withNestedScope(() => {
         const statements = optimizeHighIRStatements(
           statement.s2,
           valueContext,
@@ -259,6 +268,7 @@ const optimizeHighIRStatement = (
         return [
           statements,
           statement.finalAssignments.map((final) => optimizeExpression(final.branch2Value)),
+          optimizeNullableExpression(statement.s2BreakValue),
         ] as const;
       });
       const finalAssignments = zip3(branch1Values, branch2Values, statement.finalAssignments)
@@ -272,11 +282,13 @@ const optimizeHighIRStatement = (
           return { ...final, branch1Value, branch2Value };
         })
         .filter(isNotNull);
-      return ifElseOrNull(HIR_IF_ELSE({ booleanExpression, s1, s2, finalAssignments }));
+      return ifElseOrNull(
+        HIR_IF_ELSE({ booleanExpression, s1, s2, s1BreakValue, s2BreakValue, finalAssignments })
+      );
     }
 
     case 'HighIRSwitchStatement': {
-      const casesWithValues = statement.cases.map(({ caseNumber, statements }, i) =>
+      const casesWithValues = statement.cases.map(({ caseNumber, statements, breakValue }, i) =>
         withNestedScope(() => {
           const newStatements = optimizeHighIRStatements(
             statements,
@@ -286,7 +298,12 @@ const optimizeHighIRStatement = (
           const finalValues = statement.finalAssignments.map((it) =>
             optimizeExpression(checkNotNull(it.branchValues[i]))
           );
-          return { caseNumber, newStatements, finalValues };
+          return {
+            caseNumber,
+            newStatements,
+            breakValue: optimizeNullableExpression(breakValue),
+            finalValues,
+          };
         })
       );
       const finalAssignments = statement.finalAssignments
@@ -313,6 +330,7 @@ const optimizeHighIRStatement = (
           cases: casesWithValues.map((it) => ({
             caseNumber: it.caseNumber,
             statements: it.newStatements,
+            breakValue: it.breakValue,
           })),
           finalAssignments,
         })
@@ -320,27 +338,6 @@ const optimizeHighIRStatement = (
     }
 
     case 'HighIRWhileStatement': {
-      if (
-        statement.conditionValue.__type__ === 'HighIRIntLiteralExpression' &&
-        statement.conditionValue.value.equals(0)
-      ) {
-        // we now have do { ... } while (false)!
-        statement.loopVariables.forEach((it) =>
-          valueContext.bind(it.name, optimizeExpression(it.initialValue))
-        );
-        const statements = optimizeHighIRStatements(
-          statement.statements,
-          valueContext,
-          binaryExpressionContext
-        );
-        if (statement.returnAssignment != null) {
-          valueContext.bind(
-            statement.returnAssignment.name,
-            optimizeExpression(statement.returnAssignment.value)
-          );
-        }
-        return statements;
-      }
       const filteredLoopVariables = statement.loopVariables
         .map((it) => {
           if (
@@ -355,12 +352,7 @@ const optimizeHighIRStatement = (
       const loopVariableInitialValues = filteredLoopVariables.map((it) =>
         optimizeExpression(it.initialValue)
       );
-      const [
-        statements,
-        loopVariableLoopValues,
-        conditionValue,
-        returnAssignment,
-      ] = withNestedScope(() => {
+      const [statements, loopVariableLoopValues] = withNestedScope(() => {
         const newStatements = optimizeHighIRStatements(
           statement.statements,
           valueContext,
@@ -369,14 +361,6 @@ const optimizeHighIRStatement = (
         return [
           newStatements,
           filteredLoopVariables.map((it) => optimizeExpression(it.loopValue)),
-          optimizeExpression(statement.conditionValue),
-          statement.returnAssignment == null
-            ? undefined
-            : {
-                name: statement.returnAssignment.name,
-                type: statement.returnAssignment.type,
-                value: optimizeExpression(statement.returnAssignment.value),
-              },
         ] as const;
       });
       const loopVariables = zip3(
@@ -384,7 +368,7 @@ const optimizeHighIRStatement = (
         loopVariableLoopValues,
         filteredLoopVariables
       ).map(([initialValue, loopValue, variable]) => ({ ...variable, initialValue, loopValue }));
-      return [HIR_WHILE({ loopVariables, statements, conditionValue, returnAssignment })];
+      return [HIR_WHILE({ loopVariables, statements, breakCollector: statement.breakCollector })];
     }
 
     case 'HighIRCastStatement':

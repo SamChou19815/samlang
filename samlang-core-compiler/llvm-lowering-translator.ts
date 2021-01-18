@@ -36,7 +36,7 @@ import {
   LLVMModule,
 } from 'samlang-core-ast/llvm-nodes';
 import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
-import { checkNotNull, zip, zip3 } from 'samlang-core-utils';
+import { checkNotNull, isNotNull, zip, zip3 } from 'samlang-core-utils';
 
 class LLVMResourceAllocator {
   private nextTempId = 0;
@@ -55,6 +55,27 @@ class LLVMResourceAllocator {
   }
 }
 
+type ValueAndBranch = { readonly value: LLVMValue; readonly branch: string };
+
+type LabelAndBreakValues = {
+  readonly label: string;
+  readonly breakValues: ValueAndBranch[];
+};
+
+class WhileBreakCollectorManager {
+  private stack: LabelAndBreakValues[] = [];
+
+  get currentLevel(): LabelAndBreakValues {
+    return checkNotNull(this.stack[this.stack.length - 1]);
+  }
+
+  withNewNestedWhileLoop = (label: string, block: () => void): readonly ValueAndBranch[] => {
+    this.stack.push({ label, breakValues: [] });
+    block();
+    return checkNotNull(this.stack.pop()).breakValues;
+  };
+}
+
 class LLVMLoweringManager {
   readonly llvmInstructionCollector: LLVMInstruction[] = [];
   private readonly allocator = new LLVMResourceAllocator();
@@ -62,6 +83,7 @@ class LLVMLoweringManager {
   private currentLabel: string;
   // Keep track of under which label is a variable created.
   private readonly variableSourceMap = new Map<string, string>();
+  private readonly whileBreakCollectorManager = new WhileBreakCollectorManager();
 
   constructor(
     private readonly globalVariables: Readonly<Record<string, number>>,
@@ -155,13 +177,13 @@ class LLVMLoweringManager {
   }
 
   private lowerNormalHighIRIfElseStatement(s: HighIRIfElseStatement): void {
-    const { booleanExpression, s1, s2, finalAssignments } = s;
+    const { booleanExpression, s1, s2, s1BreakValue, s2BreakValue, finalAssignments } = s;
     const loweredCondition = this.lowerHighIRExpression(booleanExpression).value;
     const trueLabel = this.allocator.allocateLabelWithAnnotation('if_else_true');
     const falseLabel = this.allocator.allocateLabelWithAnnotation('if_else_false');
     const endLabel = this.allocator.allocateLabelWithAnnotation('if_else_end');
-    const s1IsEmpty = s1.length === 0;
-    const s2IsEmpty = s2.length === 0;
+    const s1IsEmpty = s1.length === 0 && s1BreakValue == null;
+    const s2IsEmpty = s2.length === 0 && s2BreakValue == null;
     if (s1IsEmpty && s2IsEmpty) {
       if (finalAssignments.length === 0) return;
       this.emitInstruction(LLVM_CJUMP(loweredCondition, trueLabel, falseLabel));
@@ -201,14 +223,26 @@ class LLVMLoweringManager {
       (finalAssignment) => this.lowerHighIRExpression(finalAssignment.branch1Value).value
     );
     const v1Label = this.currentLabel;
-    this.emitInstruction(LLVM_JUMP(endLabel));
+    if (s1BreakValue != null) {
+      const { label, breakValues } = this.whileBreakCollectorManager.currentLevel;
+      breakValues.push({ value: this.lowerHighIRExpression(s1BreakValue).value, branch: v1Label });
+      this.emitInstruction(LLVM_JUMP(label));
+    } else {
+      this.emitInstruction(LLVM_JUMP(endLabel));
+    }
     this.emitInstruction(LLVM_LABEL(falseLabel));
     s2.forEach((it) => this.lowerHighIRStatement(it));
     const v2List = finalAssignments.map(
       (finalAssignment) => this.lowerHighIRExpression(finalAssignment.branch2Value).value
     );
     const v2Label = this.currentLabel;
-    this.emitInstruction(LLVM_JUMP(endLabel));
+    if (s2BreakValue != null) {
+      const { label, breakValues } = this.whileBreakCollectorManager.currentLevel;
+      breakValues.push({ value: this.lowerHighIRExpression(s2BreakValue).value, branch: v2Label });
+      this.emitInstruction(LLVM_JUMP(label));
+    } else {
+      this.emitInstruction(LLVM_JUMP(endLabel));
+    }
     this.emitInstruction(LLVM_LABEL(endLabel));
     zip3(v1List, v2List, finalAssignments).forEach(([v1, v2, finalAssignment]) => {
       this.emitInstruction(
@@ -216,9 +250,13 @@ class LLVMLoweringManager {
           resultVariable: finalAssignment.name,
           variableType: lowerHighIRTypeToLLVMType(finalAssignment.type),
           valueBranchTuples: [
-            { value: v1, branch: s1IsEmpty ? beforeConditionLabel : v1Label },
-            { value: v2, branch: s2IsEmpty ? beforeConditionLabel : v2Label },
-          ],
+            s1BreakValue == null
+              ? { value: v1, branch: s1IsEmpty ? beforeConditionLabel : v1Label }
+              : null,
+            s2BreakValue == null
+              ? { value: v2, branch: s2IsEmpty ? beforeConditionLabel : v2Label }
+              : null,
+          ].filter(isNotNull),
         })
       );
     });
@@ -243,9 +281,18 @@ class LLVMLoweringManager {
       value: LLVMValue;
       branch: string;
     }>[][] = s.finalAssignments.map(() => []);
-    caseWithLabels.forEach(({ label, statements }, i) => {
+    caseWithLabels.forEach(({ label, statements, breakValue }, i) => {
       this.emitInstruction(LLVM_LABEL(label));
       statements.forEach((it) => this.lowerHighIRStatement(it));
+      if (breakValue != null) {
+        const { label: breakLabel, breakValues } = this.whileBreakCollectorManager.currentLevel;
+        breakValues.push({
+          value: this.lowerHighIRExpression(breakValue).value,
+          branch: this.currentLabel,
+        });
+        this.emitInstruction(LLVM_JUMP(breakLabel));
+        return;
+      }
       s.finalAssignments.forEach(({ branchValues }, j) => {
         const branchValue = this.lowerHighIRExpression(checkNotNull(branchValues[i])).value;
         checkNotNull(valueBranchTuplesList[j]).push({
@@ -292,28 +339,26 @@ class LLVMLoweringManager {
       })
     );
     phiInstructions.forEach((it) => this.emitInstruction(it));
-    s.statements.forEach((it) => this.lowerHighIRStatement(it));
+    const breakValueBranchTuples = this.whileBreakCollectorManager.withNewNestedWhileLoop(
+      loopEndLabel,
+      () => {
+        s.statements.forEach((it) => this.lowerHighIRStatement(it));
+      }
+    );
     const beforeJumpLabel = this.currentLabel;
     phiInstructions.forEach((it) => {
       // @ts-expect-error: ugly patch
       // eslint-disable-next-line no-param-reassign
       it.valueBranchTuples[1].branch = beforeJumpLabel;
     });
-    this.emitInstruction(
-      LLVM_CJUMP(this.lowerHighIRExpression(s.conditionValue).value, loopStartLabel, loopEndLabel)
-    );
+    this.emitInstruction(LLVM_JUMP(loopStartLabel));
     this.emitInstruction(LLVM_LABEL(loopEndLabel));
-    if (s.returnAssignment != null) {
+    if (s.breakCollector != null) {
       this.emitInstruction(
         LLVM_PHI({
-          resultVariable: s.returnAssignment.name,
-          variableType: lowerHighIRTypeToLLVMType(s.returnAssignment.type),
-          valueBranchTuples: [
-            {
-              value: this.lowerHighIRExpression(s.returnAssignment.value).value,
-              branch: beforeJumpLabel,
-            },
-          ],
+          resultVariable: s.breakCollector.name,
+          variableType: lowerHighIRTypeToLLVMType(s.breakCollector.type),
+          valueBranchTuples: breakValueBranchTuples,
         })
       );
     }

@@ -10,6 +10,7 @@ import {
   HIR_NAME,
   HIR_VARIABLE,
   HIR_ZERO,
+  HIR_ONE,
   HIR_BINARY,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
@@ -67,13 +68,13 @@ const assertExpressionLoweringWorks = (
   assertStatementLoweringWorks([HIR_RETURN(expression)], expectedString, globalStrings);
 };
 
-it('prettyPrintLLVMFunction works for base expressions 1/n', () => {
+it('LLVM lowering works for base expressions 1/n', () => {
   assertExpressionLoweringWorks(HIR_INT(42), '  ret i64 42');
   assertExpressionLoweringWorks(HIR_TRUE, '  ret i1 1');
   assertExpressionLoweringWorks(HIR_FALSE, '  ret i1 0');
 });
 
-it('prettyPrintLLVMFunction works for base expressions 2/n', () => {
+it('LLVM lowering works for base expressions 2/n', () => {
   assertStatementLoweringWorks([HIR_RETURN(HIR_INT(42))], '  ret i64 42');
   assertStatementLoweringWorks([HIR_RETURN(HIR_NAME('bar', INT))], '  ret i64 @bar');
   assertStatementLoweringWorks([HIR_RETURN(HIR_VARIABLE('bar', INT))], '  ret i64 %bar');
@@ -91,7 +92,7 @@ l0_start:
   );
 });
 
-it('prettyPrintLLVMFunction works for base expressions 3/n', () => {
+it('LLVM lowering works for base expressions 3/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_INDEX_ACCESS({
@@ -108,7 +109,7 @@ it('prettyPrintLLVMFunction works for base expressions 3/n', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for base expressions 4/n', () => {
+it('LLVM lowering works for base expressions 4/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_BINARY({
@@ -124,7 +125,7 @@ it('prettyPrintLLVMFunction works for base expressions 4/n', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_FUNCTION_CALL', () => {
+it('LLVM lowering works for HIR_FUNCTION_CALL', () => {
   assertStatementLoweringWorks(
     [
       HIR_FUNCTION_CALL({
@@ -147,7 +148,7 @@ it('prettyPrintLLVMFunction works for HIR_FUNCTION_CALL', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_IF_ELSE 1/n', () => {
+it('LLVM lowering works for HIR_IF_ELSE 1/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_BINARY({
@@ -160,6 +161,8 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 1/n', () => {
         booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
         s1: [],
         s2: [],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [],
       }),
     ],
@@ -167,13 +170,15 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 1/n', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_IF_ELSE 2/n', () => {
+it('LLVM lowering works for HIR_IF_ELSE 2/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_IF_ELSE({
         booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
         s1: [],
         s2: [],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -194,7 +199,7 @@ l3_if_else_end:
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
+it('LLVM lowering works for HIR_IF_ELSE 3/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_IF_ELSE({
@@ -207,6 +212,8 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 3/n', () => {
             returnType: INT,
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -226,7 +233,7 @@ l3_if_else_end:
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_IF_ELSE 4/n', () => {
+it('LLVM lowering works for HIR_IF_ELSE 4/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_IF_ELSE({
@@ -239,6 +246,8 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 4/n', () => {
           }),
         ],
         s2: [],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -258,7 +267,7 @@ l3_if_else_end:
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_IF_ELSE 5/n', () => {
+it('LLVM lowering works for HIR_IF_ELSE 5/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_BINARY({
@@ -283,6 +292,8 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 5/n', () => {
             returnType: INT,
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [],
       }),
     ],
@@ -298,7 +309,7 @@ l3_if_else_end:`
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_IF_ELSE 6/n', () => {
+it('LLVM lowering works for HIR_IF_ELSE 6/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_IF_ELSE({
@@ -319,6 +330,8 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 6/n', () => {
             returnCollector: 'b2',
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -341,7 +354,7 @@ l3_if_else_end:
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_IF_ELSE 7/n', () => {
+it('LLVM lowering works for HIR_IF_ELSE 7/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_IF_ELSE({
@@ -373,6 +386,8 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 7/n', () => {
                 returnCollector: 'b3',
               }),
             ],
+            s1BreakValue: null,
+            s2BreakValue: null,
             finalAssignments: [
               {
                 name: 'ma_nested',
@@ -383,6 +398,8 @@ it('prettyPrintLLVMFunction works for HIR_IF_ELSE 7/n', () => {
             ],
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -413,7 +430,7 @@ l3_if_else_end:
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_SWITCH 1/n', () => {
+it('LLVM lowering works for HIR_SWITCH 1/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_SWITCH({
@@ -428,6 +445,7 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 1/n', () => {
                 returnType: INT,
               }),
             ],
+            breakValue: null,
           },
           {
             caseNumber: 2,
@@ -438,6 +456,7 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 1/n', () => {
                 returnType: INT,
               }),
             ],
+            breakValue: null,
           },
         ],
         finalAssignments: [],
@@ -454,15 +473,15 @@ l1_match_end:`
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_SWITCH 2/n', () => {
+it('LLVM lowering works for HIR_SWITCH 2/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_SWITCH({
         caseVariable: 'c',
         cases: [
-          { caseNumber: 1, statements: [] },
-          { caseNumber: 0, statements: [] },
-          { caseNumber: 2, statements: [] },
+          { caseNumber: 1, statements: [], breakValue: null },
+          { caseNumber: 0, statements: [], breakValue: null },
+          { caseNumber: 2, statements: [], breakValue: null },
         ],
         finalAssignments: [{ name: 'ma', type: INT, branchValues: [HIR_ZERO, HIR_ZERO, HIR_ZERO] }],
       }),
@@ -479,14 +498,14 @@ l1_match_end:
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_SWITCH 3/n', () => {
+it('LLVM lowering works for HIR_SWITCH 3/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_SWITCH({
         caseVariable: 'c',
         cases: [
-          { caseNumber: 1, statements: [] },
-          { caseNumber: 0, statements: [] },
+          { caseNumber: 1, statements: [], breakValue: null },
+          { caseNumber: 0, statements: [], breakValue: null },
           {
             caseNumber: 2,
             statements: [
@@ -497,6 +516,7 @@ it('prettyPrintLLVMFunction works for HIR_SWITCH 3/n', () => {
                 returnCollector: 'b2',
               }),
             ],
+            breakValue: null,
           },
         ],
         finalAssignments: [
@@ -521,7 +541,7 @@ l1_match_end:
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_WHILE 1/n', () => {
+it('LLVM lowering works for HIR_WHILE 1/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_WHILE({
@@ -534,46 +554,113 @@ it('prettyPrintLLVMFunction works for HIR_WHILE 1/n', () => {
             returnCollector: 'b2',
           }),
         ],
-        conditionValue: HIR_ZERO,
       }),
     ],
     `  br label %l1_loop_start
 l1_loop_start:
   %n = phi i64 [ 0, %l0_start ], [ 0, %l1_loop_start ]
   %b2 = call i64 @foo() nounwind
-  br i1 0, label %l1_loop_start, label %l2_loop_end
-l2_loop_end:`
+  br label %l1_loop_start`
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_WHILE 2/n', () => {
+it('LLVM lowering works for HIR_WHILE 3/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_WHILE({
         loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
         statements: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('foo', INT),
-            functionArguments: [],
-            returnType: INT,
-            returnCollector: 'b2',
+          HIR_IF_ELSE({
+            booleanExpression: HIR_ZERO,
+            s1: [],
+            s2: [],
+            s1BreakValue: HIR_ZERO,
+            s2BreakValue: HIR_ONE,
+            finalAssignments: [],
           }),
         ],
-        conditionValue: HIR_ZERO,
-        returnAssignment: { name: 'v', type: INT, value: HIR_ZERO },
+        breakCollector: { name: 'v', type: INT },
       }),
     ],
     `  br label %l1_loop_start
 l1_loop_start:
-  %n = phi i64 [ 0, %l0_start ], [ 0, %l1_loop_start ]
-  %b2 = call i64 @foo() nounwind
-  br i1 0, label %l1_loop_start, label %l2_loop_end
+  %n = phi i64 [ 0, %l0_start ], [ 0, %l5_if_else_end ]
+  br i1 0, label %l3_if_else_true, label %l4_if_else_false
+l3_if_else_true:
+  br label %l2_loop_end
+l4_if_else_false:
+  br label %l2_loop_end
 l2_loop_end:
-  %v = phi i64 [ 0, %l1_loop_start ]`
+  %v = phi i64 [ 0, %l3_if_else_true ], [ 1, %l4_if_else_false ]`
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 1/n', () => {
+it('LLVM lowering works for HIR_WHILE 3/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_WHILE({
+        loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
+        statements: [
+          HIR_IF_ELSE({
+            booleanExpression: HIR_ZERO,
+            s1: [],
+            s2: [],
+            s1BreakValue: null,
+            s2BreakValue: HIR_ONE,
+            finalAssignments: [
+              { name: 'f', type: INT, branch1Value: HIR_ZERO, branch2Value: HIR_ONE },
+            ],
+          }),
+        ],
+        breakCollector: { name: 'v', type: INT },
+      }),
+    ],
+    `  br label %l1_loop_start
+l1_loop_start:
+  %n = phi i64 [ 0, %l0_start ], [ 0, %l5_if_else_end ]
+  br i1 0, label %l5_if_else_end, label %l4_if_else_false
+l4_if_else_false:
+  br label %l2_loop_end
+l5_if_else_end:
+  %f = phi i64 [ 0, %l1_loop_start ]
+  br label %l1_loop_start
+l2_loop_end:
+  %v = phi i64 [ 1, %l4_if_else_false ]`
+  );
+});
+
+it('LLVM lowering works for HIR_WHILE 4/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_WHILE({
+        loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
+        statements: [
+          HIR_SWITCH({
+            caseVariable: 'b2',
+            cases: [
+              { caseNumber: 0, statements: [], breakValue: HIR_ZERO },
+              { caseNumber: 1, statements: [], breakValue: HIR_ONE },
+            ],
+            finalAssignments: [],
+          }),
+        ],
+        breakCollector: { name: 'v', type: INT },
+      }),
+    ],
+    `  br label %l1_loop_start
+l1_loop_start:
+  %n = phi i64 [ 0, %l0_start ], [ 0, %l3_match_end ]
+  switch i64 %b2, label %l5_match_case_1 [ i64 0, label %l4_match_case_0 i64 1, label %l5_match_case_1 ]
+l4_match_case_0:
+  br label %l2_loop_end
+l5_match_case_1:
+  br label %l2_loop_end
+l2_loop_end:
+  %v = phi i64 [ 0, %l4_match_case_0 ], [ 1, %l5_match_case_1 ]`
+  );
+});
+
+it('LLVM lowering works for HIR_STRUCT_INITIALIZATION 1/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_STRUCT_INITIALIZATION({
@@ -591,7 +678,7 @@ it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 1/n', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 2/n', () => {
+it('LLVM lowering works for HIR_STRUCT_INITIALIZATION 2/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_STRUCT_INITIALIZATION({
@@ -609,7 +696,7 @@ it('prettyPrintLLVMFunction works for HIR_STRUCT_INITIALIZATION 2/n', () => {
   );
 });
 
-it('prettyPrintLLVMFunction works for HIR_CAST with type conversion', () => {
+it('LLVM lowering works for HIR_CAST with type conversion', () => {
   assertStatementLoweringWorks(
     [HIR_CAST({ name: 's', type: HIR_STRING_TYPE, assignedExpression: HIR_ZERO })],
     '  %s = inttoptr i64 0 to i64*'

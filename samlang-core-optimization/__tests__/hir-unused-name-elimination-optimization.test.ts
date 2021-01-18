@@ -64,7 +64,18 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
           HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE)),
           HIR_SWITCH({
             caseVariable: 'a',
-            cases: [{ caseNumber: 0, statements: [HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE))] }],
+            cases: [
+              {
+                caseNumber: 0,
+                statements: [HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE))],
+                breakValue: null,
+              },
+              {
+                caseNumber: 1,
+                statements: [HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE))],
+                breakValue: HIR_ZERO,
+              },
+            ],
             finalAssignments: [
               {
                 name: 'dff',
@@ -84,12 +95,16 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
               }),
             ],
             s2: [HIR_CAST({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
+            s1BreakValue: null,
+            s2BreakValue: null,
             finalAssignments: [],
           }),
           HIR_IF_ELSE({
             booleanExpression: HIR_ZERO,
             s1: [],
             s2: [],
+            s1BreakValue: HIR_ZERO,
+            s2BreakValue: HIR_ZERO,
             finalAssignments: [
               {
                 name: 'fff',
@@ -111,15 +126,13 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
                 e2: HIR_NAME('bar', HIR_INT_TYPE),
               }),
             ],
-            conditionValue: HIR_ZERO,
           }),
           HIR_WHILE({
             loopVariables: [
               { name: 'f', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
             ],
             statements: [],
-            conditionValue: HIR_ZERO,
-            returnAssignment: { name: 'd', type: HIR_INT_TYPE, value: HIR_ZERO },
+            breakCollector: { name: 'd', type: HIR_INT_TYPE },
           }),
         ],
       },
