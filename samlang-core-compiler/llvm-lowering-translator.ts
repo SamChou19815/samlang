@@ -7,6 +7,7 @@ import type {
   HighIRIndexAccessStatement,
   HighIRIfElseStatement,
   HighIRSwitchStatement,
+  HighIRWhileStatement,
   HighIRStructInitializationStatement,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
@@ -105,10 +106,8 @@ class LLVMLoweringManager {
       case 'HighIRSwitchStatement':
         this.lowerHighIRSwitchStatement(s);
         return;
-      // istanbul ignore next
       case 'HighIRWhileStatement':
-        // TODO: implement this when the tailrec optimization is ready.
-        // istanbul ignore next
+        this.lowerHighIRWhileStatement(s);
         return;
       case 'HighIRCastStatement': {
         const { value: sourceValue, type: sourceType } = this.lowerHighIRExpression(
@@ -268,6 +267,56 @@ class LLVMLoweringManager {
         );
       }
     );
+  }
+
+  private lowerHighIRWhileStatement(s: HighIRWhileStatement): void {
+    const beforeLoopLabel = this.currentLabel;
+    const loopStartLabel = this.allocator.allocateLabelWithAnnotation('loop_start');
+    const loopEndLabel = this.allocator.allocateLabelWithAnnotation('loop_end');
+    this.emitInstruction(LLVM_JUMP(loopStartLabel));
+    this.emitInstruction(LLVM_LABEL(loopStartLabel));
+    const phiInstructions = s.loopVariables.map((loopVariable) =>
+      LLVM_PHI({
+        resultVariable: loopVariable.name,
+        variableType: lowerHighIRTypeToLLVMType(loopVariable.type),
+        valueBranchTuples: [
+          {
+            value: this.lowerHighIRExpression(loopVariable.initialValue).value,
+            branch: beforeLoopLabel,
+          },
+          {
+            value: this.lowerHighIRExpression(loopVariable.loopValue).value,
+            branch: beforeLoopLabel, // hack: to be patched later
+          },
+        ],
+      })
+    );
+    phiInstructions.forEach((it) => this.emitInstruction(it));
+    s.statements.forEach((it) => this.lowerHighIRStatement(it));
+    const beforeJumpLabel = this.currentLabel;
+    phiInstructions.forEach((it) => {
+      // @ts-expect-error: ugly patch
+      // eslint-disable-next-line no-param-reassign
+      it.valueBranchTuples[1].branch = beforeJumpLabel;
+    });
+    this.emitInstruction(
+      LLVM_CJUMP(this.lowerHighIRExpression(s.conditionValue).value, loopStartLabel, loopEndLabel)
+    );
+    this.emitInstruction(LLVM_LABEL(loopEndLabel));
+    if (s.returnAssignment != null) {
+      this.emitInstruction(
+        LLVM_PHI({
+          resultVariable: s.returnAssignment.name,
+          variableType: lowerHighIRTypeToLLVMType(s.returnAssignment.type),
+          valueBranchTuples: [
+            {
+              value: this.lowerHighIRExpression(s.returnAssignment.value).value,
+              branch: beforeJumpLabel,
+            },
+          ],
+        })
+      );
+    }
   }
 
   private lowerHighIRStructInitializationStatement(s: HighIRStructInitializationStatement): void {

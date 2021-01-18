@@ -46,8 +46,14 @@ runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) 
 
   it(`HIR: ${testCaseName}`, () => {
     const jsCode = highIRModuleToJSCode(program);
-    // eslint-disable-next-line no-eval
-    const interpretationResult = eval(jsCode);
+    let interpretationResult: string;
+    try {
+      // eslint-disable-next-line no-eval
+      interpretationResult = eval(jsCode);
+    } catch (e) {
+      fail(`${e.message}\n\n${jsCode}`);
+      return;
+    }
     if (interpretationResult !== expectedStandardOut) {
       fail(`Expected:\n${expectedStandardOut}\nActual:\n${interpretationResult}\nCode: ${jsCode}`);
     }

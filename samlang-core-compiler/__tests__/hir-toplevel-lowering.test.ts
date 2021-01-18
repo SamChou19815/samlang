@@ -222,13 +222,9 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
 
   expect(debugPrintHighIRModule(actualCompiledModule)).toEqual(
     `
-function _module__class_Class1_function_infiniteLoop(): int {
-  _module__class_Class1_function_infiniteLoop();
-  return 0;
-}
-
 function _compiled_program_main(): int {
-  _module__class_Class1_function_infiniteLoop();
+  do {
+  } while (1);
   return 0;
 }
 `.trimLeft()
