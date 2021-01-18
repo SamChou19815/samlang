@@ -31,7 +31,8 @@ export const checkNotNull = <V>(value: V | null | undefined): V => {
 };
 
 export const zip = <A, B>(list1: readonly A[], list2: readonly B[]): readonly (readonly [A, B])[] =>
-  list1.map((e1, i) => [e1, checkNotNull(list2[i])]);
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  list1.map((e1, i) => [e1, list2[i]!]);
 
 export const zip3 = <A, B, C>(
   list1: readonly A[],

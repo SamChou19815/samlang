@@ -3,6 +3,7 @@ import optimizeHighIRStatementsByConditionalConstantPropagation from './hir-cond
 import optimizeHighIRStatementsByDeadCodeElimination from './hir-dead-code-elimination-optimization';
 import optimizeHighIRFunctionsByInlining from './hir-inline-optimization';
 import optimizeHighIRStatementsByLocalValueNumbering from './hir-local-value-numbering-optimization';
+import optimizeHighIRFunctionByTailRecursionRewrite from './hir-tail-recursion-optimization';
 import optimizeHighIRModuleByEliminatingUnusedOnes from './hir-unused-name-elimination-optimization';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
 
@@ -68,7 +69,13 @@ const optimizeHighIRModule = (
 ): HighIRModule => {
   const allocator = new OptimizationResourceAllocator();
 
-  let intermediate = highIRModule;
+  let intermediate = optimizeHighIRModuleByEliminatingUnusedOnes(highIRModule);
+  intermediate = {
+    ...intermediate,
+    functions: intermediate.functions.map(
+      (it) => optimizeHighIRFunctionByTailRecursionRewrite(it) ?? it
+    ),
+  };
   for (let i = 0; i < 4; i += 1) {
     let optimizedFunctions: readonly HighIRFunction[] = intermediate.functions.map((it) =>
       optimizeFunctionForRounds(it, allocator, optimizationConfiguration)

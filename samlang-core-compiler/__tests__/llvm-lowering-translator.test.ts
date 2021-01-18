@@ -5,20 +5,21 @@ import lowerHighIRModuleToLLVMModule, {
 import {
   HighIRExpression,
   HighIRStatement,
-  HIR_BINARY,
   HIR_FALSE,
+  HIR_TRUE,
+  HIR_NAME,
+  HIR_VARIABLE,
+  HIR_ZERO,
+  HIR_BINARY,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_SWITCH,
+  HIR_WHILE,
   HIR_INDEX_ACCESS,
   HIR_INT,
   HIR_CAST,
-  HIR_NAME,
-  HIR_RETURN,
   HIR_STRUCT_INITIALIZATION,
-  HIR_TRUE,
-  HIR_VARIABLE,
-  HIR_ZERO,
+  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import {
@@ -517,6 +518,58 @@ l4_match_case_2:
   br label %l1_match_end
 l1_match_end:
   %ma = phi i64 [ 0, %l2_match_case_0 ], [ 0, %l3_match_case_1 ], [ %b2, %l4_match_case_2 ]`
+  );
+});
+
+it('prettyPrintLLVMFunction works for HIR_WHILE 1/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_WHILE({
+        loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
+        statements: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('foo', INT),
+            functionArguments: [],
+            returnType: INT,
+            returnCollector: 'b2',
+          }),
+        ],
+        conditionValue: HIR_ZERO,
+      }),
+    ],
+    `  br label %l1_loop_start
+l1_loop_start:
+  %n = phi i64 [ 0, %l0_start ], [ 0, %l1_loop_start ]
+  %b2 = call i64 @foo() nounwind
+  br i1 0, label %l1_loop_start, label %l2_loop_end
+l2_loop_end:`
+  );
+});
+
+it('prettyPrintLLVMFunction works for HIR_WHILE 2/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_WHILE({
+        loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
+        statements: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('foo', INT),
+            functionArguments: [],
+            returnType: INT,
+            returnCollector: 'b2',
+          }),
+        ],
+        conditionValue: HIR_ZERO,
+        returnAssignment: { name: 'v', type: INT, value: HIR_ZERO },
+      }),
+    ],
+    `  br label %l1_loop_start
+l1_loop_start:
+  %n = phi i64 [ 0, %l0_start ], [ 0, %l1_loop_start ]
+  %b2 = call i64 @foo() nounwind
+  br i1 0, label %l1_loop_start, label %l2_loop_end
+l2_loop_end:
+  %v = phi i64 [ 0, %l1_loop_start ]`
   );
 });
 
