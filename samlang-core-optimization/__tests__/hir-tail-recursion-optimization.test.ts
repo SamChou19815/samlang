@@ -197,6 +197,119 @@ it('optimizeHighIRFunctionByTailRecursionRewrite simple infinite loop case', () 
   );
 });
 
+it('optimizeHighIRFunctionByTailRecursionRewrite simple if-else loop case 1/n', () => {
+  assertOptimizationSucceed(
+    {
+      name: 'loopy',
+      parameters: ['n'],
+      type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+      body: [
+        HIR_BINARY({ name: 'a', operator: '+', e1: HIR_VARIABLE('n', HIR_INT_TYPE), e2: HIR_ZERO }),
+        HIR_IF_ELSE({
+          booleanExpression: HIR_ZERO,
+          s1: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('loopy', HIR_INT_TYPE),
+              functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE)],
+              returnType: HIR_INT_TYPE,
+              returnCollector: 'r1',
+            }),
+          ],
+          s2: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('loopy', HIR_INT_TYPE),
+              functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE)],
+              returnType: HIR_INT_TYPE,
+              returnCollector: 'r2',
+            }),
+          ],
+          s1BreakValue: null,
+          s2BreakValue: null,
+          finalAssignments: [
+            {
+              name: 'r',
+              type: HIR_INT_TYPE,
+              branch1Value: HIR_VARIABLE('r1', HIR_INT_TYPE),
+              branch2Value: HIR_VARIABLE('r2', HIR_INT_TYPE),
+            },
+          ],
+        }),
+        HIR_RETURN(HIR_VARIABLE('r', HIR_INT_TYPE)),
+      ],
+    },
+    `function loopy(_tailrec_param_n: int): int {
+  let n: int = (_tailrec_param_n: int);
+  let r: int;
+  while (true) {
+    let a: int = (n: int) + 0;
+    let _tailrec_0_: int;
+    if 0 {
+      let r1: int = 0 + 0;
+      _tailrec_0_ = (a: int);
+    } else {
+      let r2: int = 0 + 0;
+      _tailrec_0_ = (a: int);
+    }
+    n = (_tailrec_0_: int);
+  }
+  return (r: int);
+}
+`
+  );
+});
+
+it('optimizeHighIRFunctionByTailRecursionRewrite simple if-else loop case 2/n', () => {
+  assertOptimizationSucceed(
+    {
+      name: 'loopy',
+      parameters: ['n'],
+      type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+      body: [
+        HIR_BINARY({ name: 'a', operator: '+', e1: HIR_VARIABLE('n', HIR_INT_TYPE), e2: HIR_ZERO }),
+        HIR_IF_ELSE({
+          booleanExpression: HIR_ZERO,
+          s1: [
+            HIR_FUNCTION_CALL({
+              functionExpression: HIR_NAME('loopy', HIR_INT_TYPE),
+              functionArguments: [HIR_VARIABLE('a', HIR_INT_TYPE)],
+              returnType: HIR_INT_TYPE,
+              returnCollector: 'r1',
+            }),
+          ],
+          s2: [],
+          s1BreakValue: null,
+          s2BreakValue: null,
+          finalAssignments: [
+            {
+              name: 'r',
+              type: HIR_INT_TYPE,
+              branch1Value: HIR_VARIABLE('r1', HIR_INT_TYPE),
+              branch2Value: HIR_ZERO,
+            },
+          ],
+        }),
+        HIR_RETURN(HIR_VARIABLE('r', HIR_INT_TYPE)),
+      ],
+    },
+    `function loopy(_tailrec_param_n: int): int {
+  let n: int = (_tailrec_param_n: int);
+  let r: int;
+  while (true) {
+    let a: int = (n: int) + 0;
+    if 0 {
+    } else {
+      r = 0;
+      break;
+    }
+    let r1: int = 0 + 0;
+    n = (a: int);
+  }
+  return (r: int);
+}
+`
+  );
+});
+
 it('optimizeHighIRFunctionByTailRecursionRewrite nested complex case', () => {
   assertOptimizationSucceed(
     {
@@ -267,7 +380,7 @@ it('optimizeHighIRFunctionByTailRecursionRewrite nested complex case', () => {
   let n: int = (_tailrec_param_n: int);
   let v: int;
   while (true) {
-    let _tailrec_1_: int;
+    let _tailrec_0_: int;
     switch (n) {
       case 0: {
         v = 0;
@@ -278,19 +391,17 @@ it('optimizeHighIRFunctionByTailRecursionRewrite nested complex case', () => {
         break;
       }
       case 2: {
-        let _tailrec_0_: int;
         if 0 {
           v = 1;
           break;
         } else {
-          let nn: int = (n: int) + -1;
-          let r: int = 0 + 0;
-          _tailrec_0_ = (nn: int);
         }
-        _tailrec_1_ = (_tailrec_0_: int);
+        let nn: int = (n: int) + -1;
+        let r: int = 0 + 0;
+        _tailrec_0_ = (nn: int);
       }
     }
-    n = (_tailrec_1_: int);
+    n = (_tailrec_0_: int);
   }
   return (v: int);
 }

@@ -42,10 +42,14 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
       type,
     }));
 
+  const getBreakValueFromBranchValue = (
+    branchValue: HighIRExpression | undefined
+  ): HighIRExpression | null => branchValue ?? HIR_ZERO;
+
   const getBreakValue = (
     result: RewriteResult | null,
     branchValue: HighIRExpression | undefined
-  ): HighIRExpression | null => (result != null ? null : branchValue ?? HIR_ZERO);
+  ): HighIRExpression | null => (result != null ? null : getBreakValueFromBranchValue(branchValue));
 
   switch (lastStatement.__type__) {
     case 'HighIRFunctionCallStatement':
@@ -106,14 +110,52 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
         allocator
       );
       if (s1Result == null && s2Result == null) return null;
+      if (s1Result == null) {
+        assert(s2Result != null, 'If you see this, then boolean algebra must be broken.');
+        return {
+          statements: [
+            ...statements.slice(0, statements.length - 1),
+            {
+              ...lastStatement,
+              s1: lastStatement.s1,
+              s2: [],
+              s1BreakValue: getBreakValueFromBranchValue(relaventFinalAssignment?.branch1Value),
+              s2BreakValue: null,
+              finalAssignments: [],
+            },
+            ...s2Result.statements,
+          ],
+          functionArguments: s2Result.functionArguments,
+        };
+      }
+      if (s2Result == null) {
+        assert(s1Result != null, 'If you see this, then boolean algebra must be broken.');
+        return {
+          statements: [
+            ...statements.slice(0, statements.length - 1),
+            {
+              ...lastStatement,
+              s1: [],
+              s2: lastStatement.s2,
+              s1BreakValue: null,
+              s2BreakValue: getBreakValueFromBranchValue(relaventFinalAssignment?.branch2Value),
+              finalAssignments: [],
+            },
+            ...s1Result.statements,
+          ],
+          functionArguments: s1Result.functionArguments,
+        };
+      }
       const newFinalAssignments = zip3(
-        getFunctionArgumentsFromResultOrDummyOnes(s1Result),
-        getFunctionArgumentsFromResultOrDummyOnes(s2Result),
+        s1Result.functionArguments,
+        s2Result.functionArguments,
         functionParameterTypes
-      ).map(([branch1Value, branch2Value, type]) => {
-        const name = allocator.allocateTailRecTemporary();
-        return { name, type, branch1Value, branch2Value };
-      });
+      ).map(([branch1Value, branch2Value, type]) => ({
+        name: allocator.allocateTailRecTemporary(),
+        type,
+        branch1Value,
+        branch2Value,
+      }));
       return {
         statements: [
           ...statements.slice(0, statements.length - 1),

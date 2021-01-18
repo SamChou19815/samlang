@@ -564,7 +564,7 @@ l1_loop_start:
   );
 });
 
-it('LLVM lowering works for HIR_WHILE 3/n', () => {
+it('LLVM lowering works for HIR_WHILE 2/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_WHILE({
@@ -630,6 +630,40 @@ l2_loop_end:
 });
 
 it('LLVM lowering works for HIR_WHILE 4/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_WHILE({
+        loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
+        statements: [
+          HIR_IF_ELSE({
+            booleanExpression: HIR_ZERO,
+            s1: [],
+            s2: [],
+            s1BreakValue: HIR_ONE,
+            s2BreakValue: null,
+            finalAssignments: [
+              { name: 'f', type: INT, branch1Value: HIR_ZERO, branch2Value: HIR_ONE },
+            ],
+          }),
+        ],
+        breakCollector: { name: 'v', type: INT },
+      }),
+    ],
+    `  br label %l1_loop_start
+l1_loop_start:
+  %n = phi i64 [ 0, %l0_start ], [ 0, %l5_if_else_end ]
+  br i1 0, label %l3_if_else_true, label %l5_if_else_end
+l3_if_else_true:
+  br label %l2_loop_end
+l5_if_else_end:
+  %f = phi i64 [ 1, %l1_loop_start ]
+  br label %l1_loop_start
+l2_loop_end:
+  %v = phi i64 [ 1, %l3_if_else_true ]`
+  );
+});
+
+it('LLVM lowering works for HIR_WHILE 5/n', () => {
   assertStatementLoweringWorks(
     [
       HIR_WHILE({
