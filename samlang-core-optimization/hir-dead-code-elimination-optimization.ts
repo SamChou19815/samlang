@@ -68,16 +68,13 @@ const optimizeHighIRStatement = (
       return switchStatement;
     }
     case 'HighIRWhileStatement': {
-      let returnAssignment = statement.returnAssignment;
-      if (returnAssignment != null) {
-        if (set.has(returnAssignment.name)) {
-          collectUseFromExpression(returnAssignment.value);
-        } else {
-          returnAssignment = undefined;
+      let breakCollector = statement.breakCollector;
+      if (breakCollector != null) {
+        if (!set.has(breakCollector.name)) {
+          breakCollector = undefined;
         }
       }
       statement.loopVariables.forEach((it) => collectUseFromExpression(it.loopValue));
-      collectUseFromExpression(statement.conditionValue);
       const statements = optimizeHighIRStatements(statement.statements, set);
       const loopVariables = statement.loopVariables
         .map((variable) => {
@@ -88,7 +85,7 @@ const optimizeHighIRStatement = (
           return null;
         })
         .filter(isNotNull);
-      return [{ ...statement, loopVariables, statements, returnAssignment }];
+      return [{ ...statement, loopVariables, statements, breakCollector }];
     }
     case 'HighIRCastStatement':
       if (!set.has(statement.name)) return [];

@@ -30,7 +30,7 @@ const assertCorrectlyOptimized = (statements: HighIRStatement[], expected: strin
   ).toBe(expected);
 };
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series of simple statements 1/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on a series of simple statements 1/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_BINARY({ name: 'u1', operator: '/', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -71,7 +71,7 @@ return (ii: int);`
   );
 });
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series of simple statements 2/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on a series of simple statements 2/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_BINARY({ name: 'u1', operator: '/', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -101,7 +101,7 @@ ff();`
   );
 });
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else statements 1/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 1/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_BINARY({ name: 'b', operator: '==', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -121,6 +121,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnType: HIR_INT_TYPE,
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [],
       }),
     ],
@@ -133,7 +135,7 @@ if (b: bool) {
   );
 });
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else statements 2/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 2/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_BINARY({ name: 'b', operator: '==', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -155,6 +157,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnCollector: 'a2',
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -179,7 +183,7 @@ return (ma: int);`
   );
 });
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else statements 3/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 3/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_BINARY({ name: 'b', operator: '==', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -199,6 +203,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnType: HIR_INT_TYPE,
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -218,7 +224,7 @@ if (b: bool) {
   );
 });
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else statements 4/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 4/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_BINARY({ name: 'b', operator: '==', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -240,6 +246,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnCollector: 'a2',
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -259,7 +267,7 @@ if (b: bool) {
   );
 });
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else statements 5/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 5/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_BINARY({ name: 'b', operator: '==', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -267,6 +275,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
         booleanExpression: HIR_VARIABLE('b', HIR_BOOL_TYPE),
         s1: [],
         s2: [],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [],
       }),
     ],
@@ -274,7 +284,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
   );
 });
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch statements 1/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on switch statements 1/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_BINARY({ name: 'b', operator: '==', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -284,10 +294,12 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
           {
             caseNumber: 0,
             statements: [HIR_BINARY({ name: 'c', operator: '==', e1: HIR_ZERO, e2: HIR_ONE })],
+            breakValue: null,
           },
           {
             caseNumber: 1,
             statements: [HIR_BINARY({ name: 'd', operator: '==', e1: HIR_ZERO, e2: HIR_ONE })],
+            breakValue: null,
           },
         ],
         finalAssignments: [],
@@ -297,7 +309,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
   );
 });
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch statements 2/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on switch statements 2/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_BINARY({ name: 'b', operator: '==', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -314,6 +326,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
                 returnCollector: 'a1',
               }),
             ],
+            breakValue: null,
           },
           {
             caseNumber: 1,
@@ -325,6 +338,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
                 returnCollector: 'a2',
               }),
             ],
+            breakValue: null,
           },
         ],
         finalAssignments: [
@@ -348,7 +362,7 @@ switch (b) {
   );
 });
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch statements 3/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on switch statements 3/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_BINARY({ name: 'b', operator: '==', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -365,6 +379,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
                 returnCollector: 'a1',
               }),
             ],
+            breakValue: null,
           },
           {
             caseNumber: 1,
@@ -376,6 +391,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
                 returnCollector: 'a2',
               }),
             ],
+            breakValue: null,
           },
         ],
         finalAssignments: [
@@ -404,7 +420,7 @@ return (ma: int);`
   );
 });
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 1/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on while statement 1/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_WHILE({
@@ -434,8 +450,9 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
                 e2: HIR_ONE,
               }),
             ],
+            s1BreakValue: null,
+            s2BreakValue: null,
             finalAssignments: [
-              { name: 'c', type: HIR_INT_TYPE, branch1Value: HIR_FALSE, branch2Value: HIR_TRUE },
               {
                 name: '_tmp_n',
                 type: HIR_INT_TYPE,
@@ -445,28 +462,24 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
             ],
           }),
         ],
-        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
       }),
     ],
     `let n: int = 10;
-do {
+while (true) {
   let is_zero: bool = (n: int) == 0;
-  let c: int;
   let _tmp_n: int;
   if (is_zero: bool) {
-    c = 0;
     _tmp_n = (n: int);
   } else {
     let s2_n: int = (n: int) + -1;
-    c = 1;
     _tmp_n = (s2_n: int);
   }
   n = (_tmp_n: int);
-} while ((c: int));`
+}`
   );
 });
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 2/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on while statement 2/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_WHILE({
@@ -502,8 +515,9 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
                 e2: HIR_ONE,
               }),
             ],
+            s1BreakValue: HIR_ZERO,
+            s2BreakValue: null,
             finalAssignments: [
-              { name: 'c', type: HIR_INT_TYPE, branch1Value: HIR_FALSE, branch2Value: HIR_TRUE },
               {
                 name: '_tmp_n',
                 type: HIR_INT_TYPE,
@@ -513,33 +527,26 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
             ],
           }),
         ],
-        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
-        returnAssignment: {
-          name: 'v',
-          type: HIR_INT_TYPE,
-          value: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
-        },
+        breakCollector: { name: 'v', type: HIR_INT_TYPE },
       }),
     ],
     `let n: int = 10;
-do {
+while (true) {
   let is_zero: bool = (n: int) == 0;
-  let c: int;
   let _tmp_n: int;
   if (is_zero: bool) {
-    c = 0;
-    _tmp_n = (n: int);
+    undefined = 0;
+    break;
   } else {
     let s2_n: int = (n: int) + -1;
-    c = 1;
     _tmp_n = (s2_n: int);
   }
   n = (_tmp_n: int);
-} while ((c: int));`
+}`
   );
 });
 
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 3/n.', () => {
+it('optimizeHighIRStatementsByDeadCodeElimination works on while statement 3/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_WHILE({
@@ -569,8 +576,9 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
                 e2: HIR_ONE,
               }),
             ],
+            s1BreakValue: null,
+            s2BreakValue: HIR_ZERO,
             finalAssignments: [
-              { name: 'c', type: HIR_INT_TYPE, branch1Value: HIR_FALSE, branch2Value: HIR_TRUE },
               {
                 name: '_tmp_n',
                 type: HIR_INT_TYPE,
@@ -580,32 +588,24 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
             ],
           }),
         ],
-        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
-        returnAssignment: {
-          name: 'v',
-          type: HIR_INT_TYPE,
-          value: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
-        },
+        breakCollector: { name: 'v', type: HIR_INT_TYPE },
       }),
       HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
     ],
     `let n: int = 10;
 let v: int;
-do {
+while (true) {
   let is_zero: bool = (n: int) == 0;
-  let c: int;
   let _tmp_n: int;
   if (is_zero: bool) {
-    c = 0;
     _tmp_n = (n: int);
   } else {
     let s2_n: int = (n: int) + -1;
-    c = 1;
-    _tmp_n = (s2_n: int);
+    v = 0;
+    break;
   }
   n = (_tmp_n: int);
-  v = (_tmp_n: int);
-} while ((c: int));
+}
 return (v: int);`
   );
 });

@@ -55,6 +55,10 @@ const optimizeHighIRStatement = (
     }
   };
 
+  const getNullableExpressionUnderContext = (
+    expression: HighIRExpression | null
+  ): HighIRExpression | null => (expression == null ? null : getExpressionUnderContext(expression));
+
   switch (statement.__type__) {
     case 'HighIRIndexAccessStatement': {
       const pointerExpression = getExpressionUnderContext(statement.pointerExpression);
@@ -96,7 +100,7 @@ const optimizeHighIRStatement = (
 
     case 'HighIRIfElseStatement': {
       const booleanExpression = getExpressionUnderContext(statement.booleanExpression);
-      const [s1, branch1Values] = variableContext.withNestedScope(() =>
+      const [s1, branch1Values, s1BreakValue] = variableContext.withNestedScope(() =>
         bindedValueContext.withNestedScope(() => {
           const statements = optimizeHighIRStatements(
             statement.s1,
@@ -108,10 +112,11 @@ const optimizeHighIRStatement = (
             statement.finalAssignments.map((final) =>
               getExpressionUnderContext(final.branch1Value)
             ),
+            getNullableExpressionUnderContext(statement.s1BreakValue),
           ] as const;
         })
       );
-      const [s2, branch2Values] = variableContext.withNestedScope(() =>
+      const [s2, branch2Values, s2BreakValue] = variableContext.withNestedScope(() =>
         bindedValueContext.withNestedScope(() => {
           const statements = optimizeHighIRStatements(
             statement.s2,
@@ -123,6 +128,7 @@ const optimizeHighIRStatement = (
             statement.finalAssignments.map((final) =>
               getExpressionUnderContext(final.branch2Value)
             ),
+            getNullableExpressionUnderContext(statement.s2BreakValue),
           ] as const;
         })
       );
@@ -130,6 +136,8 @@ const optimizeHighIRStatement = (
         booleanExpression,
         s1,
         s2,
+        s1BreakValue,
+        s2BreakValue,
         finalAssignments: zip3(branch1Values, branch2Values, statement.finalAssignments).map(
           ([branch1Value, branch2Value, final]) => ({
             ...final,
@@ -143,7 +151,7 @@ const optimizeHighIRStatement = (
     case 'HighIRSwitchStatement': {
       const caseVariable =
         variableContext.getLocalValueType(statement.caseVariable) ?? statement.caseVariable;
-      const casesWithValue = statement.cases.map(({ caseNumber, statements }, i) =>
+      const casesWithValue = statement.cases.map(({ caseNumber, statements, breakValue }, i) =>
         variableContext.withNestedScope(() =>
           bindedValueContext.withNestedScope(() => {
             const newStatements = optimizeHighIRStatements(
@@ -154,7 +162,12 @@ const optimizeHighIRStatement = (
             const finalValues = statement.finalAssignments.map((it) =>
               getExpressionUnderContext(checkNotNull(it.branchValues[i]))
             );
-            return { caseNumber, newStatements, finalValues };
+            return {
+              caseNumber,
+              newStatements,
+              breakValue: getNullableExpressionUnderContext(breakValue),
+              finalValues,
+            };
           })
         )
       );
@@ -163,6 +176,7 @@ const optimizeHighIRStatement = (
         cases: casesWithValue.map((it) => ({
           caseNumber: it.caseNumber,
           statements: it.newStatements,
+          breakValue: it.breakValue,
         })),
         finalAssignments: statement.finalAssignments.map((final, i) => ({
           ...final,
@@ -179,12 +193,7 @@ const optimizeHighIRStatement = (
           initialValue: getExpressionUnderContext(initialValue),
         })
       );
-      const [
-        statements,
-        loopVariableLoopValues,
-        conditionValue,
-        returnAssignment,
-      ] = variableContext.withNestedScope(() =>
+      const [statements, loopVariableLoopValues] = variableContext.withNestedScope(() =>
         bindedValueContext.withNestedScope(() => {
           const newStatements = optimizeHighIRStatements(
             statement.statements,
@@ -194,14 +203,6 @@ const optimizeHighIRStatement = (
           return [
             newStatements,
             statement.loopVariables.map((it) => getExpressionUnderContext(it.loopValue)),
-            getExpressionUnderContext(statement.conditionValue),
-            statement.returnAssignment == null
-              ? undefined
-              : {
-                  name: statement.returnAssignment.name,
-                  type: statement.returnAssignment.type,
-                  value: getExpressionUnderContext(statement.returnAssignment.value),
-                },
           ];
         })
       );
@@ -209,7 +210,7 @@ const optimizeHighIRStatement = (
         loopVariableWithoutLoopValues,
         loopVariableLoopValues
       ).map(([rest, loopValue]) => ({ ...rest, loopValue }));
-      return HIR_WHILE({ loopVariables, statements, conditionValue, returnAssignment });
+      return HIR_WHILE({ loopVariables, statements, breakCollector: statement.breakCollector });
     }
 
     case 'HighIRCastStatement':

@@ -84,12 +84,16 @@ it('estimateFunctionInlineCost test', () => {
               e2: HIR_INT(3),
             }),
           ],
+          s1BreakValue: null,
+          s2BreakValue: null,
           finalAssignments: [],
         }),
         HIR_IF_ELSE({
           booleanExpression: HIR_ZERO,
           s1: [],
           s2: [],
+          s1BreakValue: null,
+          s2BreakValue: null,
           finalAssignments: [
             {
               name: 'a',
@@ -112,6 +116,7 @@ it('estimateFunctionInlineCost test', () => {
                   e2: HIR_INT(3),
                 }),
               ],
+              breakValue: null,
             },
           ],
           finalAssignments: [],
@@ -129,6 +134,7 @@ it('estimateFunctionInlineCost test', () => {
                   e2: HIR_INT(3),
                 }),
               ],
+              breakValue: null,
             },
           ],
           finalAssignments: [{ name: '', type: HIR_INT_TYPE, branchValues: [HIR_ZERO] }],
@@ -145,27 +151,11 @@ it('estimateFunctionInlineCost test', () => {
               e2: HIR_INT(3),
             }),
           ],
-          conditionValue: HIR_ZERO,
-        }),
-        HIR_WHILE({
-          loopVariables: [
-            { name: '', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
-          ],
-          statements: [
-            HIR_BINARY({
-              name: '',
-              operator: '+',
-              e1: HIR_VARIABLE('', HIR_INT_TYPE),
-              e2: HIR_INT(3),
-            }),
-          ],
-          conditionValue: HIR_ZERO,
-          returnAssignment: { name: '', type: HIR_INT_TYPE, value: HIR_ZERO },
         }),
         HIR_RETURN(HIR_VARIABLE('ss', HIR_INT_TYPE)),
       ],
     })
-  ).toBe(39);
+  ).toBe(34);
 });
 
 const assertCorrectlyInlined = (functions: readonly HighIRFunction[], expected: string): void => {
@@ -219,6 +209,8 @@ it('optimizeFunctionsByInlining test 1', () => {
                 returnCollector: 'v',
               }),
             ],
+            s1BreakValue: null,
+            s2BreakValue: null,
             finalAssignments: [
               {
                 name: 'fa',
@@ -319,6 +311,8 @@ it('optimizeFunctionsByInlining test 1', () => {
                 assignedExpression: HIR_ZERO,
               }),
             ],
+            s1BreakValue: null,
+            s2BreakValue: null,
             finalAssignments: [],
           }),
         ],
@@ -418,6 +412,8 @@ it('optimizeFunctionsByInlining test 2', () => {
                 returnType: HIR_INT_TYPE,
               }),
             ],
+            s1BreakValue: null,
+            s2BreakValue: null,
             finalAssignments: [],
           }),
         ],
@@ -480,6 +476,8 @@ it('optimizeFunctionsByInlining test 3', () => {
               }),
             ],
             s2: [HIR_CAST({ name: 'a', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
+            s1BreakValue: null,
+            s2BreakValue: null,
             finalAssignments: [],
           }),
         ],
@@ -542,6 +540,8 @@ it('optimizeFunctionsByInlining test 4', () => {
               }),
             ],
             s2: [HIR_CAST({ name: 'a', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
+            s1BreakValue: null,
+            s2BreakValue: null,
             finalAssignments: [
               {
                 name: 'b',
@@ -651,12 +651,14 @@ it('optimizeFunctionsByInlining test 6', () => {
                     returnType: HIR_INT_TYPE,
                   }),
                 ],
+                breakValue: null,
               },
               {
                 caseNumber: 1,
                 statements: [
                   HIR_CAST({ name: 'a', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO }),
                 ],
+                breakValue: null,
               },
             ],
             finalAssignments: [
@@ -733,6 +735,7 @@ it('optimizeFunctionsByInlining test 7', () => {
                 statements: [
                   HIR_CAST({ name: 'a', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO }),
                 ],
+                breakValue: null,
               },
               {
                 caseNumber: 1,
@@ -743,6 +746,7 @@ it('optimizeFunctionsByInlining test 7', () => {
                     returnType: HIR_INT_TYPE,
                   }),
                 ],
+                breakValue: null,
               },
             ],
             finalAssignments: [],
@@ -831,19 +835,16 @@ it('optimizeFunctionsByInlining test 8', () => {
               },
             ],
             statements: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
-                functionArguments: [],
-                returnType: HIR_INT_TYPE,
-                returnCollector: '_tmp_n',
+              HIR_IF_ELSE({
+                booleanExpression: HIR_ZERO,
+                s1: [],
+                s2: [],
+                s1BreakValue: HIR_ZERO,
+                s2BreakValue: HIR_ZERO,
+                finalAssignments: [],
               }),
             ],
-            conditionValue: HIR_TRUE,
-            returnAssignment: {
-              name: 'v',
-              type: HIR_INT_TYPE,
-              value: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
-            },
+            breakCollector: { name: 'v', type: HIR_INT_TYPE },
           }),
           HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
         ],
@@ -852,29 +853,16 @@ it('optimizeFunctionsByInlining test 8', () => {
     `function fooBar(): int {
   let n: int = 10;
   let v: int;
-  do {
-    let _inline_0_n: int = 10;
-    let _inline_0_v: int;
-    do {
-      let _inline_1_n: int = 10;
-      let _inline_1_v: int;
-      do {
-        let _inline_1__inline_0_n: int = 10;
-        let _inline_1__inline_0_v: int;
-        do {
-          let _inline_1__inline_0__tmp_n: int = fooBar();
-          _inline_1__inline_0_n = (_inline_1__inline_0__tmp_n: int);
-          _inline_1__inline_0_v = (_inline_1__inline_0__tmp_n: int);
-        } while (1);
-        _inline_1_n = (_inline_1__inline_0_v: int);
-        _inline_1_v = (_inline_1__inline_0_v: int);
-      } while (1);
-      _inline_0_n = (_inline_1_v: int);
-      _inline_0_v = (_inline_1_v: int);
-    } while (1);
-    n = (_inline_0_v: int);
-    v = (_inline_0_v: int);
-  } while (1);
+  while (true) {
+    if 0 {
+      v = 0;
+      break;
+    } else {
+      v = 0;
+      break;
+    }
+    n = (_tmp_n: int);
+  }
   return (v: int);
 }
 `
@@ -906,7 +894,6 @@ it('optimizeFunctionsByInlining test 9', () => {
                 returnCollector: '_tmp_n',
               }),
             ],
-            conditionValue: HIR_TRUE,
           }),
           HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
         ],
@@ -914,38 +901,38 @@ it('optimizeFunctionsByInlining test 9', () => {
     ],
     `function fooBar(): int {
   let n: int = 10;
-  do {
+  while (true) {
     let _inline_0_n: int = 10;
-    do {
+    while (true) {
       let _inline_1_n: int = 10;
-      do {
+      while (true) {
         let _inline_1__inline_0_n: int = 10;
-        do {
+        while (true) {
           let _inline_2_n: int = 10;
-          do {
+          while (true) {
             let _inline_2__inline_0_n: int = 10;
-            do {
+            while (true) {
               let _inline_2__inline_1_n: int = 10;
-              do {
+              while (true) {
                 let _inline_2__inline_1__inline_0_n: int = 10;
-                do {
+                while (true) {
                   let _inline_2__inline_1__inline_0__tmp_n: int = fooBar();
                   _inline_2__inline_1__inline_0_n = (_inline_2__inline_1__inline_0__tmp_n: int);
-                } while (1);
+                }
                 _inline_2__inline_1_n = (v: int);
-              } while (1);
+              }
               _inline_2__inline_0_n = (v: int);
-            } while (1);
+            }
             _inline_2_n = (v: int);
-          } while (1);
+          }
           _inline_1__inline_0_n = (v: int);
-        } while (1);
+        }
         _inline_1_n = (v: int);
-      } while (1);
+      }
       _inline_0_n = (v: int);
-    } while (1);
+    }
     n = (v: int);
-  } while (1);
+  }
   return (v: int);
 }
 `

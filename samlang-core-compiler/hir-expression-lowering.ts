@@ -679,7 +679,14 @@ class HighIRExpressionLoweringManager {
             ];
 
         functionReturnCollectorType = functionTypeWithoutContext.returnType;
-        functionCall = HIR_IF_ELSE({ booleanExpression, s1, s2, finalAssignments });
+        functionCall = HIR_IF_ELSE({
+          booleanExpression,
+          s1,
+          s2,
+          s1BreakValue: null,
+          s2BreakValue: null,
+          finalAssignments,
+        });
         break;
       }
     }
@@ -733,6 +740,8 @@ class HighIRExpressionLoweringManager {
               booleanExpression: e1Result.expression,
               s1: e2Result.statements,
               s2: [],
+              s1BreakValue: null,
+              s2BreakValue: null,
               finalAssignments: [
                 {
                   name: temp,
@@ -765,6 +774,8 @@ class HighIRExpressionLoweringManager {
               booleanExpression: e1Result.expression,
               s1: [],
               s2: e2Result.statements,
+              s1BreakValue: null,
+              s2BreakValue: null,
               finalAssignments: [
                 {
                   name: temp,
@@ -858,6 +869,8 @@ class HighIRExpressionLoweringManager {
         booleanExpression: loweredBoolExpression,
         s1: e1LoweringResult.statements,
         s2: e2LoweringResult.statements,
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: isVoidReturn
           ? []
           : [
@@ -933,6 +946,7 @@ class HighIRExpressionLoweringManager {
           cases: loweredMatchingList.map((it) => ({
             caseNumber: it.tagOrder,
             statements: it.statements,
+            breakValue: null,
           })),
           finalAssignments: [],
         })
@@ -944,6 +958,7 @@ class HighIRExpressionLoweringManager {
           cases: loweredMatchingList.map(({ tagOrder: caseNumber, statements }) => ({
             caseNumber,
             statements,
+            breakValue: null,
           })),
           finalAssignments: [
             {

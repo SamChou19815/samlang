@@ -67,6 +67,8 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on if-else st
           }),
           HIR_RETURN(HIR_ZERO),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [],
       }),
     ],
@@ -109,6 +111,7 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on switch sta
                 returnType: HIR_INT_TYPE,
               }),
             ],
+            breakValue: null,
           },
           {
             caseNumber: 1,
@@ -130,6 +133,7 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on switch sta
               }),
               HIR_RETURN(HIR_ZERO),
             ],
+            breakValue: null,
           },
           {
             caseNumber: 2,
@@ -151,6 +155,7 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on switch sta
               }),
               HIR_RETURN(HIR_ZERO),
             ],
+            breakValue: null,
           },
         ],
         finalAssignments: [],

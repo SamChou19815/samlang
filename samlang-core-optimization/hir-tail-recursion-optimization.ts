@@ -3,22 +3,18 @@ import OptimizationResourceAllocator from './optimization-resource-allocator';
 import {
   HighIRExpression,
   HighIRStatement,
-  HIR_FALSE,
-  HIR_TRUE,
   HIR_ZERO,
   HIR_VARIABLE,
   HIR_BINARY,
   HIR_WHILE,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
-import { HighIRType, HIR_BOOL_TYPE } from 'samlang-core-ast/hir-types';
+import type { HighIRType } from 'samlang-core-ast/hir-types';
 import { Long, assert, checkNotNull, zip, zip3 } from 'samlang-core-utils';
 
 type RewriteResult = {
   readonly statements: readonly HighIRStatement[];
   readonly functionArguments: readonly HighIRExpression[];
-  readonly conditionValue: HighIRExpression;
 };
 
 const getStatements = (
@@ -46,8 +42,10 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
       type,
     }));
 
-  const getConditionValueFromResult = (result: RewriteResult | null): HighIRExpression =>
-    result?.conditionValue ?? HIR_FALSE;
+  const getBreakValue = (
+    result: RewriteResult | null,
+    branchValue: HighIRExpression | undefined
+  ): HighIRExpression | null => (result != null ? null : branchValue ?? HIR_ZERO);
 
   switch (lastStatement.__type__) {
     case 'HighIRFunctionCallStatement':
@@ -78,15 +76,14 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
                 }),
               ],
         functionArguments: lastStatement.functionArguments,
-        conditionValue: HIR_TRUE,
       };
 
     case 'HighIRIfElseStatement': {
+      const relaventFinalAssignment = lastStatement.finalAssignments.find(
+        (it) => it.name === expectedReturnCollector
+      );
       let newExpectedReturnCollector: readonly [string | null, string | null] = [null, null];
       if (expectedReturnCollector != null) {
-        const relaventFinalAssignment = lastStatement.finalAssignments.find(
-          (it) => it.name === expectedReturnCollector
-        );
         if (relaventFinalAssignment == null) return null;
         const { branch1Value, branch2Value } = relaventFinalAssignment;
         newExpectedReturnCollector = [
@@ -117,7 +114,6 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
         const name = allocator.allocateTailRecTemporary();
         return { name, type, branch1Value, branch2Value };
       });
-      const conditionValueName = allocator.allocateTailRecTemporary();
       return {
         statements: [
           ...statements.slice(0, statements.length - 1),
@@ -125,20 +121,15 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
             ...lastStatement,
             s1: getStatements(s1Result, lastStatement.s1),
             s2: getStatements(s2Result, lastStatement.s2),
+            s1BreakValue: getBreakValue(s1Result, relaventFinalAssignment?.branch1Value),
+            s2BreakValue: getBreakValue(s2Result, relaventFinalAssignment?.branch2Value),
             finalAssignments: [
-              ...lastStatement.finalAssignments,
+              ...lastStatement.finalAssignments.filter((it) => it !== relaventFinalAssignment),
               ...newFinalAssignments,
-              {
-                name: conditionValueName,
-                type: HIR_BOOL_TYPE,
-                branch1Value: getConditionValueFromResult(s1Result),
-                branch2Value: getConditionValueFromResult(s2Result),
-              },
             ],
           },
         ],
         functionArguments: newFinalAssignments.map((it) => HIR_VARIABLE(it.name, it.type)),
-        conditionValue: HIR_VARIABLE(conditionValueName, HIR_BOOL_TYPE),
       };
     }
 
@@ -146,10 +137,10 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
       let newExpectedReturnCollector: readonly (string | null)[] = lastStatement.cases.map(
         () => null
       );
+      const relaventFinalAssignment = lastStatement.finalAssignments.find(
+        (it) => it.name === expectedReturnCollector
+      );
       if (expectedReturnCollector != null) {
-        const relaventFinalAssignment = lastStatement.finalAssignments.find(
-          (it) => it.name === expectedReturnCollector
-        );
         if (relaventFinalAssignment == null) return null;
         newExpectedReturnCollector = relaventFinalAssignment.branchValues.map((it) =>
           it.__type__ === 'HighIRVariableExpression' ? it.name : null
@@ -168,9 +159,11 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
         )
       );
       if (caseResults.every((it) => it == null)) return null;
-      const cases = zip(lastStatement.cases, caseResults).map(([oneCase, caseResult]) => ({
+      const cases = zip(lastStatement.cases, caseResults).map(([oneCase, caseResult], i) => ({
         ...oneCase,
         statements: getStatements(caseResult, oneCase.statements),
+        breakValue: getBreakValue(caseResult, relaventFinalAssignment?.branchValues[i]),
+        hasBreak: caseResult == null,
       }));
       const finalArgumentsOrDummyOnes = caseResults.map(getFunctionArgumentsFromResultOrDummyOnes);
       const newFinalAssignments = functionParameterTypes.map((type, i) => {
@@ -178,7 +171,6 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
         const branchValues = finalArgumentsOrDummyOnes.map((it) => checkNotNull(it[i]));
         return { name, type, branchValues };
       });
-      const conditionValueName = allocator.allocateTailRecTemporary();
       return {
         statements: [
           ...statements.slice(0, statements.length - 1),
@@ -186,18 +178,12 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
             ...lastStatement,
             cases,
             finalAssignments: [
-              ...lastStatement.finalAssignments,
+              ...lastStatement.finalAssignments.filter((it) => it !== relaventFinalAssignment),
               ...newFinalAssignments,
-              {
-                name: conditionValueName,
-                type: HIR_BOOL_TYPE,
-                branchValues: caseResults.map(getConditionValueFromResult),
-              },
             ],
           },
         ],
         functionArguments: newFinalAssignments.map((it) => HIR_VARIABLE(it.name, it.type)),
-        conditionValue: HIR_VARIABLE(conditionValueName, HIR_BOOL_TYPE),
       };
     }
 
@@ -230,7 +216,7 @@ const optimizeHighIRFunctionByTailRecursionRewrite = ({
     allocator
   );
   if (result == null) return null;
-  const { statements, functionArguments, conditionValue } = result;
+  const { statements, functionArguments } = result;
   if (returnedExpression.__type__ === 'HighIRIntLiteralExpression') {
     return {
       name,
@@ -250,14 +236,12 @@ const optimizeHighIRFunctionByTailRecursionRewrite = ({
             })
           ),
           statements,
-          conditionValue,
         }),
         lastStatement,
       ],
     };
   }
 
-  const returnAssignmentName = allocator.allocateTailRecTemporary();
   return {
     name,
     parameters: parameters.map(getTailRecursionParameterName),
@@ -276,14 +260,9 @@ const optimizeHighIRFunctionByTailRecursionRewrite = ({
           })
         ),
         statements,
-        conditionValue,
-        returnAssignment: {
-          name: returnAssignmentName,
-          type: returnedExpression.type,
-          value: returnedExpression,
-        },
+        breakCollector: { name: returnedExpression.name, type: returnedExpression.type },
       }),
-      HIR_RETURN(HIR_VARIABLE(returnAssignmentName, returnedExpression.type)),
+      lastStatement,
     ],
   };
 };

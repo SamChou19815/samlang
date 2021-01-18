@@ -67,6 +67,8 @@ export interface HighIRIfElseStatement extends BaseHighIRStatement {
   readonly booleanExpression: HighIRExpression;
   readonly s1: readonly HighIRStatement[];
   readonly s2: readonly HighIRStatement[];
+  readonly s1BreakValue: HighIRExpression | null;
+  readonly s2BreakValue: HighIRExpression | null;
   readonly finalAssignments: readonly {
     readonly name: string;
     readonly type: HighIRType;
@@ -81,6 +83,7 @@ export interface HighIRSwitchStatement extends BaseHighIRStatement {
   readonly cases: readonly {
     readonly caseNumber: number;
     readonly statements: readonly HighIRStatement[];
+    readonly breakValue: HighIRExpression | null;
   }[];
   readonly finalAssignments: readonly {
     readonly name: string;
@@ -104,12 +107,7 @@ export interface HighIRWhileStatement extends BaseHighIRStatement {
     readonly loopValue: HighIRExpression;
   }[];
   readonly statements: readonly HighIRStatement[];
-  readonly conditionValue: HighIRExpression;
-  readonly returnAssignment?: {
-    readonly name: string;
-    readonly type: HighIRType;
-    readonly value: HighIRExpression;
-  };
+  readonly breakCollector?: { readonly name: string; readonly type: HighIRType };
 }
 
 export interface HighIRVariantPatternToStatement {
@@ -257,12 +255,16 @@ export const HIR_IF_ELSE = ({
   booleanExpression,
   s1,
   s2,
+  s1BreakValue,
+  s2BreakValue,
   finalAssignments,
 }: ConstructorArgumentObject<HighIRIfElseStatement>): HighIRIfElseStatement => ({
   __type__: 'HighIRIfElseStatement',
   booleanExpression,
   s1,
   s2,
+  s1BreakValue,
+  s2BreakValue,
   finalAssignments,
 });
 
@@ -280,14 +282,12 @@ export const HIR_SWITCH = ({
 export const HIR_WHILE = ({
   loopVariables,
   statements,
-  conditionValue,
-  returnAssignment,
+  breakCollector,
 }: ConstructorArgumentObject<HighIRWhileStatement>): HighIRWhileStatement => ({
   __type__: 'HighIRWhileStatement',
   loopVariables,
   statements,
-  conditionValue,
-  returnAssignment,
+  breakCollector,
 });
 
 export const HIR_CAST = ({
@@ -331,6 +331,7 @@ export const debugPrintHighIRExpression = (expression: HighIRExpression): string
 export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel = 0): string => {
   const collector: string[] = [];
   let level = startLevel;
+  let breakCollector: string | undefined = undefined;
 
   const printer = (s: HighIRStatement) => {
     switch (s.__type__) {
@@ -374,18 +375,34 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         );
         level += 1;
         s.s1.forEach(printer);
-        s.finalAssignments.forEach((finalAssignment) => {
-          const v1 = debugPrintHighIRExpression(finalAssignment.branch1Value);
-          collector.push('  '.repeat(level), `${finalAssignment.name} = ${v1};\n`);
-        });
+        if (s.s1BreakValue != null) {
+          collector.push(
+            '  '.repeat(level),
+            `${breakCollector} = ${debugPrintHighIRExpression(s.s1BreakValue)};\n`
+          );
+          collector.push('  '.repeat(level), 'break;\n');
+        } else {
+          s.finalAssignments.forEach((finalAssignment) => {
+            const v1 = debugPrintHighIRExpression(finalAssignment.branch1Value);
+            collector.push('  '.repeat(level), `${finalAssignment.name} = ${v1};\n`);
+          });
+        }
         level -= 1;
         collector.push('  '.repeat(level), `} else {\n`);
         level += 1;
         s.s2.forEach(printer);
-        s.finalAssignments.forEach((finalAssignment) => {
-          const v2 = debugPrintHighIRExpression(finalAssignment.branch2Value);
-          collector.push('  '.repeat(level), `${finalAssignment.name} = ${v2};\n`);
-        });
+        if (s.s2BreakValue != null) {
+          collector.push(
+            '  '.repeat(level),
+            `${breakCollector} = ${debugPrintHighIRExpression(s.s2BreakValue)};\n`
+          );
+          collector.push('  '.repeat(level), 'break;\n');
+        } else {
+          s.finalAssignments.forEach((finalAssignment) => {
+            const v2 = debugPrintHighIRExpression(finalAssignment.branch2Value);
+            collector.push('  '.repeat(level), `${finalAssignment.name} = ${v2};\n`);
+          });
+        }
         level -= 1;
         collector.push('  '.repeat(level), `}\n`);
         break;
@@ -396,14 +413,24 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         });
         collector.push('  '.repeat(level), `switch (${s.caseVariable}) {\n`);
         level += 1;
-        s.cases.forEach(({ caseNumber, statements }, i) => {
+        s.cases.forEach(({ caseNumber, statements, breakValue }, i) => {
           collector.push('  '.repeat(level), `case ${caseNumber}: {\n`);
           level += 1;
           statements.forEach(printer);
-          s.finalAssignments.forEach((finalAssignment) => {
-            const value = debugPrintHighIRExpression(checkNotNull(finalAssignment.branchValues[i]));
-            collector.push('  '.repeat(level), `${finalAssignment.name} = ${value};\n`);
-          });
+          if (breakValue != null) {
+            collector.push(
+              '  '.repeat(level),
+              `${breakCollector} = ${debugPrintHighIRExpression(breakValue)};\n`
+            );
+            collector.push('  '.repeat(level), 'break;\n');
+          } else {
+            s.finalAssignments.forEach((finalAssignment) => {
+              const value = debugPrintHighIRExpression(
+                checkNotNull(finalAssignment.branchValues[i])
+              );
+              collector.push('  '.repeat(level), `${finalAssignment.name} = ${value};\n`);
+            });
+          }
           level -= 1;
           collector.push('  '.repeat(level), `}\n`);
         });
@@ -419,11 +446,13 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
             `let ${v.name}: ${type} = ${debugPrintHighIRExpression(v.initialValue)};\n`
           );
         });
-        if (s.returnAssignment != null) {
-          const { name, type } = s.returnAssignment;
+        const previousBreakCollector = breakCollector;
+        breakCollector = s.breakCollector?.name;
+        if (s.breakCollector != null) {
+          const { name, type } = s.breakCollector;
           collector.push('  '.repeat(level), `let ${name}: ${prettyPrintHighIRType(type)};\n`);
         }
-        collector.push('  '.repeat(level), `do {\n`);
+        collector.push('  '.repeat(level), `while (true) {\n`);
         level += 1;
         s.statements.forEach(printer);
         s.loopVariables.forEach((v) => {
@@ -432,15 +461,9 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
             `${v.name} = ${debugPrintHighIRExpression(v.loopValue)};\n`
           );
         });
-        if (s.returnAssignment != null) {
-          const value = debugPrintHighIRExpression(s.returnAssignment.value);
-          collector.push('  '.repeat(level), `${s.returnAssignment.name} = ${value};\n`);
-        }
         level -= 1;
-        collector.push(
-          '  '.repeat(level),
-          `} while (${debugPrintHighIRExpression(s.conditionValue)});\n`
-        );
+        collector.push('  '.repeat(level), '}\n');
+        breakCollector = previousBreakCollector;
         break;
       }
       case 'HighIRCastStatement':

@@ -314,6 +314,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnType: HIR_INT_TYPE,
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [],
       }),
       HIR_BINARY({ name: 'b2', operator: '>', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -333,6 +335,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnType: HIR_INT_TYPE,
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [],
       }),
       HIR_BINARY({ name: 'b3', operator: '<=', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -354,6 +358,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnCollector: 'a2',
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma1',
@@ -382,6 +388,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnCollector: 'a22',
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma2',
@@ -463,6 +471,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnType: HIR_INT_TYPE,
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [],
       }),
       HIR_IF_ELSE({
@@ -483,6 +493,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnCollector: 'a2',
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma1',
@@ -497,6 +509,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
         booleanExpression: HIR_VARIABLE('b', HIR_BOOL_TYPE),
         s1: [],
         s2: [],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma2',
@@ -553,6 +567,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
                 returnType: HIR_INT_TYPE,
               }),
             ],
+            breakValue: null,
           },
           {
             caseNumber: 2,
@@ -563,6 +578,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
                 returnType: HIR_INT_TYPE,
               }),
             ],
+            breakValue: null,
           },
         ],
         finalAssignments: [],
@@ -580,6 +596,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
                 returnCollector: 'b1',
               }),
             ],
+            breakValue: null,
           },
           {
             caseNumber: 2,
@@ -591,6 +608,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
                 returnCollector: 'b2',
               }),
             ],
+            breakValue: null,
           },
         ],
         finalAssignments: [
@@ -607,6 +625,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
           {
             caseNumber: 1,
             statements: [],
+            breakValue: null,
           },
           {
             caseNumber: 2,
@@ -618,6 +637,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on switch sta
                 e2: HIR_INT(1),
               }),
             ],
+            breakValue: null,
           },
         ],
         finalAssignments: [
@@ -683,8 +703,9 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
                 e2: HIR_ONE,
               }),
             ],
+            s1BreakValue: HIR_VARIABLE('n', HIR_INT_TYPE),
+            s2BreakValue: null,
             finalAssignments: [
-              { name: 'c', type: HIR_INT_TYPE, branch1Value: HIR_FALSE, branch2Value: HIR_TRUE },
               {
                 name: '_tmp_n',
                 type: HIR_INT_TYPE,
@@ -694,24 +715,21 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
             ],
           }),
         ],
-        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
       }),
     ],
     `let n: int = 10;
-do {
+while (true) {
   let is_zero: bool = (n: int) == 0;
-  let c: int;
   let _tmp_n: int;
   if (is_zero: bool) {
-    c = 0;
-    _tmp_n = (n: int);
+    undefined = (n: int);
+    break;
   } else {
     let s2_n: int = (n: int) + -1;
-    c = 1;
     _tmp_n = (s2_n: int);
   }
   n = (_tmp_n: int);
-} while ((c: int));`
+}`
   );
 });
 
@@ -745,8 +763,9 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
                 e2: HIR_ONE,
               }),
             ],
+            s1BreakValue: HIR_VARIABLE('n', HIR_INT_TYPE),
+            s2BreakValue: null,
             finalAssignments: [
-              { name: 'c', type: HIR_INT_TYPE, branch1Value: HIR_FALSE, branch2Value: HIR_TRUE },
               {
                 name: '_tmp_n',
                 type: HIR_INT_TYPE,
@@ -756,137 +775,29 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
             ],
           }),
         ],
-        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
-        returnAssignment: {
-          name: 'v',
-          type: HIR_INT_TYPE,
-          value: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
-        },
+        breakCollector: { name: 'v', type: HIR_INT_TYPE },
       }),
       HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
     ],
     `let n: int = 10;
 let v: int;
-do {
+while (true) {
   let is_zero: bool = (n: int) == 0;
-  let c: int;
   let _tmp_n: int;
   if (is_zero: bool) {
-    c = 0;
-    _tmp_n = (n: int);
+    v = (n: int);
+    break;
   } else {
     let s2_n: int = (n: int) + -1;
-    c = 1;
     _tmp_n = (s2_n: int);
   }
   n = (_tmp_n: int);
-  v = (_tmp_n: int);
-} while ((c: int));
+}
 return (v: int);`
   );
 });
 
 it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 3/n.', () => {
-  assertCorrectlyOptimized(
-    [
-      HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'n',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_INT(10),
-            loopValue: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
-          },
-        ],
-        statements: [
-          HIR_BINARY({
-            name: 'is_zero',
-            operator: '==',
-            e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-            e2: HIR_ZERO,
-          }),
-          HIR_IF_ELSE({
-            booleanExpression: HIR_VARIABLE('is_zero', HIR_BOOL_TYPE),
-            s1: [],
-            s2: [
-              HIR_BINARY({
-                name: 's2_n',
-                operator: '-',
-                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-                e2: HIR_ONE,
-              }),
-            ],
-            finalAssignments: [
-              {
-                name: '_tmp_n',
-                type: HIR_INT_TYPE,
-                branch1Value: HIR_VARIABLE('n', HIR_INT_TYPE),
-                branch2Value: HIR_VARIABLE('s2_n', HIR_INT_TYPE),
-              },
-            ],
-          }),
-        ],
-        conditionValue: HIR_FALSE,
-      }),
-    ],
-    ``
-  );
-});
-
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 4/n.', () => {
-  assertCorrectlyOptimized(
-    [
-      HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'n',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_INT(10),
-            loopValue: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
-          },
-        ],
-        statements: [
-          HIR_BINARY({
-            name: 'is_zero',
-            operator: '==',
-            e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-            e2: HIR_ZERO,
-          }),
-          HIR_IF_ELSE({
-            booleanExpression: HIR_VARIABLE('is_zero', HIR_BOOL_TYPE),
-            s1: [],
-            s2: [
-              HIR_BINARY({
-                name: 's2_n',
-                operator: '-',
-                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-                e2: HIR_ONE,
-              }),
-            ],
-            finalAssignments: [
-              {
-                name: '_tmp_n',
-                type: HIR_INT_TYPE,
-                branch1Value: HIR_VARIABLE('n', HIR_INT_TYPE),
-                branch2Value: HIR_VARIABLE('s2_n', HIR_INT_TYPE),
-              },
-            ],
-          }),
-        ],
-        conditionValue: HIR_FALSE,
-        returnAssignment: {
-          name: 'v',
-          type: HIR_INT_TYPE,
-          value: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
-        },
-      }),
-      HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
-    ],
-    `return 9;`
-  );
-});
-
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 2/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_WHILE({
@@ -916,8 +827,9 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
                 e2: HIR_ONE,
               }),
             ],
+            s1BreakValue: null,
+            s2BreakValue: HIR_VARIABLE('s2_n', HIR_INT_TYPE),
             finalAssignments: [
-              { name: 'c', type: HIR_INT_TYPE, branch1Value: HIR_FALSE, branch2Value: HIR_TRUE },
               {
                 name: '_tmp_n',
                 type: HIR_INT_TYPE,
@@ -927,19 +839,20 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
             ],
           }),
         ],
-        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
-        returnAssignment: {
-          name: 'v',
-          type: HIR_INT_TYPE,
-          value: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
-        },
+        breakCollector: { name: 'v', type: HIR_INT_TYPE },
       }),
       HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
     ],
     `let v: int;
-do {
-  v = 9;
-} while (1);
+while (true) {
+  let _tmp_n: int;
+  if 0 {
+    _tmp_n = 10;
+  } else {
+    v = 9;
+    break;
+  }
+}
 return (v: int);`
   );
 });

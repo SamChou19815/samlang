@@ -137,6 +137,8 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on if-else 1/n', () => {
             index: 1,
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [],
       }),
       HIR_INDEX_ACCESS({
@@ -195,6 +197,8 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on if-else 2/n', () => {
             index: 1,
           }),
         ],
+        s1BreakValue: null,
+        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'bar',
@@ -245,6 +249,7 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on switch 1/n', () => {
                 index: 1,
               }),
             ],
+            breakValue: null,
           },
           {
             caseNumber: 1,
@@ -262,6 +267,7 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on switch 1/n', () => {
                 index: 1,
               }),
             ],
+            breakValue: null,
           },
         ],
         finalAssignments: [],
@@ -314,6 +320,7 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on switch 2/n', () => {
                 index: 1,
               }),
             ],
+            breakValue: null,
           },
           {
             caseNumber: 1,
@@ -331,6 +338,7 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on switch 2/n', () => {
                 index: 1,
               }),
             ],
+            breakValue: null,
           },
         ],
         finalAssignments: [
@@ -387,6 +395,8 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on while statement 1/n.'
                 e2: HIR_ONE,
               }),
             ],
+            s1BreakValue: null,
+            s2BreakValue: null,
             finalAssignments: [
               { name: 'c', type: HIR_INT_TYPE, branch1Value: HIR_FALSE, branch2Value: HIR_TRUE },
               {
@@ -398,11 +408,10 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on while statement 1/n.'
             ],
           }),
         ],
-        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
       }),
     ],
     `let n: int = 10;
-do {
+while (true) {
   let is_zero: bool = (n: int) == 0;
   let c: int;
   let _tmp_n: int;
@@ -415,7 +424,7 @@ do {
     _tmp_n = (s2_n: int);
   }
   n = (_tmp_n: int);
-} while ((c: int));`
+}`
   );
 });
 
@@ -449,6 +458,8 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on while statement 2/n.'
                 e2: HIR_ONE,
               }),
             ],
+            s1BreakValue: null,
+            s2BreakValue: null,
             finalAssignments: [
               { name: 'c', type: HIR_INT_TYPE, branch1Value: HIR_FALSE, branch2Value: HIR_TRUE },
               {
@@ -460,18 +471,13 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on while statement 2/n.'
             ],
           }),
         ],
-        conditionValue: HIR_VARIABLE('c', HIR_INT_TYPE),
-        returnAssignment: {
-          name: 'v',
-          type: HIR_INT_TYPE,
-          value: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
-        },
+        breakCollector: { name: 'v', type: HIR_INT_TYPE },
       }),
       HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
     ],
     `let n: int = 10;
 let v: int;
-do {
+while (true) {
   let is_zero: bool = (n: int) == 0;
   let c: int;
   let _tmp_n: int;
@@ -484,8 +490,7 @@ do {
     _tmp_n = (s2_n: int);
   }
   n = (_tmp_n: int);
-  v = (_tmp_n: int);
-} while ((c: int));
+}
 return (v: int);`
   );
 });

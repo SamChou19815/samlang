@@ -94,7 +94,14 @@ it('optimizeHighIRFunctionByTailRecursionRewrite fails case 6/n', () => {
     parameters: [],
     type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
     body: [
-      HIR_IF_ELSE({ booleanExpression: HIR_ZERO, s1: [], s2: [], finalAssignments: [] }),
+      HIR_IF_ELSE({
+        booleanExpression: HIR_ZERO,
+        s1: [],
+        s2: [],
+        s1BreakValue: null,
+        s2BreakValue: null,
+        finalAssignments: [],
+      }),
       HIR_RETURN(HIR_VARIABLE('', HIR_INT_TYPE)),
     ],
   });
@@ -106,7 +113,14 @@ it('optimizeHighIRFunctionByTailRecursionRewrite fails case 7/n', () => {
     parameters: [],
     type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
     body: [
-      HIR_IF_ELSE({ booleanExpression: HIR_ZERO, s1: [], s2: [], finalAssignments: [] }),
+      HIR_IF_ELSE({
+        booleanExpression: HIR_ZERO,
+        s1: [],
+        s2: [],
+        s1BreakValue: null,
+        s2BreakValue: null,
+        finalAssignments: [],
+      }),
       HIR_RETURN(HIR_ZERO),
     ],
   });
@@ -171,14 +185,13 @@ it('optimizeHighIRFunctionByTailRecursionRewrite simple infinite loop case', () 
     },
     `function loopy(_tailrec_param_n: int): int {
   let n: int = (_tailrec_param_n: int);
-  let _tailrec_0_: int;
-  do {
+  let r: int;
+  while (true) {
     let a: int = (n: int) + 0;
     let r: int = 0 + 0;
     n = (a: int);
-    _tailrec_0_ = (r: int);
-  } while (1);
-  return (_tailrec_0_: int);
+  }
+  return (r: int);
 }
 `
   );
@@ -197,10 +210,12 @@ it('optimizeHighIRFunctionByTailRecursionRewrite nested complex case', () => {
             {
               caseNumber: 0,
               statements: [],
+              breakValue: null,
             },
             {
               caseNumber: 1,
               statements: [],
+              breakValue: null,
             },
             {
               caseNumber: 2,
@@ -222,6 +237,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite nested complex case', () => {
                       returnCollector: 'r',
                     }),
                   ],
+                  s1BreakValue: null,
+                  s2BreakValue: null,
                   finalAssignments: [
                     {
                       name: 'nested_return',
@@ -232,6 +249,7 @@ it('optimizeHighIRFunctionByTailRecursionRewrite nested complex case', () => {
                   ],
                 }),
               ],
+              breakValue: null,
             },
           ],
           finalAssignments: [
@@ -247,46 +265,34 @@ it('optimizeHighIRFunctionByTailRecursionRewrite nested complex case', () => {
     },
     `function loopy(_tailrec_param_n: int): int {
   let n: int = (_tailrec_param_n: int);
-  let _tailrec_4_: int;
-  do {
-    let v: int;
-    let _tailrec_2_: int;
-    let _tailrec_3_: bool;
+  let v: int;
+  while (true) {
+    let _tailrec_1_: int;
     switch (n) {
       case 0: {
         v = 0;
-        _tailrec_2_ = 0;
-        _tailrec_3_ = 0;
+        break;
       }
       case 1: {
         v = 1;
-        _tailrec_2_ = 0;
-        _tailrec_3_ = 0;
+        break;
       }
       case 2: {
-        let nested_return: int;
         let _tailrec_0_: int;
-        let _tailrec_1_: bool;
         if 0 {
-          nested_return = 1;
-          _tailrec_0_ = 0;
-          _tailrec_1_ = 0;
+          v = 1;
+          break;
         } else {
           let nn: int = (n: int) + -1;
           let r: int = 0 + 0;
-          nested_return = (r: int);
           _tailrec_0_ = (nn: int);
-          _tailrec_1_ = 1;
         }
-        v = (nested_return: int);
-        _tailrec_2_ = (_tailrec_0_: int);
-        _tailrec_3_ = (_tailrec_1_: bool);
+        _tailrec_1_ = (_tailrec_0_: int);
       }
     }
-    n = (_tailrec_2_: int);
-    _tailrec_4_ = (v: int);
-  } while ((_tailrec_3_: bool));
-  return (_tailrec_4_: int);
+    n = (_tailrec_1_: int);
+  }
+  return (v: int);
 }
 `
   );

@@ -41,7 +41,13 @@ export class LocalValueContextForOptimization extends LocalStackedContext<HighIR
 }
 
 export const ifElseOrNull = (ifElse: HighIRIfElseStatement): readonly HighIRStatement[] => {
-  if (ifElse.s1.length === 0 && ifElse.s2.length === 0 && ifElse.finalAssignments.length === 0) {
+  if (
+    ifElse.s1.length === 0 &&
+    ifElse.s2.length === 0 &&
+    ifElse.s1BreakValue == null &&
+    ifElse.s2BreakValue == null &&
+    ifElse.finalAssignments.length === 0
+  ) {
     return [];
   }
   return [ifElse];
@@ -51,7 +57,7 @@ export const switchOrNull = (
   switchStatement: HighIRSwitchStatement
 ): readonly HighIRStatement[] => {
   if (
-    switchStatement.cases.every((it) => it.statements.length === 0) &&
+    switchStatement.cases.every((it) => it.statements.length === 0 && it.breakValue == null) &&
     switchStatement.finalAssignments.length === 0
   ) {
     return [];
