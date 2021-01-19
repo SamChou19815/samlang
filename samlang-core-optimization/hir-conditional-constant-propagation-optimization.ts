@@ -330,6 +330,23 @@ const optimizeHighIRStatement = (
           filteredLoopVariables.map((it) => optimizeExpression(it.loopValue)),
         ] as const;
       });
+      const lastStatement = statements[statements.length - 1];
+      if (lastStatement != null && lastStatement.__type__ === 'HighIRBreakStatement') {
+        // Now we know that the loop will only loop once!
+        filteredLoopVariables.forEach((it) => valueContext.bind(it.name, it.initialValue));
+        const movedStatements = optimizeHighIRStatements(
+          statements.slice(0, statements.length - 1),
+          valueContext,
+          binaryExpressionContext
+        );
+        if (statement.breakCollector != null) {
+          valueContext.bind(
+            statement.breakCollector.name,
+            optimizeExpression(lastStatement.breakValue)
+          );
+        }
+        return movedStatements;
+      }
       const loopVariables = zip3(
         loopVariableInitialValues,
         loopVariableLoopValues,

@@ -634,9 +634,47 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
         ],
       }),
     ],
-    `while (true) {
-  undefined = 10;
-  break;
-}`
+    ``
+  );
+});
+
+it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 3/n.', () => {
+  assertCorrectlyOptimized(
+    [
+      HIR_WHILE({
+        loopVariables: [
+          {
+            name: 'n',
+            type: HIR_INT_TYPE,
+            initialValue: HIR_INT(10),
+            loopValue: HIR_VARIABLE('t', HIR_INT_TYPE),
+          },
+        ],
+        statements: [HIR_BREAK(HIR_VARIABLE('n', HIR_INT_TYPE))],
+      }),
+      HIR_RETURN(HIR_ZERO),
+    ],
+    `return 0;`
+  );
+});
+
+it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 4/n.', () => {
+  assertCorrectlyOptimized(
+    [
+      HIR_WHILE({
+        loopVariables: [
+          {
+            name: 'n',
+            type: HIR_INT_TYPE,
+            initialValue: HIR_INT(10),
+            loopValue: HIR_VARIABLE('t', HIR_INT_TYPE),
+          },
+        ],
+        statements: [HIR_BREAK(HIR_VARIABLE('n', HIR_INT_TYPE))],
+        breakCollector: { name: 'v', type: HIR_INT_TYPE },
+      }),
+      HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
+    ],
+    `return 10;`
   );
 });
