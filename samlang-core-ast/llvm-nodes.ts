@@ -192,16 +192,6 @@ export type LLVMConditionalJumpInstruction = {
   readonly b2: string;
 };
 
-export type LLVMSwitchInstruction = {
-  readonly __type__: 'LLVMSwitchInstruction';
-  readonly condition: LLVMValue;
-  readonly defaultBranchName: string;
-  readonly otherBranchNameWithValues: readonly {
-    readonly value: number;
-    readonly branch: string;
-  }[];
-};
-
 export type LLVMReturnInstruction = {
   readonly __type__: 'LLVMReturnInstruction';
 } & LLVMAnnotatedValue;
@@ -217,7 +207,6 @@ export type LLVMInstruction =
   | LLVMLabelInstruction
   | LLVMJumpInstruction
   | LLVMConditionalJumpInstruction
-  | LLVMSwitchInstruction
   | LLVMReturnInstruction;
 
 type ConstructorArgumentObject<E extends LLVMInstruction> = Omit<E, '__type__'>;
@@ -328,17 +317,6 @@ export const LLVM_CJUMP = (
   condition,
   b1,
   b2,
-});
-
-export const LLVM_SWITCH = (
-  condition: LLVMValue,
-  defaultBranchName: string,
-  otherBranchNameWithValues: readonly { readonly value: number; readonly branch: string }[]
-): LLVMSwitchInstruction => ({
-  __type__: 'LLVMSwitchInstruction',
-  condition,
-  defaultBranchName,
-  otherBranchNameWithValues,
 });
 
 export const LLVM_RETURN = (value: LLVMValue, type: LLVMType): LLVMReturnInstruction => ({
@@ -465,14 +443,6 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
     case 'LLVMConditionalJumpInstruction': {
       const { condition, b1, b2 } = instruction;
       return `br i1 ${prettyPrintLLVMValue(condition, LLVM_BOOL_TYPE)}, label %${b1}, label %${b2}`;
-    }
-    case 'LLVMSwitchInstruction': {
-      const { defaultBranchName, otherBranchNameWithValues } = instruction;
-      const condition = prettyPrintLLVMValue(instruction.condition, LLVM_INT_TYPE);
-      const otherBranchMappings = otherBranchNameWithValues
-        .map((it) => `i64 ${it.value}, label %${it.branch}`)
-        .join(' ');
-      return `switch i64 ${condition}, label %${defaultBranchName} [ ${otherBranchMappings} ]`;
     }
     case 'LLVMReturnInstruction': {
       const { value, type } = instruction;

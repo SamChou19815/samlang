@@ -25,7 +25,6 @@ import {
   LLVM_LABEL,
   LLVM_JUMP,
   LLVM_CJUMP,
-  LLVM_SWITCH,
   LLVM_RETURN,
 } from '../llvm-nodes';
 
@@ -432,18 +431,6 @@ it('prettyPrintLLVMInstruction works for LLVM_CJUMP.', () => {
   expect(prettyPrintLLVMInstruction(LLVM_CJUMP(LLVM_VARIABLE('c'), 'b1', 'b2'))).toBe(
     'br i1 %c, label %b1, label %b2'
   );
-});
-
-it('prettyPrintLLVMInstruction works for LLVM_SWITCH.', () => {
-  expect(
-    prettyPrintLLVMInstruction(
-      LLVM_SWITCH(LLVM_VARIABLE('c'), 'd', [
-        { value: 0, branch: 'b1' },
-        { value: 1, branch: 'b2' },
-        { value: 2, branch: 'b3' },
-      ])
-    )
-  ).toBe('switch i64 %c, label %d [ i64 0, label %b1 i64 1, label %b2 i64 2, label %b3 ]');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_RETURN.', () => {

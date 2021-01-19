@@ -6,7 +6,6 @@ import type {
   HighIRStatement,
   HighIRIndexAccessStatement,
   HighIRIfElseStatement,
-  HighIRSwitchStatement,
   HighIRWhileStatement,
   HighIRStructInitializationStatement,
 } from 'samlang-core-ast/hir-expressions';
@@ -29,7 +28,6 @@ import {
   LLVM_LABEL,
   LLVM_JUMP,
   LLVM_CJUMP,
-  LLVM_SWITCH,
   LLVM_RETURN,
   LLVM_INT_TYPE,
   LLVMValue,
@@ -125,9 +123,6 @@ class LLVMLoweringManager {
       case 'HighIRIfElseStatement':
         this.lowerNormalHighIRIfElseStatement(s);
         return;
-      case 'HighIRSwitchStatement':
-        this.lowerHighIRSwitchStatement(s);
-        return;
       case 'HighIRWhileStatement':
         this.lowerHighIRWhileStatement(s);
         return;
@@ -182,8 +177,14 @@ class LLVMLoweringManager {
     const trueLabel = this.allocator.allocateLabelWithAnnotation('if_else_true');
     const falseLabel = this.allocator.allocateLabelWithAnnotation('if_else_false');
     const endLabel = this.allocator.allocateLabelWithAnnotation('if_else_end');
-    const s1IsEmpty = s1.length === 0 && s1BreakValue == null;
-    const s2IsEmpty = s2.length === 0 && s2BreakValue == null;
+    const s1IsEmpty =
+      s1.length === 0 &&
+      s1BreakValue == null &&
+      s.finalAssignments.every((it) => it.branch1Value.__type__ !== 'HighIRNameExpression');
+    const s2IsEmpty =
+      s2.length === 0 &&
+      s2BreakValue == null &&
+      s.finalAssignments.every((it) => it.branch2Value.__type__ !== 'HighIRNameExpression');
     if (s1IsEmpty && s2IsEmpty) {
       if (finalAssignments.length === 0) return;
       this.emitInstruction(LLVM_CJUMP(loweredCondition, trueLabel, falseLabel));
@@ -260,60 +261,6 @@ class LLVMLoweringManager {
         })
       );
     });
-  }
-
-  private lowerHighIRSwitchStatement(s: HighIRSwitchStatement): void {
-    const finalEndLabel = this.allocator.allocateLabelWithAnnotation('match_end');
-    const caseWithLabels = s.cases.map((it, i) => ({
-      ...it,
-      label: this.allocator.allocateLabelWithAnnotation(`match_case_${i}`),
-    }));
-
-    this.emitInstruction(
-      LLVM_SWITCH(
-        LLVM_VARIABLE(s.caseVariable),
-        checkNotNull(caseWithLabels[caseWithLabels.length - 1]).label,
-        caseWithLabels.map((it) => ({ value: it.caseNumber, branch: it.label }))
-      )
-    );
-
-    const valueBranchTuplesList: Readonly<{
-      value: LLVMValue;
-      branch: string;
-    }>[][] = s.finalAssignments.map(() => []);
-    caseWithLabels.forEach(({ label, statements, breakValue }, i) => {
-      this.emitInstruction(LLVM_LABEL(label));
-      statements.forEach((it) => this.lowerHighIRStatement(it));
-      if (breakValue != null) {
-        const { label: breakLabel, breakValues } = this.whileBreakCollectorManager.currentLevel;
-        breakValues.push({
-          value: this.lowerHighIRExpression(breakValue).value,
-          branch: this.currentLabel,
-        });
-        this.emitInstruction(LLVM_JUMP(breakLabel));
-        return;
-      }
-      s.finalAssignments.forEach(({ branchValues }, j) => {
-        const branchValue = this.lowerHighIRExpression(checkNotNull(branchValues[i])).value;
-        checkNotNull(valueBranchTuplesList[j]).push({
-          value: branchValue,
-          branch: this.currentLabel,
-        });
-      });
-      this.emitInstruction(LLVM_JUMP(finalEndLabel));
-    });
-    this.emitInstruction(LLVM_LABEL(finalEndLabel));
-    zip(s.finalAssignments, valueBranchTuplesList).forEach(
-      ([{ name: phiVariable, type: phiType }, valueBranchTuples]) => {
-        this.emitInstruction(
-          LLVM_PHI({
-            resultVariable: phiVariable,
-            variableType: lowerHighIRTypeToLLVMType(phiType),
-            valueBranchTuples,
-          })
-        );
-      }
-    );
   }
 
   private lowerHighIRWhileStatement(s: HighIRWhileStatement): void {

@@ -1,7 +1,7 @@
 import type { IROperator } from './common-operators';
 import { HighIRType, HIR_BOOL_TYPE, HIR_INT_TYPE, prettyPrintHighIRType } from './hir-types';
 
-import { checkNotNull, Long } from 'samlang-core-utils';
+import { Long } from 'samlang-core-utils';
 
 interface BaseHighIRExpression {
   readonly __type__: string;
@@ -77,21 +77,6 @@ export interface HighIRIfElseStatement extends BaseHighIRStatement {
   }[];
 }
 
-export interface HighIRSwitchStatement extends BaseHighIRStatement {
-  readonly __type__: 'HighIRSwitchStatement';
-  readonly caseVariable: string;
-  readonly cases: readonly {
-    readonly caseNumber: number;
-    readonly statements: readonly HighIRStatement[];
-    readonly breakValue: HighIRExpression | null;
-  }[];
-  readonly finalAssignments: readonly {
-    readonly name: string;
-    readonly type: HighIRType;
-    readonly branchValues: readonly HighIRExpression[];
-  }[];
-}
-
 export interface AssignmentForHighIRWhileStatement {
   readonly name: string;
   readonly type: HighIRType;
@@ -139,7 +124,6 @@ export type HighIRStatement =
   | HighIRIndexAccessStatement
   | HighIRFunctionCallStatement
   | HighIRIfElseStatement
-  | HighIRSwitchStatement
   | HighIRWhileStatement
   | HighIRCastStatement
   | HighIRStructInitializationStatement
@@ -265,17 +249,6 @@ export const HIR_IF_ELSE = ({
   s2,
   s1BreakValue,
   s2BreakValue,
-  finalAssignments,
-});
-
-export const HIR_SWITCH = ({
-  caseVariable,
-  cases,
-  finalAssignments,
-}: ConstructorArgumentObject<HighIRSwitchStatement>): HighIRSwitchStatement => ({
-  __type__: 'HighIRSwitchStatement',
-  caseVariable,
-  cases,
   finalAssignments,
 });
 
@@ -406,38 +379,6 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         level -= 1;
         collector.push('  '.repeat(level), `}\n`);
         break;
-      case 'HighIRSwitchStatement': {
-        s.finalAssignments.forEach((finalAssignment) => {
-          const type = prettyPrintHighIRType(finalAssignment.type);
-          collector.push('  '.repeat(level), `let ${finalAssignment.name}: ${type};\n`);
-        });
-        collector.push('  '.repeat(level), `switch (${s.caseVariable}) {\n`);
-        level += 1;
-        s.cases.forEach(({ caseNumber, statements, breakValue }, i) => {
-          collector.push('  '.repeat(level), `case ${caseNumber}: {\n`);
-          level += 1;
-          statements.forEach(printer);
-          if (breakValue != null) {
-            collector.push(
-              '  '.repeat(level),
-              `${breakCollector} = ${debugPrintHighIRExpression(breakValue)};\n`
-            );
-            collector.push('  '.repeat(level), 'break;\n');
-          } else {
-            s.finalAssignments.forEach((finalAssignment) => {
-              const value = debugPrintHighIRExpression(
-                checkNotNull(finalAssignment.branchValues[i])
-              );
-              collector.push('  '.repeat(level), `${finalAssignment.name} = ${value};\n`);
-            });
-          }
-          level -= 1;
-          collector.push('  '.repeat(level), `}\n`);
-        });
-        level -= 1;
-        collector.push('  '.repeat(level), `}\n`);
-        break;
-      }
       case 'HighIRWhileStatement': {
         s.loopVariables.forEach((v) => {
           const type = prettyPrintHighIRType(v.type);

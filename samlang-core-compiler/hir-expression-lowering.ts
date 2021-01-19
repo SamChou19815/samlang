@@ -32,7 +32,6 @@ import {
   HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
   HIR_BINARY,
-  HIR_SWITCH,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
@@ -901,7 +900,6 @@ class HighIRExpressionLoweringManager {
       loweredStatements
     );
     const variableForTag = this.allocateTemporaryVariable();
-    const temporaryVariable = this.allocateTemporaryVariable();
     loweredStatements.push(
       HIR_INDEX_ACCESS({
         name: variableForTag,
@@ -939,40 +937,76 @@ class HighIRExpressionLoweringManager {
         });
       }
     );
+    const lastCase = checkNotNull(loweredMatchingList[loweredMatchingList.length - 1]);
+    let finalExpression: HighIRExpression;
     if (isVoidReturn) {
       loweredStatements.push(
-        HIR_SWITCH({
-          caseVariable: variableForTag,
-          cases: loweredMatchingList.map((it) => ({
-            caseNumber: it.tagOrder,
-            statements: it.statements,
-            breakValue: null,
-          })),
-          finalAssignments: [],
-        })
+        ...loweredMatchingList
+          .slice(0, loweredMatchingList.length - 1)
+          .reduceRight((acc, oneCase) => {
+            const comparisonTemporary = this.allocateTemporaryVariable();
+            return [
+              HIR_BINARY({
+                name: comparisonTemporary,
+                operator: '==',
+                e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
+                e2: HIR_INT(oneCase.tagOrder),
+              }),
+              HIR_IF_ELSE({
+                booleanExpression: HIR_VARIABLE(comparisonTemporary, HIR_BOOL_TYPE),
+                s1: oneCase.statements,
+                s2: acc,
+                s1BreakValue: null,
+                s2BreakValue: null,
+                finalAssignments: [],
+              }),
+            ];
+          }, lastCase.statements)
       );
+      finalExpression = HIR_ZERO;
     } else {
-      loweredStatements.push(
-        HIR_SWITCH({
-          caseVariable: variableForTag,
-          cases: loweredMatchingList.map(({ tagOrder: caseNumber, statements }) => ({
-            caseNumber,
-            statements,
-            breakValue: null,
-          })),
-          finalAssignments: [
-            {
-              name: temporaryVariable,
-              type: loweredReturnType,
-              branchValues: loweredMatchingList.map((it) => checkNotNull(it.finalExpression)),
-            },
-          ],
-        })
-      );
+      const { s: chainedStatements, e: finalValue } = loweredMatchingList
+        .slice(0, loweredMatchingList.length - 1)
+        .reduceRight(
+          (acc, oneCase) => {
+            const comparisonTemporary = this.allocateTemporaryVariable();
+            const finalAssignmentTemporary = this.allocateTemporaryVariable();
+            return {
+              s: [
+                HIR_BINARY({
+                  name: comparisonTemporary,
+                  operator: '==',
+                  e1: HIR_VARIABLE(variableForTag, HIR_INT_TYPE),
+                  e2: HIR_INT(oneCase.tagOrder),
+                }),
+                HIR_IF_ELSE({
+                  booleanExpression: HIR_VARIABLE(comparisonTemporary, HIR_BOOL_TYPE),
+                  s1: oneCase.statements,
+                  s2: acc.s,
+                  s1BreakValue: null,
+                  s2BreakValue: null,
+                  finalAssignments: [
+                    {
+                      name: finalAssignmentTemporary,
+                      type: loweredReturnType,
+                      branch1Value: checkNotNull(oneCase.finalExpression),
+                      branch2Value: acc.e,
+                    },
+                  ],
+                }),
+              ],
+              e: HIR_VARIABLE(finalAssignmentTemporary, loweredReturnType),
+            };
+          },
+          { s: lastCase.statements, e: checkNotNull(lastCase.finalExpression) }
+        );
+      loweredStatements.push(...chainedStatements);
+      finalExpression = finalValue;
     }
+
     return {
       statements: loweredStatements,
-      expression: isVoidReturn ? HIR_ZERO : HIR_VARIABLE(temporaryVariable, loweredReturnType),
+      expression: finalExpression,
     };
   }
 

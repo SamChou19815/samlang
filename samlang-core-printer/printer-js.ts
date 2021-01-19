@@ -3,7 +3,6 @@ import {
   PRETTIER_CONCAT,
   PRETTIER_TEXT,
   PRETTIER_LINE,
-  PRETTIER_NIL,
 } from './printer-prettier-core';
 import {
   createCommaSeparatedList,
@@ -171,35 +170,6 @@ export const createPrettierDocumentFromHighIRStatement = (
               ])),
         ])
       );
-    case 'HighIRSwitchStatement': {
-      const docs: PrettierDocument[] = highIRStatement.cases.flatMap(
-        ({ caseNumber, statements, breakValue }, i) => [
-          PRETTIER_TEXT(`case ${caseNumber}: `),
-          createBracesSurroundedBlockDocument([
-            ...concatStatements(statements, manager),
-            ...(breakValue != null
-              ? manager.getBreakStatement(breakValue)
-              : [
-                  ...highIRStatement.finalAssignments.flatMap((final) => [
-                    PRETTIER_LINE,
-                    PRETTIER_TEXT(`var ${final.name} = `),
-                    createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
-                      checkNotNull(final.branchValues[i])
-                    ),
-                    PRETTIER_TEXT(';'),
-                  ]),
-                  PRETTIER_LINE,
-                  PRETTIER_TEXT('break;'),
-                ]),
-          ]),
-          PRETTIER_LINE,
-        ]
-      );
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`switch (${highIRStatement.caseVariable}) `),
-        createBracesSurroundedBlockDocument(docs.slice(0, docs.length - 1))
-      );
-    }
     case 'HighIRWhileStatement': {
       return PRETTIER_CONCAT(
         ...highIRStatement.loopVariables.flatMap((loopVariable) => [

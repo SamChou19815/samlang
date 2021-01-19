@@ -680,18 +680,16 @@ it('Match lowering works 1/3.', () => {
       ],
     }),
     `let _t0: int = (_this: _Dummy)[0];
-let _t1: _Dummy;
-switch (_t0) {
-  case 0: {
-    let _t2: any = (_this: _Dummy)[1];
-    _t1 = (_this: _Dummy);
-  }
-  case 1: {
-    _builtin_throw((_this: _Dummy));
-    _t1 = 0;
-  }
+let _t2: bool = (_t0: int) == 0;
+let _t3: _Dummy;
+if (_t2: bool) {
+  let _t1: any = (_this: _Dummy)[1];
+  _t3 = (_this: _Dummy);
+} else {
+  _builtin_throw((_this: _Dummy));
+  _t3 = 0;
 }
-return (_t1: _Dummy);`
+return (_t3: _Dummy);`
   );
 });
 
@@ -724,14 +722,14 @@ it('Match lowering works 2/3.', () => {
       ],
     }),
     `let _t0: int = (_this: _Dummy)[0];
-switch (_t0) {
-  case 0: {
-    let _t2: any = (_this: _Dummy)[1];
-  }
-  case 1: {
+let _t3: bool = (_t0: int) == 0;
+if (_t3: bool) {
+  let _t1: any = (_this: _Dummy)[1];
+} else {
+  let _t2: bool = (_t0: int) == 1;
+  if (_t2: bool) {
     _builtin_throw((_this: _Dummy));
-  }
-  case 2: {
+  } else {
     _builtin_throw((_this: _Dummy));
   }
 }
@@ -772,21 +770,23 @@ it('Match lowering works 3/3.', () => {
       ],
     }),
     `let _t0: int = (_this: _Dummy)[0];
-let _t1: _Dummy;
-switch (_t0) {
-  case 0: {
-    _t1 = (_this: _Dummy);
+let _t4: bool = (_t0: int) == 0;
+let _t5: _Dummy;
+if (_t4: bool) {
+  _t5 = (_this: _Dummy);
+} else {
+  let _t2: bool = (_t0: int) == 1;
+  let _t3: _Dummy;
+  if (_t2: bool) {
+    let _t1: any = (_this: _Dummy)[1];
+    let bar: _Dummy = (_t1: any);
+    _t3 = (bar: _Dummy);
+  } else {
+    _t3 = (_this: _Dummy);
   }
-  case 1: {
-    let _t2: any = (_this: _Dummy)[1];
-    let bar: _Dummy = (_t2: any);
-    _t1 = (bar: _Dummy);
-  }
-  case 2: {
-    _t1 = (_this: _Dummy);
-  }
+  _t5 = (_t3: _Dummy);
 }
-return (_t1: _Dummy);`
+return (_t5: _Dummy);`
   );
 });
 

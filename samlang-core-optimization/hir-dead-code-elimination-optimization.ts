@@ -1,4 +1,4 @@
-import { ifElseOrNull, switchOrNull } from './hir-optimization-common';
+import { ifElseOrNull } from './hir-optimization-common';
 
 import type { HighIRExpression, HighIRStatement } from 'samlang-core-ast/hir-expressions';
 import { isNotNull } from 'samlang-core-utils';
@@ -48,24 +48,6 @@ const optimizeHighIRStatement = (
       const ifElse = ifElseOrNull({ ...statement, s1, s2, finalAssignments });
       if (ifElse.length > 0) collectUseFromExpression(statement.booleanExpression);
       return ifElse;
-    }
-    case 'HighIRSwitchStatement': {
-      const finalAssignments = statement.finalAssignments
-        .map((final) => {
-          if (set.has(final.name)) {
-            final.branchValues.forEach(collectUseFromExpression);
-            return final;
-          }
-          return null;
-        })
-        .filter(isNotNull);
-      const cases = statement.cases.map((it) => ({
-        ...it,
-        statements: optimizeHighIRStatements(it.statements, set),
-      }));
-      const switchStatement = switchOrNull({ ...statement, cases, finalAssignments });
-      if (switchStatement.length > 0) set.add(statement.caseVariable);
-      return switchStatement;
     }
     case 'HighIRWhileStatement': {
       let breakCollector = statement.breakCollector;

@@ -1,8 +1,4 @@
-import {
-  ifElseOrNull,
-  switchOrNull,
-  LocalValueContextForOptimization,
-} from './hir-optimization-common';
+import { ifElseOrNull, LocalValueContextForOptimization } from './hir-optimization-common';
 
 import type { IROperator } from 'samlang-core-ast/common-operators';
 import {
@@ -16,7 +12,6 @@ import {
   HIR_ONE,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
-  HIR_SWITCH,
   HIR_STRUCT_INITIALIZATION,
   HIR_CAST,
   HIR_RETURN,
@@ -24,14 +19,7 @@ import {
   HIR_WHILE,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
-import {
-  error,
-  Long,
-  isNotNull,
-  checkNotNull,
-  zip3,
-  LocalStackedContext,
-} from 'samlang-core-utils';
+import { error, Long, isNotNull, zip3, LocalStackedContext } from 'samlang-core-utils';
 
 const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
 
@@ -284,56 +272,6 @@ const optimizeHighIRStatement = (
         .filter(isNotNull);
       return ifElseOrNull(
         HIR_IF_ELSE({ booleanExpression, s1, s2, s1BreakValue, s2BreakValue, finalAssignments })
-      );
-    }
-
-    case 'HighIRSwitchStatement': {
-      const casesWithValues = statement.cases.map(({ caseNumber, statements, breakValue }, i) =>
-        withNestedScope(() => {
-          const newStatements = optimizeHighIRStatements(
-            statements,
-            valueContext,
-            binaryExpressionContext
-          );
-          const finalValues = statement.finalAssignments.map((it) =>
-            optimizeExpression(checkNotNull(it.branchValues[i]))
-          );
-          return {
-            caseNumber,
-            newStatements,
-            breakValue: optimizeNullableExpression(breakValue),
-            finalValues,
-          };
-        })
-      );
-      const finalAssignments = statement.finalAssignments
-        .map((final, i) => {
-          const allValuesAreTheSame =
-            new Set(
-              casesWithValues.map((it) =>
-                debugPrintHighIRExpression(checkNotNull(it.finalValues[i]))
-              )
-            ).size === 1;
-          if (allValuesAreTheSame) {
-            valueContext.bind(final.name, checkNotNull(casesWithValues[0]?.finalValues[i]));
-            return null;
-          }
-          return {
-            ...final,
-            branchValues: casesWithValues.map((it) => checkNotNull(it.finalValues[i])),
-          };
-        })
-        .filter(isNotNull);
-      return switchOrNull(
-        HIR_SWITCH({
-          caseVariable: statement.caseVariable,
-          cases: casesWithValues.map((it) => ({
-            caseNumber: it.caseNumber,
-            statements: it.newStatements,
-            breakValue: it.breakValue,
-          })),
-          finalAssignments,
-        })
       );
     }
 

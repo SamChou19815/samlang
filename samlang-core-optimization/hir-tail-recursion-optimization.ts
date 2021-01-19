@@ -10,17 +10,12 @@ import {
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import type { HighIRType } from 'samlang-core-ast/hir-types';
-import { Long, assert, checkNotNull, zip, zip3 } from 'samlang-core-utils';
+import { assert, zip3 } from 'samlang-core-utils';
 
 type RewriteResult = {
   readonly statements: readonly HighIRStatement[];
   readonly functionArguments: readonly HighIRExpression[];
 };
-
-const getStatements = (
-  result: RewriteResult | null,
-  backup: readonly HighIRStatement[]
-): readonly HighIRStatement[] => result?.statements ?? backup;
 
 const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
   statements: readonly HighIRStatement[],
@@ -32,24 +27,9 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
   const lastStatement = statements[statements.length - 1];
   if (lastStatement == null) return null;
 
-  const getFunctionArgumentsFromResultOrDummyOnes = (
-    result: RewriteResult | null
-  ): readonly HighIRExpression[] =>
-    result?.functionArguments ??
-    functionParameterTypes.map((type) => ({
-      __type__: 'HighIRIntLiteralExpression',
-      value: Long.ZERO,
-      type,
-    }));
-
   const getBreakValueFromBranchValue = (
     branchValue: HighIRExpression | undefined
   ): HighIRExpression | null => branchValue ?? HIR_ZERO;
-
-  const getBreakValue = (
-    result: RewriteResult | null,
-    branchValue: HighIRExpression | undefined
-  ): HighIRExpression | null => (result != null ? null : getBreakValueFromBranchValue(branchValue));
 
   switch (lastStatement.__type__) {
     case 'HighIRFunctionCallStatement':
@@ -161,64 +141,10 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
           ...statements.slice(0, statements.length - 1),
           {
             ...lastStatement,
-            s1: getStatements(s1Result, lastStatement.s1),
-            s2: getStatements(s2Result, lastStatement.s2),
-            s1BreakValue: getBreakValue(s1Result, relaventFinalAssignment?.branch1Value),
-            s2BreakValue: getBreakValue(s2Result, relaventFinalAssignment?.branch2Value),
-            finalAssignments: [
-              ...lastStatement.finalAssignments.filter((it) => it !== relaventFinalAssignment),
-              ...newFinalAssignments,
-            ],
-          },
-        ],
-        functionArguments: newFinalAssignments.map((it) => HIR_VARIABLE(it.name, it.type)),
-      };
-    }
-
-    case 'HighIRSwitchStatement': {
-      let newExpectedReturnCollector: readonly (string | null)[] = lastStatement.cases.map(
-        () => null
-      );
-      const relaventFinalAssignment = lastStatement.finalAssignments.find(
-        (it) => it.name === expectedReturnCollector
-      );
-      if (expectedReturnCollector != null) {
-        if (relaventFinalAssignment == null) return null;
-        newExpectedReturnCollector = relaventFinalAssignment.branchValues.map((it) =>
-          it.__type__ === 'HighIRVariableExpression' ? it.name : null
-        );
-      }
-      const caseResults = zip(
-        lastStatement.cases,
-        newExpectedReturnCollector
-      ).map(([oneCase, collector]) =>
-        tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
-          oneCase.statements,
-          functionName,
-          functionParameterTypes,
-          collector,
-          allocator
-        )
-      );
-      if (caseResults.every((it) => it == null)) return null;
-      const cases = zip(lastStatement.cases, caseResults).map(([oneCase, caseResult], i) => ({
-        ...oneCase,
-        statements: getStatements(caseResult, oneCase.statements),
-        breakValue: getBreakValue(caseResult, relaventFinalAssignment?.branchValues[i]),
-        hasBreak: caseResult == null,
-      }));
-      const finalArgumentsOrDummyOnes = caseResults.map(getFunctionArgumentsFromResultOrDummyOnes);
-      const newFinalAssignments = functionParameterTypes.map((type, i) => {
-        const name = allocator.allocateTailRecTemporary();
-        const branchValues = finalArgumentsOrDummyOnes.map((it) => checkNotNull(it[i]));
-        return { name, type, branchValues };
-      });
-      return {
-        statements: [
-          ...statements.slice(0, statements.length - 1),
-          {
-            ...lastStatement,
-            cases,
+            s1: s1Result.statements,
+            s2: s2Result.statements,
+            s1BreakValue: null,
+            s2BreakValue: null,
             finalAssignments: [
               ...lastStatement.finalAssignments.filter((it) => it !== relaventFinalAssignment),
               ...newFinalAssignments,

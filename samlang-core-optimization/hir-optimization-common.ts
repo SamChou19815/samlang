@@ -4,7 +4,6 @@ import {
   HighIRExpression,
   debugPrintHighIRExpression as expressionToString,
   HighIRIfElseStatement,
-  HighIRSwitchStatement,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRType } from 'samlang-core-ast/hir-types';
 import { error, LocalStackedContext } from 'samlang-core-utils';
@@ -51,16 +50,4 @@ export const ifElseOrNull = (ifElse: HighIRIfElseStatement): readonly HighIRStat
     return [];
   }
   return [ifElse];
-};
-
-export const switchOrNull = (
-  switchStatement: HighIRSwitchStatement
-): readonly HighIRStatement[] => {
-  if (
-    switchStatement.cases.every((it) => it.statements.length === 0 && it.breakValue == null) &&
-    switchStatement.finalAssignments.length === 0
-  ) {
-    return [];
-  }
-  return [switchStatement];
 };

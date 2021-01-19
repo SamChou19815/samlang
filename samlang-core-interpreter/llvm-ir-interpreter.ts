@@ -290,21 +290,6 @@ const interpretLLVMFunction = (
         break;
       }
 
-      case 'LLVMSwitchInstruction': {
-        const caseNumber = interpretLLVMValue(
-          environment,
-          stackFrame,
-          instructionToInterpret.condition
-        ).toInt();
-        const labelToJump =
-          instructionToInterpret.otherBranchNameWithValues.find((it) => it.value === caseNumber)
-            ?.branch ?? instructionToInterpret.defaultBranchName;
-        const target = labelMapping.get(labelToJump);
-        assert(target != null, `Bad label ${labelToJump}!`);
-        programCounter = target;
-        break;
-      }
-
       case 'LLVMReturnInstruction':
         stackFrame.setReturnValue(
           interpretLLVMValue(environment, stackFrame, instructionToInterpret.value)

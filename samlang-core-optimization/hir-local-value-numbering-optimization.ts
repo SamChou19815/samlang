@@ -10,13 +10,12 @@ import {
   HighIRStatement,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
-  HIR_SWITCH,
   HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CAST,
   HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
-import { checkNotNull, error, isNotNull, LocalStackedContext, zip, zip3 } from 'samlang-core-utils';
+import { error, isNotNull, LocalStackedContext, zip, zip3 } from 'samlang-core-utils';
 
 class LocalVariableContext extends LocalStackedContext<string> {
   addLocalValueType(name: string, value: string, onCollision: () => void): void {
@@ -145,43 +144,6 @@ const optimizeHighIRStatement = (
             branch2Value,
           })
         ),
-      });
-    }
-
-    case 'HighIRSwitchStatement': {
-      const caseVariable =
-        variableContext.getLocalValueType(statement.caseVariable) ?? statement.caseVariable;
-      const casesWithValue = statement.cases.map(({ caseNumber, statements, breakValue }, i) =>
-        variableContext.withNestedScope(() =>
-          bindedValueContext.withNestedScope(() => {
-            const newStatements = optimizeHighIRStatements(
-              statements,
-              variableContext,
-              bindedValueContext
-            );
-            const finalValues = statement.finalAssignments.map((it) =>
-              getExpressionUnderContext(checkNotNull(it.branchValues[i]))
-            );
-            return {
-              caseNumber,
-              newStatements,
-              breakValue: getNullableExpressionUnderContext(breakValue),
-              finalValues,
-            };
-          })
-        )
-      );
-      return HIR_SWITCH({
-        caseVariable,
-        cases: casesWithValue.map((it) => ({
-          caseNumber: it.caseNumber,
-          statements: it.newStatements,
-          breakValue: it.breakValue,
-        })),
-        finalAssignments: statement.finalAssignments.map((final, i) => ({
-          ...final,
-          branchValues: casesWithValue.map((it) => checkNotNull(it.finalValues[i])),
-        })),
       });
     }
 

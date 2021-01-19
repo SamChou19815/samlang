@@ -2,7 +2,6 @@ import {
   debugPrintHighIRStatement,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
-  HIR_SWITCH,
   HIR_WHILE,
   HIR_INDEX_ACCESS,
   HIR_CAST,
@@ -22,51 +21,6 @@ it('debugPrintHighIRStatement works', () => {
       HIR_IF_ELSE({
         booleanExpression: HIR_ZERO,
         s1: [
-          HIR_SWITCH({ caseVariable: 'f', cases: [], finalAssignments: [] }),
-          HIR_SWITCH({
-            caseVariable: 'f',
-            cases: [
-              {
-                caseNumber: 1,
-                statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar')))],
-                breakValue: null,
-              },
-              {
-                caseNumber: 2,
-                statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar')))],
-                breakValue: null,
-              },
-            ],
-            finalAssignments: [
-              {
-                name: 'ma',
-                type: HIR_INT_TYPE,
-                branchValues: [HIR_VARIABLE('b1', HIR_INT_TYPE), HIR_VARIABLE('b2', HIR_INT_TYPE)],
-              },
-            ],
-          }),
-          HIR_SWITCH({
-            caseVariable: 'f',
-            cases: [
-              {
-                caseNumber: 1,
-                statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar')))],
-                breakValue: HIR_ZERO,
-              },
-              {
-                caseNumber: 2,
-                statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar')))],
-                breakValue: HIR_ZERO,
-              },
-            ],
-            finalAssignments: [
-              {
-                name: 'ma',
-                type: HIR_INT_TYPE,
-                branchValues: [HIR_VARIABLE('b1', HIR_INT_TYPE), HIR_VARIABLE('b2', HIR_INT_TYPE)],
-              },
-            ],
-          }),
           HIR_CAST({
             name: 'foo',
             type: HIR_IDENTIFIER_TYPE('Bar'),
@@ -168,32 +122,6 @@ it('debugPrintHighIRStatement works', () => {
     )
   ).toBe(`let bar: int;
 if 0 {
-  switch (f) {
-  }
-  let ma: int;
-  switch (f) {
-    case 1: {
-      return (foo: Bar);
-      ma = (b1: int);
-    }
-    case 2: {
-      return (foo: Bar);
-      ma = (b2: int);
-    }
-  }
-  let ma: int;
-  switch (f) {
-    case 1: {
-      return (foo: Bar);
-      undefined = 0;
-      break;
-    }
-    case 2: {
-      return (foo: Bar);
-      undefined = 0;
-      break;
-    }
-  }
   let foo: Bar = (dev: Bar);
   let n: int = (_tail_rec_param_n: int);
   let acc: int = (_tail_rec_param_acc: int);

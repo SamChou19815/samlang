@@ -9,7 +9,6 @@ import {
   LLVM_LABEL,
   LLVM_JUMP,
   LLVM_CJUMP,
-  LLVM_SWITCH,
   LLVM_RETURN,
 } from 'samlang-core-ast/llvm-nodes';
 
@@ -27,7 +26,6 @@ const llvmStatements: readonly LLVMInstruction[] = [
   LLVM_JUMP('baz'),
   LLVM_LABEL('baz'),
   LLVM_RETURN(LLVM_INT(0), LLVM_INT_TYPE),
-  LLVM_SWITCH(LLVM_VARIABLE(''), 'baz', [{ value: 0, branch: 'baz' }]),
   LLVM_RETURN(LLVM_INT(0), LLVM_INT_TYPE),
 ];
 const llvmGraph = ControlFlowGraph.fromLLVMInstructions(llvmStatements);
@@ -61,5 +59,5 @@ it('getParentIds is correct for llvmGraph.', () => {
   expect(parentOf(3)).toEqual([2]);
   expect(parentOf(4)).toEqual([3]);
   expect(parentOf(5)).toEqual([4]);
-  expect(parentOf(6)).toEqual([3, 5, 8]);
+  expect(parentOf(6)).toEqual([3, 5]);
 });

@@ -5,7 +5,6 @@ import type OptimizationResourceAllocator from './optimization-resource-allocato
 import {
   HighIRStatement,
   HighIRExpression,
-  HighIRVariableExpression,
   HIR_ZERO,
   HIR_VARIABLE,
 } from 'samlang-core-ast/hir-expressions';
@@ -34,17 +33,6 @@ const estimateStatementInlineCost = (statement: HighIRStatement): number => {
         statement.s1.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0) +
         statement.s2.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0) +
         statement.finalAssignments.length * 2
-      );
-    case 'HighIRSwitchStatement':
-      return (
-        1 +
-        statement.finalAssignments.length * statement.cases.length +
-        statement.cases.reduce(
-          (caseAccumulator, { statements }) =>
-            caseAccumulator +
-            statements.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0),
-          0
-        )
       );
     case 'HighIRWhileStatement':
       return (
@@ -174,44 +162,6 @@ const inlineRewriteForStatement = (
       };
     }
 
-    case 'HighIRSwitchStatement': {
-      const caseVariable =
-        // istanbul ignore next
-        (context.getLocalValueType(statement.caseVariable) as HighIRVariableExpression | undefined)
-          ?.name ?? statement.caseVariable;
-      const casesWithValues = statement.cases.map((oneCase, i) => {
-        return context.withNestedScope(() => {
-          const statements = oneCase.statements
-            .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
-            .filter(isNotNull);
-          return {
-            ...oneCase,
-            statements,
-            breakValue: rewriteNullable(oneCase.breakValue),
-            finalAssignments: statement.finalAssignments.map((final) =>
-              rewrite(checkNotNull(final.branchValues[i]))
-            ),
-          };
-        });
-      });
-      return {
-        ...statement,
-        caseVariable,
-        cases: casesWithValues.map(({ caseNumber, statements, breakValue }) => ({
-          caseNumber,
-          statements,
-          breakValue,
-        })),
-        finalAssignments: statement.finalAssignments.map((final, i) => ({
-          name: bindWithMangledName(final.name, final.type),
-          type: final.type,
-          branchValues: casesWithValues.map(({ finalAssignments }) =>
-            checkNotNull(finalAssignments[i])
-          ),
-        })),
-      };
-    }
-
     case 'HighIRWhileStatement': {
       const loopVariablesWithoutLoopValue = statement.loopVariables.map(
         ({ name, type, initialValue }) => ({
@@ -310,16 +260,6 @@ const performInlineRewriteOnFunction = (
       case 'HighIRIfElseStatement':
         return [
           { ...statement, s1: statement.s1.flatMap(rewrite), s2: statement.s2.flatMap(rewrite) },
-        ];
-      case 'HighIRSwitchStatement':
-        return [
-          {
-            ...statement,
-            cases: statement.cases.map((oneCase) => ({
-              ...oneCase,
-              statements: oneCase.statements.flatMap(rewrite),
-            })),
-          },
         ];
       case 'HighIRWhileStatement':
         return [{ ...statement, statements: statement.statements.flatMap(rewrite) }];
