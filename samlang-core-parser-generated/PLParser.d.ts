@@ -2,6 +2,7 @@
 /* eslint-disable */
 
 import { ATN } from 'antlr4ts/atn/ATN';
+import { FailedPredicateException } from 'antlr4ts/FailedPredicateException';
 import { Parser } from 'antlr4ts/Parser';
 import { ParserRuleContext } from 'antlr4ts/ParserRuleContext';
 import { RuleContext } from 'antlr4ts/RuleContext';
@@ -127,6 +128,10 @@ export declare class PLParser extends Parser {
   get grammarFileName(): string;
   get ruleNames(): string[];
   get serializedATN(): string;
+  protected createFailedPredicateException(
+    predicate?: string,
+    message?: string
+  ): FailedPredicateException;
   constructor(input: TokenStream);
   module(): ModuleContext;
   importModuleMembers(): ImportModuleMembersContext;

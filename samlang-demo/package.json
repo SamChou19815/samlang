@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@types/jest": "^26.0.20",
-    "@vercel/ncc": "^0.26.2",
+    "@vercel/ncc": "^0.27.0",
     "samlang-core-ast": "workspace:0.0.1",
     "samlang-core-compiler": "workspace:0.0.1",
     "samlang-core-interpreter": "workspace:0.0.1",
