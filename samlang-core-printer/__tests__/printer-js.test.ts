@@ -607,7 +607,6 @@ it('HIR statements to JS string test', () => {
     )
   ).toBe(`var n = _tail_rec_param_n;
 var acc = _tail_rec_param_acc;
-_while_label_0:
 while (true) {
   var foo = dev;
   n = _t0_n;
@@ -650,17 +649,16 @@ while (true) {
     )
   ).toBe(`var n = _tail_rec_param_n;
 var acc = _tail_rec_param_acc;
-_while_label_0:
 while (true) {
   var foo = dev;
   if (0) {
 
     var v = 0;
-    break _while_label_0;
+    break;
   } else {
 
     var v = 0;
-    break _while_label_0;
+    break;
   }
   n = _t0_n;
   acc = _t1_acc;
