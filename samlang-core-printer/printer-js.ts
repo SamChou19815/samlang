@@ -21,7 +21,6 @@ import {
 } from 'samlang-core-ast/common-names';
 import type { HighIRStatement, HighIRExpression } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
-import { checkNotNull } from 'samlang-core-utils';
 
 // Thanks https://gist.github.com/getify/3667624
 const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
@@ -38,20 +37,17 @@ export const createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING = (
   }
 };
 
-type LabelAndBreakCollector = { readonly label: string; readonly breakCollector?: string };
-
 class WhileLabelManager {
-  private labelStack: LabelAndBreakCollector[] = [];
-  private nextLabelID = 0;
+  private stack: (string | undefined)[] = [];
 
-  get currentLabelAndBreakCollector(): LabelAndBreakCollector {
-    return checkNotNull(this.labelStack[this.labelStack.length - 1]);
+  get currentBreakCollector(): string | undefined {
+    return this.stack[this.stack.length - 1];
   }
 
   getBreakStatement(breakValue: HighIRExpression): readonly PrettierDocument[] {
-    const { label, breakCollector } = this.currentLabelAndBreakCollector;
+    const breakCollector = this.currentBreakCollector;
     if (breakCollector == null) {
-      return [PRETTIER_LINE, PRETTIER_TEXT(`break ${label};`)];
+      return [PRETTIER_LINE, PRETTIER_TEXT('break;')];
     }
     return [
       PRETTIER_LINE,
@@ -59,17 +55,14 @@ class WhileLabelManager {
       createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(breakValue),
       PRETTIER_TEXT(';'),
       PRETTIER_LINE,
-      PRETTIER_TEXT(`break ${label};`),
+      PRETTIER_TEXT('break;'),
     ];
   }
 
   withNewNestedWhileLoop = <T>(breakCollector: string | undefined, block: () => T): T => {
-    const id = this.nextLabelID;
-    this.nextLabelID += 1;
-    const label = `_while_label_${id}`;
-    this.labelStack.push({ label, breakCollector });
+    this.stack.push(breakCollector);
     const result = block();
-    this.labelStack.pop();
+    this.stack.pop();
     return result;
   };
 }
@@ -179,8 +172,6 @@ export const createPrettierDocumentFromHighIRStatement = (
           PRETTIER_LINE,
         ]),
         ...manager.withNewNestedWhileLoop(highIRStatement.breakCollector?.name, () => [
-          PRETTIER_TEXT(`${manager.currentLabelAndBreakCollector.label}:`),
-          PRETTIER_LINE,
           PRETTIER_TEXT('while (true) '),
           createBracesSurroundedBlockDocument([
             ...concatStatements(highIRStatement.statements, manager),
