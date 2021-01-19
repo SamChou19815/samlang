@@ -4,15 +4,15 @@
   "license": "AGPLv3",
   "scripts": {
     "compile": "exit 0",
-    "codegen": "yarn antlr4ts -o src -visitor -no-listener PL.g4 && node suppress-type-errors.js"
+    "codegen": "yarn antlr4ts -o src -visitor -no-listener PL.g4 && node build.js"
   },
   "dependencies": {
-    "antlr4ts": "0.5.0-alpha.3"
+    "antlr4ts": "0.5.0-alpha.4"
   },
   "devDependencies": {
     "@types/jest": "^26.0.20",
-    "antlr4ts-cli": "0.5.0-alpha.3",
-    "terser": "^5.3.2",
+    "antlr4ts-cli": "0.5.0-alpha.4",
+    "terser": "^5.5.1",
     "typescript": "^4.1.3"
   }
 }
