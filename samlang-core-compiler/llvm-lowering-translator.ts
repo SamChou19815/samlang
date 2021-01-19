@@ -121,7 +121,7 @@ class LLVMLoweringManager {
         );
         return;
       case 'HighIRIfElseStatement':
-        this.lowerNormalHighIRIfElseStatement(s);
+        this.lowerHighIRIfElseStatement(s);
         return;
       case 'HighIRWhileStatement':
         this.lowerHighIRWhileStatement(s);
@@ -171,7 +171,7 @@ class LLVMLoweringManager {
     );
   }
 
-  private lowerNormalHighIRIfElseStatement(s: HighIRIfElseStatement): void {
+  private lowerHighIRIfElseStatement(s: HighIRIfElseStatement): void {
     const { booleanExpression, s1, s2, s1BreakValue, s2BreakValue, finalAssignments } = s;
     const loweredCondition = this.lowerHighIRExpression(booleanExpression).value;
     const trueLabel = this.allocator.allocateLabelWithAnnotation('if_else_true');
