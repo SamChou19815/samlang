@@ -625,6 +625,12 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
             invertCondition: true,
             statements: [HIR_BREAK(HIR_VARIABLE('n', HIR_INT_TYPE))],
           }),
+          HIR_BINARY({
+            name: 'is_zero',
+            operator: '==',
+            e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+            e2: HIR_ZERO,
+          }),
         ],
       }),
     ],
