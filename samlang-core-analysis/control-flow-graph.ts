@@ -17,21 +17,10 @@ const LLVMIRAdapter: Adapter<LLVMInstruction> = {
     instruction.__type__ === 'LLVMLabelInstruction' ? instruction.name : null,
   getJumpLabel: (instruction) =>
     instruction.__type__ === 'LLVMJumpInstruction' ? instruction.branch : null,
-  getConditionalJumpLabel: (instruction) => {
-    switch (instruction.__type__) {
-      case 'LLVMConditionalJumpInstruction':
-        return [instruction.b1, instruction.b2];
-      case 'LLVMSwitchInstruction':
-        return Array.from(
-          new Set([
-            ...instruction.otherBranchNameWithValues.map((it) => it.branch),
-            instruction.defaultBranchName,
-          ])
-        );
-      default:
-        return null;
-    }
-  },
+  getConditionalJumpLabel: (instruction) =>
+    instruction.__type__ === 'LLVMConditionalJumpInstruction'
+      ? [instruction.b1, instruction.b2]
+      : null,
   isReturn: (instruction) => instruction.__type__ === 'LLVMReturnInstruction',
 };
 

@@ -14,7 +14,6 @@ import {
   HIR_BINARY,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
-  HIR_SWITCH,
   HIR_WHILE,
   HIR_INDEX_ACCESS,
   HIR_INT,
@@ -430,117 +429,6 @@ l3_if_else_end:
   );
 });
 
-it('LLVM lowering works for HIR_SWITCH 1/n', () => {
-  assertStatementLoweringWorks(
-    [
-      HIR_SWITCH({
-        caseVariable: 'c',
-        cases: [
-          {
-            caseNumber: 2,
-            statements: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
-                functionArguments: [],
-                returnType: INT,
-              }),
-            ],
-            breakValue: null,
-          },
-          {
-            caseNumber: 2,
-            statements: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
-                functionArguments: [],
-                returnType: INT,
-              }),
-            ],
-            breakValue: null,
-          },
-        ],
-        finalAssignments: [],
-      }),
-    ],
-    `  switch i64 %c, label %l3_match_case_1 [ i64 2, label %l2_match_case_0 i64 2, label %l3_match_case_1 ]
-l2_match_case_0:
-  call i64 @bar() nounwind
-  br label %l1_match_end
-l3_match_case_1:
-  call i64 @bar() nounwind
-  br label %l1_match_end
-l1_match_end:`
-  );
-});
-
-it('LLVM lowering works for HIR_SWITCH 2/n', () => {
-  assertStatementLoweringWorks(
-    [
-      HIR_SWITCH({
-        caseVariable: 'c',
-        cases: [
-          { caseNumber: 1, statements: [], breakValue: null },
-          { caseNumber: 0, statements: [], breakValue: null },
-          { caseNumber: 2, statements: [], breakValue: null },
-        ],
-        finalAssignments: [{ name: 'ma', type: INT, branchValues: [HIR_ZERO, HIR_ZERO, HIR_ZERO] }],
-      }),
-    ],
-    `  switch i64 %c, label %l4_match_case_2 [ i64 1, label %l2_match_case_0 i64 0, label %l3_match_case_1 i64 2, label %l4_match_case_2 ]
-l2_match_case_0:
-  br label %l1_match_end
-l3_match_case_1:
-  br label %l1_match_end
-l4_match_case_2:
-  br label %l1_match_end
-l1_match_end:
-  %ma = phi i64 [ 0, %l2_match_case_0 ], [ 0, %l3_match_case_1 ], [ 0, %l4_match_case_2 ]`
-  );
-});
-
-it('LLVM lowering works for HIR_SWITCH 3/n', () => {
-  assertStatementLoweringWorks(
-    [
-      HIR_SWITCH({
-        caseVariable: 'c',
-        cases: [
-          { caseNumber: 1, statements: [], breakValue: null },
-          { caseNumber: 0, statements: [], breakValue: null },
-          {
-            caseNumber: 2,
-            statements: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('foo', INT),
-                functionArguments: [],
-                returnType: INT,
-                returnCollector: 'b2',
-              }),
-            ],
-            breakValue: null,
-          },
-        ],
-        finalAssignments: [
-          {
-            name: 'ma',
-            type: INT,
-            branchValues: [HIR_ZERO, HIR_ZERO, HIR_VARIABLE('b2', INT)],
-          },
-        ],
-      }),
-    ],
-    `  switch i64 %c, label %l4_match_case_2 [ i64 1, label %l2_match_case_0 i64 0, label %l3_match_case_1 i64 2, label %l4_match_case_2 ]
-l2_match_case_0:
-  br label %l1_match_end
-l3_match_case_1:
-  br label %l1_match_end
-l4_match_case_2:
-  %b2 = call i64 @foo() nounwind
-  br label %l1_match_end
-l1_match_end:
-  %ma = phi i64 [ 0, %l2_match_case_0 ], [ 0, %l3_match_case_1 ], [ %b2, %l4_match_case_2 ]`
-  );
-});
-
 it('LLVM lowering works for HIR_WHILE 1/n', () => {
   assertStatementLoweringWorks(
     [
@@ -660,37 +548,6 @@ l5_if_else_end:
   br label %l1_loop_start
 l2_loop_end:
   %v = phi i64 [ 1, %l3_if_else_true ]`
-  );
-});
-
-it('LLVM lowering works for HIR_WHILE 5/n', () => {
-  assertStatementLoweringWorks(
-    [
-      HIR_WHILE({
-        loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
-        statements: [
-          HIR_SWITCH({
-            caseVariable: 'b2',
-            cases: [
-              { caseNumber: 0, statements: [], breakValue: HIR_ZERO },
-              { caseNumber: 1, statements: [], breakValue: HIR_ONE },
-            ],
-            finalAssignments: [],
-          }),
-        ],
-        breakCollector: { name: 'v', type: INT },
-      }),
-    ],
-    `  br label %l1_loop_start
-l1_loop_start:
-  %n = phi i64 [ 0, %l0_start ], [ 0, %l3_match_end ]
-  switch i64 %b2, label %l5_match_case_1 [ i64 0, label %l4_match_case_0 i64 1, label %l5_match_case_1 ]
-l4_match_case_0:
-  br label %l2_loop_end
-l5_match_case_1:
-  br label %l2_loop_end
-l2_loop_end:
-  %v = phi i64 [ 0, %l4_match_case_0 ], [ 1, %l5_match_case_1 ]`
   );
 });
 

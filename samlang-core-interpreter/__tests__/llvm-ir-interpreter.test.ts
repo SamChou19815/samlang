@@ -28,7 +28,6 @@ import {
   LLVM_LABEL,
   LLVM_JUMP,
   LLVM_CJUMP,
-  LLVM_SWITCH,
   LLVM_RETURN,
 } from 'samlang-core-ast/llvm-nodes';
 
@@ -454,7 +453,7 @@ it('interpretLLVMModule factorial function call integration test', () => {
   ).toBe('24\n');
 });
 
-it('interpretLLVMModule switch integration test 1/2', () => {
+it('interpretLLVMModule integration test', () => {
   expect(
     interpretLLVMModule({
       globalVariables: [],
@@ -471,10 +470,6 @@ it('interpretLLVMModule switch integration test 1/2', () => {
           parameters: [],
           returnType: LLVM_INT_TYPE,
           body: [
-            LLVM_SWITCH(ONE, 'end', [
-              { value: 0, branch: 'b0' },
-              { value: 1, branch: 'b1' },
-            ]),
             LLVM_LABEL('b0'),
             LLVM_CALL({
               functionName: LLVM_NAME('id'),
@@ -516,120 +511,5 @@ it('interpretLLVMModule switch integration test 1/2', () => {
         },
       ],
     })
-  ).toBe('1\n');
-});
-
-it('interpretLLVMModule switch integration test 2/2', () => {
-  expect(
-    interpretLLVMModule({
-      globalVariables: [],
-      typeDefinitions: [],
-      functions: [
-        {
-          name: 'id',
-          parameters: [{ parameterName: 'n', parameterType: LLVM_INT_TYPE }],
-          returnType: LLVM_INT_TYPE,
-          body: [LLVM_RETURN(LLVM_VARIABLE('n'), LLVM_INT_TYPE)],
-        },
-        {
-          name: ENCODED_COMPILED_PROGRAM_MAIN,
-          parameters: [],
-          returnType: LLVM_INT_TYPE,
-          body: [
-            LLVM_LABEL('start'),
-            LLVM_SWITCH(EIGHT, 'end', [
-              { value: 0, branch: 'b0' },
-              { value: 1, branch: 'b1' },
-            ]),
-            LLVM_LABEL('b0'),
-            LLVM_CALL({
-              functionName: LLVM_NAME('id'),
-              functionArguments: [{ value: ZERO, type: LLVM_INT_TYPE }],
-              resultType: LLVM_INT_TYPE,
-              resultVariable: 'v0',
-            }),
-            LLVM_JUMP('end'),
-            LLVM_LABEL('b1'),
-            LLVM_CALL({
-              functionName: LLVM_NAME('id'),
-              functionArguments: [{ value: ONE, type: LLVM_INT_TYPE }],
-              resultType: LLVM_INT_TYPE,
-              resultVariable: 'v1',
-            }),
-            LLVM_JUMP('end'),
-            LLVM_LABEL('end'),
-            LLVM_PHI({
-              resultVariable: 'a',
-              variableType: LLVM_INT_TYPE,
-              valueBranchTuples: [
-                { value: EIGHT, branch: 'start' },
-                { value: LLVM_VARIABLE('v0'), branch: 'b0' },
-                { value: LLVM_VARIABLE('v1'), branch: 'b1' },
-              ],
-            }),
-            LLVM_CALL({
-              functionName: LLVM_NAME(ENCODED_FUNCTION_NAME_INT_TO_STRING),
-              functionArguments: [{ value: LLVM_VARIABLE('a'), type: LLVM_INT_TYPE }],
-              resultType: LLVM_STRING_TYPE(),
-              resultVariable: 'b',
-            }),
-            LLVM_CALL({
-              functionName: LLVM_NAME(ENCODED_FUNCTION_NAME_PRINTLN),
-              functionArguments: [{ value: LLVM_VARIABLE('b'), type: LLVM_STRING_TYPE() }],
-              resultType: LLVM_INT_TYPE,
-            }),
-            LLVM_RETURN(ZERO, LLVM_INT_TYPE),
-          ],
-        },
-      ],
-    })
-  ).toBe('8\n');
-});
-
-it('interpretLLVMModule id function reference call integration test', () => {
-  expect(
-    interpretLLVMModule({
-      globalVariables: [],
-      typeDefinitions: [],
-      functions: [
-        {
-          name: 'id',
-          parameters: [{ parameterName: 'n', parameterType: LLVM_INT_TYPE }],
-          returnType: LLVM_INT_TYPE,
-          body: [LLVM_RETURN(LLVM_VARIABLE('n'), LLVM_INT_TYPE)],
-        },
-        {
-          name: ENCODED_COMPILED_PROGRAM_MAIN,
-          parameters: [],
-          returnType: LLVM_INT_TYPE,
-          body: [
-            LLVM_CAST({
-              resultVariable: 'name',
-              resultType: LLVM_FUNCTION_TYPE([LLVM_INT_TYPE], LLVM_INT_TYPE),
-              sourceValue: LLVM_NAME('id'),
-              sourceType: LLVM_FUNCTION_TYPE([LLVM_INT_TYPE], LLVM_BOOL_TYPE),
-            }),
-            LLVM_CALL({
-              functionName: LLVM_VARIABLE('name'),
-              functionArguments: [{ value: ONE, type: LLVM_INT_TYPE }],
-              resultType: LLVM_INT_TYPE,
-              resultVariable: 'a',
-            }),
-            LLVM_CALL({
-              functionName: LLVM_NAME(ENCODED_FUNCTION_NAME_INT_TO_STRING),
-              functionArguments: [{ value: LLVM_VARIABLE('a'), type: LLVM_INT_TYPE }],
-              resultType: LLVM_STRING_TYPE(),
-              resultVariable: 'b',
-            }),
-            LLVM_CALL({
-              functionName: LLVM_NAME(ENCODED_FUNCTION_NAME_PRINTLN),
-              functionArguments: [{ value: LLVM_VARIABLE('b'), type: LLVM_STRING_TYPE() }],
-              resultType: LLVM_INT_TYPE,
-            }),
-            LLVM_RETURN(ZERO, LLVM_INT_TYPE),
-          ],
-        },
-      ],
-    })
-  ).toBe('1\n');
+  ).toBe('0\n');
 });

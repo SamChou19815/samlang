@@ -11,7 +11,6 @@ import {
   HIR_RETURN,
   HIR_IF_ELSE,
   HIR_BINARY,
-  HIR_SWITCH,
   HIR_WHILE,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_INT_TYPE, HIR_FUNCTION_TYPE, HIR_IDENTIFIER_TYPE } from 'samlang-core-ast/hir-types';
@@ -62,28 +61,6 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
             returnType: HIR_INT_TYPE,
           }),
           HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE)),
-          HIR_SWITCH({
-            caseVariable: 'a',
-            cases: [
-              {
-                caseNumber: 0,
-                statements: [HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE))],
-                breakValue: null,
-              },
-              {
-                caseNumber: 1,
-                statements: [HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE))],
-                breakValue: HIR_ZERO,
-              },
-            ],
-            finalAssignments: [
-              {
-                name: 'dff',
-                type: HIR_INT_TYPE,
-                branchValues: [HIR_NAME('bar', HIR_INT_TYPE)],
-              },
-            ],
-          }),
           HIR_IF_ELSE({
             booleanExpression: HIR_ZERO,
             s1: [

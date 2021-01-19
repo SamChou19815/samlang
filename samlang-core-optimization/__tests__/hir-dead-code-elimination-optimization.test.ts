@@ -3,8 +3,6 @@ import optimizeHighIRStatementsByDeadCodeElimination from '../hir-dead-code-elim
 import {
   HighIRStatement,
   debugPrintHighIRStatement,
-  HIR_TRUE,
-  HIR_FALSE,
   HIR_ZERO,
   HIR_ONE,
   HIR_INT,
@@ -14,7 +12,6 @@ import {
   HIR_BINARY,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
-  HIR_SWITCH,
   HIR_WHILE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
@@ -281,142 +278,6 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 5/
       }),
     ],
     ``
-  );
-});
-
-it('optimizeHighIRStatementsByDeadCodeElimination works on switch statements 1/n.', () => {
-  assertCorrectlyOptimized(
-    [
-      HIR_BINARY({ name: 'b', operator: '==', e1: HIR_ZERO, e2: HIR_ONE }),
-      HIR_SWITCH({
-        caseVariable: 'b',
-        cases: [
-          {
-            caseNumber: 0,
-            statements: [HIR_BINARY({ name: 'c', operator: '==', e1: HIR_ZERO, e2: HIR_ONE })],
-            breakValue: null,
-          },
-          {
-            caseNumber: 1,
-            statements: [HIR_BINARY({ name: 'd', operator: '==', e1: HIR_ZERO, e2: HIR_ONE })],
-            breakValue: null,
-          },
-        ],
-        finalAssignments: [],
-      }),
-    ],
-    ``
-  );
-});
-
-it('optimizeHighIRStatementsByDeadCodeElimination works on switch statements 2/n.', () => {
-  assertCorrectlyOptimized(
-    [
-      HIR_BINARY({ name: 'b', operator: '==', e1: HIR_ZERO, e2: HIR_ONE }),
-      HIR_SWITCH({
-        caseVariable: 'b',
-        cases: [
-          {
-            caseNumber: 0,
-            statements: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('s1', HIR_INT_TYPE),
-                functionArguments: [],
-                returnType: HIR_INT_TYPE,
-                returnCollector: 'a1',
-              }),
-            ],
-            breakValue: null,
-          },
-          {
-            caseNumber: 1,
-            statements: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('s2', HIR_INT_TYPE),
-                functionArguments: [],
-                returnType: HIR_INT_TYPE,
-                returnCollector: 'a2',
-              }),
-            ],
-            breakValue: null,
-          },
-        ],
-        finalAssignments: [
-          {
-            name: 'ma',
-            type: HIR_INT_TYPE,
-            branchValues: [HIR_VARIABLE('a1', HIR_INT_TYPE), HIR_VARIABLE('a2', HIR_INT_TYPE)],
-          },
-        ],
-      }),
-    ],
-    `let b: bool = 0 == 1;
-switch (b) {
-  case 0: {
-    s1();
-  }
-  case 1: {
-    s2();
-  }
-}`
-  );
-});
-
-it('optimizeHighIRStatementsByDeadCodeElimination works on switch statements 3/n.', () => {
-  assertCorrectlyOptimized(
-    [
-      HIR_BINARY({ name: 'b', operator: '==', e1: HIR_ZERO, e2: HIR_ONE }),
-      HIR_SWITCH({
-        caseVariable: 'b',
-        cases: [
-          {
-            caseNumber: 0,
-            statements: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('s1', HIR_INT_TYPE),
-                functionArguments: [],
-                returnType: HIR_INT_TYPE,
-                returnCollector: 'a1',
-              }),
-            ],
-            breakValue: null,
-          },
-          {
-            caseNumber: 1,
-            statements: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('s2', HIR_INT_TYPE),
-                functionArguments: [],
-                returnType: HIR_INT_TYPE,
-                returnCollector: 'a2',
-              }),
-            ],
-            breakValue: null,
-          },
-        ],
-        finalAssignments: [
-          {
-            name: 'ma',
-            type: HIR_INT_TYPE,
-            branchValues: [HIR_VARIABLE('a1', HIR_INT_TYPE), HIR_VARIABLE('a2', HIR_INT_TYPE)],
-          },
-        ],
-      }),
-      HIR_RETURN(HIR_VARIABLE('ma', HIR_INT_TYPE)),
-    ],
-    `let b: bool = 0 == 1;
-let ma: int;
-switch (b) {
-  case 0: {
-    let a1: int = s1();
-    ma = (a1: int);
-  }
-  case 1: {
-    let a2: int = s2();
-    ma = (a2: int);
-  }
-}
-return (ma: int);`
   );
 });
 

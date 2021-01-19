@@ -62,18 +62,6 @@ const collectUsedNamesFromStatement = (
         collectForTypeSet(finalAssignment.type, typeSet);
       });
       break;
-    case 'HighIRSwitchStatement':
-      statement.cases.forEach((oneCase) => {
-        oneCase.statements.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
-        if (oneCase.breakValue != null) {
-          collectUsedNamesFromExpression(nameSet, typeSet, oneCase.breakValue);
-        }
-      });
-      statement.finalAssignments.forEach((final) => {
-        final.branchValues.forEach((it) => collectUsedNamesFromExpression(nameSet, typeSet, it));
-        collectForTypeSet(final.type, typeSet);
-      });
-      break;
     case 'HighIRWhileStatement':
       statement.loopVariables.forEach((it) => {
         collectForTypeSet(it.type, typeSet);

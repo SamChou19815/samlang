@@ -4,8 +4,6 @@ import optimizeHighIRFunctionsByInlining, {
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 import {
-  HIR_FALSE,
-  HIR_TRUE,
   HIR_ZERO,
   HIR_ONE,
   HIR_INT,
@@ -15,7 +13,6 @@ import {
   HIR_BINARY,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
-  HIR_SWITCH,
   HIR_WHILE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
@@ -103,42 +100,6 @@ it('estimateFunctionInlineCost test', () => {
             },
           ],
         }),
-        HIR_SWITCH({
-          caseVariable: '',
-          cases: [
-            {
-              caseNumber: 1,
-              statements: [
-                HIR_BINARY({
-                  name: '',
-                  operator: '+',
-                  e1: HIR_VARIABLE('', HIR_INT_TYPE),
-                  e2: HIR_INT(3),
-                }),
-              ],
-              breakValue: null,
-            },
-          ],
-          finalAssignments: [],
-        }),
-        HIR_SWITCH({
-          caseVariable: '',
-          cases: [
-            {
-              caseNumber: 1,
-              statements: [
-                HIR_BINARY({
-                  name: '',
-                  operator: '+',
-                  e1: HIR_VARIABLE('', HIR_INT_TYPE),
-                  e2: HIR_INT(3),
-                }),
-              ],
-              breakValue: null,
-            },
-          ],
-          finalAssignments: [{ name: '', type: HIR_INT_TYPE, branchValues: [HIR_ZERO] }],
-        }),
         HIR_WHILE({
           loopVariables: [
             { name: '', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
@@ -155,7 +116,7 @@ it('estimateFunctionInlineCost test', () => {
         HIR_RETURN(HIR_VARIABLE('ss', HIR_INT_TYPE)),
       ],
     })
-  ).toBe(34);
+  ).toBe(29);
 });
 
 const assertCorrectlyInlined = (functions: readonly HighIRFunction[], expected: string): void => {
@@ -667,236 +628,6 @@ it('optimizeFunctionsByInlining test 6', () => {
         parameters: [],
         type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
         body: [
-          HIR_SWITCH({
-            caseVariable: 'cc',
-            cases: [
-              {
-                caseNumber: 1,
-                statements: [
-                  HIR_FUNCTION_CALL({
-                    functionExpression: HIR_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-                    functionArguments: [],
-                    returnType: HIR_INT_TYPE,
-                  }),
-                ],
-                breakValue: null,
-              },
-              {
-                caseNumber: 1,
-                statements: [
-                  HIR_CAST({ name: 'a', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO }),
-                ],
-                breakValue: null,
-              },
-            ],
-            finalAssignments: [
-              {
-                name: 'b',
-                type: HIR_INT_TYPE,
-                branchValues: [HIR_ZERO, HIR_VARIABLE('a', HIR_INT_TYPE)],
-              },
-            ],
-          }),
-        ],
-      },
-      {
-        name: 'main',
-        parameters: [],
-        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
-        body: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
-            functionArguments: [],
-            returnType: HIR_INT_TYPE,
-            returnCollector: 'v',
-          }),
-          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
-        ],
-      },
-    ],
-    `function fooBar(): int {
-  let b: int;
-  switch (cc) {
-    case 1: {
-      fooBar();
-      b = 0;
-    }
-    case 1: {
-      let a: int = 0;
-      b = (a: int);
-    }
-  }
-}
-
-function main(): int {
-  let _inline_0_b: int;
-  switch (cc) {
-    case 1: {
-      let _inline_1_b: int;
-      switch (cc) {
-        case 1: {
-          let _inline_2_b: int;
-          switch (cc) {
-            case 1: {
-              let _inline_3_b: int;
-              switch (cc) {
-                case 1: {
-                  let _inline_4_b: int;
-                  switch (cc) {
-                    case 1: {
-                      fooBar();
-                      _inline_4_b = 0;
-                    }
-                    case 1: {
-                      let _inline_4_a: int = 0;
-                      _inline_4_b = (_inline_4_a: int);
-                    }
-                  }
-                  _inline_3_b = 0;
-                }
-                case 1: {
-                  let _inline_3_a: int = 0;
-                  _inline_3_b = (_inline_3_a: int);
-                }
-              }
-              _inline_2_b = 0;
-            }
-            case 1: {
-              let _inline_2_a: int = 0;
-              _inline_2_b = (_inline_2_a: int);
-            }
-          }
-          _inline_1_b = 0;
-        }
-        case 1: {
-          let _inline_1_a: int = 0;
-          _inline_1_b = (_inline_1_a: int);
-        }
-      }
-      _inline_0_b = 0;
-    }
-    case 1: {
-      let _inline_0_a: int = 0;
-      _inline_0_b = (_inline_0_a: int);
-    }
-  }
-  return (v: int);
-}
-`
-  );
-});
-
-it('optimizeFunctionsByInlining test 7', () => {
-  assertCorrectlyInlined(
-    [
-      {
-        name: 'fooBar',
-        parameters: [],
-        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
-        body: [
-          HIR_SWITCH({
-            caseVariable: 'cc',
-            cases: [
-              {
-                caseNumber: 1,
-                statements: [
-                  HIR_CAST({ name: 'a', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO }),
-                ],
-                breakValue: null,
-              },
-              {
-                caseNumber: 1,
-                statements: [
-                  HIR_FUNCTION_CALL({
-                    functionExpression: HIR_NAME('fooBar', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
-                    functionArguments: [],
-                    returnType: HIR_INT_TYPE,
-                  }),
-                ],
-                breakValue: null,
-              },
-            ],
-            finalAssignments: [],
-          }),
-        ],
-      },
-      {
-        name: 'main',
-        parameters: [],
-        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
-        body: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
-            functionArguments: [],
-            returnType: HIR_INT_TYPE,
-            returnCollector: 'v',
-          }),
-          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
-        ],
-      },
-    ],
-    `function fooBar(): int {
-  switch (cc) {
-    case 1: {
-      let a: int = 0;
-    }
-    case 1: {
-      fooBar();
-    }
-  }
-}
-
-function main(): int {
-  switch (cc) {
-    case 1: {
-      let _inline_0_a: int = 0;
-    }
-    case 1: {
-      switch (cc) {
-        case 1: {
-          let _inline_1_a: int = 0;
-        }
-        case 1: {
-          switch (cc) {
-            case 1: {
-              let _inline_2_a: int = 0;
-            }
-            case 1: {
-              switch (cc) {
-                case 1: {
-                  let _inline_3_a: int = 0;
-                }
-                case 1: {
-                  switch (cc) {
-                    case 1: {
-                      let _inline_4_a: int = 0;
-                    }
-                    case 1: {
-                      fooBar();
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  return (v: int);
-}
-`
-  );
-});
-
-it('optimizeFunctionsByInlining test 8', () => {
-  assertCorrectlyInlined(
-    [
-      {
-        name: 'fooBar',
-        parameters: [],
-        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
-        body: [
           HIR_WHILE({
             loopVariables: [
               {
@@ -941,7 +672,7 @@ it('optimizeFunctionsByInlining test 8', () => {
   );
 });
 
-it('optimizeFunctionsByInlining test 9', () => {
+it('optimizeFunctionsByInlining test 7', () => {
   assertCorrectlyInlined(
     [
       {

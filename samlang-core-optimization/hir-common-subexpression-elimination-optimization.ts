@@ -3,14 +3,7 @@ import { BindedValue, bindedValueToString } from './hir-optimization-common';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
 import { HighIRStatement, HIR_INDEX_ACCESS, HIR_BINARY } from 'samlang-core-ast/hir-expressions';
-import {
-  checkNotNull,
-  Hashable,
-  ReadonlyHashSet,
-  HashSet,
-  hashSetOf,
-  isNotNull,
-} from 'samlang-core-utils';
+import { Hashable, ReadonlyHashSet, HashSet, hashSetOf, isNotNull } from 'samlang-core-utils';
 
 class ExpressionWrapper implements Hashable {
   constructor(readonly value: BindedValue) {}
@@ -100,32 +93,6 @@ const optimizeHighIRStatement = (
         optimizeHighIRStatement(produceHoistedStatement(allocator, it), allocator, set)
       );
       return [{ ...statement, s1, s2 }, ...hoistedStatements.reverse()];
-    }
-
-    case 'HighIRSwitchStatement': {
-      const casesWithSets = statement.cases.map(({ caseNumber, statements, breakValue }) => ({
-        caseNumber,
-        breakValue,
-        ...optimizeHighIRStatementsWithSet(statements, allocator),
-      }));
-      const commonExpressions = intersectionOf(
-        checkNotNull(casesWithSets[0]).set,
-        ...casesWithSets.slice(1).map((it) => it.set)
-      );
-      const hoistedStatements = commonExpressions.flatMap((it) =>
-        optimizeHighIRStatement(produceHoistedStatement(allocator, it), allocator, set)
-      );
-      return [
-        {
-          ...statement,
-          cases: casesWithSets.map(({ caseNumber, statements, breakValue }) => ({
-            caseNumber,
-            statements,
-            breakValue,
-          })),
-        },
-        ...hoistedStatements.reverse(),
-      ];
     }
   }
 };

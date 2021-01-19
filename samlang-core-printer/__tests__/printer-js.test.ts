@@ -15,7 +15,6 @@ import {
 } from 'samlang-core-ast/common-names';
 import {
   HIR_IF_ELSE,
-  HIR_SWITCH,
   HIR_WHILE,
   HIR_BINARY,
   HIR_INT,
@@ -490,72 +489,7 @@ it('HIR statements to JS string test', () => {
     return 0;
   }
 }`);
-  expect(
-    highIRStatementToString(
-      HIR_SWITCH({
-        caseVariable: 'f',
-        cases: [
-          {
-            caseNumber: 1,
-            statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_INT_TYPE))],
-            breakValue: null,
-          },
-          {
-            caseNumber: 2,
-            statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_INT_TYPE))],
-            breakValue: null,
-          },
-        ],
-        finalAssignments: [],
-      })
-    )
-  ).toBe(`switch (f) {
-  case 1: {
-    return foo;
-    break;
-  }
-  case 2: {
-    return foo;
-    break;
-  }
-}`);
-  expect(
-    highIRStatementToString(
-      HIR_SWITCH({
-        caseVariable: 'f',
-        cases: [
-          {
-            caseNumber: 1,
-            statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_INT_TYPE))],
-            breakValue: null,
-          },
-          {
-            caseNumber: 2,
-            statements: [HIR_RETURN(HIR_VARIABLE('foo', HIR_INT_TYPE))],
-            breakValue: null,
-          },
-        ],
-        finalAssignments: [
-          {
-            name: 'ma',
-            type: HIR_INT_TYPE,
-            branchValues: [HIR_ZERO, HIR_ZERO],
-          },
-        ],
-      })
-    )
-  ).toBe(`switch (f) {
-  case 1: {
-    return foo;
-    var ma = 0;
-    break;
-  }
-  case 2: {
-    return foo;
-    var ma = 0;
-    break;
-  }
-}`);
+
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -710,14 +644,6 @@ while (true) {
             s2BreakValue: HIR_ZERO,
             finalAssignments: [],
           }),
-          HIR_SWITCH({
-            caseVariable: 'foo',
-            cases: [
-              { caseNumber: 0, statements: [], breakValue: HIR_ZERO },
-              { caseNumber: 1, statements: [], breakValue: HIR_ZERO },
-            ],
-            finalAssignments: [],
-          }),
         ],
         breakCollector: { name: 'v', type: HIR_INT_TYPE },
       })
@@ -735,18 +661,6 @@ while (true) {
 
     var v = 0;
     break _while_label_0;
-  }
-  switch (foo) {
-    case 0: {
-
-      var v = 0;
-      break _while_label_0;
-    }
-    case 1: {
-
-      var v = 0;
-      break _while_label_0;
-    }
   }
   n = _t0_n;
   acc = _t1_acc;
