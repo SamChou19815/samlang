@@ -1,5 +1,13 @@
 import { spawnSync } from 'child_process';
-import { lstatSync, readdirSync, readFileSync, mkdirSync, writeFileSync } from 'fs';
+import {
+  lstatSync,
+  readdirSync,
+  readFileSync,
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+  unlinkSync,
+} from 'fs';
 import { join, normalize, dirname, resolve, relative, sep } from 'path';
 
 import type { SamlangProjectConfiguration } from './configuration';
@@ -78,6 +86,10 @@ const shellOut = (program: string, ...programArguments: readonly string[]): bool
   return spawnSync(program, programArguments, { shell: true, stdio: 'inherit' }).status === 0;
 };
 
+const unlinkIfExist = (file: string): void => {
+  if (existsSync(file)) unlinkSync(file);
+};
+
 export const compileEverything = (
   sources: Sources<SamlangModule>,
   outputDirectory: string
@@ -90,11 +102,13 @@ export const compileEverything = (
   const assembleResults = modulePaths.map((modulePath) => {
     const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
     const bitcodePath = `${outputProgramPath}.bc`;
-    return (
+    const success =
       shellOut('llvm-link', '-o', bitcodePath, modulePath, LLVM_LIBRARY_PATH) &&
       shellOut('llc', '-O3', '-filetype=obj', '--relocation-model=pic', bitcodePath) &&
-      shellOut('gcc', '-o', outputProgramPath, `${outputProgramPath}.o`)
-    );
+      shellOut('gcc', '-o', outputProgramPath, `${outputProgramPath}.o`);
+    unlinkIfExist(bitcodePath);
+    unlinkIfExist(`${outputProgramPath}.o`);
+    return success;
   });
   return assembleResults.every((it) => it);
 };
