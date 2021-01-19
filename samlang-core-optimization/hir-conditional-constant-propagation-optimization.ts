@@ -25,7 +25,14 @@ import {
   HIR_INT,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
-import { error, Long, isNotNull, zip3, LocalStackedContext } from 'samlang-core-utils';
+import {
+  error,
+  Long,
+  isNotNull,
+  zip3,
+  LocalStackedContext,
+  checkNotNull,
+} from 'samlang-core-utils';
 
 const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
 
@@ -358,8 +365,24 @@ const optimizeHighIRStatements = (
   statements: readonly HighIRStatement[],
   valueContext: LocalValueContextForOptimization,
   binaryExpressionContext: BinaryExpressionContext
-): readonly HighIRStatement[] =>
-  statements.flatMap((it) => optimizeHighIRStatement(it, valueContext, binaryExpressionContext));
+): readonly HighIRStatement[] => {
+  const collector: HighIRStatement[] = [];
+  // eslint-disable-next-line no-labels
+  outer: for (let i = 0; i < statements.length; i += 1) {
+    const optimized = optimizeHighIRStatement(
+      checkNotNull(statements[i]),
+      valueContext,
+      binaryExpressionContext
+    );
+    for (let j = 0; j < optimized.length; j += 1) {
+      const s = checkNotNull(optimized[j]);
+      collector.push(s);
+      // eslint-disable-next-line no-labels
+      if (s.__type__ === 'HighIRBreakStatement') break outer;
+    }
+  }
+  return collector;
+};
 
 const optimizeHighIRStatementsByConditionalConstantPropagation = (
   statements: readonly HighIRStatement[]
