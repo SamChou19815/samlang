@@ -1,5 +1,5 @@
 import type { IROperator } from './common-operators';
-import type { HighIRExpression } from './hir-expressions';
+import { HighIRExpression, HIR_BINARY } from './hir-expressions';
 
 import { Long } from 'samlang-core-utils';
 
@@ -51,10 +51,16 @@ const compareMidIR = (e1: HighIRExpression, e2: HighIRExpression): number => {
  * so that we can do a simple equality check in later optimization stages.
  */
 const createHighIRFlexibleOrderOperatorNode = (
-  operator: IROperator,
-  e1: HighIRExpression,
-  e2: HighIRExpression
+  highIROperator: IROperator,
+  expression1: HighIRExpression,
+  expression2: HighIRExpression
 ): Readonly<{ operator: IROperator; e1: HighIRExpression; e2: HighIRExpression }> => {
+  const { operator, e1, e2 } = HIR_BINARY({
+    name: '',
+    operator: highIROperator,
+    e1: expression1,
+    e2: expression2,
+  });
   switch (operator) {
     case '+':
     case '*':

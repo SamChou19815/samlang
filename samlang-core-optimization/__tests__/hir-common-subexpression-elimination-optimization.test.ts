@@ -165,7 +165,6 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on switch sta
 let _cse_1_: int = 1 + 0;
 switch (c) {
   case 0: {
-    let b: int = 1 - 0;
     let ddd: int = 0;
     fff((_cse_1_: int), (_cse_0_: int));
   }
