@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "compile": "tsc --incremental",
-    "bundle": "ncc build src/index.ts -o bin -m --no-source-map-register --transpile-only"
+    "bundle": "node build.js"
   },
   "bin": {
     "samlang": "./bin/index.js"
@@ -15,7 +15,8 @@
   "devDependencies": {
     "@types/jest": "^26.0.20",
     "@types/node": "^14.14.20",
-    "@vercel/ncc": "^0.26.2",
+    "esbuild": "^0.8.33",
+    "esbuild-plugin-pnp": "^0.3.0",
     "samlang-core-ast": "workspace:0.0.1",
     "samlang-core-compiler": "workspace:0.0.1",
     "samlang-core-printer": "workspace:0.0.1",

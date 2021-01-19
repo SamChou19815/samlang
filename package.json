@@ -11,7 +11,7 @@
     "format": "prettier --write '**/*.ts'",
     "format:generatedDTS": "prettier --write samlang-core-parser-generated/*.d.ts",
     "format:check": "prettier --check '**/*.ts'",
-    "codegen": "yarn bundle && ./samlang-dev format",
+    "codegen": "yarn workspace @dev-sam/samlang-cli bundle && ./samlang-dev format",
     "compile": "yarn workspace samlang-dummy compile",
     "bundle": "yarn workspaces foreach run bundle",
     "test": "jest --coverage",
