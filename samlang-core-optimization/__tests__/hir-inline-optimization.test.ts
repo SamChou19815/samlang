@@ -326,35 +326,8 @@ it('optimizeFunctionsByInlining test 1', () => {
   } else {
     let n1: int = (n: int) + -1;
     let acc1: int = (n: int) * (acc: int);
-    let _inline_0_c: bool = (n1: int) == 0;
-    let _inline_0_fa: int;
-    if (_inline_0_c: bool) {
-      _inline_0_fa = (acc1: int);
-    } else {
-      let _inline_0_n1: int = (n: int) + -2;
-      let _inline_0_acc1: int = (n1: int) * (acc1: int);
-      let _inline_4_c: bool = (_inline_0_n1: int) == 0;
-      let _inline_4_fa: int;
-      if (_inline_4_c: bool) {
-        _inline_4_fa = (_inline_0_acc1: int);
-      } else {
-        let _inline_4_n1: int = (n: int) + -3;
-        let _inline_4_acc1: int = (_inline_0_n1: int) * (_inline_0_acc1: int);
-        let _inline_4__inline_0_c: bool = (_inline_4_n1: int) == 0;
-        let _inline_4__inline_0_fa: int;
-        if (_inline_4__inline_0_c: bool) {
-          _inline_4__inline_0_fa = (_inline_4_acc1: int);
-        } else {
-          let _inline_4__inline_0_n1: int = (n: int) + -4;
-          let _inline_4__inline_0_acc1: int = (_inline_4_n1: int) * (_inline_4_acc1: int);
-          let _inline_4__inline_0_v: int = factorial((_inline_4__inline_0_n1: int), (_inline_4__inline_0_acc1: int));
-          _inline_4__inline_0_fa = (_inline_4__inline_0_v: int);
-        }
-        _inline_4_fa = (_inline_4__inline_0_fa: int);
-      }
-      _inline_0_fa = (_inline_4_fa: int);
-    }
-    fa = (_inline_0_fa: int);
+    let v: int = factorial((n1: int), (acc1: int));
+    fa = (v: int);
   }
   return (fa: int);
 }
@@ -365,9 +338,9 @@ function loop(): int {
 }
 
 function insanelyBigFunction(a: int): int {
-  let _inline_2_c: int = 0;
-  let _inline_3_b: int = (a: int);
-  let _inline_3_c: int = (a: int)[0];
+  let _inline_0_c: int = 0;
+  let _inline_1_b: int = (a: int);
+  let _inline_1_c: int = (a: int)[0];
   (a: int)();
   non-existing-function();
   non-existing-function();
@@ -418,41 +391,52 @@ it('optimizeFunctionsByInlining test 2', () => {
           }),
         ],
       },
+      {
+        name: 'main',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+            functionArguments: [],
+            returnType: HIR_INT_TYPE,
+            returnCollector: 'v',
+          }),
+          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
+        ],
+      },
     ],
     `function fooBar(): int {
   if (bar: int) {
     let a: int = 0;
   } else {
+    fooBar();
+  }
+}
+
+function main(): int {
+  if (bar: int) {
+    let _inline_0_a: int = 0;
+  } else {
     if (bar: int) {
-      let _inline_0_a: int = 0;
+      let _inline_1_a: int = 0;
     } else {
       if (bar: int) {
-        let _inline_1_a: int = 0;
+        let _inline_2_a: int = 0;
       } else {
         if (bar: int) {
-          let _inline_1__inline_0_a: int = 0;
+          let _inline_3_a: int = 0;
         } else {
           if (bar: int) {
-            let _inline_2_a: int = 0;
+            let _inline_4_a: int = 0;
           } else {
-            if (bar: int) {
-              let _inline_2__inline_0_a: int = 0;
-            } else {
-              if (bar: int) {
-                let _inline_2__inline_1_a: int = 0;
-              } else {
-                if (bar: int) {
-                  let _inline_2__inline_1__inline_0_a: int = 0;
-                } else {
-                  fooBar();
-                }
-              }
-            }
+            fooBar();
           }
         }
       }
     }
   }
+  return (v: int);
 }
 `
   );
@@ -482,41 +466,52 @@ it('optimizeFunctionsByInlining test 3', () => {
           }),
         ],
       },
+      {
+        name: 'main',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+            functionArguments: [],
+            returnType: HIR_INT_TYPE,
+            returnCollector: 'v',
+          }),
+          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
+        ],
+      },
     ],
     `function fooBar(): int {
+  if (bar: int) {
+    fooBar();
+  } else {
+    let a: int = 0;
+  }
+}
+
+function main(): int {
   if (bar: int) {
     if (bar: int) {
       if (bar: int) {
         if (bar: int) {
           if (bar: int) {
-            if (bar: int) {
-              if (bar: int) {
-                if (bar: int) {
-                  fooBar();
-                } else {
-                  let _inline_2__inline_1__inline_0_a: int = 0;
-                }
-              } else {
-                let _inline_2__inline_1_a: int = 0;
-              }
-            } else {
-              let _inline_2__inline_0_a: int = 0;
-            }
+            fooBar();
           } else {
-            let _inline_2_a: int = 0;
+            let _inline_4_a: int = 0;
           }
         } else {
-          let _inline_1__inline_0_a: int = 0;
+          let _inline_3_a: int = 0;
         }
       } else {
-        let _inline_1_a: int = 0;
+        let _inline_2_a: int = 0;
       }
     } else {
-      let _inline_0_a: int = 0;
+      let _inline_1_a: int = 0;
     }
   } else {
-    let a: int = 0;
+    let _inline_0_a: int = 0;
   }
+  return (v: int);
 }
 `
   );
@@ -553,37 +548,70 @@ it('optimizeFunctionsByInlining test 4', () => {
           }),
         ],
       },
+      {
+        name: 'main',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+            functionArguments: [],
+            returnType: HIR_INT_TYPE,
+            returnCollector: 'v',
+          }),
+          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
+        ],
+      },
     ],
     `function fooBar(): int {
   let b: int;
   if (bar: int) {
-    let _inline_0_b: int;
-    if (bar: int) {
-      let _inline_1_b: int;
-      if (bar: int) {
-        let _inline_1__inline_0_b: int;
-        if (bar: int) {
-          fooBar();
-          _inline_1__inline_0_b = 0;
-        } else {
-          let _inline_1__inline_0_a: int = 0;
-          _inline_1__inline_0_b = (_inline_1__inline_0_a: int);
-        }
-        _inline_1_b = 0;
-      } else {
-        let _inline_1_a: int = 0;
-        _inline_1_b = (_inline_1_a: int);
-      }
-      _inline_0_b = 0;
-    } else {
-      let _inline_0_a: int = 0;
-      _inline_0_b = (_inline_0_a: int);
-    }
+    fooBar();
     b = 0;
   } else {
     let a: int = 0;
     b = (a: int);
   }
+}
+
+function main(): int {
+  let _inline_0_b: int;
+  if (bar: int) {
+    let _inline_1_b: int;
+    if (bar: int) {
+      let _inline_2_b: int;
+      if (bar: int) {
+        let _inline_3_b: int;
+        if (bar: int) {
+          let _inline_4_b: int;
+          if (bar: int) {
+            fooBar();
+            _inline_4_b = 0;
+          } else {
+            let _inline_4_a: int = 0;
+            _inline_4_b = (_inline_4_a: int);
+          }
+          _inline_3_b = 0;
+        } else {
+          let _inline_3_a: int = 0;
+          _inline_3_b = (_inline_3_a: int);
+        }
+        _inline_2_b = 0;
+      } else {
+        let _inline_2_a: int = 0;
+        _inline_2_b = (_inline_2_a: int);
+      }
+      _inline_1_b = 0;
+    } else {
+      let _inline_1_a: int = 0;
+      _inline_1_b = (_inline_1_a: int);
+    }
+    _inline_0_b = 0;
+  } else {
+    let _inline_0_a: int = 0;
+    _inline_0_b = (_inline_0_a: int);
+  }
+  return (v: int);
 }
 `
   );
@@ -671,42 +699,26 @@ it('optimizeFunctionsByInlining test 6', () => {
           }),
         ],
       },
+      {
+        name: 'main',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+            functionArguments: [],
+            returnType: HIR_INT_TYPE,
+            returnCollector: 'v',
+          }),
+          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
+        ],
+      },
     ],
     `function fooBar(): int {
   let b: int;
   switch (cc) {
     case 1: {
-      let _inline_0_b: int;
-      switch (cc) {
-        case 1: {
-          let _inline_1_b: int;
-          switch (cc) {
-            case 1: {
-              let _inline_1__inline_0_b: int;
-              switch (cc) {
-                case 1: {
-                  fooBar();
-                  _inline_1__inline_0_b = 0;
-                }
-                case 1: {
-                  let _inline_1__inline_0_a: int = 0;
-                  _inline_1__inline_0_b = (_inline_1__inline_0_a: int);
-                }
-              }
-              _inline_1_b = 0;
-            }
-            case 1: {
-              let _inline_1_a: int = 0;
-              _inline_1_b = (_inline_1_a: int);
-            }
-          }
-          _inline_0_b = 0;
-        }
-        case 1: {
-          let _inline_0_a: int = 0;
-          _inline_0_b = (_inline_0_a: int);
-        }
-      }
+      fooBar();
       b = 0;
     }
     case 1: {
@@ -714,6 +726,61 @@ it('optimizeFunctionsByInlining test 6', () => {
       b = (a: int);
     }
   }
+}
+
+function main(): int {
+  let _inline_0_b: int;
+  switch (cc) {
+    case 1: {
+      let _inline_1_b: int;
+      switch (cc) {
+        case 1: {
+          let _inline_2_b: int;
+          switch (cc) {
+            case 1: {
+              let _inline_3_b: int;
+              switch (cc) {
+                case 1: {
+                  let _inline_4_b: int;
+                  switch (cc) {
+                    case 1: {
+                      fooBar();
+                      _inline_4_b = 0;
+                    }
+                    case 1: {
+                      let _inline_4_a: int = 0;
+                      _inline_4_b = (_inline_4_a: int);
+                    }
+                  }
+                  _inline_3_b = 0;
+                }
+                case 1: {
+                  let _inline_3_a: int = 0;
+                  _inline_3_b = (_inline_3_a: int);
+                }
+              }
+              _inline_2_b = 0;
+            }
+            case 1: {
+              let _inline_2_a: int = 0;
+              _inline_2_b = (_inline_2_a: int);
+            }
+          }
+          _inline_1_b = 0;
+        }
+        case 1: {
+          let _inline_1_a: int = 0;
+          _inline_1_b = (_inline_1_a: int);
+        }
+      }
+      _inline_0_b = 0;
+    }
+    case 1: {
+      let _inline_0_a: int = 0;
+      _inline_0_b = (_inline_0_a: int);
+    }
+  }
+  return (v: int);
 }
 `
   );
@@ -753,6 +820,20 @@ it('optimizeFunctionsByInlining test 7', () => {
           }),
         ],
       },
+      {
+        name: 'main',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+            functionArguments: [],
+            returnType: HIR_INT_TYPE,
+            returnCollector: 'v',
+          }),
+          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
+        ],
+      },
     ],
     `function fooBar(): int {
   switch (cc) {
@@ -760,48 +841,38 @@ it('optimizeFunctionsByInlining test 7', () => {
       let a: int = 0;
     }
     case 1: {
+      fooBar();
+    }
+  }
+}
+
+function main(): int {
+  switch (cc) {
+    case 1: {
+      let _inline_0_a: int = 0;
+    }
+    case 1: {
       switch (cc) {
         case 1: {
-          let _inline_0_a: int = 0;
+          let _inline_1_a: int = 0;
         }
         case 1: {
           switch (cc) {
             case 1: {
-              let _inline_1_a: int = 0;
+              let _inline_2_a: int = 0;
             }
             case 1: {
               switch (cc) {
                 case 1: {
-                  let _inline_1__inline_0_a: int = 0;
+                  let _inline_3_a: int = 0;
                 }
                 case 1: {
                   switch (cc) {
                     case 1: {
-                      let _inline_2_a: int = 0;
+                      let _inline_4_a: int = 0;
                     }
                     case 1: {
-                      switch (cc) {
-                        case 1: {
-                          let _inline_2__inline_0_a: int = 0;
-                        }
-                        case 1: {
-                          switch (cc) {
-                            case 1: {
-                              let _inline_2__inline_1_a: int = 0;
-                            }
-                            case 1: {
-                              switch (cc) {
-                                case 1: {
-                                  let _inline_2__inline_1__inline_0_a: int = 0;
-                                }
-                                case 1: {
-                                  fooBar();
-                                }
-                              }
-                            }
-                          }
-                        }
-                      }
+                      fooBar();
                     }
                   }
                 }
@@ -812,6 +883,7 @@ it('optimizeFunctionsByInlining test 7', () => {
       }
     }
   }
+  return (v: int);
 }
 `
   );
@@ -898,40 +970,51 @@ it('optimizeFunctionsByInlining test 9', () => {
           HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
         ],
       },
+      {
+        name: 'main',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('fooBar', HIR_INT_TYPE),
+            functionArguments: [],
+            returnType: HIR_INT_TYPE,
+            returnCollector: 'v',
+          }),
+          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
+        ],
+      },
     ],
     `function fooBar(): int {
   let n: int = 10;
   while (true) {
-    let _inline_0_n: int = 10;
+    let _tmp_n: int = fooBar();
+    n = (_tmp_n: int);
+  }
+  return (v: int);
+}
+
+function main(): int {
+  let _inline_0_n: int = 10;
+  while (true) {
+    let _inline_1_n: int = 10;
     while (true) {
-      let _inline_1_n: int = 10;
+      let _inline_2_n: int = 10;
       while (true) {
-        let _inline_1__inline_0_n: int = 10;
+        let _inline_3_n: int = 10;
         while (true) {
-          let _inline_2_n: int = 10;
+          let _inline_4_n: int = 10;
           while (true) {
-            let _inline_2__inline_0_n: int = 10;
-            while (true) {
-              let _inline_2__inline_1_n: int = 10;
-              while (true) {
-                let _inline_2__inline_1__inline_0_n: int = 10;
-                while (true) {
-                  let _inline_2__inline_1__inline_0__tmp_n: int = fooBar();
-                  _inline_2__inline_1__inline_0_n = (_inline_2__inline_1__inline_0__tmp_n: int);
-                }
-                _inline_2__inline_1_n = (v: int);
-              }
-              _inline_2__inline_0_n = (v: int);
-            }
-            _inline_2_n = (v: int);
+            let _inline_4__tmp_n: int = fooBar();
+            _inline_4_n = (_inline_4__tmp_n: int);
           }
-          _inline_1__inline_0_n = (v: int);
+          _inline_3_n = (v: int);
         }
-        _inline_1_n = (v: int);
+        _inline_2_n = (v: int);
       }
-      _inline_0_n = (v: int);
+      _inline_1_n = (v: int);
     }
-    n = (v: int);
+    _inline_0_n = (v: int);
   }
   return (v: int);
 }

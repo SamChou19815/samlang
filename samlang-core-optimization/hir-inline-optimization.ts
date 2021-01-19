@@ -14,7 +14,7 @@ import type { HighIRType } from 'samlang-core-ast/hir-types';
 import { checkNotNull, isNotNull, zip, zip3 } from 'samlang-core-utils';
 
 /** The threshold max tolerable cost of inlining.  */
-const INLINE_THRESHOLD = 25;
+const INLINE_THRESHOLD = 20;
 /** The threshold max tolerable cost of performing inlining.  */
 const PERFORM_INLINE_THRESHOLD = 1000;
 
@@ -279,7 +279,9 @@ const performInlineRewriteOnFunction = (
         const { functionExpression, functionArguments, returnType, returnCollector } = statement;
         if (functionExpression.__type__ !== 'HighIRNameExpression') return [statement];
         const functionName = functionExpression.name;
-        if (!functionsThatCanBeInlined.has(functionName)) return [statement];
+        if (!functionsThatCanBeInlined.has(functionName) || functionName === highIRFunction.name) {
+          return [statement];
+        }
 
         const {
           parameters: argumentNamesOfFunctionToBeInlined,
