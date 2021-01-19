@@ -10,6 +10,8 @@ import {
   HighIRStatement,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
   HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CAST,
@@ -54,10 +56,6 @@ const optimizeHighIRStatement = (
     }
   };
 
-  const getNullableExpressionUnderContext = (
-    expression: HighIRExpression | null
-  ): HighIRExpression | null => (expression == null ? null : getExpressionUnderContext(expression));
-
   switch (statement.__type__) {
     case 'HighIRIndexAccessStatement': {
       const pointerExpression = getExpressionUnderContext(statement.pointerExpression);
@@ -99,7 +97,7 @@ const optimizeHighIRStatement = (
 
     case 'HighIRIfElseStatement': {
       const booleanExpression = getExpressionUnderContext(statement.booleanExpression);
-      const [s1, branch1Values, s1BreakValue] = variableContext.withNestedScope(() =>
+      const [s1, branch1Values] = variableContext.withNestedScope(() =>
         bindedValueContext.withNestedScope(() => {
           const statements = optimizeHighIRStatements(
             statement.s1,
@@ -111,11 +109,10 @@ const optimizeHighIRStatement = (
             statement.finalAssignments.map((final) =>
               getExpressionUnderContext(final.branch1Value)
             ),
-            getNullableExpressionUnderContext(statement.s1BreakValue),
           ] as const;
         })
       );
-      const [s2, branch2Values, s2BreakValue] = variableContext.withNestedScope(() =>
+      const [s2, branch2Values] = variableContext.withNestedScope(() =>
         bindedValueContext.withNestedScope(() => {
           const statements = optimizeHighIRStatements(
             statement.s2,
@@ -127,7 +124,6 @@ const optimizeHighIRStatement = (
             statement.finalAssignments.map((final) =>
               getExpressionUnderContext(final.branch2Value)
             ),
-            getNullableExpressionUnderContext(statement.s2BreakValue),
           ] as const;
         })
       );
@@ -135,8 +131,6 @@ const optimizeHighIRStatement = (
         booleanExpression,
         s1,
         s2,
-        s1BreakValue,
-        s2BreakValue,
         finalAssignments: zip3(branch1Values, branch2Values, statement.finalAssignments).map(
           ([branch1Value, branch2Value, final]) => ({
             ...final,
@@ -146,6 +140,23 @@ const optimizeHighIRStatement = (
         ),
       });
     }
+
+    case 'HighIRSingleIfStatement': {
+      const booleanExpression = getExpressionUnderContext(statement.booleanExpression);
+      const statements = variableContext.withNestedScope(() =>
+        bindedValueContext.withNestedScope(() =>
+          optimizeHighIRStatements(statement.statements, variableContext, bindedValueContext)
+        )
+      );
+      return HIR_SINGLE_IF({
+        booleanExpression,
+        invertCondition: statement.invertCondition,
+        statements,
+      });
+    }
+
+    case 'HighIRBreakStatement':
+      return HIR_BREAK(getExpressionUnderContext(statement.breakValue));
 
     case 'HighIRWhileStatement': {
       const loopVariableWithoutLoopValues = statement.loopVariables.map(

@@ -34,6 +34,10 @@ const estimateStatementInlineCost = (statement: HighIRStatement): number => {
         statement.s2.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0) +
         statement.finalAssignments.length * 2
       );
+    case 'HighIRSingleIfStatement':
+      return 1 + statement.statements.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0);
+    case 'HighIRBreakStatement':
+      return 1;
     case 'HighIRWhileStatement':
       return (
         1 +
@@ -84,9 +88,6 @@ const inlineRewriteForStatement = (
     return binded ?? expression;
   };
 
-  const rewriteNullable = (expression: HighIRExpression | null): HighIRExpression | null =>
-    expression == null ? null : rewrite(expression);
-
   const bindWithMangledName = (name: string, type: HighIRType): string => {
     const mangledName = `${prefix}${name}`;
     context.bind(name, HIR_VARIABLE(mangledName, type));
@@ -124,24 +125,22 @@ const inlineRewriteForStatement = (
 
     case 'HighIRIfElseStatement': {
       const booleanExpression = rewrite(statement.booleanExpression);
-      const [s1, branch1Values, s1BreakValue] = context.withNestedScope(() => {
+      const [s1, branch1Values] = context.withNestedScope(() => {
         const statements = statement.s1
           .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
           .filter(isNotNull);
         return [
           statements,
           statement.finalAssignments.map((final) => rewrite(final.branch1Value)),
-          rewriteNullable(statement.s1BreakValue),
         ] as const;
       });
-      const [s2, branch2Values, s2BreakValue] = context.withNestedScope(() => {
+      const [s2, branch2Values] = context.withNestedScope(() => {
         const statements = statement.s2
           .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
           .filter(isNotNull);
         return [
           statements,
           statement.finalAssignments.map((final) => rewrite(final.branch2Value)),
-          rewriteNullable(statement.s2BreakValue),
         ] as const;
       });
       return {
@@ -149,8 +148,6 @@ const inlineRewriteForStatement = (
         booleanExpression,
         s1,
         s2,
-        s1BreakValue,
-        s2BreakValue,
         finalAssignments: zip3(branch1Values, branch2Values, statement.finalAssignments).map(
           ([branch1Value, branch2Value, final]) => ({
             name: bindWithMangledName(final.name, final.type),
@@ -161,6 +158,19 @@ const inlineRewriteForStatement = (
         ),
       };
     }
+
+    case 'HighIRSingleIfStatement': {
+      const booleanExpression = rewrite(statement.booleanExpression);
+      const statements = context.withNestedScope(() =>
+        statement.statements
+          .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
+          .filter(isNotNull)
+      );
+      return { ...statement, booleanExpression, statements };
+    }
+
+    case 'HighIRBreakStatement':
+      return { ...statement, breakValue: rewrite(statement.breakValue) };
 
     case 'HighIRWhileStatement': {
       const loopVariablesWithoutLoopValue = statement.loopVariables.map(
@@ -261,6 +271,7 @@ const performInlineRewriteOnFunction = (
         return [
           { ...statement, s1: statement.s1.flatMap(rewrite), s2: statement.s2.flatMap(rewrite) },
         ];
+      case 'HighIRSingleIfStatement':
       case 'HighIRWhileStatement':
         return [{ ...statement, statements: statement.statements.flatMap(rewrite) }];
       default:

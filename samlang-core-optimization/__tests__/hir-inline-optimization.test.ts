@@ -13,6 +13,8 @@ import {
   HIR_BINARY,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
   HIR_WHILE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
@@ -81,16 +83,12 @@ it('estimateFunctionInlineCost test', () => {
               e2: HIR_INT(3),
             }),
           ],
-          s1BreakValue: null,
-          s2BreakValue: null,
           finalAssignments: [],
         }),
         HIR_IF_ELSE({
           booleanExpression: HIR_ZERO,
           s1: [],
           s2: [],
-          s1BreakValue: null,
-          s2BreakValue: null,
           finalAssignments: [
             {
               name: 'a',
@@ -98,6 +96,18 @@ it('estimateFunctionInlineCost test', () => {
               branch1Value: HIR_ZERO,
               branch2Value: HIR_ZERO,
             },
+          ],
+        }),
+        HIR_SINGLE_IF({
+          booleanExpression: HIR_ZERO,
+          invertCondition: false,
+          statements: [
+            HIR_BINARY({
+              name: '',
+              operator: '+',
+              e1: HIR_VARIABLE('', HIR_INT_TYPE),
+              e2: HIR_INT(3),
+            }),
           ],
         }),
         HIR_WHILE({
@@ -116,7 +126,7 @@ it('estimateFunctionInlineCost test', () => {
         HIR_RETURN(HIR_VARIABLE('ss', HIR_INT_TYPE)),
       ],
     })
-  ).toBe(29);
+  ).toBe(31);
 });
 
 const assertCorrectlyInlined = (functions: readonly HighIRFunction[], expected: string): void => {
@@ -170,8 +180,6 @@ it('optimizeFunctionsByInlining test 1', () => {
                 returnCollector: 'v',
               }),
             ],
-            s1BreakValue: null,
-            s2BreakValue: null,
             finalAssignments: [
               {
                 name: 'fa',
@@ -272,8 +280,6 @@ it('optimizeFunctionsByInlining test 1', () => {
                 assignedExpression: HIR_ZERO,
               }),
             ],
-            s1BreakValue: null,
-            s2BreakValue: null,
             finalAssignments: [],
           }),
         ],
@@ -346,8 +352,6 @@ it('optimizeFunctionsByInlining test 2', () => {
                 returnType: HIR_INT_TYPE,
               }),
             ],
-            s1BreakValue: null,
-            s2BreakValue: null,
             finalAssignments: [],
           }),
         ],
@@ -421,8 +425,6 @@ it('optimizeFunctionsByInlining test 3', () => {
               }),
             ],
             s2: [HIR_CAST({ name: 'a', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
-            s1BreakValue: null,
-            s2BreakValue: null,
             finalAssignments: [],
           }),
         ],
@@ -496,8 +498,6 @@ it('optimizeFunctionsByInlining test 4', () => {
               }),
             ],
             s2: [HIR_CAST({ name: 'a', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
-            s1BreakValue: null,
-            s2BreakValue: null,
             finalAssignments: [
               {
                 name: 'b',
@@ -638,13 +638,10 @@ it('optimizeFunctionsByInlining test 6', () => {
               },
             ],
             statements: [
-              HIR_IF_ELSE({
-                booleanExpression: HIR_ZERO,
-                s1: [],
-                s2: [],
-                s1BreakValue: HIR_ZERO,
-                s2BreakValue: HIR_ZERO,
-                finalAssignments: [],
+              HIR_SINGLE_IF({
+                booleanExpression: HIR_VARIABLE('n', HIR_BOOL_TYPE),
+                invertCondition: false,
+                statements: [HIR_BREAK(HIR_ZERO)],
               }),
             ],
             breakCollector: { name: 'v', type: HIR_INT_TYPE },
@@ -657,10 +654,7 @@ it('optimizeFunctionsByInlining test 6', () => {
   let n: int = 10;
   let v: int;
   while (true) {
-    if 0 {
-      v = 0;
-      break;
-    } else {
+    if (n: bool) {
       v = 0;
       break;
     }

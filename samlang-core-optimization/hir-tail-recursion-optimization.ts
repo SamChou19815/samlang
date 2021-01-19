@@ -6,6 +6,8 @@ import {
   HIR_ZERO,
   HIR_VARIABLE,
   HIR_BINARY,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
   HIR_WHILE,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
@@ -29,7 +31,7 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
 
   const getBreakValueFromBranchValue = (
     branchValue: HighIRExpression | undefined
-  ): HighIRExpression | null => branchValue ?? HIR_ZERO;
+  ): HighIRExpression => branchValue ?? HIR_ZERO;
 
   switch (lastStatement.__type__) {
     case 'HighIRFunctionCallStatement':
@@ -95,14 +97,14 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
         return {
           statements: [
             ...statements.slice(0, statements.length - 1),
-            {
-              ...lastStatement,
-              s1: lastStatement.s1,
-              s2: [],
-              s1BreakValue: getBreakValueFromBranchValue(relaventFinalAssignment?.branch1Value),
-              s2BreakValue: null,
-              finalAssignments: [],
-            },
+            HIR_SINGLE_IF({
+              booleanExpression: lastStatement.booleanExpression,
+              invertCondition: false,
+              statements: [
+                ...lastStatement.s1,
+                HIR_BREAK(getBreakValueFromBranchValue(relaventFinalAssignment?.branch1Value)),
+              ],
+            }),
             ...s2Result.statements,
           ],
           functionArguments: s2Result.functionArguments,
@@ -113,14 +115,14 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
         return {
           statements: [
             ...statements.slice(0, statements.length - 1),
-            {
-              ...lastStatement,
-              s1: [],
-              s2: lastStatement.s2,
-              s1BreakValue: null,
-              s2BreakValue: getBreakValueFromBranchValue(relaventFinalAssignment?.branch2Value),
-              finalAssignments: [],
-            },
+            HIR_SINGLE_IF({
+              booleanExpression: lastStatement.booleanExpression,
+              invertCondition: true,
+              statements: [
+                ...lastStatement.s2,
+                HIR_BREAK(getBreakValueFromBranchValue(relaventFinalAssignment?.branch2Value)),
+              ],
+            }),
             ...s1Result.statements,
           ],
           functionArguments: s1Result.functionArguments,
@@ -143,8 +145,6 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
             ...lastStatement,
             s1: s1Result.statements,
             s2: s2Result.statements,
-            s1BreakValue: null,
-            s2BreakValue: null,
             finalAssignments: [
               ...lastStatement.finalAssignments.filter((it) => it !== relaventFinalAssignment),
               ...newFinalAssignments,

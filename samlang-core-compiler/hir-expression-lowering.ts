@@ -682,8 +682,6 @@ class HighIRExpressionLoweringManager {
           booleanExpression,
           s1,
           s2,
-          s1BreakValue: null,
-          s2BreakValue: null,
           finalAssignments,
         });
         break;
@@ -739,8 +737,6 @@ class HighIRExpressionLoweringManager {
               booleanExpression: e1Result.expression,
               s1: e2Result.statements,
               s2: [],
-              s1BreakValue: null,
-              s2BreakValue: null,
               finalAssignments: [
                 {
                   name: temp,
@@ -773,8 +769,6 @@ class HighIRExpressionLoweringManager {
               booleanExpression: e1Result.expression,
               s1: [],
               s2: e2Result.statements,
-              s1BreakValue: null,
-              s2BreakValue: null,
               finalAssignments: [
                 {
                   name: temp,
@@ -868,8 +862,6 @@ class HighIRExpressionLoweringManager {
         booleanExpression: loweredBoolExpression,
         s1: e1LoweringResult.statements,
         s2: e2LoweringResult.statements,
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: isVoidReturn
           ? []
           : [
@@ -956,8 +948,6 @@ class HighIRExpressionLoweringManager {
                 booleanExpression: HIR_VARIABLE(comparisonTemporary, HIR_BOOL_TYPE),
                 s1: oneCase.statements,
                 s2: acc,
-                s1BreakValue: null,
-                s2BreakValue: null,
                 finalAssignments: [],
               }),
             ];
@@ -983,8 +973,6 @@ class HighIRExpressionLoweringManager {
                   booleanExpression: HIR_VARIABLE(comparisonTemporary, HIR_BOOL_TYPE),
                   s1: oneCase.statements,
                   s2: acc.s,
-                  s1BreakValue: null,
-                  s2BreakValue: null,
                   finalAssignments: [
                     {
                       name: finalAssignmentTemporary,

@@ -6,6 +6,7 @@ import type {
   HighIRStatement,
   HighIRIndexAccessStatement,
   HighIRIfElseStatement,
+  HighIRSingleIfStatement,
   HighIRWhileStatement,
   HighIRStructInitializationStatement,
 } from 'samlang-core-ast/hir-expressions';
@@ -34,7 +35,7 @@ import {
   LLVMModule,
 } from 'samlang-core-ast/llvm-nodes';
 import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
-import { checkNotNull, isNotNull, zip, zip3 } from 'samlang-core-utils';
+import { checkNotNull, zip, zip3 } from 'samlang-core-utils';
 
 class LLVMResourceAllocator {
   private nextTempId = 0;
@@ -123,6 +124,18 @@ class LLVMLoweringManager {
       case 'HighIRIfElseStatement':
         this.lowerHighIRIfElseStatement(s);
         return;
+      case 'HighIRSingleIfStatement':
+        this.lowerHighIRSingleIfStatement(s);
+        return;
+      case 'HighIRBreakStatement': {
+        const { label, breakValues } = this.whileBreakCollectorManager.currentLevel;
+        breakValues.push({
+          value: this.lowerHighIRExpression(s.breakValue).value,
+          branch: this.currentLabel,
+        });
+        this.emitInstruction(LLVM_JUMP(label));
+        return;
+      }
       case 'HighIRWhileStatement':
         this.lowerHighIRWhileStatement(s);
         return;
@@ -171,20 +184,22 @@ class LLVMLoweringManager {
     );
   }
 
-  private lowerHighIRIfElseStatement(s: HighIRIfElseStatement): void {
-    const { booleanExpression, s1, s2, s1BreakValue, s2BreakValue, finalAssignments } = s;
+  private lowerHighIRIfElseStatement({
+    booleanExpression,
+    s1,
+    s2,
+    finalAssignments,
+  }: HighIRIfElseStatement): void {
     const loweredCondition = this.lowerHighIRExpression(booleanExpression).value;
     const trueLabel = this.allocator.allocateLabelWithAnnotation('if_else_true');
     const falseLabel = this.allocator.allocateLabelWithAnnotation('if_else_false');
     const endLabel = this.allocator.allocateLabelWithAnnotation('if_else_end');
     const s1IsEmpty =
       s1.length === 0 &&
-      s1BreakValue == null &&
-      s.finalAssignments.every((it) => it.branch1Value.__type__ !== 'HighIRNameExpression');
+      finalAssignments.every((it) => it.branch1Value.__type__ !== 'HighIRNameExpression');
     const s2IsEmpty =
       s2.length === 0 &&
-      s2BreakValue == null &&
-      s.finalAssignments.every((it) => it.branch2Value.__type__ !== 'HighIRNameExpression');
+      finalAssignments.every((it) => it.branch2Value.__type__ !== 'HighIRNameExpression');
     if (s1IsEmpty && s2IsEmpty) {
       if (finalAssignments.length === 0) return;
       this.emitInstruction(LLVM_CJUMP(loweredCondition, trueLabel, falseLabel));
@@ -224,26 +239,14 @@ class LLVMLoweringManager {
       (finalAssignment) => this.lowerHighIRExpression(finalAssignment.branch1Value).value
     );
     const v1Label = this.currentLabel;
-    if (s1BreakValue != null) {
-      const { label, breakValues } = this.whileBreakCollectorManager.currentLevel;
-      breakValues.push({ value: this.lowerHighIRExpression(s1BreakValue).value, branch: v1Label });
-      this.emitInstruction(LLVM_JUMP(label));
-    } else {
-      this.emitInstruction(LLVM_JUMP(endLabel));
-    }
+    this.emitInstruction(LLVM_JUMP(endLabel));
     this.emitInstruction(LLVM_LABEL(falseLabel));
     s2.forEach((it) => this.lowerHighIRStatement(it));
     const v2List = finalAssignments.map(
       (finalAssignment) => this.lowerHighIRExpression(finalAssignment.branch2Value).value
     );
     const v2Label = this.currentLabel;
-    if (s2BreakValue != null) {
-      const { label, breakValues } = this.whileBreakCollectorManager.currentLevel;
-      breakValues.push({ value: this.lowerHighIRExpression(s2BreakValue).value, branch: v2Label });
-      this.emitInstruction(LLVM_JUMP(label));
-    } else {
-      this.emitInstruction(LLVM_JUMP(endLabel));
-    }
+    this.emitInstruction(LLVM_JUMP(endLabel));
     this.emitInstruction(LLVM_LABEL(endLabel));
     zip3(v1List, v2List, finalAssignments).forEach(([v1, v2, finalAssignment]) => {
       this.emitInstruction(
@@ -251,16 +254,35 @@ class LLVMLoweringManager {
           resultVariable: finalAssignment.name,
           variableType: lowerHighIRTypeToLLVMType(finalAssignment.type),
           valueBranchTuples: [
-            s1BreakValue == null
-              ? { value: v1, branch: s1IsEmpty ? beforeConditionLabel : v1Label }
-              : null,
-            s2BreakValue == null
-              ? { value: v2, branch: s2IsEmpty ? beforeConditionLabel : v2Label }
-              : null,
-          ].filter(isNotNull),
+            { value: v1, branch: s1IsEmpty ? beforeConditionLabel : v1Label },
+            { value: v2, branch: s2IsEmpty ? beforeConditionLabel : v2Label },
+          ],
         })
       );
     });
+  }
+
+  private lowerHighIRSingleIfStatement({
+    booleanExpression,
+    invertCondition,
+    statements,
+  }: HighIRSingleIfStatement): void {
+    if (statements.length === 0) return;
+    const loweredCondition = this.lowerHighIRExpression(booleanExpression).value;
+    const blockLabel = this.allocator.allocateLabelWithAnnotation('single_if_block');
+    const endLabel = this.allocator.allocateLabelWithAnnotation('single_if_end');
+
+    this.emitInstruction(
+      LLVM_CJUMP(
+        loweredCondition,
+        invertCondition ? endLabel : blockLabel,
+        invertCondition ? blockLabel : endLabel
+      )
+    );
+    this.emitInstruction(LLVM_LABEL(blockLabel));
+    statements.forEach((it) => this.lowerHighIRStatement(it));
+    this.emitInstruction(LLVM_JUMP(endLabel));
+    this.emitInstruction(LLVM_LABEL(endLabel));
   }
 
   private lowerHighIRWhileStatement(s: HighIRWhileStatement): void {

@@ -4,6 +4,7 @@ import {
   HighIRExpression,
   debugPrintHighIRExpression as expressionToString,
   HighIRIfElseStatement,
+  HighIRSingleIfStatement,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRType } from 'samlang-core-ast/hir-types';
 import { error, LocalStackedContext } from 'samlang-core-utils';
@@ -40,14 +41,13 @@ export class LocalValueContextForOptimization extends LocalStackedContext<HighIR
 }
 
 export const ifElseOrNull = (ifElse: HighIRIfElseStatement): readonly HighIRStatement[] => {
-  if (
-    ifElse.s1.length === 0 &&
-    ifElse.s2.length === 0 &&
-    ifElse.s1BreakValue == null &&
-    ifElse.s2BreakValue == null &&
-    ifElse.finalAssignments.length === 0
-  ) {
+  if (ifElse.s1.length === 0 && ifElse.s2.length === 0 && ifElse.finalAssignments.length === 0) {
     return [];
   }
   return [ifElse];
+};
+
+export const singleIfOrNull = (singleIf: HighIRSingleIfStatement): readonly HighIRStatement[] => {
+  if (singleIf.statements.length === 0) return [];
+  return [singleIf];
 };

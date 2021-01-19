@@ -1,4 +1,8 @@
-import { ifElseOrNull, LocalValueContextForOptimization } from './hir-optimization-common';
+import {
+  ifElseOrNull,
+  singleIfOrNull,
+  LocalValueContextForOptimization,
+} from './hir-optimization-common';
 
 import type { IROperator } from 'samlang-core-ast/common-operators';
 import {
@@ -12,11 +16,13 @@ import {
   HIR_ONE,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
+  HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CAST,
   HIR_RETURN,
   HIR_INT,
-  HIR_WHILE,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
 import { error, Long, isNotNull, zip3, LocalStackedContext } from 'samlang-core-utils';
@@ -105,10 +111,6 @@ const optimizeHighIRStatement = (
       }
     }
   };
-
-  const optimizeNullableExpression = (
-    expression: HighIRExpression | null
-  ): HighIRExpression | null => (expression == null ? null : optimizeExpression(expression));
 
   const withNestedScope = <T>(block: () => T): T =>
     valueContext.withNestedScope(() => binaryExpressionContext.withNestedScope(block));
@@ -216,11 +218,7 @@ const optimizeHighIRStatement = (
 
     case 'HighIRIfElseStatement': {
       const booleanExpression = optimizeExpression(statement.booleanExpression);
-      if (
-        booleanExpression.__type__ === 'HighIRIntLiteralExpression' &&
-        statement.s1BreakValue == null &&
-        statement.s2BreakValue == null
-      ) {
+      if (booleanExpression.__type__ === 'HighIRIntLiteralExpression') {
         const isTrue = Boolean(booleanExpression.value.toInt());
         const statements = optimizeHighIRStatements(
           isTrue ? statement.s1 : statement.s2,
@@ -235,7 +233,7 @@ const optimizeHighIRStatement = (
         });
         return statements;
       }
-      const [s1, branch1Values, s1BreakValue] = withNestedScope(() => {
+      const [s1, branch1Values] = withNestedScope(() => {
         const statements = optimizeHighIRStatements(
           statement.s1,
           valueContext,
@@ -244,10 +242,9 @@ const optimizeHighIRStatement = (
         return [
           statements,
           statement.finalAssignments.map((final) => optimizeExpression(final.branch1Value)),
-          optimizeNullableExpression(statement.s1BreakValue),
         ] as const;
       });
-      const [s2, branch2Values, s2BreakValue] = withNestedScope(() => {
+      const [s2, branch2Values] = withNestedScope(() => {
         const statements = optimizeHighIRStatements(
           statement.s2,
           valueContext,
@@ -256,7 +253,6 @@ const optimizeHighIRStatement = (
         return [
           statements,
           statement.finalAssignments.map((final) => optimizeExpression(final.branch2Value)),
-          optimizeNullableExpression(statement.s2BreakValue),
         ] as const;
       });
       const finalAssignments = zip3(branch1Values, branch2Values, statement.finalAssignments)
@@ -270,10 +266,36 @@ const optimizeHighIRStatement = (
           return { ...final, branch1Value, branch2Value };
         })
         .filter(isNotNull);
-      return ifElseOrNull(
-        HIR_IF_ELSE({ booleanExpression, s1, s2, s1BreakValue, s2BreakValue, finalAssignments })
+      return ifElseOrNull(HIR_IF_ELSE({ booleanExpression, s1, s2, finalAssignments }));
+    }
+
+    case 'HighIRSingleIfStatement': {
+      const booleanExpression = optimizeExpression(statement.booleanExpression);
+      if (booleanExpression.__type__ === 'HighIRIntLiteralExpression') {
+        const isTrue = Boolean(
+          booleanExpression.value.xor(Number(statement.invertCondition)).toInt()
+        );
+        if (isTrue) {
+          return optimizeHighIRStatements(
+            statement.statements,
+            valueContext,
+            binaryExpressionContext
+          );
+        }
+        return [];
+      }
+      const statements = optimizeHighIRStatements(
+        statement.statements,
+        valueContext,
+        binaryExpressionContext
+      );
+      return singleIfOrNull(
+        HIR_SINGLE_IF({ booleanExpression, invertCondition: statement.invertCondition, statements })
       );
     }
+
+    case 'HighIRBreakStatement':
+      return [HIR_BREAK(optimizeExpression(statement.breakValue))];
 
     case 'HighIRWhileStatement': {
       const filteredLoopVariables = statement.loopVariables

@@ -14,6 +14,8 @@ import {
   HIR_BINARY,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
   HIR_WHILE,
   HIR_INDEX_ACCESS,
   HIR_INT,
@@ -160,8 +162,6 @@ it('LLVM lowering works for HIR_IF_ELSE 1/n', () => {
         booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
         s1: [],
         s2: [],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [],
       }),
     ],
@@ -176,8 +176,6 @@ it('LLVM lowering works for HIR_IF_ELSE 2/n', () => {
         booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
         s1: [],
         s2: [],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -211,8 +209,6 @@ it('LLVM lowering works for HIR_IF_ELSE 3/n', () => {
             returnType: INT,
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -245,8 +241,6 @@ it('LLVM lowering works for HIR_IF_ELSE 4/n', () => {
           }),
         ],
         s2: [],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -291,8 +285,6 @@ it('LLVM lowering works for HIR_IF_ELSE 5/n', () => {
             returnType: INT,
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [],
       }),
     ],
@@ -329,8 +321,6 @@ it('LLVM lowering works for HIR_IF_ELSE 6/n', () => {
             returnCollector: 'b2',
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -385,8 +375,6 @@ it('LLVM lowering works for HIR_IF_ELSE 7/n', () => {
                 returnCollector: 'b3',
               }),
             ],
-            s1BreakValue: null,
-            s2BreakValue: null,
             finalAssignments: [
               {
                 name: 'ma_nested',
@@ -397,8 +385,6 @@ it('LLVM lowering works for HIR_IF_ELSE 7/n', () => {
             ],
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -426,6 +412,73 @@ l6_if_else_end:
   br label %l3_if_else_end
 l3_if_else_end:
   %ma = phi i64 [ %b1, %l1_if_else_true ], [ %ma_nested, %l6_if_else_end ]`
+  );
+});
+
+it('LLVM lowering works for HIR_SINGLE_IF 1/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_SINGLE_IF({
+        booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
+        invertCondition: false,
+        statements: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+            functionArguments: [],
+            returnType: INT,
+            returnCollector: 'b1',
+          }),
+        ],
+      }),
+    ],
+    `  br i1 %bbb, label %l1_single_if_block, label %l2_single_if_end
+l1_single_if_block:
+  %b1 = call i64 @foo() nounwind
+  br label %l2_single_if_end
+l2_single_if_end:`
+  );
+});
+
+it('LLVM lowering works for HIR_SINGLE_IF 2/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_SINGLE_IF({
+        booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
+        invertCondition: true,
+        statements: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+            functionArguments: [],
+            returnType: INT,
+            returnCollector: 'b1',
+          }),
+        ],
+      }),
+    ],
+    `  br i1 %bbb, label %l2_single_if_end, label %l1_single_if_block
+l1_single_if_block:
+  %b1 = call i64 @foo() nounwind
+  br label %l2_single_if_end
+l2_single_if_end:`
+  );
+});
+
+it('LLVM lowering works for HIR_SINGLE_IF 3/n', () => {
+  assertStatementLoweringWorks(
+    [
+      HIR_FUNCTION_CALL({
+        functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+        functionArguments: [],
+        returnType: INT,
+        returnCollector: 'b1',
+      }),
+      HIR_SINGLE_IF({
+        booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
+        invertCondition: true,
+        statements: [],
+      }),
+    ],
+    `  %b1 = call i64 @foo() nounwind`
   );
 });
 
@@ -458,13 +511,10 @@ it('LLVM lowering works for HIR_WHILE 2/n', () => {
       HIR_WHILE({
         loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
         statements: [
-          HIR_IF_ELSE({
+          HIR_SINGLE_IF({
             booleanExpression: HIR_ZERO,
-            s1: [],
-            s2: [],
-            s1BreakValue: HIR_ZERO,
-            s2BreakValue: HIR_ONE,
-            finalAssignments: [],
+            invertCondition: false,
+            statements: [HIR_BREAK(HIR_ZERO)],
           }),
         ],
         breakCollector: { name: 'v', type: INT },
@@ -472,14 +522,14 @@ it('LLVM lowering works for HIR_WHILE 2/n', () => {
     ],
     `  br label %l1_loop_start
 l1_loop_start:
-  %n = phi i64 [ 0, %l0_start ], [ 0, %l5_if_else_end ]
-  br i1 0, label %l3_if_else_true, label %l4_if_else_false
-l3_if_else_true:
+  %n = phi i64 [ 0, %l0_start ], [ 0, %l4_single_if_end ]
+  br i1 0, label %l3_single_if_block, label %l4_single_if_end
+l3_single_if_block:
   br label %l2_loop_end
-l4_if_else_false:
-  br label %l2_loop_end
+l4_single_if_end:
+  br label %l1_loop_start
 l2_loop_end:
-  %v = phi i64 [ 0, %l3_if_else_true ], [ 1, %l4_if_else_false ]`
+  %v = phi i64 [ 0, %l3_single_if_block ]`
   );
 });
 
@@ -489,15 +539,10 @@ it('LLVM lowering works for HIR_WHILE 3/n', () => {
       HIR_WHILE({
         loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
         statements: [
-          HIR_IF_ELSE({
+          HIR_SINGLE_IF({
             booleanExpression: HIR_ZERO,
-            s1: [],
-            s2: [],
-            s1BreakValue: null,
-            s2BreakValue: HIR_ONE,
-            finalAssignments: [
-              { name: 'f', type: INT, branch1Value: HIR_ZERO, branch2Value: HIR_ONE },
-            ],
+            invertCondition: true,
+            statements: [HIR_BREAK(HIR_ZERO)],
           }),
         ],
         breakCollector: { name: 'v', type: INT },
@@ -505,49 +550,14 @@ it('LLVM lowering works for HIR_WHILE 3/n', () => {
     ],
     `  br label %l1_loop_start
 l1_loop_start:
-  %n = phi i64 [ 0, %l0_start ], [ 0, %l5_if_else_end ]
-  br i1 0, label %l5_if_else_end, label %l4_if_else_false
-l4_if_else_false:
+  %n = phi i64 [ 0, %l0_start ], [ 0, %l4_single_if_end ]
+  br i1 0, label %l4_single_if_end, label %l3_single_if_block
+l3_single_if_block:
   br label %l2_loop_end
-l5_if_else_end:
-  %f = phi i64 [ 0, %l1_loop_start ]
+l4_single_if_end:
   br label %l1_loop_start
 l2_loop_end:
-  %v = phi i64 [ 1, %l4_if_else_false ]`
-  );
-});
-
-it('LLVM lowering works for HIR_WHILE 4/n', () => {
-  assertStatementLoweringWorks(
-    [
-      HIR_WHILE({
-        loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
-        statements: [
-          HIR_IF_ELSE({
-            booleanExpression: HIR_ZERO,
-            s1: [],
-            s2: [],
-            s1BreakValue: HIR_ONE,
-            s2BreakValue: null,
-            finalAssignments: [
-              { name: 'f', type: INT, branch1Value: HIR_ZERO, branch2Value: HIR_ONE },
-            ],
-          }),
-        ],
-        breakCollector: { name: 'v', type: INT },
-      }),
-    ],
-    `  br label %l1_loop_start
-l1_loop_start:
-  %n = phi i64 [ 0, %l0_start ], [ 0, %l5_if_else_end ]
-  br i1 0, label %l3_if_else_true, label %l5_if_else_end
-l3_if_else_true:
-  br label %l2_loop_end
-l5_if_else_end:
-  %f = phi i64 [ 1, %l1_loop_start ]
-  br label %l1_loop_start
-l2_loop_end:
-  %v = phi i64 [ 1, %l3_if_else_true ]`
+  %v = phi i64 [ 0, %l3_single_if_block ]`
   );
 });
 
