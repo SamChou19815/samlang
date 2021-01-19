@@ -44,21 +44,6 @@ class WhileLabelManager {
     return this.stack[this.stack.length - 1];
   }
 
-  getBreakStatement(breakValue: HighIRExpression): readonly PrettierDocument[] {
-    const breakCollector = this.currentBreakCollector;
-    if (breakCollector == null) {
-      return [PRETTIER_LINE, PRETTIER_TEXT('break;')];
-    }
-    return [
-      PRETTIER_LINE,
-      PRETTIER_TEXT(`var ${breakCollector} = `),
-      createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(breakValue),
-      PRETTIER_TEXT(';'),
-      PRETTIER_LINE,
-      PRETTIER_TEXT('break;'),
-    ];
-  }
-
   withNewNestedWhileLoop = <T>(breakCollector: string | undefined, block: () => T): T => {
     this.stack.push(breakCollector);
     const result = block();
@@ -141,28 +126,50 @@ export const createPrettierDocumentFromHighIRStatement = (
         PRETTIER_TEXT(' '),
         createBracesSurroundedBlockDocument([
           ...concatStatements(highIRStatement.s1, manager),
-          ...(highIRStatement.s1BreakValue != null
-            ? manager.getBreakStatement(highIRStatement.s1BreakValue)
-            : highIRStatement.finalAssignments.flatMap((final) => [
-                PRETTIER_LINE,
-                PRETTIER_TEXT(`var ${final.name} = `),
-                createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(final.branch1Value),
-                PRETTIER_TEXT(';'),
-              ])),
+          ...highIRStatement.finalAssignments.flatMap((final) => [
+            PRETTIER_LINE,
+            PRETTIER_TEXT(`var ${final.name} = `),
+            createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(final.branch1Value),
+            PRETTIER_TEXT(';'),
+          ]),
         ]),
         PRETTIER_TEXT(' else '),
         createBracesSurroundedBlockDocument([
           ...concatStatements(highIRStatement.s2, manager),
-          ...(highIRStatement.s2BreakValue
-            ? manager.getBreakStatement(highIRStatement.s2BreakValue)
-            : highIRStatement.finalAssignments.flatMap((final) => [
-                PRETTIER_LINE,
-                PRETTIER_TEXT(`var ${final.name} = `),
-                createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(final.branch2Value),
-                PRETTIER_TEXT(';'),
-              ])),
+          ...highIRStatement.finalAssignments.flatMap((final) => [
+            PRETTIER_LINE,
+            PRETTIER_TEXT(`var ${final.name} = `),
+            createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(final.branch2Value),
+            PRETTIER_TEXT(';'),
+          ]),
         ])
       );
+    case 'HighIRSingleIfStatement': {
+      const boolDocument = createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
+        highIRStatement.booleanExpression
+      );
+      return PRETTIER_CONCAT(
+        PRETTIER_TEXT('if '),
+        createParenthesisSurroundedDocument(
+          highIRStatement.invertCondition
+            ? PRETTIER_CONCAT(PRETTIER_TEXT('!'), boolDocument)
+            : boolDocument
+        ),
+        PRETTIER_TEXT(' '),
+        createBracesSurroundedBlockDocument(concatStatements(highIRStatement.statements, manager))
+      );
+    }
+    case 'HighIRBreakStatement': {
+      const breakCollector = manager.currentBreakCollector;
+      if (breakCollector == null) {
+        return PRETTIER_TEXT('break;');
+      }
+      return PRETTIER_CONCAT(
+        PRETTIER_TEXT(`var ${breakCollector} = `),
+        createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(highIRStatement.breakValue),
+        PRETTIER_TEXT('; break;')
+      );
+    }
     case 'HighIRWhileStatement': {
       return PRETTIER_CONCAT(
         ...highIRStatement.loopVariables.flatMap((loopVariable) => [

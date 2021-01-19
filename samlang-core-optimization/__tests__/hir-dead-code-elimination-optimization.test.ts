@@ -12,6 +12,8 @@ import {
   HIR_BINARY,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
   HIR_WHILE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
@@ -118,8 +120,6 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 1/
             returnType: HIR_INT_TYPE,
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [],
       }),
     ],
@@ -154,8 +154,6 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 2/
             returnCollector: 'a2',
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -200,8 +198,6 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 3/
             returnType: HIR_INT_TYPE,
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -243,8 +239,6 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 4/
             returnCollector: 'a2',
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma',
@@ -272,9 +266,20 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 5/
         booleanExpression: HIR_VARIABLE('b', HIR_BOOL_TYPE),
         s1: [],
         s2: [],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [],
+      }),
+    ],
+    ``
+  );
+});
+
+it('optimizeHighIRStatementsByDeadCodeElimination works on single if.', () => {
+  assertCorrectlyOptimized(
+    [
+      HIR_SINGLE_IF({
+        booleanExpression: HIR_VARIABLE('is_zero', HIR_BOOL_TYPE),
+        invertCondition: false,
+        statements: [],
       }),
     ],
     ``
@@ -311,8 +316,6 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on while statement 1/n.'
                 e2: HIR_ONE,
               }),
             ],
-            s1BreakValue: null,
-            s2BreakValue: null,
             finalAssignments: [
               {
                 name: '_tmp_n',
@@ -365,27 +368,10 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on while statement 2/n.'
             e1: HIR_VARIABLE('n', HIR_INT_TYPE),
             e2: HIR_ZERO,
           }),
-          HIR_IF_ELSE({
+          HIR_SINGLE_IF({
             booleanExpression: HIR_VARIABLE('is_zero', HIR_BOOL_TYPE),
-            s1: [],
-            s2: [
-              HIR_BINARY({
-                name: 's2_n',
-                operator: '-',
-                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-                e2: HIR_ONE,
-              }),
-            ],
-            s1BreakValue: HIR_ZERO,
-            s2BreakValue: null,
-            finalAssignments: [
-              {
-                name: '_tmp_n',
-                type: HIR_INT_TYPE,
-                branch1Value: HIR_VARIABLE('n', HIR_INT_TYPE),
-                branch2Value: HIR_VARIABLE('s2_n', HIR_INT_TYPE),
-              },
-            ],
+            invertCondition: false,
+            statements: [HIR_BREAK(HIR_ZERO)],
           }),
         ],
         breakCollector: { name: 'v', type: HIR_INT_TYPE },
@@ -394,79 +380,11 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on while statement 2/n.'
     `let n: int = 10;
 while (true) {
   let is_zero: bool = (n: int) == 0;
-  let _tmp_n: int;
   if (is_zero: bool) {
     undefined = 0;
     break;
-  } else {
-    let s2_n: int = (n: int) + -1;
-    _tmp_n = (s2_n: int);
   }
   n = (_tmp_n: int);
 }`
-  );
-});
-
-it('optimizeHighIRStatementsByDeadCodeElimination works on while statement 3/n.', () => {
-  assertCorrectlyOptimized(
-    [
-      HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'n',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_INT(10),
-            loopValue: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
-          },
-        ],
-        statements: [
-          HIR_BINARY({
-            name: 'is_zero',
-            operator: '==',
-            e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-            e2: HIR_ZERO,
-          }),
-          HIR_IF_ELSE({
-            booleanExpression: HIR_VARIABLE('is_zero', HIR_BOOL_TYPE),
-            s1: [],
-            s2: [
-              HIR_BINARY({
-                name: 's2_n',
-                operator: '-',
-                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-                e2: HIR_ONE,
-              }),
-            ],
-            s1BreakValue: null,
-            s2BreakValue: HIR_ZERO,
-            finalAssignments: [
-              {
-                name: '_tmp_n',
-                type: HIR_INT_TYPE,
-                branch1Value: HIR_VARIABLE('n', HIR_INT_TYPE),
-                branch2Value: HIR_VARIABLE('s2_n', HIR_INT_TYPE),
-              },
-            ],
-          }),
-        ],
-        breakCollector: { name: 'v', type: HIR_INT_TYPE },
-      }),
-      HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
-    ],
-    `let n: int = 10;
-let v: int;
-while (true) {
-  let is_zero: bool = (n: int) == 0;
-  let _tmp_n: int;
-  if (is_zero: bool) {
-    _tmp_n = (n: int);
-  } else {
-    let s2_n: int = (n: int) + -1;
-    v = 0;
-    break;
-  }
-  n = (_tmp_n: int);
-}
-return (v: int);`
   );
 });

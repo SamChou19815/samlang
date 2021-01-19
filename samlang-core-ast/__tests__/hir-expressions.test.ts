@@ -2,6 +2,8 @@ import {
   debugPrintHighIRStatement,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
   HIR_WHILE,
   HIR_INDEX_ACCESS,
   HIR_CAST,
@@ -99,17 +101,17 @@ it('debugPrintHighIRStatement works', () => {
             pointerExpression: HIR_VARIABLE('big', HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_INT_TYPE])),
             index: 0,
           }),
-          HIR_IF_ELSE({
+          HIR_SINGLE_IF({
             booleanExpression: HIR_ZERO,
-            s1: [],
-            s2: [],
-            s1BreakValue: HIR_ZERO,
-            s2BreakValue: HIR_ZERO,
-            finalAssignments: [],
+            invertCondition: false,
+            statements: [HIR_BREAK(HIR_ZERO)],
+          }),
+          HIR_SINGLE_IF({
+            booleanExpression: HIR_ZERO,
+            invertCondition: true,
+            statements: [HIR_BREAK(HIR_ZERO)],
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'bar',
@@ -149,7 +151,8 @@ if 0 {
   if 0 {
     undefined = 0;
     break;
-  } else {
+  }
+  if !0 {
     undefined = 0;
     break;
   }

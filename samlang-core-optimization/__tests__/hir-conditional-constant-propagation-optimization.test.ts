@@ -14,6 +14,8 @@ import {
   HIR_BINARY,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
   HIR_WHILE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
@@ -313,8 +315,6 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnType: HIR_INT_TYPE,
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [],
       }),
       HIR_BINARY({ name: 'b2', operator: '>', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -334,8 +334,6 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnType: HIR_INT_TYPE,
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [],
       }),
       HIR_BINARY({ name: 'b3', operator: '<=', e1: HIR_ZERO, e2: HIR_ONE }),
@@ -357,8 +355,6 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnCollector: 'a2',
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma1',
@@ -387,8 +383,6 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnCollector: 'a22',
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma2',
@@ -470,8 +464,6 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnType: HIR_INT_TYPE,
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [],
       }),
       HIR_IF_ELSE({
@@ -492,8 +484,6 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
             returnCollector: 'a2',
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma1',
@@ -508,8 +498,6 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
         booleanExpression: HIR_VARIABLE('b', HIR_BOOL_TYPE),
         s1: [],
         s2: [],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           {
             name: 'ma2',
@@ -539,6 +527,41 @@ return 6;`
   );
 });
 
+it('optimizeHighIRStatementsByConditionalConstantPropagation works on single if statement.', () => {
+  assertCorrectlyOptimized(
+    [
+      HIR_SINGLE_IF({
+        booleanExpression: HIR_ZERO,
+        invertCondition: false,
+        statements: [HIR_BREAK(HIR_VARIABLE('n', HIR_INT_TYPE))],
+      }),
+    ],
+    ``
+  );
+
+  assertCorrectlyOptimized(
+    [
+      HIR_SINGLE_IF({
+        booleanExpression: HIR_ZERO,
+        invertCondition: true,
+        statements: [HIR_BREAK(HIR_VARIABLE('n', HIR_INT_TYPE))],
+      }),
+    ],
+    `undefined = (n: int);\nbreak;`
+  );
+
+  assertCorrectlyOptimized(
+    [
+      HIR_SINGLE_IF({
+        booleanExpression: HIR_VARIABLE('n', HIR_INT_TYPE),
+        invertCondition: false,
+        statements: [],
+      }),
+    ],
+    ``
+  );
+});
+
 it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 1/n.', () => {
   assertCorrectlyOptimized(
     [
@@ -558,27 +581,10 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
             e1: HIR_VARIABLE('n', HIR_INT_TYPE),
             e2: HIR_ZERO,
           }),
-          HIR_IF_ELSE({
+          HIR_SINGLE_IF({
             booleanExpression: HIR_VARIABLE('is_zero', HIR_BOOL_TYPE),
-            s1: [],
-            s2: [
-              HIR_BINARY({
-                name: 's2_n',
-                operator: '-',
-                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-                e2: HIR_ONE,
-              }),
-            ],
-            s1BreakValue: HIR_VARIABLE('n', HIR_INT_TYPE),
-            s2BreakValue: null,
-            finalAssignments: [
-              {
-                name: '_tmp_n',
-                type: HIR_INT_TYPE,
-                branch1Value: HIR_VARIABLE('n', HIR_INT_TYPE),
-                branch2Value: HIR_VARIABLE('s2_n', HIR_INT_TYPE),
-              },
-            ],
+            invertCondition: false,
+            statements: [HIR_BREAK(HIR_VARIABLE('n', HIR_INT_TYPE))],
           }),
         ],
       }),
@@ -586,13 +592,9 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
     `let n: int = 10;
 while (true) {
   let is_zero: bool = (n: int) == 0;
-  let _tmp_n: int;
   if (is_zero: bool) {
     undefined = (n: int);
     break;
-  } else {
-    let s2_n: int = (n: int) + -1;
-    _tmp_n = (s2_n: int);
   }
   n = (_tmp_n: int);
 }`
@@ -600,70 +602,6 @@ while (true) {
 });
 
 it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 2/n.', () => {
-  assertCorrectlyOptimized(
-    [
-      HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'n',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_INT(10),
-            loopValue: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
-          },
-        ],
-        statements: [
-          HIR_BINARY({
-            name: 'is_zero',
-            operator: '==',
-            e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-            e2: HIR_ZERO,
-          }),
-          HIR_IF_ELSE({
-            booleanExpression: HIR_VARIABLE('is_zero', HIR_BOOL_TYPE),
-            s1: [],
-            s2: [
-              HIR_BINARY({
-                name: 's2_n',
-                operator: '-',
-                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-                e2: HIR_ONE,
-              }),
-            ],
-            s1BreakValue: HIR_VARIABLE('n', HIR_INT_TYPE),
-            s2BreakValue: null,
-            finalAssignments: [
-              {
-                name: '_tmp_n',
-                type: HIR_INT_TYPE,
-                branch1Value: HIR_VARIABLE('n', HIR_INT_TYPE),
-                branch2Value: HIR_VARIABLE('s2_n', HIR_INT_TYPE),
-              },
-            ],
-          }),
-        ],
-        breakCollector: { name: 'v', type: HIR_INT_TYPE },
-      }),
-      HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
-    ],
-    `let n: int = 10;
-let v: int;
-while (true) {
-  let is_zero: bool = (n: int) == 0;
-  let _tmp_n: int;
-  if (is_zero: bool) {
-    v = (n: int);
-    break;
-  } else {
-    let s2_n: int = (n: int) + -1;
-    _tmp_n = (s2_n: int);
-  }
-  n = (_tmp_n: int);
-}
-return (v: int);`
-  );
-});
-
-it('optimizeHighIRStatementsByConditionalConstantPropagation works on while statement 3/n.', () => {
   assertCorrectlyOptimized(
     [
       HIR_WHILE({
@@ -682,43 +620,17 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
             e1: HIR_VARIABLE('n', HIR_INT_TYPE),
             e2: HIR_ZERO,
           }),
-          HIR_IF_ELSE({
+          HIR_SINGLE_IF({
             booleanExpression: HIR_VARIABLE('is_zero', HIR_BOOL_TYPE),
-            s1: [],
-            s2: [
-              HIR_BINARY({
-                name: 's2_n',
-                operator: '-',
-                e1: HIR_VARIABLE('n', HIR_INT_TYPE),
-                e2: HIR_ONE,
-              }),
-            ],
-            s1BreakValue: null,
-            s2BreakValue: HIR_VARIABLE('s2_n', HIR_INT_TYPE),
-            finalAssignments: [
-              {
-                name: '_tmp_n',
-                type: HIR_INT_TYPE,
-                branch1Value: HIR_VARIABLE('n', HIR_INT_TYPE),
-                branch2Value: HIR_VARIABLE('s2_n', HIR_INT_TYPE),
-              },
-            ],
+            invertCondition: true,
+            statements: [HIR_BREAK(HIR_VARIABLE('n', HIR_INT_TYPE))],
           }),
         ],
-        breakCollector: { name: 'v', type: HIR_INT_TYPE },
       }),
-      HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
     ],
-    `let v: int;
-while (true) {
-  let _tmp_n: int;
-  if 0 {
-    _tmp_n = 10;
-  } else {
-    v = 9;
-    break;
-  }
-}
-return (v: int);`
+    `while (true) {
+  undefined = 10;
+  break;
+}`
   );
 });

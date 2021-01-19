@@ -14,9 +14,11 @@ import {
   ENCODED_FUNCTION_NAME_THROW,
 } from 'samlang-core-ast/common-names';
 import {
-  HIR_IF_ELSE,
-  HIR_WHILE,
   HIR_BINARY,
+  HIR_IF_ELSE,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
+  HIR_WHILE,
   HIR_INT,
   HIR_FUNCTION_CALL,
   HIR_NAME,
@@ -249,8 +251,6 @@ it('confirm samlang & equivalent JS have same print output', () => {
               booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
               s1: [HIR_RETURN(HIR_NAME('y', HIR_STRING_TYPE))],
               s2: [HIR_RETURN(HIR_NAME('n', HIR_STRING_TYPE))],
-              s1BreakValue: null,
-              s2BreakValue: null,
               finalAssignments: [],
             }),
           ],
@@ -392,8 +392,6 @@ it('confirm samlang & equivalent JS have same print output', () => {
                 }),
               ],
               s2: [],
-              s1BreakValue: null,
-              s2BreakValue: null,
               finalAssignments: [],
             }),
           ],
@@ -430,8 +428,6 @@ it('HIR statements to JS string test', () => {
         booleanExpression: HIR_INT(5),
         s1: [],
         s2: [HIR_RETURN(HIR_ZERO)],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [],
       })
     )
@@ -446,8 +442,6 @@ it('HIR statements to JS string test', () => {
         booleanExpression: HIR_INT(5),
         s1: [HIR_RETURN(HIR_ZERO)],
         s2: [HIR_RETURN(HIR_ZERO)],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [
           { name: 'f', type: HIR_INT_TYPE, branch1Value: HIR_ZERO, branch2Value: HIR_ZERO },
         ],
@@ -470,13 +464,9 @@ it('HIR statements to JS string test', () => {
             booleanExpression: HIR_INT(5),
             s1: [HIR_RETURN(HIR_ZERO)],
             s2: [HIR_RETURN(HIR_ZERO)],
-            s1BreakValue: null,
-            s2BreakValue: null,
             finalAssignments: [],
           }),
         ],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [],
       })
     )
@@ -635,13 +625,15 @@ while (true) {
             type: HIR_INT_TYPE,
             assignedExpression: HIR_VARIABLE('dev', HIR_INT_TYPE),
           }),
-          HIR_IF_ELSE({
+          HIR_SINGLE_IF({
             booleanExpression: HIR_ZERO,
-            s1: [],
-            s2: [],
-            s1BreakValue: HIR_ZERO,
-            s2BreakValue: HIR_ZERO,
-            finalAssignments: [],
+            invertCondition: false,
+            statements: [HIR_BREAK(HIR_ZERO)],
+          }),
+          HIR_SINGLE_IF({
+            booleanExpression: HIR_ZERO,
+            invertCondition: true,
+            statements: [HIR_BREAK(HIR_ZERO)],
           }),
         ],
         breakCollector: { name: 'v', type: HIR_INT_TYPE },
@@ -652,13 +644,10 @@ var acc = _tail_rec_param_acc;
 while (true) {
   var foo = dev;
   if (0) {
-
-    var v = 0;
-    break;
-  } else {
-
-    var v = 0;
-    break;
+    var v = 0; break;
+  }
+  if (!0) {
+    var v = 0; break;
   }
   n = _t0_n;
   acc = _t1_acc;

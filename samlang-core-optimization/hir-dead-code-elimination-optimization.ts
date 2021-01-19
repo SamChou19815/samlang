@@ -49,6 +49,16 @@ const optimizeHighIRStatement = (
       if (ifElse.length > 0) collectUseFromExpression(statement.booleanExpression);
       return ifElse;
     }
+    case 'HighIRSingleIfStatement': {
+      const statements = optimizeHighIRStatements(statement.statements, set);
+      if (statements.length === 0) return [];
+      collectUseFromExpression(statement.booleanExpression);
+      return [{ ...statement, statements }];
+    }
+    case 'HighIRBreakStatement': {
+      collectUseFromExpression(statement.breakValue);
+      return [statement];
+    }
     case 'HighIRWhileStatement': {
       let breakCollector = statement.breakCollector;
       if (breakCollector != null) {

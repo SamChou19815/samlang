@@ -50,17 +50,18 @@ const collectUsedNamesFromStatement = (
       collectUsedNamesFromExpression(nameSet, typeSet, statement.booleanExpression);
       statement.s1.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
       statement.s2.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
-      if (statement.s1BreakValue != null) {
-        collectUsedNamesFromExpression(nameSet, typeSet, statement.s1BreakValue);
-      }
-      if (statement.s2BreakValue != null) {
-        collectUsedNamesFromExpression(nameSet, typeSet, statement.s2BreakValue);
-      }
       statement.finalAssignments.forEach((finalAssignment) => {
         collectUsedNamesFromExpression(nameSet, typeSet, finalAssignment.branch1Value);
         collectUsedNamesFromExpression(nameSet, typeSet, finalAssignment.branch2Value);
         collectForTypeSet(finalAssignment.type, typeSet);
       });
+      break;
+    case 'HighIRSingleIfStatement':
+      collectUsedNamesFromExpression(nameSet, typeSet, statement.booleanExpression);
+      statement.statements.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
+      break;
+    case 'HighIRBreakStatement':
+      collectUsedNamesFromExpression(nameSet, typeSet, statement.breakValue);
       break;
     case 'HighIRWhileStatement':
       statement.loopVariables.forEach((it) => {

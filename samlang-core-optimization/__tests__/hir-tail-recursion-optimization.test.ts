@@ -97,8 +97,6 @@ it('optimizeHighIRFunctionByTailRecursionRewrite fails case 6/n', () => {
         booleanExpression: HIR_ZERO,
         s1: [],
         s2: [],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [],
       }),
       HIR_RETURN(HIR_VARIABLE('', HIR_INT_TYPE)),
@@ -116,8 +114,6 @@ it('optimizeHighIRFunctionByTailRecursionRewrite fails case 7/n', () => {
         booleanExpression: HIR_ZERO,
         s1: [],
         s2: [],
-        s1BreakValue: null,
-        s2BreakValue: null,
         finalAssignments: [],
       }),
       HIR_RETURN(HIR_ZERO),
@@ -198,8 +194,6 @@ it('optimizeHighIRFunctionByTailRecursionRewrite simple if-else loop case 1/n', 
               returnCollector: 'r2',
             }),
           ],
-          s1BreakValue: null,
-          s2BreakValue: null,
           finalAssignments: [
             {
               name: 'r',
@@ -252,8 +246,6 @@ it('optimizeHighIRFunctionByTailRecursionRewrite simple if-else loop case 2/n', 
             }),
           ],
           s2: [],
-          s1BreakValue: null,
-          s2BreakValue: null,
           finalAssignments: [
             {
               name: 'r',
@@ -271,8 +263,7 @@ it('optimizeHighIRFunctionByTailRecursionRewrite simple if-else loop case 2/n', 
   let r: int;
   while (true) {
     let a: int = (n: int) + 0;
-    if 0 {
-    } else {
+    if !0 {
       r = 0;
       break;
     }
@@ -313,8 +304,6 @@ it('optimizeHighIRFunctionByTailRecursionRewrite nested complex case', () => {
                   returnCollector: 'r',
                 }),
               ],
-              s1BreakValue: null,
-              s2BreakValue: null,
               finalAssignments: [
                 {
                   name: 'nested_return',
@@ -325,8 +314,6 @@ it('optimizeHighIRFunctionByTailRecursionRewrite nested complex case', () => {
               ],
             }),
           ],
-          s1BreakValue: null,
-          s2BreakValue: null,
           finalAssignments: [
             {
               name: 'v',
@@ -346,12 +333,10 @@ it('optimizeHighIRFunctionByTailRecursionRewrite nested complex case', () => {
     if 0 {
       v = 0;
       break;
-    } else {
     }
     if 0 {
       v = 1;
       break;
-    } else {
     }
     let nn: int = (n: int) + -1;
     let r: int = 0 + 0;

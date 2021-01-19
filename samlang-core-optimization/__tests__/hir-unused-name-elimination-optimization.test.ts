@@ -8,10 +8,12 @@ import {
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
   HIR_INDEX_ACCESS,
-  HIR_RETURN,
-  HIR_IF_ELSE,
   HIR_BINARY,
+  HIR_IF_ELSE,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
   HIR_WHILE,
+  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_INT_TYPE, HIR_FUNCTION_TYPE, HIR_IDENTIFIER_TYPE } from 'samlang-core-ast/hir-types';
 
@@ -72,16 +74,6 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
               }),
             ],
             s2: [HIR_CAST({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
-            s1BreakValue: null,
-            s2BreakValue: null,
-            finalAssignments: [],
-          }),
-          HIR_IF_ELSE({
-            booleanExpression: HIR_ZERO,
-            s1: [],
-            s2: [],
-            s1BreakValue: HIR_ZERO,
-            s2BreakValue: HIR_ZERO,
             finalAssignments: [
               {
                 name: 'fff',
@@ -90,6 +82,11 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
                 branch2Value: HIR_ZERO,
               },
             ],
+          }),
+          HIR_SINGLE_IF({
+            booleanExpression: HIR_ZERO,
+            invertCondition: false,
+            statements: [HIR_BREAK(HIR_ZERO)],
           }),
           HIR_WHILE({
             loopVariables: [
