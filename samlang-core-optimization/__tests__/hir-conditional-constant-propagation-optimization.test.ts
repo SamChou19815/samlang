@@ -295,6 +295,136 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
   );
 });
 
+it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series of binary statements 6/n.', () => {
+  assertCorrectlyOptimized(
+    [
+      HIR_BINARY({
+        name: 'a1',
+        operator: '+',
+        e1: HIR_VARIABLE('a0', HIR_INT_TYPE),
+        e2: HIR_INT(2),
+      }),
+      HIR_BINARY({
+        name: 'a2',
+        operator: '<',
+        e1: HIR_VARIABLE('a1', HIR_INT_TYPE),
+        e2: HIR_INT(3),
+      }),
+    ],
+    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) < 1;`
+  );
+
+  assertCorrectlyOptimized(
+    [
+      HIR_BINARY({
+        name: 'a1',
+        operator: '+',
+        e1: HIR_VARIABLE('a0', HIR_INT_TYPE),
+        e2: HIR_INT(2),
+      }),
+      HIR_BINARY({
+        name: 'a2',
+        operator: '<=',
+        e1: HIR_VARIABLE('a1', HIR_INT_TYPE),
+        e2: HIR_INT(3),
+      }),
+    ],
+    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) <= 1;`
+  );
+
+  assertCorrectlyOptimized(
+    [
+      HIR_BINARY({
+        name: 'a1',
+        operator: '+',
+        e1: HIR_VARIABLE('a0', HIR_INT_TYPE),
+        e2: HIR_INT(2),
+      }),
+      HIR_BINARY({
+        name: 'a2',
+        operator: '>',
+        e1: HIR_VARIABLE('a1', HIR_INT_TYPE),
+        e2: HIR_INT(3),
+      }),
+    ],
+    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) > 1;`
+  );
+
+  assertCorrectlyOptimized(
+    [
+      HIR_BINARY({
+        name: 'a1',
+        operator: '+',
+        e1: HIR_VARIABLE('a0', HIR_INT_TYPE),
+        e2: HIR_INT(2),
+      }),
+      HIR_BINARY({
+        name: 'a2',
+        operator: '>=',
+        e1: HIR_VARIABLE('a1', HIR_INT_TYPE),
+        e2: HIR_INT(3),
+      }),
+    ],
+    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) >= 1;`
+  );
+
+  assertCorrectlyOptimized(
+    [
+      HIR_BINARY({
+        name: 'a1',
+        operator: '+',
+        e1: HIR_VARIABLE('a0', HIR_INT_TYPE),
+        e2: HIR_INT(2),
+      }),
+      HIR_BINARY({
+        name: 'a2',
+        operator: '==',
+        e1: HIR_VARIABLE('a1', HIR_INT_TYPE),
+        e2: HIR_INT(3),
+      }),
+    ],
+    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) == 1;`
+  );
+
+  assertCorrectlyOptimized(
+    [
+      HIR_BINARY({
+        name: 'a1',
+        operator: '+',
+        e1: HIR_VARIABLE('a0', HIR_INT_TYPE),
+        e2: HIR_INT(2),
+      }),
+      HIR_BINARY({
+        name: 'a2',
+        operator: '!=',
+        e1: HIR_VARIABLE('a1', HIR_INT_TYPE),
+        e2: HIR_INT(3),
+      }),
+    ],
+    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) != 1;`
+  );
+});
+
+it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series of binary statements 6/n.', () => {
+  assertCorrectlyOptimized(
+    [
+      HIR_BINARY({
+        name: 'a1',
+        operator: '*',
+        e1: HIR_VARIABLE('a0', HIR_INT_TYPE),
+        e2: HIR_INT(2),
+      }),
+      HIR_BINARY({
+        name: 'a2',
+        operator: '==',
+        e1: HIR_VARIABLE('a1', HIR_INT_TYPE),
+        e2: HIR_INT(3),
+      }),
+    ],
+    `let a1: int = (a0: int) * 2;\nlet a2: bool = (a1: int) == 3;`
+  );
+});
+
 it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else statement 1/n.', () => {
   assertCorrectlyOptimized(
     [

@@ -97,6 +97,20 @@ const mergeBinaryExpression = (
         };
       }
       return null;
+    case '<':
+    case '<=':
+    case '>':
+    case '>=':
+    case '==':
+    case '!=':
+      if (inner.operator === '+') {
+        return {
+          operator: outerOperator,
+          e1: inner.e1,
+          e2: HIR_INT(outerConstant.subtract(inner.e2.value)),
+        };
+      }
+      return null;
     default:
       return null;
   }
