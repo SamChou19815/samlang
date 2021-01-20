@@ -23,6 +23,7 @@ import {
   HIR_CAST,
   HIR_RETURN,
   HIR_INT,
+  HighIRWhileStatement,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
 import {
@@ -32,6 +33,7 @@ import {
   zip3,
   LocalStackedContext,
   checkNotNull,
+  assert,
 } from 'samlang-core-utils';
 
 const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
@@ -121,6 +123,62 @@ const optimizeHighIRStatement = (
 
   const withNestedScope = <T>(block: () => T): T =>
     valueContext.withNestedScope(() => binaryExpressionContext.withNestedScope(block));
+
+  const tryOptimizeLoopByRunForSomeIterations = (
+    { loopVariables, statements, breakCollector }: HighIRWhileStatement,
+    maxDepth = 5
+  ): readonly HighIRStatement[] | null => {
+    const firstIterationOptimizationTrial = withNestedScope(() => {
+      loopVariables.forEach((it) => valueContext.bind(it.name, it.initialValue));
+      const firstRunOptimizedStatements = optimizeHighIRStatements(
+        statements,
+        valueContext,
+        binaryExpressionContext
+      );
+      const lastStatementOfFirstRunOptimizedStatements =
+        firstRunOptimizedStatements[firstRunOptimizedStatements.length - 1];
+      if (lastStatementOfFirstRunOptimizedStatements == null) {
+        // Empty loop in first run except new loop values, so we can change the initial values!
+        const advancedLoopVariables = loopVariables.map((it) => ({
+          ...it,
+          initialValue: optimizeExpression(it.loopValue),
+        }));
+        return [
+          HIR_WHILE({
+            loopVariables: advancedLoopVariables,
+            statements,
+            breakCollector,
+          }),
+        ];
+      }
+      if (lastStatementOfFirstRunOptimizedStatements.__type__ !== 'HighIRBreakStatement') {
+        return null;
+      }
+      return firstRunOptimizedStatements;
+    });
+    if (firstIterationOptimizationTrial == null) return null;
+    const lastStatementOfFirstRunOptimizedStatements = checkNotNull(
+      firstIterationOptimizationTrial[firstIterationOptimizationTrial.length - 1]
+    );
+    if (lastStatementOfFirstRunOptimizedStatements.__type__ !== 'HighIRBreakStatement') {
+      assert(
+        firstIterationOptimizationTrial.length === 1 &&
+          lastStatementOfFirstRunOptimizedStatements.__type__ === 'HighIRWhileStatement'
+      );
+      if (maxDepth === 0) return firstIterationOptimizationTrial;
+      return tryOptimizeLoopByRunForSomeIterations(
+        lastStatementOfFirstRunOptimizedStatements,
+        maxDepth - 1
+      );
+    }
+    if (breakCollector != null) {
+      valueContext.bind(
+        breakCollector.name,
+        optimizeExpression(lastStatementOfFirstRunOptimizedStatements.breakValue)
+      );
+    }
+    return firstIterationOptimizationTrial.slice(0, firstIterationOptimizationTrial.length - 1);
+  };
 
   switch (statement.__type__) {
     case 'HighIRIndexAccessStatement': {
@@ -330,10 +388,15 @@ const optimizeHighIRStatement = (
           filteredLoopVariables.map((it) => optimizeExpression(it.loopValue)),
         ] as const;
       });
+      const loopVariables = zip3(
+        loopVariableInitialValues,
+        loopVariableLoopValues,
+        filteredLoopVariables
+      ).map(([initialValue, loopValue, variable]) => ({ ...variable, initialValue, loopValue }));
       const lastStatement = statements[statements.length - 1];
       if (lastStatement != null && lastStatement.__type__ === 'HighIRBreakStatement') {
         // Now we know that the loop will only loop once!
-        filteredLoopVariables.forEach((it) => valueContext.bind(it.name, it.initialValue));
+        loopVariables.forEach((it) => valueContext.bind(it.name, it.initialValue));
         const movedStatements = optimizeHighIRStatements(
           statements.slice(0, statements.length - 1),
           valueContext,
@@ -347,12 +410,12 @@ const optimizeHighIRStatement = (
         }
         return movedStatements;
       }
-      const loopVariables = zip3(
-        loopVariableInitialValues,
-        loopVariableLoopValues,
-        filteredLoopVariables
-      ).map(([initialValue, loopValue, variable]) => ({ ...variable, initialValue, loopValue }));
-      return [HIR_WHILE({ loopVariables, statements, breakCollector: statement.breakCollector })];
+      const optimizedWhile = HIR_WHILE({
+        loopVariables,
+        statements,
+        breakCollector: statement.breakCollector,
+      });
+      return tryOptimizeLoopByRunForSomeIterations(optimizedWhile) ?? [optimizedWhile];
     }
 
     case 'HighIRCastStatement':

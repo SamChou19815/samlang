@@ -651,16 +651,7 @@ it('optimizeFunctionsByInlining test 6', () => {
       },
     ],
     `function fooBar(): int {
-  let n: int = 10;
-  let v: int;
-  while (true) {
-    if (n: bool) {
-      v = 0;
-      break;
-    }
-    n = (_tmp_n: int);
-  }
-  return (v: int);
+  return 0;
 }
 `
   );

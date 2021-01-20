@@ -586,16 +586,23 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
             invertCondition: false,
             statements: [HIR_BREAK(HIR_VARIABLE('n', HIR_INT_TYPE))],
           }),
+          HIR_BINARY({
+            name: '_tmp_n',
+            operator: '-',
+            e1: HIR_VARIABLE('n', HIR_INT_TYPE),
+            e2: HIR_ONE,
+          }),
         ],
       }),
     ],
-    `let n: int = 10;
+    `let n: int = 4;
 while (true) {
   let is_zero: bool = (n: int) == 0;
   if (is_zero: bool) {
     undefined = (n: int);
     break;
   }
+  let _tmp_n: int = (n: int) + -1;
   n = (_tmp_n: int);
 }`
   );

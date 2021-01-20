@@ -602,6 +602,7 @@ while (true) {
   n = _t0_n;
   acc = _t1_acc;
 }`);
+  expect(highIRStatementToString(HIR_BREAK(HIR_ZERO))).toBe('break;');
   expect(
     highIRStatementToString(
       HIR_WHILE({
