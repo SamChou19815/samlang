@@ -1,4 +1,5 @@
-import ControlFlowGraph from 'samlang-core-analysis/control-flow-graph';
+import ControlFlowGraph from './control-flow-graph';
+
 import type { LLVMInstruction } from 'samlang-core-ast/llvm-nodes';
 
 const withoutUnreachableCode = <I>(
