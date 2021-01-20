@@ -15,6 +15,7 @@ node_modules
 out
 bin
 build
+workspaces.json
 
 ## Yarn
 .yarn/*
