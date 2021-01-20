@@ -67,9 +67,22 @@ const createHighIRFlexibleOrderOperatorNode = (
     case '==':
     case '!=':
       return compareMidIR(e1, e2) > 0 ? { operator, e1, e2 } : { operator, e2: e1, e1: e2 };
+    case '<':
+      if (compareMidIR(e1, e2) < 0) return { operator: '>', e1: e2, e2: e1 };
+      break;
+    case '<=':
+      if (compareMidIR(e1, e2) < 0) return { operator: '>=', e1: e2, e2: e1 };
+      break;
+    case '>':
+      if (compareMidIR(e1, e2) < 0) return { operator: '<', e1: e2, e2: e1 };
+      break;
+    case '>=':
+      if (compareMidIR(e1, e2) < 0) return { operator: '<=', e1: e2, e2: e1 };
+      break;
     default:
-      return { operator, e1, e2 };
+      break;
   }
+  return { operator, e1, e2 };
 };
 
 export default createHighIRFlexibleOrderOperatorNode;
