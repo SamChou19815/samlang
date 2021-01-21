@@ -1,4 +1,4 @@
-import extractOptimizableWhileLoop from '../hir-loop-analysis';
+import extractOptimizableWhileLoop from '../hir-loop-induction-analysis';
 
 import {
   HIR_ZERO,
