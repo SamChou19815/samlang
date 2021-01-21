@@ -93,14 +93,16 @@ export interface AssignmentForHighIRWhileStatement {
   readonly value: HighIRExpression;
 }
 
+export interface GeneralHighIRLoopVariables {
+  readonly name: string;
+  readonly type: HighIRType;
+  readonly initialValue: HighIRExpression;
+  readonly loopValue: HighIRExpression;
+}
+
 export interface HighIRWhileStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRWhileStatement';
-  readonly loopVariables: readonly {
-    readonly name: string;
-    readonly type: HighIRType;
-    readonly initialValue: HighIRExpression;
-    readonly loopValue: HighIRExpression;
-  }[];
+  readonly loopVariables: readonly GeneralHighIRLoopVariables[];
   readonly statements: readonly HighIRStatement[];
   readonly breakCollector?: { readonly name: string; readonly type: HighIRType };
 }

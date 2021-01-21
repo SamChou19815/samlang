@@ -43,14 +43,14 @@ const optimizeHighIRStatement = (
           return null;
         })
         .filter(isNotNull);
-      const s1 = optimizeHighIRStatements(statement.s1, set);
-      const s2 = optimizeHighIRStatements(statement.s2, set);
+      const s1 = internalOptimizeHighIRStatementsByDCE(statement.s1, set);
+      const s2 = internalOptimizeHighIRStatementsByDCE(statement.s2, set);
       const ifElse = ifElseOrNull({ ...statement, s1, s2, finalAssignments });
       if (ifElse.length > 0) collectUseFromExpression(statement.booleanExpression);
       return ifElse;
     }
     case 'HighIRSingleIfStatement': {
-      const statements = optimizeHighIRStatements(statement.statements, set);
+      const statements = internalOptimizeHighIRStatementsByDCE(statement.statements, set);
       if (statements.length === 0) return [];
       collectUseFromExpression(statement.booleanExpression);
       return [{ ...statement, statements }];
@@ -67,7 +67,7 @@ const optimizeHighIRStatement = (
         }
       }
       statement.loopVariables.forEach((it) => collectUseFromExpression(it.loopValue));
-      const statements = optimizeHighIRStatements(statement.statements, set);
+      const statements = internalOptimizeHighIRStatementsByDCE(statement.statements, set);
       const loopVariables = statement.loopVariables
         .map((variable) => {
           if (set.has(variable.name)) {
@@ -93,7 +93,7 @@ const optimizeHighIRStatement = (
   }
 };
 
-const optimizeHighIRStatements = (
+export const internalOptimizeHighIRStatementsByDCE = (
   statements: readonly HighIRStatement[],
   set: Set<string>
 ): readonly HighIRStatement[] => {
@@ -105,6 +105,6 @@ const optimizeHighIRStatements = (
 
 const optimizeHighIRStatementsByDeadCodeElimination = (
   statements: readonly HighIRStatement[]
-): readonly HighIRStatement[] => optimizeHighIRStatements(statements, new Set());
+): readonly HighIRStatement[] => internalOptimizeHighIRStatementsByDCE(statements, new Set());
 
 export default optimizeHighIRStatementsByDeadCodeElimination;
