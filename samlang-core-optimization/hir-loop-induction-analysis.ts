@@ -2,42 +2,48 @@
 
 import { internalOptimizeHighIRStatementsByDCE } from './hir-dead-code-elimination-optimization';
 
-import type {
+import {
   HighIRStatement,
   GeneralHighIRLoopVariables,
-  HighIRWhileStatement,
   HighIRExpression,
+  HighIRIntLiteralExpression,
+  HighIRVariableExpression,
+  HighIRWhileStatement,
   HighIRBinaryStatement,
+  HIR_INT,
+  HIR_ONE,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRType } from 'samlang-core-ast/hir-types';
-import { checkNotNull, isNotNull, Long } from 'samlang-core-utils';
+import { assert, checkNotNull, isNotNull } from 'samlang-core-utils';
+
+type PotentialLoopInvariantExpression = HighIRIntLiteralExpression | HighIRVariableExpression;
 
 type BasicInductionVariableWithLoopGuard = {
   readonly name: string;
   readonly initialValue: HighIRExpression;
-  readonly incrementAmount: Long;
+  readonly incrementAmount: PotentialLoopInvariantExpression;
   readonly guardOperator: '<' | '<=' | '>' | '>=';
-  readonly guardExpresssion: HighIRExpression;
+  readonly guardExpresssion: PotentialLoopInvariantExpression;
 };
 
 type GeneralBasicInductionVariable = {
   readonly name: string;
   readonly initialValue: HighIRExpression;
-  readonly incrementAmount: Long;
+  readonly incrementAmount: PotentialLoopInvariantExpression;
 };
 
 type DerivedInductionVariable = {
   readonly baseName: string;
-  readonly multiplier: Long;
-  readonly immediate: Long;
+  readonly multiplier: PotentialLoopInvariantExpression;
+  readonly immediate: PotentialLoopInvariantExpression;
 };
 
 type DerivedInductionVariableWithInitialValue = {
   readonly name: string;
   readonly initialValue: HighIRExpression;
   readonly baseName: string;
-  readonly multiplier: Long;
-  readonly immediate: Long;
+  readonly multiplier: PotentialLoopInvariantExpression;
+  readonly immediate: PotentialLoopInvariantExpression;
 };
 
 type HighIROptimizableWhileLoop = {
@@ -77,17 +83,63 @@ const statementContainsBreak = (statement: HighIRStatement): boolean => {
 const statementsContainsBreak = (statements: readonly HighIRStatement[]): boolean =>
   statements.some(statementContainsBreak);
 
+const mergeAddition = (
+  existingValue: PotentialLoopInvariantExpression,
+  addedValue: PotentialLoopInvariantExpression
+): PotentialLoopInvariantExpression | null => {
+  if (
+    existingValue.__type__ === 'HighIRIntLiteralExpression' &&
+    addedValue.__type__ === 'HighIRIntLiteralExpression'
+  ) {
+    return HIR_INT(existingValue.value.add(addedValue.value));
+  }
+  if (addedValue.__type__ === 'HighIRIntLiteralExpression' && addedValue.value.equals(0)) {
+    return existingValue;
+  }
+  if (existingValue.__type__ === 'HighIRIntLiteralExpression' && existingValue.value.equals(0)) {
+    return addedValue;
+  }
+  return null;
+};
+
 const mergeConstantOperationIntoDerivedInductionVariable = (
   existing: DerivedInductionVariable,
   operator: '+' | '*',
-  value: Long
-): DerivedInductionVariable => {
-  if (operator === '+') return { ...existing, immediate: existing.immediate.add(value) };
-  return {
-    baseName: existing.baseName,
-    multiplier: existing.multiplier.multiply(value),
-    immediate: existing.immediate.multiply(value),
-  };
+  loopInvariantExpression: PotentialLoopInvariantExpression
+): DerivedInductionVariable | null => {
+  if (operator === '+') {
+    const mergedImmediate = mergeAddition(existing.immediate, loopInvariantExpression);
+    if (mergedImmediate == null) return null;
+    return { ...existing, immediate: mergedImmediate };
+  }
+  if (loopInvariantExpression.__type__ === 'HighIRIntLiteralExpression') {
+    const loopInvariantExpressionValue = loopInvariantExpression.value;
+    if (
+      existing.multiplier.__type__ === 'HighIRIntLiteralExpression' &&
+      existing.immediate.__type__ === 'HighIRIntLiteralExpression'
+    ) {
+      return {
+        baseName: existing.baseName,
+        multiplier: HIR_INT(existing.multiplier.value.multiply(loopInvariantExpressionValue)),
+        immediate: HIR_INT(existing.immediate.value.multiply(loopInvariantExpressionValue)),
+      };
+    }
+    if (loopInvariantExpressionValue.equals(1)) return existing;
+    return null;
+  }
+  if (
+    existing.multiplier.__type__ === 'HighIRIntLiteralExpression' &&
+    existing.immediate.__type__ === 'HighIRIntLiteralExpression' &&
+    existing.multiplier.value.equals(1) &&
+    existing.immediate.value.equals(1)
+  ) {
+    return {
+      baseName: existing.baseName,
+      multiplier: loopInvariantExpression,
+      immediate: loopInvariantExpression,
+    };
+  }
+  return null;
 };
 
 const mergeVariableAdditionIntoDerivedInductionVariable = (
@@ -95,50 +147,77 @@ const mergeVariableAdditionIntoDerivedInductionVariable = (
   anotherVariable: DerivedInductionVariable
 ): DerivedInductionVariable | null => {
   if (existing.baseName !== anotherVariable.baseName) return null;
-  return {
-    baseName: existing.baseName,
-    multiplier: existing.multiplier.add(anotherVariable.multiplier),
-    immediate: existing.immediate.add(anotherVariable.immediate),
-  };
+  const mergedMultiplier = mergeAddition(existing.multiplier, anotherVariable.multiplier);
+  const mergedImmediate = mergeAddition(existing.immediate, anotherVariable.immediate);
+  // istanbul ignore next
+  if (mergedMultiplier == null || mergedImmediate == null) return null;
+  return { baseName: existing.baseName, multiplier: mergedMultiplier, immediate: mergedImmediate };
 };
 
 const tryMergeIntoDerivedInductionVariable = (
   existingSet: Record<string, DerivedInductionVariable>,
+  expressionIsLoopInvariant: (expression: HighIRExpression) => boolean,
   binaryStatement: HighIRBinaryStatement
 ): void => {
   if (binaryStatement.e1.__type__ !== 'HighIRVariableExpression') return;
   const existing = existingSet[binaryStatement.e1.name];
   if (existing == null) return;
-  if (binaryStatement.e2.__type__ === 'HighIRIntLiteralExpression') {
-    switch (binaryStatement.operator) {
-      case '+':
-      case '*': {
-        existingSet[binaryStatement.name] = mergeConstantOperationIntoDerivedInductionVariable(
-          existing,
-          binaryStatement.operator,
-          binaryStatement.e2.value
-        );
+  if (
+    binaryStatement.e2.__type__ === 'HighIRVariableExpression' &&
+    binaryStatement.operator === '+'
+  ) {
+    const anotherVariable = existingSet[binaryStatement.e2.name];
+    if (anotherVariable != null) {
+      const merged = mergeVariableAdditionIntoDerivedInductionVariable(existing, anotherVariable);
+      if (merged != null) {
+        existingSet[binaryStatement.name] = merged;
+        return;
       }
     }
-    return;
   }
   if (
-    binaryStatement.e2.__type__ !== 'HighIRVariableExpression' ||
-    binaryStatement.operator !== '+'
+    binaryStatement.e2.__type__ === 'HighIRNameExpression' ||
+    !expressionIsLoopInvariant(binaryStatement.e2)
   ) {
     return;
   }
-  const anotherVariable = existingSet[binaryStatement.e2.name];
-  if (anotherVariable == null) return;
-  const merged = mergeVariableAdditionIntoDerivedInductionVariable(existing, anotherVariable);
-  if (merged != null) existingSet[binaryStatement.name] = merged;
+  switch (binaryStatement.operator) {
+    case '+':
+    case '*': {
+      const merged = mergeConstantOperationIntoDerivedInductionVariable(
+        existing,
+        binaryStatement.operator,
+        binaryStatement.e2
+      );
+      if (merged != null) existingSet[binaryStatement.name] = merged;
+    }
+  }
 };
 
-const extractOptimizableWhileLoop = ({
-  loopVariables,
-  statements,
-  breakCollector: originalBreakCollector,
-}: HighIRWhileStatement): HighIROptimizableWhileLoop | null => {
+/**
+ * @param whileStatement a while statement assuming all the loop invariant statements are already
+ * hoisted out.
+ * @param nonLoopInvariantVariables a set of variables that are not guaranteed to be loop invariant.
+ * (for the purpose of analysis, they are not considered as loop invariant.)
+ */
+const extractOptimizableWhileLoop = (
+  { loopVariables, statements, breakCollector: originalBreakCollector }: HighIRWhileStatement,
+  nonLoopInvariantVariables: ReadonlySet<string>
+): HighIROptimizableWhileLoop | null => {
+  const expressionIsLoopInvariant = (expression: HighIRExpression): boolean => {
+    // istanbul ignore next
+    switch (expression.__type__) {
+      case 'HighIRIntLiteralExpression':
+        return true;
+      case 'HighIRNameExpression':
+        // We are doing algebraic operations here. Name is hopeless.
+        // istanbul ignore next
+        return false;
+      case 'HighIRVariableExpression':
+        return !nonLoopInvariantVariables.has(expression.name);
+    }
+  };
+
   // Phase 1: Check the structure for loop guard.
   if (statements.length < 2) return null;
   const [firstBinaryStatement, secondSingleIfStatement, ...restStatements] = statements;
@@ -175,6 +254,7 @@ const extractOptimizableWhileLoop = ({
       return null;
   }
   const potentialBasicInductionVariableNameWithLoopGuard = firstBinaryStatement.e1.name;
+  assert(firstBinaryStatement.e2.__type__ !== 'HighIRNameExpression');
 
   // Phase 2: Extract basic induction variables.
   const allBasicInductionVariables: GeneralBasicInductionVariable[] = [];
@@ -192,9 +272,10 @@ const extractOptimizableWhileLoop = ({
           statement.name === basicInductionLoopIncrementCollector &&
           statement.e1.__type__ === 'HighIRVariableExpression' &&
           statement.e1.name === loopVariable.name &&
-          statement.e2.__type__ === 'HighIRIntLiteralExpression'
+          expressionIsLoopInvariant(statement.e2)
         ) {
-          return statement.e2.value;
+          assert(statement.e2.__type__ !== 'HighIRNameExpression');
+          return statement.e2;
         }
         return null;
       })
@@ -235,13 +316,17 @@ const extractOptimizableWhileLoop = ({
   allBasicInductionVariables.forEach((it) => {
     existingDerivedInductionVariableSet[it.name] = {
       baseName: it.name,
-      multiplier: Long.ONE,
+      multiplier: HIR_ONE,
       immediate: it.incrementAmount,
     };
   });
   restStatements.forEach((it) => {
     if (it.__type__ !== 'HighIRBinaryStatement') return;
-    tryMergeIntoDerivedInductionVariable(existingDerivedInductionVariableSet, it);
+    tryMergeIntoDerivedInductionVariable(
+      existingDerivedInductionVariableSet,
+      expressionIsLoopInvariant,
+      it
+    );
   });
   const derivedInductionVariables: DerivedInductionVariableWithInitialValue[] = [];
   const otherLoopVariables: GeneralHighIRLoopVariables[] = [];
