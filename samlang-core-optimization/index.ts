@@ -31,11 +31,9 @@ const optimizeHighIRStatementsForOneRound = (
   }: OptimizationConfiguration
 ): readonly HighIRStatement[] => {
   let optimized = optimizeHighIRStatementsByConditionalConstantPropagation(statements);
-  // istanbul ignore next
   if (doesPerformLocalValueNumbering) {
     optimized = optimizeHighIRStatementsByLocalValueNumbering(optimized);
   }
-  // istanbul ignore next
   if (doesPerformCommonSubExpressionElimination) {
     optimized = optimizeHighIRStatementsByCommonSubExpressionElimination(optimized, allocator);
   }
@@ -63,24 +61,29 @@ const optimizeFunctionForRounds = (
   };
 };
 
-const optimizeHighIRModule = (
-  highIRModule: HighIRModule,
-  optimizationConfiguration: OptimizationConfiguration = allEnabledOptimizationConfiguration
+export const optimizeHighIRModuleByUnusedNameEliminationAndTailRecursionRewrite = (
+  highIRModule: HighIRModule
 ): HighIRModule => {
-  const allocator = new OptimizationResourceAllocator();
-
-  let intermediate = optimizeHighIRModuleByEliminatingUnusedOnes(highIRModule);
-  intermediate = {
+  const intermediate = optimizeHighIRModuleByEliminatingUnusedOnes(highIRModule);
+  return {
     ...intermediate,
     functions: intermediate.functions.map(
       (it) => optimizeHighIRFunctionByTailRecursionRewrite(it) ?? it
     ),
   };
+};
+
+export const optimizeHighIRModuleAccordingToConfiguration = (
+  highIRModule: HighIRModule,
+  optimizationConfiguration: OptimizationConfiguration = allEnabledOptimizationConfiguration
+): HighIRModule => {
+  const allocator = new OptimizationResourceAllocator();
+
+  let intermediate = highIRModule;
   for (let i = 0; i < 4; i += 1) {
     let optimizedFunctions: readonly HighIRFunction[] = intermediate.functions.map((it) =>
       optimizeFunctionForRounds(it, allocator, optimizationConfiguration)
     );
-    // istanbul ignore next
     if (optimizationConfiguration.doesPerformInlining) {
       optimizedFunctions = optimizeHighIRFunctionsByInlining(optimizedFunctions, allocator);
     }
@@ -97,5 +100,3 @@ const optimizeHighIRModule = (
     ),
   };
 };
-
-export default optimizeHighIRModule;

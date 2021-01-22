@@ -32,7 +32,11 @@ import type {
   SamlangModule,
   TypeDefinition,
 } from 'samlang-core-ast/samlang-toplevel';
-import optimizeHighIRModule, { OptimizationConfiguration } from 'samlang-core-optimization';
+import {
+  OptimizationConfiguration,
+  optimizeHighIRModuleByUnusedNameEliminationAndTailRecursionRewrite,
+  optimizeHighIRModuleAccordingToConfiguration,
+} from 'samlang-core-optimization';
 import { checkNotNull, HashMap, hashMapOf } from 'samlang-core-utils';
 
 const compileTypeDefinition = (
@@ -184,12 +188,12 @@ const compileSamlangSourcesToHighIRSources = (
     ];
     irSources.set(
       moduleReference,
-      optimizeHighIRModule(
-        {
+      optimizeHighIRModuleAccordingToConfiguration(
+        optimizeHighIRModuleByUnusedNameEliminationAndTailRecursionRewrite({
           globalVariables: stringManager.globalVariables,
           typeDefinitions: compiledTypeDefinitions,
           functions: allFunctions,
-        },
+        }),
         optimizationConfiguration
       )
     );
