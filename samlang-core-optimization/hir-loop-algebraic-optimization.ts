@@ -62,10 +62,8 @@ export const analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING = (
   }
 };
 
-/**
- * Optimize the loop with number of iteration steps that are statically analyzable.
- */
-export const highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING = (
+/** Optimize the loop with number of iteration steps that are statically analyzable. */
+const highIRLoopAlgebraicOptimization = (
   {
     basicInductionVariableWithLoopGuard,
     generalInductionVariables,
@@ -168,3 +166,5 @@ export const highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING = (
     }),
   ];
 };
+
+export default highIRLoopAlgebraicOptimization;

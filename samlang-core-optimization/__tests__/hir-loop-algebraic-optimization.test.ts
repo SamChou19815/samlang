@@ -1,7 +1,6 @@
-import {
+import highIRLoopAlgebraicOptimization, {
   analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING,
-  highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING,
-} from '../hir-loop-optimizations';
+} from '../hir-loop-algebraic-optimization';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 import {
@@ -53,7 +52,7 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
   const allocator = new OptimizationResourceAllocator();
 
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
@@ -74,7 +73,7 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
   ).toBeNull();
 
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
@@ -95,7 +94,7 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
   ).toBeNull();
 
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
@@ -116,7 +115,7 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
   ).toBeNull();
 
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
@@ -145,7 +144,7 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
   ).toBeNull();
 
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
@@ -168,7 +167,7 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
   ).toBeNull();
 
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
@@ -191,7 +190,7 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
   ).toBeNull();
 
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
@@ -212,7 +211,7 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
   ).toBeNull();
 
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
@@ -235,7 +234,7 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
 
 it('highIRLoopAlgebraicOptimization works 1/n', () => {
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
@@ -258,7 +257,7 @@ it('highIRLoopAlgebraicOptimization works 1/n', () => {
 
 it('highIRLoopAlgebraicOptimization works 2/n', () => {
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
@@ -282,7 +281,7 @@ it('highIRLoopAlgebraicOptimization works 2/n', () => {
 
 it('highIRLoopAlgebraicOptimization works 3/n', () => {
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
@@ -306,7 +305,7 @@ it('highIRLoopAlgebraicOptimization works 3/n', () => {
 
 it('highIRLoopAlgebraicOptimization works 4/n', () => {
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
@@ -350,7 +349,7 @@ it('highIRLoopAlgebraicOptimization works 4/n', () => {
 
 it('highIRLoopAlgebraicOptimization works 5/n', () => {
   expect(
-    highIRLoopAlgebraicOptimization_EXPOSED_FOR_TESTING(
+    highIRLoopAlgebraicOptimization(
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
