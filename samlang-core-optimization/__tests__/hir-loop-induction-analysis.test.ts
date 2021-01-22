@@ -1,6 +1,13 @@
-import extractOptimizableWhileLoop from '../hir-loop-induction-analysis';
+import extractOptimizableWhileLoop, {
+  getGuardOperator_EXPOSED_FOR_TESTING,
+  extractLoopGuardStructure_EXPOSED_FOR_TESTING,
+  extractBasicInductionVariables_EXPOSED_FOR_TESTING,
+  extractDerivedInductionVariables_EXPOSED_FOR_TESTING,
+  removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING,
+} from '../hir-loop-induction-analysis';
 
 import {
+  HighIRExpression,
   HIR_ZERO,
   HIR_ONE,
   HIR_INT,
@@ -21,16 +28,27 @@ import { zip } from 'samlang-core-utils';
 
 const VARIABLE_I = HIR_VARIABLE('i', HIR_INT_TYPE);
 const VARIABLE_J = HIR_VARIABLE('j', HIR_INT_TYPE);
+const VARIABLE_TMP_I = HIR_VARIABLE('tmp_i', HIR_INT_TYPE);
+const VARIABLE_TMP_J = HIR_VARIABLE('tmp_j', HIR_INT_TYPE);
+const VARIABLE_OUTSIDE = HIR_VARIABLE('outside', HIR_INT_TYPE);
 
-it('Unsupported loops are rejected 1/n', () => {
+const mockExpressionIsLoopInvariant = (e: HighIRExpression): boolean =>
+  e.__type__ === 'HighIRIntLiteralExpression';
+
+const mockExpressionIsLoopInvariantWithOutside = (e: HighIRExpression): boolean =>
+  e.__type__ === 'HighIRIntLiteralExpression' ||
+  (e.__type__ === 'HighIRVariableExpression' && e.name === VARIABLE_OUTSIDE.name);
+
+it('extractLoopGuardStructure can reject not optimizable loops.', () => {
   expect(
-    extractOptimizableWhileLoop(HIR_WHILE({ loopVariables: [], statements: [] }), new Set())
+    extractLoopGuardStructure_EXPOSED_FOR_TESTING(
+      HIR_WHILE({ loopVariables: [], statements: [] }),
+      mockExpressionIsLoopInvariant
+    )
   ).toBeNull();
-});
 
-it('Unsupported loops are rejected 2/n', () => {
   expect(
-    extractOptimizableWhileLoop(
+    extractLoopGuardStructure_EXPOSED_FOR_TESTING(
       HIR_WHILE({
         loopVariables: [],
         statements: [
@@ -38,14 +56,12 @@ it('Unsupported loops are rejected 2/n', () => {
           HIR_CAST({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO }),
         ],
       }),
-      new Set()
+      mockExpressionIsLoopInvariant
     )
   ).toBeNull();
-});
 
-it('Unsupported loops are rejected 3/n', () => {
   expect(
-    extractOptimizableWhileLoop(
+    extractLoopGuardStructure_EXPOSED_FOR_TESTING(
       HIR_WHILE({
         loopVariables: [],
         statements: [
@@ -53,14 +69,12 @@ it('Unsupported loops are rejected 3/n', () => {
           HIR_CAST({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO }),
         ],
       }),
-      new Set()
+      mockExpressionIsLoopInvariant
     )
   ).toBeNull();
-});
 
-it('Unsupported loops are rejected 4/n', () => {
   expect(
-    extractOptimizableWhileLoop(
+    extractLoopGuardStructure_EXPOSED_FOR_TESTING(
       HIR_WHILE({
         loopVariables: [],
         statements: [
@@ -68,14 +82,12 @@ it('Unsupported loops are rejected 4/n', () => {
           HIR_CAST({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO }),
         ],
       }),
-      new Set()
+      mockExpressionIsLoopInvariant
     )
   ).toBeNull();
-});
 
-it('Unsupported loops are rejected 5/n', () => {
   expect(
-    extractOptimizableWhileLoop(
+    extractLoopGuardStructure_EXPOSED_FOR_TESTING(
       HIR_WHILE({
         loopVariables: [],
         statements: [
@@ -84,14 +96,12 @@ it('Unsupported loops are rejected 5/n', () => {
           HIR_SINGLE_IF({ booleanExpression: HIR_ZERO, invertCondition: false, statements: [] }),
         ],
       }),
-      new Set()
+      mockExpressionIsLoopInvariant
     )
   ).toBeNull();
-});
 
-it('Unsupported loops are rejected 6/n', () => {
   expect(
-    extractOptimizableWhileLoop(
+    extractLoopGuardStructure_EXPOSED_FOR_TESTING(
       HIR_WHILE({
         loopVariables: [],
         statements: [
@@ -99,14 +109,12 @@ it('Unsupported loops are rejected 6/n', () => {
           HIR_SINGLE_IF({ booleanExpression: HIR_ZERO, invertCondition: false, statements: [] }),
         ],
       }),
-      new Set()
+      mockExpressionIsLoopInvariant
     )
   ).toBeNull();
-});
 
-it('Unsupported loops are rejected 7/n', () => {
   expect(
-    extractOptimizableWhileLoop(
+    extractLoopGuardStructure_EXPOSED_FOR_TESTING(
       HIR_WHILE({
         loopVariables: [],
         statements: [
@@ -118,14 +126,12 @@ it('Unsupported loops are rejected 7/n', () => {
           }),
         ],
       }),
-      new Set()
+      mockExpressionIsLoopInvariant
     )
   ).toBeNull();
-});
 
-it('Unsupported loops are rejected 8/n', () => {
   expect(
-    extractOptimizableWhileLoop(
+    extractLoopGuardStructure_EXPOSED_FOR_TESTING(
       HIR_WHILE({
         loopVariables: [],
         statements: [
@@ -137,33 +143,12 @@ it('Unsupported loops are rejected 8/n', () => {
           }),
         ],
       }),
-      new Set()
+      mockExpressionIsLoopInvariant
     )
   ).toBeNull();
-});
 
-it('Unsupported loops are rejected 9/n', () => {
   expect(
-    extractOptimizableWhileLoop(
-      HIR_WHILE({
-        loopVariables: [],
-        statements: [
-          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
-            invertCondition: false,
-            statements: [HIR_BREAK(HIR_ZERO)],
-          }),
-        ],
-      }),
-      new Set()
-    )
-  ).toBeNull();
-});
-
-it('Unsupported loops are rejected 10/n', () => {
-  expect(
-    extractOptimizableWhileLoop(
+    extractLoopGuardStructure_EXPOSED_FOR_TESTING(
       HIR_WHILE({
         loopVariables: [],
         statements: [
@@ -196,14 +181,12 @@ it('Unsupported loops are rejected 10/n', () => {
           HIR_BREAK(HIR_ZERO),
         ],
       }),
-      new Set()
+      mockExpressionIsLoopInvariant
     )
   ).toBeNull();
-});
 
-it('Unsupported loops are rejected 11/n', () => {
   expect(
-    extractOptimizableWhileLoop(
+    extractLoopGuardStructure_EXPOSED_FOR_TESTING(
       HIR_WHILE({
         loopVariables: [],
         statements: [
@@ -215,12 +198,29 @@ it('Unsupported loops are rejected 11/n', () => {
           }),
         ],
       }),
-      new Set()
+      mockExpressionIsLoopInvariant
     )
   ).toBeNull();
 });
 
-it('Unsupported loops are rejected 12/n', () => {
+it('Unsupported loops are rejected.', () => {
+  expect(
+    extractOptimizableWhileLoop(
+      HIR_WHILE({
+        loopVariables: [],
+        statements: [
+          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
+          HIR_SINGLE_IF({
+            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
+            invertCondition: false,
+            statements: [HIR_BREAK(HIR_ZERO)],
+          }),
+        ],
+      }),
+      new Set()
+    )
+  ).toBeNull();
+
   expect(
     extractOptimizableWhileLoop(
       HIR_WHILE({
@@ -229,7 +229,7 @@ it('Unsupported loops are rejected 12/n', () => {
             name: 'i',
             type: HIR_INT_TYPE,
             initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
+            loopValue: VARIABLE_TMP_I,
           },
         ],
         statements: [
@@ -247,109 +247,11 @@ it('Unsupported loops are rejected 12/n', () => {
   ).toBeNull();
 });
 
-it('very basic loops are recognized 1/n', () => {
-  const operators = ['<', '<=', '>', '>='] as const;
-  operators.forEach((guardOperator) =>
-    expect(
-      extractOptimizableWhileLoop(
-        HIR_WHILE({
-          loopVariables: [
-            {
-              name: 'i',
-              type: HIR_INT_TYPE,
-              initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
-            },
-          ],
-          statements: [
-            HIR_BINARY({ name: 'cc', operator: guardOperator, e1: VARIABLE_I, e2: HIR_ZERO }),
-            HIR_SINGLE_IF({
-              booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
-              invertCondition: false,
-              statements: [HIR_BREAK(HIR_ZERO)],
-            }),
-            HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
-          ],
-        }),
-        new Set(['i', 'cc', 'tmp_i'])
-      )
-    ).toEqual({
-      basicInductionVariableWithLoopGuard: {
-        name: 'i',
-        initialValue: HIR_ZERO,
-        incrementAmount: HIR_ONE,
-        guardOperator,
-        guardExpresssion: HIR_ZERO,
-      },
-      generalInductionVariables: [],
-      derivedInductionVariables: [],
-      otherLoopVariables: [],
-      statements: [],
-    })
-  );
-});
-
-it('very basic loops are recognized 2/n', () => {
-  const operators = ['<', '<=', '>', '>='] as const;
-  const replacementOperators = ['>=', '>', '<=', '<'] as const;
-  zip(operators, replacementOperators).forEach(([guardOperator, expectedGuardOperator]) =>
-    expect(
-      extractOptimizableWhileLoop(
-        HIR_WHILE({
-          loopVariables: [
-            {
-              name: 'i',
-              type: HIR_INT_TYPE,
-              initialValue: HIR_ZERO,
-              loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
-            },
-          ],
-          statements: [
-            HIR_BINARY({ name: 'cc', operator: guardOperator, e1: VARIABLE_I, e2: HIR_ZERO }),
-            HIR_SINGLE_IF({
-              booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
-              invertCondition: true,
-              statements: [HIR_BREAK(HIR_ZERO)],
-            }),
-            HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
-          ],
-        }),
-        new Set(['i', 'cc', 'tmp_i'])
-      )
-    ).toEqual({
-      basicInductionVariableWithLoopGuard: {
-        name: 'i',
-        initialValue: HIR_ZERO,
-        incrementAmount: HIR_ONE,
-        guardOperator: expectedGuardOperator,
-        guardExpresssion: HIR_ZERO,
-      },
-      generalInductionVariables: [],
-      derivedInductionVariables: [],
-      otherLoopVariables: [],
-      statements: [],
-    })
-  );
-});
-
-it('loops with multiple basic induction variables are recognized.', () => {
+it('Good loops are accepted.', () => {
   expect(
     extractOptimizableWhileLoop(
       HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'i',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
-          },
-          {
-            name: 'j',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
-          },
-        ],
+        loopVariables: [],
         statements: [
           HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
           HIR_SINGLE_IF({
@@ -357,34 +259,12 @@ it('loops with multiple basic induction variables are recognized.', () => {
             invertCondition: false,
             statements: [HIR_BREAK(HIR_ZERO)],
           }),
-          HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
-          HIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_J, e2: HIR_INT(3) }),
         ],
       }),
-      new Set(['i', 'j', 'cc', 'tmp_i', 'tmp_j'])
+      new Set()
     )
-  ).toEqual({
-    basicInductionVariableWithLoopGuard: {
-      name: 'i',
-      initialValue: HIR_ZERO,
-      incrementAmount: HIR_ONE,
-      guardOperator: '<',
-      guardExpresssion: HIR_ZERO,
-    },
-    generalInductionVariables: [
-      {
-        name: 'j',
-        initialValue: HIR_ZERO,
-        incrementAmount: HIR_INT(3),
-      },
-    ],
-    derivedInductionVariables: [],
-    otherLoopVariables: [],
-    statements: [],
-  });
-});
+  ).toBeNull();
 
-it('loops with derived induction variables and other statements are recognized 1/n.', () => {
   expect(
     extractOptimizableWhileLoop(
       HIR_WHILE({
@@ -393,13 +273,13 @@ it('loops with derived induction variables and other statements are recognized 1
             name: 'i',
             type: HIR_INT_TYPE,
             initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
+            loopValue: VARIABLE_TMP_I,
           },
           {
             name: 'j',
             type: HIR_INT_TYPE,
             initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
+            loopValue: VARIABLE_TMP_J,
           },
           {
             name: 'x',
@@ -407,30 +287,6 @@ it('loops with derived induction variables and other statements are recognized 1
             initialValue: HIR_ZERO,
             loopValue: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
           },
-          {
-            name: 'y',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_y', HIR_INT_TYPE),
-          },
-          {
-            name: 'z',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_z', HIR_INT_TYPE),
-          },
-          {
-            name: 'not_inductive_1',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_ZERO,
-          },
-          {
-            name: 'not_inductive_2',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('fc', HIR_INT_TYPE),
-          },
         ],
         statements: [
           HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
@@ -441,95 +297,258 @@ it('loops with derived induction variables and other statements are recognized 1
           }),
           HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
           HIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_J, e2: HIR_INT(3) }),
-          HIR_BINARY({ name: 'tmp_x', operator: '*', e1: VARIABLE_I, e2: HIR_INT(5) }),
+          HIR_BINARY({ name: 'tmp_x', operator: '*', e1: VARIABLE_TMP_I, e2: HIR_INT(5) }),
           HIR_BINARY({
             name: 'tmp_y',
             operator: '+',
             e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
             e2: HIR_INT(6),
           }),
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_ZERO,
-            functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
-            returnType: HIR_INT_TYPE,
-          }),
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_ZERO,
-            functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
-            returnType: HIR_INT_TYPE,
-            returnCollector: 'fc',
-          }),
-          HIR_BINARY({
-            name: 'tmp_z',
-            operator: '+',
-            e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
-            e2: HIR_VARIABLE('tmp_y', HIR_INT_TYPE),
-          }),
-          HIR_BINARY({
-            name: 'tmp_useless_1',
-            operator: '-',
-            e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
-            e2: HIR_VARIABLE('tmp_y', HIR_INT_TYPE),
-          }),
-          HIR_BINARY({
-            name: 'tmp_useless_2',
-            operator: '+',
-            e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
-            e2: HIR_VARIABLE('tmp_useless_1', HIR_INT_TYPE),
-          }),
-          HIR_BINARY({
-            name: 'tmp_useless_3',
-            operator: '+',
-            e1: HIR_ZERO,
-            e2: HIR_VARIABLE('tmp_useless_1', HIR_INT_TYPE),
-          }),
-          HIR_BINARY({
-            name: 'tmp_useless_4',
-            operator: '+',
-            e1: HIR_VARIABLE('tmp_useless_1', HIR_INT_TYPE),
-            e2: HIR_VARIABLE('tmp_useless_1', HIR_INT_TYPE),
-          }),
-          HIR_BINARY({ name: 'tmp_useless_6', operator: '+', e1: VARIABLE_I, e2: VARIABLE_J }),
         ],
         breakCollector: { name: 'bc', type: HIR_INT_TYPE },
       }),
-      new Set([
-        'i',
-        'j',
-        'x',
-        'y',
-        'z',
-        'not_inductive_1',
-        'not_inductive_2',
-        'cc',
-        'tmp_i',
-        'tmp_j',
-        'tmp_x',
-        'tmp_y',
-        'tmp_z',
-        'tmp_useless_1',
-        'tmp_useless_2',
-        'tmp_useless_3',
-        'tmp_useless_4',
-        'tmp_useless_6',
-      ])
+      new Set()
+    )
+  ).toBeTruthy();
+});
+
+it('getGuardOperator works', () => {
+  const operators = ['<', '<=', '>', '>='] as const;
+  const replacementOperators = ['>=', '>', '<=', '<'] as const;
+  zip(operators, replacementOperators).forEach(([guardOperator, expectedGuardOperator]) => {
+    expect(getGuardOperator_EXPOSED_FOR_TESTING(guardOperator, false)).toBe(guardOperator);
+    expect(getGuardOperator_EXPOSED_FOR_TESTING(guardOperator, true)).toBe(expectedGuardOperator);
+  });
+});
+
+it('extractBasicInductionVariables works.', () => {
+  expect(
+    extractBasicInductionVariables_EXPOSED_FOR_TESTING(
+      'i',
+      [
+        { name: 'i', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_I },
+        { name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
+      ],
+      [
+        HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
+        HIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_J, e2: HIR_INT(3) }),
+      ],
+      (e) => e.__type__ === 'HighIRIntLiteralExpression'
     )
   ).toEqual({
-    basicInductionVariableWithLoopGuard: {
-      name: 'i',
-      initialValue: HIR_ZERO,
-      incrementAmount: HIR_ONE,
-      guardOperator: '<',
-      guardExpresssion: HIR_ZERO,
-    },
-    generalInductionVariables: [
+    loopVariablesThatAreNotBasicInductionVariables: [],
+    allBasicInductionVariables: [
+      { name: 'i', loopValueCollector: 'tmp_i', initialValue: HIR_ZERO, incrementAmount: HIR_ONE },
       {
         name: 'j',
+        loopValueCollector: 'tmp_j',
         initialValue: HIR_ZERO,
         incrementAmount: HIR_INT(3),
       },
     ],
-    derivedInductionVariables: [
+    basicInductionVariableWithAssociatedLoopGuard: {
+      name: 'i',
+      loopValueCollector: 'tmp_i',
+      initialValue: HIR_ZERO,
+      incrementAmount: HIR_ONE,
+    },
+  });
+});
+
+it('removeDeadCodeInsideLoop works.', () => {
+  expect(
+    removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING(
+      [
+        {
+          name: 'not_inductive_1',
+          type: HIR_INT_TYPE,
+          initialValue: HIR_ZERO,
+          loopValue: HIR_ZERO,
+        },
+        {
+          name: 'not_inductive_2',
+          type: HIR_INT_TYPE,
+          initialValue: HIR_ZERO,
+          loopValue: HIR_VARIABLE('fc', HIR_INT_TYPE),
+        },
+      ],
+      [
+        HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
+        HIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_J, e2: HIR_INT(3) }),
+        HIR_BINARY({ name: 'tmp_x', operator: '*', e1: VARIABLE_TMP_I, e2: HIR_INT(5) }),
+        HIR_BINARY({
+          name: 'tmp_y',
+          operator: '+',
+          e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
+          e2: HIR_INT(6),
+        }),
+        HIR_FUNCTION_CALL({
+          functionExpression: HIR_ZERO,
+          functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
+          returnType: HIR_INT_TYPE,
+        }),
+        HIR_FUNCTION_CALL({
+          functionExpression: HIR_ZERO,
+          functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
+          returnType: HIR_INT_TYPE,
+          returnCollector: 'fc',
+        }),
+        HIR_BINARY({
+          name: 'tmp_z',
+          operator: '+',
+          e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
+          e2: HIR_VARIABLE('tmp_y', HIR_INT_TYPE),
+        }),
+        HIR_BINARY({
+          name: 'tmp_useless_1',
+          operator: '-',
+          e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
+          e2: HIR_VARIABLE('tmp_y', HIR_INT_TYPE),
+        }),
+        HIR_BINARY({
+          name: 'tmp_useless_2',
+          operator: '+',
+          e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
+          e2: HIR_VARIABLE('tmp_useless_1', HIR_INT_TYPE),
+        }),
+        HIR_BINARY({
+          name: 'tmp_useless_3',
+          operator: '+',
+          e1: HIR_ZERO,
+          e2: HIR_VARIABLE('tmp_useless_1', HIR_INT_TYPE),
+        }),
+        HIR_BINARY({
+          name: 'tmp_useless_4',
+          operator: '+',
+          e1: HIR_VARIABLE('tmp_useless_1', HIR_INT_TYPE),
+          e2: HIR_VARIABLE('tmp_useless_1', HIR_INT_TYPE),
+        }),
+        HIR_BINARY({ name: 'tmp_useless_6', operator: '+', e1: VARIABLE_I, e2: VARIABLE_J }),
+      ]
+    )
+  ).toEqual([
+    HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
+    HIR_BINARY({ name: 'tmp_x', operator: '*', e1: VARIABLE_TMP_I, e2: HIR_INT(5) }),
+    HIR_FUNCTION_CALL({
+      functionExpression: HIR_ZERO,
+      functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
+      returnType: HIR_INT_TYPE,
+    }),
+    HIR_FUNCTION_CALL({
+      functionExpression: HIR_ZERO,
+      functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
+      returnType: HIR_INT_TYPE,
+      returnCollector: 'fc',
+    }),
+  ]);
+});
+
+it('extractDerivedInductionVariables works 1/n.', () => {
+  expect(
+    extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
+      [
+        {
+          name: 'i',
+          loopValueCollector: 'tmp_i',
+          initialValue: HIR_ZERO,
+          incrementAmount: HIR_ONE,
+        },
+        {
+          name: 'j',
+          loopValueCollector: 'tmp_j',
+          initialValue: HIR_ZERO,
+          incrementAmount: HIR_INT(3),
+        },
+      ],
+      [
+        {
+          name: 'x',
+          type: HIR_INT_TYPE,
+          initialValue: HIR_ZERO,
+          loopValue: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
+        },
+        {
+          name: 'y',
+          type: HIR_INT_TYPE,
+          initialValue: HIR_ZERO,
+          loopValue: HIR_VARIABLE('tmp_y', HIR_INT_TYPE),
+        },
+        {
+          name: 'z',
+          type: HIR_INT_TYPE,
+          initialValue: HIR_ZERO,
+          loopValue: HIR_VARIABLE('tmp_z', HIR_INT_TYPE),
+        },
+        {
+          name: 'not_inductive_1',
+          type: HIR_INT_TYPE,
+          initialValue: HIR_ZERO,
+          loopValue: HIR_ZERO,
+        },
+        {
+          name: 'not_inductive_2',
+          type: HIR_INT_TYPE,
+          initialValue: HIR_ZERO,
+          loopValue: HIR_VARIABLE('fc', HIR_INT_TYPE),
+        },
+      ],
+      [
+        HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
+        HIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_J, e2: HIR_INT(3) }),
+        HIR_BINARY({ name: 'tmp_x', operator: '*', e1: VARIABLE_TMP_I, e2: HIR_INT(5) }),
+        HIR_BINARY({
+          name: 'tmp_y',
+          operator: '+',
+          e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
+          e2: HIR_INT(6),
+        }),
+        HIR_FUNCTION_CALL({
+          functionExpression: HIR_ZERO,
+          functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
+          returnType: HIR_INT_TYPE,
+        }),
+        HIR_FUNCTION_CALL({
+          functionExpression: HIR_ZERO,
+          functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
+          returnType: HIR_INT_TYPE,
+          returnCollector: 'fc',
+        }),
+        HIR_BINARY({
+          name: 'tmp_z',
+          operator: '+',
+          e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
+          e2: HIR_VARIABLE('tmp_y', HIR_INT_TYPE),
+        }),
+        HIR_BINARY({
+          name: 'tmp_useless_1',
+          operator: '-',
+          e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
+          e2: HIR_VARIABLE('tmp_y', HIR_INT_TYPE),
+        }),
+        HIR_BINARY({
+          name: 'tmp_useless_2',
+          operator: '+',
+          e1: HIR_VARIABLE('tmp_x', HIR_INT_TYPE),
+          e2: HIR_VARIABLE('tmp_useless_1', HIR_INT_TYPE),
+        }),
+        HIR_BINARY({
+          name: 'tmp_useless_3',
+          operator: '+',
+          e1: HIR_ZERO,
+          e2: HIR_VARIABLE('tmp_useless_1', HIR_INT_TYPE),
+        }),
+        HIR_BINARY({
+          name: 'tmp_useless_4',
+          operator: '+',
+          e1: HIR_VARIABLE('tmp_useless_1', HIR_INT_TYPE),
+          e2: HIR_VARIABLE('tmp_useless_1', HIR_INT_TYPE),
+        }),
+        HIR_BINARY({ name: 'tmp_useless_6', operator: '+', e1: VARIABLE_I, e2: VARIABLE_J }),
+      ],
+      mockExpressionIsLoopInvariant
+    )
+  ).toEqual({
+    derivedInductionLoopVariables: [
       {
         name: 'x',
         initialValue: HIR_ZERO,
@@ -552,13 +571,9 @@ it('loops with derived induction variables and other statements are recognized 1
         immediate: HIR_INT(16),
       },
     ],
+    otherDerivedInductionVariables: [],
     otherLoopVariables: [
-      {
-        name: 'not_inductive_1',
-        type: HIR_INT_TYPE,
-        initialValue: HIR_ZERO,
-        loopValue: HIR_ZERO,
-      },
+      { name: 'not_inductive_1', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
       {
         name: 'not_inductive_2',
         type: HIR_INT_TYPE,
@@ -566,542 +581,275 @@ it('loops with derived induction variables and other statements are recognized 1
         loopValue: HIR_VARIABLE('fc', HIR_INT_TYPE),
       },
     ],
-    statements: [
-      HIR_BINARY({ name: 'tmp_x', operator: '*', e1: VARIABLE_I, e2: HIR_INT(5) }),
-      HIR_FUNCTION_CALL({
-        functionExpression: HIR_ZERO,
-        functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
-        returnType: HIR_INT_TYPE,
-      }),
-      HIR_FUNCTION_CALL({
-        functionExpression: HIR_ZERO,
-        functionArguments: [HIR_VARIABLE('tmp_x', HIR_INT_TYPE)],
-        returnType: HIR_INT_TYPE,
-        returnCollector: 'fc',
-      }),
-    ],
-    breakCollector: { name: 'bc', type: HIR_INT_TYPE, value: HIR_ZERO },
   });
 });
 
-it('loops with derived induction variables and other statements are recognized 2/n.', () => {
+it('extractDerivedInductionVariables works 2/n.', () => {
   expect(
-    extractOptimizableWhileLoop(
-      HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'i',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
-          },
-        ],
-        statements: [
-          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
-            invertCondition: false,
-            statements: [HIR_BREAK(HIR_ZERO)],
-          }),
-          HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
-          HIR_BINARY({
-            name: 'tmp_x',
-            operator: '+',
-            e1: VARIABLE_I,
-            e2: HIR_VARIABLE('outside', HIR_INT_TYPE),
-          }),
-        ],
-        breakCollector: { name: 'bc', type: HIR_INT_TYPE },
-      }),
-      new Set(['i', 'cc', 'tmp_i', 'tmp_x'])
+    extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
+      [
+        {
+          name: 'i',
+          loopValueCollector: 'tmp_i',
+          initialValue: HIR_ZERO,
+          incrementAmount: HIR_ONE,
+        },
+      ],
+      [],
+      [
+        HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
+        HIR_BINARY({ name: 'tmp_x', operator: '+', e1: VARIABLE_TMP_I, e2: VARIABLE_OUTSIDE }),
+      ],
+      mockExpressionIsLoopInvariantWithOutside
     )
   ).toEqual({
-    basicInductionVariableWithLoopGuard: {
-      name: 'i',
-      initialValue: HIR_ZERO,
-      incrementAmount: HIR_ONE,
-      guardOperator: '<',
-      guardExpresssion: HIR_ZERO,
-    },
-    generalInductionVariables: [],
-    derivedInductionVariables: [],
+    derivedInductionLoopVariables: [],
+    otherDerivedInductionVariables: [],
     otherLoopVariables: [],
-    statements: [],
-    breakCollector: { name: 'bc', type: HIR_INT_TYPE, value: HIR_ZERO },
   });
 });
 
-it('loops with derived induction variables and other statements are recognized 3/n.', () => {
+it('extractDerivedInductionVariables works 3/n.', () => {
   expect(
-    extractOptimizableWhileLoop(
-      HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'i',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
-          },
-          {
-            name: 'j',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
-          },
-        ],
-        statements: [
-          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
-            invertCondition: false,
-            statements: [HIR_BREAK(HIR_ZERO)],
-          }),
-          HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
-          HIR_BINARY({
-            name: 'tmp_j',
-            operator: '+',
-            e1: VARIABLE_I,
-            e2: HIR_NAME('outside', HIR_INT_TYPE),
-          }),
-        ],
-        breakCollector: { name: 'bc', type: HIR_INT_TYPE },
-      }),
-      new Set(['i', 'j', 'cc', 'tmp_i', 'tmp_j'])
+    extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
+      [
+        {
+          name: 'i',
+          loopValueCollector: 'tmp_i',
+          initialValue: HIR_ZERO,
+          incrementAmount: HIR_ONE,
+        },
+      ],
+      [{ name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J }],
+      [
+        HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
+        HIR_BINARY({
+          name: 'tmp_j',
+          operator: '+',
+          e1: VARIABLE_I,
+          e2: HIR_NAME('outside', HIR_INT_TYPE),
+        }),
+      ],
+      mockExpressionIsLoopInvariantWithOutside
     )
   ).toEqual({
-    basicInductionVariableWithLoopGuard: {
-      name: 'i',
-      initialValue: HIR_ZERO,
-      incrementAmount: HIR_ONE,
-      guardOperator: '<',
-      guardExpresssion: HIR_ZERO,
-    },
-    generalInductionVariables: [],
-    derivedInductionVariables: [],
+    derivedInductionLoopVariables: [],
+    otherDerivedInductionVariables: [],
     otherLoopVariables: [
-      {
-        name: 'j',
-        type: HIR_INT_TYPE,
-        initialValue: HIR_ZERO,
-        loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
-      },
+      { name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
     ],
-    statements: [
-      HIR_BINARY({
-        name: 'tmp_j',
-        operator: '+',
-        e1: VARIABLE_I,
-        e2: HIR_NAME('outside', HIR_INT_TYPE),
-      }),
-    ],
-    breakCollector: { name: 'bc', type: HIR_INT_TYPE, value: HIR_ZERO },
   });
 });
 
-it('loops with derived induction variables and other statements are recognized 4/n.', () => {
+it('extractDerivedInductionVariables works 4/n.', () => {
   expect(
-    extractOptimizableWhileLoop(
-      HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'i',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
-          },
-          {
-            name: 'j',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
-          },
-        ],
-        statements: [
-          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
-            invertCondition: false,
-            statements: [HIR_BREAK(HIR_ZERO)],
-          }),
-          HIR_BINARY({
-            name: 'tmp_i',
-            operator: '+',
-            e1: VARIABLE_I,
-            e2: HIR_VARIABLE('outside', HIR_INT_TYPE),
-          }),
-          HIR_BINARY({
-            name: 'tmp_j',
-            operator: '+',
-            e1: VARIABLE_I,
-            e2: HIR_ZERO,
-          }),
-        ],
-        breakCollector: { name: 'bc', type: HIR_INT_TYPE },
-      }),
-      new Set(['i', 'cc', 'tmp_i', 'tmp_j'])
+    extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
+      [
+        {
+          name: 'i',
+          loopValueCollector: 'tmp_i',
+          initialValue: HIR_ZERO,
+          incrementAmount: VARIABLE_OUTSIDE,
+        },
+      ],
+      [{ name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J }],
+      [
+        HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: VARIABLE_OUTSIDE }),
+        HIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_TMP_I, e2: HIR_ZERO }),
+      ],
+      mockExpressionIsLoopInvariantWithOutside
     )
   ).toEqual({
-    basicInductionVariableWithLoopGuard: {
-      name: 'i',
-      initialValue: HIR_ZERO,
-      incrementAmount: HIR_VARIABLE('outside', HIR_INT_TYPE),
-      guardOperator: '<',
-      guardExpresssion: HIR_ZERO,
-    },
-    generalInductionVariables: [],
-    derivedInductionVariables: [
+    derivedInductionLoopVariables: [
       {
         name: 'j',
         initialValue: HIR_ZERO,
         baseName: 'i',
         multiplier: HIR_ONE,
-        immediate: HIR_VARIABLE('outside', HIR_INT_TYPE),
+        immediate: VARIABLE_OUTSIDE,
       },
     ],
+    otherDerivedInductionVariables: [],
     otherLoopVariables: [],
-    statements: [],
-    breakCollector: { name: 'bc', type: HIR_INT_TYPE, value: HIR_ZERO },
   });
 });
 
-it('loops with derived induction variables and other statements are recognized 5/n.', () => {
+it('extractDerivedInductionVariables works 5/n.', () => {
   expect(
-    extractOptimizableWhileLoop(
-      HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'i',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
-          },
-          {
-            name: 'j',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
-          },
-        ],
-        statements: [
-          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
-            invertCondition: false,
-            statements: [HIR_BREAK(HIR_ZERO)],
-          }),
-          HIR_BINARY({
-            name: 'tmp_i',
-            operator: '+',
-            e1: VARIABLE_I,
-            e2: HIR_ZERO,
-          }),
-          HIR_BINARY({
-            name: 'tmp_j',
-            operator: '+',
-            e1: VARIABLE_I,
-            e2: HIR_VARIABLE('outside', HIR_INT_TYPE),
-          }),
-        ],
-        breakCollector: { name: 'bc', type: HIR_INT_TYPE },
-      }),
-      new Set(['i', 'cc', 'tmp_i', 'tmp_j'])
+    extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
+      [
+        {
+          name: 'i',
+          loopValueCollector: 'tmp_i',
+          initialValue: HIR_ZERO,
+          incrementAmount: HIR_ZERO,
+        },
+      ],
+      [{ name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J }],
+      [
+        HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ZERO }),
+        HIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_I, e2: VARIABLE_OUTSIDE }),
+      ],
+      mockExpressionIsLoopInvariantWithOutside
     )
   ).toEqual({
-    basicInductionVariableWithLoopGuard: {
-      name: 'i',
-      initialValue: HIR_ZERO,
-      incrementAmount: HIR_ZERO,
-      guardOperator: '<',
-      guardExpresssion: HIR_ZERO,
-    },
-    generalInductionVariables: [],
-    derivedInductionVariables: [
+    derivedInductionLoopVariables: [
       {
         name: 'j',
         initialValue: HIR_ZERO,
         baseName: 'i',
         multiplier: HIR_ONE,
-        immediate: HIR_VARIABLE('outside', HIR_INT_TYPE),
+        immediate: VARIABLE_OUTSIDE,
       },
     ],
+    otherDerivedInductionVariables: [],
     otherLoopVariables: [],
-    statements: [],
-    breakCollector: { name: 'bc', type: HIR_INT_TYPE, value: HIR_ZERO },
   });
 });
 
-it('loops with derived induction variables and other statements are recognized 6/n.', () => {
+it('extractDerivedInductionVariables works 6/n.', () => {
   expect(
-    extractOptimizableWhileLoop(
-      HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'i',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
-          },
-          {
-            name: 'j',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
-          },
-        ],
-        statements: [
-          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
-            invertCondition: false,
-            statements: [HIR_BREAK(HIR_ZERO)],
-          }),
-          HIR_BINARY({
-            name: 'tmp_i',
-            operator: '+',
-            e1: VARIABLE_I,
-            e2: HIR_VARIABLE('outside', HIR_INT_TYPE),
-          }),
-          HIR_BINARY({
-            name: 'tmp_j',
-            operator: '*',
-            e1: VARIABLE_I,
-            e2: HIR_ONE,
-          }),
-        ],
-        breakCollector: { name: 'bc', type: HIR_INT_TYPE },
-      }),
-      new Set(['i', 'cc', 'tmp_i', 'tmp_j'])
+    extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
+      [
+        {
+          name: 'i',
+          loopValueCollector: 'tmp_i',
+          initialValue: HIR_ZERO,
+          incrementAmount: VARIABLE_OUTSIDE,
+        },
+      ],
+      [{ name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J }],
+      [
+        HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: VARIABLE_OUTSIDE }),
+        HIR_BINARY({ name: 'tmp_j', operator: '*', e1: VARIABLE_TMP_I, e2: HIR_ONE }),
+      ],
+      mockExpressionIsLoopInvariantWithOutside
     )
   ).toEqual({
-    basicInductionVariableWithLoopGuard: {
-      name: 'i',
-      initialValue: HIR_ZERO,
-      incrementAmount: HIR_VARIABLE('outside', HIR_INT_TYPE),
-      guardOperator: '<',
-      guardExpresssion: HIR_ZERO,
-    },
-    generalInductionVariables: [],
-    derivedInductionVariables: [
+    derivedInductionLoopVariables: [
       {
         name: 'j',
         initialValue: HIR_ZERO,
         baseName: 'i',
         multiplier: HIR_ONE,
-        immediate: HIR_VARIABLE('outside', HIR_INT_TYPE),
+        immediate: VARIABLE_OUTSIDE,
       },
     ],
+    otherDerivedInductionVariables: [],
     otherLoopVariables: [],
-    statements: [],
-    breakCollector: { name: 'bc', type: HIR_INT_TYPE, value: HIR_ZERO },
   });
 });
 
-it('loops with derived induction variables and other statements are recognized 7/n.', () => {
+it('extractDerivedInductionVariables works 7/n.', () => {
   expect(
-    extractOptimizableWhileLoop(
-      HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'i',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
-          },
-          {
-            name: 'j',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
-          },
-        ],
-        statements: [
-          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
-            invertCondition: false,
-            statements: [HIR_BREAK(HIR_ZERO)],
-          }),
-          HIR_BINARY({
-            name: 'tmp_i',
-            operator: '+',
-            e1: VARIABLE_I,
-            e2: HIR_VARIABLE('outside', HIR_INT_TYPE),
-          }),
-          HIR_BINARY({
-            name: 'tmp_j',
-            operator: '*',
-            e1: VARIABLE_I,
-            e2: HIR_INT(2),
-          }),
-        ],
-        breakCollector: { name: 'bc', type: HIR_INT_TYPE },
-      }),
-      new Set(['i', 'cc', 'tmp_i', 'tmp_j'])
+    extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
+      [
+        {
+          name: 'i',
+          loopValueCollector: 'tmp_i',
+          initialValue: HIR_ZERO,
+          incrementAmount: VARIABLE_OUTSIDE,
+        },
+      ],
+      [{ name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J }],
+      [
+        HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: VARIABLE_OUTSIDE }),
+        HIR_BINARY({ name: 'tmp_j', operator: '*', e1: VARIABLE_TMP_I, e2: HIR_INT(2) }),
+      ],
+      mockExpressionIsLoopInvariantWithOutside
     )
   ).toEqual({
-    basicInductionVariableWithLoopGuard: {
-      name: 'i',
-      initialValue: HIR_ZERO,
-      incrementAmount: HIR_VARIABLE('outside', HIR_INT_TYPE),
-      guardOperator: '<',
-      guardExpresssion: HIR_ZERO,
-    },
-    generalInductionVariables: [],
-    derivedInductionVariables: [],
+    derivedInductionLoopVariables: [],
+    otherDerivedInductionVariables: [],
     otherLoopVariables: [
-      {
-        name: 'j',
-        type: HIR_INT_TYPE,
-        initialValue: HIR_ZERO,
-        loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
-      },
+      { name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
     ],
-    statements: [
-      HIR_BINARY({
-        name: 'tmp_j',
-        operator: '*',
-        e1: VARIABLE_I,
-        e2: HIR_INT(2),
-      }),
-    ],
-    breakCollector: { name: 'bc', type: HIR_INT_TYPE, value: HIR_ZERO },
   });
 });
 
-it('loops with derived induction variables and other statements are recognized 8/n.', () => {
+it('extractDerivedInductionVariables works 8/n.', () => {
   expect(
-    extractOptimizableWhileLoop(
-      HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'i',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
-          },
-          {
-            name: 'j',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
-          },
-        ],
-        statements: [
-          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
-            invertCondition: false,
-            statements: [HIR_BREAK(HIR_ZERO)],
-          }),
-          HIR_BINARY({
-            name: 'tmp_i',
-            operator: '+',
-            e1: VARIABLE_I,
-            e2: HIR_ONE,
-          }),
-          HIR_BINARY({
-            name: 'tmp_j',
-            operator: '*',
-            e1: VARIABLE_I,
-            e2: HIR_VARIABLE('outside', HIR_INT_TYPE),
-          }),
-        ],
-        breakCollector: { name: 'bc', type: HIR_INT_TYPE },
-      }),
-      new Set(['i', 'cc', 'tmp_i', 'tmp_j'])
+    extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
+      [
+        {
+          name: 'i',
+          loopValueCollector: 'tmp_i',
+          initialValue: HIR_ZERO,
+          incrementAmount: HIR_ONE,
+        },
+      ],
+      [{ name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J }],
+      [
+        HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
+        HIR_BINARY({ name: 'tmp_j', operator: '*', e1: VARIABLE_TMP_I, e2: VARIABLE_OUTSIDE }),
+      ],
+      mockExpressionIsLoopInvariantWithOutside
     )
   ).toEqual({
-    basicInductionVariableWithLoopGuard: {
-      name: 'i',
-      initialValue: HIR_ZERO,
-      incrementAmount: HIR_ONE,
-      guardOperator: '<',
-      guardExpresssion: HIR_ZERO,
-    },
-    generalInductionVariables: [],
-    derivedInductionVariables: [
+    derivedInductionLoopVariables: [
       {
         name: 'j',
         initialValue: HIR_ZERO,
         baseName: 'i',
-        multiplier: HIR_VARIABLE('outside', HIR_INT_TYPE),
-        immediate: HIR_VARIABLE('outside', HIR_INT_TYPE),
+        multiplier: VARIABLE_OUTSIDE,
+        immediate: VARIABLE_OUTSIDE,
       },
     ],
+    otherDerivedInductionVariables: [],
     otherLoopVariables: [],
-    statements: [],
-    breakCollector: { name: 'bc', type: HIR_INT_TYPE, value: HIR_ZERO },
   });
 });
 
-it('loops with derived induction variables and other statements are recognized 9/n.', () => {
+it('extractDerivedInductionVariables works 9/n.', () => {
   expect(
-    extractOptimizableWhileLoop(
-      HIR_WHILE({
-        loopVariables: [
-          {
-            name: 'i',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_i', HIR_INT_TYPE),
-          },
-          {
-            name: 'j',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_ZERO,
-            loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
-          },
-        ],
-        statements: [
-          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
-            invertCondition: false,
-            statements: [HIR_BREAK(HIR_ZERO)],
-          }),
-          HIR_BINARY({
-            name: 'tmp_i',
-            operator: '+',
-            e1: VARIABLE_I,
-            e2: HIR_INT(2),
-          }),
-          HIR_BINARY({
-            name: 'tmp_j',
-            operator: '*',
-            e1: VARIABLE_I,
-            e2: HIR_VARIABLE('outside', HIR_INT_TYPE),
-          }),
-        ],
-        breakCollector: { name: 'bc', type: HIR_INT_TYPE },
-      }),
-      new Set(['i', 'cc', 'tmp_i', 'tmp_j'])
+    extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
+      [
+        {
+          name: 'i',
+          loopValueCollector: 'tmp_i',
+          initialValue: HIR_ZERO,
+          incrementAmount: HIR_INT(2),
+        },
+      ],
+      [{ name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J }],
+      [
+        HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_INT(2) }),
+        HIR_BINARY({ name: 'tmp_j', operator: '*', e1: VARIABLE_I, e2: VARIABLE_OUTSIDE }),
+      ],
+      mockExpressionIsLoopInvariantWithOutside
     )
   ).toEqual({
-    basicInductionVariableWithLoopGuard: {
-      name: 'i',
-      initialValue: HIR_ZERO,
-      incrementAmount: HIR_INT(2),
-      guardOperator: '<',
-      guardExpresssion: HIR_ZERO,
-    },
-    generalInductionVariables: [],
-    derivedInductionVariables: [],
+    derivedInductionLoopVariables: [],
+    otherDerivedInductionVariables: [],
     otherLoopVariables: [
-      {
-        name: 'j',
-        type: HIR_INT_TYPE,
-        initialValue: HIR_ZERO,
-        loopValue: HIR_VARIABLE('tmp_j', HIR_INT_TYPE),
-      },
+      { name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: VARIABLE_TMP_J },
     ],
-    statements: [
-      HIR_BINARY({
-        name: 'tmp_j',
-        operator: '*',
-        e1: VARIABLE_I,
-        e2: HIR_VARIABLE('outside', HIR_INT_TYPE),
-      }),
+  });
+});
+
+it('extractDerivedInductionVariables works 10/n.', () => {
+  expect(
+    extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
+      [
+        {
+          name: 'i',
+          loopValueCollector: 'tmp_i',
+          initialValue: HIR_ZERO,
+          incrementAmount: HIR_ONE,
+        },
+      ],
+      [],
+      [
+        HIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: HIR_ONE }),
+        HIR_BINARY({ name: 't1', operator: '+', e1: VARIABLE_TMP_I, e2: HIR_ONE }),
+      ],
+      mockExpressionIsLoopInvariantWithOutside
+    )
+  ).toEqual({
+    derivedInductionLoopVariables: [],
+    otherDerivedInductionVariables: [
+      { name: 't1', baseName: 'i', multiplier: HIR_ONE, immediate: HIR_INT(2) },
     ],
-    breakCollector: { name: 'bc', type: HIR_INT_TYPE, value: HIR_ZERO },
+    otherLoopVariables: [],
   });
 });
