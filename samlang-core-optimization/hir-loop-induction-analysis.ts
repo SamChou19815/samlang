@@ -48,7 +48,7 @@ type DerivedInductionLoopVariableWithInitialValue = DerivedInductionVariableWith
   readonly initialValue: HighIRExpression;
 };
 
-type HighIROptimizableWhileLoop = {
+export type HighIROptimizableWhileLoop = {
   readonly basicInductionVariableWithLoopGuard: BasicInductionVariableWithLoopGuard;
   readonly generalInductionVariables: readonly GeneralBasicInductionVariable[];
   readonly derivedInductionLoopVariables: readonly DerivedInductionLoopVariableWithInitialValue[];
