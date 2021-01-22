@@ -2,6 +2,7 @@
 
 import { internalOptimizeHighIRStatementsByDCE } from './hir-dead-code-elimination-optimization';
 
+import type { IROperator } from 'samlang-core-ast/common-operators';
 import {
   HighIRStatement,
   GeneralHighIRLoopVariables,
@@ -12,6 +13,7 @@ import {
   HighIRBinaryStatement,
   HIR_INT,
   HIR_ONE,
+  HIR_ZERO,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRType } from 'samlang-core-ast/hir-types';
 import { assert, checkNotNull, isNotNull } from 'samlang-core-utils';
@@ -20,14 +22,16 @@ type PotentialLoopInvariantExpression = HighIRIntLiteralExpression | HighIRVaria
 
 type BasicInductionVariableWithLoopGuard = {
   readonly name: string;
+  readonly loopValueCollector: string;
   readonly initialValue: HighIRExpression;
   readonly incrementAmount: PotentialLoopInvariantExpression;
   readonly guardOperator: '<' | '<=' | '>' | '>=';
-  readonly guardExpresssion: PotentialLoopInvariantExpression;
+  readonly guardExpression: PotentialLoopInvariantExpression;
 };
 
 type GeneralBasicInductionVariable = {
   readonly name: string;
+  readonly loopValueCollector: string;
   readonly initialValue: HighIRExpression;
   readonly incrementAmount: PotentialLoopInvariantExpression;
 };
@@ -38,18 +42,17 @@ type DerivedInductionVariable = {
   readonly immediate: PotentialLoopInvariantExpression;
 };
 
-type DerivedInductionVariableWithInitialValue = {
-  readonly name: string;
+type DerivedInductionVariableWithName = { readonly name: string } & DerivedInductionVariable;
+
+type DerivedInductionLoopVariableWithInitialValue = DerivedInductionVariableWithName & {
   readonly initialValue: HighIRExpression;
-  readonly baseName: string;
-  readonly multiplier: PotentialLoopInvariantExpression;
-  readonly immediate: PotentialLoopInvariantExpression;
 };
 
 type HighIROptimizableWhileLoop = {
   readonly basicInductionVariableWithLoopGuard: BasicInductionVariableWithLoopGuard;
   readonly generalInductionVariables: readonly GeneralBasicInductionVariable[];
-  readonly derivedInductionVariables: readonly DerivedInductionVariableWithInitialValue[];
+  readonly derivedInductionLoopVariables: readonly DerivedInductionLoopVariableWithInitialValue[];
+  readonly otherDerivedInductionVariables: readonly DerivedInductionVariableWithName[];
   readonly otherLoopVariables: readonly GeneralHighIRLoopVariables[];
   readonly statements: readonly HighIRStatement[];
   readonly breakCollector?: {
@@ -194,31 +197,40 @@ const tryMergeIntoDerivedInductionVariable = (
   }
 };
 
-/**
- * @param whileStatement a while statement assuming all the loop invariant statements are already
- * hoisted out.
- * @param nonLoopInvariantVariables a set of variables that are not guaranteed to be loop invariant.
- * (for the purpose of analysis, they are not considered as loop invariant.)
- */
-const extractOptimizableWhileLoop = (
-  { loopVariables, statements, breakCollector: originalBreakCollector }: HighIRWhileStatement,
-  nonLoopInvariantVariables: ReadonlySet<string>
-): HighIROptimizableWhileLoop | null => {
-  const expressionIsLoopInvariant = (expression: HighIRExpression): boolean => {
-    // istanbul ignore next
-    switch (expression.__type__) {
-      case 'HighIRIntLiteralExpression':
-        return true;
-      case 'HighIRNameExpression':
-        // We are doing algebraic operations here. Name is hopeless.
-        // istanbul ignore next
-        return false;
-      case 'HighIRVariableExpression':
-        return !nonLoopInvariantVariables.has(expression.name);
-    }
+type LoopGuardStructure = {
+  readonly potentialBasicInductionVariableNameWithLoopGuard: string;
+  readonly guardOperator: '<' | '<=' | '>' | '>=';
+  readonly guardExpression: PotentialLoopInvariantExpression;
+  readonly restStatements: readonly HighIRStatement[];
+  readonly breakCollector?: {
+    readonly name: string;
+    readonly type: HighIRType;
+    readonly value: HighIRExpression;
   };
+};
 
-  // Phase 1: Check the structure for loop guard.
+export const getGuardOperator_EXPOSED_FOR_TESTING = (
+  operator: IROperator,
+  invertCondition: boolean
+): '<' | '<=' | '>' | '>=' | null => {
+  switch (operator) {
+    case '<':
+      return invertCondition ? '>=' : '<';
+    case '<=':
+      return invertCondition ? '>' : '<=';
+    case '>':
+      return invertCondition ? '<=' : '>';
+    case '>=':
+      return invertCondition ? '<' : '>=';
+    default:
+      return null;
+  }
+};
+
+export const extractLoopGuardStructure_EXPOSED_FOR_TESTING = (
+  { statements, breakCollector: originalBreakCollector }: HighIRWhileStatement,
+  expressionIsLoopInvariant: (expression: HighIRExpression) => boolean
+): LoopGuardStructure | null => {
   if (statements.length < 2) return null;
   const [firstBinaryStatement, secondSingleIfStatement, ...restStatements] = statements;
   if (
@@ -226,6 +238,7 @@ const extractOptimizableWhileLoop = (
     secondSingleIfStatement == null ||
     firstBinaryStatement.__type__ !== 'HighIRBinaryStatement' ||
     firstBinaryStatement.e1.__type__ !== 'HighIRVariableExpression' ||
+    !expressionIsLoopInvariant(firstBinaryStatement.e2) ||
     secondSingleIfStatement.__type__ !== 'HighIRSingleIfStatement' ||
     secondSingleIfStatement.booleanExpression.__type__ !== 'HighIRVariableExpression' ||
     firstBinaryStatement.name !== secondSingleIfStatement.booleanExpression.name ||
@@ -236,32 +249,49 @@ const extractOptimizableWhileLoop = (
   }
   const onlyBreakStatement = checkNotNull(secondSingleIfStatement.statements[0]);
   if (onlyBreakStatement.__type__ !== 'HighIRBreakStatement') return null;
-  let guardOperator: '<' | '<=' | '>' | '>=';
-  switch (firstBinaryStatement.operator) {
-    case '<':
-      guardOperator = secondSingleIfStatement.invertCondition ? '>=' : '<';
-      break;
-    case '<=':
-      guardOperator = secondSingleIfStatement.invertCondition ? '>' : '<=';
-      break;
-    case '>':
-      guardOperator = secondSingleIfStatement.invertCondition ? '<=' : '>';
-      break;
-    case '>=':
-      guardOperator = secondSingleIfStatement.invertCondition ? '<' : '>=';
-      break;
-    default:
-      return null;
-  }
+  const guardOperator = getGuardOperator_EXPOSED_FOR_TESTING(
+    firstBinaryStatement.operator,
+    secondSingleIfStatement.invertCondition
+  );
+  if (guardOperator == null) return null;
   const potentialBasicInductionVariableNameWithLoopGuard = firstBinaryStatement.e1.name;
-  assert(firstBinaryStatement.e2.__type__ !== 'HighIRNameExpression');
+  const guardExpression = firstBinaryStatement.e2;
+  assert(guardExpression.__type__ !== 'HighIRNameExpression');
 
-  // Phase 2: Extract basic induction variables.
+  const breakCollector =
+    originalBreakCollector == null
+      ? undefined
+      : { ...originalBreakCollector, value: onlyBreakStatement.breakValue };
+
+  return {
+    potentialBasicInductionVariableNameWithLoopGuard,
+    guardOperator,
+    guardExpression,
+    restStatements,
+    breakCollector,
+  };
+};
+
+type ExtractedBasicInductionVariables = {
+  readonly loopVariablesThatAreNotBasicInductionVariables: GeneralHighIRLoopVariables[];
+  readonly allBasicInductionVariables: readonly GeneralBasicInductionVariable[];
+  readonly basicInductionVariableWithAssociatedLoopGuard: GeneralBasicInductionVariable;
+};
+
+export const extractBasicInductionVariables_EXPOSED_FOR_TESTING = (
+  potentialBasicInductionVariableNameWithLoopGuard: string,
+  loopVariables: readonly GeneralHighIRLoopVariables[],
+  restStatements: readonly HighIRStatement[],
+  expressionIsLoopInvariant: (expression: HighIRExpression) => boolean
+): ExtractedBasicInductionVariables | null => {
   const allBasicInductionVariables: GeneralBasicInductionVariable[] = [];
   const loopVariablesThatAreNotBasicInductionVariables: GeneralHighIRLoopVariables[] = [];
   loopVariables.forEach((loopVariable) => {
+    // istanbul ignore next
     if (loopVariable.loopValue.__type__ !== 'HighIRVariableExpression') {
+      // istanbul ignore next
       loopVariablesThatAreNotBasicInductionVariables.push(loopVariable);
+      // istanbul ignore next
       return;
     }
     const basicInductionLoopIncrementCollector = loopVariable.loopValue.name;
@@ -280,41 +310,51 @@ const extractOptimizableWhileLoop = (
         return null;
       })
       .find(isNotNull);
+    // istanbul ignore next
     if (incrementAmount == null) {
+      // istanbul ignore next
       loopVariablesThatAreNotBasicInductionVariables.push(loopVariable);
     } else {
       allBasicInductionVariables.push({
         name: loopVariable.name,
+        loopValueCollector: basicInductionLoopIncrementCollector,
         initialValue: loopVariable.initialValue,
         incrementAmount,
       });
     }
   });
 
-  // Phase 3: Extract the ONE basic induction variable associated with the loopGuard.
+  // Extract the ONE basic induction variable associated with the loopGuard.
   const basicInductionVariableWithAssociatedLoopGuard = allBasicInductionVariables.find(
     (it) => it.name === potentialBasicInductionVariableNameWithLoopGuard
   );
-  if (basicInductionVariableWithAssociatedLoopGuard == null) {
-    return null;
-  }
-  const basicInductionVariableWithLoopGuard: BasicInductionVariableWithLoopGuard = {
-    ...basicInductionVariableWithAssociatedLoopGuard,
-    guardOperator,
-    guardExpresssion: firstBinaryStatement.e2,
-  };
-  const breakCollector =
-    originalBreakCollector == null
-      ? undefined
-      : { ...originalBreakCollector, value: onlyBreakStatement.breakValue };
-  const generalInductionVariables = allBasicInductionVariables.filter(
-    (it) => it.name !== potentialBasicInductionVariableNameWithLoopGuard
-  );
+  if (basicInductionVariableWithAssociatedLoopGuard == null) return null;
 
-  // Phase 4: Compute all the derived induction variables.
+  return {
+    loopVariablesThatAreNotBasicInductionVariables,
+    allBasicInductionVariables,
+    basicInductionVariableWithAssociatedLoopGuard,
+  };
+};
+
+export const extractDerivedInductionVariables_EXPOSED_FOR_TESTING = (
+  allBasicInductionVariables: readonly GeneralBasicInductionVariable[],
+  loopVariablesThatAreNotBasicInductionVariables: readonly GeneralHighIRLoopVariables[],
+  restStatements: readonly HighIRStatement[],
+  expressionIsLoopInvariant: (expression: HighIRExpression) => boolean
+): {
+  readonly derivedInductionLoopVariables: readonly DerivedInductionLoopVariableWithInitialValue[];
+  readonly otherDerivedInductionVariables: readonly DerivedInductionVariableWithName[];
+  readonly otherLoopVariables: readonly GeneralHighIRLoopVariables[];
+} => {
   const existingDerivedInductionVariableSet: Record<string, DerivedInductionVariable> = {};
   allBasicInductionVariables.forEach((it) => {
     existingDerivedInductionVariableSet[it.name] = {
+      baseName: it.name,
+      multiplier: HIR_ONE,
+      immediate: HIR_ZERO,
+    };
+    existingDerivedInductionVariableSet[it.loopValueCollector] = {
       baseName: it.name,
       multiplier: HIR_ONE,
       immediate: it.incrementAmount,
@@ -328,7 +368,10 @@ const extractOptimizableWhileLoop = (
       it
     );
   });
-  const derivedInductionVariables: DerivedInductionVariableWithInitialValue[] = [];
+  const inductionLoopVariablesCollectorNames = new Set(
+    allBasicInductionVariables.map((it) => it.loopValueCollector)
+  );
+  const derivedInductionLoopVariables: DerivedInductionLoopVariableWithInitialValue[] = [];
   const otherLoopVariables: GeneralHighIRLoopVariables[] = [];
   loopVariablesThatAreNotBasicInductionVariables.forEach((loopVariable) => {
     if (loopVariable.loopValue.__type__ !== 'HighIRVariableExpression') {
@@ -340,29 +383,122 @@ const extractOptimizableWhileLoop = (
     if (derivedInductionVariable == null) {
       otherLoopVariables.push(loopVariable);
     } else {
-      derivedInductionVariables.push({
-        ...derivedInductionVariable,
+      inductionLoopVariablesCollectorNames.add(loopValueCollector);
+      derivedInductionLoopVariables.push({
         name: loopVariable.name,
         initialValue: loopVariable.initialValue,
+        ...derivedInductionVariable,
       });
     }
   });
+  const otherDerivedInductionVariables = restStatements
+    .map((it) => {
+      if (it.__type__ !== 'HighIRBinaryStatement') return null;
+      const derivedInductionVariable = existingDerivedInductionVariableSet[it.name];
+      if (derivedInductionVariable == null) return null;
+      if (inductionLoopVariablesCollectorNames.has(it.name)) return null;
+      return { name: it.name, ...derivedInductionVariable };
+    })
+    .filter(isNotNull);
 
-  // Phase 5: Remove undundant statements after getting all the induction variables.
+  return { derivedInductionLoopVariables, otherDerivedInductionVariables, otherLoopVariables };
+};
+
+export const removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING = (
+  otherLoopVariables: readonly GeneralHighIRLoopVariables[],
+  restStatements: readonly HighIRStatement[]
+): readonly HighIRStatement[] => {
   const liveVariableSet = new Set<string>();
   otherLoopVariables.forEach((it) => {
     if (it.loopValue.__type__ !== 'HighIRVariableExpression') return;
     liveVariableSet.add(it.loopValue.name);
   });
-  const optimizedStatements = internalOptimizeHighIRStatementsByDCE(
+  return internalOptimizeHighIRStatementsByDCE(restStatements, liveVariableSet);
+};
+
+/**
+ * @param whileStatement a while statement assuming all the loop invariant statements are already
+ * hoisted out.
+ * @param nonLoopInvariantVariables a set of variables that are not guaranteed to be loop invariant.
+ * (for the purpose of analysis, they are not considered as loop invariant.)
+ */
+const extractOptimizableWhileLoop = (
+  whileStatement: HighIRWhileStatement,
+  nonLoopInvariantVariables: ReadonlySet<string>
+): HighIROptimizableWhileLoop | null => {
+  const expressionIsLoopInvariant = (expression: HighIRExpression): boolean => {
+    // istanbul ignore next
+    switch (expression.__type__) {
+      case 'HighIRIntLiteralExpression':
+        return true;
+      case 'HighIRNameExpression':
+        // We are doing algebraic operations here. Name is hopeless.
+        // istanbul ignore next
+        return false;
+      case 'HighIRVariableExpression':
+        return !nonLoopInvariantVariables.has(expression.name);
+    }
+  };
+
+  // Phase 1: Check the structure for loop guard.
+  const loopGuardStructure = extractLoopGuardStructure_EXPOSED_FOR_TESTING(
+    whileStatement,
+    expressionIsLoopInvariant
+  );
+  if (loopGuardStructure == null) return null;
+  const {
+    potentialBasicInductionVariableNameWithLoopGuard,
+    guardOperator,
+    guardExpression,
     restStatements,
-    liveVariableSet
+    breakCollector,
+  } = loopGuardStructure;
+
+  // Phase 2: Extract basic induction variables.
+  const extractedBasicInductionVariables = extractBasicInductionVariables_EXPOSED_FOR_TESTING(
+    potentialBasicInductionVariableNameWithLoopGuard,
+    whileStatement.loopVariables,
+    restStatements,
+    expressionIsLoopInvariant
+  );
+  if (extractedBasicInductionVariables == null) return null;
+  const {
+    loopVariablesThatAreNotBasicInductionVariables,
+    allBasicInductionVariables,
+    basicInductionVariableWithAssociatedLoopGuard,
+  } = extractedBasicInductionVariables;
+  const basicInductionVariableWithLoopGuard: BasicInductionVariableWithLoopGuard = {
+    ...basicInductionVariableWithAssociatedLoopGuard,
+    guardOperator,
+    guardExpression,
+  };
+  const generalInductionVariables = allBasicInductionVariables.filter(
+    (it) => it.name !== potentialBasicInductionVariableNameWithLoopGuard
+  );
+
+  // Phase 3: Compute all the derived induction variables.
+  const {
+    derivedInductionLoopVariables,
+    otherDerivedInductionVariables,
+    otherLoopVariables,
+  } = extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
+    allBasicInductionVariables,
+    loopVariablesThatAreNotBasicInductionVariables,
+    restStatements,
+    expressionIsLoopInvariant
+  );
+
+  // Phase 4: Remove undundant statements after getting all the induction variables.
+  const optimizedStatements = removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING(
+    otherLoopVariables,
+    restStatements
   );
 
   return {
     basicInductionVariableWithLoopGuard,
     generalInductionVariables,
-    derivedInductionVariables,
+    derivedInductionLoopVariables,
+    otherDerivedInductionVariables,
     otherLoopVariables,
     statements: optimizedStatements,
     breakCollector,
