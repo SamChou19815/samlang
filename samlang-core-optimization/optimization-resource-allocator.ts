@@ -1,13 +1,8 @@
 export default class OptimizationResourceAllocator {
-  private tailrecTemporaryID = 0;
   private cseHoistingTemporaryID = 0;
   private inliningPrefixID = 0;
-
-  allocateTailRecTemporary(): string {
-    const temporary = `_tailrec_${this.tailrecTemporaryID}_`;
-    this.tailrecTemporaryID += 1;
-    return temporary;
-  }
+  private loopTemporaryID = 0;
+  private tailrecTemporaryID = 0;
 
   allocateCSEHoistedTemporary(): string {
     const temporary = `_cse_${this.cseHoistingTemporaryID}_`;
@@ -19,5 +14,17 @@ export default class OptimizationResourceAllocator {
     const prefix = `_inline_${this.inliningPrefixID}_`;
     this.inliningPrefixID += 1;
     return prefix;
+  }
+
+  allocateLoopTemporary(): string {
+    const prefix = `_loop_${this.loopTemporaryID}`;
+    this.loopTemporaryID += 1;
+    return prefix;
+  }
+
+  allocateTailRecTemporary(): string {
+    const temporary = `_tailrec_${this.tailrecTemporaryID}_`;
+    this.tailrecTemporaryID += 1;
+    return temporary;
   }
 }
