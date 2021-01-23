@@ -1066,6 +1066,27 @@ class Main {
 `,
   },
   {
+    testCaseName: 'loop-optimization',
+    expectedStandardOut: '100\n106\n112\n118\n124\n',
+    sourceCode: `
+class Main {
+  function printInt(n: int): unit = println(intToString(n))
+
+  function loopy(i: int): int =
+    if (i >= 10) then 0 else {
+      val j: int = i * 3 + 100;
+      val _: unit = Main.printInt(j);
+      Main.loopy(i + 2)
+    }
+
+  function main(): unit = {
+    val _: int = Main.loopy(0);
+  }
+
+}
+`,
+  },
+  {
     testCaseName: 'map-but-ignore',
     expectedStandardOut: '',
     sourceCode: `

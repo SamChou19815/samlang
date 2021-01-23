@@ -161,7 +161,7 @@ const highIRLoopInductionVariableEliminationOptimization = (
       generalInductionVariables,
       loopVariablesThatAreNotBasicInductionVariables,
       derivedInductionVariables: derivedInductionVariables.filter(
-        (it) => it !== onlyRelevantDerivedInductionVariable
+        (it) => it.name !== onlyRelevantDerivedInductionVariable.name
       ),
       statements,
       breakCollector,
