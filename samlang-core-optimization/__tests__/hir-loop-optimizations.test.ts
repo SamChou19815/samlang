@@ -12,13 +12,13 @@ import {
   HIR_INT,
   HIR_VARIABLE,
   HIR_BINARY,
+  HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_SINGLE_IF,
   HIR_BREAK,
   HIR_WHILE,
   HIR_CAST,
   HIR_RETURN,
-  HIR_TRUE,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_BOOL_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 
@@ -364,5 +364,73 @@ return (bc: int);`
       HIR_RETURN(HIR_VARIABLE('bc', HIR_INT_TYPE)),
     ],
     'return 24;'
+  );
+
+  assertOptimizeHighIRStatementsWithAllLoopOptimizations(
+    [
+      HIR_WHILE({
+        loopVariables: [
+          {
+            name: 'i',
+            type: HIR_INT_TYPE,
+            initialValue: HIR_VARIABLE('init_i', HIR_INT_TYPE),
+            loopValue: VARIABLE_TMP_I,
+          },
+        ],
+        statements: [
+          HIR_BINARY({
+            name: 'cc',
+            operator: '<',
+            e1: VARIABLE_I,
+            e2: HIR_VARIABLE('L', HIR_INT_TYPE),
+          }),
+          HIR_SINGLE_IF({
+            booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
+            invertCondition: true,
+            statements: [HIR_BREAK(HIR_ZERO)],
+          }),
+          HIR_BINARY({ name: 't', operator: '*', e1: VARIABLE_I, e2: HIR_INT(3) }),
+          HIR_BINARY({
+            name: 'j',
+            operator: '+',
+            e1: HIR_VARIABLE('t', HIR_INT_TYPE),
+            e2: HIR_VARIABLE('a', HIR_INT_TYPE),
+          }),
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_ZERO,
+            functionArguments: [VARIABLE_J],
+            returnType: HIR_INT_TYPE,
+          }),
+          HIR_BINARY({
+            name: 'tmp_i',
+            operator: '+',
+            e1: VARIABLE_I,
+            e2: HIR_INT(2),
+          }),
+        ],
+      }),
+    ],
+    `let _loop_0: int = (init_i: int) * 3;
+let _loop_2: int = (init_i: int) * 3;
+let _loop_3: int = (a: int) + (_loop_2: int);
+let i: int = (init_i: int);
+let t: int = (_loop_0: int);
+let j: int = (_loop_3: int);
+while (true) {
+  let _loop_7: bool = (L: int) <= (i: int);
+  if (_loop_7: bool) {
+    undefined = 0;
+    break;
+  }
+  let t: int = (i: int) * 3;
+  let j: int = (t: int) + (a: int);
+  0((j: int));
+  let _loop_4: int = (i: int) + 2;
+  let _loop_5: int = (t: int) + 6;
+  let _loop_6: int = (j: int) + 6;
+  i = (_loop_4: int);
+  t = (_loop_5: int);
+  j = (_loop_6: int);
+}`
   );
 });
