@@ -67,9 +67,8 @@ const highIRLoopAlgebraicOptimization = (
   {
     basicInductionVariableWithLoopGuard,
     generalInductionVariables,
-    derivedInductionLoopVariables,
-    otherDerivedInductionVariables,
-    otherLoopVariables,
+    loopVariablesThatAreNotBasicInductionVariables,
+    derivedInductionVariables,
     statements,
     breakCollector,
   }: HighIROptimizableWhileLoop,
@@ -79,9 +78,8 @@ const highIRLoopAlgebraicOptimization = (
     basicInductionVariableWithLoopGuard.initialValue.__type__ !== 'HighIRIntLiteralExpression' ||
     basicInductionVariableWithLoopGuard.incrementAmount.__type__ !== 'HighIRIntLiteralExpression' ||
     basicInductionVariableWithLoopGuard.guardExpression.__type__ !== 'HighIRIntLiteralExpression' ||
-    derivedInductionLoopVariables.length !== 0 ||
-    otherDerivedInductionVariables.length !== 0 ||
-    otherLoopVariables.length !== 0 ||
+    loopVariablesThatAreNotBasicInductionVariables.length !== 0 ||
+    derivedInductionVariables.length !== 0 ||
     statements.length !== 0
   ) {
     return null;
