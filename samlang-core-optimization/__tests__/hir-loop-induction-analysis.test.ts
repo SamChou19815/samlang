@@ -312,20 +312,12 @@ it('Good loops are accepted.', () => {
   ).toEqual({
     basicInductionVariableWithLoopGuard: {
       name: 'i',
-      loopValueCollector: 'tmp_i',
       initialValue: HIR_ZERO,
       incrementAmount: HIR_ONE,
       guardOperator: '<',
       guardExpression: HIR_ZERO,
     },
-    generalInductionVariables: [
-      {
-        name: 'j',
-        loopValueCollector: 'tmp_j',
-        initialValue: HIR_ZERO,
-        incrementAmount: HIR_INT(3),
-      },
-    ],
+    generalInductionVariables: [{ name: 'j', initialValue: HIR_ZERO, incrementAmount: HIR_INT(3) }],
     loopVariablesThatAreNotBasicInductionVariables: [
       {
         name: 'x',

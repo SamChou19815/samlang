@@ -56,7 +56,6 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
-          loopValueCollector: 'tmp_i',
           initialValue: HIR_VARIABLE('a', HIR_INT_TYPE),
           incrementAmount: HIR_ZERO,
           guardOperator: '<',
@@ -76,7 +75,6 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
-          loopValueCollector: 'tmp_i',
           initialValue: HIR_ZERO,
           incrementAmount: HIR_VARIABLE('a', HIR_INT_TYPE),
           guardOperator: '<',
@@ -96,7 +94,6 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
-          loopValueCollector: 'tmp_i',
           initialValue: HIR_ZERO,
           incrementAmount: HIR_ZERO,
           guardOperator: '<',
@@ -116,7 +113,6 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
-          loopValueCollector: 'tmp_i',
           initialValue: HIR_ZERO,
           incrementAmount: HIR_ZERO,
           guardOperator: '<',
@@ -138,7 +134,6 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
-          loopValueCollector: 'tmp_i',
           initialValue: HIR_ZERO,
           incrementAmount: HIR_ZERO,
           guardOperator: '<',
@@ -160,7 +155,6 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
-          loopValueCollector: 'tmp_i',
           initialValue: HIR_ZERO,
           incrementAmount: HIR_ZERO,
           guardOperator: '<',
@@ -180,7 +174,6 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
-          loopValueCollector: 'tmp_i',
           initialValue: HIR_ZERO,
           incrementAmount: HIR_ZERO,
           guardOperator: '<',
@@ -202,7 +195,6 @@ it('highIRLoopAlgebraicOptimization works 1/n', () => {
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
-          loopValueCollector: 'tmp_i',
           initialValue: HIR_ZERO,
           incrementAmount: HIR_ZERO,
           guardOperator: '<',
@@ -224,7 +216,6 @@ it('highIRLoopAlgebraicOptimization works 2/n', () => {
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
-          loopValueCollector: 'tmp_i',
           initialValue: HIR_INT(5),
           incrementAmount: HIR_ONE,
           guardOperator: '<',
@@ -247,7 +238,6 @@ it('highIRLoopAlgebraicOptimization works 3/n', () => {
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
-          loopValueCollector: 'tmp_i',
           initialValue: HIR_INT(5),
           incrementAmount: HIR_ONE,
           guardOperator: '<',
@@ -270,7 +260,6 @@ it('highIRLoopAlgebraicOptimization works 4/n', () => {
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
-          loopValueCollector: 'tmp_i',
           initialValue: HIR_INT(5),
           incrementAmount: HIR_ONE,
           guardOperator: '<',
@@ -279,7 +268,6 @@ it('highIRLoopAlgebraicOptimization works 4/n', () => {
         generalInductionVariables: [
           {
             name: 'j',
-            loopValueCollector: 'tmp_j',
             initialValue: HIR_VARIABLE('j_init', HIR_INT_TYPE),
             incrementAmount: HIR_VARIABLE('outside', HIR_INT_TYPE),
           },
@@ -313,7 +301,6 @@ it('highIRLoopAlgebraicOptimization works 5/n', () => {
       {
         basicInductionVariableWithLoopGuard: {
           name: 'i',
-          loopValueCollector: 'tmp_i',
           initialValue: HIR_INT(5),
           incrementAmount: HIR_ONE,
           guardOperator: '<',
@@ -322,7 +309,6 @@ it('highIRLoopAlgebraicOptimization works 5/n', () => {
         generalInductionVariables: [
           {
             name: 'j',
-            loopValueCollector: 'tmp_j',
             initialValue: HIR_VARIABLE('j_init', HIR_INT_TYPE),
             incrementAmount: HIR_VARIABLE('outside', HIR_INT_TYPE),
           },
