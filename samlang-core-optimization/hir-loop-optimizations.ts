@@ -169,7 +169,7 @@ const recursivelyOptimizeHighIRStatementWithAllLoopOptimizations = (
           s1: statement.s1.flatMap((it) =>
             recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
           ),
-          s2: statement.s1.flatMap((it) =>
+          s2: statement.s2.flatMap((it) =>
             recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
           ),
         },

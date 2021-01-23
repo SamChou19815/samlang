@@ -84,6 +84,9 @@ runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) 
   it(`HIR[inl]: ${testCaseName}`, () => {
     testHIR(program, expectedStandardOut, { doesPerformInlining: true });
   });
+  it(`HIR[loop]: ${testCaseName}`, () => {
+    testHIR(program, expectedStandardOut, { doesPerformLoopOptimization: true });
+  });
   it(`HIR[all]: ${testCaseName}`, () => {
     testHIR(program, expectedStandardOut);
   });

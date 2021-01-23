@@ -50,6 +50,9 @@ const compare = (expected: string, actual: string): boolean => {
   return false;
 };
 
+console.error('Bundling...');
+runWithErrorCheck('yarn', ['workspace', '@dev-sam/samlang-cli', 'bundle ']);
+console.error('Bundled!');
 console.error('Compiling...');
 runWithErrorCheck('./samlang-dev', ['compile']);
 console.error('Compiled!');

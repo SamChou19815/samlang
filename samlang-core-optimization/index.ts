@@ -3,6 +3,7 @@ import optimizeHighIRStatementsByConditionalConstantPropagation from './hir-cond
 import optimizeHighIRStatementsByDeadCodeElimination from './hir-dead-code-elimination-optimization';
 import optimizeHighIRFunctionsByInlining from './hir-inline-optimization';
 import optimizeHighIRStatementsByLocalValueNumbering from './hir-local-value-numbering-optimization';
+import optimizeHighIRStatementsWithAllLoopOptimizations from './hir-loop-optimizations';
 import optimizeHighIRFunctionByTailRecursionRewrite from './hir-tail-recursion-optimization';
 import optimizeHighIRModuleByEliminatingUnusedOnes from './hir-unused-name-elimination-optimization';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
@@ -13,12 +14,14 @@ import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel
 export type OptimizationConfiguration = {
   doesPerformLocalValueNumbering?: boolean;
   doesPerformCommonSubExpressionElimination?: boolean;
+  doesPerformLoopOptimization?: boolean;
   doesPerformInlining?: boolean;
 };
 
 const allEnabledOptimizationConfiguration: OptimizationConfiguration = {
   doesPerformLocalValueNumbering: true,
   doesPerformCommonSubExpressionElimination: true,
+  doesPerformLoopOptimization: true,
   doesPerformInlining: true,
 };
 
@@ -28,9 +31,13 @@ const optimizeHighIRStatementsForOneRound = (
   {
     doesPerformLocalValueNumbering,
     doesPerformCommonSubExpressionElimination,
+    doesPerformLoopOptimization,
   }: OptimizationConfiguration
 ): readonly HighIRStatement[] => {
   let optimized = optimizeHighIRStatementsByConditionalConstantPropagation(statements);
+  if (doesPerformLoopOptimization) {
+    optimized = optimizeHighIRStatementsWithAllLoopOptimizations(optimized, allocator);
+  }
   if (doesPerformLocalValueNumbering) {
     optimized = optimizeHighIRStatementsByLocalValueNumbering(optimized);
   }
