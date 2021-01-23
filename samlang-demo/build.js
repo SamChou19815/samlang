@@ -2,7 +2,7 @@ const { writeFileSync } = require('fs');
 const { join } = require('path');
 
 require('@vercel/ncc')(join(__dirname, 'src', 'index.ts'), {
-  // minify: true,
+  minify: true,
   sourceMapRegister: false,
   transpileOnly: true,
   quiet: true,
