@@ -29,7 +29,7 @@ type BasicInductionVariableWithLoopGuard = {
   readonly guardExpression: PotentialLoopInvariantExpression;
 };
 
-type GeneralBasicInductionVariable = {
+export type GeneralBasicInductionVariable = {
   readonly name: string;
   readonly loopValueCollector: string;
   readonly initialValue: HighIRExpression;
@@ -44,16 +44,11 @@ type DerivedInductionVariable = {
 
 type DerivedInductionVariableWithName = { readonly name: string } & DerivedInductionVariable;
 
-type DerivedInductionLoopVariableWithInitialValue = DerivedInductionVariableWithName & {
-  readonly initialValue: HighIRExpression;
-};
-
 export type HighIROptimizableWhileLoop = {
   readonly basicInductionVariableWithLoopGuard: BasicInductionVariableWithLoopGuard;
   readonly generalInductionVariables: readonly GeneralBasicInductionVariable[];
-  readonly derivedInductionLoopVariables: readonly DerivedInductionLoopVariableWithInitialValue[];
-  readonly otherDerivedInductionVariables: readonly DerivedInductionVariableWithName[];
-  readonly otherLoopVariables: readonly GeneralHighIRLoopVariables[];
+  readonly loopVariablesThatAreNotBasicInductionVariables: readonly GeneralHighIRLoopVariables[];
+  readonly derivedInductionVariables: readonly DerivedInductionVariableWithName[];
   readonly statements: readonly HighIRStatement[];
   readonly breakCollector?: {
     readonly name: string;
@@ -339,25 +334,15 @@ export const extractBasicInductionVariables_EXPOSED_FOR_TESTING = (
 
 export const extractDerivedInductionVariables_EXPOSED_FOR_TESTING = (
   allBasicInductionVariables: readonly GeneralBasicInductionVariable[],
-  loopVariablesThatAreNotBasicInductionVariables: readonly GeneralHighIRLoopVariables[],
   restStatements: readonly HighIRStatement[],
   expressionIsLoopInvariant: (expression: HighIRExpression) => boolean
-): {
-  readonly derivedInductionLoopVariables: readonly DerivedInductionLoopVariableWithInitialValue[];
-  readonly otherDerivedInductionVariables: readonly DerivedInductionVariableWithName[];
-  readonly otherLoopVariables: readonly GeneralHighIRLoopVariables[];
-} => {
+): readonly DerivedInductionVariableWithName[] => {
   const existingDerivedInductionVariableSet: Record<string, DerivedInductionVariable> = {};
   allBasicInductionVariables.forEach((it) => {
     existingDerivedInductionVariableSet[it.name] = {
       baseName: it.name,
       multiplier: HIR_ONE,
       immediate: HIR_ZERO,
-    };
-    existingDerivedInductionVariableSet[it.loopValueCollector] = {
-      baseName: it.name,
-      multiplier: HIR_ONE,
-      immediate: it.incrementAmount,
     };
   });
   restStatements.forEach((it) => {
@@ -371,27 +356,7 @@ export const extractDerivedInductionVariables_EXPOSED_FOR_TESTING = (
   const inductionLoopVariablesCollectorNames = new Set(
     allBasicInductionVariables.map((it) => it.loopValueCollector)
   );
-  const derivedInductionLoopVariables: DerivedInductionLoopVariableWithInitialValue[] = [];
-  const otherLoopVariables: GeneralHighIRLoopVariables[] = [];
-  loopVariablesThatAreNotBasicInductionVariables.forEach((loopVariable) => {
-    if (loopVariable.loopValue.__type__ !== 'HighIRVariableExpression') {
-      otherLoopVariables.push(loopVariable);
-      return;
-    }
-    const loopValueCollector = loopVariable.loopValue.name;
-    const derivedInductionVariable = existingDerivedInductionVariableSet[loopValueCollector];
-    if (derivedInductionVariable == null) {
-      otherLoopVariables.push(loopVariable);
-    } else {
-      inductionLoopVariablesCollectorNames.add(loopValueCollector);
-      derivedInductionLoopVariables.push({
-        name: loopVariable.name,
-        initialValue: loopVariable.initialValue,
-        ...derivedInductionVariable,
-      });
-    }
-  });
-  const otherDerivedInductionVariables = restStatements
+  return restStatements
     .map((it) => {
       if (it.__type__ !== 'HighIRBinaryStatement') return null;
       const derivedInductionVariable = existingDerivedInductionVariableSet[it.name];
@@ -400,8 +365,6 @@ export const extractDerivedInductionVariables_EXPOSED_FOR_TESTING = (
       return { name: it.name, ...derivedInductionVariable };
     })
     .filter(isNotNull);
-
-  return { derivedInductionLoopVariables, otherDerivedInductionVariables, otherLoopVariables };
 };
 
 export const removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING = (
@@ -477,29 +440,28 @@ const extractOptimizableWhileLoop = (
   );
 
   // Phase 3: Compute all the derived induction variables.
-  const {
-    derivedInductionLoopVariables,
-    otherDerivedInductionVariables,
-    otherLoopVariables,
-  } = extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
+  const derivedInductionVariables = extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
     allBasicInductionVariables,
-    loopVariablesThatAreNotBasicInductionVariables,
     restStatements,
     expressionIsLoopInvariant
   );
+  const derivedInductionVariableNames = new Set(derivedInductionVariables.map((it) => it.name));
 
   // Phase 4: Remove undundant statements after getting all the induction variables.
   const optimizedStatements = removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING(
-    otherLoopVariables,
+    loopVariablesThatAreNotBasicInductionVariables.filter(
+      (it) =>
+        it.loopValue.__type__ !== 'HighIRVariableExpression' ||
+        !derivedInductionVariableNames.has(it.loopValue.name)
+    ),
     restStatements
   );
 
   return {
     basicInductionVariableWithLoopGuard,
     generalInductionVariables,
-    derivedInductionLoopVariables,
-    otherDerivedInductionVariables,
-    otherLoopVariables,
+    loopVariablesThatAreNotBasicInductionVariables,
+    derivedInductionVariables,
     statements: optimizedStatements,
     breakCollector,
   };
