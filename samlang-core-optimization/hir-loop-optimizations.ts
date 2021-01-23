@@ -2,6 +2,7 @@ import optimizeHighIRStatementsByConditionalConstantPropagation from './hir-cond
 import highIRLoopAlgebraicOptimization from './hir-loop-algebraic-optimization';
 import extractOptimizableWhileLoop, {
   HighIROptimizableWhileLoop,
+  invertGuardOperator,
 } from './hir-loop-induction-analysis';
 import highIRLoopInductionVariableEliminationOptimization from './hir-loop-induction-variable-elimination';
 import optimizeHighIRWhileStatementByLoopInvariantCodeMotion from './hir-loop-invariant-code-motion';
@@ -59,7 +60,7 @@ const expandOptimizableWhileLoop = (
     statements: [
       HIR_BINARY({
         name: loopConditionVariable,
-        operator: basicInductionVariableWithLoopGuard.guardOperator,
+        operator: invertGuardOperator(basicInductionVariableWithLoopGuard.guardOperator),
         e1: HIR_VARIABLE(basicInductionVariableWithLoopGuard.name, HIR_INT_TYPE),
         e2: basicInductionVariableWithLoopGuard.guardExpression,
       }),
