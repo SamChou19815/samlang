@@ -1,13 +1,14 @@
-name: Integration Test
+name: Full Integration Test
 on:
-  push:
-    branches:
-      - master
+  schedule:
+    - cron: '0 0 * * *'
   pull_request:
+    paths:
+      - .github/workflows/full-integration-test.yml
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@master
       - uses: actions/setup-node@v2-beta
@@ -21,5 +22,10 @@ jobs:
             yarn-berry-
       - name: Yarn Install
         run: yarn
+      - name: Install LLVM and Clang
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: '11'
+          directory: ${{ runner.temp }}/llvm
       - name: Compile samlang Programs
         run: yarn test:integration

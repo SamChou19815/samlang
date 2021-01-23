@@ -98,6 +98,12 @@ export const compileEverything = (
 
   compileToJS(highIRSources, outputDirectory);
 
+  if (spawnSync('llc', ['--help'], { shell: true, stdio: 'pipe' }).status !== 0) {
+    // eslint-disable-next-line no-console
+    console.error('You do not have LLVM toolchain installation. Skipping LLVM targets.');
+    return true;
+  }
+
   const modulePaths = compileToLLVMModules(highIRSources, outputDirectory);
   const assembleResults = modulePaths.map((modulePath) => {
     const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
