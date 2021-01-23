@@ -104,6 +104,13 @@ success
 #./out/test.if-else-unreachable-2
 success
 
+#./out/test.loop-optimization
+100
+106
+112
+118
+124
+
 #./out/test.map-but-ignore
 
 #./out/test.math-functions

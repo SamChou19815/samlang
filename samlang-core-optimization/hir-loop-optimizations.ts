@@ -38,25 +38,24 @@ const expandOptimizableWhileLoop = (
     (it) => [it, allocator.allocateLoopTemporary()] as const
   );
   const loopConditionVariable = allocator.allocateLoopTemporary();
+  const loopVariables = [
+    ...loopVariablesThatAreNotBasicInductionVariables,
+    {
+      name: basicInductionVariableWithLoopGuard.name,
+      type: HIR_INT_TYPE,
+      initialValue: basicInductionVariableWithLoopGuard.initialValue,
+      loopValue: HIR_VARIABLE(basicInductionVariableWithLoopGuardLoopValueCollector, HIR_INT_TYPE),
+    },
+    ...generalBasicInductionVariablesWithLoopValueCollectors.map(([v, collector]) => ({
+      name: v.name,
+      type: HIR_INT_TYPE,
+      initialValue: v.initialValue,
+      loopValue: HIR_VARIABLE(collector, HIR_INT_TYPE),
+    })),
+  ];
+  const loopVariableNames = new Set(loopVariables.map((it) => it.name));
   return HIR_WHILE({
-    loopVariables: [
-      ...loopVariablesThatAreNotBasicInductionVariables,
-      {
-        name: basicInductionVariableWithLoopGuard.name,
-        type: HIR_INT_TYPE,
-        initialValue: basicInductionVariableWithLoopGuard.initialValue,
-        loopValue: HIR_VARIABLE(
-          basicInductionVariableWithLoopGuardLoopValueCollector,
-          HIR_INT_TYPE
-        ),
-      },
-      ...generalBasicInductionVariablesWithLoopValueCollectors.map(([v, collector]) => ({
-        name: v.name,
-        type: HIR_INT_TYPE,
-        initialValue: v.initialValue,
-        loopValue: HIR_VARIABLE(collector, HIR_INT_TYPE),
-      })),
-    ],
+    loopVariables,
     statements: [
       HIR_BINARY({
         name: loopConditionVariable,
@@ -69,7 +68,9 @@ const expandOptimizableWhileLoop = (
         invertCondition: false,
         statements: [HIR_BREAK(breakCollector?.value ?? HIR_ZERO)],
       }),
-      ...statements,
+      ...statements.filter(
+        (it) => it.__type__ !== 'HighIRBinaryStatement' || !loopVariableNames.has(it.name)
+      ),
       HIR_BINARY({
         name: basicInductionVariableWithLoopGuardLoopValueCollector,
         operator: '+',

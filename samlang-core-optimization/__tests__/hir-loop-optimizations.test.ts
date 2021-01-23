@@ -422,8 +422,6 @@ while (true) {
     undefined = 0;
     break;
   }
-  let t: int = (i: int) * 3;
-  let j: int = (t: int) + (a: int);
   0((j: int));
   let _loop_4: int = (i: int) + 2;
   let _loop_5: int = (t: int) + 6;
