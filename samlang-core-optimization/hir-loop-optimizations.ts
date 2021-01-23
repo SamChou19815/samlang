@@ -1,0 +1,209 @@
+import optimizeHighIRStatementsByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
+import highIRLoopAlgebraicOptimization from './hir-loop-algebraic-optimization';
+import extractOptimizableWhileLoop, {
+  HighIROptimizableWhileLoop,
+} from './hir-loop-induction-analysis';
+import highIRLoopInductionVariableEliminationOptimization from './hir-loop-induction-variable-elimination';
+import optimizeHighIRWhileStatementByLoopInvariantCodeMotion from './hir-loop-invariant-code-motion';
+import highIRLoopStrengthReductionOptimization from './hir-loop-strength-reduction';
+import type OptimizationResourceAllocator from './optimization-resource-allocator';
+
+import {
+  HighIRStatement,
+  HighIRWhileStatement,
+  HIR_ZERO,
+  HIR_VARIABLE,
+  HIR_BINARY,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
+  HIR_WHILE,
+} from 'samlang-core-ast/hir-expressions';
+import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
+import { HIR_BOOL_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
+
+const expandOptimizableWhileLoop = (
+  {
+    basicInductionVariableWithLoopGuard,
+    generalInductionVariables,
+    loopVariablesThatAreNotBasicInductionVariables,
+    derivedInductionVariables,
+    statements,
+    breakCollector,
+  }: HighIROptimizableWhileLoop,
+  allocator: OptimizationResourceAllocator
+): HighIRWhileStatement => {
+  const basicInductionVariableWithLoopGuardLoopValueCollector = allocator.allocateLoopTemporary();
+  const generalBasicInductionVariablesWithLoopValueCollectors = generalInductionVariables.map(
+    (it) => [it, allocator.allocateLoopTemporary()] as const
+  );
+  const loopConditionVariable = allocator.allocateLoopTemporary();
+  return HIR_WHILE({
+    loopVariables: [
+      ...loopVariablesThatAreNotBasicInductionVariables,
+      {
+        name: basicInductionVariableWithLoopGuard.name,
+        type: HIR_INT_TYPE,
+        initialValue: basicInductionVariableWithLoopGuard.initialValue,
+        loopValue: HIR_VARIABLE(
+          basicInductionVariableWithLoopGuardLoopValueCollector,
+          HIR_INT_TYPE
+        ),
+      },
+      ...generalBasicInductionVariablesWithLoopValueCollectors.map(([v, collector]) => ({
+        name: v.name,
+        type: HIR_INT_TYPE,
+        initialValue: v.initialValue,
+        loopValue: HIR_VARIABLE(collector, HIR_INT_TYPE),
+      })),
+    ],
+    statements: [
+      HIR_BINARY({
+        name: loopConditionVariable,
+        operator: basicInductionVariableWithLoopGuard.guardOperator,
+        e1: HIR_VARIABLE(basicInductionVariableWithLoopGuard.name, HIR_INT_TYPE),
+        e2: basicInductionVariableWithLoopGuard.guardExpression,
+      }),
+      HIR_SINGLE_IF({
+        booleanExpression: HIR_VARIABLE(loopConditionVariable, HIR_BOOL_TYPE),
+        invertCondition: false,
+        statements: [HIR_BREAK(breakCollector?.value ?? HIR_ZERO)],
+      }),
+      ...statements,
+      HIR_BINARY({
+        name: basicInductionVariableWithLoopGuardLoopValueCollector,
+        operator: '+',
+        e1: HIR_VARIABLE(basicInductionVariableWithLoopGuard.name, HIR_INT_TYPE),
+        e2: basicInductionVariableWithLoopGuard.incrementAmount,
+      }),
+      ...generalBasicInductionVariablesWithLoopValueCollectors.map(([v, collector]) =>
+        HIR_BINARY({
+          name: collector,
+          operator: '+',
+          e1: HIR_VARIABLE(v.name, HIR_INT_TYPE),
+          e2: v.incrementAmount,
+        })
+      ),
+      ...derivedInductionVariables.flatMap((derivedInductionVariable) => {
+        const step1Temp = allocator.allocateLoopTemporary();
+        return [
+          HIR_BINARY({
+            name: step1Temp,
+            ...createHighIRFlexibleOrderOperatorNode(
+              '*',
+              HIR_VARIABLE(derivedInductionVariable.baseName, HIR_INT_TYPE),
+              derivedInductionVariable.multiplier
+            ),
+          }),
+          HIR_BINARY({
+            name: derivedInductionVariable.name,
+            ...createHighIRFlexibleOrderOperatorNode(
+              '+',
+              HIR_VARIABLE(step1Temp, HIR_INT_TYPE),
+              derivedInductionVariable.immediate
+            ),
+          }),
+        ];
+      }),
+    ],
+    breakCollector:
+      breakCollector == null ? undefined : { name: breakCollector.name, type: breakCollector.type },
+  });
+};
+
+export const optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING = (
+  highIRWhileStatement: HighIRWhileStatement,
+  allocator: OptimizationResourceAllocator
+): readonly HighIRStatement[] => {
+  const {
+    hoistedStatementsBeforeWhile,
+    optimizedWhileStatement,
+    nonLoopInvariantVariables,
+  } = optimizeHighIRWhileStatementByLoopInvariantCodeMotion(highIRWhileStatement);
+  const optimizableWhileStatement = extractOptimizableWhileLoop(
+    optimizedWhileStatement,
+    nonLoopInvariantVariables
+  );
+  const finalStatements = [...hoistedStatementsBeforeWhile];
+  if (optimizableWhileStatement == null) {
+    finalStatements.push(optimizedWhileStatement);
+    return finalStatements;
+  }
+  const algebraicallyOptimizedStatements = highIRLoopAlgebraicOptimization(
+    optimizableWhileStatement,
+    allocator
+  );
+  if (algebraicallyOptimizedStatements != null) {
+    finalStatements.push(...algebraicallyOptimizedStatements);
+    return finalStatements;
+  }
+  const inductionVariableEliminationResult = highIRLoopInductionVariableEliminationOptimization(
+    optimizableWhileStatement,
+    allocator
+  );
+  let newOptimizableWhileStatement = optimizableWhileStatement;
+  if (inductionVariableEliminationResult != null) {
+    finalStatements.push(...inductionVariableEliminationResult.prefixStatements);
+    newOptimizableWhileStatement = inductionVariableEliminationResult.optimizableWhileLoop;
+  }
+  const strengthReductionResult = highIRLoopStrengthReductionOptimization(
+    newOptimizableWhileStatement,
+    allocator
+  );
+  finalStatements.push(
+    ...strengthReductionResult.prefixStatements,
+    expandOptimizableWhileLoop(strengthReductionResult.optimizableWhileLoop, allocator)
+  );
+  return finalStatements;
+};
+
+const recursivelyOptimizeHighIRStatementWithAllLoopOptimizations = (
+  statement: HighIRStatement,
+  allocator: OptimizationResourceAllocator
+): readonly HighIRStatement[] => {
+  switch (statement.__type__) {
+    case 'HighIRIfElseStatement':
+      return [
+        {
+          ...statement,
+          s1: statement.s1.flatMap((it) =>
+            recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
+          ),
+          s2: statement.s1.flatMap((it) =>
+            recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
+          ),
+        },
+      ];
+    case 'HighIRSingleIfStatement':
+      return [
+        {
+          ...statement,
+          statements: statement.statements.flatMap((it) =>
+            recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
+          ),
+        },
+      ];
+    case 'HighIRWhileStatement': {
+      const optimizedStatements = statement.statements.flatMap((it) =>
+        recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
+      );
+      return optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING(
+        { ...statement, statements: optimizedStatements },
+        allocator
+      );
+    }
+    default:
+      return [statement];
+  }
+};
+
+const optimizeHighIRStatementsWithAllLoopOptimizations = (
+  statements: readonly HighIRStatement[],
+  allocator: OptimizationResourceAllocator
+): readonly HighIRStatement[] =>
+  optimizeHighIRStatementsByConditionalConstantPropagation(
+    statements.flatMap((it) =>
+      recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
+    )
+  );
+
+export default optimizeHighIRStatementsWithAllLoopOptimizations;
