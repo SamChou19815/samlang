@@ -18,11 +18,12 @@ import {
 import type { HighIRType } from 'samlang-core-ast/hir-types';
 import { assert, checkNotNull, isNotNull } from 'samlang-core-utils';
 
-type PotentialLoopInvariantExpression = HighIRIntLiteralExpression | HighIRVariableExpression;
+export type PotentialLoopInvariantExpression =
+  | HighIRIntLiteralExpression
+  | HighIRVariableExpression;
 
 type BasicInductionVariableWithLoopGuard = {
   readonly name: string;
-  readonly loopValueCollector: string;
   readonly initialValue: HighIRExpression;
   readonly incrementAmount: PotentialLoopInvariantExpression;
   readonly guardOperator: '<' | '<=' | '>' | '>=';
@@ -31,9 +32,12 @@ type BasicInductionVariableWithLoopGuard = {
 
 export type GeneralBasicInductionVariable = {
   readonly name: string;
-  readonly loopValueCollector: string;
   readonly initialValue: HighIRExpression;
   readonly incrementAmount: PotentialLoopInvariantExpression;
+};
+
+export type GeneralBasicInductionVariableWithLoopValueCollector = GeneralBasicInductionVariable & {
+  readonly loopValueCollector: string;
 };
 
 type DerivedInductionVariable = {
@@ -42,7 +46,7 @@ type DerivedInductionVariable = {
   readonly immediate: PotentialLoopInvariantExpression;
 };
 
-type DerivedInductionVariableWithName = { readonly name: string } & DerivedInductionVariable;
+export type DerivedInductionVariableWithName = { readonly name: string } & DerivedInductionVariable;
 
 export type HighIROptimizableWhileLoop = {
   readonly basicInductionVariableWithLoopGuard: BasicInductionVariableWithLoopGuard;
@@ -81,7 +85,7 @@ const statementContainsBreak = (statement: HighIRStatement): boolean => {
 const statementsContainsBreak = (statements: readonly HighIRStatement[]): boolean =>
   statements.some(statementContainsBreak);
 
-const mergeAddition = (
+const mergeInvariantAdditionForLoopOptimization = (
   existingValue: PotentialLoopInvariantExpression,
   addedValue: PotentialLoopInvariantExpression
 ): PotentialLoopInvariantExpression | null => {
@@ -100,13 +104,35 @@ const mergeAddition = (
   return null;
 };
 
+export const mergeInvariantMultiplicationForLoopOptimization = (
+  existingValue: PotentialLoopInvariantExpression,
+  addedValue: PotentialLoopInvariantExpression
+): PotentialLoopInvariantExpression | null => {
+  if (
+    existingValue.__type__ === 'HighIRIntLiteralExpression' &&
+    addedValue.__type__ === 'HighIRIntLiteralExpression'
+  ) {
+    return HIR_INT(existingValue.value.multiply(addedValue.value));
+  }
+  if (addedValue.__type__ === 'HighIRIntLiteralExpression' && addedValue.value.equals(1)) {
+    return existingValue;
+  }
+  if (existingValue.__type__ === 'HighIRIntLiteralExpression' && existingValue.value.equals(1)) {
+    return addedValue;
+  }
+  return null;
+};
+
 const mergeConstantOperationIntoDerivedInductionVariable = (
   existing: DerivedInductionVariable,
   operator: '+' | '*',
   loopInvariantExpression: PotentialLoopInvariantExpression
 ): DerivedInductionVariable | null => {
   if (operator === '+') {
-    const mergedImmediate = mergeAddition(existing.immediate, loopInvariantExpression);
+    const mergedImmediate = mergeInvariantAdditionForLoopOptimization(
+      existing.immediate,
+      loopInvariantExpression
+    );
     if (mergedImmediate == null) return null;
     return { ...existing, immediate: mergedImmediate };
   }
@@ -145,8 +171,14 @@ const mergeVariableAdditionIntoDerivedInductionVariable = (
   anotherVariable: DerivedInductionVariable
 ): DerivedInductionVariable | null => {
   if (existing.baseName !== anotherVariable.baseName) return null;
-  const mergedMultiplier = mergeAddition(existing.multiplier, anotherVariable.multiplier);
-  const mergedImmediate = mergeAddition(existing.immediate, anotherVariable.immediate);
+  const mergedMultiplier = mergeInvariantAdditionForLoopOptimization(
+    existing.multiplier,
+    anotherVariable.multiplier
+  );
+  const mergedImmediate = mergeInvariantAdditionForLoopOptimization(
+    existing.immediate,
+    anotherVariable.immediate
+  );
   // istanbul ignore next
   if (mergedMultiplier == null || mergedImmediate == null) return null;
   return { baseName: existing.baseName, multiplier: mergedMultiplier, immediate: mergedImmediate };
@@ -269,8 +301,8 @@ export const extractLoopGuardStructure_EXPOSED_FOR_TESTING = (
 
 type ExtractedBasicInductionVariables = {
   readonly loopVariablesThatAreNotBasicInductionVariables: GeneralHighIRLoopVariables[];
-  readonly allBasicInductionVariables: readonly GeneralBasicInductionVariable[];
-  readonly basicInductionVariableWithAssociatedLoopGuard: GeneralBasicInductionVariable;
+  readonly allBasicInductionVariables: readonly GeneralBasicInductionVariableWithLoopValueCollector[];
+  readonly basicInductionVariableWithAssociatedLoopGuard: GeneralBasicInductionVariableWithLoopValueCollector;
 };
 
 export const extractBasicInductionVariables_EXPOSED_FOR_TESTING = (
@@ -279,7 +311,7 @@ export const extractBasicInductionVariables_EXPOSED_FOR_TESTING = (
   restStatements: readonly HighIRStatement[],
   expressionIsLoopInvariant: (expression: HighIRExpression) => boolean
 ): ExtractedBasicInductionVariables | null => {
-  const allBasicInductionVariables: GeneralBasicInductionVariable[] = [];
+  const allBasicInductionVariables: GeneralBasicInductionVariableWithLoopValueCollector[] = [];
   const loopVariablesThatAreNotBasicInductionVariables: GeneralHighIRLoopVariables[] = [];
   loopVariables.forEach((loopVariable) => {
     // istanbul ignore next
@@ -333,7 +365,7 @@ export const extractBasicInductionVariables_EXPOSED_FOR_TESTING = (
 };
 
 export const extractDerivedInductionVariables_EXPOSED_FOR_TESTING = (
-  allBasicInductionVariables: readonly GeneralBasicInductionVariable[],
+  allBasicInductionVariables: readonly GeneralBasicInductionVariableWithLoopValueCollector[],
   restStatements: readonly HighIRStatement[],
   expressionIsLoopInvariant: (expression: HighIRExpression) => boolean
 ): readonly DerivedInductionVariableWithName[] => {
@@ -431,13 +463,15 @@ const extractOptimizableWhileLoop = (
     basicInductionVariableWithAssociatedLoopGuard,
   } = extractedBasicInductionVariables;
   const basicInductionVariableWithLoopGuard: BasicInductionVariableWithLoopGuard = {
-    ...basicInductionVariableWithAssociatedLoopGuard,
+    name: basicInductionVariableWithAssociatedLoopGuard.name,
+    initialValue: basicInductionVariableWithAssociatedLoopGuard.initialValue,
+    incrementAmount: basicInductionVariableWithAssociatedLoopGuard.incrementAmount,
     guardOperator,
     guardExpression,
   };
-  const generalInductionVariables = allBasicInductionVariables.filter(
-    (it) => it.name !== potentialBasicInductionVariableNameWithLoopGuard
-  );
+  const generalInductionVariables = allBasicInductionVariables
+    .filter((it) => it.name !== potentialBasicInductionVariableNameWithLoopGuard)
+    .map(({ loopValueCollector, ...rest }) => ({ ...rest }));
 
   // Phase 3: Compute all the derived induction variables.
   const derivedInductionVariables = extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
