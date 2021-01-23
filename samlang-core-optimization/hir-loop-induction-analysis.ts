@@ -184,14 +184,14 @@ const mergeVariableAdditionIntoDerivedInductionVariable = (
   return { baseName: existing.baseName, multiplier: mergedMultiplier, immediate: mergedImmediate };
 };
 
-const tryMergeIntoDerivedInductionVariable = (
+const tryMergeIntoDerivedInductionVariableWithoutSwap = (
   existingSet: Record<string, DerivedInductionVariable>,
   expressionIsLoopInvariant: (expression: HighIRExpression) => boolean,
   binaryStatement: HighIRBinaryStatement
-): void => {
-  if (binaryStatement.e1.__type__ !== 'HighIRVariableExpression') return;
+): boolean => {
+  if (binaryStatement.e1.__type__ !== 'HighIRVariableExpression') return false;
   const existing = existingSet[binaryStatement.e1.name];
-  if (existing == null) return;
+  if (existing == null) return false;
   if (
     binaryStatement.e2.__type__ === 'HighIRVariableExpression' &&
     binaryStatement.operator === '+'
@@ -201,7 +201,7 @@ const tryMergeIntoDerivedInductionVariable = (
       const merged = mergeVariableAdditionIntoDerivedInductionVariable(existing, anotherVariable);
       if (merged != null) {
         existingSet[binaryStatement.name] = merged;
-        return;
+        return true;
       }
     }
   }
@@ -209,7 +209,7 @@ const tryMergeIntoDerivedInductionVariable = (
     binaryStatement.e2.__type__ === 'HighIRNameExpression' ||
     !expressionIsLoopInvariant(binaryStatement.e2)
   ) {
-    return;
+    return false;
   }
   switch (binaryStatement.operator) {
     case '+':
@@ -219,9 +219,41 @@ const tryMergeIntoDerivedInductionVariable = (
         binaryStatement.operator,
         binaryStatement.e2
       );
-      if (merged != null) existingSet[binaryStatement.name] = merged;
+      if (merged != null) {
+        existingSet[binaryStatement.name] = merged;
+        return true;
+      }
     }
   }
+  return false;
+};
+
+const tryMergeIntoDerivedInductionVariable = (
+  existingSet: Record<string, DerivedInductionVariable>,
+  expressionIsLoopInvariant: (expression: HighIRExpression) => boolean,
+  binaryStatement: HighIRBinaryStatement
+): void => {
+  if (
+    tryMergeIntoDerivedInductionVariableWithoutSwap(
+      existingSet,
+      expressionIsLoopInvariant,
+      binaryStatement
+    )
+  ) {
+    return;
+  }
+  switch (binaryStatement.operator) {
+    case '+':
+    case '*':
+      break;
+    default:
+      return;
+  }
+  tryMergeIntoDerivedInductionVariableWithoutSwap(existingSet, expressionIsLoopInvariant, {
+    ...binaryStatement,
+    e1: binaryStatement.e2,
+    e2: binaryStatement.e1,
+  });
 };
 
 type LoopGuardStructure = {
