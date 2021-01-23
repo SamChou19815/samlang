@@ -10,7 +10,6 @@ type SamlangDemoResult = {
   readonly prettyPrintedProgram?: string;
   readonly jsString?: string;
   readonly llvmString?: string;
-  readonly assemblyString?: string;
   readonly errors: readonly string[];
 };
 

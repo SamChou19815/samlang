@@ -1,9 +1,10 @@
 {
   "name": "@dev-sam/samlang-cli",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "license": "AGPLv3",
   "files": [
-    "bin"
+    "bin",
+    "samlang-runtime"
   ],
   "scripts": {
     "compile": "tsc --incremental",
