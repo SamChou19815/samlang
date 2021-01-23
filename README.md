@@ -39,4 +39,6 @@ code under the `out` directory.
 
 ## Planned Optimizations
 
-- Loop invariant code motion
+- Loop unrolling
+- Partial redundancy elimination
+- Interprocedural analysis
