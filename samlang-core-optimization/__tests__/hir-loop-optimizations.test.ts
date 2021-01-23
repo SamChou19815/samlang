@@ -280,7 +280,7 @@ it('optimizeHighIRStatementsWithAllLoopOptimizations works', () => {
         finalAssignments: [],
       }),
     ],
-    'undefined = 0;\nbreak;'
+    'let tmp_j: int = (i: int) * 2;'
   );
 
   assertOptimizeHighIRStatementsWithAllLoopOptimizations(
