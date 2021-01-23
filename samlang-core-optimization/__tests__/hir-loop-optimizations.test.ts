@@ -393,8 +393,8 @@ return (bc: int);`
           HIR_BINARY({
             name: 'j',
             operator: '+',
-            e1: HIR_VARIABLE('t', HIR_INT_TYPE),
-            e2: HIR_VARIABLE('a', HIR_INT_TYPE),
+            e1: HIR_VARIABLE('a', HIR_INT_TYPE),
+            e2: HIR_VARIABLE('t', HIR_INT_TYPE),
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_ZERO,
