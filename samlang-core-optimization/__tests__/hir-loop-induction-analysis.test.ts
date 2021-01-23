@@ -289,7 +289,7 @@ it('Good loops are accepted.', () => {
           },
         ],
         statements: [
-          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
+          HIR_BINARY({ name: 'cc', operator: '>=', e1: VARIABLE_I, e2: HIR_ZERO }),
           HIR_SINGLE_IF({
             booleanExpression: HIR_VARIABLE('cc', HIR_BOOL_TYPE),
             invertCondition: false,
@@ -339,8 +339,8 @@ it('getGuardOperator works', () => {
   const operators = ['<', '<=', '>', '>='] as const;
   const replacementOperators = ['>=', '>', '<=', '<'] as const;
   zip(operators, replacementOperators).forEach(([guardOperator, expectedGuardOperator]) => {
-    expect(getGuardOperator_EXPOSED_FOR_TESTING(guardOperator, false)).toBe(guardOperator);
-    expect(getGuardOperator_EXPOSED_FOR_TESTING(guardOperator, true)).toBe(expectedGuardOperator);
+    expect(getGuardOperator_EXPOSED_FOR_TESTING(guardOperator, true)).toBe(guardOperator);
+    expect(getGuardOperator_EXPOSED_FOR_TESTING(guardOperator, false)).toBe(expectedGuardOperator);
   });
 });
 

@@ -236,22 +236,37 @@ type LoopGuardStructure = {
   };
 };
 
+export const invertGuardOperator = (operator: '<' | '<=' | '>' | '>='): '<' | '<=' | '>' | '>=' => {
+  switch (operator) {
+    case '<':
+      return '>=';
+    case '<=':
+      return '>';
+    case '>':
+      return '<=';
+    case '>=':
+      return '<';
+  }
+};
+
 export const getGuardOperator_EXPOSED_FOR_TESTING = (
   operator: IROperator,
   invertCondition: boolean
 ): '<' | '<=' | '>' | '>=' | null => {
   switch (operator) {
     case '<':
-      return invertCondition ? '>=' : '<';
+      break;
     case '<=':
-      return invertCondition ? '>' : '<=';
+      break;
     case '>':
-      return invertCondition ? '<=' : '>';
+      break;
     case '>=':
-      return invertCondition ? '<' : '>=';
+      break;
     default:
       return null;
   }
+  if (invertCondition) return operator;
+  return invertGuardOperator(operator);
 };
 
 export const extractLoopGuardStructure_EXPOSED_FOR_TESTING = (
