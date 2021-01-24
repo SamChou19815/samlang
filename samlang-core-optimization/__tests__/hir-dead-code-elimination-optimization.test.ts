@@ -307,7 +307,24 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on while statement 1/n.'
           }),
           HIR_IF_ELSE({
             booleanExpression: HIR_VARIABLE('is_zero', HIR_BOOL_TYPE),
-            s1: [],
+            s1: [
+              HIR_INDEX_ACCESS({
+                name: '',
+                type: HIR_INT_TYPE,
+                pointerExpression: HIR_ZERO,
+                index: 0,
+              }),
+              HIR_STRUCT_INITIALIZATION({
+                structVariableName: 's',
+                type: HIR_INT_TYPE,
+                expressionList: [HIR_VARIABLE('p', HIR_INT_TYPE)],
+              }),
+              HIR_CAST({
+                name: 'ii',
+                type: HIR_INT_TYPE,
+                assignedExpression: HIR_VARIABLE('i', HIR_INT_TYPE),
+              }),
+            ],
             s2: [
               HIR_BINARY({
                 name: 's2_n',
