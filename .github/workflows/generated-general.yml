@@ -4,7 +4,7 @@ name: General
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
 
 jobs:
@@ -41,7 +41,7 @@ jobs:
       - name: Yarn Install
         run: yarn install --immutable
       - name: Compile
-        run: yarn compile
+        run: yarn c
   validate:
     runs-on: ubuntu-latest
     steps:
