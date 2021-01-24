@@ -3,6 +3,7 @@ import {
   PRETTIER_CONCAT,
   PRETTIER_TEXT,
   PRETTIER_LINE,
+  PRETTIER_NIL,
 } from './printer-prettier-core';
 import {
   createCommaSeparatedList,
@@ -71,7 +72,7 @@ export const createPrettierDocumentFromHighIRStatement = (
         pointerExpression
       );
       return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`var ${highIRStatement.name} = `),
+        PRETTIER_TEXT(`let ${highIRStatement.name} = `),
         subExpressionDocument,
         PRETTIER_TEXT(`[${index}];`)
       );
@@ -91,7 +92,7 @@ export const createPrettierDocumentFromHighIRStatement = (
             )
           : binaryExpressionDocument;
       return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`var ${highIRStatement.name} = `),
+        PRETTIER_TEXT(`let ${highIRStatement.name} = `),
         wrapped,
         PRETTIER_TEXT(';')
       );
@@ -99,7 +100,7 @@ export const createPrettierDocumentFromHighIRStatement = (
     case 'HighIRFunctionCallStatement': {
       const segments: PrettierDocument[] = [];
       if (highIRStatement.returnCollector != null) {
-        segments.push(PRETTIER_TEXT(`var ${highIRStatement.returnCollector} = `));
+        segments.push(PRETTIER_TEXT(`let ${highIRStatement.returnCollector} = `));
       }
       segments.push(
         createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
@@ -117,6 +118,10 @@ export const createPrettierDocumentFromHighIRStatement = (
     }
     case 'HighIRIfElseStatement':
       return PRETTIER_CONCAT(
+        ...highIRStatement.finalAssignments.flatMap((final) => [
+          PRETTIER_TEXT(`let ${final.name};`),
+          PRETTIER_LINE,
+        ]),
         PRETTIER_TEXT('if '),
         createParenthesisSurroundedDocument(
           createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
@@ -128,7 +133,7 @@ export const createPrettierDocumentFromHighIRStatement = (
           ...concatStatements(highIRStatement.s1, manager),
           ...highIRStatement.finalAssignments.flatMap((final) => [
             PRETTIER_LINE,
-            PRETTIER_TEXT(`var ${final.name} = `),
+            PRETTIER_TEXT(`${final.name} = `),
             createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(final.branch1Value),
             PRETTIER_TEXT(';'),
           ]),
@@ -138,7 +143,7 @@ export const createPrettierDocumentFromHighIRStatement = (
           ...concatStatements(highIRStatement.s2, manager),
           ...highIRStatement.finalAssignments.flatMap((final) => [
             PRETTIER_LINE,
-            PRETTIER_TEXT(`var ${final.name} = `),
+            PRETTIER_TEXT(`${final.name} = `),
             createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(final.branch2Value),
             PRETTIER_TEXT(';'),
           ]),
@@ -165,20 +170,24 @@ export const createPrettierDocumentFromHighIRStatement = (
         return PRETTIER_TEXT('break;');
       }
       return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`var ${breakCollector} = `),
+        PRETTIER_TEXT(`${breakCollector} = `),
         createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(highIRStatement.breakValue),
         PRETTIER_TEXT('; break;')
       );
     }
     case 'HighIRWhileStatement': {
+      const breakCollectorName = highIRStatement.breakCollector?.name;
       return PRETTIER_CONCAT(
         ...highIRStatement.loopVariables.flatMap((loopVariable) => [
-          PRETTIER_TEXT(`var ${loopVariable.name} = `),
+          PRETTIER_TEXT(`let ${loopVariable.name} = `),
           createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(loopVariable.initialValue),
           PRETTIER_TEXT(';'),
           PRETTIER_LINE,
         ]),
-        ...manager.withNewNestedWhileLoop(highIRStatement.breakCollector?.name, () => [
+        breakCollectorName != null
+          ? PRETTIER_CONCAT(PRETTIER_TEXT(`let ${breakCollectorName};`), PRETTIER_LINE)
+          : PRETTIER_NIL,
+        ...manager.withNewNestedWhileLoop(breakCollectorName, () => [
           PRETTIER_TEXT('while (true) '),
           createBracesSurroundedBlockDocument([
             ...concatStatements(highIRStatement.statements, manager),
@@ -196,7 +205,7 @@ export const createPrettierDocumentFromHighIRStatement = (
     }
     case 'HighIRCastStatement':
       return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`var ${highIRStatement.name} = `),
+        PRETTIER_TEXT(`let ${highIRStatement.name} = `),
         createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
           highIRStatement.assignedExpression
         ),
@@ -204,7 +213,7 @@ export const createPrettierDocumentFromHighIRStatement = (
       );
     case 'HighIRStructInitializationStatement':
       return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`var ${highIRStatement.structVariableName} = `),
+        PRETTIER_TEXT(`let ${highIRStatement.structVariableName} = `),
         createBracketSurroundedDocument(
           createCommaSeparatedList(
             highIRStatement.expressionList,

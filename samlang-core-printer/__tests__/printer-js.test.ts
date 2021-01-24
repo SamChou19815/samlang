@@ -117,8 +117,8 @@ const w = "World!";
 const f1 = "\\"foo";
 const f2 = "'foo";
 const _module_Test_class_Main_function_main = () => {
-  var _t0 = _builtin_stringConcat(h, w);
-  var _t1 = _builtin_println(_t0);
+  let _t0 = _builtin_stringConcat(h, w);
+  let _t1 = _builtin_println(_t0);
 };
 const _compiled_program_main = () => {
   _module_Test_class_Main_function_main();
@@ -411,7 +411,7 @@ it('HIR statements to JS string test', () => {
         index: 3,
       })
     )
-  ).toBe(`var foo = samlang[3];`);
+  ).toBe(`let foo = samlang[3];`);
   expect(
     highIRStatementToString(
       HIR_BINARY({
@@ -421,7 +421,7 @@ it('HIR statements to JS string test', () => {
         e2: HIR_INT(2),
       })
     )
-  ).toBe(`var foo = Math.floor(3 / 2);`);
+  ).toBe(`let foo = Math.floor(3 / 2);`);
   expect(
     highIRStatementToString(
       HIR_IF_ELSE({
@@ -447,12 +447,13 @@ it('HIR statements to JS string test', () => {
         ],
       })
     )
-  ).toBe(`if (5) {
+  ).toBe(`let f;
+if (5) {
   return 0;
-  var f = 0;
+  f = 0;
 } else {
   return 0;
-  var f = 0;
+  f = 0;
 }`);
   expect(
     highIRStatementToString(
@@ -489,7 +490,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'val',
       })
     )
-  ).toBe('var val = func();');
+  ).toBe('let val = func();');
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -508,7 +509,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'res',
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_PRINTLN}(0);`);
+  ).toBe(`let res = ${ENCODED_FUNCTION_NAME_PRINTLN}(0);`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -518,7 +519,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'res',
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_TO_INT}(0);`);
+  ).toBe(`let res = ${ENCODED_FUNCTION_NAME_STRING_TO_INT}(0);`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -528,7 +529,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'res',
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_INT_TO_STRING}(5);`);
+  ).toBe(`let res = ${ENCODED_FUNCTION_NAME_INT_TO_STRING}(5);`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -538,7 +539,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'res',
       })
     )
-  ).toBe(`var res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}(0, 0);`);
+  ).toBe(`let res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}(0, 0);`);
   expect(
     highIRStatementToString(
       HIR_FUNCTION_CALL({
@@ -548,7 +549,7 @@ it('HIR statements to JS string test', () => {
         returnCollector: 'panik',
       })
     )
-  ).toBe(`var panik = ${ENCODED_FUNCTION_NAME_THROW}(0);`);
+  ).toBe(`let panik = ${ENCODED_FUNCTION_NAME_THROW}(0);`);
   expect(
     highIRStatementToString(
       HIR_CAST({
@@ -557,7 +558,7 @@ it('HIR statements to JS string test', () => {
         assignedExpression: HIR_INT(19815),
       })
     )
-  ).toBe(`var foo = 19815;`);
+  ).toBe(`let foo = 19815;`);
   expect(highIRStatementToString(HIR_RETURN(HIR_ZERO))).toBe('return 0;');
   expect(
     highIRStatementToString(
@@ -567,7 +568,7 @@ it('HIR statements to JS string test', () => {
         expressionList: [HIR_ZERO, HIR_ZERO, HIR_INT(13)],
       })
     )
-  ).toBe(`var st = [0, 0, 13];`);
+  ).toBe(`let st = [0, 0, 13];`);
 
   expect(
     highIRStatementToString(
@@ -595,10 +596,10 @@ it('HIR statements to JS string test', () => {
         ],
       })
     )
-  ).toBe(`var n = _tail_rec_param_n;
-var acc = _tail_rec_param_acc;
+  ).toBe(`let n = _tail_rec_param_n;
+let acc = _tail_rec_param_acc;
 while (true) {
-  var foo = dev;
+  let foo = dev;
   n = _t0_n;
   acc = _t1_acc;
 }`);
@@ -640,15 +641,16 @@ while (true) {
         breakCollector: { name: 'v', type: HIR_INT_TYPE },
       })
     )
-  ).toBe(`var n = _tail_rec_param_n;
-var acc = _tail_rec_param_acc;
+  ).toBe(`let n = _tail_rec_param_n;
+let acc = _tail_rec_param_acc;
+let v;
 while (true) {
-  var foo = dev;
+  let foo = dev;
   if (0) {
-    var v = 0; break;
+    v = 0; break;
   }
   if (!0) {
-    var v = 0; break;
+    v = 0; break;
   }
   n = _t0_n;
   acc = _t1_acc;
@@ -673,7 +675,7 @@ it('HIR function to JS string test 1', () => {
       })
     )
   ).toBe(`const baz = (d, t, i) => {
-  var b = 1857;
+  let b = 1857;
 };
 `);
 });
