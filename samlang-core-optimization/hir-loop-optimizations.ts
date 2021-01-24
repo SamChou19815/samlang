@@ -151,10 +151,19 @@ export const optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TE
     newOptimizableWhileStatement,
     allocator
   );
-  finalStatements.push(
-    ...strengthReductionResult.prefixStatements,
-    expandOptimizableWhileLoop(strengthReductionResult.optimizableWhileLoop, allocator)
+  finalStatements.push(...strengthReductionResult.prefixStatements);
+  const alreadyHandledInductionVariableNames = new Set(
+    strengthReductionResult.optimizableWhileLoop.generalInductionVariables.map((it) => it.name)
   );
+  newOptimizableWhileStatement = {
+    ...strengthReductionResult.optimizableWhileLoop,
+    statements: strengthReductionResult.optimizableWhileLoop.statements.filter(
+      (it) =>
+        it.__type__ !== 'HighIRBinaryStatement' ||
+        !alreadyHandledInductionVariableNames.has(it.name)
+    ),
+  };
+  finalStatements.push(expandOptimizableWhileLoop(newOptimizableWhileStatement, allocator));
   return finalStatements;
 };
 
