@@ -1,6 +1,6 @@
 {
   "name": "@dev-sam/samlang-cli",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "license": "AGPLv3",
   "files": [
     "bin",
