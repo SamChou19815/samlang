@@ -3,60 +3,63 @@ import { ifElseOrNull } from './hir-optimization-common';
 import type { HighIRExpression, HighIRStatement } from 'samlang-core-ast/hir-expressions';
 import { isNotNull } from 'samlang-core-utils';
 
-const collectUseFromHighIRStatement = (statement: HighIRStatement, set: Set<string>): void => {
-  const collectUseFromExpression = (expression: HighIRExpression): void => {
-    if (expression.__type__ === 'HighIRVariableExpression') set.add(expression.name);
-  };
+export const collectUseFromHighIRExpression = (
+  expression: HighIRExpression,
+  set: Set<string>
+): void => {
+  if (expression.__type__ === 'HighIRVariableExpression') set.add(expression.name);
+};
 
+export const collectUseFromHighIRStatement = (
+  statement: HighIRStatement,
+  set: Set<string>
+): void => {
   switch (statement.__type__) {
     case 'HighIRIndexAccessStatement':
-      collectUseFromExpression(statement.pointerExpression);
+      collectUseFromHighIRExpression(statement.pointerExpression, set);
       return;
     case 'HighIRBinaryStatement':
-      collectUseFromExpression(statement.e1);
-      collectUseFromExpression(statement.e2);
+      collectUseFromHighIRExpression(statement.e1, set);
+      collectUseFromHighIRExpression(statement.e2, set);
       return;
     case 'HighIRFunctionCallStatement':
-      collectUseFromExpression(statement.functionExpression);
-      statement.functionArguments.forEach(collectUseFromExpression);
+      collectUseFromHighIRExpression(statement.functionExpression, set);
+      statement.functionArguments.forEach((it) => collectUseFromHighIRExpression(it, set));
       return;
     case 'HighIRIfElseStatement':
       statement.finalAssignments.forEach((finalAssignment) => {
-        collectUseFromExpression(finalAssignment.branch1Value);
-        collectUseFromExpression(finalAssignment.branch2Value);
+        collectUseFromHighIRExpression(finalAssignment.branch1Value, set);
+        collectUseFromHighIRExpression(finalAssignment.branch2Value, set);
       });
       statement.s1.forEach((it) => collectUseFromHighIRStatement(it, set));
       statement.s2.forEach((it) => collectUseFromHighIRStatement(it, set));
-      collectUseFromExpression(statement.booleanExpression);
+      collectUseFromHighIRExpression(statement.booleanExpression, set);
       return;
     case 'HighIRSingleIfStatement':
       statement.statements.forEach((it) => collectUseFromHighIRStatement(it, set));
-      collectUseFromExpression(statement.booleanExpression);
+      collectUseFromHighIRExpression(statement.booleanExpression, set);
       return;
     case 'HighIRBreakStatement':
-      collectUseFromExpression(statement.breakValue);
+      collectUseFromHighIRExpression(statement.breakValue, set);
       return;
     case 'HighIRWhileStatement': {
       statement.loopVariables.forEach((it) => {
-        collectUseFromExpression(it.initialValue);
-        collectUseFromExpression(it.loopValue);
+        collectUseFromHighIRExpression(it.initialValue, set);
+        collectUseFromHighIRExpression(it.loopValue, set);
       });
       statement.statements.forEach((it) => collectUseFromHighIRStatement(it, set));
-      statement.loopVariables.forEach((variable) => {
-        collectUseFromExpression(variable.initialValue);
-      });
       return;
     }
     case 'HighIRCastStatement':
-      collectUseFromExpression(statement.assignedExpression);
+      collectUseFromHighIRExpression(statement.assignedExpression, set);
       return;
     case 'HighIRStructInitializationStatement':
-      statement.expressionList.forEach(collectUseFromExpression);
+      statement.expressionList.forEach((it) => collectUseFromHighIRExpression(it, set));
       return;
     // istanbul ignore next
     case 'HighIRReturnStatement':
       // istanbul ignore next
-      collectUseFromExpression(statement.expression);
+      collectUseFromHighIRExpression(statement.expression, set);
   }
 };
 
@@ -64,37 +67,33 @@ const optimizeHighIRStatement = (
   statement: HighIRStatement,
   set: Set<string>
 ): readonly HighIRStatement[] => {
-  const collectUseFromExpression = (expression: HighIRExpression): void => {
-    if (expression.__type__ === 'HighIRVariableExpression') set.add(expression.name);
-  };
-
   switch (statement.__type__) {
     case 'HighIRIndexAccessStatement':
       if (!set.has(statement.name)) return [];
-      collectUseFromExpression(statement.pointerExpression);
+      collectUseFromHighIRExpression(statement.pointerExpression, set);
       return [statement];
     case 'HighIRBinaryStatement':
       if (!set.has(statement.name) && statement.operator !== '/' && statement.operator !== '%') {
         return [];
       }
-      collectUseFromExpression(statement.e1);
-      collectUseFromExpression(statement.e2);
+      collectUseFromHighIRExpression(statement.e1, set);
+      collectUseFromHighIRExpression(statement.e2, set);
       return [statement];
     case 'HighIRFunctionCallStatement': {
       const returnCollector =
         statement.returnCollector != null && set.has(statement.returnCollector)
           ? statement.returnCollector
           : undefined;
-      collectUseFromExpression(statement.functionExpression);
-      statement.functionArguments.forEach(collectUseFromExpression);
+      collectUseFromHighIRExpression(statement.functionExpression, set);
+      statement.functionArguments.forEach((it) => collectUseFromHighIRExpression(it, set));
       return [{ ...statement, returnCollector }];
     }
     case 'HighIRIfElseStatement': {
       const finalAssignments = statement.finalAssignments
         .map((finalAssignment) => {
           if (set.has(finalAssignment.name)) {
-            collectUseFromExpression(finalAssignment.branch1Value);
-            collectUseFromExpression(finalAssignment.branch2Value);
+            collectUseFromHighIRExpression(finalAssignment.branch1Value, set);
+            collectUseFromHighIRExpression(finalAssignment.branch2Value, set);
             return finalAssignment;
           }
           return null;
@@ -103,17 +102,17 @@ const optimizeHighIRStatement = (
       const s1 = internalOptimizeHighIRStatementsByDCE(statement.s1, set);
       const s2 = internalOptimizeHighIRStatementsByDCE(statement.s2, set);
       const ifElse = ifElseOrNull({ ...statement, s1, s2, finalAssignments });
-      if (ifElse.length > 0) collectUseFromExpression(statement.booleanExpression);
+      if (ifElse.length > 0) collectUseFromHighIRExpression(statement.booleanExpression, set);
       return ifElse;
     }
     case 'HighIRSingleIfStatement': {
       const statements = internalOptimizeHighIRStatementsByDCE(statement.statements, set);
       if (statements.length === 0) return [];
-      collectUseFromExpression(statement.booleanExpression);
+      collectUseFromHighIRExpression(statement.booleanExpression, set);
       return [{ ...statement, statements }];
     }
     case 'HighIRBreakStatement': {
-      collectUseFromExpression(statement.breakValue);
+      collectUseFromHighIRExpression(statement.breakValue, set);
       return [statement];
     }
     case 'HighIRWhileStatement': {
@@ -128,13 +127,15 @@ const optimizeHighIRStatement = (
       const usedLoopVariablesInsideLoop = statement.loopVariables.filter((it) =>
         usedSetInsideLoop.has(it.name)
       );
-      usedLoopVariablesInsideLoop.forEach((it) => collectUseFromExpression(it.loopValue));
+      usedLoopVariablesInsideLoop.forEach((it) =>
+        collectUseFromHighIRExpression(it.loopValue, set)
+      );
       const statements = internalOptimizeHighIRStatementsByDCE(statement.statements, set);
       const loopVariables = usedLoopVariablesInsideLoop
         .map((variable) => {
           // istanbul ignore next
           if (!set.has(variable.name)) return null;
-          collectUseFromExpression(variable.initialValue);
+          collectUseFromHighIRExpression(variable.initialValue, set);
           return variable;
         })
         .filter(isNotNull);
@@ -142,14 +143,14 @@ const optimizeHighIRStatement = (
     }
     case 'HighIRCastStatement':
       if (!set.has(statement.name)) return [];
-      collectUseFromExpression(statement.assignedExpression);
+      collectUseFromHighIRExpression(statement.assignedExpression, set);
       return [statement];
     case 'HighIRStructInitializationStatement':
       if (!set.has(statement.structVariableName)) return [];
-      statement.expressionList.forEach(collectUseFromExpression);
+      statement.expressionList.forEach((it) => collectUseFromHighIRExpression(it, set));
       return [statement];
     case 'HighIRReturnStatement':
-      collectUseFromExpression(statement.expression);
+      collectUseFromHighIRExpression(statement.expression, set);
       return [statement];
   }
 };
