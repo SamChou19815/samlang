@@ -154,7 +154,6 @@ let _loop_1: int = (_loop_0: int) + 10;
 let _loop_2: int = 1 * 0;
 let _loop_3: int = (_loop_2: int) + 10;
 let j: int = 0;
-let k: int = 0;
 let i: int = 0;
 let tmp_j: int = (_loop_1: int);
 let tmp_k: int = (_loop_3: int);
@@ -169,7 +168,6 @@ while (true) {
   let _loop_5: int = (tmp_j: int) + 1;
   let _loop_6: int = (tmp_k: int) + 1;
   j = (tmp_j: int);
-  k = (tmp_k: int);
   i = (_loop_4: int);
   tmp_j = (_loop_5: int);
   tmp_k = (_loop_6: int);
@@ -242,7 +240,6 @@ while (true) {
 let _loop_1: int = (_loop_0: int) + 11;
 let _loop_2: int = 10 * 1;
 let _loop_3: int = (_loop_2: int) + 11;
-let j: int = 0;
 let tmp_j: int = (_loop_1: int);
 while (true) {
   let _loop_5: bool = (tmp_j: int) >= (_loop_3: int);
@@ -251,7 +248,6 @@ while (true) {
     break;
   }
   let _loop_4: int = (tmp_j: int) + 1;
-  j = (tmp_j: int);
   tmp_j = (_loop_4: int);
 }`
   );
@@ -309,7 +305,6 @@ return (bc: int);`
   assertOptimizeHighIRStatementsWithAllLoopOptimizations(
     [optimizableWhile3, HIR_RETURN(HIR_VARIABLE('bc', HIR_INT_TYPE))],
     `let j: int = 15;
-let k: int = 15;
 let i: int = 6;
 let tmp_j: int = 16;
 let tmp_k: int = 16;
@@ -324,7 +319,6 @@ while (true) {
   let _loop_5: int = (tmp_j: int) + 1;
   let _loop_6: int = (tmp_k: int) + 1;
   j = (tmp_j: int);
-  k = (tmp_k: int);
   i = (_loop_4: int);
   tmp_j = (_loop_5: int);
   tmp_k = (_loop_6: int);
@@ -414,21 +408,18 @@ return (bc: int);`
 let _loop_2: int = (init_i: int) * 3;
 let _loop_3: int = (a: int) + (_loop_2: int);
 let i: int = (init_i: int);
-let t: int = (_loop_0: int);
 let j: int = (_loop_3: int);
 while (true) {
-  let _loop_7: bool = (L: int) <= (i: int);
-  if (_loop_7: bool) {
+  let _loop_6: bool = (L: int) <= (i: int);
+  if (_loop_6: bool) {
     undefined = 0;
     break;
   }
   0((j: int));
   let _loop_4: int = (i: int) + 2;
-  let _loop_5: int = (t: int) + 6;
-  let _loop_6: int = (j: int) + 6;
+  let _loop_5: int = (j: int) + 6;
   i = (_loop_4: int);
-  t = (_loop_5: int);
-  j = (_loop_6: int);
+  j = (_loop_5: int);
 }`
   );
 });

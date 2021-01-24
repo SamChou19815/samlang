@@ -1,4 +1,8 @@
 import optimizeHighIRStatementsByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
+import {
+  collectUseFromHighIRExpression,
+  collectUseFromHighIRStatement,
+} from './hir-dead-code-elimination-optimization';
 import highIRLoopAlgebraicOptimization from './hir-loop-algebraic-optimization';
 import extractOptimizableWhileLoop, {
   HighIROptimizableWhileLoop,
@@ -34,12 +38,19 @@ const expandOptimizableWhileLoop = (
   allocator: OptimizationResourceAllocator
 ): HighIRWhileStatement => {
   const basicInductionVariableWithLoopGuardLoopValueCollector = allocator.allocateLoopTemporary();
-  const generalBasicInductionVariablesWithLoopValueCollectors = generalInductionVariables.map(
-    (it) => [it, allocator.allocateLoopTemporary()] as const
+  const breakValue = breakCollector?.value ?? HIR_ZERO;
+  const usefulUsedSet = new Set<string>([basicInductionVariableWithLoopGuard.name]);
+  collectUseFromHighIRExpression(breakValue, usefulUsedSet);
+  loopVariablesThatAreNotBasicInductionVariables.forEach((it) =>
+    collectUseFromHighIRExpression(it.loopValue, usefulUsedSet)
   );
+  statements.forEach((it) => collectUseFromHighIRStatement(it, usefulUsedSet));
+  const generalBasicInductionVariablesWithLoopValueCollectors = generalInductionVariables
+    .filter((it) => usefulUsedSet.has(it.name))
+    .map((it) => [it, allocator.allocateLoopTemporary()] as const);
   const loopConditionVariable = allocator.allocateLoopTemporary();
   const loopVariables = [
-    ...loopVariablesThatAreNotBasicInductionVariables,
+    ...loopVariablesThatAreNotBasicInductionVariables.filter((it) => usefulUsedSet.has(it.name)),
     {
       name: basicInductionVariableWithLoopGuard.name,
       type: HIR_INT_TYPE,
@@ -53,7 +64,6 @@ const expandOptimizableWhileLoop = (
       loopValue: HIR_VARIABLE(collector, HIR_INT_TYPE),
     })),
   ];
-  const loopVariableNames = new Set(loopVariables.map((it) => it.name));
   return HIR_WHILE({
     loopVariables,
     statements: [
@@ -66,11 +76,9 @@ const expandOptimizableWhileLoop = (
       HIR_SINGLE_IF({
         booleanExpression: HIR_VARIABLE(loopConditionVariable, HIR_BOOL_TYPE),
         invertCondition: false,
-        statements: [HIR_BREAK(breakCollector?.value ?? HIR_ZERO)],
+        statements: [HIR_BREAK(breakValue)],
       }),
-      ...statements.filter(
-        (it) => it.__type__ !== 'HighIRBinaryStatement' || !loopVariableNames.has(it.name)
-      ),
+      ...statements,
       HIR_BINARY({
         name: basicInductionVariableWithLoopGuardLoopValueCollector,
         operator: '+',
