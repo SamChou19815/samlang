@@ -346,7 +346,7 @@ class Main {
   ]);
 });
 
-it('LanguageServices autocompletion test', () => {
+it('LanguageServices format test with good programs', () => {
   const testModuleReference = new ModuleReference(['Test']);
   const state = new LanguageServiceState([
     [
@@ -365,7 +365,7 @@ class Developer(
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...")
     val github = "SamChou19815"
-    { name: "Sam Zhou", github, projects: l }.
+    { name: "Sam Zhou", github, projects: l }
   }
 }
 class Main {
@@ -377,4 +377,25 @@ class Main {
   const service = new LanguageServices(state, () => 'foo bar');
   expect(service.formatEntireDocument(testModuleReference)).toBe('foo bar');
   expect(service.formatEntireDocument(new ModuleReference(['dsafadfasd']))).toBe(null);
+});
+
+it('LanguageServices format test with bad programs', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const state = new LanguageServiceState([
+    [
+      testModuleReference,
+      `
+class Developer(
+  val name: string, val github: string,
+  val projects: List<string>,
+) {
+  function sam(): Developer = {
+    { name: projects:  }.
+  }
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => 'foo bar');
+  expect(service.formatEntireDocument(testModuleReference)).toBe(null);
 });
