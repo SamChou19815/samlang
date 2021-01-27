@@ -121,6 +121,10 @@ export class LanguageServiceState {
       .flat();
   }
 
+  getRawModule(moduleReference: ModuleReference): SamlangModule | undefined {
+    return this.rawModules.get(moduleReference);
+  }
+
   getCheckedModule(moduleReference: ModuleReference): SamlangModule | undefined {
     return this.checkedModules.get(moduleReference);
   }
@@ -531,7 +535,11 @@ export class LanguageServices {
   }
 
   formatEntireDocument(moduleReference: ModuleReference): string | null {
-    const moduleToFormat = this.state.getCheckedModule(moduleReference);
-    return moduleToFormat == null ? null : this.formatter(moduleToFormat);
+    const moduleToFormat = this.state.getRawModule(moduleReference);
+    if (moduleToFormat == null) return null;
+    if (this.state.getErrors(moduleReference).some((it) => it.errorType === 'SyntaxError')) {
+      return null;
+    }
+    return this.formatter(moduleToFormat);
   }
 }
