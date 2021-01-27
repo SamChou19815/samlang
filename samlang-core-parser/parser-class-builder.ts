@@ -169,7 +169,7 @@ export default class ClassDefinitionBuilder
 
   constructor(
     errorCollector: ModuleErrorCollector,
-    private readonly resolveClass: (className: string) => ModuleReference
+    resolveClass: (className: string) => ModuleReference
   ) {
     super();
     this.expressionBuilder = new ExpressionBuilder(errorCollector, resolveClass);
@@ -199,14 +199,15 @@ export default class ClassDefinitionBuilder
       returnType
     );
     const typeParametersDeclaration = ctx.typeParametersDeclaration();
+    const typeParameters =
+      typeParametersDeclaration != null ? getTypeParameters(typeParametersDeclaration) : [];
     return {
       range: contextRange(ctx),
       isPublic: ctx.PRIVATE() == null,
       isMethod: ctx.METHOD() != null,
       nameRange: tokenRange(nameSymbol),
       name,
-      typeParameters:
-        typeParametersDeclaration != null ? getTypeParameters(typeParametersDeclaration) : [],
+      typeParameters,
       type,
       parameters,
       body,
