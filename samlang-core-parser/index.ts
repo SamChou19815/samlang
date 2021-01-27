@@ -1,4 +1,4 @@
-import { ANTLRInputStream, CommonTokenStream, ANTLRErrorListener } from 'antlr4ts';
+import { CharStreams, CommonTokenStream, ANTLRErrorListener } from 'antlr4ts';
 import type { RecognitionException } from 'antlr4ts/RecognitionException';
 import type { Recognizer } from 'antlr4ts/Recognizer';
 
@@ -40,7 +40,7 @@ export const parseSamlangModuleFromText = (
   moduleReference: ModuleReference,
   moduleErrorCollector: ModuleErrorCollector
 ): SamlangModule => {
-  const parser = new PLParser(new CommonTokenStream(new PLLexer(new ANTLRInputStream(text))));
+  const parser = new PLParser(new CommonTokenStream(new PLLexer(CharStreams.fromString(text))));
   const errorListener = new ErrorListener(moduleErrorCollector);
   parser.removeErrorListeners();
   parser.addErrorListener(errorListener);
@@ -57,7 +57,7 @@ export const parseSamlangExpressionFromText = (
   moduleReference: ModuleReference,
   moduleErrorCollector: ModuleErrorCollector
 ): SamlangExpression | null => {
-  const parser = new PLParser(new CommonTokenStream(new PLLexer(new ANTLRInputStream(text))));
+  const parser = new PLParser(new CommonTokenStream(new PLLexer(CharStreams.fromString(text))));
   const errorListener = new ErrorListener(moduleErrorCollector);
   parser.removeErrorListeners();
   parser.addErrorListener(errorListener);
