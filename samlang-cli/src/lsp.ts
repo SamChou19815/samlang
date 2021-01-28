@@ -40,7 +40,10 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
   );
 
   const uriToModuleReference = (uri: string): ModuleReference => {
-    const relativePath = relative(configuration.sourceDirectory, uri);
+    const relativePath = relative(
+      configuration.sourceDirectory,
+      uri.startsWith('file://') ? uri.substring('file://'.length) : uri
+    );
     return new ModuleReference(relativePath.substring(0, relativePath.length - 4).split(sep));
   };
 

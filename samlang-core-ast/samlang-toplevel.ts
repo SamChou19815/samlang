@@ -32,6 +32,7 @@ export interface TypeDefinition extends Node {
 }
 
 export interface ClassDefinition extends Node {
+  readonly documentText: string | null;
   readonly nameRange: Range;
   readonly name: string;
   readonly typeParameters: readonly string[];

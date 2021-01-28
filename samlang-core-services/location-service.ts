@@ -74,7 +74,7 @@ export class SamlangExpressionLocationLookupBuilder {
         moduleReference,
         EXPRESSION_VARIABLE({
           range: nameRange,
-          type: identifierType(moduleReference, `class ${name}`),
+          type: identifierType(moduleReference, `class ${moduleReference.toString()}.${name}`),
           name,
         })
       );
@@ -96,12 +96,12 @@ export class SamlangExpressionLocationLookupBuilder {
         this.buildSingleExpression(moduleReference, expression);
         return;
       case 'ClassMemberExpression': {
-        const { className, classNameRange } = expression;
+        const { moduleReference: modRef, className, classNameRange } = expression;
         this.buildSingleExpression(
           moduleReference,
           EXPRESSION_VARIABLE({
             range: classNameRange,
-            type: identifierType(moduleReference, `class ${className}`),
+            type: identifierType(moduleReference, `class ${modRef.toString()}.${className}`),
             name: className,
           })
         );

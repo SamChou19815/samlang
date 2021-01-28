@@ -35,6 +35,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
     classes: [
       {
         range: Range.DUMMY,
+        documentText: null,
         name: 'Main',
         nameRange: Range.DUMMY,
         typeParameters: [],
@@ -74,6 +75,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
       },
       {
         range: Range.DUMMY,
+        documentText: null,
         name: 'Class1',
         nameRange: Range.DUMMY,
         typeParameters: [],
@@ -181,6 +183,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
       },
       {
         range: Range.DUMMY,
+        documentText: null,
         name: 'Class2',
         nameRange: Range.DUMMY,
         typeParameters: [],
@@ -189,6 +192,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
       },
       {
         range: Range.DUMMY,
+        documentText: null,
         name: 'Class3',
         nameRange: Range.DUMMY,
         typeParameters: ['T'],

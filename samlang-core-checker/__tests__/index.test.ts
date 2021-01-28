@@ -27,6 +27,7 @@ it('collectModuleReferenceFromSamlangModule works', () => {
       classes: [
         {
           range: Range.DUMMY,
+          documentText: null,
           name: 'aa',
           nameRange: Range.DUMMY,
           typeParameters: [],
