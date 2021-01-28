@@ -1,10 +1,11 @@
 import { AbstractParseTreeVisitor } from 'antlr4ts/tree/AbstractParseTreeVisitor';
 
+import { CommentTokenWithRange, findRelevantDocComment } from './parser-comment-collector';
 import ExpressionBuilder from './parser-expression-builder';
 import TypeBuilder from './parser-type-builder';
 import { tokenRange, contextRange } from './parser-util';
 
-import { functionType, ModuleReference, Range } from 'samlang-core-ast/common-nodes';
+import { functionType, ModuleReference, Position, Range } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type {
   TypeDefinition,
@@ -169,7 +170,9 @@ export default class ClassDefinitionBuilder
 
   constructor(
     errorCollector: ModuleErrorCollector,
-    resolveClass: (className: string) => ModuleReference
+    resolveClass: (className: string) => ModuleReference,
+    private readonly commentTokens: readonly CommentTokenWithRange[],
+    private readonly previousClassEndingPosition: Position
   ) {
     super();
     this.expressionBuilder = new ExpressionBuilder(errorCollector, resolveClass);
@@ -215,6 +218,11 @@ export default class ClassDefinitionBuilder
   };
 
   visitClazz = (ctx: ClazzContext): ClassDefinition | null => {
+    const range = contextRange(ctx);
+    const documentText = findRelevantDocComment(
+      this.commentTokens,
+      new Range(this.previousClassEndingPosition, range.start)
+    );
     const moduleName = ctx.classHeaderDeclaration().accept(moduleNameBuilder);
     const typeDefinitionWithTypeParameters = ctx
       .classHeaderDeclaration()
@@ -225,7 +233,8 @@ export default class ClassDefinitionBuilder
     const [name, nameRange] = moduleName;
     const { typeParameters, ...typeDefinition } = typeDefinitionWithTypeParameters;
     return {
-      range: contextRange(ctx),
+      range,
+      documentText,
       nameRange,
       name,
       typeParameters,

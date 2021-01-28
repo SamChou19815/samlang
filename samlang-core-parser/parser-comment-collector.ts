@@ -4,7 +4,7 @@ import { tokenRange } from './parser-util';
 
 import type { Range } from 'samlang-core-ast/common-nodes';
 import { PLLexer } from 'samlang-core-parser-generated/PLLexer';
-import { isNotNull } from 'samlang-core-utils';
+import { checkNotNull, isNotNull } from 'samlang-core-utils';
 
 const HIDDEN_CHANNEL_ID = 1;
 
@@ -22,7 +22,7 @@ const postProcessBlockComment = (blockComment: string): string =>
     .filter((line) => line.length > 0)
     .join(' ');
 
-const collectCommentsForParser = (text: string): readonly CommentTokenWithRange[] =>
+export const collectCommentsForParser = (text: string): readonly CommentTokenWithRange[] =>
   new PLLexer(CharStreams.fromString(text))
     .getAllTokens()
     .map((token) => {
@@ -49,4 +49,15 @@ const collectCommentsForParser = (text: string): readonly CommentTokenWithRange[
     })
     .filter(isNotNull);
 
-export default collectCommentsForParser;
+export const findRelevantDocComment = (
+  commentTokens: readonly CommentTokenWithRange[],
+  searchRange: Range
+): string | null => {
+  for (let i = commentTokens.length - 1; i >= 0; i -= 1) {
+    const token = checkNotNull(commentTokens[i]);
+    if (token.commentType === 'doc' && searchRange.containsRange(token.range)) {
+      return token.commentText;
+    }
+  }
+  return null;
+};

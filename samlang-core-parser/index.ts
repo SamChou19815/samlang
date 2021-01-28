@@ -2,6 +2,7 @@ import { CharStreams, CommonTokenStream, ANTLRErrorListener } from 'antlr4ts';
 import type { RecognitionException } from 'antlr4ts/RecognitionException';
 import type { Recognizer } from 'antlr4ts/Recognizer';
 
+import { collectCommentsForParser } from './parser-comment-collector';
 import ExpressionBuilder from './parser-expression-builder';
 import ModuleBuilder from './parser-module-builder';
 
@@ -45,7 +46,11 @@ export const parseSamlangModuleFromText = (
   parser.removeErrorListeners();
   parser.addErrorListener(errorListener);
   try {
-    return parser.module().accept(new ModuleBuilder(moduleReference, moduleErrorCollector));
+    return parser
+      .module()
+      .accept(
+        new ModuleBuilder(moduleReference, moduleErrorCollector, collectCommentsForParser(text))
+      );
   } catch {
     moduleErrorCollector.reportSyntaxError(Range.DUMMY, 'Encountered unrecoverable syntax error');
     return { imports: [], classes: [] };

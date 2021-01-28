@@ -20,6 +20,7 @@ const typeDefinition = {
 
 const class0: ClassDefinition = {
   range: Range.DUMMY,
+  documentText: null,
   name: 'Class0',
   nameRange: Range.DUMMY,
   typeParameters: [],
@@ -28,6 +29,7 @@ const class0: ClassDefinition = {
 };
 const class1: ClassDefinition = {
   range: Range.DUMMY,
+  documentText: null,
   name: 'Class1',
   nameRange: Range.DUMMY,
   typeParameters: [],
@@ -59,6 +61,7 @@ const class1: ClassDefinition = {
 };
 const class2: ClassDefinition = {
   range: Range.DUMMY,
+  documentText: null,
   name: 'Class2',
   nameRange: Range.DUMMY,
   typeParameters: [],
