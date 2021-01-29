@@ -17,7 +17,7 @@ import {
 import { collectSources } from './cli-service';
 import type { SamlangProjectConfiguration } from './configuration';
 
-import { Position, Range, ModuleReference, prettyPrintType } from 'samlang-core-ast/common-nodes';
+import { Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintSamlangModule } from 'samlang-core-printer';
 import { LanguageServiceState, LanguageServices } from 'samlang-core-services';
 
@@ -95,13 +95,10 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
     const moduleReference = uriToModuleReference(hoverParameters.textDocument.uri);
     const lspPosition = hoverParameters.position;
     const samlangPosition = new Position(lspPosition.line, lspPosition.character);
-    const hoverResult = service.queryType(moduleReference, samlangPosition);
+    const hoverResult = service.queryForHover(moduleReference, samlangPosition);
     if (hoverResult == null) return null;
-    const [type, range] = hoverResult;
-    return {
-      contents: { language: 'samlang', value: prettyPrintType(type) },
-      range: samlangRangeToLspRange(range),
-    };
+    const [contents, range] = hoverResult;
+    return { contents, range: samlangRangeToLspRange(range) };
   });
 
   connection.onDefinition((gotoDefinitionParameters) => {
