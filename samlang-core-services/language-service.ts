@@ -5,7 +5,6 @@ import {
 } from './location-service';
 
 import {
-  Type,
   IdentifierType,
   FunctionType,
   prettyPrintType,
@@ -247,10 +246,26 @@ export class LanguageServices {
     private readonly formatter: (samlangModule: SamlangModule) => string
   ) {}
 
-  queryType(moduleReference: ModuleReference, position: Position): readonly [Type, Range] | null {
+  queryForHover(
+    moduleReference: ModuleReference,
+    position: Position
+  ): readonly [Readonly<{ language: string; value: string }>[], Range] | null {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     if (expression == null) return null;
-    return [expression.type, expression.range];
+    const type = prettyPrintType(expression.type);
+    if (type.startsWith('class ')) {
+      const moduleParts = type.substring(6).split('.');
+      const expressionClassName = checkNotNull(moduleParts.pop());
+      const expressionModuleReference = new ModuleReference(moduleParts);
+      const document = this.state
+        .getRawModule(expressionModuleReference)
+        ?.classes.find((it) => it.name === expressionClassName)?.documentText;
+      const typeContent = { language: 'samlang', value: `class ${expressionClassName}` };
+      return document == null
+        ? [[typeContent], expression.range]
+        : [[typeContent, { language: 'markdown', value: document }], expression.range];
+    }
+    return [[{ language: 'samlang', value: type }], expression.range];
   }
 
   queryFoldingRanges(moduleReference: ModuleReference): readonly Range[] | null {

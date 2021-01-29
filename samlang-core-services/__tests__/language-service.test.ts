@@ -1,6 +1,6 @@
 import { LanguageServiceState, LanguageServices, CompletionItemKinds } from '../language-service';
 
-import { stringType, Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
+import { Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
 
 it('Language server state can update.', () => {
   const state = new LanguageServiceState([]);
@@ -128,9 +128,18 @@ class Test2 {
 
 it('LanguageServices type query test', () => {
   const testModuleReference = new ModuleReference(['Test']);
+  const test2ModuleReference = new ModuleReference(['Test2']);
   const state = new LanguageServiceState([
     [
       testModuleReference,
+      `/** Test */
+class Test1 {
+  function test(): int = "haha"
+}
+`,
+    ],
+    [
+      test2ModuleReference,
       `
 class Test1 {
   function test(): int = "haha"
@@ -140,8 +149,29 @@ class Test1 {
   ]);
   const service = new LanguageServices(state, () => '');
 
-  expect(service.queryType(testModuleReference, new Position(100, 100))).toBeNull();
-  expect(service.queryType(testModuleReference, new Position(2, 27))?.[0]).toEqual(stringType);
+  expect(service.queryForHover(testModuleReference, new Position(100, 100))).toBeNull();
+  expect(service.queryForHover(testModuleReference, new Position(2, 27))?.[0]).toEqual([
+    {
+      language: 'samlang',
+      value: 'string',
+    },
+  ]);
+  expect(service.queryForHover(testModuleReference, new Position(1, 9))?.[0]).toEqual([
+    {
+      language: 'samlang',
+      value: 'class Test1',
+    },
+    {
+      language: 'markdown',
+      value: 'Test',
+    },
+  ]);
+  expect(service.queryForHover(test2ModuleReference, new Position(1, 9))?.[0]).toEqual([
+    {
+      language: 'samlang',
+      value: 'class Test1',
+    },
+  ]);
 });
 
 it('LanguageServices.queryDefinitionLocation test', () => {
