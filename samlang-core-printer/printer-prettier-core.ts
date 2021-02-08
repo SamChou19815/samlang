@@ -136,6 +136,26 @@ export const PRETTIER_SPACED_BRACKET = (
   right: string
 ): PrettierDocument => bracketFlexible(left, PRETTIER_LINE, doc, right);
 
+export const PRETTIER_MULTILINE_COMMENT = (starter: string, text: string): PrettierDocument => {
+  const words = text.split(' ');
+  const singleLineForm = PRETTIER_CONCAT(PRETTIER_TEXT(`${starter} ${text} */`), PRETTIER_LINE);
+  const multipleLineForm = PRETTIER_CONCAT(
+    PRETTIER_TEXT(starter),
+    PRETTIER_LINE,
+    PRETTIER_TEXT(' * '),
+    ...words.map((word) =>
+      PRETTIER_UNION(
+        PRETTIER_TEXT(`${word} `),
+        PRETTIER_CONCAT(PRETTIER_TEXT(word), PRETTIER_LINE, PRETTIER_TEXT(' * '))
+      )
+    ),
+    PRETTIER_LINE,
+    PRETTIER_TEXT(' */'),
+    PRETTIER_LINE
+  );
+  return PRETTIER_UNION(singleLineForm, multipleLineForm);
+};
+
 /**
  * Replace all LINE with TEXT(' ').
  * Correspond to the `flatten` function in the prettier paper.

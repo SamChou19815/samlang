@@ -255,8 +255,12 @@ class Obj(private val d: int, val e: int) {
   }
 }
 
+/** short line */
 class A(val a: int) {}
 
+/** some very very very very very very very very very very very very very very very very very very
+ * long document string
+ */
 class Main {}
 `)
   ).toBe(`
@@ -304,7 +308,14 @@ class Obj(
 
 }
 
+/** short line */
 class A(val a: int) {  }
 
+/**
+ * some very very very very very very
+ * very very very very very very very
+ * very very very very very long
+ * document string
+ */
 class Main {  }`);
 });
