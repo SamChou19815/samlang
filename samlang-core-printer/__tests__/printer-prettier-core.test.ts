@@ -5,6 +5,7 @@ import {
   PRETTIER_TEXT,
   PRETTIER_LINE,
   PRETTIER_NO_SPACE_BRACKET,
+  PRETTIER_MULTILINE_COMMENT,
   prettyPrintAccordingToPrettierAlgorithm,
 } from '../printer-prettier-core';
 
@@ -17,6 +18,44 @@ it('prettier concat constructor test', () => {
   expect(PRETTIER_CONCAT(PRETTIER_TEXT('a'), PRETTIER_TEXT('b'), PRETTIER_TEXT('c'))).toEqual(
     PRETTIER_CONCAT(PRETTIER_TEXT('a'), PRETTIER_CONCAT(PRETTIER_TEXT('b'), PRETTIER_TEXT('c')))
   );
+});
+
+it('PRETTIER_MULTILINE_COMMENT test', () => {
+  expect(
+    prettyPrintAccordingToPrettierAlgorithm(
+      20,
+      PRETTIER_MULTILINE_COMMENT('/**', 'this is a test haha foo bar oh noooooo')
+    )
+  ).toBe(`/**
+ * this is a test
+ * haha foo bar oh
+ * noooooo
+ */
+
+`);
+  expect(
+    prettyPrintAccordingToPrettierAlgorithm(20, PRETTIER_MULTILINE_COMMENT('/**', 'test test'))
+  ).toBe('/** test test */\n\n');
+
+  expect(
+    prettyPrintAccordingToPrettierAlgorithm(
+      1,
+      PRETTIER_MULTILINE_COMMENT('/**', 'this is a test haha foo bar oh noooooo')
+    )
+  ).toBe(`/**
+ * this
+ * is
+ * a
+ * test
+ * haha
+ * foo
+ * bar
+ * oh
+ * noooooo
+ *
+ */
+
+`);
 });
 
 it('prettier-core tree test', () => {

@@ -6,6 +6,7 @@ import {
   PRETTIER_TEXT,
   PRETTIER_LINE,
   PRETTIER_GROUP,
+  PRETTIER_MULTILINE_COMMENT,
   prettyPrintAccordingToPrettierAlgorithm,
 } from './printer-prettier-core';
 import {
@@ -295,6 +296,9 @@ const createPrettierDocumentsForClassDefinition = (
   if (classMembersDocuments.length > 1) classMembersDocuments.pop();
 
   return [
+    classDefinition.documentText == null
+      ? PRETTIER_NIL
+      : PRETTIER_MULTILINE_COMMENT('/**', classDefinition.documentText),
     PRETTIER_TEXT(`class ${classDefinition.name}`),
     PRETTIER_TEXT(
       classDefinition.typeParameters.length === 0
