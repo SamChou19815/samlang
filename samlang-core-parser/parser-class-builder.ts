@@ -187,8 +187,14 @@ export default class ClassDefinitionBuilder
     expressionContext.accept(this.expressionBuilder);
 
   private buildClassMemberDefinition = (
-    ctx: ClassMemberDefinitionContext
+    ctx: ClassMemberDefinitionContext,
+    previousMethodEndingPosition: Position
   ): ClassMemberDefinition | null => {
+    const range = contextRange(ctx);
+    const documentText = findRelevantDocComment(
+      this.commentTokens,
+      new Range(previousMethodEndingPosition, range.start)
+    );
     const nameSymbol = ctx.LowerId().symbol;
     const name = nameSymbol.text;
     const returnType = ctx.typeExpr()?.accept(this.typeBuilder);
@@ -205,7 +211,8 @@ export default class ClassDefinitionBuilder
     const typeParameters =
       typeParametersDeclaration != null ? getTypeParameters(typeParametersDeclaration) : [];
     return {
-      range: contextRange(ctx),
+      range,
+      documentText,
       isPublic: ctx.PRIVATE() == null,
       isMethod: ctx.METHOD() != null,
       nameRange: tokenRange(nameSymbol),
@@ -232,6 +239,18 @@ export default class ClassDefinitionBuilder
     }
     const [name, nameRange] = moduleName;
     const { typeParameters, ...typeDefinition } = typeDefinitionWithTypeParameters;
+    let previousMethodEndingPosition = range.start;
+    const members = ctx
+      .classMemberDefinition()
+      .map((memberDefinitionContext) =>
+        this.buildClassMemberDefinition(memberDefinitionContext, previousMethodEndingPosition)
+      )
+      .filter(isNotNull)
+      .map((classMember) => {
+        previousMethodEndingPosition = classMember.range.end;
+        return classMember;
+      })
+      .filter(isNotNull);
     return {
       range,
       documentText,
@@ -239,7 +258,7 @@ export default class ClassDefinitionBuilder
       name,
       typeParameters,
       typeDefinition,
-      members: ctx.classMemberDefinition().map(this.buildClassMemberDefinition).filter(isNotNull),
+      members,
     };
   };
 }

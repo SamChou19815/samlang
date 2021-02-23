@@ -1,5 +1,6 @@
 /** Main class is the entry point class. */
 class Main {
+  /** Main function is the entry point. */
   function main(): unit = {
     val h: string = "Hello";
     val w: string = " World!";

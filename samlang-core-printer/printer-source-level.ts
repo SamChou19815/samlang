@@ -258,6 +258,9 @@ export const createPrettierDocumentsFromSamlangClassMember = (
   }
 
   return [
+    member.documentText == null
+      ? PRETTIER_NIL
+      : PRETTIER_MULTILINE_COMMENT('/**', member.documentText),
     member.isPublic ? PRETTIER_NIL : PRETTIER_TEXT('private '),
     PRETTIER_TEXT(member.isMethod ? 'method ' : 'function '),
     member.typeParameters.length > 0
