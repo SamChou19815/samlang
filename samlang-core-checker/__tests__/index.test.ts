@@ -39,6 +39,7 @@ it('collectModuleReferenceFromSamlangModule works', () => {
           },
           members: [
             {
+              documentText: null,
               name: '',
               range: Range.DUMMY,
               nameRange: Range.DUMMY,

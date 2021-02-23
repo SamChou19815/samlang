@@ -241,14 +241,18 @@ class Option<T>(None(unit), Some(T)) {
       | Some a -> a
     }
 
+  /** foo bar a */
   function a(): int = 3
 
+  /** foo bar b */
   function b(): int = {}
 
+  /** foo bar c */
   function c(): int = { val a: int = 3; }
 }
 
 class Obj(private val d: int, val e: int) {
+  /** foo bar */
   function valExample(): unit = {
     val a: int = 1;
     val b: int = 2;
@@ -287,10 +291,13 @@ class Option<T>(None(unit), Some(T)) {
       | Some a -> a
     }
 
+  /** foo bar a */
   function a(): int = 3
 
+  /** foo bar b */
   function b(): int = {  }
 
+  /** foo bar c */
   function c(): int = {
     val a: int = 3;
   }
@@ -301,6 +308,7 @@ class Obj(
   private val d: int,
   val e: int
 ) {
+  /** foo bar */
   function valExample(): unit = {
     val a: int = 1;
     val b: int = 2;

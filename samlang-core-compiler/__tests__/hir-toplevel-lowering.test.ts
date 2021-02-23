@@ -47,6 +47,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
         },
         members: [
           {
+            documentText: null,
             range: Range.DUMMY,
             isPublic: true,
             isMethod: false,
@@ -87,6 +88,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
         },
         members: [
           {
+            documentText: null,
             range: Range.DUMMY,
             isPublic: true,
             isMethod: true,
@@ -100,6 +102,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
             body: THIS,
           },
           {
+            documentText: null,
             range: Range.DUMMY,
             isPublic: true,
             isMethod: false,
@@ -125,6 +128,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
             }),
           },
           {
+            documentText: null,
             range: Range.DUMMY,
             isPublic: true,
             isMethod: false,

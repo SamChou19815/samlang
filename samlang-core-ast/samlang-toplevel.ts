@@ -9,6 +9,7 @@ export type AnnotatedVariable = {
 };
 
 export interface ClassMemberDefinition extends Node {
+  readonly documentText: string | null;
   readonly isPublic: boolean;
   readonly isMethod: boolean;
   readonly nameRange: Range;

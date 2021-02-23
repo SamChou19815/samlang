@@ -36,6 +36,7 @@ const class1: ClassDefinition = {
   typeDefinition,
   members: [
     {
+      documentText: null,
       range: Range.DUMMY,
       isPublic: true,
       isMethod: true,
@@ -47,6 +48,7 @@ const class1: ClassDefinition = {
       body: EXPRESSION_FALSE(Range.DUMMY),
     },
     {
+      documentText: null,
       range: Range.DUMMY,
       isPublic: false,
       isMethod: false,
