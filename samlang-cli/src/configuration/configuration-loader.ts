@@ -11,7 +11,6 @@ type ConfigurationLoader = {
   readonly fileReader: (path: string) => string | null;
 };
 
-// eslint-disable-next-line camelcase
 export const fileSystemLoader_EXPOSED_FOR_TESTING: ConfigurationLoader = {
   startPath: resolve('.'),
   pathExistanceTester: existsSync,

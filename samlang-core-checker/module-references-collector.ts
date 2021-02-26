@@ -20,7 +20,6 @@ export const collectModuleReferenceFromType = (
     case 'FunctionType':
       type.argumentTypes.forEach((it) => collectModuleReferenceFromType(it, collector));
       collectModuleReferenceFromType(type.returnType, collector);
-      // eslint-disable-next-line no-useless-return
       return;
   }
 };
@@ -97,7 +96,6 @@ export const collectModuleReferenceFromExpression = (
       if (finalExpression != null) {
         collectModuleReferenceFromExpression(finalExpression, collector);
       }
-      // eslint-disable-next-line no-useless-return
       return;
     }
   }

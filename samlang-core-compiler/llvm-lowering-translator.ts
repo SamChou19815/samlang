@@ -159,7 +159,6 @@ class LLVMLoweringManager {
       case 'HighIRReturnStatement': {
         const { value, type } = this.lowerHighIRExpression(s.expression);
         this.emitInstruction(LLVM_RETURN(value, type));
-        // eslint-disable-next-line no-useless-return
         return;
       }
     }

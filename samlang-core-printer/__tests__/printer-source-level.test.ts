@@ -1,5 +1,4 @@
 import { prettyPrintSamlangModule } from '..';
-// eslint-disable-next-line camelcase
 import { prettyPrintSamlangExpression_EXPOSED_FOR_TESTING } from '../printer-source-level';
 
 import { intType, Range, ModuleReference } from 'samlang-core-ast/common-nodes';

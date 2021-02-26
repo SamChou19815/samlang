@@ -20,7 +20,6 @@ const lowerHighIRTypeToLLVMType = (type: HighIRType): LLVMType => {
         case 'any':
           return LLVM_STRING_TYPE();
       }
-    // eslint-disable-next-line no-fallthrough
     case 'IdentifierType':
       return type;
     case 'StructType':

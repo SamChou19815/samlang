@@ -1,6 +1,5 @@
 import {
   IdentifierTypeValidator,
-  // eslint-disable-next-line camelcase
   findInvalidTypeIdentifier_EXPOSED_FOR_TESTING,
   validateType,
 } from '../type-validator';

@@ -24,7 +24,6 @@ const lowerSamlangType = (type: Type, genericTypes: ReadonlySet<string>): HighIR
         case 'string':
           return HIR_STRING_TYPE;
       }
-    // eslint-disable-next-line no-fallthrough
     case 'IdentifierType': {
       if (genericTypes.has(type.identifier)) return HIR_ANY_TYPE;
       return HIR_IDENTIFIER_TYPE(`${type.moduleReference.parts.join('_')}_${type.identifier}`);

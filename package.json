@@ -23,7 +23,7 @@
     "@babel/core": "^7.13.1",
     "@babel/preset-env": "^7.12.7",
     "@babel/preset-typescript": "^7.12.7",
-    "@dev-sam/eslint-config-common": "0.19.0",
+    "@dev-sam/eslint-config-common": "0.20.0",
     "@types/jest": "^26.0.20",
     "@types/node": "^14.14.31",
     "@typescript-eslint/eslint-plugin": "^4.15.2",
