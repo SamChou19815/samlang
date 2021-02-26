@@ -102,7 +102,6 @@ export class UndecidedTypes {
     return list;
   }
 
-  // eslint-disable-next-line camelcase
   static resetUndecidedTypeIndex_ONLY_FOR_TEST(): void {
     UndecidedTypes.nextUndecidedTypeIndex = 0;
   }

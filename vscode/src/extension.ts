@@ -1,6 +1,4 @@
-// eslint-disable-next-line import/no-unresolved
 import * as vscode from 'vscode';
-// eslint-disable-next-line import/no-unresolved
 import { LanguageClient, LanguageClientOptions, TransportKind } from 'vscode-languageclient';
 
 const provideDocumentFormattingEdits = (document: vscode.TextDocument): vscode.TextEdit[] => {

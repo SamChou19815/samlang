@@ -190,7 +190,6 @@ class HighIRExpressionLoweringManager {
             };
           }
         }
-      // eslint-disable-next-line no-fallthrough
       case 'ThisExpression':
         return {
           statements: [],

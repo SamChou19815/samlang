@@ -23,7 +23,6 @@ const compareMidIR = (e1: HighIRExpression, e2: HighIRExpression): number => {
         case 'HighIRVariableExpression':
           return -1;
       }
-    // eslint-disable-next-line no-fallthrough
     case 'HighIRNameExpression':
       switch (e2.__type__) {
         case 'HighIRIntLiteralExpression':
@@ -33,7 +32,6 @@ const compareMidIR = (e1: HighIRExpression, e2: HighIRExpression): number => {
         case 'HighIRVariableExpression':
           return -1;
       }
-    // eslint-disable-next-line no-fallthrough
     case 'HighIRVariableExpression':
       switch (e2.__type__) {
         case 'HighIRIntLiteralExpression':

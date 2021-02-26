@@ -1,7 +1,6 @@
 import { resolve } from 'path';
 
 import loadSamlangProjectConfiguration, {
-  // eslint-disable-next-line camelcase
   fileSystemLoader_EXPOSED_FOR_TESTING,
 } from '../configuration-loader';
 
@@ -64,7 +63,6 @@ it('When the configuration file is good, say so', () => {
 it('Real filesystem bad configuration file integration test.', () => {
   expect(
     loadSamlangProjectConfiguration({
-      // eslint-disable-next-line camelcase
       ...fileSystemLoader_EXPOSED_FOR_TESTING,
       startPath: resolve('./samlang-cli/fixtures/bad-configuration-file'),
     })
@@ -74,7 +72,6 @@ it('Real filesystem bad configuration file integration test.', () => {
 it('Real filesystem bad start path integration test.', () => {
   expect(
     loadSamlangProjectConfiguration({
-      // eslint-disable-next-line camelcase
       ...fileSystemLoader_EXPOSED_FOR_TESTING,
       startPath: '/',
     })

@@ -25,8 +25,9 @@ const getX86Programs = (): readonly string[] => {
       try {
         fs.accessSync(fullRelativePath, fs.constants.X_OK);
         programs.push(fullRelativePath);
-        // eslint-disable-next-line no-empty
-      } catch (_) {}
+      } catch (_) {
+        // Do nothing
+      }
     }
   });
   programs.sort((a, b) => a.localeCompare(b));

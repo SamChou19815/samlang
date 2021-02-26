@@ -226,8 +226,6 @@ const createPrettierDocumentFromSamlangExpression = (
   }
 };
 
-/** DO NOT USE IN PROD. It is only exposed for testing. */
-// eslint-disable-next-line camelcase
 export const prettyPrintSamlangExpression_EXPOSED_FOR_TESTING = (
   availableWidth: number,
   expression: SamlangExpression

@@ -1865,9 +1865,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dev-sam/eslint-config-common@npm:0.19.0":
-  version: 0.19.0
-  resolution: "@dev-sam/eslint-config-common@npm:0.19.0"
+"@dev-sam/eslint-config-common@npm:0.20.0":
+  version: 0.20.0
+  resolution: "@dev-sam/eslint-config-common@npm:0.20.0"
   peerDependencies:
     "@typescript-eslint/eslint-plugin": "*"
     "@typescript-eslint/parser": "*"
@@ -1883,7 +1883,7 @@ __metadata:
       optional: true
     eslint-plugin-react-hooks:
       optional: true
-  checksum: 7f15dbbbf2aecb8dfe76521acc17a3773580c7b8040cf782083e310e629e3e0ae27ba9595e59c83a1b13d68d369fc0fa9ccb997935a9e04601cf29f4b3181696
+  checksum: 56817ce04bac4189dc55797f27c976d5fd504e454c4de2764c239afa5a62d250007529bab317901fbd270b68798fe0834cef02381b05a4a5436ae8dae8eedf43
   languageName: node
   linkType: hard
 
@@ -7128,7 +7128,7 @@ resolve@^1.18.1:
     "@babel/core": ^7.13.1
     "@babel/preset-env": ^7.12.7
     "@babel/preset-typescript": ^7.12.7
-    "@dev-sam/eslint-config-common": 0.19.0
+    "@dev-sam/eslint-config-common": 0.20.0
     "@types/jest": ^26.0.20
     "@types/node": ^14.14.31
     "@typescript-eslint/eslint-plugin": ^4.15.2

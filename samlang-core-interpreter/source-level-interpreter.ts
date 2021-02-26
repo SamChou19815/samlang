@@ -95,7 +95,6 @@ export class ExpressionInterpreter {
             return expression.literal.value;
         }
       }
-      // eslint-disable-next-line no-fallthrough
       case 'ThisExpression':
         return context.localValues.this ?? this.blameTypeChecker('Missing `this`');
       case 'VariableExpression':
@@ -156,7 +155,6 @@ export class ExpressionInterpreter {
             return !v;
         }
       }
-      // eslint-disable-next-line no-fallthrough
       case 'PanicExpression':
         throw new PanicException(this.eval(expression.expression, context) as string);
       case 'BuiltInFunctionCallExpression': {
@@ -177,7 +175,6 @@ export class ExpressionInterpreter {
             return { type: 'unit' };
         }
       }
-      // eslint-disable-next-line no-fallthrough
       case 'FunctionCallExpression': {
         const functionVal = this.eval(expression.functionExpression, context) as FunctionValue;
         const args = functionVal.arguments;
@@ -281,7 +278,6 @@ export class ExpressionInterpreter {
           }
         }
       }
-      // eslint-disable-next-line no-fallthrough
       case 'IfElseExpression': {
         return this.eval(
           (this.eval(expression.boolExpression, context) as boolean)
