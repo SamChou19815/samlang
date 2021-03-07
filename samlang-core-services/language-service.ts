@@ -34,7 +34,7 @@ import {
   createGlobalErrorCollector,
 } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
-import { HashMap, hashMapOf, hashSetOf, isNotNull, checkNotNull } from 'samlang-core-utils';
+import { HashMap, hashMapOf, hashSetOf, isNotNull, checkNotNull, assert } from 'samlang-core-utils';
 
 export class LanguageServiceState {
   private readonly dependencyTracker: DependencyTracker = new DependencyTracker();
@@ -252,6 +252,28 @@ export class LanguageServices {
   ): readonly [Readonly<{ language: string; value: string }>[], Range] | null {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     if (expression == null) return null;
+    let functionReference: readonly [ModuleReference, string, string] | undefined;
+    if (expression.__type__ === 'ClassMemberExpression') {
+      functionReference = [expression.moduleReference, expression.className, expression.memberName];
+    } else if (expression.__type__ === 'MethodAccessExpression') {
+      const thisType = expression.expression.type;
+      assert(thisType.type === 'IdentifierType');
+      functionReference = [thisType.moduleReference, thisType.identifier, expression.methodName];
+    }
+    if (functionReference != null) {
+      const [fetchedFunctionModuleReference, className, functionName] = functionReference;
+      const relevantFunction = this.state
+        .getCheckedModule(fetchedFunctionModuleReference)
+        ?.classes?.find((it) => it.name === className)
+        ?.members?.find((it) => it.name === functionName);
+      // istanbul ignore next
+      if (relevantFunction == null) return null;
+      const typeContent = { language: 'samlang', value: prettyPrintType(expression.type) };
+      const document = relevantFunction.documentText;
+      return document == null
+        ? [[typeContent], expression.range]
+        : [[typeContent, { language: 'markdown', value: document }], expression.range];
+    }
     const type = prettyPrintType(expression.type);
     if (type.startsWith('class ')) {
       const moduleParts = type.substring(6).split('.');
