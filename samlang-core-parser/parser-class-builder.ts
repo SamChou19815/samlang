@@ -234,9 +234,7 @@ export default class ClassDefinitionBuilder
     const typeDefinitionWithTypeParameters = ctx
       .classHeaderDeclaration()
       .accept(this.moduleTypeDefinitionBuilder);
-    if (moduleName == null || typeDefinitionWithTypeParameters == null) {
-      return null;
-    }
+    if (moduleName == null || typeDefinitionWithTypeParameters == null) return null;
     const [name, nameRange] = moduleName;
     const { typeParameters, ...typeDefinition } = typeDefinitionWithTypeParameters;
     let previousMethodEndingPosition = range.start;
@@ -251,14 +249,6 @@ export default class ClassDefinitionBuilder
         return classMember;
       })
       .filter(isNotNull);
-    return {
-      range,
-      documentText,
-      nameRange,
-      name,
-      typeParameters,
-      typeDefinition,
-      members,
-    };
+    return { range, documentText, nameRange, name, typeParameters, typeDefinition, members };
   };
 }

@@ -367,9 +367,7 @@ class ExpressionTypeChecker {
   ): Readonly<{ checkedExpression: SamlangExpression; methodType: FunctionType }> | null {
     const checkedExpression = this.basicTypeCheck(expression.expression);
     const checkedExpressionType = checkedExpression.type;
-    if (checkedExpressionType.type !== 'IdentifierType') {
-      return null;
-    }
+    if (checkedExpressionType.type !== 'IdentifierType') return null;
     const {
       moduleReference: checkedExprTypeModuleReference,
       identifier: checkedExprTypeIdentifier,
@@ -381,9 +379,7 @@ class ExpressionTypeChecker {
       expression.methodName,
       checkedExprTypeArguments
     );
-    if (methodTypeOrError.type !== 'FunctionType') {
-      return null;
-    }
+    if (methodTypeOrError.type !== 'FunctionType') return null;
     return { checkedExpression, methodType: methodTypeOrError };
   }
 
