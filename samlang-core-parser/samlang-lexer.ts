@@ -1,7 +1,18 @@
+import { Position, Range } from 'samlang-core-ast/common-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
-/** @internal */
-export class TokenStream {
+const characterIsWhitespace = (character: string): boolean => /\s/.test(character);
+const characterIsNumber = (character: string): boolean =>
+  character.length === 1 && '0' <= character && character <= '9';
+const characterIsLetter = (character: string): boolean =>
+  character.length === 1 &&
+  (('A' <= character && character <= 'Z') || ('a' <= character && character <= 'z'));
+
+class EOF extends Error {}
+
+const MAX_INT_PLUS_ONE = BigInt('9223372036854775808');
+
+class TokenStream {
   public lineNumber = 0;
   public columnNumber = 0;
 
@@ -13,65 +24,436 @@ export class TokenStream {
     this.position += 1;
     if (character === '\n') {
       this.lineNumber += 1;
+      this.columnNumber = 0;
     } else {
       this.columnNumber += 1;
     }
   }
 
-  private consumeWhitespace(): void {
-    while (this.position < this.source.length) {
-      const character = checkNotNull(this.source[this.position]);
-      if (!/\s/.test(character)) return;
-      this.advanceCharacter(character);
-    }
+  get currentPosition(): Position {
+    return new Position(this.lineNumber, this.columnNumber);
   }
 
-  consume(length: number): void {
-    for (let i = this.position; i < this.position + length; i += 1) {
+  consumeWhitespace(): void {
+    while (this.position < this.source.length) {
+      const character = checkNotNull(this.source[this.position]);
+      if (!characterIsWhitespace(character)) return;
+      this.advanceCharacter(character);
+    }
+    throw new EOF();
+  }
+
+  consumeAndGetRange(start: Position, length: number): Range {
+    const startingPosition = this.position;
+    for (let i = startingPosition; i < startingPosition + length; i += 1) {
       this.advanceCharacter(checkNotNull(this.source[i]));
     }
+    return new Range(start, this.currentPosition);
+  }
+
+  peekUntilWhitespace(): string {
+    let position = this.position;
+    while (position < this.source.length) {
+      if (characterIsWhitespace(checkNotNull(this.source[position]))) break;
+      position += 1;
+    }
+    return this.source.substring(this.position, position);
   }
 
   peekNextConstantToken(constantToken: string): boolean {
-    this.consumeWhitespace();
-    const peeked = this.source.substr(this.position, this.position + constantToken.length);
+    const peeked = this.source.substr(this.position, constantToken.length);
     return peeked === constantToken;
   }
 
   /** @returns comment string including // or null if it's not a line comment. */
   peekLineComment(): string | null {
-    this.consumeWhitespace();
-    if (this.source.substr(this.position, this.position + 2) !== '//') return null;
+    if (this.source.substr(this.position, 2) !== '//') return null;
     let commentLength = 0;
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const character = checkNotNull(this.source[this.position + 2 + commentLength]);
-      if (character === '\n') break;
+      const character = this.source[this.position + 2 + commentLength];
+      if (character == null || character === '\n') break;
       commentLength += 1;
     }
-    return this.source.substr(this.position, this.position + 2 + commentLength);
+    return this.source.substr(this.position, 2 + commentLength);
   }
 
   /** @returns comment string including /* or null if it's not a block comment. */
   peekBlockComment(): string | null {
-    this.consumeWhitespace();
-    if (this.source.substr(this.position, this.position + 2) !== '/*') return null;
+    if (this.source.substr(this.position, 2) !== '/*') return null;
     let commentLength = 0;
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      if (
-        this.source.substr(
-          this.position + 2 + commentLength,
-          this.position + 2 + commentLength + 2
-        ) === '*/'
-      ) {
+      const twoChars = this.source.substr(this.position + 2 + commentLength, 2);
+      if (twoChars.length !== 2) return null;
+      if (twoChars === '*/') {
         break;
       }
       commentLength += 1;
     }
     commentLength += 1;
-    return this.source.substr(this.position, this.position + 2 + commentLength);
+    return this.source.substr(this.position, 2 + commentLength);
+  }
+
+  peekInteger(): string | null {
+    if (this.source[this.position] === '0') return '0';
+    let position = this.position;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      if (characterIsNumber(this.source[position] ?? '')) {
+        position += 1;
+      } else if (position === this.position) {
+        return null;
+      } else {
+        return this.source.substring(this.position, position);
+      }
+    }
+  }
+
+  peekIdentifier(): string | null {
+    if (!characterIsLetter(checkNotNull(this.source[this.position]))) return null;
+    let position = this.position + 1;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const character = this.source[position] ?? '';
+      if (characterIsNumber(character) || characterIsLetter(character)) {
+        position += 1;
+      } else {
+        return this.source.substring(this.position, position);
+      }
+    }
+  }
+
+  peekString(): string | null {
+    if (this.source[this.position] !== '"') return null;
+    let position = this.position + 1;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const character = this.source[position];
+      if (character == null) return null;
+      if (character === '"') {
+        let escapeCount = 0;
+        for (let i = position - 1; i >= this.position + 1; i -= 1) {
+          if (this.source[i] !== '\\') break;
+          escapeCount += 1;
+        }
+        // We don't validate escaping here.
+        if (escapeCount % 2 === 0) {
+          // When there are even number of escapes, the quote is not escaped,
+          // so it's the ending quote.
+          return this.source.substring(this.position, position + 1);
+        }
+      }
+      if (character === '\n') return null;
+      position += 1;
+    }
   }
 }
 
-export default class SamlangLexer {}
+export type SamlangKeywordString =
+  // Imports
+  | 'import'
+  | 'from'
+  // Declarations
+  | 'class'
+  | 'val'
+  | 'function'
+  | 'method'
+  | 'as'
+  // Visibility modifiers
+  | 'private'
+  | 'protected'
+  | 'internal'
+  | 'public'
+  // Control Flow
+  | 'if'
+  | 'then'
+  | 'else'
+  | 'match'
+  | 'panic'
+  | 'return'
+  // Type Keywords
+  | 'int'
+  | 'string'
+  | 'bool'
+  | 'unit'
+  // Some Important Literals
+  | 'true'
+  | 'false'
+  | 'this'
+  // Builtins
+  | 'stringToInt'
+  | 'intToString'
+  | 'println'
+  // Forbidden Names
+  | 'self'
+  | 'const'
+  | 'let'
+  | 'var'
+  | 'type'
+  | 'interface'
+  | 'functor'
+  | 'extends'
+  | 'implements'
+  | 'export'
+  | 'assert';
+
+const SAMLANG_KEYWORDS: SamlangKeywordString[] = [
+  // Imports
+  'import',
+  'from',
+  // Declarations
+  'class',
+  'val',
+  'function',
+  'method',
+  'as',
+  // Visibility modifiers
+  'private',
+  'protected',
+  'internal',
+  'public',
+  // Control Flow
+  'if',
+  'then',
+  'else',
+  'match',
+  'panic',
+  'return',
+  // Type Keywords
+  'int',
+  'string',
+  'bool',
+  'unit',
+  // Some Important Literals
+  'true',
+  'false',
+  'this',
+  // Builtins
+  'stringToInt',
+  'intToString',
+  'println',
+  // Forbidden Names
+  'self',
+  'const',
+  'let',
+  'var',
+  'type',
+  'interface',
+  'functor',
+  'extends',
+  'implements',
+  'export',
+  'assert',
+];
+
+export type SamlangOperatorString =
+  | '_'
+  // Parentheses
+  | '('
+  | ')'
+  | '{'
+  | '}'
+  | '['
+  | ']'
+  // Separators
+  | '?'
+  | ';'
+  | ':'
+  | '::'
+  | ','
+  | '.'
+  | '|'
+  | '->'
+  // Operators
+  | '='
+  | '!'
+  | '*'
+  | '/'
+  | '%'
+  | '+'
+  | '-'
+  | '=='
+  | '<'
+  | '<='
+  | '>'
+  | '>='
+  | '!='
+  | '&&'
+  | '||'
+  | '...';
+
+const SAMLANG_OPERATORS: SamlangOperatorString[] = [
+  '_',
+  // Parentheses
+  '(',
+  ')',
+  '{',
+  '}',
+  '[',
+  ']',
+  // Separators
+  '?',
+  ';',
+  ':',
+  '::',
+  ',',
+  '.',
+  '|',
+  '->',
+  // Operators
+  '=',
+  '!',
+  '*',
+  '/',
+  '%',
+  '+',
+  '-',
+  '==',
+  '<',
+  '<=',
+  '>',
+  '>=',
+  '!=',
+  '&&',
+  '||',
+  '...',
+];
+// Sort by length reversed to enforce longest-rule-win rule.
+SAMLANG_OPERATORS.sort((a, b) => b.length - a.length);
+
+export type SamlangTokenContent =
+  | SamlangKeywordString
+  | SamlangOperatorString
+  | {
+      readonly __type__:
+        | 'UpperId'
+        | 'LowerId'
+        | 'StringLiteral'
+        | 'IntLiteral'
+        | 'LineComment'
+        | 'BlockComment'
+        | 'Error';
+      readonly content: string;
+    };
+
+export type SamlangToken = {
+  readonly range: Range;
+  readonly content: SamlangTokenContent;
+};
+
+const samlangTokenContentToString = (content: SamlangTokenContent): string => {
+  if (typeof content === 'string') return content;
+  if (content.__type__ === 'Error') return `ERROR: ${content.content}`;
+  return content.content;
+};
+
+export const samlangTokenToString = ({ range, content }: SamlangToken): string =>
+  `${range}: ${samlangTokenContentToString(content)}`;
+
+const getNextToken = (stream: TokenStream): SamlangToken | null => {
+  try {
+    stream.consumeWhitespace();
+    const start = stream.currentPosition;
+
+    const lineComment = stream.peekLineComment();
+    if (lineComment != null) {
+      return {
+        range: stream.consumeAndGetRange(start, lineComment.length),
+        content: { __type__: 'LineComment', content: lineComment },
+      };
+    }
+    const blockComment = stream.peekBlockComment();
+    if (blockComment != null) {
+      return {
+        range: stream.consumeAndGetRange(start, blockComment.length),
+        content: { __type__: 'BlockComment', content: blockComment },
+      };
+    }
+    const integer = stream.peekInteger();
+    if (integer != null) {
+      return {
+        range: stream.consumeAndGetRange(start, integer.length),
+        content: { __type__: 'IntLiteral', content: integer },
+      };
+    }
+    const string = stream.peekString();
+    if (string != null) {
+      const range = stream.consumeAndGetRange(start, string.length);
+      // TODO: validate string escaping
+      return { range, content: { __type__: 'StringLiteral', content: string } };
+    }
+
+    const identifier = stream.peekIdentifier();
+    if (identifier != null) {
+      const range = stream.consumeAndGetRange(start, identifier.length);
+      if ((SAMLANG_KEYWORDS as string[]).includes(identifier)) {
+        return { range, content: identifier as SamlangKeywordString };
+      }
+      const firstLetter = checkNotNull(identifier[0]);
+      return {
+        range,
+        content: {
+          __type__: 'A' <= firstLetter && firstLetter <= 'Z' ? 'UpperId' : 'LowerId',
+          content: identifier,
+        },
+      };
+    }
+
+    for (const operator of SAMLANG_OPERATORS) {
+      if (stream.peekNextConstantToken(operator)) {
+        return { range: stream.consumeAndGetRange(start, operator.length), content: operator };
+      }
+    }
+
+    const errorTokenContent = stream.peekUntilWhitespace();
+    return {
+      range: stream.consumeAndGetRange(start, errorTokenContent.length),
+      content: { __type__: 'Error', content: errorTokenContent },
+    };
+  } catch (e) {
+    // istanbul ignore next
+    if (!(e instanceof EOF)) throw e;
+    return null;
+  }
+};
+
+const lexSamlangProgram = (source: string): readonly SamlangToken[] => {
+  const stream = new TokenStream(source);
+
+  const tokens: SamlangToken[] = [];
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    let token = getNextToken(stream);
+    if (token == null) return tokens;
+
+    // Validate the range of int token.
+    // We have to do it here since we need access of the previous token.
+    if (typeof token.content !== 'string' && token.content.__type__ === 'IntLiteral') {
+      const intLiteralString = token.content.content;
+      const parsedBigInt = BigInt(intLiteralString);
+      if (parsedBigInt > MAX_INT_PLUS_ONE) {
+        token = { range: token.range, content: { __type__: 'Error', content: intLiteralString } };
+      } else if (parsedBigInt === MAX_INT_PLUS_ONE) {
+        const previousToken = tokens[tokens.length - 1]?.content;
+        if (previousToken == null || previousToken !== '-') {
+          token = {
+            range: token.range,
+            content: { __type__: 'Error', content: intLiteralString },
+          };
+        } else {
+          tokens.pop();
+          // Merge - and MAX_INT_PLUS_ONE into MIN_INT
+          token = {
+            range: token.range,
+            content: { __type__: 'IntLiteral', content: `-${intLiteralString}` },
+          };
+        }
+      }
+    }
+
+    tokens.push(token);
+  }
+};
+
+export default lexSamlangProgram;
