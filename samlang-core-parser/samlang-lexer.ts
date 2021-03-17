@@ -12,7 +12,7 @@ class EOF extends Error {}
 
 const MAX_INT_PLUS_ONE = BigInt('9223372036854775808');
 
-class TokenStream {
+class CharacterStream {
   public lineNumber = 0;
   public columnNumber = 0;
 
@@ -380,7 +380,7 @@ const stringHasValidEscape = (string: string): boolean => {
   return true;
 };
 
-const getNextToken = (stream: TokenStream): SamlangToken | null => {
+const getNextToken = (stream: CharacterStream): SamlangToken | null => {
   try {
     stream.consumeWhitespace();
     const start = stream.currentPosition;
@@ -452,7 +452,7 @@ const getNextToken = (stream: TokenStream): SamlangToken | null => {
 };
 
 const lexSamlangProgram = (source: string): readonly SamlangToken[] => {
-  const stream = new TokenStream(source);
+  const stream = new CharacterStream(source);
 
   const tokens: SamlangToken[] = [];
   // eslint-disable-next-line no-constant-condition
