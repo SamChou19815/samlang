@@ -632,6 +632,20 @@ it('lexSamlangProgram string end escaping test', () => {
   expect(lex(`"abcdefg\\\\\\"`)).toEqual(['1:1-1:13: ERROR: "abcdefg\\\\\\"']);
 });
 
+it('lexSamlangProgram string mid escaping good tests', () => {
+  expect(lex(`"abcdefg\\t"`)).toEqual(['1:1-1:12: "abcdefg\\t"']);
+  expect(lex(`"abcdefg\\f"`)).toEqual(['1:1-1:12: "abcdefg\\f"']);
+  expect(lex(`"abcdefg\\r"`)).toEqual(['1:1-1:12: "abcdefg\\r"']);
+  expect(lex(`"abcdefg\\n"`)).toEqual(['1:1-1:12: "abcdefg\\n"']);
+  expect(lex(`"abcdefg\\b"`)).toEqual(['1:1-1:12: "abcdefg\\b"']);
+  expect(lex(`"abcdefg\\0"`)).toEqual(['1:1-1:12: "abcdefg\\0"']);
+});
+
+it('lexSamlangProgram string mid escaping bad tests', () => {
+  expect(lex(`"abcdefg\\a"`)).toEqual(['1:1-1:12: ERROR: "abcdefg\\a"']);
+  expect(lex(`"abcdefg\\c"`)).toEqual(['1:1-1:12: ERROR: "abcdefg\\c"']);
+});
+
 it('lexSamlangProgram bad multiple string', () => {
   expect(lex(`"abcdefg\n"`)).toEqual(['1:1-1:9: ERROR: "abcdefg', '2:1-2:2: ERROR: "']);
 });
