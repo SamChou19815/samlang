@@ -351,6 +351,35 @@ const samlangTokenContentToString = (content: SamlangTokenContent): string => {
 export const samlangTokenToString = ({ range, content }: SamlangToken): string =>
   `${range}: ${samlangTokenContentToString(content)}`;
 
+const stringHasValidEscape = (string: string): boolean => {
+  let hasUnprocessedEscape = false;
+  for (let i = 0; i < string.length; i += 1) {
+    const character = string[i];
+    if (character === '\\') {
+      hasUnprocessedEscape = !hasUnprocessedEscape;
+      continue;
+    }
+    if (hasUnprocessedEscape) {
+      switch (character) {
+        case 't':
+        case 'v':
+        case '0':
+        case 'b':
+        case 'f':
+        case 'n':
+        case 'r':
+        case '"':
+          hasUnprocessedEscape = false;
+          break;
+        default:
+          // Escaping things that should not be escaped
+          return false;
+      }
+    }
+  }
+  return true;
+};
+
 const getNextToken = (stream: TokenStream): SamlangToken | null => {
   try {
     stream.consumeWhitespace();
@@ -379,9 +408,13 @@ const getNextToken = (stream: TokenStream): SamlangToken | null => {
     }
     const string = stream.peekString();
     if (string != null) {
-      const range = stream.consumeAndGetRange(start, string.length);
-      // TODO: validate string escaping
-      return { range, content: { __type__: 'StringLiteral', content: string } };
+      return {
+        range: stream.consumeAndGetRange(start, string.length),
+        content: {
+          __type__: stringHasValidEscape(string) ? 'StringLiteral' : 'Error',
+          content: string,
+        },
+      };
     }
 
     const identifier = stream.peekIdentifier();
