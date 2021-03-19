@@ -169,7 +169,7 @@ it('Can parse good programs.', () => {
 
     class Developer(
       val name: string, val github: string,
-      val projects: List<string>,
+      val projects: List<string>
     ) {
       function sam(): Developer = {
         val l = List.of("SAMLANG").cons("...")
@@ -239,7 +239,7 @@ it('Can handle really bad programs.', () => {
       method notAnnotated(bad: , : int):
     }
 
-    class TypeInference(val : string, val foo: ) {
+    class TypeInference(vafl : string, val foo: ) {
       function notAnnotated(bad: , : int):  = {
         val _ = (a, b, c) -> if a(b + 1) then b else c;
       }

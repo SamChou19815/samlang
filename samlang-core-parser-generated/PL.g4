@@ -16,14 +16,14 @@ classHeaderDeclaration
     ;
 classMemberDefinition
     : PRIVATE? (FUNCTION | METHOD) typeParametersDeclaration? LowerId
-        LPAREN (annotatedVariable (COMMA annotatedVariable)* COMMA?)? RPAREN (COLON typeExpr)?
+        LPAREN (annotatedVariable (COMMA annotatedVariable)*)? RPAREN (COLON typeExpr)?
       ASSIGN expression
     ;
 typeParametersDeclaration : LT UpperId (COMMA UpperId)* GT;
 
 typeDeclaration
-    : objectTypeFieldDeclaration (COMMA objectTypeFieldDeclaration)* COMMA? # ObjType
-    | variantTypeConstructorDeclaration (COMMA variantTypeConstructorDeclaration)+ COMMA? # VariantType
+    : objectTypeFieldDeclaration (COMMA objectTypeFieldDeclaration)* # ObjType
+    | variantTypeConstructorDeclaration (COMMA variantTypeConstructorDeclaration)+ # VariantType
     ;
 objectTypeFieldDeclaration : PRIVATE? VAL LowerId typeAnnotation;
 variantTypeConstructorDeclaration : UpperId LPAREN typeExpr RPAREN;
@@ -36,7 +36,7 @@ typeExpr
     | BOOL # BoolType
     | UpperId typeParameters? # SingleIdentifierType
     | LBRACKET typeExpr (MUL typeExpr)+ RBRACKET # TupleType
-    | LPAREN typeExpr (COMMA typeExpr)* COMMA? RPAREN ARROW typeExpr # FunctionType
+    | LPAREN typeExpr (COMMA typeExpr)* RPAREN ARROW typeExpr # FunctionType
     | LPAREN RPAREN ARROW typeExpr # FunctionTypeNoArg
     ;
 
@@ -60,7 +60,7 @@ expression
     | THIS # ThisExpr
     | LowerId # VariableExpr
     | UpperId DOT LowerId # ClassMemberExpr
-    | LBRACKET expression (COMMA expression)+ COMMA? RBRACKET # TupleConstructor
+    | LBRACKET expression (COMMA expression)+ RBRACKET # TupleConstructor
     | LBRACE objectFieldDeclarations RBRACE # ObjConstructor
     | UpperId LPAREN expression RPAREN # VariantConstructor
     | statementBlock # StatementBlockExpr
@@ -80,20 +80,20 @@ expression
     | expression COLONCOLON expression # ConcatExpr
     | IF expression THEN expression ELSE expression # IfElseExpr
     | MATCH LPAREN expression RPAREN LBRACE patternToExpr+ RBRACE # MatchExpr
-    | LPAREN optionallyAnnotatedParameter (COMMA optionallyAnnotatedParameter)* COMMA? RPAREN ARROW expression # FunExpr
+    | LPAREN optionallyAnnotatedParameter (COMMA optionallyAnnotatedParameter)* RPAREN ARROW expression # FunExpr
     | LPAREN RPAREN ARROW expression # NoArgFunExpr
     ;
 
-objectFieldDeclarations : objectFieldDeclaration (COMMA objectFieldDeclaration)* COMMA?;
+objectFieldDeclarations : objectFieldDeclaration (COMMA objectFieldDeclaration)*;
 objectFieldDeclaration
     : LowerId COLON expression # NormalObjFieldDeclaration
     | LowerId # ShorthandObjFieldDeclaration
     ;
-functionArguments : LPAREN RPAREN | LPAREN expression (COMMA expression)* COMMA? RPAREN;
+functionArguments : LPAREN RPAREN | LPAREN expression (COMMA expression)* RPAREN;
 
 pattern
-    : LBRACKET varOrWildCard (COMMA varOrWildCard)+ COMMA? RBRACKET # TuplePattern
-    | LBRACE varOrRenamedVar (COMMA varOrRenamedVar)* COMMA? RBRACE # ObjectPattern
+    : LBRACKET varOrWildCard (COMMA varOrWildCard)+ RBRACKET # TuplePattern
+    | LBRACE varOrRenamedVar (COMMA varOrRenamedVar)* RBRACE # ObjectPattern
     | LowerId # VariablePattern
     | WILDCARD # WildcardPattern
     ;

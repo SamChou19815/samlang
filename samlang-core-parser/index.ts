@@ -52,7 +52,9 @@ export const parseSamlangModuleFromText = (
         new ModuleBuilder(moduleReference, moduleErrorCollector, collectCommentsForParser(text))
       );
   } catch {
+    // istanbul ignore next
     moduleErrorCollector.reportSyntaxError(Range.DUMMY, 'Encountered unrecoverable syntax error');
+    // istanbul ignore next
     return { imports: [], classes: [] };
   }
 };
