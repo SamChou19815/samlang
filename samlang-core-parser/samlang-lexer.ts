@@ -342,7 +342,7 @@ export type SamlangToken = {
   readonly content: SamlangTokenContent;
 };
 
-const samlangTokenContentToString = (content: SamlangTokenContent): string => {
+export const samlangTokenContentToString = (content: SamlangTokenContent): string => {
   if (typeof content === 'string') return content;
   if (content.__type__ === 'Error') return `ERROR: ${content.content}`;
   return content.content;
