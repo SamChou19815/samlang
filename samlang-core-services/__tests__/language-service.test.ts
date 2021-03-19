@@ -289,7 +289,7 @@ class List<T>(Nil(unit), Cons([T * List<T>])) {
 }
 class Developer(
   val name: string, val github: string,
-  val projects: List<string>,
+  val projects: List<string>
 ) {
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...")
@@ -337,7 +337,7 @@ class List<T>(Nil(unit), Cons([T * List<T>])) {
 }
 class Developer(
   val name: string, val github: string,
-  val projects: List<string>,
+  val projects: List<string>
 ) {
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...")
@@ -411,7 +411,7 @@ class List<T>(Nil(unit), Cons([T * List<T>])) {
 }
 class Developer(
   val name: string, val github: string,
-  val projects: List<string>,
+  val projects: List<string>
 ) {
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...")
@@ -438,7 +438,7 @@ it('LanguageServices format test with bad programs', () => {
       `
 class Developer(
   val name: string, val github: string,
-  val projects: List<string>,
+  val projects: List<string>
 ) {
   function sam(): Developer = {
     { name: projects:  }.

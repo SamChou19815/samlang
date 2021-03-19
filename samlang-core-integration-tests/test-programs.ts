@@ -317,11 +317,11 @@ class List<T>(Nil(unit), Cons([T * List<T>])) {
 }
 class Developer(
   val name: string, val github: string,
-  val projects: List<string>,
+  val projects: List<string>
 ) {
   function sam(): Developer = {
-    val l = List.of("SAMLANG").cons("...")
-    val github = "SamChou19815"
+    val l = List.of("SAMLANG").cons("...");
+    val github = "SamChou19815";
     { name: "Sam Zhou", github, projects: l }
   }
 }
@@ -750,7 +750,7 @@ class PrimitiveType(
   U(bool),
   I(int),
   S(string),
-  B(bool),
+  B(bool)
 ) {
   // some random functions
   function getUnit(): PrimitiveType = U(false)
