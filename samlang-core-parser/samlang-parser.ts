@@ -10,6 +10,9 @@ import {
   Type,
   UndecidedTypes,
   unitType,
+  boolType,
+  intType,
+  stringType,
   tupleType,
   functionType,
   Range,
@@ -22,10 +25,16 @@ import {
   EXPRESSION_INT,
   EXPRESSION_STRING,
   EXPRESSION_VARIABLE,
+  EXPRESSION_THIS,
   EXPRESSION_CLASS_MEMBER,
   EXPRESSION_TUPLE_CONSTRUCTOR,
   EXPRESSION_OBJECT_CONSTRUCTOR,
   EXPRESSION_VARIANT_CONSTRUCTOR,
+  EXPRESSION_FIELD_ACCESS,
+  EXPRESSION_UNARY,
+  EXPRESSION_PANIC,
+  EXPRESSION_BUILTIN_FUNCTION_CALL,
+  EXPRESSION_FUNCTION_CALL,
   EXPRESSION_LAMBDA,
 } from 'samlang-core-ast/samlang-expressions';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
@@ -118,7 +127,111 @@ export default class SamlangParser extends BaseParser {
   }
 
   parseExpression = (): SamlangExpression => {
-    return this.parseBaseExpression();
+    return this.parseUnaryExpression();
+  };
+
+  private parseUnaryExpression = (): SamlangExpression => {
+    const peeked = this.peek();
+
+    if (peeked.content === '!') {
+      this.consume();
+      const expression = this.parseBaseExpression();
+      return EXPRESSION_UNARY({
+        range: peeked.range.union(expression.range),
+        type: boolType,
+        operator: '!',
+        expression,
+      });
+    }
+    if (peeked.content === '-') {
+      this.consume();
+      const expression = this.parseBaseExpression();
+      return EXPRESSION_UNARY({
+        range: peeked.range.union(expression.range),
+        type: intType,
+        operator: '-',
+        expression,
+      });
+    }
+
+    return this.parseFunctionCall();
+  };
+
+  private parseFunctionCall = (): SamlangExpression => {
+    const peeked = this.peek();
+
+    if (peeked.content === 'panic') {
+      this.consume();
+      this.assertAndConsume('(');
+      const expression = this.parseExpression();
+      const endRange = this.assertAndConsume(')');
+      return EXPRESSION_PANIC({
+        range: peeked.range.union(endRange),
+        type: UndecidedTypes.next(),
+        expression,
+      });
+    }
+    if (peeked.content === 'stringToInt') {
+      this.consume();
+      this.assertAndConsume('(');
+      const argumentExpression = this.parseExpression();
+      const endRange = this.assertAndConsume(')');
+      return EXPRESSION_BUILTIN_FUNCTION_CALL({
+        range: peeked.range.union(endRange),
+        type: intType,
+        functionName: 'stringToInt',
+        argumentExpression,
+      });
+    }
+    if (peeked.content === 'intToString') {
+      this.consume();
+      this.assertAndConsume('(');
+      const argumentExpression = this.parseExpression();
+      const endRange = this.assertAndConsume(')');
+      return EXPRESSION_BUILTIN_FUNCTION_CALL({
+        range: peeked.range.union(endRange),
+        type: stringType,
+        functionName: 'intToString',
+        argumentExpression,
+      });
+    }
+    if (peeked.content === 'println') {
+      this.consume();
+      this.assertAndConsume('(');
+      const argumentExpression = this.parseExpression();
+      const endRange = this.assertAndConsume(')');
+      return EXPRESSION_BUILTIN_FUNCTION_CALL({
+        range: peeked.range.union(endRange),
+        type: unitType,
+        functionName: 'println',
+        argumentExpression,
+      });
+    }
+
+    const functionExpression = this.parseFieldAccessExpression();
+    if (this.peek().content !== '(') return functionExpression;
+    this.consume();
+    const functionArguments = this.parseCommaSeparatedList(this.parseExpression);
+    const endRange = this.assertAndConsume(')');
+    return EXPRESSION_FUNCTION_CALL({
+      range: peeked.range.union(endRange),
+      type: UndecidedTypes.next(),
+      functionExpression,
+      functionArguments,
+    });
+  };
+
+  private parseFieldAccessExpression = (): SamlangExpression => {
+    const baseExpression = this.parseBaseExpression();
+    if (this.peek().content !== '.') return baseExpression;
+    const { range, variable } = this.assertAndPeekLowerId();
+    return EXPRESSION_FIELD_ACCESS({
+      range: baseExpression.range.union(range),
+      type: UndecidedTypes.next(),
+      expression: baseExpression,
+      fieldName: variable,
+      fieldOrder: -1,
+    });
   };
 
   private parseBaseExpression = (): SamlangExpression => {
@@ -131,6 +244,10 @@ export default class SamlangParser extends BaseParser {
     if (peeked.content === 'false') {
       this.consume();
       return EXPRESSION_FALSE(peeked.range);
+    }
+    if (peeked.content === 'this') {
+      this.consume();
+      return EXPRESSION_THIS({ range: peeked.range, type: UndecidedTypes.next() });
     }
 
     if (typeof peeked.content !== 'string') {
