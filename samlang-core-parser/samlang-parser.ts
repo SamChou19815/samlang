@@ -5,8 +5,30 @@ import {
   samlangTokenContentToString,
 } from './samlang-lexer';
 
-import { ModuleReference, Type, unitType, Range, Position } from 'samlang-core-ast/common-nodes';
+import {
+  ModuleReference,
+  Type,
+  UndecidedTypes,
+  unitType,
+  tupleType,
+  functionType,
+  Range,
+  Position,
+} from 'samlang-core-ast/common-nodes';
+import {
+  SamlangExpression,
+  EXPRESSION_TRUE,
+  EXPRESSION_FALSE,
+  EXPRESSION_INT,
+  EXPRESSION_STRING,
+  EXPRESSION_VARIABLE,
+  EXPRESSION_CLASS_MEMBER,
+  EXPRESSION_VARIANT_CONSTRUCTOR,
+  EXPRESSION_TUPLE_CONSTRUCTOR,
+  EXPRESSION_LAMBDA,
+} from 'samlang-core-ast/samlang-expressions';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
+import { Long } from 'samlang-core-utils';
 
 class EOFWhileParsing extends Error {}
 
@@ -39,13 +61,14 @@ class BaseParser {
     this.position += 1;
   }
 
-  protected assertAndConsume(token: SamlangKeywordString | SamlangOperatorString): void {
+  protected assertAndConsume(token: SamlangKeywordString | SamlangOperatorString): Range {
     const { range, content } = this.peek();
     if (content === token) {
       this.consume();
     } else {
       this.report(range, `Expecting ${token}, seeing ${samlangTokenContentToString(content)}.`);
     }
+    return range;
   }
 
   protected report(range: Range, reason: string): void {
@@ -68,6 +91,8 @@ const pushIfParsed = <T>(array: T[], parser: () => T | null): void => {
   if (parsed != null) array.push(parsed);
 };
 
+const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');
+
 export default class SamlangParser extends BaseParser {
   constructor(
     tokens: readonly SamlangToken[],
@@ -76,6 +101,128 @@ export default class SamlangParser extends BaseParser {
   ) {
     super(tokens, errorCollector);
   }
+
+  parseExpression = (): SamlangExpression => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return this.parseBaseExpression()!;
+  };
+
+  private parseBaseExpression = (): SamlangExpression | null => {
+    const peeked = this.peek();
+
+    if (peeked.content === 'true') {
+      this.consume();
+      return EXPRESSION_TRUE(peeked.range);
+    }
+    if (peeked.content === 'false') {
+      this.consume();
+      return EXPRESSION_FALSE(peeked.range);
+    }
+
+    if (typeof peeked.content !== 'string') {
+      if (peeked.content.__type__ === 'IntLiteral') {
+        this.consume();
+        return EXPRESSION_INT(peeked.range, Long.fromString(peeked.content.content));
+      }
+
+      if (peeked.content.__type__ === 'StringLiteral') {
+        this.consume();
+        const literalText = peeked.content.content;
+        return EXPRESSION_STRING(
+          peeked.range,
+          unescapeQuotes(literalText.substring(1, literalText.length - 1))
+        );
+      }
+
+      if (peeked.content.__type__ === 'LowerId') {
+        this.consume();
+        return EXPRESSION_VARIABLE({
+          range: peeked.range,
+          type: UndecidedTypes.next(),
+          name: peeked.content.content,
+        });
+      }
+
+      if (peeked.content.__type__ === 'UpperId') {
+        this.consume();
+        const className = peeked.content.content;
+        const nextPeeked = this.peek();
+        if (nextPeeked.content === '.') {
+          this.consume();
+          const lowerIdPeeked = this.peek();
+          let lowerId: string;
+          if (
+            typeof lowerIdPeeked.content === 'string' ||
+            lowerIdPeeked.content.__type__ !== 'LowerId'
+          ) {
+            this.report(
+              lowerIdPeeked.range,
+              `Expecting lowerId, seeing ${samlangTokenContentToString(lowerIdPeeked.content)}.`
+            );
+            lowerId = '';
+          } else {
+            this.consume();
+            lowerId = lowerIdPeeked.content.content;
+          }
+          return EXPRESSION_CLASS_MEMBER({
+            range: peeked.range.union(lowerIdPeeked.range),
+            type: UndecidedTypes.next(),
+            typeArguments: [],
+            moduleReference: this.resolveClass(className),
+            className,
+            classNameRange: peeked.range,
+            memberName: lowerId,
+            memberNameRange: lowerIdPeeked.range,
+          });
+        }
+        if (nextPeeked.content === '(') {
+          this.consume();
+          const child = this.parseExpression();
+          const endRange = this.assertAndConsume(')');
+          return EXPRESSION_VARIANT_CONSTRUCTOR({
+            range: peeked.range.union(endRange),
+            type: UndecidedTypes.next(),
+            tag: peeked.content.content,
+            tagOrder: -1,
+            data: child,
+          });
+        }
+      }
+    }
+
+    if (peeked.content === '(') {
+      this.consume();
+      if (this.peek().content === ')') {
+        this.consume();
+        this.assertAndConsume('->');
+        const body = this.parseExpression();
+        return EXPRESSION_LAMBDA({
+          range: peeked.range.union(body.range),
+          type: functionType([], body.type),
+          parameters: [],
+          captured: {},
+          body,
+        });
+      }
+    }
+
+    if (peeked.content === '[') {
+      this.consume();
+      const expressions = this.parseCommaSeparatedList(this.parseExpression);
+      const endRange = this.assertAndConsume(']');
+      return EXPRESSION_TUPLE_CONSTRUCTOR({
+        range: peeked.range.union(endRange),
+        type: tupleType(UndecidedTypes.nextN(expressions.length)),
+        expressions,
+      });
+    }
+
+    // TODO: parse ObjConstructor
+    // TODO: parse NestedExpr
+    // TODO: parse lambdas
+
+    return null;
+  };
 
   parseType = (): Type => {
     const peeked = this.peek();
