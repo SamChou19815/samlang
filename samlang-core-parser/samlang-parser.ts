@@ -61,6 +61,10 @@ class BaseParser {
     this.position += 1;
   }
 
+  protected unconsume(n = 1): void {
+    this.position -= n;
+  }
+
   protected assertAndConsume(token: SamlangKeywordString | SamlangOperatorString): Range {
     const { range, content } = this.peek();
     if (content === token) {
@@ -69,6 +73,16 @@ class BaseParser {
       this.report(range, `Expecting ${token}, seeing ${samlangTokenContentToString(content)}.`);
     }
     return range;
+  }
+
+  protected assertAndPeekLowerId(): { readonly range: Range; readonly variable: string } {
+    const { range, content } = this.peek();
+    if (typeof content !== 'string' && content.__type__ === 'LowerId') {
+      this.consume();
+      return { range, variable: content.content };
+    }
+    this.report(range, `Expecting lowerId, seeing ${samlangTokenContentToString(content)}.`);
+    return { range, variable: 'MISSING' };
   }
 
   protected report(range: Range, reason: string): void {
@@ -204,6 +218,49 @@ export default class SamlangParser extends BaseParser {
           body,
         });
       }
+      const lowerIdentifierForLambdaPeeked = this.peek();
+      if (
+        typeof lowerIdentifierForLambdaPeeked.content !== 'string' &&
+        lowerIdentifierForLambdaPeeked.content.__type__ === 'LowerId'
+      ) {
+        this.consume();
+        const next = this.peek();
+        if (next.content === ',' || next.content === ':') {
+          this.unconsume();
+          const parameters = this.parseCommaSeparatedList(this.parseOptionallyAnnotatedVariable);
+          this.assertAndConsume(')');
+          this.assertAndConsume('->');
+          const body = this.parseExpression();
+          return EXPRESSION_LAMBDA({
+            range: peeked.range.union(body.range),
+            type: functionType(
+              parameters.map((it) => it[1]),
+              body.type
+            ),
+            parameters,
+            captured: {},
+            body,
+          });
+        } else if (next.content === ')') {
+          this.consume();
+          if (this.peek().content === '->') {
+            this.consume();
+            const body = this.parseExpression();
+            return EXPRESSION_LAMBDA({
+              range: peeked.range.union(body.range),
+              type: functionType([UndecidedTypes.next()], body.type),
+              parameters: [[lowerIdentifierForLambdaPeeked.content.content, UndecidedTypes.next()]],
+              captured: {},
+              body,
+            });
+          }
+        } else {
+          this.unconsume();
+        }
+      }
+      const nestedExpression = this.parseExpression();
+      this.assertAndConsume(')');
+      return nestedExpression;
     }
 
     if (peeked.content === '[') {
@@ -218,10 +275,18 @@ export default class SamlangParser extends BaseParser {
     }
 
     // TODO: parse ObjConstructor
-    // TODO: parse NestedExpr
-    // TODO: parse lambdas
 
     return null;
+  };
+
+  private parseOptionallyAnnotatedVariable = (): readonly [string, Type] => {
+    const { variable } = this.assertAndPeekLowerId();
+    if (this.peek().content === ':') {
+      this.consume();
+      const type = this.parseType();
+      return [variable, type];
+    }
+    return [variable, UndecidedTypes.next()];
   };
 
   parseType = (): Type => {
