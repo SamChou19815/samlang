@@ -19,6 +19,21 @@ import {
   Position,
 } from 'samlang-core-ast/common-nodes';
 import {
+  BinaryOperator,
+  MUL,
+  DIV,
+  MOD,
+  PLUS,
+  MINUS,
+  LT,
+  LE,
+  GT,
+  GE,
+  EQ,
+  NE,
+  AND,
+} from 'samlang-core-ast/common-operators';
+import {
   SamlangExpression,
   EXPRESSION_TRUE,
   EXPRESSION_FALSE,
@@ -35,6 +50,8 @@ import {
   EXPRESSION_PANIC,
   EXPRESSION_BUILTIN_FUNCTION_CALL,
   EXPRESSION_FUNCTION_CALL,
+  EXPRESSION_BINARY,
+  EXPRESSION_IF_ELSE,
   EXPRESSION_LAMBDA,
 } from 'samlang-core-ast/samlang-expressions';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
@@ -127,7 +144,184 @@ export default class SamlangParser extends BaseParser {
   }
 
   parseExpression = (): SamlangExpression => {
-    return this.parseUnaryExpression();
+    return this.parseIfElse();
+  };
+
+  private parseIfElse = (): SamlangExpression => {
+    const peeked = this.peek();
+    if (peeked.content !== 'if') return this.parseDisjunction();
+    this.consume();
+    const boolExpression = this.parseExpression();
+    this.assertAndConsume('then');
+    const e1 = this.parseExpression();
+    this.assertAndConsume('else');
+    const e2 = this.parseExpression();
+    return EXPRESSION_IF_ELSE({
+      range: peeked.range.union(e2.range),
+      type: UndecidedTypes.next(),
+      boolExpression,
+      e1,
+      e2,
+    });
+  };
+
+  private parseDisjunction = (): SamlangExpression => {
+    let e = this.parseConjunction();
+    // eslint-disable-next-line no-constant-condition
+    while (this.peek().content === '||') {
+      this.consume();
+      const e2 = this.parseConjunction();
+      e = EXPRESSION_BINARY({
+        range: e.range.union(e2.range),
+        type: boolType,
+        operator: AND,
+        e1: e,
+        e2,
+      });
+    }
+    return e;
+  };
+
+  private parseConjunction = (): SamlangExpression => {
+    let e = this.parseComparison();
+    // eslint-disable-next-line no-constant-condition
+    while (this.peek().content === '&&') {
+      this.consume();
+      const e2 = this.parseComparison();
+      e = EXPRESSION_BINARY({
+        range: e.range.union(e2.range),
+        type: boolType,
+        operator: AND,
+        e1: e,
+        e2,
+      });
+    }
+    return e;
+  };
+
+  private parseComparison = (): SamlangExpression => {
+    let e = this.parseTerm();
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const peeked = this.peek().content;
+      if (
+        peeked !== '<' &&
+        peeked !== '<=' &&
+        peeked !== '>' &&
+        peeked !== '>=' &&
+        peeked !== '==' &&
+        peeked !== '!='
+      ) {
+        break;
+      }
+      this.consume();
+      let operator: BinaryOperator;
+      switch (peeked) {
+        case '<':
+          operator = LT;
+          break;
+        case '<=':
+          operator = LE;
+          break;
+        case '>':
+          operator = GT;
+          break;
+        case '>=':
+          operator = GE;
+          break;
+        case '==':
+          operator = EQ;
+          break;
+        case '!=':
+          operator = NE;
+          break;
+      }
+      const e2 = this.parseTerm();
+      e = EXPRESSION_BINARY({
+        range: e.range.union(e2.range),
+        type: boolType,
+        operator,
+        e1: e,
+        e2,
+      });
+    }
+    return e;
+  };
+
+  private parseTerm = (): SamlangExpression => {
+    let e = this.parseFactor();
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const peeked = this.peek().content;
+      if (peeked !== '+' && peeked !== '-') break;
+      this.consume();
+      let operator: BinaryOperator;
+      switch (peeked) {
+        case '+':
+          operator = PLUS;
+          break;
+        case '-':
+          operator = MINUS;
+          break;
+      }
+      const e2 = this.parseFactor();
+      e = EXPRESSION_BINARY({
+        range: e.range.union(e2.range),
+        type: intType,
+        operator,
+        e1: e,
+        e2,
+      });
+    }
+    return e;
+  };
+
+  private parseFactor = (): SamlangExpression => {
+    let e = this.parseConcat();
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const peeked = this.peek().content;
+      if (peeked !== '*' && peeked !== '/' && peeked !== '%') break;
+      this.consume();
+      let operator: BinaryOperator;
+      switch (peeked) {
+        case '*':
+          operator = MUL;
+          break;
+        case '/':
+          operator = DIV;
+          break;
+        case '%':
+          operator = MOD;
+          break;
+      }
+      const e2 = this.parseConcat();
+      e = EXPRESSION_BINARY({
+        range: e.range.union(e2.range),
+        type: intType,
+        operator,
+        e1: e,
+        e2,
+      });
+    }
+    return e;
+  };
+
+  private parseConcat = (): SamlangExpression => {
+    let e = this.parseUnaryExpression();
+    // eslint-disable-next-line no-constant-condition
+    while (this.peek().content === '::') {
+      this.consume();
+      const e2 = this.parseUnaryExpression();
+      e = EXPRESSION_BINARY({
+        range: e.range.union(e2.range),
+        type: stringType,
+        operator: AND,
+        e1: e,
+        e2,
+      });
+    }
+    return e;
   };
 
   private parseUnaryExpression = (): SamlangExpression => {
