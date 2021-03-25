@@ -23,8 +23,9 @@ import {
   EXPRESSION_STRING,
   EXPRESSION_VARIABLE,
   EXPRESSION_CLASS_MEMBER,
-  EXPRESSION_VARIANT_CONSTRUCTOR,
   EXPRESSION_TUPLE_CONSTRUCTOR,
+  EXPRESSION_OBJECT_CONSTRUCTOR,
+  EXPRESSION_VARIANT_CONSTRUCTOR,
   EXPRESSION_LAMBDA,
 } from 'samlang-core-ast/samlang-expressions';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
@@ -117,11 +118,10 @@ export default class SamlangParser extends BaseParser {
   }
 
   parseExpression = (): SamlangExpression => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return this.parseBaseExpression()!;
+    return this.parseBaseExpression();
   };
 
-  private parseBaseExpression = (): SamlangExpression | null => {
+  private parseBaseExpression = (): SamlangExpression => {
     const peeked = this.peek();
 
     if (peeked.content === 'true') {
@@ -227,7 +227,15 @@ export default class SamlangParser extends BaseParser {
         const next = this.peek();
         if (next.content === ',' || next.content === ':') {
           this.unconsume();
-          const parameters = this.parseCommaSeparatedList(this.parseOptionallyAnnotatedVariable);
+          const parameters = this.parseCommaSeparatedList((): readonly [string, Type] => {
+            const { variable } = this.assertAndPeekLowerId();
+            if (this.peek().content === ':') {
+              this.consume();
+              const type = this.parseType();
+              return [variable, type];
+            }
+            return [variable, UndecidedTypes.next()];
+          });
           this.assertAndConsume(')');
           this.assertAndConsume('->');
           const body = this.parseExpression();
@@ -274,19 +282,44 @@ export default class SamlangParser extends BaseParser {
       });
     }
 
-    // TODO: parse ObjConstructor
+    if (peeked.content === '{') {
+      const lowerIdentifierForObjectFieldPeeked = this.peek();
+      if (
+        typeof lowerIdentifierForObjectFieldPeeked.content !== 'string' &&
+        lowerIdentifierForObjectFieldPeeked.content.__type__ === 'LowerId'
+      ) {
+        this.consume();
+        const next = this.peek();
+        if (next.content === ',' || next.content === ':') {
+          this.unconsume();
+          const fieldDeclarations = this.parseCommaSeparatedList(() => {
+            const { range, variable } = this.assertAndPeekLowerId();
+            if (this.peek().content !== ':') {
+              return { range, type: UndecidedTypes.next(), name: variable };
+            }
+            this.consume();
+            const expression = this.parseExpression();
+            return {
+              range: range.union(expression.range),
+              type: UndecidedTypes.next(),
+              name: variable,
+              expression,
+            };
+          });
+          const endRange = this.assertAndConsume('}');
+          return EXPRESSION_OBJECT_CONSTRUCTOR({
+            range: peeked.range.union(endRange),
+            type: UndecidedTypes.next(),
+            fieldDeclarations,
+          });
+        }
+      }
 
-    return null;
-  };
-
-  private parseOptionallyAnnotatedVariable = (): readonly [string, Type] => {
-    const { variable } = this.assertAndPeekLowerId();
-    if (this.peek().content === ':') {
-      this.consume();
-      const type = this.parseType();
-      return [variable, type];
+      // TODO parse statement block
     }
-    return [variable, UndecidedTypes.next()];
+
+    // We failed to parse the base expression, so we stick in a dummy value here.
+    return EXPRESSION_INT(peeked.range, 0);
   };
 
   parseType = (): Type => {
