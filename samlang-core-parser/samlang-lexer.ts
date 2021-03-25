@@ -322,20 +322,21 @@ const SAMLANG_OPERATORS: SamlangOperatorString[] = [
 // Sort by length reversed to enforce longest-rule-win rule.
 SAMLANG_OPERATORS.sort((a, b) => b.length - a.length);
 
+export type SamlangVariableTokenContent = {
+  readonly __type__:
+    | 'UpperId'
+    | 'LowerId'
+    | 'StringLiteral'
+    | 'IntLiteral'
+    | 'LineComment'
+    | 'BlockComment'
+    | 'Error';
+  readonly content: string;
+};
 export type SamlangTokenContent =
   | SamlangKeywordString
   | SamlangOperatorString
-  | {
-      readonly __type__:
-        | 'UpperId'
-        | 'LowerId'
-        | 'StringLiteral'
-        | 'IntLiteral'
-        | 'LineComment'
-        | 'BlockComment'
-        | 'Error';
-      readonly content: string;
-    };
+  | SamlangVariableTokenContent;
 
 export type SamlangToken = {
   readonly range: Range;
