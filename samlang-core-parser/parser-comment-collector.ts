@@ -14,7 +14,7 @@ export type CommentTokenWithRange = {
   readonly range: Range;
 };
 
-const postProcessBlockComment = (blockComment: string): string =>
+export const postProcessBlockComment = (blockComment: string): string =>
   blockComment
     .split('\n')
     .map((line) => line.trimStart())
