@@ -35,6 +35,7 @@ import {
 } from 'samlang-core-ast/common-operators';
 import {
   SamlangExpression,
+  VariantPatternToExpression,
   EXPRESSION_TRUE,
   EXPRESSION_FALSE,
   EXPRESSION_INT,
@@ -53,6 +54,7 @@ import {
   EXPRESSION_BINARY,
   EXPRESSION_IF_ELSE,
   EXPRESSION_LAMBDA,
+  EXPRESSION_MATCH,
 } from 'samlang-core-ast/samlang-expressions';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { Long } from 'samlang-core-utils';
@@ -112,6 +114,16 @@ class BaseParser {
     return { range, variable: 'MISSING' };
   }
 
+  protected assertAndPeekUpperId(): { readonly range: Range; readonly variable: string } {
+    const { range, content } = this.peek();
+    if (typeof content !== 'string' && content.__type__ === 'UpperId') {
+      this.consume();
+      return { range, variable: content.content };
+    }
+    this.report(range, `Expecting lowerId, seeing ${samlangTokenContentToString(content)}.`);
+    return { range, variable: 'MISSING' };
+  }
+
   protected report(range: Range, reason: string): void {
     this.errorCollector.reportSyntaxError(range, reason);
   }
@@ -143,8 +155,46 @@ export default class SamlangParser extends BaseParser {
     super(tokens, errorCollector);
   }
 
-  parseExpression = (): SamlangExpression => {
-    return this.parseIfElse();
+  parseExpression = (): SamlangExpression => this.parseMatch();
+
+  private parseMatch = (): SamlangExpression => {
+    const peeked = this.peek();
+    if (peeked.content !== 'match') return this.parseIfElse();
+    this.assertAndConsume('(');
+    const matchedExpression = this.parseExpression();
+    this.assertAndConsume(')');
+    this.assertAndConsume('{');
+    const matchingList = [this.parsePatternToExpression()];
+    while (this.peek().content === '|') {
+      matchingList.push(this.parsePatternToExpression());
+    }
+    const endRange = this.assertAndConsume('}');
+    return EXPRESSION_MATCH({
+      range: peeked.range.union(endRange),
+      type: UndecidedTypes.next(),
+      matchedExpression,
+      matchingList,
+    });
+  };
+
+  private parsePatternToExpression = (): VariantPatternToExpression => {
+    const startRange = this.assertAndConsume('|');
+    const { variable: tag } = this.assertAndPeekUpperId();
+    let dataVariable: readonly [string, Type] | undefined;
+    if (this.peek().content === '_') {
+      this.consume();
+    } else {
+      dataVariable = [this.assertAndPeekLowerId().variable, UndecidedTypes.next()];
+    }
+    this.assertAndConsume('->');
+    const expression = this.parseExpression();
+    return {
+      range: startRange.union(expression.range),
+      tag,
+      tagOrder: -1,
+      dataVariable,
+      expression,
+    };
   };
 
   private parseIfElse = (): SamlangExpression => {
