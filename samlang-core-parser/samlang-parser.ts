@@ -60,11 +60,15 @@ import {
   EXPRESSION_STATEMENT_BLOCK,
 } from 'samlang-core-ast/samlang-expressions';
 import type { Pattern } from 'samlang-core-ast/samlang-pattern';
-import type { ClassMemberDefinition } from 'samlang-core-ast/samlang-toplevel';
+import type {
+  ClassDefinition,
+  ClassMemberDefinition,
+  ModuleMembersImport,
+  SamlangModule,
+  TypeDefinition,
+} from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { checkNotNull, Long } from 'samlang-core-utils';
-
-class EOFWhileParsing extends Error {}
 
 class BaseParser {
   private position = 0;
@@ -80,8 +84,8 @@ class BaseParser {
 
   protected simplePeek(): SamlangToken {
     const peeked = this.tokens[this.position];
-    if (peeked == null) throw new EOFWhileParsing();
-    return peeked;
+    if (peeked != null) return peeked;
+    return { range: checkNotNull(this.tokens[this.tokens.length - 1]).range, content: 'EOF' };
   }
 
   protected peek(): SamlangToken {
@@ -110,6 +114,15 @@ class BaseParser {
 
   protected unconsume(n = 1): void {
     this.position -= n;
+  }
+
+  protected uncomsumeComments(): void {
+    while (this.position >= 0) {
+      const token = this.peek().content;
+      if (typeof token === 'string') return;
+      if (token.__type__ !== 'LineComment' && token.__type__ !== 'BlockComment') return;
+      this.position -= 1;
+    }
   }
 
   protected assertAndConsume(token: SamlangKeywordString | SamlangOperatorString): Range {
@@ -146,15 +159,24 @@ class BaseParser {
     this.errorCollector.reportSyntaxError(range, reason);
   }
 
-  protected parseCommaSeparatedList = <T>(parser: () => T | null): T[] => {
+  private parsePunctuationSeparatedList = <T>(
+    punctuation: ',' | '.',
+    parser: () => T | null
+  ): T[] => {
     const collector: T[] = [];
     pushIfParsed(collector, parser);
-    while (this.peek().content === ',') {
+    while (this.peek().content === punctuation) {
       this.consume();
       pushIfParsed(collector, parser);
     }
     return collector;
   };
+
+  protected parseCommaSeparatedList = <T>(parser: () => T | null): T[] =>
+    this.parsePunctuationSeparatedList(',', parser);
+
+  protected parseDotSeparatedList = <T>(parser: () => T | null): T[] =>
+    this.parsePunctuationSeparatedList('.', parser);
 }
 
 const pushIfParsed = <T>(array: T[], parser: () => T | null): void => {
@@ -164,27 +186,138 @@ const pushIfParsed = <T>(array: T[], parser: () => T | null): void => {
 
 const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');
 
-export default class SamlangParser extends BaseParser {
+export default class SamlangModuleParser extends BaseParser {
+  private classSourceMap = new Map<string, ModuleReference>();
+
   constructor(
     tokens: readonly SamlangToken[],
     errorCollector: ModuleErrorCollector,
-    private readonly resolveClass: (className: string) => ModuleReference
+    private readonly moduleReference: ModuleReference
   ) {
     super(tokens, errorCollector);
   }
 
-  parseClassMemberDefinition = (): ClassMemberDefinition => {
-    const documentTextList: string[] = [];
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const token = this.simplePeek().content;
-      if (typeof token === 'string') break;
-      if (token.__type__ === 'LineComment') continue;
-      if (token.__type__ !== 'BlockComment' || !token.content.startsWith('/**')) break;
-      const rawText = token.content;
-      documentTextList.push(postProcessBlockComment(rawText.substring(3, rawText.length - 2)));
+  private resolveClass = (className: string) =>
+    this.classSourceMap.get(className) ?? this.moduleReference;
+
+  parseModule = (): SamlangModule => {
+    const imports: ModuleMembersImport[] = [];
+    while (this.peek().content === 'import') {
+      const importStart = this.peek().range;
+      this.consume();
+      this.assertAndConsume('{');
+      const importedMembers = this.parseCommaSeparatedList(() => {
+        const { range, variable } = this.assertAndPeekUpperId();
+        return [variable, range] as const;
+      });
+      this.assertAndConsume('}');
+      this.assertAndConsume('from');
+      const importRangeStart = this.peek().range;
+      const importedModule = new ModuleReference(
+        this.parseDotSeparatedList(() => this.assertAndPeekUpperId().variable)
+      );
+      const importedModuleRange = importRangeStart.union(this.lastRange());
+      importedMembers.forEach(([variable]) => this.classSourceMap.set(variable, importedModule));
+      imports.push({
+        range: importStart.union(importedModuleRange),
+        importedMembers,
+        importedModule,
+        importedModuleRange,
+      });
     }
-    const documentText = documentTextList.length === 0 ? null : documentTextList.join(' ');
+
+    const classes: ClassDefinition[] = [];
+    while (this.peek().content === 'class') {
+      classes.push(this.parseClass());
+    }
+
+    return { imports, classes };
+  };
+
+  parseClass = (): ClassDefinition => {
+    const { startRange, ...header } = this.parseClassHeader();
+    this.assertAndConsume('{');
+    const members: ClassMemberDefinition[] = [];
+    while (this.peek().content !== '}' && this.peek().content !== 'EOF') {
+      members.push(this.parseClassMemberDefinition());
+    }
+    const endRange = this.assertAndConsume('}');
+    return { range: startRange.union(endRange), ...header, members };
+  };
+
+  private parseClassHeader = (): Omit<ClassDefinition, 'range' | 'members'> & {
+    readonly startRange: Range;
+  } => {
+    const documentText = this.parseDocComments();
+    const startRange = this.assertAndConsume('class');
+    const { range: nameRange, variable: name } = this.assertAndPeekUpperId();
+    if (this.peek().content === '{') {
+      // Util class. Now the class header has ended.
+      return {
+        startRange,
+        documentText,
+        nameRange,
+        name,
+        typeParameters: [],
+        typeDefinition: { range: this.peek().range, type: 'object', names: [], mappings: {} },
+      };
+    }
+    let typeParameters: readonly string[];
+    if (this.peek().content === '<') {
+      this.consume();
+      typeParameters = this.parseCommaSeparatedList(() => this.assertAndPeekUpperId().variable);
+      this.assertAndConsume('>');
+    } else {
+      typeParameters = [];
+    }
+    const typeDefinitionRangeStart = this.assertAndConsume('(');
+    const innerTypeDefinition = this.parseTypeDefinitionInner();
+    const typeDefinitionRangeEnd = this.assertAndConsume(')');
+    const typeDefinition: TypeDefinition = {
+      range: typeDefinitionRangeStart.union(typeDefinitionRangeEnd),
+      ...innerTypeDefinition,
+    };
+    return { startRange, documentText, nameRange, name, typeParameters, typeDefinition };
+  };
+
+  private parseTypeDefinitionInner = (): Omit<TypeDefinition, 'range'> => {
+    const firstPeeked = this.peek().content;
+    if (typeof firstPeeked !== 'string' && firstPeeked.__type__ === 'UpperId') {
+      const mappings = this.parseCommaSeparatedList(() => {
+        const name = this.assertAndPeekUpperId().variable;
+        this.assertAndConsume('(');
+        const type = this.parseType();
+        this.assertAndConsume(')');
+        return [name, { type, isPublic: false }] as const;
+      });
+      return {
+        type: 'variant',
+        names: mappings.map(([name]) => name),
+        mappings: Object.fromEntries(mappings),
+      };
+    } else {
+      const mappings = this.parseCommaSeparatedList(() => {
+        let isPublic = true;
+        if (this.peek().content === 'private') {
+          isPublic = false;
+          this.consume();
+        }
+        this.assertAndConsume('val');
+        const name = this.assertAndPeekLowerId().variable;
+        this.assertAndConsume(':');
+        const type = this.parseType();
+        return [name, { type, isPublic }] as const;
+      });
+      return {
+        type: 'object',
+        names: mappings.map(([name]) => name),
+        mappings: Object.fromEntries(mappings),
+      };
+    }
+  };
+
+  parseClassMemberDefinition = (): ClassMemberDefinition => {
+    const documentText = this.parseDocComments();
     let startRange: Range;
     let isPublic = true;
     let isMethod = true;
@@ -243,6 +376,21 @@ export default class SamlangParser extends BaseParser {
       parameters,
       body,
     };
+  };
+
+  private parseDocComments = (): string | null => {
+    this.uncomsumeComments();
+    const documentTextList: string[] = [];
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const token = this.simplePeek().content;
+      if (typeof token === 'string') break;
+      if (token.__type__ === 'LineComment') continue;
+      if (token.__type__ !== 'BlockComment' || !token.content.startsWith('/**')) break;
+      const rawText = token.content;
+      documentTextList.push(postProcessBlockComment(rawText.substring(3, rawText.length - 2)));
+    }
+    return documentTextList.length === 0 ? null : documentTextList.join(' ');
   };
 
   parseExpression = (): SamlangExpression => this.parseMatch();
