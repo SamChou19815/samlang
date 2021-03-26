@@ -145,7 +145,7 @@ class Test1 {
       test2ModuleReference,
       `
 class Test1(val a: int) {
-  method test(): int = "haha"
+  method test(): int = 1
 
   function test2(): int = {a: 3}.test()
 }
@@ -259,13 +259,13 @@ class Test1(val a: int) {
   const actualLocation4 = service.queryDefinitionLocation(moduleReference1, new Position(6, 28));
   expect(actualLocation4?.moduleReference.toString()).toEqual(moduleReference1.toString());
   expect(actualLocation4?.range.toString()).toEqual(
-    new Range(new Position(2, 12), new Position(2, 22)).toString()
+    new Range(new Position(2, 11), new Position(2, 23)).toString()
   );
 
   const actualLocation5 = service.queryDefinitionLocation(moduleReference1, new Position(6, 36));
   expect(actualLocation5?.moduleReference.toString()).toEqual(moduleReference1.toString());
   expect(actualLocation5?.range.toString()).toEqual(
-    new Range(new Position(2, 12), new Position(2, 22)).toString()
+    new Range(new Position(2, 11), new Position(2, 23)).toString()
   );
 
   const actualLocation6 = service.queryDefinitionLocation(moduleReference1, new Position(10, 15));
@@ -294,12 +294,7 @@ class Developer(
   function sam(): Developer = {
     val l = List.of("SAMLANG").cons("...")
     val github = "SamChou19815"
-    { name: "Sam Zhou", github, projects: l }.
-    function sam(): Developer = {
-      val l = List.of("SAMLANG").cons("...")
-      val github = "SamChou19815"
-      { name: "Sam Zhou", github, projects: l }.
-    }
+    { name: "Sam Zhou", github, projects: l }
   }
 }
 class Main {
@@ -315,10 +310,10 @@ class Main {
     new Range(new Position(2, 2), new Position(3, 22)).toString(),
     new Range(new Position(4, 2), new Position(5, 19)).toString(),
     new Range(new Position(1, 0), new Position(6, 1)).toString(),
-    new Range(new Position(11, 2), new Position(16, 44)).toString(),
-    new Range(new Position(7, 0), new Position(18, 47)).toString(),
-    new Range(new Position(23, 2), new Position(23, 46)).toString(),
-    new Range(new Position(22, 0), new Position(24, 1)).toString(),
+    new Range(new Position(11, 2), new Position(15, 3)).toString(),
+    new Range(new Position(7, 0), new Position(16, 1)).toString(),
+    new Range(new Position(18, 2), new Position(18, 46)).toString(),
+    new Range(new Position(17, 0), new Position(19, 1)).toString(),
   ]);
   expect(service.queryFoldingRanges(new ModuleReference(['dsafadfasd']))).toBe(null);
 });

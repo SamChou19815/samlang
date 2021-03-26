@@ -240,7 +240,7 @@ class Option<T>(None(unit), Some(T)) {
       | Some a -> a
     }
 
-  /** foo bar a */
+  /* ignored */ /** foo bar a */
   function a(): int = 3
 
   /** foo bar b */
