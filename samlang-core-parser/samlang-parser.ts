@@ -1,4 +1,3 @@
-import { postProcessBlockComment } from './parser-comment-collector';
 import {
   SamlangKeywordString,
   SamlangOperatorString,
@@ -192,6 +191,14 @@ class BaseParser {
 }
 
 const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');
+
+const postProcessBlockComment = (blockComment: string): string =>
+  blockComment
+    .split('\n')
+    .map((line) => line.trimStart())
+    .map((line) => (line.startsWith('*') ? line.substring(1).trim() : line.trimEnd()))
+    .filter((line) => line.length > 0)
+    .join(' ');
 
 export default class SamlangModuleParser extends BaseParser {
   private classSourceMap = new Map<string, ModuleReference>();

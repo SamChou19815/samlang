@@ -4,7 +4,6 @@
 .yarn/releases/** linguist-generated=true
 .yarn/sdks/** linguist-generated=true
 configurations/* linguist-generated=true
-samlang-core-parser-generated/** linguist-generated=true
 samlang-cli/samlang-runtime/* linguist-generated=true
 samlang-runtime/gc.h linguist-generated=true
 samlang-runtime/gc.c linguist-generated=true

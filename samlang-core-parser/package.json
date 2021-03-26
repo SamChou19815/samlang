@@ -6,10 +6,8 @@
     "compile": "tsc --incremental --noEmit"
   },
   "dependencies": {
-    "antlr4ts": "0.5.0-alpha.4",
     "samlang-core-ast": "workspace:0.0.1",
     "samlang-core-errors": "workspace:0.0.1",
-    "samlang-core-parser-generated": "workspace:0.0.1",
     "samlang-core-utils": "workspace:0.0.1"
   },
   "devDependencies": {
