@@ -1913,7 +1913,7 @@ __metadata:
   dependencies:
     "@types/jest": ^26.0.21
     "@types/node": ^14.14.35
-    esbuild: ^0.9.5
+    esbuild: ^0.10.1
     esbuild-plugin-pnp: ^0.3.0
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
@@ -1931,7 +1931,8 @@ __metadata:
   resolution: "@dev-sam/samlang-demo@workspace:samlang-demo"
   dependencies:
     "@types/jest": ^26.0.21
-    "@vercel/ncc": ^0.27.0
+    esbuild: ^0.10.1
+    esbuild-plugin-pnp: ^0.3.0
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
@@ -2499,17 +2500,6 @@ __metadata:
     "@typescript-eslint/types": 4.18.0
     eslint-visitor-keys: ^2.0.0
   checksum: 654576d330531386773facffc715e213602721de8ca2f6268d71186a732975031954119fba414a4d502b4827b3941fae068ebb4368b4b7f94e937597b3f57d82
-  languageName: node
-  linkType: hard
-
-"@vercel/ncc@npm:^0.27.0":
-  version: 0.27.0
-  resolution: "@vercel/ncc@npm:0.27.0"
-  dependencies:
-    node-gyp: latest
-  bin:
-    ncc: dist/ncc/cli.js
-  checksum: ce8fbde30502da756b804b81e5203031a227a42d175c654381f36d81417d1ba2c06fd2ffc2514a61beb44bfd361b443a454f688cc4a98eeccd300bc5558c4e9a
   languageName: node
   linkType: hard
 
@@ -3730,12 +3720,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"esbuild@npm:^0.9.5":
-  version: 0.9.5
-  resolution: "esbuild@npm:0.9.5"
+"esbuild@npm:^0.10.1":
+  version: 0.10.1
+  resolution: "esbuild@npm:0.10.1"
   bin:
     esbuild: bin/esbuild
-  checksum: dbaf6ea851db32a07fe269d4aebe2b84f71d19b296faed57d55f45768754fc55a6fe089d8889eeb0130e60796d441f4147483c58a14fb59512b7ae881783dfc0
+  checksum: d17487cd63a3bac9ef3e8d731e5f1b8abf3b57d68828f5bbeba2a4b097791d97ac85097be58b199d5aba01cc0821690825530ef5f1f15f967d8d71a138531823
   languageName: node
   linkType: hard
 
