@@ -36,6 +36,7 @@ import {
 import {
   SamlangExpression,
   VariantPatternToExpression,
+  SamlangValStatement,
   EXPRESSION_TRUE,
   EXPRESSION_FALSE,
   EXPRESSION_INT,
@@ -55,7 +56,9 @@ import {
   EXPRESSION_IF_ELSE,
   EXPRESSION_LAMBDA,
   EXPRESSION_MATCH,
+  EXPRESSION_STATEMENT_BLOCK,
 } from 'samlang-core-ast/samlang-expressions';
+import type { Pattern } from 'samlang-core-ast/samlang-pattern';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { Long } from 'samlang-core-utils';
 
@@ -676,11 +679,107 @@ export default class SamlangParser extends BaseParser {
         }
       }
 
-      // TODO parse statement block
+      const statements: SamlangValStatement[] = [];
+      while (this.peek().content === 'val') {
+        statements.push(this.parseStatement());
+      }
+      if (this.peek().content === '}') {
+        const range = peeked.range.union(this.peek().range);
+        this.consume();
+        return EXPRESSION_STATEMENT_BLOCK({
+          range,
+          type: unitType,
+          block: { range, statements },
+        });
+      }
+      const expression = this.parseExpression();
+      const range = peeked.range.union(this.assertAndConsume('}'));
+      return EXPRESSION_STATEMENT_BLOCK({
+        range,
+        type: unitType,
+        block: { range, statements, expression },
+      });
     }
 
     // We failed to parse the base expression, so we stick in a dummy value here.
     return EXPRESSION_INT(peeked.range, 0);
+  };
+
+  parseStatement = (): SamlangValStatement => {
+    const startRange = this.assertAndConsume('val');
+    const pattern = this.parsePattern();
+    let typeAnnotation: Type;
+    if (this.peek().content === ':') {
+      this.consume();
+      typeAnnotation = this.parseType();
+    } else {
+      typeAnnotation = UndecidedTypes.next();
+    }
+    this.assertAndConsume('=');
+    const assignedExpression = this.parseExpression();
+    let range: Range;
+    if (this.peek().content === ';') {
+      range = startRange.union(this.peek().range);
+      this.consume();
+    } else {
+      range = startRange.union(assignedExpression.range);
+    }
+    return { range, pattern, typeAnnotation, assignedExpression };
+  };
+
+  parsePattern = (): Pattern => {
+    const peeked = this.peek();
+    if (peeked.content === '[') {
+      const destructedNames = this.parseCommaSeparatedList(() => {
+        const node = this.peek();
+        if (node.content === '_') return { type: UndecidedTypes.next(), range: node.range };
+        return {
+          name: this.assertAndPeekLowerId().variable,
+          type: UndecidedTypes.next(),
+          range: node.range,
+        };
+      });
+      const endRange = this.assertAndConsume(']');
+      return {
+        range: peeked.range.union(endRange),
+        type: 'TuplePattern',
+        destructedNames,
+      };
+    }
+    if (peeked.content === '{') {
+      const destructedNames = this.parseCommaSeparatedList(() => {
+        const { range: fieldRange, variable: fieldName } = this.assertAndPeekLowerId();
+        let range = fieldRange;
+        let alias: string | undefined;
+        if (this.peek().content === 'as') {
+          this.consume();
+          const peekedLower = this.assertAndPeekLowerId();
+          alias = peekedLower.variable;
+          range = range.union(peekedLower.range);
+        }
+        return {
+          fieldName,
+          fieldOrder: -1,
+          type: UndecidedTypes.next(),
+          alias,
+          range,
+        };
+      });
+      const endRange = this.assertAndConsume('}');
+      return {
+        range: peeked.range.union(endRange),
+        type: 'ObjectPattern',
+        destructedNames,
+      };
+    }
+    if (peeked.content === '_') {
+      return { range: peeked.range, type: 'WildCardPattern' };
+    }
+    return {
+      range: peeked.range,
+      type: 'VariablePattern',
+      name: this.assertAndPeekLowerId().variable,
+    };
   };
 
   parseType = (): Type => {
