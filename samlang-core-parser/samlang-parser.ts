@@ -86,7 +86,13 @@ class BaseParser {
   protected simplePeek(): SamlangToken {
     const peeked = this.tokens[this.position];
     if (peeked != null) return peeked;
-    return { range: checkNotNull(this.tokens[this.tokens.length - 1]).range, content: 'EOF' };
+    return {
+      range:
+        this.tokens.length === 0
+          ? Range.DUMMY
+          : checkNotNull(this.tokens[this.tokens.length - 1]).range,
+      content: 'EOF',
+    };
   }
 
   protected peek(): SamlangToken {
@@ -117,13 +123,15 @@ class BaseParser {
     this.position -= n;
   }
 
-  protected uncomsumeComments(): void {
-    while (this.position >= 0) {
-      const token = this.simplePeek().content;
-      if (typeof token === 'string') return;
-      if (token.__type__ !== 'LineComment' && token.__type__ !== 'BlockComment') return;
-      this.position -= 1;
+  protected unconsumeComments(): void {
+    let i = this.position - 1;
+    while (i >= 0) {
+      const token = checkNotNull(this.tokens[i]).content;
+      if (typeof token === 'string') break;
+      if (token.__type__ !== 'LineComment' && token.__type__ !== 'BlockComment') break;
+      i -= 1;
     }
+    this.position = i + 1;
   }
 
   protected assertAndConsume(token: SamlangKeywordString | SamlangOperatorString): Range {
@@ -212,7 +220,7 @@ export default class SamlangModuleParser extends BaseParser {
       this.assertAndConsume('from');
       const importRangeStart = this.peek().range;
       const importedModule = new ModuleReference(
-        this.parsePunctuationSeparatedList('*', () => this.assertAndPeekUpperId().variable)
+        this.parsePunctuationSeparatedList('.', () => this.assertAndPeekUpperId().variable)
       );
       const importedModuleRange = importRangeStart.union(this.lastRange());
       importedMembers.forEach(([variable]) => this.classSourceMap.set(variable, importedModule));
@@ -225,7 +233,16 @@ export default class SamlangModuleParser extends BaseParser {
     }
 
     const classes: ClassDefinition[] = [];
-    while (this.peek().content === 'class') {
+    // eslint-disable-next-line no-labels
+    ParseClasses: while (this.peek().content !== 'EOF') {
+      let potentialGarbagePeeked = this.peek();
+      while (potentialGarbagePeeked.content !== 'class') {
+        // eslint-disable-next-line no-labels
+        if (potentialGarbagePeeked.content === 'EOF') break ParseClasses;
+        this.report(potentialGarbagePeeked.range, 'Unexpected token among the classes.');
+        this.consume();
+        potentialGarbagePeeked = this.peek();
+      }
       classes.push(this.parseClass());
     }
 
@@ -387,14 +404,22 @@ export default class SamlangModuleParser extends BaseParser {
   };
 
   private parseDocComments = (): string | null => {
-    this.uncomsumeComments();
+    this.unconsumeComments();
     const documentTextList: string[] = [];
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const token = this.simplePeek().content;
       if (typeof token === 'string') break;
-      if (token.__type__ === 'LineComment') continue;
-      if (token.__type__ !== 'BlockComment' || !token.content.startsWith('/**')) break;
+      if (token.__type__ === 'LineComment') {
+        this.consume();
+        continue;
+      }
+      if (token.__type__ !== 'BlockComment') break;
+      if (!token.content.startsWith('/**')) {
+        this.consume();
+        continue;
+      }
+      this.consume();
       const rawText = token.content;
       documentTextList.push(postProcessBlockComment(rawText.substring(3, rawText.length - 2)));
     }

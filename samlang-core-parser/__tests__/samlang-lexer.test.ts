@@ -1,7 +1,13 @@
 import lexSamlangProgram, { samlangTokenToString } from '../samlang-lexer';
 
+import { ModuleReference } from 'samlang-core-ast/common-nodes';
+import { createGlobalErrorCollector } from 'samlang-core-errors';
+
 const lex = (source: string): readonly string[] =>
-  lexSamlangProgram(source).map(samlangTokenToString);
+  lexSamlangProgram(
+    source,
+    createGlobalErrorCollector().getModuleErrorCollector(new ModuleReference([]))
+  ).map(samlangTokenToString);
 
 it('lexSamlangProgram good test 0', () => {
   expect(lex('val l = List.of("SAMLANG").cons("...")')).toEqual([
@@ -599,6 +605,7 @@ class Main {
     0000l */
     / not a line comment
     // line comment haha
+    /** foo bar */
     /*
   }
 }
@@ -629,20 +636,20 @@ class Main {
     '5:16-5:17: =',
     '5:18-5:19: 2',
     '5:19-5:20: ;',
-    `6:5-8:12: /* block comment lol
+    `6:5-8:13: /* block comment lol
     ol ol
-    0000l *`,
-    '8:12-8:13: /',
+    0000l */`,
     '9:5-9:6: /',
     '9:7-9:10: not',
     '9:11-9:12: a',
     '9:13-9:17: line',
     '9:18-9:25: comment',
     '10:5-10:25: // line comment haha',
-    '11:5-11:6: /',
-    '11:6-11:7: *',
-    '12:3-12:4: }',
-    '13:1-13:2: }',
+    '11:5-11:19: /** foo bar */',
+    '12:5-12:6: /',
+    '12:6-12:7: *',
+    '13:3-13:4: }',
+    '14:1-14:2: }',
   ]);
 });
 
@@ -661,8 +668,8 @@ it('lexSamlangProgram string mid escaping good tests', () => {
 });
 
 it('lexSamlangProgram string mid escaping bad tests', () => {
-  expect(lex(`"abcdefg\\a"`)).toEqual(['1:1-1:12: ERROR: "abcdefg\\a"']);
-  expect(lex(`"abcdefg\\c"`)).toEqual(['1:1-1:12: ERROR: "abcdefg\\c"']);
+  expect(lex(`"abcdefg\\a"`)).toEqual(['1:1-1:12: "abcdefg\\a"']);
+  expect(lex(`"abcdefg\\c"`)).toEqual(['1:1-1:12: "abcdefg\\c"']);
 });
 
 it('lexSamlangProgram bad multiple string', () => {
@@ -670,22 +677,16 @@ it('lexSamlangProgram bad multiple string', () => {
 });
 
 it('lexSamlangProgram min-int test 1', () => {
-  expect(lex('9223372036854775809')).toEqual(['1:1-1:20: ERROR: 9223372036854775809']);
+  expect(lex('9223372036854775809')).toEqual(['1:1-1:20: 9223372036854775809']);
 });
 
 it('lexSamlangProgram min-int test 2', () => {
-  expect(lex('9223372036854775808')).toEqual(['1:1-1:20: ERROR: 9223372036854775808']);
-  expect(lex('9223372036854775808 3')).toEqual([
-    '1:1-1:20: ERROR: 9223372036854775808',
-    '1:21-1:22: 3',
-  ]);
+  expect(lex('9223372036854775808')).toEqual(['1:1-1:20: 9223372036854775808']);
+  expect(lex('9223372036854775808 3')).toEqual(['1:1-1:20: 9223372036854775808', '1:21-1:22: 3']);
 });
 
 it('lexSamlangProgram min-int test 3', () => {
-  expect(lex('+ 9223372036854775808')).toEqual([
-    '1:1-1:2: +',
-    '1:3-1:22: ERROR: 9223372036854775808',
-  ]);
+  expect(lex('+ 9223372036854775808')).toEqual(['1:1-1:2: +', '1:3-1:22: 9223372036854775808']);
 });
 
 it('lexSamlangProgram min-int test 4', () => {
