@@ -22,7 +22,7 @@ it('hello world processor test', () => {
   `;
 
   const { checkedSources, compileTimeErrors } = checkSources([[moduleReference, sourceCode]]);
-  expect(compileTimeErrors).toEqual([]);
+  expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
 
   const llvmModule = lowerSourcesToLLVMModules(checkedSources).forceGet(moduleReference);
   expect(prettyPrintLLVMModule(llvmModule)).toBe(`declare i64* @_builtin_malloc(i64) nounwind

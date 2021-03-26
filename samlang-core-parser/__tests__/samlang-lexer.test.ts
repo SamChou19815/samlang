@@ -3,6 +3,25 @@ import lexSamlangProgram, { samlangTokenToString } from '../samlang-lexer';
 const lex = (source: string): readonly string[] =>
   lexSamlangProgram(source).map(samlangTokenToString);
 
+it('lexSamlangProgram good test 0', () => {
+  expect(lex('val l = List.of("SAMLANG").cons("...")')).toEqual([
+    '1:1-1:4: val',
+    '1:5-1:6: l',
+    '1:7-1:8: =',
+    '1:9-1:13: List',
+    '1:13-1:14: .',
+    '1:14-1:16: of',
+    '1:16-1:17: (',
+    '1:17-1:26: "SAMLANG"',
+    '1:26-1:27: )',
+    '1:27-1:28: .',
+    '1:28-1:32: cons',
+    '1:32-1:33: (',
+    '1:33-1:38: "..."',
+    '1:38-1:39: )',
+  ]);
+});
+
 it('lexSamlangProgram good test 1', () => {
   expect(
     lex(`

@@ -33,6 +33,7 @@ import {
   EQ,
   NE,
   AND,
+  CONCAT,
 } from 'samlang-core-ast/common-operators';
 import {
   SamlangExpression,
@@ -159,8 +160,8 @@ class BaseParser {
     this.errorCollector.reportSyntaxError(range, reason);
   }
 
-  private parsePunctuationSeparatedList = <T>(
-    punctuation: ',' | '.',
+  protected parsePunctuationSeparatedList = <T>(
+    punctuation: ',' | '.' | '*',
     parser: () => T | null
   ): T[] => {
     const collector: T[] = [];
@@ -174,9 +175,6 @@ class BaseParser {
 
   protected parseCommaSeparatedList = <T>(parser: () => T | null): T[] =>
     this.parsePunctuationSeparatedList(',', parser);
-
-  protected parseDotSeparatedList = <T>(parser: () => T | null): T[] =>
-    this.parsePunctuationSeparatedList('.', parser);
 }
 
 const pushIfParsed = <T>(array: T[], parser: () => T | null): void => {
@@ -214,7 +212,7 @@ export default class SamlangModuleParser extends BaseParser {
       this.assertAndConsume('from');
       const importRangeStart = this.peek().range;
       const importedModule = new ModuleReference(
-        this.parseDotSeparatedList(() => this.assertAndPeekUpperId().variable)
+        this.parsePunctuationSeparatedList('*', () => this.assertAndPeekUpperId().variable)
       );
       const importedModuleRange = importRangeStart.union(this.lastRange());
       importedMembers.forEach(([variable]) => this.classSourceMap.set(variable, importedModule));
@@ -243,7 +241,6 @@ export default class SamlangModuleParser extends BaseParser {
       this.peek().content === 'function' ||
       this.peek().content === 'method'
     ) {
-      console.error('loop');
       members.push(this.parseClassMemberDefinition());
     }
     const endRange = this.assertAndConsume('}');
@@ -268,7 +265,9 @@ export default class SamlangModuleParser extends BaseParser {
       };
     }
     let typeParameters: readonly string[];
+    let typeParameterRangeStart: Range | undefined;
     if (this.peek().content === '<') {
+      typeParameterRangeStart = this.peek().range;
       this.consume();
       typeParameters = this.parseCommaSeparatedList(() => this.assertAndPeekUpperId().variable);
       this.assertAndConsume('>');
@@ -279,7 +278,7 @@ export default class SamlangModuleParser extends BaseParser {
     const innerTypeDefinition = this.parseTypeDefinitionInner();
     const typeDefinitionRangeEnd = this.assertAndConsume(')');
     const typeDefinition: TypeDefinition = {
-      range: typeDefinitionRangeStart.union(typeDefinitionRangeEnd),
+      range: (typeParameterRangeStart || typeDefinitionRangeStart).union(typeDefinitionRangeEnd),
       ...innerTypeDefinition,
     };
     return { startRange, documentText, nameRange, name, typeParameters, typeDefinition };
@@ -614,7 +613,7 @@ export default class SamlangModuleParser extends BaseParser {
       e = EXPRESSION_BINARY({
         range: e.range.union(e2.range),
         type: stringType,
-        operator: AND,
+        operator: CONCAT,
         e1: e,
         e2,
       });
@@ -646,10 +645,10 @@ export default class SamlangModuleParser extends BaseParser {
       });
     }
 
-    return this.parseFunctionCall();
+    return this.parseFunctionCallOrFieldAccess();
   };
 
-  private parseFunctionCall = (): SamlangExpression => {
+  private parseFunctionCallOrFieldAccess = (): SamlangExpression => {
     const peeked = this.peek();
 
     if (peeked.content === 'panic') {
@@ -700,31 +699,35 @@ export default class SamlangModuleParser extends BaseParser {
       });
     }
 
-    const functionExpression = this.parseFieldAccessExpression();
-    if (this.peek().content !== '(') return functionExpression;
-    this.consume();
-    const functionArguments =
-      this.peek().content === ')' ? [] : this.parseCommaSeparatedList(this.parseExpression);
-    const endRange = this.assertAndConsume(')');
-    return EXPRESSION_FUNCTION_CALL({
-      range: peeked.range.union(endRange),
-      type: UndecidedTypes.next(),
-      functionExpression,
-      functionArguments,
-    });
-  };
+    // Treat function arguments or field name as postfix.
+    // Then use Kleene star trick to parse.
+    let functionExpression = this.parseBaseExpression();
+    while (this.peek().content === '.' || this.peek().content === '(') {
+      if (this.peek().content === '.') {
+        this.consume();
+        const { range, variable: fieldName } = this.assertAndPeekLowerId();
+        functionExpression = EXPRESSION_FIELD_ACCESS({
+          range: functionExpression.range.union(range),
+          type: UndecidedTypes.next(),
+          expression: functionExpression,
+          fieldName,
+          fieldOrder: -1,
+        });
+      } else {
+        this.consume();
+        const functionArguments =
+          this.peek().content === ')' ? [] : this.parseCommaSeparatedList(this.parseExpression);
+        const endRange = this.assertAndConsume(')');
+        functionExpression = EXPRESSION_FUNCTION_CALL({
+          range: peeked.range.union(endRange),
+          type: UndecidedTypes.next(),
+          functionExpression,
+          functionArguments,
+        });
+      }
+    }
 
-  private parseFieldAccessExpression = (): SamlangExpression => {
-    const baseExpression = this.parseBaseExpression();
-    if (this.peek().content !== '.') return baseExpression;
-    const { range, variable } = this.assertAndPeekLowerId();
-    return EXPRESSION_FIELD_ACCESS({
-      range: baseExpression.range.union(range),
-      type: UndecidedTypes.next(),
-      expression: baseExpression,
-      fieldName: variable,
-      fieldOrder: -1,
-    });
+    return functionExpression;
   };
 
   private parseBaseExpression = (): SamlangExpression => {
@@ -887,7 +890,7 @@ export default class SamlangModuleParser extends BaseParser {
       ) {
         this.consume();
         const next = this.peek();
-        if (next.content === ',' || next.content === ':') {
+        if (next.content === ',' || next.content === ':' || next.content === '}') {
           this.unconsume();
           const fieldDeclarations = this.parseCommaSeparatedList(() => {
             const { range, variable } = this.assertAndPeekLowerId();
@@ -966,7 +969,10 @@ export default class SamlangModuleParser extends BaseParser {
       this.consume();
       const destructedNames = this.parseCommaSeparatedList(() => {
         const node = this.peek();
-        if (node.content === '_') return { type: UndecidedTypes.next(), range: node.range };
+        if (node.content === '_') {
+          this.consume();
+          return { type: UndecidedTypes.next(), range: node.range };
+        }
         return {
           name: this.assertAndPeekLowerId().variable,
           type: UndecidedTypes.next(),
@@ -992,13 +998,7 @@ export default class SamlangModuleParser extends BaseParser {
           alias = peekedLower.variable;
           range = range.union(peekedLower.range);
         }
-        return {
-          fieldName,
-          fieldOrder: -1,
-          type: UndecidedTypes.next(),
-          alias,
-          range,
-        };
+        return { fieldName, fieldOrder: -1, type: UndecidedTypes.next(), alias, range };
       });
       const endRange = this.assertAndConsume('}');
       return {
@@ -1050,7 +1050,7 @@ export default class SamlangModuleParser extends BaseParser {
     }
     if (peeked.content === '[') {
       this.consume();
-      const mappings = this.parseCommaSeparatedList(this.parseType);
+      const mappings = this.parsePunctuationSeparatedList('*', this.parseType);
       this.assertAndConsume(']');
       return { type: 'TupleType', mappings };
     }

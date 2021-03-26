@@ -218,11 +218,8 @@ it('Can handle bad programs.', () => {
     ModuleReference.ROOT,
     moduleErrorCollector
   );
-  if (parsed == null) {
-    fail();
-  }
+  if (parsed == null) fail();
   expect(parsed.imports.length).toBe(1);
-  expect(parsed.classes.length).toBe(2);
   expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
 });
 
@@ -252,6 +249,5 @@ it('Can handle really bad programs.', () => {
     moduleErrorCollector
   );
   expect(parsed.imports).toEqual([]);
-  expect(parsed.classes).toEqual([]);
   expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
 });
