@@ -246,6 +246,6 @@ it('Can handle really bad programs.', () => {
     moduleErrorCollector
   );
   expect(parsed.imports).toEqual([]);
-  expect(parsed.classes).toEqual([]);
+  expect(parsed.classes).toEqual(['Main', 'Main', 'Option', 'TypeInference', 'Developer']);
   expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
 });
