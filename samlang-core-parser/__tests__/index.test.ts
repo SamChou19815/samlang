@@ -181,12 +181,9 @@ it('Can parse good programs.', () => {
     ModuleReference.ROOT,
     moduleErrorCollector
   );
-  if (parsed == null) {
-    fail();
-  }
+  expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
   expect(parsed.imports.length).toBe(1);
-  expect(parsed.classes.length).toBe(5);
-  expect(globalErrorCollector.getErrors()).toEqual([]);
+  expect(parsed.classes.map((it) => it.name)).toEqual([]);
 });
 
 it('Can handle bad programs.', () => {
