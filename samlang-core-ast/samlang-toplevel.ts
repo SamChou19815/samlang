@@ -37,8 +37,8 @@ export interface ClassDefinition extends Node {
   readonly nameRange: Range;
   readonly name: string;
   readonly typeParameters: readonly string[];
-  readonly members: readonly ClassMemberDefinition[];
   readonly typeDefinition: TypeDefinition;
+  readonly members: readonly ClassMemberDefinition[];
 }
 
 export interface ModuleMembersImport extends Node {

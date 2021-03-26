@@ -336,6 +336,7 @@ export type SamlangVariableTokenContent = {
 export type SamlangTokenContent =
   | SamlangKeywordString
   | SamlangOperatorString
+  | 'EOF'
   | SamlangVariableTokenContent;
 
 export type SamlangToken = {
