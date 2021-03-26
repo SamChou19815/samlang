@@ -183,7 +183,13 @@ it('Can parse good programs.', () => {
   );
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
   expect(parsed.imports.length).toBe(1);
-  expect(parsed.classes.map((it) => it.name)).toEqual([]);
+  expect(parsed.classes.map((it) => it.name)).toEqual([
+    'Main',
+    'Main',
+    'Option',
+    'TypeInference',
+    'Developer',
+  ]);
 });
 
 it('Can handle bad programs.', () => {
@@ -246,6 +252,6 @@ it('Can handle really bad programs.', () => {
     moduleErrorCollector
   );
   expect(parsed.imports).toEqual([]);
-  expect(parsed.classes).toEqual(['Main', 'Main', 'Option', 'TypeInference', 'Developer']);
+  expect(parsed.classes).toEqual([]);
   expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
 });
