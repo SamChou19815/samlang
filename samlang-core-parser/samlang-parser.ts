@@ -1,3 +1,4 @@
+import { postProcessBlockComment } from './parser-comment-collector';
 import {
   SamlangKeywordString,
   SamlangOperatorString,
@@ -59,8 +60,9 @@ import {
   EXPRESSION_STATEMENT_BLOCK,
 } from 'samlang-core-ast/samlang-expressions';
 import type { Pattern } from 'samlang-core-ast/samlang-pattern';
+import type { ClassMemberDefinition } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { Long } from 'samlang-core-utils';
+import { checkNotNull, Long } from 'samlang-core-utils';
 
 class EOFWhileParsing extends Error {}
 
@@ -72,14 +74,27 @@ class BaseParser {
     public readonly errorCollector: ModuleErrorCollector
   ) {}
 
-  protected available(): boolean {
-    return this.position < this.tokens.length;
+  protected lastRange(): Range {
+    return checkNotNull(this.tokens[this.position - 1]).range;
   }
 
-  protected peek(): SamlangToken {
+  protected simplePeek(): SamlangToken {
     const peeked = this.tokens[this.position];
     if (peeked == null) throw new EOFWhileParsing();
     return peeked;
+  }
+
+  protected peek(): SamlangToken {
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const peeked = this.simplePeek();
+      if (typeof peeked.content === 'string') return peeked;
+      if (peeked.content.__type__ === 'BlockComment' || peeked.content.__type__ === 'LineComment') {
+        this.consume();
+      } else {
+        return peeked;
+      }
+    }
   }
 
   protected consume(): void {
@@ -157,6 +172,78 @@ export default class SamlangParser extends BaseParser {
   ) {
     super(tokens, errorCollector);
   }
+
+  parseClassMemberDefinition = (): ClassMemberDefinition => {
+    const documentTextList: string[] = [];
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const token = this.simplePeek().content;
+      if (typeof token === 'string') break;
+      if (token.__type__ === 'LineComment') continue;
+      if (token.__type__ !== 'BlockComment' || !token.content.startsWith('/**')) break;
+      const rawText = token.content;
+      documentTextList.push(postProcessBlockComment(rawText.substring(3, rawText.length - 2)));
+    }
+    const documentText = documentTextList.length === 0 ? null : documentTextList.join(' ');
+    let startRange: Range;
+    let isPublic = true;
+    let isMethod = true;
+    let peeked: SamlangToken;
+    if (this.peek().content === 'private') {
+      isPublic = false;
+      startRange = this.peek().range;
+      this.consume();
+      peeked = this.peek();
+    } else {
+      peeked = this.peek();
+      startRange = peeked.range;
+    }
+    if (peeked.content === 'function') {
+      isMethod = false;
+      this.consume();
+    }
+    this.assertAndConsume('method');
+    let typeParameters: string[];
+    if (this.peek().content === '<') {
+      this.consume();
+      typeParameters = this.parseCommaSeparatedList(() => this.assertAndPeekUpperId()).map(
+        (it) => it.variable
+      );
+      this.assertAndConsume('>');
+    } else {
+      typeParameters = [];
+    }
+    const { range: nameRange, variable: name } = this.assertAndPeekLowerId();
+    this.assertAndConsume('(');
+    const parameters = this.parseCommaSeparatedList(() => {
+      const lowerId = this.assertAndPeekLowerId();
+      this.assertAndConsume(':');
+      const typeStartRange = this.peek().range;
+      const type = this.parseType();
+      const typeRange = typeStartRange.union(this.lastRange());
+      return { name: lowerId.variable, nameRange: lowerId.range, type, typeRange };
+    });
+    this.assertAndConsume(')');
+    this.assertAndConsume(':');
+    const returnType = this.parseType();
+    this.assertAndConsume('=');
+    const body = this.parseExpression();
+    return {
+      range: startRange.union(body.range),
+      documentText,
+      isPublic,
+      isMethod,
+      nameRange,
+      name,
+      typeParameters,
+      type: functionType(
+        parameters.map((it) => it.type),
+        returnType
+      ),
+      parameters,
+      body,
+    };
+  };
 
   parseExpression = (): SamlangExpression => this.parseMatch();
 
