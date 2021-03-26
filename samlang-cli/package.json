@@ -14,8 +14,8 @@
     "samlang": "./bin/index.js"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.21",
-    "@types/node": "^14.14.35",
+    "@types/jest": "^26.0.22",
+    "@types/node": "^14.14.36",
     "esbuild": "^0.10.1",
     "esbuild-plugin-pnp": "^0.3.0",
     "samlang-core-ast": "workspace:0.0.1",
