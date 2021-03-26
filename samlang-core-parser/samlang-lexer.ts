@@ -1,4 +1,5 @@
 import { Position, Range } from 'samlang-core-ast/common-nodes';
+import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { checkNotNull } from 'samlang-core-utils';
 
 const characterIsWhitespace = (character: string): boolean => /\s/.test(character);
@@ -91,7 +92,7 @@ class CharacterStream {
       }
       commentLength += 1;
     }
-    commentLength += 1;
+    commentLength += 2;
     return this.source.substr(this.position, 2 + commentLength);
   }
 
@@ -382,7 +383,10 @@ const stringHasValidEscape = (string: string): boolean => {
   return true;
 };
 
-const getNextToken = (stream: CharacterStream): SamlangToken | null => {
+const getNextToken = (
+  stream: CharacterStream,
+  errorCollector: ModuleErrorCollector
+): SamlangToken | null => {
   try {
     stream.consumeWhitespace();
     const start = stream.currentPosition;
@@ -410,12 +414,13 @@ const getNextToken = (stream: CharacterStream): SamlangToken | null => {
     }
     const string = stream.peekString();
     if (string != null) {
+      const range = stream.consumeAndGetRange(start, string.length);
+      if (!stringHasValidEscape(string)) {
+        errorCollector.reportSyntaxError(range, 'Invalid escape in string.');
+      }
       return {
-        range: stream.consumeAndGetRange(start, string.length),
-        content: {
-          __type__: stringHasValidEscape(string) ? 'StringLiteral' : 'Error',
-          content: string,
-        },
+        range,
+        content: { __type__: 'StringLiteral', content: string },
       };
     }
 
@@ -442,8 +447,10 @@ const getNextToken = (stream: CharacterStream): SamlangToken | null => {
     }
 
     const errorTokenContent = stream.peekUntilWhitespace();
+    const errorRange = stream.consumeAndGetRange(start, errorTokenContent.length);
+    errorCollector.reportSyntaxError(errorRange, 'Invalid token.');
     return {
-      range: stream.consumeAndGetRange(start, errorTokenContent.length),
+      range: errorRange,
       content: { __type__: 'Error', content: errorTokenContent },
     };
   } catch (e) {
@@ -453,13 +460,16 @@ const getNextToken = (stream: CharacterStream): SamlangToken | null => {
   }
 };
 
-const lexSamlangProgram = (source: string): readonly SamlangToken[] => {
+const lexSamlangProgram = (
+  source: string,
+  errorCollector: ModuleErrorCollector
+): readonly SamlangToken[] => {
   const stream = new CharacterStream(source);
 
   const tokens: SamlangToken[] = [];
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    let token = getNextToken(stream);
+    let token = getNextToken(stream, errorCollector);
     if (token == null) return tokens;
 
     // Validate the range of int token.
@@ -468,13 +478,18 @@ const lexSamlangProgram = (source: string): readonly SamlangToken[] => {
       const intLiteralString = token.content.content;
       const parsedBigInt = BigInt(intLiteralString);
       if (parsedBigInt > MAX_INT_PLUS_ONE) {
-        token = { range: token.range, content: { __type__: 'Error', content: intLiteralString } };
+        errorCollector.reportSyntaxError(token.range, 'Not a 64-bit integer.');
+        token = {
+          range: token.range,
+          content: { __type__: 'IntLiteral', content: intLiteralString },
+        };
       } else if (parsedBigInt === MAX_INT_PLUS_ONE) {
         const previousToken = tokens[tokens.length - 1]?.content;
         if (previousToken == null || previousToken !== '-') {
+          errorCollector.reportSyntaxError(token.range, 'Not a 64-bit integer.');
           token = {
             range: token.range,
-            content: { __type__: 'Error', content: intLiteralString },
+            content: { __type__: 'IntLiteral', content: intLiteralString },
           };
         } else {
           tokens.pop();
