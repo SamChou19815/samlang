@@ -12,7 +12,7 @@
     "bundle": "node build.js"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.21",
+    "@types/jest": "^26.0.22",
     "esbuild": "^0.10.1",
     "esbuild-plugin-pnp": "^0.3.0",
     "samlang-core-ast": "workspace:0.0.1",
