@@ -272,8 +272,8 @@ it('typeCheckSources smoke test (failing case)', () => {
       .sort()
   ).toEqual([
     'A.sam:1:43-1:44: [Collision]: Name `a` collides with a previously defined name.',
-    'B.sam:2:10-2:31: [Collision]: Name `A` collides with a previously defined name.',
-    'C.sam:2:11-2:36: [NotWellDefinedIdentifier]: `B` is not well defined.',
+    'B.sam:2:10-2:32: [Collision]: Name `A` collides with a previously defined name.',
+    'C.sam:2:10-2:37: [NotWellDefinedIdentifier]: `B` is not well defined.',
     'C.sam:3:41-3:46: [UnexpectedType]: Expected: `bool`, actual: `int`.',
     'C.sam:4:30-4:31: [NotWellDefinedIdentifier]: `B` is not well defined.',
     'C.sam:4:5-4:42: [Collision]: Name `T` collides with a previously defined name.',

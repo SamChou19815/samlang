@@ -95,7 +95,6 @@ it('Can report bad expressions.', () => {
   expectBadAST('SomeClass.');
   expectBadAST('.');
   expectBadAST(',');
-  expectBadAST('[3]');
   expectBadAST('[]');
   expectBadAST('{: }');
   expectBadAST('{: bar}');
@@ -182,7 +181,12 @@ it('Can parse good programs.', () => {
     moduleErrorCollector
   );
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
-  expect(parsed.imports.length).toBe(1);
+  expect(
+    parsed.imports.map((it) => ({
+      members: it.importedMembers.map(([m]) => m),
+      importedModule: it.importedModule.toString(),
+    }))
+  ).toEqual([{ importedModule: 'Path.To', members: ['Foo', 'Bar'] }]);
   expect(parsed.classes.map((it) => it.name)).toEqual([
     'Main',
     'Main',
@@ -250,4 +254,19 @@ it('Can handle really bad programs.', () => {
   );
   expect(parsed.imports).toEqual([]);
   expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
+});
+
+it('Can handle complete trash', () => {
+  const globalErrorCollector = createGlobalErrorCollector();
+  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.ROOT);
+
+  parseSamlangModuleFromText('This is not a program.', ModuleReference.ROOT, moduleErrorCollector);
+  expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([
+    '.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes.',
+    '.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes.',
+    '.sam:1:9-1:12: [SyntaxError]: Unexpected token among the classes.',
+    '.sam:1:13-1:14: [SyntaxError]: Unexpected token among the classes.',
+    '.sam:1:15-1:22: [SyntaxError]: Unexpected token among the classes.',
+    '.sam:1:22-1:23: [SyntaxError]: Unexpected token among the classes.',
+  ]);
 });

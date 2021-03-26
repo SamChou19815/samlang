@@ -258,13 +258,13 @@ it('FieldConstructor', () => {
   );
 
   assertTypeErrors('{foo:true,bar:3,foo:true}', identifierType(dummyModuleReference, 'Test'), [
-    'Test.sam:1:17-1:20: [DuplicateFieldDeclaration]: Field name `foo` is declared twice.',
+    'Test.sam:1:17-1:25: [DuplicateFieldDeclaration]: Field name `foo` is declared twice.',
   ]);
   assertTypeErrors('{foo:true,bar:3,baz:true}', identifierType(dummyModuleReference, 'Test'), [
     'Test.sam:1:1-1:26: [InconsistentFieldsInObject]: Inconsistent fields. Expected: `bar, foo`, actual: `bar, baz, foo`.',
   ]);
   assertTypeErrors('{foo:true,bar:false}', identifierType(dummyModuleReference, 'Test'), [
-    'Test.sam:1:11-1:14: [UnexpectedType]: Expected: `int`, actual: `bool`.',
+    'Test.sam:1:11-1:20: [UnexpectedType]: Expected: `int`, actual: `bool`.',
   ]);
   assertTypeErrors('{ val foo=3; {foo,bar:3} }', identifierType(dummyModuleReference, 'Test'), [
     'Test.sam:1:15-1:18: [UnexpectedType]: Expected: `bool`, actual: `int`.',
@@ -382,7 +382,7 @@ it('Unary', () => {
     'Test.sam:1:2-1:3: [UnexpectedType]: Expected: `bool`, actual: `int`.',
   ]);
   assertTypeErrors('-(1+1)', bool, [
-    'Test.sam:1:1-1:7: [UnexpectedType]: Expected: `bool`, actual: `int`.',
+    'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `bool`, actual: `int`.',
   ]);
   assertTypeErrors('!true', int, [
     'Test.sam:1:1-1:6: [UnexpectedType]: Expected: `int`, actual: `bool`.',

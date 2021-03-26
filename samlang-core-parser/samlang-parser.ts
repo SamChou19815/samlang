@@ -33,6 +33,7 @@ import {
   EQ,
   NE,
   AND,
+  OR,
   CONCAT,
 } from 'samlang-core-ast/common-operators';
 import {
@@ -110,10 +111,15 @@ class BaseParser {
 
   protected consume(): void {
     const tokens = this.tokens;
+    // istanbul ignore next
     if (this.position >= tokens.length) {
+      // istanbul ignore next
       const position = tokens[tokens.length - 1]?.range.end ?? new Position(0, 0);
+      // istanbul ignore next
       const range = new Range(position, position);
+      // istanbul ignore next
       this.report(range, 'Unexpected end of file.');
+      // istanbul ignore next
       return;
     }
     this.position += 1;
@@ -170,25 +176,20 @@ class BaseParser {
 
   protected parsePunctuationSeparatedList = <T>(
     punctuation: ',' | '.' | '*',
-    parser: () => T | null
+    parser: () => T
   ): T[] => {
     const collector: T[] = [];
-    pushIfParsed(collector, parser);
+    collector.push(parser());
     while (this.peek().content === punctuation) {
       this.consume();
-      pushIfParsed(collector, parser);
+      collector.push(parser());
     }
     return collector;
   };
 
-  protected parseCommaSeparatedList = <T>(parser: () => T | null): T[] =>
+  protected parseCommaSeparatedList = <T>(parser: () => T): T[] =>
     this.parsePunctuationSeparatedList(',', parser);
 }
-
-const pushIfParsed = <T>(array: T[], parser: () => T | null): void => {
-  const parsed = parser();
-  if (parsed != null) array.push(parsed);
-};
 
 const unescapeQuotes = (source: string): string => source.replace(/\\"/g, '"');
 
@@ -414,6 +415,7 @@ export default class SamlangModuleParser extends BaseParser {
         this.consume();
         continue;
       }
+      // istanbul ignore next
       if (token.__type__ !== 'BlockComment') break;
       if (!token.content.startsWith('/**')) {
         this.consume();
@@ -496,7 +498,7 @@ export default class SamlangModuleParser extends BaseParser {
       e = EXPRESSION_BINARY({
         range: e.range.union(e2.range),
         type: boolType,
-        operator: AND,
+        operator: OR,
         e1: e,
         e2,
       });
@@ -795,6 +797,7 @@ export default class SamlangModuleParser extends BaseParser {
         });
       }
 
+      // istanbul ignore next
       if (peeked.content.__type__ === 'UpperId') {
         this.consume();
         const className = peeked.content.content;
@@ -878,17 +881,19 @@ export default class SamlangModuleParser extends BaseParser {
           if (this.peek().content === '->') {
             this.consume();
             const body = this.parseExpression();
+            const parameterType = UndecidedTypes.next();
             return EXPRESSION_LAMBDA({
               range: peeked.range.union(body.range),
-              type: functionType([UndecidedTypes.next()], body.type),
-              parameters: [[lowerIdentifierForLambdaPeeked.content.content, UndecidedTypes.next()]],
+              type: functionType([parameterType], body.type),
+              parameters: [[lowerIdentifierForLambdaPeeked.content.content, parameterType]],
               captured: {},
               body,
             });
+          } else {
+            this.unconsume();
           }
-        } else {
-          this.unconsume();
         }
+        this.unconsume();
       }
       const nestedExpression = this.parseExpression();
       this.assertAndConsume(')');
@@ -915,6 +920,7 @@ export default class SamlangModuleParser extends BaseParser {
       ) {
         this.consume();
         const next = this.peek();
+        // istanbul ignore next
         if (next.content === ',' || next.content === ':' || next.content === '}') {
           this.unconsume();
           const fieldDeclarations = this.parseCommaSeparatedList(() => {
@@ -957,12 +963,16 @@ export default class SamlangModuleParser extends BaseParser {
       const range = peeked.range.union(this.assertAndConsume('}'));
       return EXPRESSION_STATEMENT_BLOCK({
         range,
-        type: unitType,
+        type: UndecidedTypes.next(),
         block: { range, statements, expression },
       });
     }
 
     // We failed to parse the base expression, so we stick in a dummy value here.
+    this.report(
+      peeked.range,
+      `Expecting expression, seeing ${samlangTokenContentToString(peeked.content)}`
+    );
     return EXPRESSION_INT(peeked.range, 0);
   };
 
@@ -1097,6 +1107,6 @@ export default class SamlangModuleParser extends BaseParser {
       peeked.range,
       `Expecting type, seeing ${samlangTokenContentToString(peeked.content)}`
     );
-    return unitType;
+    return UndecidedTypes.next();
   };
 }
