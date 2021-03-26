@@ -9,7 +9,6 @@
   "scripts": {
     "lint": "eslint . --cache",
     "format": "prettier --write '**/*.ts'",
-    "format:generatedDTS": "prettier --write samlang-core-parser-generated/*.d.ts",
     "format:check": "prettier --check '**/*.ts'",
     "codegen": "yarn workspace @dev-sam/samlang-cli bundle && ./samlang-dev format",
     "bundle": "yarn workspaces foreach run bundle",
@@ -55,8 +54,7 @@
                 "**/samlang-core-analysis/*",
                 "**/samlang-core-ast/*",
                 "**/samlang-core-interpreter/*",
-                "**/samlang-core-optimization/simple-optimizations*",
-                "**/samlang-core-parser-generated/*"
+                "**/samlang-core-optimization/simple-optimizations*"
               ]
             }
           ]
@@ -80,9 +78,6 @@
       }
     },
     "coverageDirectory": "coverage",
-    "coveragePathIgnorePatterns": [
-      "/samlang-core-parser-generated/"
-    ],
     "testEnvironment": "node",
     "testPathIgnorePatterns": [
       "/lib/"

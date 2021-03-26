@@ -2670,22 +2670,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"antlr4ts-cli@npm:0.5.0-alpha.4":
-  version: 0.5.0-alpha.4
-  resolution: "antlr4ts-cli@npm:0.5.0-alpha.4"
-  bin:
-    antlr4ts: ./antlr4ts
-  checksum: f94fd5a146309f73b6cf28bf010324843118b4559394ba1c621162ed3bffcf8b63f259045ef93187874be37678dfccfd6ca32240a434290250d840f153962c9e
-  languageName: node
-  linkType: hard
-
-"antlr4ts@npm:0.5.0-alpha.4":
-  version: 0.5.0-alpha.4
-  resolution: "antlr4ts@npm:0.5.0-alpha.4"
-  checksum: 61d5414f88b53abf7b352beb526a1466298f75663de5297af66a04a72b4330e68097a9bbcbb9996b56d8db90c8ff83138a8c2f4d393aff277674c7756143cdc7
-  languageName: node
-  linkType: hard
-
 "anymatch@npm:^2.0.0":
   version: 2.0.0
   resolution: "anymatch@npm:2.0.0"
@@ -3282,13 +3266,6 @@ __metadata:
   dependencies:
     delayed-stream: ~1.0.0
   checksum: 5791ce7944530f0db74a97e77ea28b6fdbf89afcf038e41d6b4195019c4c803cd19ed2905a54959e5b3830d50bd5d6f93c681c6d3aaea8614ad43b48e62e9d65
-  languageName: node
-  linkType: hard
-
-"commander@npm:^2.20.0":
-  version: 2.20.3
-  resolution: "commander@npm:2.20.3"
-  checksum: b73428e97de7624323f81ba13f8ed9271de487017432d18b4da3f07cfc528ad754bbd199004bd5d14e0ccd67d1fdfe0ec8dbbd4c438b401df3c4cc387bfd1daa
   languageName: node
   linkType: hard
 
@@ -7313,27 +7290,13 @@ resolve@^1.18.1:
   languageName: unknown
   linkType: soft
 
-"samlang-core-parser-generated@workspace:0.0.1, samlang-core-parser-generated@workspace:samlang-core-parser-generated":
-  version: 0.0.0-use.local
-  resolution: "samlang-core-parser-generated@workspace:samlang-core-parser-generated"
-  dependencies:
-    "@types/jest": ^26.0.21
-    antlr4ts: 0.5.0-alpha.4
-    antlr4ts-cli: 0.5.0-alpha.4
-    terser: ^5.5.1
-    typescript: ^4.2.3
-  languageName: unknown
-  linkType: soft
-
 "samlang-core-parser@workspace:0.0.1, samlang-core-parser@workspace:samlang-core-parser":
   version: 0.0.0-use.local
   resolution: "samlang-core-parser@workspace:samlang-core-parser"
   dependencies:
     "@types/jest": ^26.0.21
-    antlr4ts: 0.5.0-alpha.4
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
-    samlang-core-parser-generated: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
     typescript: ^4.2.3
   languageName: unknown
@@ -7600,7 +7563,7 @@ resolve@^1.18.1:
   languageName: node
   linkType: hard
 
-"source-map-support@npm:^0.5.17, source-map-support@npm:^0.5.6, source-map-support@npm:~0.5.19":
+"source-map-support@npm:^0.5.17, source-map-support@npm:^0.5.6":
   version: 0.5.19
   resolution: "source-map-support@npm:0.5.19"
   dependencies:
@@ -7631,7 +7594,7 @@ resolve@^1.18.1:
   languageName: node
   linkType: hard
 
-"source-map@npm:^0.7.3, source-map@npm:~0.7.2":
+"source-map@npm:^0.7.3":
   version: 0.7.3
   resolution: "source-map@npm:0.7.3"
   checksum: 351ce26ffa1ebf203660c0d70d7566c81e65d2d994d1c2d94da140808e02da34961673ce12ecea9b40797b96fbeb8c70bf71a4ad9f779f1a4fdbba75530bb386
@@ -7942,19 +7905,6 @@ resolve@^1.18.1:
     ansi-escapes: ^4.2.1
     supports-hyperlinks: ^2.0.0
   checksum: f84553e11e9dc9034c9a62aeada2985e2c50adf161b773b3e4a5cf174b0d14f6b8868eb1dcdf91c3f71e3d932a3be158b8742c2a43ee459e9b88a246d78a6dc1
-  languageName: node
-  linkType: hard
-
-"terser@npm:^5.5.1":
-  version: 5.5.1
-  resolution: "terser@npm:5.5.1"
-  dependencies:
-    commander: ^2.20.0
-    source-map: ~0.7.2
-    source-map-support: ~0.5.19
-  bin:
-    terser: bin/terser
-  checksum: f96abd0fb4595a1cbc875df661eceb7ae97cf05996f5327e38f16b5bf0c685296ab81d00a34059f6ca292bbba5eeed31ed7e51d2bf5d7cf6534a1a31aff0db86
   languageName: node
   linkType: hard
 
