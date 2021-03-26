@@ -118,7 +118,7 @@ class BaseParser {
 
   protected uncomsumeComments(): void {
     while (this.position >= 0) {
-      const token = this.peek().content;
+      const token = this.simplePeek().content;
       if (typeof token === 'string') return;
       if (token.__type__ !== 'LineComment' && token.__type__ !== 'BlockComment') return;
       this.position -= 1;
@@ -238,7 +238,12 @@ export default class SamlangModuleParser extends BaseParser {
     const { startRange, ...header } = this.parseClassHeader();
     this.assertAndConsume('{');
     const members: ClassMemberDefinition[] = [];
-    while (this.peek().content !== '}' && this.peek().content !== 'EOF') {
+    while (
+      this.peek().content === 'private' ||
+      this.peek().content === 'function' ||
+      this.peek().content === 'method'
+    ) {
+      console.error('loop');
       members.push(this.parseClassMemberDefinition());
     }
     const endRange = this.assertAndConsume('}');
@@ -334,8 +339,9 @@ export default class SamlangModuleParser extends BaseParser {
     if (peeked.content === 'function') {
       isMethod = false;
       this.consume();
+    } else {
+      this.assertAndConsume('method');
     }
-    this.assertAndConsume('method');
     let typeParameters: string[];
     if (this.peek().content === '<') {
       this.consume();
@@ -348,14 +354,17 @@ export default class SamlangModuleParser extends BaseParser {
     }
     const { range: nameRange, variable: name } = this.assertAndPeekLowerId();
     this.assertAndConsume('(');
-    const parameters = this.parseCommaSeparatedList(() => {
-      const lowerId = this.assertAndPeekLowerId();
-      this.assertAndConsume(':');
-      const typeStartRange = this.peek().range;
-      const type = this.parseType();
-      const typeRange = typeStartRange.union(this.lastRange());
-      return { name: lowerId.variable, nameRange: lowerId.range, type, typeRange };
-    });
+    const parameters =
+      this.peek().content === ')'
+        ? []
+        : this.parseCommaSeparatedList(() => {
+            const lowerId = this.assertAndPeekLowerId();
+            this.assertAndConsume(':');
+            const typeStartRange = this.peek().range;
+            const type = this.parseType();
+            const typeRange = typeStartRange.union(this.lastRange());
+            return { name: lowerId.variable, nameRange: lowerId.range, type, typeRange };
+          });
     this.assertAndConsume(')');
     this.assertAndConsume(':');
     const returnType = this.parseType();
@@ -398,6 +407,7 @@ export default class SamlangModuleParser extends BaseParser {
   private parseMatch = (): SamlangExpression => {
     const peeked = this.peek();
     if (peeked.content !== 'match') return this.parseIfElse();
+    this.consume();
     this.assertAndConsume('(');
     const matchedExpression = this.parseExpression();
     this.assertAndConsume(')');
@@ -693,7 +703,8 @@ export default class SamlangModuleParser extends BaseParser {
     const functionExpression = this.parseFieldAccessExpression();
     if (this.peek().content !== '(') return functionExpression;
     this.consume();
-    const functionArguments = this.parseCommaSeparatedList(this.parseExpression);
+    const functionArguments =
+      this.peek().content === ')' ? [] : this.parseCommaSeparatedList(this.parseExpression);
     const endRange = this.assertAndConsume(')');
     return EXPRESSION_FUNCTION_CALL({
       range: peeked.range.union(endRange),
@@ -762,30 +773,16 @@ export default class SamlangModuleParser extends BaseParser {
         const nextPeeked = this.peek();
         if (nextPeeked.content === '.') {
           this.consume();
-          const lowerIdPeeked = this.peek();
-          let lowerId: string;
-          if (
-            typeof lowerIdPeeked.content === 'string' ||
-            lowerIdPeeked.content.__type__ !== 'LowerId'
-          ) {
-            this.report(
-              lowerIdPeeked.range,
-              `Expecting lowerId, seeing ${samlangTokenContentToString(lowerIdPeeked.content)}.`
-            );
-            lowerId = '';
-          } else {
-            this.consume();
-            lowerId = lowerIdPeeked.content.content;
-          }
+          const { range: memberNameRange, variable: memberName } = this.assertAndPeekLowerId();
           return EXPRESSION_CLASS_MEMBER({
-            range: peeked.range.union(lowerIdPeeked.range),
+            range: peeked.range.union(memberNameRange),
             type: UndecidedTypes.next(),
             typeArguments: [],
             moduleReference: this.resolveClass(className),
             className,
             classNameRange: peeked.range,
-            memberName: lowerId,
-            memberNameRange: lowerIdPeeked.range,
+            memberName,
+            memberNameRange,
           });
         }
         if (nextPeeked.content === '(') {
@@ -882,6 +879,7 @@ export default class SamlangModuleParser extends BaseParser {
     }
 
     if (peeked.content === '{') {
+      this.consume();
       const lowerIdentifierForObjectFieldPeeked = this.peek();
       if (
         typeof lowerIdentifierForObjectFieldPeeked.content !== 'string' &&
@@ -965,6 +963,7 @@ export default class SamlangModuleParser extends BaseParser {
   parsePattern = (): Pattern => {
     const peeked = this.peek();
     if (peeked.content === '[') {
+      this.consume();
       const destructedNames = this.parseCommaSeparatedList(() => {
         const node = this.peek();
         if (node.content === '_') return { type: UndecidedTypes.next(), range: node.range };
@@ -982,6 +981,7 @@ export default class SamlangModuleParser extends BaseParser {
       };
     }
     if (peeked.content === '{') {
+      this.consume();
       const destructedNames = this.parseCommaSeparatedList(() => {
         const { range: fieldRange, variable: fieldName } = this.assertAndPeekLowerId();
         let range = fieldRange;
@@ -1008,6 +1008,7 @@ export default class SamlangModuleParser extends BaseParser {
       };
     }
     if (peeked.content === '_') {
+      this.consume();
       return { range: peeked.range, type: 'WildCardPattern' };
     }
     return {
