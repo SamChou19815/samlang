@@ -1,16 +1,15 @@
-const { writeFileSync } = require('fs');
-const { join } = require('path');
+const { build } = require('esbuild');
+const pnpPlugin = require('esbuild-plugin-pnp');
 
-require('@vercel/ncc')(join(__dirname, 'src', 'index.ts'), {
+build({
+  entryPoints: ['src/index.ts'],
+  bundle: true,
   minify: true,
-  sourceMapRegister: false,
-  transpileOnly: true,
-  quiet: true,
-}).then(({ code }) =>
-  writeFileSync(
-    join(__dirname, 'bin', 'index.js'),
-    code
-      .replace('require("assert")', '() => {}')
-      .replace('require("util")', '{inspect:{custom:"UTIL_INSPECT_CUSTOM"}}')
-  )
-);
+  platform: 'node',
+  outfile: 'bin/index.js',
+  plugins: [pnpPlugin()],
+}).catch((err) => {
+  // eslint-disable-next-line no-console
+  console.log(err);
+  process.exit(1);
+});
