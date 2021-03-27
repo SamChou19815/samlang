@@ -97,6 +97,7 @@ it('Can report bad expressions.', () => {
   expectBadAST(',');
   expectBadAST('[]');
   expectBadAST('{: }');
+  expectBadAST('{ hello / }');
   expectBadAST('{: bar}');
   expectBadAST('{foo: }');
   expectBadAST('Variant');

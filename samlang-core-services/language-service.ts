@@ -109,7 +109,6 @@ export class LanguageServiceState {
   }
 
   get allModulesWithError(): readonly ModuleReference[] {
-    // istanbul ignore next
     return this.errors.entries().map((it) => it[0]);
   }
 
@@ -326,6 +325,7 @@ export class LanguageServices {
           moduleReference,
           position
         );
+        // istanbul ignore next
         if (classMemberDefinition == null) return null;
         const range = LanguageServices.findLocalVariableDefinitionDefiningStatementRange(
           classMemberDefinition.body,
@@ -391,15 +391,17 @@ export class LanguageServices {
         return [moduleReference, samlangClass];
       }
     }
-    for (let i = 0; i < imports.length; i += 1) {
-      const oneImport = checkNotNull(imports[i]);
-      const { importedMembers, importedModule } = oneImport;
-      if (importedMembers.some((it) => it[0] === className)) {
-        return this.getClassDefinition(importedModule, className);
-      }
-    }
-    // istanbul ignore next
-    throw new Error('Type checker is messed up!');
+    return checkNotNull(
+      imports
+        .map(({ importedMembers, importedModule }) => {
+          if (importedMembers.some((it) => it[0] === className)) {
+            return this.getClassDefinition(importedModule, className);
+          }
+          return null;
+        })
+        .filter(isNotNull)
+        .find(() => true)
+    );
   }
 
   private static findLocalVariableDefinitionDefiningStatementRange(
@@ -409,13 +411,10 @@ export class LanguageServices {
     if (expression.__type__ !== 'StatementBlockExpression') return null;
     const statements = expression.block.statements;
     const definingStatement = statements.find((statement) => {
-      // istanbul ignore next
       switch (statement.pattern.type) {
         case 'TuplePattern':
-          // istanbul ignore next
           return statement.pattern.destructedNames.some((it) => it.name === variableName);
         case 'ObjectPattern':
-          // istanbul ignore next
           return statement.pattern.destructedNames.some(
             (it) => it.alias === variableName || it.fieldName === variableName
           );

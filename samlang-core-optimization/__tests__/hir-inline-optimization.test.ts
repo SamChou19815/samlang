@@ -19,6 +19,7 @@ import {
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
   HIR_RETURN,
+  HighIRStatement,
 } from 'samlang-core-ast/hir-expressions';
 import { debugPrintHighIRFunction, HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { HIR_BOOL_TYPE, HIR_FUNCTION_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
@@ -136,6 +137,121 @@ const assertCorrectlyInlined = (functions: readonly HighIRFunction[], expected: 
       .join('\n')
   ).toBe(expected);
 };
+
+it('optimizeHighIRFunctionsByInlining empty test', () => {
+  expect(optimizeHighIRFunctionsByInlining([], new OptimizationResourceAllocator()).length).toBe(0);
+});
+
+it('optimizeHighIRFunctionsByInlining abort test', () => {
+  const bigStatement = HIR_WHILE({
+    loopVariables: [{ name: '', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
+    statements: [
+      HIR_INDEX_ACCESS({
+        name: 'i0',
+        type: HIR_INT_TYPE,
+        pointerExpression: HIR_VARIABLE('a', HIR_INT_TYPE),
+        index: 2,
+      }),
+      HIR_BINARY({
+        name: 'b0',
+        operator: '+',
+        e1: HIR_VARIABLE('i1', HIR_INT_TYPE),
+        e2: HIR_INT(3),
+      }),
+      HIR_STRUCT_INITIALIZATION({
+        structVariableName: 's',
+        type: HIR_INT_TYPE,
+        expressionList: [
+          HIR_VARIABLE('i1', HIR_INT_TYPE),
+          HIR_VARIABLE('b1', HIR_INT_TYPE),
+          HIR_VARIABLE('b3', HIR_INT_TYPE),
+        ],
+      }),
+      HIR_FUNCTION_CALL({
+        functionExpression: HIR_NAME('fff', HIR_INT_TYPE),
+        functionArguments: [
+          HIR_VARIABLE('i1', HIR_INT_TYPE),
+          HIR_VARIABLE('b1', HIR_INT_TYPE),
+          HIR_VARIABLE('b3', HIR_INT_TYPE),
+        ],
+        returnType: HIR_INT_TYPE,
+      }),
+      HIR_CAST({
+        name: 'ss',
+        type: HIR_INT_TYPE,
+        assignedExpression: HIR_VARIABLE('b3', HIR_INT_TYPE),
+      }),
+      HIR_IF_ELSE({
+        booleanExpression: HIR_ZERO,
+        s1: [
+          HIR_BINARY({
+            name: '',
+            operator: '+',
+            e1: HIR_VARIABLE('', HIR_INT_TYPE),
+            e2: HIR_INT(3),
+          }),
+        ],
+        s2: [
+          HIR_BINARY({
+            name: '',
+            operator: '+',
+            e1: HIR_VARIABLE('', HIR_INT_TYPE),
+            e2: HIR_INT(3),
+          }),
+        ],
+        finalAssignments: [],
+      }),
+      HIR_IF_ELSE({
+        booleanExpression: HIR_ZERO,
+        s1: [],
+        s2: [],
+        finalAssignments: [
+          {
+            name: 'a',
+            type: HIR_INT_TYPE,
+            branch1Value: HIR_ZERO,
+            branch2Value: HIR_ZERO,
+          },
+        ],
+      }),
+      HIR_SINGLE_IF({
+        booleanExpression: HIR_ZERO,
+        invertCondition: false,
+        statements: [
+          HIR_BINARY({
+            name: '',
+            operator: '+',
+            e1: HIR_VARIABLE('', HIR_INT_TYPE),
+            e2: HIR_INT(3),
+          }),
+        ],
+      }),
+      HIR_BINARY({
+        name: '',
+        operator: '+',
+        e1: HIR_VARIABLE('', HIR_INT_TYPE),
+        e2: HIR_INT(3),
+      }),
+    ],
+  });
+
+  const statements: HighIRStatement[] = [];
+  for (let i = 0; i < 100; i += 1) {
+    statements.push(bigStatement);
+  }
+
+  optimizeHighIRFunctionsByInlining(
+    [
+      {
+        name: '',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        body: statements,
+      },
+    ],
+    new OptimizationResourceAllocator()
+  );
+});
 
 it('optimizeFunctionsByInlining test 1', () => {
   assertCorrectlyInlined(

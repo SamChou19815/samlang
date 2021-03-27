@@ -67,7 +67,6 @@ const getFunctionsToInline = (
     if (cost <= INLINE_THRESHOLD) {
       functionsThatCanBeInlined.add(highIRFunction.name);
     }
-    // istanbul ignore next
     if (cost <= PERFORM_INLINE_THRESHOLD) {
       functionsThatCanPerformInlining.add(highIRFunction.name);
     }
@@ -296,7 +295,6 @@ const optimizeHighIRFunctionsByInlining = (
     const { functionsThatCanBeInlined, functionsThatCanPerformInlining } = getFunctionsToInline(
       tempFunctions
     );
-    // istanbul ignore next
     if (functionsThatCanBeInlined.size === 0) return tempFunctions;
     const allFunctions = Object.fromEntries(tempFunctions.map((it) => [it.name, it]));
     tempFunctions = tempFunctions.map((oldFunction) => {

@@ -71,7 +71,8 @@ import type {
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { checkNotNull, Long } from 'samlang-core-utils';
 
-class BaseParser {
+/** @internal */
+export class BaseParser {
   private position = 0;
 
   constructor(
@@ -80,7 +81,8 @@ class BaseParser {
   ) {}
 
   protected lastRange(): Range {
-    return checkNotNull(this.tokens[this.position - 1]).range;
+    const token = this.tokens[this.position - 1];
+    return token?.range ?? Range.DUMMY;
   }
 
   protected simplePeek(): SamlangToken {
@@ -110,15 +112,10 @@ class BaseParser {
 
   protected consume(): void {
     const tokens = this.tokens;
-    // istanbul ignore next
     if (this.position >= tokens.length) {
-      // istanbul ignore next
       const position = tokens[tokens.length - 1]?.range.end ?? new Position(0, 0);
-      // istanbul ignore next
       const range = new Range(position, position);
-      // istanbul ignore next
       this.report(range, 'Unexpected end of file.');
-      // istanbul ignore next
       return;
     }
     this.position += 1;
@@ -422,7 +419,6 @@ export default class SamlangModuleParser extends BaseParser {
         this.consume();
         continue;
       }
-      // istanbul ignore next
       if (token.__type__ !== 'BlockComment') break;
       if (!token.content.startsWith('/**')) {
         this.consume();
@@ -804,7 +800,6 @@ export default class SamlangModuleParser extends BaseParser {
         });
       }
 
-      // istanbul ignore next
       if (peeked.content.__type__ === 'UpperId') {
         this.consume();
         const className = peeked.content.content;
@@ -927,7 +922,6 @@ export default class SamlangModuleParser extends BaseParser {
       ) {
         this.consume();
         const next = this.peek();
-        // istanbul ignore next
         if (next.content === ',' || next.content === ':' || next.content === '}') {
           this.unconsume();
           const fieldDeclarations = this.parseCommaSeparatedList(() => {

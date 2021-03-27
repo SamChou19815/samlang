@@ -311,7 +311,6 @@ const createPrettierDocumentsForClassDefinition = (
       : createParenthesisSurroundedDocument(
           createCommaSeparatedList(typeMappings, ([name, type]) => {
             if (classDefinition.typeDefinition.type === 'object') {
-              // istanbul ignore next
               const modifier = type.isPublic ? '' : 'private ';
               return PRETTIER_TEXT(`${modifier}val ${name}: ${prettyPrintType(type.type)}`);
             }

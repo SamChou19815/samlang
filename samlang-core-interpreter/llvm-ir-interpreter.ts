@@ -34,7 +34,6 @@ class StackFrame {
   }
 
   getLocalValue(name: string): Long {
-    // istanbul ignore next
     return this.variables.get(name) ?? Long.ZERO;
   }
 
@@ -115,7 +114,6 @@ const handleBuiltInFunctionCall = (
 const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
 
 const computeBinary = (operator: IROperator, value1: Long, value2: Long): Long => {
-  // istanbul ignore next
   switch (operator) {
     case '+':
       return value1.add(value2);
@@ -132,12 +130,10 @@ const computeBinary = (operator: IROperator, value1: Long, value2: Long): Long =
     case '^':
       return value1.xor(value2);
     case '<':
-      // istanbul ignore next
       return longOfBool(value1.lessThan(value2));
     case '<=':
       return longOfBool(value1.lessThanOrEqual(value2));
     case '>':
-      // istanbul ignore next
       return longOfBool(value1.greaterThan(value2));
     case '>=':
       return longOfBool(value1.greaterThanOrEqual(value2));

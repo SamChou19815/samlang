@@ -36,8 +36,7 @@ export const bindedValueToString = (value: BindedValue): string => {
 
 export class LocalValueContextForOptimization extends LocalStackedContext<HighIRExpression> {
   bind(name: string, expression: HighIRExpression): void {
-    // istanbul ignore next
-    this.addLocalValueType(name, expression, () => error(`${name} is collided!`));
+    this.addLocalValueType(name, expression, error);
   }
 }
 

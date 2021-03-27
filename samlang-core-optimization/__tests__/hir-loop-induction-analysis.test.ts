@@ -1,6 +1,7 @@
 import extractOptimizableWhileLoop, {
   getGuardOperator_EXPOSED_FOR_TESTING,
   extractLoopGuardStructure_EXPOSED_FOR_TESTING,
+  expressionIsLoopInvariant_EXPOSED_FOR_TESTING,
   extractBasicInductionVariables_EXPOSED_FOR_TESTING,
   extractDerivedInductionVariables_EXPOSED_FOR_TESTING,
   removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING,
@@ -38,6 +39,13 @@ const mockExpressionIsLoopInvariant = (e: HighIRExpression): boolean =>
 const mockExpressionIsLoopInvariantWithOutside = (e: HighIRExpression): boolean =>
   e.__type__ === 'HighIRIntLiteralExpression' ||
   (e.__type__ === 'HighIRVariableExpression' && e.name === VARIABLE_OUTSIDE.name);
+
+it('expressionIsLoopInvariant test', () => {
+  expect(
+    expressionIsLoopInvariant_EXPOSED_FOR_TESTING(HIR_NAME('ss', HIR_BOOL_TYPE), new Set())
+  ).toBe(false);
+  expect(expressionIsLoopInvariant_EXPOSED_FOR_TESTING(HIR_ZERO, new Set())).toBe(true);
+});
 
 it('extractLoopGuardStructure can reject not optimizable loops.', () => {
   expect(
@@ -201,6 +209,24 @@ it('extractLoopGuardStructure can reject not optimizable loops.', () => {
       mockExpressionIsLoopInvariant
     )
   ).toBeNull();
+
+  expect(
+    extractLoopGuardStructure_EXPOSED_FOR_TESTING(
+      HIR_WHILE({
+        loopVariables: [],
+        statements: [
+          HIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: HIR_ZERO }),
+          HIR_SINGLE_IF({
+            booleanExpression: HIR_NAME('ss', HIR_BOOL_TYPE),
+            invertCondition: false,
+            statements: [HIR_CAST({ name: '', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
+          }),
+          HIR_BINARY({ name: 'cc', operator: '+', e1: VARIABLE_I, e2: HIR_ZERO }),
+        ],
+      }),
+      mockExpressionIsLoopInvariant
+    )
+  ).toBeNull();
 });
 
 it('Unsupported loops are rejected.', () => {
@@ -345,6 +371,18 @@ it('getGuardOperator works', () => {
 });
 
 it('extractBasicInductionVariables works.', () => {
+  expect(
+    extractBasicInductionVariables_EXPOSED_FOR_TESTING(
+      'i',
+      [
+        { name: 'i', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
+        { name: 'j', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
+      ],
+      [],
+      () => true
+    )
+  ).toBeNull();
+
   expect(
     extractBasicInductionVariables_EXPOSED_FOR_TESTING(
       'i',

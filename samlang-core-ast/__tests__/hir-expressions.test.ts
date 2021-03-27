@@ -17,6 +17,17 @@ import {
 } from '../hir-expressions';
 import { HIR_INT_TYPE, HIR_STRING_TYPE, HIR_IDENTIFIER_TYPE, HIR_STRUCT_TYPE } from '../hir-types';
 
+import { Long } from 'samlang-core-utils';
+
+it('HIR_BINARY test', () => {
+  HIR_BINARY({
+    name: '',
+    operator: '-',
+    e1: HIR_ZERO,
+    e2: HIR_INT(Long.fromString('-9223372036854775808')),
+  });
+});
+
 it('debugPrintHighIRStatement works', () => {
   expect(
     debugPrintHighIRStatement(

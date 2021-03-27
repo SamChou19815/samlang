@@ -31,7 +31,6 @@ const fixExpressionType = (
 ): SamlangExpression => {
   const typeFixItself = (type: Type, expected: Type | null): Type => {
     const resolvedPotentiallyUndecidedType = resolution.resolveType(type);
-    // istanbul ignore next
     const resolvedType = resolveType(resolvedPotentiallyUndecidedType, () => unitType);
     if (expected === null) {
       return resolvedType;

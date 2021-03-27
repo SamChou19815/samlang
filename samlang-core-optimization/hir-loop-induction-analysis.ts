@@ -180,8 +180,9 @@ const mergeVariableAdditionIntoDerivedInductionVariable = (
     anotherVariable.immediate
   );
   // istanbul ignore next
-  if (mergedMultiplier == null || mergedImmediate == null) return null;
-  return { baseName: existing.baseName, multiplier: mergedMultiplier, immediate: mergedImmediate };
+  return mergedMultiplier == null || mergedImmediate == null
+    ? null
+    : { baseName: existing.baseName, multiplier: mergedMultiplier, immediate: mergedImmediate };
 };
 
 const tryMergeIntoDerivedInductionVariableWithoutSwap = (
@@ -361,11 +362,8 @@ export const extractBasicInductionVariables_EXPOSED_FOR_TESTING = (
   const allBasicInductionVariables: GeneralBasicInductionVariableWithLoopValueCollector[] = [];
   const loopVariablesThatAreNotBasicInductionVariables: GeneralHighIRLoopVariables[] = [];
   loopVariables.forEach((loopVariable) => {
-    // istanbul ignore next
     if (loopVariable.loopValue.__type__ !== 'HighIRVariableExpression') {
-      // istanbul ignore next
       loopVariablesThatAreNotBasicInductionVariables.push(loopVariable);
-      // istanbul ignore next
       return;
     }
     const basicInductionLoopIncrementCollector = loopVariable.loopValue.name;
@@ -384,9 +382,7 @@ export const extractBasicInductionVariables_EXPOSED_FOR_TESTING = (
         return null;
       })
       .find(isNotNull);
-    // istanbul ignore next
     if (incrementAmount == null) {
-      // istanbul ignore next
       loopVariablesThatAreNotBasicInductionVariables.push(loopVariable);
     } else {
       allBasicInductionVariables.push({
@@ -458,6 +454,21 @@ export const removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING = (
   return internalOptimizeHighIRStatementsByDCE(restStatements, liveVariableSet);
 };
 
+export const expressionIsLoopInvariant_EXPOSED_FOR_TESTING = (
+  expression: HighIRExpression,
+  nonLoopInvariantVariables: ReadonlySet<string>
+): boolean => {
+  switch (expression.__type__) {
+    case 'HighIRIntLiteralExpression':
+      return true;
+    case 'HighIRNameExpression':
+      // We are doing algebraic operations here. Name is hopeless.
+      return false;
+    case 'HighIRVariableExpression':
+      return !nonLoopInvariantVariables.has(expression.name);
+  }
+};
+
 /**
  * @param whileStatement a while statement assuming all the loop invariant statements are already
  * hoisted out.
@@ -468,19 +479,8 @@ const extractOptimizableWhileLoop = (
   whileStatement: HighIRWhileStatement,
   nonLoopInvariantVariables: ReadonlySet<string>
 ): HighIROptimizableWhileLoop | null => {
-  const expressionIsLoopInvariant = (expression: HighIRExpression): boolean => {
-    // istanbul ignore next
-    switch (expression.__type__) {
-      case 'HighIRIntLiteralExpression':
-        return true;
-      case 'HighIRNameExpression':
-        // We are doing algebraic operations here. Name is hopeless.
-        // istanbul ignore next
-        return false;
-      case 'HighIRVariableExpression':
-        return !nonLoopInvariantVariables.has(expression.name);
-    }
-  };
+  const expressionIsLoopInvariant = (expression: HighIRExpression): boolean =>
+    expressionIsLoopInvariant_EXPOSED_FOR_TESTING(expression, nonLoopInvariantVariables);
 
   // Phase 1: Check the structure for loop guard.
   const loopGuardStructure = extractLoopGuardStructure_EXPOSED_FOR_TESTING(
