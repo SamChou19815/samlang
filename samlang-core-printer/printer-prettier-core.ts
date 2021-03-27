@@ -205,7 +205,6 @@ const intermediateDocumentFitsInAvailableWidth = (
   let remainingWidth = availableWidth;
   let doc = document;
   while (remainingWidth >= 0) {
-    // istanbul ignore next
     switch (doc.__type__) {
       case 'NIL':
       case 'LINE':

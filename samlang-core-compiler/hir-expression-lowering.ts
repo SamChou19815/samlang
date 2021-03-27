@@ -90,7 +90,6 @@ class HighIRLoweringVariableContext extends LocalStackedContext<HighIRExpression
   }
 
   bind(name: string, value: HighIRExpression): void {
-    // istanbul ignore next
     this.addLocalValueType(name, value, () => {});
   }
 }
@@ -705,7 +704,6 @@ class HighIRExpressionLoweringManager {
     expression: SamlangExpression
   ): HighIRExpressionLoweringResult {
     if (expression.__type__ === 'LiteralExpression' && expression.literal.type === 'BoolLiteral') {
-      // istanbul ignore next
       return { statements: [], expression: expression.literal.value ? HIR_TRUE : HIR_FALSE };
     }
     if (expression.__type__ !== 'BinaryExpression') {

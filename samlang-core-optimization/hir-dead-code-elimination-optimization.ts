@@ -56,9 +56,7 @@ export const collectUseFromHighIRStatement = (
     case 'HighIRStructInitializationStatement':
       statement.expressionList.forEach((it) => collectUseFromHighIRExpression(it, set));
       return;
-    // istanbul ignore next
     case 'HighIRReturnStatement':
-      // istanbul ignore next
       collectUseFromHighIRExpression(statement.expression, set);
   }
 };
@@ -150,7 +148,7 @@ const optimizeHighIRStatement = (
       statement.expressionList.forEach((it) => collectUseFromHighIRExpression(it, set));
       return [statement];
     case 'HighIRReturnStatement':
-      collectUseFromHighIRExpression(statement.expression, set);
+      collectUseFromHighIRStatement(statement, set);
       return [statement];
   }
 };

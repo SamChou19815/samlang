@@ -1,6 +1,6 @@
 import { Position, Range } from 'samlang-core-ast/common-nodes';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { checkNotNull } from 'samlang-core-utils';
+import { assert, checkNotNull } from 'samlang-core-utils';
 
 const characterIsWhitespace = (character: string): boolean => /\s/.test(character);
 const characterIsNumber = (character: string): boolean =>
@@ -454,8 +454,7 @@ const getNextToken = (
       content: { __type__: 'Error', content: errorTokenContent },
     };
   } catch (e) {
-    // istanbul ignore next
-    if (!(e instanceof EOF)) throw e;
+    assert(e instanceof EOF);
     return null;
   }
 };

@@ -10,7 +10,7 @@ import type {
   SamlangModule,
 } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { isNotNull, LocalStackedContext } from 'samlang-core-utils';
+import { error, isNotNull, LocalStackedContext } from 'samlang-core-utils';
 
 export default class ModuleTypeChecker {
   constructor(
@@ -112,11 +112,7 @@ export default class ModuleTypeChecker {
     const localTypingContext = new LocalStackedContext<Type>();
     const { isMethod, typeParameters, type, parameters, body } = memberDefinition;
     if (isMethod) {
-      // istanbul ignore next
-      localTypingContext.addLocalValueType('this', accessibleGlobalTypingContext.thisType, () => {
-        // istanbul ignore next
-        throw new Error();
-      });
+      localTypingContext.addLocalValueType('this', accessibleGlobalTypingContext.thisType, error);
     }
     const contextWithAdditionalTypeParameters = accessibleGlobalTypingContext.withAdditionalTypeParameters(
       typeParameters

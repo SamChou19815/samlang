@@ -14,6 +14,7 @@ class Test {
   );
 
   expect(state.allErrors.length).toBe(1);
+  expect(state.allModulesWithError.length).toBe(1);
   expect(state.getErrors(new ModuleReference(['test-test']))).toEqual([]);
   expect(state.getErrors(new ModuleReference(['test'])).map((it) => it.toString())).toEqual([
     'test.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`.',
@@ -195,7 +196,7 @@ class Test1(val a: int) {
   ]);
 });
 
-it('LanguageServices.queryDefinitionLocation test', () => {
+it('LanguageServices.queryDefinitionLocation test 1', () => {
   const moduleReference1 = new ModuleReference(['Test1']);
   const moduleReference2 = new ModuleReference(['Test2']);
   const moduleReference3 = new ModuleReference(['Test3']);
@@ -272,6 +273,44 @@ class Test1(val a: int) {
   expect(actualLocation6?.moduleReference.toString()).toEqual(moduleReference1.toString());
   expect(actualLocation6?.range.toString()).toEqual(
     new Range(new Position(9, 6), new Position(9, 16)).toString()
+  );
+});
+
+it('LanguageServices.queryDefinitionLocation test 2', () => {
+  const moduleReference1 = new ModuleReference(['Test1']);
+  const state = new LanguageServiceState([
+    [
+      moduleReference1,
+      `class Test1(val a: int) {
+  function test(): int = {
+    val [c, b] = [1, 2];
+    val {a} = {a:1};
+    a + b + c
+  }
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => '');
+
+  expect(state.allErrors.map((it) => it.toString())).toEqual([]);
+
+  const actualLocation0 = service.queryDefinitionLocation(moduleReference1, new Position(4, 4));
+  expect(actualLocation0?.moduleReference.toString()).toEqual(moduleReference1.toString());
+  expect(actualLocation0?.range.toString()).toEqual(
+    new Range(new Position(3, 4), new Position(3, 20)).toString()
+  );
+
+  const actualLocation1 = service.queryDefinitionLocation(moduleReference1, new Position(4, 8));
+  expect(actualLocation1?.moduleReference.toString()).toEqual(moduleReference1.toString());
+  expect(actualLocation1?.range.toString()).toEqual(
+    new Range(new Position(2, 4), new Position(2, 24)).toString()
+  );
+
+  const actualLocation2 = service.queryDefinitionLocation(moduleReference1, new Position(4, 12));
+  expect(actualLocation2?.moduleReference.toString()).toEqual(moduleReference1.toString());
+  expect(actualLocation2?.range.toString()).toEqual(
+    new Range(new Position(2, 4), new Position(2, 24)).toString()
   );
 });
 

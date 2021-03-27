@@ -11,10 +11,8 @@ import {
 } from 'samlang-core-ast/common-names';
 import {
   LLVM_INT_TYPE,
-  LLVM_BOOL_TYPE,
   LLVM_STRING_TYPE,
   LLVM_STRUCT_TYPE,
-  LLVM_FUNCTION_TYPE,
   LLVM_INT,
   LLVM_NAME,
   LLVM_VARIABLE,
@@ -35,6 +33,56 @@ const ZERO = LLVM_INT(0);
 const ONE = LLVM_INT(1);
 const EIGHT = LLVM_INT(8);
 
+it('interpretLLVMModule arithmetic panic test', () => {
+  expect(() =>
+    interpretLLVMModule({
+      globalVariables: [{ name: 'HW', content: 'Hello World!' }],
+      typeDefinitions: [],
+      functions: [
+        {
+          name: ENCODED_COMPILED_PROGRAM_MAIN,
+          parameters: [],
+          returnType: LLVM_INT_TYPE,
+          body: [
+            LLVM_BINARY({
+              resultVariable: '',
+              operator: '/',
+              operandType: LLVM_INT_TYPE,
+              v1: LLVM_VARIABLE('not_found'),
+              v2: ZERO,
+            }),
+            LLVM_RETURN(ZERO, LLVM_INT_TYPE),
+          ],
+        },
+      ],
+    })
+  ).toThrow();
+
+  expect(() =>
+    interpretLLVMModule({
+      globalVariables: [{ name: 'HW', content: 'Hello World!' }],
+      typeDefinitions: [],
+      functions: [
+        {
+          name: ENCODED_COMPILED_PROGRAM_MAIN,
+          parameters: [],
+          returnType: LLVM_INT_TYPE,
+          body: [
+            LLVM_BINARY({
+              resultVariable: '',
+              operator: '%',
+              operandType: LLVM_INT_TYPE,
+              v1: LLVM_VARIABLE('not_found'),
+              v2: ZERO,
+            }),
+            LLVM_RETURN(ZERO, LLVM_INT_TYPE),
+          ],
+        },
+      ],
+    })
+  ).toThrow();
+});
+
 it('interpretLLVMModule hello world test', () => {
   expect(
     interpretLLVMModule({
@@ -46,6 +94,20 @@ it('interpretLLVMModule hello world test', () => {
           parameters: [],
           returnType: LLVM_INT_TYPE,
           body: [
+            LLVM_BINARY({
+              resultVariable: '',
+              operator: '<',
+              operandType: LLVM_INT_TYPE,
+              v1: LLVM_VARIABLE('not_found'),
+              v2: ZERO,
+            }),
+            LLVM_BINARY({
+              resultVariable: '',
+              operator: '>',
+              operandType: LLVM_INT_TYPE,
+              v1: ZERO,
+              v2: ZERO,
+            }),
             LLVM_CAST({
               resultVariable: 'hw',
               resultType: LLVM_STRING_TYPE(),
