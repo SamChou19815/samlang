@@ -297,6 +297,12 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on while statement 1/n.'
             initialValue: HIR_INT(10),
             loopValue: HIR_VARIABLE('_tmp_n', HIR_INT_TYPE),
           },
+          {
+            name: 'unused',
+            type: HIR_INT_TYPE,
+            initialValue: HIR_INT(10),
+            loopValue: HIR_INT(20),
+          },
         ],
         statements: [
           HIR_BINARY({
@@ -313,6 +319,11 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on while statement 1/n.'
                 type: HIR_INT_TYPE,
                 pointerExpression: HIR_ZERO,
                 index: 0,
+              }),
+              HIR_CAST({
+                name: '_',
+                type: HIR_INT_TYPE,
+                assignedExpression: HIR_VARIABLE('unused', HIR_INT_TYPE),
               }),
               HIR_STRUCT_INITIALIZATION({
                 structVariableName: 's',

@@ -251,6 +251,31 @@ it('optimizeHighIRFunctionsByInlining abort test', () => {
     ],
     new OptimizationResourceAllocator()
   );
+
+  optimizeHighIRFunctionsByInlining(
+    [
+      {
+        name: 'loop',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        body: [
+          HIR_FUNCTION_CALL({
+            functionExpression: HIR_NAME('loop', HIR_FUNCTION_TYPE([], HIR_INT_TYPE)),
+            functionArguments: [],
+            returnType: HIR_INT_TYPE,
+          }),
+          HIR_RETURN(HIR_ZERO),
+        ],
+      },
+      {
+        name: '',
+        parameters: [],
+        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        body: statements,
+      },
+    ],
+    new OptimizationResourceAllocator()
+  );
 });
 
 it('optimizeFunctionsByInlining test 1', () => {

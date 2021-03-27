@@ -298,7 +298,6 @@ const optimizeHighIRFunctionsByInlining = (
     if (functionsThatCanBeInlined.size === 0) return tempFunctions;
     const allFunctions = Object.fromEntries(tempFunctions.map((it) => [it.name, it]));
     tempFunctions = tempFunctions.map((oldFunction) => {
-      // istanbul ignore next
       if (!functionsThatCanPerformInlining.has(oldFunction.name)) return oldFunction;
       return performInlineRewriteOnFunction(
         oldFunction,

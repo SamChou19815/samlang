@@ -166,7 +166,7 @@ const mergeConstantOperationIntoDerivedInductionVariable = (
   return null;
 };
 
-const mergeVariableAdditionIntoDerivedInductionVariable = (
+export const mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TESTING = (
   existing: DerivedInductionVariable,
   anotherVariable: DerivedInductionVariable
 ): DerivedInductionVariable | null => {
@@ -179,7 +179,6 @@ const mergeVariableAdditionIntoDerivedInductionVariable = (
     existing.immediate,
     anotherVariable.immediate
   );
-  // istanbul ignore next
   return mergedMultiplier == null || mergedImmediate == null
     ? null
     : { baseName: existing.baseName, multiplier: mergedMultiplier, immediate: mergedImmediate };
@@ -199,7 +198,10 @@ const tryMergeIntoDerivedInductionVariableWithoutSwap = (
   ) {
     const anotherVariable = existingSet[binaryStatement.e2.name];
     if (anotherVariable != null) {
-      const merged = mergeVariableAdditionIntoDerivedInductionVariable(existing, anotherVariable);
+      const merged = mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TESTING(
+        existing,
+        anotherVariable
+      );
       if (merged != null) {
         existingSet[binaryStatement.name] = merged;
         return true;

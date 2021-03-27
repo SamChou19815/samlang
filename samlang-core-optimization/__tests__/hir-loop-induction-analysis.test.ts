@@ -1,5 +1,6 @@
 import extractOptimizableWhileLoop, {
   getGuardOperator_EXPOSED_FOR_TESTING,
+  mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TESTING,
   extractLoopGuardStructure_EXPOSED_FOR_TESTING,
   expressionIsLoopInvariant_EXPOSED_FOR_TESTING,
   extractBasicInductionVariables_EXPOSED_FOR_TESTING,
@@ -45,6 +46,23 @@ it('expressionIsLoopInvariant test', () => {
     expressionIsLoopInvariant_EXPOSED_FOR_TESTING(HIR_NAME('ss', HIR_BOOL_TYPE), new Set())
   ).toBe(false);
   expect(expressionIsLoopInvariant_EXPOSED_FOR_TESTING(HIR_ZERO, new Set())).toBe(true);
+});
+
+it('mergeVariableAdditionIntoDerivedInductionVariable test', () => {
+  expect(
+    mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TESTING(
+      {
+        baseName: 'a',
+        multiplier: HIR_ONE,
+        immediate: HIR_ONE,
+      },
+      {
+        baseName: 'a',
+        multiplier: HIR_VARIABLE('vv', HIR_INT_TYPE),
+        immediate: HIR_ONE,
+      }
+    )
+  ).toBeNull();
 });
 
 it('extractLoopGuardStructure can reject not optimizable loops.', () => {
