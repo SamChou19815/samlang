@@ -127,7 +127,7 @@ class Test2 {
   expect(state.getErrors(test2ModuleReference)).toEqual([]);
 });
 
-it('LanguageServices type query test', () => {
+it('LanguageServices type query test 1', () => {
   const testModuleReference = new ModuleReference(['Test']);
   const test2ModuleReference = new ModuleReference(['Test2']);
   const state = new LanguageServiceState([
@@ -194,6 +194,37 @@ class Test1(val a: int) {
       value: '() -> int',
     },
   ]);
+});
+
+it('LanguageServices type query test 2', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const test2ModuleReference = new ModuleReference(['Test2']);
+  const state = new LanguageServiceState([
+    [
+      testModuleReference,
+      `/** Test */
+class Test1 {
+  /** test */
+  // function test(): int = "haha"
+
+  function test2(): int = Test1.test()
+}
+`,
+    ],
+    [
+      test2ModuleReference,
+      `import {Test1} from Test
+class Test2(val a: int) {
+  method test(): int = 1
+
+  function test2(): int = Test1.test()
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => '');
+
+  expect(service.queryForHover(test2ModuleReference, new Position(4, 36))?.[0]).toBeUndefined();
 });
 
 it('LanguageServices.queryDefinitionLocation test 1', () => {
@@ -314,6 +345,58 @@ it('LanguageServices.queryDefinitionLocation test 2', () => {
   );
 });
 
+it('LanguageServices.queryDefinitionLocation test 3', () => {
+  const moduleReference1 = new ModuleReference(['Test1']);
+  const state = new LanguageServiceState([
+    [
+      moduleReference1,
+      `class Test1(val a: int) {
+  function test(): int = {
+    val [c, b] = [1, 2];
+
+    a + b + c
+  }
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => '');
+  expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 4))).toBeNull();
+});
+
+it('LanguageServices type query test 4', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const test2ModuleReference = new ModuleReference(['Test2']);
+  const state = new LanguageServiceState([
+    [
+      testModuleReference,
+      `/** Test */
+class Test1 {
+  /** test */
+  // function test(): int = -1
+
+  function test2(): int = stringToInt("")
+}
+`,
+    ],
+    [
+      test2ModuleReference,
+      `import {Test1} from Test
+class Test2(val a: int) {
+  method test(): int = -1
+
+  function test2(): int = panic("")
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => '');
+
+  expect(service.queryDefinitionLocation(testModuleReference, new Position(4, 33))).toBeNull();
+  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(2, 23))).toBeNull();
+  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 29))).toBeNull();
+});
+
 it('LanguageServices.queryFoldingRanges test', () => {
   const testModuleReference = new ModuleReference(['Test']);
   const state = new LanguageServiceState([
@@ -357,7 +440,7 @@ class Main {
   expect(service.queryFoldingRanges(new ModuleReference(['dsafadfasd']))).toBe(null);
 });
 
-it('LanguageServices autocompletion test', () => {
+it('LanguageServices autocompletion test 1', () => {
   const testModuleReference = new ModuleReference(['Test']);
   const state = new LanguageServiceState([
     [
@@ -429,6 +512,99 @@ class Main {
       type: 'List<string>',
     },
   ]);
+  expect(service.autoComplete(testModuleReference, new Position(18, 41))).toEqual([
+    {
+      isSnippet: false,
+      kind: CompletionItemKinds.FUNCTION,
+      name: 'sam(): Developer',
+      text: 'sam()',
+      type: '() -> Developer',
+    },
+  ]);
+});
+
+it('LanguageServices autocompletion test 2', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const state = new LanguageServiceState([
+    [
+      testModuleReference,
+      `
+class List<T>(Nil(unit), Cons([T * List<T>])) {
+  function <T> of(t: T): List<T> =
+    Cons([t, Nil({})])
+  method cons(t: T): List<T> =
+    Cons([t, this])
+  private test(): unit = {}
+}
+class Developer(
+  val name: string, val github: string,
+  val projects: List<string>
+) {
+  function sam(): Developer = {
+    val l = List.of("SAMLANG").cons("...")
+    val github = "SamChou19815"
+    { name: "Sam Zhou", github, projects: l }.
+  }
+}
+class Main {
+  function main(): Developer = Developer.sam()
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => '');
+
+  expect(service.autoComplete(testModuleReference, new Position(13, 31))).toEqual([
+    {
+      isSnippet: true,
+      kind: CompletionItemKinds.METHOD,
+      name: 'cons(a0: T): List<T>',
+      text: 'cons($0)$1',
+      type: '(T) -> List<T>',
+    },
+  ]);
+});
+
+it('LanguageServices autocompletion test 3', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const state = new LanguageServiceState([[testModuleReference, '.']]);
+  const service = new LanguageServices(state, () => '');
+
+  expect(service.autoComplete(testModuleReference, new Position(0, 1))).toEqual([]);
+});
+
+it('LanguageServices autocompletion test 4', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const state = new LanguageServiceState([
+    [
+      testModuleReference,
+      `
+class Main {
+  function main(): Developer = Developer.
+}
+  `,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => '');
+
+  expect(service.autoComplete(testModuleReference, new Position(2, 41))).toEqual([]);
+});
+
+it('LanguageServices autocompletion test 5', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const state = new LanguageServiceState([
+    [
+      testModuleReference,
+      `
+class Main {
+  function main(a: Developer): Developer = a.
+}
+  `,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => '');
+
+  expect(service.autoComplete(testModuleReference, new Position(2, 45))).toEqual([]);
 });
 
 it('LanguageServices format test with good programs', () => {

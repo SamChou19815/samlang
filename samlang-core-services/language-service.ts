@@ -28,6 +28,8 @@ import {
   typeCheckSourcesIncrementally,
   typeCheckSingleModuleSource,
 } from 'samlang-core-checker';
+// eslint-disable-next-line import/no-internal-modules
+import type { ClassTypingContext } from 'samlang-core-checker/typing-context';
 import {
   ReadonlyGlobalErrorCollector,
   CompileTimeError,
@@ -265,7 +267,6 @@ export class LanguageServices {
         .getCheckedModule(fetchedFunctionModuleReference)
         ?.classes?.find((it) => it.name === className)
         ?.members?.find((it) => it.name === functionName);
-      // istanbul ignore next
       if (relevantFunction == null) return null;
       const typeContent = { language: 'samlang', value: prettyPrintType(expression.type) };
       const document = relevantFunction.documentText;
@@ -304,7 +305,6 @@ export class LanguageServices {
   queryDefinitionLocation(moduleReference: ModuleReference, position: Position): Location | null {
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     if (expression == null) return null;
-    // istanbul ignore next
     switch (expression.__type__) {
       case 'LiteralExpression':
       case 'ThisExpression':
@@ -321,12 +321,9 @@ export class LanguageServices {
           );
           return { moduleReference: moduleReferenceOfClass, range: classDefinition.range };
         }
-        const classMemberDefinition = this.state.classMemberLocationLookup.get(
-          moduleReference,
-          position
+        const classMemberDefinition = checkNotNull(
+          this.state.classMemberLocationLookup.get(moduleReference, position)
         );
-        // istanbul ignore next
-        if (classMemberDefinition == null) return null;
         const range = LanguageServices.findLocalVariableDefinitionDefiningStatementRange(
           classMemberDefinition.body,
           expression.name
@@ -425,7 +422,7 @@ export class LanguageServices {
       }
     });
     if (definingStatement != null) return definingStatement.range;
-    const range = checkNotNull(
+    return (
       statements
         .map((statement) =>
           LanguageServices.findLocalVariableDefinitionDefiningStatementRange(
@@ -433,9 +430,8 @@ export class LanguageServices {
             variableName
           )
         )
-        .filter(isNotNull)[0]
+        .filter(isNotNull)[0] ?? null
     );
-    return range;
   }
 
   private findClassMemberLocation(
@@ -457,18 +453,11 @@ export class LanguageServices {
     moduleReference: ModuleReference,
     position: Position
   ): readonly AutoCompletionItem[] {
-    // istanbul ignore next
-    if (position.column < 0) return [];
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     const classOfExpression = this.state.classLocationLookup.get(moduleReference, position);
-    // istanbul ignore next
     if (expression == null || classOfExpression == null) return [];
     if (expression.__type__ === 'ClassMemberExpression') {
-      // istanbul ignore next
-      const relevantClassType = this.state.globalTypingContext.get(expression.moduleReference)?.[
-        expression.className
-      ];
-      // istanbul ignore next
+      const relevantClassType = this.getClassType(expression.moduleReference, expression.className);
       if (relevantClassType == null) return [];
       return Object.entries(relevantClassType.functions).map(([name, typeInformation]) => {
         return LanguageServices.getCompletionResultFromTypeInformation(
@@ -483,18 +472,14 @@ export class LanguageServices {
       case 'FieldAccessExpression':
       case 'MethodAccessExpression': {
         const objectExpressionType = expression.expression.type;
-        // istanbul ignore next
-        if (objectExpressionType.type !== 'IdentifierType') return [];
+        assert(objectExpressionType.type === 'IdentifierType');
         type = objectExpressionType;
         break;
       }
       default:
         return [];
     }
-    const relevantClassType =
-      // istanbul ignore next
-      this.state.globalTypingContext.get(type.moduleReference)?.[type.identifier];
-    // istanbul ignore next
+    const relevantClassType = this.getClassType(type.moduleReference, type.identifier);
     if (relevantClassType == null) return [];
     const completionResults: AutoCompletionItem[] = [];
     const isInsideClass = classOfExpression === type.identifier;
@@ -510,7 +495,6 @@ export class LanguageServices {
       });
     }
     Object.entries(relevantClassType.methods).forEach(([name, typeInformation]) => {
-      // istanbul ignore next
       if (isInsideClass || typeInformation.isPublic) {
         completionResults.push(
           LanguageServices.getCompletionResultFromTypeInformation(
@@ -522,6 +506,13 @@ export class LanguageServices {
       }
     });
     return completionResults;
+  }
+
+  private getClassType(
+    moduleReference: ModuleReference,
+    className: string
+  ): ClassTypingContext | undefined {
+    return this.state.globalTypingContext.get(moduleReference)?.[className];
   }
 
   private static getCompletionResultFromTypeInformation(
@@ -561,7 +552,6 @@ export class LanguageServices {
   }
 
   private static getInsertText(name: string, argumentLength: number): readonly [string, boolean] {
-    // istanbul ignore next
     if (argumentLength === 0) return [`${name}()`, false];
     const items: string[] = [];
     for (let i = 0; i < argumentLength; i += 1) {

@@ -131,7 +131,6 @@ const optimizeHighIRStatement = (
       const statements = internalOptimizeHighIRStatementsByDCE(statement.statements, set);
       const loopVariables = usedLoopVariablesInsideLoop
         .map((variable) => {
-          // istanbul ignore next
           if (!set.has(variable.name)) return null;
           collectUseFromHighIRExpression(variable.initialValue, set);
           return variable;
