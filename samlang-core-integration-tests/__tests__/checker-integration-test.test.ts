@@ -33,7 +33,7 @@ const expectedErrors: readonly string[] = [
   'illegal-shadow.sam:22:9-22:10: [Collision]: Name `a` collides with a previously defined name.',
   'illegal-shadow.sam:3:7-3:8: [Collision]: Name `A` collides with a previously defined name.',
   'illegal-shadow.sam:7:12-7:16: [Collision]: Name `test` collides with a previously defined name.',
-  'invalid-property-declaration-syntax.sam:2:12-2:13: [SyntaxError]: Expecting val, seeing a.',
+  'invalid-property-declaration-syntax.sam:2:12-2:13: [SyntaxError]: Expected: val, actual: a.',
   'multiple-type-errors.sam:3:35-3:40: [UnexpectedType]: Expected: `int`, actual: `string`.',
   'multiple-type-errors.sam:3:43-3:48: [UnexpectedType]: Expected: `int`, actual: `string`.',
   'overflow-int.sam:3:26-3:56: [SyntaxError]: Not a 64-bit integer.',
