@@ -141,7 +141,7 @@ export class BaseParser {
     if (content === token) {
       this.consume();
     } else {
-      this.report(range, `Expecting ${token}, seeing ${samlangTokenContentToString(content)}.`);
+      this.report(range, `Expected: ${token}, actual: ${samlangTokenContentToString(content)}.`);
     }
     return range;
   }
@@ -152,7 +152,7 @@ export class BaseParser {
       this.consume();
       return { range, variable: content.content };
     }
-    this.report(range, `Expecting lowerId, seeing ${samlangTokenContentToString(content)}.`);
+    this.report(range, `Expected: lowerId, actual: ${samlangTokenContentToString(content)}.`);
     return { range, variable: 'MISSING' };
   }
 
@@ -162,7 +162,7 @@ export class BaseParser {
       this.consume();
       return { range, variable: content.content };
     }
-    this.report(range, `Expecting lowerId, seeing ${samlangTokenContentToString(content)}.`);
+    this.report(range, `Expected: upperId, actual: ${samlangTokenContentToString(content)}.`);
     return { range, variable: 'MISSING' };
   }
 
@@ -972,7 +972,7 @@ export default class SamlangModuleParser extends BaseParser {
     // We failed to parse the base expression, so we stick in a dummy value here.
     this.report(
       peeked.range,
-      `Expecting expression, seeing ${samlangTokenContentToString(peeked.content)}`
+      `Expected: expression, actual: ${samlangTokenContentToString(peeked.content)}`
     );
     return EXPRESSION_INT(peeked.range, 0);
   };
@@ -1106,7 +1106,7 @@ export default class SamlangModuleParser extends BaseParser {
     }
     this.report(
       peeked.range,
-      `Expecting type, seeing ${samlangTokenContentToString(peeked.content)}`
+      `Expecting: type, actual: ${samlangTokenContentToString(peeked.content)}`
     );
     return UndecidedTypes.next();
   };
