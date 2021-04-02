@@ -197,6 +197,8 @@ const postProcessBlockComment = (blockComment: string): string =>
     .filter((line) => line.length > 0)
     .join(' ');
 
+type TypedComment = { readonly type: 'line' | 'block' | 'doc'; readonly text: string };
+
 export default class SamlangModuleParser extends BaseParser {
   private classSourceMap = new Map<string, ModuleReference>();
 
@@ -409,26 +411,32 @@ export default class SamlangModuleParser extends BaseParser {
   };
 
   private parseDocComments = (): string | null => {
+    const documentTextList = this.collectPrecedingComments()
+      .filter((it) => it.type === 'doc')
+      .map(({ text }) => postProcessBlockComment(text.substring(3, text.length - 2)));
+    return documentTextList.length === 0 ? null : documentTextList.join(' ');
+  };
+
+  private collectPrecedingComments = (): readonly TypedComment[] => {
     this.unconsumeComments();
-    const documentTextList: string[] = [];
+    const comments: TypedComment[] = [];
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const token = this.simplePeek().content;
       if (typeof token === 'string') break;
       if (token.__type__ === 'LineComment') {
         this.consume();
+        comments.push({ type: 'line', text: token.content });
         continue;
       }
       if (token.__type__ !== 'BlockComment') break;
-      if (!token.content.startsWith('/**')) {
-        this.consume();
-        continue;
-      }
       this.consume();
-      const rawText = token.content;
-      documentTextList.push(postProcessBlockComment(rawText.substring(3, rawText.length - 2)));
+      comments.push({
+        type: token.content.startsWith('/**') ? 'doc' : 'block',
+        text: token.content,
+      });
     }
-    return documentTextList.length === 0 ? null : documentTextList.join(' ');
+    return comments;
   };
 
   parseExpression = (): SamlangExpression => this.parseMatch();
