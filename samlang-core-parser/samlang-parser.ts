@@ -6,7 +6,6 @@ import {
 } from './samlang-lexer';
 
 import {
-  ModuleReference,
   Type,
   UndecidedTypes,
   unitType,
@@ -15,8 +14,10 @@ import {
   stringType,
   tupleType,
   functionType,
-  Range,
   Position,
+  Range,
+  ModuleReference,
+  TypedComment,
 } from 'samlang-core-ast/common-nodes';
 import {
   BinaryOperator,
@@ -196,8 +197,6 @@ const postProcessBlockComment = (blockComment: string): string =>
     .map((line) => (line.startsWith('*') ? line.substring(1).trim() : line.trimEnd()))
     .filter((line) => line.length > 0)
     .join(' ');
-
-type TypedComment = { readonly type: 'line' | 'block' | 'doc'; readonly text: string };
 
 export default class SamlangModuleParser extends BaseParser {
   private classSourceMap = new Map<string, ModuleReference>();
@@ -413,7 +412,7 @@ export default class SamlangModuleParser extends BaseParser {
   private parseDocComments = (): string | null => {
     const documentTextList = this.collectPrecedingComments()
       .filter((it) => it.type === 'doc')
-      .map(({ text }) => postProcessBlockComment(text.substring(3, text.length - 2)));
+      .map(({ text }) => text);
     return documentTextList.length === 0 ? null : documentTextList.join(' ');
   };
 
@@ -426,14 +425,20 @@ export default class SamlangModuleParser extends BaseParser {
       if (typeof token === 'string') break;
       if (token.__type__ === 'LineComment') {
         this.consume();
-        comments.push({ type: 'line', text: token.content });
+        comments.push({ type: 'line', text: token.content.substring(2).trim() });
         continue;
       }
       if (token.__type__ !== 'BlockComment') break;
       this.consume();
+      const isDocComment = token.content.startsWith('/**');
+      const rawText = token.content;
       comments.push({
-        type: token.content.startsWith('/**') ? 'doc' : 'block',
-        text: token.content,
+        type: isDocComment ? 'doc' : 'block',
+        text: postProcessBlockComment(
+          isDocComment
+            ? rawText.substring(3, rawText.length - 2)
+            : rawText.substring(2, rawText.length - 2)
+        ),
       });
     }
     return comments;

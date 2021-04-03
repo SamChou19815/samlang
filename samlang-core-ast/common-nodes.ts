@@ -231,6 +231,12 @@ export interface Location {
 
 /** SECTION 4: MISC */
 
+export type TypedComment = {
+  readonly type: 'line' | 'block' | 'doc';
+  /** The text in the comment, excluding the comment markers. */
+  readonly text: string;
+};
+
 /** A common interface for all AST nodes. */
 export interface Node {
   /** The range of the entire node. */
