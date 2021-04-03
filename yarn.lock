@@ -451,7 +451,7 @@ __metadata:
   dependencies:
     "@types/jest": ^26.0.22
     "@types/node": ^14.14.37
-    esbuild: ^0.11.2
+    esbuild: ^0.11.5
     esbuild-plugin-pnp: ^0.3.0
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
@@ -469,7 +469,7 @@ __metadata:
   resolution: "@dev-sam/samlang-demo@workspace:samlang-demo"
   dependencies:
     "@types/jest": ^26.0.22
-    esbuild: ^0.11.2
+    esbuild: ^0.11.5
     esbuild-plugin-pnp: ^0.3.0
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
@@ -2195,12 +2195,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"esbuild@npm:^0.11.2":
-  version: 0.11.2
-  resolution: "esbuild@npm:0.11.2"
+"esbuild@npm:^0.11.5":
+  version: 0.11.5
+  resolution: "esbuild@npm:0.11.5"
   bin:
     esbuild: bin/esbuild
-  checksum: 28e5d7d752b05f4712d3d154e586d8ee621af5507d95743e2728aa4c70a36c9a8abccf302bc58385a2d2344c76296eb6573513fb56e77f7e0c27a2d34eb14ec1
+  checksum: d4fdb966101ce44c9ecf9c847d82b28c368a8a43f2ef604036c1702ecc176677d4e757ee682997d3c972d9fa5024c8683cf15cd993176feae3ee7e6a0a61c189
   languageName: node
   linkType: hard
 
