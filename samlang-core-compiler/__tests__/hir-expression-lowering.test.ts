@@ -42,7 +42,11 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 
 const DUMMY_IDENTIFIER_TYPE = identifierType(ModuleReference.ROOT, 'Dummy');
-const THIS = EXPRESSION_THIS({ range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE });
+const THIS = EXPRESSION_THIS({
+  range: Range.DUMMY,
+  type: DUMMY_IDENTIFIER_TYPE,
+  precedingComments: [],
+});
 
 const expectCorrectlyLowered = (
   samlangExpression: SamlangExpression,
@@ -89,11 +93,11 @@ const expectCorrectlyLowered = (
 };
 
 it('Literal lowering works.', () => {
-  expectCorrectlyLowered(EXPRESSION_FALSE(Range.DUMMY), 'return 0;');
-  expectCorrectlyLowered(EXPRESSION_TRUE(Range.DUMMY), 'return 1;');
-  expectCorrectlyLowered(EXPRESSION_INT(Range.DUMMY, 0), 'return 0;');
+  expectCorrectlyLowered(EXPRESSION_FALSE(Range.DUMMY, []), 'return 0;');
+  expectCorrectlyLowered(EXPRESSION_TRUE(Range.DUMMY, []), 'return 1;');
+  expectCorrectlyLowered(EXPRESSION_INT(Range.DUMMY, [], 0), 'return 0;');
   expectCorrectlyLowered(
-    EXPRESSION_STRING(Range.DUMMY, 'foo'),
+    EXPRESSION_STRING(Range.DUMMY, [], 'foo'),
     "const GLOBAL_STRING_0 = 'foo';\nreturn GLOBAL_STRING_0;"
   );
 });
@@ -104,7 +108,7 @@ it('This lowering works.', () => {
 
 it('Variable lowering works.', () => {
   expectCorrectlyLowered(
-    EXPRESSION_VARIABLE({ range: Range.DUMMY, type: unitType, name: 'foo' }),
+    EXPRESSION_VARIABLE({ range: Range.DUMMY, type: unitType, name: 'foo', precedingComments: [] }),
     'return (foo: int);'
   );
 });
@@ -114,6 +118,7 @@ it('ClassMember lowering works.', () => {
     EXPRESSION_CLASS_MEMBER({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       typeArguments: [],
       moduleReference: ModuleReference.ROOT,
       className: 'A',
@@ -132,6 +137,7 @@ it('Lowering to StructConstructor works (1/n).', () => {
     EXPRESSION_TUPLE_CONSTRUCTOR({
       range: Range.DUMMY,
       type: tupleType([DUMMY_IDENTIFIER_TYPE]),
+      precedingComments: [],
       expressions: [THIS],
     }),
     `let _t0: (_Dummy) = [(_this: _Dummy)];
@@ -144,6 +150,7 @@ it('Lowering to StructConstructor works (2/n).', () => {
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
       type: identifierType(ModuleReference.ROOT, 'Foo'),
+      precedingComments: [],
       fieldDeclarations: [
         { range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE, name: 'foo', expression: THIS },
         { range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE, name: 'bar' },
@@ -161,6 +168,7 @@ it('Lowering to StructConstructor works (3/n).', () => {
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
       type: identifierType(ModuleReference.ROOT, 'Foo'),
+      precedingComments: [],
       tag: 'Foo',
       tagOrder: 1,
       data: THIS,
@@ -176,6 +184,7 @@ it('FieldAccess lowering works.', () => {
     EXPRESSION_FIELD_ACCESS({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       expression: THIS,
       fieldName: 'foo',
       fieldOrder: 0,
@@ -189,6 +198,7 @@ it('MethodAccess lowering works.', () => {
     EXPRESSION_METHOD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], unitType),
+      precedingComments: [],
       expression: THIS,
       methodName: 'foo',
     }),
@@ -202,6 +212,7 @@ it('Unary lowering works.', () => {
     EXPRESSION_UNARY({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       operator: '!',
       expression: THIS,
     }),
@@ -212,6 +223,7 @@ it('Unary lowering works.', () => {
     EXPRESSION_UNARY({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       operator: '-',
       expression: THIS,
     }),
@@ -224,6 +236,7 @@ it('FunctionCall family lowering works 1/n.', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: stringType,
+      precedingComments: [],
       functionName: 'intToString',
       argumentExpression: THIS,
     }),
@@ -236,6 +249,7 @@ it('FunctionCall family lowering works 2/n.', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       functionName: 'stringToInt',
       argumentExpression: THIS,
     }),
@@ -248,6 +262,7 @@ it('FunctionCall family lowering works 3/n.', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       functionName: 'println',
       argumentExpression: THIS,
     }),
@@ -260,9 +275,11 @@ it('FunctionCall family lowering works 4/n.', () => {
     EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       functionExpression: EXPRESSION_CLASS_MEMBER({
         range: Range.DUMMY,
         type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], intType),
+        precedingComments: [],
         typeArguments: [],
         moduleReference: new ModuleReference(['ModuleModule']),
         className: 'ImportedClass',
@@ -282,9 +299,11 @@ it('FunctionCall family lowering works 5/n.', () => {
     EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       functionExpression: EXPRESSION_METHOD_ACCESS({
         range: Range.DUMMY,
         type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], intType),
+        precedingComments: [],
         expression: THIS,
         methodName: 'fooBar',
       }),
@@ -300,10 +319,12 @@ it('FunctionCall family lowering works 6/n.', () => {
     EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       functionExpression: EXPRESSION_VARIABLE({
         range: Range.DUMMY,
         name: 'closure',
         type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], intType),
+        precedingComments: [],
       }),
       functionArguments: [THIS, THIS],
     }),
@@ -330,10 +351,12 @@ it('FunctionCall family lowering works 7/n.', () => {
     EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       functionExpression: EXPRESSION_VARIABLE({
         range: Range.DUMMY,
         name: 'closure',
         type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], unitType),
+        precedingComments: [],
       }),
       functionArguments: [THIS, THIS],
     }),
@@ -357,9 +380,11 @@ it('FunctionCall family lowering works 8/n.', () => {
     EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       functionExpression: EXPRESSION_CLASS_MEMBER({
         range: Range.DUMMY,
         type: functionType([DUMMY_IDENTIFIER_TYPE], unitType),
+        precedingComments: [],
         typeArguments: [],
         moduleReference: new ModuleReference(['']),
         className: 'C',
@@ -367,7 +392,7 @@ it('FunctionCall family lowering works 8/n.', () => {
         memberName: 'm1',
         memberNameRange: Range.DUMMY,
       }),
-      functionArguments: [EXPRESSION_INT(Range.DUMMY, 0)],
+      functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
     }),
     `let _t1: _Dummy = 0;
 _module__class_C_function_m1((_t1: _Dummy));
@@ -380,9 +405,11 @@ it('FunctionCall family lowering works 9/n.', () => {
     EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       functionExpression: EXPRESSION_CLASS_MEMBER({
         range: Range.DUMMY,
         type: functionType([intType], DUMMY_IDENTIFIER_TYPE),
+        precedingComments: [],
         typeArguments: [],
         moduleReference: new ModuleReference(['']),
         className: 'C',
@@ -390,7 +417,7 @@ it('FunctionCall family lowering works 9/n.', () => {
         memberName: 'm2',
         memberNameRange: Range.DUMMY,
       }),
-      functionArguments: [EXPRESSION_INT(Range.DUMMY, 0)],
+      functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
     }),
     `let _t0: _Dummy = _module__class_C_function_m2(0);
 let _t1: int = (_t0: _Dummy);
@@ -403,12 +430,14 @@ it('FunctionCall family lowering works 10/n.', () => {
     EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       functionExpression: EXPRESSION_VARIABLE({
         range: Range.DUMMY,
         name: 'closure',
         type: functionType([DUMMY_IDENTIFIER_TYPE], DUMMY_IDENTIFIER_TYPE),
+        precedingComments: [],
       }),
-      functionArguments: [EXPRESSION_INT(Range.DUMMY, 0)],
+      functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
     }),
     `let _t1: _Dummy = 0;
 let _t2: any = (closure: (any, any))[0];
@@ -432,7 +461,14 @@ return (_t10: int);`
 
 it('Normal binary lowering works.', () => {
   expectCorrectlyLowered(
-    EXPRESSION_BINARY({ range: Range.DUMMY, type: intType, operator: PLUS, e1: THIS, e2: THIS }),
+    EXPRESSION_BINARY({
+      range: Range.DUMMY,
+      type: intType,
+      precedingComments: [],
+      operator: PLUS,
+      e1: THIS,
+      e2: THIS,
+    }),
     'let _t0: int = (_this: _Dummy) + (_this: _Dummy);\nreturn (_t0: int);'
   );
 });
@@ -442,6 +478,7 @@ it('String concat binary lowering works.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: stringType,
+      precedingComments: [],
       operator: CONCAT,
       e1: THIS,
       e2: THIS,
@@ -456,9 +493,20 @@ it('Short circuiting binary lowering works.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: boolType,
+      precedingComments: [],
       operator: AND,
-      e1: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
-      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'bar' }),
+      e1: EXPRESSION_VARIABLE({
+        range: Range.DUMMY,
+        type: boolType,
+        name: 'foo',
+        precedingComments: [],
+      }),
+      e2: EXPRESSION_VARIABLE({
+        range: Range.DUMMY,
+        type: boolType,
+        name: 'bar',
+        precedingComments: [],
+      }),
     }),
     `let _t0: bool;
 if (foo: bool) {
@@ -473,9 +521,15 @@ return (_t0: bool);`
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: boolType,
+      precedingComments: [],
       operator: AND,
-      e1: EXPRESSION_TRUE(Range.DUMMY),
-      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
+      e1: EXPRESSION_TRUE(Range.DUMMY, []),
+      e2: EXPRESSION_VARIABLE({
+        range: Range.DUMMY,
+        type: boolType,
+        name: 'foo',
+        precedingComments: [],
+      }),
     }),
     'return (foo: bool);'
   );
@@ -484,9 +538,15 @@ return (_t0: bool);`
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: boolType,
+      precedingComments: [],
       operator: AND,
-      e1: EXPRESSION_FALSE(Range.DUMMY),
-      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
+      e1: EXPRESSION_FALSE(Range.DUMMY, []),
+      e2: EXPRESSION_VARIABLE({
+        range: Range.DUMMY,
+        type: boolType,
+        name: 'foo',
+        precedingComments: [],
+      }),
     }),
     'return 0;'
   );
@@ -496,8 +556,14 @@ return (_t0: bool);`
       range: Range.DUMMY,
       type: boolType,
       operator: OR,
-      e1: EXPRESSION_TRUE(Range.DUMMY),
-      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
+      precedingComments: [],
+      e1: EXPRESSION_TRUE(Range.DUMMY, []),
+      e2: EXPRESSION_VARIABLE({
+        range: Range.DUMMY,
+        type: boolType,
+        name: 'foo',
+        precedingComments: [],
+      }),
     }),
     'return 1;'
   );
@@ -506,9 +572,15 @@ return (_t0: bool);`
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: boolType,
+      precedingComments: [],
       operator: OR,
-      e1: EXPRESSION_FALSE(Range.DUMMY),
-      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
+      e1: EXPRESSION_FALSE(Range.DUMMY, []),
+      e2: EXPRESSION_VARIABLE({
+        range: Range.DUMMY,
+        type: boolType,
+        name: 'foo',
+        precedingComments: [],
+      }),
     }),
     'return (foo: bool);'
   );
@@ -517,9 +589,20 @@ return (_t0: bool);`
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: boolType,
+      precedingComments: [],
       operator: OR,
-      e1: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'foo' }),
-      e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: boolType, name: 'bar' }),
+      e1: EXPRESSION_VARIABLE({
+        range: Range.DUMMY,
+        type: boolType,
+        name: 'foo',
+        precedingComments: [],
+      }),
+      e2: EXPRESSION_VARIABLE({
+        range: Range.DUMMY,
+        type: boolType,
+        name: 'bar',
+        precedingComments: [],
+      }),
     }),
     `let _t0: bool;
 if (foo: bool) {
@@ -536,6 +619,7 @@ it('Lambda lowering works (1/n).', () => {
     EXPRESSION_LAMBDA({
       range: Range.DUMMY,
       type: functionType([], unitType),
+      precedingComments: [],
       parameters: [['a', unitType]],
       captured: { a: unitType },
       body: THIS,
@@ -557,6 +641,7 @@ it('Lambda lowering works (2/n).', () => {
     EXPRESSION_LAMBDA({
       range: Range.DUMMY,
       type: functionType([], intType),
+      precedingComments: [],
       parameters: [['a', unitType]],
       captured: { a: unitType },
       body: THIS,
@@ -578,6 +663,7 @@ it('Lambda lowering works (3/n).', () => {
     EXPRESSION_LAMBDA({
       range: Range.DUMMY,
       type: functionType([], DUMMY_IDENTIFIER_TYPE),
+      precedingComments: [],
       parameters: [['a', unitType]],
       captured: { a: unitType },
       body: THIS,
@@ -599,6 +685,7 @@ it('Lambda lowering works (4/n).', () => {
     EXPRESSION_LAMBDA({
       range: Range.DUMMY,
       type: functionType([], DUMMY_IDENTIFIER_TYPE),
+      precedingComments: [],
       parameters: [['a', unitType]],
       captured: {},
       body: THIS,
@@ -615,7 +702,12 @@ return (_t0: (any, any));`
 
 it('Panic lowering works.', () => {
   expectCorrectlyLowered(
-    EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
+    EXPRESSION_PANIC({
+      range: Range.DUMMY,
+      type: unitType,
+      precedingComments: [],
+      expression: THIS,
+    }),
     `_builtin_throw((_this: _Dummy));\nreturn 0;`
   );
 });
@@ -625,8 +717,14 @@ it('IfElse lowering works 1/2.', () => {
     EXPRESSION_IF_ELSE({
       range: Range.DUMMY,
       type: DUMMY_IDENTIFIER_TYPE,
+      precedingComments: [],
       boolExpression: THIS,
-      e1: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
+      e1: EXPRESSION_PANIC({
+        range: Range.DUMMY,
+        type: unitType,
+        precedingComments: [],
+        expression: THIS,
+      }),
       e2: THIS,
     }),
     `let _t0: _Dummy;
@@ -645,8 +743,14 @@ it('IfElse lowering works 2/2.', () => {
     EXPRESSION_IF_ELSE({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       boolExpression: THIS,
-      e1: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
+      e1: EXPRESSION_PANIC({
+        range: Range.DUMMY,
+        type: unitType,
+        precedingComments: [],
+        expression: THIS,
+      }),
       e2: THIS,
     }),
     `if (_this: _Dummy) {
@@ -662,6 +766,7 @@ it('Match lowering works 1/3.', () => {
     EXPRESSION_MATCH({
       range: Range.DUMMY,
       type: DUMMY_IDENTIFIER_TYPE,
+      precedingComments: [],
       matchedExpression: THIS,
       matchingList: [
         {
@@ -675,7 +780,12 @@ it('Match lowering works 1/3.', () => {
           range: Range.DUMMY,
           tag: 'Bar',
           tagOrder: 1,
-          expression: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
+          expression: EXPRESSION_PANIC({
+            range: Range.DUMMY,
+            type: unitType,
+            precedingComments: [],
+            expression: THIS,
+          }),
         },
       ],
     }),
@@ -698,6 +808,7 @@ it('Match lowering works 2/3.', () => {
     EXPRESSION_MATCH({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       matchedExpression: THIS,
       matchingList: [
         {
@@ -711,13 +822,23 @@ it('Match lowering works 2/3.', () => {
           range: Range.DUMMY,
           tag: 'Bar',
           tagOrder: 1,
-          expression: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
+          expression: EXPRESSION_PANIC({
+            range: Range.DUMMY,
+            type: unitType,
+            precedingComments: [],
+            expression: THIS,
+          }),
         },
         {
           range: Range.DUMMY,
           tag: 'Baz',
           tagOrder: 2,
-          expression: EXPRESSION_PANIC({ range: Range.DUMMY, type: unitType, expression: THIS }),
+          expression: EXPRESSION_PANIC({
+            range: Range.DUMMY,
+            type: unitType,
+            precedingComments: [],
+            expression: THIS,
+          }),
         },
       ],
     }),
@@ -742,6 +863,7 @@ it('Match lowering works 3/3.', () => {
     EXPRESSION_MATCH({
       range: Range.DUMMY,
       type: DUMMY_IDENTIFIER_TYPE,
+      precedingComments: [],
       matchedExpression: THIS,
       matchingList: [
         {
@@ -759,6 +881,7 @@ it('Match lowering works 3/3.', () => {
             range: Range.DUMMY,
             name: 'bar',
             type: DUMMY_IDENTIFIER_TYPE,
+            precedingComments: [],
           }),
         },
         {
@@ -795,6 +918,7 @@ it('StatementBlockExpression lowering works.', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -805,6 +929,7 @@ it('StatementBlockExpression lowering works.', () => {
             assignedExpression: EXPRESSION_STATEMENT_BLOCK({
               range: Range.DUMMY,
               type: unitType,
+              precedingComments: [],
               block: {
                 range: Range.DUMMY,
                 statements: [
@@ -847,7 +972,12 @@ it('StatementBlockExpression lowering works.', () => {
                     assignedExpression: THIS,
                   },
                 ],
-                expression: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: unitType, name: 'a' }),
+                expression: EXPRESSION_VARIABLE({
+                  range: Range.DUMMY,
+                  type: unitType,
+                  precedingComments: [],
+                  name: 'a',
+                }),
               },
             }),
           },
@@ -866,6 +996,7 @@ it('shadowing statement block lowering works.', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: stringType,
+      precedingComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -876,6 +1007,7 @@ it('shadowing statement block lowering works.', () => {
             assignedExpression: EXPRESSION_STATEMENT_BLOCK({
               range: Range.DUMMY,
               type: unitType,
+              precedingComments: [],
               block: {
                 range: Range.DUMMY,
                 statements: [
@@ -886,6 +1018,7 @@ it('shadowing statement block lowering works.', () => {
                     assignedExpression: EXPRESSION_BUILTIN_FUNCTION_CALL({
                       range: Range.DUMMY,
                       type: stringType,
+                      precedingComments: [],
                       functionName: 'intToString',
                       argumentExpression: THIS,
                     }),
@@ -894,6 +1027,7 @@ it('shadowing statement block lowering works.', () => {
                 expression: EXPRESSION_VARIABLE({
                   range: Range.DUMMY,
                   type: stringType,
+                  precedingComments: [],
                   name: 'a',
                 }),
               },
@@ -903,6 +1037,7 @@ it('shadowing statement block lowering works.', () => {
         expression: EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: stringType,
+          precedingComments: [],
           name: 'a',
         }),
       },

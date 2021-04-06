@@ -132,7 +132,7 @@ it('value equality test', () => {
     data: { type: 'int', value: 1 },
   });
 
-  const samlangExpression = EXPRESSION_TRUE(new Range(new Position(1, 2), new Position(3, 4)));
+  const samlangExpression = EXPRESSION_TRUE(new Range(new Position(1, 2), new Position(3, 4)), []);
   expect({
     type: 'functionValue',
     arguments: [],
@@ -164,7 +164,7 @@ it('empty context equality check', () => {
 it('non-empty context equality check', () => {
   const testFunctions: Record<string, FunctionValue> = {};
   const testMethods: Record<string, FunctionValue> = {};
-  const samlangExpression = EXPRESSION_TRUE(new Range(new Position(1, 2), new Position(3, 4)));
+  const samlangExpression = EXPRESSION_TRUE(new Range(new Position(1, 2), new Position(3, 4)), []);
   const functionValue: FunctionValue = {
     type: 'functionValue',
     arguments: [],
@@ -259,6 +259,7 @@ it('method access expression evaluates correctly', () => {
   const methodAccessExpression = EXPRESSION_METHOD_ACCESS({
     range: Range.DUMMY,
     type: identifierType(ModuleReference.ROOT, 'C', []),
+    precedingComments: [],
     expression: {
       ...(getExpression('Tag(5)') as VariantConstructorExpression),
       type: identifierType(ModuleReference.ROOT, 'C', []),
@@ -351,6 +352,7 @@ it('matching list evaluates correctly', () => {
       EXPRESSION_MATCH({
         range: Range.DUMMY,
         type: stringType,
+        precedingComments: [],
         matchedExpression: getExpression('Tag(5)'),
         matchingList: [],
       }),

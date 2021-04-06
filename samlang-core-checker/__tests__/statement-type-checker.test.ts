@@ -137,6 +137,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: tupleType([intType, boolType]),
+          precedingComments: [],
           name: 'foo',
         })
       ),
@@ -156,6 +157,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: tupleType([intType, boolType]),
+          precedingComments: [],
           name: 'foo',
         })
       ),
@@ -189,6 +191,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: identifierType(ModuleReference.ROOT, 'A'),
+          precedingComments: [],
           name: 'foo',
         })
       ),
@@ -208,6 +211,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: identifierType(ModuleReference.ROOT, 'A'),
+          precedingComments: [],
           name: 'foo',
         })
       ),
@@ -220,7 +224,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1)
+        EXPRESSION_INT(Range.DUMMY, [], 1)
       ),
     ]),
     unitType,
@@ -228,7 +232,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1)
+        EXPRESSION_INT(Range.DUMMY, [], 1)
       ),
     ]),
   ],
@@ -238,12 +242,12 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1)
+        EXPRESSION_INT(Range.DUMMY, [], 1)
       ),
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'b' },
         boolType,
-        EXPRESSION_TRUE(Range.DUMMY)
+        EXPRESSION_TRUE(Range.DUMMY, [])
       ),
     ]),
     unitType,
@@ -251,12 +255,12 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1)
+        EXPRESSION_INT(Range.DUMMY, [], 1)
       ),
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'b' },
         boolType,
-        EXPRESSION_TRUE(Range.DUMMY)
+        EXPRESSION_TRUE(Range.DUMMY, [])
       ),
     ]),
   ],
@@ -267,10 +271,10 @@ const passingTypeCheckerTestCases: readonly (readonly [
         STATEMENT(
           { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
           intType,
-          EXPRESSION_INT(Range.DUMMY, 1)
+          EXPRESSION_INT(Range.DUMMY, [], 1)
         ),
       ],
-      EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: 'a' })
+      EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, precedingComments: [], name: 'a' })
     ),
     intType,
     BLOCK(
@@ -278,10 +282,10 @@ const passingTypeCheckerTestCases: readonly (readonly [
         STATEMENT(
           { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
           intType,
-          EXPRESSION_INT(Range.DUMMY, 1)
+          EXPRESSION_INT(Range.DUMMY, [], 1)
         ),
       ],
-      EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: 'a' })
+      EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, precedingComments: [], name: 'a' })
     ),
   ],
 
@@ -291,7 +295,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'WildCardPattern' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1)
+        EXPRESSION_INT(Range.DUMMY, [], 1)
       ),
     ]),
     unitType,
@@ -299,7 +303,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'WildCardPattern' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1)
+        EXPRESSION_INT(Range.DUMMY, [], 1)
       ),
     ]),
   ],
@@ -307,9 +311,25 @@ const passingTypeCheckerTestCases: readonly (readonly [
   ['de-facto unit literal', BLOCK([]), unitType, BLOCK([])],
   [
     'nested de-facto unit literal',
-    BLOCK([], EXPRESSION_STATEMENT_BLOCK({ range: Range.DUMMY, type: unitType, block: BLOCK([]) })),
+    BLOCK(
+      [],
+      EXPRESSION_STATEMENT_BLOCK({
+        range: Range.DUMMY,
+        type: unitType,
+        precedingComments: [],
+        block: BLOCK([]),
+      })
+    ),
     unitType,
-    BLOCK([], EXPRESSION_STATEMENT_BLOCK({ range: Range.DUMMY, type: unitType, block: BLOCK([]) })),
+    BLOCK(
+      [],
+      EXPRESSION_STATEMENT_BLOCK({
+        range: Range.DUMMY,
+        type: unitType,
+        precedingComments: [],
+        block: BLOCK([]),
+      })
+    ),
   ],
 ];
 
@@ -334,6 +354,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: tupleType([intType, boolType]),
+          precedingComments: [],
           name: 'foo',
         })
       ),
@@ -356,6 +377,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: intType,
+          precedingComments: [],
           name: 'foo',
         })
       ),
@@ -379,6 +401,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: tupleType([intType, boolType]),
+          precedingComments: [],
           name: 'foo',
         })
       ),
@@ -414,6 +437,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: identifierType(ModuleReference.ROOT, 'B'),
+          precedingComments: [],
           name: 'foo',
         })
       ),
@@ -448,6 +472,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: identifierType(ModuleReference.ROOT, 'C'),
+          precedingComments: [],
           name: 'foo',
         })
       ),
@@ -484,6 +509,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: tupleType([]),
+          precedingComments: [],
           name: 'foo',
         })
       ),
@@ -518,6 +544,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: identifierType(ModuleReference.ROOT, 'A'),
+          precedingComments: [],
           name: 'foo',
         })
       ),
@@ -552,6 +579,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: identifierType(ModuleReference.ROOT, 'A'),
+          precedingComments: [],
           name: 'foo',
         })
       ),
@@ -566,12 +594,12 @@ const failingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, 1)
+        EXPRESSION_INT(Range.DUMMY, [], 1)
       ),
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         boolType,
-        EXPRESSION_TRUE(Range.DUMMY)
+        EXPRESSION_TRUE(Range.DUMMY, [])
       ),
     ]),
     unitType,
@@ -584,12 +612,13 @@ const failingTypeCheckerTestCases: readonly (readonly [
         STATEMENT(
           { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
           intType,
-          EXPRESSION_INT(Range.DUMMY, 1)
+          EXPRESSION_INT(Range.DUMMY, [], 1)
         ),
       ],
       EXPRESSION_VARIABLE({
         range: Range.DUMMY,
         type: boolType,
+        precedingComments: [],
         name: 'a',
       })
     ),

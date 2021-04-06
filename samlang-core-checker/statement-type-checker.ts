@@ -38,7 +38,12 @@ export default class StatementTypeChecker {
       }
       // Force the type checker to resolve expected type to unit.
       this.typeCheckExpression(
-        EXPRESSION_PANIC({ range, type: unitType, expression: EXPRESSION_STRING(range, '') }),
+        EXPRESSION_PANIC({
+          range,
+          type: unitType,
+          precedingComments: [],
+          expression: EXPRESSION_STRING(range, [], ''),
+        }),
         expectedType
       );
       return { range, statements: checkedStatements };
