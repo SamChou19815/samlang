@@ -53,9 +53,9 @@ const assertCorrectlyFixed = (
   type: Type
 ): void => expect(fixExpressionType(unfixed, type, TestingResolution)).toEqual(expected);
 
-const TRUE = EXPRESSION_TRUE(Range.DUMMY);
-const intOf = (n: number) => EXPRESSION_INT(Range.DUMMY, n);
-const stringOf = (s: string) => EXPRESSION_STRING(Range.DUMMY, s);
+const TRUE = EXPRESSION_TRUE(Range.DUMMY, []);
+const intOf = (n: number) => EXPRESSION_INT(Range.DUMMY, [], n);
+const stringOf = (s: string) => EXPRESSION_STRING(Range.DUMMY, [], s);
 
 const assertThrows = (unfixed: SamlangExpression, type: Type): void =>
   expect(() => fixExpressionType(unfixed, type, TestingResolution)).toThrow();
@@ -72,22 +72,31 @@ it('Literal types are unchanged', () => {
 
 it('This expressions are correctly resolved.', () => {
   assertCorrectlyFixed(
-    EXPRESSION_THIS({ range: Range.DUMMY, type: unitType }),
-    EXPRESSION_THIS({ range: Range.DUMMY, type: { type: 'UndecidedType', index: 0 } }),
+    EXPRESSION_THIS({ range: Range.DUMMY, type: unitType, precedingComments: [] }),
+    EXPRESSION_THIS({
+      range: Range.DUMMY,
+      type: { type: 'UndecidedType', index: 0 },
+      precedingComments: [],
+    }),
     unitType
   );
   assertThrows(
-    EXPRESSION_THIS({ range: Range.DUMMY, type: { type: 'UndecidedType', index: 0 } }),
+    EXPRESSION_THIS({
+      range: Range.DUMMY,
+      type: { type: 'UndecidedType', index: 0 },
+      precedingComments: [],
+    }),
     boolType
   );
 });
 
 it('Variable types are correctly resolved.', () => {
   assertCorrectlyFixed(
-    EXPRESSION_VARIABLE({ range: Range.DUMMY, type: unitType, name: 'v' }),
+    EXPRESSION_VARIABLE({ range: Range.DUMMY, type: unitType, precedingComments: [], name: 'v' }),
     EXPRESSION_VARIABLE({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 0 },
+      precedingComments: [],
       name: 'v',
     }),
     unitType
@@ -96,6 +105,7 @@ it('Variable types are correctly resolved.', () => {
     EXPRESSION_VARIABLE({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 0 },
+      precedingComments: [],
       name: 'v',
     }),
     boolType
@@ -107,6 +117,7 @@ it('Class members are correctly resolved.', () => {
     EXPRESSION_CLASS_MEMBER({
       range: Range.DUMMY,
       type: functionType([], unitType),
+      precedingComments: [],
       typeArguments: [boolType],
       moduleReference: ModuleReference.ROOT,
       className: 'Foo',
@@ -117,6 +128,7 @@ it('Class members are correctly resolved.', () => {
     EXPRESSION_CLASS_MEMBER({
       range: Range.DUMMY,
       type: functionType([], { type: 'UndecidedType', index: 0 }),
+      precedingComments: [],
       typeArguments: [{ type: 'UndecidedType', index: 1 }],
       moduleReference: ModuleReference.ROOT,
       className: 'Foo',
@@ -131,6 +143,7 @@ it('Class members are correctly resolved.', () => {
     EXPRESSION_CLASS_MEMBER({
       range: Range.DUMMY,
       type: functionType([], { type: 'UndecidedType', index: 0 }),
+      precedingComments: [],
       typeArguments: [{ type: 'UndecidedType', index: 1 }],
       moduleReference: ModuleReference.ROOT,
       className: 'Foo',
@@ -147,6 +160,7 @@ it('Tuple constructors are correctly resolved.', () => {
     EXPRESSION_TUPLE_CONSTRUCTOR({
       range: Range.DUMMY,
       type: tupleType([intType, boolType]),
+      precedingComments: [],
       expressions: [intOf(1), TRUE],
     }),
     EXPRESSION_TUPLE_CONSTRUCTOR({
@@ -155,6 +169,7 @@ it('Tuple constructors are correctly resolved.', () => {
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 1 },
       ]),
+      precedingComments: [],
       expressions: [intOf(1), TRUE],
     }),
     tupleType([intType, boolType])
@@ -167,6 +182,7 @@ it('Tuple constructors are correctly resolved.', () => {
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 1 },
       ]),
+      precedingComments: [],
       expressions: [intOf(1), TRUE],
     }),
     tupleType([boolType, intType])
@@ -179,6 +195,7 @@ it('Tuple constructors are correctly resolved.', () => {
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 1 },
       ]),
+      precedingComments: [],
       expressions: [TRUE, intOf(1)],
     }),
     tupleType([intType, boolType])
@@ -190,6 +207,7 @@ it('Object constructors are correctly resolved', () => {
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
       type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      precedingComments: [],
       fieldDeclarations: [
         { range: Range.DUMMY, name: 'a', type: intType },
         { range: Range.DUMMY, name: 'b', type: boolType, expression: TRUE },
@@ -201,6 +219,7 @@ it('Object constructors are correctly resolved', () => {
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 1 },
       ]),
+      precedingComments: [],
       fieldDeclarations: [
         { range: Range.DUMMY, name: 'a', type: { type: 'UndecidedType', index: 2 } },
         {
@@ -218,6 +237,7 @@ it('Object constructors are correctly resolved', () => {
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
       type: identifierType(ModuleReference.ROOT, 'A', [{ type: 'UndecidedType', index: 2 }]),
+      precedingComments: [],
       fieldDeclarations: [
         { range: Range.DUMMY, name: 'a', type: { type: 'UndecidedType', index: 2 } },
         {
@@ -238,6 +258,7 @@ it('Object constructors are correctly resolved', () => {
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 3 },
       ]),
+      precedingComments: [],
       fieldDeclarations: [
         { range: Range.DUMMY, name: 'a', type: { type: 'UndecidedType', index: 2 } },
         {
@@ -257,6 +278,7 @@ it('Variant constructors are correctly resolved.', () => {
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
       type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      precedingComments: [],
       tag: 'Foo',
       tagOrder: 0,
       data: intOf(1),
@@ -267,6 +289,7 @@ it('Variant constructors are correctly resolved.', () => {
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 1 },
       ]),
+      precedingComments: [],
       tag: 'Foo',
       tagOrder: 0,
       data: intOf(1),
@@ -278,6 +301,7 @@ it('Variant constructors are correctly resolved.', () => {
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
       type: identifierType(ModuleReference.ROOT, 'A', [{ type: 'UndecidedType', index: 2 }]),
+      precedingComments: [],
       tag: 'Foo',
       tagOrder: 0,
       data: intOf(1),
@@ -292,6 +316,7 @@ it('Variant constructors are correctly resolved.', () => {
         { type: 'UndecidedType', index: 1 },
         { type: 'UndecidedType', index: 2 },
       ]),
+      precedingComments: [],
       tag: 'Foo',
       tagOrder: 0,
       data: intOf(1),
@@ -305,9 +330,11 @@ it('Field accesses are correctly resolved.', () => {
     EXPRESSION_FIELD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], intType),
+      precedingComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'Foo'),
+        precedingComments: [],
       }),
       fieldName: 'bar',
       fieldOrder: 1,
@@ -315,9 +342,11 @@ it('Field accesses are correctly resolved.', () => {
     EXPRESSION_FIELD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], { type: 'UndecidedType', index: 2 }),
+      precedingComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'Foo'),
+        precedingComments: [],
       }),
       fieldName: 'bar',
       fieldOrder: 1,
@@ -329,9 +358,11 @@ it('Field accesses are correctly resolved.', () => {
     EXPRESSION_METHOD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], { type: 'UndecidedType', index: 3 }),
+      precedingComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'Foo'),
+        precedingComments: [],
       }),
       methodName: 'bar',
     }),
@@ -344,18 +375,22 @@ it('Method accesses are correctly resolved.', () => {
     EXPRESSION_METHOD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], intType),
+      precedingComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'Foo'),
+        precedingComments: [],
       }),
       methodName: 'bar',
     }),
     EXPRESSION_METHOD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], { type: 'UndecidedType', index: 2 }),
+      precedingComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'Foo'),
+        precedingComments: [],
       }),
       methodName: 'bar',
     }),
@@ -366,9 +401,11 @@ it('Method accesses are correctly resolved.', () => {
     EXPRESSION_METHOD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], { type: 'UndecidedType', index: 3 }),
+      precedingComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'Foo'),
+        precedingComments: [],
       }),
       methodName: 'bar',
     }),
@@ -381,12 +418,14 @@ it('Unary expressions are correctly resolved', () => {
     EXPRESSION_UNARY({
       range: Range.DUMMY,
       type: boolType,
+      precedingComments: [],
       operator: '!',
       expression: TRUE,
     }),
     EXPRESSION_UNARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       operator: '!',
       expression: TRUE,
     }),
@@ -396,12 +435,14 @@ it('Unary expressions are correctly resolved', () => {
     EXPRESSION_UNARY({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       operator: '-',
       expression: intOf(1),
     }),
     EXPRESSION_UNARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       operator: '-',
       expression: intOf(1),
     }),
@@ -412,6 +453,7 @@ it('Unary expressions are correctly resolved', () => {
     EXPRESSION_UNARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       operator: '!',
       expression: TRUE,
     }),
@@ -421,6 +463,7 @@ it('Unary expressions are correctly resolved', () => {
     EXPRESSION_UNARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       operator: '-',
       expression: intOf(1),
     }),
@@ -431,6 +474,7 @@ it('Unary expressions are correctly resolved', () => {
     EXPRESSION_UNARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       operator: '!',
       expression: intOf(1),
     }),
@@ -440,6 +484,7 @@ it('Unary expressions are correctly resolved', () => {
     EXPRESSION_UNARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       operator: '-',
       expression: TRUE,
     }),
@@ -452,11 +497,13 @@ it('Panic expressions can be correctly resolved', () => {
     EXPRESSION_PANIC({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       expression: stringOf(''),
     }),
     EXPRESSION_PANIC({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       expression: stringOf(''),
     }),
     intType
@@ -466,6 +513,7 @@ it('Panic expressions can be correctly resolved', () => {
     EXPRESSION_PANIC({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       expression: intOf(1),
     }),
     intType
@@ -477,12 +525,14 @@ it('Built-in function calls can be correctly resolved', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: stringType,
+      precedingComments: [],
       functionName: 'intToString',
       argumentExpression: intOf(1),
     }),
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 3 },
+      precedingComments: [],
       functionName: 'intToString',
       argumentExpression: intOf(1),
     }),
@@ -492,12 +542,14 @@ it('Built-in function calls can be correctly resolved', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       functionName: 'stringToInt',
       argumentExpression: stringOf(''),
     }),
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       functionName: 'stringToInt',
       argumentExpression: stringOf(''),
     }),
@@ -507,12 +559,14 @@ it('Built-in function calls can be correctly resolved', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       functionName: 'println',
       argumentExpression: stringOf(''),
     }),
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 0 },
+      precedingComments: [],
       functionName: 'println',
       argumentExpression: stringOf(''),
     }),
@@ -523,6 +577,7 @@ it('Built-in function calls can be correctly resolved', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       functionName: 'intToString',
       argumentExpression: intOf(1),
     }),
@@ -532,6 +587,7 @@ it('Built-in function calls can be correctly resolved', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       functionName: 'stringToInt',
       argumentExpression: stringOf(''),
     }),
@@ -541,6 +597,7 @@ it('Built-in function calls can be correctly resolved', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       functionName: 'println',
       argumentExpression: stringOf(''),
     }),
@@ -551,6 +608,7 @@ it('Built-in function calls can be correctly resolved', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 3 },
+      precedingComments: [],
       functionName: 'intToString',
       argumentExpression: stringOf(''),
     }),
@@ -560,6 +618,7 @@ it('Built-in function calls can be correctly resolved', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       functionName: 'stringToInt',
       argumentExpression: intOf(1),
     }),
@@ -569,6 +628,7 @@ it('Built-in function calls can be correctly resolved', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 0 },
+      precedingComments: [],
       functionName: 'println',
       argumentExpression: intOf(1),
     }),
@@ -581,6 +641,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       operator: MUL,
       e1: intOf(1),
       e2: intOf(1),
@@ -588,6 +649,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       operator: MUL,
       e1: intOf(1),
       e2: intOf(1),
@@ -598,6 +660,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: boolType,
+      precedingComments: [],
       operator: LT,
       e1: intOf(1),
       e2: intOf(1),
@@ -605,6 +668,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       operator: LT,
       e1: intOf(1),
       e2: intOf(1),
@@ -615,6 +679,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: boolType,
+      precedingComments: [],
       operator: AND,
       e1: TRUE,
       e2: TRUE,
@@ -622,6 +687,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       operator: AND,
       e1: TRUE,
       e2: TRUE,
@@ -632,6 +698,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: stringType,
+      precedingComments: [],
       operator: CONCAT,
       e1: stringOf(''),
       e2: stringOf(''),
@@ -639,6 +706,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 3 },
+      precedingComments: [],
       operator: CONCAT,
       e1: stringOf(''),
       e2: stringOf(''),
@@ -649,6 +717,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: boolType,
+      precedingComments: [],
       operator: EQ,
       e1: stringOf(''),
       e2: stringOf(''),
@@ -656,6 +725,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       operator: EQ,
       e1: stringOf(''),
       e2: stringOf(''),
@@ -667,6 +737,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       operator: MUL,
       e1: intOf(1),
       e2: intOf(1),
@@ -677,6 +748,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       operator: LT,
       e1: intOf(1),
       e2: intOf(1),
@@ -687,6 +759,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       operator: AND,
       e1: TRUE,
       e2: TRUE,
@@ -697,6 +770,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 3 },
+      precedingComments: [],
       operator: CONCAT,
       e1: stringOf(''),
       e2: stringOf(''),
@@ -707,6 +781,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       operator: EQ,
       e1: stringOf(''),
       e2: stringOf(''),
@@ -718,6 +793,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       operator: MUL,
       e1: stringOf(''),
       e2: intOf(1),
@@ -728,6 +804,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       operator: LT,
       e1: intOf(1),
       e2: stringOf(''),
@@ -738,6 +815,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       operator: AND,
       e1: stringOf(''),
       e2: TRUE,
@@ -748,6 +826,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 3 },
+      precedingComments: [],
       operator: CONCAT,
       e1: stringOf(''),
       e2: TRUE,
@@ -758,6 +837,7 @@ it('Binary expressions are correctly resolved.', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       operator: EQ,
       e1: TRUE,
       e2: stringOf(''),
@@ -771,25 +851,34 @@ it('Match expressions are correctly resolved.', () => {
     EXPRESSION_MATCH({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       matchedExpression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'A'),
+        precedingComments: [],
       }),
       matchingList: [
         {
           range: Range.DUMMY,
           tag: 'A',
           tagOrder: 1,
-          expression: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: '' }),
+          expression: EXPRESSION_VARIABLE({
+            range: Range.DUMMY,
+            type: intType,
+            precedingComments: [],
+            name: '',
+          }),
         },
       ],
     }),
     EXPRESSION_MATCH({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       matchedExpression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'A'),
+        precedingComments: [],
       }),
       matchingList: [
         {
@@ -799,6 +888,7 @@ it('Match expressions are correctly resolved.', () => {
           expression: EXPRESSION_VARIABLE({
             range: Range.DUMMY,
             type: { type: 'UndecidedType', index: 2 },
+            precedingComments: [],
             name: '',
           }),
         },
@@ -811,9 +901,11 @@ it('Match expressions are correctly resolved.', () => {
     EXPRESSION_MATCH({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       matchedExpression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'A'),
+        precedingComments: [],
       }),
       matchingList: [
         {
@@ -823,6 +915,7 @@ it('Match expressions are correctly resolved.', () => {
           expression: EXPRESSION_VARIABLE({
             range: Range.DUMMY,
             type: { type: 'UndecidedType', index: 2 },
+            precedingComments: [],
             name: '',
           }),
         },
@@ -835,9 +928,11 @@ it('Match expressions are correctly resolved.', () => {
     EXPRESSION_MATCH({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       matchedExpression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'A'),
+        precedingComments: [],
       }),
       matchingList: [
         {
@@ -847,6 +942,7 @@ it('Match expressions are correctly resolved.', () => {
           expression: EXPRESSION_VARIABLE({
             range: Range.DUMMY,
             type: { type: 'UndecidedType', index: 1 },
+            precedingComments: [],
             name: '',
           }),
         },
@@ -861,6 +957,7 @@ it('Statement block expressions are correctly resolved.', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -876,6 +973,7 @@ it('Statement block expressions are correctly resolved.', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 0 },
+      precedingComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -894,6 +992,7 @@ it('Statement block expressions are correctly resolved.', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -910,6 +1009,7 @@ it('Statement block expressions are correctly resolved.', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -930,6 +1030,7 @@ it('Statement block expressions are correctly resolved.', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 1 },
+      precedingComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -950,6 +1051,7 @@ it('Statement block expressions are correctly resolved.', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -969,6 +1071,7 @@ it('Statement block expressions are correctly resolved.', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 2 },
+      precedingComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -989,32 +1092,45 @@ it('Deep expression integration test', () => {
   const expected = EXPRESSION_IF_ELSE({
     range: Range.DUMMY,
     type: boolType,
+    precedingComments: [],
     boolExpression: TRUE,
     e1: TRUE,
     e2: EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
       type: boolType,
+      precedingComments: [],
       functionExpression: EXPRESSION_LAMBDA({
         range: Range.DUMMY,
         type: functionType([intType], boolType),
+        precedingComments: [],
         parameters: [['a', intType]],
         captured: { a: intType },
         body: TRUE,
       }),
-      functionArguments: [EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: 'v' })],
+      functionArguments: [
+        EXPRESSION_VARIABLE({
+          range: Range.DUMMY,
+          type: intType,
+          precedingComments: [],
+          name: 'v',
+        }),
+      ],
     }),
   });
   const unfixed = EXPRESSION_IF_ELSE({
     range: Range.DUMMY,
     type: { type: 'UndecidedType', index: 1 },
+    precedingComments: [],
     boolExpression: TRUE,
     e1: TRUE,
     e2: EXPRESSION_FUNCTION_CALL({
       range: Range.DUMMY,
       type: { type: 'UndecidedType', index: 5 },
+      precedingComments: [],
       functionExpression: EXPRESSION_LAMBDA({
         range: Range.DUMMY,
         type: functionType([intType], { type: 'UndecidedType', index: 9 }),
+        precedingComments: [],
         parameters: [['a', intType]],
         captured: { a: { type: 'UndecidedType', index: 2 } },
         body: TRUE,
@@ -1023,6 +1139,7 @@ it('Deep expression integration test', () => {
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: { type: 'UndecidedType', index: 2 },
+          precedingComments: [],
           name: 'v',
         }),
       ],

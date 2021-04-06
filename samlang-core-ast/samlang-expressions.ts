@@ -13,6 +13,7 @@ import {
   Range,
   Node,
   ModuleReference,
+  TypedComment,
 } from './common-nodes';
 import type { BinaryOperator } from './common-operators';
 import type { Pattern } from './samlang-pattern';
@@ -26,6 +27,8 @@ interface BaseExpression extends Node {
   readonly type: Type;
   /** Precedence level. Lower the number, higher the precedence. */
   readonly precedence: number;
+  /** A list of comments immediately before the expression. */
+  readonly precedingComments: readonly TypedComment[];
 }
 
 type ExpressionConstructorArgumentObject<E extends BaseExpression> = Omit<
@@ -189,63 +192,86 @@ export type SamlangExpression =
   | LambdaExpression
   | StatementBlockExpression;
 
-export const EXPRESSION_TRUE = (range: Range): LiteralExpression => ({
+export const EXPRESSION_TRUE = (
+  range: Range,
+  precedingComments: readonly TypedComment[]
+): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
   type: boolType,
   precedence: 0,
+  precedingComments,
   literal: TRUE,
 });
 
-export const EXPRESSION_FALSE = (range: Range): LiteralExpression => ({
+export const EXPRESSION_FALSE = (
+  range: Range,
+  precedingComments: readonly TypedComment[]
+): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
   type: boolType,
   precedence: 0,
+  precedingComments,
   literal: FALSE,
 });
 
-export const EXPRESSION_INT = (range: Range, value: number | Long): LiteralExpression => ({
+export const EXPRESSION_INT = (
+  range: Range,
+  precedingComments: readonly TypedComment[],
+  value: number | Long
+): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
   type: intType,
   precedence: 0,
+  precedingComments,
   literal: intLiteralOf(typeof value === 'number' ? Long.fromInt(value) : value),
 });
 
-export const EXPRESSION_STRING = (range: Range, value: string): LiteralExpression => ({
+export const EXPRESSION_STRING = (
+  range: Range,
+  precedingComments: readonly TypedComment[],
+  value: string
+): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
   type: stringType,
   precedence: 0,
+  precedingComments,
   literal: stringLiteralOf(value),
 });
 
 export const EXPRESSION_THIS = ({
   range,
   type,
+  precedingComments,
 }: ExpressionConstructorArgumentObject<ThisExpression>): ThisExpression => ({
   __type__: 'ThisExpression',
   range,
   type,
   precedence: 0,
+  precedingComments,
 });
 
 export const EXPRESSION_VARIABLE = ({
   range,
   type,
+  precedingComments,
   name,
 }: ExpressionConstructorArgumentObject<VariableExpression>): VariableExpression => ({
   __type__: 'VariableExpression',
   range,
   type,
   precedence: 0,
+  precedingComments,
   name,
 });
 
 export const EXPRESSION_CLASS_MEMBER = ({
   range,
   type,
+  precedingComments,
   typeArguments,
   moduleReference,
   className,
@@ -257,6 +283,7 @@ export const EXPRESSION_CLASS_MEMBER = ({
   range,
   type,
   precedence: 0,
+  precedingComments,
   typeArguments,
   moduleReference,
   className,
@@ -268,30 +295,35 @@ export const EXPRESSION_CLASS_MEMBER = ({
 export const EXPRESSION_TUPLE_CONSTRUCTOR = ({
   range,
   type,
+  precedingComments,
   expressions,
 }: ExpressionConstructorArgumentObject<TupleConstructorExpression>): TupleConstructorExpression => ({
   __type__: 'TupleConstructorExpression',
   range,
   type,
   precedence: 1,
+  precedingComments,
   expressions,
 });
 
 export const EXPRESSION_OBJECT_CONSTRUCTOR = ({
   range,
   type,
+  precedingComments,
   fieldDeclarations,
 }: ExpressionConstructorArgumentObject<ObjectConstructorExpression>): ObjectConstructorExpression => ({
   __type__: 'ObjectConstructorExpression',
   range,
   type,
   precedence: 1,
+  precedingComments,
   fieldDeclarations,
 });
 
 export const EXPRESSION_VARIANT_CONSTRUCTOR = ({
   range,
   type,
+  precedingComments,
   tag,
   tagOrder,
   data,
@@ -300,6 +332,7 @@ export const EXPRESSION_VARIANT_CONSTRUCTOR = ({
   range,
   type,
   precedence: 1,
+  precedingComments,
   tag,
   tagOrder,
   data,
@@ -308,6 +341,7 @@ export const EXPRESSION_VARIANT_CONSTRUCTOR = ({
 export const EXPRESSION_FIELD_ACCESS = ({
   range,
   type,
+  precedingComments,
   expression,
   fieldName,
   fieldOrder,
@@ -316,6 +350,7 @@ export const EXPRESSION_FIELD_ACCESS = ({
   range,
   type,
   precedence: 2,
+  precedingComments,
   expression,
   fieldName,
   fieldOrder,
@@ -324,6 +359,7 @@ export const EXPRESSION_FIELD_ACCESS = ({
 export const EXPRESSION_METHOD_ACCESS = ({
   range,
   type,
+  precedingComments,
   expression,
   methodName,
 }: ExpressionConstructorArgumentObject<MethodAccessExpression>): MethodAccessExpression => ({
@@ -331,6 +367,7 @@ export const EXPRESSION_METHOD_ACCESS = ({
   range,
   type,
   precedence: 2,
+  precedingComments,
   expression,
   methodName,
 });
@@ -338,6 +375,7 @@ export const EXPRESSION_METHOD_ACCESS = ({
 export const EXPRESSION_UNARY = ({
   range,
   type,
+  precedingComments,
   operator,
   expression,
 }: ExpressionConstructorArgumentObject<UnaryExpression>): UnaryExpression => ({
@@ -345,6 +383,7 @@ export const EXPRESSION_UNARY = ({
   range,
   type,
   precedence: 3,
+  precedingComments,
   operator,
   expression,
 });
@@ -352,18 +391,21 @@ export const EXPRESSION_UNARY = ({
 export const EXPRESSION_PANIC = ({
   range,
   type,
+  precedingComments,
   expression,
 }: ExpressionConstructorArgumentObject<PanicExpression>): PanicExpression => ({
   __type__: 'PanicExpression',
   range,
   type,
   precedence: 3,
+  precedingComments,
   expression,
 });
 
 export const EXPRESSION_BUILTIN_FUNCTION_CALL = ({
   range,
   type,
+  precedingComments,
   functionName,
   argumentExpression,
 }: ExpressionConstructorArgumentObject<BuiltInFunctionCallExpression>): BuiltInFunctionCallExpression => ({
@@ -371,6 +413,7 @@ export const EXPRESSION_BUILTIN_FUNCTION_CALL = ({
   range,
   type,
   precedence: 3,
+  precedingComments,
   functionName,
   argumentExpression,
 });
@@ -378,6 +421,7 @@ export const EXPRESSION_BUILTIN_FUNCTION_CALL = ({
 export const EXPRESSION_FUNCTION_CALL = ({
   range,
   type,
+  precedingComments,
   functionExpression,
   functionArguments,
 }: ExpressionConstructorArgumentObject<FunctionCallExpression>): FunctionCallExpression => ({
@@ -385,6 +429,7 @@ export const EXPRESSION_FUNCTION_CALL = ({
   range,
   type,
   precedence: 4,
+  precedingComments,
   functionExpression,
   functionArguments,
 });
@@ -392,6 +437,7 @@ export const EXPRESSION_FUNCTION_CALL = ({
 export const EXPRESSION_BINARY = ({
   range,
   type,
+  precedingComments,
   operator,
   e1,
   e2,
@@ -400,6 +446,7 @@ export const EXPRESSION_BINARY = ({
   range,
   type,
   precedence: 5 + operator.precedence,
+  precedingComments,
   operator,
   e1,
   e2,
@@ -408,6 +455,7 @@ export const EXPRESSION_BINARY = ({
 export const EXPRESSION_IF_ELSE = ({
   range,
   type,
+  precedingComments,
   boolExpression,
   e1,
   e2,
@@ -416,6 +464,7 @@ export const EXPRESSION_IF_ELSE = ({
   range,
   type,
   precedence: 11,
+  precedingComments,
   boolExpression,
   e1,
   e2,
@@ -424,6 +473,7 @@ export const EXPRESSION_IF_ELSE = ({
 export const EXPRESSION_MATCH = ({
   range,
   type,
+  precedingComments,
   matchedExpression,
   matchingList,
 }: ExpressionConstructorArgumentObject<MatchExpression>): MatchExpression => ({
@@ -431,6 +481,7 @@ export const EXPRESSION_MATCH = ({
   range,
   type,
   precedence: 12,
+  precedingComments,
   matchedExpression,
   matchingList,
 });
@@ -438,6 +489,7 @@ export const EXPRESSION_MATCH = ({
 export const EXPRESSION_LAMBDA = ({
   range,
   type,
+  precedingComments,
   parameters,
   captured,
   body,
@@ -446,6 +498,7 @@ export const EXPRESSION_LAMBDA = ({
   range,
   type,
   precedence: 13,
+  precedingComments,
   parameters,
   captured,
   body,
@@ -454,11 +507,13 @@ export const EXPRESSION_LAMBDA = ({
 export const EXPRESSION_STATEMENT_BLOCK = ({
   range,
   type,
+  precedingComments,
   block,
 }: ExpressionConstructorArgumentObject<StatementBlockExpression>): StatementBlockExpression => ({
   __type__: 'StatementBlockExpression',
   range,
   type,
   precedence: 2,
+  precedingComments,
   block,
 });

@@ -123,7 +123,7 @@ export class ExpressionInterpreter {
             const { range, type, name } = declaration;
             objectContent.set(
               declaration.name,
-              this.eval(EXPRESSION_VARIABLE({ range, type, name }), context)
+              this.eval(EXPRESSION_VARIABLE({ range, type, name, precedingComments: [] }), context)
             );
           }
         });
@@ -409,6 +409,7 @@ class ModuleInterpreter {
       const lambda = EXPRESSION_LAMBDA({
         range: member.range,
         type: member.type,
+        precedingComments: [],
         parameters: member.parameters.map(({ name, type }) => [name, type]),
         captured: {},
         body: member.body,

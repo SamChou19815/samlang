@@ -45,7 +45,7 @@ const class1: ClassDefinition = {
       typeParameters: [],
       type: functionType([], intType),
       parameters: [],
-      body: EXPRESSION_FALSE(Range.DUMMY),
+      body: EXPRESSION_FALSE(Range.DUMMY, []),
     },
     {
       documentText: null,
@@ -57,7 +57,7 @@ const class1: ClassDefinition = {
       typeParameters: [],
       type: functionType([], intType),
       parameters: [],
-      body: EXPRESSION_FALSE(Range.DUMMY),
+      body: EXPRESSION_FALSE(Range.DUMMY, []),
     },
   ],
 };

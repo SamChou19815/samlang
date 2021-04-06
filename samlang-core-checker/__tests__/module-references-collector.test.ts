@@ -51,18 +51,18 @@ const assertFoundAllModuleReferencesFromExpression = (
   ).toEqual(expected);
 };
 
-const TRUE = EXPRESSION_TRUE(Range.DUMMY);
-const intOf = (n: number) => EXPRESSION_INT(Range.DUMMY, n);
-const stringOf = (s: string) => EXPRESSION_STRING(Range.DUMMY, s);
+const TRUE = EXPRESSION_TRUE(Range.DUMMY, []);
+const intOf = (n: number) => EXPRESSION_INT(Range.DUMMY, [], n);
+const stringOf = (s: string) => EXPRESSION_STRING(Range.DUMMY, [], s);
 
 it('collectModuleReferenceFromExpression works 1/n', () => {
   assertFoundAllModuleReferencesFromExpression(TRUE, []);
   assertFoundAllModuleReferencesFromExpression(
-    EXPRESSION_VARIABLE({ range: Range.DUMMY, type: unitType, name: 'v' }),
+    EXPRESSION_VARIABLE({ range: Range.DUMMY, type: unitType, precedingComments: [], name: 'v' }),
     []
   );
   assertFoundAllModuleReferencesFromExpression(
-    EXPRESSION_THIS({ range: Range.DUMMY, type: unitType }),
+    EXPRESSION_THIS({ range: Range.DUMMY, type: unitType, precedingComments: [] }),
     []
   );
 });
@@ -72,6 +72,7 @@ it('collectModuleReferenceFromExpression works 2/n', () => {
     EXPRESSION_CLASS_MEMBER({
       range: Range.DUMMY,
       type: functionType([], unitType),
+      precedingComments: [],
       typeArguments: [boolType],
       moduleReference: ModuleReference.ROOT,
       className: 'Foo',
@@ -91,6 +92,7 @@ it('collectModuleReferenceFromExpression works 3/n', () => {
         intType,
         identifierType(ModuleReference.ROOT, 'f', [functionType([intType], tupleType([boolType]))]),
       ]),
+      precedingComments: [],
       expressions: [intOf(1), TRUE],
     }),
     ['']
@@ -102,6 +104,7 @@ it('collectModuleReferenceFromExpression works 4/n', () => {
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
       type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      precedingComments: [],
       fieldDeclarations: [
         { range: Range.DUMMY, name: 'a', type: intType },
         { range: Range.DUMMY, name: 'b', type: boolType, expression: TRUE },
@@ -116,6 +119,7 @@ it('collectModuleReferenceFromExpression works 5/n', () => {
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
       type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      precedingComments: [],
       tag: 'Foo',
       tagOrder: 0,
       data: intOf(1),
@@ -129,9 +133,11 @@ it('collectModuleReferenceFromExpression works 6/n', () => {
     EXPRESSION_FIELD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], intType),
+      precedingComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'Foo'),
+        precedingComments: [],
       }),
       fieldName: 'bar',
       fieldOrder: 1,
@@ -143,9 +149,11 @@ it('collectModuleReferenceFromExpression works 6/n', () => {
     EXPRESSION_METHOD_ACCESS({
       range: Range.DUMMY,
       type: functionType([], intType),
+      precedingComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'Foo'),
+        precedingComments: [],
       }),
       methodName: 'bar',
     }),
@@ -156,6 +164,7 @@ it('collectModuleReferenceFromExpression works 6/n', () => {
     EXPRESSION_UNARY({
       range: Range.DUMMY,
       type: boolType,
+      precedingComments: [],
       operator: '!',
       expression: TRUE,
     }),
@@ -166,6 +175,7 @@ it('collectModuleReferenceFromExpression works 6/n', () => {
     EXPRESSION_PANIC({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       expression: stringOf(''),
     }),
     []
@@ -177,6 +187,7 @@ it('collectModuleReferenceFromExpression works 7/n', () => {
     EXPRESSION_BUILTIN_FUNCTION_CALL({
       range: Range.DUMMY,
       type: stringType,
+      precedingComments: [],
       functionName: 'intToString',
       argumentExpression: intOf(1),
     }),
@@ -189,6 +200,7 @@ it('collectModuleReferenceFromExpression works 8/n', () => {
     EXPRESSION_BINARY({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       operator: MUL,
       e1: intOf(1),
       e2: intOf(1),
@@ -202,16 +214,23 @@ it('collectModuleReferenceFromExpression works 9/n', () => {
     EXPRESSION_MATCH({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       matchedExpression: EXPRESSION_THIS({
         range: Range.DUMMY,
         type: identifierType(ModuleReference.ROOT, 'A'),
+        precedingComments: [],
       }),
       matchingList: [
         {
           range: Range.DUMMY,
           tag: 'A',
           tagOrder: 1,
-          expression: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: '' }),
+          expression: EXPRESSION_VARIABLE({
+            range: Range.DUMMY,
+            type: intType,
+            precedingComments: [],
+            name: '',
+          }),
         },
       ],
     }),
@@ -224,6 +243,7 @@ it('collectModuleReferenceFromExpression works 10/n', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: unitType,
+      precedingComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -243,6 +263,7 @@ it('collectModuleReferenceFromExpression works 10/n', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: intType,
+      precedingComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -265,19 +286,29 @@ it('collectModuleReferenceFromExpression works 11/n', () => {
     EXPRESSION_IF_ELSE({
       range: Range.DUMMY,
       type: boolType,
+      precedingComments: [],
       boolExpression: TRUE,
       e1: TRUE,
       e2: EXPRESSION_FUNCTION_CALL({
         range: Range.DUMMY,
         type: boolType,
+        precedingComments: [],
         functionExpression: EXPRESSION_LAMBDA({
           range: Range.DUMMY,
           type: functionType([intType], boolType),
+          precedingComments: [],
           parameters: [['a', intType]],
           captured: { a: intType },
           body: TRUE,
         }),
-        functionArguments: [EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: 'v' })],
+        functionArguments: [
+          EXPRESSION_VARIABLE({
+            range: Range.DUMMY,
+            type: intType,
+            precedingComments: [],
+            name: 'v',
+          }),
+        ],
       }),
     }),
     []

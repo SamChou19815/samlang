@@ -48,7 +48,7 @@ it('collectModuleReferenceFromSamlangModule works', () => {
               typeParameters: [],
               parameters: [],
               type: functionType([], intType),
-              body: EXPRESSION_INT(Range.DUMMY, 3),
+              body: EXPRESSION_INT(Range.DUMMY, [], 3),
             },
           ],
         },

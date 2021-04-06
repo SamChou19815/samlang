@@ -27,6 +27,7 @@ import { mapOf } from 'samlang-core-utils';
 const THIS = EXPRESSION_THIS({
   range: Range.DUMMY,
   type: identifierType(ModuleReference.ROOT, 'Dummy'),
+  precedingComments: [],
 });
 
 it('compileSamlangSourcesToHighIRSources integration test', () => {
@@ -59,9 +60,11 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
             body: EXPRESSION_FUNCTION_CALL({
               range: Range.DUMMY,
               type: unitType,
+              precedingComments: [],
               functionExpression: EXPRESSION_CLASS_MEMBER({
                 range: Range.DUMMY,
                 type: functionType([], intType),
+                precedingComments: [],
                 typeArguments: [],
                 moduleReference: ModuleReference.ROOT,
                 className: 'Class1',
@@ -114,9 +117,11 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
             body: EXPRESSION_FUNCTION_CALL({
               range: Range.DUMMY,
               type: unitType,
+              precedingComments: [],
               functionExpression: EXPRESSION_CLASS_MEMBER({
                 range: Range.DUMMY,
                 type: functionType([], intType),
+                precedingComments: [],
                 typeArguments: [],
                 moduleReference: ModuleReference.ROOT,
                 className: 'Class1',
@@ -143,20 +148,29 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
             body: EXPRESSION_IF_ELSE({
               range: Range.DUMMY,
               type: intType,
+              precedingComments: [],
               boolExpression: EXPRESSION_BINARY({
                 range: Range.DUMMY,
                 type: boolType,
+                precedingComments: [],
                 operator: EQ,
-                e1: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: 'n' }),
-                e2: EXPRESSION_INT(Range.DUMMY, 0),
+                e1: EXPRESSION_VARIABLE({
+                  range: Range.DUMMY,
+                  type: intType,
+                  precedingComments: [],
+                  name: 'n',
+                }),
+                e2: EXPRESSION_INT(Range.DUMMY, [], 0),
               }),
-              e1: EXPRESSION_INT(Range.DUMMY, 1),
+              e1: EXPRESSION_INT(Range.DUMMY, [], 1),
               e2: EXPRESSION_FUNCTION_CALL({
                 range: Range.DUMMY,
                 type: intType,
+                precedingComments: [],
                 functionExpression: EXPRESSION_CLASS_MEMBER({
                   range: Range.DUMMY,
                   type: functionType([intType, intType], intType),
+                  precedingComments: [],
                   typeArguments: [],
                   moduleReference: ModuleReference.ROOT,
                   className: 'Class1',
@@ -168,16 +182,33 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                   EXPRESSION_BINARY({
                     range: Range.DUMMY,
                     type: intType,
+                    precedingComments: [],
                     operator: MINUS,
-                    e1: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: 'n' }),
-                    e2: EXPRESSION_INT(Range.DUMMY, 1),
+                    e1: EXPRESSION_VARIABLE({
+                      range: Range.DUMMY,
+                      type: intType,
+                      precedingComments: [],
+                      name: 'n',
+                    }),
+                    e2: EXPRESSION_INT(Range.DUMMY, [], 1),
                   }),
                   EXPRESSION_BINARY({
                     range: Range.DUMMY,
                     type: intType,
+                    precedingComments: [],
                     operator: MUL,
-                    e1: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: 'n' }),
-                    e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, name: 'acc' }),
+                    e1: EXPRESSION_VARIABLE({
+                      range: Range.DUMMY,
+                      type: intType,
+                      precedingComments: [],
+                      name: 'n',
+                    }),
+                    e2: EXPRESSION_VARIABLE({
+                      range: Range.DUMMY,
+                      type: intType,
+                      precedingComments: [],
+                      name: 'acc',
+                    }),
                   }),
                 ],
               }),

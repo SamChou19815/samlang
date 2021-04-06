@@ -657,6 +657,7 @@ it('IfElse integration test', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: unit,
+      precedingComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -667,6 +668,7 @@ it('IfElse integration test', () => {
             assignedExpression: EXPRESSION_LAMBDA({
               range: Range.DUMMY,
               type: functionType([bool, int, int], int),
+              precedingComments: [],
               parameters: [
                 ['b', bool],
                 ['t', int],
@@ -676,17 +678,25 @@ it('IfElse integration test', () => {
               body: EXPRESSION_IF_ELSE({
                 range: Range.DUMMY,
                 type: int,
+                precedingComments: [],
                 boolExpression: EXPRESSION_VARIABLE({
                   range: Range.DUMMY,
                   type: bool,
+                  precedingComments: [],
                   name: 'b',
                 }),
                 e1: EXPRESSION_VARIABLE({
                   range: Range.DUMMY,
                   type: int,
+                  precedingComments: [],
                   name: 't',
                 }),
-                e2: EXPRESSION_VARIABLE({ range: Range.DUMMY, type: int, name: 'f' }),
+                e2: EXPRESSION_VARIABLE({
+                  range: Range.DUMMY,
+                  type: int,
+                  precedingComments: [],
+                  name: 'f',
+                }),
               }),
             }),
           },
@@ -708,6 +718,7 @@ it('Lambda integration test', () => {
   const expectedExpression = EXPRESSION_STATEMENT_BLOCK({
     range: Range.DUMMY,
     type: int,
+    precedingComments: [],
     block: {
       range: Range.DUMMY,
       statements: [
@@ -718,6 +729,7 @@ it('Lambda integration test', () => {
           assignedExpression: EXPRESSION_LAMBDA({
             range: Range.DUMMY,
             type: functionType([int, int, int], int),
+            precedingComments: [],
             parameters: [
               ['a', int],
               ['b', int],
@@ -727,6 +739,7 @@ it('Lambda integration test', () => {
             body: EXPRESSION_STATEMENT_BLOCK({
               range: Range.DUMMY,
               type: int,
+              precedingComments: [],
               block: {
                 range: Range.DUMMY,
                 statements: [
@@ -737,6 +750,7 @@ it('Lambda integration test', () => {
                     assignedExpression: EXPRESSION_LAMBDA({
                       range: Range.DUMMY,
                       type: functionType([int, int], int),
+                      precedingComments: [],
                       parameters: [
                         ['d', int],
                         ['e', int],
@@ -745,45 +759,54 @@ it('Lambda integration test', () => {
                       body: EXPRESSION_BINARY({
                         range: Range.DUMMY,
                         type: int,
+                        precedingComments: [],
                         operator: PLUS,
                         e1: EXPRESSION_BINARY({
                           range: Range.DUMMY,
                           type: int,
+                          precedingComments: [],
                           operator: PLUS,
                           e1: EXPRESSION_BINARY({
                             range: Range.DUMMY,
                             type: int,
+                            precedingComments: [],
                             operator: PLUS,
                             e1: EXPRESSION_BINARY({
                               range: Range.DUMMY,
                               type: int,
+                              precedingComments: [],
                               operator: PLUS,
                               e1: EXPRESSION_VARIABLE({
                                 range: Range.DUMMY,
                                 type: int,
+                                precedingComments: [],
                                 name: 'a',
                               }),
                               e2: EXPRESSION_VARIABLE({
                                 range: Range.DUMMY,
                                 type: int,
+                                precedingComments: [],
                                 name: 'b',
                               }),
                             }),
                             e2: EXPRESSION_VARIABLE({
                               range: Range.DUMMY,
                               type: int,
+                              precedingComments: [],
                               name: 'c',
                             }),
                           }),
                           e2: EXPRESSION_VARIABLE({
                             range: Range.DUMMY,
                             type: int,
+                            precedingComments: [],
                             name: 'd',
                           }),
                         }),
                         e2: EXPRESSION_VARIABLE({
                           range: Range.DUMMY,
                           type: int,
+                          precedingComments: [],
                           name: 'e',
                         }),
                       }),
@@ -793,14 +816,16 @@ it('Lambda integration test', () => {
                 expression: EXPRESSION_FUNCTION_CALL({
                   range: Range.DUMMY,
                   type: int,
+                  precedingComments: [],
                   functionExpression: EXPRESSION_VARIABLE({
                     range: Range.DUMMY,
                     type: functionType([int, int], int),
+                    precedingComments: [],
                     name: 'f',
                   }),
                   functionArguments: [
-                    EXPRESSION_INT(Range.DUMMY, 1),
-                    EXPRESSION_INT(Range.DUMMY, 2),
+                    EXPRESSION_INT(Range.DUMMY, [], 1),
+                    EXPRESSION_INT(Range.DUMMY, [], 2),
                   ],
                 }),
               },
@@ -811,15 +836,17 @@ it('Lambda integration test', () => {
       expression: EXPRESSION_FUNCTION_CALL({
         range: Range.DUMMY,
         type: int,
+        precedingComments: [],
         functionExpression: EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: functionType([int, int, int], int),
+          precedingComments: [],
           name: 'f',
         }),
         functionArguments: [
-          EXPRESSION_INT(Range.DUMMY, 3),
-          EXPRESSION_INT(Range.DUMMY, 4),
-          EXPRESSION_INT(Range.DUMMY, 5),
+          EXPRESSION_INT(Range.DUMMY, [], 3),
+          EXPRESSION_INT(Range.DUMMY, [], 4),
+          EXPRESSION_INT(Range.DUMMY, [], 5),
         ],
       }),
     },

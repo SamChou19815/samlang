@@ -74,6 +74,7 @@ export class SamlangExpressionLocationLookupBuilder {
         moduleReference,
         EXPRESSION_VARIABLE({
           range: nameRange,
+          precedingComments: [],
           type: identifierType(moduleReference, `class ${moduleReference.toString()}.${name}`),
           name,
         })
@@ -81,7 +82,12 @@ export class SamlangExpressionLocationLookupBuilder {
       members.forEach((member) => {
         this.buildSingleExpression(
           moduleReference,
-          EXPRESSION_VARIABLE({ range: member.nameRange, type: member.type, name: member.name })
+          EXPRESSION_VARIABLE({
+            range: member.nameRange,
+            type: member.type,
+            precedingComments: [],
+            name: member.name,
+          })
         );
         this.buildRecursively(moduleReference, member.body);
       });
@@ -102,6 +108,7 @@ export class SamlangExpressionLocationLookupBuilder {
           EXPRESSION_VARIABLE({
             range: classNameRange,
             type: identifierType(moduleReference, `class ${modRef.toString()}.${className}`),
+            precedingComments: [],
             name: className,
           })
         );
@@ -121,6 +128,7 @@ export class SamlangExpressionLocationLookupBuilder {
               : EXPRESSION_VARIABLE({
                   range: fieldDeclaration.range,
                   type: fieldDeclaration.type,
+                  precedingComments: [],
                   name: fieldDeclaration.name,
                 })
           )
@@ -178,7 +186,7 @@ export class SamlangExpressionLocationLookupBuilder {
               pattern.destructedNames.forEach(({ name, type, range }) => {
                 this.buildSingleExpression(
                   moduleReference,
-                  EXPRESSION_VARIABLE({ range, name: name ?? '_', type })
+                  EXPRESSION_VARIABLE({ range, name: name ?? '_', type, precedingComments: [] })
                 );
               });
               return;
@@ -191,6 +199,7 @@ export class SamlangExpressionLocationLookupBuilder {
                 EXPRESSION_VARIABLE({
                   range: pattern.range,
                   name: pattern.name,
+                  precedingComments: [],
                   type: assignedExpressionType,
                 })
               );
@@ -202,6 +211,7 @@ export class SamlangExpressionLocationLookupBuilder {
                   range: pattern.range,
                   name: '_',
                   type: assignedExpressionType,
+                  precedingComments: [],
                 })
               );
           }
