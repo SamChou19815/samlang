@@ -458,7 +458,7 @@ __metadata:
     samlang-core-printer: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
     typescript: ^4.2.4
-    vscode-languageserver: ^6.1.1
+    vscode-languageserver: ^7.0.0
   bin:
     samlang: ./bin/index.js
   languageName: unknown
@@ -6613,7 +6613,7 @@ typescript@^4.2.4:
   languageName: node
   linkType: hard
 
-"vscode-languageserver-protocol@npm:^3.15.3":
+"vscode-languageserver-protocol@npm:3.16.0":
   version: 3.16.0
   resolution: "vscode-languageserver-protocol@npm:3.16.0"
   dependencies:
@@ -6630,14 +6630,14 @@ typescript@^4.2.4:
   languageName: node
   linkType: hard
 
-"vscode-languageserver@npm:^6.1.1":
-  version: 6.1.1
-  resolution: "vscode-languageserver@npm:6.1.1"
+"vscode-languageserver@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "vscode-languageserver@npm:7.0.0"
   dependencies:
-    vscode-languageserver-protocol: ^3.15.3
+    vscode-languageserver-protocol: 3.16.0
   bin:
-    installServerIntoExtension: ./bin/installServerIntoExtension
-  checksum: c33680e0f52b1391558c8dbd17128f6b12c6adf16ecfabc0c3afb21be09ef954af13a79729d5e0a623ca3341ca73fa0502ecd69554062f4354edabefb508910e
+    installServerIntoExtension: bin/installServerIntoExtension
+  checksum: 6ff28308276acff60b11cc71c635331294d9a25c6c94160f343c5c9bf90bf4f52175121d82b603a8acd17db3d858c6c4ba1cf5aacdbe4244b57677c2ca7d3d4a
   languageName: node
   linkType: hard
 
