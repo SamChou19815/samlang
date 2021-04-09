@@ -56,6 +56,7 @@ export interface ClassMemberExpression extends BaseExpression {
   readonly moduleReference: ModuleReference;
   readonly className: string;
   readonly classNameRange: Range;
+  readonly memberPrecedingComments: readonly TypedComment[];
   readonly memberName: string;
   readonly memberNameRange: Range;
 }
@@ -276,6 +277,7 @@ export const EXPRESSION_CLASS_MEMBER = ({
   moduleReference,
   className,
   classNameRange,
+  memberPrecedingComments,
   memberName,
   memberNameRange,
 }: ExpressionConstructorArgumentObject<ClassMemberExpression>): ClassMemberExpression => ({
@@ -288,6 +290,7 @@ export const EXPRESSION_CLASS_MEMBER = ({
   moduleReference,
   className,
   classNameRange,
+  memberPrecedingComments,
   memberName,
   memberNameRange,
 });
