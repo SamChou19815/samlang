@@ -77,6 +77,7 @@ it('collectModuleReferenceFromExpression works 2/n', () => {
       moduleReference: ModuleReference.ROOT,
       className: 'Foo',
       classNameRange: Range.DUMMY,
+      memberPrecedingComments: [],
       memberName: 'bar',
       memberNameRange: Range.DUMMY,
     }),

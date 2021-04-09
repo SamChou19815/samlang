@@ -852,6 +852,7 @@ export default class SamlangModuleParser extends BaseParser {
         const nextPeeked = this.peek();
         if (nextPeeked.content === '.') {
           this.consume();
+          const memberPrecedingComments = this.collectPrecedingComments();
           const { range: memberNameRange, variable: memberName } = this.assertAndPeekLowerId();
           return EXPRESSION_CLASS_MEMBER({
             range: peeked.range.union(memberNameRange),
@@ -861,6 +862,7 @@ export default class SamlangModuleParser extends BaseParser {
             moduleReference: this.resolveClass(className),
             className,
             classNameRange: peeked.range,
+            memberPrecedingComments,
             memberName,
             memberNameRange,
           });
