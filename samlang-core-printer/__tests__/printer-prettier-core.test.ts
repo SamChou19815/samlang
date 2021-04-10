@@ -34,11 +34,10 @@ it('PRETTIER_MULTILINE_COMMENT test', () => {
  * haha foo bar oh
  * noooooo
  */
-
 `);
   expect(
     prettyPrintAccordingToPrettierAlgorithm(20, PRETTIER_MULTILINE_COMMENT('/**', 'test test'))
-  ).toBe('/** test test */\n\n');
+  ).toBe('/** test test */\n');
 
   expect(
     prettyPrintAccordingToPrettierAlgorithm(
@@ -57,7 +56,6 @@ it('PRETTIER_MULTILINE_COMMENT test', () => {
  * noooooo
  *
  */
-
 `);
 });
 
