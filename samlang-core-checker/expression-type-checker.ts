@@ -222,7 +222,7 @@ class ExpressionTypeChecker {
         checkedDeclarations.push({ range, name, type: checkedType, expression: checkedExpression });
       } else {
         const checkedExpression = this.basicTypeCheck(
-          EXPRESSION_VARIABLE({ range, type, precedingComments: [], name })
+          EXPRESSION_VARIABLE({ range, type, associatedComments: [], name })
         );
         const checkedType = checkedExpression.type;
         declaredFieldTypes[name] = checkedType;
@@ -308,7 +308,7 @@ class ExpressionTypeChecker {
       return EXPRESSION_OBJECT_CONSTRUCTOR({
         range: expression.range,
         type: constraintInferredType,
-        precedingComments: expression.precedingComments,
+        associatedComments: expression.associatedComments,
         fieldDeclarations: sortedFields,
       });
     }
@@ -394,7 +394,7 @@ class ExpressionTypeChecker {
       EXPRESSION_METHOD_ACCESS({
         range: expression.range,
         type: expression.type,
-        precedingComments: expression.precedingComments,
+        associatedComments: expression.associatedComments,
         expression: expression.expression,
         methodName: expression.fieldName,
       })
@@ -409,7 +409,7 @@ class ExpressionTypeChecker {
       return EXPRESSION_METHOD_ACCESS({
         range: expression.range,
         type: constraintInferredType,
-        precedingComments: expression.precedingComments,
+        associatedComments: expression.associatedComments,
         expression: checkedExpression,
         methodName: expression.fieldName,
       });
@@ -547,7 +547,7 @@ class ExpressionTypeChecker {
     return EXPRESSION_FUNCTION_CALL({
       range: expression.range,
       type: constraintInferredType,
-      precedingComments: expression.precedingComments,
+      associatedComments: expression.associatedComments,
       functionExpression: checkedFunctionExpression,
       functionArguments: checkedArguments,
     });
@@ -700,7 +700,7 @@ class ExpressionTypeChecker {
     return EXPRESSION_MATCH({
       range: expression.range,
       type: finalType,
-      precedingComments: expression.precedingComments,
+      associatedComments: expression.associatedComments,
       matchedExpression: checkedMatchedExpression,
       matchingList: checkedMatchingList,
     });
@@ -735,7 +735,7 @@ class ExpressionTypeChecker {
     return EXPRESSION_LAMBDA({
       range: expression.range,
       type: constraintInferredType,
-      precedingComments: expression.precedingComments,
+      associatedComments: expression.associatedComments,
       parameters: expression.parameters,
       captured: Object.fromEntries(captured.entries()),
       body: checkedBody,

@@ -41,7 +41,7 @@ export default class StatementTypeChecker {
         EXPRESSION_PANIC({
           range,
           type: unitType,
-          precedingComments: [],
+          associatedComments: [],
           expression: EXPRESSION_STRING(range, [], ''),
         }),
         expectedType

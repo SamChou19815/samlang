@@ -29,10 +29,10 @@ import type {
 } from 'samlang-core-ast/samlang-toplevel';
 
 const createPrettierDocumentForPrecedingComments = (
-  precedingComments: readonly TypedComment[],
+  associatedComments: readonly TypedComment[],
   removeLastLineBreak: boolean
 ): PrettierDocument => {
-  const documents = precedingComments.flatMap((precedingComment) => {
+  const documents = associatedComments.flatMap((precedingComment) => {
     switch (precedingComment.type) {
       case 'line':
         return [PRETTIER_LINE_COMMENT(precedingComment.text), PRETTIER_EXTENSION_LINE_HARD];
@@ -48,16 +48,16 @@ const createPrettierDocumentForPrecedingComments = (
 };
 
 const createPrettierDocumentForPrecedingCommentsForExpression = (
-  precedingComments: readonly TypedComment[],
+  associatedComments: readonly TypedComment[],
   removeLastLineBreak = false
 ): PrettierDocument =>
-  createPrettierDocumentForPrecedingComments(precedingComments, removeLastLineBreak);
+  createPrettierDocumentForPrecedingComments(associatedComments, removeLastLineBreak);
 
 const createPrettierDocumentForPrecedingCommentsForDefinition = (
-  precedingComments: readonly TypedComment[]
+  associatedComments: readonly TypedComment[]
 ): PrettierDocument =>
   PRETTIER_CONCAT(
-    createPrettierDocumentForPrecedingComments(precedingComments, true),
+    createPrettierDocumentForPrecedingComments(associatedComments, true),
     PRETTIER_LINE
   );
 
@@ -95,7 +95,7 @@ const createPrettierDocumentFromSamlangExpression = (
   };
 
   const commentDoc = createPrettierDocumentForPrecedingCommentsForExpression(
-    expression.precedingComments
+    expression.associatedComments
   );
   const documentWithoutPrecedingComment = (() => {
     switch (expression.__type__) {

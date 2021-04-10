@@ -657,7 +657,7 @@ it('IfElse integration test', () => {
     EXPRESSION_STATEMENT_BLOCK({
       range: Range.DUMMY,
       type: unit,
-      precedingComments: [],
+      associatedComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -668,7 +668,7 @@ it('IfElse integration test', () => {
             assignedExpression: EXPRESSION_LAMBDA({
               range: Range.DUMMY,
               type: functionType([bool, int, int], int),
-              precedingComments: [],
+              associatedComments: [],
               parameters: [
                 ['b', bool],
                 ['t', int],
@@ -678,23 +678,23 @@ it('IfElse integration test', () => {
               body: EXPRESSION_IF_ELSE({
                 range: Range.DUMMY,
                 type: int,
-                precedingComments: [],
+                associatedComments: [],
                 boolExpression: EXPRESSION_VARIABLE({
                   range: Range.DUMMY,
                   type: bool,
-                  precedingComments: [],
+                  associatedComments: [],
                   name: 'b',
                 }),
                 e1: EXPRESSION_VARIABLE({
                   range: Range.DUMMY,
                   type: int,
-                  precedingComments: [],
+                  associatedComments: [],
                   name: 't',
                 }),
                 e2: EXPRESSION_VARIABLE({
                   range: Range.DUMMY,
                   type: int,
-                  precedingComments: [],
+                  associatedComments: [],
                   name: 'f',
                 }),
               }),
@@ -718,7 +718,7 @@ it('Lambda integration test', () => {
   const expectedExpression = EXPRESSION_STATEMENT_BLOCK({
     range: Range.DUMMY,
     type: int,
-    precedingComments: [],
+    associatedComments: [],
     block: {
       range: Range.DUMMY,
       statements: [
@@ -729,7 +729,7 @@ it('Lambda integration test', () => {
           assignedExpression: EXPRESSION_LAMBDA({
             range: Range.DUMMY,
             type: functionType([int, int, int], int),
-            precedingComments: [],
+            associatedComments: [],
             parameters: [
               ['a', int],
               ['b', int],
@@ -739,7 +739,7 @@ it('Lambda integration test', () => {
             body: EXPRESSION_STATEMENT_BLOCK({
               range: Range.DUMMY,
               type: int,
-              precedingComments: [],
+              associatedComments: [],
               block: {
                 range: Range.DUMMY,
                 statements: [
@@ -750,7 +750,7 @@ it('Lambda integration test', () => {
                     assignedExpression: EXPRESSION_LAMBDA({
                       range: Range.DUMMY,
                       type: functionType([int, int], int),
-                      precedingComments: [],
+                      associatedComments: [],
                       parameters: [
                         ['d', int],
                         ['e', int],
@@ -759,58 +759,58 @@ it('Lambda integration test', () => {
                       body: EXPRESSION_BINARY({
                         range: Range.DUMMY,
                         type: int,
-                        precedingComments: [],
+                        associatedComments: [],
                         operatorPrecedingComments: [],
                         operator: PLUS,
                         e1: EXPRESSION_BINARY({
                           range: Range.DUMMY,
                           type: int,
-                          precedingComments: [],
+                          associatedComments: [],
                           operatorPrecedingComments: [],
                           operator: PLUS,
                           e1: EXPRESSION_BINARY({
                             range: Range.DUMMY,
                             type: int,
-                            precedingComments: [],
+                            associatedComments: [],
                             operatorPrecedingComments: [],
                             operator: PLUS,
                             e1: EXPRESSION_BINARY({
                               range: Range.DUMMY,
                               type: int,
-                              precedingComments: [],
+                              associatedComments: [],
                               operatorPrecedingComments: [],
                               operator: PLUS,
                               e1: EXPRESSION_VARIABLE({
                                 range: Range.DUMMY,
                                 type: int,
-                                precedingComments: [],
+                                associatedComments: [],
                                 name: 'a',
                               }),
                               e2: EXPRESSION_VARIABLE({
                                 range: Range.DUMMY,
                                 type: int,
-                                precedingComments: [],
+                                associatedComments: [],
                                 name: 'b',
                               }),
                             }),
                             e2: EXPRESSION_VARIABLE({
                               range: Range.DUMMY,
                               type: int,
-                              precedingComments: [],
+                              associatedComments: [],
                               name: 'c',
                             }),
                           }),
                           e2: EXPRESSION_VARIABLE({
                             range: Range.DUMMY,
                             type: int,
-                            precedingComments: [],
+                            associatedComments: [],
                             name: 'd',
                           }),
                         }),
                         e2: EXPRESSION_VARIABLE({
                           range: Range.DUMMY,
                           type: int,
-                          precedingComments: [],
+                          associatedComments: [],
                           name: 'e',
                         }),
                       }),
@@ -820,11 +820,11 @@ it('Lambda integration test', () => {
                 expression: EXPRESSION_FUNCTION_CALL({
                   range: Range.DUMMY,
                   type: int,
-                  precedingComments: [],
+                  associatedComments: [],
                   functionExpression: EXPRESSION_VARIABLE({
                     range: Range.DUMMY,
                     type: functionType([int, int], int),
-                    precedingComments: [],
+                    associatedComments: [],
                     name: 'f',
                   }),
                   functionArguments: [
@@ -840,11 +840,11 @@ it('Lambda integration test', () => {
       expression: EXPRESSION_FUNCTION_CALL({
         range: Range.DUMMY,
         type: int,
-        precedingComments: [],
+        associatedComments: [],
         functionExpression: EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: functionType([int, int, int], int),
-          precedingComments: [],
+          associatedComments: [],
           name: 'f',
         }),
         functionArguments: [

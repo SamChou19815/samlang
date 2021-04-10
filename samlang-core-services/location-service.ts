@@ -74,7 +74,7 @@ export class SamlangExpressionLocationLookupBuilder {
         moduleReference,
         EXPRESSION_VARIABLE({
           range: nameRange,
-          precedingComments: [],
+          associatedComments: [],
           type: identifierType(moduleReference, `class ${moduleReference.toString()}.${name}`),
           name,
         })
@@ -85,7 +85,7 @@ export class SamlangExpressionLocationLookupBuilder {
           EXPRESSION_VARIABLE({
             range: member.nameRange,
             type: member.type,
-            precedingComments: [],
+            associatedComments: [],
             name: member.name,
           })
         );
@@ -108,7 +108,7 @@ export class SamlangExpressionLocationLookupBuilder {
           EXPRESSION_VARIABLE({
             range: classNameRange,
             type: identifierType(moduleReference, `class ${modRef.toString()}.${className}`),
-            precedingComments: [],
+            associatedComments: [],
             name: className,
           })
         );
@@ -128,7 +128,7 @@ export class SamlangExpressionLocationLookupBuilder {
               : EXPRESSION_VARIABLE({
                   range: fieldDeclaration.range,
                   type: fieldDeclaration.type,
-                  precedingComments: [],
+                  associatedComments: [],
                   name: fieldDeclaration.name,
                 })
           )
@@ -186,7 +186,7 @@ export class SamlangExpressionLocationLookupBuilder {
               pattern.destructedNames.forEach(({ name, type, range }) => {
                 this.buildSingleExpression(
                   moduleReference,
-                  EXPRESSION_VARIABLE({ range, name: name ?? '_', type, precedingComments: [] })
+                  EXPRESSION_VARIABLE({ range, name: name ?? '_', type, associatedComments: [] })
                 );
               });
               return;
@@ -199,7 +199,7 @@ export class SamlangExpressionLocationLookupBuilder {
                 EXPRESSION_VARIABLE({
                   range: pattern.range,
                   name: pattern.name,
-                  precedingComments: [],
+                  associatedComments: [],
                   type: assignedExpressionType,
                 })
               );
@@ -211,7 +211,7 @@ export class SamlangExpressionLocationLookupBuilder {
                   range: pattern.range,
                   name: '_',
                   type: assignedExpressionType,
-                  precedingComments: [],
+                  associatedComments: [],
                 })
               );
           }

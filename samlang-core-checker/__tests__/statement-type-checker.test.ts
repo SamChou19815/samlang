@@ -137,7 +137,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: tupleType([intType, boolType]),
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         })
       ),
@@ -157,7 +157,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: tupleType([intType, boolType]),
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         })
       ),
@@ -191,7 +191,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: identifierType(ModuleReference.ROOT, 'A'),
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         })
       ),
@@ -211,7 +211,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: identifierType(ModuleReference.ROOT, 'A'),
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         })
       ),
@@ -274,7 +274,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
           EXPRESSION_INT(Range.DUMMY, [], 1)
         ),
       ],
-      EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, precedingComments: [], name: 'a' })
+      EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, associatedComments: [], name: 'a' })
     ),
     intType,
     BLOCK(
@@ -285,7 +285,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
           EXPRESSION_INT(Range.DUMMY, [], 1)
         ),
       ],
-      EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, precedingComments: [], name: 'a' })
+      EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, associatedComments: [], name: 'a' })
     ),
   ],
 
@@ -316,7 +316,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       EXPRESSION_STATEMENT_BLOCK({
         range: Range.DUMMY,
         type: unitType,
-        precedingComments: [],
+        associatedComments: [],
         block: BLOCK([]),
       })
     ),
@@ -326,7 +326,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       EXPRESSION_STATEMENT_BLOCK({
         range: Range.DUMMY,
         type: unitType,
-        precedingComments: [],
+        associatedComments: [],
         block: BLOCK([]),
       })
     ),
@@ -354,7 +354,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: tupleType([intType, boolType]),
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         })
       ),
@@ -377,7 +377,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: intType,
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         })
       ),
@@ -401,7 +401,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: tupleType([intType, boolType]),
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         })
       ),
@@ -437,7 +437,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: identifierType(ModuleReference.ROOT, 'B'),
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         })
       ),
@@ -472,7 +472,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: identifierType(ModuleReference.ROOT, 'C'),
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         })
       ),
@@ -509,7 +509,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: tupleType([]),
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         })
       ),
@@ -544,7 +544,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: identifierType(ModuleReference.ROOT, 'A'),
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         })
       ),
@@ -579,7 +579,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: identifierType(ModuleReference.ROOT, 'A'),
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         })
       ),
@@ -618,7 +618,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
       EXPRESSION_VARIABLE({
         range: Range.DUMMY,
         type: boolType,
-        precedingComments: [],
+        associatedComments: [],
         name: 'a',
       })
     ),

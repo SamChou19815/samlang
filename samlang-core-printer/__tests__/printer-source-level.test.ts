@@ -131,11 +131,11 @@ it('prettyPrintSamlangExpression test', () => {
       EXPRESSION_METHOD_ACCESS({
         range: Range.DUMMY,
         type: intType,
-        precedingComments: [],
+        associatedComments: [],
         expression: EXPRESSION_VARIABLE({
           range: Range.DUMMY,
           type: intType,
-          precedingComments: [],
+          associatedComments: [],
           name: 'foo',
         }),
         methodName: 'bar',
