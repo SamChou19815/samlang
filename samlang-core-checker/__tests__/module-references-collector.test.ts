@@ -202,6 +202,7 @@ it('collectModuleReferenceFromExpression works 8/n', () => {
       range: Range.DUMMY,
       type: intType,
       precedingComments: [],
+      operatorPrecedingComments: [],
       operator: MUL,
       e1: intOf(1),
       e2: intOf(1),

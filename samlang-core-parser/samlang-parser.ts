@@ -510,16 +510,17 @@ export default class SamlangModuleParser extends BaseParser {
   };
 
   private parseDisjunction = (): SamlangExpression => {
-    const precedingComments = this.collectPrecedingComments();
     let e = this.parseConjunction();
     // eslint-disable-next-line no-constant-condition
     while (this.peek().content === '||') {
+      const operatorPrecedingComments = this.collectPrecedingComments();
       this.consume();
       const e2 = this.parseConjunction();
       e = EXPRESSION_BINARY({
         range: e.range.union(e2.range),
         type: boolType,
-        precedingComments,
+        precedingComments: [],
+        operatorPrecedingComments,
         operator: OR,
         e1: e,
         e2,
@@ -529,16 +530,17 @@ export default class SamlangModuleParser extends BaseParser {
   };
 
   private parseConjunction = (): SamlangExpression => {
-    const precedingComments = this.collectPrecedingComments();
     let e = this.parseComparison();
     // eslint-disable-next-line no-constant-condition
     while (this.peek().content === '&&') {
+      const operatorPrecedingComments = this.collectPrecedingComments();
       this.consume();
       const e2 = this.parseComparison();
       e = EXPRESSION_BINARY({
         range: e.range.union(e2.range),
         type: boolType,
-        precedingComments,
+        precedingComments: [],
+        operatorPrecedingComments,
         operator: AND,
         e1: e,
         e2,
@@ -551,6 +553,7 @@ export default class SamlangModuleParser extends BaseParser {
     let e = this.parseTerm();
     // eslint-disable-next-line no-constant-condition
     while (true) {
+      const operatorPrecedingComments = this.collectPrecedingComments();
       const peeked = this.peek().content;
       if (
         peeked !== '<' &&
@@ -589,6 +592,7 @@ export default class SamlangModuleParser extends BaseParser {
         range: e.range.union(e2.range),
         type: boolType,
         precedingComments: [],
+        operatorPrecedingComments,
         operator,
         e1: e,
         e2,
@@ -601,6 +605,7 @@ export default class SamlangModuleParser extends BaseParser {
     let e = this.parseFactor();
     // eslint-disable-next-line no-constant-condition
     while (true) {
+      const operatorPrecedingComments = this.collectPrecedingComments();
       const peeked = this.peek().content;
       if (peeked !== '+' && peeked !== '-') break;
       this.consume();
@@ -618,6 +623,7 @@ export default class SamlangModuleParser extends BaseParser {
         range: e.range.union(e2.range),
         type: intType,
         precedingComments: [],
+        operatorPrecedingComments,
         operator,
         e1: e,
         e2,
@@ -630,6 +636,7 @@ export default class SamlangModuleParser extends BaseParser {
     let e = this.parseConcat();
     // eslint-disable-next-line no-constant-condition
     while (true) {
+      const operatorPrecedingComments = this.collectPrecedingComments();
       const peeked = this.peek().content;
       if (peeked !== '*' && peeked !== '/' && peeked !== '%') break;
       this.consume();
@@ -650,6 +657,7 @@ export default class SamlangModuleParser extends BaseParser {
         range: e.range.union(e2.range),
         type: intType,
         precedingComments: [],
+        operatorPrecedingComments,
         operator,
         e1: e,
         e2,
@@ -662,6 +670,7 @@ export default class SamlangModuleParser extends BaseParser {
     let e = this.parseUnaryExpression();
     // eslint-disable-next-line no-constant-condition
     while (this.peek().content === '::') {
+      const operatorPrecedingComments = this.collectPrecedingComments();
       this.consume();
       const e2 = this.parseUnaryExpression();
       e = EXPRESSION_BINARY({
@@ -669,6 +678,7 @@ export default class SamlangModuleParser extends BaseParser {
         type: stringType,
         operator: CONCAT,
         precedingComments: [],
+        operatorPrecedingComments,
         e1: e,
         e2,
       });

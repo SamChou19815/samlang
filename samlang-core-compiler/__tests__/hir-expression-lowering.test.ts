@@ -469,6 +469,7 @@ it('Normal binary lowering works.', () => {
       range: Range.DUMMY,
       type: intType,
       precedingComments: [],
+      operatorPrecedingComments: [],
       operator: PLUS,
       e1: THIS,
       e2: THIS,
@@ -483,6 +484,7 @@ it('String concat binary lowering works.', () => {
       range: Range.DUMMY,
       type: stringType,
       precedingComments: [],
+      operatorPrecedingComments: [],
       operator: CONCAT,
       e1: THIS,
       e2: THIS,
@@ -498,6 +500,7 @@ it('Short circuiting binary lowering works.', () => {
       range: Range.DUMMY,
       type: boolType,
       precedingComments: [],
+      operatorPrecedingComments: [],
       operator: AND,
       e1: EXPRESSION_VARIABLE({
         range: Range.DUMMY,
@@ -526,6 +529,7 @@ return (_t0: bool);`
       range: Range.DUMMY,
       type: boolType,
       precedingComments: [],
+      operatorPrecedingComments: [],
       operator: AND,
       e1: EXPRESSION_TRUE(Range.DUMMY, []),
       e2: EXPRESSION_VARIABLE({
@@ -543,6 +547,7 @@ return (_t0: bool);`
       range: Range.DUMMY,
       type: boolType,
       precedingComments: [],
+      operatorPrecedingComments: [],
       operator: AND,
       e1: EXPRESSION_FALSE(Range.DUMMY, []),
       e2: EXPRESSION_VARIABLE({
@@ -561,6 +566,7 @@ return (_t0: bool);`
       type: boolType,
       operator: OR,
       precedingComments: [],
+      operatorPrecedingComments: [],
       e1: EXPRESSION_TRUE(Range.DUMMY, []),
       e2: EXPRESSION_VARIABLE({
         range: Range.DUMMY,
@@ -577,6 +583,7 @@ return (_t0: bool);`
       range: Range.DUMMY,
       type: boolType,
       precedingComments: [],
+      operatorPrecedingComments: [],
       operator: OR,
       e1: EXPRESSION_FALSE(Range.DUMMY, []),
       e2: EXPRESSION_VARIABLE({
@@ -594,6 +601,7 @@ return (_t0: bool);`
       range: Range.DUMMY,
       type: boolType,
       precedingComments: [],
+      operatorPrecedingComments: [],
       operator: OR,
       e1: EXPRESSION_VARIABLE({
         range: Range.DUMMY,

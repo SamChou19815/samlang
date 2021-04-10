@@ -760,21 +760,25 @@ it('Lambda integration test', () => {
                         range: Range.DUMMY,
                         type: int,
                         precedingComments: [],
+                        operatorPrecedingComments: [],
                         operator: PLUS,
                         e1: EXPRESSION_BINARY({
                           range: Range.DUMMY,
                           type: int,
                           precedingComments: [],
+                          operatorPrecedingComments: [],
                           operator: PLUS,
                           e1: EXPRESSION_BINARY({
                             range: Range.DUMMY,
                             type: int,
                             precedingComments: [],
+                            operatorPrecedingComments: [],
                             operator: PLUS,
                             e1: EXPRESSION_BINARY({
                               range: Range.DUMMY,
                               type: int,
                               precedingComments: [],
+                              operatorPrecedingComments: [],
                               operator: PLUS,
                               e1: EXPRESSION_VARIABLE({
                                 range: Range.DUMMY,
