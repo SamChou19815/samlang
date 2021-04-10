@@ -27,7 +27,7 @@ import { mapOf } from 'samlang-core-utils';
 const THIS = EXPRESSION_THIS({
   range: Range.DUMMY,
   type: identifierType(ModuleReference.ROOT, 'Dummy'),
-  precedingComments: [],
+  associatedComments: [],
 });
 
 it('compileSamlangSourcesToHighIRSources integration test', () => {
@@ -60,11 +60,11 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
             body: EXPRESSION_FUNCTION_CALL({
               range: Range.DUMMY,
               type: unitType,
-              precedingComments: [],
+              associatedComments: [],
               functionExpression: EXPRESSION_CLASS_MEMBER({
                 range: Range.DUMMY,
                 type: functionType([], intType),
-                precedingComments: [],
+                associatedComments: [],
                 typeArguments: [],
                 moduleReference: ModuleReference.ROOT,
                 className: 'Class1',
@@ -118,11 +118,11 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
             body: EXPRESSION_FUNCTION_CALL({
               range: Range.DUMMY,
               type: unitType,
-              precedingComments: [],
+              associatedComments: [],
               functionExpression: EXPRESSION_CLASS_MEMBER({
                 range: Range.DUMMY,
                 type: functionType([], intType),
-                precedingComments: [],
+                associatedComments: [],
                 typeArguments: [],
                 moduleReference: ModuleReference.ROOT,
                 className: 'Class1',
@@ -150,17 +150,17 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
             body: EXPRESSION_IF_ELSE({
               range: Range.DUMMY,
               type: intType,
-              precedingComments: [],
+              associatedComments: [],
               boolExpression: EXPRESSION_BINARY({
                 range: Range.DUMMY,
                 type: boolType,
-                precedingComments: [],
+                associatedComments: [],
                 operatorPrecedingComments: [],
                 operator: EQ,
                 e1: EXPRESSION_VARIABLE({
                   range: Range.DUMMY,
                   type: intType,
-                  precedingComments: [],
+                  associatedComments: [],
                   name: 'n',
                 }),
                 e2: EXPRESSION_INT(Range.DUMMY, [], 0),
@@ -169,11 +169,11 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
               e2: EXPRESSION_FUNCTION_CALL({
                 range: Range.DUMMY,
                 type: intType,
-                precedingComments: [],
+                associatedComments: [],
                 functionExpression: EXPRESSION_CLASS_MEMBER({
                   range: Range.DUMMY,
                   type: functionType([intType, intType], intType),
-                  precedingComments: [],
+                  associatedComments: [],
                   typeArguments: [],
                   moduleReference: ModuleReference.ROOT,
                   className: 'Class1',
@@ -186,13 +186,13 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                   EXPRESSION_BINARY({
                     range: Range.DUMMY,
                     type: intType,
-                    precedingComments: [],
+                    associatedComments: [],
                     operatorPrecedingComments: [],
                     operator: MINUS,
                     e1: EXPRESSION_VARIABLE({
                       range: Range.DUMMY,
                       type: intType,
-                      precedingComments: [],
+                      associatedComments: [],
                       name: 'n',
                     }),
                     e2: EXPRESSION_INT(Range.DUMMY, [], 1),
@@ -200,19 +200,19 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                   EXPRESSION_BINARY({
                     range: Range.DUMMY,
                     type: intType,
-                    precedingComments: [],
+                    associatedComments: [],
                     operatorPrecedingComments: [],
                     operator: MUL,
                     e1: EXPRESSION_VARIABLE({
                       range: Range.DUMMY,
                       type: intType,
-                      precedingComments: [],
+                      associatedComments: [],
                       name: 'n',
                     }),
                     e2: EXPRESSION_VARIABLE({
                       range: Range.DUMMY,
                       type: intType,
-                      precedingComments: [],
+                      associatedComments: [],
                       name: 'acc',
                     }),
                   }),

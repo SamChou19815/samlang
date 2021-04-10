@@ -259,7 +259,7 @@ it('method access expression evaluates correctly', () => {
   const methodAccessExpression = EXPRESSION_METHOD_ACCESS({
     range: Range.DUMMY,
     type: identifierType(ModuleReference.ROOT, 'C', []),
-    precedingComments: [],
+    associatedComments: [],
     expression: {
       ...(getExpression('Tag(5)') as VariantConstructorExpression),
       type: identifierType(ModuleReference.ROOT, 'C', []),
@@ -352,7 +352,7 @@ it('matching list evaluates correctly', () => {
       EXPRESSION_MATCH({
         range: Range.DUMMY,
         type: stringType,
-        precedingComments: [],
+        associatedComments: [],
         matchedExpression: getExpression('Tag(5)'),
         matchingList: [],
       }),

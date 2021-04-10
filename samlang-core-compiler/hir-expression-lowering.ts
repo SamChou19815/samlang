@@ -301,7 +301,7 @@ class HighIRExpressionLoweringManager {
           __type__: 'VariableExpression',
           range: fieldDeclaration.range,
           precedence: 1,
-          precedingComments: [],
+          associatedComments: [],
           type: fieldDeclaration.type,
           name: fieldDeclaration.name,
         };
