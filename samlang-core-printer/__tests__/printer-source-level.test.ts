@@ -38,11 +38,26 @@ const reprintModule = (rawSourceWithTypeAnnotation: string, width = 40): string 
 
 it('prettyPrintSamlangExpression test', () => {
   expect(reprintExpression('1')).toBe('1');
+  expect(reprintExpression('/* dsfsd */ 1')).toBe('/* dsfsd */ 1');
+  expect(reprintExpression('/* long long long long long long long long long long */ 1')).toBe(
+    `/*
+ * long long long long long long long
+ * long long long
+ */
+1`
+  );
   expect(reprintExpression('hi')).toBe('hi');
   expect(reprintExpression('this')).toBe('this');
   expect(reprintExpression('ClassName.classMember')).toBe('ClassName.classMember');
 
   expect(reprintExpression('[1,2,3,4,5,6,7,8,9]')).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9]');
+  expect(reprintExpression('// a\n[/* a*/ 1,// abc\n2,3]')).toBe(`// a
+[
+  /* a */ 1,
+  // abc
+  2,
+  3
+]`);
   expect(reprintExpression('[1,2,3,4,5,6,7,8,9,10,11,12,13,14]')).toBe(
     `[
   1,
@@ -61,6 +76,29 @@ it('prettyPrintSamlangExpression test', () => {
   14
 ]`
   );
+  expect(
+    reprintExpression(
+      '[/* a */ 1, /* a */ 2, /* a */ 3, /* a */ 4, /* a */ 5, /* a */ 6, /* a */ 7, ' +
+        '/* a */ 8, /* a */ 9, /* a */ 10, /* a */ 11, /* a */ 12, /* a */ 13, /* a */ 14]'
+    )
+  ).toBe(
+    `[
+  /* a */ 1,
+  /* a */ 2,
+  /* a */ 3,
+  /* a */ 4,
+  /* a */ 5,
+  /* a */ 6,
+  /* a */ 7,
+  /* a */ 8,
+  /* a */ 9,
+  /* a */ 10,
+  /* a */ 11,
+  /* a */ 12,
+  /* a */ 13,
+  /* a */ 14
+]`
+  );
 
   expect(reprintExpression('{foo:bar,baz}')).toBe('{ foo: bar, baz }');
   expect(reprintExpression('{foo:bar,baz0,baz1,baz2,baz3,baz4,baz5}')).toBe(
@@ -76,6 +114,9 @@ it('prettyPrintSamlangExpression test', () => {
   );
 
   expect(reprintExpression('VariantName(42)')).toBe('VariantName(42)');
+  expect(reprintExpression('/* a */VariantName(/* b */42)')).toBe(
+    '/* a */ VariantName(/* b */ 42)'
+  );
   expect(reprintExpression('VariantName(aVariableNameThatIsVeryVeryVeryLong)')).toBe(
     `VariantName(
   aVariableNameThatIsVeryVeryVeryLong
