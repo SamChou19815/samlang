@@ -3,7 +3,10 @@ import {
   PRETTIER_NIL,
   PRETTIER_CONCAT,
   PRETTIER_TEXT,
+  PRETTIER_NEST,
   PRETTIER_LINE,
+  PRETTIER_EXTENSION_LINE_HARD,
+  PRETTIER_GROUP,
   PRETTIER_NO_SPACE_BRACKET,
   PRETTIER_MULTILINE_COMMENT,
   prettyPrintAccordingToPrettierAlgorithm,
@@ -55,6 +58,31 @@ it('PRETTIER_MULTILINE_COMMENT test', () => {
  *
  */
 
+`);
+});
+
+it('prettier hard-line test', () => {
+  // With a hardline, it forces the entire group to be unable to flatten.
+  expect(
+    prettyPrintAccordingToPrettierAlgorithm(
+      100,
+      PRETTIER_GROUP(
+        PRETTIER_CONCAT(
+          PRETTIER_TEXT('a'),
+          PRETTIER_LINE,
+          PRETTIER_NEST(
+            2,
+            PRETTIER_CONCAT(PRETTIER_TEXT('c'), PRETTIER_EXTENSION_LINE_HARD, PRETTIER_TEXT('d'))
+          ),
+          PRETTIER_LINE,
+          PRETTIER_TEXT('b')
+        )
+      )
+    )
+  ).toBe(`a
+c
+  d
+b
 `);
 });
 
