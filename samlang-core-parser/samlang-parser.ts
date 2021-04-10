@@ -416,7 +416,7 @@ export default class SamlangModuleParser extends BaseParser {
     return documentTextList.length === 0 ? null : documentTextList.join(' ');
   };
 
-  private collectPrecedingComments = (): readonly TypedComment[] => {
+  private collectPrecedingComments = (): TypedComment[] => {
     this.unconsumeComments();
     const comments: TypedComment[] = [];
     // eslint-disable-next-line no-constant-condition
@@ -861,8 +861,9 @@ export default class SamlangModuleParser extends BaseParser {
         const className = peeked.content.content;
         const nextPeeked = this.peek();
         if (nextPeeked.content === '.') {
-          this.consume();
           const memberPrecedingComments = this.collectPrecedingComments();
+          this.consume();
+          memberPrecedingComments.push(...this.collectPrecedingComments());
           const { range: memberNameRange, variable: memberName } = this.assertAndPeekLowerId();
           return EXPRESSION_CLASS_MEMBER({
             range: peeked.range.union(memberNameRange),
