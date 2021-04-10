@@ -155,6 +155,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                 range: Range.DUMMY,
                 type: boolType,
                 precedingComments: [],
+                operatorPrecedingComments: [],
                 operator: EQ,
                 e1: EXPRESSION_VARIABLE({
                   range: Range.DUMMY,
@@ -186,6 +187,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                     range: Range.DUMMY,
                     type: intType,
                     precedingComments: [],
+                    operatorPrecedingComments: [],
                     operator: MINUS,
                     e1: EXPRESSION_VARIABLE({
                       range: Range.DUMMY,
@@ -199,6 +201,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                     range: Range.DUMMY,
                     type: intType,
                     precedingComments: [],
+                    operatorPrecedingComments: [],
                     operator: MUL,
                     e1: EXPRESSION_VARIABLE({
                       range: Range.DUMMY,

@@ -123,6 +123,7 @@ export interface FunctionCallExpression extends BaseExpression {
 
 export interface BinaryExpression extends BaseExpression {
   readonly __type__: 'BinaryExpression';
+  readonly operatorPrecedingComments: readonly TypedComment[];
   readonly operator: BinaryOperator;
   readonly e1: SamlangExpression;
   readonly e2: SamlangExpression;
@@ -441,6 +442,7 @@ export const EXPRESSION_BINARY = ({
   range,
   type,
   precedingComments,
+  operatorPrecedingComments,
   operator,
   e1,
   e2,
@@ -450,6 +452,7 @@ export const EXPRESSION_BINARY = ({
   type,
   precedence: 5 + operator.precedence,
   precedingComments,
+  operatorPrecedingComments,
   operator,
   e1,
   e2,
