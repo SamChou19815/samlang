@@ -48,8 +48,10 @@ const createPrettierDocumentForPrecedingComments = (
 };
 
 const createPrettierDocumentForPrecedingCommentsForExpression = (
-  precedingComments: readonly TypedComment[]
-): PrettierDocument => createPrettierDocumentForPrecedingComments(precedingComments, false);
+  precedingComments: readonly TypedComment[],
+  removeLastLineBreak = false
+): PrettierDocument =>
+  createPrettierDocumentForPrecedingComments(precedingComments, removeLastLineBreak);
 
 const createPrettierDocumentForPrecedingCommentsForDefinition = (
   precedingComments: readonly TypedComment[]
@@ -104,7 +106,14 @@ const createPrettierDocumentFromSamlangExpression = (
       case 'ThisExpression':
         return PRETTIER_TEXT('this');
       case 'ClassMemberExpression':
-        return PRETTIER_TEXT(`${expression.className}.${expression.memberName}`);
+        return PRETTIER_CONCAT(
+          PRETTIER_TEXT(expression.className),
+          createPrettierDocumentForPrecedingCommentsForExpression(
+            expression.memberPrecedingComments
+          ),
+          PRETTIER_TEXT('.'),
+          PRETTIER_TEXT(expression.memberName)
+        );
       case 'TupleConstructorExpression':
         return createBracketSurroundedDocument(
           createCommaSeparatedList(
@@ -172,6 +181,10 @@ const createPrettierDocumentFromSamlangExpression = (
       case 'BinaryExpression':
         return PRETTIER_CONCAT(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
+          createPrettierDocumentForPrecedingCommentsForExpression(
+            expression.operatorPrecedingComments,
+            true
+          ),
           PRETTIER_TEXT(` ${expression.operator.symbol} `),
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
         );
