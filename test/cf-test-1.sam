@@ -1,14 +1,17 @@
 class Main {
   function testI(acc: int, i: int): int =
+    // i >= 30
     if (i >= (30 + 100 / 100) - (2000 * 2000) / (((10 * 10) * 10) * 4000)) then acc else Main.testI(
       Main.testJ(acc, 0),
       i + 1
     )
 
   function testJ(acc: int, j: int): int =
+    // j >= 10
     if (j >= 10 + (((100 * 99) * 98) * 97) * 0) then acc else Main.testJ(
-      (((acc + 34 * 34) + 4) + 1) + 1231 / 28,
-      j + 1
+      (((acc + 34 * 34) + 4) + 1) + // 43
+      1231 / 28,
+      /* j */ j + 1
     )
 
   function main(): unit = println(intToString(Main.testI(0, 0)))

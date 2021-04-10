@@ -19,7 +19,7 @@ class Main {
   function checkAll(): unit = {
     val _: unit = Main.checkInt(42, 21 * 2);
     val _: unit = Main.checkInt(42, 84 / 2);
-    val _: unit = Main.checkInt(42, 91 % 49);
+    val _: unit = Main.checkInt(42, /* 2 */ 91 % 49);
     val _: unit = Main.checkInt(42, 20 + 22);
     val _: unit = Main.checkInt(42, 50 - 8);
     val _: unit = Main.checkBool(false, false);
@@ -48,7 +48,12 @@ class Main {
     val _: unit = Main.checkBool(false, 1 == 2);
     val _: unit = Main.checkBool(false, 1 != 1);
     val _: unit = Main.checkBool(true, 1 != 2);
-    val _: unit = Main.checkBool(true, true == true);
+    val _: unit = Main.checkBool(
+      /* hi */ true,
+      /* f */
+      // hihi
+      true == /* b */ true
+    );
     val _: unit = Main.checkBool(false, true == false);
     val _: unit = Main.checkBool(false, true != true);
     val _: unit = Main.checkBool(true, true != false);

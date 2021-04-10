@@ -145,6 +145,21 @@ export const PRETTIER_SPACED_BRACKET = (
   right: string
 ): PrettierDocument => bracketFlexible(left, PRETTIER_LINE, doc, right);
 
+export const PRETTIER_LINE_COMMENT = (text: string): PrettierDocument => {
+  const words = text.split(' ');
+  const singleLineForm = PRETTIER_TEXT(`// ${text}`);
+  const multipleLineForm = PRETTIER_CONCAT(
+    PRETTIER_TEXT('// '),
+    ...words.map((word) =>
+      PRETTIER_UNION(
+        PRETTIER_TEXT(`${word} `),
+        PRETTIER_CONCAT(PRETTIER_TEXT(word), PRETTIER_EXTENSION_LINE_HARD, PRETTIER_TEXT('// '))
+      )
+    )
+  );
+  return PRETTIER_UNION(singleLineForm, multipleLineForm);
+};
+
 export const PRETTIER_MULTILINE_COMMENT = (starter: string, text: string): PrettierDocument => {
   const words = text.split(' ');
   const singleLineForm = PRETTIER_TEXT(`${starter} ${text} */`);

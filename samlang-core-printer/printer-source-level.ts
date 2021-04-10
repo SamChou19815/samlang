@@ -5,7 +5,9 @@ import {
   PRETTIER_NEST,
   PRETTIER_TEXT,
   PRETTIER_LINE,
+  PRETTIER_EXTENSION_LINE_HARD,
   PRETTIER_GROUP,
+  PRETTIER_LINE_COMMENT,
   PRETTIER_MULTILINE_COMMENT,
   prettyPrintAccordingToPrettierAlgorithm,
 } from './printer-prettier-core';
@@ -17,7 +19,7 @@ import {
   createBracesSurroundedBlockDocument,
 } from './printer-prettier-library';
 
-import { prettyPrintLiteral, prettyPrintType } from 'samlang-core-ast/common-nodes';
+import { prettyPrintLiteral, prettyPrintType, TypedComment } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression, IfElseExpression } from 'samlang-core-ast/samlang-expressions';
 import type {
   ClassMemberDefinition,
@@ -25,6 +27,37 @@ import type {
   ModuleMembersImport,
   SamlangModule,
 } from 'samlang-core-ast/samlang-toplevel';
+
+const createPrettierDocumentForPrecedingComments = (
+  precedingComments: readonly TypedComment[],
+  removeLastLineBreak: boolean
+): PrettierDocument => {
+  const documents = precedingComments.flatMap((precedingComment) => {
+    switch (precedingComment.type) {
+      case 'line':
+        return [PRETTIER_LINE_COMMENT(precedingComment.text), PRETTIER_EXTENSION_LINE_HARD];
+      case 'block':
+        return [PRETTIER_MULTILINE_COMMENT('/*', precedingComment.text), PRETTIER_LINE];
+      case 'doc':
+        return [PRETTIER_MULTILINE_COMMENT('/**', precedingComment.text), PRETTIER_LINE];
+    }
+  });
+  if (documents.length === 0) return PRETTIER_NIL;
+  if (removeLastLineBreak) documents.pop();
+  return PRETTIER_GROUP(PRETTIER_CONCAT(...documents));
+};
+
+const createPrettierDocumentForPrecedingCommentsForExpression = (
+  precedingComments: readonly TypedComment[]
+): PrettierDocument => createPrettierDocumentForPrecedingComments(precedingComments, false);
+
+const createPrettierDocumentForPrecedingCommentsForDefinition = (
+  precedingComments: readonly TypedComment[]
+): PrettierDocument =>
+  PRETTIER_CONCAT(
+    createPrettierDocumentForPrecedingComments(precedingComments, true),
+    PRETTIER_LINE
+  );
 
 const createPrettierDocumentFromSamlangExpression = (
   expression: SamlangExpression
@@ -59,171 +92,182 @@ const createPrettierDocumentFromSamlangExpression = (
     return PRETTIER_CONCAT(...documents);
   };
 
-  switch (expression.__type__) {
-    case 'LiteralExpression':
-      return PRETTIER_TEXT(prettyPrintLiteral(expression.literal));
-    case 'VariableExpression':
-      return PRETTIER_TEXT(expression.name);
-    case 'ThisExpression':
-      return PRETTIER_TEXT('this');
-    case 'ClassMemberExpression':
-      return PRETTIER_TEXT(`${expression.className}.${expression.memberName}`);
-    case 'TupleConstructorExpression':
-      return createBracketSurroundedDocument(
-        createCommaSeparatedList(
-          expression.expressions,
-          createPrettierDocumentFromSamlangExpression
-        )
-      );
-    case 'ObjectConstructorExpression':
-      return createBracesSurroundedDocument(
-        createCommaSeparatedList(expression.fieldDeclarations, (fieldDeclaration) =>
-          fieldDeclaration.expression == null
-            ? PRETTIER_TEXT(fieldDeclaration.name)
-            : PRETTIER_CONCAT(
-                PRETTIER_TEXT(`${fieldDeclaration.name}: `),
-                createPrettierDocumentFromSamlangExpression(fieldDeclaration.expression)
-              )
-        )
-      );
-    case 'VariantConstructorExpression':
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT(expression.tag),
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.data)
-        )
-      );
-    case 'FieldAccessExpression':
-      return PRETTIER_CONCAT(
-        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
-        PRETTIER_TEXT(`.${expression.fieldName}`)
-      );
-    case 'MethodAccessExpression':
-      return PRETTIER_CONCAT(
-        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
-        PRETTIER_TEXT(`.${expression.methodName}`)
-      );
-    case 'UnaryExpression':
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`${expression.operator}`),
-        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression)
-      );
-    case 'PanicExpression':
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT('panic'),
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.expression)
-        )
-      );
-    case 'BuiltInFunctionCallExpression':
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT(expression.functionName),
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.argumentExpression)
-        )
-      );
-    case 'FunctionCallExpression':
-      return PRETTIER_CONCAT(
-        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.functionExpression),
-        createParenthesisSurroundedDocument(
+  const commentDoc = createPrettierDocumentForPrecedingCommentsForExpression(
+    expression.precedingComments
+  );
+  const documentWithoutPrecedingComment = (() => {
+    switch (expression.__type__) {
+      case 'LiteralExpression':
+        return PRETTIER_TEXT(prettyPrintLiteral(expression.literal));
+      case 'VariableExpression':
+        return PRETTIER_TEXT(expression.name);
+      case 'ThisExpression':
+        return PRETTIER_TEXT('this');
+      case 'ClassMemberExpression':
+        return PRETTIER_TEXT(`${expression.className}.${expression.memberName}`);
+      case 'TupleConstructorExpression':
+        return createBracketSurroundedDocument(
           createCommaSeparatedList(
-            expression.functionArguments,
+            expression.expressions,
             createPrettierDocumentFromSamlangExpression
           )
-        )
-      );
-    case 'BinaryExpression':
-      return PRETTIER_CONCAT(
-        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
-        PRETTIER_TEXT(` ${expression.operator.symbol} `),
-        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
-      );
-    case 'IfElseExpression':
-      return createDocumentIfElseExpression(expression);
-    case 'MatchExpression': {
-      const list = expression.matchingList
-        .map(({ tag, dataVariable, expression: finalExpression }) => [
-          PRETTIER_TEXT(`| ${tag} ${dataVariable?.[0] ?? '_'} -> `),
-          createDocumentForSubExpressionConsideringPrecedenceLevel(finalExpression),
-          PRETTIER_LINE,
-        ])
-        .flat();
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT('match '),
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromSamlangExpression(expression.matchedExpression)
-        ),
-        PRETTIER_TEXT(' '),
-        createBracesSurroundedDocument(PRETTIER_CONCAT(...list.slice(0, list.length - 1)))
-      );
-    }
-    case 'LambdaExpression':
-      return PRETTIER_CONCAT(
-        createParenthesisSurroundedDocument(
-          createCommaSeparatedList(expression.parameters, ([name, type]) =>
-            PRETTIER_TEXT(
-              type.type === 'UndecidedType' ? name : `${name}: ${prettyPrintType(type)}`
+        );
+      case 'ObjectConstructorExpression':
+        return createBracesSurroundedDocument(
+          createCommaSeparatedList(expression.fieldDeclarations, (fieldDeclaration) =>
+            fieldDeclaration.expression == null
+              ? PRETTIER_TEXT(fieldDeclaration.name)
+              : PRETTIER_CONCAT(
+                  PRETTIER_TEXT(`${fieldDeclaration.name}: `),
+                  createPrettierDocumentFromSamlangExpression(fieldDeclaration.expression)
+                )
+          )
+        );
+      case 'VariantConstructorExpression':
+        return PRETTIER_CONCAT(
+          PRETTIER_TEXT(expression.tag),
+          createParenthesisSurroundedDocument(
+            createPrettierDocumentFromSamlangExpression(expression.data)
+          )
+        );
+      case 'FieldAccessExpression':
+        return PRETTIER_CONCAT(
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
+          PRETTIER_TEXT(`.${expression.fieldName}`)
+        );
+      case 'MethodAccessExpression':
+        return PRETTIER_CONCAT(
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
+          PRETTIER_TEXT(`.${expression.methodName}`)
+        );
+      case 'UnaryExpression':
+        return PRETTIER_CONCAT(
+          PRETTIER_TEXT(`${expression.operator}`),
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression)
+        );
+      case 'PanicExpression':
+        return PRETTIER_CONCAT(
+          PRETTIER_TEXT('panic'),
+          createParenthesisSurroundedDocument(
+            createPrettierDocumentFromSamlangExpression(expression.expression)
+          )
+        );
+      case 'BuiltInFunctionCallExpression':
+        return PRETTIER_CONCAT(
+          PRETTIER_TEXT(expression.functionName),
+          createParenthesisSurroundedDocument(
+            createPrettierDocumentFromSamlangExpression(expression.argumentExpression)
+          )
+        );
+      case 'FunctionCallExpression':
+        return PRETTIER_CONCAT(
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.functionExpression),
+          createParenthesisSurroundedDocument(
+            createCommaSeparatedList(
+              expression.functionArguments,
+              createPrettierDocumentFromSamlangExpression
             )
           )
-        ),
-        PRETTIER_TEXT(' -> '),
-        createDocumentForSubExpressionConsideringPrecedenceLevel(expression.body)
-      );
-    case 'StatementBlockExpression': {
-      const { statements, expression: finalExpression } = expression.block;
-      const segments = statements
-        .map(({ pattern, typeAnnotation, assignedExpression }) => {
-          let patternDocument: PrettierDocument;
-          switch (pattern.type) {
-            case 'TuplePattern':
-              patternDocument = createBracketSurroundedDocument(
-                createCommaSeparatedList(pattern.destructedNames, (it) =>
-                  PRETTIER_TEXT(it.name ?? '_')
-                )
-              );
-              break;
-            case 'ObjectPattern':
-              patternDocument = createBracesSurroundedDocument(
-                createCommaSeparatedList(pattern.destructedNames, (it) =>
-                  PRETTIER_TEXT(it.alias == null ? it.fieldName : `${it.fieldName} as ${it.alias}`)
-                )
-              );
-              break;
-            case 'VariablePattern':
-              patternDocument = PRETTIER_TEXT(pattern.name);
-              break;
-            case 'WildCardPattern':
-              patternDocument = PRETTIER_TEXT('_');
-              break;
-          }
-          return [
-            PRETTIER_TEXT('val '),
-            patternDocument,
-            typeAnnotation.type === 'UndecidedType'
-              ? PRETTIER_NIL
-              : PRETTIER_TEXT(`: ${prettyPrintType(typeAnnotation)}`),
-            PRETTIER_TEXT(' = '),
-            createPrettierDocumentFromSamlangExpression(assignedExpression),
-            PRETTIER_TEXT(';'),
+        );
+      case 'BinaryExpression':
+        return PRETTIER_CONCAT(
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
+          PRETTIER_TEXT(` ${expression.operator.symbol} `),
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
+        );
+      case 'IfElseExpression':
+        return createDocumentIfElseExpression(expression);
+      case 'MatchExpression': {
+        const list = expression.matchingList
+          .map(({ tag, dataVariable, expression: finalExpression }) => [
+            PRETTIER_TEXT(`| ${tag} ${dataVariable?.[0] ?? '_'} -> `),
+            createDocumentForSubExpressionConsideringPrecedenceLevel(finalExpression),
             PRETTIER_LINE,
-          ];
-        })
-        .flat();
-      const finalExpressionDocument =
-        finalExpression == null
-          ? null
-          : createPrettierDocumentFromSamlangExpression(finalExpression);
-      if (segments.length === 0) {
-        return createBracesSurroundedDocument(finalExpressionDocument ?? PRETTIER_NIL);
+          ])
+          .flat();
+        return PRETTIER_CONCAT(
+          PRETTIER_TEXT('match '),
+          createParenthesisSurroundedDocument(
+            createPrettierDocumentFromSamlangExpression(expression.matchedExpression)
+          ),
+          PRETTIER_TEXT(' '),
+          createBracesSurroundedDocument(PRETTIER_CONCAT(...list.slice(0, list.length - 1)))
+        );
       }
-      if (finalExpressionDocument == null) {
-        segments.pop();
-      } else {
-        segments.push(finalExpressionDocument);
+      case 'LambdaExpression':
+        return PRETTIER_CONCAT(
+          createParenthesisSurroundedDocument(
+            createCommaSeparatedList(expression.parameters, ([name, type]) =>
+              PRETTIER_TEXT(
+                type.type === 'UndecidedType' ? name : `${name}: ${prettyPrintType(type)}`
+              )
+            )
+          ),
+          PRETTIER_TEXT(' -> '),
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.body)
+        );
+      case 'StatementBlockExpression': {
+        const { statements, expression: finalExpression } = expression.block;
+        const segments = statements
+          .map(({ pattern, typeAnnotation, assignedExpression }) => {
+            let patternDocument: PrettierDocument;
+            switch (pattern.type) {
+              case 'TuplePattern':
+                patternDocument = createBracketSurroundedDocument(
+                  createCommaSeparatedList(pattern.destructedNames, (it) =>
+                    PRETTIER_TEXT(it.name ?? '_')
+                  )
+                );
+                break;
+              case 'ObjectPattern':
+                patternDocument = createBracesSurroundedDocument(
+                  createCommaSeparatedList(pattern.destructedNames, (it) =>
+                    PRETTIER_TEXT(
+                      it.alias == null ? it.fieldName : `${it.fieldName} as ${it.alias}`
+                    )
+                  )
+                );
+                break;
+              case 'VariablePattern':
+                patternDocument = PRETTIER_TEXT(pattern.name);
+                break;
+              case 'WildCardPattern':
+                patternDocument = PRETTIER_TEXT('_');
+                break;
+            }
+            return [
+              PRETTIER_TEXT('val '),
+              patternDocument,
+              typeAnnotation.type === 'UndecidedType'
+                ? PRETTIER_NIL
+                : PRETTIER_TEXT(`: ${prettyPrintType(typeAnnotation)}`),
+              PRETTIER_TEXT(' = '),
+              createPrettierDocumentFromSamlangExpression(assignedExpression),
+              PRETTIER_TEXT(';'),
+              PRETTIER_LINE,
+            ];
+          })
+          .flat();
+        const finalExpressionDocument =
+          finalExpression == null
+            ? null
+            : createPrettierDocumentFromSamlangExpression(finalExpression);
+        if (segments.length === 0) {
+          return createBracesSurroundedDocument(finalExpressionDocument ?? PRETTIER_NIL);
+        }
+        if (finalExpressionDocument == null) {
+          segments.pop();
+        } else {
+          segments.push(finalExpressionDocument);
+        }
+        return createBracesSurroundedBlockDocument(segments);
       }
-      return createBracesSurroundedBlockDocument(segments);
     }
-  }
+  })();
+
+  return commentDoc.__type__ !== 'NIL'
+    ? PRETTIER_CONCAT(commentDoc, documentWithoutPrecedingComment)
+    : documentWithoutPrecedingComment;
 };
 
 export const prettyPrintSamlangExpression_EXPOSED_FOR_TESTING = (
@@ -258,7 +302,9 @@ export const createPrettierDocumentsFromSamlangClassMember = (
   return [
     member.documentText == null
       ? PRETTIER_NIL
-      : PRETTIER_CONCAT(PRETTIER_MULTILINE_COMMENT('/**', member.documentText), PRETTIER_LINE),
+      : createPrettierDocumentForPrecedingCommentsForDefinition([
+          { type: 'doc', text: member.documentText },
+        ]),
     member.isPublic ? PRETTIER_NIL : PRETTIER_TEXT('private '),
     PRETTIER_TEXT(member.isMethod ? 'method ' : 'function '),
     member.typeParameters.length > 0
@@ -299,10 +345,9 @@ const createPrettierDocumentsForClassDefinition = (
   return [
     classDefinition.documentText == null
       ? PRETTIER_NIL
-      : PRETTIER_CONCAT(
-          PRETTIER_MULTILINE_COMMENT('/**', classDefinition.documentText),
-          PRETTIER_LINE
-        ),
+      : createPrettierDocumentForPrecedingCommentsForDefinition([
+          { type: 'doc', text: classDefinition.documentText },
+        ]),
     PRETTIER_TEXT(`class ${classDefinition.name}`),
     PRETTIER_TEXT(
       classDefinition.typeParameters.length === 0
