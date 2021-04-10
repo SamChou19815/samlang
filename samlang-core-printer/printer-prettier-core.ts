@@ -28,6 +28,7 @@ export type PrettierDocument =
   | { readonly __type__: 'TEXT'; readonly text: string }
   | { readonly __type__: 'LINE' }
   | { readonly __type__: 'LINE_FLATTEN_TO_NIL' }
+  | { readonly __type__: 'LINE_HARD' }
   | {
       readonly __type__: 'UNION';
       readonly doc1: PrettierDocument;
@@ -83,6 +84,12 @@ export const PRETTIER_EXTENSION_LINE_FLATTEN_TO_NIL: PrettierDocument = {
 };
 
 /**
+ * Sam's extension to prettier's document.
+ * It behaves like `LINE`, except that it must always be a line.
+ */
+export const PRETTIER_EXTENSION_LINE_HARD: PrettierDocument = { __type__: 'LINE_HARD' };
+
+/**
  * Correspond to the `DOC :<|> DOC` node in the prettier paper.
  * It represents two different ways to print the document, where `doc1` is preferred over `doc2`.
  * In general, `doc1` is the flattened version of `doc2`.
@@ -101,8 +108,10 @@ const PRETTIER_UNION = (doc1: PrettierDocument, doc2: PrettierDocument): Prettie
  * This is useful when we want the algorithm to choose between two forms to optimally fitting
  * elements into lines with width constraits.
  */
-export const PRETTIER_GROUP = (document: PrettierDocument): PrettierDocument =>
-  PRETTIER_UNION(flattenPrettierDocument(document), document);
+export const PRETTIER_GROUP = (document: PrettierDocument): PrettierDocument => {
+  const flattened = flattenPrettierDocument(document);
+  return flattened != null ? PRETTIER_UNION(flattened, document) : document;
+};
 
 const bracketFlexible = (
   left: string,
@@ -160,22 +169,27 @@ export const PRETTIER_MULTILINE_COMMENT = (starter: string, text: string): Prett
  * Replace all LINE with TEXT(' ').
  * Correspond to the `flatten` function in the prettier paper.
  */
-const flattenPrettierDocument = (document: PrettierDocument): PrettierDocument => {
+const flattenPrettierDocument = (document: PrettierDocument): PrettierDocument | null => {
   switch (document.__type__) {
     case 'NIL':
     case 'TEXT':
       return document;
-    case 'CONCAT':
-      return PRETTIER_CONCAT(
-        flattenPrettierDocument(document.doc1),
-        flattenPrettierDocument(document.doc2)
-      );
-    case 'NEST':
-      return PRETTIER_NEST(document.indentation, flattenPrettierDocument(document.doc));
+    case 'CONCAT': {
+      const doc1 = flattenPrettierDocument(document.doc1);
+      const doc2 = flattenPrettierDocument(document.doc2);
+      if (doc1 == null || doc2 == null) return null;
+      return PRETTIER_CONCAT(doc1, doc2);
+    }
+    case 'NEST': {
+      const doc = flattenPrettierDocument(document.doc);
+      return doc != null ? PRETTIER_NEST(document.indentation, doc) : null;
+    }
     case 'LINE':
       return PRETTIER_TEXT(' ');
     case 'LINE_FLATTEN_TO_NIL':
       return PRETTIER_NIL;
+    case 'LINE_HARD':
+      return null;
     case 'UNION':
       return flattenPrettierDocument(document.doc1);
   }
@@ -255,6 +269,7 @@ const generateBestDoc = (
       };
     case 'LINE':
     case 'LINE_FLATTEN_TO_NIL':
+    case 'LINE_HARD':
       return {
         __type__: 'LINE',
         indentation,
