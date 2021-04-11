@@ -49,6 +49,11 @@ it('prettyPrintSamlangExpression test', () => {
   expect(reprintExpression('hi')).toBe('hi');
   expect(reprintExpression('this')).toBe('this');
   expect(reprintExpression('ClassName.classMember')).toBe('ClassName.classMember');
+  expect(reprintExpression('ClassName/* a */.classMember')).toBe('ClassName /* a */ .classMember');
+  expect(reprintExpression('ClassName. /* b */classMember')).toBe('ClassName /* b */ .classMember');
+  expect(reprintExpression('ClassName/* a */. /* b */classMember')).toBe(
+    'ClassName /* a */ /* b */ .classMember'
+  );
 
   expect(reprintExpression('[1,2,3,4,5,6,7,8,9]')).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9]');
   expect(reprintExpression('// a\n[/* a*/ 1,// abc\n2,3]')).toBe(`// a
@@ -169,6 +174,9 @@ it('prettyPrintSamlangExpression test', () => {
   );
 
   expect(reprintExpression('1 + 1')).toBe('1 + 1');
+  expect(reprintExpression('/* a */ 1 /* plus */ + /* b */ 1')).toBe(
+    '/* a */ 1 /* plus */ + /* b */ 1'
+  );
   expect(reprintExpression('1 + 1 * 1')).toBe('1 + 1 * 1');
   expect(reprintExpression('(1 + 1) * 1')).toBe('(1 + 1) * 1');
   expect(reprintExpression('1 + 1 + 1')).toBe('(1 + 1) + 1');

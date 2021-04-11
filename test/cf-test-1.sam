@@ -10,7 +10,7 @@ class Main {
     // j >= 10
     if (j >= 10 + (((100 * 99) * 98) * 97) * 0) then acc else Main.testJ(
       (((acc + /* 1156 */ 34 * 34) + 4) + 1) + /* 43 */ 1231 / 28,
-      /* j */ j/* plus */ + 1
+      /* j */ j /* plus */ + 1
     )
 
   function main(): unit =
@@ -18,7 +18,8 @@ class Main {
     println(
       // number -> string
       intToString(
-        Main/* a */
+        Main
+        /* a */
         /* b */
         // c
         .testI(0, 0)

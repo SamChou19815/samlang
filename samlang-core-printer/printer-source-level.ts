@@ -27,11 +27,12 @@ import type {
   ModuleMembersImport,
   SamlangModule,
 } from 'samlang-core-ast/samlang-toplevel';
+import { checkNotNull } from 'samlang-core-utils';
 
-const createPrettierDocumentForPrecedingComments = (
+const createPrettierDocumentForAssociatedComments = (
   associatedComments: readonly TypedComment[],
-  removeLastLineBreak: boolean
-): PrettierDocument => {
+  addFinalLineBreak: boolean
+): PrettierDocument | null => {
   const documents = associatedComments.flatMap((precedingComment) => {
     switch (precedingComment.type) {
       case 'line':
@@ -42,24 +43,14 @@ const createPrettierDocumentForPrecedingComments = (
         return [PRETTIER_MULTILINE_COMMENT('/**', precedingComment.text), PRETTIER_LINE];
     }
   });
-  if (documents.length === 0) return PRETTIER_NIL;
-  if (removeLastLineBreak) documents.pop();
-  return PRETTIER_GROUP(PRETTIER_CONCAT(...documents));
+  if (documents.length === 0) return null;
+  const finalLineBreakIsSoft = checkNotNull(documents[documents.length - 1]).__type__ === 'LINE';
+  if (finalLineBreakIsSoft) documents.pop();
+  const finalMainDocument = PRETTIER_GROUP(PRETTIER_CONCAT(...documents));
+  return addFinalLineBreak && finalLineBreakIsSoft
+    ? PRETTIER_CONCAT(finalMainDocument, PRETTIER_LINE)
+    : finalMainDocument;
 };
-
-const createPrettierDocumentForPrecedingCommentsForExpression = (
-  associatedComments: readonly TypedComment[],
-  removeLastLineBreak = false
-): PrettierDocument =>
-  createPrettierDocumentForPrecedingComments(associatedComments, removeLastLineBreak);
-
-const createPrettierDocumentForPrecedingCommentsForDefinition = (
-  associatedComments: readonly TypedComment[]
-): PrettierDocument =>
-  PRETTIER_CONCAT(
-    createPrettierDocumentForPrecedingComments(associatedComments, true),
-    PRETTIER_LINE
-  );
 
 const createPrettierDocumentFromSamlangExpression = (
   expression: SamlangExpression
@@ -94,8 +85,9 @@ const createPrettierDocumentFromSamlangExpression = (
     return PRETTIER_CONCAT(...documents);
   };
 
-  const commentDoc = createPrettierDocumentForPrecedingCommentsForExpression(
-    expression.associatedComments
+  const precedingCommentDoc = createPrettierDocumentForAssociatedComments(
+    expression.associatedComments,
+    true
   );
   const documentWithoutPrecedingComment = (() => {
     switch (expression.__type__) {
@@ -105,15 +97,22 @@ const createPrettierDocumentFromSamlangExpression = (
         return PRETTIER_TEXT(expression.name);
       case 'ThisExpression':
         return PRETTIER_TEXT('this');
-      case 'ClassMemberExpression':
-        return PRETTIER_CONCAT(
-          PRETTIER_TEXT(expression.className),
-          createPrettierDocumentForPrecedingCommentsForExpression(
-            expression.memberPrecedingComments
-          ),
-          PRETTIER_TEXT('.'),
-          PRETTIER_TEXT(expression.memberName)
+      case 'ClassMemberExpression': {
+        const memberPrecedingCommentsDoc = createPrettierDocumentForAssociatedComments(
+          expression.memberPrecedingComments,
+          true
         );
+        const memberPrecedingCommentsDocs =
+          memberPrecedingCommentsDoc != null ? [PRETTIER_LINE, memberPrecedingCommentsDoc] : [];
+        return PRETTIER_GROUP(
+          PRETTIER_CONCAT(
+            PRETTIER_TEXT(expression.className),
+            ...memberPrecedingCommentsDocs,
+            PRETTIER_TEXT('.'),
+            PRETTIER_TEXT(expression.memberName)
+          )
+        );
+      }
       case 'TupleConstructorExpression':
         return createBracketSurroundedDocument(
           createCommaSeparatedList(
@@ -178,16 +177,22 @@ const createPrettierDocumentFromSamlangExpression = (
             )
           )
         );
-      case 'BinaryExpression':
-        return PRETTIER_CONCAT(
-          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
-          createPrettierDocumentForPrecedingCommentsForExpression(
-            expression.operatorPrecedingComments,
-            true
-          ),
-          PRETTIER_TEXT(` ${expression.operator.symbol} `),
-          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
+      case 'BinaryExpression': {
+        const operatorPrecedingCommentsDoc = createPrettierDocumentForAssociatedComments(
+          expression.operatorPrecedingComments,
+          false
         );
+        const operatorPrecedingCommentsDocs =
+          operatorPrecedingCommentsDoc != null ? [PRETTIER_LINE, operatorPrecedingCommentsDoc] : [];
+        return PRETTIER_GROUP(
+          PRETTIER_CONCAT(
+            createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
+            ...operatorPrecedingCommentsDocs,
+            PRETTIER_TEXT(` ${expression.operator.symbol} `),
+            createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
+          )
+        );
+      }
       case 'IfElseExpression':
         return createDocumentIfElseExpression(expression);
       case 'MatchExpression': {
@@ -278,8 +283,8 @@ const createPrettierDocumentFromSamlangExpression = (
     }
   })();
 
-  return commentDoc.__type__ !== 'NIL'
-    ? PRETTIER_CONCAT(commentDoc, documentWithoutPrecedingComment)
+  return precedingCommentDoc != null
+    ? PRETTIER_GROUP(PRETTIER_CONCAT(precedingCommentDoc, documentWithoutPrecedingComment))
     : documentWithoutPrecedingComment;
 };
 
@@ -312,12 +317,15 @@ export const createPrettierDocumentsFromSamlangClassMember = (
     );
   }
 
-  return [
+  const precedingCommentDoc =
     member.documentText == null
-      ? PRETTIER_NIL
-      : createPrettierDocumentForPrecedingCommentsForDefinition([
-          { type: 'doc', text: member.documentText },
-        ]),
+      ? null
+      : createPrettierDocumentForAssociatedComments(
+          [{ type: 'doc', text: member.documentText }],
+          true
+        );
+  return [
+    precedingCommentDoc ?? PRETTIER_NIL,
     member.isPublic ? PRETTIER_NIL : PRETTIER_TEXT('private '),
     PRETTIER_TEXT(member.isMethod ? 'method ' : 'function '),
     member.typeParameters.length > 0
@@ -355,12 +363,15 @@ const createPrettierDocumentsForClassDefinition = (
     .flat();
   if (classMembersDocuments.length > 1) classMembersDocuments.pop();
 
-  return [
+  const precedingCommentDoc =
     classDefinition.documentText == null
-      ? PRETTIER_NIL
-      : createPrettierDocumentForPrecedingCommentsForDefinition([
-          { type: 'doc', text: classDefinition.documentText },
-        ]),
+      ? null
+      : createPrettierDocumentForAssociatedComments(
+          [{ type: 'doc', text: classDefinition.documentText }],
+          true
+        );
+  return [
+    precedingCommentDoc ?? PRETTIER_NIL,
     PRETTIER_TEXT(`class ${classDefinition.name}`),
     PRETTIER_TEXT(
       classDefinition.typeParameters.length === 0
