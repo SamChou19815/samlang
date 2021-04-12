@@ -85,10 +85,29 @@ const createPrettierDocumentFromSamlangExpression = (
     return PRETTIER_CONCAT(...documents);
   };
 
+  const createDocumentDottedExpression = (
+    base: PrettierDocument,
+    comments: readonly TypedComment[],
+    member: string
+  ) => {
+    const memberPrecedingCommentsDoc = createPrettierDocumentForAssociatedComments(comments, true);
+    const memberPrecedingCommentsDocs =
+      memberPrecedingCommentsDoc != null ? [PRETTIER_LINE, memberPrecedingCommentsDoc] : [];
+    return PRETTIER_GROUP(
+      PRETTIER_CONCAT(
+        base,
+        ...memberPrecedingCommentsDocs,
+        PRETTIER_TEXT('.'),
+        PRETTIER_TEXT(member)
+      )
+    );
+  };
+
   const precedingCommentDoc = createPrettierDocumentForAssociatedComments(
     expression.associatedComments,
     true
   );
+
   const documentWithoutPrecedingComment = (() => {
     switch (expression.__type__) {
       case 'LiteralExpression':
@@ -97,22 +116,12 @@ const createPrettierDocumentFromSamlangExpression = (
         return PRETTIER_TEXT(expression.name);
       case 'ThisExpression':
         return PRETTIER_TEXT('this');
-      case 'ClassMemberExpression': {
-        const memberPrecedingCommentsDoc = createPrettierDocumentForAssociatedComments(
+      case 'ClassMemberExpression':
+        return createDocumentDottedExpression(
+          PRETTIER_TEXT(expression.className),
           expression.memberPrecedingComments,
-          true
+          expression.memberName
         );
-        const memberPrecedingCommentsDocs =
-          memberPrecedingCommentsDoc != null ? [PRETTIER_LINE, memberPrecedingCommentsDoc] : [];
-        return PRETTIER_GROUP(
-          PRETTIER_CONCAT(
-            PRETTIER_TEXT(expression.className),
-            ...memberPrecedingCommentsDocs,
-            PRETTIER_TEXT('.'),
-            PRETTIER_TEXT(expression.memberName)
-          )
-        );
-      }
       case 'TupleConstructorExpression':
         return createBracketSurroundedDocument(
           createCommaSeparatedList(
@@ -123,12 +132,20 @@ const createPrettierDocumentFromSamlangExpression = (
       case 'ObjectConstructorExpression':
         return createBracesSurroundedDocument(
           createCommaSeparatedList(expression.fieldDeclarations, (fieldDeclaration) =>
-            fieldDeclaration.expression == null
-              ? PRETTIER_TEXT(fieldDeclaration.name)
-              : PRETTIER_CONCAT(
-                  PRETTIER_TEXT(`${fieldDeclaration.name}: `),
-                  createPrettierDocumentFromSamlangExpression(fieldDeclaration.expression)
-                )
+            PRETTIER_GROUP(
+              PRETTIER_CONCAT(
+                createPrettierDocumentForAssociatedComments(
+                  fieldDeclaration.associatedComments,
+                  true
+                ) ?? PRETTIER_NIL,
+                fieldDeclaration.expression == null
+                  ? PRETTIER_TEXT(fieldDeclaration.name)
+                  : PRETTIER_CONCAT(
+                      PRETTIER_TEXT(`${fieldDeclaration.name}: `),
+                      createPrettierDocumentFromSamlangExpression(fieldDeclaration.expression)
+                    )
+              )
+            )
           )
         );
       case 'VariantConstructorExpression':
@@ -139,14 +156,16 @@ const createPrettierDocumentFromSamlangExpression = (
           )
         );
       case 'FieldAccessExpression':
-        return PRETTIER_CONCAT(
+        return createDocumentDottedExpression(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
-          PRETTIER_TEXT(`.${expression.fieldName}`)
+          expression.fieldPrecedingComments,
+          expression.fieldName
         );
       case 'MethodAccessExpression':
-        return PRETTIER_CONCAT(
+        return createDocumentDottedExpression(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression),
-          PRETTIER_TEXT(`.${expression.methodName}`)
+          expression.methodPrecedingComments,
+          expression.methodName
         );
       case 'UnaryExpression':
         return PRETTIER_CONCAT(

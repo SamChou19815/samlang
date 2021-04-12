@@ -264,6 +264,7 @@ it('method access expression evaluates correctly', () => {
       ...(getExpression('Tag(5)') as VariantConstructorExpression),
       type: identifierType(ModuleReference.ROOT, 'C', []),
     },
+    methodPrecedingComments: [],
     methodName: 'method',
   });
 

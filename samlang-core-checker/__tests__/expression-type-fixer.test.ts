@@ -212,8 +212,8 @@ it('Object constructors are correctly resolved', () => {
       type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
       associatedComments: [],
       fieldDeclarations: [
-        { range: Range.DUMMY, name: 'a', type: intType },
-        { range: Range.DUMMY, name: 'b', type: boolType, expression: TRUE },
+        { range: Range.DUMMY, associatedComments: [], name: 'a', type: intType },
+        { range: Range.DUMMY, associatedComments: [], name: 'b', type: boolType, expression: TRUE },
       ],
     }),
     EXPRESSION_OBJECT_CONSTRUCTOR({
@@ -224,10 +224,16 @@ it('Object constructors are correctly resolved', () => {
       ]),
       associatedComments: [],
       fieldDeclarations: [
-        { range: Range.DUMMY, name: 'a', type: { type: 'UndecidedType', index: 2 } },
+        {
+          range: Range.DUMMY,
+          associatedComments: [],
+          name: 'a',
+          type: { type: 'UndecidedType', index: 2 },
+        },
         {
           range: Range.DUMMY,
           name: 'b',
+          associatedComments: [],
           type: { type: 'UndecidedType', index: 1 },
           expression: TRUE,
         },
@@ -242,9 +248,15 @@ it('Object constructors are correctly resolved', () => {
       type: identifierType(ModuleReference.ROOT, 'A', [{ type: 'UndecidedType', index: 2 }]),
       associatedComments: [],
       fieldDeclarations: [
-        { range: Range.DUMMY, name: 'a', type: { type: 'UndecidedType', index: 2 } },
         {
           range: Range.DUMMY,
+          associatedComments: [],
+          name: 'a',
+          type: { type: 'UndecidedType', index: 2 },
+        },
+        {
+          range: Range.DUMMY,
+          associatedComments: [],
           name: 'b',
           type: { type: 'UndecidedType', index: 1 },
           expression: TRUE,
@@ -263,9 +275,15 @@ it('Object constructors are correctly resolved', () => {
       ]),
       associatedComments: [],
       fieldDeclarations: [
-        { range: Range.DUMMY, name: 'a', type: { type: 'UndecidedType', index: 2 } },
         {
           range: Range.DUMMY,
+          associatedComments: [],
+          name: 'a',
+          type: { type: 'UndecidedType', index: 2 },
+        },
+        {
+          range: Range.DUMMY,
+          associatedComments: [],
           name: 'b',
           type: { type: 'UndecidedType', index: 1 },
           expression: TRUE,
@@ -339,6 +357,7 @@ it('Field accesses are correctly resolved.', () => {
         type: identifierType(ModuleReference.ROOT, 'Foo'),
         associatedComments: [],
       }),
+      fieldPrecedingComments: [],
       fieldName: 'bar',
       fieldOrder: 1,
     }),
@@ -351,6 +370,7 @@ it('Field accesses are correctly resolved.', () => {
         type: identifierType(ModuleReference.ROOT, 'Foo'),
         associatedComments: [],
       }),
+      fieldPrecedingComments: [],
       fieldName: 'bar',
       fieldOrder: 1,
     }),
@@ -367,6 +387,7 @@ it('Field accesses are correctly resolved.', () => {
         type: identifierType(ModuleReference.ROOT, 'Foo'),
         associatedComments: [],
       }),
+      methodPrecedingComments: [],
       methodName: 'bar',
     }),
     functionType([], intType)
@@ -384,6 +405,7 @@ it('Method accesses are correctly resolved.', () => {
         type: identifierType(ModuleReference.ROOT, 'Foo'),
         associatedComments: [],
       }),
+      methodPrecedingComments: [],
       methodName: 'bar',
     }),
     EXPRESSION_METHOD_ACCESS({
@@ -395,6 +417,7 @@ it('Method accesses are correctly resolved.', () => {
         type: identifierType(ModuleReference.ROOT, 'Foo'),
         associatedComments: [],
       }),
+      methodPrecedingComments: [],
       methodName: 'bar',
     }),
     functionType([], intType)
@@ -410,6 +433,7 @@ it('Method accesses are correctly resolved.', () => {
         type: identifierType(ModuleReference.ROOT, 'Foo'),
         associatedComments: [],
       }),
+      methodPrecedingComments: [],
       methodName: 'bar',
     }),
     functionType([], intType)

@@ -106,11 +106,24 @@ it('prettyPrintSamlangExpression test', () => {
   );
 
   expect(reprintExpression('{foo:bar,baz}')).toBe('{ foo: bar, baz }');
+  expect(reprintExpression('{/*d*/foo:bar,/*f */baz}')).toBe('{ /* d */ foo: bar, /* f */ baz }');
   expect(reprintExpression('{foo:bar,baz0,baz1,baz2,baz3,baz4,baz5}')).toBe(
     `{
   foo: bar,
   baz0,
   baz1,
+  baz2,
+  baz3,
+  baz4,
+  baz5
+}`
+  );
+  expect(reprintExpression('{/*dsf*/foo:bar,baz0,baz1,//dd\nbaz2,baz3,baz4,baz5}')).toBe(
+    `{
+  /* dsf */ foo: bar,
+  baz0,
+  baz1,
+  // dd
   baz2,
   baz3,
   baz4,
@@ -143,6 +156,7 @@ it('prettyPrintSamlangExpression test', () => {
           associatedComments: [],
           name: 'foo',
         }),
+        methodPrecedingComments: [],
         methodName: 'bar',
       })
     ).trimEnd()

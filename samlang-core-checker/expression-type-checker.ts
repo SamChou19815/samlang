@@ -210,7 +210,7 @@ class ExpressionTypeChecker {
   } {
     const declaredFieldTypes: Record<string, Type> = {};
     const checkedDeclarations: ObjectConstructorExpressionFieldConstructor[] = [];
-    fieldDeclarations.forEach(({ range, name, type, expression }) => {
+    fieldDeclarations.forEach(({ range, associatedComments, name, type, expression }) => {
       if (declaredFieldTypes[name] != null) {
         this.errorCollector.reportDuplicateFieldDeclarationError(range, name);
         return;
@@ -219,14 +219,20 @@ class ExpressionTypeChecker {
         const checkedExpression = this.basicTypeCheck(expression);
         const checkedType = checkedExpression.type;
         declaredFieldTypes[name] = checkedType;
-        checkedDeclarations.push({ range, name, type: checkedType, expression: checkedExpression });
+        checkedDeclarations.push({
+          range,
+          associatedComments,
+          name,
+          type: checkedType,
+          expression: checkedExpression,
+        });
       } else {
         const checkedExpression = this.basicTypeCheck(
           EXPRESSION_VARIABLE({ range, type, associatedComments: [], name })
         );
         const checkedType = checkedExpression.type;
         declaredFieldTypes[name] = checkedType;
-        checkedDeclarations.push({ range, name, type: checkedType });
+        checkedDeclarations.push({ range, associatedComments, name, type: checkedType });
       }
     });
     return { declaredFieldTypes, checkedDeclarations };
@@ -395,6 +401,7 @@ class ExpressionTypeChecker {
         type: expression.type,
         associatedComments: expression.associatedComments,
         expression: expression.expression,
+        methodPrecedingComments: expression.fieldPrecedingComments,
         methodName: expression.fieldName,
       })
     );
@@ -410,6 +417,7 @@ class ExpressionTypeChecker {
         type: constraintInferredType,
         associatedComments: expression.associatedComments,
         expression: checkedExpression,
+        methodPrecedingComments: expression.fieldPrecedingComments,
         methodName: expression.fieldName,
       });
     }
