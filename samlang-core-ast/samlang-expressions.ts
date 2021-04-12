@@ -27,7 +27,7 @@ interface BaseExpression extends Node {
   readonly type: Type;
   /** Precedence level. Lower the number, higher the precedence. */
   readonly precedence: number;
-  /** A list of comments immediately before the expression. */
+  /** A list of comments associated with the expression. */
   readonly associatedComments: readonly TypedComment[];
 }
 
@@ -162,6 +162,7 @@ export interface SamlangValStatement extends Node {
   readonly pattern: Pattern;
   readonly typeAnnotation: Type;
   readonly assignedExpression: SamlangExpression;
+  readonly associatedComments: readonly TypedComment[];
 }
 
 export interface StatementBlock extends Node {

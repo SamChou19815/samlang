@@ -962,6 +962,7 @@ it('StatementBlockExpression lowering works.', () => {
                     },
                     typeAnnotation: tupleType([intType, intType]),
                     assignedExpression: { ...THIS, type: tupleType([intType, intType]) },
+                    associatedComments: [],
                   },
                   {
                     range: Range.DUMMY,
@@ -981,12 +982,14 @@ it('StatementBlockExpression lowering works.', () => {
                     },
                     typeAnnotation: DUMMY_IDENTIFIER_TYPE,
                     assignedExpression: THIS,
+                    associatedComments: [],
                   },
                   {
                     range: Range.DUMMY,
                     pattern: { range: Range.DUMMY, type: 'WildCardPattern' },
                     typeAnnotation: DUMMY_IDENTIFIER_TYPE,
                     assignedExpression: THIS,
+                    associatedComments: [],
                   },
                 ],
                 expression: EXPRESSION_VARIABLE({
@@ -997,6 +1000,7 @@ it('StatementBlockExpression lowering works.', () => {
                 }),
               },
             }),
+            associatedComments: [],
           },
         ],
       },
@@ -1039,6 +1043,7 @@ it('shadowing statement block lowering works.', () => {
                       functionName: 'intToString',
                       argumentExpression: THIS,
                     }),
+                    associatedComments: [],
                   },
                 ],
                 expression: EXPRESSION_VARIABLE({
@@ -1049,6 +1054,7 @@ it('shadowing statement block lowering works.', () => {
                 }),
               },
             }),
+            associatedComments: [],
           },
         ],
         expression: EXPRESSION_VARIABLE({

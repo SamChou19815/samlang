@@ -1,5 +1,6 @@
 class Main {
   function main(): unit = {
+    // i == 1
     val i: int = 1;
     val j: int = 2;
     if ((i < j && i > 0) && j > 0) then {

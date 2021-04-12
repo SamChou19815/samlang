@@ -699,6 +699,7 @@ it('IfElse integration test', () => {
                 }),
               }),
             }),
+            associatedComments: [],
           },
         ],
       },
@@ -815,6 +816,7 @@ it('Lambda integration test', () => {
                         }),
                       }),
                     }),
+                    associatedComments: [],
                   },
                 ],
                 expression: EXPRESSION_FUNCTION_CALL({
@@ -835,6 +837,7 @@ it('Lambda integration test', () => {
               },
             }),
           }),
+          associatedComments: [],
         },
       ],
       expression: EXPRESSION_FUNCTION_CALL({
