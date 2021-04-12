@@ -20,7 +20,7 @@ const typeDefinition = {
 
 const class0: ClassDefinition = {
   range: Range.DUMMY,
-  documentText: null,
+  associatedComments: [],
   name: 'Class0',
   nameRange: Range.DUMMY,
   typeParameters: [],
@@ -29,14 +29,14 @@ const class0: ClassDefinition = {
 };
 const class1: ClassDefinition = {
   range: Range.DUMMY,
-  documentText: null,
+  associatedComments: [],
   name: 'Class1',
   nameRange: Range.DUMMY,
   typeParameters: [],
   typeDefinition,
   members: [
     {
-      documentText: null,
+      associatedComments: [],
       range: Range.DUMMY,
       isPublic: true,
       isMethod: true,
@@ -48,7 +48,7 @@ const class1: ClassDefinition = {
       body: EXPRESSION_FALSE(Range.DUMMY, []),
     },
     {
-      documentText: null,
+      associatedComments: [],
       range: Range.DUMMY,
       isPublic: false,
       isMethod: false,
@@ -63,7 +63,7 @@ const class1: ClassDefinition = {
 };
 const class2: ClassDefinition = {
   range: Range.DUMMY,
-  documentText: null,
+  associatedComments: [],
   name: 'Class2',
   nameRange: Range.DUMMY,
   typeParameters: [],

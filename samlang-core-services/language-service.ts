@@ -12,6 +12,7 @@ import {
   Range,
   ModuleReference,
   Location,
+  TypedComment,
 } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type {
@@ -241,6 +242,9 @@ export type AutoCompletionItem = {
   readonly type: string;
 };
 
+const getLastDocComment = (associatedComments?: readonly TypedComment[]): string | undefined =>
+  [...(associatedComments ?? [])].reverse().find((it) => it.type === 'doc')?.text;
+
 export class LanguageServices {
   constructor(
     private readonly state: LanguageServiceState,
@@ -269,7 +273,7 @@ export class LanguageServices {
         ?.members?.find((it) => it.name === functionName);
       if (relevantFunction == null) return null;
       const typeContent = { language: 'samlang', value: prettyPrintType(expression.type) };
-      const document = relevantFunction.documentText;
+      const document = getLastDocComment(relevantFunction.associatedComments);
       return document == null
         ? [[typeContent], expression.range]
         : [[typeContent, { language: 'markdown', value: document }], expression.range];
@@ -279,9 +283,11 @@ export class LanguageServices {
       const moduleParts = type.substring(6).split('.');
       const expressionClassName = checkNotNull(moduleParts.pop());
       const expressionModuleReference = new ModuleReference(moduleParts);
-      const document = this.state
-        .getRawModule(expressionModuleReference)
-        ?.classes.find((it) => it.name === expressionClassName)?.documentText;
+      const document = getLastDocComment(
+        this.state
+          .getRawModule(expressionModuleReference)
+          ?.classes.find((it) => it.name === expressionClassName)?.associatedComments
+      );
       const typeContent = { language: 'samlang', value: `class ${expressionClassName}` };
       return document == null
         ? [[typeContent], expression.range]

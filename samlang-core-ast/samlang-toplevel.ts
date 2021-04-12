@@ -1,4 +1,11 @@
-import type { Type, FunctionType, Range, ModuleReference, Node } from './common-nodes';
+import type {
+  Type,
+  FunctionType,
+  Range,
+  ModuleReference,
+  Node,
+  TypedComment,
+} from './common-nodes';
 import type { SamlangExpression } from './samlang-expressions';
 
 export type AnnotatedVariable = {
@@ -9,7 +16,7 @@ export type AnnotatedVariable = {
 };
 
 export interface ClassMemberDefinition extends Node {
-  readonly documentText: string | null;
+  readonly associatedComments: readonly TypedComment[];
   readonly isPublic: boolean;
   readonly isMethod: boolean;
   readonly nameRange: Range;
@@ -33,7 +40,7 @@ export interface TypeDefinition extends Node {
 }
 
 export interface ClassDefinition extends Node {
-  readonly documentText: string | null;
+  readonly associatedComments: readonly TypedComment[];
   readonly nameRange: Range;
   readonly name: string;
   readonly typeParameters: readonly string[];

@@ -318,15 +318,8 @@ export const createPrettierDocumentsFromSamlangClassMember = (
     );
   }
 
-  const precedingCommentDoc =
-    member.documentText == null
-      ? null
-      : createPrettierDocumentForAssociatedComments(
-          [{ type: 'doc', text: member.documentText }],
-          true
-        );
   return [
-    precedingCommentDoc ?? PRETTIER_NIL,
+    createPrettierDocumentForAssociatedComments(member.associatedComments, true) ?? PRETTIER_NIL,
     member.isPublic ? PRETTIER_NIL : PRETTIER_TEXT('private '),
     PRETTIER_TEXT(member.isMethod ? 'method ' : 'function '),
     member.typeParameters.length > 0
@@ -364,15 +357,9 @@ const createPrettierDocumentsForClassDefinition = (
     .flat();
   if (classMembersDocuments.length > 1) classMembersDocuments.pop();
 
-  const precedingCommentDoc =
-    classDefinition.documentText == null
-      ? null
-      : createPrettierDocumentForAssociatedComments(
-          [{ type: 'doc', text: classDefinition.documentText }],
-          true
-        );
   return [
-    precedingCommentDoc ?? PRETTIER_NIL,
+    createPrettierDocumentForAssociatedComments(classDefinition.associatedComments, true) ??
+      PRETTIER_NIL,
     PRETTIER_TEXT(`class ${classDefinition.name}`),
     PRETTIER_TEXT(
       classDefinition.typeParameters.length === 0

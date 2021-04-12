@@ -36,7 +36,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
     classes: [
       {
         range: Range.DUMMY,
-        documentText: null,
+        associatedComments: [],
         name: 'Main',
         nameRange: Range.DUMMY,
         typeParameters: [],
@@ -48,7 +48,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
         },
         members: [
           {
-            documentText: null,
+            associatedComments: [],
             range: Range.DUMMY,
             isPublic: true,
             isMethod: false,
@@ -80,7 +80,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
       },
       {
         range: Range.DUMMY,
-        documentText: null,
+        associatedComments: [],
         name: 'Class1',
         nameRange: Range.DUMMY,
         typeParameters: [],
@@ -92,7 +92,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
         },
         members: [
           {
-            documentText: null,
+            associatedComments: [],
             range: Range.DUMMY,
             isPublic: true,
             isMethod: true,
@@ -106,7 +106,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
             body: THIS,
           },
           {
-            documentText: null,
+            associatedComments: [],
             range: Range.DUMMY,
             isPublic: true,
             isMethod: false,
@@ -135,7 +135,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
             }),
           },
           {
-            documentText: null,
+            associatedComments: [],
             range: Range.DUMMY,
             isPublic: true,
             isMethod: false,
@@ -224,7 +224,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
       },
       {
         range: Range.DUMMY,
-        documentText: null,
+        associatedComments: [],
         name: 'Class2',
         nameRange: Range.DUMMY,
         typeParameters: [],
@@ -233,7 +233,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
       },
       {
         range: Range.DUMMY,
-        documentText: null,
+        associatedComments: [],
         name: 'Class3',
         nameRange: Range.DUMMY,
         typeParameters: ['T'],
