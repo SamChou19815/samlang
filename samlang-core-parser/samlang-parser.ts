@@ -446,13 +446,31 @@ export default class SamlangModuleParser extends BaseParser {
 
   parseExpression = (): SamlangExpression => this.parseMatch();
 
+  private parseExpressionWithEndingComments = (): SamlangExpression => {
+    const parsed = this.parseExpression();
+    return {
+      ...parsed,
+      associatedComments: [...parsed.associatedComments, ...this.collectPrecedingComments()],
+    };
+  };
+
+  private parseCommaSeparatedExpressions = (): SamlangExpression[] => {
+    const collector: SamlangExpression[] = [];
+    collector.push(this.parseExpressionWithEndingComments());
+    while (this.peek().content === ',') {
+      this.consume();
+      collector.push(this.parseExpressionWithEndingComments());
+    }
+    return collector;
+  };
+
   private parseMatch = (): SamlangExpression => {
     const associatedComments = this.collectPrecedingComments();
     const peeked = this.peek();
     if (peeked.content !== 'match') return this.parseIfElse();
     this.consume();
     this.assertAndConsume('(');
-    const matchedExpression = this.parseExpression();
+    const matchedExpression = this.parseExpressionWithEndingComments();
     this.assertAndConsume(')');
     this.assertAndConsume('{');
     const matchingList = [this.parsePatternToExpression()];
@@ -723,7 +741,7 @@ export default class SamlangModuleParser extends BaseParser {
     if (peeked.content === 'panic') {
       this.consume();
       this.assertAndConsume('(');
-      const expression = this.parseExpression();
+      const expression = this.parseExpressionWithEndingComments();
       const endRange = this.assertAndConsume(')');
       return EXPRESSION_PANIC({
         range: peeked.range.union(endRange),
@@ -735,7 +753,7 @@ export default class SamlangModuleParser extends BaseParser {
     if (peeked.content === 'stringToInt') {
       this.consume();
       this.assertAndConsume('(');
-      const argumentExpression = this.parseExpression();
+      const argumentExpression = this.parseExpressionWithEndingComments();
       const endRange = this.assertAndConsume(')');
       return EXPRESSION_BUILTIN_FUNCTION_CALL({
         range: peeked.range.union(endRange),
@@ -748,7 +766,7 @@ export default class SamlangModuleParser extends BaseParser {
     if (peeked.content === 'intToString') {
       this.consume();
       this.assertAndConsume('(');
-      const argumentExpression = this.parseExpression();
+      const argumentExpression = this.parseExpressionWithEndingComments();
       const endRange = this.assertAndConsume(')');
       return EXPRESSION_BUILTIN_FUNCTION_CALL({
         range: peeked.range.union(endRange),
@@ -761,7 +779,7 @@ export default class SamlangModuleParser extends BaseParser {
     if (peeked.content === 'println') {
       this.consume();
       this.assertAndConsume('(');
-      const argumentExpression = this.parseExpression();
+      const argumentExpression = this.parseExpressionWithEndingComments();
       const endRange = this.assertAndConsume(')');
       return EXPRESSION_BUILTIN_FUNCTION_CALL({
         range: peeked.range.union(endRange),
@@ -790,7 +808,7 @@ export default class SamlangModuleParser extends BaseParser {
       } else {
         this.consume();
         const functionArguments =
-          this.peek().content === ')' ? [] : this.parseCommaSeparatedList(this.parseExpression);
+          this.peek().content === ')' ? [] : this.parseCommaSeparatedExpressions();
         const endRange = this.assertAndConsume(')');
         functionExpression = EXPRESSION_FUNCTION_CALL({
           range: peeked.range.union(endRange),
@@ -880,7 +898,7 @@ export default class SamlangModuleParser extends BaseParser {
         }
         if (nextPeeked.content === '(') {
           this.consume();
-          const child = this.parseExpression();
+          const child = this.parseExpressionWithEndingComments();
           const endRange = this.assertAndConsume(')');
           return EXPRESSION_VARIANT_CONSTRUCTOR({
             range: peeked.range.union(endRange),
@@ -961,14 +979,14 @@ export default class SamlangModuleParser extends BaseParser {
         }
         this.unconsume();
       }
-      const nestedExpression = this.parseExpression();
+      const nestedExpression = this.parseExpressionWithEndingComments();
       this.assertAndConsume(')');
       return nestedExpression;
     }
 
     if (peeked.content === '[') {
       this.consume();
-      const expressions = this.parseCommaSeparatedList(this.parseExpression);
+      const expressions = this.parseCommaSeparatedExpressions();
       const endRange = this.assertAndConsume(']');
       return EXPRESSION_TUPLE_CONSTRUCTOR({
         range: peeked.range.union(endRange),
