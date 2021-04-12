@@ -1,6 +1,4 @@
-/**
- Some exports to help write Xi bindings
-*/
+/** Some exports to help write Xi bindings */
 #ifndef LIBXI_H
 #define LIBXI_H
 

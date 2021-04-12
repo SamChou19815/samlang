@@ -100,9 +100,7 @@ samlang_int SAMLANG_BUILTIN(stringToInt)(samlang_string str) {
 samlang_string SAMLANG_BUILTIN(intToString)(samlang_int in) {
   char buffer[32]; // more than enough to represent 64-bit numbers
 
-#if defined(WINDOWS) || defined(WIN32)
-  sprintf(buffer, "%I64d", in);
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
   sprintf(buffer, "%lld", in);
 #else
   sprintf(buffer, "%ld", in);

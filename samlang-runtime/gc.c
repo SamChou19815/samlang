@@ -106,129 +106,56 @@ static inline bool gc_is_marked_index(uint8_t *markptr_0, uint32_t idx);
 #define gc_read_prefetch(ptr)   __builtin_prefetch((ptr), 0, 1)
 #define gc_write_prefetch(ptr)  __builtin_prefetch((ptr), 1)
 
-/*
- * GC platform specific.
- */
-#ifdef __MINGW32__
-
-/*
- * Windows.
- */
-
-#include <windows.h>
-#include <winnt.h>
-
-static void *gc_get_memory(void)
-{
-    // Note: Windows (stupidly) assumes that if we are reserving address
-    //       space, then there must be enough physical memory to fill that
-    //       region.  The work-around is to do lots of small allocates that
-    //       do not violate this assumption.
-    size_t increment = 256 * 1048576;   // 256Mb
-    for (size_t i = 0; i < GC_REGION_SIZE*GC_NUM_REGIONS; i += increment)
-    {
-        void *addr;
-        if ((addr = VirtualAlloc(GC_MEMORY + i, increment, MEM_RESERVE,
-                PAGE_READWRITE)) != GC_MEMORY + i)
-            return NULL;
-    }
-    return GC_MEMORY;
-}
-static void *gc_get_mark_memory(size_t size)
-{
-    return VirtualAlloc(NULL, size, MEM_RESERVE, PAGE_READWRITE);
-}
-static void gc_free_memory(void *ptr, size_t size)
-{
-    VirtualFree(ptr, 0, MEM_RELEASE);
-}
-static void gc_zero_memory(void *ptr, size_t size)
-{
-    memset(ptr, 0, size + GC_PAGESIZE);
-}
-static int gc_protect_memory(void *ptr, size_t size)
-{
-    void *ptr1 = (void *)(((uintptr_t)ptr / GC_PAGESIZE) * GC_PAGESIZE);
-    void *result = VirtualAlloc(ptr1, size + (ptr-ptr1), MEM_COMMIT,
-        PAGE_READWRITE);
-    return (ptr1 != result);
-}
-struct _TEB
-{
-    NT_TIB NtTib;
-};
-static void *gc_get_stackbottom(void)
-{
-    return NtCurrentTeb()->NtTib.StackBase;
-}
-#else       /* __MINGW32__ */
-
-/*
- * Linux/MACOSX.
- */
-
 #include <sys/mman.h>
 #include <sys/syscall.h>
 
-static void *gc_get_memory(void)
-{
+static void *gc_get_memory(void) {
 #ifdef __APPLE__
-    int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE | MAP_FIXED;
+  int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE | MAP_FIXED;
 #else       /* __APPLE__ */
-    int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
+  int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
 #endif      /* __APPLE__ */
-    void *ptr = mmap(GC_MEMORY, GC_REGION_SIZE*GC_NUM_REGIONS,
-        PROT_READ | PROT_WRITE, flags, -1, 0);
-    return (ptr == MAP_FAILED? NULL: ptr);
+  void *ptr = mmap(GC_MEMORY, GC_REGION_SIZE*GC_NUM_REGIONS, PROT_READ | PROT_WRITE, flags, -1, 0);
+  return (ptr == MAP_FAILED? NULL: ptr);
 }
-static void *gc_get_mark_memory(size_t size)
-{
+static void *gc_get_mark_memory(size_t size) {
 #ifdef __APPLE__
-    int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
+  int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
 #else       /* __APPLE__ */
-    int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
+  int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
 #endif      /* __APPLE__ */
-    void *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0);
-    return (ptr == MAP_FAILED? NULL: ptr);
+  void *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0);
+  return (ptr == MAP_FAILED? NULL: ptr);
 }
-static void gc_zero_memory(void *ptr, size_t size)
-{
-    size += GC_PAGESIZE;
+static void gc_zero_memory(void *ptr, size_t size) {
+  size += GC_PAGESIZE;
 #ifdef __APPLE__
-    memset(ptr, 0, size);
+  memset(ptr, 0, size);
 #else       /* __APPLE__ */
-    madvise(ptr, size, MADV_DONTNEED);
+  madvise(ptr, size, MADV_DONTNEED);
 #endif      /* __APPLE__ */
 }
-static void gc_free_memory(void *ptr, size_t size)
-{
-    munmap(ptr, size);
+static void gc_free_memory(void *ptr, size_t size) {
+  munmap(ptr, size);
 }
-static int gc_protect_memory(void *ptr, size_t size)
-{
-    void *ptr1 = (void *)(((uintptr_t)ptr / GC_PAGESIZE) * GC_PAGESIZE);
-    return mprotect(ptr1, size + (ptr-ptr1), PROT_READ | PROT_WRITE);
+static int gc_protect_memory(void *ptr, size_t size) {
+  void *ptr1 = (void *)(((uintptr_t)ptr / GC_PAGESIZE) * GC_PAGESIZE);
+  return mprotect(ptr1, size + (ptr-ptr1), PROT_READ | PROT_WRITE);
 }
-static void *gc_get_stackbottom(void)
-{
-    void *stackbottom;
-    stackbottom = (void *)gc_stacktop();
-    stackbottom = (void *)(((uintptr_t)(stackbottom + GC_PAGESIZE)
-        / GC_PAGESIZE) * GC_PAGESIZE);
-    unsigned char vec;
+static void *gc_get_stackbottom(void) {
+  void *stackbottom;
+  stackbottom = (void *)gc_stacktop();
+  stackbottom = (void *)(((uintptr_t)(stackbottom + GC_PAGESIZE) / GC_PAGESIZE) * GC_PAGESIZE);
+  unsigned char vec;
 #ifdef __APPLE__
-    while (mincore(stackbottom, GC_PAGESIZE, &vec) == 0 && vec != 0)
-        stackbottom += GC_PAGESIZE;
+  while (mincore(stackbottom, GC_PAGESIZE, &vec) == 0 && vec != 0) stackbottom += GC_PAGESIZE;
 #else       /* __APPLE__ */
-    while (mincore(stackbottom, GC_PAGESIZE, &vec) == 0)
-        stackbottom += GC_PAGESIZE;
-    if (errno != ENOMEM)
-        return false;
+  while (mincore(stackbottom, GC_PAGESIZE, &vec) == 0) stackbottom += GC_PAGESIZE;
+  if (errno != ENOMEM) return false;
 #endif      /* __APPLE__ */
-    stackbottom -= sizeof(void *);
-    return stackbottom;
+  stackbottom -= sizeof(void *);
+  return stackbottom;
 }
-#endif      /* __MINGW32__ */
 
 /** Get the top of the stack. */
 static __attribute__((noinline)) void *gc_stacktop(void) {
@@ -636,9 +563,7 @@ static void gc_sweep(void) {
           freesize -= diff;
           void *freeptr = region->startptr + offset;
           freesize -= freesize % GC_PAGESIZE;
-#ifndef __MINGW32__
           madvise(freeptr, freesize, MADV_DONTNEED);
-#endif      /* __MINGW32__ */
         }
         freesize = 0;
         if (start) {
