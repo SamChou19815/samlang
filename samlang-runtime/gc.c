@@ -110,30 +110,18 @@ static inline bool gc_is_marked_index(uint8_t *markptr_0, uint32_t idx);
 #include <sys/syscall.h>
 
 static void *gc_get_memory(void) {
-#ifdef __APPLE__
   int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE | MAP_FIXED;
-#else       /* __APPLE__ */
-  int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE | MAP_FIXED;
-#endif      /* __APPLE__ */
   void *ptr = mmap(GC_MEMORY, GC_REGION_SIZE*GC_NUM_REGIONS, PROT_READ | PROT_WRITE, flags, -1, 0);
   return (ptr == MAP_FAILED? NULL: ptr);
 }
 static void *gc_get_mark_memory(size_t size) {
-#ifdef __APPLE__
   int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
-#else       /* __APPLE__ */
-  int flags = MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE;
-#endif      /* __APPLE__ */
   void *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0);
   return (ptr == MAP_FAILED? NULL: ptr);
 }
 static void gc_zero_memory(void *ptr, size_t size) {
   size += GC_PAGESIZE;
-#ifdef __APPLE__
-  memset(ptr, 0, size);
-#else       /* __APPLE__ */
   madvise(ptr, size, MADV_DONTNEED);
-#endif      /* __APPLE__ */
 }
 static void gc_free_memory(void *ptr, size_t size) {
   munmap(ptr, size);
@@ -147,12 +135,8 @@ static void *gc_get_stackbottom(void) {
   stackbottom = (void *)gc_stacktop();
   stackbottom = (void *)(((uintptr_t)(stackbottom + GC_PAGESIZE) / GC_PAGESIZE) * GC_PAGESIZE);
   unsigned char vec;
-#ifdef __APPLE__
-  while (mincore(stackbottom, GC_PAGESIZE, &vec) == 0 && vec != 0) stackbottom += GC_PAGESIZE;
-#else       /* __APPLE__ */
   while (mincore(stackbottom, GC_PAGESIZE, &vec) == 0) stackbottom += GC_PAGESIZE;
   if (errno != ENOMEM) return false;
-#endif      /* __APPLE__ */
   stackbottom -= sizeof(void *);
   return stackbottom;
 }

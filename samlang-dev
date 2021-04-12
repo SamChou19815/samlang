@@ -1,3 +1,0 @@
-#!/bin/bash
-MY_PATH=$(dirname "$0")
-"${MY_PATH}"/samlang-cli/bin/index.js "$@"
