@@ -135,7 +135,7 @@ static void *gc_get_stackbottom(void) {
   stackbottom = (void *)gc_stacktop();
   stackbottom = (void *)(((uintptr_t)(stackbottom + GC_PAGESIZE) / GC_PAGESIZE) * GC_PAGESIZE);
   unsigned char vec;
-  while (mincore(stackbottom, GC_PAGESIZE, &vec) == 0) stackbottom += GC_PAGESIZE;
+  while (mincore(stackbottom, GC_PAGESIZE, &vec) == 0 && vec != 0) stackbottom += GC_PAGESIZE;
   if (errno != ENOMEM) return false;
   stackbottom -= sizeof(void *);
   return stackbottom;
