@@ -7,7 +7,7 @@ import { hashMapOf } from 'samlang-core-utils';
 
 const createMockClass = (name: string): ClassDefinition => ({
   range: Range.DUMMY,
-  documentText: null,
+  associatedComments: [],
   name,
   nameRange: Range.DUMMY,
   typeParameters: [],

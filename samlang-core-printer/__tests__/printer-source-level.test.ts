@@ -299,7 +299,7 @@ class Option<T>(None(unit), Some(T)) {
       | Some a -> a
     }
 
-  /* ignored */ /** foo bar a */
+  /* not ignored */ /** foo bar a */
   function a(): int = 3
 
   /** foo bar b */
@@ -349,7 +349,7 @@ class Option<T>(None(unit), Some(T)) {
       | Some a -> a
     }
 
-  /** foo bar a */
+  /* not ignored */ /** foo bar a */
   function a(): int = 3
 
   /** foo bar b */

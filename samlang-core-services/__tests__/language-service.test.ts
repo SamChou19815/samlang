@@ -130,6 +130,7 @@ class Test2 {
 it('LanguageServices type query test 1', () => {
   const testModuleReference = new ModuleReference(['Test']);
   const test2ModuleReference = new ModuleReference(['Test2']);
+  const test3ModuleReference = new ModuleReference(['Test3']);
   const state = new LanguageServiceState([
     [
       testModuleReference,
@@ -152,47 +153,30 @@ class Test1(val a: int) {
 }
 `,
     ],
+    [test3ModuleReference, 'class Test1 { function test(): int = NonExisting.test() }'],
   ]);
   const service = new LanguageServices(state, () => '');
 
   expect(service.queryForHover(testModuleReference, new Position(100, 100))).toBeNull();
   expect(service.queryForHover(testModuleReference, new Position(3, 27))?.[0]).toEqual([
-    {
-      language: 'samlang',
-      value: 'string',
-    },
+    { language: 'samlang', value: 'string' },
   ]);
   expect(service.queryForHover(testModuleReference, new Position(1, 9))?.[0]).toEqual([
-    {
-      language: 'samlang',
-      value: 'class Test1',
-    },
-    {
-      language: 'markdown',
-      value: 'Test',
-    },
+    { language: 'samlang', value: 'class Test1' },
+    { language: 'markdown', value: 'Test' },
   ]);
   expect(service.queryForHover(testModuleReference, new Position(5, 34))?.[0]).toEqual([
-    {
-      language: 'samlang',
-      value: '() -> int',
-    },
-    {
-      language: 'markdown',
-      value: 'test',
-    },
+    { language: 'samlang', value: '() -> int' },
+    { language: 'markdown', value: 'test' },
   ]);
   expect(service.queryForHover(test2ModuleReference, new Position(1, 9))?.[0]).toEqual([
-    {
-      language: 'samlang',
-      value: 'class Test1',
-    },
+    { language: 'samlang', value: 'class Test1' },
   ]);
   expect(service.queryForHover(test2ModuleReference, new Position(4, 36))?.[0]).toEqual([
-    {
-      language: 'samlang',
-      value: '() -> int',
-    },
+    { language: 'samlang', value: '() -> int' },
+  ]);
+  expect(service.queryForHover(test3ModuleReference, new Position(0, 45))?.[0]).toEqual([
+    { language: 'samlang', value: 'class NonExisting' },
   ]);
 });
 

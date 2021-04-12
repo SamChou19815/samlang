@@ -26,7 +26,7 @@ it('collectModuleReferenceFromSamlangModule works', () => {
       classes: [
         {
           range: Range.DUMMY,
-          documentText: null,
+          associatedComments: [],
           name: 'aa',
           nameRange: Range.DUMMY,
           typeParameters: [],
@@ -38,7 +38,7 @@ it('collectModuleReferenceFromSamlangModule works', () => {
           },
           members: [
             {
-              documentText: null,
+              associatedComments: [],
               name: '',
               range: Range.DUMMY,
               nameRange: Range.DUMMY,

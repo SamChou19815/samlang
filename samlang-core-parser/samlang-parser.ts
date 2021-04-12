@@ -270,14 +270,14 @@ export default class SamlangModuleParser extends BaseParser {
   private parseClassHeader = (): Omit<ClassDefinition, 'range' | 'members'> & {
     readonly startRange: Range;
   } => {
-    const documentText = this.parseDocComments();
+    const associatedComments = this.collectPrecedingComments();
     const startRange = this.assertAndConsume('class');
     const { range: nameRange, variable: name } = this.assertAndPeekUpperId();
     if (this.peek().content === '{') {
       // Util class. Now the class header has ended.
       return {
         startRange,
-        documentText,
+        associatedComments,
         nameRange,
         name,
         typeParameters: [],
@@ -301,7 +301,7 @@ export default class SamlangModuleParser extends BaseParser {
       range: (typeParameterRangeStart || typeDefinitionRangeStart).union(typeDefinitionRangeEnd),
       ...innerTypeDefinition,
     };
-    return { startRange, documentText, nameRange, name, typeParameters, typeDefinition };
+    return { startRange, associatedComments, nameRange, name, typeParameters, typeDefinition };
   };
 
   private parseTypeDefinitionInner = (): Omit<TypeDefinition, 'range'> => {
@@ -341,7 +341,7 @@ export default class SamlangModuleParser extends BaseParser {
   };
 
   parseClassMemberDefinition = (): ClassMemberDefinition => {
-    const documentText = this.parseDocComments();
+    const associatedComments = this.collectPrecedingComments();
     let startRange: Range;
     let isPublic = true;
     let isMethod = true;
@@ -391,7 +391,7 @@ export default class SamlangModuleParser extends BaseParser {
     const body = this.parseExpression();
     return {
       range: startRange.union(body.range),
-      documentText,
+      associatedComments,
       isPublic,
       isMethod,
       nameRange,
@@ -404,13 +404,6 @@ export default class SamlangModuleParser extends BaseParser {
       parameters,
       body,
     };
-  };
-
-  private parseDocComments = (): string | null => {
-    const documentTextList = this.collectPrecedingComments()
-      .filter((it) => it.type === 'doc')
-      .map(({ text }) => text);
-    return documentTextList.length === 0 ? null : documentTextList.join(' ');
   };
 
   private collectPrecedingComments = (): TypedComment[] => {
