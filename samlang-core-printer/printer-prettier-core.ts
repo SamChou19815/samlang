@@ -309,7 +309,6 @@ export const prettyPrintAccordingToPrettierAlgorithm = (
   let doc = generateBestDoc(availableWidth, 0, [[0, document], null]);
   const collector: string[] = [];
 
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     switch (doc.__type__) {
       case 'NIL': {

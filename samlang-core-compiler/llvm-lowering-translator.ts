@@ -316,7 +316,6 @@ class LLVMLoweringManager {
     const beforeJumpLabel = this.currentLabel;
     phiInstructions.forEach((it) => {
       // @ts-expect-error: ugly patch
-      // eslint-disable-next-line no-param-reassign
       it.valueBranchTuples[1].branch = beforeJumpLabel;
     });
     this.emitInstruction(LLVM_JUMP(loopStartLabel));

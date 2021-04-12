@@ -2,7 +2,6 @@ import {
   DependencyTracker,
   typeCheckSources,
   typeCheckSourcesIncrementally,
-  // eslint-disable-next-line camelcase
   typeCheckSingleModuleSource,
   collectModuleReferenceFromSamlangModule,
 } from '..';

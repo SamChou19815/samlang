@@ -461,7 +461,6 @@ const optimizeHighIRStatements = (
   binaryExpressionContext: BinaryExpressionContext
 ): readonly HighIRStatement[] => {
   const collector: HighIRStatement[] = [];
-  // eslint-disable-next-line no-labels
   outer: for (let i = 0; i < statements.length; i += 1) {
     const optimized = optimizeHighIRStatement(
       checkNotNull(statements[i]),
@@ -471,7 +470,6 @@ const optimizeHighIRStatements = (
     for (let j = 0; j < optimized.length; j += 1) {
       const s = checkNotNull(optimized[j]);
       collector.push(s);
-      // eslint-disable-next-line no-labels
       if (s.__type__ === 'HighIRBreakStatement') break outer;
     }
   }

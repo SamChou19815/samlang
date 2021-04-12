@@ -423,9 +423,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dev-sam/eslint-config-common@npm:0.20.0":
-  version: 0.20.0
-  resolution: "@dev-sam/eslint-config-common@npm:0.20.0"
+"@dev-sam/eslint-config-common@npm:0.21.0":
+  version: 0.21.0
+  resolution: "@dev-sam/eslint-config-common@npm:0.21.0"
   peerDependencies:
     "@typescript-eslint/eslint-plugin": "*"
     "@typescript-eslint/parser": "*"
@@ -441,7 +441,7 @@ __metadata:
       optional: true
     eslint-plugin-react-hooks:
       optional: true
-  checksum: 56817ce04bac4189dc55797f27c976d5fd504e454c4de2764c239afa5a62d250007529bab317901fbd270b68798fe0834cef02381b05a4a5436ae8dae8eedf43
+  checksum: 4ec41ecee4b3ba9d661be170886a74e8bd66626aedf90a1f323d20954b4912d26b5a6d08a76879aecd58308e6408a158822cb36325ec1175360a1ca6755a0286
   languageName: node
   linkType: hard
 
@@ -5488,7 +5488,7 @@ resolve@^1.18.1:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@dev-sam/eslint-config-common": 0.20.0
+    "@dev-sam/eslint-config-common": 0.21.0
     "@types/jest": ^26.0.22
     "@types/node": ^14.14.37
     "@typescript-eslint/eslint-plugin": ^4.22.0

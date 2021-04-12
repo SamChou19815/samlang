@@ -99,7 +99,6 @@ export class BaseParser {
   }
 
   protected peek(): SamlangToken {
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const peeked = this.simplePeek();
       if (typeof peeked.content === 'string') return peeked;
@@ -239,11 +238,9 @@ export default class SamlangModuleParser extends BaseParser {
     }
 
     const classes: ClassDefinition[] = [];
-    // eslint-disable-next-line no-labels
     ParseClasses: while (this.peek().content !== 'EOF') {
       let potentialGarbagePeeked = this.peek();
       while (potentialGarbagePeeked.content !== 'class') {
-        // eslint-disable-next-line no-labels
         if (potentialGarbagePeeked.content === 'EOF') break ParseClasses;
         this.report(potentialGarbagePeeked.range, 'Unexpected token among the classes.');
         this.consume();
@@ -419,7 +416,6 @@ export default class SamlangModuleParser extends BaseParser {
   private collectPrecedingComments = (): TypedComment[] => {
     this.unconsumeComments();
     const comments: TypedComment[] = [];
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const token = this.simplePeek().content;
       if (typeof token === 'string') break;
@@ -529,7 +525,6 @@ export default class SamlangModuleParser extends BaseParser {
 
   private parseDisjunction = (): SamlangExpression => {
     let e = this.parseConjunction();
-    // eslint-disable-next-line no-constant-condition
     while (this.peek().content === '||') {
       const operatorPrecedingComments = this.collectPrecedingComments();
       this.consume();
@@ -549,7 +544,6 @@ export default class SamlangModuleParser extends BaseParser {
 
   private parseConjunction = (): SamlangExpression => {
     let e = this.parseComparison();
-    // eslint-disable-next-line no-constant-condition
     while (this.peek().content === '&&') {
       const operatorPrecedingComments = this.collectPrecedingComments();
       this.consume();
@@ -569,7 +563,6 @@ export default class SamlangModuleParser extends BaseParser {
 
   private parseComparison = (): SamlangExpression => {
     let e = this.parseTerm();
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const operatorPrecedingComments = this.collectPrecedingComments();
       const peeked = this.peek().content;
@@ -621,7 +614,6 @@ export default class SamlangModuleParser extends BaseParser {
 
   private parseTerm = (): SamlangExpression => {
     let e = this.parseFactor();
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const operatorPrecedingComments = this.collectPrecedingComments();
       const peeked = this.peek().content;
@@ -652,7 +644,6 @@ export default class SamlangModuleParser extends BaseParser {
 
   private parseFactor = (): SamlangExpression => {
     let e = this.parseConcat();
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const operatorPrecedingComments = this.collectPrecedingComments();
       const peeked = this.peek().content;
@@ -686,7 +677,6 @@ export default class SamlangModuleParser extends BaseParser {
 
   private parseConcat = (): SamlangExpression => {
     let e = this.parseUnaryExpression();
-    // eslint-disable-next-line no-constant-condition
     while (this.peek().content === '::') {
       const operatorPrecedingComments = this.collectPrecedingComments();
       this.consume();
