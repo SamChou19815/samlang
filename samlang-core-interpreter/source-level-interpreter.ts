@@ -434,11 +434,9 @@ class ModuleInterpreter {
     };
     // patch the functions and methods with correct context.
     Object.values(functions).forEach((f) => {
-      // eslint-disable-next-line no-param-reassign
       f.context = newContext;
     });
     Object.values(methods).forEach((m) => {
-      // eslint-disable-next-line no-param-reassign
       m.context = newContext;
     });
     return newContext;

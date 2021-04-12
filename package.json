@@ -19,7 +19,7 @@
     "bump": "yarn up @types/jest @types/node typescript prettier jest husky lint-staged esbuild \"esbuild-*\" eslint \"@typescript-eslint/*\" \"eslint-*\""
   },
   "devDependencies": {
-    "@dev-sam/eslint-config-common": "0.20.0",
+    "@dev-sam/eslint-config-common": "0.21.0",
     "@types/jest": "^26.0.22",
     "@types/node": "^14.14.37",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
@@ -46,7 +46,7 @@
             "error",
             {
               "allow": [
-                "antlr4ts/**",
+                "vscode-languageserver/node",
                 "**/samlang-core-analysis/*",
                 "**/samlang-core-ast/*",
                 "**/samlang-core-interpreter/*",

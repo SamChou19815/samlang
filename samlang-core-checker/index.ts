@@ -147,7 +147,6 @@ export const typeCheckSourcesIncrementally = (
   return updatedSources;
 };
 
-// eslint-disable-next-line camelcase
 export const typeCheckSingleModuleSource = (
   samlangModule: SamlangModule,
   errorCollector: ReadonlyGlobalErrorCollector

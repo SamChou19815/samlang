@@ -255,7 +255,6 @@ class ExpressionTypeChecker {
       expression.fieldDeclarations.map((it) => [it.name, it.range])
     );
     let locallyInferredType: IdentifierType;
-    // eslint-disable-next-line no-lone-blocks
     {
       // In this case, all keys must perfectly match because we have no fall back
       const typeMappingsKeys = Object.keys(typeMappings).sort();

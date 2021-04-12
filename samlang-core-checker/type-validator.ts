@@ -17,7 +17,6 @@ export interface IdentifierTypeValidator {
 /**
  * @returns an invalidid string identifier, null if there is none.
  */
-// eslint-disable-next-line camelcase
 export const findInvalidTypeIdentifier_EXPOSED_FOR_TESTING = (
   type: Type,
   identifierTypeValidator: IdentifierTypeValidator

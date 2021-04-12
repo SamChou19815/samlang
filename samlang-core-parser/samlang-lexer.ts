@@ -70,7 +70,6 @@ class CharacterStream {
   peekLineComment(): string | null {
     if (this.source.substr(this.position, 2) !== '//') return null;
     let commentLength = 0;
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const character = this.source[this.position + 2 + commentLength];
       if (character == null || character === '\n') break;
@@ -83,7 +82,6 @@ class CharacterStream {
   peekBlockComment(): string | null {
     if (this.source.substr(this.position, 2) !== '/*') return null;
     let commentLength = 0;
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const twoChars = this.source.substr(this.position + 2 + commentLength, 2);
       if (twoChars.length !== 2) return null;
@@ -99,7 +97,6 @@ class CharacterStream {
   peekInteger(): string | null {
     if (this.source[this.position] === '0') return '0';
     let position = this.position;
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       if (characterIsNumber(this.source[position] ?? '')) {
         position += 1;
@@ -114,7 +111,6 @@ class CharacterStream {
   peekIdentifier(): string | null {
     if (!characterIsLetter(checkNotNull(this.source[this.position]))) return null;
     let position = this.position + 1;
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const character = this.source[position] ?? '';
       if (characterIsNumber(character) || characterIsLetter(character)) {
@@ -128,7 +124,6 @@ class CharacterStream {
   peekString(): string | null {
     if (this.source[this.position] !== '"') return null;
     let position = this.position + 1;
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const character = this.source[position];
       if (character == null) return null;
@@ -466,7 +461,6 @@ const lexSamlangProgram = (
   const stream = new CharacterStream(source);
 
   const tokens: SamlangToken[] = [];
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     let token = getNextToken(stream, errorCollector);
     if (token == null) return tokens;

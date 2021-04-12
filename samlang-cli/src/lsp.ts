@@ -11,7 +11,6 @@ import {
   FoldingRangeParams,
   FoldingRange as LspFoldingRange,
   TextEdit,
-  // eslint-disable-next-line import/no-extraneous-dependencies, import/no-internal-modules
 } from 'vscode-languageserver/node';
 
 import { collectSources } from './cli-service';
