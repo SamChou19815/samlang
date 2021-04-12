@@ -778,13 +778,16 @@ export default class SamlangModuleParser extends BaseParser {
     let functionExpression = this.parseBaseExpression();
     while (this.peek().content === '.' || this.peek().content === '(') {
       if (this.peek().content === '.') {
+        const fieldPrecedingComments = this.collectPrecedingComments();
         this.consume();
+        fieldPrecedingComments.push(...this.collectPrecedingComments());
         const { range, variable: fieldName } = this.assertAndPeekLowerId();
         functionExpression = EXPRESSION_FIELD_ACCESS({
           range: functionExpression.range.union(range),
           type: UndecidedTypes.next(),
           associatedComments: [],
           expression: functionExpression,
+          fieldPrecedingComments,
           fieldName,
           fieldOrder: -1,
         });
@@ -880,6 +883,7 @@ export default class SamlangModuleParser extends BaseParser {
           });
         }
         if (nextPeeked.content === '(') {
+          associatedComments.push(...this.collectPrecedingComments());
           this.consume();
           const child = this.parseExpressionWithEndingComments();
           const endRange = this.assertAndConsume(')');
@@ -898,7 +902,9 @@ export default class SamlangModuleParser extends BaseParser {
     if (peeked.content === '(') {
       this.consume();
       if (this.peek().content === ')') {
+        associatedComments.push(...this.collectPrecedingComments());
         this.consume();
+        associatedComments.push(...this.collectPrecedingComments());
         this.assertAndConsume('->');
         const body = this.parseExpression();
         return EXPRESSION_LAMBDA({
@@ -945,6 +951,7 @@ export default class SamlangModuleParser extends BaseParser {
         } else if (next.content === ')') {
           this.consume();
           if (this.peek().content === '->') {
+            associatedComments.push(...this.collectPrecedingComments());
             this.consume();
             const body = this.parseExpression();
             const parameterType = UndecidedTypes.next();
@@ -991,15 +998,22 @@ export default class SamlangModuleParser extends BaseParser {
         if (next.content === ',' || next.content === ':' || next.content === '}') {
           this.unconsume();
           const fieldDeclarations = this.parseCommaSeparatedList(() => {
+            const declarationAssociatedComments = this.collectPrecedingComments();
             const { range, variable } = this.assertAndPeekLowerId();
             if (this.peek().content !== ':') {
-              return { range, type: UndecidedTypes.next(), name: variable };
+              return {
+                range,
+                type: UndecidedTypes.next(),
+                associatedComments: declarationAssociatedComments,
+                name: variable,
+              };
             }
             this.consume();
-            const expression = this.parseExpression();
+            const expression = this.parseExpressionWithEndingComments();
             return {
               range: range.union(expression.range),
               type: UndecidedTypes.next(),
+              associatedComments: declarationAssociatedComments,
               name: variable,
               expression,
             };

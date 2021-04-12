@@ -7,7 +7,11 @@ class Main {
       {  }
     } else { {  } }
 
-  function main2(): int = if (true) then { val _: int = 3; 3 } else { 2 }
+  function main2(): int =
+    if (true) then {
+      val _: int = 3;
+      3
+    } else { 2 }
 
   function main3(): unit = if (true) then { val _: int = 3; } else {  }
 

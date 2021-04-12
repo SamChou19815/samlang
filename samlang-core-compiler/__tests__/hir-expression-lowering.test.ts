@@ -158,8 +158,14 @@ it('Lowering to StructConstructor works (2/n).', () => {
       type: identifierType(ModuleReference.ROOT, 'Foo'),
       associatedComments: [],
       fieldDeclarations: [
-        { range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE, name: 'foo', expression: THIS },
-        { range: Range.DUMMY, type: DUMMY_IDENTIFIER_TYPE, name: 'bar' },
+        {
+          range: Range.DUMMY,
+          associatedComments: [],
+          type: DUMMY_IDENTIFIER_TYPE,
+          name: 'foo',
+          expression: THIS,
+        },
+        { range: Range.DUMMY, associatedComments: [], type: DUMMY_IDENTIFIER_TYPE, name: 'bar' },
       ],
     }),
     `let _t0: int = (_this: _Dummy);
@@ -192,6 +198,7 @@ it('FieldAccess lowering works.', () => {
       type: unitType,
       associatedComments: [],
       expression: THIS,
+      fieldPrecedingComments: [],
       fieldName: 'foo',
       fieldOrder: 0,
     }),
@@ -206,6 +213,7 @@ it('MethodAccess lowering works.', () => {
       type: functionType([], unitType),
       associatedComments: [],
       expression: THIS,
+      methodPrecedingComments: [],
       methodName: 'foo',
     }),
     `let _t0: (any, any) = [_module__class_Dummy_function_foo, (_this: _Dummy)];
@@ -312,6 +320,7 @@ it('FunctionCall family lowering works 5/n.', () => {
         type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], intType),
         associatedComments: [],
         expression: THIS,
+        methodPrecedingComments: [],
         methodName: 'fooBar',
       }),
       functionArguments: [THIS, THIS],

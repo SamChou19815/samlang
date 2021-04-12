@@ -107,8 +107,8 @@ it('collectModuleReferenceFromExpression works 4/n', () => {
       type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
       associatedComments: [],
       fieldDeclarations: [
-        { range: Range.DUMMY, name: 'a', type: intType },
-        { range: Range.DUMMY, name: 'b', type: boolType, expression: TRUE },
+        { range: Range.DUMMY, associatedComments: [], name: 'a', type: intType },
+        { range: Range.DUMMY, associatedComments: [], name: 'b', type: boolType, expression: TRUE },
       ],
     }),
     ['']
@@ -140,6 +140,7 @@ it('collectModuleReferenceFromExpression works 6/n', () => {
         type: identifierType(ModuleReference.ROOT, 'Foo'),
         associatedComments: [],
       }),
+      fieldPrecedingComments: [],
       fieldName: 'bar',
       fieldOrder: 1,
     }),
@@ -156,6 +157,7 @@ it('collectModuleReferenceFromExpression works 6/n', () => {
         type: identifierType(ModuleReference.ROOT, 'Foo'),
         associatedComments: [],
       }),
+      methodPrecedingComments: [],
       methodName: 'bar',
     }),
     ['']

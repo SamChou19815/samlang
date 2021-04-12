@@ -69,6 +69,7 @@ export interface TupleConstructorExpression extends BaseExpression {
 
 export interface ObjectConstructorExpressionFieldConstructor extends Node {
   readonly type: Type;
+  readonly associatedComments: readonly TypedComment[];
   readonly name: string;
   readonly expression?: SamlangExpression;
 }
@@ -88,6 +89,7 @@ export interface VariantConstructorExpression extends BaseExpression {
 export interface FieldAccessExpression extends BaseExpression {
   readonly __type__: 'FieldAccessExpression';
   readonly expression: SamlangExpression;
+  readonly fieldPrecedingComments: readonly TypedComment[];
   readonly fieldName: string;
   readonly fieldOrder: number;
 }
@@ -95,6 +97,7 @@ export interface FieldAccessExpression extends BaseExpression {
 export interface MethodAccessExpression extends BaseExpression {
   readonly __type__: 'MethodAccessExpression';
   readonly expression: SamlangExpression;
+  readonly methodPrecedingComments: readonly TypedComment[];
   readonly methodName: string;
 }
 
@@ -348,6 +351,7 @@ export const EXPRESSION_FIELD_ACCESS = ({
   type,
   associatedComments,
   expression,
+  fieldPrecedingComments,
   fieldName,
   fieldOrder,
 }: ExpressionConstructorArgumentObject<FieldAccessExpression>): FieldAccessExpression => ({
@@ -357,6 +361,7 @@ export const EXPRESSION_FIELD_ACCESS = ({
   precedence: 2,
   associatedComments,
   expression,
+  fieldPrecedingComments,
   fieldName,
   fieldOrder,
 });
@@ -366,6 +371,7 @@ export const EXPRESSION_METHOD_ACCESS = ({
   type,
   associatedComments,
   expression,
+  methodPrecedingComments,
   methodName,
 }: ExpressionConstructorArgumentObject<MethodAccessExpression>): MethodAccessExpression => ({
   __type__: 'MethodAccessExpression',
@@ -374,6 +380,7 @@ export const EXPRESSION_METHOD_ACCESS = ({
   precedence: 2,
   associatedComments,
   expression,
+  methodPrecedingComments,
   methodName,
 });
 

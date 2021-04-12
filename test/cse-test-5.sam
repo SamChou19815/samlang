@@ -1,16 +1,15 @@
 class Main {
-  function test(totalOddNumbers: int, i: int): int =
-    {
-      if (i >= 300) then totalOddNumbers else {
-        val iMod64: int = i % 64;
-        val iMod32: int = (i % 64) % 32;
-        val iMod16: int = ((i % 64) % 32) % 16;
-        val iMod8: int = (((i % 64) % 32) % 16) % 8;
-        val iMod4: int = ((((i % 64) % 32) % 16) % 8) % 4;
-        val iMod2: int = (((((i % 64) % 32) % 16) % 8) % 4) % 2;
-        Main.test(totalOddNumbers + iMod2, i + 1)
-      }
+  function test(totalOddNumbers: int, i: int): int = {
+    if (i >= 300) then totalOddNumbers else {
+      val iMod64: int = i % 64;
+      val iMod32: int = (i % 64) % 32;
+      val iMod16: int = ((i % 64) % 32) % 16;
+      val iMod8: int = (((i % 64) % 32) % 16) % 8;
+      val iMod4: int = ((((i % 64) % 32) % 16) % 8) % 4;
+      val iMod2: int = (((((i % 64) % 32) % 16) % 8) % 4) % 2;
+      Main.test(totalOddNumbers + iMod2, i + 1)
     }
+  }
 
   function main(): unit = println(intToString(Main.test(0, 0)))
 
