@@ -29,7 +29,7 @@
 #define GC_INLINE static inline __attribute__((__always_inline__))
 #define GC_CONST  __attribute__((__const__))
 
-/*
+/**
  * GC memory base address.
  *
  * This is the base address of all GC memory.  The GC assumes a memory block
@@ -44,9 +44,9 @@
  *
  * DEFAULT: Address 0x200000000
  */
-#define GC_MEMORY           ((char *)0x200000000)
+#define GC_MEMORY ((char *)0x200000000)
 
-/*
+/**
  * GC memory region size.
  *
  * This is the size of each GC "region".  A region is an area of the virtual
@@ -54,26 +54,18 @@
  * Objects from different size ranges are allocated from different regions.
  * If any given region hits this limit, memory allocation will fail.
  *
- * Note: Windows only allows 8TB of address space to be used.  If we use too
- *       much, we seem to bump into artificial limits, so we must use a
- *       reduced bucket size.
- *
- * DEFAULT: 4GB (linux, macosx), 1GB (windows)
+ * DEFAULT: 4GB
  */
-#ifndef __MINGW32__
-#define GC_REGION_SIZE      ((size_t)4294967296)
-#else       /* __MINGW32__ */
-#define GC_REGION_SIZE      ((size_t)1073741824)
-#endif      /* __MINGW32__ */
+#define GC_REGION_SIZE ((size_t)4294967296)
 
-/*
+/**
  * GC number of memory regions.
  *
  * This determines the total number of memory regions the GC uses.
  *
  * DEFAULT: 768
  */
-#define GC_NUM_REGIONS      ((size_t)768)
+#define GC_NUM_REGIONS ((size_t)768)
 
 /*
  * GC memory byte alignment.
@@ -292,10 +284,9 @@ GC_INLINE void *GC_base(void *ptr) {
 }
 #define gc_base             GC_base
 
-/**
- * GC enable/disable.
- */
+/** GC disable. */
 extern void GC_disable(void);
+/** GC enable. */
 extern void GC_enable(void);
 #define gc_disable          GC_disable
 #define gc_enable           GC_enable
