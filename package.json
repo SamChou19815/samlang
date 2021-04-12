@@ -10,7 +10,7 @@
     "lint": "eslint . --cache",
     "format": "prettier --write '**/*.ts'",
     "format:check": "prettier --check '**/*.ts'",
-    "codegen": "yarn workspace @dev-sam/samlang-cli bundle && ./samlang-dev format",
+    "codegen": "yarn workspace @dev-sam/samlang-cli bundle && ./samlang-cli/bin/index.js format",
     "bundle": "yarn workspaces foreach run bundle",
     "test": "jest --coverage",
     "test:single": "jest -t",

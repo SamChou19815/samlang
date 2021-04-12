@@ -68,7 +68,7 @@ console.error('Bundling...');
 runWithErrorCheck('yarn', ['workspace', '@dev-sam/samlang-cli', 'bundle ']);
 console.error('Bundled!');
 console.error('Compiling...');
-runWithErrorCheck('./samlang-dev', ['compile']);
+runWithErrorCheck('./samlang-cli/bin/index.js', ['compile']);
 console.error('Compiled!');
 console.error('Checking generated JS code...');
 if (!compare(read('./scripts/snapshot.txt'), interpretJSPrograms(getJSPrograms()))) {
