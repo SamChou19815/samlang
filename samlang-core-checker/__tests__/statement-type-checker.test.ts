@@ -29,7 +29,13 @@ const STATEMENT = (
   pattern: Pattern,
   typeAnnotation: Type,
   assignedExpression: SamlangExpression
-): SamlangValStatement => ({ range: Range.DUMMY, pattern, typeAnnotation, assignedExpression });
+): SamlangValStatement => ({
+  range: Range.DUMMY,
+  pattern,
+  typeAnnotation,
+  assignedExpression,
+  associatedComments: [],
+});
 
 const BLOCK = (
   statements: readonly SamlangValStatement[],

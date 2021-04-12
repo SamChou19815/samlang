@@ -1064,6 +1064,7 @@ export default class SamlangModuleParser extends BaseParser {
   };
 
   parseStatement = (): SamlangValStatement => {
+    const associatedComments = this.collectPrecedingComments();
     const startRange = this.assertAndConsume('val');
     const pattern = this.parsePattern();
     let typeAnnotation: Type;
@@ -1082,7 +1083,7 @@ export default class SamlangModuleParser extends BaseParser {
     } else {
       range = startRange.union(assignedExpression.range);
     }
-    return { range, pattern, typeAnnotation, assignedExpression };
+    return { range, pattern, typeAnnotation, assignedExpression, associatedComments };
   };
 
   parsePattern = (): Pattern => {

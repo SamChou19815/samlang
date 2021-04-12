@@ -227,7 +227,7 @@ const createPrettierDocumentFromSamlangExpression = (
       case 'StatementBlockExpression': {
         const { statements, expression: finalExpression } = expression.block;
         const segments = statements
-          .map(({ pattern, typeAnnotation, assignedExpression }) => {
+          .map(({ pattern, typeAnnotation, assignedExpression, associatedComments }) => {
             let patternDocument: PrettierDocument;
             switch (pattern.type) {
               case 'TuplePattern':
@@ -254,6 +254,7 @@ const createPrettierDocumentFromSamlangExpression = (
                 break;
             }
             return [
+              createPrettierDocumentForAssociatedComments(associatedComments, true) ?? PRETTIER_NIL,
               PRETTIER_TEXT('val '),
               patternDocument,
               typeAnnotation.type === 'UndecidedType'
@@ -262,7 +263,7 @@ const createPrettierDocumentFromSamlangExpression = (
               PRETTIER_TEXT(' = '),
               createPrettierDocumentFromSamlangExpression(assignedExpression),
               PRETTIER_TEXT(';'),
-              PRETTIER_LINE,
+              PRETTIER_EXTENSION_LINE_HARD,
             ];
           })
           .flat();

@@ -186,9 +186,11 @@ it('prettyPrintSamlangExpression test', () => {
     reprintExpression(
       `
       if (b) then {
+        // fff
         val _ = println("");
         val _ = println("");
         val _ = println("");
+        /* f */
         val _ = println("");
       } else if (b) then {
         val _ = println("");
@@ -203,9 +205,11 @@ it('prettyPrintSamlangExpression test', () => {
       }`
     )
   ).toBe(`if (b) then {
+  // fff
   val _ = println("");
   val _ = println("");
   val _ = println("");
+  /* f */
   val _ = println("");
 } else if (b) then {
   val _ = println("");
