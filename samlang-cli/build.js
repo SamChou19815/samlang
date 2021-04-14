@@ -1,5 +1,5 @@
+const { pnpPlugin } = require('@yarnpkg/esbuild-plugin-pnp');
 const { build } = require('esbuild');
-const pnpPlugin = require('esbuild-plugin-pnp');
 
 build({
   entryPoints: ['src/index.ts'],
