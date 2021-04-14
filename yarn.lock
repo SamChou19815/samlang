@@ -451,8 +451,8 @@ __metadata:
   dependencies:
     "@types/jest": ^26.0.22
     "@types/node": ^14.14.37
+    "@yarnpkg/esbuild-plugin-pnp": ^1.0.0-rc.2
     esbuild: ^0.11.9
-    esbuild-plugin-pnp: ^0.3.0
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
@@ -469,8 +469,8 @@ __metadata:
   resolution: "@dev-sam/samlang-demo@workspace:samlang-demo"
   dependencies:
     "@types/jest": ^26.0.22
+    "@yarnpkg/esbuild-plugin-pnp": ^1.0.0-rc.2
     esbuild: ^0.11.9
-    esbuild-plugin-pnp: ^0.3.0
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
@@ -1038,6 +1038,19 @@ __metadata:
     "@typescript-eslint/types": 4.22.0
     eslint-visitor-keys: ^2.0.0
   checksum: 645896d05aa757fac02d952574ecda0eecd0be120162e28533c4528bb70d2162e9df62c3547217c69f18a72ceecaf212ea585afd20f976db64b59ac6de0d1ec8
+  languageName: node
+  linkType: hard
+
+"@yarnpkg/esbuild-plugin-pnp@npm:^1.0.0-rc.2":
+  version: 1.0.0-rc.2
+  resolution: "@yarnpkg/esbuild-plugin-pnp@npm:1.0.0-rc.2"
+  dependencies:
+    tslib: ^1.13.0
+  peerDependencies:
+    esbuild: ^0.8.36
+  bin:
+    esbuild-plugin-pnp: ./lib/cli.js
+  checksum: bfa55937465b0a4ecae1af2639fdddcf63a614e0a68e10401348fd290c86a630396978c2ab3afccfb1bf90e23b7b45cf11947c0348830d57464f4976c4b30bec
   languageName: node
   linkType: hard
 
@@ -2170,15 +2183,6 @@ __metadata:
     is-date-object: ^1.0.1
     is-symbol: ^1.0.2
   checksum: d20b7be268b84662469972ec7265a57d4d6a65b9bf2b73f040d75e14f9f6dbe266a1a88579162e11349f9cb70eaa17640efb515c90dab19745a904b680b14be3
-  languageName: node
-  linkType: hard
-
-"esbuild-plugin-pnp@npm:^0.3.0":
-  version: 0.3.0
-  resolution: "esbuild-plugin-pnp@npm:0.3.0"
-  peerDependencies:
-    esbuild: ^0.8.1
-  checksum: b80ab17bea35ab6eaf9a9adc14c52667c0a5e2c7c8c8e97194c57feb7d14b7247228745a3ad34f69447d6c5241081f38b9786948b879bf0051a479ce74450edc
   languageName: node
   linkType: hard
 
@@ -6371,6 +6375,13 @@ resolve@^1.18.1:
     minimist: ^1.2.0
     strip-bom: ^3.0.0
   checksum: 5383ba626b3ac70e08094b9dfd1e30ce82878407b6c8db8cd84279cc7c7340d5f53f67dbeb8174a233c082a068322a6b00ec8514b96d9a80a453e0476dc116d2
+  languageName: node
+  linkType: hard
+
+"tslib@npm:^1.13.0":
+  version: 1.14.1
+  resolution: "tslib@npm:1.14.1"
+  checksum: f44fe7f216946b17d3e3074df3746372703cf24e9127b4c045511456e8e4bf25515fb0a1bb3937676cc305651c5d4fcb6377b0588a4c6a957e748c4c28905d17
   languageName: node
   linkType: hard
 
