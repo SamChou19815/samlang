@@ -450,9 +450,9 @@ __metadata:
   resolution: "@dev-sam/samlang-cli@workspace:samlang-cli"
   dependencies:
     "@types/jest": ^26.0.22
-    "@types/node": ^14.14.37
+    "@types/node": ^14.14.41
     "@yarnpkg/esbuild-plugin-pnp": ^1.0.0-rc.2
-    esbuild: ^0.11.9
+    esbuild: ^0.11.12
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
@@ -470,7 +470,7 @@ __metadata:
   dependencies:
     "@types/jest": ^26.0.22
     "@yarnpkg/esbuild-plugin-pnp": ^1.0.0-rc.2
-    esbuild: ^0.11.9
+    esbuild: ^0.11.12
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
@@ -890,10 +890,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^14.14.37":
-  version: 14.14.37
-  resolution: "@types/node@npm:14.14.37"
-  checksum: 5e2d9baf7594ebacaf016716515f30de0765169412787f981481c2fb8b468923149bb9e2e3219ee672399811672ceddc339a7372a61cf15bc656836a5494d991
+"@types/node@npm:^14.14.41":
+  version: 14.14.41
+  resolution: "@types/node@npm:14.14.41"
+  checksum: 37dfb639644c8ee9b9846106834983f590d494b855e74645a4f169ea24199f7559366d25f6e72e83ba940b59eb6370e002bd53963d098d6d9fdf935a37011417
   languageName: node
   linkType: hard
 
@@ -2199,21 +2199,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"esbuild@npm:^0.11.9":
-  version: 0.11.9
-  resolution: "esbuild@npm:0.11.9"
+"esbuild@npm:0.11.12":
+  version: 0.11.12
+  resolution: "esbuild@npm:0.11.12"
   bin:
     esbuild: bin/esbuild
-  checksum: c3cfd48627e6cbafcc23aa2a6e42a7c4f19a48ead35b40810649bcdddc0bde6f30489fdb77693df9ed0eaeca023fb1ffe9023622e5ab7c9b70030a10b358247e
-  languageName: node
-  linkType: hard
-
-"esbuild@npm:^0.8.20":
-  version: 0.8.57
-  resolution: "esbuild@npm:0.8.57"
-  bin:
-    esbuild: bin/esbuild
-  checksum: 0942950a21a30b57a324380cfedcb425cc1245412e720593415afa0d4f1b7c5f931aa6330937dc1353c754d45c1e5ff7dbc52eb514f54d85517114971300b454
+  checksum: 06139e5fe1f960db65d093f8439f3da73f63f3ec7202bf08dd8ca64d60efe49335fec4f24e637fc815bf5f77c3a047b83c91c07a08f2c09ea2c5d79f2600ad85
   languageName: node
   linkType: hard
 
@@ -5494,7 +5485,7 @@ resolve@^1.18.1:
   dependencies:
     "@dev-sam/eslint-config-common": 0.21.0
     "@types/jest": ^26.0.22
-    "@types/node": ^14.14.37
+    "@types/node": ^14.14.41
     "@typescript-eslint/eslint-plugin": ^4.22.0
     "@typescript-eslint/parser": ^4.22.0
     esbuild-runner: ^1.3.2
