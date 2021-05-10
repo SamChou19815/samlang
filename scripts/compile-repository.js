@@ -1,23 +1,26 @@
 #!/usr/bin/env node
-
 /* eslint-disable no-console */
+// @ts-check
 
-import { spawnSync } from 'child_process';
-import * as fs from 'fs';
-import * as path from 'path';
+const { spawnSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
-const read = (filename: string): string => fs.readFileSync(filename).toString();
+const read = (/** @type {string} */ filename) => fs.readFileSync(filename).toString();
 
-const runWithErrorCheck = (command: string, args: readonly string[] = []): string => {
-  const result = spawnSync(command, args, { shell: true, stdio: ['pipe', 'pipe', 'inherit'] });
+const runWithErrorCheck = (/** @type {string} */ command, /** @type {string[]} */ args = []) => {
+  const result = spawnSync(command, args, {
+    shell: true,
+    stdio: ['pipe', 'pipe', 'inherit'],
+  });
   if (result.status !== 0) throw new Error(`Command \`${command}\` failed with ${result.status}.`);
   return result.stdout.toString();
 };
 
 const basePath = './out';
 
-const getX86Programs = (): readonly string[] => {
-  const programs: string[] = [];
+const getX86Programs = () => {
+  const programs = [];
   fs.readdirSync(basePath).forEach((filename) => {
     if (filename.startsWith('test') && path.extname(filename) !== '.ll') {
       const fullRelativePath = `${basePath}/${filename}`;
@@ -33,8 +36,8 @@ const getX86Programs = (): readonly string[] => {
   return programs;
 };
 
-const getJSPrograms = (): readonly string[] => {
-  const programs: string[] = [];
+const getJSPrograms = () => {
+  const programs = [];
   fs.readdirSync(basePath).forEach((filename) => {
     if (filename.startsWith('test') && path.extname(filename) === '.js') {
       programs.push(`${basePath}/${filename}`);
@@ -44,10 +47,10 @@ const getJSPrograms = (): readonly string[] => {
   return programs;
 };
 
-const interpretPrograms = (programs: readonly string[]): string =>
+const interpretPrograms = (/** @type {string[]} */ programs) =>
   programs.map((program) => `#${program}\n${runWithErrorCheck(program)}`).join('\n');
 
-const interpretJSPrograms = (programs: readonly string[]): string =>
+const interpretJSPrograms = (/** @type {string[]} */ programs) =>
   programs
     .map(
       (program) =>
@@ -55,7 +58,7 @@ const interpretJSPrograms = (programs: readonly string[]): string =>
     )
     .join('\n');
 
-const compare = (expected: string, actual: string): boolean => {
+const compare = (/** @type {string} */ expected, /** @type {string} */ actual) => {
   if (expected === actual) {
     return true;
   }
