@@ -7,5 +7,12 @@
   "search.exclude": {
     "**/.yarn": true,
     "**/.pnp.*": true
+  },
+  "files.associations": {
+    "*.m": "matlab",
+    "*.ml": "ocaml",
+    "*.mli": "ocaml",
+    "gc.h": "c",
+    "libsam-base.h": "c"
   }
 }
