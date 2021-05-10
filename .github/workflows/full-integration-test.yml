@@ -23,7 +23,7 @@ jobs:
       - name: Yarn Install
         run: yarn
       - name: Install LLVM and Clang
-        uses: KyleMayes/install-llvm-action@v1
+        uses: KyleMayes/install-llvm-action@master
         with:
           version: '12'
           directory: ${{ runner.temp }}/llvm
