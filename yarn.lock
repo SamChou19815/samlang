@@ -445,6 +445,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dev-sam/jest-esbuild-transformer@0.3.0, @dev-sam/jest-esbuild-transformer@workspace:jest-esbuild-transformer":
+  version: 0.0.0-use.local
+  resolution: "@dev-sam/jest-esbuild-transformer@workspace:jest-esbuild-transformer"
+  dependencies:
+    "@types/node": ^15.0.2
+    esbuild: 0.11.18
+    typescript: ^4.2.4
+  peerDependencies:
+    esbuild: "*"
+  languageName: unknown
+  linkType: soft
+
 "@dev-sam/samlang-cli@workspace:samlang-cli":
   version: 0.0.0-use.local
   resolution: "@dev-sam/samlang-cli@workspace:samlang-cli"
@@ -452,7 +464,7 @@ __metadata:
     "@types/jest": ^26.0.23
     "@types/node": ^15.0.2
     "@yarnpkg/esbuild-plugin-pnp": ^1.0.0-rc.2
-    esbuild: ^0.11.18
+    esbuild: 0.11.18
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
@@ -470,7 +482,7 @@ __metadata:
   dependencies:
     "@types/jest": ^26.0.23
     "@yarnpkg/esbuild-plugin-pnp": ^1.0.0-rc.2
-    esbuild: ^0.11.18
+    esbuild: 0.11.18
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
@@ -2183,19 +2195,6 @@ __metadata:
     is-date-object: ^1.0.1
     is-symbol: ^1.0.2
   checksum: d20b7be268b84662469972ec7265a57d4d6a65b9bf2b73f040d75e14f9f6dbe266a1a88579162e11349f9cb70eaa17640efb515c90dab19745a904b680b14be3
-  languageName: node
-  linkType: hard
-
-"esbuild-runner@npm:^1.3.2":
-  version: 1.3.2
-  resolution: "esbuild-runner@npm:1.3.2"
-  dependencies:
-    esbuild: ^0.8.20
-    source-map-support: ^0.5.19
-    tslib: ^2.0.3
-  bin:
-    esr: bin/esr.js
-  checksum: ab16a3dccd147a4d896fe5dbcd748b97990304a7f13ed32a58cb06c92de824f734b92fcaab9f05bbf442f4cf9bf7fdc96adbcf93819a12551548147899334cac
   languageName: node
   linkType: hard
 
@@ -5484,11 +5483,12 @@ resolve@^1.18.1:
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
     "@dev-sam/eslint-config-common": 0.21.0
+    "@dev-sam/jest-esbuild-transformer": 0.3.0
     "@types/jest": ^26.0.23
     "@types/node": ^15.0.2
     "@typescript-eslint/eslint-plugin": ^4.22.1
     "@typescript-eslint/parser": ^4.22.1
-    esbuild-runner: ^1.3.2
+    esbuild: 0.11.18
     eslint: ^7.25.0
     eslint-import-resolver-node: ^0.3.4
     eslint-plugin-import: ^2.22.1
@@ -5896,7 +5896,7 @@ resolve@^1.18.1:
   languageName: node
   linkType: hard
 
-"source-map-support@npm:^0.5.19, source-map-support@npm:^0.5.6":
+"source-map-support@npm:^0.5.6":
   version: 0.5.19
   resolution: "source-map-support@npm:0.5.19"
   dependencies:
@@ -6380,13 +6380,6 @@ resolve@^1.18.1:
   version: 1.13.0
   resolution: "tslib@npm:1.13.0"
   checksum: 5dc3bdaea3b67c76ef4a14c28fcb2171da7bcf292fd9c59a260098729626b1ce766c52b588f08e324ed9a0c52ea8a93a815920f980d75981abc9d850fbf310fb
-  languageName: node
-  linkType: hard
-
-"tslib@npm:^2.0.3":
-  version: 2.1.0
-  resolution: "tslib@npm:2.1.0"
-  checksum: d8f5bdd067611651c6b846c2388f4dc8ba1f5af124e66105f5263d1ad56da17f4b8c6566887ca2f205c5a9758451871ceca87d5d06087af2dca1699c5e33db69
   languageName: node
   linkType: hard
 

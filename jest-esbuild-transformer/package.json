@@ -1,0 +1,19 @@
+{
+  "name": "@dev-sam/jest-esbuild-transformer",
+  "version": "0.3.0",
+  "license": "AGPLv3",
+  "files": [
+    "index.js"
+  ],
+  "scripts": {
+    "compile": "tsc"
+  },
+  "peerDependencies": {
+    "esbuild": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^15.0.2",
+    "esbuild": "0.11.18",
+    "typescript": "^4.2.4"
+  }
+}
