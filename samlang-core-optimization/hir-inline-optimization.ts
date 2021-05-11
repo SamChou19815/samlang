@@ -1,4 +1,4 @@
-import optimizeHighIRStatementsByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
+import optimizeHighIRFunctionByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
 import { LocalValueContextForOptimization } from './hir-optimization-common';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
@@ -23,7 +23,6 @@ const estimateStatementInlineCost = (statement: HighIRStatement): number => {
       return 2;
     case 'HighIRBinaryStatement':
     case 'HighIRCastStatement':
-    case 'HighIRReturnStatement':
       return 1;
     case 'HighIRFunctionCallStatement':
       return 10;
@@ -75,12 +74,21 @@ const getFunctionsToInline = (
   return { functionsThatCanPerformInlining, functionsThatCanBeInlined };
 };
 
+const inlineRewriteExpression = (
+  expression: HighIRExpression,
+  context: LocalValueContextForOptimization
+): HighIRExpression => {
+  if (expression.__type__ !== 'HighIRVariableExpression') return expression;
+  const binded = context.getLocalValueType(expression.name);
+  return binded ?? expression;
+};
+
 const inlineRewriteForStatement = (
   prefix: string,
   context: LocalValueContextForOptimization,
   returnCollector: Readonly<{ name: string; type: HighIRType }> | undefined,
   statement: HighIRStatement
-): HighIRStatement | null => {
+): HighIRStatement => {
   const rewrite = (expression: HighIRExpression): HighIRExpression => {
     if (expression.__type__ !== 'HighIRVariableExpression') return expression;
     const binded = context.getLocalValueType(expression.name);
@@ -179,9 +187,9 @@ const inlineRewriteForStatement = (
           initialValue: rewrite(initialValue),
         })
       );
-      const statements = statement.statements
-        .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
-        .filter(isNotNull);
+      const statements = statement.statements.map((it) =>
+        inlineRewriteForStatement(prefix, context, returnCollector, it)
+      );
       const loopVariablesLoopValues = statement.loopVariables.map((it) => rewrite(it.loopValue));
       const breakCollector =
         statement.breakCollector == null
@@ -212,17 +220,6 @@ const inlineRewriteForStatement = (
         structVariableName: bindWithMangledName(statement.structVariableName, statement.type),
         expressionList: statement.expressionList.map(rewrite),
       };
-    case 'HighIRReturnStatement':
-      if (returnCollector == null) return null;
-      // CCP optimization will optimize this away.
-      return {
-        __type__: 'HighIRBinaryStatement',
-        operator: '+',
-        name: returnCollector.name,
-        type: returnCollector.type,
-        e1: rewrite(statement.expression),
-        e2: HIR_ZERO,
-      };
   }
 };
 
@@ -245,6 +242,7 @@ const performInlineRewriteOnFunction = (
         const {
           parameters: argumentNamesOfFunctionToBeInlined,
           body: mainBodyStatementsOfFunctionToBeInlined,
+          returnValue: returnValueOfFunctionToBeInlined,
         } = checkNotNull(allFunctions[functionName]);
         const temporaryPrefix = allocator.allocateInliningTemporaryPrefix();
         const context = new LocalValueContextForOptimization();
@@ -255,7 +253,7 @@ const performInlineRewriteOnFunction = (
           }
         );
         // Inline step 2: Add in body code and change return statements
-        return mainBodyStatementsOfFunctionToBeInlined
+        const rewrittenBody = mainBodyStatementsOfFunctionToBeInlined
           .map((it) =>
             inlineRewriteForStatement(
               temporaryPrefix,
@@ -265,6 +263,18 @@ const performInlineRewriteOnFunction = (
             )
           )
           .filter(isNotNull);
+        if (returnCollector == null) return rewrittenBody;
+        return [
+          ...rewrittenBody,
+          {
+            __type__: 'HighIRBinaryStatement',
+            operator: '+',
+            name: returnCollector,
+            type: returnType,
+            e1: inlineRewriteExpression(returnValueOfFunctionToBeInlined, context),
+            e2: HIR_ZERO,
+          },
+        ];
       }
       case 'HighIRIfElseStatement':
         return [
@@ -278,12 +288,10 @@ const performInlineRewriteOnFunction = (
     }
   };
 
-  return {
+  return optimizeHighIRFunctionByConditionalConstantPropagation({
     ...highIRFunction,
-    body: optimizeHighIRStatementsByConditionalConstantPropagation(
-      highIRFunction.body.flatMap(rewrite)
-    ),
-  };
+    body: [...highIRFunction.body.flatMap(rewrite)],
+  });
 };
 
 const optimizeHighIRFunctionsByInlining = (

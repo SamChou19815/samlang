@@ -1,8 +1,9 @@
-import optimizeHighIRStatementsByLocalValueNumbering from './hir-local-value-numbering-optimization';
+import optimizeHighIRFunctionByLocalValueNumbering from './hir-local-value-numbering-optimization';
 import { BindedValue, bindedValueToString } from './hir-optimization-common';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
 import { HighIRStatement, HIR_INDEX_ACCESS, HIR_BINARY } from 'samlang-core-ast/hir-expressions';
+import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { Hashable, ReadonlyHashSet, HashSet, hashSetOf, isNotNull } from 'samlang-core-utils';
 
 class ExpressionWrapper implements Hashable {
@@ -78,7 +79,6 @@ const optimizeHighIRStatement = (
     case 'HighIRWhileStatement': // handle similar optimization in loop-invariant code motion
     case 'HighIRCastStatement':
     case 'HighIRStructInitializationStatement':
-    case 'HighIRReturnStatement':
       return [statement];
 
     case 'HighIRIfElseStatement': {
@@ -111,12 +111,13 @@ const optimizeHighIRStatementsWithSet = (
   return { statements: optimizedStatements, set };
 };
 
-const optimizeHighIRStatementsByCommonSubExpressionElimination = (
-  statements: readonly HighIRStatement[],
+const optimizeHighIRFunctionByCommonSubExpressionElimination = (
+  highIRFunction: HighIRFunction,
   allocator: OptimizationResourceAllocator
-): readonly HighIRStatement[] =>
-  optimizeHighIRStatementsByLocalValueNumbering(
-    optimizeHighIRStatementsWithSet(statements, allocator).statements
-  );
+): HighIRFunction =>
+  optimizeHighIRFunctionByLocalValueNumbering({
+    ...highIRFunction,
+    body: optimizeHighIRStatementsWithSet(highIRFunction.body, allocator).statements,
+  });
 
-export default optimizeHighIRStatementsByCommonSubExpressionElimination;
+export default optimizeHighIRFunctionByCommonSubExpressionElimination;

@@ -84,9 +84,6 @@ const collectUsedNamesFromStatement = (
       );
       collectForTypeSet(statement.type, typeSet);
       break;
-    case 'HighIRReturnStatement':
-      collectUsedNamesFromExpression(nameSet, typeSet, statement.expression);
-      break;
   }
 };
 
@@ -96,6 +93,7 @@ const getOtherFunctionsUsedByGivenFunction = (
   const nameSet = new Set<string>();
   const typeSet = new Set<string>();
   highIRFunction.body.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
+  collectUsedNamesFromExpression(nameSet, typeSet, highIRFunction.returnValue);
   nameSet.delete(highIRFunction.name);
   return [nameSet, typeSet];
 };

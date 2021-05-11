@@ -1,4 +1,4 @@
-import { HIR_RETURN, HIR_ZERO } from '../hir-expressions';
+import { HIR_CAST, HIR_ZERO } from '../hir-expressions';
 import { debugPrintHighIRModule } from '../hir-toplevel';
 import { HIR_ANY_TYPE, HIR_INT_TYPE, HIR_FUNCTION_TYPE } from '../hir-types';
 
@@ -12,7 +12,8 @@ it('debugPrintHighIRModule works', () => {
           name: 'Bar',
           parameters: ['f'],
           type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
-          body: [HIR_RETURN(HIR_ZERO)],
+          body: [HIR_CAST({ name: 'a', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
+          returnValue: HIR_ZERO,
         },
       ],
     })
@@ -21,6 +22,7 @@ it('debugPrintHighIRModule works', () => {
 type Foo = (int, any);
 
 function Bar(f: int): int {
+  let a: int = 0;
   return 0;
 }
 `);

@@ -68,7 +68,6 @@ const statementContainsBreak = (statement: HighIRStatement): boolean => {
     case 'HighIRFunctionCallStatement':
     case 'HighIRCastStatement':
     case 'HighIRStructInitializationStatement':
-    case 'HighIRReturnStatement':
       return false;
     case 'HighIRBreakStatement':
       return true;

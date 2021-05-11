@@ -10,7 +10,6 @@ import {
   HIR_NAME,
   HIR_VARIABLE,
   HIR_ZERO,
-  HIR_ONE,
   HIR_BINARY,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
@@ -21,7 +20,6 @@ import {
   HIR_INT,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import {
@@ -49,13 +47,20 @@ const assertLoweringWorks = (
 const assertStatementLoweringWorks = (
   statements: readonly HighIRStatement[],
   expectedString: string,
-  globalStrings: Readonly<Record<string, number>> = {}
+  globalStrings: Readonly<Record<string, number>> = {},
+  hasReturn = true
 ): void => {
   assertLoweringWorks(
-    { name: 'testFunction', parameters: [], type: HIR_FUNCTION_TYPE([], INT), body: statements },
+    {
+      name: 'testFunction',
+      parameters: [],
+      type: HIR_FUNCTION_TYPE([], INT),
+      body: statements,
+      returnValue: HIR_ZERO,
+    },
     `define i64 @testFunction() local_unnamed_addr nounwind {
 l0_start:
-${expectedString}
+${expectedString}${hasReturn ? '\n  ret i64 0' : ''}
 }`,
     globalStrings
   );
@@ -66,25 +71,39 @@ const assertExpressionLoweringWorks = (
   expectedString: string,
   globalStrings: Readonly<Record<string, number>> = {}
 ): void => {
-  assertStatementLoweringWorks([HIR_RETURN(expression)], expectedString, globalStrings);
+  assertLoweringWorks(
+    {
+      name: 'testFunction',
+      parameters: [],
+      type: HIR_FUNCTION_TYPE([], INT),
+      body: [],
+      returnValue: expression,
+    },
+    `define i64 @testFunction() local_unnamed_addr nounwind {
+l0_start:
+${expectedString}
+}`,
+    globalStrings
+  );
 };
 
 it('LLVM lowering works for base expressions 1/n', () => {
   assertExpressionLoweringWorks(HIR_INT(42), '  ret i64 42');
-  assertExpressionLoweringWorks(HIR_TRUE, '  ret i1 1');
-  assertExpressionLoweringWorks(HIR_FALSE, '  ret i1 0');
+  assertExpressionLoweringWorks(HIR_TRUE, '  ret i64 1');
+  assertExpressionLoweringWorks(HIR_FALSE, '  ret i64 0');
 });
 
 it('LLVM lowering works for base expressions 2/n', () => {
-  assertStatementLoweringWorks([HIR_RETURN(HIR_INT(42))], '  ret i64 42');
-  assertStatementLoweringWorks([HIR_RETURN(HIR_NAME('bar', INT))], '  ret i64 @bar');
-  assertStatementLoweringWorks([HIR_RETURN(HIR_VARIABLE('bar', INT))], '  ret i64 %bar');
+  assertExpressionLoweringWorks(HIR_INT(42), '  ret i64 42');
+  assertExpressionLoweringWorks(HIR_NAME('bar', INT), '  ret i64 @bar');
+  assertExpressionLoweringWorks(HIR_VARIABLE('bar', INT), '  ret i64 %bar');
   assertLoweringWorks(
     {
       name: 'foo',
       parameters: ['bar'],
       type: HIR_FUNCTION_TYPE([INT], INT),
-      body: [HIR_RETURN(HIR_VARIABLE('bar', INT))],
+      body: [],
+      returnValue: HIR_VARIABLE('bar', INT),
     },
     `define i64 @foo(i64 %bar) local_unnamed_addr nounwind {
 l0_start:
@@ -102,11 +121,9 @@ it('LLVM lowering works for base expressions 3/n', () => {
         pointerExpression: HIR_VARIABLE('bar', HIR_IDENTIFIER_TYPE('Bar')),
         index: 3,
       }),
-      HIR_RETURN(HIR_VARIABLE('foo', INT)),
     ],
     `  %_temp_0_index_pointer_temp = getelementptr %Bar, %Bar* %bar, i32 0, i32 3
-  %foo = load i64, i64* %_temp_0_index_pointer_temp
-  ret i64 %foo`
+  %foo = load i64, i64* %_temp_0_index_pointer_temp`
   );
 });
 
@@ -119,10 +136,8 @@ it('LLVM lowering works for base expressions 4/n', () => {
         e1: HIR_VARIABLE('bar', INT),
         e2: HIR_VARIABLE('baz', INT),
       }),
-      HIR_RETURN(HIR_VARIABLE('foo', INT)),
     ],
-    `  %foo = sdiv i64 %bar, %baz
-  ret i64 %foo`
+    '  %foo = sdiv i64 %bar, %baz'
   );
 });
 
@@ -501,7 +516,9 @@ it('LLVM lowering works for HIR_WHILE 1/n', () => {
 l1_loop_start:
   %n = phi i64 [ 0, %l0_start ], [ 0, %l1_loop_start ]
   %b2 = call i64 @foo() nounwind
-  br label %l1_loop_start`
+  br label %l1_loop_start`,
+    {},
+    false
   );
 });
 
@@ -631,6 +648,7 @@ it('lowerHighIRModuleToLLVMModule works', () => {
                 returnCollector: 'r',
               }),
             ],
+            returnValue: HIR_ZERO,
           },
         ],
       })
@@ -651,5 +669,6 @@ l0_start:
   call i64 @println(i64* %_temp_0_string_name_cast) nounwind
   %_temp_1_string_name_cast = bitcast [2 x i64]* @ss to i64*
   %r = call i64 @stringToInt(i64* %_temp_1_string_name_cast) nounwind
+  ret i64 0
 }`);
 });

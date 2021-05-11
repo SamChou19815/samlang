@@ -9,7 +9,6 @@ import {
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_CAST,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { debugPrintHighIRFunction, HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { HIR_FUNCTION_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
@@ -30,7 +29,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite fails case 1/n', () => {
     name: 'ff',
     parameters: [],
     type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
-    body: [HIR_RETURN(HIR_NAME('', HIR_INT_TYPE))],
+    body: [],
+    returnValue: HIR_NAME('', HIR_INT_TYPE),
   });
 });
 
@@ -39,7 +39,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite fails case 2/n', () => {
     name: 'ff',
     parameters: [],
     type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
-    body: [HIR_RETURN(HIR_VARIABLE('', HIR_INT_TYPE))],
+    body: [],
+    returnValue: HIR_VARIABLE('', HIR_INT_TYPE),
   });
 });
 
@@ -48,10 +49,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite fails case 3/n', () => {
     name: 'ff',
     parameters: [],
     type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
-    body: [
-      HIR_CAST({ name: 'd', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO }),
-      HIR_RETURN(HIR_VARIABLE('', HIR_INT_TYPE)),
-    ],
+    body: [HIR_CAST({ name: 'd', type: HIR_INT_TYPE, assignedExpression: HIR_ZERO })],
+    returnValue: HIR_VARIABLE('', HIR_INT_TYPE),
   });
 });
 
@@ -66,8 +65,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite fails case 4/n', () => {
         functionArguments: [],
         returnType: HIR_INT_TYPE,
       }),
-      HIR_RETURN(HIR_VARIABLE('', HIR_INT_TYPE)),
     ],
+    returnValue: HIR_VARIABLE('', HIR_INT_TYPE),
   });
 });
 
@@ -82,8 +81,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite fails case 5/n', () => {
         functionArguments: [],
         returnType: HIR_INT_TYPE,
       }),
-      HIR_RETURN(HIR_VARIABLE('', HIR_INT_TYPE)),
     ],
+    returnValue: HIR_VARIABLE('', HIR_INT_TYPE),
   });
 });
 
@@ -99,8 +98,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite fails case 6/n', () => {
         s2: [],
         finalAssignments: [],
       }),
-      HIR_RETURN(HIR_VARIABLE('', HIR_INT_TYPE)),
     ],
+    returnValue: HIR_VARIABLE('', HIR_INT_TYPE),
   });
 });
 
@@ -116,8 +115,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite fails case 7/n', () => {
         s2: [],
         finalAssignments: [],
       }),
-      HIR_RETURN(HIR_ZERO),
     ],
+    returnValue: HIR_ZERO,
   });
 });
 
@@ -132,8 +131,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite fails case 8/n', () => {
         functionArguments: [],
         returnType: HIR_INT_TYPE,
       }),
-      HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
     ],
+    returnValue: HIR_VARIABLE('v', HIR_INT_TYPE),
   });
 });
 
@@ -151,8 +150,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite simple infinite loop case', () 
           returnType: HIR_INT_TYPE,
           returnCollector: 'r',
         }),
-        HIR_RETURN(HIR_VARIABLE('r', HIR_INT_TYPE)),
       ],
+      returnValue: HIR_VARIABLE('r', HIR_INT_TYPE),
     },
     `function loopy(_tailrec_param_n: int): int {
   let n: int = (_tailrec_param_n: int);
@@ -203,8 +202,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite simple if-else loop case 1/n', 
             },
           ],
         }),
-        HIR_RETURN(HIR_VARIABLE('r', HIR_INT_TYPE)),
       ],
+      returnValue: HIR_VARIABLE('r', HIR_INT_TYPE),
     },
     `function loopy(_tailrec_param_n: int): int {
   let n: int = (_tailrec_param_n: int);
@@ -255,8 +254,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite simple if-else loop case 2/n', 
             },
           ],
         }),
-        HIR_RETURN(HIR_VARIABLE('r', HIR_INT_TYPE)),
       ],
+      returnValue: HIR_VARIABLE('r', HIR_INT_TYPE),
     },
     `function loopy(_tailrec_param_n: int): int {
   let n: int = (_tailrec_param_n: int);
@@ -323,8 +322,8 @@ it('optimizeHighIRFunctionByTailRecursionRewrite nested complex case', () => {
             },
           ],
         }),
-        HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
       ],
+      returnValue: HIR_VARIABLE('v', HIR_INT_TYPE),
     },
     `function loopy(_tailrec_param_n: int): int {
   let n: int = (_tailrec_param_n: int);

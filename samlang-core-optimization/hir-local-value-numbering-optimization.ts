@@ -15,8 +15,8 @@ import {
   HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CAST,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
+import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { error, isNotNull, LocalStackedContext, zip, zip3 } from 'samlang-core-utils';
 
 class LocalVariableContext extends LocalStackedContext<string> {
@@ -39,22 +39,28 @@ class LocalBindedValueContext extends LocalStackedContext<string> {
   }
 }
 
+const optimizeHighIRExpression = (
+  expression: HighIRExpression,
+  variableContext: LocalVariableContext
+): HighIRExpression => {
+  switch (expression.__type__) {
+    case 'HighIRIntLiteralExpression':
+    case 'HighIRNameExpression':
+      return expression;
+    case 'HighIRVariableExpression': {
+      const binded = variableContext.getLocalValueType(expression.name);
+      return { ...expression, name: binded ?? expression.name };
+    }
+  }
+};
+
 const optimizeHighIRStatement = (
   statement: HighIRStatement,
   variableContext: LocalVariableContext,
   bindedValueContext: LocalBindedValueContext
 ): HighIRStatement | null => {
-  const getExpressionUnderContext = (expression: HighIRExpression): HighIRExpression => {
-    switch (expression.__type__) {
-      case 'HighIRIntLiteralExpression':
-      case 'HighIRNameExpression':
-        return expression;
-      case 'HighIRVariableExpression': {
-        const binded = variableContext.getLocalValueType(expression.name);
-        return { ...expression, name: binded ?? expression.name };
-      }
-    }
-  };
+  const getExpressionUnderContext = (expression: HighIRExpression) =>
+    optimizeHighIRExpression(expression, variableContext);
 
   switch (statement.__type__) {
     case 'HighIRIndexAccessStatement': {
@@ -199,9 +205,6 @@ const optimizeHighIRStatement = (
         type: statement.type,
         expressionList: statement.expressionList.map(getExpressionUnderContext),
       });
-
-    case 'HighIRReturnStatement':
-      return HIR_RETURN(getExpressionUnderContext(statement.expression));
   }
 };
 
@@ -214,9 +217,14 @@ const optimizeHighIRStatements = (
     .map((it) => optimizeHighIRStatement(it, variableContext, bindedValueContext))
     .filter(isNotNull);
 
-const optimizeHighIRStatementsByLocalValueNumbering = (
-  statements: readonly HighIRStatement[]
-): readonly HighIRStatement[] =>
-  optimizeHighIRStatements(statements, new LocalVariableContext(), new LocalBindedValueContext());
+const optimizeHighIRFunctionByLocalValueNumbering = (
+  highIRFunction: HighIRFunction
+): HighIRFunction => {
+  const variableContext = new LocalVariableContext();
+  const bindedValueContext = new LocalBindedValueContext();
+  const body = optimizeHighIRStatements(highIRFunction.body, variableContext, bindedValueContext);
+  const returnValue = optimizeHighIRExpression(highIRFunction.returnValue, variableContext);
+  return { ...highIRFunction, body, returnValue };
+};
 
-export default optimizeHighIRStatementsByLocalValueNumbering;
+export default optimizeHighIRFunctionByLocalValueNumbering;

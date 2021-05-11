@@ -8,12 +8,7 @@ import {
   encodeMainFunctionName,
 } from 'samlang-core-ast/common-names';
 import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
-import {
-  HIR_FUNCTION_CALL,
-  HIR_NAME,
-  HIR_RETURN,
-  HIR_ZERO,
-} from 'samlang-core-ast/hir-expressions';
+import { HIR_FUNCTION_CALL, HIR_NAME, HIR_ZERO } from 'samlang-core-ast/hir-expressions';
 import type {
   HighIRTypeDefinition,
   HighIRFunction,
@@ -105,7 +100,8 @@ const compileFunction = (
           : classMember.parameters.map(({ type }) => lowerSamlangType(type, typeParametersSet)),
         lowerSamlangType(classMember.type.returnType, typeParametersSet)
       ),
-      body: [...statements, HIR_RETURN(bodyLoweringResult.expression)],
+      body: statements,
+      returnValue: bodyLoweringResult.expression,
     },
   ];
 };
@@ -182,8 +178,8 @@ const compileSamlangSourcesToHighIRSources = (
             functionArguments: [],
             returnType: HIR_INT_TYPE,
           }),
-          HIR_RETURN(HIR_ZERO),
         ],
+        returnValue: HIR_ZERO,
       },
     ];
     irSources.set(

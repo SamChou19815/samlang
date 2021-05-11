@@ -14,7 +14,6 @@ import {
   debugPrintHighIRStatement,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
-  HIR_RETURN,
   HIR_IF_ELSE,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_BOOL_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
@@ -169,7 +168,6 @@ it('optimizeHighIRWhileStatementByLoopInvariantCodeMotion works', () => {
           statements: [],
           breakCollector: { name: 'zzzz', type: HIR_INT_TYPE },
         }),
-        HIR_RETURN(HIR_VARIABLE('kk', HIR_INT_TYPE)),
       ],
       breakCollector: { name: 'bc', type: HIR_INT_TYPE },
     })
@@ -216,7 +214,6 @@ while (true) {
   let zzzz: int;
   while (true) {
   }
-  return (kk: int);
   i = (tmp_i: int);
   j = (tmp_j: int);
   x = (tmp_x: int);

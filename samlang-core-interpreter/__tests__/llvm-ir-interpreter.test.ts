@@ -33,6 +33,52 @@ const ZERO = LLVM_INT(0);
 const ONE = LLVM_INT(1);
 const EIGHT = LLVM_INT(8);
 
+it('interpretLLVMModule arithmetic normal test', () => {
+  interpretLLVMModule({
+    globalVariables: [{ name: 'HW', content: 'Hello World!' }],
+    typeDefinitions: [],
+    functions: [
+      {
+        name: ENCODED_COMPILED_PROGRAM_MAIN,
+        parameters: [],
+        returnType: LLVM_INT_TYPE,
+        body: [
+          LLVM_BINARY({
+            resultVariable: 'a',
+            operator: '/',
+            operandType: LLVM_INT_TYPE,
+            v1: ZERO,
+            v2: ONE,
+          }),
+          LLVM_RETURN(LLVM_VARIABLE('a'), LLVM_INT_TYPE),
+        ],
+      },
+    ],
+  });
+
+  interpretLLVMModule({
+    globalVariables: [{ name: 'HW', content: 'Hello World!' }],
+    typeDefinitions: [],
+    functions: [
+      {
+        name: ENCODED_COMPILED_PROGRAM_MAIN,
+        parameters: [],
+        returnType: LLVM_INT_TYPE,
+        body: [
+          LLVM_BINARY({
+            resultVariable: 'a',
+            operator: '%',
+            operandType: LLVM_INT_TYPE,
+            v1: ZERO,
+            v2: ONE,
+          }),
+          LLVM_RETURN(LLVM_VARIABLE('a'), LLVM_INT_TYPE),
+        ],
+      },
+    ],
+  });
+});
+
 it('interpretLLVMModule arithmetic panic test', () => {
   expect(() =>
     interpretLLVMModule({

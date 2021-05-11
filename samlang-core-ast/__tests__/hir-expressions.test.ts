@@ -8,7 +8,6 @@ import {
   HIR_INDEX_ACCESS,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
-  HIR_RETURN,
   HIR_ZERO,
   HIR_INT,
   HIR_NAME,
@@ -86,7 +85,6 @@ it('debugPrintHighIRStatement works', () => {
             ],
             breakCollector: { name: 'v', type: HIR_INT_TYPE },
           }),
-          HIR_RETURN(HIR_VARIABLE('foo', HIR_IDENTIFIER_TYPE('Bar'))),
         ],
         s2: [
           HIR_BINARY({ name: 'dd', operator: '+', e1: HIR_INT(0), e2: HIR_INT(0) }),
@@ -151,7 +149,6 @@ if 0 {
     n = (_t0_n: int);
     acc = (_t1_acc: int);
   }
-  return (foo: Bar);
   bar = (b1: int);
 } else {
   let dd: int = 0 + 0;

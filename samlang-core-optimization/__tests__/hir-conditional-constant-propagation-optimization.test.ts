@@ -1,7 +1,9 @@
-import optimizeHighIRStatementsByConditionalConstantPropagation from '../hir-conditional-constant-propagation-optimization';
+import optimizeHighIRFunctionByConditionalConstantPropagation from '../hir-conditional-constant-propagation-optimization';
 
 import {
+  HighIRExpression,
   HighIRStatement,
+  debugPrintHighIRExpression,
   debugPrintHighIRStatement,
   HIR_TRUE,
   HIR_FALSE,
@@ -19,15 +21,28 @@ import {
   HIR_WHILE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_BOOL_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 
-const assertCorrectlyOptimized = (statements: HighIRStatement[], expected: string): void => {
+const assertCorrectlyOptimized = (
+  statements: HighIRStatement[],
+  returnValue: HighIRExpression,
+  expected: string
+): void => {
+  const {
+    body,
+    returnValue: optimizedReturnValue,
+  } = optimizeHighIRFunctionByConditionalConstantPropagation({
+    name: '',
+    parameters: [],
+    type: { __type__: 'FunctionType', argumentTypes: [], returnType: HIR_INT_TYPE },
+    body: statements,
+    returnValue,
+  });
+
   expect(
-    optimizeHighIRStatementsByConditionalConstantPropagation(statements)
-      .map((it) => debugPrintHighIRStatement(it))
-      .join('\n')
+    `${body.map((it) => debugPrintHighIRStatement(it)).join('\n')}\n` +
+      `return ${debugPrintHighIRExpression(optimizedReturnValue)};`
   ).toBe(expected);
 };
 
@@ -181,8 +196,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         type: HIR_INT_TYPE,
         assignedExpression: HIR_VARIABLE('a3', HIR_INT_TYPE),
       }),
-      HIR_RETURN(HIR_VARIABLE('a8', HIR_INT_TYPE)),
     ],
+    HIR_VARIABLE('a8', HIR_INT_TYPE),
     `let i0: int = 6[2];
 let b8: int = (i0: int) * (i0: int);
 let a6: int = (i1: int) / 30;
@@ -211,7 +226,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e2: HIR_INT(2),
       }),
     ],
-    `let a1: int = (a0: int) + 2;\nlet a2: int = (a0: int) + 4;`
+    HIR_ZERO,
+    `let a1: int = (a0: int) + 2;\nlet a2: int = (a0: int) + 4;\nreturn 0;`
   );
 });
 
@@ -231,7 +247,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e2: HIR_INT(3),
       }),
     ],
-    `let a1: int = (a0: int) + 2;\nlet a2: int = (a0: int) + -1;`
+    HIR_ZERO,
+    `let a1: int = (a0: int) + 2;\nlet a2: int = (a0: int) + -1;\nreturn 0;`
   );
 });
 
@@ -251,7 +268,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e2: HIR_INT(3),
       }),
     ],
-    `let a1: int = (a0: int) + -2;\nlet a2: int = (a0: int) + 1;`
+    HIR_ZERO,
+    `let a1: int = (a0: int) + -2;\nlet a2: int = (a0: int) + 1;\nreturn 0;`
   );
 });
 
@@ -271,7 +289,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e2: HIR_INT(3),
       }),
     ],
-    `let a1: int = (a0: int) + -2;\nlet a2: int = (a0: int) + -5;`
+    HIR_ZERO,
+    `let a1: int = (a0: int) + -2;\nlet a2: int = (a0: int) + -5;\nreturn 0;`
   );
 });
 
@@ -291,7 +310,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e2: HIR_INT(3),
       }),
     ],
-    `let a1: int = (a0: int) * 2;\nlet a2: int = (a0: int) * 6;`
+    HIR_ZERO,
+    `let a1: int = (a0: int) * 2;\nlet a2: int = (a0: int) * 6;\nreturn 0;`
   );
 });
 
@@ -311,7 +331,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e2: HIR_INT(3),
       }),
     ],
-    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) < 1;`
+    HIR_ZERO,
+    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) < 1;\nreturn 0;`
   );
 
   assertCorrectlyOptimized(
@@ -329,7 +350,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e2: HIR_INT(3),
       }),
     ],
-    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) <= 1;`
+    HIR_ZERO,
+    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) <= 1;\nreturn 0;`
   );
 
   assertCorrectlyOptimized(
@@ -347,7 +369,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e2: HIR_INT(3),
       }),
     ],
-    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) > 1;`
+    HIR_ZERO,
+    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) > 1;\nreturn 0;`
   );
 
   assertCorrectlyOptimized(
@@ -365,7 +388,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e2: HIR_INT(3),
       }),
     ],
-    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) >= 1;`
+    HIR_ZERO,
+    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) >= 1;\nreturn 0;`
   );
 
   assertCorrectlyOptimized(
@@ -383,7 +407,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e2: HIR_INT(3),
       }),
     ],
-    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) == 1;`
+    HIR_ZERO,
+    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) == 1;\nreturn 0;`
   );
 
   assertCorrectlyOptimized(
@@ -401,7 +426,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e2: HIR_INT(3),
       }),
     ],
-    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) != 1;`
+    HIR_ZERO,
+    `let a1: int = (a0: int) + 2;\nlet a2: bool = (a0: int) != 1;\nreturn 0;`
   );
 });
 
@@ -421,7 +447,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e2: HIR_INT(3),
       }),
     ],
-    `let a1: int = (a0: int) * 2;\nlet a2: bool = (a1: int) == 3;`
+    HIR_ZERO,
+    `let a1: int = (a0: int) * 2;\nlet a2: bool = (a1: int) == 3;\nreturn 0;`
   );
 });
 
@@ -552,8 +579,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
         e1: HIR_VARIABLE('r4', HIR_BOOL_TYPE),
         e2: HIR_VARIABLE('r2', HIR_BOOL_TYPE),
       }),
-      HIR_RETURN(HIR_VARIABLE('r5', HIR_BOOL_TYPE)),
     ],
+    HIR_VARIABLE('r5', HIR_BOOL_TYPE),
     `foo();
 bar();
 let a1: int = foo();
@@ -623,7 +650,6 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
           },
         ],
       }),
-      HIR_RETURN(HIR_VARIABLE('ma1', HIR_INT_TYPE)),
       HIR_IF_ELSE({
         booleanExpression: HIR_VARIABLE('b', HIR_BOOL_TYPE),
         s1: [],
@@ -637,8 +663,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on if-else st
           },
         ],
       }),
-      HIR_RETURN(HIR_VARIABLE('ma2', HIR_INT_TYPE)),
     ],
+    HIR_VARIABLE('ma2', HIR_INT_TYPE),
     `if (b: bool) {
   foo(6);
 } else {
@@ -652,7 +678,6 @@ if (b: bool) {
   let a2: int = bar(9);
   ma1 = (a2: int);
 }
-return (ma1: int);
 return 6;`
   );
 });
@@ -666,7 +691,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on single if 
         statements: [HIR_BREAK(HIR_VARIABLE('n', HIR_INT_TYPE))],
       }),
     ],
-    ``
+    HIR_ZERO,
+    `\nreturn 0;`
   );
 
   assertCorrectlyOptimized(
@@ -677,7 +703,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on single if 
         statements: [HIR_BREAK(HIR_VARIABLE('n', HIR_INT_TYPE))],
       }),
     ],
-    `undefined = (n: int);\nbreak;`
+    HIR_ZERO,
+    `undefined = (n: int);\nbreak;\nreturn 0;`
   );
 
   assertCorrectlyOptimized(
@@ -688,7 +715,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on single if 
         statements: [],
       }),
     ],
-    ``
+    HIR_ZERO,
+    `\nreturn 0;`
   );
 });
 
@@ -725,6 +753,7 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
         ],
       }),
     ],
+    HIR_ZERO,
     `let n: int = 4;
 while (true) {
   let is_zero: bool = (n: int) == 0;
@@ -734,7 +763,8 @@ while (true) {
   }
   let _tmp_n: int = (n: int) + -1;
   n = (_tmp_n: int);
-}`
+}
+return 0;`
   );
 });
 
@@ -771,7 +801,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
         ],
       }),
     ],
-    ``
+    HIR_ZERO,
+    `\nreturn 0;`
   );
 });
 
@@ -789,9 +820,9 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
         ],
         statements: [HIR_BREAK(HIR_VARIABLE('n', HIR_INT_TYPE))],
       }),
-      HIR_RETURN(HIR_ZERO),
     ],
-    `return 0;`
+    HIR_ZERO,
+    `\nreturn 0;`
   );
 });
 
@@ -810,8 +841,8 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on while stat
         statements: [HIR_BREAK(HIR_VARIABLE('n', HIR_INT_TYPE))],
         breakCollector: { name: 'v', type: HIR_INT_TYPE },
       }),
-      HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
     ],
-    `return 10;`
+    HIR_VARIABLE('v', HIR_INT_TYPE),
+    `\nreturn 10;`
   );
 });

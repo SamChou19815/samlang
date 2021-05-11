@@ -156,11 +156,6 @@ class LLVMLoweringManager {
       case 'HighIRStructInitializationStatement':
         this.lowerHighIRStructInitializationStatement(s);
         return;
-      case 'HighIRReturnStatement': {
-        const { value, type } = this.lowerHighIRExpression(s.expression);
-        this.emitInstruction(LLVM_RETURN(value, type));
-        return;
-      }
     }
   }
 
@@ -367,7 +362,7 @@ class LLVMLoweringManager {
     });
   }
 
-  private lowerHighIRExpression(e: HighIRExpression): LLVMAnnotatedValue {
+  lowerHighIRExpression(e: HighIRExpression): LLVMAnnotatedValue {
     switch (e.__type__) {
       case 'HighIRIntLiteralExpression':
         return { value: LLVM_INT(e.value), type: lowerHighIRTypeToLLVMType(e.type) };
@@ -395,7 +390,7 @@ class LLVMLoweringManager {
 }
 
 export const lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING = (
-  { name, type: { argumentTypes, returnType }, parameters, body }: HighIRFunction,
+  { name, type: { argumentTypes, returnType }, parameters, body, returnValue }: HighIRFunction,
   /** Mapping between global variable name and their length */
   globalVariables: Readonly<Record<string, number>>
 ): LLVMFunction => {
@@ -405,6 +400,12 @@ export const lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING = (
   }));
   const manager = new LLVMLoweringManager(globalVariables, parameters);
   body.forEach((it) => manager.lowerHighIRStatement(it));
+  manager.llvmInstructionCollector.push(
+    LLVM_RETURN(
+      manager.lowerHighIRExpression(returnValue).value,
+      lowerHighIRTypeToLLVMType(returnType)
+    )
+  );
   return {
     name,
     parameters: annotatedParameters,

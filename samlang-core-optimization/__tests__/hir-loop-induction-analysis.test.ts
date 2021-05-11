@@ -23,7 +23,6 @@ import {
   HIR_BREAK,
   HIR_WHILE,
   HIR_CAST,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_BOOL_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import { zip } from 'samlang-core-utils';
@@ -203,7 +202,6 @@ it('extractLoopGuardStructure can reject not optimizable loops.', () => {
             functionArguments: [],
             returnType: HIR_INT_TYPE,
           }),
-          HIR_RETURN(HIR_ZERO),
           HIR_BREAK(HIR_ZERO),
         ],
       }),

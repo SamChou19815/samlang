@@ -30,7 +30,6 @@ import {
   HIR_IF_ELSE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
-  HIR_RETURN,
   HIR_BINARY,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
@@ -1058,7 +1057,7 @@ class HighIRExpressionLoweringManager {
         })
       );
     });
-    lambdaStatements.push(...loweringResult.statements, HIR_RETURN(loweringResult.expression));
+    lambdaStatements.push(...loweringResult.statements);
     return {
       name: this.allocateSyntheticFunctionName(),
       parameters: ['_context', ...expression.parameters.map(([name]) => name)],
@@ -1067,6 +1066,7 @@ class HighIRExpressionLoweringManager {
         this.lowerType(expression.type.returnType)
       ),
       body: lambdaStatements,
+      returnValue: loweringResult.expression,
     };
   }
 

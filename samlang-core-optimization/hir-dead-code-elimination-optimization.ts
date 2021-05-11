@@ -1,6 +1,7 @@
 import { ifElseOrNull } from './hir-optimization-common';
 
 import type { HighIRExpression, HighIRStatement } from 'samlang-core-ast/hir-expressions';
+import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { isNotNull } from 'samlang-core-utils';
 
 export const collectUseFromHighIRExpression = (
@@ -56,8 +57,6 @@ export const collectUseFromHighIRStatement = (
     case 'HighIRStructInitializationStatement':
       statement.expressionList.forEach((it) => collectUseFromHighIRExpression(it, set));
       return;
-    case 'HighIRReturnStatement':
-      collectUseFromHighIRExpression(statement.expression, set);
   }
 };
 
@@ -146,9 +145,6 @@ const optimizeHighIRStatement = (
       if (!set.has(statement.structVariableName)) return [];
       statement.expressionList.forEach((it) => collectUseFromHighIRExpression(it, set));
       return [statement];
-    case 'HighIRReturnStatement':
-      collectUseFromHighIRStatement(statement, set);
-      return [statement];
   }
 };
 
@@ -162,8 +158,13 @@ export const internalOptimizeHighIRStatementsByDCE = (
     .reverse();
 };
 
-const optimizeHighIRStatementsByDeadCodeElimination = (
-  statements: readonly HighIRStatement[]
-): readonly HighIRStatement[] => internalOptimizeHighIRStatementsByDCE(statements, new Set());
+const optimizeHighIRFunctionByDeadCodeElimination = (
+  highIRFunction: HighIRFunction
+): HighIRFunction => {
+  const set = new Set<string>();
+  collectUseFromHighIRExpression(highIRFunction.returnValue, set);
+  const body = internalOptimizeHighIRStatementsByDCE(highIRFunction.body, set);
+  return { ...highIRFunction, body };
+};
 
-export default optimizeHighIRStatementsByDeadCodeElimination;
+export default optimizeHighIRFunctionByDeadCodeElimination;

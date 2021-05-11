@@ -23,7 +23,6 @@ import {
   HIR_FUNCTION_CALL,
   HIR_NAME,
   HIR_CAST,
-  HIR_RETURN,
   HIR_ZERO,
   HIR_STRUCT_INITIALIZATION,
   HIR_INDEX_ACCESS,
@@ -90,6 +89,7 @@ it('compile hello world to JS integration test', () => {
             returnCollector: '_t1',
           }),
         ],
+        returnValue: HIR_ZERO,
       },
       {
         name: '_compiled_program_main',
@@ -102,6 +102,7 @@ it('compile hello world to JS integration test', () => {
             returnType: HIR_INT_TYPE,
           }),
         ],
+        returnValue: HIR_ZERO,
       },
     ],
   };
@@ -119,9 +120,11 @@ const f2 = "'foo";
 const _module_Test_class_Main_function_main = () => {
   let _t0 = _builtin_stringConcat(h, w);
   let _t1 = _builtin_println(_t0);
+  return 0;
 };
 const _compiled_program_main = () => {
   _module_Test_class_Main_function_main();
+  return 0;
 };
 
 _compiled_program_main();`
@@ -160,6 +163,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
               returnCollector: '_t1',
             }),
           ],
+          returnValue: HIR_ZERO,
         },
       ],
     })
@@ -175,6 +179,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
           parameters: [],
           type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [],
+          returnValue: HIR_ZERO,
         },
       ],
     })
@@ -196,8 +201,8 @@ it('confirm samlang & equivalent JS have same print output', () => {
               e1: HIR_VARIABLE('a', HIR_INT_TYPE),
               e2: HIR_VARIABLE('b', HIR_INT_TYPE),
             }),
-            HIR_RETURN(HIR_VARIABLE('aaa', HIR_INT_TYPE)),
           ],
+          returnValue: HIR_VARIABLE('aaa', HIR_INT_TYPE),
         },
         {
           name: '_compiled_program_main',
@@ -223,6 +228,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
               returnCollector: '_t2',
             }),
           ],
+          returnValue: HIR_ZERO,
         },
       ],
     })
@@ -249,11 +255,19 @@ it('confirm samlang & equivalent JS have same print output', () => {
             }),
             HIR_IF_ELSE({
               booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
-              s1: [HIR_RETURN(HIR_NAME('y', HIR_STRING_TYPE))],
-              s2: [HIR_RETURN(HIR_NAME('n', HIR_STRING_TYPE))],
-              finalAssignments: [],
+              s1: [],
+              s2: [],
+              finalAssignments: [
+                {
+                  name: 'rv',
+                  type: HIR_STRING_TYPE,
+                  branch1Value: HIR_NAME('y', HIR_STRING_TYPE),
+                  branch2Value: HIR_NAME('n', HIR_STRING_TYPE),
+                },
+              ],
             }),
           ],
+          returnValue: HIR_VARIABLE('rv', HIR_INT_TYPE),
         },
         {
           name: 'sum',
@@ -266,8 +280,8 @@ it('confirm samlang & equivalent JS have same print output', () => {
               e1: HIR_VARIABLE('a', HIR_INT_TYPE),
               e2: HIR_VARIABLE('b', HIR_INT_TYPE),
             }),
-            HIR_RETURN(HIR_VARIABLE('aaa', HIR_INT_TYPE)),
           ],
+          returnValue: HIR_VARIABLE('aaa', HIR_INT_TYPE),
         },
         {
           name: '_compiled_program_main',
@@ -293,6 +307,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
               returnCollector: '_t2',
             }),
           ],
+          returnValue: HIR_ZERO,
         },
       ],
     })
@@ -313,8 +328,8 @@ it('confirm samlang & equivalent JS have same print output', () => {
               type: HIR_INT_TYPE,
               expressionList: [HIR_NAME('rb', HIR_STRING_TYPE)],
             }),
-            HIR_RETURN(HIR_VARIABLE('t0', HIR_INT_TYPE)),
           ],
+          returnValue: HIR_VARIABLE('t0', HIR_INT_TYPE),
         },
         {
           name: 'getName',
@@ -327,8 +342,8 @@ it('confirm samlang & equivalent JS have same print output', () => {
               pointerExpression: HIR_VARIABLE('s', HIR_INT_TYPE),
               index: 0,
             }),
-            HIR_RETURN(HIR_VARIABLE('aa', HIR_INT_TYPE)),
           ],
+          returnValue: HIR_VARIABLE('aa', HIR_INT_TYPE),
         },
         {
           name: '_compiled_program_main',
@@ -353,6 +368,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
               returnType: HIR_INT_TYPE,
             }),
           ],
+          returnValue: HIR_ZERO,
         },
       ],
     })
@@ -374,8 +390,8 @@ it('confirm samlang & equivalent JS have same print output', () => {
               e1: HIR_VARIABLE('a', HIR_INT_TYPE),
               e2: HIR_VARIABLE('b', HIR_INT_TYPE),
             }),
-            HIR_RETURN(HIR_VARIABLE('aaa', HIR_INT_TYPE)),
           ],
+          returnValue: HIR_VARIABLE('aaa', HIR_INT_TYPE),
         },
         {
           name: '_compiled_program_main',
@@ -395,6 +411,7 @@ it('confirm samlang & equivalent JS have same print output', () => {
               finalAssignments: [],
             }),
           ],
+          returnValue: HIR_ZERO,
         },
       ],
     })
@@ -427,21 +444,28 @@ it('HIR statements to JS string test', () => {
       HIR_IF_ELSE({
         booleanExpression: HIR_INT(5),
         s1: [],
-        s2: [HIR_RETURN(HIR_ZERO)],
+        s2: [
+          HIR_BINARY({
+            name: 'foo',
+            operator: '/',
+            e1: HIR_INT(3),
+            e2: HIR_INT(2),
+          }),
+        ],
         finalAssignments: [],
       })
     )
   ).toBe(`if (5) {
 
 } else {
-  return 0;
+  let foo = Math.floor(3 / 2);
 }`);
   expect(
     highIRStatementToString(
       HIR_IF_ELSE({
         booleanExpression: HIR_INT(5),
-        s1: [HIR_RETURN(HIR_ZERO)],
-        s2: [HIR_RETURN(HIR_ZERO)],
+        s1: [],
+        s2: [],
         finalAssignments: [
           { name: 'f', type: HIR_INT_TYPE, branch1Value: HIR_ZERO, branch2Value: HIR_ZERO },
         ],
@@ -449,22 +473,22 @@ it('HIR statements to JS string test', () => {
     )
   ).toBe(`let f;
 if (5) {
-  return 0;
+
   f = 0;
 } else {
-  return 0;
+
   f = 0;
 }`);
   expect(
     highIRStatementToString(
       HIR_IF_ELSE({
         booleanExpression: HIR_INT(5),
-        s1: [HIR_RETURN(HIR_ZERO)],
+        s1: [],
         s2: [
           HIR_IF_ELSE({
             booleanExpression: HIR_INT(5),
-            s1: [HIR_RETURN(HIR_ZERO)],
-            s2: [HIR_RETURN(HIR_ZERO)],
+            s1: [],
+            s2: [],
             finalAssignments: [],
           }),
         ],
@@ -472,12 +496,12 @@ if (5) {
       })
     )
   ).toBe(`if (5) {
-  return 0;
+
 } else {
   if (5) {
-    return 0;
+
   } else {
-    return 0;
+
   }
 }`);
 
@@ -559,7 +583,6 @@ if (5) {
       })
     )
   ).toBe(`let foo = 19815;`);
-  expect(highIRStatementToString(HIR_RETURN(HIR_ZERO))).toBe('return 0;');
   expect(
     highIRStatementToString(
       HIR_STRUCT_INITIALIZATION({
@@ -672,10 +695,12 @@ it('HIR function to JS string test 1', () => {
             assignedExpression: HIR_INT(1857),
           }),
         ],
+        returnValue: HIR_ZERO,
       })
     )
   ).toBe(`const baz = (d, t, i) => {
   let b = 1857;
+  return 0;
 };
 `);
 });
@@ -688,7 +713,8 @@ it('HIR function to JS string test 2', () => {
         name: 'baz',
         parameters: ['d', 't', 'i'],
         type: HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
-        body: [HIR_RETURN(HIR_INT(42))],
+        body: [],
+        returnValue: HIR_INT(42),
       })
     )
   ).toBe(`const baz = (d, t, i) => {

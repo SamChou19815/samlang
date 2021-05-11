@@ -80,8 +80,6 @@ const highIRLoopInductionVariableEliminationOptimization = (
         return expressionUsesBasicInductionVariableWithLoopGuard(statement.assignedExpression);
       case 'HighIRStructInitializationStatement':
         return statement.expressionList.some(expressionUsesBasicInductionVariableWithLoopGuard);
-      case 'HighIRReturnStatement':
-        return expressionUsesBasicInductionVariableWithLoopGuard(statement.expression);
     }
   };
 

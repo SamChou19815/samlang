@@ -17,7 +17,6 @@ import {
   HIR_STRING_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_STRUCT_TYPE,
-  HIR_FUNCTION_TYPE,
   HIR_CLOSURE_TYPE,
 } from 'samlang-core-ast/hir-types';
 

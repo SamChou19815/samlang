@@ -1,4 +1,4 @@
-import optimizeHighIRStatementsByCommonSubExpressionElimination from '../hir-common-subexpression-elimination-optimization';
+import optimizeHighIRFunctionByCommonSubExpressionElimination from '../hir-common-subexpression-elimination-optimization';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 import {
@@ -13,17 +13,22 @@ import {
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_CAST,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_BOOL_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 
 const assertCorrectlyOptimized = (statements: HighIRStatement[], expected: string): void => {
   expect(
-    optimizeHighIRStatementsByCommonSubExpressionElimination(
-      statements,
+    optimizeHighIRFunctionByCommonSubExpressionElimination(
+      {
+        name: '',
+        parameters: [],
+        type: { __type__: 'FunctionType', argumentTypes: [], returnType: HIR_INT_TYPE },
+        body: statements,
+        returnValue: HIR_ZERO,
+      },
       new OptimizationResourceAllocator()
     )
-      .map((it) => debugPrintHighIRStatement(it))
+      .body.map((it) => debugPrintHighIRStatement(it))
       .join('\n')
   ).toBe(expected);
 };
@@ -64,7 +69,6 @@ it('optimizeHighIRStatementsByCommonSubExpressionElimination works on if-else st
             ],
             returnType: HIR_INT_TYPE,
           }),
-          HIR_RETURN(HIR_ZERO),
         ],
         finalAssignments: [],
       }),
@@ -76,7 +80,6 @@ if (b: bool) {
   fff((_cse_1_: int), (_cse_0_: int));
 } else {
   eee((_cse_1_: int), (_cse_0_: int));
-  return 0;
 }`
   );
 });
