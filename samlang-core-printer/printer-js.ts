@@ -31,7 +31,7 @@ export const createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING = (
 ): PrettierDocument => {
   switch (highIRExpression.__type__) {
     case 'HighIRIntLiteralExpression':
-      return PRETTIER_TEXT(String(highIRExpression.value));
+      return PRETTIER_TEXT(`${String(highIRExpression.value)}n`);
     case 'HighIRVariableExpression':
     case 'HighIRNameExpression':
       return PRETTIER_TEXT(highIRExpression.name);
@@ -83,16 +83,9 @@ export const createPrettierDocumentFromHighIRStatement = (
         PRETTIER_TEXT(` ${operator} `),
         createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(e2)
       );
-      const wrapped =
-        operator === '/'
-          ? PRETTIER_CONCAT(
-              PRETTIER_TEXT('Math.floor'),
-              createParenthesisSurroundedDocument(binaryExpressionDocument)
-            )
-          : binaryExpressionDocument;
       return PRETTIER_CONCAT(
         PRETTIER_TEXT(`let ${highIRStatement.name} = `),
-        wrapped,
+        binaryExpressionDocument,
         PRETTIER_TEXT(';')
       );
     }

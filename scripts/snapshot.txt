@@ -89,6 +89,9 @@ OK
 #./out/test.function-call-never-ignored
 hi
 
+#./out/test.gc
+Yay
+
 #./out/test.generic-object-test
 2
 42
