@@ -1,0 +1,5 @@
+#!/bin/sh
+
+make
+cp samlang-runtime/runtime.bc samlang-cli/samlang-runtime/libsam-darwin.bc
+NO_JS=true yarn test:integration
