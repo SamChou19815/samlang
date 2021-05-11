@@ -63,24 +63,22 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
       });
     });
 
-  connection.onInitialize(
-    (): InitializeResult => {
-      publishDiagnostics(state.allModulesWithError);
-      return {
-        capabilities: {
-          textDocumentSync: TextDocumentSyncKind.Full,
-          hoverProvider: true,
-          definitionProvider: {},
-          foldingRangeProvider: true,
-          completionProvider: {
-            triggerCharacters: ['.'],
-            resolveProvider: false,
-          },
-          documentFormattingProvider: {},
+  connection.onInitialize((): InitializeResult => {
+    publishDiagnostics(state.allModulesWithError);
+    return {
+      capabilities: {
+        textDocumentSync: TextDocumentSyncKind.Full,
+        hoverProvider: true,
+        definitionProvider: {},
+        foldingRangeProvider: true,
+        completionProvider: {
+          triggerCharacters: ['.'],
+          resolveProvider: false,
         },
-      };
-    }
-  );
+        documentFormattingProvider: {},
+      },
+    };
+  });
 
   connection.onDidChangeTextDocument((didChangeTextDocumentParameters) => {
     const moduleReference = uriToModuleReference(didChangeTextDocumentParameters.textDocument.uri);

@@ -263,15 +263,13 @@ class HighIRExpressionLoweringManager {
     const loweredStatements: HighIRStatement[] = [];
     const tupleVariableName = this.allocateTemporaryVariable();
     const loweredTupleType = this.lowerType(expression.type) as HighIRStructType;
-    const loweredExpressions = zip(
-      expression.expressions,
-      loweredTupleType.mappings
-    ).map(([subExpression, tupleElementType]) =>
-      this.lowerWithPotentialCast(
-        tupleElementType,
-        this.loweredAndAddStatements(subExpression, loweredStatements),
-        loweredStatements
-      )
+    const loweredExpressions = zip(expression.expressions, loweredTupleType.mappings).map(
+      ([subExpression, tupleElementType]) =>
+        this.lowerWithPotentialCast(
+          tupleElementType,
+          this.loweredAndAddStatements(subExpression, loweredStatements),
+          loweredStatements
+        )
     );
     return {
       statements: [

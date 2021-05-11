@@ -201,10 +201,9 @@ const inlineRewriteForStatement = (
               ),
               type: statement.breakCollector.type,
             };
-      const loopVariables = zip(
-        loopVariablesWithoutLoopValue,
-        loopVariablesLoopValues
-      ).map(([rest, loopValue]) => ({ ...rest, loopValue }));
+      const loopVariables = zip(loopVariablesWithoutLoopValue, loopVariablesLoopValues).map(
+        ([rest, loopValue]) => ({ ...rest, loopValue })
+      );
       return { ...statement, loopVariables, statements, breakCollector };
     }
 
@@ -300,9 +299,8 @@ const optimizeHighIRFunctionsByInlining = (
 ): readonly HighIRFunction[] => {
   let tempFunctions = highIRFunctions;
   for (let i = 0; i < 5; i += 1) {
-    const { functionsThatCanBeInlined, functionsThatCanPerformInlining } = getFunctionsToInline(
-      tempFunctions
-    );
+    const { functionsThatCanBeInlined, functionsThatCanPerformInlining } =
+      getFunctionsToInline(tempFunctions);
     if (functionsThatCanBeInlined.size === 0) return tempFunctions;
     const allFunctions = Object.fromEntries(tempFunctions.map((it) => [it.name, it]));
     tempFunctions = tempFunctions.map((oldFunction) => {

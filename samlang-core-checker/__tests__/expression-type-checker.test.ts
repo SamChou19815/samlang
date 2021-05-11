@@ -39,80 +39,81 @@ const typeCheckInSandbox = (
 ): readonly [SamlangExpression, readonly string[]] => {
   const globalErrorCollector = createGlobalErrorCollector();
   const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(dummyModuleReference);
-  const accessibleGlobalTypingContext: AccessibleGlobalTypingContext = new AccessibleGlobalTypingContext(
-    dummyModuleReference,
-    hashMapOf([
+  const accessibleGlobalTypingContext: AccessibleGlobalTypingContext =
+    new AccessibleGlobalTypingContext(
       dummyModuleReference,
-      {
-        Test: {
-          typeParameters: [],
-          typeDefinition: {
-            range: Range.DUMMY,
-            type: 'object',
-            names: ['foo', 'bar'],
-            mappings: {
-              foo: { isPublic: true, type: bool },
-              bar: { isPublic: false, type: int },
+      hashMapOf([
+        dummyModuleReference,
+        {
+          Test: {
+            typeParameters: [],
+            typeDefinition: {
+              range: Range.DUMMY,
+              type: 'object',
+              names: ['foo', 'bar'],
+              mappings: {
+                foo: { isPublic: true, type: bool },
+                bar: { isPublic: false, type: int },
+              },
+            },
+            functions: {
+              helloWorld: {
+                isPublic: false,
+                typeParameters: [],
+                type: functionType([string], unit),
+              },
+            },
+            methods: {
+              baz: { isPublic: false, typeParameters: [], type: functionType([int], bool) },
             },
           },
-          functions: {
-            helloWorld: {
-              isPublic: false,
-              typeParameters: [],
-              type: functionType([string], unit),
+          Test2: {
+            typeParameters: [],
+            typeDefinition: {
+              range: Range.DUMMY,
+              type: 'variant',
+              names: ['Foo', 'Bar'],
+              mappings: {
+                Foo: { isPublic: true, type: bool },
+                Bar: { isPublic: true, type: int },
+              },
             },
+            functions: {},
+            methods: {},
           },
-          methods: {
-            baz: { isPublic: false, typeParameters: [], type: functionType([int], bool) },
+          Test3: {
+            typeParameters: ['E'],
+            typeDefinition: {
+              range: Range.DUMMY,
+              type: 'object',
+              names: ['foo', 'bar'],
+              mappings: {
+                foo: { isPublic: true, type: identifierType(dummyModuleReference, 'E') },
+                bar: { isPublic: false, type: int },
+              },
+            },
+            functions: {},
+            methods: {},
+          },
+          Test4: {
+            typeParameters: ['E'],
+            typeDefinition: {
+              range: Range.DUMMY,
+              type: 'variant',
+              names: ['Foo', 'Bar'],
+              mappings: {
+                Foo: { isPublic: true, type: identifierType(dummyModuleReference, 'E') },
+                Bar: { isPublic: true, type: int },
+              },
+            },
+            functions: {},
+            methods: {},
           },
         },
-        Test2: {
-          typeParameters: [],
-          typeDefinition: {
-            range: Range.DUMMY,
-            type: 'variant',
-            names: ['Foo', 'Bar'],
-            mappings: {
-              Foo: { isPublic: true, type: bool },
-              Bar: { isPublic: true, type: int },
-            },
-          },
-          functions: {},
-          methods: {},
-        },
-        Test3: {
-          typeParameters: ['E'],
-          typeDefinition: {
-            range: Range.DUMMY,
-            type: 'object',
-            names: ['foo', 'bar'],
-            mappings: {
-              foo: { isPublic: true, type: identifierType(dummyModuleReference, 'E') },
-              bar: { isPublic: false, type: int },
-            },
-          },
-          functions: {},
-          methods: {},
-        },
-        Test4: {
-          typeParameters: ['E'],
-          typeDefinition: {
-            range: Range.DUMMY,
-            type: 'variant',
-            names: ['Foo', 'Bar'],
-            mappings: {
-              Foo: { isPublic: true, type: identifierType(dummyModuleReference, 'E') },
-              Bar: { isPublic: true, type: int },
-            },
-          },
-          functions: {},
-          methods: {},
-        },
-      },
-    ]),
-    new Set(),
-    currentClass ?? 'Test'
-  );
+      ]),
+      new Set(),
+      currentClass ?? 'Test'
+    );
 
   // Parse
   const parsedExpression = checkNotNull(

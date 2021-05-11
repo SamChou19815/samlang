@@ -17,23 +17,23 @@
     "test:single": "jest -t",
     "test:integration": "node scripts/compile-repository.js",
     "test:new-linter-config:dev-sam-local": "eslint --config configurations/latest-local-linter-config.js .",
-    "bump": "yarn up @types/jest @types/node typescript prettier jest husky lint-staged esbuild \"esbuild-*\" eslint \"@typescript-eslint/*\" \"eslint-*\""
+    "bump": "yarn up @types/jest @types/node typescript prettier jest husky lint-staged esbuild eslint \"@typescript-eslint/*\" \"eslint-*\""
   },
   "devDependencies": {
     "@dev-sam/eslint-config-common": "0.21.0",
     "@dev-sam/jest-esbuild-transformer": "0.3.0",
     "@types/jest": "^26.0.23",
     "@types/node": "^15.0.2",
-    "@typescript-eslint/eslint-plugin": "^4.22.1",
-    "@typescript-eslint/parser": "^4.22.1",
-    "esbuild": "0.11.18",
-    "eslint": "^7.25.0",
+    "@typescript-eslint/eslint-plugin": "^4.23.0",
+    "@typescript-eslint/parser": "^4.23.0",
+    "esbuild": "^0.11.20",
+    "eslint": "^7.26.0",
     "eslint-import-resolver-node": "^0.3.4",
     "eslint-plugin-import": "^2.22.1",
     "husky": "^6.0.0",
     "jest": "^26.6.3",
-    "lint-staged": "^10.5.4",
-    "prettier": "^2.2.1",
+    "lint-staged": "^11.0.0",
+    "prettier": "^2.3.0",
     "typescript": "^4.2.4"
   },
   "eslintConfig": {

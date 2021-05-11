@@ -125,11 +125,8 @@ export const optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TE
   highIRWhileStatement: HighIRWhileStatement,
   allocator: OptimizationResourceAllocator
 ): readonly HighIRStatement[] => {
-  const {
-    hoistedStatementsBeforeWhile,
-    optimizedWhileStatement,
-    nonLoopInvariantVariables,
-  } = optimizeHighIRWhileStatementByLoopInvariantCodeMotion(highIRWhileStatement);
+  const { hoistedStatementsBeforeWhile, optimizedWhileStatement, nonLoopInvariantVariables } =
+    optimizeHighIRWhileStatementByLoopInvariantCodeMotion(highIRWhileStatement);
   const optimizableWhileStatement = extractOptimizableWhileLoop(
     optimizedWhileStatement,
     nonLoopInvariantVariables
