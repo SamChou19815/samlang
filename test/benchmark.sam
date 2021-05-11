@@ -6,7 +6,7 @@ class Main {
     )
 
   function main(): unit = {
-    val bigNum = 2000000000;
+    val bigNum = 200000000;
     val actual = Main.mathTailRec(bigNum, 0);
     val expected = ((((1 + bigNum) % 1000000007) * bigNum) / 2) % 1000000007;
     if (actual == expected) then println("Yay") else panic(
