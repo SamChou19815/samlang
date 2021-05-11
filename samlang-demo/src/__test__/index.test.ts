@@ -13,7 +13,7 @@ const _builtin_throw = (v) => { throw Error(v); };
 const GLOBAL_STRING_0 = "hello world";
 const _compiled_program_main = () => {
   _builtin_println(GLOBAL_STRING_0);
-  return 0;
+  return 0n;
 };
 
 _compiled_program_main();`,
