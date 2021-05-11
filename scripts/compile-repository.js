@@ -89,13 +89,15 @@ console.error('Bundled!');
 console.error('Compiling...');
 runWithErrorCheck('./samlang-cli/bin/index.js', ['compile']);
 console.error('Compiled!');
-console.error('Checking generated JS code...');
-const { result: jsProgramResult, totalTime: jsTotalTime } = interpretJSPrograms(getJSPrograms());
-if (!compare(read('./scripts/snapshot.txt'), jsProgramResult)) {
-  process.exit(1);
+if (!process.env.NO_JS) {
+  console.error('Checking generated JS code...');
+  const { result: jsProgramResult, totalTime: jsTotalTime } = interpretJSPrograms(getJSPrograms());
+  if (!compare(read('./scripts/snapshot.txt'), jsProgramResult)) {
+    process.exit(1);
+  }
+  console.error('Generated JS code is good.');
+  console.error(`Generated JS code takes ${jsTotalTime}ms to run.`);
 }
-console.error('Generated JS code is good.');
-console.error(`Generated JS code takes ${jsTotalTime}ms to run.`);
 if (spawnSync('llc', ['--help'], { shell: true, stdio: 'pipe' }).status === 0) {
   const { result: nativeProgramResult, totalTime: nativeTotalTime } = interpretPrograms(
     getX86Programs()

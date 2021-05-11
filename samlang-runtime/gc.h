@@ -324,14 +324,6 @@ extern bool GC_init(void);
 extern bool GC_root(void *ptr, size_t size);
 #define gc_root             GC_root
 
-/**
- * GC dynamic root registration.
- *
- * This is like GC_root(), except the ptr and the size may be changed by the
- * program at any time.
- */
-extern bool GC_dynamic_root(void **ptrptr, size_t *sizeptr, size_t elemsize);
-#define gc_dynamic_root     GC_dynamic_root
 
 /**
  * GC memory allocation.
@@ -355,42 +347,11 @@ GC_INLINE void *GC_malloc(size_t size) {
 #define gc_malloc           GC_malloc
 
 /**
- * GC memory reallocation.
- *
- * This is the GC's replacement of stdlib realloc().  Memory returned by
- * gc_realloc() has the same guarantees as that returned by gc_malloc().
- * After the call to gc_realloc(ptr, size), the memory pointed to by 'ptr'
- * has been explicitly freed, and should no longer be used.
- */
-extern void *GC_realloc(void *ptr, size_t size);
-#define gc_realloc          GC_realloc
-
-/**
- * GC memory explicit deallocation.
- *
- * This is the GC's replacement of stdlib free().  Using gc_free() is optional.
- */
-extern void GC_free_nonnull(void *ptr) __attribute__((__nonnull__(1)));
-GC_INLINE void GC_free(void *ptr) {
-  if (ptr == NULL) return;
-  GC_free_nonnull(ptr);
-}
-#define gc_free             GC_free
-
-/**
  * GC garbage collection.
  *
  * Force the GC to do a collection.
  */
 extern void GC_collect(void) __attribute__((__noinline__));
 #define gc_collect          GC_collect
-
-/**
- * GC strdup
- *
- * GC version of stdlib strdup().
- */
-extern char *GC_strdup(const char *str);
-#define gc_strdup           GC_strdup
 
 #endif      /* __GC_H */

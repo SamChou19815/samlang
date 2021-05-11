@@ -22,8 +22,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
 
 #include "gc.h"
 
@@ -84,10 +82,10 @@ static gc_root_t gc_roots = NULL;               // All GC roots.
 static gc_error_func_t gc_error_func = NULL;    // Memory error callback.
 
 // Timing and stats related:
-static ssize_t gc_total_size = 0;               // Total size.
-static ssize_t gc_alloc_size = 0;               // Total allocation (since GC).
-static ssize_t gc_trigger_size = GC_MIN_TRIGGER;// GC trigger size.
-static ssize_t gc_used_size  = 0;               // Total used memory.
+static size_t gc_total_size = 0;               // Total size.
+static size_t gc_alloc_size = 0;               // Total allocation (since GC).
+static size_t gc_trigger_size = GC_MIN_TRIGGER;// GC trigger size.
+static size_t gc_used_size  = 0;               // Total used memory.
 
 /* GC Prototypes. */
 static void __attribute__((noinline)) *gc_stacktop(void);
@@ -216,19 +214,6 @@ extern bool GC_root(void *ptr, size_t size) {
   return true;
 }
 
-/** GC dynamic root registration. */
-extern bool GC_dynamic_root(void **ptrptr, size_t *sizeptr, size_t elemsize) {
-  gc_root_t root = (gc_root_t)malloc(sizeof(struct gc_root_s));
-  if (root == NULL) return false;
-  root->ptr = NULL;
-  root->size = 0;
-  root->ptrptr = ptrptr;
-  root->sizeptr = sizeptr;
-  root->elemsize = elemsize;
-  gc_add_root(root);
-  return true;
-}
-
 /** Add a root to the global list. */
 static void gc_add_root(gc_root_t root) {
   root->next = gc_roots;
@@ -328,36 +313,6 @@ nonempty_freelist:
   }
 
   return ptr;
-}
-
-/**
- * GC memory reallocation.
- */
-extern void *GC_realloc(void *ptr, size_t size) {
-  // As per realloc(), if ptr == NULL then gc_realloc() becomes gc_malloc().
-  if (ptr == NULL) return gc_malloc(size);
-  size_t idx_size = gc_size_index(size);
-  size_t idx_ptr = gc_index(ptr);
-  if (idx_size == idx_ptr) return ptr;
-  void *newptr = gc_malloc(size);
-  if (newptr == NULL) return NULL;
-  gc_region_t region = __gc_regions + idx_ptr;
-  size_t cpy_size = (size < region->size? size: region->size);
-  memcpy(newptr, ptr, cpy_size);
-  GC_free_nonnull(ptr);
-  return newptr;
-}
-
-/** GC memory explicit deallocation. */
-extern void GC_free_nonnull(void *ptr) {
-  // Add ptr to the appropriate freelist.  Do no error checking whatsoever.
-  size_t idx = gc_index(ptr);
-  gc_region_t region = __gc_regions + idx;
-  gc_freelist_t newfreelist = (gc_freelist_t)ptr;
-  gc_freelist_t oldfreelist = region->freelist;
-  newfreelist->next = gc_hide(oldfreelist);
-  region->freelist = newfreelist;
-  gc_alloc_size -= (ssize_t)idx;
 }
 
 /** GC collection. */
@@ -562,12 +517,3 @@ static void gc_sweep(void) {
     region->freelist = NULL;
   }
 }
-
-/** GC strdup() */
-extern char *GC_strdup(const char *str) {
-  size_t len = strlen(str);
-  char *copy = (char *)GC_malloc(len+1);
-  strcpy(copy, str);
-  return copy;
-}
-
