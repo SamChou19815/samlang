@@ -1,5 +1,6 @@
 class Main {
   function mathTailRec(n: int, acc: int): int =
+    // Forcing allocating a lot of objects, test gc
     if (n == 0) then acc else Main.mathTailRec(n - 1, acc + stringToInt(intToString(1)))
 
   function main(): unit = {

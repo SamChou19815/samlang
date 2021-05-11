@@ -18,10 +18,7 @@
 
 // Adapted from https://github.com/GJDuck/GC
 
-/*
- * This is a very simple conservative GC implementation for single-threaded
- * x86_64/AMD64.
- */
+/** This is a very simple conservative GC implementation for single-threaded x86_64/AMD64. */
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -92,9 +89,7 @@ static ssize_t gc_alloc_size = 0;               // Total allocation (since GC).
 static ssize_t gc_trigger_size = GC_MIN_TRIGGER;// GC trigger size.
 static ssize_t gc_used_size  = 0;               // Total used memory.
 
-/*
- * GC Prototypes.
- */
+/* GC Prototypes. */
 static void __attribute__((noinline)) *gc_stacktop(void);
 static void gc_add_root(gc_root_t root);
 static void gc_mark_init(void);
