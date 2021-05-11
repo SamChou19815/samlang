@@ -73,13 +73,9 @@ typedef struct gc_root_s *gc_root_t;
 /* GC globals. */
 
 // General:
-static bool gc_inited = false;                  // Is GC initialised?
-static bool gc_enabled = true;                  // Is collection enabled?
 static void *gc_stackbottom;                    // Stack bottom.
 struct gc_region_s __gc_regions[GC_NUM_REGIONS] = {{0}};
 static void *gc_markstack;                      // Mark-stack.
-static gc_root_t gc_roots = NULL;               // All GC roots.
-static gc_error_func_t gc_error_func = NULL;    // Memory error callback.
 
 // Timing and stats related:
 static size_t gc_total_size = 0;               // Total size.
@@ -89,7 +85,6 @@ static size_t gc_used_size  = 0;               // Total used memory.
 
 /* GC Prototypes. */
 static void __attribute__((noinline)) *gc_stacktop(void);
-static void gc_add_root(gc_root_t root);
 static void gc_mark_init(void);
 static void gc_mark(gc_root_t roots);
 static void gc_sweep(void);
@@ -153,9 +148,7 @@ static __attribute__((noinline)) void *gc_stacktop(void) {
 }
 
 /** GC initialization. */
-extern bool GC_init(void) {
-  if (gc_inited) return true; // Already initialised.
-
+extern void GC_init(void) {
   // Find the stack:
   gc_stackbottom = gc_get_stackbottom();
 
@@ -185,69 +178,16 @@ extern bool GC_init(void) {
 
   // Reserve virtual space for the mark stack.
   gc_markstack = gc_get_mark_memory(GC_MARK_STACK_SIZE);
-
-  gc_inited = true;
-  return true;
-}
-
-/* GC enable/disable. */
-extern void GC_disable(void) {
-  gc_enabled = false;
-}
-extern void GC_enable(void) {
-  gc_enabled = true;
-}
-
-/** GC root registration. */
-extern bool GC_root(void *ptr, size_t size) {
-  if (size > GC_MAX_ROOT_SIZE) {
-    errno = EINVAL;
-    return false;
-  }
-  gc_root_t root = (gc_root_t)malloc(sizeof(struct gc_root_s));
-  if (root == NULL) return false;
-  root->ptr = ptr;
-  root->size = size;
-  root->ptrptr = &root->ptr;
-  root->sizeptr = &root->size;
-  root->elemsize = 1;
-  gc_add_root(root);
-  return true;
-}
-
-/** Add a root to the global list. */
-static void gc_add_root(gc_root_t root) {
-  root->next = gc_roots;
-  gc_roots   = root;
-}
-
-/** GC set error handler. */
-extern void GC_error(gc_error_func_t func) {
-  gc_error_func = func;
-}
-
-/** GC handle error. */
-extern void GC_handle_error(bool fatal, int err) {
-  if (err != 0) errno = err;
-  gc_error_func_t func = gc_error_func;
-  if (func != NULL) func();
-  if (fatal) abort();
 }
 
 /** GC should collect? */
 static inline void gc_maybe_collect(uint32_t size) {
   gc_alloc_size += size;
   if (gc_alloc_size >= gc_trigger_size) {
-    if (!gc_enabled) return;
     gc_collect();
     size_t gc_scan_size = 0;
     size_t stacksize = gc_stackbottom - gc_stacktop();
     gc_scan_size += 2*stacksize;
-    gc_root_t root = gc_roots;
-    while (root != NULL) {
-      gc_scan_size += (*root->sizeptr)*root->elemsize;
-      root = root->next;
-    }
     gc_scan_size += 2*gc_used_size;
     gc_trigger_size = (size_t)(gc_scan_size / GC_SPACE_FACTOR);
     gc_trigger_size = (gc_trigger_size < GC_MIN_TRIGGER? GC_MIN_TRIGGER: gc_trigger_size);
@@ -297,7 +237,7 @@ nonempty_freelist:
   ptr = region->freeptr;
   region->freeptr = ptr + region->size;
   if (ptr >= region->endptr) {
-    gc_handle_error(false, ENOMEM);
+    errno = ENOMEM;
     return NULL;
   }
 
@@ -314,9 +254,6 @@ nonempty_freelist:
 
 /** GC collection. */
 extern void GC_collect(void) {
-  // Is collection enabled?
-  if (!gc_enabled) return;
-
   // Initialize marking
   gc_mark_init();
 
@@ -327,7 +264,7 @@ extern void GC_collect(void) {
   root->ptrptr = &root->ptr;
   root->sizeptr = &root->size;
   root->elemsize = 1;
-  root->next = gc_roots;
+  root->next = NULL;
   gc_root_t roots = root;
 
   gc_mark(roots);
@@ -349,8 +286,6 @@ static void gc_mark_init(void) {
       size_t marksize = GC_REGION_SIZE / (region->size*8) + GC_PAGESIZE;
       void *markptr = gc_get_mark_memory(marksize);
       region->markptr = (uint8_t *)markptr;
-    } else {
-      size_t marksize = (regionsize + 7) / 8;
     }
   }
 }
@@ -380,9 +315,7 @@ static inline bool gc_is_marked_index(uint8_t *markptr_0, uint32_t idx) {
   return ((markunit & markmask) != 0);
 }
 
-/*
- * GC marking.
- */
+/** GC marking. */
 static void gc_mark(gc_root_t roots) {
   gc_markstack_t stack = (gc_markstack_t)(gc_markstack + GC_MARK_STACK_SIZE);
   stack--;

@@ -278,27 +278,6 @@ GC_INLINE void *GC_base(void *ptr) {
 }
 #define gc_base             GC_base
 
-/** GC disable. */
-extern void GC_disable(void);
-/** GC enable. */
-extern void GC_enable(void);
-#define gc_disable          GC_disable
-#define gc_enable           GC_enable
-
-/**
- * GC error callback.
- *
- * The GC will call this function for any error, including out-of-memory
- * errors.  If no such function is provided, or the function returns (i.e.
- * does not cause the program to exit), the GC will handle the error in
- * an unspecified way.  Passing 'func = NULL' resets the callback.
- */
-typedef void (*gc_error_func_t)(void);
-extern void GC_error(gc_error_func_t func);
-extern void GC_handle_error(bool fatal, int err);
-#define gc_error            GC_error
-#define gc_handle_error     GC_handle_error
-
 /**
  * GC initialization.
  *
@@ -307,23 +286,8 @@ extern void GC_handle_error(bool fatal, int err);
  * should also be called early during program execution, ideally from the
  * main() function, so the GC can accurately determine the base of the stack.
  */
-extern bool GC_init(void);
+extern void GC_init(void);
 #define gc_init             GC_init
-
-/**
- * GC root registration.
- *
- * Register a root with the GC within the memory range: [ptr .. ptr+size]
- * A root is a region of memory that may contain GC pointers, but itself is
- * not GC allocated memory.  By default, the GC only considers the stack as a
- * root.  Any global variable, or (non-GC) malloc'ed memory, must explicitly be
- * registered as a root if it may contain GC pointers.
- * NOTE: each call to gc_root() consumes additional memory resources, thus
- * should be used sparingly.
- */
-extern bool GC_root(void *ptr, size_t size);
-#define gc_root             GC_root
-
 
 /**
  * GC memory allocation.
@@ -340,7 +304,10 @@ GC_INLINE void *GC_malloc(size_t size) {
   else if (size1 < GC_HUGE_UNIT) idx = GC_BIG_IDX_OFFSET + size1 / GC_BIG_UNIT;
   else {
     idx = GC_HUGE_IDX_OFFSET + size1 / GC_HUGE_UNIT;
-    if (idx >= GC_NUM_REGIONS) GC_handle_error(true, EINVAL);
+    if (idx >= GC_NUM_REGIONS) {
+      errno = EINVAL;
+      abort();
+    }
   }
   return GC_malloc_index(idx);
 }
