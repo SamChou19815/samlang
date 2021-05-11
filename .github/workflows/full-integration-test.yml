@@ -5,6 +5,9 @@ on:
   pull_request:
     paths:
       - .github/workflows/full-integration-test.yml
+      - scripts/compile-repository.js
+      - scripts/snapshot.txt
+      - test/*.sam
 
 jobs:
   test:
