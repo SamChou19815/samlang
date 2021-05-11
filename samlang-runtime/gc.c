@@ -23,7 +23,6 @@
  * x86_64/AMD64.
  */
 
-#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>

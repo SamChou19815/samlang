@@ -12,7 +12,6 @@
     "*.m": "matlab",
     "*.ml": "ocaml",
     "*.mli": "ocaml",
-    "gc.h": "c",
-    "libsam-base.h": "c"
+    "*.h": "c"
   }
 }
