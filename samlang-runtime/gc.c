@@ -109,11 +109,10 @@ static void *gc_get_memory(void) {
 static void *gc_get_mark_memory(size_t size) {
   int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
   void *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0);
-  return (ptr == MAP_FAILED? NULL: ptr);
+  return ptr;
 }
 static void gc_zero_memory(void *ptr, size_t size) {
   size += GC_PAGESIZE;
-  madvise(ptr, size, MADV_DONTNEED);
 }
 static void gc_free_memory(void *ptr, size_t size) {
   munmap(ptr, size);
@@ -174,8 +173,6 @@ extern bool GC_init(void) {
 
   // Reserve virtual space for the mark stack.
   gc_markstack = gc_get_mark_memory(GC_MARK_STACK_SIZE);
-  if (gc_markstack == NULL)
-    goto init_error;
 
   gc_inited = true;
   return true;
@@ -337,9 +334,7 @@ extern void GC_collect(void) {
   gc_sweep();
 }
 
-/*
- * Initialize marking.
- */
+/** Initialize marking. */
 static void gc_mark_init(void) {
   gc_total_size = 0;
 
@@ -353,7 +348,6 @@ static void gc_mark_init(void) {
     if (region->markptr == NULL) {
       size_t marksize = GC_REGION_SIZE / (region->size*8) + GC_PAGESIZE;
       void *markptr = gc_get_mark_memory(marksize);
-      if (markptr == NULL) gc_handle_error(true, 0);
       region->markptr = (uint8_t *)markptr;
     } else {
       size_t marksize = (regionsize + 7) / 8;
@@ -362,9 +356,7 @@ static void gc_mark_init(void) {
   }
 }
 
-/*
- * Mark the given index.
- */
+/** Mark the given index. */
 static inline bool gc_mark_index(uint8_t *markptr_0, uint32_t idx) {
   gc_markunit_t *markptr = (gc_markunit_t *)markptr_0;
   uint32_t unitidx = (idx / (sizeof(gc_markunit_t)*8));
@@ -378,9 +370,7 @@ static inline bool gc_mark_index(uint8_t *markptr_0, uint32_t idx) {
   return true;
 }
 
-/*
- * Test if the given index is marked.
- */
+/** Test if the given index is marked. */
 static inline bool gc_is_marked_index(uint8_t *markptr_0, uint32_t idx) {
   gc_markunit_t *markptr = (gc_markunit_t *)markptr_0;
   uint32_t unitidx = (idx / (sizeof(gc_markunit_t)*8));
