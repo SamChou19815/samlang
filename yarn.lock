@@ -888,13 +888,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/long@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "@types/long@npm:4.0.1"
-  checksum: ed2a125330dbf2b425b2e58b1e1151a37106ceeec973f9f191fba0bda83ed00fae6d858254022e8b6e7165fec5f0c3872b7cb5f425c753383fed54699fb63b38
-  languageName: node
-  linkType: hard
-
 "@types/node@npm:*":
   version: 14.0.14
   resolution: "@types/node@npm:14.0.14"
@@ -4393,13 +4386,6 @@ fsevents@^2.1.2:
   languageName: node
   linkType: hard
 
-"long@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "long@npm:4.0.0"
-  checksum: 9cebc1ee8b9ea15278c977f61250ac41becdf7216104905f0d198c147ed2a7a090a2d83bb212878d3dc3ccb0199e6428862f848ec4b0ecfeab4dfe24eccf21b3
-  languageName: node
-  linkType: hard
-
 "make-dir@npm:^3.0.0":
   version: 3.1.0
   resolution: "make-dir@npm:3.1.0"
@@ -5737,8 +5723,6 @@ resolve@^1.18.1:
   resolution: "samlang-core-utils@workspace:samlang-core-utils"
   dependencies:
     "@types/jest": ^26.0.23
-    "@types/long": ^4.0.1
-    long: ^4.0.0
     typescript: ^4.2.4
   languageName: unknown
   linkType: soft

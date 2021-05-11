@@ -1,8 +1,6 @@
 import type { IROperator } from './common-operators';
 import { HighIRType, HIR_BOOL_TYPE, HIR_INT_TYPE, prettyPrintHighIRType } from './hir-types';
 
-import { Long } from 'samlang-core-utils';
-
 interface BaseHighIRExpression {
   readonly __type__: string;
   readonly type: HighIRType;
@@ -10,7 +8,7 @@ interface BaseHighIRExpression {
 
 export interface HighIRIntLiteralExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRIntLiteralExpression';
-  readonly value: Long;
+  readonly value: number;
 }
 
 export interface HighIRStringLiteralExpression extends BaseHighIRExpression {
@@ -145,19 +143,19 @@ type ConstructorArgumentObject<E extends BaseHighIRExpression | BaseHighIRStatem
 export const HIR_FALSE: HighIRIntLiteralExpression = {
   __type__: 'HighIRIntLiteralExpression',
   type: HIR_BOOL_TYPE,
-  value: Long.ZERO,
+  value: 0,
 };
 
 export const HIR_TRUE: HighIRIntLiteralExpression = {
   __type__: 'HighIRIntLiteralExpression',
   type: HIR_BOOL_TYPE,
-  value: Long.ONE,
+  value: 1,
 };
 
-export const HIR_INT = (value: number | Long): HighIRIntLiteralExpression => ({
+export const HIR_INT = (value: number): HighIRIntLiteralExpression => ({
   __type__: 'HighIRIntLiteralExpression',
   type: HIR_INT_TYPE,
-  value: typeof value === 'number' ? Long.fromInt(value) : value,
+  value,
 });
 
 export const HIR_ZERO: HighIRIntLiteralExpression = HIR_INT(0);
@@ -201,8 +199,8 @@ export const HIR_BINARY = ({
       break;
   }
   if (operator === '-' && e2.__type__ === 'HighIRIntLiteralExpression') {
-    const negOfE2Constant = e2.value.neg();
-    if (negOfE2Constant.notEquals(e2.value) || negOfE2Constant.equals(0)) {
+    const negOfE2Constant = -e2.value;
+    if (negOfE2Constant !== 2147483648) {
       return {
         __type__: 'HighIRBinaryStatement',
         name,

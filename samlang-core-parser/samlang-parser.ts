@@ -70,7 +70,7 @@ import type {
   TypeDefinition,
 } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { checkNotNull, Long } from 'samlang-core-utils';
+import { checkNotNull } from 'samlang-core-utils';
 
 /** @internal */
 export class BaseParser {
@@ -836,7 +836,7 @@ export default class SamlangModuleParser extends BaseParser {
         return EXPRESSION_INT(
           peeked.range,
           associatedComments,
-          Long.fromString(peeked.content.content)
+          parseInt(peeked.content.content, 10)
         );
       }
 

@@ -28,7 +28,6 @@ import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import {
   error,
-  Long,
   isNotNull,
   zip3,
   LocalStackedContext,
@@ -36,34 +35,37 @@ import {
   assert,
 } from 'samlang-core-utils';
 
-const longOfBool = (b: boolean) => (b ? Long.ONE : Long.ZERO);
+const longOfBool = (b: boolean) => (b ? 1 : 0);
 
-const evaluateBinaryExpression = (operator: IROperator, v1: Long, v2: Long): Long | null => {
+const evaluateBinaryExpression = (operator: IROperator, v1: number, v2: number): number | null => {
   switch (operator) {
     case '+':
-      return v1.add(v2);
+      return v1 + v2;
     case '-':
-      return v1.subtract(v2);
+      return v1 - v2;
     case '*':
-      return v1.multiply(v2);
-    case '/':
-      return v2.equals(Long.ZERO) ? null : v1.divide(v2);
+      return v1 * v2;
+    case '/': {
+      if (v2 === 0) return null;
+      const result = v1 / v2;
+      return result >= 0 ? Math.floor(result) : Math.ceil(result);
+    }
     case '%':
-      return v2.equals(Long.ZERO) ? null : v1.mod(v2);
+      return v2 === 0 ? null : v1 % v2;
     case '^':
-      return v1.xor(v2);
+      return v1 ^ v2;
     case '<':
-      return longOfBool(v1.lessThan(v2));
+      return longOfBool(v1 < v2);
     case '<=':
-      return longOfBool(v1.lessThanOrEqual(v2));
+      return longOfBool(v1 <= v2);
     case '>':
-      return longOfBool(v1.greaterThan(v2));
+      return longOfBool(v1 > v2);
     case '>=':
-      return longOfBool(v1.greaterThanOrEqual(v2));
+      return longOfBool(v1 >= v2);
     case '==':
-      return longOfBool(v1.equals(v2));
+      return longOfBool(v1 === v2);
     case '!=':
-      return longOfBool(v1.notEquals(v2));
+      return longOfBool(v1 !== v2);
   }
 };
 
@@ -76,7 +78,7 @@ type BinaryExpression = {
 const mergeBinaryExpression = (
   outerOperator: IROperator,
   inner: BinaryExpression,
-  outerConstant: Long
+  outerConstant: number
 ): BinaryExpression | null => {
   switch (outerOperator) {
     case '+':
@@ -84,7 +86,7 @@ const mergeBinaryExpression = (
         return {
           operator: '+',
           e1: inner.e1,
-          e2: HIR_INT(inner.e2.value.add(outerConstant)),
+          e2: HIR_INT(inner.e2.value + outerConstant),
         };
       }
       return null;
@@ -93,7 +95,7 @@ const mergeBinaryExpression = (
         return {
           operator: '*',
           e1: inner.e1,
-          e2: HIR_INT(inner.e2.value.multiply(outerConstant)),
+          e2: HIR_INT(inner.e2.value * outerConstant),
         };
       }
       return null;
@@ -107,7 +109,7 @@ const mergeBinaryExpression = (
         return {
           operator: outerOperator,
           e1: inner.e1,
-          e2: HIR_INT(outerConstant.subtract(inner.e2.value)),
+          e2: HIR_INT(outerConstant - inner.e2.value),
         };
       }
       return null;
@@ -212,7 +214,7 @@ const optimizeHighIRStatement = (
       const { name, operator } = statement;
       if (e2.__type__ === 'HighIRIntLiteralExpression') {
         const v2 = e2.value;
-        if (v2.equals(0)) {
+        if (v2 === 0) {
           if (operator === '+') {
             valueContext.bind(name, e1);
             return [];
@@ -222,7 +224,7 @@ const optimizeHighIRStatement = (
             return [];
           }
         }
-        if (v2.equals(1)) {
+        if (v2 === 1) {
           if (operator === '%') {
             valueContext.bind(name, HIR_ZERO);
             return [];
@@ -304,7 +306,7 @@ const optimizeHighIRStatement = (
     case 'HighIRIfElseStatement': {
       const booleanExpression = optimizeExpression(statement.booleanExpression);
       if (booleanExpression.__type__ === 'HighIRIntLiteralExpression') {
-        const isTrue = Boolean(booleanExpression.value.toInt());
+        const isTrue = Boolean(booleanExpression.value);
         const statements = optimizeHighIRStatements(
           isTrue ? statement.s1 : statement.s2,
           valueContext,
@@ -357,9 +359,7 @@ const optimizeHighIRStatement = (
     case 'HighIRSingleIfStatement': {
       const booleanExpression = optimizeExpression(statement.booleanExpression);
       if (booleanExpression.__type__ === 'HighIRIntLiteralExpression') {
-        const isTrue = Boolean(
-          booleanExpression.value.xor(Number(statement.invertCondition)).toInt()
-        );
+        const isTrue = Boolean(booleanExpression.value ^ Number(statement.invertCondition));
         if (isTrue) {
           return optimizeHighIRStatements(
             statement.statements,

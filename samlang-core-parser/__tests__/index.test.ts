@@ -21,8 +21,8 @@ it('Can parse good expressions.', () => {
   expectASTWithTheSameKind('true', 'LiteralExpression');
   expectASTWithTheSameKind('false', 'LiteralExpression');
   expectASTWithTheSameKind('42', 'LiteralExpression');
-  expectASTWithTheSameKind('-9223372036854775808', 'LiteralExpression');
-  expectASTWithTheSameKind('9223372036854775807', 'LiteralExpression');
+  expectASTWithTheSameKind('-2147483648', 'LiteralExpression');
+  expectASTWithTheSameKind('2147483647', 'LiteralExpression');
   expectASTWithTheSameKind('"Hello World!"', 'LiteralExpression');
   expectASTWithTheSameKind('this', 'ThisExpression');
   expectASTWithTheSameKind('abc', 'VariableExpression');

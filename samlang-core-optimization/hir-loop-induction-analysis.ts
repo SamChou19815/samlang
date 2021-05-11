@@ -92,12 +92,12 @@ const mergeInvariantAdditionForLoopOptimization = (
     existingValue.__type__ === 'HighIRIntLiteralExpression' &&
     addedValue.__type__ === 'HighIRIntLiteralExpression'
   ) {
-    return HIR_INT(existingValue.value.add(addedValue.value));
+    return HIR_INT(existingValue.value + addedValue.value);
   }
-  if (addedValue.__type__ === 'HighIRIntLiteralExpression' && addedValue.value.equals(0)) {
+  if (addedValue.__type__ === 'HighIRIntLiteralExpression' && addedValue.value === 0) {
     return existingValue;
   }
-  if (existingValue.__type__ === 'HighIRIntLiteralExpression' && existingValue.value.equals(0)) {
+  if (existingValue.__type__ === 'HighIRIntLiteralExpression' && existingValue.value === 0) {
     return addedValue;
   }
   return null;
@@ -111,12 +111,12 @@ export const mergeInvariantMultiplicationForLoopOptimization = (
     existingValue.__type__ === 'HighIRIntLiteralExpression' &&
     addedValue.__type__ === 'HighIRIntLiteralExpression'
   ) {
-    return HIR_INT(existingValue.value.multiply(addedValue.value));
+    return HIR_INT(existingValue.value * addedValue.value);
   }
-  if (addedValue.__type__ === 'HighIRIntLiteralExpression' && addedValue.value.equals(1)) {
+  if (addedValue.__type__ === 'HighIRIntLiteralExpression' && addedValue.value === 1) {
     return existingValue;
   }
-  if (existingValue.__type__ === 'HighIRIntLiteralExpression' && existingValue.value.equals(1)) {
+  if (existingValue.__type__ === 'HighIRIntLiteralExpression' && existingValue.value === 1) {
     return addedValue;
   }
   return null;
@@ -143,18 +143,18 @@ const mergeConstantOperationIntoDerivedInductionVariable = (
     ) {
       return {
         baseName: existing.baseName,
-        multiplier: HIR_INT(existing.multiplier.value.multiply(loopInvariantExpressionValue)),
-        immediate: HIR_INT(existing.immediate.value.multiply(loopInvariantExpressionValue)),
+        multiplier: HIR_INT(existing.multiplier.value * loopInvariantExpressionValue),
+        immediate: HIR_INT(existing.immediate.value * loopInvariantExpressionValue),
       };
     }
-    if (loopInvariantExpressionValue.equals(1)) return existing;
+    if (loopInvariantExpressionValue === 1) return existing;
     return null;
   }
   if (
     existing.multiplier.__type__ === 'HighIRIntLiteralExpression' &&
     existing.immediate.__type__ === 'HighIRIntLiteralExpression' &&
-    existing.multiplier.value.equals(1) &&
-    existing.immediate.value.equals(1)
+    existing.multiplier.value === 1 &&
+    existing.immediate.value === 1
   ) {
     return {
       baseName: existing.baseName,

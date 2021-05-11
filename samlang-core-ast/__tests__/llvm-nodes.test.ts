@@ -28,8 +28,6 @@ import {
   LLVM_RETURN,
 } from '../llvm-nodes';
 
-import { Long } from 'samlang-core-utils';
-
 it('isTheSameLLVMType works', () => {
   expect(isTheSameLLVMType(LLVM_INT_TYPE, LLVM_STRING_TYPE())).toBeFalsy();
   expect(isTheSameLLVMType(LLVM_INT_TYPE, LLVM_BOOL_TYPE)).toBeFalsy();
@@ -102,22 +100,22 @@ it('isTheSameLLVMType works', () => {
 
 it('prettyPrintLLVMType works.', () => {
   expect(prettyPrintLLVMType(LLVM_BOOL_TYPE)).toBe('i1');
-  expect(prettyPrintLLVMType(LLVM_INT_TYPE)).toBe('i64');
-  expect(prettyPrintLLVMType(LLVM_STRING_TYPE())).toBe('i64*');
-  expect(prettyPrintLLVMType(LLVM_STRING_TYPE(3))).toBe('[3 x i64]*');
+  expect(prettyPrintLLVMType(LLVM_INT_TYPE)).toBe('i32');
+  expect(prettyPrintLLVMType(LLVM_STRING_TYPE())).toBe('i32*');
+  expect(prettyPrintLLVMType(LLVM_STRING_TYPE(3))).toBe('[3 x i32]*');
   expect(prettyPrintLLVMType(LLVM_IDENTIFIER_TYPE('Foo'))).toBe('%Foo*');
   expect(prettyPrintLLVMType(LLVM_STRUCT_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE]))).toBe(
-    '{ i64, i1 }*'
+    '{ i32, i1 }*'
   );
   expect(
     prettyPrintLLVMType(LLVM_FUNCTION_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE], LLVM_INT_TYPE))
-  ).toBe('i64 (i64, i1)*');
+  ).toBe('i32 (i32, i1)*');
 });
 
 it('prettyPrintLLVMValue works.', () => {
   expect(prettyPrintLLVMValue(LLVM_INT(0), LLVM_STRING_TYPE())).toBe('null');
   expect(prettyPrintLLVMValue(LLVM_INT(3), LLVM_INT_TYPE)).toBe('3');
-  expect(prettyPrintLLVMValue(LLVM_INT(Long.fromInt(3)), LLVM_INT_TYPE)).toBe('3');
+  expect(prettyPrintLLVMValue(LLVM_INT(3), LLVM_INT_TYPE)).toBe('3');
   expect(prettyPrintLLVMValue(LLVM_VARIABLE('foo'), LLVM_INT_TYPE)).toBe('%foo');
   expect(prettyPrintLLVMValue(LLVM_NAME('foo'), LLVM_INT_TYPE)).toBe('@foo');
 });
@@ -165,7 +163,7 @@ it('prettyPrintLLVMInstruction works for LLVM_CAST.', () => {
         sourceType: LLVM_INT_TYPE,
       })
     )
-  ).toBe('%foo = inttoptr i64 %bar to %Foo*');
+  ).toBe('%foo = inttoptr i32 %bar to %Foo*');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -176,7 +174,7 @@ it('prettyPrintLLVMInstruction works for LLVM_CAST.', () => {
         sourceType: LLVM_IDENTIFIER_TYPE('Bar'),
       })
     )
-  ).toBe('%foo = ptrtoint %Bar* %bar to i64');
+  ).toBe('%foo = ptrtoint %Bar* %bar to i32');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_GET_ELEMENT_PTR.', () => {
@@ -203,7 +201,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(3),
       })
     )
-  ).toBe('%foo = add i64 %bar, 3');
+  ).toBe('%foo = add i32 %bar, 3');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -215,7 +213,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(3),
       })
     )
-  ).toBe('%foo = sub i64 %bar, 3');
+  ).toBe('%foo = sub i32 %bar, 3');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -227,7 +225,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(3),
       })
     )
-  ).toBe('%foo = mul i64 %bar, 3');
+  ).toBe('%foo = mul i32 %bar, 3');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -239,7 +237,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(3),
       })
     )
-  ).toBe('%foo = sdiv i64 %bar, 3');
+  ).toBe('%foo = sdiv i32 %bar, 3');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -251,7 +249,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(3),
       })
     )
-  ).toBe('%foo = srem i64 %bar, 3');
+  ).toBe('%foo = srem i32 %bar, 3');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -275,7 +273,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(1),
       })
     )
-  ).toBe('%foo = icmp slt i64 %bar, 1');
+  ).toBe('%foo = icmp slt i32 %bar, 1');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -287,7 +285,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(1),
       })
     )
-  ).toBe('%foo = icmp sle i64 %bar, 1');
+  ).toBe('%foo = icmp sle i32 %bar, 1');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -299,7 +297,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(1),
       })
     )
-  ).toBe('%foo = icmp sgt i64 %bar, 1');
+  ).toBe('%foo = icmp sgt i32 %bar, 1');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -311,7 +309,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(1),
       })
     )
-  ).toBe('%foo = icmp sge i64 %bar, 1');
+  ).toBe('%foo = icmp sge i32 %bar, 1');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -323,7 +321,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(1),
       })
     )
-  ).toBe('%foo = icmp eq i64 %bar, 1');
+  ).toBe('%foo = icmp eq i32 %bar, 1');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -335,7 +333,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(1),
       })
     )
-  ).toBe('%foo = icmp ne i64 %bar, 1');
+  ).toBe('%foo = icmp ne i32 %bar, 1');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -347,7 +345,7 @@ it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {
         v2: LLVM_INT(0),
       })
     )
-  ).toBe('%foo = icmp ne i64* %bar, null');
+  ).toBe('%foo = icmp ne i32* %bar, null');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_LOAD.', () => {
@@ -359,7 +357,7 @@ it('prettyPrintLLVMInstruction works for LLVM_LOAD.', () => {
         valueType: LLVM_INT_TYPE,
       })
     )
-  ).toBe('%foo = load i64, i64* %bar');
+  ).toBe('%foo = load i32, i32* %bar');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_STORE.', () => {
@@ -371,7 +369,7 @@ it('prettyPrintLLVMInstruction works for LLVM_STORE.', () => {
         valueType: LLVM_INT_TYPE,
       })
     )
-  ).toBe('store i64 @bar, i64* %foo');
+  ).toBe('store i32 @bar, i32* %foo');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_PHI.', () => {
@@ -387,7 +385,7 @@ it('prettyPrintLLVMInstruction works for LLVM_PHI.', () => {
         ],
       })
     )
-  ).toBe('%f = phi i64 [ %bar, %b1 ], [ 1, %b2 ], [ 42, %b3 ]');
+  ).toBe('%f = phi i32 [ %bar, %b1 ], [ 1, %b2 ], [ 42, %b3 ]');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_CALL.', () => {
@@ -403,7 +401,7 @@ it('prettyPrintLLVMInstruction works for LLVM_CALL.', () => {
         ],
       })
     )
-  ).toBe('%c = call i64 @plusPlus(i64 %bar, i64 1) nounwind');
+  ).toBe('%c = call i32 @plusPlus(i32 %bar, i32 1) nounwind');
 
   expect(
     prettyPrintLLVMInstruction(
@@ -416,7 +414,7 @@ it('prettyPrintLLVMInstruction works for LLVM_CALL.', () => {
         ],
       })
     )
-  ).toBe('call i64 @plusPlus(i64 %bar, i64 1) nounwind');
+  ).toBe('call i32 @plusPlus(i32 %bar, i32 1) nounwind');
 });
 
 it('prettyPrintLLVMInstruction works for LLVM_LABEL.', () => {
@@ -447,9 +445,9 @@ it('prettyPrintLLVMFunction works', () => {
       returnType: LLVM_INT_TYPE,
       body: [LLVM_LABEL('start'), LLVM_RETURN(LLVM_VARIABLE('n'), LLVM_INT_TYPE)],
     })
-  ).toBe(`define i64 @fact(i64 %n) local_unnamed_addr nounwind {
+  ).toBe(`define i32 @fact(i32 %n) local_unnamed_addr nounwind {
 start:
-  ret i64 %n
+  ret i32 %n
 }`);
 });
 
@@ -472,20 +470,20 @@ it('prettyPrintLLVMModule works', () => {
         },
       ],
     })
-  ).toBe(`declare i64* @_builtin_malloc(i64) nounwind
-declare i64 @_builtin_println(i64*) nounwind
-declare i64 @_builtin_throw(i64*) nounwind
-declare i64* @_builtin_intToString(i64) nounwind
-declare i64 @_builtin_stringToInt(i64*) nounwind
-declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
+  ).toBe(`declare i32* @_builtin_malloc(i32) nounwind
+declare i32 @_builtin_println(i32*) nounwind
+declare i32 @_builtin_throw(i32*) nounwind
+declare i32* @_builtin_intToString(i32) nounwind
+declare i32 @_builtin_stringToInt(i32*) nounwind
+declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
 
 ; @hw = 'AA'
-@hw = private unnamed_addr constant [3 x i64] [i64 2, i64 65, i64 65], align 8
+@hw = private unnamed_addr constant [3 x i32] [i32 2, i32 65, i32 65], align 8
 ; @empty = ''
-@empty = private unnamed_addr constant [1 x i64] [i64 0], align 8
-%Foo = type { i64, %Bar* }
-define i64 @fact(i64 %n) local_unnamed_addr nounwind {
+@empty = private unnamed_addr constant [1 x i32] [i32 0], align 8
+%Foo = type { i32, %Bar* }
+define i32 @fact(i32 %n) local_unnamed_addr nounwind {
 start:
-  ret i64 %n
+  ret i32 %n
 }`);
 });

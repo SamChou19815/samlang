@@ -27,7 +27,7 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText } from 'samlang-core-parser';
-import { Long, checkNotNull, hashMapOf, LocalStackedContext } from 'samlang-core-utils';
+import { checkNotNull, hashMapOf, LocalStackedContext } from 'samlang-core-utils';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
 
@@ -163,7 +163,7 @@ const assertTypeChecks = (
           json,
           (_, value) => {
             if (value instanceof Range) return '';
-            if (value instanceof Long || value instanceof ModuleReference) {
+            if (value instanceof ModuleReference) {
               return value.toString();
             }
             return value;

@@ -18,8 +18,6 @@ import {
 import type { BinaryOperator } from './common-operators';
 import type { Pattern } from './samlang-pattern';
 
-import { Long } from 'samlang-core-utils';
-
 interface BaseExpression extends Node {
   /** Identity of the object used for pattern matching. */
   readonly __type__: string;
@@ -225,14 +223,14 @@ export const EXPRESSION_FALSE = (
 export const EXPRESSION_INT = (
   range: Range,
   associatedComments: readonly TypedComment[],
-  value: number | Long
+  value: number
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
   type: intType,
   precedence: 0,
   associatedComments,
-  literal: intLiteralOf(typeof value === 'number' ? Long.fromInt(value) : value),
+  literal: intLiteralOf(value),
 });
 
 export const EXPRESSION_STRING = (

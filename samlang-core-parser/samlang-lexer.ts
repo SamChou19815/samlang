@@ -11,7 +11,7 @@ const characterIsLetter = (character: string): boolean =>
 
 class EOF extends Error {}
 
-const MAX_INT_PLUS_ONE = BigInt('9223372036854775808');
+const MAX_INT_PLUS_ONE = 2147483648;
 
 class CharacterStream {
   public lineNumber = 0;
@@ -469,17 +469,17 @@ const lexSamlangProgram = (
     // We have to do it here since we need access of the previous token.
     if (typeof token.content !== 'string' && token.content.__type__ === 'IntLiteral') {
       const intLiteralString = token.content.content;
-      const parsedBigInt = BigInt(intLiteralString);
-      if (parsedBigInt > MAX_INT_PLUS_ONE) {
-        errorCollector.reportSyntaxError(token.range, 'Not a 64-bit integer.');
+      const parsedInt = parseInt(intLiteralString, 10);
+      if (parsedInt > MAX_INT_PLUS_ONE) {
+        errorCollector.reportSyntaxError(token.range, 'Not a 32-bit integer.');
         token = {
           range: token.range,
           content: { __type__: 'IntLiteral', content: intLiteralString },
         };
-      } else if (parsedBigInt === MAX_INT_PLUS_ONE) {
+      } else if (parsedInt === MAX_INT_PLUS_ONE) {
         const previousToken = tokens[tokens.length - 1]?.content;
         if (previousToken == null || previousToken !== '-') {
-          errorCollector.reportSyntaxError(token.range, 'Not a 64-bit integer.');
+          errorCollector.reportSyntaxError(token.range, 'Not a 32-bit integer.');
           token = {
             range: token.range,
             content: { __type__: 'IntLiteral', content: intLiteralString },

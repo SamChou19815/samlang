@@ -7,9 +7,9 @@
 
 #include "./gc.h"
 #include "./libsam-base.h"
-#define WORDSIZE 8
+#define WORDSIZE 4
 
-typedef int64_t samlang_int;
+typedef int32_t samlang_int;
 typedef samlang_int *samlang_string;
 
 /** Core runtime */
@@ -92,14 +92,8 @@ samlang_int _builtin_println(samlang_string str) {
 }
 
 samlang_string _builtin_intToString(samlang_int in) {
-  char buffer[32]; // more than enough to represent 64-bit numbers
-
-#if defined(__APPLE__)
-  sprintf(buffer, "%lld", in);
-#else
-  sprintf(buffer, "%ld", in);
-#endif
-
+  char buffer[16]; // more than enough to represent 32-bit numbers
+  sprintf(buffer, "%d", in);
   return mkString(buffer);
 }
 

@@ -19,12 +19,10 @@ import {
   ModuleReference,
 } from '../common-nodes';
 
-import { Long } from 'samlang-core-utils';
-
 it('Literals have expected pretty printed values', () => {
   expect(prettyPrintLiteral(TRUE)).toBe('true');
   expect(prettyPrintLiteral(FALSE)).toBe('false');
-  expect(prettyPrintLiteral(intLiteralOf(Long.fromInt(42)))).toBe('42');
+  expect(prettyPrintLiteral(intLiteralOf(42))).toBe('42');
   expect(prettyPrintLiteral(stringLiteralOf('hello'))).toBe('"hello"');
 });
 

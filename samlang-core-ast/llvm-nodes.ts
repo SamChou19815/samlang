@@ -2,9 +2,9 @@ import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
 import type { HighIRIdentifierType } from './hir-types';
 
-import { assert, Long, zip } from 'samlang-core-utils';
+import { assert, zip } from 'samlang-core-utils';
 
-export type LLVMPrimitiveType = { readonly __type__: 'PrimitiveType'; readonly type: 'i1' | 'i64' };
+export type LLVMPrimitiveType = { readonly __type__: 'PrimitiveType'; readonly type: 'i1' | 'i32' };
 export type LLVMStringType = { readonly __type__: 'StringType'; readonly length?: number };
 export type LLVMIdentifierType = HighIRIdentifierType;
 
@@ -27,7 +27,7 @@ export type LLVMType =
   | LLVMFunctionType;
 
 export const LLVM_BOOL_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i1' };
-export const LLVM_INT_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i64' };
+export const LLVM_INT_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i32' };
 
 export const LLVM_STRING_TYPE = (length?: number): LLVMStringType => ({
   __type__: 'StringType',
@@ -82,7 +82,7 @@ export const prettyPrintLLVMType = (type: LLVMType): string => {
     case 'PrimitiveType':
       return type.type;
     case 'StringType':
-      return type.length == null ? 'i64*' : `[${type.length} x i64]*`;
+      return type.length == null ? 'i32*' : `[${type.length} x i32]*`;
     case 'IdentifierType':
       return `%${type.name}*`;
     case 'StructType':
@@ -94,14 +94,14 @@ export const prettyPrintLLVMType = (type: LLVMType): string => {
   }
 };
 
-export type LLVMLiteral = { readonly __type__: 'LLVMLiteral'; readonly value: Long };
+export type LLVMLiteral = { readonly __type__: 'LLVMLiteral'; readonly value: number };
 export type LLVMVariable = { readonly __type__: 'LLVMVariable'; readonly name: string };
 export type LLVMName = { readonly __type__: 'LLVMName'; readonly name: string };
 export type LLVMValue = LLVMLiteral | LLVMVariable | LLVMName;
 
-export const LLVM_INT = (value: Long | number): LLVMLiteral => ({
+export const LLVM_INT = (value: number): LLVMLiteral => ({
   __type__: 'LLVMLiteral',
-  value: typeof value === 'number' ? Long.fromInt(value) : value,
+  value,
 });
 
 export const LLVM_VARIABLE = (name: string): LLVMVariable => ({ __type__: 'LLVMVariable', name });
@@ -110,7 +110,7 @@ export const LLVM_NAME = (name: string): LLVMName => ({ __type__: 'LLVMName', na
 export const prettyPrintLLVMValue = (value: LLVMValue, type: LLVMType): string => {
   switch (value.__type__) {
     case 'LLVMLiteral':
-      if (value.value.eq(Long.ZERO) && type.__type__ !== 'PrimitiveType') return 'null';
+      if (value.value === 0 && type.__type__ !== 'PrimitiveType') return 'null';
       return value.value.toString();
     case 'LLVMVariable':
       return `%${value.name}`;
@@ -502,24 +502,24 @@ export const prettyPrintLLVMModule = ({
   functions,
 }: LLVMModule): string => {
   return [
-    `declare i64* @_builtin_malloc(i64) nounwind
-declare i64 @_builtin_println(i64*) nounwind
-declare i64 @_builtin_throw(i64*) nounwind
-declare i64* @_builtin_intToString(i64) nounwind
-declare i64 @_builtin_stringToInt(i64*) nounwind
-declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
+    `declare i32* @_builtin_malloc(i32) nounwind
+declare i32 @_builtin_println(i32*) nounwind
+declare i32 @_builtin_throw(i32*) nounwind
+declare i32* @_builtin_intToString(i32) nounwind
+declare i32 @_builtin_stringToInt(i32*) nounwind
+declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
 `,
     ...globalVariables.flatMap(({ name, content }) => {
       const size = content.length;
       const structLength = size + 1;
       const ints = Array.from(content)
-        .map((it) => `i64 ${it.charCodeAt(0)}`)
+        .map((it) => `i32 ${it.charCodeAt(0)}`)
         .join(', ');
       return [
         `; @${name} = '${content}'`,
         size === 0
-          ? `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 ${size}], align 8`
-          : `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 ${size}, ${ints}], align 8`,
+          ? `@${name} = private unnamed_addr constant [${structLength} x i32] [i32 ${size}], align 8`
+          : `@${name} = private unnamed_addr constant [${structLength} x i32] [i32 ${size}, ${ints}], align 8`,
       ];
     }),
     ...typeDefinitions.map(

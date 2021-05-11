@@ -6,31 +6,31 @@ it('runSamlangDemo works when given good program.', () => {
     prettyPrintedProgram: `class Main { function main(): unit = println("hello world")  }\n`,
     jsString: `const _builtin_stringConcat = (a, b) => a + b;
 const _builtin_println = (line) => console.log(line);
-const _builtin_stringToInt = (v) => BigInt(v);
+const _builtin_stringToInt = (v) => parseInt(v, 10);
 const _builtin_intToString = (v) => String(v);
 const _builtin_throw = (v) => { throw Error(v); };
 
 const GLOBAL_STRING_0 = "hello world";
 const _compiled_program_main = () => {
   _builtin_println(GLOBAL_STRING_0);
-  return 0n;
+  return 0;
 };
 
 _compiled_program_main();`,
-    llvmString: `declare i64* @_builtin_malloc(i64) nounwind
-declare i64 @_builtin_println(i64*) nounwind
-declare i64 @_builtin_throw(i64*) nounwind
-declare i64* @_builtin_intToString(i64) nounwind
-declare i64 @_builtin_stringToInt(i64*) nounwind
-declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
+    llvmString: `declare i32* @_builtin_malloc(i32) nounwind
+declare i32 @_builtin_println(i32*) nounwind
+declare i32 @_builtin_throw(i32*) nounwind
+declare i32* @_builtin_intToString(i32) nounwind
+declare i32 @_builtin_stringToInt(i32*) nounwind
+declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
 
 ; @GLOBAL_STRING_0 = 'hello world'
-@GLOBAL_STRING_0 = private unnamed_addr constant [12 x i64] [i64 11, i64 104, i64 101, i64 108, i64 108, i64 111, i64 32, i64 119, i64 111, i64 114, i64 108, i64 100], align 8
-define i64 @_compiled_program_main() local_unnamed_addr nounwind {
+@GLOBAL_STRING_0 = private unnamed_addr constant [12 x i32] [i32 11, i32 104, i32 101, i32 108, i32 108, i32 111, i32 32, i32 119, i32 111, i32 114, i32 108, i32 100], align 8
+define i32 @_compiled_program_main() local_unnamed_addr nounwind {
 l0_start:
-  %_temp_0_string_name_cast = bitcast [12 x i64]* @GLOBAL_STRING_0 to i64*
-  call i64 @_builtin_println(i64* %_temp_0_string_name_cast) nounwind
-  ret i64 0
+  %_temp_0_string_name_cast = bitcast [12 x i32]* @GLOBAL_STRING_0 to i32*
+  call i32 @_builtin_println(i32* %_temp_0_string_name_cast) nounwind
+  ret i32 0
 }`,
     errors: [],
   });

@@ -105,7 +105,7 @@ it('value equality test', () => {
   const objectContent1 = new Map<string, Value>();
   objectContent1.set('field1', { type: 'unit' });
   const objectContent2 = new Map<string, Value>();
-  objectContent2.set('field1', BigInt(1));
+  objectContent2.set('field1', 1);
   expect({ type: 'object', objectContent: objectContent1 }).not.toEqual({
     type: 'object',
     objectContent: objectContent2,
@@ -184,7 +184,7 @@ it('non-empty context equality check', () => {
 });
 
 it('literal expressions evaluate correctly', () => {
-  expect(interpret('5')).toEqual(BigInt(5));
+  expect(interpret('5')).toEqual(5);
   expect(interpret('"value"')).toEqual('value');
   expect(interpret('true')).toEqual(true);
 });
@@ -222,7 +222,7 @@ it('class member expressions evaluate correctly', () => {
       },
       localValues: {},
     })
-  ).toBe(BigInt(5));
+  ).toBe(5);
 
   expect(() => interpret('MyClass.func')).toThrow('');
 });
@@ -230,7 +230,7 @@ it('class member expressions evaluate correctly', () => {
 it('tuple expression evaluates correctly', () => {
   expect(interpret('[5, true]')).toEqual({
     type: 'tuple',
-    tupleContent: [BigInt(5), true],
+    tupleContent: [5, true],
   });
 });
 
@@ -238,7 +238,7 @@ it('object constructor expression evaluates correctly', () => {
   expect(() => interpret('{ test }')).toThrow('Missing variable test');
   expect(interpret('{ test: 5 }')).toEqual({
     type: 'object',
-    objectContent: new Map([['test', BigInt(5)]]),
+    objectContent: new Map([['test', 5]]),
   });
 });
 
@@ -246,12 +246,12 @@ it('variant expression evaluates correctly', () => {
   expect(interpret('Tag(5)')).toEqual({
     type: 'variant',
     tag: 'Tag',
-    data: BigInt(5),
+    data: 5,
   });
 });
 
 it('field access expression evaluates correctly', () => {
-  expect(interpret('{test:5}.test')).toEqual(BigInt(5));
+  expect(interpret('{test:5}.test')).toEqual(5);
   expect(() => interpret('"value".test')).toThrow('');
 });
 
@@ -292,7 +292,7 @@ it('method access expression evaluates correctly', () => {
 });
 
 it('unary expression evaluates correctly', () => {
-  expect(interpret('-5')).toEqual(BigInt(-5));
+  expect(interpret('-5')).toEqual(-5);
   expect(interpret('!true')).toEqual(false);
 });
 
@@ -301,7 +301,7 @@ it('panic expression evaluates correctly', () => {
 });
 
 it('built in function call expression evaluates correctly', () => {
-  expect(interpret('stringToInt("5")')).toEqual(BigInt(5));
+  expect(interpret('stringToInt("5")')).toEqual(5);
   expect(() => interpret('stringToInt("value")')).toThrow(`Cannot convert \`value\` to int.`);
   expect(interpret('intToString(5)')).toEqual('5');
 
@@ -318,13 +318,15 @@ it('function expression evaluates correctly', () => {
 });
 
 it('binary expression evaluates correctly', () => {
-  expect(interpret('5 * 5')).toEqual(BigInt(25));
-  expect(interpret('5 / 5')).toEqual(BigInt(1));
+  expect(interpret('5 * 5')).toEqual(25);
+  expect(interpret('5 / 5')).toEqual(1);
+  expect(interpret('6 / 5')).toEqual(1);
+  expect(interpret('-6 / 5')).toEqual(-1);
   expect(() => interpret('5 / 0')).toThrow('Division by zero!');
-  expect(interpret('5 % 5')).toEqual(BigInt(0));
+  expect(interpret('5 % 5')).toEqual(0);
   expect(() => interpret('5 % 0')).toThrow('Mod by zero!');
-  expect(interpret('5 + 5')).toEqual(BigInt(10));
-  expect(interpret('5 - 5')).toEqual(BigInt(0));
+  expect(interpret('5 + 5')).toEqual(10);
+  expect(interpret('5 - 5')).toEqual(0);
   expect(interpret('5 < 5')).toEqual(false);
   expect(interpret('5 <= 5')).toEqual(true);
   expect(interpret('5 > 5')).toEqual(false);
@@ -348,7 +350,7 @@ it('if else expression evaluates correctly', () => {
 });
 
 it('matching list evaluates correctly', () => {
-  expect(interpret('match (Tag(5)) { | Tag data -> data }')).toEqual(BigInt(5));
+  expect(interpret('match (Tag(5)) { | Tag data -> data }')).toEqual(5);
   expect(interpret('match (Tag(5)) { | Tag _ -> "value" }')).toEqual('value');
   expect(() =>
     new ExpressionInterpreter().eval(
@@ -388,9 +390,9 @@ it('statement block expression evalutes correctly', () => {
     }`)
   ).toThrow('Missing variable varrr');
 
-  expect(interpret('{ 5 }')).toEqual(BigInt(5));
+  expect(interpret('{ 5 }')).toEqual(5);
 
-  expect(interpret('{ val varrr = 5; varrr }')).toEqual(BigInt(5));
+  expect(interpret('{ val varrr = 5; varrr }')).toEqual(5);
 
   expect(() => interpret('{ val {fieldName as f} = {field: 5}; }')).toThrow();
 });
