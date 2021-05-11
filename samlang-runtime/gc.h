@@ -255,15 +255,9 @@ GC_INLINE bool GC_isptr(const void *ptr) {
 }
 #define gc_isptr            GC_isptr
 
-/**
- * GC object index.
- *
- * Given a pointer, return the object's index with the bucket.
- */
+/** GC object index: Given a pointer, return the object's index with the bucket. */
 GC_INLINE GC_CONST size_t GC_mul128(size_t x, size_t y) {
-  size_t z;
-  asm ("imul %2" : "=d"(z) : "a"(x), "r"(y));
-  return z;
+  return x * y;
 }
 GC_INLINE uint32_t GC_objidx(void *ptr) {
   gc_region_t region = __gc_regions + gc_index(ptr);
