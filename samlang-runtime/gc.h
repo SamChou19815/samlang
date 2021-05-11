@@ -54,9 +54,9 @@
  * Objects from different size ranges are allocated from different regions.
  * If any given region hits this limit, memory allocation will fail.
  *
- * DEFAULT: 4GB
+ * DEFAULT: 2GB
  */
-#define GC_REGION_SIZE ((size_t)4294967296)
+#define GC_REGION_SIZE ((size_t)2147483648)
 
 /**
  * GC number of memory regions.

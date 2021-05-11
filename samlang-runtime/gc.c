@@ -98,26 +98,36 @@ static inline bool gc_is_marked_index(uint8_t *markptr_0, uint32_t idx);
 #define gc_read_prefetch(ptr)   __builtin_prefetch((ptr), 0, 1)
 #define gc_write_prefetch(ptr)  __builtin_prefetch((ptr), 1)
 
+#ifndef WASM_MODE
 #include <sys/mman.h>
 #include <sys/syscall.h>
+#endif
 
 static void *gc_get_memory(void) {
+  #ifndef WASM_MODE
   int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE | MAP_FIXED;
   void *ptr = mmap(GC_MEMORY, GC_REGION_SIZE*GC_NUM_REGIONS, PROT_READ | PROT_WRITE, flags, -1, 0);
   return ptr;
+  #else
+  return 0;
+  #endif
 }
 static void *gc_get_mark_memory(size_t size) {
+  #ifndef WASM_MODE
   int flags = MAP_PRIVATE | MAP_ANON | MAP_NORESERVE;
   void *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, flags, -1, 0);
   return ptr;
-}
-static void gc_zero_memory(void *ptr, size_t size) {
-  size += GC_PAGESIZE;
+  #else
+  return 0;
+  #endif
 }
 static void gc_free_memory(void *ptr, size_t size) {
+  #ifndef WASM_MODE
   munmap(ptr, size);
+  #endif
 }
 static void *gc_get_stackbottom(void) {
+  #ifndef WASM_MODE
   void *stackbottom;
   stackbottom = (void *)gc_stacktop();
   stackbottom = (void *)(((uintptr_t)(stackbottom + GC_PAGESIZE) / GC_PAGESIZE) * GC_PAGESIZE);
@@ -126,13 +136,20 @@ static void *gc_get_stackbottom(void) {
   if (errno != ENOMEM) return false;
   stackbottom -= sizeof(void *);
   return stackbottom;
+  #else
+  return 0;
+  #endif
 }
 
 /** Get the top of the stack. */
 static __attribute__((noinline)) void *gc_stacktop(void) {
+  #ifndef WASM_MODE
   void *stack_ptr;
   asm ("movq %%rsp, %0" : "=r"(stack_ptr));
   return stack_ptr;
+  #else
+  return 0;
+  #endif
 }
 
 /** GC initialization. */
@@ -334,7 +351,6 @@ static void gc_mark_init(void) {
       region->markptr = (uint8_t *)markptr;
     } else {
       size_t marksize = (regionsize + 7) / 8;
-      gc_zero_memory(region->markptr, marksize);
     }
   }
 }
@@ -469,7 +485,6 @@ static void gc_sweep(void) {
           freesize -= diff;
           void *freeptr = region->startptr + offset;
           freesize -= freesize % GC_PAGESIZE;
-          madvise(freeptr, freesize, MADV_DONTNEED);
         }
         freesize = 0;
         if (start) {
