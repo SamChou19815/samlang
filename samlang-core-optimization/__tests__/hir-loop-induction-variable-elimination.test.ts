@@ -15,7 +15,6 @@ import {
   HIR_WHILE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 
@@ -115,7 +114,6 @@ it('highIRLoopInductionVariableEliminationOptimization rejects unoptimizable loo
               }),
             ],
           }),
-          HIR_RETURN(HIR_VARIABLE('i', HIR_INT_TYPE)),
         ],
       },
       allocator

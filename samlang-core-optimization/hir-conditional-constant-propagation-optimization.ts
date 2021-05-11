@@ -21,11 +21,11 @@ import {
   HIR_WHILE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CAST,
-  HIR_RETURN,
   HIR_INT,
   HighIRWhileStatement,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
+import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import {
   error,
   Long,
@@ -118,22 +118,28 @@ const mergeBinaryExpression = (
 
 class BinaryExpressionContext extends LocalStackedContext<BinaryExpression> {}
 
+const optimizeHighIRExpression = (
+  valueContext: LocalValueContextForOptimization,
+  expression: HighIRExpression
+): HighIRExpression => {
+  switch (expression.__type__) {
+    case 'HighIRIntLiteralExpression':
+    case 'HighIRNameExpression':
+      return expression;
+    case 'HighIRVariableExpression': {
+      const binded = valueContext.getLocalValueType(expression.name);
+      return binded ?? expression;
+    }
+  }
+};
+
 const optimizeHighIRStatement = (
   statement: HighIRStatement,
   valueContext: LocalValueContextForOptimization,
   binaryExpressionContext: BinaryExpressionContext
 ): readonly HighIRStatement[] => {
-  const optimizeExpression = (expression: HighIRExpression): HighIRExpression => {
-    switch (expression.__type__) {
-      case 'HighIRIntLiteralExpression':
-      case 'HighIRNameExpression':
-        return expression;
-      case 'HighIRVariableExpression': {
-        const binded = valueContext.getLocalValueType(expression.name);
-        return binded ?? expression;
-      }
-    }
-  };
+  const optimizeExpression = (expression: HighIRExpression) =>
+    optimizeHighIRExpression(valueContext, expression);
 
   const withNestedScope = <T>(block: () => T): T =>
     valueContext.withNestedScope(() => binaryExpressionContext.withNestedScope(block));
@@ -449,9 +455,6 @@ const optimizeHighIRStatement = (
           expressionList: statement.expressionList.map(optimizeExpression),
         }),
       ];
-
-    case 'HighIRReturnStatement':
-      return [HIR_RETURN(optimizeExpression(statement.expression))];
   }
 };
 
@@ -476,13 +479,14 @@ const optimizeHighIRStatements = (
   return collector;
 };
 
-const optimizeHighIRStatementsByConditionalConstantPropagation = (
-  statements: readonly HighIRStatement[]
-): readonly HighIRStatement[] =>
-  optimizeHighIRStatements(
-    statements,
-    new LocalValueContextForOptimization(),
-    new LocalStackedContext()
-  );
+const optimizeHighIRFunctionByConditionalConstantPropagation = (
+  highIRFunction: HighIRFunction
+): HighIRFunction => {
+  const valueContext = new LocalValueContextForOptimization();
+  const binaryExpressionContext = new BinaryExpressionContext();
+  const body = optimizeHighIRStatements(highIRFunction.body, valueContext, binaryExpressionContext);
+  const returnValue = optimizeHighIRExpression(valueContext, highIRFunction.returnValue);
+  return { ...highIRFunction, body, returnValue };
+};
 
-export default optimizeHighIRStatementsByConditionalConstantPropagation;
+export default optimizeHighIRFunctionByConditionalConstantPropagation;

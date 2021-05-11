@@ -1,11 +1,13 @@
-import optimizeHighIRStatementsWithAllLoopOptimizations, {
+import optimizeHighIRFunctionWithAllLoopOptimizations, {
   optimizeHighIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING,
 } from '../hir-loop-optimizations';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 import {
+  HighIRExpression,
   HighIRStatement,
   HighIRWhileStatement,
+  debugPrintHighIRExpression,
   debugPrintHighIRStatement,
   HIR_ZERO,
   HIR_ONE,
@@ -18,7 +20,6 @@ import {
   HIR_BREAK,
   HIR_WHILE,
   HIR_CAST,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_BOOL_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 
@@ -37,16 +38,27 @@ const assertOptimizeHighIRWhileStatementWithAllLoopOptimizations = (
 };
 
 const assertOptimizeHighIRStatementsWithAllLoopOptimizations = (
-  statements: readonly HighIRStatement[],
+  statements: HighIRStatement[],
+  returnValue: HighIRExpression,
   expected: string
 ): void => {
+  const {
+    body,
+    returnValue: optimizedReturnValue,
+  } = optimizeHighIRFunctionWithAllLoopOptimizations(
+    {
+      name: '',
+      parameters: [],
+      type: { __type__: 'FunctionType', argumentTypes: [], returnType: HIR_INT_TYPE },
+      body: statements,
+      returnValue,
+    },
+    new OptimizationResourceAllocator()
+  );
+
   expect(
-    optimizeHighIRStatementsWithAllLoopOptimizations(
-      statements,
-      new OptimizationResourceAllocator()
-    )
-      .map((it) => debugPrintHighIRStatement(it))
-      .join('\n')
+    `${body.map((it) => debugPrintHighIRStatement(it)).join('\n')}\n` +
+      `return ${debugPrintHighIRExpression(optimizedReturnValue)};`
   ).toBe(expected);
 };
 
@@ -276,16 +288,19 @@ it('optimizeHighIRStatementsWithAllLoopOptimizations works', () => {
         finalAssignments: [],
       }),
     ],
-    'let tmp_j: int = (i: int) * 2;'
+    HIR_ZERO,
+    'let tmp_j: int = (i: int) * 2;\nreturn 0;'
   );
 
   assertOptimizeHighIRStatementsWithAllLoopOptimizations(
-    [optimizableWhile1, HIR_RETURN(HIR_VARIABLE('bc', HIR_INT_TYPE))],
-    'return 100;'
+    [optimizableWhile1],
+    HIR_VARIABLE('bc', HIR_INT_TYPE),
+    '\nreturn 100;'
   );
 
   assertOptimizeHighIRStatementsWithAllLoopOptimizations(
-    [optimizableWhile2, HIR_RETURN(HIR_VARIABLE('bc', HIR_INT_TYPE))],
+    [optimizableWhile2],
+    HIR_VARIABLE('bc', HIR_INT_TYPE),
     `let j: int = 16;
 let tmp_j: int = 17;
 let bc: int;
@@ -303,7 +318,8 @@ return (bc: int);`
   );
 
   assertOptimizeHighIRStatementsWithAllLoopOptimizations(
-    [optimizableWhile3, HIR_RETURN(HIR_VARIABLE('bc', HIR_INT_TYPE))],
+    [optimizableWhile3],
+    HIR_VARIABLE('bc', HIR_INT_TYPE),
     `let j: int = 15;
 let i: int = 6;
 let tmp_j: int = 16;
@@ -355,9 +371,9 @@ return (bc: int);`
         ],
         breakCollector: { name: 'bc', type: HIR_INT_TYPE },
       }),
-      HIR_RETURN(HIR_VARIABLE('bc', HIR_INT_TYPE)),
     ],
-    'return 24;'
+    HIR_VARIABLE('bc', HIR_INT_TYPE),
+    '\nreturn 24;'
   );
 
   assertOptimizeHighIRStatementsWithAllLoopOptimizations(
@@ -404,6 +420,7 @@ return (bc: int);`
         ],
       }),
     ],
+    HIR_ZERO,
     `let _loop_0: int = (init_i: int) * 3;
 let _loop_2: int = (init_i: int) * 3;
 let _loop_3: int = (a: int) + (_loop_2: int);
@@ -420,6 +437,7 @@ while (true) {
   let _loop_5: int = (j: int) + 6;
   i = (_loop_4: int);
   j = (_loop_5: int);
-}`
+}
+return 0;`
   );
 });

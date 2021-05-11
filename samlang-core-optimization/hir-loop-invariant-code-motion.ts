@@ -71,7 +71,6 @@ const optimizeHighIRWhileStatementByLoopInvariantCodeMotion = ({
           return statement;
         case 'HighIRSingleIfStatement':
         case 'HighIRBreakStatement':
-        case 'HighIRReturnStatement':
           return statement;
         case 'HighIRWhileStatement':
           if (statement.breakCollector != null) {

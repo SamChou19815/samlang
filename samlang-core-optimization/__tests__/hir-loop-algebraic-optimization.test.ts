@@ -9,7 +9,6 @@ import {
   HIR_INT,
   HIR_VARIABLE,
   HIR_BINARY,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import { Long } from 'samlang-core-utils';
@@ -145,25 +144,6 @@ it('highIRLoopAlgebraicOptimization can reject unoptimizable loops', () => {
         ],
         derivedInductionVariables: [],
         statements: [],
-      },
-      allocator
-    )
-  ).toBeNull();
-
-  expect(
-    highIRLoopAlgebraicOptimization(
-      {
-        basicInductionVariableWithLoopGuard: {
-          name: 'i',
-          initialValue: HIR_ZERO,
-          incrementAmount: HIR_ZERO,
-          guardOperator: '<',
-          guardExpression: HIR_ZERO,
-        },
-        generalInductionVariables: [],
-        loopVariablesThatAreNotBasicInductionVariables: [],
-        derivedInductionVariables: [],
-        statements: [HIR_RETURN(HIR_ZERO)],
       },
       allocator
     )

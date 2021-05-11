@@ -126,11 +126,6 @@ export interface HighIRStructInitializationStatement extends BaseHighIRStatement
   readonly expressionList: readonly HighIRExpression[];
 }
 
-export interface HighIRReturnStatement extends BaseHighIRStatement {
-  readonly __type__: 'HighIRReturnStatement';
-  readonly expression: HighIRExpression;
-}
-
 export type HighIRStatement =
   | HighIRBinaryStatement
   | HighIRIndexAccessStatement
@@ -140,8 +135,7 @@ export type HighIRStatement =
   | HighIRBreakStatement
   | HighIRWhileStatement
   | HighIRCastStatement
-  | HighIRStructInitializationStatement
-  | HighIRReturnStatement;
+  | HighIRStructInitializationStatement;
 
 type ConstructorArgumentObject<E extends BaseHighIRExpression | BaseHighIRStatement> = Omit<
   E,
@@ -310,11 +304,6 @@ export const HIR_STRUCT_INITIALIZATION = ({
   expressionList,
 });
 
-export const HIR_RETURN = (expression: HighIRExpression): HighIRReturnStatement => ({
-  __type__: 'HighIRReturnStatement',
-  expression,
-});
-
 export const debugPrintHighIRExpression = (expression: HighIRExpression): string => {
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
@@ -447,10 +436,6 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
           '  '.repeat(level),
           `let ${s.structVariableName}: ${prettyPrintHighIRType(s.type)} = [${expressionString}];\n`
         );
-        break;
-      }
-      case 'HighIRReturnStatement': {
-        collector.push('  '.repeat(level), `return ${debugPrintHighIRExpression(s.expression)};\n`);
         break;
       }
     }

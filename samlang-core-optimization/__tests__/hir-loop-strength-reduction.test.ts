@@ -1,22 +1,7 @@
 import highIRLoopStrengthReductionOptimization from '../hir-loop-strength-reduction';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
-import {
-  HIR_ZERO,
-  HIR_ONE,
-  HIR_INT,
-  HIR_VARIABLE,
-  HIR_INDEX_ACCESS,
-  HIR_BINARY,
-  HIR_FUNCTION_CALL,
-  HIR_IF_ELSE,
-  HIR_SINGLE_IF,
-  HIR_BREAK,
-  HIR_WHILE,
-  HIR_CAST,
-  HIR_STRUCT_INITIALIZATION,
-  HIR_RETURN,
-} from 'samlang-core-ast/hir-expressions';
+import { HIR_ONE, HIR_INT, HIR_VARIABLE, HIR_BINARY } from 'samlang-core-ast/hir-expressions';
 import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 
 it('highIRLoopStrengthReductionOptimization works', () => {

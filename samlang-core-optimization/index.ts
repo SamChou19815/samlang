@@ -1,14 +1,13 @@
-import optimizeHighIRStatementsByCommonSubExpressionElimination from './hir-common-subexpression-elimination-optimization';
-import optimizeHighIRStatementsByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
-import optimizeHighIRStatementsByDeadCodeElimination from './hir-dead-code-elimination-optimization';
+import optimizeHighIRFunctionByCommonSubExpressionElimination from './hir-common-subexpression-elimination-optimization';
+import optimizeHighIRFunctionByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
+import optimizeHighIRFunctionByDeadCodeElimination from './hir-dead-code-elimination-optimization';
 import optimizeHighIRFunctionsByInlining from './hir-inline-optimization';
-import optimizeHighIRStatementsByLocalValueNumbering from './hir-local-value-numbering-optimization';
-import optimizeHighIRStatementsWithAllLoopOptimizations from './hir-loop-optimizations';
+import optimizeHighIRFunctionByLocalValueNumbering from './hir-local-value-numbering-optimization';
+import optimizeHighIRFunctionWithAllLoopOptimizations from './hir-loop-optimizations';
 import optimizeHighIRFunctionByTailRecursionRewrite from './hir-tail-recursion-optimization';
 import optimizeHighIRModuleByEliminatingUnusedOnes from './hir-unused-name-elimination-optimization';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
 
-import type { HighIRStatement } from 'samlang-core-ast/hir-expressions';
 import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
 
 export type OptimizationConfiguration = {
@@ -25,26 +24,32 @@ const allEnabledOptimizationConfiguration: OptimizationConfiguration = {
   doesPerformInlining: true,
 };
 
-const optimizeHighIRStatementsForOneRound = (
-  statements: readonly HighIRStatement[],
+const optimizeHighIRFunctionForOneRound = (
+  highIRFunction: HighIRFunction,
   allocator: OptimizationResourceAllocator,
   {
     doesPerformLocalValueNumbering,
     doesPerformCommonSubExpressionElimination,
     doesPerformLoopOptimization,
   }: OptimizationConfiguration
-): readonly HighIRStatement[] => {
-  let optimized = optimizeHighIRStatementsByConditionalConstantPropagation(statements);
+): HighIRFunction => {
+  let optimizedFunction = optimizeHighIRFunctionByConditionalConstantPropagation(highIRFunction);
   if (doesPerformLoopOptimization) {
-    optimized = optimizeHighIRStatementsWithAllLoopOptimizations(optimized, allocator);
+    optimizedFunction = optimizeHighIRFunctionWithAllLoopOptimizations(
+      optimizedFunction,
+      allocator
+    );
   }
   if (doesPerformLocalValueNumbering) {
-    optimized = optimizeHighIRStatementsByLocalValueNumbering(optimized);
+    optimizedFunction = optimizeHighIRFunctionByLocalValueNumbering(optimizedFunction);
   }
   if (doesPerformCommonSubExpressionElimination) {
-    optimized = optimizeHighIRStatementsByCommonSubExpressionElimination(optimized, allocator);
+    optimizedFunction = optimizeHighIRFunctionByCommonSubExpressionElimination(
+      optimizedFunction,
+      allocator
+    );
   }
-  return optimizeHighIRStatementsByDeadCodeElimination(optimized);
+  return optimizeHighIRFunctionByDeadCodeElimination(optimizedFunction);
 };
 
 const optimizeFunctionForRounds = (
@@ -52,20 +57,17 @@ const optimizeFunctionForRounds = (
   allocator: OptimizationResourceAllocator,
   optimizationConfiguration: OptimizationConfiguration
 ): HighIRFunction => {
-  let statements = highIRFunction.body;
+  let optimizedFunction = highIRFunction;
   for (let j = 0; j < 5; j += 1) {
-    statements = optimizeHighIRStatementsForOneRound(
-      statements,
+    optimizedFunction = optimizeHighIRFunctionForOneRound(
+      optimizedFunction,
       allocator,
       optimizationConfiguration
     );
   }
-  return {
-    ...highIRFunction,
-    body: optimizeHighIRStatementsByDeadCodeElimination(
-      optimizeHighIRStatementsByConditionalConstantPropagation(statements)
-    ),
-  };
+  return optimizeHighIRFunctionByDeadCodeElimination(
+    optimizeHighIRFunctionByConditionalConstantPropagation(optimizedFunction)
+  );
 };
 
 export const optimizeHighIRModuleByUnusedNameEliminationAndTailRecursionRewrite = (

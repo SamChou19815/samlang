@@ -18,7 +18,6 @@ import {
   HIR_WHILE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
-  HIR_RETURN,
   HighIRStatement,
 } from 'samlang-core-ast/hir-expressions';
 import { debugPrintHighIRFunction, HighIRFunction } from 'samlang-core-ast/hir-toplevel';
@@ -124,10 +123,10 @@ it('estimateFunctionInlineCost test', () => {
             }),
           ],
         }),
-        HIR_RETURN(HIR_VARIABLE('ss', HIR_INT_TYPE)),
       ],
+      returnValue: HIR_VARIABLE('ss', HIR_INT_TYPE),
     })
-  ).toBe(31);
+  ).toBe(30);
 });
 
 const assertCorrectlyInlined = (functions: readonly HighIRFunction[], expected: string): void => {
@@ -247,6 +246,7 @@ it('optimizeHighIRFunctionsByInlining abort test', () => {
         parameters: [],
         type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
         body: statements,
+        returnValue: HIR_ZERO,
       },
     ],
     new OptimizationResourceAllocator()
@@ -264,14 +264,15 @@ it('optimizeHighIRFunctionsByInlining abort test', () => {
             functionArguments: [],
             returnType: HIR_INT_TYPE,
           }),
-          HIR_RETURN(HIR_ZERO),
         ],
+        returnValue: HIR_ZERO,
       },
       {
         name: '',
         parameters: [],
         type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
         body: statements,
+        returnValue: HIR_ZERO,
       },
     ],
     new OptimizationResourceAllocator()
@@ -330,8 +331,8 @@ it('optimizeFunctionsByInlining test 1', () => {
               },
             ],
           }),
-          HIR_RETURN(HIR_VARIABLE('fa', HIR_INT_TYPE)),
         ],
+        returnValue: HIR_VARIABLE('fa', HIR_INT_TYPE),
       },
       {
         name: 'loop',
@@ -343,8 +344,8 @@ it('optimizeFunctionsByInlining test 1', () => {
             functionArguments: [],
             returnType: HIR_INT_TYPE,
           }),
-          HIR_RETURN(HIR_ZERO),
         ],
+        returnValue: HIR_ZERO,
       },
       {
         name: 'insanelyBigFunction',
@@ -380,6 +381,7 @@ it('optimizeFunctionsByInlining test 1', () => {
             })
           ),
         ],
+        returnValue: HIR_ZERO,
       },
       {
         name: 'moveMove',
@@ -397,8 +399,8 @@ it('optimizeFunctionsByInlining test 1', () => {
             pointerExpression: HIR_VARIABLE('a', HIR_INT_TYPE),
             index: 0,
           }),
-          HIR_RETURN(HIR_ZERO),
         ],
+        returnValue: HIR_ZERO,
       },
       {
         name: 'bb',
@@ -424,6 +426,7 @@ it('optimizeFunctionsByInlining test 1', () => {
             finalAssignments: [],
           }),
         ],
+        returnValue: HIR_ZERO,
       },
     ],
     `function factorial(n: int, acc: int): int {
@@ -460,6 +463,7 @@ function insanelyBigFunction(a: int): int {
   non-existing-function();
   non-existing-function();
   non-existing-function();
+  return 0;
 }
 
 function moveMove(a: int): int {
@@ -470,6 +474,7 @@ function moveMove(a: int): int {
 
 function bb(): int {
   let c: int = 0;
+  return 0;
 }
 `
   );
@@ -496,6 +501,7 @@ it('optimizeFunctionsByInlining test 2', () => {
             finalAssignments: [],
           }),
         ],
+        returnValue: HIR_ZERO,
       },
       {
         name: 'main',
@@ -508,8 +514,8 @@ it('optimizeFunctionsByInlining test 2', () => {
             returnType: HIR_INT_TYPE,
             returnCollector: 'v',
           }),
-          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
         ],
+        returnValue: HIR_VARIABLE('v', HIR_INT_TYPE),
       },
     ],
     `function fooBar(): int {
@@ -518,6 +524,7 @@ it('optimizeFunctionsByInlining test 2', () => {
   } else {
     fooBar();
   }
+  return 0;
 }
 
 function main(): int {
@@ -542,7 +549,7 @@ function main(): int {
       }
     }
   }
-  return (v: int);
+  return 0;
 }
 `
   );
@@ -569,6 +576,7 @@ it('optimizeFunctionsByInlining test 3', () => {
             finalAssignments: [],
           }),
         ],
+        returnValue: HIR_ZERO,
       },
       {
         name: 'main',
@@ -581,8 +589,8 @@ it('optimizeFunctionsByInlining test 3', () => {
             returnType: HIR_INT_TYPE,
             returnCollector: 'v',
           }),
-          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
         ],
+        returnValue: HIR_VARIABLE('v', HIR_INT_TYPE),
       },
     ],
     `function fooBar(): int {
@@ -591,6 +599,7 @@ it('optimizeFunctionsByInlining test 3', () => {
   } else {
     let a: int = 0;
   }
+  return 0;
 }
 
 function main(): int {
@@ -615,7 +624,7 @@ function main(): int {
   } else {
     let _inline_0_a: int = 0;
   }
-  return (v: int);
+  return 0;
 }
 `
   );
@@ -649,6 +658,7 @@ it('optimizeFunctionsByInlining test 4', () => {
             ],
           }),
         ],
+        returnValue: HIR_ZERO,
       },
       {
         name: 'main',
@@ -661,8 +671,8 @@ it('optimizeFunctionsByInlining test 4', () => {
             returnType: HIR_INT_TYPE,
             returnCollector: 'v',
           }),
-          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
         ],
+        returnValue: HIR_VARIABLE('v', HIR_INT_TYPE),
       },
     ],
     `function fooBar(): int {
@@ -674,6 +684,7 @@ it('optimizeFunctionsByInlining test 4', () => {
     let a: int = 0;
     b = (a: int);
   }
+  return 0;
 }
 
 function main(): int {
@@ -713,7 +724,7 @@ function main(): int {
     let _inline_0_a: int = 0;
     _inline_0_b = (_inline_0_a: int);
   }
-  return (v: int);
+  return 0;
 }
 `
   );
@@ -733,6 +744,7 @@ it('optimizeFunctionsByInlining test 5', () => {
             expressionList: [HIR_VARIABLE('bar', HIR_INT_TYPE), HIR_VARIABLE('baz', HIR_INT_TYPE)],
           }),
         ],
+        returnValue: HIR_ZERO,
       },
       {
         name: 'main',
@@ -748,14 +760,17 @@ it('optimizeFunctionsByInlining test 5', () => {
             returnType: HIR_INT_TYPE,
           }),
         ],
+        returnValue: HIR_ZERO,
       },
     ],
     `function fooBar(bar: int, baz: int): int {
   let ff: int = [(bar: int), (baz: int)];
+  return 0;
 }
 
 function main(): int {
   let _inline_0_ff: int = [1, 0];
+  return 0;
 }
 `
   );
@@ -787,8 +802,8 @@ it('optimizeFunctionsByInlining test 6', () => {
             ],
             breakCollector: { name: 'v', type: HIR_INT_TYPE },
           }),
-          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
         ],
+        returnValue: HIR_VARIABLE('v', HIR_INT_TYPE),
       },
     ],
     `function fooBar(): int {
@@ -824,8 +839,8 @@ it('optimizeFunctionsByInlining test 7', () => {
               }),
             ],
           }),
-          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
         ],
+        returnValue: HIR_VARIABLE('v', HIR_INT_TYPE),
       },
       {
         name: 'main',
@@ -838,8 +853,8 @@ it('optimizeFunctionsByInlining test 7', () => {
             returnType: HIR_INT_TYPE,
             returnCollector: 'v',
           }),
-          HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
         ],
+        returnValue: HIR_VARIABLE('v', HIR_INT_TYPE),
       },
     ],
     `function fooBar(): int {

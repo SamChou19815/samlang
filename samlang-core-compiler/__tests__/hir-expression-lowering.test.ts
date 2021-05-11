@@ -13,7 +13,10 @@ import {
   boolType,
 } from 'samlang-core-ast/common-nodes';
 import { PLUS, AND, OR, CONCAT } from 'samlang-core-ast/common-operators';
-import { HIR_RETURN, debugPrintHighIRStatement } from 'samlang-core-ast/hir-expressions';
+import {
+  debugPrintHighIRExpression,
+  debugPrintHighIRStatement,
+} from 'samlang-core-ast/hir-expressions';
 import { debugPrintHighIRModule, HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import { HIR_FUNCTION_TYPE, HIR_IDENTIFIER_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 import {
@@ -84,11 +87,10 @@ const expectCorrectlyLowered = (
     typeDefinitions: [],
     functions: syntheticFunctions,
   };
-  const syntheticStatements = [...statements, HIR_RETURN(expression)];
   expect(
-    `${debugPrintHighIRModule(syntheticModule)}${syntheticStatements
+    `${debugPrintHighIRModule(syntheticModule)}${statements
       .map((it) => debugPrintHighIRStatement(it))
-      .join('\n')}`
+      .join('\n')}\nreturn ${debugPrintHighIRExpression(expression)};`.trim()
   ).toBe(expectedString);
 };
 
@@ -98,7 +100,7 @@ it('Literal lowering works.', () => {
   expectCorrectlyLowered(EXPRESSION_INT(Range.DUMMY, [], 0), 'return 0;');
   expectCorrectlyLowered(
     EXPRESSION_STRING(Range.DUMMY, [], 'foo'),
-    "const GLOBAL_STRING_0 = 'foo';\nreturn GLOBAL_STRING_0;"
+    "const GLOBAL_STRING_0 = 'foo';\n\nreturn GLOBAL_STRING_0;"
   );
 });
 

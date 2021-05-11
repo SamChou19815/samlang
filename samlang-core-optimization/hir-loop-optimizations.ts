@@ -24,6 +24,7 @@ import {
   HIR_WHILE,
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
+import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import { HIR_BOOL_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 
 const expandOptimizableWhileLoop = (
@@ -215,14 +216,15 @@ const recursivelyOptimizeHighIRStatementWithAllLoopOptimizations = (
   }
 };
 
-const optimizeHighIRStatementsWithAllLoopOptimizations = (
-  statements: readonly HighIRStatement[],
+const optimizeHighIRFunctionWithAllLoopOptimizations = (
+  highIRFunction: HighIRFunction,
   allocator: OptimizationResourceAllocator
-): readonly HighIRStatement[] =>
-  optimizeHighIRStatementsByConditionalConstantPropagation(
-    statements.flatMap((it) =>
+): HighIRFunction =>
+  optimizeHighIRStatementsByConditionalConstantPropagation({
+    ...highIRFunction,
+    body: highIRFunction.body.flatMap((it) =>
       recursivelyOptimizeHighIRStatementWithAllLoopOptimizations(it, allocator)
-    )
-  );
+    ),
+  });
 
-export default optimizeHighIRStatementsWithAllLoopOptimizations;
+export default optimizeHighIRFunctionWithAllLoopOptimizations;

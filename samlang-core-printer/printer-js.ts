@@ -222,12 +222,6 @@ export const createPrettierDocumentFromHighIRStatement = (
         ),
         PRETTIER_TEXT(';')
       );
-    case 'HighIRReturnStatement':
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT('return '),
-        createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(highIRStatement.expression),
-        PRETTIER_TEXT(';')
-      );
   }
 };
 
@@ -238,18 +232,30 @@ export const createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING = (
 
 export const createPrettierDocumentFromHighIRFunction_EXPOSED_FOR_TESTING = (
   highIRFunction: HighIRFunction
-): PrettierDocument =>
-  PRETTIER_CONCAT(
+): PrettierDocument => {
+  const returnStatementDocument = PRETTIER_CONCAT(
+    PRETTIER_TEXT('return '),
+    createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(highIRFunction.returnValue),
+    PRETTIER_TEXT(';')
+  );
+  return PRETTIER_CONCAT(
     PRETTIER_TEXT(`const ${highIRFunction.name} = `),
     createParenthesisSurroundedDocument(
       createCommaSeparatedList(highIRFunction.parameters, PRETTIER_TEXT)
     ),
     PRETTIER_TEXT(' => '),
     createBracesSurroundedBlockDocument(
-      concatStatements(highIRFunction.body, new WhileLabelManager())
+      highIRFunction.body.length === 0
+        ? [returnStatementDocument]
+        : [
+            ...concatStatements(highIRFunction.body, new WhileLabelManager()),
+            PRETTIER_LINE,
+            returnStatementDocument,
+          ]
     ),
     PRETTIER_TEXT(';')
   );
+};
 
 export const createPrettierDocumentFromHighIRModule = (
   highIRModule: HighIRModule,

@@ -167,25 +167,20 @@ const optimizeHighIRFunctionByTailRecursionRewrite = ({
   parameters,
   type,
   body,
+  returnValue,
 }: HighIRFunction): HighIRFunction | null => {
-  const lastStatement = body[body.length - 1];
-  assert(
-    lastStatement != null && lastStatement.__type__ === 'HighIRReturnStatement',
-    'Last statement of a compiled HighIR function must be return!'
-  );
-  const returnedExpression = lastStatement.expression;
-  if (returnedExpression.__type__ === 'HighIRNameExpression') return null;
+  if (returnValue.__type__ === 'HighIRNameExpression') return null;
   const allocator = new OptimizationResourceAllocator();
   const result = tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
-    body.slice(0, body.length - 1),
+    body,
     name,
     type.argumentTypes,
-    returnedExpression.__type__ === 'HighIRIntLiteralExpression' ? null : returnedExpression.name,
+    returnValue.__type__ === 'HighIRIntLiteralExpression' ? null : returnValue.name,
     allocator
   );
   if (result == null) return null;
   const { statements, functionArguments } = result;
-  if (returnedExpression.__type__ === 'HighIRIntLiteralExpression') {
+  if (returnValue.__type__ === 'HighIRIntLiteralExpression') {
     return {
       name,
       parameters: parameters.map(getTailRecursionParameterName),
@@ -205,8 +200,8 @@ const optimizeHighIRFunctionByTailRecursionRewrite = ({
           ),
           statements,
         }),
-        lastStatement,
       ],
+      returnValue,
     };
   }
 
@@ -228,10 +223,10 @@ const optimizeHighIRFunctionByTailRecursionRewrite = ({
           })
         ),
         statements,
-        breakCollector: { name: returnedExpression.name, type: returnedExpression.type },
+        breakCollector: { name: returnValue.name, type: returnValue.type },
       }),
-      lastStatement,
     ],
+    returnValue,
   };
 };
 

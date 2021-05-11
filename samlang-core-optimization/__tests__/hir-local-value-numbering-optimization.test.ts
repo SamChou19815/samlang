@@ -1,7 +1,9 @@
-import optimizeHighIRStatementsByLocalValueNumbering from '../hir-local-value-numbering-optimization';
+import optimizeHighIRFunctionByLocalValueNumbering from '../hir-local-value-numbering-optimization';
 
 import {
+  HighIRExpression,
   HighIRStatement,
+  debugPrintHighIRExpression,
   debugPrintHighIRStatement,
   HIR_FALSE,
   HIR_TRUE,
@@ -17,15 +19,25 @@ import {
   HIR_WHILE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_BOOL_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 
-const assertCorrectlyOptimized = (statements: HighIRStatement[], expected: string): void => {
+const assertCorrectlyOptimized = (
+  statements: HighIRStatement[],
+  returnValue: HighIRExpression,
+  expected: string
+): void => {
+  const { body, returnValue: optimizedReturnValue } = optimizeHighIRFunctionByLocalValueNumbering({
+    name: '',
+    parameters: [],
+    type: { __type__: 'FunctionType', argumentTypes: [], returnType: HIR_INT_TYPE },
+    body: statements,
+    returnValue,
+  });
+
   expect(
-    optimizeHighIRStatementsByLocalValueNumbering(statements)
-      .map((it) => debugPrintHighIRStatement(it))
-      .join('\n')
+    `${body.map((it) => debugPrintHighIRStatement(it)).join('\n')}\n` +
+      `return ${debugPrintHighIRExpression(optimizedReturnValue)};`
   ).toBe(expected);
 };
 
@@ -85,8 +97,8 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on a series of simple st
         type: HIR_INT_TYPE,
         assignedExpression: HIR_VARIABLE('b3', HIR_INT_TYPE),
       }),
-      HIR_RETURN(HIR_VARIABLE('ss', HIR_INT_TYPE)),
     ],
+    HIR_VARIABLE('ss', HIR_INT_TYPE),
     `let i0: int = (a: int)[2];
 let b0: int = (i0: int) + 3;
 let b3: int = (i0: int) + (b0: int);
@@ -145,13 +157,15 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on if-else 1/n', () => {
         index: 1,
       }),
     ],
+    HIR_ZERO,
     `let i0: int = (a: int)[2];
 if 0 {
   let i3: int = (i0: int)[1];
 } else {
   let i4: int = (i0: int)[1];
 }
-let i5: int = (i0: int)[1];`
+let i5: int = (i0: int)[1];
+return 0;`
   );
 });
 
@@ -204,6 +218,7 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on if-else 2/n', () => {
         ],
       }),
     ],
+    HIR_ZERO,
     `let i0: int = (a: int)[2];
 let bar: int;
 if 0 {
@@ -212,7 +227,8 @@ if 0 {
 } else {
   let i4: int = (i0: int)[1];
   bar = (i0: int);
-}`
+}
+return 0;`
   );
 });
 
@@ -259,6 +275,7 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on while statement 1/n.'
         ],
       }),
     ],
+    HIR_ZERO,
     `let n: int = 10;
 while (true) {
   let is_zero: bool = (n: int) == 0;
@@ -273,7 +290,8 @@ while (true) {
     _tmp_n = (s2_n: int);
   }
   n = (_tmp_n: int);
-}`
+}
+return 0;`
   );
 });
 
@@ -320,8 +338,8 @@ it('optimizeHighIRStatementsByLocalValueNumbering works on while statement 2/n.'
         ],
         breakCollector: { name: 'v', type: HIR_INT_TYPE },
       }),
-      HIR_RETURN(HIR_VARIABLE('v', HIR_INT_TYPE)),
     ],
+    HIR_VARIABLE('v', HIR_INT_TYPE),
     `let n: int = 10;
 let v: int;
 while (true) {

@@ -13,7 +13,6 @@ import {
   HIR_SINGLE_IF,
   HIR_BREAK,
   HIR_WHILE,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_INT_TYPE, HIR_FUNCTION_TYPE, HIR_IDENTIFIER_TYPE } from 'samlang-core-ast/hir-types';
 
@@ -39,6 +38,7 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
             returnType: HIR_INT_TYPE,
           }),
         ],
+        returnValue: HIR_ZERO,
       },
       {
         name: 'foo',
@@ -62,7 +62,6 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
             functionArguments: [HIR_NAME('haha', HIR_INT_TYPE)],
             returnType: HIR_INT_TYPE,
           }),
-          HIR_RETURN(HIR_NAME('bar', HIR_INT_TYPE)),
           HIR_IF_ELSE({
             booleanExpression: HIR_ZERO,
             s1: [
@@ -109,6 +108,7 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
             breakCollector: { name: 'd', type: HIR_INT_TYPE },
           }),
         ],
+        returnValue: HIR_NAME('bar', HIR_INT_TYPE),
       },
       {
         name: 'bar',
@@ -121,12 +121,14 @@ it('optimizeHighIRModuleByEliminatingUnusedOnes test', () => {
             returnType: HIR_INT_TYPE,
           }),
         ],
+        returnValue: HIR_ZERO,
       },
       {
         name: 'baz',
         parameters: [],
         type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
         body: [],
+        returnValue: HIR_ZERO,
       },
     ],
   });

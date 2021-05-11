@@ -1,7 +1,9 @@
-import optimizeHighIRStatementsByDeadCodeElimination from '../hir-dead-code-elimination-optimization';
+import optimizeHighIRFunctionByDeadCodeElimination from '../hir-dead-code-elimination-optimization';
 
 import {
+  HighIRExpression,
   HighIRStatement,
+  debugPrintHighIRExpression,
   debugPrintHighIRStatement,
   HIR_ZERO,
   HIR_ONE,
@@ -17,15 +19,25 @@ import {
   HIR_WHILE,
   HIR_CAST,
   HIR_STRUCT_INITIALIZATION,
-  HIR_RETURN,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_BOOL_TYPE, HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
 
-const assertCorrectlyOptimized = (statements: HighIRStatement[], expected: string): void => {
+const assertCorrectlyOptimized = (
+  statements: HighIRStatement[],
+  returnValue: HighIRExpression,
+  expected: string
+): void => {
+  const { body, returnValue: optimizedReturnValue } = optimizeHighIRFunctionByDeadCodeElimination({
+    name: '',
+    parameters: [],
+    type: { __type__: 'FunctionType', argumentTypes: [], returnType: HIR_INT_TYPE },
+    body: statements,
+    returnValue,
+  });
+
   expect(
-    optimizeHighIRStatementsByDeadCodeElimination(statements)
-      .map((it) => debugPrintHighIRStatement(it))
-      .join('\n')
+    `${body.map((it) => debugPrintHighIRStatement(it)).join('\n')}\n` +
+      `return ${debugPrintHighIRExpression(optimizedReturnValue)};`
   ).toBe(expected);
 };
 
@@ -57,8 +69,8 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on a series of simple st
         type: HIR_INT_TYPE,
         assignedExpression: HIR_VARIABLE('i', HIR_INT_TYPE),
       }),
-      HIR_RETURN(HIR_VARIABLE('ii', HIR_INT_TYPE)),
     ],
+    HIR_VARIABLE('ii', HIR_INT_TYPE),
     `let u1: int = 0 / 1;
 let u2: int = 0 % 1;
 let p: int = 0 + 1;
@@ -94,9 +106,11 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on a series of simple st
         returnType: HIR_INT_TYPE,
       }),
     ],
+    HIR_ZERO,
     `let u1: int = 0 / 1;
 let u2: int = 0 % 1;
-ff();`
+ff();
+return 0;`
   );
 });
 
@@ -123,12 +137,14 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 1/
         finalAssignments: [],
       }),
     ],
+    HIR_ZERO,
     `let b: bool = 0 == 1;
 if (b: bool) {
   s1();
 } else {
   s1();
-}`
+}
+return 0;`
   );
 });
 
@@ -163,8 +179,8 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 2/
           },
         ],
       }),
-      HIR_RETURN(HIR_VARIABLE('ma', HIR_INT_TYPE)),
     ],
+    HIR_VARIABLE('ma', HIR_INT_TYPE),
     `let b: bool = 0 == 1;
 let ma: int;
 if (b: bool) {
@@ -208,12 +224,14 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 3/
         ],
       }),
     ],
+    HIR_ZERO,
     `let b: bool = 0 == 1;
 if (b: bool) {
   s1();
 } else {
   s1();
-}`
+}
+return 0;`
   );
 });
 
@@ -249,12 +267,14 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 4/
         ],
       }),
     ],
+    HIR_ZERO,
     `let b: bool = 0 == 1;
 if (b: bool) {
   s1();
 } else {
   s1();
-}`
+}
+return 0;`
   );
 });
 
@@ -269,7 +289,8 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on if-else statements 5/
         finalAssignments: [],
       }),
     ],
-    ``
+    HIR_ZERO,
+    `\nreturn 0;`
   );
 });
 
@@ -282,7 +303,8 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on single if.', () => {
         statements: [],
       }),
     ],
-    ``
+    HIR_ZERO,
+    `\nreturn 0;`
   );
 });
 
@@ -356,6 +378,7 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on while statement 1/n.'
         ],
       }),
     ],
+    HIR_ZERO,
     `let n: int = 10;
 while (true) {
   let is_zero: bool = (n: int) == 0;
@@ -367,7 +390,8 @@ while (true) {
     _tmp_n = (s2_n: int);
   }
   n = (_tmp_n: int);
-}`
+}
+return 0;`
   );
 });
 
@@ -405,6 +429,7 @@ it('optimizeHighIRStatementsByDeadCodeElimination works on while statement 2/n.'
         breakCollector: { name: 'v', type: HIR_INT_TYPE },
       }),
     ],
+    HIR_ZERO,
     `let n: int = 10;
 while (true) {
   let is_zero: bool = (n: int) == 0;
@@ -413,6 +438,7 @@ while (true) {
     break;
   }
   n = (_tmp_n: int);
-}`
+}
+return 0;`
   );
 });
