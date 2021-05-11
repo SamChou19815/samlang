@@ -1,6 +1,9 @@
 #./out/test.and-or-inside-if
 one
 
+#./out/test.benchmark
+Yay
+
 #./out/test.block-in-if-else
 
 #./out/test.builtins
