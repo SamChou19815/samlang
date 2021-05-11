@@ -30,9 +30,9 @@
 #define GC_MIN_TRIGGER          100000
 #define GC_FREELIST_LEN         256
 #define GC_PROTECT_LEN          16
-#define GC_MARK_STACK_SIZE      0x40000000      // 1 GB
+#define GC_MARK_STACK_SIZE      0x10000000      // 256MB
 #define GC_RETURN_SWEEP         8
-#define GC_MAX_ROOT_SIZE        0x40000000      // 1 GB
+#define GC_MAX_ROOT_SIZE        0x10000000      // 256MB
 #define GC_MAX_MARK_PUSH        1024
 #define GC_PAGESIZE             4096
 
@@ -53,7 +53,7 @@ struct gc_markstack_s {
 typedef struct gc_markstack_s *gc_markstack_t;
 typedef uint64_t gc_markunit_t;
 
-/**  Root node. */
+/** Root node. */
 struct gc_root_s {
   /** Pointer (static) */
   void *ptr;
@@ -116,11 +116,7 @@ static void *gc_get_mark_memory(size_t size) {
   return 0;
   #endif
 }
-static void gc_free_memory(void *ptr, size_t size) {
-  #ifndef WASM_MODE
-  munmap(ptr, size);
-  #endif
-}
+
 static void *gc_get_stackbottom(void) {
   #ifndef WASM_MODE
   void *stackbottom;
@@ -157,7 +153,7 @@ extern void GC_init(void) {
 
   // Initialize all of the region information structures.
   for (size_t i = 0; i < GC_NUM_REGIONS; i++) {
-    void *startptr = GC_MEMORY + i*GC_REGION_SIZE;
+    void *startptr = gc_memory + i*GC_REGION_SIZE;
     size_t unit = gc_index_unit(i);
     size_t size = (i - gc_unit_offset(unit))*unit + unit;
     uintptr_t offset = (uintptr_t)startptr % size;

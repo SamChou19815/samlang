@@ -54,18 +54,18 @@
  * Objects from different size ranges are allocated from different regions.
  * If any given region hits this limit, memory allocation will fail.
  *
- * DEFAULT: 2GB
+ * DEFAULT: 32MB
  */
-#define GC_REGION_SIZE ((size_t)2147483648)
+#define GC_REGION_SIZE ((size_t)33554432)
 
 /**
  * GC number of memory regions.
  *
  * This determines the total number of memory regions the GC uses.
  *
- * DEFAULT: 768
+ * DEFAULT: 256
  */
-#define GC_NUM_REGIONS ((size_t)768)
+#define GC_NUM_REGIONS ((size_t)256)
 
 /*
  * GC memory byte alignment.
@@ -84,10 +84,10 @@
  * memory allocations, and GC_BIG_UNIT is for large memory allocations.
  */
 #define GC_UNIT             GC_ALIGNMENT
-#define GC_BIG_UNIT         ((GC_NUM_REGIONS / 3)*GC_UNIT)
-#define GC_HUGE_UNIT        ((GC_NUM_REGIONS / 3)*GC_BIG_UNIT)
-#define GC_BIG_IDX_OFFSET   (GC_NUM_REGIONS / 3)
-#define GC_HUGE_IDX_OFFSET  (2*GC_NUM_REGIONS / 3)
+#define GC_BIG_UNIT         (GC_NUM_REGIONS*GC_UNIT)
+#define GC_HUGE_UNIT        (GC_NUM_REGIONS*GC_BIG_UNIT)
+#define GC_BIG_IDX_OFFSET   GC_NUM_REGIONS
+#define GC_HUGE_IDX_OFFSET  (2*GC_NUM_REGIONS)
 
 /**
  * GC region information.
