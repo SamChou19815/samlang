@@ -11,7 +11,7 @@ import { zip } from 'samlang-core-utils';
 
 export type Value =
   | UnitValue
-  | bigint
+  | number
   | string
   | boolean
   | TupleValue
@@ -89,7 +89,7 @@ export class ExpressionInterpreter {
       case 'LiteralExpression': {
         switch (expression.literal.type) {
           case 'IntLiteral':
-            return BigInt(expression.literal.value.toString());
+            return expression.literal.value;
           case 'StringLiteral':
           case 'BoolLiteral':
             return expression.literal.value;
@@ -163,13 +163,11 @@ export class ExpressionInterpreter {
           case 'stringToInt': {
             const value = argumentValue as string;
             const parsedValue = parseInt(value, 10);
-            if (!Number.isNaN(parsedValue)) {
-              return BigInt(parsedValue);
-            }
+            if (!Number.isNaN(parsedValue)) return parsedValue;
             throw new PanicException(`Cannot convert \`${value}\` to int.`);
           }
           case 'intToString':
-            return (argumentValue as bigint).toString();
+            return (argumentValue as number).toString();
           case 'println':
             this.printedCollector += `${argumentValue as string}\n`;
             return { type: 'unit' };
@@ -191,54 +189,55 @@ export class ExpressionInterpreter {
       case 'BinaryExpression': {
         switch (expression.operator.symbol) {
           case '*': {
-            const v1 = this.eval(expression.e1, context) as bigint;
-            const v2 = this.eval(expression.e2, context) as bigint;
-            return BigInt(v1 * v2);
+            const v1 = this.eval(expression.e1, context) as number;
+            const v2 = this.eval(expression.e2, context) as number;
+            return v1 * v2;
           }
           case '/': {
-            const v1 = this.eval(expression.e1, context) as bigint;
-            const v2 = this.eval(expression.e2, context) as bigint;
-            if (v2 === BigInt(0)) {
+            const v1 = this.eval(expression.e1, context) as number;
+            const v2 = this.eval(expression.e2, context) as number;
+            if (v2 === 0) {
               throw new PanicException('Division by zero!');
             }
-            return BigInt(v1 / v2);
+            const result = v1 / v2;
+            return result >= 0 ? Math.floor(result) : Math.ceil(result);
           }
           case '%': {
-            const v1 = this.eval(expression.e1, context) as bigint;
-            const v2 = this.eval(expression.e2, context) as bigint;
-            if (v2 === BigInt(0)) {
+            const v1 = this.eval(expression.e1, context) as number;
+            const v2 = this.eval(expression.e2, context) as number;
+            if (v2 === 0) {
               throw new PanicException('Mod by zero!');
             }
-            return BigInt(v1 % v2);
+            return v1 % v2;
           }
           case '+': {
-            const v1 = this.eval(expression.e1, context) as bigint;
-            const v2 = this.eval(expression.e2, context) as bigint;
-            return BigInt(v1 + v2);
+            const v1 = this.eval(expression.e1, context) as number;
+            const v2 = this.eval(expression.e2, context) as number;
+            return v1 + v2;
           }
           case '-': {
-            const v1 = this.eval(expression.e1, context) as bigint;
-            const v2 = this.eval(expression.e2, context) as bigint;
-            return BigInt(v1 - v2);
+            const v1 = this.eval(expression.e1, context) as number;
+            const v2 = this.eval(expression.e2, context) as number;
+            return v1 - v2;
           }
           case '<': {
-            const v1 = this.eval(expression.e1, context) as bigint;
-            const v2 = this.eval(expression.e2, context) as bigint;
+            const v1 = this.eval(expression.e1, context) as number;
+            const v2 = this.eval(expression.e2, context) as number;
             return v1 < v2;
           }
           case '<=': {
-            const v1 = this.eval(expression.e1, context) as bigint;
-            const v2 = this.eval(expression.e2, context) as bigint;
+            const v1 = this.eval(expression.e1, context) as number;
+            const v2 = this.eval(expression.e2, context) as number;
             return v1 <= v2;
           }
           case '>': {
-            const v1 = this.eval(expression.e1, context) as bigint;
-            const v2 = this.eval(expression.e2, context) as bigint;
+            const v1 = this.eval(expression.e1, context) as number;
+            const v2 = this.eval(expression.e2, context) as number;
             return v1 > v2;
           }
           case '>=': {
-            const v1 = this.eval(expression.e1, context) as bigint;
-            const v2 = this.eval(expression.e2, context) as bigint;
+            const v1 = this.eval(expression.e1, context) as number;
+            const v2 = this.eval(expression.e2, context) as number;
             return v1 >= v2;
           }
           case '==': {

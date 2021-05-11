@@ -10,30 +10,30 @@ import {
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
 import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
-import { Long } from 'samlang-core-utils';
 
 const analyzeNumberOfIterationsToBreakLessThanGuard = (
-  initialGuardValue: Long,
-  guardIncrementAmount: Long,
-  guardedValue: Long
-): Long | null => {
+  initialGuardValue: number,
+  guardIncrementAmount: number,
+  guardedValue: number
+): number | null => {
   // Condition is already satisfied, so it does not loop.
-  if (initialGuardValue.greaterThanOrEqual(guardedValue)) return Long.ZERO;
+  if (initialGuardValue >= guardedValue) return 0;
   // The guardIncrementAmount does not helps to make any progress,
   // so it can loop forever (until wraparound...)
-  if (guardIncrementAmount.lessThanOrEqual(0)) return null;
-  const difference = guardedValue.subtract(initialGuardValue);
-  return difference
-    .divide(guardIncrementAmount)
-    .add(difference.mod(guardIncrementAmount).equals(0) ? Long.ZERO : Long.ONE);
+  if (guardIncrementAmount <= 0) return null;
+  const difference = guardedValue - initialGuardValue;
+  return (
+    Math.floor(difference / guardIncrementAmount) +
+    (difference % guardIncrementAmount === 0 ? 0 : 1)
+  );
 };
 
 export const analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING = (
-  initialGuardValue: Long,
-  guardIncrementAmount: Long,
+  initialGuardValue: number,
+  guardIncrementAmount: number,
   operator: '<' | '<=' | '>' | '>=',
-  guardedValue: Long
-): Long | null => {
+  guardedValue: number
+): number | null => {
   switch (operator) {
     case '<':
       return analyzeNumberOfIterationsToBreakLessThanGuard(
@@ -45,19 +45,19 @@ export const analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING = (
       return analyzeNumberOfIterationsToBreakLessThanGuard(
         initialGuardValue,
         guardIncrementAmount,
-        guardedValue.add(1)
+        guardedValue + 1
       );
     case '>':
       return analyzeNumberOfIterationsToBreakLessThanGuard(
-        initialGuardValue.negate(),
-        guardIncrementAmount.negate(),
-        guardedValue.negate()
+        -initialGuardValue,
+        -guardIncrementAmount,
+        -guardedValue
       );
     case '>=':
       return analyzeNumberOfIterationsToBreakLessThanGuard(
-        initialGuardValue.negate(),
-        guardIncrementAmount.negate(),
-        guardedValue.subtract(1).negate()
+        -initialGuardValue,
+        -guardIncrementAmount,
+        -(guardedValue - 1)
       );
   }
 };
@@ -92,9 +92,8 @@ const highIRLoopAlgebraicOptimization = (
   );
   if (numberOfLoopIterations == null) return null;
   const basicInductionVariableWithLoopGuardFinalValue =
-    basicInductionVariableWithLoopGuard.initialValue.value.add(
-      basicInductionVariableWithLoopGuard.incrementAmount.value.multiply(numberOfLoopIterations)
-    );
+    basicInductionVariableWithLoopGuard.initialValue.value +
+    basicInductionVariableWithLoopGuard.incrementAmount.value * numberOfLoopIterations;
   if (breakCollector == null) {
     // Now we know there is nothing to get from this loop, and the loop has no side effects.
     // Therefore, it is safe to remove everything.

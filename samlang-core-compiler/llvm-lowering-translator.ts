@@ -334,7 +334,7 @@ class LLVMLoweringManager {
         resultVariable: rawPointerTemp,
         resultType: LLVM_STRING_TYPE(),
         functionName: LLVM_NAME(ENCODED_FUNCTION_NAME_MALLOC),
-        functionArguments: [{ value: LLVM_INT(s.expressionList.length * 8), type: LLVM_INT_TYPE }],
+        functionArguments: [{ value: LLVM_INT(s.expressionList.length * 4), type: LLVM_INT_TYPE }],
       })
     );
     this.emitInstruction(

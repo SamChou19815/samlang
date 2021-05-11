@@ -189,13 +189,37 @@ it('optimizeHighIRStatementsByConditionalConstantPropagation works on a series o
         e1: HIR_VARIABLE('a7', HIR_INT_TYPE),
         e2: HIR_ZERO,
       }),
+      HIR_BINARY({
+        name: 'a11',
+        operator: '/',
+        e1: HIR_INT(-11),
+        e2: HIR_INT(10),
+      }),
+      HIR_BINARY({
+        name: 'a12',
+        operator: '/',
+        e1: HIR_INT(11),
+        e2: HIR_INT(10),
+      }),
       HIR_CAST({
         name: 'ss',
         type: HIR_INT_TYPE,
         assignedExpression: HIR_VARIABLE('a3', HIR_INT_TYPE),
       }),
+      HIR_BINARY({
+        name: 'a13',
+        operator: '+',
+        e1: HIR_VARIABLE('a11', HIR_INT_TYPE),
+        e2: HIR_VARIABLE('a8', HIR_INT_TYPE),
+      }),
+      HIR_BINARY({
+        name: 'a14',
+        operator: '+',
+        e1: HIR_VARIABLE('a13', HIR_INT_TYPE),
+        e2: HIR_VARIABLE('a12', HIR_INT_TYPE),
+      }),
     ],
-    HIR_VARIABLE('a8', HIR_INT_TYPE),
+    HIR_VARIABLE('a14', HIR_INT_TYPE),
     `let i0: int = 6[2];
 let b8: int = (i0: int) * (i0: int);
 let a6: int = (i1: int) / 30;

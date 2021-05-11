@@ -47,6 +47,27 @@ it('interpretLLVMModule arithmetic normal test', () => {
             resultVariable: 'a',
             operator: '/',
             operandType: LLVM_INT_TYPE,
+            v1: LLVM_INT(-1),
+            v2: ONE,
+          }),
+          LLVM_RETURN(LLVM_VARIABLE('a'), LLVM_INT_TYPE),
+        ],
+      },
+    ],
+  });
+  interpretLLVMModule({
+    globalVariables: [{ name: 'HW', content: 'Hello World!' }],
+    typeDefinitions: [],
+    functions: [
+      {
+        name: ENCODED_COMPILED_PROGRAM_MAIN,
+        parameters: [],
+        returnType: LLVM_INT_TYPE,
+        body: [
+          LLVM_BINARY({
+            resultVariable: 'a',
+            operator: '/',
+            operandType: LLVM_INT_TYPE,
             v1: ZERO,
             v2: ONE,
           }),

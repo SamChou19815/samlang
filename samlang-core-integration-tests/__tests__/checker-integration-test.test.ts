@@ -36,7 +36,7 @@ const expectedErrors: readonly string[] = [
   'invalid-property-declaration-syntax.sam:2:12-2:13: [SyntaxError]: Expected: val, actual: a.',
   'multiple-type-errors.sam:3:35-3:40: [UnexpectedType]: Expected: `int`, actual: `string`.',
   'multiple-type-errors.sam:3:43-3:48: [UnexpectedType]: Expected: `int`, actual: `string`.',
-  'overflow-int.sam:3:26-3:56: [SyntaxError]: Not a 64-bit integer.',
+  'overflow-int.sam:3:26-3:56: [SyntaxError]: Not a 32-bit integer.',
   'simple-mismatch.sam:4:26-4:30: [UnexpectedType]: Expected: `int`, actual: `bool`.',
   'undefined-type.sam:3:3-3:34: [NotWellDefinedIdentifier]: `HelloWorld` is not well defined.',
   'undefined-type.sam:3:33-3:34: [UnexpectedType]: Expected: `HelloWorld`, actual: `int`.',

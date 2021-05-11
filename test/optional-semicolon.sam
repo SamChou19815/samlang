@@ -1,12 +1,17 @@
 class Main(val a: int, val b: bool) {
   function main(): unit = {
     val _: int = 3;
+    // a = 2
     val a: int = 2;
+    // c = -1
     val c: int = a - 3;
+    // d = -7
     val d: int = c * 7;
     val b: bool = true;
+    // e = -1
     val [_, e]: [int * int] = [a, c];
     val _: Main = { a: e, b };
+    // 2-1-7 + 0 + -1 = -7
     val finalValue: int = (((a + c) + d) + (if (b) then 0 else panic(""))) + e;
     println(intToString(finalValue))
   }

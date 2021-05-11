@@ -11,7 +11,6 @@ import {
   HIR_BINARY,
 } from 'samlang-core-ast/hir-expressions';
 import { HIR_INT_TYPE } from 'samlang-core-ast/hir-types';
-import { Long } from 'samlang-core-utils';
 
 it('analyzeNumberOfIterationsToBreakGuard works', () => {
   const analyzeNumberOfIterationsToBreakGuard = (
@@ -19,23 +18,18 @@ it('analyzeNumberOfIterationsToBreakGuard works', () => {
     increment: number,
     operator: '<' | '<=' | '>' | '>=',
     guard: number
-  ): number | undefined =>
-    analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING(
-      Long.fromInt(initial),
-      Long.fromInt(increment),
-      operator,
-      Long.fromInt(guard)
-    )?.toInt();
+  ): number | null =>
+    analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING(initial, increment, operator, guard);
 
   expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '<', 1)).toBe(0);
   expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '<=', 1)).toBe(0);
   expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '>', 3)).toBe(0);
   expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '>=', 3)).toBe(0);
 
-  expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '<', 3)).toBeUndefined();
-  expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '<=', 3)).toBeUndefined();
-  expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '>', 1)).toBeUndefined();
-  expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '>=', 1)).toBeUndefined();
+  expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '<', 3)).toBeNull();
+  expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '<=', 3)).toBeNull();
+  expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '>', 1)).toBeNull();
+  expect(analyzeNumberOfIterationsToBreakGuard(2, 0, '>=', 1)).toBeNull();
 
   expect(analyzeNumberOfIterationsToBreakGuard(2, 2, '<', 10)).toBe(4);
   expect(analyzeNumberOfIterationsToBreakGuard(2, 2, '<', 11)).toBe(5);

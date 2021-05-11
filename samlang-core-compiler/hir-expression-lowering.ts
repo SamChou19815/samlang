@@ -718,7 +718,7 @@ class HighIRExpressionLoweringManager {
         const e1Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e1);
         const e2Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e2);
         if (e1Result.expression.__type__ === 'HighIRIntLiteralExpression') {
-          return e1Result.expression.value.toInt()
+          return e1Result.expression.value
             ? {
                 statements: [...e1Result.statements, ...e2Result.statements],
                 expression: e2Result.expression,
@@ -750,7 +750,7 @@ class HighIRExpressionLoweringManager {
         const e1Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e1);
         const e2Result = this.shortCircuitBehaviorPreservingBoolExpressionLowering(e2);
         if (e1Result.expression.__type__ === 'HighIRIntLiteralExpression') {
-          return e1Result.expression.value.toInt()
+          return e1Result.expression.value
             ? { statements: e1Result.statements, expression: HIR_TRUE }
             : {
                 statements: [...e1Result.statements, ...e2Result.statements],

@@ -1,8 +1,6 @@
 import type { IROperator } from './common-operators';
 import { HighIRExpression, HIR_BINARY } from './hir-expressions';
 
-import { Long } from 'samlang-core-utils';
-
 /**
  * Compare two Mid IR expression.
  * The order itself has no semantic meaning.
@@ -13,11 +11,11 @@ const compareMidIR = (e1: HighIRExpression, e2: HighIRExpression): number => {
     case 'HighIRIntLiteralExpression':
       switch (e2.__type__) {
         case 'HighIRIntLiteralExpression': {
-          const diff = e1.value.subtract(e2.value);
-          if (diff.equals(Long.ZERO)) {
+          const diff = e1.value - e2.value;
+          if (diff === 0) {
             return 0;
           }
-          return diff.greaterThan(Long.ZERO) ? 1 : -1;
+          return diff >= 0 ? 1 : -1;
         }
         case 'HighIRNameExpression':
         case 'HighIRVariableExpression':

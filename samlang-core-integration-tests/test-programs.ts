@@ -229,7 +229,7 @@ class Main {
     testName: 'min-int',
     sourceCode: `
 class Main {
-  function main(): int = -9223372036854775808
+  function main(): int = -2147483648
 }
 `,
   },
@@ -666,18 +666,14 @@ class Main {
   },
   {
     testCaseName: 'cse-test-4',
-    expectedStandardOut: '9\n',
+    expectedStandardOut: '141\n',
     sourceCode: `
 class Main {
   function main(): unit = {
-    val megagrams = 9223372036854775807;
-    val kilograms = megagrams / 1000;
-    val grams = (megagrams / 1000) / 1000;
-    val milligrams = ((megagrams / 1000) / 1000) / 1000;
-    val micrograms = (((megagrams / 1000) / 1000) / 1000) / 1000;
-    val nanograms = ((((megagrams / 1000) / 1000) / 1000) / 1000) / 1000;
-    val picograms = (((((megagrams / 1000) / 1000) / 1000) / 1000) / 1000) / 1000;
-    println(intToString(picograms))
+    val megagrams: int = 141332443;
+    val kilograms: int = megagrams / 1000;
+    val grams: int = (megagrams / 1000) / 1000;
+    println(intToString(grams))
   }
 }`,
   },

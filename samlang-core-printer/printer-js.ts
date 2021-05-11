@@ -31,7 +31,7 @@ export const createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING = (
 ): PrettierDocument => {
   switch (highIRExpression.__type__) {
     case 'HighIRIntLiteralExpression':
-      return PRETTIER_TEXT(`${String(highIRExpression.value)}n`);
+      return PRETTIER_TEXT(String(highIRExpression.value));
     case 'HighIRVariableExpression':
     case 'HighIRNameExpression':
       return PRETTIER_TEXT(highIRExpression.name);
@@ -83,9 +83,16 @@ export const createPrettierDocumentFromHighIRStatement = (
         PRETTIER_TEXT(` ${operator} `),
         createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(e2)
       );
+      const wrapped =
+        operator === '/'
+          ? PRETTIER_CONCAT(
+              PRETTIER_TEXT('Math.floor'),
+              createParenthesisSurroundedDocument(binaryExpressionDocument)
+            )
+          : binaryExpressionDocument;
       return PRETTIER_CONCAT(
         PRETTIER_TEXT(`let ${highIRStatement.name} = `),
-        binaryExpressionDocument,
+        wrapped,
         PRETTIER_TEXT(';')
       );
     }
@@ -263,7 +270,7 @@ export const createPrettierDocumentFromHighIRModule = (
         : `const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => console.log(line);`
     ),
     PRETTIER_LINE,
-    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => BigInt(v);`),
+    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => parseInt(v, 10);`),
     PRETTIER_LINE,
     PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);`),
     PRETTIER_LINE,

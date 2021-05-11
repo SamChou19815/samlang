@@ -676,21 +676,25 @@ it('lexSamlangProgram bad multiple string', () => {
   expect(lex(`"abcdefg\n"`)).toEqual(['1:1-1:9: ERROR: "abcdefg', '2:1-2:2: ERROR: "']);
 });
 
+it('lexSamlangProgram min-int test 0', () => {
+  expect(lex('0')).toEqual(['1:1-1:2: 0']);
+});
+
 it('lexSamlangProgram min-int test 1', () => {
-  expect(lex('9223372036854775809')).toEqual(['1:1-1:20: 9223372036854775809']);
+  expect(lex('2147483648')).toEqual(['1:1-1:11: 2147483648']);
 });
 
 it('lexSamlangProgram min-int test 2', () => {
-  expect(lex('9223372036854775808')).toEqual(['1:1-1:20: 9223372036854775808']);
-  expect(lex('9223372036854775808 3')).toEqual(['1:1-1:20: 9223372036854775808', '1:21-1:22: 3']);
+  expect(lex('2147483648')).toEqual(['1:1-1:11: 2147483648']);
+  expect(lex('2147483648 3')).toEqual(['1:1-1:11: 2147483648', '1:12-1:13: 3']);
 });
 
 it('lexSamlangProgram min-int test 3', () => {
-  expect(lex('+ 9223372036854775808')).toEqual(['1:1-1:2: +', '1:3-1:22: 9223372036854775808']);
+  expect(lex('+ 2147483648')).toEqual(['1:1-1:2: +', '1:3-1:13: 2147483648']);
 });
 
 it('lexSamlangProgram min-int test 4', () => {
-  expect(lex('-9223372036854775808')).toEqual(['1:2-1:21: -9223372036854775808']);
+  expect(lex('-2147483648')).toEqual(['1:2-1:12: -2147483648']);
 });
 
 it('lexSamlangProgram identifier test', () => {
