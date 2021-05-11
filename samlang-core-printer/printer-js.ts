@@ -68,9 +68,8 @@ export const createPrettierDocumentFromHighIRStatement = (
   switch (highIRStatement.__type__) {
     case 'HighIRIndexAccessStatement': {
       const { pointerExpression, index } = highIRStatement;
-      const subExpressionDocument = createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(
-        pointerExpression
-      );
+      const subExpressionDocument =
+        createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(pointerExpression);
       return PRETTIER_CONCAT(
         PRETTIER_TEXT(`let ${highIRStatement.name} = `),
         subExpressionDocument,

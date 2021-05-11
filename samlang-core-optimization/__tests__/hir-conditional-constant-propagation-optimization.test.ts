@@ -29,16 +29,14 @@ const assertCorrectlyOptimized = (
   returnValue: HighIRExpression,
   expected: string
 ): void => {
-  const {
-    body,
-    returnValue: optimizedReturnValue,
-  } = optimizeHighIRFunctionByConditionalConstantPropagation({
-    name: '',
-    parameters: [],
-    type: { __type__: 'FunctionType', argumentTypes: [], returnType: HIR_INT_TYPE },
-    body: statements,
-    returnValue,
-  });
+  const { body, returnValue: optimizedReturnValue } =
+    optimizeHighIRFunctionByConditionalConstantPropagation({
+      name: '',
+      parameters: [],
+      type: { __type__: 'FunctionType', argumentTypes: [], returnType: HIR_INT_TYPE },
+      body: statements,
+      returnValue,
+    });
 
   expect(
     `${body.map((it) => debugPrintHighIRStatement(it)).join('\n')}\n` +

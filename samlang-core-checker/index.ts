@@ -46,16 +46,12 @@ export const collectModuleReferenceFromSamlangModule = (
  */
 export class DependencyTracker {
   /** [module] => what this module depends on */
-  private readonly forwardDependency: HashMap<
-    ModuleReference,
-    ReadonlyHashSet<ModuleReference>
-  > = hashMapOf();
+  private readonly forwardDependency: HashMap<ModuleReference, ReadonlyHashSet<ModuleReference>> =
+    hashMapOf();
 
   /** [module] => other modules depends on this module */
-  private readonly reverseDependency: HashMap<
-    ModuleReference,
-    HashSet<ModuleReference>
-  > = hashMapOf();
+  private readonly reverseDependency: HashMap<ModuleReference, HashSet<ModuleReference>> =
+    hashMapOf();
 
   getForwardDependencies(moduleReference: ModuleReference): ReadonlyHashSet<ModuleReference> {
     return this.forwardDependency.get(moduleReference) ?? setOf();

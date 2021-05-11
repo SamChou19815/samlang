@@ -269,22 +269,24 @@ it('method access expression evaluates correctly', () => {
   });
 
   expect(
-    (new ExpressionInterpreter().eval(methodAccessExpression, {
-      classes: {
-        C: {
-          functions: {},
-          methods: {
-            method: {
-              type: 'functionValue',
-              arguments: [],
-              body: getExpression('5'),
-              context: EMPTY,
+    (
+      new ExpressionInterpreter().eval(methodAccessExpression, {
+        classes: {
+          C: {
+            functions: {},
+            methods: {
+              method: {
+                type: 'functionValue',
+                arguments: [],
+                body: getExpression('5'),
+                context: EMPTY,
+              },
             },
           },
         },
-      },
-      localValues: {},
-    }) as FunctionValue).type
+        localValues: {},
+      }) as FunctionValue
+    ).type
   ).toBe('functionValue');
   expect(() => new ExpressionInterpreter().eval(methodAccessExpression, EMPTY)).toThrow('');
 });

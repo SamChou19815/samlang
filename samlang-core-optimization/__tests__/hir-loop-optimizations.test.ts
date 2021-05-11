@@ -42,19 +42,17 @@ const assertOptimizeHighIRStatementsWithAllLoopOptimizations = (
   returnValue: HighIRExpression,
   expected: string
 ): void => {
-  const {
-    body,
-    returnValue: optimizedReturnValue,
-  } = optimizeHighIRFunctionWithAllLoopOptimizations(
-    {
-      name: '',
-      parameters: [],
-      type: { __type__: 'FunctionType', argumentTypes: [], returnType: HIR_INT_TYPE },
-      body: statements,
-      returnValue,
-    },
-    new OptimizationResourceAllocator()
-  );
+  const { body, returnValue: optimizedReturnValue } =
+    optimizeHighIRFunctionWithAllLoopOptimizations(
+      {
+        name: '',
+        parameters: [],
+        type: { __type__: 'FunctionType', argumentTypes: [], returnType: HIR_INT_TYPE },
+        body: statements,
+        returnValue,
+      },
+      new OptimizationResourceAllocator()
+    );
 
   expect(
     `${body.map((it) => debugPrintHighIRStatement(it)).join('\n')}\n` +

@@ -91,9 +91,10 @@ const highIRLoopAlgebraicOptimization = (
     basicInductionVariableWithLoopGuard.guardExpression.value
   );
   if (numberOfLoopIterations == null) return null;
-  const basicInductionVariableWithLoopGuardFinalValue = basicInductionVariableWithLoopGuard.initialValue.value.add(
-    basicInductionVariableWithLoopGuard.incrementAmount.value.multiply(numberOfLoopIterations)
-  );
+  const basicInductionVariableWithLoopGuardFinalValue =
+    basicInductionVariableWithLoopGuard.initialValue.value.add(
+      basicInductionVariableWithLoopGuard.incrementAmount.value.multiply(numberOfLoopIterations)
+    );
   if (breakCollector == null) {
     // Now we know there is nothing to get from this loop, and the loop has no side effects.
     // Therefore, it is safe to remove everything.

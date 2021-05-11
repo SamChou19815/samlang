@@ -185,10 +185,9 @@ const optimizeHighIRStatement = (
           ];
         })
       );
-      const loopVariables = zip(
-        loopVariableWithoutLoopValues,
-        loopVariableLoopValues
-      ).map(([rest, loopValue]) => ({ ...rest, loopValue }));
+      const loopVariables = zip(loopVariableWithoutLoopValues, loopVariableLoopValues).map(
+        ([rest, loopValue]) => ({ ...rest, loopValue })
+      );
       return HIR_WHILE({ loopVariables, statements, breakCollector: statement.breakCollector });
     }
 

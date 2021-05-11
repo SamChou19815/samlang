@@ -93,9 +93,8 @@ export default class ModuleTypeChecker {
   ): void {
     classMembers.forEach((member) => {
       const typeParameters = member.typeParameters;
-      let patchedContext = accessibleGlobalTypingContext.withAdditionalTypeParameters(
-        typeParameters
-      );
+      let patchedContext =
+        accessibleGlobalTypingContext.withAdditionalTypeParameters(typeParameters);
       if (member.isMethod) {
         patchedContext = patchedContext.withAdditionalTypeParameters(
           patchedContext.getCurrentClassTypeDefinition().classTypeParameters
@@ -114,9 +113,8 @@ export default class ModuleTypeChecker {
     if (isMethod) {
       localTypingContext.addLocalValueType('this', accessibleGlobalTypingContext.thisType, error);
     }
-    const contextWithAdditionalTypeParameters = accessibleGlobalTypingContext.withAdditionalTypeParameters(
-      typeParameters
-    );
+    const contextWithAdditionalTypeParameters =
+      accessibleGlobalTypingContext.withAdditionalTypeParameters(typeParameters);
     parameters.forEach((parameter) => {
       const parameterType = parameter.type;
       validateType(

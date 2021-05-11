@@ -237,10 +237,9 @@ const fixExpressionType = (
       return {
         ...expression,
         type: newType,
-        parameters: checkedZip(
-          expression.parameters,
-          newType.argumentTypes
-        ).map(([[parameter, originalT], t]) => [parameter, typeFixItself(originalT, t)]),
+        parameters: checkedZip(expression.parameters, newType.argumentTypes).map(
+          ([[parameter, originalT], t]) => [parameter, typeFixItself(originalT, t)]
+        ),
         captured: Object.fromEntries(
           Object.entries(expression.captured).map(([name, t]) => [name, typeFixItself(t, null)])
         ),
