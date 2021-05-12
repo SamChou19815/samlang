@@ -34,16 +34,12 @@ static samlang_string mkString(const char* in) {
   return out;
 }
 
-extern samlang_int _compiled_program_main(samlang_string[]);
+extern samlang_int _compiled_program_main();
 
 int main(int argc, char *argv[]) {
   gc_init();
-  // Create arguments array.
-  samlang_string* args = mkArray(sizeof(samlang_int *) * argc, argc);
-  int c;
-  for (c = 0; c < argc; ++c) args[c] = mkString(argv[c]);
   // transfer to program's main
-  _compiled_program_main(args);
+  _compiled_program_main();
   return 0;
 }
 
@@ -92,8 +88,30 @@ samlang_int _builtin_println(samlang_string str) {
 }
 
 samlang_string _builtin_intToString(samlang_int in) {
+  if (in == 0) return mkString("0");
+  if (in == -2147483648) return mkString("-2147483648");
   char buffer[16]; // more than enough to represent 32-bit numbers
-  sprintf(buffer, "%d", in);
+  int is_negative = in < 0;
+  if (is_negative) {
+    buffer[0] = '-';
+    in = -in;
+  }
+  int len = is_negative;
+  while (in > 0) {
+    buffer[len] = (in % 10) + '0';
+    in /= 10;
+    len += 1;
+  }
+  // Set the final char to be 0 to make it NULL terminated.
+  buffer[len] = 0;
+  char *reverse_slice = &buffer[is_negative];
+  int reverse_slice_len = len - is_negative;
+  int reverse_slice_mid = reverse_slice_len / 2;
+  for (int i = 0; i < reverse_slice_mid; i++) {
+    char temp = reverse_slice[i];
+    reverse_slice[i] = reverse_slice[reverse_slice_len - i - 1];
+    reverse_slice[reverse_slice_len - i - 1] = temp;
+  }
   return mkString(buffer);
 }
 

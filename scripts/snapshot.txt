@@ -110,6 +110,17 @@ success
 #./out/test.if-else-unreachable-2
 success
 
+#./out/test.int-to-string-test
+0
+1
+123
+1234567
+2147483647
+-1
+-123
+-1234567
+-2147483648
+
 #./out/test.loop-optimization
 100
 106
