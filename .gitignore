@@ -4,6 +4,9 @@ samlang-runtime/*.a
 samlang-runtime/example
 samlang-runtime/*.bc
 
+# Libraries
+samlang-runtime/compiled-wasi-libc
+
 # Node
 node_modules
 
