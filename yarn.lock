@@ -445,7 +445,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dev-sam/jest-esbuild-transformer@0.3.0, @dev-sam/jest-esbuild-transformer@workspace:jest-esbuild-transformer":
+"@dev-sam/jest-esbuild-transformer@workspace:0.4.0, @dev-sam/jest-esbuild-transformer@workspace:jest-esbuild-transformer":
   version: 0.0.0-use.local
   resolution: "@dev-sam/jest-esbuild-transformer@workspace:jest-esbuild-transformer"
   dependencies:
@@ -454,6 +454,8 @@ __metadata:
     typescript: ^4.2.4
   peerDependencies:
     esbuild: "*"
+  bin:
+    esr: runner.js
   languageName: unknown
   linkType: soft
 
@@ -5528,7 +5530,7 @@ resolve@^1.18.1:
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
     "@dev-sam/eslint-config-common": 0.21.0
-    "@dev-sam/jest-esbuild-transformer": 0.3.0
+    "@dev-sam/jest-esbuild-transformer": "workspace:0.4.0"
     "@types/jest": ^26.0.23
     "@types/node": ^15.0.2
     "@typescript-eslint/eslint-plugin": ^4.23.0

@@ -1,10 +1,15 @@
 {
   "name": "@dev-sam/jest-esbuild-transformer",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "license": "AGPLv3",
   "files": [
-    "index.js"
+    "api.js",
+    "index.js",
+    "runner.js"
   ],
+  "bin": {
+    "esr": "runner.js"
+  },
   "scripts": {
     "compile": "tsc"
   },

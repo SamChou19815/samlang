@@ -2,13 +2,13 @@
 /* eslint-disable no-console */
 // @ts-check
 
-const { spawnSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { spawnSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
-const read = (/** @type {string} */ filename) => fs.readFileSync(filename).toString();
+const read = (filename: string) => fs.readFileSync(filename).toString();
 
-const runWithErrorCheck = (/** @type {string} */ command, /** @type {string[]} */ args = []) => {
+const runWithErrorCheck = (command: string, args: readonly string[] = []) => {
   const startTime = new Date().getTime();
   const result = spawnSync(command, args, {
     shell: true,
@@ -50,7 +50,7 @@ const getJSPrograms = () => {
   return programs;
 };
 
-const interpretPrograms = (/** @type {string[]} */ programs) => {
+const interpretPrograms = (programs: readonly string[]) => {
   let totalTime = 0;
   const result = programs
     .map((program) => {
@@ -62,7 +62,7 @@ const interpretPrograms = (/** @type {string[]} */ programs) => {
   return { result, totalTime };
 };
 
-const interpretJSPrograms = (/** @type {string[]} */ programs) => {
+const interpretJSPrograms = (programs: readonly string[]) => {
   let totalTime = 0;
   const result = programs
     .map((program) => {
@@ -74,7 +74,7 @@ const interpretJSPrograms = (/** @type {string[]} */ programs) => {
   return { result, totalTime };
 };
 
-const compare = (/** @type {string} */ expected, /** @type {string} */ actual) => {
+const compare = (expected: string, actual: string) => {
   if (expected === actual) {
     return true;
   }

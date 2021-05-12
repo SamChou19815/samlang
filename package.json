@@ -15,13 +15,13 @@
     "bundle": "yarn workspaces foreach run bundle",
     "test": "jest --coverage",
     "test:single": "jest -t",
-    "test:integration": "node scripts/compile-repository.js",
+    "test:integration": "esr scripts/compile-repository.ts",
     "test:new-linter-config:dev-sam-local": "eslint --config configurations/latest-local-linter-config.js .",
     "bump": "yarn up @types/jest @types/node typescript prettier jest husky lint-staged esbuild eslint \"@typescript-eslint/*\" \"eslint-*\""
   },
   "devDependencies": {
     "@dev-sam/eslint-config-common": "0.21.0",
-    "@dev-sam/jest-esbuild-transformer": "0.3.0",
+    "@dev-sam/jest-esbuild-transformer": "workspace:0.4.0",
     "@types/jest": "^26.0.23",
     "@types/node": "^15.0.2",
     "@typescript-eslint/eslint-plugin": "^4.23.0",
