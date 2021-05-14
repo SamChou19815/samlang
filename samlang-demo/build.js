@@ -5,6 +5,7 @@ build({
   entryPoints: ['src/index.ts'],
   bundle: true,
   minify: true,
+  sourcemap: true,
   target: 'es2017',
   platform: 'node',
   outfile: 'bin/index.js',
