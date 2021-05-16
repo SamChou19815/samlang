@@ -1,4 +1,4 @@
-import { relative, sep } from 'path';
+import { join, relative, resolve, sep } from 'path';
 
 import {
   createConnection,
@@ -46,6 +46,9 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
     return new ModuleReference(relativePath.substring(0, relativePath.length - 4).split(sep));
   };
 
+  const moduleReferenceToUri = (moduleReference: ModuleReference): string =>
+    resolve(join(configuration.sourceDirectory, moduleReference.toFilename()));
+
   // Create a connection for the server. The connection uses Node's IPC as a transport.
   // Also include all preview / proposed LSP features.
   const connection = createConnection(ProposedFeatures.all);
@@ -53,7 +56,7 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
   const publishDiagnostics = (affectedModules: readonly ModuleReference[]): void =>
     affectedModules.forEach((affectedModule) => {
       connection.sendDiagnostics({
-        uri: affectedModule.toFilename(),
+        uri: moduleReferenceToUri(affectedModule),
         diagnostics: state.getErrors(affectedModule).map((error) => ({
           range: samlangRangeToLspRange(error.range),
           severity: DiagnosticSeverity.Error,
