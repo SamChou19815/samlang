@@ -1,9 +1,8 @@
 class Main {
   function main(): unit = {
-    // i == 1
     val i: int = 1;
     val j: int = 2;
-    if ((i < j && i > 0) && j > 0) then {
+    if ((i < j && i > 0) && /* f */ j > 0) then {
       val a: int = 3;
       val b: int = 4;
       if (a > b || a + b > 0 && true) then println("one") else println("two")
