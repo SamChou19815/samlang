@@ -122,7 +122,17 @@ export class BaseParser {
   }
 
   protected unconsume(n = 1): void {
-    this.position -= n;
+    let leftOver = n;
+    while (leftOver > 0) {
+      this.position -= 1;
+      const content = checkNotNull(this.tokens[this.position]).content;
+      if (
+        typeof content === 'string' ||
+        (content.__type__ !== 'BlockComment' && content.__type__ !== 'LineComment')
+      ) {
+        leftOver -= 1;
+      }
+    }
   }
 
   protected unconsumeComments(): void {

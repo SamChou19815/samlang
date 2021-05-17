@@ -47,6 +47,9 @@ it('Can parse good expressions.', () => {
   expectASTWithTheSameKind('3 + 4', 'BinaryExpression');
   expectASTWithTheSameKind('3 - 4', 'BinaryExpression');
   expectASTWithTheSameKind('3 < 4', 'BinaryExpression');
+  expectASTWithTheSameKind('/* hi */ 3 < 4', 'BinaryExpression');
+  expectASTWithTheSameKind('3 /* hi */ < 4', 'BinaryExpression');
+  expectASTWithTheSameKind('(i /* */ < j && i > 0)', 'BinaryExpression');
   expectASTWithTheSameKind('3 <= 4', 'BinaryExpression');
   expectASTWithTheSameKind('3 > 4', 'BinaryExpression');
   expectASTWithTheSameKind('3 >= 4', 'BinaryExpression');
@@ -75,7 +78,7 @@ it('Can parse good expressions.', () => {
   expectASTWithTheSameKind('{ val _: (int, bool) -> string = 3; }', 'StatementBlockExpression');
   expectASTWithTheSameKind('{ }', 'StatementBlockExpression');
 
-  expect(globalErrorCollector.getErrors()).toEqual([]);
+  expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
 });
 
 it('Can report bad expressions.', () => {
