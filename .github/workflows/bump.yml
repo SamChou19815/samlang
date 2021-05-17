@@ -5,7 +5,7 @@ on:
     - cron: '0 0 * * 1'
   pull_request:
     paths:
-      - .github/workflows/auto-bump.yml
+      - .github/workflows/bump.yml
 
 jobs:
   bump:
