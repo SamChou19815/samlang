@@ -591,6 +591,15 @@ class Main {
   expect(service.autoComplete(testModuleReference, new Position(2, 45))).toEqual([]);
 });
 
+it('LanguageServices rename bad identifier tests', () => {
+  const state = new LanguageServiceState([]);
+  const service = new LanguageServices(state, () => '');
+  const testModuleReference = new ModuleReference(['Test']);
+  expect(service.renameVariable(testModuleReference, new Position(2, 45), '3')).toBe('Invalid');
+  expect(service.renameVariable(testModuleReference, new Position(2, 45), 'A3')).toBe('Invalid');
+  expect(service.renameVariable(testModuleReference, new Position(2, 45), 'a3')).toBeNull();
+});
+
 it('LanguageServices format test with good programs', () => {
   const testModuleReference = new ModuleReference(['Test']);
   const state = new LanguageServiceState([
