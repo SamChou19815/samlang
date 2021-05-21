@@ -8,7 +8,6 @@ import {
   InsertTextFormat,
   DiagnosticSeverity,
   Range as LspRange,
-  FoldingRangeParams,
   FoldingRange as LspFoldingRange,
   TextEdit,
 } from 'vscode-languageserver/node';
@@ -19,6 +18,11 @@ import type { SamlangProjectConfiguration } from './configuration';
 import { Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintSamlangModule } from 'samlang-core-printer';
 import { LanguageServiceState, LanguageServices } from 'samlang-core-services';
+
+const ENTIRE_DOCUMENT_RANGE = new Range(
+  new Position(0, 0),
+  new Position(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
+);
 
 const samlangRangeToLspRange = (range: Range): LspRange => ({
   start: { line: range.start.line, character: range.start.column },
@@ -114,9 +118,7 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
         };
   });
 
-  connection.onFoldingRanges((foldingrangeParameters: FoldingRangeParams):
-    | LspFoldingRange[]
-    | null => {
+  connection.onFoldingRanges((foldingrangeParameters) => {
     const moduleReference = uriToModuleReference(foldingrangeParameters.textDocument.uri);
     if (moduleReference == null) return null;
     const foldingRangeResult = service.queryFoldingRanges(moduleReference);
@@ -143,17 +145,7 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
     if (moduleReference == null) return null;
     const formattedString = service.formatEntireDocument(moduleReference);
     if (formattedString == null) return null;
-    return [
-      TextEdit.replace(
-        samlangRangeToLspRange(
-          new Range(
-            new Position(0, 0),
-            new Position(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
-          )
-        ),
-        formattedString
-      ),
-    ];
+    return [TextEdit.replace(samlangRangeToLspRange(ENTIRE_DOCUMENT_RANGE), formattedString)];
   });
 
   connection.listen();
