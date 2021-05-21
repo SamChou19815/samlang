@@ -12,7 +12,7 @@ class Main(val a: int, val b: bool) {
     val [_, e]: [int * int] = [a, c];
     val _: Main = { a: e, b };
     // 2-1-7 + 0 + -1 = -7
-    val finalValue: int = (((a + c) + d) + (if (b) then 0 else panic(""))) + e;
+    val finalValue: int = a + c + d + (if (b) then 0 else panic("")) + e;
     println(intToString(finalValue))
   }
 

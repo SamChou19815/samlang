@@ -193,7 +193,15 @@ it('prettyPrintSamlangExpression test', () => {
   );
   expect(reprintExpression('1 + 1 * 1')).toBe('1 + 1 * 1');
   expect(reprintExpression('(1 + 1) * 1')).toBe('(1 + 1) * 1');
-  expect(reprintExpression('1 + 1 + 1')).toBe('(1 + 1) + 1');
+  expect(reprintExpression('1 - (1 + 1)')).toBe('1 - (1 + 1)');
+  expect(reprintExpression('1 + (1 + 1)')).toBe('1 + 1 + 1');
+  expect(reprintExpression('1 + 1 + 1 + 1')).toBe('1 + 1 + 1 + 1');
+  expect(reprintExpression('1 + 1 + 1 - 1')).toBe('1 + 1 + 1 - 1');
+  expect(reprintExpression('1 * 1 * 1')).toBe('1 * 1 * 1');
+  expect(reprintExpression('1 / 1 % 1 * 1')).toBe('1 / 1 % 1 * 1');
+  expect(reprintExpression('true && false && true')).toBe('true && false && true');
+  expect(reprintExpression('true || false || true')).toBe('true || false || true');
+  expect(reprintExpression('"dev" :: "meggo" :: "vibez"')).toBe('"dev" :: "meggo" :: "vibez"');
 
   expect(reprintExpression('if (b) then a else c')).toBe('if (b) then a else c');
   expect(

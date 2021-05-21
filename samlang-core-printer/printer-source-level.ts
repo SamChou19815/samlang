@@ -203,6 +203,35 @@ const createPrettierDocumentFromSamlangExpression = (
         );
         const operatorPrecedingCommentsDocs =
           operatorPrecedingCommentsDoc != null ? [PRETTIER_LINE, operatorPrecedingCommentsDoc] : [];
+        if (expression.e1.precedence === expression.precedence) {
+          // Since we are doing left to right evaluation, this is safe.
+          return PRETTIER_GROUP(
+            PRETTIER_CONCAT(
+              createPrettierDocumentFromSamlangExpression(expression.e1),
+              ...operatorPrecedingCommentsDocs,
+              PRETTIER_TEXT(` ${expression.operator.symbol} `),
+              createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
+            )
+          );
+        }
+        if (expression.e2.precedence === expression.precedence) {
+          // For the commutative operators, we can remove parentheses.
+          switch (expression.operator.symbol) {
+            case '-':
+            case '/':
+            case '%':
+              break;
+            default:
+              return PRETTIER_GROUP(
+                PRETTIER_CONCAT(
+                  createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
+                  ...operatorPrecedingCommentsDocs,
+                  PRETTIER_TEXT(` ${expression.operator.symbol} `),
+                  createPrettierDocumentFromSamlangExpression(expression.e2)
+                )
+              );
+          }
+        }
         return PRETTIER_GROUP(
           PRETTIER_CONCAT(
             createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
