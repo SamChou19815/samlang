@@ -566,6 +566,28 @@ export class LanguageServices {
     return [`${name}(${items.join(', ')})$${items.length}`, true];
   }
 
+  renameVariable(
+    moduleReference: ModuleReference,
+    position: Position,
+    newName: string
+  ): 'Invalid' | null {
+    const trimmedNewName = newName.trim();
+    if (!/[a-z][A-Za-z0-9]/.test(trimmedNewName)) return 'Invalid';
+    this.state.expressionLocationLookup.get(moduleReference, position);
+    /*
+    const expression = this.state.expressionLocationLookup.get(moduleReference, position);
+    if (expression == null || expression.__type__ !== 'VariableExpression') return null;
+    if (
+      expression.type.type === 'IdentifierType' &&
+      expression.type.identifier.startsWith('class ')
+    ) {
+      return null;
+    }
+    */
+    // TODO: concrete implementation. Depending on define service.
+    return null;
+  }
+
   formatEntireDocument(moduleReference: ModuleReference): string | null {
     const moduleToFormat = this.state.getRawModule(moduleReference);
     if (moduleToFormat == null) return null;

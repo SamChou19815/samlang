@@ -10,6 +10,7 @@ import {
   Range as LspRange,
   FoldingRange as LspFoldingRange,
   TextEdit,
+  ResponseError,
 } from 'vscode-languageserver/node';
 
 import { collectSources } from './cli-service';
@@ -82,6 +83,7 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
           triggerCharacters: ['.'],
           resolveProvider: false,
         },
+        renameProvider: true,
         documentFormattingProvider: {},
       },
     };
@@ -138,6 +140,20 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
       insertText: item.text,
       insertTextFormat: item.isSnippet ? InsertTextFormat.Snippet : InsertTextFormat.PlainText,
     }));
+  });
+
+  connection.onRenameRequest((renameParameters) => {
+    const moduleReference = uriToModuleReference(renameParameters.textDocument.uri);
+    const lspPosition = renameParameters.position;
+    const samlangPosition = new Position(lspPosition.line, lspPosition.character);
+    const result = service.renameVariable(
+      moduleReference,
+      samlangPosition,
+      renameParameters.newName
+    );
+    if (result == null) return null;
+    if (result === 'Invalid') return new ResponseError(1, 'Invalid identifier.');
+    return null;
   });
 
   connection.onDocumentFormatting((formatParameters) => {
