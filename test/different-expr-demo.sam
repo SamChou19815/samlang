@@ -12,7 +12,7 @@ class Obj(val d: int, val e: int) {
     val [_, c]: [string * int] = ["dd", 3];
     val { e as d }: Obj = { d: 5, e: 4 };
     val _: int = 42;
-    a + (b * c) / d
+    a + b * c / d
   }
 
 }
@@ -47,7 +47,7 @@ class Main {
     println(
       intToString(
         Main.identity(
-          (((Foo.bar() * Main.oof()) * Obj.valExample()) / Main.div(4, 2) + Main.nestedVal()) - 5
+          Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
         )
       )
     )

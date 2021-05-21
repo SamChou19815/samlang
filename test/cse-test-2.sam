@@ -3,7 +3,7 @@ class Main {
 
   function check(actual: int, expected: int): unit =
     if (actual != expected) then panic(
-      (("actual: " :: intToString(actual)) :: ", expected ") :: intToString(expected)
+      "actual: " :: intToString(actual) :: ", expected " :: intToString(expected)
     ) else {  }
 
   function test(first: bool, a: int, b: int, aTimesB: int): unit = {

@@ -60,9 +60,7 @@ class Main {
     if (!condition) then {  } else panic(message)
 
   private function assertEquals(e1: int, e2: int, message: string): unit =
-    if (e1 == e2) then {  } else panic(
-      (((intToString(e1) :: " ") :: intToString(e2)) :: " ") :: message
-    )
+    if (e1 == e2) then {  } else panic(intToString(e1) :: " " :: intToString(e2) :: " " :: message)
 
   private function consistencyTest(): unit = {
     val _: unit = Main.assertEquals(

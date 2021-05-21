@@ -4,9 +4,9 @@ class Main {
     if (i >= 300) then totalPicograms else {
       val megagrams: int = maxLong - i;
       val kilograms: int = megagrams / 1000;
-      val grams: int = (megagrams / 1000) / 1000;
-      val milligrams: int = ((megagrams / 1000) / 1000) / 1000;
-      Main.test((kilograms + grams) + milligrams, i + 1)
+      val grams: int = megagrams / 1000 / 1000;
+      val milligrams: int = megagrams / 1000 / 1000 / 1000;
+      Main.test(kilograms + grams + milligrams, i + 1)
     }
   }
 
