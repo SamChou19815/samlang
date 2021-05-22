@@ -1016,6 +1016,7 @@ export default class SamlangModuleParser extends BaseParser {
                 type: UndecidedTypes.next(),
                 associatedComments: declarationAssociatedComments,
                 name: variable,
+                nameRange: range,
               };
             }
             this.consume();
@@ -1025,6 +1026,7 @@ export default class SamlangModuleParser extends BaseParser {
               type: UndecidedTypes.next(),
               associatedComments: declarationAssociatedComments,
               name: variable,
+              nameRange: range,
               expression,
             };
           });

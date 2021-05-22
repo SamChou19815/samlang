@@ -210,31 +210,40 @@ class ExpressionTypeChecker {
   } {
     const declaredFieldTypes: Record<string, Type> = {};
     const checkedDeclarations: ObjectConstructorExpressionFieldConstructor[] = [];
-    fieldDeclarations.forEach(({ range, associatedComments, name, type, expression }) => {
-      if (declaredFieldTypes[name] != null) {
-        this.errorCollector.reportDuplicateFieldDeclarationError(range, name);
-        return;
+    fieldDeclarations.forEach(
+      ({ range, associatedComments, name, nameRange, type, expression }) => {
+        if (declaredFieldTypes[name] != null) {
+          this.errorCollector.reportDuplicateFieldDeclarationError(range, name);
+          return;
+        }
+        if (expression != null) {
+          const checkedExpression = this.basicTypeCheck(expression);
+          const checkedType = checkedExpression.type;
+          declaredFieldTypes[name] = checkedType;
+          checkedDeclarations.push({
+            range,
+            associatedComments,
+            name,
+            nameRange,
+            type: checkedType,
+            expression: checkedExpression,
+          });
+        } else {
+          const checkedExpression = this.basicTypeCheck(
+            EXPRESSION_VARIABLE({ range, type, associatedComments: [], name })
+          );
+          const checkedType = checkedExpression.type;
+          declaredFieldTypes[name] = checkedType;
+          checkedDeclarations.push({
+            range,
+            associatedComments,
+            name,
+            nameRange,
+            type: checkedType,
+          });
+        }
       }
-      if (expression != null) {
-        const checkedExpression = this.basicTypeCheck(expression);
-        const checkedType = checkedExpression.type;
-        declaredFieldTypes[name] = checkedType;
-        checkedDeclarations.push({
-          range,
-          associatedComments,
-          name,
-          type: checkedType,
-          expression: checkedExpression,
-        });
-      } else {
-        const checkedExpression = this.basicTypeCheck(
-          EXPRESSION_VARIABLE({ range, type, associatedComments: [], name })
-        );
-        const checkedType = checkedExpression.type;
-        declaredFieldTypes[name] = checkedType;
-        checkedDeclarations.push({ range, associatedComments, name, type: checkedType });
-      }
-    });
+    );
     return { declaredFieldTypes, checkedDeclarations };
   }
 

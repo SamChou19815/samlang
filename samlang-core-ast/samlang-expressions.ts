@@ -69,6 +69,7 @@ export interface ObjectConstructorExpressionFieldConstructor extends Node {
   readonly type: Type;
   readonly associatedComments: readonly TypedComment[];
   readonly name: string;
+  readonly nameRange: Range;
   readonly expression?: SamlangExpression;
 }
 
