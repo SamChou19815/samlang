@@ -107,8 +107,21 @@ it('collectModuleReferenceFromExpression works 4/n', () => {
       type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
       associatedComments: [],
       fieldDeclarations: [
-        { range: Range.DUMMY, associatedComments: [], name: 'a', type: intType },
-        { range: Range.DUMMY, associatedComments: [], name: 'b', type: boolType, expression: TRUE },
+        {
+          range: Range.DUMMY,
+          associatedComments: [],
+          name: 'a',
+          nameRange: Range.DUMMY,
+          type: intType,
+        },
+        {
+          range: Range.DUMMY,
+          associatedComments: [],
+          name: 'b',
+          nameRange: Range.DUMMY,
+          type: boolType,
+          expression: TRUE,
+        },
       ],
     }),
     ['']

@@ -165,9 +165,16 @@ it('Lowering to StructConstructor works (2/n).', () => {
           associatedComments: [],
           type: DUMMY_IDENTIFIER_TYPE,
           name: 'foo',
+          nameRange: Range.DUMMY,
           expression: THIS,
         },
-        { range: Range.DUMMY, associatedComments: [], type: DUMMY_IDENTIFIER_TYPE, name: 'bar' },
+        {
+          range: Range.DUMMY,
+          associatedComments: [],
+          type: DUMMY_IDENTIFIER_TYPE,
+          name: 'bar',
+          nameRange: Range.DUMMY,
+        },
       ],
     }),
     `let _t0: int = (_this: _Dummy);
