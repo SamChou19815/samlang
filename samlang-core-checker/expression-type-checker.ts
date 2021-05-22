@@ -7,6 +7,7 @@ import { validateType } from './type-validator';
 import type { AccessibleGlobalTypingContext } from './typing-context';
 
 import {
+  Range,
   Type,
   IdentifierType,
   FunctionType,
@@ -673,19 +674,19 @@ class ExpressionTypeChecker {
         }
         delete unusedMappings[tag];
         let checkedExpression: SamlangExpression;
-        let checkedDatadataVariable: readonly [string, Type] | undefined = undefined;
+        let checkedDatadataVariable: readonly [string, Range, Type] | undefined = undefined;
         if (dataVariable == null) {
           checkedExpression = this.localTypingContext.withNestedScope(() =>
             this.typeCheck(correspondingExpression, expectedType)
           );
         } else {
-          const [dataVariableName] = dataVariable;
+          const [dataVariableName, dataVariableRange] = dataVariable;
           this.localTypingContext.addLocalValueType(dataVariableName, mappingDataType, () =>
             this.errorCollector.reportCollisionError(range, dataVariableName)
           );
           checkedExpression = this.typeCheck(correspondingExpression, expectedType);
           this.localTypingContext.removeLocalValue(dataVariableName);
-          checkedDatadataVariable = [dataVariableName, mappingDataType];
+          checkedDatadataVariable = [dataVariableName, dataVariableRange, mappingDataType];
         }
         const tagOrder = variantNames.findIndex((name) => name === tag);
         assert(tagOrder !== -1, `Bad tag: ${tag}`);
@@ -719,7 +720,7 @@ class ExpressionTypeChecker {
   private typeCheckLambda(expression: LambdaExpression, expectedType: Type): SamlangExpression {
     const [checkedBody, captured] = this.localTypingContext.withNestedScopeReturnCaptured(() => {
       // Validate parameters and add them to local context.
-      expression.parameters.forEach(([parameterName, parameterType]) => {
+      expression.parameters.forEach(([parameterName, , parameterType]) => {
         validateType(
           parameterType,
           this.accessibleGlobalTypingContext,

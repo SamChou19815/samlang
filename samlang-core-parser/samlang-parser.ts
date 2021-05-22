@@ -489,11 +489,12 @@ export default class SamlangModuleParser extends BaseParser {
   private parsePatternToExpression = (): VariantPatternToExpression => {
     const startRange = this.assertAndConsume('|');
     const { variable: tag } = this.assertAndPeekUpperId();
-    let dataVariable: readonly [string, Type] | undefined;
+    let dataVariable: readonly [string, Range, Type] | undefined;
     if (this.peek().content === '_') {
       this.consume();
     } else {
-      dataVariable = [this.assertAndPeekLowerId().variable, UndecidedTypes.next()];
+      const { variable, range } = this.assertAndPeekLowerId();
+      dataVariable = [variable, range, UndecidedTypes.next()];
     }
     this.assertAndConsume('->');
     const expression = this.parseExpression();
@@ -935,14 +936,14 @@ export default class SamlangModuleParser extends BaseParser {
         const next = this.peek();
         if (next.content === ',' || next.content === ':') {
           this.unconsume();
-          const parameters = this.parseCommaSeparatedList((): readonly [string, Type] => {
-            const { variable } = this.assertAndPeekLowerId();
+          const parameters = this.parseCommaSeparatedList((): readonly [string, Range, Type] => {
+            const { variable, range } = this.assertAndPeekLowerId();
             if (this.peek().content === ':') {
               this.consume();
               const type = this.parseType();
-              return [variable, type];
+              return [variable, range, type];
             }
-            return [variable, UndecidedTypes.next()];
+            return [variable, range, UndecidedTypes.next()];
           });
           this.assertAndConsume(')');
           this.assertAndConsume('->');
@@ -950,7 +951,7 @@ export default class SamlangModuleParser extends BaseParser {
           return EXPRESSION_LAMBDA({
             range: peeked.range.union(body.range),
             type: functionType(
-              parameters.map((it) => it[1]),
+              parameters.map((it) => it[2]),
               body.type
             ),
             associatedComments,
@@ -969,7 +970,13 @@ export default class SamlangModuleParser extends BaseParser {
               range: peeked.range.union(body.range),
               type: functionType([parameterType], body.type),
               associatedComments,
-              parameters: [[lowerIdentifierForLambdaPeeked.content.content, parameterType]],
+              parameters: [
+                [
+                  lowerIdentifierForLambdaPeeked.content.content,
+                  lowerIdentifierForLambdaPeeked.range,
+                  parameterType,
+                ],
+              ],
               captured: {},
               body,
             });

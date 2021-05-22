@@ -316,7 +316,7 @@ it('collectModuleReferenceFromExpression works 11/n', () => {
           range: Range.DUMMY,
           type: functionType([intType], boolType),
           associatedComments: [],
-          parameters: [['a', intType]],
+          parameters: [['a', Range.DUMMY, intType]],
           captured: { a: intType },
           body: TRUE,
         }),

@@ -671,9 +671,9 @@ it('IfElse integration test', () => {
               type: functionType([bool, int, int], int),
               associatedComments: [],
               parameters: [
-                ['b', bool],
-                ['t', int],
-                ['f', int],
+                ['b', Range.DUMMY, bool],
+                ['t', Range.DUMMY, int],
+                ['f', Range.DUMMY, int],
               ],
               captured: {},
               body: EXPRESSION_IF_ELSE({
@@ -733,9 +733,9 @@ it('Lambda integration test', () => {
             type: functionType([int, int, int], int),
             associatedComments: [],
             parameters: [
-              ['a', int],
-              ['b', int],
-              ['c', int],
+              ['a', Range.DUMMY, int],
+              ['b', Range.DUMMY, int],
+              ['c', Range.DUMMY, int],
             ],
             captured: {},
             body: EXPRESSION_STATEMENT_BLOCK({
@@ -754,8 +754,8 @@ it('Lambda integration test', () => {
                       type: functionType([int, int], int),
                       associatedComments: [],
                       parameters: [
-                        ['d', int],
-                        ['e', int],
+                        ['d', Range.DUMMY, int],
+                        ['e', Range.DUMMY, int],
                       ],
                       captured: { a: int, b: int, c: int },
                       body: EXPRESSION_BINARY({

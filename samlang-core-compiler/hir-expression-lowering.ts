@@ -901,7 +901,7 @@ class HighIRExpressionLoweringManager {
         return this.varibleContext.withNestedScope(() => {
           if (dataVariable != null) {
             const dataVariableRawTemp = this.allocateTemporaryVariable();
-            const [dataVariableName, dataVariableType] = dataVariable;
+            const [dataVariableName, , dataVariableType] = dataVariable;
             localStatements.push(
               HIR_INDEX_ACCESS({
                 name: dataVariableRawTemp,
@@ -1060,7 +1060,7 @@ class HighIRExpressionLoweringManager {
       name: this.allocateSyntheticFunctionName(),
       parameters: ['_context', ...expression.parameters.map(([name]) => name)],
       type: HIR_FUNCTION_TYPE(
-        [contextType, ...expression.parameters.map(([, type]) => this.lowerType(type))],
+        [contextType, ...expression.parameters.map(([, , type]) => this.lowerType(type))],
         this.lowerType(expression.type.returnType)
       ),
       body: lambdaStatements,
