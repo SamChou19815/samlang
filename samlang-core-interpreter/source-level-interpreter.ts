@@ -409,7 +409,7 @@ class ModuleInterpreter {
         range: member.range,
         type: member.type,
         associatedComments: [],
-        parameters: member.parameters.map(({ name, type }) => [name, type]),
+        parameters: member.parameters.map(({ name, nameRange, type }) => [name, nameRange, type]),
         captured: {},
         body: member.body,
       });

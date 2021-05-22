@@ -263,7 +263,7 @@ const createPrettierDocumentFromSamlangExpression = (
       case 'LambdaExpression':
         return PRETTIER_CONCAT(
           createParenthesisSurroundedDocument(
-            createCommaSeparatedList(expression.parameters, ([name, type]) =>
+            createCommaSeparatedList(expression.parameters, ([name, , type]) =>
               PRETTIER_TEXT(
                 type.type === 'UndecidedType' ? name : `${name}: ${prettyPrintType(type)}`
               )

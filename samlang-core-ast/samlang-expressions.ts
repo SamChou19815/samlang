@@ -142,7 +142,7 @@ export interface VariantPatternToExpression {
   readonly range: Range;
   readonly tag: string;
   readonly tagOrder: number;
-  readonly dataVariable?: readonly [string, Type];
+  readonly dataVariable?: readonly [string, Range, Type];
   readonly expression: SamlangExpression;
 }
 
@@ -155,7 +155,7 @@ export interface MatchExpression extends BaseExpression {
 export interface LambdaExpression extends BaseExpression {
   readonly __type__: 'LambdaExpression';
   readonly type: FunctionType;
-  readonly parameters: readonly (readonly [string, Type])[];
+  readonly parameters: readonly (readonly [string, Range, Type])[];
   readonly captured: Record<string, Type>;
   readonly body: SamlangExpression;
 }
