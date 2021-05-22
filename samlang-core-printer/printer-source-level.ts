@@ -289,7 +289,7 @@ const createPrettierDocumentFromSamlangExpression = (
                 patternDocument = createBracesSurroundedDocument(
                   createCommaSeparatedList(pattern.destructedNames, (it) =>
                     PRETTIER_TEXT(
-                      it.alias == null ? it.fieldName : `${it.fieldName} as ${it.alias}`
+                      it.alias == null ? it.fieldName : `${it.fieldName} as ${it.alias[0]}`
                     )
                   )
                 );

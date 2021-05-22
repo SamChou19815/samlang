@@ -988,13 +988,20 @@ it('StatementBlockExpression lowering works.', () => {
                       range: Range.DUMMY,
                       type: 'ObjectPattern',
                       destructedNames: [
-                        { range: Range.DUMMY, fieldName: 'a', type: intType, fieldOrder: 0 },
+                        {
+                          range: Range.DUMMY,
+                          fieldName: 'a',
+                          fieldNameRange: Range.DUMMY,
+                          type: intType,
+                          fieldOrder: 0,
+                        },
                         {
                           range: Range.DUMMY,
                           fieldName: 'b',
+                          fieldNameRange: Range.DUMMY,
                           type: intType,
                           fieldOrder: 1,
-                          alias: 'c',
+                          alias: ['c', Range.DUMMY],
                         },
                       ],
                     },

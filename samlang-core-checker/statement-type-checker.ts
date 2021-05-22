@@ -170,7 +170,7 @@ export default class StatementTypeChecker {
               assignedExpression: checkedAssignedExpression,
             };
           }
-          const nameToBeUsed = renamedName ?? originalName;
+          const nameToBeUsed = renamedName?.[0] ?? originalName;
           localContext.addLocalValueType(nameToBeUsed, fieldType, () =>
             this.errorCollector.reportCollisionError(fieldRange, nameToBeUsed)
           );

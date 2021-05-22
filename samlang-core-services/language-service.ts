@@ -419,7 +419,7 @@ export class LanguageServices {
           return statement.pattern.destructedNames.some((it) => it.name === variableName);
         case 'ObjectPattern':
           return statement.pattern.destructedNames.some(
-            (it) => it.alias === variableName || it.fieldName === variableName
+            (it) => it.alias?.[0] === variableName || it.fieldName === variableName
           );
         case 'VariablePattern':
           return statement.pattern.name === variableName;
