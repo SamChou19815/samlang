@@ -1117,7 +1117,7 @@ class HighIRExpressionLoweringManager {
               ([{ fieldName, fieldOrder, type, alias }, extractedFieldType]) => {
                 const expectedFieldType = this.lowerType(type);
                 const mangledName = this.getRenamedVariableForNesting(
-                  alias ?? fieldName,
+                  alias?.[0] ?? fieldName,
                   extractedFieldType
                 );
                 loweredStatements.push(

@@ -11,9 +11,10 @@ export interface TuplePattern extends Node {
 
 export interface ObjectPatternDestucturedName {
   readonly fieldName: string;
+  readonly fieldNameRange: Range;
   readonly fieldOrder: number;
   readonly type: Type;
-  readonly alias?: string;
+  readonly alias?: readonly [string, Range];
   readonly range: Range;
 }
 

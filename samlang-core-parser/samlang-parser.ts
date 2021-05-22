@@ -1130,14 +1130,21 @@ export default class SamlangModuleParser extends BaseParser {
       const destructedNames = this.parseCommaSeparatedList(() => {
         const { range: fieldRange, variable: fieldName } = this.assertAndPeekLowerId();
         let range = fieldRange;
-        let alias: string | undefined;
+        let alias: [string, Range] | undefined;
         if (this.peek().content === 'as') {
           this.consume();
           const peekedLower = this.assertAndPeekLowerId();
-          alias = peekedLower.variable;
+          alias = [peekedLower.variable, peekedLower.range];
           range = range.union(peekedLower.range);
         }
-        return { fieldName, fieldOrder: -1, type: UndecidedTypes.next(), alias, range };
+        return {
+          fieldName,
+          fieldNameRange: fieldRange,
+          fieldOrder: -1,
+          type: UndecidedTypes.next(),
+          alias,
+          range,
+        };
       });
       const endRange = this.assertAndConsume('}');
       return {

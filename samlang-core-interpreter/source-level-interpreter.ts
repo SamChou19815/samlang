@@ -329,7 +329,7 @@ export class ExpressionInterpreter {
               const { objectContent } = assignedValue as ObjectValue;
               p.destructedNames.forEach(({ fieldName, alias }) => {
                 const v = objectContent.get(fieldName) ?? this.blameTypeChecker();
-                contextForStatementBlock.localValues[alias ?? fieldName] = v;
+                contextForStatementBlock.localValues[alias?.[0] ?? fieldName] = v;
               });
               break;
             }
