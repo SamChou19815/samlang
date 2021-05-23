@@ -3,7 +3,6 @@ import { VariableDefinitionLookup } from '../variable-definition-service';
 import { ModuleReference, Position, Range } from 'samlang-core-ast/common-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
-import { checkNotNull } from 'samlang-core-utils';
 
 const prepareLookup = (source: string): VariableDefinitionLookup => {
   const moduleReference = ModuleReference.ROOT;
@@ -14,11 +13,13 @@ const prepareLookup = (source: string): VariableDefinitionLookup => {
     errorCollector.getModuleErrorCollector(moduleReference)
   );
   expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
-  return new VariableDefinitionLookup(checkNotNull(parsedModule.classes[0]?.members[0]));
+  return new VariableDefinitionLookup(parsedModule);
 };
 
 const query = (lookup: VariableDefinitionLookup, range: Range) => {
-  const { definitionRange, useRanges } = checkNotNull(lookup.findAllDefinitionAndUses(range));
+  const defAndUse = lookup.findAllDefinitionAndUses(range);
+  if (defAndUse == null) return null;
+  const { definitionRange, useRanges } = defAndUse;
   return { definition: definitionRange.toString(), uses: useRanges.map((it) => it.toString()) };
 };
 
