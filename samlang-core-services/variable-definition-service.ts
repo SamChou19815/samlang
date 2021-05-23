@@ -1,7 +1,7 @@
 import type { ModuleReference, Range, Sources } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { HashMap, LocalStackedContext, checkNotNull, error, hashMapOf } from 'samlang-core-utils';
+import { HashMap, LocalStackedContext, error, hashMapOf } from 'samlang-core-utils';
 
 export type DefinitionAndUses = {
   readonly definitionRange: Range;
@@ -45,10 +45,7 @@ export class ModuleScopedVariableDefinitionLookup {
       case 'ClassMemberExpression':
         return;
       case 'VariableExpression':
-        this.addDefinitionAndUse(
-          checkNotNull(manager.getLocalValueType(expression.name)),
-          expression.range
-        );
+        this.addDefinitionAndUse(manager.getLocalValueType(expression.name), expression.range);
         return;
       case 'TupleConstructorExpression':
         expression.expressions.map((it) =>
@@ -59,7 +56,7 @@ export class ModuleScopedVariableDefinitionLookup {
         expression.fieldDeclarations.forEach((fieldDeclaration) => {
           if (fieldDeclaration.expression == null) {
             this.addDefinitionAndUse(
-              checkNotNull(manager.getLocalValueType(fieldDeclaration.name)),
+              manager.getLocalValueType(fieldDeclaration.name),
               fieldDeclaration.nameRange
             );
           } else {
@@ -156,7 +153,8 @@ export class ModuleScopedVariableDefinitionLookup {
     this.definitionToUsesTable.set(range, []);
   }
 
-  private addDefinitionAndUse(definition: Range, use: Range) {
+  private addDefinitionAndUse(definition: Range | undefined, use: Range) {
+    if (definition == null) return;
     this.definitionToUsesTable.forceGet(definition).push(use);
     this.useToDefinitionTable.set(use, definition);
   }
