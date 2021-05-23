@@ -1,6 +1,6 @@
 import type { Range } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
-import type { ClassMemberDefinition } from 'samlang-core-ast/samlang-toplevel';
+import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { HashMap, LocalStackedContext, checkNotNull, error, hashMapOf } from 'samlang-core-utils';
 
 export type DefinitionAndUses = {
@@ -16,12 +16,16 @@ export class VariableDefinitionLookup {
   /** Mapping from a use to its definition. Here for faster lookup. */
   private readonly useToDefinitionTable: HashMap<Range, Range> = hashMapOf();
 
-  constructor(classMember: ClassMemberDefinition) {
-    const manager = new ScopedDefinitionManager();
-    classMember.parameters.forEach(({ name, nameRange }) => {
-      this.defineVariable(name, nameRange, manager);
+  constructor(samlangModule: SamlangModule) {
+    samlangModule.classes.forEach((samlangClass) => {
+      samlangClass.members.forEach((classMember) => {
+        const manager = new ScopedDefinitionManager();
+        classMember.parameters.forEach(({ name, nameRange }) => {
+          this.defineVariable(name, nameRange, manager);
+        });
+        this.collectDefinitionAndUseWithDefinitionManager(classMember.body, manager);
+      });
     });
-    this.collectDefinitionAndUseWithDefinitionManager(classMember.body, manager);
   }
 
   public findAllDefinitionAndUses(range: Range): DefinitionAndUses | null {
