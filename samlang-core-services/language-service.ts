@@ -3,6 +3,10 @@ import {
   LocationLookup,
   SamlangExpressionLocationLookupBuilder,
 } from './location-service';
+import {
+  ReadonlyVariableDefinitionLookup,
+  VariableDefinitionLookup,
+} from './variable-definition-service';
 
 import {
   IdentifierType,
@@ -59,6 +63,8 @@ export class LanguageServiceState {
 
   private _classMemberLocationLookup: LocationLookup<ClassMemberDefinition> = new LocationLookup();
 
+  private _variableDefinitionLookup: VariableDefinitionLookup = new VariableDefinitionLookup();
+
   constructor(sourceHandles: readonly (readonly [ModuleReference, string])[]) {
     const errorCollector = createGlobalErrorCollector();
     sourceHandles.forEach(([moduleReference, sourceCode]) => {
@@ -96,6 +102,10 @@ export class LanguageServiceState {
 
   get classMemberLocationLookup(): ReadOnlyLocationLookup<ClassMemberDefinition> {
     return this._classMemberLocationLookup;
+  }
+
+  get variableDefinitionLookup(): ReadonlyVariableDefinitionLookup {
+    return this._variableDefinitionLookup;
   }
 
   get allModulesWithError(): readonly ModuleReference[] {
@@ -215,6 +225,7 @@ export class LanguageServiceState {
         });
       });
     });
+    this._variableDefinitionLookup.rebuild(checkedModules);
   }
 }
 
@@ -321,14 +332,12 @@ export class LanguageServices {
           );
           return { moduleReference: moduleReferenceOfClass, range: classDefinition.range };
         }
-        const classMemberDefinition = checkNotNull(
-          this.state.classMemberLocationLookup.get(moduleReference, position)
-        );
-        const range = LanguageServices.findLocalVariableDefinitionDefiningStatementRange(
-          classMemberDefinition.body,
-          expression.name
-        );
-        return range == null ? null : { moduleReference, range };
+        const definitionRange = this.state.variableDefinitionLookup.findAllDefinitionAndUses(
+          moduleReference,
+          expression.range
+        )?.definitionRange;
+        if (definitionRange == null) return null;
+        return { moduleReference, range: definitionRange };
       }
       case 'ClassMemberExpression':
         return this.findClassMemberLocation(
@@ -398,39 +407,6 @@ export class LanguageServices {
         })
         .filter(isNotNull)
         .find(() => true)
-    );
-  }
-
-  private static findLocalVariableDefinitionDefiningStatementRange(
-    expression: SamlangExpression,
-    variableName: string
-  ): Range | null {
-    if (expression.__type__ !== 'StatementBlockExpression') return null;
-    const statements = expression.block.statements;
-    const definingStatement = statements.find((statement) => {
-      switch (statement.pattern.type) {
-        case 'TuplePattern':
-          return statement.pattern.destructedNames.some((it) => it.name === variableName);
-        case 'ObjectPattern':
-          return statement.pattern.destructedNames.some(
-            (it) => it.alias?.[0] === variableName || it.fieldName === variableName
-          );
-        case 'VariablePattern':
-          return statement.pattern.name === variableName;
-        case 'WildCardPattern':
-          return false;
-      }
-    });
-    if (definingStatement != null) return definingStatement.range;
-    return (
-      statements
-        .map((statement) =>
-          LanguageServices.findLocalVariableDefinitionDefiningStatementRange(
-            statement.assignedExpression,
-            variableName
-          )
-        )
-        .filter(isNotNull)[0] ?? null
     );
   }
 

@@ -243,8 +243,6 @@ class Test1(val a: int) {
 
   expect(service.queryDefinitionLocation(moduleReference1, new Position(100, 100))).toBeNull();
   expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 46))).toBeNull();
-  expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 47))).toBeNull();
-  expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 48))).toBeNull();
   expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 59))).toBeNull();
   expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 60))).toBeNull();
 
@@ -260,9 +258,15 @@ class Test1(val a: int) {
     new Range(new Position(4, 2), new Position(4, 59)).toString()
   );
 
-  const actualLocation2 = service.queryDefinitionLocation(moduleReference1, new Position(4, 51));
-  expect(actualLocation2?.moduleReference.toString()).toEqual(moduleReference2.toString());
-  expect(actualLocation2?.range.toString()).toEqual(
+  const actualLocation21 = service.queryDefinitionLocation(moduleReference1, new Position(4, 47));
+  expect(actualLocation21?.moduleReference.toString()).toEqual(moduleReference1.toString());
+  expect(actualLocation21?.range.toString()).toEqual(
+    new Range(new Position(4, 16), new Position(4, 17)).toString()
+  );
+
+  const actualLocation22 = service.queryDefinitionLocation(moduleReference1, new Position(4, 51));
+  expect(actualLocation22?.moduleReference.toString()).toEqual(moduleReference2.toString());
+  expect(actualLocation22?.range.toString()).toEqual(
     new Range(new Position(0, 12), new Position(0, 44)).toString()
   );
 
@@ -287,49 +291,11 @@ class Test1(val a: int) {
   const actualLocation6 = service.queryDefinitionLocation(moduleReference1, new Position(10, 15));
   expect(actualLocation6?.moduleReference.toString()).toEqual(moduleReference1.toString());
   expect(actualLocation6?.range.toString()).toEqual(
-    new Range(new Position(9, 6), new Position(9, 16)).toString()
+    new Range(new Position(9, 10), new Position(9, 11)).toString()
   );
 });
 
 it('LanguageServices.queryDefinitionLocation test 2', () => {
-  const moduleReference1 = new ModuleReference(['Test1']);
-  const state = new LanguageServiceState([
-    [
-      moduleReference1,
-      `class Test1(val a: int) {
-  function test(): int = {
-    val [c, b] = [1, 2];
-    val {a} = {a:1};
-    a + b + c
-  }
-}
-`,
-    ],
-  ]);
-  const service = new LanguageServices(state, () => '');
-
-  expect(state.allErrors.map((it) => it.toString())).toEqual([]);
-
-  const actualLocation0 = service.queryDefinitionLocation(moduleReference1, new Position(4, 4));
-  expect(actualLocation0?.moduleReference.toString()).toEqual(moduleReference1.toString());
-  expect(actualLocation0?.range.toString()).toEqual(
-    new Range(new Position(3, 4), new Position(3, 20)).toString()
-  );
-
-  const actualLocation1 = service.queryDefinitionLocation(moduleReference1, new Position(4, 8));
-  expect(actualLocation1?.moduleReference.toString()).toEqual(moduleReference1.toString());
-  expect(actualLocation1?.range.toString()).toEqual(
-    new Range(new Position(2, 4), new Position(2, 24)).toString()
-  );
-
-  const actualLocation2 = service.queryDefinitionLocation(moduleReference1, new Position(4, 12));
-  expect(actualLocation2?.moduleReference.toString()).toEqual(moduleReference1.toString());
-  expect(actualLocation2?.range.toString()).toEqual(
-    new Range(new Position(2, 4), new Position(2, 24)).toString()
-  );
-});
-
-it('LanguageServices.queryDefinitionLocation test 3', () => {
   const moduleReference1 = new ModuleReference(['Test1']);
   const state = new LanguageServiceState([
     [
@@ -348,7 +314,7 @@ it('LanguageServices.queryDefinitionLocation test 3', () => {
   expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 4))).toBeNull();
 });
 
-it('LanguageServices type query test 4', () => {
+it('LanguageServices type query test 3', () => {
   const testModuleReference = new ModuleReference(['Test']);
   const test2ModuleReference = new ModuleReference(['Test2']);
   const state = new LanguageServiceState([
