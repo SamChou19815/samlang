@@ -1,4 +1,4 @@
-import type { Range } from 'samlang-core-ast/common-nodes';
+import type { ModuleReference, Range, Sources } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { HashMap, LocalStackedContext, checkNotNull, error, hashMapOf } from 'samlang-core-utils';
@@ -10,7 +10,7 @@ export type DefinitionAndUses = {
 
 class ScopedDefinitionManager extends LocalStackedContext<Range> {}
 
-export class VariableDefinitionLookup {
+export class ModuleScopedVariableDefinitionLookup {
   /** Mapping from definition's range to all the uses' range. */
   private readonly definitionToUsesTable: HashMap<Range, Range[]> = hashMapOf();
   /** Mapping from a use to its definition. Here for faster lookup. */
@@ -159,5 +159,34 @@ export class VariableDefinitionLookup {
   private addDefinitionAndUse(definition: Range, use: Range) {
     this.definitionToUsesTable.forceGet(definition).push(use);
     this.useToDefinitionTable.set(use, definition);
+  }
+}
+
+export interface ReadonlyVariableDefinitionLookup {
+  findAllDefinitionAndUses(
+    moduleReference: ModuleReference,
+    range: Range
+  ): DefinitionAndUses | null;
+}
+
+export class VariableDefinitionLookup implements ReadonlyVariableDefinitionLookup {
+  private readonly moduleTable: HashMap<ModuleReference, ModuleScopedVariableDefinitionLookup> =
+    hashMapOf();
+
+  rebuild(sources: Sources<SamlangModule>): void {
+    this.moduleTable.clear();
+    sources.forEach((samlangModule, moduleReference) => {
+      this.moduleTable.set(
+        moduleReference,
+        new ModuleScopedVariableDefinitionLookup(samlangModule)
+      );
+    });
+  }
+
+  findAllDefinitionAndUses(
+    moduleReference: ModuleReference,
+    range: Range
+  ): DefinitionAndUses | null {
+    return this.moduleTable.get(moduleReference)?.findAllDefinitionAndUses(range) ?? null;
   }
 }

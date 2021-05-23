@@ -1,10 +1,14 @@
-import { VariableDefinitionLookup } from '../variable-definition-service';
+import {
+  ModuleScopedVariableDefinitionLookup,
+  VariableDefinitionLookup,
+} from '../variable-definition-service';
 
 import { ModuleReference, Position, Range } from 'samlang-core-ast/common-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
+import { hashMapOf } from 'samlang-core-utils';
 
-const prepareLookup = (source: string): VariableDefinitionLookup => {
+const prepareLookup = (source: string): ModuleScopedVariableDefinitionLookup => {
   const moduleReference = ModuleReference.ROOT;
   const errorCollector = createGlobalErrorCollector();
   const parsedModule = parseSamlangModuleFromText(
@@ -13,17 +17,17 @@ const prepareLookup = (source: string): VariableDefinitionLookup => {
     errorCollector.getModuleErrorCollector(moduleReference)
   );
   expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
-  return new VariableDefinitionLookup(parsedModule);
+  return new ModuleScopedVariableDefinitionLookup(parsedModule);
 };
 
-const query = (lookup: VariableDefinitionLookup, range: Range) => {
+const query = (lookup: ModuleScopedVariableDefinitionLookup, range: Range) => {
   const defAndUse = lookup.findAllDefinitionAndUses(range);
   if (defAndUse == null) return null;
   const { definitionRange, useRanges } = defAndUse;
   return { definition: definitionRange.toString(), uses: useRanges.map((it) => it.toString()) };
 };
 
-it('VariableDefinitionLookup basic test', () => {
+it('ModuleScopedVariableDefinitionLookup basic test', () => {
   const source = `
 class Main {
   function test(a: int, b: bool): unit = { }
@@ -32,7 +36,7 @@ class Main {
   expect(prepareLookup(source).findAllDefinitionAndUses(Range.DUMMY)).toBeNull();
 });
 
-it('VariableDefinitionLookup look up tests', () => {
+it('ModuleScopedVariableDefinitionLookup look up tests', () => {
   const source = `
 class Main {
   function test(a: int, b: bool): unit = {
@@ -80,4 +84,42 @@ class Main {
     definition: '13:14-13:16',
     uses: ['13:20-13:22'],
   });
+});
+
+it('VariableDefinitionLookup integration test', () => {
+  const moduleReference = new ModuleReference(['Test']);
+  const errorCollector = createGlobalErrorCollector();
+  const parsedModule = parseSamlangModuleFromText(
+    `
+class Main {
+  function test(a: int, b: bool): unit = {
+    val c = a;
+    val [e, _] = [b, 2];
+    val g = 3;
+    val {f, g as h} = {f:3, g};
+    val _ = Tagged(h);
+    val _ = f + h;
+    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(f) else println(h);
+    match (lambda1(3, !h)) {
+      | None _ -> 1.d
+      | Some dd -> dd
+    }
+  }
+}
+`,
+    moduleReference,
+    errorCollector.getModuleErrorCollector(moduleReference)
+  );
+  expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
+  const lookup = new VariableDefinitionLookup();
+  lookup.rebuild(hashMapOf([moduleReference, parsedModule]));
+
+  expect(lookup.findAllDefinitionAndUses(new ModuleReference(['Test1']), Range.DUMMY)).toBeNull();
+  expect(lookup.findAllDefinitionAndUses(new ModuleReference(['Test']), Range.DUMMY)).toBeNull();
+  expect(
+    lookup.findAllDefinitionAndUses(
+      new ModuleReference(['Test']),
+      new Range(new Position(3, 12), new Position(3, 13))
+    )
+  ).not.toBeNull();
 });
