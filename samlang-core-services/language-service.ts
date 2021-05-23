@@ -13,6 +13,7 @@ import {
   ModuleReference,
   Location,
   TypedComment,
+  Sources,
 } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type {
@@ -78,21 +79,7 @@ export class LanguageServiceState {
     this._globalTypingContext = globalTypingContext;
     this.updateErrors(errorCollector.getErrors());
 
-    const locationLookupBuilder = new SamlangExpressionLocationLookupBuilder(
-      this._expressionLocationLookup
-    );
-    checkedModules.forEach((checkedModule, moduleReference) => {
-      locationLookupBuilder.rebuild(moduleReference, checkedModule);
-      checkedModule.classes.forEach((classDefinition) => {
-        this._classLocationLookup.set(
-          { moduleReference, range: classDefinition.range },
-          classDefinition.name
-        );
-        classDefinition.members.forEach((member) => {
-          this._classMemberLocationLookup.set({ moduleReference, range: member.range }, member);
-        });
-      });
-    });
+    this.updateLocationLookupsForCheckedModules(checkedModules);
   }
 
   get globalTypingContext(): GlobalTypingContext {
@@ -207,20 +194,27 @@ export class LanguageServiceState {
       this.checkedModules.set(moduleReference, updatedModule);
     });
 
+    this.updateLocationLookupsForCheckedModules(updatedModules);
+    affectedSourceList.forEach((affectedSource) => this.errors.delete(affectedSource));
+    this.updateErrors(errorCollector.getErrors());
+  }
+
+  private updateLocationLookupsForCheckedModules(checkedModules: Sources<SamlangModule>) {
     const locationLookupBuilder = new SamlangExpressionLocationLookupBuilder(
       this._expressionLocationLookup
     );
-    updatedModules.forEach((checkedModule, moduleReference) => {
+    checkedModules.forEach((checkedModule, moduleReference) => {
       locationLookupBuilder.rebuild(moduleReference, checkedModule);
       checkedModule.classes.forEach((classDefinition) => {
         this._classLocationLookup.set(
           { moduleReference, range: classDefinition.range },
           classDefinition.name
         );
+        classDefinition.members.forEach((member) => {
+          this._classMemberLocationLookup.set({ moduleReference, range: member.range }, member);
+        });
       });
     });
-    affectedSourceList.forEach((affectedSource) => this.errors.delete(affectedSource));
-    this.updateErrors(errorCollector.getErrors());
   }
 }
 
