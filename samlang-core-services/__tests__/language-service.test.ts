@@ -566,6 +566,46 @@ it('LanguageServices rename bad identifier tests', () => {
   expect(service.renameVariable(testModuleReference, new Position(2, 45), 'a3')).toBeNull();
 });
 
+it('LanguageServices rename not-found tests', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const state = new LanguageServiceState([
+    [
+      testModuleReference,
+      `/** Test */
+class Test1 {
+  /** test */
+  function test(): int = "haha"
+
+  function test2(): int = Test1.test()
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => '');
+
+  expect(service.renameVariable(testModuleReference, new Position(100, 100), 'a')).toBeNull();
+  expect(service.renameVariable(testModuleReference, new Position(3, 27), 'a')).toBeNull();
+  expect(service.renameVariable(testModuleReference, new Position(1, 9), 'a')).toBeNull();
+});
+
+it('LanguageServices failed to rename due to undefined variable tests', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const state = new LanguageServiceState([
+    [
+      testModuleReference,
+      `/** Test */
+class Test {
+  function main(): unit = { val a = b; }
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => '');
+  expect(service.renameVariable(testModuleReference, new Position(2, 36), 'a')).toBeNull();
+  // TODO: remove this once the implementation is done.
+  expect(service.renameVariable(testModuleReference, new Position(2, 32), 'a')).toBeNull();
+});
+
 it('LanguageServices format test with good programs', () => {
   const testModuleReference = new ModuleReference(['Test']);
   const state = new LanguageServiceState([
