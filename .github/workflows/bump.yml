@@ -1,8 +1,8 @@
 name: Bump
 on:
   schedule:
-    # Run the script at 0AM in UTC on Monday, which is 7PM or 8PM in ET on Sunday.
-    - cron: '0 0 * * 1'
+    # Run the script at 0AM in UTC on Wednesday, which is 7PM or 8PM in ET on Tuesday.
+    - cron: '0 0 * * 3'
   pull_request:
     paths:
       - .github/workflows/bump.yml
@@ -17,4 +17,3 @@ jobs:
       - uses: SamChou19815/auto-bumper@main
         env:
           BOT_TOKEN: '${{ secrets.DEV_SAM_BOT_TOKEN }}'
-[
