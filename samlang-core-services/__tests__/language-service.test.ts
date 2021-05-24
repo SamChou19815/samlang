@@ -211,6 +211,39 @@ class Test2(val a: int) {
   expect(service.queryForHover(test2ModuleReference, new Position(4, 36))?.[0]).toBeUndefined();
 });
 
+it('LanguageServices type query test 3', () => {
+  const testModuleReference = new ModuleReference(['Test']);
+  const test2ModuleReference = new ModuleReference(['Test2']);
+  const state = new LanguageServiceState([
+    [
+      testModuleReference,
+      `/** Test */
+class Test1 {
+  /** test */
+  // function test(): int = -1
+
+  function test2(): int = stringToInt("")
+}
+`,
+    ],
+    [
+      test2ModuleReference,
+      `import {Test1} from Test
+class Test2(val a: int) {
+  method test(): int = -1
+
+  function test2(): int = panic("")
+}
+`,
+    ],
+  ]);
+  const service = new LanguageServices(state, () => '');
+
+  expect(service.queryDefinitionLocation(testModuleReference, new Position(4, 33))).toBeNull();
+  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(2, 23))).toBeNull();
+  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 29))).toBeNull();
+});
+
 it('LanguageServices.queryDefinitionLocation test 1', () => {
   const moduleReference1 = new ModuleReference(['Test1']);
   const moduleReference2 = new ModuleReference(['Test2']);
@@ -312,39 +345,6 @@ it('LanguageServices.queryDefinitionLocation test 2', () => {
   ]);
   const service = new LanguageServices(state, () => '');
   expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 4))).toBeNull();
-});
-
-it('LanguageServices type query test 3', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const test2ModuleReference = new ModuleReference(['Test2']);
-  const state = new LanguageServiceState([
-    [
-      testModuleReference,
-      `/** Test */
-class Test1 {
-  /** test */
-  // function test(): int = -1
-
-  function test2(): int = stringToInt("")
-}
-`,
-    ],
-    [
-      test2ModuleReference,
-      `import {Test1} from Test
-class Test2(val a: int) {
-  method test(): int = -1
-
-  function test2(): int = panic("")
-}
-`,
-    ],
-  ]);
-  const service = new LanguageServices(state, () => '');
-
-  expect(service.queryDefinitionLocation(testModuleReference, new Position(4, 33))).toBeNull();
-  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(2, 23))).toBeNull();
-  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 29))).toBeNull();
 });
 
 it('LanguageServices.queryFoldingRanges test', () => {
