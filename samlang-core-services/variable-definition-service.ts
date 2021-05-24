@@ -104,7 +104,6 @@ export class ModuleScopedVariableDefinitionLookup {
         });
         return;
       case 'LambdaExpression':
-        // TODO: record location for parameters
         manager.withNestedScope(() => {
           expression.parameters.forEach(([name, range]) =>
             this.defineVariable(name, range, manager)

@@ -542,9 +542,7 @@ export class LanguageServices {
     newName: string
   ): 'Invalid' | null {
     const trimmedNewName = newName.trim();
-    if (!/[a-z][A-Za-z0-9]/.test(trimmedNewName)) return 'Invalid';
-    this.state.expressionLocationLookup.get(moduleReference, position);
-    /*
+    if (!/[a-z][A-Za-z0-9]*/.test(trimmedNewName)) return 'Invalid';
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
     if (expression == null || expression.__type__ !== 'VariableExpression') return null;
     if (
@@ -553,7 +551,11 @@ export class LanguageServices {
     ) {
       return null;
     }
-    */
+    const useAndDefinitions = this.state.variableDefinitionLookup.findAllDefinitionAndUses(
+      moduleReference,
+      expression.range
+    );
+    if (useAndDefinitions == null) return null;
     // TODO: concrete implementation. Depending on define service.
     return null;
   }
