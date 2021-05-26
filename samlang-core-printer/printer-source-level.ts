@@ -92,14 +92,14 @@ const createPrettierDocumentFromSamlangExpression = (
   ) => {
     const memberPrecedingCommentsDoc = createPrettierDocumentForAssociatedComments(comments, true);
     const memberPrecedingCommentsDocs =
-      memberPrecedingCommentsDoc != null ? [PRETTIER_LINE, memberPrecedingCommentsDoc] : [];
-    return PRETTIER_GROUP(
-      PRETTIER_CONCAT(
-        base,
-        ...memberPrecedingCommentsDocs,
-        PRETTIER_TEXT('.'),
-        PRETTIER_TEXT(member)
-      )
+      memberPrecedingCommentsDoc != null
+        ? PRETTIER_GROUP(PRETTIER_CONCAT(PRETTIER_LINE, memberPrecedingCommentsDoc))
+        : PRETTIER_NIL;
+    return PRETTIER_CONCAT(
+      base,
+      memberPrecedingCommentsDocs,
+      PRETTIER_TEXT('.'),
+      PRETTIER_TEXT(member)
     );
   };
 
@@ -132,19 +132,17 @@ const createPrettierDocumentFromSamlangExpression = (
       case 'ObjectConstructorExpression':
         return createBracesSurroundedDocument(
           createCommaSeparatedList(expression.fieldDeclarations, (fieldDeclaration) =>
-            PRETTIER_GROUP(
-              PRETTIER_CONCAT(
-                createPrettierDocumentForAssociatedComments(
-                  fieldDeclaration.associatedComments,
-                  true
-                ) ?? PRETTIER_NIL,
-                fieldDeclaration.expression == null
-                  ? PRETTIER_TEXT(fieldDeclaration.name)
-                  : PRETTIER_CONCAT(
-                      PRETTIER_TEXT(`${fieldDeclaration.name}: `),
-                      createPrettierDocumentFromSamlangExpression(fieldDeclaration.expression)
-                    )
-              )
+            PRETTIER_CONCAT(
+              createPrettierDocumentForAssociatedComments(
+                fieldDeclaration.associatedComments,
+                true
+              ) ?? PRETTIER_NIL,
+              fieldDeclaration.expression == null
+                ? PRETTIER_TEXT(fieldDeclaration.name)
+                : PRETTIER_CONCAT(
+                    PRETTIER_TEXT(`${fieldDeclaration.name}: `),
+                    createPrettierDocumentFromSamlangExpression(fieldDeclaration.expression)
+                  )
             )
           )
         );
@@ -188,16 +186,16 @@ const createPrettierDocumentFromSamlangExpression = (
           false
         );
         const operatorPrecedingCommentsDocs =
-          operatorPrecedingCommentsDoc != null ? [PRETTIER_LINE, operatorPrecedingCommentsDoc] : [];
+          operatorPrecedingCommentsDoc != null
+            ? PRETTIER_GROUP(PRETTIER_CONCAT(PRETTIER_LINE, operatorPrecedingCommentsDoc))
+            : PRETTIER_NIL;
         if (expression.e1.precedence === expression.precedence) {
           // Since we are doing left to right evaluation, this is safe.
-          return PRETTIER_GROUP(
-            PRETTIER_CONCAT(
-              createPrettierDocumentFromSamlangExpression(expression.e1),
-              ...operatorPrecedingCommentsDocs,
-              PRETTIER_TEXT(` ${expression.operator.symbol} `),
-              createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
-            )
+          return PRETTIER_CONCAT(
+            createPrettierDocumentFromSamlangExpression(expression.e1),
+            operatorPrecedingCommentsDocs,
+            PRETTIER_TEXT(` ${expression.operator.symbol} `),
+            createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
           );
         }
         if (expression.e2.precedence === expression.precedence) {
@@ -208,23 +206,19 @@ const createPrettierDocumentFromSamlangExpression = (
             case '%':
               break;
             default:
-              return PRETTIER_GROUP(
-                PRETTIER_CONCAT(
-                  createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
-                  ...operatorPrecedingCommentsDocs,
-                  PRETTIER_TEXT(` ${expression.operator.symbol} `),
-                  createPrettierDocumentFromSamlangExpression(expression.e2)
-                )
+              return PRETTIER_CONCAT(
+                createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
+                operatorPrecedingCommentsDocs,
+                PRETTIER_TEXT(` ${expression.operator.symbol} `),
+                createPrettierDocumentFromSamlangExpression(expression.e2)
               );
           }
         }
-        return PRETTIER_GROUP(
-          PRETTIER_CONCAT(
-            createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
-            ...operatorPrecedingCommentsDocs,
-            PRETTIER_TEXT(` ${expression.operator.symbol} `),
-            createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
-          )
+        return PRETTIER_CONCAT(
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
+          operatorPrecedingCommentsDocs,
+          PRETTIER_TEXT(` ${expression.operator.symbol} `),
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
         );
       }
       case 'IfElseExpression':

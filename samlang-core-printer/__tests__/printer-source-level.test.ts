@@ -122,7 +122,8 @@ it('prettyPrintSamlangExpression test', () => {
   );
   expect(reprintExpression('{/*dsf*/foo:bar,baz0,baz1,//dd\nbaz2,baz3,baz4,baz5}')).toBe(
     `{
-  /* dsf */ foo: bar,
+  /* dsf */
+  foo: bar,
   baz0,
   baz1,
   // dd
