@@ -153,7 +153,14 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
     );
     if (result == null) return null;
     if (result === 'Invalid') return new ResponseError(1, 'Invalid identifier.');
-    return null;
+    return {
+      documentChanges: [
+        {
+          textDocument: { uri: renameParameters.textDocument.uri, version: null },
+          edits: [TextEdit.replace(samlangRangeToLspRange(ENTIRE_DOCUMENT_RANGE), result)],
+        },
+      ],
+    };
   });
 
   connection.onDocumentFormatting((formatParameters) => {

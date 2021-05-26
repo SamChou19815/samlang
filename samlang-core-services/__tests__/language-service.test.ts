@@ -1,6 +1,7 @@
 import { LanguageServiceState, LanguageServices, CompletionItemKinds } from '../language-service';
 
 import { Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
+import { prettyPrintSamlangModule } from 'samlang-core-printer';
 
 it('Language server state can update.', () => {
   const state = new LanguageServiceState([]);
@@ -593,17 +594,21 @@ it('LanguageServices failed to rename due to undefined variable tests', () => {
   const state = new LanguageServiceState([
     [
       testModuleReference,
-      `/** Test */
+      `
 class Test {
   function main(): unit = { val a = b; }
 }
 `,
     ],
   ]);
-  const service = new LanguageServices(state, () => '');
+  const service = new LanguageServices(state, (m) => prettyPrintSamlangModule(60, m));
   expect(service.renameVariable(testModuleReference, new Position(2, 36), 'a')).toBeNull();
-  // TODO: remove this once the implementation is done.
-  expect(service.renameVariable(testModuleReference, new Position(2, 32), 'a')).toBeNull();
+  expect(service.renameVariable(testModuleReference, new Position(2, 32), 'a')).toBe(
+    'class Test { function main(): unit = { val a = b; }  }\n'
+  );
+  expect(service.renameVariable(testModuleReference, new Position(2, 32), 'c')).toBe(
+    'class Test { function main(): unit = { val c = b; }  }\n'
+  );
 });
 
 it('LanguageServices format test with good programs', () => {

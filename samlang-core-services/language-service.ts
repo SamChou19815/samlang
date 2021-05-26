@@ -6,6 +6,7 @@ import {
 import {
   ReadonlyVariableDefinitionLookup,
   VariableDefinitionLookup,
+  applyRenamingWithDefinitionAndUse,
 } from './variable-definition-service';
 
 import {
@@ -540,7 +541,7 @@ export class LanguageServices {
     moduleReference: ModuleReference,
     position: Position,
     newName: string
-  ): 'Invalid' | null {
+  ): 'Invalid' | string | null {
     const trimmedNewName = newName.trim();
     if (!/[a-z][A-Za-z0-9]*/.test(trimmedNewName)) return 'Invalid';
     const expression = this.state.expressionLocationLookup.get(moduleReference, position);
@@ -551,13 +552,18 @@ export class LanguageServices {
     ) {
       return null;
     }
-    const useAndDefinitions = this.state.variableDefinitionLookup.findAllDefinitionAndUses(
+    const definitionAndUses = this.state.variableDefinitionLookup.findAllDefinitionAndUses(
       moduleReference,
       expression.range
     );
-    if (useAndDefinitions == null) return null;
-    // TODO: concrete implementation. Depending on define service.
-    return null;
+    if (definitionAndUses == null) return null;
+    return this.formatter(
+      applyRenamingWithDefinitionAndUse(
+        checkNotNull(this.state.getCheckedModule(moduleReference)),
+        definitionAndUses,
+        newName
+      )
+    );
   }
 
   formatEntireDocument(moduleReference: ModuleReference): string | null {
