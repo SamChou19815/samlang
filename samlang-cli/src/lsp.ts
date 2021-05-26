@@ -115,7 +115,7 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
     return location == null
       ? null
       : {
-          uri: location.moduleReference.toFilename(),
+          uri: moduleReferenceToUri(location.moduleReference),
           range: samlangRangeToLspRange(location.range),
         };
   });
