@@ -21,7 +21,7 @@ it('t1=primitive type', () => {
   expect(checkAndInfer(unitType, boolType, resolution).type).toBe('FAILED_MEET');
   expect(checkAndInfer(unitType, intType, resolution).type).toBe('FAILED_MEET');
   expect(checkAndInfer(unitType, stringType, resolution).type).toBe('FAILED_MEET');
-  expect(checkAndInfer(unitType, identifierType(ModuleReference.ROOT, 'A'), resolution).type).toBe(
+  expect(checkAndInfer(unitType, identifierType(ModuleReference.DUMMY, 'A'), resolution).type).toBe(
     'FAILED_MEET'
   );
 
@@ -36,45 +36,49 @@ it('t1=primitive type', () => {
 it('t1=identifier type', () => {
   const resolution = new TypeResolution();
 
-  expect(checkAndInfer(identifierType(ModuleReference.ROOT, 'A'), unitType, resolution).type).toBe(
+  expect(checkAndInfer(identifierType(ModuleReference.DUMMY, 'A'), unitType, resolution).type).toBe(
     'FAILED_MEET'
   );
   expect(
     checkAndInfer(
-      identifierType(ModuleReference.ROOT, 'A'),
-      identifierType(ModuleReference.ROOT, 'B'),
+      identifierType(ModuleReference.DUMMY, 'A'),
+      identifierType(ModuleReference.DUMMY, 'B'),
       resolution
     ).type
   ).toBe('FAILED_MEET');
   expect(
     checkAndInfer(
-      identifierType(ModuleReference.ROOT, 'A'),
-      identifierType(ModuleReference.ROOT, 'A', [intType]),
+      identifierType(ModuleReference.DUMMY, 'A'),
+      identifierType(ModuleReference.DUMMY, 'A', [intType]),
       resolution
     ).type
   ).toBe('FAILED_MEET');
   expect(
     checkAndInfer(
-      identifierType(ModuleReference.ROOT, 'A', [identifierType(ModuleReference.ROOT, 'B')]),
-      identifierType(ModuleReference.ROOT, 'A', [identifierType(ModuleReference.ROOT, 'B')]),
+      identifierType(ModuleReference.DUMMY, 'A', [identifierType(ModuleReference.DUMMY, 'B')]),
+      identifierType(ModuleReference.DUMMY, 'A', [identifierType(ModuleReference.DUMMY, 'B')]),
       resolution
     )
-  ).toEqual(identifierType(ModuleReference.ROOT, 'A', [identifierType(ModuleReference.ROOT, 'B')]));
+  ).toEqual(
+    identifierType(ModuleReference.DUMMY, 'A', [identifierType(ModuleReference.DUMMY, 'B')])
+  );
 
   expect(
     checkAndInfer(
-      identifierType(ModuleReference.ROOT, 'A', [identifierType(ModuleReference.ROOT, 'B')]),
-      identifierType(ModuleReference.ROOT, 'A', [{ type: 'UndecidedType', index: 0 }]),
+      identifierType(ModuleReference.DUMMY, 'A', [identifierType(ModuleReference.DUMMY, 'B')]),
+      identifierType(ModuleReference.DUMMY, 'A', [{ type: 'UndecidedType', index: 0 }]),
       resolution
     )
-  ).toEqual(identifierType(ModuleReference.ROOT, 'A', [identifierType(ModuleReference.ROOT, 'B')]));
+  ).toEqual(
+    identifierType(ModuleReference.DUMMY, 'A', [identifierType(ModuleReference.DUMMY, 'B')])
+  );
   expect(
     checkAndInfer(
-      identifierType(ModuleReference.ROOT, 'B'),
+      identifierType(ModuleReference.DUMMY, 'B'),
       { type: 'UndecidedType', index: 0 },
       resolution
     )
-  ).toEqual(identifierType(ModuleReference.ROOT, 'B'));
+  ).toEqual(identifierType(ModuleReference.DUMMY, 'B'));
 });
 
 it('t1=tuple type', () => {
@@ -82,7 +86,7 @@ it('t1=tuple type', () => {
 
   expect(checkAndInfer(tupleType([]), unitType, resolution).type).toBe('FAILED_MEET');
   expect(
-    checkAndInfer(tupleType([]), identifierType(ModuleReference.ROOT, 'B'), resolution).type
+    checkAndInfer(tupleType([]), identifierType(ModuleReference.DUMMY, 'B'), resolution).type
   ).toBe('FAILED_MEET');
   expect(checkAndInfer(tupleType([]), tupleType([intType]), resolution).type).toBe('FAILED_MEET');
   expect(checkAndInfer(tupleType([intType]), tupleType([intType]), resolution)).toEqual(
@@ -109,7 +113,7 @@ it('t1=function type', () => {
 
   expect(checkAndInfer(functionType([], intType), unitType, resolution).type).toBe('FAILED_MEET');
   expect(
-    checkAndInfer(functionType([], intType), identifierType(ModuleReference.ROOT, 'B'), resolution)
+    checkAndInfer(functionType([], intType), identifierType(ModuleReference.DUMMY, 'B'), resolution)
       .type
   ).toBe('FAILED_MEET');
   expect(
@@ -214,7 +218,7 @@ it('t1=undecided type', () => {
 it('checkAndInferWithErrorRecording type', () => {
   const resolution = new TypeResolution();
   const globalCollector = createGlobalErrorCollector();
-  const moduleCollector = globalCollector.getModuleErrorCollector(ModuleReference.ROOT);
+  const moduleCollector = globalCollector.getModuleErrorCollector(ModuleReference.DUMMY);
 
   expect(
     new ConstraintAwareChecker(resolution, moduleCollector).checkAndInfer(

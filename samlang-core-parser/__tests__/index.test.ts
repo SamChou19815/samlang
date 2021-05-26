@@ -6,14 +6,14 @@ import { createGlobalErrorCollector } from 'samlang-core-errors';
 
 it('Can parse good expressions.', () => {
   const globalErrorCollector = createGlobalErrorCollector();
-  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.ROOT);
+  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.DUMMY);
 
   const expectASTWithTheSameKind = (
     text: string,
     expected: SamlangExpression['__type__']
   ): void => {
     expect(
-      parseSamlangExpressionFromText(text, ModuleReference.ROOT, moduleErrorCollector)?.__type__
+      parseSamlangExpressionFromText(text, ModuleReference.DUMMY, moduleErrorCollector)?.__type__
     ).toBe(expected);
   };
 
@@ -84,8 +84,10 @@ it('Can parse good expressions.', () => {
 it('Can report bad expressions.', () => {
   const expectBadAST = (text: string): void => {
     const globalErrorCollector = createGlobalErrorCollector();
-    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.ROOT);
-    parseSamlangExpressionFromText(text, ModuleReference.ROOT, moduleErrorCollector);
+    const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(
+      ModuleReference.DUMMY
+    );
+    parseSamlangExpressionFromText(text, ModuleReference.DUMMY, moduleErrorCollector);
     expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
   };
 
@@ -132,7 +134,7 @@ it('Can report bad expressions.', () => {
 
 it('Can parse good programs.', () => {
   const globalErrorCollector = createGlobalErrorCollector();
-  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.ROOT);
+  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.DUMMY);
 
   const parsed = parseSamlangModuleFromText(
     `
@@ -181,7 +183,7 @@ it('Can parse good programs.', () => {
       }
     }
     `,
-    ModuleReference.ROOT,
+    ModuleReference.DUMMY,
     moduleErrorCollector
   );
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
@@ -202,7 +204,7 @@ it('Can parse good programs.', () => {
 
 it('Can handle bad programs.', () => {
   const globalErrorCollector = createGlobalErrorCollector();
-  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.ROOT);
+  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.DUMMY);
 
   const parsed = parseSamlangModuleFromText(
     `
@@ -223,7 +225,7 @@ it('Can handle bad programs.', () => {
       }
     }
     `,
-    ModuleReference.ROOT,
+    ModuleReference.DUMMY,
     moduleErrorCollector
   );
   if (parsed == null) fail();
@@ -233,7 +235,7 @@ it('Can handle bad programs.', () => {
 
 it('Can handle really bad programs.', () => {
   const globalErrorCollector = createGlobalErrorCollector();
-  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.ROOT);
+  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.DUMMY);
 
   const parsed = parseSamlangModuleFromText(
     `
@@ -253,7 +255,7 @@ it('Can handle really bad programs.', () => {
       }
     }
     `,
-    ModuleReference.ROOT,
+    ModuleReference.DUMMY,
     moduleErrorCollector
   );
   expect(parsed.imports).toEqual([]);
@@ -262,15 +264,15 @@ it('Can handle really bad programs.', () => {
 
 it('Can handle complete trash', () => {
   const globalErrorCollector = createGlobalErrorCollector();
-  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.ROOT);
+  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.DUMMY);
 
-  parseSamlangModuleFromText('This is not a program.', ModuleReference.ROOT, moduleErrorCollector);
+  parseSamlangModuleFromText('This is not a program.', ModuleReference.DUMMY, moduleErrorCollector);
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([
-    '.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes.',
-    '.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes.',
-    '.sam:1:9-1:12: [SyntaxError]: Unexpected token among the classes.',
-    '.sam:1:13-1:14: [SyntaxError]: Unexpected token among the classes.',
-    '.sam:1:15-1:22: [SyntaxError]: Unexpected token among the classes.',
-    '.sam:1:22-1:23: [SyntaxError]: Unexpected token among the classes.',
+    '__DUMMY__.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes.',
+    '__DUMMY__.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes.',
+    '__DUMMY__.sam:1:9-1:12: [SyntaxError]: Unexpected token among the classes.',
+    '__DUMMY__.sam:1:13-1:14: [SyntaxError]: Unexpected token among the classes.',
+    '__DUMMY__.sam:1:15-1:22: [SyntaxError]: Unexpected token among the classes.',
+    '__DUMMY__.sam:1:22-1:23: [SyntaxError]: Unexpected token among the classes.',
   ]);
 });

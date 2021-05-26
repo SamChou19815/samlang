@@ -15,7 +15,7 @@ it('can collect all undecided types', () => {
       collectUndecidedTypeIndices(
         functionType(
           [
-            identifierType(ModuleReference.ROOT, 'A', [
+            identifierType(ModuleReference.DUMMY, 'A', [
               boolType,
               { type: 'UndecidedType', index: 0 },
             ]),

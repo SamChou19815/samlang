@@ -47,7 +47,7 @@ const typeCheckInSandbox = (
   expectedType: Type
 ): readonly [StatementBlock, readonly string[]] => {
   const globalErrorCollector = createGlobalErrorCollector();
-  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.ROOT);
+  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.DUMMY);
 
   const dummyExpressionTypeChecker = (
     expression: SamlangExpression,
@@ -61,9 +61,9 @@ const typeCheckInSandbox = (
 
   const checker = new StatementTypeChecker(
     new AccessibleGlobalTypingContext(
-      ModuleReference.ROOT,
+      ModuleReference.DUMMY,
       hashMapOf([
-        ModuleReference.ROOT,
+        ModuleReference.DUMMY,
         {
           A: {
             typeParameters: [],
@@ -198,7 +198,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
         { type: 'UndecidedType', index: 0 },
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
-          type: identifierType(ModuleReference.ROOT, 'A'),
+          type: identifierType(ModuleReference.DUMMY, 'A'),
           associatedComments: [],
           name: 'foo',
         })
@@ -228,10 +228,10 @@ const passingTypeCheckerTestCases: readonly (readonly [
             },
           ],
         },
-        identifierType(ModuleReference.ROOT, 'A'),
+        identifierType(ModuleReference.DUMMY, 'A'),
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
-          type: identifierType(ModuleReference.ROOT, 'A'),
+          type: identifierType(ModuleReference.DUMMY, 'A'),
           associatedComments: [],
           name: 'foo',
         })
@@ -381,7 +381,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
       ),
     ]),
     unitType,
-    ['.sam:0:0-0:0: [TupleSizeMismatch]: Incorrect tuple size. Expected: 2, actual: 1.'],
+    ['__DUMMY__.sam:0:0-0:0: [TupleSizeMismatch]: Incorrect tuple size. Expected: 2, actual: 1.'],
   ],
   [
     'tuple destructuring 3',
@@ -404,7 +404,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
       ),
     ]),
     unitType,
-    ['.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `tuple`, actual: `int`.'],
+    ['__DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `tuple`, actual: `int`.'],
   ],
   [
     'tuple destructuring 4',
@@ -428,7 +428,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
       ),
     ]),
     unitType,
-    ['.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
+    ['__DUMMY__.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
   ],
 
   [
@@ -459,14 +459,14 @@ const failingTypeCheckerTestCases: readonly (readonly [
         { type: 'UndecidedType', index: 0 },
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
-          type: identifierType(ModuleReference.ROOT, 'B'),
+          type: identifierType(ModuleReference.DUMMY, 'B'),
           associatedComments: [],
           name: 'foo',
         })
       ),
     ]),
     unitType,
-    ['.sam:0:0-0:0: [UnresolvedName]: Name `b` is not resolved.'],
+    ['__DUMMY__.sam:0:0-0:0: [UnresolvedName]: Name `b` is not resolved.'],
   ],
   [
     'object destructuring 3',
@@ -496,7 +496,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
         { type: 'UndecidedType', index: 0 },
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
-          type: identifierType(ModuleReference.ROOT, 'C'),
+          type: identifierType(ModuleReference.DUMMY, 'C'),
           associatedComments: [],
           name: 'foo',
         })
@@ -504,7 +504,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
     ]),
     unitType,
     [
-      ".sam:0:0-0:0: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
+      "__DUMMY__.sam:0:0-0:0: [UnsupportedClassTypeDefinition]: Expect the current class to have `object` type definition, but it doesn't.",
     ],
   ],
   [
@@ -542,7 +542,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
       ),
     ]),
     unitType,
-    ['.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `[]`.'],
+    ['__DUMMY__.sam:0:0-0:0: [UnexpectedTypeKind]: Expected kind: `identifier`, actual: `[]`.'],
   ],
   [
     'object destructuring 5',
@@ -572,14 +572,14 @@ const failingTypeCheckerTestCases: readonly (readonly [
         { type: 'UndecidedType', index: 0 },
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
-          type: identifierType(ModuleReference.ROOT, 'A'),
+          type: identifierType(ModuleReference.DUMMY, 'A'),
           associatedComments: [],
           name: 'foo',
         })
       ),
     ]),
     unitType,
-    ['.sam:0:0-0:0: [UnresolvedName]: Name `d` is not resolved.'],
+    ['__DUMMY__.sam:0:0-0:0: [UnresolvedName]: Name `d` is not resolved.'],
   ],
   [
     'object destructuring 6',
@@ -609,14 +609,14 @@ const failingTypeCheckerTestCases: readonly (readonly [
         { type: 'UndecidedType', index: 0 },
         EXPRESSION_VARIABLE({
           range: Range.DUMMY,
-          type: identifierType(ModuleReference.ROOT, 'A'),
+          type: identifierType(ModuleReference.DUMMY, 'A'),
           associatedComments: [],
           name: 'foo',
         })
       ),
     ]),
     unitType,
-    ['.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
+    ['__DUMMY__.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
   ],
 
   [
@@ -634,7 +634,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
       ),
     ]),
     unitType,
-    ['.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
+    ['__DUMMY__.sam:0:0-0:0: [Collision]: Name `a` collides with a previously defined name.'],
   ],
   [
     'variable pattern 5',
@@ -654,7 +654,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
       })
     ),
     intType,
-    ['.sam:0:0-0:0: [UnexpectedType]: Expected: `int`, actual: `bool`.'],
+    ['__DUMMY__.sam:0:0-0:0: [UnexpectedType]: Expected: `int`, actual: `bool`.'],
   ],
 ];
 

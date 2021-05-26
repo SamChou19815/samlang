@@ -42,93 +42,93 @@ const expectToHaveBadIdentifier = (embeddedType: IdentifierType, badIdentifier: 
   expect(withEmbeddedType(embeddedType)).toBe(badIdentifier);
 
 it('good types are told to be good', () => {
-  expectToBeGood(identifierType(ModuleReference.ROOT, 'Good', [unitType]));
-  expectToBeGood(identifierType(ModuleReference.ROOT, 'Good', [boolType]));
-  expectToBeGood(identifierType(ModuleReference.ROOT, 'Good', [intType]));
-  expectToBeGood(identifierType(ModuleReference.ROOT, 'Good', [stringType]));
+  expectToBeGood(identifierType(ModuleReference.DUMMY, 'Good', [unitType]));
+  expectToBeGood(identifierType(ModuleReference.DUMMY, 'Good', [boolType]));
+  expectToBeGood(identifierType(ModuleReference.DUMMY, 'Good', [intType]));
+  expectToBeGood(identifierType(ModuleReference.DUMMY, 'Good', [stringType]));
 });
 
 it('bad types are told to be bad', () => {
   expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Good', [unitType, unitType]),
+    identifierType(ModuleReference.DUMMY, 'Good', [unitType, unitType]),
     'Good'
   );
   expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Good', [boolType, unitType]),
+    identifierType(ModuleReference.DUMMY, 'Good', [boolType, unitType]),
     'Good'
   );
   expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Good', [intType, unitType]),
+    identifierType(ModuleReference.DUMMY, 'Good', [intType, unitType]),
     'Good'
   );
   expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Good', [stringType, unitType]),
-    'Good'
-  );
-
-  expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Bad', [unitType, unitType]),
-    'Bad'
-  );
-  expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Bad', [boolType, unitType]),
-    'Bad'
-  );
-  expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Bad', [intType, unitType]),
-    'Bad'
-  );
-  expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Bad', [stringType, unitType]),
-    'Bad'
-  );
-
-  expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Good', [
-      identifierType(ModuleReference.ROOT, 'Good', [unitType, unitType]),
-    ]),
-    'Good'
-  );
-  expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Good', [
-      identifierType(ModuleReference.ROOT, 'Good', [boolType, unitType]),
-    ]),
-    'Good'
-  );
-  expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Good', [
-      identifierType(ModuleReference.ROOT, 'Good', [intType, unitType]),
-    ]),
-    'Good'
-  );
-  expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Good', [
-      identifierType(ModuleReference.ROOT, 'Good', [stringType, unitType]),
-    ]),
+    identifierType(ModuleReference.DUMMY, 'Good', [stringType, unitType]),
     'Good'
   );
 
   expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Good', [
-      identifierType(ModuleReference.ROOT, 'Bad', [unitType, unitType]),
+    identifierType(ModuleReference.DUMMY, 'Bad', [unitType, unitType]),
+    'Bad'
+  );
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.DUMMY, 'Bad', [boolType, unitType]),
+    'Bad'
+  );
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.DUMMY, 'Bad', [intType, unitType]),
+    'Bad'
+  );
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.DUMMY, 'Bad', [stringType, unitType]),
+    'Bad'
+  );
+
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.DUMMY, 'Good', [
+      identifierType(ModuleReference.DUMMY, 'Good', [unitType, unitType]),
+    ]),
+    'Good'
+  );
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.DUMMY, 'Good', [
+      identifierType(ModuleReference.DUMMY, 'Good', [boolType, unitType]),
+    ]),
+    'Good'
+  );
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.DUMMY, 'Good', [
+      identifierType(ModuleReference.DUMMY, 'Good', [intType, unitType]),
+    ]),
+    'Good'
+  );
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.DUMMY, 'Good', [
+      identifierType(ModuleReference.DUMMY, 'Good', [stringType, unitType]),
+    ]),
+    'Good'
+  );
+
+  expectToHaveBadIdentifier(
+    identifierType(ModuleReference.DUMMY, 'Good', [
+      identifierType(ModuleReference.DUMMY, 'Bad', [unitType, unitType]),
     ]),
     'Bad'
   );
   expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Good', [
-      identifierType(ModuleReference.ROOT, 'Bad', [boolType, unitType]),
+    identifierType(ModuleReference.DUMMY, 'Good', [
+      identifierType(ModuleReference.DUMMY, 'Bad', [boolType, unitType]),
     ]),
     'Bad'
   );
   expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Good', [
-      identifierType(ModuleReference.ROOT, 'Bad', [intType, unitType]),
+    identifierType(ModuleReference.DUMMY, 'Good', [
+      identifierType(ModuleReference.DUMMY, 'Bad', [intType, unitType]),
     ]),
     'Bad'
   );
   expectToHaveBadIdentifier(
-    identifierType(ModuleReference.ROOT, 'Good', [
-      identifierType(ModuleReference.ROOT, 'Bad', [stringType, unitType]),
+    identifierType(ModuleReference.DUMMY, 'Good', [
+      identifierType(ModuleReference.DUMMY, 'Bad', [stringType, unitType]),
     ]),
     'Bad'
   );
@@ -136,7 +136,7 @@ it('bad types are told to be bad', () => {
 
 it('validateType integration test', () => {
   const globalErrorCollector = createGlobalErrorCollector();
-  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.ROOT);
+  const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.DUMMY);
 
   expect(
     validateType(intType, identifierTypeValidatorForTesting, moduleErrorCollector, Range.DUMMY)
@@ -145,8 +145,8 @@ it('validateType integration test', () => {
 
   expect(
     validateType(
-      identifierType(ModuleReference.ROOT, 'Good', [
-        identifierType(ModuleReference.ROOT, 'Bad', [boolType, unitType]),
+      identifierType(ModuleReference.DUMMY, 'Good', [
+        identifierType(ModuleReference.DUMMY, 'Bad', [boolType, unitType]),
       ]),
       identifierTypeValidatorForTesting,
       moduleErrorCollector,

@@ -11,9 +11,9 @@ import { hashMapOf } from 'samlang-core-utils';
 
 it('AccessibleGlobalTypingContext tests', () => {
   const context = new AccessibleGlobalTypingContext(
-    ModuleReference.ROOT,
+    ModuleReference.DUMMY,
     hashMapOf([
-      ModuleReference.ROOT,
+      ModuleReference.DUMMY,
       {
         A: {
           typeParameters: ['A', 'B'],
@@ -22,8 +22,8 @@ it('AccessibleGlobalTypingContext tests', () => {
             type: 'variant',
             names: ['a', 'b'],
             mappings: {
-              a: { isPublic: true, type: identifierType(ModuleReference.ROOT, 'A') },
-              b: { isPublic: false, type: identifierType(ModuleReference.ROOT, 'B') },
+              a: { isPublic: true, type: identifierType(ModuleReference.DUMMY, 'A') },
+              b: { isPublic: false, type: identifierType(ModuleReference.DUMMY, 'B') },
             },
           },
           functions: {
@@ -44,8 +44,8 @@ it('AccessibleGlobalTypingContext tests', () => {
               typeParameters: ['C'],
               type: functionType(
                 [
-                  identifierType(ModuleReference.ROOT, 'A'),
-                  identifierType(ModuleReference.ROOT, 'B'),
+                  identifierType(ModuleReference.DUMMY, 'A'),
+                  identifierType(ModuleReference.DUMMY, 'B'),
                 ],
                 intType
               ),
@@ -97,62 +97,62 @@ it('AccessibleGlobalTypingContext tests', () => {
   );
 
   expect(context.getClassFunctionType(new ModuleReference(['A']), 'A', 'f1')).toBeFalsy();
-  expect(context.getClassFunctionType(ModuleReference.ROOT, 'A', 'f1')).toBeTruthy();
-  expect(context.getClassFunctionType(ModuleReference.ROOT, 'A', 'f2')).toBeTruthy();
-  expect(context.getClassFunctionType(ModuleReference.ROOT, 'A', 'f3')).toBeNull();
-  expect(context.getClassFunctionType(ModuleReference.ROOT, 'A', 'm1')).toBeNull();
-  expect(context.getClassFunctionType(ModuleReference.ROOT, 'A', 'm2')).toBeNull();
-  expect(context.getClassFunctionType(ModuleReference.ROOT, 'A', 'm3')).toBeNull();
-  expect(context.getClassFunctionType(ModuleReference.ROOT, 'B', 'f1')).toBeTruthy();
-  expect(context.getClassFunctionType(ModuleReference.ROOT, 'B', 'f2')).toBeNull();
-  expect(context.getClassFunctionType(ModuleReference.ROOT, 'B', 'f3')).toBeNull();
-  expect(context.getClassFunctionType(ModuleReference.ROOT, 'B', 'm1')).toBeNull();
-  expect(context.getClassFunctionType(ModuleReference.ROOT, 'B', 'm2')).toBeNull();
-  expect(context.getClassFunctionType(ModuleReference.ROOT, 'B', 'm3')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f1')).toBeTruthy();
+  expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f2')).toBeTruthy();
+  expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'f3')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm1')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm2')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.DUMMY, 'A', 'm3')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f1')).toBeTruthy();
+  expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f2')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'f3')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm1')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm2')).toBeNull();
+  expect(context.getClassFunctionType(ModuleReference.DUMMY, 'B', 'm3')).toBeNull();
 
   expect(context.getClassMethodType(new ModuleReference(['A']), 'A', 'f1', []).type).toBe(
     'UnresolvedName'
   );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'f1', []).type).toBe(
+  expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'f1', []).type).toBe(
     'UnresolvedName'
   );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'f2', []).type).toBe(
+  expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'f2', []).type).toBe(
     'UnresolvedName'
   );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'f3', []).type).toBe(
+  expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'f3', []).type).toBe(
     'UnresolvedName'
   );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'm1', [intType]).type).toBe(
+  expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm1', [intType]).type).toBe(
     'TypeParameterSizeMismatch'
   );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'm1', [intType, intType])).toEqual(
+  expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm1', [intType, intType])).toEqual(
     functionType([intType, intType], intType)
   );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'm2', [intType, intType]).type).toBe(
-    'FunctionType'
-  );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'A', 'm3', []).type).toBe(
+  expect(
+    context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm2', [intType, intType]).type
+  ).toBe('FunctionType');
+  expect(context.getClassMethodType(ModuleReference.DUMMY, 'A', 'm3', []).type).toBe(
     'UnresolvedName'
   );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'B', 'f1', []).type).toBe(
+  expect(context.getClassMethodType(ModuleReference.DUMMY, 'B', 'f1', []).type).toBe(
     'UnresolvedName'
   );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'B', 'f2', []).type).toBe(
+  expect(context.getClassMethodType(ModuleReference.DUMMY, 'B', 'f2', []).type).toBe(
     'UnresolvedName'
   );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'B', 'f3', []).type).toBe(
+  expect(context.getClassMethodType(ModuleReference.DUMMY, 'B', 'f3', []).type).toBe(
     'UnresolvedName'
   );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'B', 'm1', [intType, intType]).type).toBe(
-    'FunctionType'
-  );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'B', 'm2', []).type).toBe(
+  expect(
+    context.getClassMethodType(ModuleReference.DUMMY, 'B', 'm1', [intType, intType]).type
+  ).toBe('FunctionType');
+  expect(context.getClassMethodType(ModuleReference.DUMMY, 'B', 'm2', []).type).toBe(
     'UnresolvedName'
   );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'B', 'm3', []).type).toBe(
+  expect(context.getClassMethodType(ModuleReference.DUMMY, 'B', 'm3', []).type).toBe(
     'UnresolvedName'
   );
-  expect(context.getClassMethodType(ModuleReference.ROOT, 'C', 'm3', []).type).toBe(
+  expect(context.getClassMethodType(ModuleReference.DUMMY, 'C', 'm3', []).type).toBe(
     'UnresolvedName'
   );
 
@@ -160,13 +160,13 @@ it('AccessibleGlobalTypingContext tests', () => {
 
   expect(
     context.resolveTypeDefinition(
-      identifierType(ModuleReference.ROOT, 'A', [intType, intType]),
+      identifierType(ModuleReference.DUMMY, 'A', [intType, intType]),
       'object'
     ).type
   ).toBe('UnsupportedClassTypeDefinition');
   expect(
     context.resolveTypeDefinition(
-      identifierType(ModuleReference.ROOT, 'B', [intType, intType]),
+      identifierType(ModuleReference.DUMMY, 'B', [intType, intType]),
       'object'
     )
   ).toEqual({
@@ -176,13 +176,13 @@ it('AccessibleGlobalTypingContext tests', () => {
   });
   expect(
     context.resolveTypeDefinition(
-      identifierType(ModuleReference.ROOT, 'B', [intType, intType]),
+      identifierType(ModuleReference.DUMMY, 'B', [intType, intType]),
       'variant'
     ).type
   ).toBe('IllegalOtherClassMatch');
   expect(
     context.resolveTypeDefinition(
-      identifierType(ModuleReference.ROOT, 'A', [intType, intType]),
+      identifierType(ModuleReference.DUMMY, 'A', [intType, intType]),
       'variant'
     )
   ).toEqual({
@@ -192,25 +192,25 @@ it('AccessibleGlobalTypingContext tests', () => {
   });
 
   expect(context.thisType).toEqual(
-    identifierType(ModuleReference.ROOT, 'A', [
-      identifierType(ModuleReference.ROOT, 'A'),
-      identifierType(ModuleReference.ROOT, 'B'),
+    identifierType(ModuleReference.DUMMY, 'A', [
+      identifierType(ModuleReference.DUMMY, 'A'),
+      identifierType(ModuleReference.DUMMY, 'B'),
     ])
   );
 
   expect(context.identifierTypeIsWellDefined(new ModuleReference(['A']), 'A', 2)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'A', 2)).toBeTruthy();
-  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'B', 2)).toBeTruthy();
-  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'A', 1)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'B', 1)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'A', 0)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'B', 0)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'C', 0)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'D', 0)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'E', 0)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'F', 0)).toBeFalsy();
-  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'T', 0)).toBeTruthy();
-  expect(context.identifierTypeIsWellDefined(ModuleReference.ROOT, 'T', 1)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.DUMMY, 'A', 2)).toBeTruthy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.DUMMY, 'B', 2)).toBeTruthy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.DUMMY, 'A', 1)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.DUMMY, 'B', 1)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.DUMMY, 'A', 0)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.DUMMY, 'B', 0)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.DUMMY, 'C', 0)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.DUMMY, 'D', 0)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.DUMMY, 'E', 0)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.DUMMY, 'F', 0)).toBeFalsy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.DUMMY, 'T', 0)).toBeTruthy();
+  expect(context.identifierTypeIsWellDefined(ModuleReference.DUMMY, 'T', 1)).toBeFalsy();
 
   context.withAdditionalTypeParameters(['A', 'B']);
   context.withAdditionalTypeParameters(new Set(['C', 'D']));

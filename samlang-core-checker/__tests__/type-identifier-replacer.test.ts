@@ -13,13 +13,15 @@ it('can replace deeply nested identifiers', () => {
     replaceTypeIdentifier(
       functionType(
         [
-          identifierType(ModuleReference.ROOT, 'A', [
-            identifierType(ModuleReference.ROOT, 'B'),
-            identifierType(ModuleReference.ROOT, 'C', [intType]),
+          identifierType(ModuleReference.DUMMY, 'A', [
+            identifierType(ModuleReference.DUMMY, 'B'),
+            identifierType(ModuleReference.DUMMY, 'C', [intType]),
           ]),
           tupleType([
-            identifierType(ModuleReference.ROOT, 'D'),
-            identifierType(ModuleReference.ROOT, 'E', [identifierType(ModuleReference.ROOT, 'F')]),
+            identifierType(ModuleReference.DUMMY, 'D'),
+            identifierType(ModuleReference.DUMMY, 'E', [
+              identifierType(ModuleReference.DUMMY, 'F'),
+            ]),
           ]),
           { type: 'UndecidedType', index: 0 },
         ],
@@ -30,13 +32,13 @@ it('can replace deeply nested identifiers', () => {
   ).toEqual(
     functionType(
       [
-        identifierType(ModuleReference.ROOT, 'A', [
+        identifierType(ModuleReference.DUMMY, 'A', [
           intType,
-          identifierType(ModuleReference.ROOT, 'C', [intType]),
+          identifierType(ModuleReference.DUMMY, 'C', [intType]),
         ]),
         tupleType([
           intType,
-          identifierType(ModuleReference.ROOT, 'E', [identifierType(ModuleReference.ROOT, 'F')]),
+          identifierType(ModuleReference.DUMMY, 'E', [identifierType(ModuleReference.DUMMY, 'F')]),
         ]),
         { type: 'UndecidedType', index: 0 },
       ],

@@ -214,6 +214,8 @@ export class ModuleReference implements Hashable {
    * since it cannot be named according to the syntax so no module can depend on it.
    */
   static readonly ROOT: ModuleReference = new ModuleReference([]);
+  /** A dummy module reference for testing. */
+  static readonly DUMMY: ModuleReference = new ModuleReference(['__DUMMY__']);
 
   constructor(public readonly parts: readonly string[]) {}
 

@@ -6,7 +6,7 @@ import { createGlobalErrorCollector } from 'samlang-core-errors';
 it('BaseParser test', () => {
   class P extends BaseParser {
     constructor() {
-      super([], createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.ROOT));
+      super([], createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.DUMMY));
     }
 
     test() {
@@ -22,8 +22,8 @@ it('BaseParser test', () => {
 it('SamlangParser empty robustness test', () => {
   const parser = new SamlangParser(
     [],
-    createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.ROOT),
-    ModuleReference.ROOT
+    createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.DUMMY),
+    ModuleReference.DUMMY
   );
   parser.parseClass();
   parser.parseClassMemberDefinition();
@@ -37,8 +37,8 @@ it('SamlangParser empty robustness test', () => {
 it('SamlangParser error robustness test', () => {
   const parser = new SamlangParser(
     [{ range: Range.DUMMY, content: { __type__: 'Error', content: 'fooooo' } }],
-    createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.ROOT),
-    ModuleReference.ROOT
+    createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.DUMMY),
+    ModuleReference.DUMMY
   );
 
   parser.parseClass();
