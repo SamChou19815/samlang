@@ -1,7 +1,8 @@
 import type { ModuleReference, Range, Sources } from 'samlang-core-ast/common-nodes';
-import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
+import { EXPRESSION_VARIABLE, SamlangExpression } from 'samlang-core-ast/samlang-expressions';
+import type { Pattern } from 'samlang-core-ast/samlang-pattern';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { HashMap, LocalStackedContext, error, hashMapOf } from 'samlang-core-utils';
+import { HashMap, LocalStackedContext, assert, error, hashMapOf } from 'samlang-core-utils';
 
 export type DefinitionAndUses = {
   readonly definitionRange: Range;
@@ -187,3 +188,280 @@ export class VariableDefinitionLookup implements ReadonlyVariableDefinitionLooku
     return this.moduleTable.get(moduleReference)?.findAllDefinitionAndUses(range) ?? null;
   }
 }
+
+const getRelevantInRanges = (range: Range, { definitionRange, useRanges }: DefinitionAndUses) => {
+  const ranges: Range[] = [];
+  if (range.containsRange(definitionRange)) ranges.push(definitionRange);
+  ranges.push(...useRanges.filter((it) => range.containsRange(it)));
+  return ranges;
+};
+
+const applyExpressionRenamingWithDefinitionAndUse = (
+  expression: SamlangExpression,
+  definitionAndUses: DefinitionAndUses,
+  newName: string
+): SamlangExpression => {
+  const relevantInRange = getRelevantInRanges(expression.range, definitionAndUses);
+  if (relevantInRange.length === 0) return expression;
+  assert(expression.__type__ !== 'LiteralExpression');
+  assert(expression.__type__ !== 'ThisExpression');
+  assert(expression.__type__ !== 'ClassMemberExpression');
+  switch (expression.__type__) {
+    case 'VariableExpression':
+      return { ...expression, name: newName };
+    case 'TupleConstructorExpression':
+      return {
+        ...expression,
+        expressions: expression.expressions.map((it) =>
+          applyExpressionRenamingWithDefinitionAndUse(it, definitionAndUses, newName)
+        ),
+      };
+    case 'ObjectConstructorExpression':
+      return {
+        ...expression,
+        fieldDeclarations: expression.fieldDeclarations.map((fieldDeclaration) => {
+          if (fieldDeclaration.expression != null) {
+            return {
+              ...fieldDeclaration,
+              expression: applyExpressionRenamingWithDefinitionAndUse(
+                fieldDeclaration.expression,
+                definitionAndUses,
+                newName
+              ),
+            };
+          }
+          return {
+            ...fieldDeclaration,
+            expression: EXPRESSION_VARIABLE({
+              range: fieldDeclaration.nameRange,
+              type: fieldDeclaration.type,
+              associatedComments: [],
+              name: newName,
+            }),
+          };
+        }),
+      };
+    case 'VariantConstructorExpression':
+      return {
+        ...expression,
+        data: applyExpressionRenamingWithDefinitionAndUse(
+          expression.data,
+          definitionAndUses,
+          newName
+        ),
+      };
+    case 'FieldAccessExpression':
+    case 'MethodAccessExpression':
+    case 'UnaryExpression':
+    case 'PanicExpression':
+      return {
+        ...expression,
+        expression: applyExpressionRenamingWithDefinitionAndUse(
+          expression.expression,
+          definitionAndUses,
+          newName
+        ),
+      };
+    case 'BuiltInFunctionCallExpression':
+      return {
+        ...expression,
+        argumentExpression: applyExpressionRenamingWithDefinitionAndUse(
+          expression.argumentExpression,
+          definitionAndUses,
+          newName
+        ),
+      };
+    case 'FunctionCallExpression':
+      return {
+        ...expression,
+        functionExpression: applyExpressionRenamingWithDefinitionAndUse(
+          expression.functionExpression,
+          definitionAndUses,
+          newName
+        ),
+        functionArguments: expression.functionArguments.map((it) =>
+          applyExpressionRenamingWithDefinitionAndUse(it, definitionAndUses, newName)
+        ),
+      };
+    case 'BinaryExpression':
+      return {
+        ...expression,
+        e1: applyExpressionRenamingWithDefinitionAndUse(expression.e1, definitionAndUses, newName),
+        e2: applyExpressionRenamingWithDefinitionAndUse(expression.e2, definitionAndUses, newName),
+      };
+    case 'IfElseExpression':
+      return {
+        ...expression,
+        boolExpression: applyExpressionRenamingWithDefinitionAndUse(
+          expression.boolExpression,
+          definitionAndUses,
+          newName
+        ),
+        e1: applyExpressionRenamingWithDefinitionAndUse(expression.e1, definitionAndUses, newName),
+        e2: applyExpressionRenamingWithDefinitionAndUse(expression.e2, definitionAndUses, newName),
+      };
+    case 'MatchExpression':
+      return {
+        ...expression,
+        matchedExpression: applyExpressionRenamingWithDefinitionAndUse(
+          expression.matchedExpression,
+          definitionAndUses,
+          newName
+        ),
+        matchingList: expression.matchingList.map((matchingItem) => {
+          const rewrittenExpression = applyExpressionRenamingWithDefinitionAndUse(
+            matchingItem.expression,
+            definitionAndUses,
+            newName
+          );
+          if (matchingItem.dataVariable == null) {
+            return {
+              ...matchingItem,
+              expression: rewrittenExpression,
+            };
+          }
+          if (
+            definitionAndUses.definitionRange.toString() !== matchingItem.dataVariable[1].toString()
+          ) {
+            return {
+              ...matchingItem,
+              expression: rewrittenExpression,
+            };
+          }
+          return {
+            ...matchingItem,
+            dataVariable: [newName, matchingItem.dataVariable[1], matchingItem.dataVariable[2]],
+            expression: rewrittenExpression,
+          };
+        }),
+      };
+    case 'LambdaExpression':
+      return {
+        ...expression,
+        parameters: expression.parameters.map(([parameterName, parameterRange, parameterType]) => [
+          parameterRange.toString() === definitionAndUses.definitionRange.toString()
+            ? newName
+            : parameterName,
+          parameterRange,
+          parameterType,
+        ]),
+        body: applyExpressionRenamingWithDefinitionAndUse(
+          expression.body,
+          definitionAndUses,
+          newName
+        ),
+      };
+    case 'StatementBlockExpression':
+      return {
+        ...expression,
+        block: {
+          range: expression.block.range,
+          statements: expression.block.statements.map((statement) => {
+            const assignedExpression = applyExpressionRenamingWithDefinitionAndUse(
+              statement.assignedExpression,
+              definitionAndUses,
+              newName
+            );
+            let pattern: Pattern;
+            switch (statement.pattern.type) {
+              case 'TuplePattern':
+                pattern = {
+                  ...statement.pattern,
+                  destructedNames: statement.pattern.destructedNames.map(
+                    ({ name, type, range }) => ({
+                      name:
+                        name == null
+                          ? undefined
+                          : range.toString() === definitionAndUses.definitionRange.toString()
+                          ? newName
+                          : name,
+                      type,
+                      range,
+                    })
+                  ),
+                };
+                break;
+              case 'ObjectPattern':
+                pattern = {
+                  ...statement.pattern,
+                  destructedNames: statement.pattern.destructedNames.map(
+                    ({ fieldName, fieldNameRange, fieldOrder, type, alias, range }) => {
+                      if (alias == null) {
+                        if (
+                          fieldNameRange.toString() === definitionAndUses.definitionRange.toString()
+                        ) {
+                          return {
+                            fieldName,
+                            fieldNameRange,
+                            fieldOrder,
+                            type,
+                            alias: [newName, fieldNameRange] as const,
+                            range,
+                          };
+                        }
+                      } else {
+                        if (alias[1].toString() === definitionAndUses.definitionRange.toString()) {
+                          return {
+                            fieldName,
+                            fieldNameRange,
+                            fieldOrder,
+                            type,
+                            alias: [newName, alias[1]] as const,
+                            range,
+                          };
+                        }
+                      }
+                      return { fieldName, fieldNameRange, fieldOrder, type, alias, range };
+                    }
+                  ),
+                };
+                break;
+              case 'VariablePattern':
+                pattern =
+                  statement.pattern.range.toString() ===
+                  definitionAndUses.definitionRange.toString()
+                    ? { ...statement.pattern, name: newName }
+                    : statement.pattern;
+                break;
+              case 'WildCardPattern':
+                pattern = statement.pattern;
+                break;
+            }
+            return {
+              ...statement,
+              pattern,
+              assignedExpression,
+            };
+          }),
+          expression:
+            expression.block.expression == null
+              ? undefined
+              : applyExpressionRenamingWithDefinitionAndUse(
+                  expression.block.expression,
+                  definitionAndUses,
+                  newName
+                ),
+        },
+      };
+  }
+};
+
+export const applyRenamingWithDefinitionAndUse = (
+  samlangModule: SamlangModule,
+  definitionAndUses: DefinitionAndUses,
+  newName: string
+): SamlangModule => ({
+  imports: samlangModule.imports,
+  classes: samlangModule.classes.map((classDefinition) => ({
+    ...classDefinition,
+    members: classDefinition.members.map((member) => ({
+      ...member,
+      parameters: member.parameters.map((variable) =>
+        variable.nameRange.toString() === definitionAndUses.definitionRange.toString()
+          ? { ...variable, name: newName }
+          : variable
+      ),
+      body: applyExpressionRenamingWithDefinitionAndUse(member.body, definitionAndUses, newName),
+    })),
+  })),
+});
