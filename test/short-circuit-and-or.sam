@@ -51,6 +51,12 @@ class Main {
     val _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(true, 1)) then {
 
     } else Builtins.panic("Ah");
+    val _: unit = if (
+      Main.printAndReturn(false, 0) || Main.printAndReturn(false, 1)
+    ) then Builtins.panic("Ah") else {  };
+    val _: unit = if (Main.printAndReturn(false, 0) || Main.printAndReturn(true, 1)) then {
+
+    } else Builtins.panic("Ah");
   }
 
   function main(): unit = {
