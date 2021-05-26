@@ -26,7 +26,7 @@ import { mapOf } from 'samlang-core-utils';
 
 const THIS = EXPRESSION_THIS({
   range: Range.DUMMY,
-  type: identifierType(ModuleReference.ROOT, 'Dummy'),
+  type: identifierType(ModuleReference.DUMMY, 'Dummy'),
   associatedComments: [],
 });
 
@@ -66,7 +66,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                 type: functionType([], intType),
                 associatedComments: [],
                 typeArguments: [],
-                moduleReference: ModuleReference.ROOT,
+                moduleReference: ModuleReference.DUMMY,
                 className: 'Class1',
                 classNameRange: Range.DUMMY,
                 memberPrecedingComments: [],
@@ -124,7 +124,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                 type: functionType([], intType),
                 associatedComments: [],
                 typeArguments: [],
-                moduleReference: ModuleReference.ROOT,
+                moduleReference: ModuleReference.DUMMY,
                 className: 'Class1',
                 classNameRange: Range.DUMMY,
                 memberPrecedingComments: [],
@@ -175,7 +175,7 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
                   type: functionType([intType, intType], intType),
                   associatedComments: [],
                   typeArguments: [],
-                  moduleReference: ModuleReference.ROOT,
+                  moduleReference: ModuleReference.DUMMY,
                   className: 'Class1',
                   classNameRange: Range.DUMMY,
                   memberPrecedingComments: [],
@@ -247,8 +247,8 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
               type: functionType(
                 [
                   tupleType([
-                    identifierType(ModuleReference.ROOT, 'A', [intType]),
-                    identifierType(ModuleReference.ROOT, 'T'),
+                    identifierType(ModuleReference.DUMMY, 'A', [intType]),
+                    identifierType(ModuleReference.DUMMY, 'T'),
                   ]),
                 ],
                 intType
@@ -262,8 +262,8 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
   };
 
   const actualCompiledModule = compileSamlangSourcesToHighIRSources(
-    mapOf([ModuleReference.ROOT, sourceModule])
-  ).forceGet(ModuleReference.ROOT);
+    mapOf([ModuleReference.DUMMY, sourceModule])
+  ).forceGet(ModuleReference.DUMMY);
 
   expect(debugPrintHighIRModule(actualCompiledModule)).toEqual(
     `

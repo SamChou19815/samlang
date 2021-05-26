@@ -48,12 +48,12 @@ it('Undecided types will always be resolved', () => {
 it('Recursive types will be resolved', () => {
   expect(
     resolve(
-      identifierType(ModuleReference.ROOT, 'A', [
+      identifierType(ModuleReference.DUMMY, 'A', [
         { type: 'UndecidedType', index: 0 },
         { type: 'UndecidedType', index: 1 },
       ])
     )
-  ).toEqual(identifierType(ModuleReference.ROOT, 'A', [unitType, boolType]));
+  ).toEqual(identifierType(ModuleReference.DUMMY, 'A', [unitType, boolType]));
 
   expect(
     resolve(

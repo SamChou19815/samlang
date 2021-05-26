@@ -44,7 +44,7 @@ import {
   EXPRESSION_STATEMENT_BLOCK,
 } from 'samlang-core-ast/samlang-expressions';
 
-const DUMMY_IDENTIFIER_TYPE = identifierType(ModuleReference.ROOT, 'Dummy');
+const DUMMY_IDENTIFIER_TYPE = identifierType(ModuleReference.DUMMY, 'Dummy');
 const THIS = EXPRESSION_THIS({
   range: Range.DUMMY,
   type: DUMMY_IDENTIFIER_TYPE,
@@ -57,25 +57,25 @@ const expectCorrectlyLowered = (
 ): void => {
   const stringManager = new HighIRStringManager();
   const { statements, expression, syntheticFunctions } = lowerSamlangExpression(
-    ModuleReference.ROOT,
+    ModuleReference.DUMMY,
     'ENCODED_FUNCTION_NAME',
-    { _Foo: [HIR_INT_TYPE, HIR_INT_TYPE], _Dummy: [HIR_INT_TYPE, HIR_INT_TYPE] },
+    { __DUMMY___Foo: [HIR_INT_TYPE, HIR_INT_TYPE], __DUMMY___Dummy: [HIR_INT_TYPE, HIR_INT_TYPE] },
     {
       _module_ModuleModule_class_ImportedClass_function_bar: HIR_FUNCTION_TYPE(
-        [HIR_IDENTIFIER_TYPE('_Dummy'), HIR_IDENTIFIER_TYPE('_Dummy')],
+        [HIR_IDENTIFIER_TYPE('__DUMMY___Dummy'), HIR_IDENTIFIER_TYPE('__DUMMY___Dummy')],
         HIR_INT_TYPE
       ),
-      _module__class_Dummy_function_fooBar: HIR_FUNCTION_TYPE(
-        [HIR_IDENTIFIER_TYPE('_Dummy'), HIR_IDENTIFIER_TYPE('_Dummy')],
+      _module___DUMMY___class_Dummy_function_fooBar: HIR_FUNCTION_TYPE(
+        [HIR_IDENTIFIER_TYPE('__DUMMY___Dummy'), HIR_IDENTIFIER_TYPE('__DUMMY___Dummy')],
         HIR_INT_TYPE
       ),
-      _module__class_C_function_m1: HIR_FUNCTION_TYPE(
-        [HIR_IDENTIFIER_TYPE('_Dummy')],
+      _module___DUMMY___class_C_function_m1: HIR_FUNCTION_TYPE(
+        [HIR_IDENTIFIER_TYPE('__DUMMY___Dummy')],
         HIR_INT_TYPE
       ),
-      _module__class_C_function_m2: HIR_FUNCTION_TYPE(
+      _module___DUMMY___class_C_function_m2: HIR_FUNCTION_TYPE(
         [HIR_INT_TYPE],
-        HIR_IDENTIFIER_TYPE('_Dummy')
+        HIR_IDENTIFIER_TYPE('__DUMMY___Dummy')
       ),
     },
     new Set(),
@@ -105,7 +105,7 @@ it('Literal lowering works.', () => {
 });
 
 it('This lowering works.', () => {
-  expectCorrectlyLowered(THIS, 'return (_this: _Dummy);');
+  expectCorrectlyLowered(THIS, 'return (_this: __DUMMY___Dummy);');
 });
 
 it('Variable lowering works.', () => {
@@ -127,7 +127,7 @@ it('ClassMember lowering works.', () => {
       type: unitType,
       associatedComments: [],
       typeArguments: [],
-      moduleReference: ModuleReference.ROOT,
+      moduleReference: ModuleReference.DUMMY,
       className: 'A',
       classNameRange: Range.DUMMY,
       memberPrecedingComments: [],
@@ -135,7 +135,7 @@ it('ClassMember lowering works.', () => {
       memberNameRange: Range.DUMMY,
     }),
     `let _t1: any = 0;
-let _t0: (any, any) = [_module__class_A_function_b, (_t1: any)];
+let _t0: (any, any) = [_module___DUMMY___class_A_function_b, (_t1: any)];
 return (_t0: (any, any));`
   );
 });
@@ -148,8 +148,8 @@ it('Lowering to StructConstructor works (1/n).', () => {
       associatedComments: [],
       expressions: [THIS],
     }),
-    `let _t0: (_Dummy) = [(_this: _Dummy)];
-return (_t0: (_Dummy));`
+    `let _t0: (__DUMMY___Dummy) = [(_this: __DUMMY___Dummy)];
+return (_t0: (__DUMMY___Dummy));`
   );
 });
 
@@ -157,7 +157,7 @@ it('Lowering to StructConstructor works (2/n).', () => {
   expectCorrectlyLowered(
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType(ModuleReference.ROOT, 'Foo'),
+      type: identifierType(ModuleReference.DUMMY, 'Foo'),
       associatedComments: [],
       fieldDeclarations: [
         {
@@ -177,10 +177,10 @@ it('Lowering to StructConstructor works (2/n).', () => {
         },
       ],
     }),
-    `let _t0: int = (_this: _Dummy);
-let _t1: int = (bar: _Dummy);
-let _t2: _Foo = [(_t0: int), (_t1: int)];
-return (_t2: _Foo);`
+    `let _t0: int = (_this: __DUMMY___Dummy);
+let _t1: int = (bar: __DUMMY___Dummy);
+let _t2: __DUMMY___Foo = [(_t0: int), (_t1: int)];
+return (_t2: __DUMMY___Foo);`
   );
 });
 
@@ -188,15 +188,15 @@ it('Lowering to StructConstructor works (3/n).', () => {
   expectCorrectlyLowered(
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType(ModuleReference.ROOT, 'Foo'),
+      type: identifierType(ModuleReference.DUMMY, 'Foo'),
       associatedComments: [],
       tag: 'Foo',
       tagOrder: 1,
       data: THIS,
     }),
-    `let _t1: any = (_this: _Dummy);
-let _t0: _Foo = [1, (_t1: any)];
-return (_t0: _Foo);`
+    `let _t1: any = (_this: __DUMMY___Dummy);
+let _t0: __DUMMY___Foo = [1, (_t1: any)];
+return (_t0: __DUMMY___Foo);`
   );
 });
 
@@ -211,7 +211,7 @@ it('FieldAccess lowering works.', () => {
       fieldName: 'foo',
       fieldOrder: 0,
     }),
-    'let _t0: int = (_this: _Dummy)[0];\nreturn (_t0: int);'
+    'let _t0: int = (_this: __DUMMY___Dummy)[0];\nreturn (_t0: int);'
   );
 });
 
@@ -225,7 +225,7 @@ it('MethodAccess lowering works.', () => {
       methodPrecedingComments: [],
       methodName: 'foo',
     }),
-    `let _t0: (any, any) = [_module__class_Dummy_function_foo, (_this: _Dummy)];
+    `let _t0: (any, any) = [_module___DUMMY___class_Dummy_function_foo, (_this: __DUMMY___Dummy)];
 return (_t0: (any, any));`
   );
 });
@@ -239,7 +239,7 @@ it('Unary lowering works.', () => {
       operator: '!',
       expression: THIS,
     }),
-    'let _t0: bool = (_this: _Dummy) ^ 1;\nreturn (_t0: bool);'
+    'let _t0: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t0: bool);'
   );
 
   expectCorrectlyLowered(
@@ -250,7 +250,7 @@ it('Unary lowering works.', () => {
       operator: '-',
       expression: THIS,
     }),
-    'let _t0: int = 0 - (_this: _Dummy);\nreturn (_t0: int);'
+    'let _t0: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t0: int);'
   );
 });
 
@@ -263,7 +263,7 @@ it('FunctionCall family lowering works 1/n.', () => {
       functionName: 'intToString',
       argumentExpression: THIS,
     }),
-    'let _t0: string = _builtin_intToString((_this: _Dummy));\nreturn (_t0: string);'
+    'let _t0: string = _builtin_intToString((_this: __DUMMY___Dummy));\nreturn (_t0: string);'
   );
 });
 
@@ -276,7 +276,7 @@ it('FunctionCall family lowering works 2/n.', () => {
       functionName: 'stringToInt',
       argumentExpression: THIS,
     }),
-    'let _t0: int = _builtin_stringToInt((_this: _Dummy));\nreturn (_t0: int);'
+    'let _t0: int = _builtin_stringToInt((_this: __DUMMY___Dummy));\nreturn (_t0: int);'
   );
 });
 
@@ -289,7 +289,7 @@ it('FunctionCall family lowering works 3/n.', () => {
       functionName: 'println',
       argumentExpression: THIS,
     }),
-    '_builtin_println((_this: _Dummy));\nreturn 0;'
+    '_builtin_println((_this: __DUMMY___Dummy));\nreturn 0;'
   );
 });
 
@@ -313,7 +313,7 @@ it('FunctionCall family lowering works 4/n.', () => {
       }),
       functionArguments: [THIS, THIS],
     }),
-    `let _t0: int = _module_ModuleModule_class_ImportedClass_function_bar((_this: _Dummy), (_this: _Dummy));
+    `let _t0: int = _module_ModuleModule_class_ImportedClass_function_bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: int);`
   );
 });
@@ -334,7 +334,7 @@ it('FunctionCall family lowering works 5/n.', () => {
       }),
       functionArguments: [THIS, THIS],
     }),
-    `let _t0: int = _module__class_Dummy_function_fooBar((_this: _Dummy), (_this: _Dummy), (_this: _Dummy));
+    `let _t0: int = _module___DUMMY___class_Dummy_function_fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: int);`
   );
 });
@@ -359,12 +359,12 @@ let _t6: int = (_t2: any);
 let _t5: bool = (_t6: int) == 0;
 let _t0: int;
 if (_t5: bool) {
-  let _t7: (_Dummy, _Dummy) -> int = (_t1: any);
-  let _t3: int = (_t7: (_Dummy, _Dummy) -> int)((_this: _Dummy), (_this: _Dummy));
+  let _t7: (__DUMMY___Dummy, __DUMMY___Dummy) -> int = (_t1: any);
+  let _t3: int = (_t7: (__DUMMY___Dummy, __DUMMY___Dummy) -> int)((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
   _t0 = (_t3: int);
 } else {
-  let _t8: (any, _Dummy, _Dummy) -> int = (_t1: any);
-  let _t4: int = (_t8: (any, _Dummy, _Dummy) -> int)((_t2: any), (_this: _Dummy), (_this: _Dummy));
+  let _t8: (any, __DUMMY___Dummy, __DUMMY___Dummy) -> int = (_t1: any);
+  let _t4: int = (_t8: (any, __DUMMY___Dummy, __DUMMY___Dummy) -> int)((_t2: any), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
   _t0 = (_t4: int);
 }
 return (_t0: int);`
@@ -390,11 +390,11 @@ let _t2: any = (closure: (any, any))[1];
 let _t6: int = (_t2: any);
 let _t5: bool = (_t6: int) == 0;
 if (_t5: bool) {
-  let _t7: (_Dummy, _Dummy) -> int = (_t1: any);
-  (_t7: (_Dummy, _Dummy) -> int)((_this: _Dummy), (_this: _Dummy));
+  let _t7: (__DUMMY___Dummy, __DUMMY___Dummy) -> int = (_t1: any);
+  (_t7: (__DUMMY___Dummy, __DUMMY___Dummy) -> int)((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 } else {
-  let _t8: (any, _Dummy, _Dummy) -> int = (_t1: any);
-  (_t8: (any, _Dummy, _Dummy) -> int)((_t2: any), (_this: _Dummy), (_this: _Dummy));
+  let _t8: (any, __DUMMY___Dummy, __DUMMY___Dummy) -> int = (_t1: any);
+  (_t8: (any, __DUMMY___Dummy, __DUMMY___Dummy) -> int)((_t2: any), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 }
 return 0;`
   );
@@ -411,7 +411,7 @@ it('FunctionCall family lowering works 8/n.', () => {
         type: functionType([DUMMY_IDENTIFIER_TYPE], unitType),
         associatedComments: [],
         typeArguments: [],
-        moduleReference: new ModuleReference(['']),
+        moduleReference: ModuleReference.DUMMY,
         className: 'C',
         classNameRange: Range.DUMMY,
         memberPrecedingComments: [],
@@ -420,8 +420,8 @@ it('FunctionCall family lowering works 8/n.', () => {
       }),
       functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
     }),
-    `let _t1: _Dummy = 0;
-_module__class_C_function_m1((_t1: _Dummy));
+    `let _t1: __DUMMY___Dummy = 0;
+_module___DUMMY___class_C_function_m1((_t1: __DUMMY___Dummy));
 return 0;`
   );
 });
@@ -437,7 +437,7 @@ it('FunctionCall family lowering works 9/n.', () => {
         type: functionType([intType], DUMMY_IDENTIFIER_TYPE),
         associatedComments: [],
         typeArguments: [],
-        moduleReference: new ModuleReference(['']),
+        moduleReference: ModuleReference.DUMMY,
         className: 'C',
         classNameRange: Range.DUMMY,
         memberPrecedingComments: [],
@@ -446,8 +446,8 @@ it('FunctionCall family lowering works 9/n.', () => {
       }),
       functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
     }),
-    `let _t0: _Dummy = _module__class_C_function_m2(0);
-let _t1: int = (_t0: _Dummy);
+    `let _t0: __DUMMY___Dummy = _module___DUMMY___class_C_function_m2(0);
+let _t1: int = (_t0: __DUMMY___Dummy);
 return (_t1: int);`
   );
 });
@@ -466,22 +466,22 @@ it('FunctionCall family lowering works 10/n.', () => {
       }),
       functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
     }),
-    `let _t1: _Dummy = 0;
+    `let _t1: __DUMMY___Dummy = 0;
 let _t2: any = (closure: (any, any))[0];
 let _t3: any = (closure: (any, any))[1];
 let _t7: int = (_t3: any);
 let _t6: bool = (_t7: int) == 0;
-let _t0: _Dummy;
+let _t0: __DUMMY___Dummy;
 if (_t6: bool) {
-  let _t8: (_Dummy) -> _Dummy = (_t2: any);
-  let _t4: _Dummy = (_t8: (_Dummy) -> _Dummy)((_t1: _Dummy));
-  _t0 = (_t4: _Dummy);
+  let _t8: (__DUMMY___Dummy) -> __DUMMY___Dummy = (_t2: any);
+  let _t4: __DUMMY___Dummy = (_t8: (__DUMMY___Dummy) -> __DUMMY___Dummy)((_t1: __DUMMY___Dummy));
+  _t0 = (_t4: __DUMMY___Dummy);
 } else {
-  let _t9: (any, _Dummy) -> _Dummy = (_t2: any);
-  let _t5: _Dummy = (_t9: (any, _Dummy) -> _Dummy)((_t3: any), (_t1: _Dummy));
-  _t0 = (_t5: _Dummy);
+  let _t9: (any, __DUMMY___Dummy) -> __DUMMY___Dummy = (_t2: any);
+  let _t5: __DUMMY___Dummy = (_t9: (any, __DUMMY___Dummy) -> __DUMMY___Dummy)((_t3: any), (_t1: __DUMMY___Dummy));
+  _t0 = (_t5: __DUMMY___Dummy);
 }
-let _t10: int = (_t0: _Dummy);
+let _t10: int = (_t0: __DUMMY___Dummy);
 return (_t10: int);`
   );
 });
@@ -497,7 +497,7 @@ it('Normal binary lowering works.', () => {
       e1: THIS,
       e2: THIS,
     }),
-    'let _t0: int = (_this: _Dummy) + (_this: _Dummy);\nreturn (_t0: int);'
+    'let _t0: int = (_this: __DUMMY___Dummy) + (_this: __DUMMY___Dummy);\nreturn (_t0: int);'
   );
 });
 
@@ -512,7 +512,7 @@ it('String concat binary lowering works.', () => {
       e1: THIS,
       e2: THIS,
     }),
-    `let _t0: string = _builtin_stringConcat((_this: _Dummy), (_this: _Dummy));
+    `let _t0: string = _builtin_stringConcat((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: string);`
   );
 });
@@ -659,12 +659,12 @@ it('Lambda lowering works (1/n).', () => {
       captured: { a: unitType },
       body: THIS,
     }),
-    `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (int), a: int): int {
+    `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (int), a: int): int {
   let a: int = (_context: (int))[0];
-  return (_this: _Dummy);
+  return (_this: __DUMMY___Dummy);
 }
 let _t1: (int) = [(a: int)];
-let _t2: any = _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
+let _t2: any = _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
 let _t3: any = (_t1: (int));
 let _t0: (any, any) = [(_t2: any), (_t3: any)];
 return (_t0: (any, any));`
@@ -681,12 +681,12 @@ it('Lambda lowering works (2/n).', () => {
       captured: { a: unitType },
       body: THIS,
     }),
-    `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (int), a: int): int {
+    `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (int), a: int): int {
   let a: int = (_context: (int))[0];
-  return (_this: _Dummy);
+  return (_this: __DUMMY___Dummy);
 }
 let _t1: (int) = [(a: int)];
-let _t2: any = _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
+let _t2: any = _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
 let _t3: any = (_t1: (int));
 let _t0: (any, any) = [(_t2: any), (_t3: any)];
 return (_t0: (any, any));`
@@ -703,12 +703,12 @@ it('Lambda lowering works (3/n).', () => {
       captured: { a: unitType },
       body: THIS,
     }),
-    `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (int), a: int): _Dummy {
+    `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (int), a: int): __DUMMY___Dummy {
   let a: int = (_context: (int))[0];
-  return (_this: _Dummy);
+  return (_this: __DUMMY___Dummy);
 }
 let _t1: (int) = [(a: int)];
-let _t2: any = _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
+let _t2: any = _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
 let _t3: any = (_t1: (int));
 let _t0: (any, any) = [(_t2: any), (_t3: any)];
 return (_t0: (any, any));`
@@ -725,10 +725,10 @@ it('Lambda lowering works (4/n).', () => {
       captured: {},
       body: THIS,
     }),
-    `function _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (), a: int): _Dummy {
-  return (_this: _Dummy);
+    `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (), a: int): __DUMMY___Dummy {
+  return (_this: __DUMMY___Dummy);
 }
-let _t1: any = _module__class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
+let _t1: any = _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
 let _t2: any = 1;
 let _t0: (any, any) = [(_t1: any), (_t2: any)];
 return (_t0: (any, any));`
@@ -743,7 +743,7 @@ it('Panic lowering works.', () => {
       associatedComments: [],
       expression: THIS,
     }),
-    `_builtin_throw((_this: _Dummy));\nreturn 0;`
+    `_builtin_throw((_this: __DUMMY___Dummy));\nreturn 0;`
   );
 });
 
@@ -762,14 +762,14 @@ it('IfElse lowering works 1/2.', () => {
       }),
       e2: THIS,
     }),
-    `let _t0: _Dummy;
-if (_this: _Dummy) {
-  _builtin_throw((_this: _Dummy));
+    `let _t0: __DUMMY___Dummy;
+if (_this: __DUMMY___Dummy) {
+  _builtin_throw((_this: __DUMMY___Dummy));
   _t0 = 0;
 } else {
-  _t0 = (_this: _Dummy);
+  _t0 = (_this: __DUMMY___Dummy);
 }
-return (_t0: _Dummy);`
+return (_t0: __DUMMY___Dummy);`
   );
 });
 
@@ -788,8 +788,8 @@ it('IfElse lowering works 2/2.', () => {
       }),
       e2: THIS,
     }),
-    `if (_this: _Dummy) {
-  _builtin_throw((_this: _Dummy));
+    `if (_this: __DUMMY___Dummy) {
+  _builtin_throw((_this: __DUMMY___Dummy));
 } else {
 }
 return 0;`
@@ -824,17 +824,17 @@ it('Match lowering works 1/3.', () => {
         },
       ],
     }),
-    `let _t0: int = (_this: _Dummy)[0];
+    `let _t0: int = (_this: __DUMMY___Dummy)[0];
 let _t2: bool = (_t0: int) == 0;
-let _t3: _Dummy;
+let _t3: __DUMMY___Dummy;
 if (_t2: bool) {
-  let _t1: any = (_this: _Dummy)[1];
-  _t3 = (_this: _Dummy);
+  let _t1: any = (_this: __DUMMY___Dummy)[1];
+  _t3 = (_this: __DUMMY___Dummy);
 } else {
-  _builtin_throw((_this: _Dummy));
+  _builtin_throw((_this: __DUMMY___Dummy));
   _t3 = 0;
 }
-return (_t3: _Dummy);`
+return (_t3: __DUMMY___Dummy);`
   );
 });
 
@@ -877,16 +877,16 @@ it('Match lowering works 2/3.', () => {
         },
       ],
     }),
-    `let _t0: int = (_this: _Dummy)[0];
+    `let _t0: int = (_this: __DUMMY___Dummy)[0];
 let _t3: bool = (_t0: int) == 0;
 if (_t3: bool) {
-  let _t1: any = (_this: _Dummy)[1];
+  let _t1: any = (_this: __DUMMY___Dummy)[1];
 } else {
   let _t2: bool = (_t0: int) == 1;
   if (_t2: bool) {
-    _builtin_throw((_this: _Dummy));
+    _builtin_throw((_this: __DUMMY___Dummy));
   } else {
-    _builtin_throw((_this: _Dummy));
+    _builtin_throw((_this: __DUMMY___Dummy));
   }
 }
 return 0;`
@@ -927,24 +927,24 @@ it('Match lowering works 3/3.', () => {
         },
       ],
     }),
-    `let _t0: int = (_this: _Dummy)[0];
+    `let _t0: int = (_this: __DUMMY___Dummy)[0];
 let _t4: bool = (_t0: int) == 0;
-let _t5: _Dummy;
+let _t5: __DUMMY___Dummy;
 if (_t4: bool) {
-  _t5 = (_this: _Dummy);
+  _t5 = (_this: __DUMMY___Dummy);
 } else {
   let _t2: bool = (_t0: int) == 1;
-  let _t3: _Dummy;
+  let _t3: __DUMMY___Dummy;
   if (_t2: bool) {
-    let _t1: any = (_this: _Dummy)[1];
-    let bar: _Dummy = (_t1: any);
-    _t3 = (bar: _Dummy);
+    let _t1: any = (_this: __DUMMY___Dummy)[1];
+    let bar: __DUMMY___Dummy = (_t1: any);
+    _t3 = (bar: __DUMMY___Dummy);
   } else {
-    _t3 = (_this: _Dummy);
+    _t3 = (_this: __DUMMY___Dummy);
   }
-  _t5 = (_t3: _Dummy);
+  _t5 = (_t3: __DUMMY___Dummy);
 }
-return (_t5: _Dummy);`
+return (_t5: __DUMMY___Dummy);`
   );
 });
 
@@ -1031,8 +1031,8 @@ it('StatementBlockExpression lowering works.', () => {
       },
     }),
     `let a__depth_1__block_0: int = (_this: (int, int))[0];
-let a__depth_1__block_0: int = (_this: _Dummy)[0];
-let c__depth_1__block_0: int = (_this: _Dummy)[1];
+let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
+let c__depth_1__block_0: int = (_this: __DUMMY___Dummy)[1];
 return 0;`
   );
 });
@@ -1090,7 +1090,7 @@ it('shadowing statement block lowering works.', () => {
         }),
       },
     }),
-    `let _t0: string = _builtin_intToString((_this: _Dummy));
+    `let _t0: string = _builtin_intToString((_this: __DUMMY___Dummy));
 return (_t0: string);`
   );
 });

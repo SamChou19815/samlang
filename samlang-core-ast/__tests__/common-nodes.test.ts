@@ -31,13 +31,13 @@ it('prettyPrint is working.', () => {
   expect(prettyPrintType(boolType)).toBe('bool');
   expect(prettyPrintType(intType)).toBe('int');
   expect(prettyPrintType(stringType)).toBe('string');
-  expect(prettyPrintType(identifierType(ModuleReference.ROOT, 'Foo'))).toBe('Foo');
+  expect(prettyPrintType(identifierType(ModuleReference.DUMMY, 'Foo'))).toBe('Foo');
   expect(
     prettyPrintType(
-      identifierType(ModuleReference.ROOT, 'Foo', [
+      identifierType(ModuleReference.DUMMY, 'Foo', [
         unitType,
         intType,
-        identifierType(ModuleReference.ROOT, 'Bar'),
+        identifierType(ModuleReference.DUMMY, 'Bar'),
       ])
     )
   ).toBe('Foo<unit, int, Bar>');
@@ -82,42 +82,42 @@ it('type equality test', () => {
   expect(isTheSameType(stringType, stringType)).toBeTruthy();
 
   expect(
-    isTheSameType(identifierType(ModuleReference.ROOT, 'A', [intType, boolType]), unitType)
+    isTheSameType(identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]), unitType)
   ).toBeFalsy();
   expect(
     isTheSameType(
-      identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
-      identifierType(ModuleReference.ROOT, 'B')
+      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
+      identifierType(ModuleReference.DUMMY, 'B')
     )
   ).toBeFalsy();
   expect(
     isTheSameType(
-      identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
-      identifierType(ModuleReference.ROOT, 'A')
+      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
+      identifierType(ModuleReference.DUMMY, 'A')
     )
   ).toBeFalsy();
   expect(
     isTheSameType(
-      identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
-      identifierType(ModuleReference.ROOT, 'A', [intType])
+      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
+      identifierType(ModuleReference.DUMMY, 'A', [intType])
     )
   ).toBeFalsy();
   expect(
     isTheSameType(
-      identifierType(ModuleReference.ROOT, 'A', [boolType, intType]),
-      identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
+      identifierType(ModuleReference.DUMMY, 'A', [boolType, intType]),
+      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
     )
   ).toBeFalsy();
   expect(
     isTheSameType(
-      identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
       identifierType(new ModuleReference(['AAA']), 'A', [intType, boolType])
     )
   ).toBeFalsy();
   expect(
     isTheSameType(
-      identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
-      identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
+      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
+      identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
     )
   ).toBeTruthy();
 
@@ -251,13 +251,13 @@ it('Range.union() works as expected', () => {
 });
 
 it('ModuleReference.toString()', () => {
-  expect(ModuleReference.ROOT.toString()).toBe('');
+  expect(ModuleReference.DUMMY.toString()).toBe('__DUMMY__');
   expect(new ModuleReference(['Foo']).toString()).toBe('Foo');
   expect(new ModuleReference(['Foo', 'Bar']).toString()).toBe('Foo.Bar');
 });
 
 it('ModuleReference.toFilename', () => {
-  expect(ModuleReference.ROOT.toFilename()).toBe('.sam');
+  expect(ModuleReference.DUMMY.toFilename()).toBe('__DUMMY__.sam');
   expect(new ModuleReference(['Foo']).toFilename()).toBe('Foo.sam');
   expect(new ModuleReference(['Foo', 'Bar']).toFilename()).toBe('Foo/Bar.sam');
 });

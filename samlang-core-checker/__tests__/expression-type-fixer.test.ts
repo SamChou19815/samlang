@@ -119,7 +119,7 @@ it('Class members are correctly resolved.', () => {
       type: functionType([], unitType),
       associatedComments: [],
       typeArguments: [boolType],
-      moduleReference: ModuleReference.ROOT,
+      moduleReference: ModuleReference.DUMMY,
       className: 'Foo',
       classNameRange: Range.DUMMY,
       memberPrecedingComments: [],
@@ -131,7 +131,7 @@ it('Class members are correctly resolved.', () => {
       type: functionType([], { type: 'UndecidedType', index: 0 }),
       associatedComments: [],
       typeArguments: [{ type: 'UndecidedType', index: 1 }],
-      moduleReference: ModuleReference.ROOT,
+      moduleReference: ModuleReference.DUMMY,
       className: 'Foo',
       classNameRange: Range.DUMMY,
       memberPrecedingComments: [],
@@ -147,7 +147,7 @@ it('Class members are correctly resolved.', () => {
       type: functionType([], { type: 'UndecidedType', index: 0 }),
       associatedComments: [],
       typeArguments: [{ type: 'UndecidedType', index: 1 }],
-      moduleReference: ModuleReference.ROOT,
+      moduleReference: ModuleReference.DUMMY,
       className: 'Foo',
       classNameRange: Range.DUMMY,
       memberPrecedingComments: [],
@@ -209,7 +209,7 @@ it('Object constructors are correctly resolved', () => {
   assertCorrectlyFixed(
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      type: identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
       associatedComments: [],
       fieldDeclarations: [
         {
@@ -231,7 +231,7 @@ it('Object constructors are correctly resolved', () => {
     }),
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType(ModuleReference.ROOT, 'A', [
+      type: identifierType(ModuleReference.DUMMY, 'A', [
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 1 },
       ]),
@@ -254,13 +254,13 @@ it('Object constructors are correctly resolved', () => {
         },
       ],
     }),
-    identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
+    identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
   );
 
   assertThrows(
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType(ModuleReference.ROOT, 'A', [{ type: 'UndecidedType', index: 2 }]),
+      type: identifierType(ModuleReference.DUMMY, 'A', [{ type: 'UndecidedType', index: 2 }]),
       associatedComments: [],
       fieldDeclarations: [
         {
@@ -280,13 +280,13 @@ it('Object constructors are correctly resolved', () => {
         },
       ],
     }),
-    identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
+    identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
   );
 
   assertThrows(
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType(ModuleReference.ROOT, 'A', [
+      type: identifierType(ModuleReference.DUMMY, 'A', [
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 3 },
       ]),
@@ -309,7 +309,7 @@ it('Object constructors are correctly resolved', () => {
         },
       ],
     }),
-    identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
+    identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
   );
 });
 
@@ -317,7 +317,7 @@ it('Variant constructors are correctly resolved.', () => {
   assertCorrectlyFixed(
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      type: identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
       associatedComments: [],
       tag: 'Foo',
       tagOrder: 0,
@@ -325,7 +325,7 @@ it('Variant constructors are correctly resolved.', () => {
     }),
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType(ModuleReference.ROOT, 'A', [
+      type: identifierType(ModuleReference.DUMMY, 'A', [
         { type: 'UndecidedType', index: 2 },
         { type: 'UndecidedType', index: 1 },
       ]),
@@ -334,25 +334,25 @@ it('Variant constructors are correctly resolved.', () => {
       tagOrder: 0,
       data: intOf(1),
     }),
-    identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
+    identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
   );
 
   assertThrows(
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType(ModuleReference.ROOT, 'A', [{ type: 'UndecidedType', index: 2 }]),
+      type: identifierType(ModuleReference.DUMMY, 'A', [{ type: 'UndecidedType', index: 2 }]),
       associatedComments: [],
       tag: 'Foo',
       tagOrder: 0,
       data: intOf(1),
     }),
-    identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
+    identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
   );
 
   assertThrows(
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType(ModuleReference.ROOT, 'A', [
+      type: identifierType(ModuleReference.DUMMY, 'A', [
         { type: 'UndecidedType', index: 1 },
         { type: 'UndecidedType', index: 2 },
       ]),
@@ -361,7 +361,7 @@ it('Variant constructors are correctly resolved.', () => {
       tagOrder: 0,
       data: intOf(1),
     }),
-    identifierType(ModuleReference.ROOT, 'A', [intType, boolType])
+    identifierType(ModuleReference.DUMMY, 'A', [intType, boolType])
   );
 });
 
@@ -373,7 +373,7 @@ it('Field accesses are correctly resolved.', () => {
       associatedComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'Foo'),
+        type: identifierType(ModuleReference.DUMMY, 'Foo'),
         associatedComments: [],
       }),
       fieldPrecedingComments: [],
@@ -386,7 +386,7 @@ it('Field accesses are correctly resolved.', () => {
       associatedComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'Foo'),
+        type: identifierType(ModuleReference.DUMMY, 'Foo'),
         associatedComments: [],
       }),
       fieldPrecedingComments: [],
@@ -403,7 +403,7 @@ it('Field accesses are correctly resolved.', () => {
       associatedComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'Foo'),
+        type: identifierType(ModuleReference.DUMMY, 'Foo'),
         associatedComments: [],
       }),
       methodPrecedingComments: [],
@@ -421,7 +421,7 @@ it('Method accesses are correctly resolved.', () => {
       associatedComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'Foo'),
+        type: identifierType(ModuleReference.DUMMY, 'Foo'),
         associatedComments: [],
       }),
       methodPrecedingComments: [],
@@ -433,7 +433,7 @@ it('Method accesses are correctly resolved.', () => {
       associatedComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'Foo'),
+        type: identifierType(ModuleReference.DUMMY, 'Foo'),
         associatedComments: [],
       }),
       methodPrecedingComments: [],
@@ -449,7 +449,7 @@ it('Method accesses are correctly resolved.', () => {
       associatedComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'Foo'),
+        type: identifierType(ModuleReference.DUMMY, 'Foo'),
         associatedComments: [],
       }),
       methodPrecedingComments: [],
@@ -920,7 +920,7 @@ it('Match expressions are correctly resolved.', () => {
       associatedComments: [],
       matchedExpression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'A'),
+        type: identifierType(ModuleReference.DUMMY, 'A'),
         associatedComments: [],
       }),
       matchingList: [
@@ -943,7 +943,7 @@ it('Match expressions are correctly resolved.', () => {
       associatedComments: [],
       matchedExpression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'A'),
+        type: identifierType(ModuleReference.DUMMY, 'A'),
         associatedComments: [],
       }),
       matchingList: [
@@ -970,7 +970,7 @@ it('Match expressions are correctly resolved.', () => {
       associatedComments: [],
       matchedExpression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'A'),
+        type: identifierType(ModuleReference.DUMMY, 'A'),
         associatedComments: [],
       }),
       matchingList: [
@@ -997,7 +997,7 @@ it('Match expressions are correctly resolved.', () => {
       associatedComments: [],
       matchedExpression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'A'),
+        type: identifierType(ModuleReference.DUMMY, 'A'),
         associatedComments: [],
       }),
       matchingList: [

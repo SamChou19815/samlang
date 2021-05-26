@@ -11,7 +11,7 @@ import { prettyPrintSamlangModule } from 'samlang-core-printer';
 import { checkNotNull, hashMapOf } from 'samlang-core-utils';
 
 const prepareLookup = (source: string): ModuleScopedVariableDefinitionLookup => {
-  const moduleReference = ModuleReference.ROOT;
+  const moduleReference = ModuleReference.DUMMY;
   const errorCollector = createGlobalErrorCollector();
   const parsedModule = parseSamlangModuleFromText(
     source,

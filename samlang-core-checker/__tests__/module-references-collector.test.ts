@@ -74,14 +74,14 @@ it('collectModuleReferenceFromExpression works 2/n', () => {
       type: functionType([], unitType),
       associatedComments: [],
       typeArguments: [boolType],
-      moduleReference: ModuleReference.ROOT,
+      moduleReference: ModuleReference.DUMMY,
       className: 'Foo',
       classNameRange: Range.DUMMY,
       memberPrecedingComments: [],
       memberName: 'bar',
       memberNameRange: Range.DUMMY,
     }),
-    ['']
+    ['__DUMMY__']
   );
 });
 
@@ -91,12 +91,14 @@ it('collectModuleReferenceFromExpression works 3/n', () => {
       range: Range.DUMMY,
       type: tupleType([
         intType,
-        identifierType(ModuleReference.ROOT, 'f', [functionType([intType], tupleType([boolType]))]),
+        identifierType(ModuleReference.DUMMY, 'f', [
+          functionType([intType], tupleType([boolType])),
+        ]),
       ]),
       associatedComments: [],
       expressions: [intOf(1), TRUE],
     }),
-    ['']
+    ['__DUMMY__']
   );
 });
 
@@ -104,7 +106,7 @@ it('collectModuleReferenceFromExpression works 4/n', () => {
   assertFoundAllModuleReferencesFromExpression(
     EXPRESSION_OBJECT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      type: identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
       associatedComments: [],
       fieldDeclarations: [
         {
@@ -124,7 +126,7 @@ it('collectModuleReferenceFromExpression works 4/n', () => {
         },
       ],
     }),
-    ['']
+    ['__DUMMY__']
   );
 });
 
@@ -132,13 +134,13 @@ it('collectModuleReferenceFromExpression works 5/n', () => {
   assertFoundAllModuleReferencesFromExpression(
     EXPRESSION_VARIANT_CONSTRUCTOR({
       range: Range.DUMMY,
-      type: identifierType(ModuleReference.ROOT, 'A', [intType, boolType]),
+      type: identifierType(ModuleReference.DUMMY, 'A', [intType, boolType]),
       associatedComments: [],
       tag: 'Foo',
       tagOrder: 0,
       data: intOf(1),
     }),
-    ['']
+    ['__DUMMY__']
   );
 });
 
@@ -150,14 +152,14 @@ it('collectModuleReferenceFromExpression works 6/n', () => {
       associatedComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'Foo'),
+        type: identifierType(ModuleReference.DUMMY, 'Foo'),
         associatedComments: [],
       }),
       fieldPrecedingComments: [],
       fieldName: 'bar',
       fieldOrder: 1,
     }),
-    ['']
+    ['__DUMMY__']
   );
 
   assertFoundAllModuleReferencesFromExpression(
@@ -167,13 +169,13 @@ it('collectModuleReferenceFromExpression works 6/n', () => {
       associatedComments: [],
       expression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'Foo'),
+        type: identifierType(ModuleReference.DUMMY, 'Foo'),
         associatedComments: [],
       }),
       methodPrecedingComments: [],
       methodName: 'bar',
     }),
-    ['']
+    ['__DUMMY__']
   );
 
   assertFoundAllModuleReferencesFromExpression(
@@ -234,7 +236,7 @@ it('collectModuleReferenceFromExpression works 9/n', () => {
       associatedComments: [],
       matchedExpression: EXPRESSION_THIS({
         range: Range.DUMMY,
-        type: identifierType(ModuleReference.ROOT, 'A'),
+        type: identifierType(ModuleReference.DUMMY, 'A'),
         associatedComments: [],
       }),
       matchingList: [
@@ -251,7 +253,7 @@ it('collectModuleReferenceFromExpression works 9/n', () => {
         },
       ],
     }),
-    ['']
+    ['__DUMMY__']
   );
 });
 

@@ -15,8 +15,8 @@ const reprintExpression = (rawSourceWithTypeAnnotation: string, width = 40): str
   const expression = checkNotNull(
     parseSamlangExpressionFromText(
       rawSourceWithTypeAnnotation,
-      ModuleReference.ROOT,
-      errorCollector.getModuleErrorCollector(ModuleReference.ROOT)
+      ModuleReference.DUMMY,
+      errorCollector.getModuleErrorCollector(ModuleReference.DUMMY)
     )
   );
   const errors = errorCollector.getErrors().map((it) => it.toString());
@@ -28,8 +28,8 @@ const reprintModule = (rawSourceWithTypeAnnotation: string, width = 40): string 
   const errorCollector = createGlobalErrorCollector();
   const samlangModule = parseSamlangModuleFromText(
     rawSourceWithTypeAnnotation,
-    ModuleReference.ROOT,
-    errorCollector.getModuleErrorCollector(ModuleReference.ROOT)
+    ModuleReference.DUMMY,
+    errorCollector.getModuleErrorCollector(ModuleReference.DUMMY)
   );
   const errors = errorCollector.getErrors().map((it) => it.toString());
   expect(errors).toEqual([]);

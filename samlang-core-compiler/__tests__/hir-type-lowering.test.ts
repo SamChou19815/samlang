@@ -26,10 +26,10 @@ it('lowerSamlangType works', () => {
   expect(lowerSamlangType(unitType, new Set())).toEqual(HIR_INT_TYPE);
   expect(lowerSamlangType(stringType, new Set([]))).toEqual(HIR_STRING_TYPE);
 
-  expect(lowerSamlangType(identifierType(ModuleReference.ROOT, 'A'), new Set())).toEqual(
-    HIR_IDENTIFIER_TYPE('_A')
+  expect(lowerSamlangType(identifierType(ModuleReference.DUMMY, 'A'), new Set())).toEqual(
+    HIR_IDENTIFIER_TYPE('__DUMMY___A')
   );
-  expect(lowerSamlangType(identifierType(ModuleReference.ROOT, 'A'), new Set(['A']))).toEqual(
+  expect(lowerSamlangType(identifierType(ModuleReference.DUMMY, 'A'), new Set(['A']))).toEqual(
     HIR_ANY_TYPE
   );
 
