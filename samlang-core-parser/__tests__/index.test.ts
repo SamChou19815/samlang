@@ -13,7 +13,8 @@ it('Can parse good expressions.', () => {
     expected: SamlangExpression['__type__']
   ): void => {
     expect(
-      parseSamlangExpressionFromText(text, ModuleReference.DUMMY, moduleErrorCollector)?.__type__
+      parseSamlangExpressionFromText(text, ModuleReference.DUMMY, new Set(), moduleErrorCollector)
+        ?.__type__
     ).toBe(expected);
   };
 
@@ -87,7 +88,7 @@ it('Can report bad expressions.', () => {
     const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(
       ModuleReference.DUMMY
     );
-    parseSamlangExpressionFromText(text, ModuleReference.DUMMY, moduleErrorCollector);
+    parseSamlangExpressionFromText(text, ModuleReference.DUMMY, new Set(), moduleErrorCollector);
     expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
   };
 
@@ -184,6 +185,7 @@ it('Can parse good programs.', () => {
     }
     `,
     ModuleReference.DUMMY,
+    new Set(['List']),
     moduleErrorCollector
   );
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([]);
@@ -226,6 +228,7 @@ it('Can handle bad programs.', () => {
     }
     `,
     ModuleReference.DUMMY,
+    new Set(),
     moduleErrorCollector
   );
   if (parsed == null) fail();
@@ -256,6 +259,7 @@ it('Can handle really bad programs.', () => {
     }
     `,
     ModuleReference.DUMMY,
+    new Set(),
     moduleErrorCollector
   );
   expect(parsed.imports).toEqual([]);
@@ -266,7 +270,12 @@ it('Can handle complete trash', () => {
   const globalErrorCollector = createGlobalErrorCollector();
   const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.DUMMY);
 
-  parseSamlangModuleFromText('This is not a program.', ModuleReference.DUMMY, moduleErrorCollector);
+  parseSamlangModuleFromText(
+    'This is not a program.',
+    ModuleReference.DUMMY,
+    new Set(),
+    moduleErrorCollector
+  );
   expect(globalErrorCollector.getErrors().map((it) => it.toString())).toEqual([
     '__DUMMY__.sam:1:1-1:5: [SyntaxError]: Unexpected token among the classes.',
     '__DUMMY__.sam:1:6-1:8: [SyntaxError]: Unexpected token among the classes.',

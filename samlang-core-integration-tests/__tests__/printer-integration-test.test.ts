@@ -2,12 +2,16 @@ import { runnableSamlangProgramTestCases } from '../test-programs';
 
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { prettyPrintSamlangModule } from 'samlang-core-printer';
 import { checkSources } from 'samlang-core-services';
 
 const getTypeCheckedModule = (code: string): SamlangModule => {
   const moduleReference = new ModuleReference(['test']);
-  const { checkedSources, compileTimeErrors } = checkSources([[moduleReference, code]]);
+  const { checkedSources, compileTimeErrors } = checkSources(
+    [[moduleReference, code]],
+    DEFAULT_BUILTIN_TYPING_CONTEXT
+  );
   const errors = compileTimeErrors.map((it) => it.toString());
   if (errors.length > 0) {
     fail(`Source: ${code}. Errors:\n${errors.join('\n')}`);

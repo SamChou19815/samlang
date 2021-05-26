@@ -10,6 +10,7 @@ import startSamlangLanguageServer from './lsp';
 
 import type { Sources } from 'samlang-core-ast/common-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { prettyPrintSamlangModule } from 'samlang-core-printer';
 import { parseSources, checkSources } from 'samlang-core-services';
 
@@ -28,9 +29,11 @@ const getConfiguration = (): SamlangProjectConfiguration => {
 
 const format = () => {
   const sources = collectSources(getConfiguration());
-  parseSources(sources).forEach(([moduleReference, samlangModule]) => {
-    writeFileSync(moduleReference.toFilename(), prettyPrintSamlangModule(100, samlangModule));
-  });
+  parseSources(sources, new Set(Object.keys(DEFAULT_BUILTIN_TYPING_CONTEXT))).forEach(
+    ([moduleReference, samlangModule]) => {
+      writeFileSync(moduleReference.toFilename(), prettyPrintSamlangModule(100, samlangModule));
+    }
+  );
 };
 
 const typeCheck = (): {
@@ -38,7 +41,10 @@ const typeCheck = (): {
   readonly configuration: SamlangProjectConfiguration;
 } => {
   const configuration = getConfiguration();
-  const { checkedSources, compileTimeErrors } = checkSources(collectSources(configuration));
+  const { checkedSources, compileTimeErrors } = checkSources(
+    collectSources(configuration),
+    DEFAULT_BUILTIN_TYPING_CONTEXT
+  );
   if (compileTimeErrors.length > 0) {
     console.error(`Found ${compileTimeErrors.length} error(s).`);
     compileTimeErrors

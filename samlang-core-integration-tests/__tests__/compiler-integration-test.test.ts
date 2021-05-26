@@ -3,6 +3,7 @@ import { runnableSamlangProgramTestCases } from '../test-programs';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRModuleToLLVMModule,
@@ -23,7 +24,8 @@ const { checkedSources, compileTimeErrors } = checkSources(
   runnableSamlangProgramTestCases.map((it) => [
     new ModuleReference([it.testCaseName]),
     it.sourceCode,
-  ])
+  ]),
+  DEFAULT_BUILTIN_TYPING_CONTEXT
 );
 
 // @ts-expect-error: process type is in @types/node, but we deliberatively excludes it to prevent core package depending on node.

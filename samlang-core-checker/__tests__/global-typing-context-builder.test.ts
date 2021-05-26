@@ -90,8 +90,8 @@ const module1: SamlangModule = {
 const testSources = mapOf([module0Reference, module0], [module1Reference, module1]);
 
 it('can handle imports and definitions', () => {
-  const actualGlobalTypingContext = buildGlobalTypingContext(testSources);
-  expect(actualGlobalTypingContext.size).toBe(2);
+  const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {});
+  expect(actualGlobalTypingContext.size).toBe(3);
 
   expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
     Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
@@ -117,7 +117,7 @@ it('can handle imports and definitions', () => {
 });
 
 it('can handle incremental add', () => {
-  const actualGlobalTypingContext = buildGlobalTypingContext(testSources);
+  const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {});
   updateGlobalTypingContext(
     actualGlobalTypingContext,
     mapOf(
@@ -127,7 +127,7 @@ it('can handle incremental add', () => {
     [module0Reference, module1Reference]
   );
 
-  expect(actualGlobalTypingContext.size).toBe(2);
+  expect(actualGlobalTypingContext.size).toBe(3);
 
   expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({
     Class0: { typeParameters: [], typeDefinition, functions: {}, methods: {} },
@@ -148,14 +148,14 @@ it('can handle incremental add', () => {
 });
 
 it('can handle incremental update', () => {
-  const actualGlobalTypingContext = buildGlobalTypingContext(testSources);
+  const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {});
   updateGlobalTypingContext(
     actualGlobalTypingContext,
     mapOf([module0Reference, { imports: [], classes: [] }], [module1Reference, module1]),
     [module0Reference, module1Reference]
   );
 
-  expect(actualGlobalTypingContext.size).toBe(2);
+  expect(actualGlobalTypingContext.size).toBe(3);
 
   expect(actualGlobalTypingContext.get(module0Reference)).toStrictEqual({});
   expect(actualGlobalTypingContext.get(module1Reference)).toStrictEqual({
@@ -179,10 +179,10 @@ it('can handle incremental update', () => {
 });
 
 it('can handle incremental removal', () => {
-  const actualGlobalTypingContext = buildGlobalTypingContext(testSources);
+  const actualGlobalTypingContext = buildGlobalTypingContext(testSources, {});
   updateGlobalTypingContext(actualGlobalTypingContext, mapOf([module1Reference, module1]), [
     module0Reference,
     module1Reference,
   ]);
-  expect(actualGlobalTypingContext.size).toBe(1);
+  expect(actualGlobalTypingContext.size).toBe(2);
 });

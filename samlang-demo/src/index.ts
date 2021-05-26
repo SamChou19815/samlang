@@ -1,5 +1,6 @@
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { compileSamlangSourcesToHighIRSources } from 'samlang-core-compiler';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import { prettyPrintSamlangModule, prettyPrintHighIRModuleAsJS } from 'samlang-core-printer';
@@ -20,9 +21,10 @@ type SamlangDemoResult = {
 const runSamlangDemo = (programString: string): SamlangDemoResult => {
   const demoModuleReference = new ModuleReference(['Demo']);
 
-  const { checkedSources, compileTimeErrors } = checkSources([
-    [demoModuleReference, programString],
-  ]);
+  const { checkedSources, compileTimeErrors } = checkSources(
+    [[demoModuleReference, programString]],
+    DEFAULT_BUILTIN_TYPING_CONTEXT
+  );
 
   if (compileTimeErrors.length > 0) {
     return {

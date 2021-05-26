@@ -1,4 +1,5 @@
 import typeCheckExpression from '../expression-type-checker';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../global-typing-context-builder';
 import TypeResolution from '../type-resolution';
 import { AccessibleGlobalTypingContext } from '../typing-context';
 
@@ -117,7 +118,12 @@ const typeCheckInSandbox = (
 
   // Parse
   const parsedExpression = checkNotNull(
-    parseSamlangExpressionFromText(source, dummyModuleReference, moduleErrorCollector)
+    parseSamlangExpressionFromText(
+      source,
+      dummyModuleReference,
+      new Set(Object.keys(DEFAULT_BUILTIN_TYPING_CONTEXT)),
+      moduleErrorCollector
+    )
   );
   expect(globalErrorCollector.getErrors()).toEqual([]);
 

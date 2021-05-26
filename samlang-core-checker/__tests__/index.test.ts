@@ -5,6 +5,7 @@ import {
   typeCheckSingleModuleSource,
   collectModuleReferenceFromSamlangModule,
 } from '..';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../global-typing-context-builder';
 
 import { Range, ModuleReference, functionType, intType } from 'samlang-core-ast/common-nodes';
 import { EXPRESSION_INT } from 'samlang-core-ast/samlang-expressions';
@@ -145,6 +146,7 @@ it('typeCheckSources integration smoke test (passing case)', () => {
       parseSamlangModuleFromText(
         sourceA,
         moduleReferenceA,
+        new Set(),
         errorCollector.getModuleErrorCollector(moduleReferenceA)
       ),
     ],
@@ -153,6 +155,7 @@ it('typeCheckSources integration smoke test (passing case)', () => {
       parseSamlangModuleFromText(
         sourceB,
         moduleReferenceB,
+        new Set(),
         errorCollector.getModuleErrorCollector(moduleReferenceB)
       ),
     ],
@@ -161,6 +164,7 @@ it('typeCheckSources integration smoke test (passing case)', () => {
       parseSamlangModuleFromText(
         sourceC,
         moduleReferenceC,
+        new Set(),
         errorCollector.getModuleErrorCollector(moduleReferenceC)
       ),
     ],
@@ -169,12 +173,17 @@ it('typeCheckSources integration smoke test (passing case)', () => {
       parseSamlangModuleFromText(
         sourceD,
         moduleReferenceD,
+        new Set(),
         errorCollector.getModuleErrorCollector(moduleReferenceD)
       ),
     ]
   );
 
-  const [, globalTypingContext] = typeCheckSources(sources, errorCollector);
+  const [, globalTypingContext] = typeCheckSources(
+    sources,
+    DEFAULT_BUILTIN_TYPING_CONTEXT,
+    errorCollector
+  );
   expect(errorCollector.getErrors().map((e) => e.toString())).toEqual([]);
 
   sources.delete(moduleReferenceC);
@@ -234,6 +243,7 @@ it('typeCheckSources smoke test (failing case)', () => {
       parseSamlangModuleFromText(
         sourceA,
         moduleReferenceA,
+        new Set(),
         errorCollector.getModuleErrorCollector(moduleReferenceA)
       ),
     ],
@@ -242,6 +252,7 @@ it('typeCheckSources smoke test (failing case)', () => {
       parseSamlangModuleFromText(
         sourceB,
         moduleReferenceB,
+        new Set(),
         errorCollector.getModuleErrorCollector(moduleReferenceB)
       ),
     ],
@@ -250,6 +261,7 @@ it('typeCheckSources smoke test (failing case)', () => {
       parseSamlangModuleFromText(
         sourceC,
         moduleReferenceC,
+        new Set(),
         errorCollector.getModuleErrorCollector(moduleReferenceC)
       ),
     ],
@@ -258,12 +270,13 @@ it('typeCheckSources smoke test (failing case)', () => {
       parseSamlangModuleFromText(
         sourceD,
         moduleReferenceD,
+        new Set(),
         errorCollector.getModuleErrorCollector(moduleReferenceD)
       ),
     ]
   );
 
-  typeCheckSources(sources, errorCollector);
+  typeCheckSources(sources, DEFAULT_BUILTIN_TYPING_CONTEXT, errorCollector);
   expect(
     errorCollector
       .getErrors()
@@ -312,6 +325,7 @@ it('typeCheckSources identifier resolution test.', () => {
       parseSamlangModuleFromText(
         sourceA,
         moduleReferenceA,
+        new Set(),
         errorCollector.getModuleErrorCollector(moduleReferenceA)
       ),
     ],
@@ -320,6 +334,7 @@ it('typeCheckSources identifier resolution test.', () => {
       parseSamlangModuleFromText(
         sourceB,
         moduleReferenceB,
+        new Set(),
         errorCollector.getModuleErrorCollector(moduleReferenceB)
       ),
     ],
@@ -328,12 +343,13 @@ it('typeCheckSources identifier resolution test.', () => {
       parseSamlangModuleFromText(
         sourceC,
         moduleReferenceC,
+        new Set(),
         errorCollector.getModuleErrorCollector(moduleReferenceC)
       ),
     ]
   );
 
-  typeCheckSources(sources, errorCollector);
+  typeCheckSources(sources, DEFAULT_BUILTIN_TYPING_CONTEXT, errorCollector);
   expect(errorCollector.getErrors().map((e) => e.toString())).toEqual([]);
 });
 
@@ -343,8 +359,10 @@ it('typeCheckSingleModuleSource smoke test', () => {
     parseSamlangModuleFromText(
       'class Main {}',
       new ModuleReference(['Test']),
+      new Set(),
       errorCollector.getModuleErrorCollector(new ModuleReference(['Test']))
     ),
+    DEFAULT_BUILTIN_TYPING_CONTEXT,
     errorCollector
   );
 

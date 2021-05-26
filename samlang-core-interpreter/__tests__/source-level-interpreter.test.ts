@@ -21,6 +21,7 @@ import {
   EXPRESSION_METHOD_ACCESS,
   EXPRESSION_MATCH,
 } from 'samlang-core-ast/samlang-expressions';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from 'samlang-core-parser';
 import { checkNotNull } from 'samlang-core-utils';
@@ -31,6 +32,7 @@ const getExpression = (rawSourceWithTypeAnnotation: string): SamlangExpression =
     parseSamlangExpressionFromText(
       rawSourceWithTypeAnnotation,
       ModuleReference.DUMMY,
+      new Set(Object.keys(DEFAULT_BUILTIN_TYPING_CONTEXT)),
       errorCollector.getModuleErrorCollector(ModuleReference.DUMMY)
     )
   );
@@ -53,6 +55,7 @@ const interpretModule = (rawSourceWithTypeAnnotation: string): string => {
   const samlangModule = parseSamlangModuleFromText(
     rawSourceWithTypeAnnotation,
     ModuleReference.DUMMY,
+    new Set(Object.keys(DEFAULT_BUILTIN_TYPING_CONTEXT)),
     errorCollector.getModuleErrorCollector(ModuleReference.DUMMY)
   );
   expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);

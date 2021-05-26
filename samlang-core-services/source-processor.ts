@@ -2,6 +2,8 @@ import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import type { LLVMModule } from 'samlang-core-ast/llvm-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { typeCheckSources, GlobalTypingContext } from 'samlang-core-checker';
+// eslint-disable-next-line import/no-internal-modules
+import type { ModuleTypingContext } from 'samlang-core-checker/typing-context';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRModuleToLLVMModule,
@@ -11,7 +13,8 @@ import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import { hashMapOf, isNotNull } from 'samlang-core-utils';
 
 export const parseSources = (
-  sourceHandles: readonly (readonly [ModuleReference, string])[]
+  sourceHandles: readonly (readonly [ModuleReference, string])[],
+  builtInClasses: ReadonlySet<string>
 ): readonly (readonly [ModuleReference, SamlangModule])[] => {
   const errorCollector = createGlobalErrorCollector();
   return sourceHandles
@@ -20,6 +23,7 @@ export const parseSources = (
       const parsed = parseSamlangModuleFromText(
         sourceString,
         moduleReference,
+        builtInClasses,
         moduleErrorCollector
       );
       return moduleErrorCollector.hasErrors ? null : ([moduleReference, parsed] as const);
@@ -34,7 +38,8 @@ type CheckSourcesResult = {
 };
 
 export const checkSources = (
-  sourceHandles: readonly (readonly [ModuleReference, string])[]
+  sourceHandles: readonly (readonly [ModuleReference, string])[],
+  builtinModuleTypes: ModuleTypingContext
 ): CheckSourcesResult => {
   const errorCollector = createGlobalErrorCollector();
   const moduleMappings = hashMapOf(
@@ -45,12 +50,17 @@ export const checkSources = (
           parseSamlangModuleFromText(
             text,
             moduleReference,
+            new Set(Object.keys(builtinModuleTypes)),
             errorCollector.getModuleErrorCollector(moduleReference)
           ),
         ] as const
     )
   );
-  const [checkedSources, globalTypingContext] = typeCheckSources(moduleMappings, errorCollector);
+  const [checkedSources, globalTypingContext] = typeCheckSources(
+    moduleMappings,
+    builtinModuleTypes,
+    errorCollector
+  );
   return { checkedSources, globalTypingContext, compileTimeErrors: errorCollector.getErrors() };
 };
 

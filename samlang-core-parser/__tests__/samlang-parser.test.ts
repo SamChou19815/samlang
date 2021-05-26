@@ -23,7 +23,8 @@ it('SamlangParser empty robustness test', () => {
   const parser = new SamlangParser(
     [],
     createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.DUMMY),
-    ModuleReference.DUMMY
+    ModuleReference.DUMMY,
+    new Set()
   );
   parser.parseClass();
   parser.parseClassMemberDefinition();
@@ -38,7 +39,8 @@ it('SamlangParser error robustness test', () => {
   const parser = new SamlangParser(
     [{ range: Range.DUMMY, content: { __type__: 'Error', content: 'fooooo' } }],
     createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.DUMMY),
-    ModuleReference.DUMMY
+    ModuleReference.DUMMY,
+    new Set()
   );
 
   parser.parseClass();

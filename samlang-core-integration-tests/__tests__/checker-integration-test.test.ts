@@ -1,6 +1,7 @@
 import { samlangProgramCheckerTestSources } from '../test-programs';
 
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { checkSources } from 'samlang-core-services';
 
 const expectedErrors: readonly string[] = [
@@ -48,7 +49,8 @@ it('samlang type checker integration test', () => {
     samlangProgramCheckerTestSources.map((it) => [
       new ModuleReference([it.testName]),
       it.sourceCode,
-    ])
+    ]),
+    DEFAULT_BUILTIN_TYPING_CONTEXT
   );
 
   const actualErrors = compileTimeErrors

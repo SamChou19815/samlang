@@ -3,6 +3,7 @@ import { checkSources } from '../source-processor';
 
 import { Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 
 it('LocationLookupTest self consistent test', () => {
   const lookup = new LocationLookup<string>();
@@ -39,10 +40,11 @@ it('LocationLookupTest favors small range test', () => {
 
 it('SamlangExpressionLocationLookupBuilder test', () => {
   const moduleReference = new ModuleReference(['foo']);
-  const { checkedSources, compileTimeErrors } = checkSources([
+  const { checkedSources, compileTimeErrors } = checkSources(
     [
-      moduleReference,
-      `class Foo(val a: int) {
+      [
+        moduleReference,
+        `class Foo(val a: int) {
     function bar(): int = 3
   }
 
@@ -107,8 +109,10 @@ it('SamlangExpressionLocationLookupBuilder test', () => {
       Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
     )))
   }`,
+      ],
     ],
-  ]);
+    DEFAULT_BUILTIN_TYPING_CONTEXT
+  );
   expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
 
   const lookup = new LocationLookup<SamlangExpression>();
