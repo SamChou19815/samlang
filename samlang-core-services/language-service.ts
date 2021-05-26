@@ -340,10 +340,9 @@ export class LanguageServices {
           expression.type.type === 'IdentifierType' &&
           expression.type.identifier.startsWith('class ')
         ) {
-          const [moduleReferenceOfClass, classDefinition] = this.getClassDefinition(
-            moduleReference,
-            expression.name
-          );
+          const nullableClassDefinition = this.getClassDefinition(moduleReference, expression.name);
+          if (nullableClassDefinition == null) return null;
+          const [moduleReferenceOfClass, classDefinition] = nullableClassDefinition;
           return { moduleReference: moduleReferenceOfClass, range: classDefinition.range };
         }
         const definitionRange = this.state.variableDefinitionLookup.findAllDefinitionAndUses(
@@ -361,9 +360,8 @@ export class LanguageServices {
         );
       case 'ObjectConstructorExpression':
       case 'VariantConstructorExpression': {
-        const [moduleReferenceOfClass, classDefinition] = this.getClassDefinition(
-          moduleReference,
-          (expression.type as IdentifierType).identifier
+        const [moduleReferenceOfClass, classDefinition] = checkNotNull(
+          this.getClassDefinition(moduleReference, (expression.type as IdentifierType).identifier)
         );
         return {
           moduleReference: moduleReferenceOfClass,
@@ -371,9 +369,11 @@ export class LanguageServices {
         };
       }
       case 'FieldAccessExpression': {
-        const [moduleReferenceOfClass, classDefinition] = this.getClassDefinition(
-          moduleReference,
-          (expression.expression.type as IdentifierType).identifier
+        const [moduleReferenceOfClass, classDefinition] = checkNotNull(
+          this.getClassDefinition(
+            moduleReference,
+            (expression.expression.type as IdentifierType).identifier
+          )
         );
         return {
           moduleReference: moduleReferenceOfClass,
@@ -400,8 +400,7 @@ export class LanguageServices {
   private getClassDefinition(
     moduleReference: ModuleReference,
     className: string
-  ): readonly [ModuleReference, ClassDefinition] {
-    // TODO: make it nullable to support ROOT definition.
+  ): readonly [ModuleReference, ClassDefinition] | undefined {
     const samlangModule = checkNotNull(this.state.getCheckedModule(moduleReference));
     const { imports, classes } = samlangModule;
     for (let i = 0; i < classes.length; i += 1) {
@@ -410,28 +409,25 @@ export class LanguageServices {
         return [moduleReference, samlangClass];
       }
     }
-    return checkNotNull(
-      imports
-        .map(({ importedMembers, importedModule }) => {
-          if (importedMembers.some((it) => it[0] === className)) {
-            return this.getClassDefinition(importedModule, className);
-          }
-          return null;
-        })
-        .filter(isNotNull)
-        .find(() => true)
-    );
+    return imports
+      .map(({ importedMembers, importedModule }) => {
+        if (importedMembers.some((it) => it[0] === className)) {
+          return this.getClassDefinition(importedModule, className);
+        }
+        return undefined;
+      })
+      .filter(isNotNull)
+      .find(() => true);
   }
 
   private findClassMemberLocation(
     moduleReference: ModuleReference,
     className: string,
     memberName: string
-  ): Location {
-    const [moduleReferenceOfClass, classDefinition] = this.getClassDefinition(
-      moduleReference,
-      className
-    );
+  ): Location | null {
+    const nullableClassDefinition = this.getClassDefinition(moduleReference, className);
+    if (nullableClassDefinition == null) return null;
+    const [moduleReferenceOfClass, classDefinition] = nullableClassDefinition;
     const matchingMember = checkNotNull(
       classDefinition.members.find((it) => it.name === memberName)
     );

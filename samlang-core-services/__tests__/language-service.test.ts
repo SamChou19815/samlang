@@ -1,6 +1,7 @@
 import { LanguageServiceState, LanguageServices, CompletionItemKinds } from '../language-service';
 
 import { Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { prettyPrintSamlangModule } from 'samlang-core-printer';
 
 it('Language server state can update.', () => {
@@ -233,7 +234,7 @@ class Test1 {
   /** test */
   // function test(): int = -1
 
-  function test2(): int = stringToInt("")
+  function test2(): int = Builtins.stringToInt("")
 }
 `,
       ],
@@ -243,18 +244,20 @@ class Test1 {
 class Test2(val a: int) {
   method test(): int = -1
 
-  function test2(): int = panic("")
+  function test2(): int = Builtins.panic("")
 }
 `,
       ],
     ],
-    {}
+    DEFAULT_BUILTIN_TYPING_CONTEXT
   );
   const service = new LanguageServices(state, () => '');
 
   expect(service.queryDefinitionLocation(testModuleReference, new Position(4, 33))).toBeNull();
   expect(service.queryDefinitionLocation(test2ModuleReference, new Position(2, 23))).toBeNull();
-  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 29))).toBeNull();
+  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 30))).toBeNull();
+  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 33))).toBeNull();
+  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 37))).toBeNull();
 });
 
 it('LanguageServices.queryDefinitionLocation test 1', () => {
