@@ -1,4 +1,5 @@
 import {
+  DEFAULT_BUILTIN_TYPING_CONTEXT,
   buildGlobalTypingContext,
   updateGlobalTypingContext,
 } from './global-typing-context-builder';
@@ -7,7 +8,11 @@ import {
   collectModuleReferenceFromExpression,
 } from './module-references-collector';
 import ModuleTypeChecker from './module-type-checker';
-import type { GlobalTypingContext, MemberTypeInformation } from './typing-context';
+import type {
+  GlobalTypingContext,
+  ModuleTypingContext,
+  MemberTypeInformation,
+} from './typing-context';
 import checkUndefinedImportsError from './undefined-imports-checker';
 
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
@@ -22,6 +27,8 @@ import {
   setOf,
   hashSetOf,
 } from 'samlang-core-utils';
+
+export { DEFAULT_BUILTIN_TYPING_CONTEXT };
 
 export const collectModuleReferenceFromSamlangModule = (
   samlangModule: SamlangModule
@@ -109,9 +116,10 @@ const typeCheckModule = (
 
 export const typeCheckSources = (
   sources: Sources<SamlangModule>,
+  builtinModuleTypes: ModuleTypingContext,
   errorCollector: ReadonlyGlobalErrorCollector
 ): readonly [Sources<SamlangModule>, GlobalTypingContext] => {
-  const globalTypingContext = buildGlobalTypingContext(sources);
+  const globalTypingContext = buildGlobalTypingContext(sources, builtinModuleTypes);
   const checkedSources = hashMapOf<ModuleReference, SamlangModule>();
   sources.forEach((samlangModule, moduleReference) => {
     checkedSources.set(
@@ -145,11 +153,13 @@ export const typeCheckSourcesIncrementally = (
 
 export const typeCheckSingleModuleSource = (
   samlangModule: SamlangModule,
+  builtinModuleTypes: ModuleTypingContext,
   errorCollector: ReadonlyGlobalErrorCollector
 ): SamlangModule => {
   const moduleReference = new ModuleReference(['Test']);
   const checkedModule = typeCheckSources(
     mapOf([moduleReference, samlangModule]),
+    builtinModuleTypes,
     errorCollector
   )[0].forceGet(moduleReference);
   return checkedModule;

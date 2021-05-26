@@ -2,14 +2,18 @@ import { parseSources, checkSources, lowerSourcesToLLVMModules } from '../source
 
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 
 it('parseSources test', () => {
   expect(
-    parseSources([
-      [new ModuleReference(['Test1']), 'class Main { function main(): unit = {} }'],
-      // with syntax error
-      [new ModuleReference(['Test2']), 'class Main { function main(): unt = {} }'],
-    ]).length
+    parseSources(
+      [
+        [new ModuleReference(['Test1']), 'class Main { function main(): unit = {} }'],
+        // with syntax error
+        [new ModuleReference(['Test2']), 'class Main { function main(): unt = {} }'],
+      ],
+      new Set()
+    ).length
   ).toBe(1);
 });
 
@@ -21,7 +25,10 @@ it('hello world processor test', () => {
   }
   `;
 
-  const { checkedSources, compileTimeErrors } = checkSources([[moduleReference, sourceCode]]);
+  const { checkedSources, compileTimeErrors } = checkSources(
+    [[moduleReference, sourceCode]],
+    DEFAULT_BUILTIN_TYPING_CONTEXT
+  );
   expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
 
   const llvmModule = lowerSourcesToLLVMModules(checkedSources).forceGet(moduleReference);

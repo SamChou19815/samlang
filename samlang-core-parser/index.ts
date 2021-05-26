@@ -9,12 +9,14 @@ import type { ModuleErrorCollector } from 'samlang-core-errors';
 export const parseSamlangModuleFromText = (
   text: string,
   moduleReference: ModuleReference,
+  builtInClasses: ReadonlySet<string>,
   moduleErrorCollector: ModuleErrorCollector
 ): SamlangModule => {
   const parser = new SamlangModuleParser(
     lexSamlangProgram(text, moduleErrorCollector),
     moduleErrorCollector,
-    moduleReference
+    moduleReference,
+    builtInClasses
   );
   return parser.parseModule();
 };
@@ -22,12 +24,14 @@ export const parseSamlangModuleFromText = (
 export const parseSamlangExpressionFromText = (
   text: string,
   moduleReference: ModuleReference,
+  builtInClasses: ReadonlySet<string>,
   moduleErrorCollector: ModuleErrorCollector
 ): SamlangExpression => {
   const parser = new SamlangModuleParser(
     lexSamlangProgram(text, moduleErrorCollector),
     moduleErrorCollector,
-    moduleReference
+    moduleReference,
+    builtInClasses
   );
   return parser.parseExpression();
 };

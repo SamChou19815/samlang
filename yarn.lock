@@ -468,6 +468,7 @@ __metadata:
     "@yarnpkg/esbuild-plugin-pnp": ^1.0.0-rc.2
     esbuild: ^0.11.23
     samlang-core-ast: "workspace:0.0.1"
+    samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
@@ -486,6 +487,7 @@ __metadata:
     "@yarnpkg/esbuild-plugin-pnp": ^1.0.0-rc.2
     esbuild: ^0.11.23
     samlang-core-ast: "workspace:0.0.1"
+    samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
@@ -5821,6 +5823,7 @@ resolve@^1.18.1:
   dependencies:
     "@types/jest": ^26.0.23
     samlang-core-ast: "workspace:0.0.1"
+    samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
     samlang-core-interpreter: "workspace:0.0.1"
     samlang-core-optimization: "workspace:0.0.1"
@@ -5838,6 +5841,7 @@ resolve@^1.18.1:
   dependencies:
     "@types/jest": ^26.0.23
     samlang-core-ast: "workspace:0.0.1"
+    samlang-core-checker: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"

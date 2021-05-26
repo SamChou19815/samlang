@@ -7,7 +7,16 @@ import type {
   GlobalTypingContext,
 } from './typing-context';
 
-import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import {
+  ModuleReference,
+  Range,
+  Sources,
+  unitType,
+  intType,
+  stringType,
+  identifierType,
+  functionType,
+} from 'samlang-core-ast/common-nodes';
 import type { ClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { hashMapOf } from 'samlang-core-utils';
 
@@ -37,14 +46,48 @@ const buildModuleTypingContext = (samlangModule: SamlangModule): ModuleTypingCon
     )
   );
 
+export const DEFAULT_BUILTIN_TYPING_CONTEXT: ModuleTypingContext = {
+  Pervasive: {
+    typeParameters: [],
+    typeDefinition: { range: Range.DUMMY, type: 'object', names: [], mappings: {} },
+    functions: {
+      stringToInt: {
+        isPublic: true,
+        typeParameters: [],
+        type: functionType([stringType], intType),
+      },
+      intToString: {
+        isPublic: true,
+        typeParameters: [],
+        type: functionType([intType], stringType),
+      },
+      println: {
+        isPublic: true,
+        typeParameters: [],
+        type: functionType([stringType], unitType),
+      },
+      panic: {
+        isPublic: true,
+        typeParameters: ['T'],
+        type: functionType([stringType], identifierType(ModuleReference.ROOT, 'T')),
+      },
+    },
+    methods: {},
+  },
+};
+
 /**
  * Build global typing context from scratch.
  *
  * @param sources a collection of all sources needed for type checking.
  * @returns a fully constructed global typing context.
  */
-export const buildGlobalTypingContext = (sources: Sources<SamlangModule>): GlobalTypingContext => {
+export const buildGlobalTypingContext = (
+  sources: Sources<SamlangModule>,
+  builtinModuleTypes: ModuleTypingContext
+): GlobalTypingContext => {
   const modules = hashMapOf<ModuleReference, ModuleTypingContext>();
+  modules.set(ModuleReference.ROOT, builtinModuleTypes);
   sources.forEach((samlangModule, moduleReference) => {
     modules.set(moduleReference, buildModuleTypingContext(samlangModule));
   });

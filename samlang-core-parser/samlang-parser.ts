@@ -213,13 +213,16 @@ export default class SamlangModuleParser extends BaseParser {
   constructor(
     tokens: readonly SamlangToken[],
     errorCollector: ModuleErrorCollector,
-    private readonly moduleReference: ModuleReference
+    private readonly moduleReference: ModuleReference,
+    private readonly builtInClasses: ReadonlySet<string>
   ) {
     super(tokens, errorCollector);
   }
 
-  private resolveClass = (className: string) =>
-    this.classSourceMap.get(className) ?? this.moduleReference;
+  private resolveClass = (className: string) => {
+    if (this.builtInClasses.has(className)) return ModuleReference.ROOT;
+    return this.classSourceMap.get(className) ?? this.moduleReference;
+  };
 
   parseModule = (): SamlangModule => {
     const imports: ModuleMembersImport[] = [];
