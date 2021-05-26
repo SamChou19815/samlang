@@ -31,7 +31,10 @@ const format = () => {
   const sources = collectSources(getConfiguration());
   parseSources(sources, new Set(Object.keys(DEFAULT_BUILTIN_TYPING_CONTEXT))).forEach(
     ([moduleReference, samlangModule]) => {
-      writeFileSync(moduleReference.toFilename(), prettyPrintSamlangModule(100, samlangModule));
+      {
+        console.log('formatting', moduleReference.toFilename());
+        writeFileSync(moduleReference.toFilename(), prettyPrintSamlangModule(100, samlangModule));
+      }
     }
   );
 };

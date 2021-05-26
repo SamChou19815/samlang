@@ -142,12 +142,7 @@ export class SamlangExpressionLocationLookupBuilder {
       case 'FieldAccessExpression':
       case 'MethodAccessExpression':
       case 'UnaryExpression':
-      case 'PanicExpression':
         this.buildRecursively(moduleReference, expression.expression);
-        this.buildSingleExpression(moduleReference, expression);
-        return;
-      case 'BuiltInFunctionCallExpression':
-        this.buildRecursively(moduleReference, expression.argumentExpression);
         this.buildSingleExpression(moduleReference, expression);
         return;
       case 'FunctionCallExpression':

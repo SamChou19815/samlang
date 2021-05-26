@@ -26,14 +26,7 @@ import {
 } from 'samlang-core-ast/hir-expressions';
 import createHighIRFlexibleOrderOperatorNode from 'samlang-core-ast/hir-flexible-op';
 import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
-import {
-  error,
-  isNotNull,
-  zip3,
-  LocalStackedContext,
-  checkNotNull,
-  assert,
-} from 'samlang-core-utils';
+import { isNotNull, zip3, LocalStackedContext, checkNotNull, assert } from 'samlang-core-utils';
 
 const longOfBool = (b: boolean) => (b ? 1 : 0);
 
@@ -287,7 +280,7 @@ const optimizeHighIRStatement = (
             e1: partiallyOptimizedStatement.e1,
             e2: partiallyOptimizedStatement.e2,
           },
-          error
+          () => {}
         );
       }
       return [partiallyOptimizedStatement];

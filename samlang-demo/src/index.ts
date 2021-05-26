@@ -33,8 +33,14 @@ const runSamlangDemo = (programString: string): SamlangDemoResult => {
   }
 
   const demoSamlangModule = checkedSources.forceGet(demoModuleReference);
-  const jsProgram = compileSamlangSourcesToHighIRSources(checkedSources).get(demoModuleReference);
-  const demoLLVMModule = lowerSourcesToLLVMModules(checkedSources).get(demoModuleReference);
+  const jsProgram = compileSamlangSourcesToHighIRSources(
+    checkedSources,
+    DEFAULT_BUILTIN_TYPING_CONTEXT
+  ).get(demoModuleReference);
+  const demoLLVMModule = lowerSourcesToLLVMModules(
+    checkedSources,
+    DEFAULT_BUILTIN_TYPING_CONTEXT
+  ).get(demoModuleReference);
 
   const interpreterPrinted = interpretSamlangModule(demoSamlangModule);
   const prettyPrintedProgram = prettyPrintSamlangModule(100, demoSamlangModule);

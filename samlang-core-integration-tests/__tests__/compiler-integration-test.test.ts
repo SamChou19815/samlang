@@ -28,9 +28,10 @@ const { checkedSources, compileTimeErrors } = checkSources(
   DEFAULT_BUILTIN_TYPING_CONTEXT
 );
 
+expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
+
 // @ts-expect-error: process type is in @types/node, but we deliberatively excludes it to prevent core package depending on node.
 if (process.env.CI) {
-  expect(compileTimeErrors).toEqual([]);
   runnableSamlangProgramTestCases.forEach((testCase) => {
     it(`source-level: ${testCase.testCaseName}`, () => {
       const samlangModule = checkedSources.forceGet(new ModuleReference([testCase.testCaseName]));
@@ -39,7 +40,10 @@ if (process.env.CI) {
   });
 }
 
-const hirSources = compileSamlangSourcesToHighIRSources(checkedSources, {});
+const hirSources = compileSamlangSourcesToHighIRSources(
+  checkedSources,
+  DEFAULT_BUILTIN_TYPING_CONTEXT
+);
 
 const highIRModuleToJSCode = (highIRModule: HighIRModule): string =>
   prettyPrintAccordingToPrettierAlgorithm(

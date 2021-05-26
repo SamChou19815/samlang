@@ -387,8 +387,6 @@ export class LanguageServices {
           expression.methodName
         );
       case 'UnaryExpression':
-      case 'PanicExpression':
-      case 'BuiltInFunctionCallExpression':
       case 'FunctionCallExpression':
       case 'BinaryExpression':
       case 'IfElseExpression':
@@ -403,6 +401,7 @@ export class LanguageServices {
     moduleReference: ModuleReference,
     className: string
   ): readonly [ModuleReference, ClassDefinition] {
+    // TODO: make it nullable to support ROOT definition.
     const samlangModule = checkNotNull(this.state.getCheckedModule(moduleReference));
     const { imports, classes } = samlangModule;
     for (let i = 0; i < classes.length; i += 1) {

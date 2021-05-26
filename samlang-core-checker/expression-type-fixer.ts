@@ -119,31 +119,6 @@ const fixExpressionType = (
         expression: fixedExpression,
       };
     }
-    case 'PanicExpression':
-      return {
-        ...expression,
-        type: getExpressionFixedType(expression, expectedType),
-        expression: tryFixExpressionType(expression.expression, stringType),
-      };
-    case 'BuiltInFunctionCallExpression': {
-      let argumentExpression: SamlangExpression;
-      switch (expression.functionName) {
-        case 'intToString':
-          argumentExpression = tryFixExpressionType(expression.argumentExpression, intType);
-          break;
-        case 'stringToInt':
-          argumentExpression = tryFixExpressionType(expression.argumentExpression, stringType);
-          break;
-        case 'println':
-          argumentExpression = tryFixExpressionType(expression.argumentExpression, stringType);
-          break;
-      }
-      return {
-        ...expression,
-        type: getExpressionFixedType(expression, expectedType),
-        argumentExpression,
-      };
-    }
     case 'FunctionCallExpression': {
       const functionFixedType = getExpressionFixedType(
         expression.functionExpression,

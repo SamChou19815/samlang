@@ -1,16 +1,16 @@
 class Main {
   function intIdentity(order: int): int = {
-    val _: unit = println(intToString(order));
+    val _: unit = Builtins.println(Builtins.intToString(order));
     2
   }
 
   function boolIdentity(item: bool, order: int): bool = {
-    val _: unit = println(intToString(order));
+    val _: unit = Builtins.println(Builtins.intToString(order));
     item
   }
 
   function stringIdentity(str: string): string = {
-    val _: unit = println("surprise!");
+    val _: unit = Builtins.println("surprise!");
     str
   }
 

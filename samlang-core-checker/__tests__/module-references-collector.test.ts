@@ -4,7 +4,6 @@ import {
   unitType,
   boolType,
   intType,
-  stringType,
   identifierType,
   tupleType,
   functionType,
@@ -26,8 +25,6 @@ import {
   EXPRESSION_FIELD_ACCESS,
   EXPRESSION_METHOD_ACCESS,
   EXPRESSION_UNARY,
-  EXPRESSION_PANIC,
-  EXPRESSION_BUILTIN_FUNCTION_CALL,
   EXPRESSION_FUNCTION_CALL,
   EXPRESSION_BINARY,
   EXPRESSION_IF_ELSE,
@@ -53,7 +50,6 @@ const assertFoundAllModuleReferencesFromExpression = (
 
 const TRUE = EXPRESSION_TRUE(Range.DUMMY, []);
 const intOf = (n: number) => EXPRESSION_INT(Range.DUMMY, [], n);
-const stringOf = (s: string) => EXPRESSION_STRING(Range.DUMMY, [], s);
 
 it('collectModuleReferenceFromExpression works 1/n', () => {
   assertFoundAllModuleReferencesFromExpression(TRUE, []);
@@ -185,29 +181,6 @@ it('collectModuleReferenceFromExpression works 6/n', () => {
       associatedComments: [],
       operator: '!',
       expression: TRUE,
-    }),
-    []
-  );
-
-  assertFoundAllModuleReferencesFromExpression(
-    EXPRESSION_PANIC({
-      range: Range.DUMMY,
-      type: intType,
-      associatedComments: [],
-      expression: stringOf(''),
-    }),
-    []
-  );
-});
-
-it('collectModuleReferenceFromExpression works 7/n', () => {
-  assertFoundAllModuleReferencesFromExpression(
-    EXPRESSION_BUILTIN_FUNCTION_CALL({
-      range: Range.DUMMY,
-      type: stringType,
-      associatedComments: [],
-      functionName: 'intToString',
-      argumentExpression: intOf(1),
     }),
     []
   );

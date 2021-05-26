@@ -1,5 +1,5 @@
 class Main {
-  function printInt(i: int): unit = println(intToString(i))
+  function printInt(i: int): unit = Builtins.println(Builtins.intToString(i))
 
   function test(a: int, b: int): unit = {
     val _: unit = Main.printInt(a * b + a + (a * b + a));

@@ -48,7 +48,7 @@ class Main {
 
   function methodAndFunctionReference(): int = (Clazz.of()).thisTest()
 
-  function panicTest(reason: string): Clazz = panic(reason)
+  function panicTest(reason: string): Clazz = Builtins.panic(reason)
 
   function functionsTest(): unit = {
     val _: unit = Main.literalsAndSimpleExpressions();
@@ -78,7 +78,7 @@ class Main {
     val _: unit = Main.literalsAndSimpleExpressions();
     val _: unit = Main.variables(3, "sss");
     val v: int = Main.methodAndFunctionReference();
-    println(intToString(v))
+    Builtins.println(Builtins.intToString(v))
   }
 
 }

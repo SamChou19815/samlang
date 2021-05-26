@@ -7,7 +7,7 @@ import {
   EXPRESSION_LAMBDA,
 } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule, ClassDefinition } from 'samlang-core-ast/samlang-toplevel';
-import { zip } from 'samlang-core-utils';
+import { assert, checkNotNull, zip } from 'samlang-core-utils';
 
 export type Value =
   | UnitValue
@@ -17,7 +17,8 @@ export type Value =
   | TupleValue
   | ObjectValue
   | VariantValue
-  | FunctionValue;
+  | FunctionValue
+  | BuiltinsFunctionValue;
 
 export type UnitValue = {
   readonly type: 'unit';
@@ -44,6 +45,11 @@ export type FunctionValue = {
   readonly arguments: string[];
   readonly body: SamlangExpression;
   context: InterpretationContext;
+};
+
+export type BuiltinsFunctionValue = {
+  readonly type: 'builtinFunction';
+  readonly value: 'stringToInt' | 'intToString' | 'println' | 'panic';
 };
 
 /**
@@ -103,6 +109,15 @@ export class ExpressionInterpreter {
           this.blameTypeChecker(`Missing variable ${expression.name}`)
         );
       case 'ClassMemberExpression':
+        if (expression.className === 'Builtins') {
+          switch (expression.memberName) {
+            case 'stringToInt':
+            case 'intToString':
+            case 'println':
+            case 'panic':
+              return { type: 'builtinFunction', value: expression.memberName };
+          }
+        }
         return (
           context.classes[expression.className]?.functions?.[expression.memberName] ||
           this.blameTypeChecker(
@@ -155,30 +170,31 @@ export class ExpressionInterpreter {
             return !v;
         }
       }
-      case 'PanicExpression':
-        throw new PanicException(this.eval(expression.expression, context) as string);
-      case 'BuiltInFunctionCallExpression': {
-        const argumentValue = this.eval(expression.argumentExpression, context);
-        switch (expression.functionName) {
-          case 'stringToInt': {
-            const value = argumentValue as string;
-            const parsedValue = parseInt(value, 10);
-            if (!Number.isNaN(parsedValue)) return parsedValue;
-            throw new PanicException(`Cannot convert \`${value}\` to int.`);
-          }
-          case 'intToString':
-            return (argumentValue as number).toString();
-          case 'println':
-            this.printedCollector += `${argumentValue as string}\n`;
-            return { type: 'unit' };
-        }
-      }
       case 'FunctionCallExpression': {
-        const functionVal = this.eval(expression.functionExpression, context) as FunctionValue;
+        const functionVal = this.eval(expression.functionExpression, context);
+        const argValues = expression.functionArguments.map((arg) => this.eval(arg, context));
+        if (typeof functionVal === 'object' && functionVal.type === 'builtinFunction') {
+          const argumentValue = checkNotNull(argValues[0]);
+          switch (functionVal.value) {
+            case 'stringToInt': {
+              const value = argumentValue as string;
+              const parsedValue = parseInt(value, 10);
+              if (!Number.isNaN(parsedValue)) return parsedValue;
+              throw new PanicException(`Cannot convert \`${value}\` to int.`);
+            }
+            case 'intToString':
+              return (argumentValue as number).toString();
+            case 'println':
+              this.printedCollector += `${argumentValue as string}\n`;
+              return { type: 'unit' };
+            case 'panic':
+              throw new PanicException(argumentValue as string);
+          }
+        }
+        assert(typeof functionVal === 'object' && functionVal.type === 'functionValue');
         const args = functionVal.arguments;
         const body = functionVal.body;
         const ctx = functionVal.context;
-        const argValues = expression.functionArguments.map((arg) => this.eval(arg, context));
         const bodyLocalValues = { ...ctx.localValues };
         zip(args, argValues).forEach(([arg, value]) => {
           bodyLocalValues[arg] = value;

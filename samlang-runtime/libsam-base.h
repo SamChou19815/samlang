@@ -7,6 +7,6 @@ typedef samlang_int *samlang_string;
 
 // Main allocation hook
 extern samlang_int* _builtin_malloc(samlang_int);
-extern samlang_string _builtin_intToString(samlang_int);
-extern samlang_int _builtin_println(samlang_string);
-extern samlang_int _builtin_throw(samlang_string);
+extern samlang_string _module__class_Builtins_function_intToString(samlang_int);
+extern samlang_int _module__class_Builtins_function_println(samlang_string);
+extern samlang_int _module__class_Builtins_function_panic(samlang_string);

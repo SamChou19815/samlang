@@ -32,8 +32,6 @@ import {
   FieldAccessExpression,
   MethodAccessExpression,
   UnaryExpression,
-  PanicExpression,
-  BuiltInFunctionCallExpression,
   FunctionCallExpression,
   BinaryExpression,
   IfElseExpression,
@@ -101,10 +99,6 @@ class ExpressionTypeChecker {
         return this.typeCheckFieldAccess(expression, expectedType);
       case 'UnaryExpression':
         return this.typeCheckUnary(expression, expectedType);
-      case 'PanicExpression':
-        return this.typeCheckPanic(expression, expectedType);
-      case 'BuiltInFunctionCallExpression':
-        return this.typeCheckBuiltinFunctionCall(expression, expectedType);
       case 'FunctionCallExpression':
         return this.typeCheckFunctionCall(expression, expectedType);
       case 'BinaryExpression':
@@ -143,7 +137,10 @@ class ExpressionTypeChecker {
   }
 
   private typeCheckVariable(expression: VariableExpression, expectedType: Type): SamlangExpression {
-    const locallyInferredType = this.localTypingContext.getLocalValueType(expression.name);
+    const locallyInferredType =
+      expression.name === '_'
+        ? unitType
+        : this.localTypingContext.getLocalValueType(expression.name);
     if (locallyInferredType == null) {
       this.errorCollector.reportUnresolvedNameError(expression.range, expression.name);
       return { ...expression, type: expectedType };
@@ -495,31 +492,6 @@ class ExpressionTypeChecker {
     this.constraintAwareTypeChecker.checkAndInfer(expectedType, expression.type, expression.range);
     const checkedSubExpression = this.typeCheck(expression.expression, expression.type);
     return { ...expression, expression: checkedSubExpression };
-  }
-
-  private typeCheckPanic(expression: PanicExpression, expectedType: Type): SamlangExpression {
-    this.constraintAwareTypeChecker.checkAndInfer(expectedType, expression.type, expression.range);
-    const checkedSubExpression = this.typeCheck(expression.expression, stringType);
-    return { ...expression, expression: checkedSubExpression };
-  }
-
-  private typeCheckBuiltinFunctionCall(
-    expression: BuiltInFunctionCallExpression,
-    expectedType: Type
-  ): SamlangExpression {
-    let expectedArgumentType: Type;
-    switch (expression.functionName) {
-      case 'intToString':
-        expectedArgumentType = intType;
-        break;
-      case 'stringToInt':
-      case 'println':
-        expectedArgumentType = stringType;
-        break;
-    }
-    const checkedArgument = this.typeCheck(expression.argumentExpression, expectedArgumentType);
-    this.constraintAwareTypeChecker.checkAndInfer(expectedType, expression.type, expression.range);
-    return { ...expression, argumentExpression: checkedArgument };
   }
 
   private typeCheckFunctionCall(

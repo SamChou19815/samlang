@@ -471,10 +471,10 @@ it('prettyPrintLLVMModule works', () => {
       ],
     })
   ).toBe(`declare i32* @_builtin_malloc(i32) nounwind
-declare i32 @_builtin_println(i32*) nounwind
-declare i32 @_builtin_throw(i32*) nounwind
-declare i32* @_builtin_intToString(i32) nounwind
-declare i32 @_builtin_stringToInt(i32*) nounwind
+declare i32 @_module__class_Builtins_function_println(i32*) nounwind
+declare i32* @_module__class_Builtins_function_panic(i32*) nounwind
+declare i32* @_module__class_Builtins_function_intToString(i32) nounwind
+declare i32 @_module__class_Builtins_function_stringToInt(i32*) nounwind
 declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
 
 ; @hw = 'AA'

@@ -4,6 +4,6 @@ class Main {
   function isOdd(n: int): bool = if (n == 0) then false else Main.isEven(n - 1)
 
   function main(): unit =
-    if (!(Main.isEven(3)) && Main.isOdd(3)) then println("OK") else println("BAD")
+    if (!(Main.isEven(3)) && Main.isOdd(3)) then Builtins.println("OK") else Builtins.println("BAD")
 
 }

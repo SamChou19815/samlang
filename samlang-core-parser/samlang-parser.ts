@@ -52,8 +52,6 @@ import {
   EXPRESSION_VARIANT_CONSTRUCTOR,
   EXPRESSION_FIELD_ACCESS,
   EXPRESSION_UNARY,
-  EXPRESSION_PANIC,
-  EXPRESSION_BUILTIN_FUNCTION_CALL,
   EXPRESSION_FUNCTION_CALL,
   EXPRESSION_BINARY,
   EXPRESSION_IF_ELSE,
@@ -732,60 +730,7 @@ export default class SamlangModuleParser extends BaseParser {
   };
 
   private parseFunctionCallOrFieldAccess = (): SamlangExpression => {
-    const associatedComments = this.collectPrecedingComments();
-    const peeked = this.peek();
-
-    if (peeked.content === 'panic') {
-      this.consume();
-      this.assertAndConsume('(');
-      const expression = this.parseExpressionWithEndingComments();
-      const endRange = this.assertAndConsume(')');
-      return EXPRESSION_PANIC({
-        range: peeked.range.union(endRange),
-        type: UndecidedTypes.next(),
-        associatedComments,
-        expression,
-      });
-    }
-    if (peeked.content === 'stringToInt') {
-      this.consume();
-      this.assertAndConsume('(');
-      const argumentExpression = this.parseExpressionWithEndingComments();
-      const endRange = this.assertAndConsume(')');
-      return EXPRESSION_BUILTIN_FUNCTION_CALL({
-        range: peeked.range.union(endRange),
-        type: intType,
-        associatedComments,
-        functionName: 'stringToInt',
-        argumentExpression,
-      });
-    }
-    if (peeked.content === 'intToString') {
-      this.consume();
-      this.assertAndConsume('(');
-      const argumentExpression = this.parseExpressionWithEndingComments();
-      const endRange = this.assertAndConsume(')');
-      return EXPRESSION_BUILTIN_FUNCTION_CALL({
-        range: peeked.range.union(endRange),
-        type: stringType,
-        associatedComments,
-        functionName: 'intToString',
-        argumentExpression,
-      });
-    }
-    if (peeked.content === 'println') {
-      this.consume();
-      this.assertAndConsume('(');
-      const argumentExpression = this.parseExpressionWithEndingComments();
-      const endRange = this.assertAndConsume(')');
-      return EXPRESSION_BUILTIN_FUNCTION_CALL({
-        range: peeked.range.union(endRange),
-        associatedComments,
-        type: unitType,
-        functionName: 'println',
-        argumentExpression,
-      });
-    }
+    const startRange = this.peek().range;
 
     // Treat function arguments or field name as postfix.
     // Then use Kleene star trick to parse.
@@ -811,7 +756,7 @@ export default class SamlangModuleParser extends BaseParser {
           this.peek().content === ')' ? [] : this.parseCommaSeparatedExpressions();
         const endRange = this.assertAndConsume(')');
         functionExpression = EXPRESSION_FUNCTION_CALL({
-          range: peeked.range.union(endRange),
+          range: startRange.union(endRange),
           type: UndecidedTypes.next(),
           associatedComments: [],
           functionExpression,

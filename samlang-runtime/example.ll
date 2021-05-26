@@ -1,5 +1,5 @@
-declare i32 @_builtin_println(i32*) nounwind
-declare i32* @_builtin_intToString(i32) nounwind
+declare i32 @_module__class_Builtins_function_println(i32*) nounwind
+declare i32* @_module__class_Builtins_function_intToString(i32) nounwind
 
 define i32 @_factorial(i32 %n) local_unnamed_addr nounwind {
 start:
@@ -19,7 +19,7 @@ loop_end:
 
 define void @_compiled_program_main(i32** %0) local_unnamed_addr nounwind {
   %t0 = call i32 @_factorial(i32 10) nounwind
-  %t1 = call i32* @_builtin_intToString(i32 %t0) nounwind
-  call i32 @_builtin_println(i32* %t1) nounwind
+  %t1 = call i32* @_module__class_Builtins_function_intToString(i32 %t0) nounwind
+  call i32 @_module__class_Builtins_function_println(i32* %t1) nounwind
   ret void
 }

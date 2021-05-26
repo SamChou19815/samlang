@@ -4,7 +4,7 @@ class Main {
   function main(): unit = {
     val h: string = "Hello";
     val w: string = " World!";
-    println(h :: w)
+    Builtins.println(h :: w)
   }
 
 }

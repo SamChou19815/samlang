@@ -1,11 +1,11 @@
 class Main {
   function main(): unit = {
-    if (stringToInt("42") == 42) then {
+    if (Builtins.stringToInt("42") == 42) then {
       val a: int = 3;
-      println(intToString(a))
+      Builtins.println(Builtins.intToString(a))
     } else {
       val a: int = 4;
-      println(intToString(a))
+      Builtins.println(Builtins.intToString(a))
     }
   }
 

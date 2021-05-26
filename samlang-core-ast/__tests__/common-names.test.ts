@@ -14,5 +14,5 @@ it('Has correct names', () => {
     '_module_Foo_Bar_Derp__Baz_class_Main_function_main'
   );
 
-  expect(ENCODED_FUNCTION_NAME_THROW).toBe('_builtin_throw');
+  expect(ENCODED_FUNCTION_NAME_THROW).toBe('_module__class_Builtins_function_panic');
 });

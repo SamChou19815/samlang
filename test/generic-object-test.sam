@@ -4,8 +4,8 @@ class GenericObject<T1, T2>(val v1: T1, val v2: T2) {
       v1: 3,
       v2
     } else { v1: 3, v2: 42 };
-    val _: unit = println(intToString((f(2)) /* f */ .v2));
-    val _: unit = println(intToString((f(3)) /* f */ .v2));
+    val _: unit = Builtins.println(Builtins.intToString((f(2)) /* f */ .v2));
+    val _: unit = Builtins.println(Builtins.intToString((f(3)) /* f */ .v2));
   }
 
 }

@@ -1,11 +1,16 @@
 class Main {
   function mathTailRec(n: int, acc: int): int =
     // Forcing allocating a lot of objects, test gc
-    if (n == 0) then acc else Main.mathTailRec(n - 1, acc + stringToInt(intToString(12)))
+    if (n == 0) then acc else Main.mathTailRec(
+      n - 1,
+      acc + Builtins.stringToInt(Builtins.intToString(12))
+    )
 
   function main(): unit = {
     val actual = Main.mathTailRec(100000, 0);
-    if (actual == 1200000) then println("Yay") else panic(intToString(actual))
+    if (actual == 1200000) then Builtins.println("Yay") else Builtins.panic(
+      Builtins.intToString(actual)
+    )
   }
 
 }

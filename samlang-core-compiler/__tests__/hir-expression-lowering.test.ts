@@ -34,8 +34,6 @@ import {
   EXPRESSION_FIELD_ACCESS,
   EXPRESSION_METHOD_ACCESS,
   EXPRESSION_UNARY,
-  EXPRESSION_PANIC,
-  EXPRESSION_BUILTIN_FUNCTION_CALL,
   EXPRESSION_FUNCTION_CALL,
   EXPRESSION_BINARY,
   EXPRESSION_LAMBDA,
@@ -251,45 +249,6 @@ it('Unary lowering works.', () => {
       expression: THIS,
     }),
     'let _t0: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t0: int);'
-  );
-});
-
-it('FunctionCall family lowering works 1/n.', () => {
-  expectCorrectlyLowered(
-    EXPRESSION_BUILTIN_FUNCTION_CALL({
-      range: Range.DUMMY,
-      type: stringType,
-      associatedComments: [],
-      functionName: 'intToString',
-      argumentExpression: THIS,
-    }),
-    'let _t0: string = _builtin_intToString((_this: __DUMMY___Dummy));\nreturn (_t0: string);'
-  );
-});
-
-it('FunctionCall family lowering works 2/n.', () => {
-  expectCorrectlyLowered(
-    EXPRESSION_BUILTIN_FUNCTION_CALL({
-      range: Range.DUMMY,
-      type: intType,
-      associatedComments: [],
-      functionName: 'stringToInt',
-      argumentExpression: THIS,
-    }),
-    'let _t0: int = _builtin_stringToInt((_this: __DUMMY___Dummy));\nreturn (_t0: int);'
-  );
-});
-
-it('FunctionCall family lowering works 3/n.', () => {
-  expectCorrectlyLowered(
-    EXPRESSION_BUILTIN_FUNCTION_CALL({
-      range: Range.DUMMY,
-      type: unitType,
-      associatedComments: [],
-      functionName: 'println',
-      argumentExpression: THIS,
-    }),
-    '_builtin_println((_this: __DUMMY___Dummy));\nreturn 0;'
   );
 });
 
@@ -735,18 +694,6 @@ return (_t0: (any, any));`
   );
 });
 
-it('Panic lowering works.', () => {
-  expectCorrectlyLowered(
-    EXPRESSION_PANIC({
-      range: Range.DUMMY,
-      type: unitType,
-      associatedComments: [],
-      expression: THIS,
-    }),
-    `_builtin_throw((_this: __DUMMY___Dummy));\nreturn 0;`
-  );
-});
-
 it('IfElse lowering works 1/2.', () => {
   expectCorrectlyLowered(
     EXPRESSION_IF_ELSE({
@@ -754,18 +701,12 @@ it('IfElse lowering works 1/2.', () => {
       type: DUMMY_IDENTIFIER_TYPE,
       associatedComments: [],
       boolExpression: THIS,
-      e1: EXPRESSION_PANIC({
-        range: Range.DUMMY,
-        type: unitType,
-        associatedComments: [],
-        expression: THIS,
-      }),
+      e1: THIS,
       e2: THIS,
     }),
     `let _t0: __DUMMY___Dummy;
 if (_this: __DUMMY___Dummy) {
-  _builtin_throw((_this: __DUMMY___Dummy));
-  _t0 = 0;
+  _t0 = (_this: __DUMMY___Dummy);
 } else {
   _t0 = (_this: __DUMMY___Dummy);
 }
@@ -780,16 +721,10 @@ it('IfElse lowering works 2/2.', () => {
       type: unitType,
       associatedComments: [],
       boolExpression: THIS,
-      e1: EXPRESSION_PANIC({
-        range: Range.DUMMY,
-        type: unitType,
-        associatedComments: [],
-        expression: THIS,
-      }),
+      e1: THIS,
       e2: THIS,
     }),
     `if (_this: __DUMMY___Dummy) {
-  _builtin_throw((_this: __DUMMY___Dummy));
 } else {
 }
 return 0;`
@@ -815,12 +750,7 @@ it('Match lowering works 1/3.', () => {
           range: Range.DUMMY,
           tag: 'Bar',
           tagOrder: 1,
-          expression: EXPRESSION_PANIC({
-            range: Range.DUMMY,
-            type: unitType,
-            associatedComments: [],
-            expression: THIS,
-          }),
+          expression: THIS,
         },
       ],
     }),
@@ -831,8 +761,7 @@ if (_t2: bool) {
   let _t1: any = (_this: __DUMMY___Dummy)[1];
   _t3 = (_this: __DUMMY___Dummy);
 } else {
-  _builtin_throw((_this: __DUMMY___Dummy));
-  _t3 = 0;
+  _t3 = (_this: __DUMMY___Dummy);
 }
 return (_t3: __DUMMY___Dummy);`
   );
@@ -857,23 +786,13 @@ it('Match lowering works 2/3.', () => {
           range: Range.DUMMY,
           tag: 'Bar',
           tagOrder: 1,
-          expression: EXPRESSION_PANIC({
-            range: Range.DUMMY,
-            type: unitType,
-            associatedComments: [],
-            expression: THIS,
-          }),
+          expression: THIS,
         },
         {
           range: Range.DUMMY,
           tag: 'Baz',
           tagOrder: 2,
-          expression: EXPRESSION_PANIC({
-            range: Range.DUMMY,
-            type: unitType,
-            associatedComments: [],
-            expression: THIS,
-          }),
+          expression: THIS,
         },
       ],
     }),
@@ -884,9 +803,7 @@ if (_t3: bool) {
 } else {
   let _t2: bool = (_t0: int) == 1;
   if (_t2: bool) {
-    _builtin_throw((_this: __DUMMY___Dummy));
   } else {
-    _builtin_throw((_this: __DUMMY___Dummy));
   }
 }
 return 0;`
@@ -1061,13 +978,7 @@ it('shadowing statement block lowering works.', () => {
                     range: Range.DUMMY,
                     typeAnnotation: intType,
                     pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-                    assignedExpression: EXPRESSION_BUILTIN_FUNCTION_CALL({
-                      range: Range.DUMMY,
-                      type: stringType,
-                      associatedComments: [],
-                      functionName: 'intToString',
-                      argumentExpression: THIS,
-                    }),
+                    assignedExpression: THIS,
                     associatedComments: [],
                   },
                 ],
@@ -1090,7 +1001,6 @@ it('shadowing statement block lowering works.', () => {
         }),
       },
     }),
-    `let _t0: string = _builtin_intToString((_this: __DUMMY___Dummy));
-return (_t0: string);`
+    `return (_this: __DUMMY___Dummy);`
   );
 });

@@ -172,20 +172,6 @@ const createPrettierDocumentFromSamlangExpression = (
           PRETTIER_TEXT(`${expression.operator}`),
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.expression)
         );
-      case 'PanicExpression':
-        return PRETTIER_CONCAT(
-          PRETTIER_TEXT('panic'),
-          createParenthesisSurroundedDocument(
-            createPrettierDocumentFromSamlangExpression(expression.expression)
-          )
-        );
-      case 'BuiltInFunctionCallExpression':
-        return PRETTIER_CONCAT(
-          PRETTIER_TEXT(expression.functionName),
-          createParenthesisSurroundedDocument(
-            createPrettierDocumentFromSamlangExpression(expression.argumentExpression)
-          )
-        );
       case 'FunctionCallExpression':
         return PRETTIER_CONCAT(
           createDocumentForSubExpressionConsideringPrecedenceLevel(expression.functionExpression),

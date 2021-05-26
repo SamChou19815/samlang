@@ -11,6 +11,6 @@ class Main {
     }
   }
 
-  function main(): unit = println(intToString(Main.test(0, 0)))
+  function main(): unit = Builtins.println(Builtins.intToString(Main.test(0, 0)))
 
 }
