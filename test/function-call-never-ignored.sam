@@ -1,6 +1,6 @@
 class Main {
   function hi(): int = {
-    val _: unit = println("hi");
+    val _: unit = Builtins.println("hi");
     5
   }
 

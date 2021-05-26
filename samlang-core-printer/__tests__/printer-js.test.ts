@@ -157,7 +157,10 @@ it('confirm samlang & equivalent JS have same print output', () => {
               returnCollector: '_t0',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_println', HIR_INT_TYPE),
+              functionExpression: HIR_NAME(
+                '_module__class_Builtins_function_println',
+                HIR_INT_TYPE
+              ),
               functionArguments: [HIR_VARIABLE('_t0', HIR_INT_TYPE)],
               returnType: HIR_STRING_TYPE,
               returnCollector: '_t1',
@@ -216,13 +219,19 @@ it('confirm samlang & equivalent JS have same print output', () => {
               returnCollector: '_t0',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_intToString', HIR_INT_TYPE),
+              functionExpression: HIR_NAME(
+                '_module__class_Builtins_function_intToString',
+                HIR_INT_TYPE
+              ),
               functionArguments: [HIR_VARIABLE('_t0', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
               returnCollector: '_t1',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_println', HIR_INT_TYPE),
+              functionExpression: HIR_NAME(
+                '_module__class_Builtins_function_println',
+                HIR_INT_TYPE
+              ),
               functionArguments: [HIR_VARIABLE('_t1', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
               returnCollector: '_t2',
@@ -301,7 +310,10 @@ it('confirm samlang & equivalent JS have same print output', () => {
               returnCollector: '_t1',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_println', HIR_INT_TYPE),
+              functionExpression: HIR_NAME(
+                '_module__class_Builtins_function_println',
+                HIR_INT_TYPE
+              ),
               functionArguments: [HIR_VARIABLE('_t1', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
               returnCollector: '_t2',
@@ -363,7 +375,10 @@ it('confirm samlang & equivalent JS have same print output', () => {
               returnCollector: '_t1',
             }),
             HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_println', HIR_INT_TYPE),
+              functionExpression: HIR_NAME(
+                '_module__class_Builtins_function_println',
+                HIR_INT_TYPE
+              ),
               functionArguments: [HIR_VARIABLE('_t1', HIR_INT_TYPE)],
               returnType: HIR_INT_TYPE,
             }),
@@ -402,7 +417,10 @@ it('confirm samlang & equivalent JS have same print output', () => {
               booleanExpression: HIR_INT(1),
               s1: [
                 HIR_FUNCTION_CALL({
-                  functionExpression: HIR_NAME('_builtin_throw', HIR_INT_TYPE),
+                  functionExpression: HIR_NAME(
+                    '_module__class_Builtins_function_panic',
+                    HIR_INT_TYPE
+                  ),
                   functionArguments: [HIR_NAME('illegal', HIR_STRING_TYPE)],
                   returnType: HIR_INT_TYPE,
                 }),

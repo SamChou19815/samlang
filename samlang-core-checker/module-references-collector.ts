@@ -54,11 +54,7 @@ export const collectModuleReferenceFromExpression = (
     case 'FieldAccessExpression':
     case 'MethodAccessExpression':
     case 'UnaryExpression':
-    case 'PanicExpression':
       collectModuleReferenceFromExpression(expression.expression, collector);
-      return;
-    case 'BuiltInFunctionCallExpression':
-      collectModuleReferenceFromExpression(expression.argumentExpression, collector);
       return;
     case 'FunctionCallExpression':
       collectModuleReferenceFromExpression(expression.functionExpression, collector);

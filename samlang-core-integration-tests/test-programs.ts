@@ -5,6 +5,19 @@ export type SamlangProgramCheckerTestSource = {
 
 export const samlangProgramCheckerTestSources: readonly SamlangProgramCheckerTestSource[] = [
   {
+    testName: 'access-builtin',
+    sourceCode: `
+class Main {
+  function main(): unit = {
+    val a: int = Builtins.stringToInt("3");
+    val b: string = Builtins.intToString(3);
+    val c: unit = Builtins.println("3");
+    val d: Main = Builtins.panic("3");
+  }
+}
+`,
+  },
+  {
     testName: 'access-private-member',
     sourceCode: `
 class A {
@@ -31,8 +44,8 @@ class A(val a: int) {
 }
 
 class Main {
-  function main1(): int = panic("Ah") + A.init()
-  function main2(): int = A.init() + panic("Ah")
+  function main1(): int = Builtins.panic("Ah") + A.init()
+  function main2(): int = A.init() + Builtins.panic("Ah")
   private function main(): int = Main.main1() + Main.main2()
 }
 `,
@@ -89,12 +102,12 @@ class Main {
     testName: 'illegal-binary-operations',
     sourceCode: `
 class Box<T>(val value: T) {
-  function <T> empty(): Box<T> = { value: panic("PANIC") }
+  function <T> empty(): Box<T> = { value: Builtins.panic("PANIC") }
   function <T> of(value: T): Box<T> = { value }
 }
 
 class AnotherBox<T>(val value: T) {
-  function <T> empty(): AnotherBox<T> = { value: panic("PANIC") }
+  function <T> empty(): AnotherBox<T> = { value: Builtins.panic("PANIC") }
 }
 
 class Main {
@@ -172,7 +185,7 @@ class Main {
     testName: 'insufficient-type-info',
     sourceCode: `
 class NotEnoughTypeInfo {
-  function <T> randomFunction(): T = panic("I can be any type!")
+  function <T> randomFunction(): T = Builtins.panic("I can be any type!")
   function main(): unit = {
     val _ = NotEnoughTypeInfo.randomFunction();
   }
@@ -403,14 +416,14 @@ class Main {
     if (i < j && i > 0 && j > 0) then {
       val a = 3;
       val b = 4;
-      if (a > b || a + b > 0 && true) then println("one") else println("two")
+      if (a > b || a + b > 0 && true) then Builtins.println("one") else Builtins.println("two")
     } else {
       val a = 3;
       val b = 4;
       if (a == 2 || b == 4) then {
-        println("three")
+        Builtins.println("three")
       } else {
-        println("four")
+        Builtins.println("four")
       }
     }
   }
@@ -455,8 +468,8 @@ class Main {
     sourceCode: `
 class Main {
   function main(): unit = {
-    val value = intToString(stringToInt("42"))::"!";
-    val _ = println(value);
+    val value = Builtins.intToString(Builtins.stringToInt("42"))::"!";
+    val _ = Builtins.println(value);
   }
 }
 `,
@@ -466,7 +479,7 @@ class Main {
     expectedStandardOut: '1205\n',
     sourceCode: `
 class Main {
-  function main(): unit = println(intToString(
+  function main(): unit = Builtins.println(Builtins.intToString(
     1 + 34 * 34 + 4 + 1 + 1231 / 28 + 100/100 - 2000*2000/(10*10*10*4000)
   ))
 }
@@ -482,7 +495,7 @@ class Main {
     val increase = (1+2*3-4/5%10000000/12334) + (1+2*3-4/5%10000000/12334) +
                    (1+2*3-4/5%10000000/12334) + (1+2*3-4/5%10000000/12334) +
                    (1+2*3-4/5%10000000/12334);
-    println(intToString(2 + increase))
+    Builtins.println(Builtins.intToString(2 + increase))
   }
 }
 `,
@@ -492,7 +505,7 @@ class Main {
     expectedStandardOut: '7\n',
     sourceCode: `
 class Main {
-  function main(): unit = println(intToString(1 + 2 * 3 - 4 / 5 % 10000000 / 1234))
+  function main(): unit = Builtins.println(Builtins.intToString(1 + 2 * 3 - 4 / 5 % 10000000 / 1234))
 }
 `,
   },
@@ -501,7 +514,7 @@ class Main {
     expectedStandardOut: 'Hello World!\n',
     sourceCode: `
 class Main {
-  function main(): unit = println("Hello "::"World!")
+  function main(): unit = Builtins.println("Hello "::"World!")
 }
 `,
   },
@@ -511,16 +524,16 @@ class Main {
     sourceCode: `
 class Main {
   function crash(a: string, b: string): unit = {
-    val _ = println("different:");
-    val _ = println("a:");
-    val _ = println(a);
-    val _ = println("b:");
-    val _ = println(b);
-    val _ = panic("crash!");
+    val _ = Builtins.println("different:");
+    val _ = Builtins.println("a:");
+    val _ = Builtins.println(a);
+    val _ = Builtins.println("b:");
+    val _ = Builtins.println(b);
+    val _ = Builtins.panic("crash!");
   }
 
   function checkInt(a: int, b: int): unit =
-    if (a == b) then {} else Main.crash(intToString(a), intToString(b))
+    if (a == b) then {} else Main.crash(Builtins.intToString(a), Builtins.intToString(b))
 
   function boolToString(b: bool): string =
     if (b) then "true" else "false"
@@ -577,7 +590,7 @@ class Main {
 
   function main(): unit = {
     val _ = Main.checkAll();
-    println("OK")
+    Builtins.println("OK")
   }
 }
 `,
@@ -588,7 +601,7 @@ class Main {
     sourceCode: `
 class List(Nil(unit), Cons([int * List])) { function of(i: int): List = Cons([i, Nil({  })])  }
 
-class Main { function main(): unit = { val _: List = List.of(1); println("hello") }  }
+class Main { function main(): unit = { val _: List = List.of(1); Builtins.println("hello") }  }
 `,
   },
   {
@@ -596,7 +609,7 @@ class Main { function main(): unit = { val _: List = List.of(1); println("hello"
     expectedStandardOut: '30\n12\n15\n',
     sourceCode: `
 class Main {
-  function printInt(i: int): unit = println(intToString(i))
+  function printInt(i: int): unit = Builtins.println(Builtins.intToString(i))
 
   function test(a: int, b: int): unit = {
     val _ = Main.printInt((a * b + a) + (a * b + a));
@@ -613,11 +626,11 @@ class Main {
     expectedStandardOut: 'OK\n',
     sourceCode: `
 class Main {
-  function printInt(i: int): unit = println(intToString(i))
+  function printInt(i: int): unit = Builtins.println(Builtins.intToString(i))
 
   function check(actual: int, expected: int): unit =
     if (actual != expected) then
-      panic("actual: "::intToString(actual)::", expected "::intToString(expected))
+      Builtins.panic("actual: "::Builtins.intToString(actual)::", expected "::Builtins.intToString(expected))
     else {}
 
   function test(first: bool, a: int, b: int, aTimesB: int): unit = {
@@ -628,7 +641,7 @@ class Main {
   function main(): unit = {
     val _ = Main.test(true, 3, 4, 12);
     val _ = Main.test(false, 3, 4, 12);
-    println("OK")
+    Builtins.println("OK")
   }
 }
 `,
@@ -660,7 +673,7 @@ class Main {
     else
       Main.test(acc + Main.log(i, 2), i + 1)
 
-  function main(): unit = println(intToString(Main.test(0, 0)))
+  function main(): unit = Builtins.println(Builtins.intToString(Main.test(0, 0)))
 }
 `,
   },
@@ -673,7 +686,7 @@ class Main {
     val megagrams: int = 141332443;
     val kilograms: int = megagrams / 1000;
     val grams: int = (megagrams / 1000) / 1000;
-    println(intToString(grams))
+    Builtins.println(Builtins.intToString(grams))
   }
 }`,
   },
@@ -696,7 +709,7 @@ class Main {
     }
   }
 
-  function main(): unit = println(intToString(Main.test(0, 0)))
+  function main(): unit = Builtins.println(Builtins.intToString(Main.test(0, 0)))
 }
 `,
   },
@@ -705,11 +718,11 @@ class Main {
     expectedStandardOut: 'OK\n',
     sourceCode: `
 class Main {
-  function printInt(i: int): unit = println(intToString(i))
+  function printInt(i: int): unit = Builtins.println(Builtins.intToString(i))
 
   function check(actual: int, expected: int): unit =
     if (actual != expected) then
-      panic("actual: "::intToString(actual)::", expected "::intToString(expected))
+      Builtins.panic("actual: "::Builtins.intToString(actual)::", expected "::Builtins.intToString(expected))
     else {}
 
   function test(first: bool, a: int, b: int, aTimesB: int): unit = {
@@ -722,7 +735,7 @@ class Main {
   function main(): unit = {
     val _ = Main.test(true, 3, 4, 12);
     val _ = Main.test(false, 3, 4, 12);
-    println("OK")
+    Builtins.println("OK")
   }
 }
 `,
@@ -733,7 +746,7 @@ class Main {
     sourceCode: `
 class Math {
   function plus(a: int, b: int): int = a + b
-  function cosine(angleInDegree: int): int = panic("Not supported!")
+  function cosine(angleInDegree: int): int = Builtins.panic("Not supported!")
 }
 
 class Student(val name: string, val age: int) {
@@ -780,7 +793,7 @@ class Option<T>(None(unit), Some(T)) {
   function <T> getSome(d: T): Option<T> = Some(d)
   method forceValue(): T =
     match (this) {
-      | None _ -> panic("Ah")
+      | None _ -> Builtins.panic("Ah")
       | Some v -> v
     }
   method <R> map(f: (T) -> R): Option<R> =
@@ -793,13 +806,13 @@ class Option<T>(None(unit), Some(T)) {
 class Main {
 
   private function assertTrue(condition: bool, message: string): unit =
-    if (condition) then {} else panic(message)
+    if (condition) then {} else Builtins.panic(message)
 
   private function assertFalse(condition: bool, message: string): unit =
-    if (!condition) then {} else panic(message)
+    if (!condition) then {} else Builtins.panic(message)
 
   private function assertEquals(e1: int, e2: int, message: string): unit =
-    if (e1 == e2) then {} else panic(intToString(e1)::" "::intToString(e2)::" "::message)
+    if (e1 == e2) then {} else Builtins.panic(Builtins.intToString(e1)::" "::Builtins.intToString(e2)::" "::message)
 
   private function consistencyTest(): unit = {
     val _ = Main.assertEquals(Option.getSome(3).map((i) -> i + 1).forceValue(), 4, "Ah1");
@@ -815,7 +828,7 @@ class Main {
 
   function main(): unit = {
     val _ = Main.consistencyTest();
-    println("OK")
+    Builtins.println("OK")
   }
 }
 `,
@@ -860,7 +873,7 @@ class Main {
 
   function div(a: int, b: int): int =
     if b == 0 then (
-      panic("Division by zero is illegal!")
+      Builtins.panic("Division by zero is illegal!")
     ) else (
       a / b
     )
@@ -878,7 +891,7 @@ class Main {
     a + 1 // 5
   }
 
-  function main(): unit = println(intToString(Main.identity(
+  function main(): unit = Builtins.println(Builtins.intToString(Main.identity(
     Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
   )))
 }
@@ -928,19 +941,19 @@ class Main {
 class Main {
   // return a random number, print order
   function intIdentity(order: int): int = {
-    val _ = println(intToString(order));
+    val _ = Builtins.println(Builtins.intToString(order));
     2
   }
 
   // return a random bool, print order
   function boolIdentity(item: bool, order: int): bool = {
-    val _ = println(intToString(order));
+    val _ = Builtins.println(Builtins.intToString(order));
     item
   }
 
   // return the string back, print str
   function stringIdentity(str: string): string = {
-    val _ = println("surprise!");
+    val _ = Builtins.println("surprise!");
     str
   }
 
@@ -970,7 +983,7 @@ class Main {
     sourceCode: `
 class Main {
   function hi(): int = {
-    val _ = println("hi");
+    val _ = Builtins.println("hi");
     5
   }
 
@@ -992,8 +1005,8 @@ class GenericObject<T1, T2>(val v1: T1, val v2: T2) {
       else
         { v1: 3, v2: 42 }
     );
-    val _ = println(intToString(f(2).v2)); // print 2
-    val _ = println(intToString(f(3).v2)); // print 42
+    val _ = Builtins.println(Builtins.intToString(f(2).v2)); // print 2
+    val _ = Builtins.println(Builtins.intToString(f(3).v2)); // print 42
   }
 }
 
@@ -1014,9 +1027,9 @@ class Main {
       4
     ;
     val b = if (false) then 4 else if (true) then 3 else 20000;
-    val _ = println(intToString(a));
-    val _ = println(intToString(b));
-    if (a != b) then panic("Not OK") else println("OK")
+    val _ = Builtins.println(Builtins.intToString(a));
+    val _ = Builtins.println(Builtins.intToString(b));
+    if (a != b) then Builtins.panic("Not OK") else Builtins.println("OK")
   }
 }
 `,
@@ -1030,13 +1043,13 @@ class Main {
     val i = 2;
     val j = 3;
     if (i > j) then
-      println("shouldn't reach here")
+      Builtins.println("shouldn't reach here")
     else if (j < i) then
-      println("shouldn't reach here")
+      Builtins.println("shouldn't reach here")
     else if (i < 0) then
-      println("shouldn't reach here")
+      Builtins.println("shouldn't reach here")
     else
-      println("success")
+      Builtins.println("success")
   }
 }
 `,
@@ -1050,13 +1063,13 @@ class Main {
     val i = 3;
     val j = 2;
     if (i > j) then
-      println("success")
+      Builtins.println("success")
     else if (j < i) then
-      println("shouldn't reach here")
+      Builtins.println("shouldn't reach here")
     else if (i < 0) then
-      println("shouldn't reach here")
+      Builtins.println("shouldn't reach here")
     else
-      println("shouldn't reach here")
+      Builtins.println("shouldn't reach here")
   }
 }
 `,
@@ -1066,7 +1079,7 @@ class Main {
     expectedStandardOut: '100\n106\n112\n118\n124\n',
     sourceCode: `
 class Main {
-  function printInt(n: int): unit = println(intToString(n))
+  function printInt(n: int): unit = Builtins.println(Builtins.intToString(n))
 
   function loopy(i: int): int =
     if (i >= 10) then 0 else {
@@ -1124,8 +1137,8 @@ class Main {
   function uselessRecursion(n: int): unit = if (n == 0) then {} else Main.uselessRecursion(n - 1)
 
   function main(): unit = {
-    val _ = println(intToString(Main.factorial(4)));
-    val _ = println(intToString(Main.fib(10)));
+    val _ = Builtins.println(Builtins.intToString(Main.factorial(4)));
+    val _ = Builtins.println(Builtins.intToString(Main.fib(10)));
     val _ = Main.uselessRecursion(3);
   }
 }
@@ -1140,7 +1153,7 @@ class Main {
   function isOdd(n: int): bool = if n == 0 then false else Main.isEven(n-1)
 
   function main(): unit =
-    if (!(Main.isEven(3)) && Main.isOdd(3)) then println("OK") else println("BAD")
+    if (!(Main.isEven(3)) && Main.isOdd(3)) then Builtins.println("OK") else Builtins.println("BAD")
 }
 `,
   },
@@ -1157,8 +1170,8 @@ class Main(val a: int, val b: bool) {
     val b = true;
     val [_, e] = [a, c]
     val _ = { a: e, b }
-    val finalValue = a + c + d + (if (b) then 0 else panic("")) + e; // 2 + (-1) + (-7) + (-1) = -7
-    println(intToString(finalValue))
+    val finalValue = a + c + d + (if (b) then 0 else Builtins.panic("")) + e; // 2 + (-1) + (-7) + (-1) = -7
+    Builtins.println(Builtins.intToString(finalValue))
   }
 }
 `,
@@ -1201,11 +1214,11 @@ true
     sourceCode: `
 class Main {
   function printAndReturn(b: bool, i: int): bool = {
-    val _ = println(intToString(i));
+    val _ = Builtins.println(Builtins.intToString(i));
     b
   }
 
-  function printlnBool(b: bool): unit = if (b) then println("true") else println("false")
+  function printlnBool(b: bool): unit = if (b) then Builtins.println("true") else Builtins.println("false")
 
   function testAndShortCircuitInExpression(): unit = {
     val b1 = Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1); // [0] [1]
@@ -1231,24 +1244,24 @@ class Main {
 
   function testAndShortCircuitInIf(): unit = {
     // [0] [1]
-    val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1)) then panic("Ah") else {};
+    val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1)) then Builtins.panic("Ah") else {};
     // [0] [1]
-    val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(true, 1)) then {} else panic("Ah");
+    val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(true, 1)) then {} else Builtins.panic("Ah");
     // [0]
-    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(false, 1)) then panic("Ah") else {};
+    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(false, 1)) then Builtins.panic("Ah") else {};
     // [0]
-    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(true, 1)) then panic("Ah") else {};
+    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(true, 1)) then Builtins.panic("Ah") else {};
   }
 
   function testOrShortCircuitInIf(): unit = {
     // [0]
-    val _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(false, 1)) then {} else panic("Ah");
+    val _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(false, 1)) then {} else Builtins.panic("Ah");
     // [0]
-    val _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(true, 1)) then {} else panic("Ah");
+    val _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(true, 1)) then {} else Builtins.panic("Ah");
     // [0] [1]
-    val _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(false, 1)) then panic("Ah") else {};
+    val _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(false, 1)) then Builtins.panic("Ah") else {};
     // [0] [1]
-    val _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(true, 1)) then {} else panic("Ah");
+    val _ = if (Main.printAndReturn(false, 0) || Main.printAndReturn(true, 1)) then {} else Builtins.panic("Ah");
   }
 
   function main(): unit = {
@@ -1269,9 +1282,9 @@ class Main {
     val a1 = "a";
     val a2 = "a";
     if a1 == a2 then
-      println("OK")
+      Builtins.println("OK")
     else {
-      println("BAD")
+      Builtins.println("BAD")
     }
   }
 }
@@ -1341,7 +1354,7 @@ class Main {
     v30 + v31 + v32 + v33 + v34 + v35 + v36 + v37 + v38 + v39 +
     v40 + v41 + v42 + v43 + v44 + v45 + v46 + v47 + v48 + v49
     ;
-    println(intToString(result))
+    Builtins.println(Builtins.intToString(result))
   }
 }
 `,
@@ -1402,7 +1415,7 @@ class Main {
   function methodAndFunctionReference(): int =
     Clazz.of().thisTest()
 
-  function panicTest(reason: string): Clazz = panic(reason)
+  function panicTest(reason: string): Clazz = Builtins.panic(reason)
 
   function functionsTest(): unit = {
     val _ = Main.literalsAndSimpleExpressions();
@@ -1432,7 +1445,7 @@ class Main {
     val _ = Main.literalsAndSimpleExpressions();
     val _ = Main.variables(3, "sss");
     val v = Main.methodAndFunctionReference(); // 42 + 42 == 84
-    println(intToString(v))
+    Builtins.println(Builtins.intToString(v))
   }
 }
 `,

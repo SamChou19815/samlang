@@ -106,17 +106,6 @@ export interface UnaryExpression extends BaseExpression {
   readonly expression: SamlangExpression;
 }
 
-export interface PanicExpression extends BaseExpression {
-  readonly __type__: 'PanicExpression';
-  readonly expression: SamlangExpression;
-}
-
-export interface BuiltInFunctionCallExpression extends BaseExpression {
-  readonly __type__: 'BuiltInFunctionCallExpression';
-  readonly functionName: 'stringToInt' | 'intToString' | 'println';
-  readonly argumentExpression: SamlangExpression;
-}
-
 export interface FunctionCallExpression extends BaseExpression {
   readonly __type__: 'FunctionCallExpression';
   readonly functionExpression: SamlangExpression;
@@ -188,8 +177,6 @@ export type SamlangExpression =
   | FieldAccessExpression
   | MethodAccessExpression
   | UnaryExpression
-  | PanicExpression
-  | BuiltInFunctionCallExpression
   | FunctionCallExpression
   | BinaryExpression
   | IfElseExpression
@@ -397,36 +384,6 @@ export const EXPRESSION_UNARY = ({
   associatedComments,
   operator,
   expression,
-});
-
-export const EXPRESSION_PANIC = ({
-  range,
-  type,
-  associatedComments,
-  expression,
-}: ExpressionConstructorArgumentObject<PanicExpression>): PanicExpression => ({
-  __type__: 'PanicExpression',
-  range,
-  type,
-  precedence: 3,
-  associatedComments,
-  expression,
-});
-
-export const EXPRESSION_BUILTIN_FUNCTION_CALL = ({
-  range,
-  type,
-  associatedComments,
-  functionName,
-  argumentExpression,
-}: ExpressionConstructorArgumentObject<BuiltInFunctionCallExpression>): BuiltInFunctionCallExpression => ({
-  __type__: 'BuiltInFunctionCallExpression',
-  range,
-  type,
-  precedence: 3,
-  associatedComments,
-  functionName,
-  argumentExpression,
 });
 
 export const EXPRESSION_FUNCTION_CALL = ({

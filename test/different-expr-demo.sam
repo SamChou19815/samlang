@@ -28,7 +28,7 @@ class Main {
   function oof(): int = 14
 
   function div(a: int, b: int): int =
-    if (b == 0) then panic("Division by zero is illegal!") else a / b
+    if (b == 0) then Builtins.panic("Division by zero is illegal!") else a / b
 
   function nestedVal(): int = {
     val a: int = {
@@ -44,8 +44,8 @@ class Main {
   }
 
   function main(): unit =
-    println(
-      intToString(
+    Builtins.println(
+      Builtins.intToString(
         Main.identity(
           Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
         )

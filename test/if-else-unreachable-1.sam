@@ -2,9 +2,9 @@ class Main {
   function main(): unit = {
     val i: int = 2;
     val j: int = 3;
-    if (i > j) then println("shouldn't reach here") else if (j < i) then println(
+    if (i > j) then Builtins.println("shouldn't reach here") else if (j < i) then Builtins.println(
       "shouldn't reach here"
-    ) else if (i < 0) then println("shouldn't reach here") else println("success")
+    ) else if (i < 0) then Builtins.println("shouldn't reach here") else Builtins.println("success")
   }
 
 }

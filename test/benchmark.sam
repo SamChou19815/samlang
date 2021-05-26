@@ -9,8 +9,8 @@ class Main {
     val bigNum = 200000000;
     val actual = Main.mathTailRec(bigNum, 0);
     val expected = (1 + bigNum) % 1000000007 * bigNum / 2 % 1000000007;
-    if (actual == expected) then println("Yay") else panic(
-      "Actual: " :: intToString(actual) :: ", expected: " :: intToString(expected)
+    if (actual == expected) then Builtins.println("Yay") else Builtins.panic(
+      "Actual: " :: Builtins.intToString(actual) :: ", expected: " :: Builtins.intToString(expected)
     )
   }
 

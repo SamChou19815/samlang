@@ -5,8 +5,7 @@ import {
   SamlangExpression,
   SamlangValStatement,
   StatementBlock,
-  EXPRESSION_PANIC,
-  EXPRESSION_STRING,
+  EXPRESSION_VARIABLE,
 } from 'samlang-core-ast/samlang-expressions';
 import type { Pattern, ObjectPatternDestucturedName } from 'samlang-core-ast/samlang-pattern';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
@@ -38,11 +37,11 @@ export default class StatementTypeChecker {
       }
       // Force the type checker to resolve expected type to unit.
       this.typeCheckExpression(
-        EXPRESSION_PANIC({
+        EXPRESSION_VARIABLE({
           range,
           type: unitType,
           associatedComments: [],
-          expression: EXPRESSION_STRING(range, [], ''),
+          name: '_',
         }),
         expectedType
       );

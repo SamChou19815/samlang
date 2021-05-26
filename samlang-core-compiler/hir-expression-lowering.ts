@@ -3,10 +3,6 @@ import lowerSamlangType from './hir-types-lowering';
 
 import {
   encodeFunctionNameGlobally,
-  ENCODED_FUNCTION_NAME_THROW,
-  ENCODED_FUNCTION_NAME_INT_TO_STRING,
-  ENCODED_FUNCTION_NAME_STRING_TO_INT,
-  ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
 } from 'samlang-core-ast/common-names';
 import type {
@@ -57,8 +53,6 @@ import type {
   FieldAccessExpression,
   MethodAccessExpression,
   UnaryExpression,
-  PanicExpression,
-  BuiltInFunctionCallExpression,
   FunctionCallExpression,
   BinaryExpression,
   IfElseExpression,
@@ -66,7 +60,7 @@ import type {
   LambdaExpression,
   StatementBlockExpression,
 } from 'samlang-core-ast/samlang-expressions';
-import { checkNotNull, LocalStackedContext, zip } from 'samlang-core-utils';
+import { LocalStackedContext, assert, checkNotNull, zip } from 'samlang-core-utils';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -215,10 +209,6 @@ class HighIRExpressionLoweringManager {
         return this.lowerMethodAccess(expression);
       case 'UnaryExpression':
         return this.lowerUnary(expression);
-      case 'PanicExpression':
-        return this.lowerPanic(expression);
-      case 'BuiltInFunctionCallExpression':
-        return this.lowerBuiltinFunctionCall(expression);
       case 'FunctionCallExpression':
         return this.lowerFunctionCall(expression);
       case 'BinaryExpression':
@@ -424,69 +414,6 @@ class HighIRExpressionLoweringManager {
     }
   }
 
-  private lowerPanic(expression: PanicExpression): HighIRExpressionLoweringResult {
-    const result = this.lower(expression.expression);
-    return {
-      statements: [
-        ...result.statements,
-        HIR_FUNCTION_CALL({
-          functionExpression: HIR_NAME(
-            ENCODED_FUNCTION_NAME_THROW,
-            HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE)
-          ),
-          functionArguments: [result.expression],
-          returnType: HIR_INT_TYPE,
-        }),
-      ],
-      expression: HIR_ZERO,
-    };
-  }
-
-  private lowerBuiltinFunctionCall(
-    expression: BuiltInFunctionCallExpression
-  ): HighIRExpressionLoweringResult {
-    const loweredStatements: HighIRStatement[] = [];
-    const loweredArgument = this.loweredAndAddStatements(
-      expression.argumentExpression,
-      loweredStatements
-    );
-    let functionName: string;
-    let calledFunctionType: HighIRFunctionType;
-    let returnCollector: string | undefined = undefined;
-    let finalExpression: HighIRExpression;
-    switch (expression.functionName) {
-      case 'intToString':
-        functionName = ENCODED_FUNCTION_NAME_INT_TO_STRING;
-        calledFunctionType = HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_STRING_TYPE);
-        returnCollector = this.allocateTemporaryVariable();
-        finalExpression = HIR_VARIABLE(returnCollector, HIR_STRING_TYPE);
-        break;
-      case 'stringToInt':
-        functionName = ENCODED_FUNCTION_NAME_STRING_TO_INT;
-        calledFunctionType = HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE);
-        returnCollector = this.allocateTemporaryVariable();
-        finalExpression = HIR_VARIABLE(returnCollector, HIR_INT_TYPE);
-        break;
-      case 'println':
-        functionName = ENCODED_FUNCTION_NAME_PRINTLN;
-        calledFunctionType = HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE);
-        finalExpression = HIR_ZERO;
-        break;
-    }
-    loweredStatements.push(
-      HIR_FUNCTION_CALL({
-        functionExpression: HIR_NAME(functionName, calledFunctionType),
-        functionArguments: [loweredArgument],
-        returnType: calledFunctionType.returnType,
-        returnCollector,
-      })
-    );
-    return {
-      statements: loweredStatements,
-      expression: finalExpression,
-    };
-  }
-
   private lowerFunctionCall(expression: FunctionCallExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
     const functionExpression = expression.functionExpression;
@@ -503,7 +430,8 @@ class HighIRExpressionLoweringManager {
           functionExpression.className,
           functionExpression.memberName
         );
-        const functionTypeWithoutContext = checkNotNull(this.functionTypeMapping[functionName]);
+        const functionTypeWithoutContext = this.functionTypeMapping[functionName];
+        assert(functionTypeWithoutContext != null, `Missing function: ${functionName}`);
         functionReturnCollectorType = functionTypeWithoutContext.returnType;
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME(functionName, functionTypeWithoutContext),

@@ -2,7 +2,7 @@
 
 #include "./libsam-base.h"
 
-samlang_int _builtin_stringToInt(samlang_string str) {
+samlang_int _module__class_Builtins_function_stringToInt(samlang_string str) {
   // ### should this worry about overflow?
   samlang_int len = str[0];
   str = &str[1];

@@ -1,15 +1,15 @@
 class Main {
   function crash(a: string, b: string): unit = {
-    val _: unit = println("different:");
-    val _: unit = println("a:");
-    val _: unit = println(a);
-    val _: unit = println("b:");
-    val _: unit = println(b);
-    val _: unit = panic("crash!");
+    val _: unit = Builtins.println("different:");
+    val _: unit = Builtins.println("a:");
+    val _: unit = Builtins.println(a);
+    val _: unit = Builtins.println("b:");
+    val _: unit = Builtins.println(b);
+    val _: unit = Builtins.panic("crash!");
   }
 
   function checkInt(a: int, b: int): unit =
-    if (a == b) then {  } else Main.crash(intToString(a), intToString(b))
+    if (a == b) then {  } else Main.crash(Builtins.intToString(a), Builtins.intToString(b))
 
   function boolToString(b: bool): string = if (b) then "true" else "false"
 
@@ -65,7 +65,7 @@ class Main {
 
   function main(): unit = {
     val _: unit = Main.checkAll();
-    println("OK")
+    Builtins.println("OK")
   }
 
 }

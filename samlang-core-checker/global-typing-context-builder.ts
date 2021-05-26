@@ -47,7 +47,7 @@ const buildModuleTypingContext = (samlangModule: SamlangModule): ModuleTypingCon
   );
 
 export const DEFAULT_BUILTIN_TYPING_CONTEXT: ModuleTypingContext = {
-  Pervasive: {
+  Builtins: {
     typeParameters: [],
     typeDefinition: { range: Range.DUMMY, type: 'object', names: [], mappings: {} },
     functions: {

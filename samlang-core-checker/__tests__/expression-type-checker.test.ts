@@ -43,75 +43,78 @@ const typeCheckInSandbox = (
   const accessibleGlobalTypingContext: AccessibleGlobalTypingContext =
     new AccessibleGlobalTypingContext(
       dummyModuleReference,
-      hashMapOf([
-        dummyModuleReference,
-        {
-          Test: {
-            typeParameters: [],
-            typeDefinition: {
-              range: Range.DUMMY,
-              type: 'object',
-              names: ['foo', 'bar'],
-              mappings: {
-                foo: { isPublic: true, type: bool },
-                bar: { isPublic: false, type: int },
+      hashMapOf(
+        [ModuleReference.ROOT, DEFAULT_BUILTIN_TYPING_CONTEXT],
+        [
+          dummyModuleReference,
+          {
+            Test: {
+              typeParameters: [],
+              typeDefinition: {
+                range: Range.DUMMY,
+                type: 'object',
+                names: ['foo', 'bar'],
+                mappings: {
+                  foo: { isPublic: true, type: bool },
+                  bar: { isPublic: false, type: int },
+                },
+              },
+              functions: {
+                helloWorld: {
+                  isPublic: false,
+                  typeParameters: [],
+                  type: functionType([string], unit),
+                },
+              },
+              methods: {
+                baz: { isPublic: false, typeParameters: [], type: functionType([int], bool) },
               },
             },
-            functions: {
-              helloWorld: {
-                isPublic: false,
-                typeParameters: [],
-                type: functionType([string], unit),
+            Test2: {
+              typeParameters: [],
+              typeDefinition: {
+                range: Range.DUMMY,
+                type: 'variant',
+                names: ['Foo', 'Bar'],
+                mappings: {
+                  Foo: { isPublic: true, type: bool },
+                  Bar: { isPublic: true, type: int },
+                },
               },
+              functions: {},
+              methods: {},
             },
-            methods: {
-              baz: { isPublic: false, typeParameters: [], type: functionType([int], bool) },
+            Test3: {
+              typeParameters: ['E'],
+              typeDefinition: {
+                range: Range.DUMMY,
+                type: 'object',
+                names: ['foo', 'bar'],
+                mappings: {
+                  foo: { isPublic: true, type: identifierType(dummyModuleReference, 'E') },
+                  bar: { isPublic: false, type: int },
+                },
+              },
+              functions: {},
+              methods: {},
+            },
+            Test4: {
+              typeParameters: ['E'],
+              typeDefinition: {
+                range: Range.DUMMY,
+                type: 'variant',
+                names: ['Foo', 'Bar'],
+                mappings: {
+                  Foo: { isPublic: true, type: identifierType(dummyModuleReference, 'E') },
+                  Bar: { isPublic: true, type: int },
+                },
+              },
+              functions: {},
+              methods: {},
             },
           },
-          Test2: {
-            typeParameters: [],
-            typeDefinition: {
-              range: Range.DUMMY,
-              type: 'variant',
-              names: ['Foo', 'Bar'],
-              mappings: {
-                Foo: { isPublic: true, type: bool },
-                Bar: { isPublic: true, type: int },
-              },
-            },
-            functions: {},
-            methods: {},
-          },
-          Test3: {
-            typeParameters: ['E'],
-            typeDefinition: {
-              range: Range.DUMMY,
-              type: 'object',
-              names: ['foo', 'bar'],
-              mappings: {
-                foo: { isPublic: true, type: identifierType(dummyModuleReference, 'E') },
-                bar: { isPublic: false, type: int },
-              },
-            },
-            functions: {},
-            methods: {},
-          },
-          Test4: {
-            typeParameters: ['E'],
-            typeDefinition: {
-              range: Range.DUMMY,
-              type: 'variant',
-              names: ['Foo', 'Bar'],
-              mappings: {
-                Foo: { isPublic: true, type: identifierType(dummyModuleReference, 'E') },
-                Bar: { isPublic: true, type: int },
-              },
-            },
-            functions: {},
-            methods: {},
-          },
-        },
-      ]),
+        ]
+      ),
       new Set(),
       currentClass ?? 'Test'
     );
@@ -400,40 +403,14 @@ it('Unary', () => {
 });
 
 it('Panic', () => {
-  assertTypeChecks('panic("")', unit);
-  assertTypeChecks('panic("")', bool);
-  assertTypeChecks('panic("")', int);
-  assertTypeChecks('panic("")', string);
-  assertTypeChecks('panic("")', tupleType([int, bool]));
+  assertTypeChecks('Builtins.panic("")', unit);
+  assertTypeChecks('Builtins.panic("")', bool);
+  assertTypeChecks('Builtins.panic("")', int);
+  assertTypeChecks('Builtins.panic("")', string);
+  assertTypeChecks('Builtins.panic("")', tupleType([int, bool]));
 
-  assertTypeErrors('panic(3)', unit, [
-    'Test.sam:1:7-1:8: [UnexpectedType]: Expected: `string`, actual: `int`.',
-  ]);
-});
-
-it('BuiltinFunctionCall', () => {
-  assertTypeChecks('intToString(3)', string);
-  assertTypeChecks('stringToInt("3")', int);
-  assertTypeChecks('println("3")', unit);
-
-  assertTypeErrors('intToString(3)', int, [
-    'Test.sam:1:1-1:15: [UnexpectedType]: Expected: `int`, actual: `string`.',
-  ]);
-  assertTypeErrors('stringToInt("3")', unit, [
-    'Test.sam:1:1-1:17: [UnexpectedType]: Expected: `unit`, actual: `int`.',
-  ]);
-  assertTypeErrors('println("3")', int, [
-    'Test.sam:1:1-1:13: [UnexpectedType]: Expected: `int`, actual: `unit`.',
-  ]);
-
-  assertTypeErrors('intToString("3")', string, [
-    'Test.sam:1:13-1:16: [UnexpectedType]: Expected: `int`, actual: `string`.',
-  ]);
-  assertTypeErrors('stringToInt(3)', int, [
-    'Test.sam:1:13-1:14: [UnexpectedType]: Expected: `string`, actual: `int`.',
-  ]);
-  assertTypeErrors('println(3)', unit, [
-    'Test.sam:1:9-1:10: [UnexpectedType]: Expected: `string`, actual: `int`.',
+  assertTypeErrors('Builtins.panic(3)', unit, [
+    'Test.sam:1:1-1:15: [UnexpectedType]: Expected: `(int) -> unit`, actual: `(string) -> __UNDECIDED__`.',
   ]);
 });
 

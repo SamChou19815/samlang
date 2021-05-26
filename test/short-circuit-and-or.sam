@@ -1,10 +1,11 @@
 class Main {
   function printAndReturn(b: bool, i: int): bool = {
-    val _: unit = println(intToString(i));
+    val _: unit = Builtins.println(Builtins.intToString(i));
     b
   }
 
-  function printlnBool(b: bool): unit = if (b) then println("true") else println("false")
+  function printlnBool(b: bool): unit =
+    if (b) then Builtins.println("true") else Builtins.println("false")
 
   function testAndShortCircuitInExpression(): unit = {
     val b1: bool = Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1);
@@ -29,33 +30,27 @@ class Main {
   }
 
   function testAndShortCircuitInIf(): unit = {
-    val _: unit = if (Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1)) then panic(
+    val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(false, 1)) then Builtins.panic(
       "Ah"
     ) else {  };
-    val _: unit = if (Main.printAndReturn(true, 0) && Main.printAndReturn(true, 1)) then {
+    val _ = if (Main.printAndReturn(true, 0) && Main.printAndReturn(true, 1)) then {
 
-    } else panic("Ah");
-    val _: unit = if (Main.printAndReturn(false, 0) && Main.printAndReturn(false, 1)) then panic(
+    } else Builtins.panic("Ah");
+    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(false, 1)) then Builtins.panic(
       "Ah"
     ) else {  };
-    val _: unit = if (Main.printAndReturn(false, 0) && Main.printAndReturn(true, 1)) then panic(
+    val _ = if (Main.printAndReturn(false, 0) && Main.printAndReturn(true, 1)) then Builtins.panic(
       "Ah"
     ) else {  };
   }
 
   function testOrShortCircuitInIf(): unit = {
-    val _: unit = if (Main.printAndReturn(true, 0) || Main.printAndReturn(false, 1)) then {
+    val _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(false, 1)) then {
 
-    } else panic("Ah");
-    val _: unit = if (Main.printAndReturn(true, 0) || Main.printAndReturn(true, 1)) then {
+    } else Builtins.panic("Ah");
+    val _ = if (Main.printAndReturn(true, 0) || Main.printAndReturn(true, 1)) then {
 
-    } else panic("Ah");
-    val _: unit = if (Main.printAndReturn(false, 0) || Main.printAndReturn(false, 1)) then panic(
-      "Ah"
-    ) else {  };
-    val _: unit = if (Main.printAndReturn(false, 0) || Main.printAndReturn(true, 1)) then {
-
-    } else panic("Ah");
+    } else Builtins.panic("Ah");
   }
 
   function main(): unit = {

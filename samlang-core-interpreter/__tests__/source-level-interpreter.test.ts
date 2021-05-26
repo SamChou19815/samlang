@@ -300,16 +300,20 @@ it('unary expression evaluates correctly', () => {
 });
 
 it('panic expression evaluates correctly', () => {
-  expect(() => interpret('panic("value")')).toThrow('value');
+  expect(() => interpret('Builtins.panic("value")')).toThrow('value');
 });
 
 it('built in function call expression evaluates correctly', () => {
-  expect(interpret('stringToInt("5")')).toEqual(5);
-  expect(() => interpret('stringToInt("value")')).toThrow(`Cannot convert \`value\` to int.`);
-  expect(interpret('intToString(5)')).toEqual('5');
+  expect(interpret('Builtins.stringToInt("5")')).toEqual(5);
+  expect(() => interpret('Builtins.stringToInt("value")')).toThrow(
+    `Cannot convert \`value\` to int.`
+  );
+  expect(interpret('Builtins.intToString(5)')).toEqual('5');
 
   const temporaryInterpreterForPrint = new ExpressionInterpreter();
-  expect(temporaryInterpreterForPrint.eval(getExpression('println("value")'), EMPTY)).toEqual({
+  expect(
+    temporaryInterpreterForPrint.eval(getExpression('Builtins.println("value")'), EMPTY)
+  ).toEqual({
     type: 'unit',
   });
   expect(temporaryInterpreterForPrint.printed()).toEqual('value\n');
@@ -405,12 +409,14 @@ it('module runs correctly', () => {
   expect(interpretModule('class ExampleClass<P>(val types: int) { }')).toBe('');
   expect(interpretModule(`class Main { }`)).toBe('');
   expect(interpretModule('class Main { function main(): int = 2 }')).toBe('');
-  expect(interpretModule('class Main { method main(): unit = println("a") }')).toBe('');
-  expect(interpretModule('class Main { function main(a: int): unit = println("a") }')).toBe('');
-  expect(interpretModule('class Main { function main(): unit = println("Hello World!") }')).toBe(
-    'Hello World!\n'
-  );
+  expect(interpretModule('class Main { method main(): unit = Builtins.println("a") }')).toBe('');
+  expect(
+    interpretModule('class Main { function main(a: int): unit = Builtins.println("a") }')
+  ).toBe('');
+  expect(
+    interpretModule('class Main { function main(): unit = Builtins.println("Hello World!") }')
+  ).toBe('Hello World!\n');
   expect(() =>
-    interpretModule('class Main { function main(): unit = panic("Hello World!") }')
+    interpretModule('class Main { function main(): unit = Builtins.panic("Hello World!") }')
   ).toThrow();
 });

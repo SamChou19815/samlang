@@ -1,3 +1,11 @@
+import {
+  ENCODED_FUNCTION_NAME_INT_TO_STRING,
+  ENCODED_FUNCTION_NAME_MALLOC,
+  ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_FUNCTION_NAME_STRING_CONCAT,
+  ENCODED_FUNCTION_NAME_STRING_TO_INT,
+  ENCODED_FUNCTION_NAME_THROW,
+} from './common-names';
 import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
 import type { HighIRIdentifierType } from './hir-types';
@@ -502,12 +510,12 @@ export const prettyPrintLLVMModule = ({
   functions,
 }: LLVMModule): string => {
   return [
-    `declare i32* @_builtin_malloc(i32) nounwind
-declare i32 @_builtin_println(i32*) nounwind
-declare i32 @_builtin_throw(i32*) nounwind
-declare i32* @_builtin_intToString(i32) nounwind
-declare i32 @_builtin_stringToInt(i32*) nounwind
-declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
+    `declare i32* @${ENCODED_FUNCTION_NAME_MALLOC}(i32) nounwind
+declare i32 @${ENCODED_FUNCTION_NAME_PRINTLN}(i32*) nounwind
+declare i32* @${ENCODED_FUNCTION_NAME_THROW}(i32*) nounwind
+declare i32* @${ENCODED_FUNCTION_NAME_INT_TO_STRING}(i32) nounwind
+declare i32 @${ENCODED_FUNCTION_NAME_STRING_TO_INT}(i32*) nounwind
+declare i32* @${ENCODED_FUNCTION_NAME_STRING_CONCAT}(i32*, i32*) nounwind
 `,
     ...globalVariables.flatMap(({ name, content }) => {
       const size = content.length;

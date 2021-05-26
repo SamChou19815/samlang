@@ -166,7 +166,6 @@ export type SamlangKeywordString =
   | 'then'
   | 'else'
   | 'match'
-  | 'panic'
   | 'return'
   // Type Keywords
   | 'int'
@@ -177,10 +176,6 @@ export type SamlangKeywordString =
   | 'true'
   | 'false'
   | 'this'
-  // Builtins
-  | 'stringToInt'
-  | 'intToString'
-  | 'println'
   // Forbidden Names
   | 'self'
   | 'const'
@@ -214,7 +209,6 @@ const SAMLANG_KEYWORDS: SamlangKeywordString[] = [
   'then',
   'else',
   'match',
-  'panic',
   'return',
   // Type Keywords
   'int',
@@ -225,10 +219,6 @@ const SAMLANG_KEYWORDS: SamlangKeywordString[] = [
   'true',
   'false',
   'this',
-  // Builtins
-  'stringToInt',
-  'intToString',
-  'println',
   // Forbidden Names
   'self',
   'const',

@@ -15,9 +15,9 @@ class Main {
 
   function main(): unit =
     // string -> terminal
-    println(
+    Builtins.println(
       // number -> string
-      intToString(
+      Builtins.intToString(
         Main
         /* a */
         /* b */

@@ -9,6 +9,6 @@ class Main {
       Main.test(acc + increase, i + 1)
     }
 
-  function main(): unit = println(intToString(Main.test(0, 0)))
+  function main(): unit = Builtins.println(Builtins.intToString(Main.test(0, 0)))
 
 }

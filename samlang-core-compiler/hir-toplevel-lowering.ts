@@ -7,7 +7,7 @@ import {
   encodeFunctionNameGlobally,
   encodeMainFunctionName,
 } from 'samlang-core-ast/common-names';
-import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import { HIR_FUNCTION_CALL, HIR_NAME, HIR_ZERO } from 'samlang-core-ast/hir-expressions';
 import type {
   HighIRTypeDefinition,
@@ -27,6 +27,8 @@ import type {
   SamlangModule,
   TypeDefinition,
 } from 'samlang-core-ast/samlang-toplevel';
+// eslint-disable-next-line import/no-internal-modules
+import type { ModuleTypingContext } from 'samlang-core-checker/typing-context';
 import {
   OptimizationConfiguration,
   optimizeHighIRModuleByUnusedNameEliminationAndTailRecursionRewrite,
@@ -108,12 +110,30 @@ const compileFunction = (
 
 const compileSamlangSourcesToHighIRSources = (
   sources: Sources<SamlangModule>,
+  builtinModuleTypes: ModuleTypingContext,
   optimizationConfiguration?: OptimizationConfiguration
 ): Sources<HighIRModule> => {
   const compiledTypeDefinitions: HighIRTypeDefinition[] = [];
   const compiledFunctions: HighIRFunction[] = [];
   const stringManager = new HighIRStringManager();
   const functionTypeMapping: Record<string, HighIRFunctionType> = {};
+  Object.entries(builtinModuleTypes).forEach(([builtinClass, builtinClassContext]) => {
+    Object.entries(builtinClassContext.functions).forEach(
+      ([builtinFunctionName, builtinFuncionType]) => {
+        functionTypeMapping[
+          encodeFunctionNameGlobally(ModuleReference.ROOT, builtinClass, builtinFunctionName)
+        ] = HIR_FUNCTION_TYPE(
+          builtinFuncionType.type.argumentTypes.map((it) =>
+            lowerSamlangType(it, new Set(builtinFuncionType.typeParameters))
+          ),
+          lowerSamlangType(
+            builtinFuncionType.type.returnType,
+            new Set(builtinFuncionType.typeParameters)
+          )
+        );
+      }
+    );
+  });
   sources.forEach((samlangModule, moduleReference) =>
     samlangModule.classes.map(({ name: className, typeParameters, typeDefinition, members }) => {
       const compiledTypeDefinition = compileTypeDefinition(

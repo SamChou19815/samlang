@@ -1,5 +1,5 @@
 class Main {
-  function printInt(n: int): unit = println(intToString(n))
+  function printInt(n: int): unit = Builtins.println(Builtins.intToString(n))
 
   function loopy(i: int): int =
     if (i >= 10) then 0 else {

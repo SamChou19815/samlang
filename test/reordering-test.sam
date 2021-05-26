@@ -1,5 +1,5 @@
 class Main {
-  function assertEqual(a: int, b: int): unit = if (a != b) then panic("") else {  }
+  function assertEqual(a: int, b: int): unit = if (a != b) then Builtins.panic("") else {  }
 
   function main(): unit = {
     val v0: int = if (true) then {
@@ -57,7 +57,7 @@ class Main {
     val _: unit = Main.assertEqual(v0, v1);
     val _: unit = Main.assertEqual(v2, v3);
     val _: unit = Main.assertEqual(v0, v2);
-    println("OK")
+    Builtins.println("OK")
   }
 
 }

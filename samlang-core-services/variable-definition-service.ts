@@ -71,11 +71,7 @@ export class ModuleScopedVariableDefinitionLookup {
       case 'FieldAccessExpression':
       case 'MethodAccessExpression':
       case 'UnaryExpression':
-      case 'PanicExpression':
         this.collectDefinitionAndUseWithDefinitionManager(expression.expression, manager);
-        return;
-      case 'BuiltInFunctionCallExpression':
-        this.collectDefinitionAndUseWithDefinitionManager(expression.argumentExpression, manager);
         return;
       case 'FunctionCallExpression':
         this.collectDefinitionAndUseWithDefinitionManager(expression.functionExpression, manager);
@@ -253,20 +249,10 @@ const applyExpressionRenamingWithDefinitionAndUse = (
     case 'FieldAccessExpression':
     case 'MethodAccessExpression':
     case 'UnaryExpression':
-    case 'PanicExpression':
       return {
         ...expression,
         expression: applyExpressionRenamingWithDefinitionAndUse(
           expression.expression,
-          definitionAndUses,
-          newName
-        ),
-      };
-    case 'BuiltInFunctionCallExpression':
-      return {
-        ...expression,
-        argumentExpression: applyExpressionRenamingWithDefinitionAndUse(
-          expression.argumentExpression,
           definitionAndUses,
           newName
         ),

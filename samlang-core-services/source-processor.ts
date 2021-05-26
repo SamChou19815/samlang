@@ -64,9 +64,12 @@ export const checkSources = (
   return { checkedSources, globalTypingContext, compileTimeErrors: errorCollector.getErrors() };
 };
 
-export const lowerSourcesToLLVMModules = (sources: Sources<SamlangModule>): Sources<LLVMModule> =>
+export const lowerSourcesToLLVMModules = (
+  sources: Sources<SamlangModule>,
+  builtinModuleTypes: ModuleTypingContext
+): Sources<LLVMModule> =>
   hashMapOf(
-    ...compileSamlangSourcesToHighIRSources(sources)
+    ...compileSamlangSourcesToHighIRSources(sources, builtinModuleTypes)
       .entries()
       .map(
         ([moduleReference, highIRModule]) =>

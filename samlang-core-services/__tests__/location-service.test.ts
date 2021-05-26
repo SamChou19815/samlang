@@ -87,7 +87,7 @@ it('SamlangExpressionLocationLookupBuilder test', () => {
 
     function div(a: int, b: int): int =
       if b == 0 then (
-        panic("Division by zero is illegal!")
+        Builtins.panic("Division by zero is illegal!")
       ) else (
         a / b
       )
@@ -105,7 +105,7 @@ it('SamlangExpressionLocationLookupBuilder test', () => {
       a + 1 // 5
     }
 
-    function main(): unit = println(intToString(Main.identity(
+    function main(): unit = Builtins.println(Builtins.intToString(Main.identity(
       Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
     )))
   }`,

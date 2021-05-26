@@ -33,13 +33,9 @@ it('Can parse good expressions.', () => {
   expectASTWithTheSameKind('{foo, bar: 3}', 'ObjectConstructorExpression');
   expectASTWithTheSameKind('Variant({})', 'VariantConstructorExpression');
   expectASTWithTheSameKind('Variant(3)', 'VariantConstructorExpression');
-  expectASTWithTheSameKind('panic(42)', 'PanicExpression');
   expectASTWithTheSameKind('foo.bar', 'FieldAccessExpression');
   expectASTWithTheSameKind('!false', 'UnaryExpression');
   expectASTWithTheSameKind('-42', 'UnaryExpression');
-  expectASTWithTheSameKind('stringToInt("d")', 'BuiltInFunctionCallExpression');
-  expectASTWithTheSameKind('intToString(3)', 'BuiltInFunctionCallExpression');
-  expectASTWithTheSameKind('println("haha")', 'BuiltInFunctionCallExpression');
   expectASTWithTheSameKind('haha(3, 4, false, "oh no")', 'FunctionCallExpression');
   expectASTWithTheSameKind('haha()', 'FunctionCallExpression');
   expectASTWithTheSameKind('3 * 4', 'BinaryExpression');
@@ -107,12 +103,8 @@ it('Can report bad expressions.', () => {
   expectBadAST('{: bar}');
   expectBadAST('{foo: }');
   expectBadAST('Variant');
-  expectBadAST('panic');
   expectBadAST('foo.Bar');
   expectBadAST('foo.');
-  expectBadAST('stringToInt');
-  expectBadAST('intToString');
-  expectBadAST('println');
   expectBadAST('if (true) then 3');
   expectBadAST('if (true) else 4');
   expectBadAST('if (true)');

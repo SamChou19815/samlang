@@ -262,7 +262,8 @@ it('compileSamlangSourcesToHighIRSources integration test', () => {
   };
 
   const actualCompiledModule = compileSamlangSourcesToHighIRSources(
-    mapOf([ModuleReference.DUMMY, sourceModule])
+    mapOf([ModuleReference.DUMMY, sourceModule]),
+    {}
   ).forceGet(ModuleReference.DUMMY);
 
   expect(debugPrintHighIRModule(actualCompiledModule)).toEqual(
