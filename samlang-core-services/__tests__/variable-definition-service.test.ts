@@ -1,12 +1,14 @@
 import {
   ModuleScopedVariableDefinitionLookup,
   VariableDefinitionLookup,
+  applyRenamingWithDefinitionAndUse,
 } from '../variable-definition-service';
 
 import { ModuleReference, Position, Range } from 'samlang-core-ast/common-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
-import { hashMapOf } from 'samlang-core-utils';
+import { prettyPrintSamlangModule } from 'samlang-core-printer';
+import { checkNotNull, hashMapOf } from 'samlang-core-utils';
 
 const prepareLookup = (source: string): ModuleScopedVariableDefinitionLookup => {
   const moduleReference = ModuleReference.ROOT;
@@ -86,7 +88,7 @@ class Main {
   });
 });
 
-it('VariableDefinitionLookup integration test', () => {
+it('VariableDefinitionLookup and applyRenamingWithDefinitionAndUse integration test 1', () => {
   const moduleReference = new ModuleReference(['Test']);
   const errorCollector = createGlobalErrorCollector();
   const parsedModule = parseSamlangModuleFromText(
@@ -116,10 +118,256 @@ class Main {
 
   expect(lookup.findAllDefinitionAndUses(new ModuleReference(['Test1']), Range.DUMMY)).toBeNull();
   expect(lookup.findAllDefinitionAndUses(new ModuleReference(['Test']), Range.DUMMY)).toBeNull();
+
+  const assertCorrectlyRewritten = (range: Range, expected: string) =>
+    expect(
+      prettyPrintSamlangModule(
+        60,
+        applyRenamingWithDefinitionAndUse(
+          parsedModule,
+          checkNotNull(lookup.findAllDefinitionAndUses(new ModuleReference(['Test']), range)),
+          'renAmeD'
+        )
+      )
+    ).toBe(expected);
+
+  assertCorrectlyRewritten(
+    new Range(new Position(3, 12), new Position(3, 13)),
+    `class Main {
+  function test(renAmeD: int, b: bool): unit = {
+    val c = renAmeD;
+    val [e, _] = [b, 2];
+    val g = 3;
+    val { f, g as h } = { f: 3, g };
+    val _ = Tagged(h);
+    val _ = f + h;
+    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
+      f
+    ) else println(h);
+    match (lambda1(3, !h)) {
+      | None _ -> 1.d
+      | Some dd -> dd
+    }
+  }
+
+}
+`
+  );
+  assertCorrectlyRewritten(
+    new Range(new Position(3, 8), new Position(3, 9)),
+    `class Main {
+  function test(a: int, b: bool): unit = {
+    val renAmeD = a;
+    val [e, _] = [b, 2];
+    val g = 3;
+    val { f, g as h } = { f: 3, g };
+    val _ = Tagged(h);
+    val _ = f + h;
+    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
+      f
+    ) else println(h);
+    match (lambda1(3, !h)) {
+      | None _ -> 1.d
+      | Some dd -> dd
+    }
+  }
+
+}
+`
+  );
+  assertCorrectlyRewritten(
+    new Range(new Position(4, 9), new Position(4, 10)),
+    `class Main {
+  function test(a: int, b: bool): unit = {
+    val c = a;
+    val [renAmeD, _] = [b, 2];
+    val g = 3;
+    val { f, g as h } = { f: 3, g };
+    val _ = Tagged(h);
+    val _ = f + h;
+    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
+      f
+    ) else println(h);
+    match (lambda1(3, !h)) {
+      | None _ -> 1.d
+      | Some dd -> dd
+    }
+  }
+
+}
+`
+  );
+  assertCorrectlyRewritten(
+    new Range(new Position(4, 18), new Position(4, 19)),
+    `class Main {
+  function test(a: int, renAmeD: bool): unit = {
+    val c = a;
+    val [e, _] = [renAmeD, 2];
+    val g = 3;
+    val { f, g as h } = { f: 3, g };
+    val _ = Tagged(h);
+    val _ = f + h;
+    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
+      f
+    ) else println(h);
+    match (lambda1(3, !h)) {
+      | None _ -> 1.d
+      | Some dd -> dd
+    }
+  }
+
+}
+`
+  );
+  assertCorrectlyRewritten(
+    new Range(new Position(6, 28), new Position(6, 29)),
+    `class Main {
+  function test(a: int, b: bool): unit = {
+    val c = a;
+    val [e, _] = [b, 2];
+    val renAmeD = 3;
+    val { f, g as h } = { f: 3, g: renAmeD };
+    val _ = Tagged(h);
+    val _ = f + h;
+    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
+      f
+    ) else println(h);
+    match (lambda1(3, !h)) {
+      | None _ -> 1.d
+      | Some dd -> dd
+    }
+  }
+
+}
+`
+  );
+  assertCorrectlyRewritten(
+    new Range(new Position(8, 12), new Position(8, 13)),
+    `class Main {
+  function test(a: int, b: bool): unit = {
+    val c = a;
+    val [e, _] = [b, 2];
+    val g = 3;
+    val { f as renAmeD, g as h } = { f: 3, g };
+    val _ = Tagged(h);
+    val _ = renAmeD + h;
+    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
+      renAmeD
+    ) else println(h);
+    match (lambda1(3, !h)) {
+      | None _ -> 1.d
+      | Some dd -> dd
+    }
+  }
+
+}
+`
+  );
+  assertCorrectlyRewritten(
+    new Range(new Position(8, 16), new Position(8, 17)),
+    `class Main {
+  function test(a: int, b: bool): unit = {
+    val c = a;
+    val [e, _] = [b, 2];
+    val g = 3;
+    val { f, g as renAmeD } = { f: 3, g };
+    val _ = Tagged(renAmeD);
+    val _ = f + renAmeD;
+    val lambda1 = (x, y) -> if (
+      x + y * 3 > renAmeD
+    ) then panic(f) else println(renAmeD);
+    match (lambda1(3, !renAmeD)) {
+      | None _ -> 1.d
+      | Some dd -> dd
+    }
+  }
+
+}
+`
+  );
+  assertCorrectlyRewritten(
+    new Range(new Position(9, 22), new Position(9, 23)),
+    `class Main {
+  function test(a: int, b: bool): unit = {
+    val c = a;
+    val [e, _] = [b, 2];
+    val g = 3;
+    val { f, g as h } = { f: 3, g };
+    val _ = Tagged(h);
+    val _ = f + h;
+    val lambda1 = (x, renAmeD) -> if (
+      x + renAmeD * 3 > h
+    ) then panic(f) else println(h);
+    match (lambda1(3, !h)) {
+      | None _ -> 1.d
+      | Some dd -> dd
+    }
+  }
+
+}
+`
+  );
+  assertCorrectlyRewritten(
+    new Range(new Position(12, 19), new Position(12, 21)),
+    `class Main {
+  function test(a: int, b: bool): unit = {
+    val c = a;
+    val [e, _] = [b, 2];
+    val g = 3;
+    val { f, g as h } = { f: 3, g };
+    val _ = Tagged(h);
+    val _ = f + h;
+    val lambda1 = (x, y) -> if (x + y * 3 > h) then panic(
+      f
+    ) else println(h);
+    match (lambda1(3, !h)) {
+      | None _ -> 1.d
+      | Some renAmeD -> renAmeD
+    }
+  }
+
+}
+`
+  );
+});
+
+it('VariableDefinitionLookup and applyRenamingWithDefinitionAndUse integration test 2', () => {
+  const moduleReference = new ModuleReference(['Test']);
+  const errorCollector = createGlobalErrorCollector();
+  const parsedModule = parseSamlangModuleFromText(
+    `
+class Main {
+  function test(a: int, b: bool): unit = {
+    val c = a.foo;
+  }
+}
+`,
+    moduleReference,
+    errorCollector.getModuleErrorCollector(moduleReference)
+  );
+  expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
+  const lookup = new VariableDefinitionLookup();
+  lookup.rebuild(hashMapOf([moduleReference, parsedModule]));
+
   expect(
-    lookup.findAllDefinitionAndUses(
-      new ModuleReference(['Test']),
-      new Range(new Position(3, 12), new Position(3, 13))
+    prettyPrintSamlangModule(
+      60,
+      applyRenamingWithDefinitionAndUse(
+        parsedModule,
+        checkNotNull(
+          lookup.findAllDefinitionAndUses(
+            new ModuleReference(['Test']),
+            new Range(new Position(3, 12), new Position(3, 13))
+          )
+        ),
+        'renAmeD'
+      )
     )
-  ).not.toBeNull();
+  ).toBe(`class Main {
+  function test(renAmeD: int, b: bool): unit = {
+    val c = renAmeD.foo;
+  }
+
+}
+`);
 });
