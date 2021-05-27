@@ -177,7 +177,7 @@ it('setEquals tests', () => {
 it('LocalStackedContext basic methods test.', () => {
   const context = new LocalStackedContext<number>();
   expect(context.getLocalValueType('b')).toBeUndefined();
-  context.addLocalValueType('a', 3, fail);
+  context.addLocalValueType('a', 3, error);
   expect(context.getLocalValueType('a')).toBe(3);
   context.removeLocalValue('a');
   expect(() => context.removeLocalValue('a')).toThrow();
@@ -186,7 +186,7 @@ it('LocalStackedContext basic methods test.', () => {
 
 it('LocalStackedContext can find conflicts.', () => {
   const context = new LocalStackedContext();
-  context.addLocalValueType('a', 3, fail);
+  context.addLocalValueType('a', 3, error);
   let hasConflict = false;
   context.addLocalValueType('a', 3, () => {
     hasConflict = true;
@@ -196,27 +196,27 @@ it('LocalStackedContext can find conflicts.', () => {
 
 it('LocalStackedContext can compute local values.', () => {
   const context = new LocalStackedContext();
-  context.addLocalValueType('a', 3, fail);
-  context.addLocalValueType('b', 3, fail);
+  context.addLocalValueType('a', 3, error);
+  context.addLocalValueType('b', 3, error);
   const [, local] = context.withNestedScopeReturnScoped(() => {
-    context.addLocalValueType('c', 3, fail);
-    context.addLocalValueType('d', 3, fail);
+    context.addLocalValueType('c', 3, error);
+    context.addLocalValueType('d', 3, error);
   });
   expect(Array.from(local.keys())).toEqual(['c', 'd']);
 });
 
 it('LocalStackedContext can compute captured values.', () => {
   const context = new LocalStackedContext();
-  context.addLocalValueType('a', 3, fail);
-  context.addLocalValueType('b', 3, fail);
+  context.addLocalValueType('a', 3, error);
+  context.addLocalValueType('b', 3, error);
   const [, capturedOuter] = context.withNestedScopeReturnCaptured(() => {
     expect(() =>
       context.addLocalValueType('a', 3, () => {
         throw new Error();
       })
     ).toThrow();
-    context.addLocalValueType('c', 3, fail);
-    context.addLocalValueType('d', 3, fail);
+    context.addLocalValueType('c', 3, error);
+    context.addLocalValueType('d', 3, error);
     context.getLocalValueType('a');
     const [, capturedInner] = context.withNestedScopeReturnCaptured(() => {
       context.getLocalValueType('a');
