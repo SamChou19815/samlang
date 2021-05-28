@@ -9,9 +9,11 @@ import {
   MIR_FUNCTION_CALL,
   MIR_IF_ELSE,
   MIR_CAST,
-} from 'samlang-core-ast/mir-expressions';
-import { debugPrintMidIRFunction, MidIRFunction } from 'samlang-core-ast/mir-toplevel';
-import { MIR_FUNCTION_TYPE, MIR_INT_TYPE } from 'samlang-core-ast/mir-types';
+  debugPrintMidIRFunction,
+  MidIRFunction,
+  MIR_FUNCTION_TYPE,
+  MIR_INT_TYPE,
+} from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
 const assertOptimizationFails = (midIRFunction: MidIRFunction): void =>

@@ -9,20 +9,18 @@ import {
   encodeMainFunctionName,
 } from 'samlang-core-ast/common-names';
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
-import { MIR_FUNCTION_CALL, MIR_NAME, MIR_ZERO } from 'samlang-core-ast/mir-expressions';
-import type {
-  MidIRTypeDefinition,
-  MidIRFunction,
-  MidIRModule,
-} from 'samlang-core-ast/mir-toplevel';
 import {
+  MIR_FUNCTION_CALL,
+  MIR_NAME,
+  MIR_ZERO,
   MIR_INT_TYPE,
   MIR_ANY_TYPE,
   MIR_FUNCTION_TYPE,
   MIR_IDENTIFIER_TYPE,
   MidIRType,
   MidIRFunctionType,
-} from 'samlang-core-ast/mir-types';
+} from 'samlang-core-ast/mir-nodes';
+import type { MidIRTypeDefinition, MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-nodes';
 import type {
   ClassMemberDefinition,
   SamlangModule,

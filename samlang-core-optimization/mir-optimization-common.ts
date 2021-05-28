@@ -5,8 +5,8 @@ import {
   debugPrintMidIRExpression as expressionToString,
   MidIRIfElseStatement,
   MidIRSingleIfStatement,
-} from 'samlang-core-ast/mir-expressions';
-import type { MidIRType } from 'samlang-core-ast/mir-types';
+} from 'samlang-core-ast/mir-nodes';
+import type { MidIRType } from 'samlang-core-ast/mir-nodes';
 import { error, LocalStackedContext } from 'samlang-core-utils';
 
 export type IndexAccessBindedValue = {

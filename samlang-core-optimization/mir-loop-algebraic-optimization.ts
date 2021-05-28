@@ -1,15 +1,15 @@
 import type { MidIROptimizableWhileLoop } from './mir-loop-induction-analysis';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
+import createMidIRFlexibleOrderOperatorNode from 'samlang-core-ast/mir-flexible-op';
 import {
   MidIRStatement,
   MIR_ZERO,
   MIR_INT,
   MIR_VARIABLE,
   MIR_BINARY,
-} from 'samlang-core-ast/mir-expressions';
-import createMidIRFlexibleOrderOperatorNode from 'samlang-core-ast/mir-flexible-op';
-import { MIR_INT_TYPE } from 'samlang-core-ast/mir-types';
+  MIR_INT_TYPE,
+} from 'samlang-core-ast/mir-nodes';
 
 const analyzeNumberOfIterationsToBreakLessThanGuard = (
   initialGuardValue: number,

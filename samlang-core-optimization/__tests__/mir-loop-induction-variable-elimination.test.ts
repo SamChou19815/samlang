@@ -15,8 +15,8 @@ import {
   MIR_WHILE,
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
-} from 'samlang-core-ast/mir-expressions';
-import { MIR_INT_TYPE } from 'samlang-core-ast/mir-types';
+  MIR_INT_TYPE,
+} from 'samlang-core-ast/mir-nodes';
 
 it('midIRLoopInductionVariableEliminationOptimization rejects unoptimizable loops', () => {
   const allocator = new OptimizationResourceAllocator();

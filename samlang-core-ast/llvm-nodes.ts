@@ -8,7 +8,7 @@ import {
 } from './common-names';
 import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
-import type { MidIRIdentifierType } from './mir-types';
+import type { MidIRIdentifierType } from './mir-nodes';
 
 import { assert, zip } from 'samlang-core-utils';
 

@@ -7,9 +7,8 @@ import {
   MidIRExpression,
   MIR_ZERO,
   MIR_VARIABLE,
-} from 'samlang-core-ast/mir-expressions';
-import type { MidIRFunction } from 'samlang-core-ast/mir-toplevel';
-import type { MidIRType } from 'samlang-core-ast/mir-types';
+} from 'samlang-core-ast/mir-nodes';
+import type { MidIRFunction, MidIRType } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull, isNotNull, zip, zip3 } from 'samlang-core-utils';
 
 /** The threshold max tolerable cost of inlining.  */

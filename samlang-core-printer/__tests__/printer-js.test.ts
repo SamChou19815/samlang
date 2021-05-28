@@ -29,14 +29,12 @@ import {
   MIR_VARIABLE,
   MidIRExpression,
   MidIRStatement,
-} from 'samlang-core-ast/mir-expressions';
-import type { MidIRModule } from 'samlang-core-ast/mir-toplevel';
-import {
   MIR_INT_TYPE,
   MIR_STRING_TYPE,
   MIR_FUNCTION_TYPE,
   MIR_BOOL_TYPE,
-} from 'samlang-core-ast/mir-types';
+} from 'samlang-core-ast/mir-nodes';
+import type { MidIRModule } from 'samlang-core-ast/mir-nodes';
 
 const midIRExpressionToString = (e: MidIRExpression): string =>
   prettyPrintAccordingToPrettierAlgorithm(

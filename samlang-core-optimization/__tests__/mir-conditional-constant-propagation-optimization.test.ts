@@ -21,8 +21,9 @@ import {
   MIR_WHILE,
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
-} from 'samlang-core-ast/mir-expressions';
-import { MIR_BOOL_TYPE, MIR_INT_TYPE } from 'samlang-core-ast/mir-types';
+  MIR_BOOL_TYPE,
+  MIR_INT_TYPE,
+} from 'samlang-core-ast/mir-nodes';
 
 const assertCorrectlyOptimized = (
   statements: MidIRStatement[],

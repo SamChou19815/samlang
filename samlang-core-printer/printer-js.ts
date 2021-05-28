@@ -20,8 +20,12 @@ import {
   ENCODED_FUNCTION_NAME_THROW,
   ENCODED_COMPILED_PROGRAM_MAIN,
 } from 'samlang-core-ast/common-names';
-import type { MidIRStatement, MidIRExpression } from 'samlang-core-ast/mir-expressions';
-import type { MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-toplevel';
+import type {
+  MidIRStatement,
+  MidIRExpression,
+  MidIRFunction,
+  MidIRModule,
+} from 'samlang-core-ast/mir-nodes';
 
 // Thanks https://gist.github.com/getify/3667624
 const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');

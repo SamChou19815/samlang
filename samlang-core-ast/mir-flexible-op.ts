@@ -1,5 +1,5 @@
 import type { IROperator } from './common-operators';
-import { MidIRExpression, MIR_BINARY } from './mir-expressions';
+import { MidIRExpression, MIR_BINARY } from './mir-nodes';
 
 /**
  * Compare two Mid IR expression.

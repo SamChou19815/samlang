@@ -1,5 +1,8 @@
 import {
+  prettyPrintMidIRType,
+  isTheSameMidIRType,
   debugPrintMidIRStatement,
+  debugPrintMidIRModule,
   MIR_FUNCTION_CALL,
   MIR_IF_ELSE,
   MIR_SINGLE_IF,
@@ -13,8 +16,69 @@ import {
   MIR_NAME,
   MIR_VARIABLE,
   MIR_BINARY,
-} from '../mir-expressions';
-import { MIR_INT_TYPE, MIR_STRING_TYPE, MIR_IDENTIFIER_TYPE } from '../mir-types';
+  MIR_INT_TYPE,
+  MIR_BOOL_TYPE,
+  MIR_ANY_TYPE,
+  MIR_STRING_TYPE,
+  MIR_IDENTIFIER_TYPE,
+  MIR_FUNCTION_TYPE,
+} from '../mir-nodes';
+
+it('prettyPrintMidIRType works', () => {
+  expect(
+    prettyPrintMidIRType(
+      MIR_FUNCTION_TYPE(
+        [MIR_INT_TYPE, MIR_INT_TYPE],
+        MIR_FUNCTION_TYPE([MIR_IDENTIFIER_TYPE('Foo'), MIR_ANY_TYPE], MIR_STRING_TYPE)
+      )
+    )
+  ).toBe('(int, int) -> (Foo, any) -> string');
+});
+
+it('isTheSameMidIRType works', () => {
+  expect(isTheSameMidIRType(MIR_ANY_TYPE, MIR_STRING_TYPE)).toBeTruthy();
+  expect(isTheSameMidIRType(MIR_STRING_TYPE, MIR_ANY_TYPE)).toBeTruthy();
+  expect(isTheSameMidIRType(MIR_STRING_TYPE, MIR_STRING_TYPE)).toBeTruthy();
+  expect(isTheSameMidIRType(MIR_ANY_TYPE, MIR_ANY_TYPE)).toBeTruthy();
+
+  expect(isTheSameMidIRType(MIR_INT_TYPE, MIR_ANY_TYPE)).toBeFalsy();
+  expect(isTheSameMidIRType(MIR_INT_TYPE, MIR_BOOL_TYPE)).toBeFalsy();
+  expect(isTheSameMidIRType(MIR_INT_TYPE, MIR_INT_TYPE)).toBeTruthy();
+  expect(isTheSameMidIRType(MIR_BOOL_TYPE, MIR_BOOL_TYPE)).toBeTruthy();
+  expect(isTheSameMidIRType(MIR_BOOL_TYPE, MIR_INT_TYPE)).toBeFalsy();
+
+  expect(isTheSameMidIRType(MIR_IDENTIFIER_TYPE('A'), MIR_ANY_TYPE)).toBeFalsy();
+  expect(isTheSameMidIRType(MIR_IDENTIFIER_TYPE('A'), MIR_IDENTIFIER_TYPE('B'))).toBeFalsy();
+  expect(isTheSameMidIRType(MIR_IDENTIFIER_TYPE('A'), MIR_IDENTIFIER_TYPE('A'))).toBeTruthy();
+
+  expect(
+    isTheSameMidIRType(MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE), MIR_INT_TYPE)
+  ).toBeFalsy();
+  expect(
+    isTheSameMidIRType(
+      MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE),
+      MIR_FUNCTION_TYPE([MIR_BOOL_TYPE], MIR_INT_TYPE)
+    )
+  ).toBeFalsy();
+  expect(
+    isTheSameMidIRType(
+      MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE),
+      MIR_FUNCTION_TYPE([MIR_BOOL_TYPE], MIR_BOOL_TYPE)
+    )
+  ).toBeFalsy();
+  expect(
+    isTheSameMidIRType(
+      MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE),
+      MIR_FUNCTION_TYPE([], MIR_BOOL_TYPE)
+    )
+  ).toBeFalsy();
+  expect(
+    isTheSameMidIRType(
+      MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE),
+      MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_BOOL_TYPE)
+    )
+  ).toBeTruthy();
+});
 
 it('MIR_BINARY test', () => {
   MIR_BINARY({
@@ -171,4 +235,30 @@ if 0 {
   }
   bar = (b2: int);
 }`);
+});
+
+it('debugPrintMidIRModule works', () => {
+  expect(
+    debugPrintMidIRModule({
+      globalVariables: [{ name: 'dev_meggo', content: 'vibez' }],
+      typeDefinitions: [{ identifier: 'Foo', mappings: [MIR_INT_TYPE, MIR_ANY_TYPE] }],
+      functions: [
+        {
+          name: 'Bar',
+          parameters: ['f'],
+          type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE),
+          body: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
+          returnValue: MIR_ZERO,
+        },
+      ],
+    })
+  ).toBe(`const dev_meggo = 'vibez';
+
+type Foo = (int, any);
+
+function Bar(f: int): int {
+  let a: int = 0;
+  return 0;
+}
+`);
 });

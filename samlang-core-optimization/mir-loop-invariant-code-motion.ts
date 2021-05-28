@@ -3,7 +3,7 @@ import {
   MidIRStatement,
   MidIRWhileStatement,
   MIR_WHILE,
-} from 'samlang-core-ast/mir-expressions';
+} from 'samlang-core-ast/mir-nodes';
 import { isNotNull } from 'samlang-core-utils';
 
 type LoopInvariantCodeMotionOptimizationResult = {

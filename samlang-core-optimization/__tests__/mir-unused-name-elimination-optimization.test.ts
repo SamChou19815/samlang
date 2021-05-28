@@ -13,8 +13,10 @@ import {
   MIR_SINGLE_IF,
   MIR_BREAK,
   MIR_WHILE,
-} from 'samlang-core-ast/mir-expressions';
-import { MIR_INT_TYPE, MIR_FUNCTION_TYPE, MIR_IDENTIFIER_TYPE } from 'samlang-core-ast/mir-types';
+  MIR_INT_TYPE,
+  MIR_FUNCTION_TYPE,
+  MIR_IDENTIFIER_TYPE,
+} from 'samlang-core-ast/mir-nodes';
 
 it('optimizeMidIRModuleByEliminatingUnusedOnes test', () => {
   const optimized = optimizeMidIRModuleByEliminatingUnusedOnes({

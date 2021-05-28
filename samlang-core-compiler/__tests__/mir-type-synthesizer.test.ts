@@ -5,7 +5,7 @@ import {
   MIR_BOOL_TYPE,
   MIR_FUNCTION_TYPE,
   MIR_INT_TYPE,
-} from 'samlang-core-ast/mir-types';
+} from 'samlang-core-ast/mir-nodes';
 
 it('MidIRTypeSynthesizer works', () => {
   const synthesizer = new MidIRTypeSynthesizer();

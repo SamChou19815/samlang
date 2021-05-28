@@ -2,8 +2,8 @@ import optimizeMidIRFunctionByLocalValueNumbering from './mir-local-value-number
 import { BindedValue, bindedValueToString } from './mir-optimization-common';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
-import { MidIRStatement, MIR_INDEX_ACCESS, MIR_BINARY } from 'samlang-core-ast/mir-expressions';
-import type { MidIRFunction } from 'samlang-core-ast/mir-toplevel';
+import { MidIRStatement, MIR_INDEX_ACCESS, MIR_BINARY } from 'samlang-core-ast/mir-nodes';
+import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
 import { Hashable, ReadonlyHashSet, HashSet, hashSetOf, isNotNull } from 'samlang-core-utils';
 
 class ExpressionWrapper implements Hashable {

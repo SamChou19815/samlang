@@ -17,9 +17,12 @@ import { PLUS, AND, OR, CONCAT } from 'samlang-core-ast/common-operators';
 import {
   debugPrintMidIRExpression,
   debugPrintMidIRStatement,
-} from 'samlang-core-ast/mir-expressions';
-import { debugPrintMidIRModule, MidIRModule } from 'samlang-core-ast/mir-toplevel';
-import { MIR_FUNCTION_TYPE, MIR_IDENTIFIER_TYPE, MIR_INT_TYPE } from 'samlang-core-ast/mir-types';
+  debugPrintMidIRModule,
+  MidIRModule,
+  MIR_FUNCTION_TYPE,
+  MIR_IDENTIFIER_TYPE,
+  MIR_INT_TYPE,
+} from 'samlang-core-ast/mir-nodes';
 import {
   SamlangExpression,
   EXPRESSION_FALSE,

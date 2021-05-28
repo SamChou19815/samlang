@@ -5,7 +5,7 @@ import {
   LLVM_STRING_TYPE,
   LLVM_FUNCTION_TYPE,
 } from 'samlang-core-ast/llvm-nodes';
-import type { MidIRType } from 'samlang-core-ast/mir-types';
+import type { MidIRType } from 'samlang-core-ast/mir-nodes';
 
 const lowerMidIRTypeToLLVMType = (type: MidIRType): LLVMType => {
   switch (type.__type__) {

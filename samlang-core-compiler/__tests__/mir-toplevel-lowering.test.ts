@@ -11,7 +11,7 @@ import {
   tupleType,
 } from 'samlang-core-ast/common-nodes';
 import { MUL, MINUS, EQ } from 'samlang-core-ast/common-operators';
-import { debugPrintMidIRModule } from 'samlang-core-ast/mir-toplevel';
+import { debugPrintMidIRModule } from 'samlang-core-ast/mir-nodes';
 import {
   EXPRESSION_INT,
   EXPRESSION_VARIABLE,
