@@ -1,4 +1,5 @@
 import type HighIRStringManager from './hir-string-manager';
+import type HighIRTypeSynthesizer from './hir-type-synthesizer';
 import lowerSamlangType from './hir-types-lowering';
 
 import {
@@ -33,16 +34,15 @@ import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
 import {
   HighIRType,
   HighIRIdentifierType,
-  HighIRStructType,
   HighIRFunctionType,
   isTheSameHighIRType,
   HIR_BOOL_TYPE,
   HIR_INT_TYPE,
   HIR_ANY_TYPE,
-  HIR_STRUCT_TYPE,
   HIR_FUNCTION_TYPE,
   HIR_STRING_TYPE,
   HIR_CLOSURE_TYPE,
+  HIR_IDENTIFIER_TYPE,
 } from 'samlang-core-ast/hir-types';
 import type {
   SamlangExpression,
@@ -105,6 +105,7 @@ class HighIRExpressionLoweringManager {
     private readonly typeDefinitionMapping: Readonly<Record<string, readonly HighIRType[]>>,
     private readonly functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
     private readonly typeParameters: ReadonlySet<string>,
+    private readonly typeSynthesizer: HighIRTypeSynthesizer,
     private readonly stringManager: HighIRStringManager
   ) {}
 
@@ -134,7 +135,14 @@ class HighIRExpressionLoweringManager {
   }
 
   private lowerType(type: Type): HighIRType {
-    return lowerSamlangType(type, this.typeParameters);
+    return lowerSamlangType(type, this.typeParameters, this.typeSynthesizer);
+  }
+
+  private getTypeDefinition(identifier: string): readonly HighIRType[] {
+    return checkNotNull(
+      this.typeDefinitionMapping[identifier] ??
+        this.typeSynthesizer.mappings.get(identifier)?.mappings
+    );
   }
 
   private lowerWithPotentialCast(
@@ -252,8 +260,11 @@ class HighIRExpressionLoweringManager {
   ): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
     const tupleVariableName = this.allocateTemporaryVariable();
-    const loweredTupleType = this.lowerType(expression.type) as HighIRStructType;
-    const loweredExpressions = zip(expression.expressions, loweredTupleType.mappings).map(
+    const loweredTupleIdentifierType = HIR_IDENTIFIER_TYPE(
+      (this.lowerType(expression.type) as HighIRIdentifierType).name
+    );
+    const loweredTupleMappings = this.getTypeDefinition(loweredTupleIdentifierType.name);
+    const loweredExpressions = zip(expression.expressions, loweredTupleMappings).map(
       ([subExpression, tupleElementType]) =>
         this.lowerWithPotentialCast(
           tupleElementType,
@@ -266,11 +277,11 @@ class HighIRExpressionLoweringManager {
         ...loweredStatements,
         HIR_STRUCT_INITIALIZATION({
           structVariableName: tupleVariableName,
-          type: loweredTupleType,
+          type: loweredTupleIdentifierType,
           expressionList: loweredExpressions,
         }),
       ],
-      expression: HIR_VARIABLE(tupleVariableName, loweredTupleType),
+      expression: HIR_VARIABLE(tupleVariableName, loweredTupleIdentifierType),
     };
   }
 
@@ -279,9 +290,7 @@ class HighIRExpressionLoweringManager {
   ): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
     const loweredIdentifierType = this.lowerType(expression.type) as HighIRIdentifierType;
-    const mappingsForIdentifierType = checkNotNull(
-      this.typeDefinitionMapping[loweredIdentifierType.name]
-    );
+    const mappingsForIdentifierType = this.getTypeDefinition(loweredIdentifierType.name);
     const loweredFields = zip(expression.fieldDeclarations, mappingsForIdentifierType).map(
       ([fieldDeclaration, fieldType]) => {
         const fieldExpression = fieldDeclaration.expression ?? {
@@ -338,10 +347,8 @@ class HighIRExpressionLoweringManager {
 
   private lowerFieldAccess(expression: FieldAccessExpression): HighIRExpressionLoweringResult {
     const result = this.lower(expression.expression);
-    const mappingsForIdentifierType = checkNotNull(
-      this.typeDefinitionMapping[
-        (this.lowerType(expression.expression.type) as HighIRIdentifierType).name
-      ]
+    const mappingsForIdentifierType = this.getTypeDefinition(
+      (this.lowerType(expression.expression.type) as HighIRIdentifierType).name
     );
     const expectedFieldType = this.lowerType(expression.type);
     const extractedFieldType = checkNotNull(mappingsForIdentifierType[expression.fieldOrder]);
@@ -937,7 +944,9 @@ class HighIRExpressionLoweringManager {
       const expressionList = captured.map(([variableName, variableType]) =>
         HIR_VARIABLE(variableName, this.lowerType(variableType))
       );
-      const contextType = HIR_STRUCT_TYPE(expressionList.map((it) => it.type));
+      const contextType = HIR_IDENTIFIER_TYPE(
+        this.typeSynthesizer.synthesize(expressionList.map((it) => it.type)).identifier
+      );
       loweredStatements.push(
         HIR_STRUCT_INITIALIZATION({
           structVariableName: contextName,
@@ -970,8 +979,10 @@ class HighIRExpressionLoweringManager {
   private createSyntheticLambdaFunction(expression: LambdaExpression): HighIRFunction {
     const loweringResult = this.lower(expression.body);
     const lambdaStatements: HighIRStatement[] = [];
-    const contextType = HIR_STRUCT_TYPE(
-      Object.values(expression.captured).map((it) => this.lowerType(it))
+    const contextType = HIR_IDENTIFIER_TYPE(
+      this.typeSynthesizer.synthesize(
+        Object.values(expression.captured).map((it) => this.lowerType(it))
+      ).identifier
     );
     Object.entries(expression.captured).forEach(([variable, variableType], index) => {
       lambdaStatements.push(
@@ -1009,8 +1020,9 @@ class HighIRExpressionLoweringManager {
         );
         switch (pattern.type) {
           case 'TuplePattern': {
-            const mappingsForTupleType = (loweredAssignedExpression.type as HighIRStructType)
-              .mappings;
+            const mappingsForTupleType = this.getTypeDefinition(
+              (loweredAssignedExpression.type as HighIRIdentifierType).name
+            );
             zip(pattern.destructedNames, mappingsForTupleType).forEach(
               ([{ name, type }, extractedFieldType], index) => {
                 if (name == null) {
@@ -1036,10 +1048,8 @@ class HighIRExpressionLoweringManager {
             break;
           }
           case 'ObjectPattern': {
-            const mappingsForIdentifierType = checkNotNull(
-              this.typeDefinitionMapping[
-                (loweredAssignedExpression.type as HighIRIdentifierType).name
-              ]
+            const mappingsForIdentifierType = this.getTypeDefinition(
+              (loweredAssignedExpression.type as HighIRIdentifierType).name
             );
             zip(pattern.destructedNames, mappingsForIdentifierType).forEach(
               ([{ fieldName, fieldOrder, type, alias }, extractedFieldType]) => {
@@ -1097,6 +1107,7 @@ const lowerSamlangExpression = (
   typeDefinitionMapping: Readonly<Record<string, readonly HighIRType[]>>,
   functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
   typeParameters: ReadonlySet<string>,
+  typeSynthesizer: HighIRTypeSynthesizer,
   stringManager: HighIRStringManager,
   expression: SamlangExpression
 ): HighIRExpressionLoweringResultWithSyntheticFunctions => {
@@ -1106,6 +1117,7 @@ const lowerSamlangExpression = (
     typeDefinitionMapping,
     functionTypeMapping,
     typeParameters,
+    typeSynthesizer,
     stringManager
   );
   if (expression.__type__ === 'StatementBlockExpression') {

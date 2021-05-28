@@ -1,3 +1,5 @@
+import type HighIRTypeSynthesizer from './hir-type-synthesizer';
+
 import type { Type } from 'samlang-core-ast/common-nodes';
 import {
   HighIRType,
@@ -6,12 +8,15 @@ import {
   HIR_STRING_TYPE,
   HIR_ANY_TYPE,
   HIR_IDENTIFIER_TYPE,
-  HIR_STRUCT_TYPE,
   HIR_CLOSURE_TYPE,
 } from 'samlang-core-ast/hir-types';
 import { assert } from 'samlang-core-utils';
 
-const lowerSamlangType = (type: Type, genericTypes: ReadonlySet<string>): HighIRType => {
+const lowerSamlangType = (
+  type: Type,
+  genericTypes: ReadonlySet<string>,
+  typeSynthesizer: HighIRTypeSynthesizer
+): HighIRType => {
   assert(type.type !== 'UndecidedType', 'Unreachable!');
   switch (type.type) {
     case 'PrimitiveType':
@@ -28,8 +33,12 @@ const lowerSamlangType = (type: Type, genericTypes: ReadonlySet<string>): HighIR
       if (genericTypes.has(type.identifier)) return HIR_ANY_TYPE;
       return HIR_IDENTIFIER_TYPE(`${type.moduleReference.parts.join('_')}_${type.identifier}`);
     }
-    case 'TupleType':
-      return HIR_STRUCT_TYPE(type.mappings.map((it) => lowerSamlangType(it, genericTypes)));
+    case 'TupleType': {
+      const typeDefinition = typeSynthesizer.synthesize(
+        type.mappings.map((it) => lowerSamlangType(it, genericTypes, typeSynthesizer))
+      );
+      return HIR_IDENTIFIER_TYPE(typeDefinition.identifier);
+    }
     case 'FunctionType':
       return HIR_CLOSURE_TYPE;
   }

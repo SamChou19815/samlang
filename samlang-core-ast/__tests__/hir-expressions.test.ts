@@ -14,7 +14,7 @@ import {
   HIR_VARIABLE,
   HIR_BINARY,
 } from '../hir-expressions';
-import { HIR_INT_TYPE, HIR_STRING_TYPE, HIR_IDENTIFIER_TYPE, HIR_STRUCT_TYPE } from '../hir-types';
+import { HIR_INT_TYPE, HIR_STRING_TYPE, HIR_IDENTIFIER_TYPE } from '../hir-types';
 
 it('HIR_BINARY test', () => {
   HIR_BINARY({
@@ -95,12 +95,12 @@ it('debugPrintHighIRStatement works', () => {
           HIR_BINARY({ name: 'dd', operator: '+', e1: HIR_INT(0), e2: HIR_INT(0) }),
           HIR_STRUCT_INITIALIZATION({
             structVariableName: 'baz',
-            type: HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_STRING_TYPE]),
+            type: HIR_IDENTIFIER_TYPE('FooBar'),
             expressionList: [HIR_NAME('meggo', HIR_STRING_TYPE)],
           }),
           HIR_FUNCTION_CALL({
             functionExpression: HIR_NAME('h', HIR_INT_TYPE),
-            functionArguments: [HIR_VARIABLE('big', HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_INT_TYPE]))],
+            functionArguments: [HIR_VARIABLE('big', HIR_IDENTIFIER_TYPE('FooBar'))],
             returnType: HIR_INT_TYPE,
             returnCollector: 'vibez',
           }),
@@ -112,7 +112,7 @@ it('debugPrintHighIRStatement works', () => {
           HIR_INDEX_ACCESS({
             name: 'f',
             type: HIR_INT_TYPE,
-            pointerExpression: HIR_VARIABLE('big', HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_INT_TYPE])),
+            pointerExpression: HIR_VARIABLE('big', HIR_IDENTIFIER_TYPE('FooBar')),
             index: 0,
           }),
           HIR_SINGLE_IF({
@@ -157,10 +157,10 @@ if 0 {
   bar = (b1: int);
 } else {
   let dd: int = 0 + 0;
-  let baz: (int, string) = [meggo];
-  let vibez: int = h((big: (int, int)));
+  let baz: FooBar = [meggo];
+  let vibez: int = h((big: FooBar));
   stresso((d: int));
-  let f: int = (big: (int, int))[0];
+  let f: int = (big: FooBar)[0];
   if 0 {
     undefined = 0;
     break;
