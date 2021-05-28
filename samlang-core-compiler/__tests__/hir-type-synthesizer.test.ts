@@ -12,16 +12,20 @@ it('HighIRTypeSynthesizer works', () => {
 
   expect(
     synthesizer.synthesize([HIR_BOOL_TYPE, HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_ANY_TYPE)])
+      .identifier
   ).toBe('_SYNTHETIC_ID_TYPE_0');
   expect(
     synthesizer.synthesize([HIR_INT_TYPE, HIR_FUNCTION_TYPE([HIR_BOOL_TYPE], HIR_ANY_TYPE)])
+      .identifier
   ).toBe('_SYNTHETIC_ID_TYPE_1');
 
   expect(
     synthesizer.synthesize([HIR_BOOL_TYPE, HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_ANY_TYPE)])
+      .identifier
   ).toBe('_SYNTHETIC_ID_TYPE_0');
   expect(
     synthesizer.synthesize([HIR_INT_TYPE, HIR_FUNCTION_TYPE([HIR_BOOL_TYPE], HIR_ANY_TYPE)])
+      .identifier
   ).toBe('_SYNTHETIC_ID_TYPE_1');
 
   expect(synthesizer.synthesized).toEqual([

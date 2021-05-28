@@ -41,18 +41,9 @@ it('isTheSameHighIRType works', () => {
     isTheSameHighIRType(HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_BOOL_TYPE]), HIR_INT_TYPE)
   ).toBeFalsy();
   expect(
-    isTheSameHighIRType(HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_BOOL_TYPE]), HIR_STRUCT_TYPE([]))
-  ).toBeFalsy();
-  expect(
     isTheSameHighIRType(
       HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_BOOL_TYPE]),
       HIR_STRUCT_TYPE([HIR_INT_TYPE])
-    )
-  ).toBeFalsy();
-  expect(
-    isTheSameHighIRType(
-      HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_BOOL_TYPE]),
-      HIR_STRUCT_TYPE([HIR_BOOL_TYPE, HIR_INT_TYPE])
     )
   ).toBeFalsy();
   expect(

@@ -34,7 +34,6 @@ import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import {
   HIR_INT_TYPE,
   HIR_STRING_TYPE,
-  HIR_STRUCT_TYPE,
   HIR_FUNCTION_TYPE,
   HIR_BOOL_TYPE,
 } from 'samlang-core-ast/hir-types';
@@ -605,7 +604,7 @@ if (5) {
     highIRStatementToString(
       HIR_STRUCT_INITIALIZATION({
         structVariableName: 'st',
-        type: HIR_STRUCT_TYPE([HIR_INT_TYPE, HIR_STRING_TYPE, HIR_INT_TYPE]),
+        type: HIR_INT_TYPE,
         expressionList: [HIR_ZERO, HIR_ZERO, HIR_INT(13)],
       })
     )

@@ -5,12 +5,7 @@ import {
   HighIRExpression,
   HighIRStatement,
 } from './hir-expressions';
-import {
-  HighIRType,
-  HighIRFunctionType,
-  prettyPrintHighIRType,
-  HIR_STRUCT_TYPE,
-} from './hir-types';
+import { HighIRType, HighIRFunctionType, prettyPrintHighIRType } from './hir-types';
 
 import { zip } from 'samlang-core-utils';
 
@@ -60,7 +55,7 @@ export const debugPrintHighIRModule = ({
     ...globalVariables.map(({ name, content }) => `const ${name} = '${content}';\n`),
     ...typeDefinitions.map(
       ({ identifier, mappings }) =>
-        `type ${identifier} = ${prettyPrintHighIRType(HIR_STRUCT_TYPE(mappings))};\n`
+        `type ${identifier} = (${mappings.map(prettyPrintHighIRType).join(', ')});\n`
     ),
     ...functions.map((it) => debugPrintHighIRFunction(it)),
   ].join('\n');

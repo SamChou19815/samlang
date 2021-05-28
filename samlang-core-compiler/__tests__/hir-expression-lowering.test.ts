@@ -1,5 +1,6 @@
 import lowerSamlangExpression from '../hir-expression-lowering';
 import HighIRStringManager from '../hir-string-manager';
+import HighIRTypeSynthesizer from '../hir-type-synthesizer';
 
 import {
   unitType,
@@ -53,6 +54,7 @@ const expectCorrectlyLowered = (
   samlangExpression: SamlangExpression,
   expectedString: string
 ): void => {
+  const typeSynthesizer = new HighIRTypeSynthesizer();
   const stringManager = new HighIRStringManager();
   const { statements, expression, syntheticFunctions } = lowerSamlangExpression(
     ModuleReference.DUMMY,
@@ -77,6 +79,7 @@ const expectCorrectlyLowered = (
       ),
     },
     new Set(),
+    typeSynthesizer,
     stringManager,
     samlangExpression
   );
@@ -146,8 +149,8 @@ it('Lowering to StructConstructor works (1/n).', () => {
       associatedComments: [],
       expressions: [THIS],
     }),
-    `let _t0: (__DUMMY___Dummy) = [(_this: __DUMMY___Dummy)];
-return (_t0: (__DUMMY___Dummy));`
+    `let _t0: _SYNTHETIC_ID_TYPE_0 = [(_this: __DUMMY___Dummy)];
+return (_t0: _SYNTHETIC_ID_TYPE_0);`
   );
 });
 
@@ -618,13 +621,13 @@ it('Lambda lowering works (1/n).', () => {
       captured: { a: unitType },
       body: THIS,
     }),
-    `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (int), a: int): int {
-  let a: int = (_context: (int))[0];
+    `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): int {
+  let a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
   return (_this: __DUMMY___Dummy);
 }
-let _t1: (int) = [(a: int)];
+let _t1: _SYNTHETIC_ID_TYPE_0 = [(a: int)];
 let _t2: any = _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
-let _t3: any = (_t1: (int));
+let _t3: any = (_t1: _SYNTHETIC_ID_TYPE_0);
 let _t0: (any, any) = [(_t2: any), (_t3: any)];
 return (_t0: (any, any));`
   );
@@ -640,13 +643,13 @@ it('Lambda lowering works (2/n).', () => {
       captured: { a: unitType },
       body: THIS,
     }),
-    `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (int), a: int): int {
-  let a: int = (_context: (int))[0];
+    `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): int {
+  let a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
   return (_this: __DUMMY___Dummy);
 }
-let _t1: (int) = [(a: int)];
+let _t1: _SYNTHETIC_ID_TYPE_0 = [(a: int)];
 let _t2: any = _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
-let _t3: any = (_t1: (int));
+let _t3: any = (_t1: _SYNTHETIC_ID_TYPE_0);
 let _t0: (any, any) = [(_t2: any), (_t3: any)];
 return (_t0: (any, any));`
   );
@@ -662,13 +665,13 @@ it('Lambda lowering works (3/n).', () => {
       captured: { a: unitType },
       body: THIS,
     }),
-    `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (int), a: int): __DUMMY___Dummy {
-  let a: int = (_context: (int))[0];
+    `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): __DUMMY___Dummy {
+  let a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
   return (_this: __DUMMY___Dummy);
 }
-let _t1: (int) = [(a: int)];
+let _t1: _SYNTHETIC_ID_TYPE_0 = [(a: int)];
 let _t2: any = _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
-let _t3: any = (_t1: (int));
+let _t3: any = (_t1: _SYNTHETIC_ID_TYPE_0);
 let _t0: (any, any) = [(_t2: any), (_t3: any)];
 return (_t0: (any, any));`
   );
@@ -684,7 +687,7 @@ it('Lambda lowering works (4/n).', () => {
       captured: {},
       body: THIS,
     }),
-    `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: (), a: int): __DUMMY___Dummy {
+    `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): __DUMMY___Dummy {
   return (_this: __DUMMY___Dummy);
 }
 let _t1: any = _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
@@ -947,7 +950,7 @@ it('StatementBlockExpression lowering works.', () => {
         ],
       },
     }),
-    `let a__depth_1__block_0: int = (_this: (int, int))[0];
+    `let a__depth_1__block_0: int = (_this: _SYNTHETIC_ID_TYPE_0)[0];
 let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
 let c__depth_1__block_0: int = (_this: __DUMMY___Dummy)[1];
 return 0;`
