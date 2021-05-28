@@ -16,23 +16,13 @@ export type LLVMPrimitiveType = { readonly __type__: 'PrimitiveType'; readonly t
 export type LLVMStringType = { readonly __type__: 'StringType'; readonly length?: number };
 export type LLVMIdentifierType = HighIRIdentifierType;
 
-export type LLVMStructType = {
-  readonly __type__: 'StructType';
-  readonly mappings: readonly LLVMType[];
-};
-
 export type LLVMFunctionType = {
   readonly __type__: 'FunctionType';
   readonly argumentTypes: readonly LLVMType[];
   readonly returnType: LLVMType;
 };
 
-export type LLVMType =
-  | LLVMPrimitiveType
-  | LLVMIdentifierType
-  | LLVMStringType
-  | LLVMStructType
-  | LLVMFunctionType;
+export type LLVMType = LLVMPrimitiveType | LLVMIdentifierType | LLVMStringType | LLVMFunctionType;
 
 export const LLVM_BOOL_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i1' };
 export const LLVM_INT_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i32' };
@@ -45,11 +35,6 @@ export const LLVM_STRING_TYPE = (length?: number): LLVMStringType => ({
 export const LLVM_IDENTIFIER_TYPE = (name: string): LLVMIdentifierType => ({
   __type__: 'IdentifierType',
   name,
-});
-
-export const LLVM_STRUCT_TYPE = (mappings: readonly LLVMType[]): LLVMStructType => ({
-  __type__: 'StructType',
-  mappings,
 });
 
 export const LLVM_FUNCTION_TYPE = (
@@ -65,14 +50,6 @@ export const isTheSameLLVMType = (t1: LLVMType, t2: LLVMType): boolean => {
       return t2.__type__ === 'StringType' && t1.length === t2.length;
     case 'IdentifierType':
       return t2.__type__ === 'IdentifierType' && t1.name === t2.name;
-    case 'StructType':
-      return (
-        t2.__type__ === 'StructType' &&
-        t1.mappings.length === t2.mappings.length &&
-        zip(t1.mappings, t2.mappings).every(([t1Element, t2Element]) =>
-          isTheSameLLVMType(t1Element, t2Element)
-        )
-      );
     case 'FunctionType':
       return (
         t2.__type__ === 'FunctionType' &&
@@ -93,8 +70,6 @@ export const prettyPrintLLVMType = (type: LLVMType): string => {
       return type.length == null ? 'i32*' : `[${type.length} x i32]*`;
     case 'IdentifierType':
       return `%${type.name}*`;
-    case 'StructType':
-      return `{ ${type.mappings.map(prettyPrintLLVMType).join(', ')} }*`;
     case 'FunctionType':
       return `${prettyPrintLLVMType(type.returnType)} (${type.argumentTypes
         .map(prettyPrintLLVMType)

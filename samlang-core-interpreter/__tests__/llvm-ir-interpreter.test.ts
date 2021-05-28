@@ -12,7 +12,6 @@ import {
 import {
   LLVM_INT_TYPE,
   LLVM_STRING_TYPE,
-  LLVM_STRUCT_TYPE,
   LLVM_INT,
   LLVM_NAME,
   LLVM_VARIABLE,
@@ -340,7 +339,7 @@ it('interpretLLVMModule setup tuple and print test', () => {
             LLVM_GET_ELEMENT_PTR({
               resultVariable: 'second_pointer',
               sourceValue: LLVM_VARIABLE('tuple'),
-              sourcePointerType: LLVM_STRUCT_TYPE([LLVM_INT_TYPE, LLVM_INT_TYPE]),
+              sourcePointerType: LLVM_INT_TYPE,
               offset: 1,
             }),
             LLVM_STORE({

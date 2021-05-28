@@ -41,7 +41,6 @@ import {
   HIR_ANY_TYPE,
   HIR_FUNCTION_TYPE,
   HIR_STRING_TYPE,
-  HIR_CLOSURE_TYPE,
   HIR_IDENTIFIER_TYPE,
 } from 'samlang-core-ast/hir-types';
 import type {
@@ -232,13 +231,18 @@ class HighIRExpressionLoweringManager {
     }
   };
 
+  private get closureType(): HighIRType {
+    const typeDefinition = this.typeSynthesizer.synthesize([HIR_ANY_TYPE, HIR_ANY_TYPE]);
+    return HIR_IDENTIFIER_TYPE(typeDefinition.identifier);
+  }
+
   private lowerClassMember(expression: ClassMemberExpression): HighIRExpressionLoweringResult {
     const structVariableName = this.allocateTemporaryVariable();
     const statements: HighIRStatement[] = [];
     statements.push(
       HIR_STRUCT_INITIALIZATION({
         structVariableName,
-        type: HIR_CLOSURE_TYPE,
+        type: this.closureType,
         expressionList: [
           HIR_NAME(
             encodeFunctionNameGlobally(
@@ -252,7 +256,7 @@ class HighIRExpressionLoweringManager {
         ],
       })
     );
-    return { statements, expression: HIR_VARIABLE(structVariableName, HIR_CLOSURE_TYPE) };
+    return { statements, expression: HIR_VARIABLE(structVariableName, this.closureType) };
   }
 
   private lowerTupleConstructor(
@@ -380,7 +384,7 @@ class HighIRExpressionLoweringManager {
         ...result.statements,
         HIR_STRUCT_INITIALIZATION({
           structVariableName,
-          type: HIR_CLOSURE_TYPE,
+          type: this.closureType,
           expressionList: [
             HIR_NAME(
               encodeFunctionNameGlobally(
@@ -394,7 +398,7 @@ class HighIRExpressionLoweringManager {
           ],
         }),
       ],
-      expression: HIR_VARIABLE(structVariableName, HIR_CLOSURE_TYPE),
+      expression: HIR_VARIABLE(structVariableName, this.closureType),
     };
   }
 
@@ -517,7 +521,7 @@ class HighIRExpressionLoweringManager {
           loweredStatements
         );
         const closureExpression = this.lowerWithPotentialCast(
-          HIR_CLOSURE_TYPE,
+          this.closureType,
           loweredFunctionExpression,
           loweredStatements
         );
@@ -959,7 +963,7 @@ class HighIRExpressionLoweringManager {
     loweredStatements.push(
       HIR_STRUCT_INITIALIZATION({
         structVariableName,
-        type: HIR_CLOSURE_TYPE,
+        type: this.closureType,
         expressionList: [
           this.lowerWithPotentialCast(
             HIR_ANY_TYPE,
@@ -972,7 +976,7 @@ class HighIRExpressionLoweringManager {
     );
     return {
       statements: loweredStatements,
-      expression: HIR_VARIABLE(structVariableName, HIR_CLOSURE_TYPE),
+      expression: HIR_VARIABLE(structVariableName, this.closureType),
     };
   }
 

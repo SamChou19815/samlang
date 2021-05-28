@@ -10,7 +10,6 @@ import {
   LLVM_INT_TYPE,
   LLVM_STRING_TYPE,
   LLVM_IDENTIFIER_TYPE,
-  LLVM_STRUCT_TYPE,
   LLVM_FUNCTION_TYPE,
   LLVM_INT,
   LLVM_VARIABLE,
@@ -43,31 +42,6 @@ it('isTheSameLLVMType works', () => {
   expect(isTheSameLLVMType(HIR_IDENTIFIER_TYPE('A'), LLVM_STRING_TYPE())).toBeFalsy();
   expect(isTheSameLLVMType(HIR_IDENTIFIER_TYPE('A'), HIR_IDENTIFIER_TYPE('B'))).toBeFalsy();
   expect(isTheSameLLVMType(HIR_IDENTIFIER_TYPE('A'), HIR_IDENTIFIER_TYPE('A'))).toBeTruthy();
-
-  expect(
-    isTheSameLLVMType(LLVM_STRUCT_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE]), LLVM_INT_TYPE)
-  ).toBeFalsy();
-  expect(
-    isTheSameLLVMType(LLVM_STRUCT_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE]), LLVM_STRUCT_TYPE([]))
-  ).toBeFalsy();
-  expect(
-    isTheSameLLVMType(
-      LLVM_STRUCT_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE]),
-      LLVM_STRUCT_TYPE([LLVM_INT_TYPE])
-    )
-  ).toBeFalsy();
-  expect(
-    isTheSameLLVMType(
-      LLVM_STRUCT_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE]),
-      LLVM_STRUCT_TYPE([LLVM_BOOL_TYPE, LLVM_INT_TYPE])
-    )
-  ).toBeFalsy();
-  expect(
-    isTheSameLLVMType(
-      LLVM_STRUCT_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE]),
-      LLVM_STRUCT_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE])
-    )
-  ).toBeTruthy();
 
   expect(
     isTheSameLLVMType(LLVM_FUNCTION_TYPE([LLVM_INT_TYPE], LLVM_BOOL_TYPE), LLVM_INT_TYPE)
@@ -104,9 +78,6 @@ it('prettyPrintLLVMType works.', () => {
   expect(prettyPrintLLVMType(LLVM_STRING_TYPE())).toBe('i32*');
   expect(prettyPrintLLVMType(LLVM_STRING_TYPE(3))).toBe('[3 x i32]*');
   expect(prettyPrintLLVMType(LLVM_IDENTIFIER_TYPE('Foo'))).toBe('%Foo*');
-  expect(prettyPrintLLVMType(LLVM_STRUCT_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE]))).toBe(
-    '{ i32, i1 }*'
-  );
   expect(
     prettyPrintLLVMType(LLVM_FUNCTION_TYPE([LLVM_INT_TYPE, LLVM_BOOL_TYPE], LLVM_INT_TYPE))
   ).toBe('i32 (i32, i1)*');

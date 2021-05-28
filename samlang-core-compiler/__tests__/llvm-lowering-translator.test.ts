@@ -27,7 +27,6 @@ import {
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_STRING_TYPE,
-  HIR_STRUCT_TYPE,
   HIR_BOOL_TYPE,
 } from 'samlang-core-ast/hir-types';
 import { prettyPrintLLVMFunction, prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
@@ -583,15 +582,15 @@ it('LLVM lowering works for HIR_STRUCT_INITIALIZATION 1/n', () => {
     [
       HIR_STRUCT_INITIALIZATION({
         structVariableName: 's',
-        type: HIR_STRUCT_TYPE([INT, INT]),
+        type: INT,
         expressionList: [HIR_ZERO, HIR_ZERO],
       }),
     ],
     `  %_temp_0_struct_ptr_raw = call i32* @_builtin_malloc(i32 8) nounwind
-  %s = bitcast i32* %_temp_0_struct_ptr_raw to { i32, i32 }*
-  %_temp_1_struct_ptr_0 = getelementptr { i32, i32 }, { i32, i32 }* %s, i32 0, i32 0
+  %s = ptrtoint i32* %_temp_0_struct_ptr_raw to i32
+  %_temp_1_struct_ptr_0 = getelementptr i3, i32 %s, i32 0, i32 0
   store i32 0, i32* %_temp_1_struct_ptr_0
-  %_temp_2_struct_ptr_1 = getelementptr { i32, i32 }, { i32, i32 }* %s, i32 0, i32 1
+  %_temp_2_struct_ptr_1 = getelementptr i3, i32 %s, i32 0, i32 1
   store i32 0, i32* %_temp_2_struct_ptr_1`
   );
 });
