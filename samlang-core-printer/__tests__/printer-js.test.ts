@@ -1,8 +1,8 @@
 import {
-  createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING,
-  createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING,
-  createPrettierDocumentFromHighIRFunction_EXPOSED_FOR_TESTING,
-  createPrettierDocumentFromHighIRModule,
+  createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING,
+  createPrettierDocumentFromMidIRStatement_EXPOSED_FOR_TESTING,
+  createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING,
+  createPrettierDocumentFromMidIRModule,
 } from '../printer-js';
 import { prettyPrintAccordingToPrettierAlgorithm } from '../printer-prettier-core';
 
@@ -14,54 +14,54 @@ import {
   ENCODED_FUNCTION_NAME_THROW,
 } from 'samlang-core-ast/common-names';
 import {
-  HIR_BINARY,
-  HIR_IF_ELSE,
-  HIR_SINGLE_IF,
-  HIR_BREAK,
-  HIR_WHILE,
-  HIR_INT,
-  HIR_FUNCTION_CALL,
-  HIR_NAME,
-  HIR_CAST,
-  HIR_ZERO,
-  HIR_STRUCT_INITIALIZATION,
-  HIR_INDEX_ACCESS,
-  HIR_VARIABLE,
-  HighIRExpression,
-  HighIRStatement,
-} from 'samlang-core-ast/hir-expressions';
-import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
+  MIR_BINARY,
+  MIR_IF_ELSE,
+  MIR_SINGLE_IF,
+  MIR_BREAK,
+  MIR_WHILE,
+  MIR_INT,
+  MIR_FUNCTION_CALL,
+  MIR_NAME,
+  MIR_CAST,
+  MIR_ZERO,
+  MIR_STRUCT_INITIALIZATION,
+  MIR_INDEX_ACCESS,
+  MIR_VARIABLE,
+  MidIRExpression,
+  MidIRStatement,
+} from 'samlang-core-ast/mir-expressions';
+import type { MidIRModule } from 'samlang-core-ast/mir-toplevel';
 import {
-  HIR_INT_TYPE,
-  HIR_STRING_TYPE,
-  HIR_FUNCTION_TYPE,
-  HIR_BOOL_TYPE,
-} from 'samlang-core-ast/hir-types';
+  MIR_INT_TYPE,
+  MIR_STRING_TYPE,
+  MIR_FUNCTION_TYPE,
+  MIR_BOOL_TYPE,
+} from 'samlang-core-ast/mir-types';
 
-const highIRExpressionToString = (highIRExpression: HighIRExpression): string =>
+const midIRExpressionToString = (e: MidIRExpression): string =>
   prettyPrintAccordingToPrettierAlgorithm(
     /* availableWidth */ 100,
-    createPrettierDocumentFromHighIRExpression_EXPOSED_FOR_TESTING(highIRExpression)
+    createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(e)
   ).trimEnd();
 
-const highIRStatementToString = (highIRStatement: HighIRStatement): string =>
+const midIRStatementToString = (s: MidIRStatement): string =>
   prettyPrintAccordingToPrettierAlgorithm(
     /* availableWidth */ 100,
-    createPrettierDocumentFromHighIRStatement_EXPOSED_FOR_TESTING(highIRStatement)
+    createPrettierDocumentFromMidIRStatement_EXPOSED_FOR_TESTING(s)
   ).trimEnd();
 
-const highIRModuleToJSString = (
+const midIRModuleToJSString = (
   availableWidth: number,
-  highIRModule: HighIRModule,
+  midIRModule: MidIRModule,
   forInterpreter = false
 ): string =>
   prettyPrintAccordingToPrettierAlgorithm(
     availableWidth,
-    createPrettierDocumentFromHighIRModule(highIRModule, forInterpreter)
+    createPrettierDocumentFromMidIRModule(midIRModule, forInterpreter)
   ).trimEnd();
 
 it('compile hello world to JS integration test', () => {
-  const hirModule: HighIRModule = {
+  const mirModule: MidIRModule = {
     globalVariables: [
       { name: 'h', content: 'Hello ' },
       { name: 'w', content: 'World!' },
@@ -73,39 +73,39 @@ it('compile hello world to JS integration test', () => {
       {
         name: '_module_Test_class_Main_function_main',
         parameters: [],
-        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
         body: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('_builtin_stringConcat', HIR_INT_TYPE),
-            functionArguments: [HIR_NAME('h', HIR_STRING_TYPE), HIR_NAME('w', HIR_STRING_TYPE)],
-            returnType: HIR_STRING_TYPE,
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('_builtin_stringConcat', MIR_INT_TYPE),
+            functionArguments: [MIR_NAME('h', MIR_STRING_TYPE), MIR_NAME('w', MIR_STRING_TYPE)],
+            returnType: MIR_STRING_TYPE,
             returnCollector: '_t0',
           }),
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('_builtin_println', HIR_INT_TYPE),
-            functionArguments: [HIR_VARIABLE('_t0', HIR_INT_TYPE)],
-            returnType: HIR_INT_TYPE,
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('_builtin_println', MIR_INT_TYPE),
+            functionArguments: [MIR_VARIABLE('_t0', MIR_INT_TYPE)],
+            returnType: MIR_INT_TYPE,
             returnCollector: '_t1',
           }),
         ],
-        returnValue: HIR_ZERO,
+        returnValue: MIR_ZERO,
       },
       {
         name: '_compiled_program_main',
         parameters: [],
-        type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
         body: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('_module_Test_class_Main_function_main', HIR_INT_TYPE),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('_module_Test_class_Main_function_main', MIR_INT_TYPE),
             functionArguments: [],
-            returnType: HIR_INT_TYPE,
+            returnType: MIR_INT_TYPE,
           }),
         ],
-        returnValue: HIR_ZERO,
+        returnValue: MIR_ZERO,
       },
     ],
   };
-  expect(highIRModuleToJSString(100, hirModule)).toBe(
+  expect(midIRModuleToJSString(100, mirModule)).toBe(
     `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
 const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => console.log(line);
 const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => parseInt(v, 10);
@@ -130,14 +130,14 @@ _compiled_program_main();`
   );
 });
 
-const setupHIRIntegration = (hirModule: HighIRModule): string => {
+const setupMIRIntegration = (mirModule: MidIRModule): string => {
   // eslint-disable-next-line no-eval
-  return eval(highIRModuleToJSString(100, hirModule, true));
+  return eval(midIRModuleToJSString(100, mirModule, true));
 };
 
 it('confirm samlang & equivalent JS have same print output', () => {
   expect(
-    setupHIRIntegration({
+    setupMIRIntegration({
       globalVariables: [
         { name: 'h', content: 'Hello ' },
         { name: 'w', content: 'World!' },
@@ -147,103 +147,103 @@ it('confirm samlang & equivalent JS have same print output', () => {
         {
           name: '_compiled_program_main',
           parameters: [],
-          type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
           body: [
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('_builtin_stringConcat', HIR_INT_TYPE),
-              functionArguments: [HIR_NAME('h', HIR_STRING_TYPE), HIR_NAME('w', HIR_STRING_TYPE)],
-              returnType: HIR_STRING_TYPE,
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('_builtin_stringConcat', MIR_INT_TYPE),
+              functionArguments: [MIR_NAME('h', MIR_STRING_TYPE), MIR_NAME('w', MIR_STRING_TYPE)],
+              returnType: MIR_STRING_TYPE,
               returnCollector: '_t0',
             }),
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME(
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME(
                 '_module__class_Builtins_function_println',
-                HIR_INT_TYPE
+                MIR_INT_TYPE
               ),
-              functionArguments: [HIR_VARIABLE('_t0', HIR_INT_TYPE)],
-              returnType: HIR_STRING_TYPE,
+              functionArguments: [MIR_VARIABLE('_t0', MIR_INT_TYPE)],
+              returnType: MIR_STRING_TYPE,
               returnCollector: '_t1',
             }),
           ],
-          returnValue: HIR_ZERO,
+          returnValue: MIR_ZERO,
         },
       ],
     })
   ).toBe('Hello World!\n');
 
   expect(
-    setupHIRIntegration({
+    setupMIRIntegration({
       globalVariables: [],
       typeDefinitions: [],
       functions: [
         {
           name: '_compiled_program_main',
           parameters: [],
-          type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
           body: [],
-          returnValue: HIR_ZERO,
+          returnValue: MIR_ZERO,
         },
       ],
     })
   ).toBe('');
 
   expect(
-    setupHIRIntegration({
+    setupMIRIntegration({
       globalVariables: [],
       typeDefinitions: [],
       functions: [
         {
           name: 'sum',
           parameters: ['a', 'b'],
-          type: HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
+          type: MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE),
           body: [
-            HIR_BINARY({
+            MIR_BINARY({
               name: 'aaa',
               operator: '+',
-              e1: HIR_VARIABLE('a', HIR_INT_TYPE),
-              e2: HIR_VARIABLE('b', HIR_INT_TYPE),
+              e1: MIR_VARIABLE('a', MIR_INT_TYPE),
+              e2: MIR_VARIABLE('b', MIR_INT_TYPE),
             }),
           ],
-          returnValue: HIR_VARIABLE('aaa', HIR_INT_TYPE),
+          returnValue: MIR_VARIABLE('aaa', MIR_INT_TYPE),
         },
         {
           name: '_compiled_program_main',
           parameters: [],
-          type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
           body: [
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('sum', HIR_INT_TYPE),
-              functionArguments: [HIR_INT(42), HIR_INT(7)],
-              returnType: HIR_INT_TYPE,
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('sum', MIR_INT_TYPE),
+              functionArguments: [MIR_INT(42), MIR_INT(7)],
+              returnType: MIR_INT_TYPE,
               returnCollector: '_t0',
             }),
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME(
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME(
                 '_module__class_Builtins_function_intToString',
-                HIR_INT_TYPE
+                MIR_INT_TYPE
               ),
-              functionArguments: [HIR_VARIABLE('_t0', HIR_INT_TYPE)],
-              returnType: HIR_INT_TYPE,
+              functionArguments: [MIR_VARIABLE('_t0', MIR_INT_TYPE)],
+              returnType: MIR_INT_TYPE,
               returnCollector: '_t1',
             }),
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME(
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME(
                 '_module__class_Builtins_function_println',
-                HIR_INT_TYPE
+                MIR_INT_TYPE
               ),
-              functionArguments: [HIR_VARIABLE('_t1', HIR_INT_TYPE)],
-              returnType: HIR_INT_TYPE,
+              functionArguments: [MIR_VARIABLE('_t1', MIR_INT_TYPE)],
+              returnType: MIR_INT_TYPE,
               returnCollector: '_t2',
             }),
           ],
-          returnValue: HIR_ZERO,
+          returnValue: MIR_ZERO,
         },
       ],
     })
   ).toBe('49\n');
 
   expect(
-    setupHIRIntegration({
+    setupMIRIntegration({
       globalVariables: [
         { name: 'y', content: 'Meaning of life' },
         { name: 'n', content: 'Not the meaning of life... keep looking' },
@@ -253,220 +253,220 @@ it('confirm samlang & equivalent JS have same print output', () => {
         {
           name: 'MeaningOfLifeConditional',
           parameters: ['sum'],
-          type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_STRING_TYPE),
+          type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_STRING_TYPE),
           body: [
-            HIR_BINARY({
+            MIR_BINARY({
               name: 'bb',
               operator: '==',
-              e1: HIR_VARIABLE('sum', HIR_INT_TYPE),
-              e2: HIR_INT(42),
+              e1: MIR_VARIABLE('sum', MIR_INT_TYPE),
+              e2: MIR_INT(42),
             }),
-            HIR_IF_ELSE({
-              booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
+            MIR_IF_ELSE({
+              booleanExpression: MIR_VARIABLE('bb', MIR_BOOL_TYPE),
               s1: [],
               s2: [],
               finalAssignments: [
                 {
                   name: 'rv',
-                  type: HIR_STRING_TYPE,
-                  branch1Value: HIR_NAME('y', HIR_STRING_TYPE),
-                  branch2Value: HIR_NAME('n', HIR_STRING_TYPE),
+                  type: MIR_STRING_TYPE,
+                  branch1Value: MIR_NAME('y', MIR_STRING_TYPE),
+                  branch2Value: MIR_NAME('n', MIR_STRING_TYPE),
                 },
               ],
             }),
           ],
-          returnValue: HIR_VARIABLE('rv', HIR_INT_TYPE),
+          returnValue: MIR_VARIABLE('rv', MIR_INT_TYPE),
         },
         {
           name: 'sum',
           parameters: ['a', 'b'],
-          type: HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
+          type: MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE),
           body: [
-            HIR_BINARY({
+            MIR_BINARY({
               name: 'aaa',
               operator: '+',
-              e1: HIR_VARIABLE('a', HIR_INT_TYPE),
-              e2: HIR_VARIABLE('b', HIR_INT_TYPE),
+              e1: MIR_VARIABLE('a', MIR_INT_TYPE),
+              e2: MIR_VARIABLE('b', MIR_INT_TYPE),
             }),
           ],
-          returnValue: HIR_VARIABLE('aaa', HIR_INT_TYPE),
+          returnValue: MIR_VARIABLE('aaa', MIR_INT_TYPE),
         },
         {
           name: '_compiled_program_main',
           parameters: [],
-          type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
           body: [
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('sum', HIR_INT_TYPE),
-              functionArguments: [HIR_INT(42), HIR_INT(7)],
-              returnType: HIR_INT_TYPE,
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('sum', MIR_INT_TYPE),
+              functionArguments: [MIR_INT(42), MIR_INT(7)],
+              returnType: MIR_INT_TYPE,
               returnCollector: '_t0',
             }),
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('MeaningOfLifeConditional', HIR_INT_TYPE),
-              functionArguments: [HIR_VARIABLE('_t0', HIR_INT_TYPE)],
-              returnType: HIR_INT_TYPE,
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('MeaningOfLifeConditional', MIR_INT_TYPE),
+              functionArguments: [MIR_VARIABLE('_t0', MIR_INT_TYPE)],
+              returnType: MIR_INT_TYPE,
               returnCollector: '_t1',
             }),
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME(
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME(
                 '_module__class_Builtins_function_println',
-                HIR_INT_TYPE
+                MIR_INT_TYPE
               ),
-              functionArguments: [HIR_VARIABLE('_t1', HIR_INT_TYPE)],
-              returnType: HIR_INT_TYPE,
+              functionArguments: [MIR_VARIABLE('_t1', MIR_INT_TYPE)],
+              returnType: MIR_INT_TYPE,
               returnCollector: '_t2',
             }),
           ],
-          returnValue: HIR_ZERO,
+          returnValue: MIR_ZERO,
         },
       ],
     })
   ).toBe('Not the meaning of life... keep looking\n');
 
   expect(
-    setupHIRIntegration({
+    setupMIRIntegration({
       globalVariables: [{ name: 'rb', content: 'RANDOM_BABY' }],
       typeDefinitions: [],
       functions: [
         {
           name: 'dummyStudent',
           parameters: [],
-          type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
           body: [
-            HIR_STRUCT_INITIALIZATION({
+            MIR_STRUCT_INITIALIZATION({
               structVariableName: 't0',
-              type: HIR_INT_TYPE,
-              expressionList: [HIR_NAME('rb', HIR_STRING_TYPE)],
+              type: MIR_INT_TYPE,
+              expressionList: [MIR_NAME('rb', MIR_STRING_TYPE)],
             }),
           ],
-          returnValue: HIR_VARIABLE('t0', HIR_INT_TYPE),
+          returnValue: MIR_VARIABLE('t0', MIR_INT_TYPE),
         },
         {
           name: 'getName',
           parameters: ['s'],
-          type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+          type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE),
           body: [
-            HIR_INDEX_ACCESS({
+            MIR_INDEX_ACCESS({
               name: 'aa',
-              type: HIR_INT_TYPE,
-              pointerExpression: HIR_VARIABLE('s', HIR_INT_TYPE),
+              type: MIR_INT_TYPE,
+              pointerExpression: MIR_VARIABLE('s', MIR_INT_TYPE),
               index: 0,
             }),
           ],
-          returnValue: HIR_VARIABLE('aa', HIR_INT_TYPE),
+          returnValue: MIR_VARIABLE('aa', MIR_INT_TYPE),
         },
         {
           name: '_compiled_program_main',
           parameters: [],
-          type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
           body: [
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('dummyStudent', HIR_INT_TYPE),
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('dummyStudent', MIR_INT_TYPE),
               functionArguments: [],
-              returnType: HIR_INT_TYPE,
+              returnType: MIR_INT_TYPE,
               returnCollector: '_t0',
             }),
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME('getName', HIR_INT_TYPE),
-              functionArguments: [HIR_VARIABLE('_t0', HIR_INT_TYPE)],
-              returnType: HIR_INT_TYPE,
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('getName', MIR_INT_TYPE),
+              functionArguments: [MIR_VARIABLE('_t0', MIR_INT_TYPE)],
+              returnType: MIR_INT_TYPE,
               returnCollector: '_t1',
             }),
-            HIR_FUNCTION_CALL({
-              functionExpression: HIR_NAME(
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME(
                 '_module__class_Builtins_function_println',
-                HIR_INT_TYPE
+                MIR_INT_TYPE
               ),
-              functionArguments: [HIR_VARIABLE('_t1', HIR_INT_TYPE)],
-              returnType: HIR_INT_TYPE,
+              functionArguments: [MIR_VARIABLE('_t1', MIR_INT_TYPE)],
+              returnType: MIR_INT_TYPE,
             }),
           ],
-          returnValue: HIR_ZERO,
+          returnValue: MIR_ZERO,
         },
       ],
     })
   ).toBe('RANDOM_BABY\n');
 
   expect(() =>
-    setupHIRIntegration({
+    setupMIRIntegration({
       globalVariables: [{ name: 'illegal', content: 'Division by zero is illegal!' }],
       typeDefinitions: [],
       functions: [
         {
           name: 'sum',
           parameters: ['a', 'b'],
-          type: HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
+          type: MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE),
           body: [
-            HIR_BINARY({
+            MIR_BINARY({
               name: 'aaa',
               operator: '+',
-              e1: HIR_VARIABLE('a', HIR_INT_TYPE),
-              e2: HIR_VARIABLE('b', HIR_INT_TYPE),
+              e1: MIR_VARIABLE('a', MIR_INT_TYPE),
+              e2: MIR_VARIABLE('b', MIR_INT_TYPE),
             }),
           ],
-          returnValue: HIR_VARIABLE('aaa', HIR_INT_TYPE),
+          returnValue: MIR_VARIABLE('aaa', MIR_INT_TYPE),
         },
         {
           name: '_compiled_program_main',
           parameters: [],
-          type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
           body: [
-            HIR_IF_ELSE({
-              booleanExpression: HIR_INT(1),
+            MIR_IF_ELSE({
+              booleanExpression: MIR_INT(1),
               s1: [
-                HIR_FUNCTION_CALL({
-                  functionExpression: HIR_NAME(
+                MIR_FUNCTION_CALL({
+                  functionExpression: MIR_NAME(
                     '_module__class_Builtins_function_panic',
-                    HIR_INT_TYPE
+                    MIR_INT_TYPE
                   ),
-                  functionArguments: [HIR_NAME('illegal', HIR_STRING_TYPE)],
-                  returnType: HIR_INT_TYPE,
+                  functionArguments: [MIR_NAME('illegal', MIR_STRING_TYPE)],
+                  returnType: MIR_INT_TYPE,
                 }),
               ],
               s2: [],
               finalAssignments: [],
             }),
           ],
-          returnValue: HIR_ZERO,
+          returnValue: MIR_ZERO,
         },
       ],
     })
   ).toThrow(`Division by zero is illegal!`);
 });
 
-it('HIR statements to JS string test', () => {
+it('MIR statements to JS string test', () => {
   expect(
-    highIRStatementToString(
-      HIR_INDEX_ACCESS({
+    midIRStatementToString(
+      MIR_INDEX_ACCESS({
         name: 'foo',
-        type: HIR_INT_TYPE,
-        pointerExpression: HIR_VARIABLE('samlang', HIR_INT_TYPE),
+        type: MIR_INT_TYPE,
+        pointerExpression: MIR_VARIABLE('samlang', MIR_INT_TYPE),
         index: 3,
       })
     )
   ).toBe(`let foo = samlang[3];`);
   expect(
-    highIRStatementToString(
-      HIR_BINARY({
+    midIRStatementToString(
+      MIR_BINARY({
         name: 'foo',
         operator: '/',
-        e1: HIR_INT(3),
-        e2: HIR_INT(2),
+        e1: MIR_INT(3),
+        e2: MIR_INT(2),
       })
     )
   ).toBe(`let foo = Math.floor(3 / 2);`);
   expect(
-    highIRStatementToString(
-      HIR_IF_ELSE({
-        booleanExpression: HIR_INT(5),
+    midIRStatementToString(
+      MIR_IF_ELSE({
+        booleanExpression: MIR_INT(5),
         s1: [],
         s2: [
-          HIR_BINARY({
+          MIR_BINARY({
             name: 'foo',
             operator: '/',
-            e1: HIR_INT(3),
-            e2: HIR_INT(2),
+            e1: MIR_INT(3),
+            e2: MIR_INT(2),
           }),
         ],
         finalAssignments: [],
@@ -478,13 +478,13 @@ it('HIR statements to JS string test', () => {
   let foo = Math.floor(3 / 2);
 }`);
   expect(
-    highIRStatementToString(
-      HIR_IF_ELSE({
-        booleanExpression: HIR_INT(5),
+    midIRStatementToString(
+      MIR_IF_ELSE({
+        booleanExpression: MIR_INT(5),
         s1: [],
         s2: [],
         finalAssignments: [
-          { name: 'f', type: HIR_INT_TYPE, branch1Value: HIR_ZERO, branch2Value: HIR_ZERO },
+          { name: 'f', type: MIR_INT_TYPE, branch1Value: MIR_ZERO, branch2Value: MIR_ZERO },
         ],
       })
     )
@@ -497,13 +497,13 @@ if (5) {
   f = 0;
 }`);
   expect(
-    highIRStatementToString(
-      HIR_IF_ELSE({
-        booleanExpression: HIR_INT(5),
+    midIRStatementToString(
+      MIR_IF_ELSE({
+        booleanExpression: MIR_INT(5),
         s1: [],
         s2: [
-          HIR_IF_ELSE({
-            booleanExpression: HIR_INT(5),
+          MIR_IF_ELSE({
+            booleanExpression: MIR_INT(5),
             s1: [],
             s2: [],
             finalAssignments: [],
@@ -523,115 +523,115 @@ if (5) {
 }`);
 
   expect(
-    highIRStatementToString(
-      HIR_FUNCTION_CALL({
+    midIRStatementToString(
+      MIR_FUNCTION_CALL({
         functionArguments: [],
-        functionExpression: HIR_NAME('func', HIR_INT_TYPE),
-        returnType: HIR_STRING_TYPE,
+        functionExpression: MIR_NAME('func', MIR_INT_TYPE),
+        returnType: MIR_STRING_TYPE,
         returnCollector: 'val',
       })
     )
   ).toBe('let val = func();');
   expect(
-    highIRStatementToString(
-      HIR_FUNCTION_CALL({
+    midIRStatementToString(
+      MIR_FUNCTION_CALL({
         functionArguments: [],
-        functionExpression: HIR_NAME('func', HIR_INT_TYPE),
-        returnType: HIR_INT_TYPE,
+        functionExpression: MIR_NAME('func', MIR_INT_TYPE),
+        returnType: MIR_INT_TYPE,
       })
     )
   ).toBe('func();');
   expect(
-    highIRStatementToString(
-      HIR_FUNCTION_CALL({
-        functionArguments: [HIR_ZERO],
-        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, HIR_INT_TYPE),
-        returnType: HIR_INT_TYPE,
+    midIRStatementToString(
+      MIR_FUNCTION_CALL({
+        functionArguments: [MIR_ZERO],
+        functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, MIR_INT_TYPE),
+        returnType: MIR_INT_TYPE,
         returnCollector: 'res',
       })
     )
   ).toBe(`let res = ${ENCODED_FUNCTION_NAME_PRINTLN}(0);`);
   expect(
-    highIRStatementToString(
-      HIR_FUNCTION_CALL({
-        functionArguments: [HIR_ZERO],
-        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_TO_INT, HIR_INT_TYPE),
-        returnType: HIR_INT_TYPE,
+    midIRStatementToString(
+      MIR_FUNCTION_CALL({
+        functionArguments: [MIR_ZERO],
+        functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_STRING_TO_INT, MIR_INT_TYPE),
+        returnType: MIR_INT_TYPE,
         returnCollector: 'res',
       })
     )
   ).toBe(`let res = ${ENCODED_FUNCTION_NAME_STRING_TO_INT}(0);`);
   expect(
-    highIRStatementToString(
-      HIR_FUNCTION_CALL({
-        functionArguments: [HIR_INT(5)],
-        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_INT_TO_STRING, HIR_INT_TYPE),
-        returnType: HIR_STRING_TYPE,
+    midIRStatementToString(
+      MIR_FUNCTION_CALL({
+        functionArguments: [MIR_INT(5)],
+        functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_INT_TO_STRING, MIR_INT_TYPE),
+        returnType: MIR_STRING_TYPE,
         returnCollector: 'res',
       })
     )
   ).toBe(`let res = ${ENCODED_FUNCTION_NAME_INT_TO_STRING}(5);`);
   expect(
-    highIRStatementToString(
-      HIR_FUNCTION_CALL({
-        functionArguments: [HIR_ZERO, HIR_ZERO],
-        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_STRING_CONCAT, HIR_INT_TYPE),
-        returnType: HIR_STRING_TYPE,
+    midIRStatementToString(
+      MIR_FUNCTION_CALL({
+        functionArguments: [MIR_ZERO, MIR_ZERO],
+        functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_STRING_CONCAT, MIR_INT_TYPE),
+        returnType: MIR_STRING_TYPE,
         returnCollector: 'res',
       })
     )
   ).toBe(`let res = ${ENCODED_FUNCTION_NAME_STRING_CONCAT}(0, 0);`);
   expect(
-    highIRStatementToString(
-      HIR_FUNCTION_CALL({
-        functionArguments: [HIR_ZERO],
-        functionExpression: HIR_NAME(ENCODED_FUNCTION_NAME_THROW, HIR_INT_TYPE),
-        returnType: HIR_INT_TYPE,
+    midIRStatementToString(
+      MIR_FUNCTION_CALL({
+        functionArguments: [MIR_ZERO],
+        functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_THROW, MIR_INT_TYPE),
+        returnType: MIR_INT_TYPE,
         returnCollector: 'panik',
       })
     )
   ).toBe(`let panik = ${ENCODED_FUNCTION_NAME_THROW}(0);`);
   expect(
-    highIRStatementToString(
-      HIR_CAST({
+    midIRStatementToString(
+      MIR_CAST({
         name: 'foo',
-        type: HIR_INT_TYPE,
-        assignedExpression: HIR_INT(19815),
+        type: MIR_INT_TYPE,
+        assignedExpression: MIR_INT(19815),
       })
     )
   ).toBe(`let foo = 19815;`);
   expect(
-    highIRStatementToString(
-      HIR_STRUCT_INITIALIZATION({
+    midIRStatementToString(
+      MIR_STRUCT_INITIALIZATION({
         structVariableName: 'st',
-        type: HIR_INT_TYPE,
-        expressionList: [HIR_ZERO, HIR_ZERO, HIR_INT(13)],
+        type: MIR_INT_TYPE,
+        expressionList: [MIR_ZERO, MIR_ZERO, MIR_INT(13)],
       })
     )
   ).toBe(`let st = [0, 0, 13];`);
 
   expect(
-    highIRStatementToString(
-      HIR_WHILE({
+    midIRStatementToString(
+      MIR_WHILE({
         loopVariables: [
           {
             name: 'n',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_VARIABLE('_tail_rec_param_n', HIR_INT_TYPE),
-            loopValue: HIR_VARIABLE('_t0_n', HIR_INT_TYPE),
+            type: MIR_INT_TYPE,
+            initialValue: MIR_VARIABLE('_tail_rec_param_n', MIR_INT_TYPE),
+            loopValue: MIR_VARIABLE('_t0_n', MIR_INT_TYPE),
           },
           {
             name: 'acc',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_VARIABLE('_tail_rec_param_acc', HIR_INT_TYPE),
-            loopValue: HIR_VARIABLE('_t1_acc', HIR_INT_TYPE),
+            type: MIR_INT_TYPE,
+            initialValue: MIR_VARIABLE('_tail_rec_param_acc', MIR_INT_TYPE),
+            loopValue: MIR_VARIABLE('_t1_acc', MIR_INT_TYPE),
           },
         ],
         statements: [
-          HIR_CAST({
+          MIR_CAST({
             name: 'foo',
-            type: HIR_INT_TYPE,
-            assignedExpression: HIR_VARIABLE('dev', HIR_INT_TYPE),
+            type: MIR_INT_TYPE,
+            assignedExpression: MIR_VARIABLE('dev', MIR_INT_TYPE),
           }),
         ],
       })
@@ -643,42 +643,42 @@ while (true) {
   n = _t0_n;
   acc = _t1_acc;
 }`);
-  expect(highIRStatementToString(HIR_BREAK(HIR_ZERO))).toBe('break;');
+  expect(midIRStatementToString(MIR_BREAK(MIR_ZERO))).toBe('break;');
   expect(
-    highIRStatementToString(
-      HIR_WHILE({
+    midIRStatementToString(
+      MIR_WHILE({
         loopVariables: [
           {
             name: 'n',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_VARIABLE('_tail_rec_param_n', HIR_INT_TYPE),
-            loopValue: HIR_VARIABLE('_t0_n', HIR_INT_TYPE),
+            type: MIR_INT_TYPE,
+            initialValue: MIR_VARIABLE('_tail_rec_param_n', MIR_INT_TYPE),
+            loopValue: MIR_VARIABLE('_t0_n', MIR_INT_TYPE),
           },
           {
             name: 'acc',
-            type: HIR_INT_TYPE,
-            initialValue: HIR_VARIABLE('_tail_rec_param_acc', HIR_INT_TYPE),
-            loopValue: HIR_VARIABLE('_t1_acc', HIR_INT_TYPE),
+            type: MIR_INT_TYPE,
+            initialValue: MIR_VARIABLE('_tail_rec_param_acc', MIR_INT_TYPE),
+            loopValue: MIR_VARIABLE('_t1_acc', MIR_INT_TYPE),
           },
         ],
         statements: [
-          HIR_CAST({
+          MIR_CAST({
             name: 'foo',
-            type: HIR_INT_TYPE,
-            assignedExpression: HIR_VARIABLE('dev', HIR_INT_TYPE),
+            type: MIR_INT_TYPE,
+            assignedExpression: MIR_VARIABLE('dev', MIR_INT_TYPE),
           }),
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_ZERO,
+          MIR_SINGLE_IF({
+            booleanExpression: MIR_ZERO,
             invertCondition: false,
-            statements: [HIR_BREAK(HIR_ZERO)],
+            statements: [MIR_BREAK(MIR_ZERO)],
           }),
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_ZERO,
+          MIR_SINGLE_IF({
+            booleanExpression: MIR_ZERO,
             invertCondition: true,
-            statements: [HIR_BREAK(HIR_ZERO)],
+            statements: [MIR_BREAK(MIR_ZERO)],
           }),
         ],
-        breakCollector: { name: 'v', type: HIR_INT_TYPE },
+        breakCollector: { name: 'v', type: MIR_INT_TYPE },
       })
     )
   ).toBe(`let n = _tail_rec_param_n;
@@ -697,22 +697,22 @@ while (true) {
 }`);
 });
 
-it('HIR function to JS string test 1', () => {
+it('MIR function to JS string test 1', () => {
   expect(
     prettyPrintAccordingToPrettierAlgorithm(
       100,
-      createPrettierDocumentFromHighIRFunction_EXPOSED_FOR_TESTING({
+      createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING({
         name: 'baz',
         parameters: ['d', 't', 'i'],
-        type: HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
+        type: MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE),
         body: [
-          HIR_CAST({
+          MIR_CAST({
             name: 'b',
-            type: HIR_INT_TYPE,
-            assignedExpression: HIR_INT(1857),
+            type: MIR_INT_TYPE,
+            assignedExpression: MIR_INT(1857),
           }),
         ],
-        returnValue: HIR_ZERO,
+        returnValue: MIR_ZERO,
       })
     )
   ).toBe(`const baz = (d, t, i) => {
@@ -722,16 +722,16 @@ it('HIR function to JS string test 1', () => {
 `);
 });
 
-it('HIR function to JS string test 2', () => {
+it('MIR function to JS string test 2', () => {
   expect(
     prettyPrintAccordingToPrettierAlgorithm(
       100,
-      createPrettierDocumentFromHighIRFunction_EXPOSED_FOR_TESTING({
+      createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING({
         name: 'baz',
         parameters: ['d', 't', 'i'],
-        type: HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_INT_TYPE, HIR_INT_TYPE], HIR_INT_TYPE),
+        type: MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE),
         body: [],
-        returnValue: HIR_INT(42),
+        returnValue: MIR_INT(42),
       })
     )
   ).toBe(`const baz = (d, t, i) => {
@@ -740,8 +740,8 @@ it('HIR function to JS string test 2', () => {
 `);
 });
 
-it('HIR expression to JS string test', () => {
-  expect(highIRExpressionToString(HIR_INT(1305))).toBe('1305');
-  expect(highIRExpressionToString(HIR_VARIABLE('ts', HIR_INT_TYPE))).toBe('ts');
-  expect(highIRExpressionToString(HIR_NAME('key', HIR_INT_TYPE))).toBe('key');
+it('MIR expression to JS string test', () => {
+  expect(midIRExpressionToString(MIR_INT(1305))).toBe('1305');
+  expect(midIRExpressionToString(MIR_VARIABLE('ts', MIR_INT_TYPE))).toBe('ts');
+  expect(midIRExpressionToString(MIR_NAME('key', MIR_INT_TYPE))).toBe('key');
 });

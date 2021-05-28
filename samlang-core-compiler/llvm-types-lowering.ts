@@ -1,4 +1,3 @@
-import type { HighIRType } from 'samlang-core-ast/hir-types';
 import {
   LLVMType,
   LLVM_INT_TYPE,
@@ -6,8 +5,9 @@ import {
   LLVM_STRING_TYPE,
   LLVM_FUNCTION_TYPE,
 } from 'samlang-core-ast/llvm-nodes';
+import type { MidIRType } from 'samlang-core-ast/mir-types';
 
-const lowerHighIRTypeToLLVMType = (type: HighIRType): LLVMType => {
+const lowerMidIRTypeToLLVMType = (type: MidIRType): LLVMType => {
   switch (type.__type__) {
     case 'PrimitiveType':
       switch (type.type) {
@@ -23,10 +23,10 @@ const lowerHighIRTypeToLLVMType = (type: HighIRType): LLVMType => {
       return type;
     case 'FunctionType':
       return LLVM_FUNCTION_TYPE(
-        type.argumentTypes.map(lowerHighIRTypeToLLVMType),
-        lowerHighIRTypeToLLVMType(type.returnType)
+        type.argumentTypes.map(lowerMidIRTypeToLLVMType),
+        lowerMidIRTypeToLLVMType(type.returnType)
       );
   }
 };
 
-export default lowerHighIRTypeToLLVMType;
+export default lowerMidIRTypeToLLVMType;

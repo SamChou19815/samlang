@@ -1,4 +1,4 @@
-import compileSamlangSourcesToHighIRSources from './hir-toplevel-lowering';
-import lowerHighIRModuleToLLVMModule from './llvm-lowering-translator';
+import lowerMidIRModuleToLLVMModule from './llvm-lowering-translator';
+import compileSamlangSourcesToMidIRSources from './mir-toplevel-lowering';
 
-export { compileSamlangSourcesToHighIRSources, lowerHighIRModuleToLLVMModule };
+export { compileSamlangSourcesToMidIRSources, lowerMidIRModuleToLLVMModule };
