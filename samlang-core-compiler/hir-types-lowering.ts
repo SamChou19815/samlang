@@ -8,7 +8,6 @@ import {
   HIR_STRING_TYPE,
   HIR_ANY_TYPE,
   HIR_IDENTIFIER_TYPE,
-  HIR_CLOSURE_TYPE,
 } from 'samlang-core-ast/hir-types';
 import { assert } from 'samlang-core-utils';
 
@@ -39,8 +38,10 @@ const lowerSamlangType = (
       );
       return HIR_IDENTIFIER_TYPE(typeDefinition.identifier);
     }
-    case 'FunctionType':
-      return HIR_CLOSURE_TYPE;
+    case 'FunctionType': {
+      const typeDefinition = typeSynthesizer.synthesize([HIR_ANY_TYPE, HIR_ANY_TYPE]);
+      return HIR_IDENTIFIER_TYPE(typeDefinition.identifier);
+    }
   }
 };
 
