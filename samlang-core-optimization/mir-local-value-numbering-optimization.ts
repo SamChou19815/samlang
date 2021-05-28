@@ -15,8 +15,8 @@ import {
   MIR_WHILE,
   MIR_STRUCT_INITIALIZATION,
   MIR_CAST,
-} from 'samlang-core-ast/mir-expressions';
-import type { MidIRFunction } from 'samlang-core-ast/mir-toplevel';
+} from 'samlang-core-ast/mir-nodes';
+import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
 import { error, isNotNull, LocalStackedContext, zip, zip3 } from 'samlang-core-utils';
 
 class LocalVariableContext extends LocalStackedContext<string> {

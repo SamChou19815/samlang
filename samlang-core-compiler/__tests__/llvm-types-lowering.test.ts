@@ -13,7 +13,7 @@ import {
   MIR_IDENTIFIER_TYPE,
   MIR_INT_TYPE,
   MIR_STRING_TYPE,
-} from 'samlang-core-ast/mir-types';
+} from 'samlang-core-ast/mir-nodes';
 
 it('lowerMidIRTypeToLLVMType works', () => {
   expect(lowerMidIRTypeToLLVMType(MIR_BOOL_TYPE)).toEqual(LLVM_BOOL_TYPE);

@@ -25,7 +25,7 @@ import {
   LLVM_CJUMP,
   LLVM_RETURN,
 } from '../llvm-nodes';
-import { MIR_IDENTIFIER_TYPE } from '../mir-types';
+import { MIR_IDENTIFIER_TYPE } from '../mir-nodes';
 
 it('isTheSameLLVMType works', () => {
   expect(isTheSameLLVMType(LLVM_INT_TYPE, LLVM_STRING_TYPE())).toBeFalsy();

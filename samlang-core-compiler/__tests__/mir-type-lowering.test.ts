@@ -17,7 +17,7 @@ import {
   MIR_ANY_TYPE,
   MIR_STRING_TYPE,
   MIR_IDENTIFIER_TYPE,
-} from 'samlang-core-ast/mir-types';
+} from 'samlang-core-ast/mir-nodes';
 
 it('lowerSamlangType works', () => {
   const typeSynthesizer = new MidIRTypeSynthesizer();

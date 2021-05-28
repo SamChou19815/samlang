@@ -13,6 +13,7 @@ import optimizeMidIRWhileStatementByLoopInvariantCodeMotion from './mir-loop-inv
 import midIRLoopStrengthReductionOptimization from './mir-loop-strength-reduction';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
+import createMidIRFlexibleOrderOperatorNode from 'samlang-core-ast/mir-flexible-op';
 import {
   MidIRStatement,
   MidIRWhileStatement,
@@ -22,10 +23,10 @@ import {
   MIR_SINGLE_IF,
   MIR_BREAK,
   MIR_WHILE,
-} from 'samlang-core-ast/mir-expressions';
-import createMidIRFlexibleOrderOperatorNode from 'samlang-core-ast/mir-flexible-op';
-import type { MidIRFunction } from 'samlang-core-ast/mir-toplevel';
-import { MIR_BOOL_TYPE, MIR_INT_TYPE } from 'samlang-core-ast/mir-types';
+  MIR_BOOL_TYPE,
+  MIR_INT_TYPE,
+} from 'samlang-core-ast/mir-nodes';
+import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
 
 const expandOptimizableWhileLoop = (
   {

@@ -8,7 +8,7 @@ import optimizeMidIRFunctionByTailRecursionRewrite from './mir-tail-recursion-op
 import optimizeMidIRModuleByEliminatingUnusedOnes from './mir-unused-name-elimination-optimization';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
 
-import type { MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-toplevel';
+import type { MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-nodes';
 
 export type OptimizationConfiguration = {
   doesPerformLocalValueNumbering?: boolean;

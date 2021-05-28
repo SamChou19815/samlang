@@ -5,9 +5,8 @@ import {
 } from './mir-loop-induction-analysis';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
-import { MidIRStatement, MIR_VARIABLE, MIR_BINARY } from 'samlang-core-ast/mir-expressions';
 import createMidIRFlexibleOrderOperatorNode from 'samlang-core-ast/mir-flexible-op';
-import { MIR_INT_TYPE } from 'samlang-core-ast/mir-types';
+import { MidIRStatement, MIR_VARIABLE, MIR_BINARY, MIR_INT_TYPE } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull, isNotNull } from 'samlang-core-utils';
 
 const midIRLoopStrengthReductionOptimization = (

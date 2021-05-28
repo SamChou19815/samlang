@@ -15,8 +15,9 @@ import {
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
   MIR_IF_ELSE,
-} from 'samlang-core-ast/mir-expressions';
-import { MIR_BOOL_TYPE, MIR_INT_TYPE } from 'samlang-core-ast/mir-types';
+  MIR_BOOL_TYPE,
+  MIR_INT_TYPE,
+} from 'samlang-core-ast/mir-nodes';
 
 it('optimizeMidIRWhileStatementByLoopInvariantCodeMotion works', () => {
   const { hoistedStatementsBeforeWhile, optimizedWhileStatement, nonLoopInvariantVariables } =

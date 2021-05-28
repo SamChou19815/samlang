@@ -8,7 +8,7 @@ import {
   MIR_STRING_TYPE,
   MIR_ANY_TYPE,
   MIR_IDENTIFIER_TYPE,
-} from 'samlang-core-ast/mir-types';
+} from 'samlang-core-ast/mir-nodes';
 import { assert } from 'samlang-core-utils';
 
 const lowerSamlangType = (

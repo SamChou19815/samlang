@@ -14,7 +14,7 @@ import type { SamlangProjectConfiguration } from './configuration';
 
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
-import type { MidIRModule } from 'samlang-core-ast/mir-toplevel';
+import type { MidIRModule } from 'samlang-core-ast/mir-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import {

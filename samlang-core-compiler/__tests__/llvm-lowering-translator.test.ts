@@ -21,15 +21,13 @@ import {
   MIR_INT,
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
-} from 'samlang-core-ast/mir-expressions';
-import type { MidIRFunction } from 'samlang-core-ast/mir-toplevel';
-import {
   MIR_INT_TYPE as INT,
   MIR_FUNCTION_TYPE,
   MIR_IDENTIFIER_TYPE,
   MIR_STRING_TYPE,
   MIR_BOOL_TYPE,
-} from 'samlang-core-ast/mir-types';
+} from 'samlang-core-ast/mir-nodes';
+import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
 
 const assertLoweringWorks = (
   midIRFunction: MidIRFunction,

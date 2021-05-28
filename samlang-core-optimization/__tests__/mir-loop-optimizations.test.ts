@@ -20,8 +20,9 @@ import {
   MIR_BREAK,
   MIR_WHILE,
   MIR_CAST,
-} from 'samlang-core-ast/mir-expressions';
-import { MIR_BOOL_TYPE, MIR_INT_TYPE } from 'samlang-core-ast/mir-types';
+  MIR_BOOL_TYPE,
+  MIR_INT_TYPE,
+} from 'samlang-core-ast/mir-nodes';
 
 const assertOptimizeMidIRWhileStatementWithAllLoopOptimizations = (
   midIRWhileStatement: MidIRWhileStatement,

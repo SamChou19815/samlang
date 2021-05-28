@@ -12,6 +12,7 @@ import type {
   ModuleReference,
   FunctionType,
 } from 'samlang-core-ast/common-nodes';
+import createMidIRFlexibleOrderOperatorNode from 'samlang-core-ast/mir-flexible-op';
 import {
   MidIRStatement,
   MidIRExpression,
@@ -28,10 +29,6 @@ import {
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
   MIR_BINARY,
-} from 'samlang-core-ast/mir-expressions';
-import createMidIRFlexibleOrderOperatorNode from 'samlang-core-ast/mir-flexible-op';
-import type { MidIRFunction } from 'samlang-core-ast/mir-toplevel';
-import {
   MidIRType,
   MidIRIdentifierType,
   MidIRFunctionType,
@@ -42,7 +39,8 @@ import {
   MIR_FUNCTION_TYPE,
   MIR_STRING_TYPE,
   MIR_IDENTIFIER_TYPE,
-} from 'samlang-core-ast/mir-types';
+} from 'samlang-core-ast/mir-nodes';
+import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
 import type {
   SamlangExpression,
   ClassMemberExpression,

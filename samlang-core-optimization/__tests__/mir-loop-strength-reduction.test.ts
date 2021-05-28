@@ -1,8 +1,13 @@
 import midIRLoopStrengthReductionOptimization from '../mir-loop-strength-reduction';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
-import { MIR_ONE, MIR_INT, MIR_VARIABLE, MIR_BINARY } from 'samlang-core-ast/mir-expressions';
-import { MIR_INT_TYPE } from 'samlang-core-ast/mir-types';
+import {
+  MIR_ONE,
+  MIR_INT,
+  MIR_VARIABLE,
+  MIR_BINARY,
+  MIR_INT_TYPE,
+} from 'samlang-core-ast/mir-nodes';
 
 it('midIRLoopStrengthReductionOptimization works', () => {
   expect(

@@ -1,5 +1,5 @@
-import type { MidIRTypeDefinition } from 'samlang-core-ast/mir-toplevel';
-import { MidIRType, prettyPrintMidIRType } from 'samlang-core-ast/mir-types';
+import type { MidIRTypeDefinition } from 'samlang-core-ast/mir-nodes';
+import { MidIRType, prettyPrintMidIRType } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
 /** A helper class to generate an identifier type for each struct type. */

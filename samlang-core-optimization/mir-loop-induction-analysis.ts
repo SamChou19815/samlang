@@ -14,8 +14,8 @@ import {
   MIR_INT,
   MIR_ONE,
   MIR_ZERO,
-} from 'samlang-core-ast/mir-expressions';
-import type { MidIRType } from 'samlang-core-ast/mir-types';
+} from 'samlang-core-ast/mir-nodes';
+import type { MidIRType } from 'samlang-core-ast/mir-nodes';
 import { assert, checkNotNull, isNotNull } from 'samlang-core-utils';
 
 export type PotentialLoopInvariantExpression = MidIRIntLiteralExpression | MidIRVariableExpression;

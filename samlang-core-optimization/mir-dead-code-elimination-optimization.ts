@@ -1,7 +1,6 @@
 import { ifElseOrNull } from './mir-optimization-common';
 
-import type { MidIRExpression, MidIRStatement } from 'samlang-core-ast/mir-expressions';
-import type { MidIRFunction } from 'samlang-core-ast/mir-toplevel';
+import type { MidIRExpression, MidIRStatement, MidIRFunction } from 'samlang-core-ast/mir-nodes';
 import { isNotNull } from 'samlang-core-utils';
 
 export const collectUseFromMidIRExpression = (

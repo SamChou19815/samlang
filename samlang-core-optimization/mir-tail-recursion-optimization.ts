@@ -9,9 +9,8 @@ import {
   MIR_SINGLE_IF,
   MIR_BREAK,
   MIR_WHILE,
-} from 'samlang-core-ast/mir-expressions';
-import type { MidIRFunction } from 'samlang-core-ast/mir-toplevel';
-import type { MidIRType } from 'samlang-core-ast/mir-types';
+} from 'samlang-core-ast/mir-nodes';
+import type { MidIRFunction, MidIRType } from 'samlang-core-ast/mir-nodes';
 import { assert, zip3 } from 'samlang-core-utils';
 
 type RewriteResult = {

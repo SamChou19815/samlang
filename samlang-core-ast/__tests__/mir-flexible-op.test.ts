@@ -1,6 +1,5 @@
-import { MIR_ZERO, MIR_ONE, MIR_NAME, MIR_VARIABLE } from '../mir-expressions';
 import createMidIRFlexibleOrderOperatorNode from '../mir-flexible-op';
-import { MIR_INT_TYPE } from '../mir-types';
+import { MIR_ZERO, MIR_ONE, MIR_NAME, MIR_VARIABLE, MIR_INT_TYPE } from '../mir-nodes';
 
 it('createMidIRFlexibleOrderOperatorNode test', () => {
   expect(createMidIRFlexibleOrderOperatorNode('+', MIR_ZERO, MIR_ONE)).toEqual({

@@ -9,8 +9,8 @@ import {
   MIR_INT,
   MIR_VARIABLE,
   MIR_BINARY,
-} from 'samlang-core-ast/mir-expressions';
-import { MIR_INT_TYPE } from 'samlang-core-ast/mir-types';
+  MIR_INT_TYPE,
+} from 'samlang-core-ast/mir-nodes';
 
 it('analyzeNumberOfIterationsToBreakGuard works', () => {
   const analyzeNumberOfIterationsToBreakGuard = (

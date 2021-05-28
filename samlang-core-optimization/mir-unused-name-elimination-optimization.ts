@@ -1,7 +1,11 @@
 import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
-import type { MidIRExpression, MidIRStatement } from 'samlang-core-ast/mir-expressions';
-import type { MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-toplevel';
-import type { MidIRType } from 'samlang-core-ast/mir-types';
+import type {
+  MidIRExpression,
+  MidIRStatement,
+  MidIRFunction,
+  MidIRModule,
+  MidIRType,
+} from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
 const collectForTypeSet = (type: MidIRType, typeSet: Set<string>): void => {

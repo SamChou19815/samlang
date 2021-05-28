@@ -2,7 +2,7 @@ import { runnableSamlangProgramTestCases } from '../test-programs';
 
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
-import type { MidIRModule } from 'samlang-core-ast/mir-toplevel';
+import type { MidIRModule } from 'samlang-core-ast/mir-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import {
   compileSamlangSourcesToMidIRSources,

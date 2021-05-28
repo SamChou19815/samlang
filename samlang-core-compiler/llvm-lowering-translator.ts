@@ -32,8 +32,9 @@ import type {
   MidIRSingleIfStatement,
   MidIRWhileStatement,
   MidIRStructInitializationStatement,
-} from 'samlang-core-ast/mir-expressions';
-import type { MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-toplevel';
+  MidIRFunction,
+  MidIRModule,
+} from 'samlang-core-ast/mir-nodes';
 import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
 import { checkNotNull, zip, zip3 } from 'samlang-core-utils';
 

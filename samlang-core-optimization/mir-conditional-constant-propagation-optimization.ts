@@ -5,6 +5,7 @@ import {
 } from './mir-optimization-common';
 
 import type { IROperator } from 'samlang-core-ast/common-operators';
+import createMidIRFlexibleOrderOperatorNode from 'samlang-core-ast/mir-flexible-op';
 import {
   MidIRExpression,
   MidIRBinaryStatement,
@@ -23,9 +24,8 @@ import {
   MIR_CAST,
   MIR_INT,
   MidIRWhileStatement,
-} from 'samlang-core-ast/mir-expressions';
-import createMidIRFlexibleOrderOperatorNode from 'samlang-core-ast/mir-flexible-op';
-import type { MidIRFunction } from 'samlang-core-ast/mir-toplevel';
+} from 'samlang-core-ast/mir-nodes';
+import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
 import { isNotNull, zip3, LocalStackedContext, checkNotNull, assert } from 'samlang-core-utils';
 
 const longOfBool = (b: boolean) => (b ? 1 : 0);
