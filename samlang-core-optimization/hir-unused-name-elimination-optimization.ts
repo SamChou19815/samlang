@@ -93,6 +93,8 @@ const getOtherFunctionsUsedByGivenFunction = (
   const nameSet = new Set<string>();
   const typeSet = new Set<string>();
   highIRFunction.body.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
+  highIRFunction.type.argumentTypes.forEach((it) => collectForTypeSet(it, typeSet));
+  collectForTypeSet(highIRFunction.type.returnType, typeSet);
   collectUsedNamesFromExpression(nameSet, typeSet, highIRFunction.returnValue);
   nameSet.delete(highIRFunction.name);
   return [nameSet, typeSet];
