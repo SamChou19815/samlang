@@ -1,16 +1,6 @@
-import lowerHighIRTypeToLLVMType from './llvm-types-lowering';
+import lowerMidIRTypeToLLVMType from './llvm-types-lowering';
 
 import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
-import type {
-  HighIRExpression,
-  HighIRStatement,
-  HighIRIndexAccessStatement,
-  HighIRIfElseStatement,
-  HighIRSingleIfStatement,
-  HighIRWhileStatement,
-  HighIRStructInitializationStatement,
-} from 'samlang-core-ast/hir-expressions';
-import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import {
   LLVMAnnotatedValue,
   LLVMInstruction,
@@ -34,6 +24,16 @@ import {
   LLVMValue,
   LLVMModule,
 } from 'samlang-core-ast/llvm-nodes';
+import type {
+  MidIRExpression,
+  MidIRStatement,
+  MidIRIndexAccessStatement,
+  MidIRIfElseStatement,
+  MidIRSingleIfStatement,
+  MidIRWhileStatement,
+  MidIRStructInitializationStatement,
+} from 'samlang-core-ast/mir-expressions';
+import type { MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-toplevel';
 import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
 import { checkNotNull, zip, zip3 } from 'samlang-core-utils';
 
@@ -99,72 +99,72 @@ class LLVMLoweringManager {
     if (instruction.__type__ === 'LLVMLabelInstruction') this.currentLabel = instruction.name;
   }
 
-  lowerHighIRStatement(s: HighIRStatement): void {
+  lowerMidIRStatement(s: MidIRStatement): void {
     switch (s.__type__) {
-      case 'HighIRIndexAccessStatement':
-        this.lowerHighIRIndexAccessStatement(s);
+      case 'MidIRIndexAccessStatement':
+        this.lowerMidIRIndexAccessStatement(s);
         return;
-      case 'HighIRBinaryStatement': {
+      case 'MidIRBinaryStatement': {
         const { name: resultVariable, operator, e1, e2 } = s;
-        const { value: v1, type: operandType } = this.lowerHighIRExpression(e1);
-        const v2 = this.lowerHighIRExpression(e2).value;
+        const { value: v1, type: operandType } = this.lowerMidIRExpression(e1);
+        const v2 = this.lowerMidIRExpression(e2).value;
         this.emitInstruction(LLVM_BINARY({ resultVariable, operator, operandType, v1, v2 }));
         return;
       }
-      case 'HighIRFunctionCallStatement':
+      case 'MidIRFunctionCallStatement':
         this.emitInstruction(
           LLVM_CALL({
-            resultType: lowerHighIRTypeToLLVMType(s.returnType),
+            resultType: lowerMidIRTypeToLLVMType(s.returnType),
             resultVariable: s.returnCollector,
-            functionName: this.lowerHighIRExpression(s.functionExpression).value,
-            functionArguments: s.functionArguments.map((it) => this.lowerHighIRExpression(it)),
+            functionName: this.lowerMidIRExpression(s.functionExpression).value,
+            functionArguments: s.functionArguments.map((it) => this.lowerMidIRExpression(it)),
           })
         );
         return;
-      case 'HighIRIfElseStatement':
-        this.lowerHighIRIfElseStatement(s);
+      case 'MidIRIfElseStatement':
+        this.lowerMidIRIfElseStatement(s);
         return;
-      case 'HighIRSingleIfStatement':
-        this.lowerHighIRSingleIfStatement(s);
+      case 'MidIRSingleIfStatement':
+        this.lowerMidIRSingleIfStatement(s);
         return;
-      case 'HighIRBreakStatement': {
+      case 'MidIRBreakStatement': {
         const { label, breakValues } = this.whileBreakCollectorManager.currentLevel;
         breakValues.push({
-          value: this.lowerHighIRExpression(s.breakValue).value,
+          value: this.lowerMidIRExpression(s.breakValue).value,
           branch: this.currentLabel,
         });
         this.emitInstruction(LLVM_JUMP(label));
         return;
       }
-      case 'HighIRWhileStatement':
-        this.lowerHighIRWhileStatement(s);
+      case 'MidIRWhileStatement':
+        this.lowerMidIRWhileStatement(s);
         return;
-      case 'HighIRCastStatement': {
-        const { value: sourceValue, type: sourceType } = this.lowerHighIRExpression(
+      case 'MidIRCastStatement': {
+        const { value: sourceValue, type: sourceType } = this.lowerMidIRExpression(
           s.assignedExpression
         );
         this.emitInstruction(
           LLVM_CAST({
             resultVariable: s.name,
-            resultType: lowerHighIRTypeToLLVMType(s.type),
+            resultType: lowerMidIRTypeToLLVMType(s.type),
             sourceValue,
             sourceType,
           })
         );
         return;
       }
-      case 'HighIRStructInitializationStatement':
-        this.lowerHighIRStructInitializationStatement(s);
+      case 'MidIRStructInitializationStatement':
+        this.lowerMidIRStructInitializationStatement(s);
         return;
     }
   }
 
-  private lowerHighIRIndexAccessStatement(s: HighIRIndexAccessStatement): void {
-    const { value: loweredPointerValue, type: loweredPointerType } = this.lowerHighIRExpression(
+  private lowerMidIRIndexAccessStatement(s: MidIRIndexAccessStatement): void {
+    const { value: loweredPointerValue, type: loweredPointerType } = this.lowerMidIRExpression(
       s.pointerExpression
     );
     const pointerTemp = this.allocator.allocateTemp('index_pointer_temp');
-    const valueType = lowerHighIRTypeToLLVMType(s.type);
+    const valueType = lowerMidIRTypeToLLVMType(s.type);
     this.emitInstruction(
       LLVM_GET_ELEMENT_PTR({
         resultVariable: pointerTemp,
@@ -178,22 +178,22 @@ class LLVMLoweringManager {
     );
   }
 
-  private lowerHighIRIfElseStatement({
+  private lowerMidIRIfElseStatement({
     booleanExpression,
     s1,
     s2,
     finalAssignments,
-  }: HighIRIfElseStatement): void {
-    const loweredCondition = this.lowerHighIRExpression(booleanExpression).value;
+  }: MidIRIfElseStatement): void {
+    const loweredCondition = this.lowerMidIRExpression(booleanExpression).value;
     const trueLabel = this.allocator.allocateLabelWithAnnotation('if_else_true');
     const falseLabel = this.allocator.allocateLabelWithAnnotation('if_else_false');
     const endLabel = this.allocator.allocateLabelWithAnnotation('if_else_end');
     const s1IsEmpty =
       s1.length === 0 &&
-      finalAssignments.every((it) => it.branch1Value.__type__ !== 'HighIRNameExpression');
+      finalAssignments.every((it) => it.branch1Value.__type__ !== 'MidIRNameExpression');
     const s2IsEmpty =
       s2.length === 0 &&
-      finalAssignments.every((it) => it.branch2Value.__type__ !== 'HighIRNameExpression');
+      finalAssignments.every((it) => it.branch2Value.__type__ !== 'MidIRNameExpression');
     if (s1IsEmpty && s2IsEmpty) {
       if (finalAssignments.length === 0) return;
       this.emitInstruction(LLVM_CJUMP(loweredCondition, trueLabel, falseLabel));
@@ -203,12 +203,12 @@ class LLVMLoweringManager {
       this.emitInstruction(LLVM_JUMP(endLabel));
       this.emitInstruction(LLVM_LABEL(endLabel));
       finalAssignments.forEach((finalAssignment) => {
-        const v1 = this.lowerHighIRExpression(finalAssignment.branch1Value).value;
-        const v2 = this.lowerHighIRExpression(finalAssignment.branch2Value).value;
+        const v1 = this.lowerMidIRExpression(finalAssignment.branch1Value).value;
+        const v2 = this.lowerMidIRExpression(finalAssignment.branch2Value).value;
         this.emitInstruction(
           LLVM_PHI({
             resultVariable: finalAssignment.name,
-            variableType: lowerHighIRTypeToLLVMType(finalAssignment.type),
+            variableType: lowerMidIRTypeToLLVMType(finalAssignment.type),
             valueBranchTuples: [
               { value: v1, branch: trueLabel },
               { value: v2, branch: falseLabel },
@@ -228,16 +228,16 @@ class LLVMLoweringManager {
     );
     const beforeConditionLabel = this.currentLabel;
     this.emitInstruction(LLVM_LABEL(trueLabel));
-    s1.forEach((it) => this.lowerHighIRStatement(it));
+    s1.forEach((it) => this.lowerMidIRStatement(it));
     const v1List = finalAssignments.map(
-      (finalAssignment) => this.lowerHighIRExpression(finalAssignment.branch1Value).value
+      (finalAssignment) => this.lowerMidIRExpression(finalAssignment.branch1Value).value
     );
     const v1Label = this.currentLabel;
     this.emitInstruction(LLVM_JUMP(endLabel));
     this.emitInstruction(LLVM_LABEL(falseLabel));
-    s2.forEach((it) => this.lowerHighIRStatement(it));
+    s2.forEach((it) => this.lowerMidIRStatement(it));
     const v2List = finalAssignments.map(
-      (finalAssignment) => this.lowerHighIRExpression(finalAssignment.branch2Value).value
+      (finalAssignment) => this.lowerMidIRExpression(finalAssignment.branch2Value).value
     );
     const v2Label = this.currentLabel;
     this.emitInstruction(LLVM_JUMP(endLabel));
@@ -246,7 +246,7 @@ class LLVMLoweringManager {
       this.emitInstruction(
         LLVM_PHI({
           resultVariable: finalAssignment.name,
-          variableType: lowerHighIRTypeToLLVMType(finalAssignment.type),
+          variableType: lowerMidIRTypeToLLVMType(finalAssignment.type),
           valueBranchTuples: [
             { value: v1, branch: s1IsEmpty ? beforeConditionLabel : v1Label },
             { value: v2, branch: s2IsEmpty ? beforeConditionLabel : v2Label },
@@ -256,13 +256,13 @@ class LLVMLoweringManager {
     });
   }
 
-  private lowerHighIRSingleIfStatement({
+  private lowerMidIRSingleIfStatement({
     booleanExpression,
     invertCondition,
     statements,
-  }: HighIRSingleIfStatement): void {
+  }: MidIRSingleIfStatement): void {
     if (statements.length === 0) return;
-    const loweredCondition = this.lowerHighIRExpression(booleanExpression).value;
+    const loweredCondition = this.lowerMidIRExpression(booleanExpression).value;
     const blockLabel = this.allocator.allocateLabelWithAnnotation('single_if_block');
     const endLabel = this.allocator.allocateLabelWithAnnotation('single_if_end');
 
@@ -274,12 +274,12 @@ class LLVMLoweringManager {
       )
     );
     this.emitInstruction(LLVM_LABEL(blockLabel));
-    statements.forEach((it) => this.lowerHighIRStatement(it));
+    statements.forEach((it) => this.lowerMidIRStatement(it));
     this.emitInstruction(LLVM_JUMP(endLabel));
     this.emitInstruction(LLVM_LABEL(endLabel));
   }
 
-  private lowerHighIRWhileStatement(s: HighIRWhileStatement): void {
+  private lowerMidIRWhileStatement(s: MidIRWhileStatement): void {
     const beforeLoopLabel = this.currentLabel;
     const loopStartLabel = this.allocator.allocateLabelWithAnnotation('loop_start');
     const loopEndLabel = this.allocator.allocateLabelWithAnnotation('loop_end');
@@ -288,14 +288,14 @@ class LLVMLoweringManager {
     const phiInstructions = s.loopVariables.map((loopVariable) =>
       LLVM_PHI({
         resultVariable: loopVariable.name,
-        variableType: lowerHighIRTypeToLLVMType(loopVariable.type),
+        variableType: lowerMidIRTypeToLLVMType(loopVariable.type),
         valueBranchTuples: [
           {
-            value: this.lowerHighIRExpression(loopVariable.initialValue).value,
+            value: this.lowerMidIRExpression(loopVariable.initialValue).value,
             branch: beforeLoopLabel,
           },
           {
-            value: this.lowerHighIRExpression(loopVariable.loopValue).value,
+            value: this.lowerMidIRExpression(loopVariable.loopValue).value,
             branch: beforeLoopLabel, // hack: to be patched later
           },
         ],
@@ -305,7 +305,7 @@ class LLVMLoweringManager {
     const breakValueBranchTuples = this.whileBreakCollectorManager.withNewNestedWhileLoop(
       loopEndLabel,
       () => {
-        s.statements.forEach((it) => this.lowerHighIRStatement(it));
+        s.statements.forEach((it) => this.lowerMidIRStatement(it));
       }
     );
     const beforeJumpLabel = this.currentLabel;
@@ -319,16 +319,16 @@ class LLVMLoweringManager {
       this.emitInstruction(
         LLVM_PHI({
           resultVariable: s.breakCollector.name,
-          variableType: lowerHighIRTypeToLLVMType(s.breakCollector.type),
+          variableType: lowerMidIRTypeToLLVMType(s.breakCollector.type),
           valueBranchTuples: breakValueBranchTuples,
         })
       );
     }
   }
 
-  private lowerHighIRStructInitializationStatement(s: HighIRStructInitializationStatement): void {
+  private lowerMidIRStructInitializationStatement(s: MidIRStructInitializationStatement): void {
     const rawPointerTemp = this.allocator.allocateTemp('struct_ptr_raw');
-    const structType = lowerHighIRTypeToLLVMType(s.type);
+    const structType = lowerMidIRTypeToLLVMType(s.type);
     this.emitInstruction(
       LLVM_CALL({
         resultVariable: rawPointerTemp,
@@ -346,7 +346,7 @@ class LLVMLoweringManager {
       })
     );
     s.expressionList.forEach((e, i) => {
-      const { value, type } = this.lowerHighIRExpression(e);
+      const { value, type } = this.lowerMidIRExpression(e);
       const storePointerTemp = this.allocator.allocateTemp(`struct_ptr_${i}`);
       this.emitInstruction(
         LLVM_GET_ELEMENT_PTR({
@@ -362,15 +362,15 @@ class LLVMLoweringManager {
     });
   }
 
-  lowerHighIRExpression(e: HighIRExpression): LLVMAnnotatedValue {
+  lowerMidIRExpression(e: MidIRExpression): LLVMAnnotatedValue {
     switch (e.__type__) {
-      case 'HighIRIntLiteralExpression':
-        return { value: LLVM_INT(e.value), type: lowerHighIRTypeToLLVMType(e.type) };
-      case 'HighIRNameExpression': {
+      case 'MidIRIntLiteralExpression':
+        return { value: LLVM_INT(e.value), type: lowerMidIRTypeToLLVMType(e.type) };
+      case 'MidIRNameExpression': {
         const length = this.globalVariables[e.name];
         if (length == null) {
           // must be a function name
-          return { value: LLVM_NAME(e.name), type: lowerHighIRTypeToLLVMType(e.type) };
+          return { value: LLVM_NAME(e.name), type: lowerMidIRTypeToLLVMType(e.type) };
         }
         const castedTempName = this.allocator.allocateTemp('string_name_cast');
         this.emitInstruction(
@@ -381,54 +381,54 @@ class LLVMLoweringManager {
             sourceType: LLVM_STRING_TYPE(length),
           })
         );
-        return { value: LLVM_VARIABLE(castedTempName), type: lowerHighIRTypeToLLVMType(e.type) };
+        return { value: LLVM_VARIABLE(castedTempName), type: lowerMidIRTypeToLLVMType(e.type) };
       }
-      case 'HighIRVariableExpression':
-        return { value: LLVM_VARIABLE(e.name), type: lowerHighIRTypeToLLVMType(e.type) };
+      case 'MidIRVariableExpression':
+        return { value: LLVM_VARIABLE(e.name), type: lowerMidIRTypeToLLVMType(e.type) };
     }
   }
 }
 
-export const lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING = (
-  { name, type: { argumentTypes, returnType }, parameters, body, returnValue }: HighIRFunction,
+export const lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING = (
+  { name, type: { argumentTypes, returnType }, parameters, body, returnValue }: MidIRFunction,
   /** Mapping between global variable name and their length */
   globalVariables: Readonly<Record<string, number>>
 ): LLVMFunction => {
   const annotatedParameters = zip(parameters, argumentTypes).map(([parameterName, type]) => ({
     parameterName,
-    parameterType: lowerHighIRTypeToLLVMType(type),
+    parameterType: lowerMidIRTypeToLLVMType(type),
   }));
   const manager = new LLVMLoweringManager(globalVariables, parameters);
-  body.forEach((it) => manager.lowerHighIRStatement(it));
+  body.forEach((it) => manager.lowerMidIRStatement(it));
   manager.llvmInstructionCollector.push(
     LLVM_RETURN(
-      manager.lowerHighIRExpression(returnValue).value,
-      lowerHighIRTypeToLLVMType(returnType)
+      manager.lowerMidIRExpression(returnValue).value,
+      lowerMidIRTypeToLLVMType(returnType)
     )
   );
   return {
     name,
     parameters: annotatedParameters,
-    returnType: lowerHighIRTypeToLLVMType(returnType),
+    returnType: lowerMidIRTypeToLLVMType(returnType),
     body: withoutUnreachableLLVMCode(manager.llvmInstructionCollector),
   };
 };
 
-const lowerHighIRModuleToLLVMModule = (highIRModule: HighIRModule): LLVMModule => {
+const lowerMidIRModuleToLLVMModule = (midIRModule: MidIRModule): LLVMModule => {
   const globalVariablesMapping = Object.fromEntries(
-    highIRModule.globalVariables.map((it) => [it.name, it.content.length + 1])
+    midIRModule.globalVariables.map((it) => [it.name, it.content.length + 1])
   );
 
   return {
-    globalVariables: highIRModule.globalVariables,
-    typeDefinitions: highIRModule.typeDefinitions.map((it) => ({
+    globalVariables: midIRModule.globalVariables,
+    typeDefinitions: midIRModule.typeDefinitions.map((it) => ({
       identifier: it.identifier,
-      mappings: it.mappings.map(lowerHighIRTypeToLLVMType),
+      mappings: it.mappings.map(lowerMidIRTypeToLLVMType),
     })),
-    functions: highIRModule.functions.map((it) =>
-      lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(it, globalVariablesMapping)
+    functions: midIRModule.functions.map((it) =>
+      lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(it, globalVariablesMapping)
     ),
   };
 };
 
-export default lowerHighIRModuleToLLVMModule;
+export default lowerMidIRModuleToLLVMModule;

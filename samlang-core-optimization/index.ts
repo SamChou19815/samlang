@@ -1,14 +1,14 @@
-import optimizeHighIRFunctionByCommonSubExpressionElimination from './hir-common-subexpression-elimination-optimization';
-import optimizeHighIRFunctionByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
-import optimizeHighIRFunctionByDeadCodeElimination from './hir-dead-code-elimination-optimization';
-import optimizeHighIRFunctionsByInlining from './hir-inline-optimization';
-import optimizeHighIRFunctionByLocalValueNumbering from './hir-local-value-numbering-optimization';
-import optimizeHighIRFunctionWithAllLoopOptimizations from './hir-loop-optimizations';
-import optimizeHighIRFunctionByTailRecursionRewrite from './hir-tail-recursion-optimization';
-import optimizeHighIRModuleByEliminatingUnusedOnes from './hir-unused-name-elimination-optimization';
+import optimizeMidIRFunctionByCommonSubExpressionElimination from './mir-common-subexpression-elimination-optimization';
+import optimizeMidIRFunctionByConditionalConstantPropagation from './mir-conditional-constant-propagation-optimization';
+import optimizeMidIRFunctionByDeadCodeElimination from './mir-dead-code-elimination-optimization';
+import optimizeMidIRFunctionsByInlining from './mir-inline-optimization';
+import optimizeMidIRFunctionByLocalValueNumbering from './mir-local-value-numbering-optimization';
+import optimizeMidIRFunctionWithAllLoopOptimizations from './mir-loop-optimizations';
+import optimizeMidIRFunctionByTailRecursionRewrite from './mir-tail-recursion-optimization';
+import optimizeMidIRModuleByEliminatingUnusedOnes from './mir-unused-name-elimination-optimization';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
 
-import type { HighIRFunction, HighIRModule } from 'samlang-core-ast/hir-toplevel';
+import type { MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-toplevel';
 
 export type OptimizationConfiguration = {
   doesPerformLocalValueNumbering?: boolean;
@@ -24,80 +24,77 @@ const allEnabledOptimizationConfiguration: OptimizationConfiguration = {
   doesPerformInlining: true,
 };
 
-const optimizeHighIRFunctionForOneRound = (
-  highIRFunction: HighIRFunction,
+const optimizeMidIRFunctionForOneRound = (
+  midIRFunction: MidIRFunction,
   allocator: OptimizationResourceAllocator,
   {
     doesPerformLocalValueNumbering,
     doesPerformCommonSubExpressionElimination,
     doesPerformLoopOptimization,
   }: OptimizationConfiguration
-): HighIRFunction => {
-  let optimizedFunction = optimizeHighIRFunctionByConditionalConstantPropagation(highIRFunction);
+): MidIRFunction => {
+  let optimizedFunction = optimizeMidIRFunctionByConditionalConstantPropagation(midIRFunction);
   if (doesPerformLoopOptimization) {
-    optimizedFunction = optimizeHighIRFunctionWithAllLoopOptimizations(
-      optimizedFunction,
-      allocator
-    );
+    optimizedFunction = optimizeMidIRFunctionWithAllLoopOptimizations(optimizedFunction, allocator);
   }
   if (doesPerformLocalValueNumbering) {
-    optimizedFunction = optimizeHighIRFunctionByLocalValueNumbering(optimizedFunction);
+    optimizedFunction = optimizeMidIRFunctionByLocalValueNumbering(optimizedFunction);
   }
   if (doesPerformCommonSubExpressionElimination) {
-    optimizedFunction = optimizeHighIRFunctionByCommonSubExpressionElimination(
+    optimizedFunction = optimizeMidIRFunctionByCommonSubExpressionElimination(
       optimizedFunction,
       allocator
     );
   }
-  return optimizeHighIRFunctionByDeadCodeElimination(optimizedFunction);
+  return optimizeMidIRFunctionByDeadCodeElimination(optimizedFunction);
 };
 
 const optimizeFunctionForRounds = (
-  highIRFunction: HighIRFunction,
+  midIRFunction: MidIRFunction,
   allocator: OptimizationResourceAllocator,
   optimizationConfiguration: OptimizationConfiguration
-): HighIRFunction => {
-  let optimizedFunction = highIRFunction;
+): MidIRFunction => {
+  let optimizedFunction = midIRFunction;
   for (let j = 0; j < 5; j += 1) {
-    optimizedFunction = optimizeHighIRFunctionForOneRound(
+    optimizedFunction = optimizeMidIRFunctionForOneRound(
       optimizedFunction,
       allocator,
       optimizationConfiguration
     );
   }
-  return optimizeHighIRFunctionByDeadCodeElimination(
-    optimizeHighIRFunctionByConditionalConstantPropagation(optimizedFunction)
+  return optimizeMidIRFunctionByDeadCodeElimination(
+    optimizeMidIRFunctionByConditionalConstantPropagation(optimizedFunction)
   );
 };
 
-export const optimizeHighIRModuleByUnusedNameEliminationAndTailRecursionRewrite = (
-  highIRModule: HighIRModule
-): HighIRModule => {
-  const intermediate = optimizeHighIRModuleByEliminatingUnusedOnes(highIRModule);
+export const optimizeMidIRModuleByUnusedNameEliminationAndTailRecursionRewrite = (
+  midIRModule: MidIRModule
+): MidIRModule => {
+  const intermediate = optimizeMidIRModuleByEliminatingUnusedOnes(midIRModule);
   return {
     ...intermediate,
     functions: intermediate.functions.map(
-      (it) => optimizeHighIRFunctionByTailRecursionRewrite(it) ?? it
+      (it) => optimizeMidIRFunctionByTailRecursionRewrite(it) ?? it
     ),
   };
 };
 
-export const optimizeHighIRModuleAccordingToConfiguration = (
-  highIRModule: HighIRModule,
+export const optimizeMidIRModuleAccordingToConfiguration = (
+  midIRModule: MidIRModule,
   optimizationConfiguration: OptimizationConfiguration = allEnabledOptimizationConfiguration
-): HighIRModule => {
+): MidIRModule => {
   const allocator = new OptimizationResourceAllocator();
 
-  let intermediate = highIRModule;
+  let intermediate = midIRModule;
   for (let i = 0; i < 4; i += 1) {
-    let optimizedFunctions: readonly HighIRFunction[] = intermediate.functions.map((it) =>
+    let optimizedFunctions: readonly MidIRFunction[] = intermediate.functions.map((it) =>
       optimizeFunctionForRounds(it, allocator, optimizationConfiguration)
     );
     if (optimizationConfiguration.doesPerformInlining) {
-      optimizedFunctions = optimizeHighIRFunctionsByInlining(optimizedFunctions, allocator);
+      optimizedFunctions = optimizeMidIRFunctionsByInlining(optimizedFunctions, allocator);
     }
-    intermediate = optimizeHighIRModuleByEliminatingUnusedOnes({
-      ...highIRModule,
+    intermediate = optimizeMidIRModuleByEliminatingUnusedOnes({
+      ...midIRModule,
       functions: optimizedFunctions,
     });
   }

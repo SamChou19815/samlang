@@ -1,21 +1,21 @@
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
-import type { HighIRModule } from 'samlang-core-ast/hir-toplevel';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
+import type { MidIRModule } from 'samlang-core-ast/mir-toplevel';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import {
-  compileSamlangSourcesToHighIRSources,
-  lowerHighIRModuleToLLVMModule,
+  compileSamlangSourcesToMidIRSources,
+  lowerMidIRModuleToLLVMModule,
 } from 'samlang-core-compiler';
 import interpretLLVMModule from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import {
   OptimizationConfiguration,
-  optimizeHighIRModuleAccordingToConfiguration,
+  optimizeMidIRModuleAccordingToConfiguration,
 } from 'samlang-core-optimization';
 // eslint-disable-next-line import/no-internal-modules
-import { createPrettierDocumentFromHighIRModule } from 'samlang-core-printer/printer-js';
+import { createPrettierDocumentFromMidIRModule } from 'samlang-core-printer/printer-js';
 // eslint-disable-next-line import/no-internal-modules
 import { prettyPrintAccordingToPrettierAlgorithm } from 'samlang-core-printer/printer-prettier-core';
 import { checkSources } from 'samlang-core-services';
@@ -40,24 +40,24 @@ if (process.env.CI) {
   });
 }
 
-const hirSources = compileSamlangSourcesToHighIRSources(
+const midSources = compileSamlangSourcesToMidIRSources(
   checkedSources,
   DEFAULT_BUILTIN_TYPING_CONTEXT
 );
 
-const highIRModuleToJSCode = (highIRModule: HighIRModule): string =>
+const midIRModuleToJSCode = (midIRModule: MidIRModule): string =>
   prettyPrintAccordingToPrettierAlgorithm(
     100,
-    createPrettierDocumentFromHighIRModule(highIRModule, true)
+    createPrettierDocumentFromMidIRModule(midIRModule, true)
   );
 
-const testHIR = (
-  program: HighIRModule,
+const testMIR = (
+  program: MidIRModule,
   expectedStandardOut: string,
   optimizationConfig?: OptimizationConfiguration
 ): void => {
-  const jsCode = highIRModuleToJSCode(
-    optimizeHighIRModuleAccordingToConfiguration(program, optimizationConfig)
+  const jsCode = midIRModuleToJSCode(
+    optimizeMidIRModuleAccordingToConfiguration(program, optimizationConfig)
   );
   let interpretationResult: string;
   try {
@@ -68,7 +68,7 @@ const testHIR = (
     return;
   }
   if (interpretationResult !== expectedStandardOut) {
-    const unoptimizedJSCode = highIRModuleToJSCode(program);
+    const unoptimizedJSCode = midIRModuleToJSCode(program);
     fail(
       `Expected:\n${expectedStandardOut}\nActual:\n${interpretationResult}\nCode:\n${jsCode}\n\nUnoptimized Code:\n${unoptimizedJSCode}`
     );
@@ -76,33 +76,33 @@ const testHIR = (
 };
 
 runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) => {
-  const program = hirSources.forceGet(new ModuleReference([testCaseName]));
+  const program = midSources.forceGet(new ModuleReference([testCaseName]));
 
-  it(`HIR[no-opt]: ${testCaseName}`, () => {
-    testHIR(program, expectedStandardOut, {});
+  it(`MIR[no-opt]: ${testCaseName}`, () => {
+    testMIR(program, expectedStandardOut, {});
   });
-  it(`HIR[lvn]: ${testCaseName}`, () => {
-    testHIR(program, expectedStandardOut, { doesPerformLocalValueNumbering: true });
+  it(`MIR[lvn]: ${testCaseName}`, () => {
+    testMIR(program, expectedStandardOut, { doesPerformLocalValueNumbering: true });
   });
-  it(`HIR[cse]: ${testCaseName}`, () => {
-    testHIR(program, expectedStandardOut, { doesPerformCommonSubExpressionElimination: true });
+  it(`MIR[cse]: ${testCaseName}`, () => {
+    testMIR(program, expectedStandardOut, { doesPerformCommonSubExpressionElimination: true });
   });
-  it(`HIR[inl]: ${testCaseName}`, () => {
-    testHIR(program, expectedStandardOut, { doesPerformInlining: true });
+  it(`MIR[inl]: ${testCaseName}`, () => {
+    testMIR(program, expectedStandardOut, { doesPerformInlining: true });
   });
-  it(`HIR[loop]: ${testCaseName}`, () => {
-    testHIR(program, expectedStandardOut, { doesPerformLoopOptimization: true });
+  it(`MIR[loop]: ${testCaseName}`, () => {
+    testMIR(program, expectedStandardOut, { doesPerformLoopOptimization: true });
   });
-  it(`HIR[all]: ${testCaseName}`, () => {
-    testHIR(program, expectedStandardOut);
+  it(`MIR[all]: ${testCaseName}`, () => {
+    testMIR(program, expectedStandardOut);
   });
 });
 
 runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) => {
   it(`LLVM: ${testCaseName}`, () => {
-    const compilationUnit = lowerHighIRModuleToLLVMModule(
-      optimizeHighIRModuleAccordingToConfiguration(
-        hirSources.forceGet(new ModuleReference([testCaseName]))
+    const compilationUnit = lowerMidIRModuleToLLVMModule(
+      optimizeMidIRModuleAccordingToConfiguration(
+        midSources.forceGet(new ModuleReference([testCaseName]))
       )
     );
 

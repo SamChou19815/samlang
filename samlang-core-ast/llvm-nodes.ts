@@ -8,13 +8,13 @@ import {
 } from './common-names';
 import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
-import type { HighIRIdentifierType } from './hir-types';
+import type { MidIRIdentifierType } from './mir-types';
 
 import { assert, zip } from 'samlang-core-utils';
 
 export type LLVMPrimitiveType = { readonly __type__: 'PrimitiveType'; readonly type: 'i1' | 'i32' };
 export type LLVMStringType = { readonly __type__: 'StringType'; readonly length?: number };
-export type LLVMIdentifierType = HighIRIdentifierType;
+export type LLVMIdentifierType = MidIRIdentifierType;
 
 export type LLVMFunctionType = {
   readonly __type__: 'FunctionType';

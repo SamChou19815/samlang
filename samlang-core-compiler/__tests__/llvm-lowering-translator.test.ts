@@ -1,50 +1,50 @@
-import lowerHighIRModuleToLLVMModule, {
-  lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING,
+import lowerMidIRModuleToLLVMModule, {
+  lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING,
 } from '../llvm-lowering-translator';
 
-import {
-  HighIRExpression,
-  HighIRStatement,
-  HIR_FALSE,
-  HIR_TRUE,
-  HIR_NAME,
-  HIR_VARIABLE,
-  HIR_ZERO,
-  HIR_BINARY,
-  HIR_FUNCTION_CALL,
-  HIR_IF_ELSE,
-  HIR_SINGLE_IF,
-  HIR_BREAK,
-  HIR_WHILE,
-  HIR_INDEX_ACCESS,
-  HIR_INT,
-  HIR_CAST,
-  HIR_STRUCT_INITIALIZATION,
-} from 'samlang-core-ast/hir-expressions';
-import type { HighIRFunction } from 'samlang-core-ast/hir-toplevel';
-import {
-  HIR_INT_TYPE as INT,
-  HIR_FUNCTION_TYPE,
-  HIR_IDENTIFIER_TYPE,
-  HIR_STRING_TYPE,
-  HIR_BOOL_TYPE,
-} from 'samlang-core-ast/hir-types';
 import { prettyPrintLLVMFunction, prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
+import {
+  MidIRExpression,
+  MidIRStatement,
+  MIR_FALSE,
+  MIR_TRUE,
+  MIR_NAME,
+  MIR_VARIABLE,
+  MIR_ZERO,
+  MIR_BINARY,
+  MIR_FUNCTION_CALL,
+  MIR_IF_ELSE,
+  MIR_SINGLE_IF,
+  MIR_BREAK,
+  MIR_WHILE,
+  MIR_INDEX_ACCESS,
+  MIR_INT,
+  MIR_CAST,
+  MIR_STRUCT_INITIALIZATION,
+} from 'samlang-core-ast/mir-expressions';
+import type { MidIRFunction } from 'samlang-core-ast/mir-toplevel';
+import {
+  MIR_INT_TYPE as INT,
+  MIR_FUNCTION_TYPE,
+  MIR_IDENTIFIER_TYPE,
+  MIR_STRING_TYPE,
+  MIR_BOOL_TYPE,
+} from 'samlang-core-ast/mir-types';
 
 const assertLoweringWorks = (
-  highIRFunction: HighIRFunction,
+  midIRFunction: MidIRFunction,
   expectedString: string,
   globalStrings: Readonly<Record<string, number>> = {}
 ): void => {
   expect(
     prettyPrintLLVMFunction(
-      lowerHighIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(highIRFunction, globalStrings)
+      lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(midIRFunction, globalStrings)
     )
   ).toBe(expectedString);
 };
 
 const assertStatementLoweringWorks = (
-  statements: readonly HighIRStatement[],
+  statements: readonly MidIRStatement[],
   expectedString: string,
   globalStrings: Readonly<Record<string, number>> = {},
   hasReturn = true
@@ -53,9 +53,9 @@ const assertStatementLoweringWorks = (
     {
       name: 'testFunction',
       parameters: [],
-      type: HIR_FUNCTION_TYPE([], INT),
+      type: MIR_FUNCTION_TYPE([], INT),
       body: statements,
-      returnValue: HIR_ZERO,
+      returnValue: MIR_ZERO,
     },
     `define i32 @testFunction() local_unnamed_addr nounwind {
 l0_start:
@@ -66,7 +66,7 @@ ${expectedString}${hasReturn ? '\n  ret i32 0' : ''}
 };
 
 const assertExpressionLoweringWorks = (
-  expression: HighIRExpression,
+  expression: MidIRExpression,
   expectedString: string,
   globalStrings: Readonly<Record<string, number>> = {}
 ): void => {
@@ -74,7 +74,7 @@ const assertExpressionLoweringWorks = (
     {
       name: 'testFunction',
       parameters: [],
-      type: HIR_FUNCTION_TYPE([], INT),
+      type: MIR_FUNCTION_TYPE([], INT),
       body: [],
       returnValue: expression,
     },
@@ -87,22 +87,22 @@ ${expectedString}
 };
 
 it('LLVM lowering works for base expressions 1/n', () => {
-  assertExpressionLoweringWorks(HIR_INT(42), '  ret i32 42');
-  assertExpressionLoweringWorks(HIR_TRUE, '  ret i32 1');
-  assertExpressionLoweringWorks(HIR_FALSE, '  ret i32 0');
+  assertExpressionLoweringWorks(MIR_INT(42), '  ret i32 42');
+  assertExpressionLoweringWorks(MIR_TRUE, '  ret i32 1');
+  assertExpressionLoweringWorks(MIR_FALSE, '  ret i32 0');
 });
 
 it('LLVM lowering works for base expressions 2/n', () => {
-  assertExpressionLoweringWorks(HIR_INT(42), '  ret i32 42');
-  assertExpressionLoweringWorks(HIR_NAME('bar', INT), '  ret i32 @bar');
-  assertExpressionLoweringWorks(HIR_VARIABLE('bar', INT), '  ret i32 %bar');
+  assertExpressionLoweringWorks(MIR_INT(42), '  ret i32 42');
+  assertExpressionLoweringWorks(MIR_NAME('bar', INT), '  ret i32 @bar');
+  assertExpressionLoweringWorks(MIR_VARIABLE('bar', INT), '  ret i32 %bar');
   assertLoweringWorks(
     {
       name: 'foo',
       parameters: ['bar'],
-      type: HIR_FUNCTION_TYPE([INT], INT),
+      type: MIR_FUNCTION_TYPE([INT], INT),
       body: [],
-      returnValue: HIR_VARIABLE('bar', INT),
+      returnValue: MIR_VARIABLE('bar', INT),
     },
     `define i32 @foo(i32 %bar) local_unnamed_addr nounwind {
 l0_start:
@@ -114,10 +114,10 @@ l0_start:
 it('LLVM lowering works for base expressions 3/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_INDEX_ACCESS({
+      MIR_INDEX_ACCESS({
         name: 'foo',
         type: INT,
-        pointerExpression: HIR_VARIABLE('bar', HIR_IDENTIFIER_TYPE('Bar')),
+        pointerExpression: MIR_VARIABLE('bar', MIR_IDENTIFIER_TYPE('Bar')),
         index: 3,
       }),
     ],
@@ -129,28 +129,28 @@ it('LLVM lowering works for base expressions 3/n', () => {
 it('LLVM lowering works for base expressions 4/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_BINARY({
+      MIR_BINARY({
         name: 'foo',
         operator: '/',
-        e1: HIR_VARIABLE('bar', INT),
-        e2: HIR_VARIABLE('baz', INT),
+        e1: MIR_VARIABLE('bar', INT),
+        e2: MIR_VARIABLE('baz', INT),
       }),
     ],
     '  %foo = sdiv i32 %bar, %baz'
   );
 });
 
-it('LLVM lowering works for HIR_FUNCTION_CALL', () => {
+it('LLVM lowering works for MIR_FUNCTION_CALL', () => {
   assertStatementLoweringWorks(
     [
-      HIR_FUNCTION_CALL({
-        functionExpression: HIR_NAME('println', HIR_FUNCTION_TYPE([HIR_STRING_TYPE], INT)),
-        functionArguments: [HIR_NAME('ss', HIR_STRING_TYPE)],
+      MIR_FUNCTION_CALL({
+        functionExpression: MIR_NAME('println', MIR_FUNCTION_TYPE([MIR_STRING_TYPE], INT)),
+        functionArguments: [MIR_NAME('ss', MIR_STRING_TYPE)],
         returnType: INT,
       }),
-      HIR_FUNCTION_CALL({
-        functionExpression: HIR_NAME('stringToInt', HIR_FUNCTION_TYPE([HIR_STRING_TYPE], INT)),
-        functionArguments: [HIR_NAME('ss', HIR_STRING_TYPE)],
+      MIR_FUNCTION_CALL({
+        functionExpression: MIR_NAME('stringToInt', MIR_FUNCTION_TYPE([MIR_STRING_TYPE], INT)),
+        functionArguments: [MIR_NAME('ss', MIR_STRING_TYPE)],
         returnType: INT,
         returnCollector: 'r',
       }),
@@ -163,17 +163,17 @@ it('LLVM lowering works for HIR_FUNCTION_CALL', () => {
   );
 });
 
-it('LLVM lowering works for HIR_IF_ELSE 1/n', () => {
+it('LLVM lowering works for MIR_IF_ELSE 1/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_BINARY({
+      MIR_BINARY({
         name: 'bb',
         operator: '==',
-        e1: HIR_VARIABLE('t', INT),
-        e2: HIR_INT(2),
+        e1: MIR_VARIABLE('t', INT),
+        e2: MIR_INT(2),
       }),
-      HIR_IF_ELSE({
-        booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
+      MIR_IF_ELSE({
+        booleanExpression: MIR_VARIABLE('bb', MIR_BOOL_TYPE),
         s1: [],
         s2: [],
         finalAssignments: [],
@@ -183,19 +183,19 @@ it('LLVM lowering works for HIR_IF_ELSE 1/n', () => {
   );
 });
 
-it('LLVM lowering works for HIR_IF_ELSE 2/n', () => {
+it('LLVM lowering works for MIR_IF_ELSE 2/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_IF_ELSE({
-        booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
+      MIR_IF_ELSE({
+        booleanExpression: MIR_VARIABLE('bb', MIR_BOOL_TYPE),
         s1: [],
         s2: [],
         finalAssignments: [
           {
             name: 'ma',
             type: INT,
-            branch1Value: HIR_INT(2),
-            branch2Value: HIR_ZERO,
+            branch1Value: MIR_INT(2),
+            branch2Value: MIR_ZERO,
           },
         ],
       }),
@@ -210,15 +210,15 @@ l3_if_else_end:
   );
 });
 
-it('LLVM lowering works for HIR_IF_ELSE 3/n', () => {
+it('LLVM lowering works for MIR_IF_ELSE 3/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_IF_ELSE({
-        booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
+      MIR_IF_ELSE({
+        booleanExpression: MIR_VARIABLE('bb', MIR_BOOL_TYPE),
         s1: [],
         s2: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('bar', MIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
             returnType: INT,
           }),
@@ -227,8 +227,8 @@ it('LLVM lowering works for HIR_IF_ELSE 3/n', () => {
           {
             name: 'ma',
             type: INT,
-            branch1Value: HIR_INT(2),
-            branch2Value: HIR_ZERO,
+            branch1Value: MIR_INT(2),
+            branch2Value: MIR_ZERO,
           },
         ],
       }),
@@ -242,14 +242,14 @@ l3_if_else_end:
   );
 });
 
-it('LLVM lowering works for HIR_IF_ELSE 4/n', () => {
+it('LLVM lowering works for MIR_IF_ELSE 4/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_IF_ELSE({
-        booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
+      MIR_IF_ELSE({
+        booleanExpression: MIR_VARIABLE('bb', MIR_BOOL_TYPE),
         s1: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('bar', MIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
             returnType: INT,
           }),
@@ -259,8 +259,8 @@ it('LLVM lowering works for HIR_IF_ELSE 4/n', () => {
           {
             name: 'ma',
             type: INT,
-            branch1Value: HIR_INT(2),
-            branch2Value: HIR_ZERO,
+            branch1Value: MIR_INT(2),
+            branch2Value: MIR_ZERO,
           },
         ],
       }),
@@ -274,27 +274,27 @@ l3_if_else_end:
   );
 });
 
-it('LLVM lowering works for HIR_IF_ELSE 5/n', () => {
+it('LLVM lowering works for MIR_IF_ELSE 5/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_BINARY({
+      MIR_BINARY({
         name: 'bb',
         operator: '==',
-        e1: HIR_VARIABLE('t', INT),
-        e2: HIR_INT(2),
+        e1: MIR_VARIABLE('t', INT),
+        e2: MIR_INT(2),
       }),
-      HIR_IF_ELSE({
-        booleanExpression: HIR_VARIABLE('bb', HIR_BOOL_TYPE),
+      MIR_IF_ELSE({
+        booleanExpression: MIR_VARIABLE('bb', MIR_BOOL_TYPE),
         s1: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('foo', MIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
             returnType: INT,
           }),
         ],
         s2: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('bar', MIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
             returnType: INT,
           }),
@@ -314,22 +314,22 @@ l3_if_else_end:`
   );
 });
 
-it('LLVM lowering works for HIR_IF_ELSE 6/n', () => {
+it('LLVM lowering works for MIR_IF_ELSE 6/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_IF_ELSE({
-        booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
+      MIR_IF_ELSE({
+        booleanExpression: MIR_VARIABLE('bbb', MIR_BOOL_TYPE),
         s1: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('foo', MIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
             returnType: INT,
             returnCollector: 'b1',
           }),
         ],
         s2: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('bar', MIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
             returnType: INT,
             returnCollector: 'b2',
@@ -339,8 +339,8 @@ it('LLVM lowering works for HIR_IF_ELSE 6/n', () => {
           {
             name: 'ma',
             type: INT,
-            branch1Value: HIR_VARIABLE('b1', INT),
-            branch2Value: HIR_VARIABLE('b2', INT),
+            branch1Value: MIR_VARIABLE('b1', INT),
+            branch2Value: MIR_VARIABLE('b2', INT),
           },
         ],
       }),
@@ -357,33 +357,33 @@ l3_if_else_end:
   );
 });
 
-it('LLVM lowering works for HIR_IF_ELSE 7/n', () => {
+it('LLVM lowering works for MIR_IF_ELSE 7/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_IF_ELSE({
-        booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
+      MIR_IF_ELSE({
+        booleanExpression: MIR_VARIABLE('bbb', MIR_BOOL_TYPE),
         s1: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('foo', MIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
             returnType: INT,
             returnCollector: 'b1',
           }),
         ],
         s2: [
-          HIR_IF_ELSE({
-            booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
+          MIR_IF_ELSE({
+            booleanExpression: MIR_VARIABLE('bbb', MIR_BOOL_TYPE),
             s1: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+              MIR_FUNCTION_CALL({
+                functionExpression: MIR_NAME('foo', MIR_FUNCTION_TYPE([], INT)),
                 functionArguments: [],
                 returnType: INT,
                 returnCollector: 'b2',
               }),
             ],
             s2: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('bar', HIR_FUNCTION_TYPE([], INT)),
+              MIR_FUNCTION_CALL({
+                functionExpression: MIR_NAME('bar', MIR_FUNCTION_TYPE([], INT)),
                 functionArguments: [],
                 returnType: INT,
                 returnCollector: 'b3',
@@ -393,8 +393,8 @@ it('LLVM lowering works for HIR_IF_ELSE 7/n', () => {
               {
                 name: 'ma_nested',
                 type: INT,
-                branch1Value: HIR_VARIABLE('b2', INT),
-                branch2Value: HIR_VARIABLE('b3', INT),
+                branch1Value: MIR_VARIABLE('b2', INT),
+                branch2Value: MIR_VARIABLE('b3', INT),
               },
             ],
           }),
@@ -403,8 +403,8 @@ it('LLVM lowering works for HIR_IF_ELSE 7/n', () => {
           {
             name: 'ma',
             type: INT,
-            branch1Value: HIR_VARIABLE('b1', INT),
-            branch2Value: HIR_VARIABLE('ma_nested', INT),
+            branch1Value: MIR_VARIABLE('b1', INT),
+            branch2Value: MIR_VARIABLE('ma_nested', INT),
           },
         ],
       }),
@@ -429,15 +429,15 @@ l3_if_else_end:
   );
 });
 
-it('LLVM lowering works for HIR_SINGLE_IF 1/n', () => {
+it('LLVM lowering works for MIR_SINGLE_IF 1/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_SINGLE_IF({
-        booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
+      MIR_SINGLE_IF({
+        booleanExpression: MIR_VARIABLE('bbb', MIR_BOOL_TYPE),
         invertCondition: false,
         statements: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('foo', MIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
             returnType: INT,
             returnCollector: 'b1',
@@ -453,15 +453,15 @@ l2_single_if_end:`
   );
 });
 
-it('LLVM lowering works for HIR_SINGLE_IF 2/n', () => {
+it('LLVM lowering works for MIR_SINGLE_IF 2/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_SINGLE_IF({
-        booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
+      MIR_SINGLE_IF({
+        booleanExpression: MIR_VARIABLE('bbb', MIR_BOOL_TYPE),
         invertCondition: true,
         statements: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('foo', MIR_FUNCTION_TYPE([], INT)),
             functionArguments: [],
             returnType: INT,
             returnCollector: 'b1',
@@ -477,17 +477,17 @@ l2_single_if_end:`
   );
 });
 
-it('LLVM lowering works for HIR_SINGLE_IF 3/n', () => {
+it('LLVM lowering works for MIR_SINGLE_IF 3/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_FUNCTION_CALL({
-        functionExpression: HIR_NAME('foo', HIR_FUNCTION_TYPE([], INT)),
+      MIR_FUNCTION_CALL({
+        functionExpression: MIR_NAME('foo', MIR_FUNCTION_TYPE([], INT)),
         functionArguments: [],
         returnType: INT,
         returnCollector: 'b1',
       }),
-      HIR_SINGLE_IF({
-        booleanExpression: HIR_VARIABLE('bbb', HIR_BOOL_TYPE),
+      MIR_SINGLE_IF({
+        booleanExpression: MIR_VARIABLE('bbb', MIR_BOOL_TYPE),
         invertCondition: true,
         statements: [],
       }),
@@ -496,14 +496,14 @@ it('LLVM lowering works for HIR_SINGLE_IF 3/n', () => {
   );
 });
 
-it('LLVM lowering works for HIR_WHILE 1/n', () => {
+it('LLVM lowering works for MIR_WHILE 1/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_WHILE({
-        loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
+      MIR_WHILE({
+        loopVariables: [{ name: 'n', type: INT, initialValue: MIR_ZERO, loopValue: MIR_ZERO }],
         statements: [
-          HIR_FUNCTION_CALL({
-            functionExpression: HIR_NAME('foo', INT),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('foo', INT),
             functionArguments: [],
             returnType: INT,
             returnCollector: 'b2',
@@ -521,16 +521,16 @@ l1_loop_start:
   );
 });
 
-it('LLVM lowering works for HIR_WHILE 2/n', () => {
+it('LLVM lowering works for MIR_WHILE 2/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_WHILE({
-        loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
+      MIR_WHILE({
+        loopVariables: [{ name: 'n', type: INT, initialValue: MIR_ZERO, loopValue: MIR_ZERO }],
         statements: [
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_ZERO,
+          MIR_SINGLE_IF({
+            booleanExpression: MIR_ZERO,
             invertCondition: false,
-            statements: [HIR_BREAK(HIR_ZERO)],
+            statements: [MIR_BREAK(MIR_ZERO)],
           }),
         ],
         breakCollector: { name: 'v', type: INT },
@@ -549,16 +549,16 @@ l2_loop_end:
   );
 });
 
-it('LLVM lowering works for HIR_WHILE 3/n', () => {
+it('LLVM lowering works for MIR_WHILE 3/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_WHILE({
-        loopVariables: [{ name: 'n', type: INT, initialValue: HIR_ZERO, loopValue: HIR_ZERO }],
+      MIR_WHILE({
+        loopVariables: [{ name: 'n', type: INT, initialValue: MIR_ZERO, loopValue: MIR_ZERO }],
         statements: [
-          HIR_SINGLE_IF({
-            booleanExpression: HIR_ZERO,
+          MIR_SINGLE_IF({
+            booleanExpression: MIR_ZERO,
             invertCondition: true,
-            statements: [HIR_BREAK(HIR_ZERO)],
+            statements: [MIR_BREAK(MIR_ZERO)],
           }),
         ],
         breakCollector: { name: 'v', type: INT },
@@ -577,13 +577,13 @@ l2_loop_end:
   );
 });
 
-it('LLVM lowering works for HIR_STRUCT_INITIALIZATION 1/n', () => {
+it('LLVM lowering works for MIR_STRUCT_INITIALIZATION 1/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_STRUCT_INITIALIZATION({
+      MIR_STRUCT_INITIALIZATION({
         structVariableName: 's',
         type: INT,
-        expressionList: [HIR_ZERO, HIR_ZERO],
+        expressionList: [MIR_ZERO, MIR_ZERO],
       }),
     ],
     `  %_temp_0_struct_ptr_raw = call i32* @_builtin_malloc(i32 8) nounwind
@@ -595,13 +595,13 @@ it('LLVM lowering works for HIR_STRUCT_INITIALIZATION 1/n', () => {
   );
 });
 
-it('LLVM lowering works for HIR_STRUCT_INITIALIZATION 2/n', () => {
+it('LLVM lowering works for MIR_STRUCT_INITIALIZATION 2/n', () => {
   assertStatementLoweringWorks(
     [
-      HIR_STRUCT_INITIALIZATION({
+      MIR_STRUCT_INITIALIZATION({
         structVariableName: 's',
-        type: HIR_IDENTIFIER_TYPE('Foo'),
-        expressionList: [HIR_ZERO, HIR_ZERO],
+        type: MIR_IDENTIFIER_TYPE('Foo'),
+        expressionList: [MIR_ZERO, MIR_ZERO],
       }),
     ],
     `  %_temp_0_struct_ptr_raw = call i32* @_builtin_malloc(i32 8) nounwind
@@ -613,41 +613,41 @@ it('LLVM lowering works for HIR_STRUCT_INITIALIZATION 2/n', () => {
   );
 });
 
-it('LLVM lowering works for HIR_CAST with type conversion', () => {
+it('LLVM lowering works for MIR_CAST with type conversion', () => {
   assertStatementLoweringWorks(
-    [HIR_CAST({ name: 's', type: HIR_STRING_TYPE, assignedExpression: HIR_ZERO })],
+    [MIR_CAST({ name: 's', type: MIR_STRING_TYPE, assignedExpression: MIR_ZERO })],
     '  %s = inttoptr i32 0 to i32*'
   );
 });
 
-it('lowerHighIRModuleToLLVMModule works', () => {
+it('lowerMidIRModuleToLLVMModule works', () => {
   expect(
     prettyPrintLLVMModule(
-      lowerHighIRModuleToLLVMModule({
+      lowerMidIRModuleToLLVMModule({
         globalVariables: [{ name: 'ss', content: 'S' }],
         typeDefinitions: [{ identifier: 'A', mappings: [INT, INT] }],
         functions: [
           {
             name: 'test',
             parameters: [],
-            type: HIR_FUNCTION_TYPE([], INT),
+            type: MIR_FUNCTION_TYPE([], INT),
             body: [
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME('println', HIR_FUNCTION_TYPE([HIR_STRING_TYPE], INT)),
-                functionArguments: [HIR_NAME('ss', HIR_STRING_TYPE)],
+              MIR_FUNCTION_CALL({
+                functionExpression: MIR_NAME('println', MIR_FUNCTION_TYPE([MIR_STRING_TYPE], INT)),
+                functionArguments: [MIR_NAME('ss', MIR_STRING_TYPE)],
                 returnType: INT,
               }),
-              HIR_FUNCTION_CALL({
-                functionExpression: HIR_NAME(
+              MIR_FUNCTION_CALL({
+                functionExpression: MIR_NAME(
                   'stringToInt',
-                  HIR_FUNCTION_TYPE([HIR_STRING_TYPE], INT)
+                  MIR_FUNCTION_TYPE([MIR_STRING_TYPE], INT)
                 ),
-                functionArguments: [HIR_NAME('ss', HIR_STRING_TYPE)],
+                functionArguments: [MIR_NAME('ss', MIR_STRING_TYPE)],
                 returnType: INT,
                 returnCollector: 'r',
               }),
             ],
-            returnValue: HIR_ZERO,
+            returnValue: MIR_ZERO,
           },
         ],
       })

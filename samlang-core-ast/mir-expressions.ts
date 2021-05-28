@@ -1,0 +1,429 @@
+import type { IROperator } from './common-operators';
+import { MidIRType, MIR_BOOL_TYPE, MIR_INT_TYPE, prettyPrintMidIRType } from './mir-types';
+
+interface BaseMidIRExpression {
+  readonly __type__: string;
+  readonly type: MidIRType;
+}
+
+export interface MidIRIntLiteralExpression extends BaseMidIRExpression {
+  readonly __type__: 'MidIRIntLiteralExpression';
+  readonly value: number;
+}
+
+export interface MidIRNameExpression extends BaseMidIRExpression {
+  readonly __type__: 'MidIRNameExpression';
+  readonly name: string;
+}
+
+export interface MidIRVariableExpression extends BaseMidIRExpression {
+  readonly __type__: 'MidIRVariableExpression';
+  readonly name: string;
+}
+
+export type MidIRExpression =
+  | MidIRIntLiteralExpression
+  | MidIRNameExpression
+  | MidIRVariableExpression;
+
+interface BaseMidIRStatement {
+  readonly __type__: string;
+}
+
+export interface MidIRIndexAccessStatement extends BaseMidIRStatement {
+  readonly __type__: 'MidIRIndexAccessStatement';
+  readonly name: string;
+  readonly type: MidIRType;
+  readonly pointerExpression: MidIRExpression;
+  readonly index: number;
+}
+
+export interface MidIRBinaryStatement extends BaseMidIRExpression {
+  readonly __type__: 'MidIRBinaryStatement';
+  readonly name: string;
+  readonly type: MidIRType;
+  readonly operator: IROperator;
+  readonly e1: MidIRExpression;
+  readonly e2: MidIRExpression;
+}
+
+export interface MidIRFunctionCallStatement extends BaseMidIRStatement {
+  readonly __type__: 'MidIRFunctionCallStatement';
+  readonly functionExpression: MidIRExpression;
+  readonly functionArguments: readonly MidIRExpression[];
+  readonly returnType: MidIRType;
+  readonly returnCollector?: string;
+}
+
+export interface MidIRIfElseStatement extends BaseMidIRStatement {
+  readonly __type__: 'MidIRIfElseStatement';
+  readonly booleanExpression: MidIRExpression;
+  readonly s1: readonly MidIRStatement[];
+  readonly s2: readonly MidIRStatement[];
+  readonly finalAssignments: readonly {
+    readonly name: string;
+    readonly type: MidIRType;
+    readonly branch1Value: MidIRExpression;
+    readonly branch2Value: MidIRExpression;
+  }[];
+}
+
+export interface MidIRSingleIfStatement extends BaseMidIRStatement {
+  readonly __type__: 'MidIRSingleIfStatement';
+  readonly booleanExpression: MidIRExpression;
+  readonly invertCondition: boolean;
+  readonly statements: readonly MidIRStatement[];
+}
+
+export interface MidIRBreakStatement extends BaseMidIRStatement {
+  readonly __type__: 'MidIRBreakStatement';
+  readonly breakValue: MidIRExpression;
+}
+
+export interface GeneralMidIRLoopVariables {
+  readonly name: string;
+  readonly type: MidIRType;
+  readonly initialValue: MidIRExpression;
+  readonly loopValue: MidIRExpression;
+}
+
+export interface MidIRWhileStatement extends BaseMidIRStatement {
+  readonly __type__: 'MidIRWhileStatement';
+  readonly loopVariables: readonly GeneralMidIRLoopVariables[];
+  readonly statements: readonly MidIRStatement[];
+  readonly breakCollector?: { readonly name: string; readonly type: MidIRType };
+}
+
+export interface MidIRCastStatement extends BaseMidIRStatement {
+  readonly __type__: 'MidIRCastStatement';
+  readonly name: string;
+  readonly type: MidIRType;
+  readonly assignedExpression: MidIRExpression;
+}
+
+export interface MidIRStructInitializationStatement extends BaseMidIRStatement {
+  readonly __type__: 'MidIRStructInitializationStatement';
+  readonly structVariableName: string;
+  readonly type: MidIRType;
+  readonly expressionList: readonly MidIRExpression[];
+}
+
+export type MidIRStatement =
+  | MidIRBinaryStatement
+  | MidIRIndexAccessStatement
+  | MidIRFunctionCallStatement
+  | MidIRIfElseStatement
+  | MidIRSingleIfStatement
+  | MidIRBreakStatement
+  | MidIRWhileStatement
+  | MidIRCastStatement
+  | MidIRStructInitializationStatement;
+
+type ConstructorArgumentObject<E extends BaseMidIRExpression | BaseMidIRStatement> = Omit<
+  E,
+  '__type__' | 'precedence'
+>;
+
+export const MIR_FALSE: MidIRIntLiteralExpression = {
+  __type__: 'MidIRIntLiteralExpression',
+  type: MIR_BOOL_TYPE,
+  value: 0,
+};
+
+export const MIR_TRUE: MidIRIntLiteralExpression = {
+  __type__: 'MidIRIntLiteralExpression',
+  type: MIR_BOOL_TYPE,
+  value: 1,
+};
+
+export const MIR_INT = (value: number): MidIRIntLiteralExpression => ({
+  __type__: 'MidIRIntLiteralExpression',
+  type: MIR_INT_TYPE,
+  value,
+});
+
+export const MIR_ZERO: MidIRIntLiteralExpression = MIR_INT(0);
+export const MIR_ONE: MidIRIntLiteralExpression = MIR_INT(1);
+
+export const MIR_NAME = (name: string, type: MidIRType): MidIRNameExpression => ({
+  __type__: 'MidIRNameExpression',
+  type,
+  name,
+});
+
+export const MIR_VARIABLE = (name: string, type: MidIRType): MidIRVariableExpression => ({
+  __type__: 'MidIRVariableExpression',
+  type,
+  name,
+});
+
+export const MIR_BINARY = ({
+  name,
+  operator,
+  e1,
+  e2,
+}: Omit<ConstructorArgumentObject<MidIRBinaryStatement>, 'type'>): MidIRBinaryStatement => {
+  let type: MidIRType;
+  switch (operator) {
+    case '*':
+    case '/':
+    case '%':
+    case '+':
+    case '-':
+      type = MIR_INT_TYPE;
+      break;
+    case '^':
+    case '<':
+    case '>':
+    case '<=':
+    case '>=':
+    case '==':
+    case '!=':
+      type = MIR_BOOL_TYPE;
+      break;
+  }
+  if (operator === '-' && e2.__type__ === 'MidIRIntLiteralExpression') {
+    const negOfE2Constant = -e2.value;
+    if (negOfE2Constant !== 2147483648) {
+      return {
+        __type__: 'MidIRBinaryStatement',
+        name,
+        type,
+        operator: '+',
+        e1,
+        e2: MIR_INT(negOfE2Constant),
+      };
+    }
+  }
+  return { __type__: 'MidIRBinaryStatement', name, type, operator, e1, e2 };
+};
+
+export const MIR_INDEX_ACCESS = ({
+  name,
+  type,
+  pointerExpression,
+  index,
+}: ConstructorArgumentObject<MidIRIndexAccessStatement>): MidIRIndexAccessStatement => ({
+  __type__: 'MidIRIndexAccessStatement',
+  name,
+  type,
+  pointerExpression,
+  index,
+});
+
+export const MIR_FUNCTION_CALL = ({
+  functionExpression,
+  functionArguments,
+  returnType,
+  returnCollector,
+}: ConstructorArgumentObject<MidIRFunctionCallStatement>): MidIRFunctionCallStatement => ({
+  __type__: 'MidIRFunctionCallStatement',
+  functionExpression,
+  functionArguments,
+  returnType,
+  returnCollector,
+});
+
+export const MIR_IF_ELSE = ({
+  booleanExpression,
+  s1,
+  s2,
+  finalAssignments,
+}: ConstructorArgumentObject<MidIRIfElseStatement>): MidIRIfElseStatement => ({
+  __type__: 'MidIRIfElseStatement',
+  booleanExpression,
+  s1,
+  s2,
+  finalAssignments,
+});
+
+export const MIR_SINGLE_IF = ({
+  booleanExpression,
+  invertCondition,
+  statements,
+}: ConstructorArgumentObject<MidIRSingleIfStatement>): MidIRSingleIfStatement => ({
+  __type__: 'MidIRSingleIfStatement',
+  booleanExpression,
+  invertCondition,
+  statements,
+});
+
+export const MIR_BREAK = (breakValue: MidIRExpression): MidIRBreakStatement => ({
+  __type__: 'MidIRBreakStatement',
+  breakValue,
+});
+
+export const MIR_WHILE = ({
+  loopVariables,
+  statements,
+  breakCollector,
+}: ConstructorArgumentObject<MidIRWhileStatement>): MidIRWhileStatement => ({
+  __type__: 'MidIRWhileStatement',
+  loopVariables,
+  statements,
+  breakCollector,
+});
+
+export const MIR_CAST = ({
+  name,
+  type,
+  assignedExpression,
+}: ConstructorArgumentObject<MidIRCastStatement>): MidIRCastStatement => ({
+  __type__: 'MidIRCastStatement',
+  name,
+  type,
+  assignedExpression,
+});
+
+export const MIR_STRUCT_INITIALIZATION = ({
+  structVariableName,
+  type,
+  expressionList,
+}: ConstructorArgumentObject<MidIRStructInitializationStatement>): MidIRStructInitializationStatement => ({
+  __type__: 'MidIRStructInitializationStatement',
+  structVariableName,
+  type,
+  expressionList,
+});
+
+export const debugPrintMidIRExpression = (expression: MidIRExpression): string => {
+  switch (expression.__type__) {
+    case 'MidIRIntLiteralExpression':
+      return expression.value.toString();
+    case 'MidIRVariableExpression':
+      return `(${expression.name}: ${prettyPrintMidIRType(expression.type)})`;
+    case 'MidIRNameExpression':
+      return expression.name;
+  }
+};
+
+export const debugPrintMidIRStatement = (statement: MidIRStatement, startLevel = 0): string => {
+  const collector: string[] = [];
+  let level = startLevel;
+  let breakCollector: string | undefined = undefined;
+
+  const printer = (s: MidIRStatement) => {
+    switch (s.__type__) {
+      case 'MidIRIndexAccessStatement': {
+        const type = prettyPrintMidIRType(s.type);
+        const pointerExpression = debugPrintMidIRExpression(s.pointerExpression);
+        collector.push(
+          '  '.repeat(level),
+          `let ${s.name}: ${type} = ${pointerExpression}[${s.index}];\n`
+        );
+        break;
+      }
+      case 'MidIRBinaryStatement': {
+        const type = prettyPrintMidIRType(s.type);
+        const e1 = debugPrintMidIRExpression(s.e1);
+        const e2 = debugPrintMidIRExpression(s.e2);
+        collector.push('  '.repeat(level), `let ${s.name}: ${type} = ${e1} ${s.operator} ${e2};\n`);
+        break;
+      }
+      case 'MidIRFunctionCallStatement': {
+        const functionString = debugPrintMidIRExpression(s.functionExpression);
+        const argumentString = s.functionArguments.map(debugPrintMidIRExpression).join(', ');
+        const collectorString =
+          s.returnCollector != null
+            ? `let ${s.returnCollector}: ${prettyPrintMidIRType(s.returnType)} = `
+            : '';
+        collector.push(
+          '  '.repeat(level),
+          `${collectorString}${functionString}(${argumentString});\n`
+        );
+        break;
+      }
+      case 'MidIRIfElseStatement':
+        s.finalAssignments.forEach((finalAssignment) => {
+          const type = prettyPrintMidIRType(finalAssignment.type);
+          collector.push('  '.repeat(level), `let ${finalAssignment.name}: ${type};\n`);
+        });
+        collector.push(
+          '  '.repeat(level),
+          `if ${debugPrintMidIRExpression(s.booleanExpression)} {\n`
+        );
+        level += 1;
+        s.s1.forEach(printer);
+        s.finalAssignments.forEach((finalAssignment) => {
+          const v1 = debugPrintMidIRExpression(finalAssignment.branch1Value);
+          collector.push('  '.repeat(level), `${finalAssignment.name} = ${v1};\n`);
+        });
+        level -= 1;
+        collector.push('  '.repeat(level), `} else {\n`);
+        level += 1;
+        s.s2.forEach(printer);
+        s.finalAssignments.forEach((finalAssignment) => {
+          const v2 = debugPrintMidIRExpression(finalAssignment.branch2Value);
+          collector.push('  '.repeat(level), `${finalAssignment.name} = ${v2};\n`);
+        });
+        level -= 1;
+        collector.push('  '.repeat(level), `}\n`);
+        break;
+      case 'MidIRSingleIfStatement':
+        collector.push(
+          '  '.repeat(level),
+          `if ${s.invertCondition ? '!' : ''}${debugPrintMidIRExpression(s.booleanExpression)} {\n`
+        );
+        level += 1;
+        s.statements.forEach(printer);
+        level -= 1;
+        collector.push('  '.repeat(level), `}\n`);
+        break;
+      case 'MidIRBreakStatement':
+        collector.push(
+          '  '.repeat(level),
+          `${breakCollector} = ${debugPrintMidIRExpression(s.breakValue)};\n`
+        );
+        collector.push('  '.repeat(level), 'break;\n');
+        break;
+      case 'MidIRWhileStatement': {
+        s.loopVariables.forEach((v) => {
+          const type = prettyPrintMidIRType(v.type);
+          collector.push(
+            '  '.repeat(level),
+            `let ${v.name}: ${type} = ${debugPrintMidIRExpression(v.initialValue)};\n`
+          );
+        });
+        const previousBreakCollector = breakCollector;
+        breakCollector = s.breakCollector?.name;
+        if (s.breakCollector != null) {
+          const { name, type } = s.breakCollector;
+          collector.push('  '.repeat(level), `let ${name}: ${prettyPrintMidIRType(type)};\n`);
+        }
+        collector.push('  '.repeat(level), `while (true) {\n`);
+        level += 1;
+        s.statements.forEach(printer);
+        s.loopVariables.forEach((v) => {
+          collector.push(
+            '  '.repeat(level),
+            `${v.name} = ${debugPrintMidIRExpression(v.loopValue)};\n`
+          );
+        });
+        level -= 1;
+        collector.push('  '.repeat(level), '}\n');
+        breakCollector = previousBreakCollector;
+        break;
+      }
+      case 'MidIRCastStatement':
+        collector.push(
+          '  '.repeat(level),
+          `let ${s.name}: ${prettyPrintMidIRType(s.type)} = ${debugPrintMidIRExpression(
+            s.assignedExpression
+          )};\n`
+        );
+        break;
+      case 'MidIRStructInitializationStatement': {
+        const expressionString = s.expressionList.map(debugPrintMidIRExpression).join(', ');
+        collector.push(
+          '  '.repeat(level),
+          `let ${s.structVariableName}: ${prettyPrintMidIRType(s.type)} = [${expressionString}];\n`
+        );
+        break;
+      }
+    }
+  };
+
+  printer(statement);
+
+  return collector.join('').trimEnd();
+};

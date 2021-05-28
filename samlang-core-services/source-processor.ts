@@ -5,8 +5,8 @@ import { typeCheckSources, GlobalTypingContext } from 'samlang-core-checker';
 // eslint-disable-next-line import/no-internal-modules
 import type { ModuleTypingContext } from 'samlang-core-checker/typing-context';
 import {
-  compileSamlangSourcesToHighIRSources,
-  lowerHighIRModuleToLLVMModule,
+  compileSamlangSourcesToMidIRSources,
+  lowerMidIRModuleToLLVMModule,
 } from 'samlang-core-compiler';
 import { CompileTimeError, createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
@@ -69,10 +69,10 @@ export const lowerSourcesToLLVMModules = (
   builtinModuleTypes: ModuleTypingContext
 ): Sources<LLVMModule> =>
   hashMapOf(
-    ...compileSamlangSourcesToHighIRSources(sources, builtinModuleTypes)
+    ...compileSamlangSourcesToMidIRSources(sources, builtinModuleTypes)
       .entries()
       .map(
-        ([moduleReference, highIRModule]) =>
-          [moduleReference, lowerHighIRModuleToLLVMModule(highIRModule)] as const
+        ([moduleReference, midIRModule]) =>
+          [moduleReference, lowerMidIRModuleToLLVMModule(midIRModule)] as const
       )
   );
