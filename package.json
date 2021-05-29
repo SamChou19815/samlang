@@ -4,8 +4,7 @@
     "jest-esbuild-transformer",
     "samlang-cli",
     "samlang-core-*",
-    "samlang-demo",
-    "samlang-dummy"
+    "samlang-demo"
   ],
   "scripts": {
     "lint": "eslint . --cache",

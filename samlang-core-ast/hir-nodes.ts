@@ -49,3 +49,21 @@ export const prettyPrintHighIRType = (type: HighIRType): string => {
         .join(', ')}) -> ${prettyPrintHighIRType(type.returnType)}`;
   }
 };
+
+export interface HighIRTypeDefinition {
+  readonly identifier: string;
+  readonly type: 'object' | 'variant';
+  readonly typeParameters: readonly string[];
+  readonly mappings: readonly HighIRType[];
+}
+
+export const prettyPrintHighIRTypeDefinition = ({
+  identifier,
+  type,
+  typeParameters,
+  mappings,
+}: HighIRTypeDefinition): string => {
+  const idPart =
+    typeParameters.length === 0 ? identifier : `${identifier}<${typeParameters.join(', ')}>`;
+  return `${type} type ${idPart} = [${mappings.map(prettyPrintHighIRType).join(', ')}]`;
+};
