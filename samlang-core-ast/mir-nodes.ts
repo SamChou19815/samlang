@@ -189,7 +189,7 @@ export type MidIRStatement =
 
 type ConstructorArgumentObject<E extends BaseMidIRExpression | BaseMidIRStatement> = Omit<
   E,
-  '__type__' | 'precedence'
+  '__type__'
 >;
 
 export const MIR_FALSE: MidIRIntLiteralExpression = {
