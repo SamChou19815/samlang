@@ -558,15 +558,13 @@ class MidIRExpressionLoweringManager {
           functionTypeWithoutContext.returnType
         );
 
-        const s2FunctionExpression = this.lowerWithPotentialCast(
-          functionTypeWithContext,
-          MIR_VARIABLE(functionTempRaw, MIR_ANY_TYPE),
-          loweredStatements
-        );
-
         functionReturnCollectorType = functionTypeWithoutContext.returnType;
         functionCall = MIR_FUNCTION_CALL({
-          functionExpression: s2FunctionExpression,
+          functionExpression: this.lowerWithPotentialCast(
+            functionTypeWithContext,
+            MIR_VARIABLE(functionTempRaw, MIR_ANY_TYPE),
+            loweredStatements
+          ),
           functionArguments: [MIR_VARIABLE(contextTemp, MIR_ANY_TYPE), ...loweredFunctionArguments],
           returnType: functionTypeWithoutContext.returnType,
           returnCollector: isVoidReturn ? undefined : returnCollectorName,
@@ -1030,10 +1028,9 @@ class MidIRExpressionLoweringManager {
             );
             break;
           }
-          case 'VariablePattern': {
+          case 'VariablePattern':
             this.varibleContext.bind(pattern.name, loweredAssignedExpression);
             break;
-          }
           case 'WildCardPattern':
             break;
         }
@@ -1075,9 +1072,7 @@ const lowerSamlangExpression = (
     typeSynthesizer,
     stringManager
   );
-  if (expression.__type__ === 'StatementBlockExpression') {
-    manager.depth = -1;
-  }
+  if (expression.__type__ === 'StatementBlockExpression') manager.depth = -1;
   const result = manager.lower(expression);
   return { ...result, syntheticFunctions: manager.syntheticFunctions };
 };
