@@ -1,5 +1,5 @@
-import lowerSamlangExpression from '../mir-expression-lowering';
 import HighIRStringManager from '../hir-string-manager';
+import lowerSamlangExpression from '../mir-expression-lowering';
 import MidIRTypeSynthesizer from '../mir-type-synthesizer';
 
 import {
