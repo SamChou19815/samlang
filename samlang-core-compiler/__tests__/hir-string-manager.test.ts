@@ -1,7 +1,7 @@
-import MidIRStringManager from '../mir-string-manager';
+import HighIRStringManager from '../hir-string-manager';
 
 it('allocate string global variable test', () => {
-  const allocator = new MidIRStringManager();
+  const allocator = new HighIRStringManager();
   expect(allocator.allocateStringArrayGlobalVariable('foobar')).toEqual({
     name: 'GLOBAL_STRING_0',
     content: 'foobar',

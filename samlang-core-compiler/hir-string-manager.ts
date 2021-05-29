@@ -1,6 +1,6 @@
 import type { GlobalVariable } from 'samlang-core-ast/common-nodes';
 
-export default class MidIRStringManager {
+export default class HighIRStringManager {
   private nextGlobalVariableId = 0;
 
   private globalVariableReferenceMap: Map<string, GlobalVariable> = new Map();

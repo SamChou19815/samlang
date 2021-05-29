@@ -1,5 +1,5 @@
+import HighIRStringManager from './hir-string-manager';
 import lowerSamlangExpression from './mir-expression-lowering';
-import MidIRStringManager from './mir-string-manager';
 import MidIRTypeSynthesizer from './mir-type-synthesizer';
 import lowerSamlangType from './mir-types-lowering';
 
@@ -71,7 +71,7 @@ const compileFunction = (
   functionTypeMapping: Readonly<Record<string, MidIRFunctionType>>,
   classTypeParameters: readonly string[],
   typeSynthesizer: MidIRTypeSynthesizer,
-  stringManager: MidIRStringManager,
+  stringManager: HighIRStringManager,
   classMember: ClassMemberDefinition
 ) => {
   const encodedName = encodeFunctionNameGlobally(moduleReference, className, classMember.name);
@@ -155,7 +155,7 @@ const compileSamlangSourcesToMidIRSources = (
   const compiledTypeDefinitions: MidIRTypeDefinition[] = [];
   const compiledFunctionsWithAddedDummyContext: MidIRFunction[] = [];
   const compiledFunctions: MidIRFunction[] = [];
-  const stringManager = new MidIRStringManager();
+  const stringManager = new HighIRStringManager();
   const functionTypeMapping: Record<string, MidIRFunctionType> = {};
   const typeSynthesizer = new MidIRTypeSynthesizer();
   Object.entries(builtinModuleTypes).forEach(([builtinClass, builtinClassContext]) => {

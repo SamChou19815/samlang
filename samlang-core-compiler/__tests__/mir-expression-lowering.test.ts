@@ -1,5 +1,5 @@
+import HighIRStringManager from '../hir-string-manager';
 import lowerSamlangExpression from '../mir-expression-lowering';
-import MidIRStringManager from '../mir-string-manager';
 import MidIRTypeSynthesizer from '../mir-type-synthesizer';
 
 import {
@@ -58,7 +58,7 @@ const expectCorrectlyLowered = (
   expectedString: string
 ): void => {
   const typeSynthesizer = new MidIRTypeSynthesizer();
-  const stringManager = new MidIRStringManager();
+  const stringManager = new HighIRStringManager();
   const { statements, expression, syntheticFunctions } = lowerSamlangExpression(
     ModuleReference.DUMMY,
     'ENCODED_FUNCTION_NAME',

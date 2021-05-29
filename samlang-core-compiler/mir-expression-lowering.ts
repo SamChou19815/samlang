@@ -1,4 +1,4 @@
-import type MidIRStringManager from './mir-string-manager';
+import type HighIRStringManager from './hir-string-manager';
 import type MidIRTypeSynthesizer from './mir-type-synthesizer';
 import lowerSamlangType from './mir-types-lowering';
 
@@ -103,7 +103,7 @@ class MidIRExpressionLoweringManager {
     private readonly functionTypeMapping: Readonly<Record<string, MidIRFunctionType>>,
     private readonly typeParameters: ReadonlySet<string>,
     private readonly typeSynthesizer: MidIRTypeSynthesizer,
-    private readonly stringManager: MidIRStringManager
+    private readonly stringManager: HighIRStringManager
   ) {}
 
   private allocateTemporaryVariable(): string {
@@ -1060,7 +1060,7 @@ const lowerSamlangExpression = (
   functionTypeMapping: Readonly<Record<string, MidIRFunctionType>>,
   typeParameters: ReadonlySet<string>,
   typeSynthesizer: MidIRTypeSynthesizer,
-  stringManager: MidIRStringManager,
+  stringManager: HighIRStringManager,
   expression: SamlangExpression
 ): MidIRExpressionLoweringResultWithSyntheticFunctions => {
   const manager = new MidIRExpressionLoweringManager(
