@@ -129,7 +129,7 @@ it('ClassMember lowering works.', () => {
   expectCorrectlyLowered(
     EXPRESSION_CLASS_MEMBER({
       range: Range.DUMMY,
-      type: unitType,
+      type: functionType([intType], intType),
       associatedComments: [],
       typeArguments: [],
       moduleReference: ModuleReference.DUMMY,
@@ -140,8 +140,9 @@ it('ClassMember lowering works.', () => {
       memberNameRange: Range.DUMMY,
     }),
     `type _SYNTHETIC_ID_TYPE_0 = (any, any);
-let _t1: any = 0;
-let _t0: _SYNTHETIC_ID_TYPE_0 = [_module___DUMMY___class_A_function_b, (_t1: any)];
+let _t1: any = _module___DUMMY___class_A_function_b_with_context;
+let _t2: any = 1;
+let _t0: _SYNTHETIC_ID_TYPE_0 = [(_t1: any), (_t2: any)];
 return (_t0: _SYNTHETIC_ID_TYPE_0);`
   );
 });
@@ -325,18 +326,8 @@ it('FunctionCall family lowering works 3/n.', () => {
     `type _SYNTHETIC_ID_TYPE_0 = (any, any);
 let _t1: any = (closure: _SYNTHETIC_ID_TYPE_0)[0];
 let _t2: any = (closure: _SYNTHETIC_ID_TYPE_0)[1];
-let _t6: int = (_t2: any);
-let _t5: bool = (_t6: int) == 0;
-let _t0: int;
-if (_t5: bool) {
-  let _t7: (__DUMMY___Dummy, __DUMMY___Dummy) -> int = (_t1: any);
-  let _t3: int = (_t7: (__DUMMY___Dummy, __DUMMY___Dummy) -> int)((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-  _t0 = (_t3: int);
-} else {
-  let _t8: (any, __DUMMY___Dummy, __DUMMY___Dummy) -> int = (_t1: any);
-  let _t4: int = (_t8: (any, __DUMMY___Dummy, __DUMMY___Dummy) -> int)((_t2: any), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-  _t0 = (_t4: int);
-}
+let _t3: (any, __DUMMY___Dummy, __DUMMY___Dummy) -> int = (_t1: any);
+let _t0: int = (_t3: (any, __DUMMY___Dummy, __DUMMY___Dummy) -> int)((_t2: any), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: int);`
   );
 });
@@ -358,15 +349,8 @@ it('FunctionCall family lowering works 4/n.', () => {
     `type _SYNTHETIC_ID_TYPE_0 = (any, any);
 let _t1: any = (closure: _SYNTHETIC_ID_TYPE_0)[0];
 let _t2: any = (closure: _SYNTHETIC_ID_TYPE_0)[1];
-let _t6: int = (_t2: any);
-let _t5: bool = (_t6: int) == 0;
-if (_t5: bool) {
-  let _t7: (__DUMMY___Dummy, __DUMMY___Dummy) -> int = (_t1: any);
-  (_t7: (__DUMMY___Dummy, __DUMMY___Dummy) -> int)((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-} else {
-  let _t8: (any, __DUMMY___Dummy, __DUMMY___Dummy) -> int = (_t1: any);
-  (_t8: (any, __DUMMY___Dummy, __DUMMY___Dummy) -> int)((_t2: any), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-}
+let _t3: (any, __DUMMY___Dummy, __DUMMY___Dummy) -> int = (_t1: any);
+(_t3: (any, __DUMMY___Dummy, __DUMMY___Dummy) -> int)((_t2: any), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return 0;`
   );
 });
@@ -441,20 +425,10 @@ it('FunctionCall family lowering works 7/n.', () => {
 let _t1: __DUMMY___Dummy = 0;
 let _t2: any = (closure: _SYNTHETIC_ID_TYPE_0)[0];
 let _t3: any = (closure: _SYNTHETIC_ID_TYPE_0)[1];
-let _t7: int = (_t3: any);
-let _t6: bool = (_t7: int) == 0;
-let _t0: __DUMMY___Dummy;
-if (_t6: bool) {
-  let _t8: (__DUMMY___Dummy) -> __DUMMY___Dummy = (_t2: any);
-  let _t4: __DUMMY___Dummy = (_t8: (__DUMMY___Dummy) -> __DUMMY___Dummy)((_t1: __DUMMY___Dummy));
-  _t0 = (_t4: __DUMMY___Dummy);
-} else {
-  let _t9: (any, __DUMMY___Dummy) -> __DUMMY___Dummy = (_t2: any);
-  let _t5: __DUMMY___Dummy = (_t9: (any, __DUMMY___Dummy) -> __DUMMY___Dummy)((_t3: any), (_t1: __DUMMY___Dummy));
-  _t0 = (_t5: __DUMMY___Dummy);
-}
-let _t10: int = (_t0: __DUMMY___Dummy);
-return (_t10: int);`
+let _t4: (any, __DUMMY___Dummy) -> __DUMMY___Dummy = (_t2: any);
+let _t0: __DUMMY___Dummy = (_t4: (any, __DUMMY___Dummy) -> __DUMMY___Dummy)((_t3: any), (_t1: __DUMMY___Dummy));
+let _t5: int = (_t0: __DUMMY___Dummy);
+return (_t5: int);`
   );
 });
 
