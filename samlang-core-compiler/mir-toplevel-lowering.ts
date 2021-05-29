@@ -19,6 +19,7 @@ import {
   MIR_IDENTIFIER_TYPE,
   MidIRType,
   MidIRFunctionType,
+  MIR_VARIABLE,
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRTypeDefinition, MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-nodes';
 import type {
@@ -33,7 +34,7 @@ import {
   optimizeMidIRModuleByUnusedNameEliminationAndTailRecursionRewrite,
   optimizeMidIRModuleAccordingToConfiguration,
 } from 'samlang-core-optimization';
-import { checkNotNull, HashMap, hashMapOf } from 'samlang-core-utils';
+import { checkNotNull, HashMap, hashMapOf, zip } from 'samlang-core-utils';
 
 const compileTypeDefinition = (
   moduleReference: ModuleReference,
@@ -72,7 +73,7 @@ const compileFunction = (
   typeSynthesizer: MidIRTypeSynthesizer,
   stringManager: MidIRStringManager,
   classMember: ClassMemberDefinition
-): readonly MidIRFunction[] => {
+) => {
   const encodedName = encodeFunctionNameGlobally(moduleReference, className, classMember.name);
   const typeParametersSet = new Set(
     classMember.isMethod
@@ -92,28 +93,58 @@ const compileFunction = (
   const parameters = classMember.parameters.map(({ name }) => name);
   const parametersWithThis = classMember.isMethod ? ['_this', ...parameters] : parameters;
   const statements = bodyLoweringResult.statements;
-  return [
-    ...bodyLoweringResult.syntheticFunctions,
-    {
-      name: encodedName,
-      parameters: parametersWithThis,
+  const compiledFunctions: MidIRFunction[] = [];
+  compiledFunctions.push(...bodyLoweringResult.syntheticFunctions);
+  const mainFunctionParameterTypes = classMember.parameters.map(({ type }) =>
+    lowerSamlangType(type, typeParametersSet, typeSynthesizer)
+  );
+  const mainFunctionReturnType = lowerSamlangType(
+    classMember.type.returnType,
+    typeParametersSet,
+    typeSynthesizer
+  );
+  const mainFunction = {
+    name: encodedName,
+    parameters: parametersWithThis,
+    type: MIR_FUNCTION_TYPE(
+      classMember.isMethod
+        ? [
+            MIR_IDENTIFIER_TYPE(`${moduleReference.parts.join('_')}_${className}`),
+            ...mainFunctionParameterTypes,
+          ]
+        : mainFunctionParameterTypes,
+      mainFunctionReturnType
+    ),
+    body: statements,
+    returnValue: bodyLoweringResult.expression,
+  };
+  compiledFunctions.push(mainFunction);
+  if (!classMember.isMethod) {
+    const functionWithContext: MidIRFunction = {
+      name: `${encodedName}_with_context`,
+      parameters: ['_context', ...parameters],
       type: MIR_FUNCTION_TYPE(
-        classMember.isMethod
-          ? [
-              MIR_IDENTIFIER_TYPE(`${moduleReference.parts.join('_')}_${className}`),
-              ...classMember.parameters.map(({ type }) =>
-                lowerSamlangType(type, typeParametersSet, typeSynthesizer)
-              ),
-            ]
-          : classMember.parameters.map(({ type }) =>
-              lowerSamlangType(type, typeParametersSet, typeSynthesizer)
-            ),
-        lowerSamlangType(classMember.type.returnType, typeParametersSet, typeSynthesizer)
+        [MIR_ANY_TYPE, ...mainFunctionParameterTypes],
+        mainFunctionReturnType
       ),
-      body: statements,
-      returnValue: bodyLoweringResult.expression,
-    },
-  ];
+      body: [
+        MIR_FUNCTION_CALL({
+          functionExpression: MIR_NAME(
+            encodedName,
+            MIR_FUNCTION_TYPE(mainFunctionParameterTypes, mainFunctionReturnType)
+          ),
+          functionArguments: zip(parameters, mainFunctionParameterTypes).map(([name, type]) =>
+            MIR_VARIABLE(name, type)
+          ),
+          returnType: mainFunctionReturnType,
+          returnCollector: '_ret',
+        }),
+      ],
+      returnValue: MIR_VARIABLE('_ret', mainFunctionReturnType),
+    };
+    return [compiledFunctions, functionWithContext] as const;
+  }
+  return [compiledFunctions, null] as const;
 };
 
 const compileSamlangSourcesToMidIRSources = (
@@ -122,6 +153,7 @@ const compileSamlangSourcesToMidIRSources = (
   optimizationConfiguration?: OptimizationConfiguration
 ): Sources<MidIRModule> => {
   const compiledTypeDefinitions: MidIRTypeDefinition[] = [];
+  const compiledFunctionsWithAddedDummyContext: MidIRFunction[] = [];
   const compiledFunctions: MidIRFunction[] = [];
   const stringManager = new MidIRStringManager();
   const functionTypeMapping: Record<string, MidIRFunctionType> = {};
@@ -174,10 +206,11 @@ const compileSamlangSourcesToMidIRSources = (
   const typeDefinitionMapping = Object.fromEntries(
     compiledTypeDefinitions.map((it) => [it.identifier, it.mappings])
   );
+
   sources.forEach((samlangModule, moduleReference) => {
     samlangModule.classes.map(({ name: className, typeParameters, members }) => {
-      members.forEach((member) =>
-        compileFunction(
+      members.forEach((member) => {
+        const [compiledFunctionsToAdd, withContext] = compileFunction(
           moduleReference,
           className,
           typeDefinitionMapping,
@@ -186,8 +219,10 @@ const compileSamlangSourcesToMidIRSources = (
           typeSynthesizer,
           stringManager,
           member
-        ).forEach((it) => compiledFunctions.push(it))
-      );
+        );
+        if (withContext != null) compiledFunctionsWithAddedDummyContext.push(withContext);
+        compiledFunctionsToAdd.forEach((it) => compiledFunctions.push(it));
+      });
     });
   });
 
@@ -200,6 +235,8 @@ const compileSamlangSourcesToMidIRSources = (
       return;
     }
     const allFunctions = [
+      // Put these functions at first so they can always be referenced as global values.
+      ...compiledFunctionsWithAddedDummyContext,
       ...compiledFunctions,
       {
         name: ENCODED_COMPILED_PROGRAM_MAIN,

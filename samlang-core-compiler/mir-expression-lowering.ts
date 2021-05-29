@@ -236,21 +236,28 @@ class MidIRExpressionLoweringManager {
 
   private lowerClassMember(expression: ClassMemberExpression): MidIRExpressionLoweringResult {
     const structVariableName = this.allocateTemporaryVariable();
+    const sourceLevelFunctionType = expression.type as FunctionType;
+    const withContextIRFunctionType = MIR_FUNCTION_TYPE(
+      [MIR_ANY_TYPE, ...sourceLevelFunctionType.argumentTypes.map((it) => this.lowerType(it))],
+      this.lowerType(sourceLevelFunctionType.returnType)
+    );
     const statements: MidIRStatement[] = [];
+    const encodedOriginalFunctionName = encodeFunctionNameGlobally(
+      expression.moduleReference,
+      expression.className,
+      expression.memberName
+    );
     statements.push(
       MIR_STRUCT_INITIALIZATION({
         structVariableName,
         type: this.closureType,
         expressionList: [
-          MIR_NAME(
-            encodeFunctionNameGlobally(
-              expression.moduleReference,
-              expression.className,
-              expression.memberName
-            ),
-            this.lowerType(expression.type)
+          this.lowerWithPotentialCast(
+            MIR_ANY_TYPE,
+            MIR_NAME(`${encodedOriginalFunctionName}_with_context`, withContextIRFunctionType),
+            statements
           ),
-          this.lowerWithPotentialCast(MIR_ANY_TYPE, MIR_ZERO, statements),
+          this.lowerWithPotentialCast(MIR_ANY_TYPE, MIR_ONE, statements),
         ],
       })
     );
@@ -505,8 +512,7 @@ class MidIRExpressionLoweringManager {
          *    [1]: context
          * }
          *
-         * If context is NULL (0), then it will directly call the function like functionExpr(...restArguments).
-         * If context is NONNULL, then it will call functionExpr(context, ...restArguments);
+         * It will call functionExpr(context, ...restArguments);
          */
         const sourceLevelFunctionTypeWithoutContext = functionExpression.type as FunctionType;
         const functionTypeWithoutContext = MIR_FUNCTION_TYPE(
@@ -532,9 +538,6 @@ class MidIRExpressionLoweringManager {
         });
         const functionTempRaw = this.allocateTemporaryVariable();
         const contextTemp = this.allocateTemporaryVariable();
-        const resultTempB1 = this.allocateTemporaryVariable();
-        const resultTempB2 = this.allocateTemporaryVariable();
-        const comparisonTemp = this.allocateTemporaryVariable();
 
         loweredStatements.push(
           MIR_INDEX_ACCESS({
@@ -550,77 +553,27 @@ class MidIRExpressionLoweringManager {
             index: 1,
           })
         );
-        loweredStatements.push(
-          MIR_BINARY({
-            name: comparisonTemp,
-            operator: '==',
-            e1: this.lowerWithPotentialCast(
-              MIR_INT_TYPE,
-              MIR_VARIABLE(contextTemp, MIR_ANY_TYPE),
-              loweredStatements
-            ),
-            e2: MIR_ZERO,
-          })
-        );
-        const booleanExpression = MIR_VARIABLE(comparisonTemp, MIR_BOOL_TYPE);
         const functionTypeWithContext = MIR_FUNCTION_TYPE(
           [MIR_ANY_TYPE, ...functionTypeWithoutContext.argumentTypes],
           functionTypeWithoutContext.returnType
         );
 
-        const s1: MidIRStatement[] = [];
-        const s1FunctionExpression = this.lowerWithPotentialCast(
-          functionTypeWithoutContext,
-          MIR_VARIABLE(functionTempRaw, MIR_ANY_TYPE),
-          s1
-        );
-        s1.push(
-          MIR_FUNCTION_CALL({
-            functionExpression: s1FunctionExpression,
-            functionArguments: loweredFunctionArguments,
-            returnType: functionTypeWithoutContext.returnType,
-            returnCollector: isVoidReturn ? undefined : resultTempB1,
-          })
-        );
-        const s2: MidIRStatement[] = [];
         const s2FunctionExpression = this.lowerWithPotentialCast(
           functionTypeWithContext,
           MIR_VARIABLE(functionTempRaw, MIR_ANY_TYPE),
-          s2
+          loweredStatements
         );
-        s2.push(
-          MIR_FUNCTION_CALL({
-            functionExpression: s2FunctionExpression,
-            functionArguments: [
-              MIR_VARIABLE(contextTemp, MIR_ANY_TYPE),
-              ...loweredFunctionArguments,
-            ],
-            returnType: functionTypeWithoutContext.returnType,
-            returnCollector: isVoidReturn ? undefined : resultTempB2,
-          })
-        );
-        const finalAssignments = isVoidReturn
-          ? []
-          : [
-              {
-                name: returnCollectorName,
-                type: functionTypeWithoutContext.returnType,
-                branch1Value: MIR_VARIABLE(resultTempB1, functionTypeWithoutContext.returnType),
-                branch2Value: MIR_VARIABLE(resultTempB2, functionTypeWithoutContext.returnType),
-              },
-            ];
 
         functionReturnCollectorType = functionTypeWithoutContext.returnType;
-        functionCall = MIR_IF_ELSE({
-          booleanExpression,
-          s1,
-          s2,
-          finalAssignments,
+        functionCall = MIR_FUNCTION_CALL({
+          functionExpression: s2FunctionExpression,
+          functionArguments: [MIR_VARIABLE(contextTemp, MIR_ANY_TYPE), ...loweredFunctionArguments],
+          returnType: functionTypeWithoutContext.returnType,
+          returnCollector: isVoidReturn ? undefined : returnCollectorName,
         });
         break;
       }
     }
-    loweredReturnType;
 
     loweredStatements.push(functionCall);
     return {

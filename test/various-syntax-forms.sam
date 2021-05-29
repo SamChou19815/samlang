@@ -69,7 +69,6 @@ class Main {
   }
 
   function lambdaTest(a: int): string = {
-    val b: Option<string> = ((Option.none()).toSome(3)).map(Main.lambdaTest);
     val c: Option<string> = ((Option.none()).toSome(3)).map((x: int) -> "empty");
     "hello world"
   }
@@ -77,6 +76,8 @@ class Main {
   function main(): unit = {
     val _: unit = Main.literalsAndSimpleExpressions();
     val _: unit = Main.variables(3, "sss");
+    val c = Main.lambdaTest;
+    val _ = c(3);
     val v: int = Main.methodAndFunctionReference();
     Builtins.println(Builtins.intToString(v))
   }
