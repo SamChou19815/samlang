@@ -135,6 +135,7 @@ it('debugPrintHighIRModule works', () => {
         {
           name: 'Bar',
           parameters: ['f'],
+          typeParameters: [],
           type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
           body: [
             HIR_INDEX_ACCESS({
@@ -153,6 +154,26 @@ it('debugPrintHighIRModule works', () => {
 object type Foo = [int, bool]
 function Bar(f: int): int {
   let f: int = (big: FooBar)[0];
+  return 0;
+}
+`);
+
+  expect(
+    debugPrintHighIRModule({
+      globalVariables: [],
+      typeDefinitions: [],
+      functions: [
+        {
+          name: 'Bar',
+          parameters: ['f'],
+          typeParameters: ['A'],
+          type: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+          body: [],
+          returnValue: HIR_ZERO,
+        },
+      ],
+    })
+  ).toBe(`function Bar<A>(f: int): int {
   return 0;
 }
 `);
