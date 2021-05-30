@@ -366,6 +366,7 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
 export interface HighIRFunction {
   readonly name: string;
   readonly parameters: readonly string[];
+  readonly typeParameters: readonly string[];
   readonly type: HighIRFunctionType;
   readonly body: readonly HighIRStatement[];
   readonly returnValue: HighIRExpression;
@@ -380,6 +381,7 @@ export interface HighIRModule {
 export const debugPrintHighIRFunction = ({
   name,
   parameters,
+  typeParameters,
   type: { argumentTypes, returnType },
   body: bodyStatements,
   returnValue,
@@ -387,7 +389,10 @@ export const debugPrintHighIRFunction = ({
   const typedParameters = zip(parameters, argumentTypes)
     .map(([parameter, parameterType]) => `${parameter}: ${prettyPrintHighIRType(parameterType)}`)
     .join(', ');
-  const header = `function ${name}(${typedParameters}): ${prettyPrintHighIRType(returnType)} {`;
+  const typeParameterString = typeParameters.length === 0 ? '' : `<${typeParameters.join(', ')}>`;
+  const header = `function ${name}${typeParameterString}(${typedParameters}): ${prettyPrintHighIRType(
+    returnType
+  )} {`;
   const body = [
     ...bodyStatements.map((it) => debugPrintHighIRStatement(it, 1)),
     `  return ${debugPrintHighIRExpression(returnValue)};`,
