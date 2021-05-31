@@ -46,6 +46,29 @@ export class HighIRTypeSynthesizer {
   }
 }
 
+export const collectUsedGenericTypes = (
+  highIRType: HighIRType,
+  genericTypes: ReadonlySet<string>
+): ReadonlySet<string> => {
+  const collector = new Set<string>();
+  const visit = (t: HighIRType) => {
+    switch (t.__type__) {
+      case 'PrimitiveType':
+        return;
+      case 'IdentifierType':
+        if (genericTypes.has(t.name) && t.typeArguments.length === 0) collector.add(t.name);
+        t.typeArguments.forEach(visit);
+        return;
+      case 'FunctionType':
+        t.argumentTypes.forEach(visit);
+        visit(t.returnType);
+        return;
+    }
+  };
+  visit(highIRType);
+  return collector;
+};
+
 export const lowerSamlangType = (
   type: Type,
   genericTypes: ReadonlySet<string>,
@@ -64,35 +87,38 @@ export const lowerSamlangType = (
           return HIR_STRING_TYPE;
       }
     case 'IdentifierType': {
+      if (genericTypes.has(type.identifier)) return HIR_IDENTIFIER_TYPE(type.identifier, []);
       return HIR_IDENTIFIER_TYPE(
         `${type.moduleReference.parts.join('_')}_${type.identifier}`,
         type.typeArguments.map((it) => lowerSamlangType(it, genericTypes, typeSynthesizer))
       );
     }
     case 'TupleType': {
-      const typeParameters = Array.from(genericTypes);
-      const typeDefinition = typeSynthesizer.synthesizeTupleType(
-        type.mappings.map((it) => lowerSamlangType(it, genericTypes, typeSynthesizer)),
-        typeParameters
+      const typeMappings = type.mappings.map((it) =>
+        lowerSamlangType(it, genericTypes, typeSynthesizer)
       );
+      const typeParameters = Array.from(
+        collectUsedGenericTypes(HIR_FUNCTION_TYPE(typeMappings, HIR_BOOL_TYPE), genericTypes)
+      );
+      const typeDefinition = typeSynthesizer.synthesizeTupleType(typeMappings, typeParameters);
       return HIR_IDENTIFIER_TYPE(
         typeDefinition.identifier,
         typeParameters.map((name) => HIR_IDENTIFIER_TYPE(name, []))
       );
     }
     case 'FunctionType': {
-      const typeParameters = Array.from(genericTypes);
+      const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
+        [...type.argumentTypes.map((it) => lowerSamlangType(it, genericTypes, typeSynthesizer))],
+        lowerSamlangType(type.returnType, genericTypes, typeSynthesizer)
+      );
+      const usedGenericTypes = collectUsedGenericTypes(hirFunctionTypeWithoutContext, genericTypes);
+      const typeParameters = Array.from(usedGenericTypes);
       const contextGenericType = HIR_IDENTIFIER_TYPE('_Context', []);
       const typeDefinition = typeSynthesizer.synthesizeTupleType(
         [
           HIR_FUNCTION_TYPE(
-            [
-              contextGenericType,
-              ...type.argumentTypes.map((it) =>
-                lowerSamlangType(it, genericTypes, typeSynthesizer)
-              ),
-            ],
-            lowerSamlangType(type.returnType, genericTypes, typeSynthesizer)
+            [contextGenericType, ...hirFunctionTypeWithoutContext.argumentTypes],
+            hirFunctionTypeWithoutContext.returnType
           ),
           contextGenericType,
         ],
