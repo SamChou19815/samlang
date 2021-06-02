@@ -1,7 +1,8 @@
-import type { Type } from 'samlang-core-ast/common-nodes';
+import type { Type, FunctionType } from 'samlang-core-ast/common-nodes';
 import {
   prettyPrintHighIRType,
   HighIRType,
+  HighIRFunctionType,
   HighIRTypeDefinition,
   HIR_BOOL_TYPE,
   HIR_INT_TYPE,
@@ -69,6 +70,8 @@ export const collectUsedGenericTypes = (
   return collector;
 };
 
+const SYNTHETIC_CONTEXT_TYPE_PARAMETER = '_Context';
+
 export const lowerSamlangType = (
   type: Type,
   genericTypes: ReadonlySet<string>,
@@ -113,7 +116,7 @@ export const lowerSamlangType = (
       );
       const usedGenericTypes = collectUsedGenericTypes(hirFunctionTypeWithoutContext, genericTypes);
       const typeParameters = Array.from(usedGenericTypes);
-      const contextGenericType = HIR_IDENTIFIER_TYPE('_Context', []);
+      const contextGenericType = HIR_IDENTIFIER_TYPE(SYNTHETIC_CONTEXT_TYPE_PARAMETER, []);
       const typeDefinition = typeSynthesizer.synthesizeTupleType(
         [
           HIR_FUNCTION_TYPE(
@@ -122,7 +125,7 @@ export const lowerSamlangType = (
           ),
           contextGenericType,
         ],
-        [...typeParameters, '_Context']
+        [...typeParameters, SYNTHETIC_CONTEXT_TYPE_PARAMETER]
       );
       return HIR_IDENTIFIER_TYPE(
         typeDefinition.identifier,
@@ -130,4 +133,41 @@ export const lowerSamlangType = (
       );
     }
   }
+};
+
+export const lowerSamlangFunctionTypeForTopLevel = (
+  { argumentTypes, returnType }: FunctionType,
+  genericTypes: ReadonlySet<string>,
+  typeSynthesizer: HighIRTypeSynthesizer
+): HighIRFunctionType => {
+  const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
+    [...argumentTypes.map((it) => lowerSamlangType(it, genericTypes, typeSynthesizer))],
+    lowerSamlangType(returnType, genericTypes, typeSynthesizer)
+  );
+  return hirFunctionTypeWithoutContext;
+  // TODO: Must have different context parameter for every context!
+  //
+  // Example:
+  // function foo(a: (int) -> bool, b: (bool) -> int);
+  // val x = 3; val y = false;
+  // foo((k) -> k + x, (k) -> k && y);
+  //
+  // Explanation:
+  // First lambda has context {x:3}. Second lambda has context {y:false}.
+  //
+  //
+  // The above section describes how to lower function types at the function toplevel.
+  // However, it turns out that the statement/expression level function types are more tricky.
+  // Consider the following statements:
+  //
+  // val x: int = 4;
+  // val f: (int) -> int = (y) -> x + y;
+  // val g: (int) -> int = f;
+  //
+  // The RHS of f init statement has HIR type ({x:int}, int) -> int.
+  // The concrete context type information is simply not available when we are translating the
+  // function type *locally*. The g assignment statement also seems to suggest that this kind of
+  // function context type information might need to go through a process like constant propagation.
+  // This kind of constant propagation also cannot just focus on the type. Since two expressions with
+  // both (int) -> int type at source level might have completely different context type in HIR.
 };
