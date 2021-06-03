@@ -1,13 +1,3 @@
-import extractOptimizableWhileLoop, {
-  getGuardOperator_EXPOSED_FOR_TESTING,
-  mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TESTING,
-  extractLoopGuardStructure_EXPOSED_FOR_TESTING,
-  expressionIsLoopInvariant_EXPOSED_FOR_TESTING,
-  extractBasicInductionVariables_EXPOSED_FOR_TESTING,
-  extractDerivedInductionVariables_EXPOSED_FOR_TESTING,
-  removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING,
-} from '../mir-loop-induction-analysis';
-
 import {
   MidIRExpression,
   MIR_ZERO,
@@ -27,6 +17,16 @@ import {
   MIR_INT_TYPE,
 } from 'samlang-core-ast/mir-nodes';
 import { zip } from 'samlang-core-utils';
+
+import extractOptimizableWhileLoop, {
+  getGuardOperator_EXPOSED_FOR_TESTING,
+  mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TESTING,
+  extractLoopGuardStructure_EXPOSED_FOR_TESTING,
+  expressionIsLoopInvariant_EXPOSED_FOR_TESTING,
+  extractBasicInductionVariables_EXPOSED_FOR_TESTING,
+  extractDerivedInductionVariables_EXPOSED_FOR_TESTING,
+  removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING,
+} from '../mir-loop-induction-analysis';
 
 const VARIABLE_I = MIR_VARIABLE('i', MIR_INT_TYPE);
 const VARIABLE_J = MIR_VARIABLE('j', MIR_INT_TYPE);

@@ -1,5 +1,3 @@
-import { collectModuleReferenceFromExpression } from '../module-references-collector';
-
 import {
   unitType,
   boolType,
@@ -33,6 +31,8 @@ import {
   EXPRESSION_STATEMENT_BLOCK,
 } from 'samlang-core-ast/samlang-expressions';
 import { hashSetOf } from 'samlang-core-utils';
+
+import { collectModuleReferenceFromExpression } from '../module-references-collector';
 
 const assertFoundAllModuleReferencesFromExpression = (
   expression: SamlangExpression,

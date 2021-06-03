@@ -1,5 +1,3 @@
-import type MidIRTypeSynthesizer from './mir-type-synthesizer';
-
 import type { Type } from 'samlang-core-ast/common-nodes';
 import {
   MidIRType,
@@ -10,6 +8,8 @@ import {
   MIR_IDENTIFIER_TYPE,
 } from 'samlang-core-ast/mir-nodes';
 import { assert } from 'samlang-core-utils';
+
+import type MidIRTypeSynthesizer from './mir-type-synthesizer';
 
 const lowerSamlangType = (
   type: Type,

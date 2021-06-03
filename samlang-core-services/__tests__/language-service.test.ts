@@ -1,8 +1,8 @@
-import { LanguageServiceState, LanguageServices, CompletionItemKinds } from '../language-service';
-
 import { Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { prettyPrintSamlangModule } from 'samlang-core-printer';
+
+import { LanguageServiceState, LanguageServices, CompletionItemKinds } from '../language-service';
 
 it('Language server state can update.', () => {
   const state = new LanguageServiceState([], {});

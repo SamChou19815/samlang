@@ -1,8 +1,3 @@
-import typeCheckExpression from './expression-type-checker';
-import TypeResolution from './type-resolution';
-import { validateType } from './type-validator';
-import { AccessibleGlobalTypingContext, ReadonlyGlobalTypingContext } from './typing-context';
-
 import type { ModuleReference, Range, Type } from 'samlang-core-ast/common-nodes';
 import type {
   ClassMemberDefinition,
@@ -11,6 +6,11 @@ import type {
 } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { error, isNotNull, LocalStackedContext } from 'samlang-core-utils';
+
+import typeCheckExpression from './expression-type-checker';
+import TypeResolution from './type-resolution';
+import { validateType } from './type-validator';
+import { AccessibleGlobalTypingContext, ReadonlyGlobalTypingContext } from './typing-context';
 
 export default class ModuleTypeChecker {
   constructor(

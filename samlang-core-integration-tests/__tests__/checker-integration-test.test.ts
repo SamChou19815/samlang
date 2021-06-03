@@ -1,8 +1,8 @@
-import { samlangProgramCheckerTestSources } from '../test-programs';
-
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { checkSources } from 'samlang-core-services';
+
+import { samlangProgramCheckerTestSources } from '../test-programs';
 
 const expectedErrors: readonly string[] = [
   'access-private-member.sam:12:13-12:16: [UnresolvedName]: Name `A.b` is not resolved.',

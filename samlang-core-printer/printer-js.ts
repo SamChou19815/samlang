@@ -1,18 +1,4 @@
 import {
-  PrettierDocument,
-  PRETTIER_CONCAT,
-  PRETTIER_TEXT,
-  PRETTIER_LINE,
-  PRETTIER_NIL,
-} from './printer-prettier-core';
-import {
-  createCommaSeparatedList,
-  createParenthesisSurroundedDocument,
-  createBracketSurroundedDocument,
-  createBracesSurroundedBlockDocument,
-} from './printer-prettier-library';
-
-import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
@@ -26,6 +12,20 @@ import type {
   MidIRFunction,
   MidIRModule,
 } from 'samlang-core-ast/mir-nodes';
+
+import {
+  PrettierDocument,
+  PRETTIER_CONCAT,
+  PRETTIER_TEXT,
+  PRETTIER_LINE,
+  PRETTIER_NIL,
+} from './printer-prettier-core';
+import {
+  createCommaSeparatedList,
+  createParenthesisSurroundedDocument,
+  createBracketSurroundedDocument,
+  createBracesSurroundedBlockDocument,
+} from './printer-prettier-library';
 
 // Thanks https://gist.github.com/getify/3667624
 const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');

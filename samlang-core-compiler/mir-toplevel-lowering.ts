@@ -1,8 +1,3 @@
-import HighIRStringManager from './hir-string-manager';
-import lowerSamlangExpression from './mir-expression-lowering';
-import MidIRTypeSynthesizer from './mir-type-synthesizer';
-import lowerSamlangType from './mir-types-lowering';
-
 import {
   ENCODED_COMPILED_PROGRAM_MAIN,
   encodeFunctionNameGlobally,
@@ -35,6 +30,11 @@ import {
   optimizeMidIRModuleAccordingToConfiguration,
 } from 'samlang-core-optimization';
 import { checkNotNull, HashMap, hashMapOf, zip } from 'samlang-core-utils';
+
+import HighIRStringManager from './hir-string-manager';
+import lowerSamlangExpression from './mir-expression-lowering';
+import MidIRTypeSynthesizer from './mir-type-synthesizer';
+import lowerSamlangType from './mir-types-lowering';
 
 const compileTypeDefinition = (
   moduleReference: ModuleReference,

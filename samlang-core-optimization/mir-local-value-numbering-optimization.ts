@@ -1,11 +1,4 @@
 import {
-  IndexAccessBindedValue,
-  BinaryBindedValue,
-  BindedValue,
-  bindedValueToString,
-} from './mir-optimization-common';
-
-import {
   MidIRExpression,
   MidIRStatement,
   MIR_FUNCTION_CALL,
@@ -18,6 +11,13 @@ import {
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
 import { error, isNotNull, LocalStackedContext, zip, zip3 } from 'samlang-core-utils';
+
+import {
+  IndexAccessBindedValue,
+  BinaryBindedValue,
+  BindedValue,
+  bindedValueToString,
+} from './mir-optimization-common';
 
 class LocalVariableContext extends LocalStackedContext<string> {
   addLocalValueType(name: string, value: string, onCollision: () => void): void {

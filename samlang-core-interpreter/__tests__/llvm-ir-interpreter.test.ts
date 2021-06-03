@@ -1,5 +1,3 @@
-import interpretLLVMModule from '../llvm-ir-interpreter';
-
 import {
   ENCODED_FUNCTION_NAME_MALLOC,
   ENCODED_FUNCTION_NAME_THROW,
@@ -27,6 +25,8 @@ import {
   LLVM_CJUMP,
   LLVM_RETURN,
 } from 'samlang-core-ast/llvm-nodes';
+
+import interpretLLVMModule from '../llvm-ir-interpreter';
 
 const ZERO = LLVM_INT(0);
 const ONE = LLVM_INT(1);

@@ -1,6 +1,3 @@
-import type { ReadOnlyTypeResolution } from './type-resolution';
-import resolveType from './type-resolver';
-
 import {
   Type,
   IdentifierType,
@@ -15,6 +12,9 @@ import {
 } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import { assert, zip } from 'samlang-core-utils';
+
+import type { ReadOnlyTypeResolution } from './type-resolution';
+import resolveType from './type-resolver';
 
 const checkedZip = <E1, E2>(
   list1: readonly E1[],

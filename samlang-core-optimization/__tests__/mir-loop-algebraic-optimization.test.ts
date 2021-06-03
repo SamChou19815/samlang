@@ -1,8 +1,3 @@
-import midIRLoopAlgebraicOptimization, {
-  analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING,
-} from '../mir-loop-algebraic-optimization';
-import OptimizationResourceAllocator from '../optimization-resource-allocator';
-
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -11,6 +6,11 @@ import {
   MIR_BINARY,
   MIR_INT_TYPE,
 } from 'samlang-core-ast/mir-nodes';
+
+import midIRLoopAlgebraicOptimization, {
+  analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING,
+} from '../mir-loop-algebraic-optimization';
+import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 it('analyzeNumberOfIterationsToBreakGuard works', () => {
   const analyzeNumberOfIterationsToBreakGuard = (

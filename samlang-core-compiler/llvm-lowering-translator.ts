@@ -1,5 +1,3 @@
-import lowerMidIRTypeToLLVMType from './llvm-types-lowering';
-
 import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
 import {
   LLVMAnnotatedValue,
@@ -37,6 +35,8 @@ import type {
 } from 'samlang-core-ast/mir-nodes';
 import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
 import { checkNotNull, zip, zip3 } from 'samlang-core-utils';
+
+import lowerMidIRTypeToLLVMType from './llvm-types-lowering';
 
 class LLVMResourceAllocator {
   private nextTempId = 0;

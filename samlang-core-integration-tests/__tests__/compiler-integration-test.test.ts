@@ -1,5 +1,3 @@
-import { runnableSamlangProgramTestCases } from '../test-programs';
-
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import type { MidIRModule } from 'samlang-core-ast/mir-nodes';
@@ -19,6 +17,8 @@ import { createPrettierDocumentFromMidIRModule } from 'samlang-core-printer/prin
 // eslint-disable-next-line import/no-internal-modules
 import { prettyPrintAccordingToPrettierAlgorithm } from 'samlang-core-printer/printer-prettier-core';
 import { checkSources } from 'samlang-core-services';
+
+import { runnableSamlangProgramTestCases } from '../test-programs';
 
 const { checkedSources, compileTimeErrors } = checkSources(
   runnableSamlangProgramTestCases.map((it) => [

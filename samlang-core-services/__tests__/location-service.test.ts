@@ -1,9 +1,9 @@
-import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../location-service';
-import { checkSources } from '../source-processor';
-
 import { Position, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
+
+import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../location-service';
+import { checkSources } from '../source-processor';
 
 it('LocationLookupTest self consistent test', () => {
   const lookup = new LocationLookup<string>();

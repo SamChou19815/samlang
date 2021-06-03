@@ -1,8 +1,8 @@
-import { parseSources, checkSources, lowerSourcesToLLVMModules } from '../source-processor';
-
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
+
+import { parseSources, checkSources, lowerSourcesToLLVMModules } from '../source-processor';
 
 it('parseSources test', () => {
   expect(

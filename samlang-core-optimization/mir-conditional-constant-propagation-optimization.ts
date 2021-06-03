@@ -1,9 +1,3 @@
-import {
-  ifElseOrNull,
-  singleIfOrNull,
-  LocalValueContextForOptimization,
-} from './mir-optimization-common';
-
 import type { IROperator } from 'samlang-core-ast/common-operators';
 import createMidIRFlexibleOrderOperatorNode from 'samlang-core-ast/mir-flexible-op';
 import {
@@ -27,6 +21,12 @@ import {
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
 import { isNotNull, zip3, LocalStackedContext, checkNotNull, assert } from 'samlang-core-utils';
+
+import {
+  ifElseOrNull,
+  singleIfOrNull,
+  LocalValueContextForOptimization,
+} from './mir-optimization-common';
 
 const longOfBool = (b: boolean) => (b ? 1 : 0);
 

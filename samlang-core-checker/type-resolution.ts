@@ -1,7 +1,7 @@
-import typeResolver from './type-resolver';
-
 import type { UndecidedType, Type } from 'samlang-core-ast/common-nodes';
 import { assert, checkNotNull, UnionFind } from 'samlang-core-utils';
+
+import typeResolver from './type-resolver';
 
 /** A provider of type resolution to previously undecided types. */
 export interface ReadOnlyTypeResolution {

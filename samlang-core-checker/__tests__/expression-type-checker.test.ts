@@ -1,8 +1,3 @@
-import typeCheckExpression from '../expression-type-checker';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../global-typing-context-builder';
-import TypeResolution from '../type-resolution';
-import { AccessibleGlobalTypingContext } from '../typing-context';
-
 import {
   Type,
   unitType as unit,
@@ -29,6 +24,11 @@ import {
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText } from 'samlang-core-parser';
 import { checkNotNull, hashMapOf, LocalStackedContext } from 'samlang-core-utils';
+
+import typeCheckExpression from '../expression-type-checker';
+import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../global-typing-context-builder';
+import TypeResolution from '../type-resolution';
+import { AccessibleGlobalTypingContext } from '../typing-context';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
 

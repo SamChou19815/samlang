@@ -1,8 +1,3 @@
-import fixExpressionType from '../expression-type-fixer';
-import type { ReadOnlyTypeResolution } from '../type-resolution';
-import resolveType from '../type-resolver';
-import { undecidedTypeResolver } from './type-resolver.test';
-
 import {
   Type,
   unitType,
@@ -37,6 +32,11 @@ import {
   EXPRESSION_LAMBDA,
   EXPRESSION_STATEMENT_BLOCK,
 } from 'samlang-core-ast/samlang-expressions';
+
+import fixExpressionType from '../expression-type-fixer';
+import type { ReadOnlyTypeResolution } from '../type-resolution';
+import resolveType from '../type-resolver';
+import { undecidedTypeResolver } from './type-resolver.test';
 
 const TestingResolution: ReadOnlyTypeResolution = {
   getPartiallyResolvedType() {

@@ -1,7 +1,3 @@
-import HighIRStringManager from '../hir-string-manager';
-import lowerSamlangExpression from '../mir-expression-lowering';
-import MidIRTypeSynthesizer from '../mir-type-synthesizer';
-
 import {
   unitType,
   identifierType,
@@ -45,6 +41,10 @@ import {
   EXPRESSION_MATCH,
   EXPRESSION_STATEMENT_BLOCK,
 } from 'samlang-core-ast/samlang-expressions';
+
+import HighIRStringManager from '../hir-string-manager';
+import lowerSamlangExpression from '../mir-expression-lowering';
+import MidIRTypeSynthesizer from '../mir-type-synthesizer';
 
 const DUMMY_IDENTIFIER_TYPE = identifierType(ModuleReference.DUMMY, 'Dummy');
 const THIS = EXPRESSION_THIS({

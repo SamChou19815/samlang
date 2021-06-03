@@ -1,7 +1,5 @@
 /* eslint-disable no-param-reassign */
 
-import { internalOptimizeMidIRStatementsByDCE } from './mir-dead-code-elimination-optimization';
-
 import type { IROperator } from 'samlang-core-ast/common-operators';
 import {
   MidIRStatement,
@@ -17,6 +15,8 @@ import {
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRType } from 'samlang-core-ast/mir-nodes';
 import { assert, checkNotNull, isNotNull } from 'samlang-core-utils';
+
+import { internalOptimizeMidIRStatementsByDCE } from './mir-dead-code-elimination-optimization';
 
 export type PotentialLoopInvariantExpression = MidIRIntLiteralExpression | MidIRVariableExpression;
 

@@ -1,5 +1,3 @@
-import optimizeMidIRFunctionByDeadCodeElimination from '../mir-dead-code-elimination-optimization';
-
 import {
   MidIRExpression,
   MidIRStatement,
@@ -22,6 +20,8 @@ import {
   MIR_BOOL_TYPE,
   MIR_INT_TYPE,
 } from 'samlang-core-ast/mir-nodes';
+
+import optimizeMidIRFunctionByDeadCodeElimination from '../mir-dead-code-elimination-optimization';
 
 const assertCorrectlyOptimized = (
   statements: MidIRStatement[],

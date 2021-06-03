@@ -1,3 +1,16 @@
+import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import type { ReadonlyGlobalErrorCollector } from 'samlang-core-errors';
+import {
+  HashMap,
+  HashSet,
+  ReadonlyHashSet,
+  hashMapOf,
+  mapOf,
+  setOf,
+  hashSetOf,
+} from 'samlang-core-utils';
+
 import {
   DEFAULT_BUILTIN_TYPING_CONTEXT,
   buildGlobalTypingContext,
@@ -14,19 +27,6 @@ import type {
   MemberTypeInformation,
 } from './typing-context';
 import checkUndefinedImportsError from './undefined-imports-checker';
-
-import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
-import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import type { ReadonlyGlobalErrorCollector } from 'samlang-core-errors';
-import {
-  HashMap,
-  HashSet,
-  ReadonlyHashSet,
-  hashMapOf,
-  mapOf,
-  setOf,
-  hashSetOf,
-} from 'samlang-core-utils';
 
 export { DEFAULT_BUILTIN_TYPING_CONTEXT };
 

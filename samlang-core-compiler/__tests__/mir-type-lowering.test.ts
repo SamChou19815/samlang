@@ -1,6 +1,3 @@
-import MidIRTypeSynthesizer from '../mir-type-synthesizer';
-import lowerSamlangType from '../mir-types-lowering';
-
 import {
   boolType,
   functionType,
@@ -18,6 +15,9 @@ import {
   MIR_STRING_TYPE,
   MIR_IDENTIFIER_TYPE,
 } from 'samlang-core-ast/mir-nodes';
+
+import MidIRTypeSynthesizer from '../mir-type-synthesizer';
+import lowerSamlangType from '../mir-types-lowering';
 
 it('lowerSamlangType works', () => {
   const typeSynthesizer = new MidIRTypeSynthesizer();

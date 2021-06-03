@@ -1,10 +1,4 @@
 import {
-  IdentifierTypeValidator,
-  findInvalidTypeIdentifier_EXPOSED_FOR_TESTING,
-  validateType,
-} from '../type-validator';
-
-import {
   IdentifierType,
   unitType,
   boolType,
@@ -17,6 +11,12 @@ import {
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
+
+import {
+  IdentifierTypeValidator,
+  findInvalidTypeIdentifier_EXPOSED_FOR_TESTING,
+  validateType,
+} from '../type-validator';
 
 const identifierTypeValidatorForTesting: IdentifierTypeValidator = {
   identifierTypeIsWellDefined: (

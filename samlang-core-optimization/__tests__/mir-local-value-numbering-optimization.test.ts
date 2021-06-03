@@ -1,5 +1,3 @@
-import optimizeMidIRFunctionByLocalValueNumbering from '../mir-local-value-numbering-optimization';
-
 import {
   MidIRExpression,
   MidIRStatement,
@@ -22,6 +20,8 @@ import {
   MIR_BOOL_TYPE,
   MIR_INT_TYPE,
 } from 'samlang-core-ast/mir-nodes';
+
+import optimizeMidIRFunctionByLocalValueNumbering from '../mir-local-value-numbering-optimization';
 
 const assertCorrectlyOptimized = (
   statements: MidIRStatement[],

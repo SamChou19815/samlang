@@ -1,5 +1,3 @@
-import ControlFlowGraph from '../control-flow-graph';
-
 import {
   LLVMInstruction,
   LLVM_INT,
@@ -11,6 +9,8 @@ import {
   LLVM_CJUMP,
   LLVM_RETURN,
 } from 'samlang-core-ast/llvm-nodes';
+
+import ControlFlowGraph from '../control-flow-graph';
 
 const llvmStatements: readonly LLVMInstruction[] = [
   LLVM_LABEL('foo'),

@@ -1,14 +1,14 @@
-import {
-  ModuleScopedVariableDefinitionLookup,
-  VariableDefinitionLookup,
-  applyRenamingWithDefinitionAndUse,
-} from '../variable-definition-service';
-
 import { ModuleReference, Position, Range } from 'samlang-core-ast/common-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import { prettyPrintSamlangModule } from 'samlang-core-printer';
 import { checkNotNull, hashMapOf } from 'samlang-core-utils';
+
+import {
+  ModuleScopedVariableDefinitionLookup,
+  VariableDefinitionLookup,
+  applyRenamingWithDefinitionAndUse,
+} from '../variable-definition-service';
 
 const prepareLookup = (source: string): ModuleScopedVariableDefinitionLookup => {
   const moduleReference = ModuleReference.DUMMY;

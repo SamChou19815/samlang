@@ -1,7 +1,3 @@
-import lowerMidIRModuleToLLVMModule, {
-  lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING,
-} from '../llvm-lowering-translator';
-
 import { prettyPrintLLVMFunction, prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import {
   MidIRExpression,
@@ -28,6 +24,10 @@ import {
   MIR_BOOL_TYPE,
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
+
+import lowerMidIRModuleToLLVMModule, {
+  lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING,
+} from '../llvm-lowering-translator';
 
 const assertLoweringWorks = (
   midIRFunction: MidIRFunction,

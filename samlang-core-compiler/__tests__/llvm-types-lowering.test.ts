@@ -1,5 +1,3 @@
-import lowerMidIRTypeToLLVMType from '../llvm-types-lowering';
-
 import {
   LLVM_BOOL_TYPE,
   LLVM_FUNCTION_TYPE,
@@ -14,6 +12,8 @@ import {
   MIR_INT_TYPE,
   MIR_STRING_TYPE,
 } from 'samlang-core-ast/mir-nodes';
+
+import lowerMidIRTypeToLLVMType from '../llvm-types-lowering';
 
 it('lowerMidIRTypeToLLVMType works', () => {
   expect(lowerMidIRTypeToLLVMType(MIR_BOOL_TYPE)).toEqual(LLVM_BOOL_TYPE);

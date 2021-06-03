@@ -1,10 +1,3 @@
-import ControlFlowGraph from '../control-flow-graph';
-import {
-  DataflowAnalysisGraphOperator,
-  runBackwardDataflowAnalysis,
-  runForwardDataflowAnalysis,
-} from '../dataflow-analysis';
-
 import {
   LLVMInstruction,
   LLVM_INT,
@@ -18,6 +11,13 @@ import {
   LLVM_RETURN,
   LLVM_INT_TYPE,
 } from 'samlang-core-ast/llvm-nodes';
+
+import ControlFlowGraph from '../control-flow-graph';
+import {
+  DataflowAnalysisGraphOperator,
+  runBackwardDataflowAnalysis,
+  runForwardDataflowAnalysis,
+} from '../dataflow-analysis';
 
 const ZERO = LLVM_INT(0);
 const ONE = LLVM_INT(1);

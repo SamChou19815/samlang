@@ -1,3 +1,5 @@
+import { checkNotNull } from 'samlang-core-utils';
+
 import {
   PrettierDocument,
   PRETTIER_NIL,
@@ -11,8 +13,6 @@ import {
   PRETTIER_MULTILINE_COMMENT,
   prettyPrintAccordingToPrettierAlgorithm,
 } from '../printer-prettier-core';
-
-import { checkNotNull } from 'samlang-core-utils';
 
 it('prettier concat constructor test', () => {
   expect(PRETTIER_CONCAT()).toEqual(PRETTIER_NIL);

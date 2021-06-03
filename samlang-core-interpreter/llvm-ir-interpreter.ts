@@ -1,7 +1,5 @@
 /* eslint-disable no-param-reassign */
 
-import PanicException from './panic-exception';
-
 import {
   ENCODED_FUNCTION_NAME_MALLOC,
   ENCODED_FUNCTION_NAME_THROW,
@@ -19,6 +17,8 @@ import type {
   LLVMLabelInstruction,
 } from 'samlang-core-ast/llvm-nodes';
 import { checkNotNull, zip, assert } from 'samlang-core-utils';
+
+import PanicException from './panic-exception';
 
 class StackFrame {
   private variables = new Map<string, number>();

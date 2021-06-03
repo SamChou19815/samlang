@@ -1,5 +1,3 @@
-import OptimizationResourceAllocator from './optimization-resource-allocator';
-
 import {
   MidIRExpression,
   MidIRStatement,
@@ -12,6 +10,8 @@ import {
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRFunction, MidIRType } from 'samlang-core-ast/mir-nodes';
 import { assert, zip3 } from 'samlang-core-utils';
+
+import OptimizationResourceAllocator from './optimization-resource-allocator';
 
 type RewriteResult = {
   readonly statements: readonly MidIRStatement[];

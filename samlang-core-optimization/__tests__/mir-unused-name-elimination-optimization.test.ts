@@ -1,5 +1,3 @@
-import optimizeMidIRModuleByEliminatingUnusedOnes from '../mir-unused-name-elimination-optimization';
-
 import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
 import {
   MIR_ZERO,
@@ -17,6 +15,8 @@ import {
   MIR_FUNCTION_TYPE,
   MIR_IDENTIFIER_TYPE,
 } from 'samlang-core-ast/mir-nodes';
+
+import optimizeMidIRModuleByEliminatingUnusedOnes from '../mir-unused-name-elimination-optimization';
 
 it('optimizeMidIRModuleByEliminatingUnusedOnes test', () => {
   const optimized = optimizeMidIRModuleByEliminatingUnusedOnes({
