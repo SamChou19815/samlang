@@ -1,3 +1,9 @@
+import { Range, ModuleReference, functionType, intType } from 'samlang-core-ast/common-nodes';
+import { EXPRESSION_INT } from 'samlang-core-ast/samlang-expressions';
+import { createGlobalErrorCollector } from 'samlang-core-errors';
+import { parseSamlangModuleFromText } from 'samlang-core-parser';
+import { mapOf, hashMapOf } from 'samlang-core-utils';
+
 import {
   DependencyTracker,
   typeCheckSources,
@@ -6,12 +12,6 @@ import {
   collectModuleReferenceFromSamlangModule,
 } from '..';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from '../global-typing-context-builder';
-
-import { Range, ModuleReference, functionType, intType } from 'samlang-core-ast/common-nodes';
-import { EXPRESSION_INT } from 'samlang-core-ast/samlang-expressions';
-import { createGlobalErrorCollector } from 'samlang-core-errors';
-import { parseSamlangModuleFromText } from 'samlang-core-parser';
-import { mapOf, hashMapOf } from 'samlang-core-utils';
 
 it('collectModuleReferenceFromSamlangModule works', () => {
   expect(

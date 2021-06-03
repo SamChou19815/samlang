@@ -1,8 +1,3 @@
-import optimizeMidIRFunctionWithAllLoopOptimizations, {
-  optimizeMidIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING,
-} from '../mir-loop-optimizations';
-import OptimizationResourceAllocator from '../optimization-resource-allocator';
-
 import {
   MidIRExpression,
   MidIRStatement,
@@ -23,6 +18,11 @@ import {
   MIR_BOOL_TYPE,
   MIR_INT_TYPE,
 } from 'samlang-core-ast/mir-nodes';
+
+import optimizeMidIRFunctionWithAllLoopOptimizations, {
+  optimizeMidIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING,
+} from '../mir-loop-optimizations';
+import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 const assertOptimizeMidIRWhileStatementWithAllLoopOptimizations = (
   midIRWhileStatement: MidIRWhileStatement,

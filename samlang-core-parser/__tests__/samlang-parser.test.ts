@@ -1,7 +1,7 @@
-import SamlangParser, { BaseParser } from '../samlang-parser';
-
 import { ModuleReference, Range } from 'samlang-core-ast/common-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
+
+import SamlangParser, { BaseParser } from '../samlang-parser';
 
 it('BaseParser test', () => {
   class P extends BaseParser {

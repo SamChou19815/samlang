@@ -1,6 +1,3 @@
-import optimizeMidIRFunctionByCommonSubExpressionElimination from '../mir-common-subexpression-elimination-optimization';
-import OptimizationResourceAllocator from '../optimization-resource-allocator';
-
 import {
   MidIRStatement,
   debugPrintMidIRStatement,
@@ -16,6 +13,9 @@ import {
   MIR_BOOL_TYPE,
   MIR_INT_TYPE,
 } from 'samlang-core-ast/mir-nodes';
+
+import optimizeMidIRFunctionByCommonSubExpressionElimination from '../mir-common-subexpression-elimination-optimization';
+import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 const assertCorrectlyOptimized = (statements: MidIRStatement[], expected: string): void => {
   expect(

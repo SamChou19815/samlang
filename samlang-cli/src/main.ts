@@ -2,17 +2,17 @@
 
 import { writeFileSync } from 'fs';
 
-import cliMainRunner, { CLIRunners } from './cli';
-import { collectSources, compileEverything } from './cli-service';
-import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './configuration';
-import ASCII_ART_SAMLANG_LOGO from './logo';
-import startSamlangLanguageServer from './lsp';
-
 import type { Sources } from 'samlang-core-ast/common-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { prettyPrintSamlangModule } from 'samlang-core-printer';
 import { parseSources, checkSources } from 'samlang-core-services';
+
+import cliMainRunner, { CLIRunners } from './cli';
+import { collectSources, compileEverything } from './cli-service';
+import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './configuration';
+import ASCII_ART_SAMLANG_LOGO from './logo';
+import startSamlangLanguageServer from './lsp';
 
 const getConfiguration = (): SamlangProjectConfiguration => {
   const configuration = loadSamlangProjectConfiguration();

@@ -1,5 +1,3 @@
-import optimizeMidIRWhileStatementByLoopInvariantCodeMotion from '../mir-loop-invariant-code-motion';
-
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -18,6 +16,8 @@ import {
   MIR_BOOL_TYPE,
   MIR_INT_TYPE,
 } from 'samlang-core-ast/mir-nodes';
+
+import optimizeMidIRWhileStatementByLoopInvariantCodeMotion from '../mir-loop-invariant-code-motion';
 
 it('optimizeMidIRWhileStatementByLoopInvariantCodeMotion works', () => {
   const { hoistedStatementsBeforeWhile, optimizedWhileStatement, nonLoopInvariantVariables } =

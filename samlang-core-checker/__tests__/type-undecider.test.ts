@@ -1,5 +1,3 @@
-import { undecideTypeParameters, undecideFieldTypeParameters } from '../type-undecider';
-
 import {
   UndecidedTypes,
   unitType,
@@ -9,6 +7,8 @@ import {
   functionType,
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
+
+import { undecideTypeParameters, undecideFieldTypeParameters } from '../type-undecider';
 
 it('will throw on undecided type', () => {
   expect(() => undecideTypeParameters(UndecidedTypes.next(), [])).toThrow();

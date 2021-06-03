@@ -1,3 +1,5 @@
+import { intType, boolType, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
+
 import {
   CompileTimeError,
   SyntaxError,
@@ -15,8 +17,6 @@ import {
   DuplicateFieldDeclarationError,
   NonExhausiveMatchError,
 } from '..';
-
-import { intType, boolType, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
 
 const testCases: readonly (readonly [CompileTimeError, string])[] = [
   [

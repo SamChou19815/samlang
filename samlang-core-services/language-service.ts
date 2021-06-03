@@ -1,15 +1,4 @@
 import {
-  ReadOnlyLocationLookup,
-  LocationLookup,
-  SamlangExpressionLocationLookupBuilder,
-} from './location-service';
-import {
-  ReadonlyVariableDefinitionLookup,
-  VariableDefinitionLookup,
-  applyRenamingWithDefinitionAndUse,
-} from './variable-definition-service';
-
-import {
   IdentifierType,
   FunctionType,
   prettyPrintType,
@@ -44,6 +33,17 @@ import {
 } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import { HashMap, hashMapOf, hashSetOf, isNotNull, checkNotNull, assert } from 'samlang-core-utils';
+
+import {
+  ReadOnlyLocationLookup,
+  LocationLookup,
+  SamlangExpressionLocationLookupBuilder,
+} from './location-service';
+import {
+  ReadonlyVariableDefinitionLookup,
+  VariableDefinitionLookup,
+  applyRenamingWithDefinitionAndUse,
+} from './variable-definition-service';
 
 export class LanguageServiceState {
   private readonly dependencyTracker: DependencyTracker = new DependencyTracker();

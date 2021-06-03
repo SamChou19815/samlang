@@ -1,3 +1,13 @@
+import { prettyPrintLiteral, prettyPrintType, TypedComment } from 'samlang-core-ast/common-nodes';
+import type { SamlangExpression, IfElseExpression } from 'samlang-core-ast/samlang-expressions';
+import type {
+  ClassMemberDefinition,
+  ClassDefinition,
+  ModuleMembersImport,
+  SamlangModule,
+} from 'samlang-core-ast/samlang-toplevel';
+import { checkNotNull } from 'samlang-core-utils';
+
 import {
   PrettierDocument,
   PRETTIER_NIL,
@@ -18,16 +28,6 @@ import {
   createBracesSurroundedDocument,
   createBracesSurroundedBlockDocument,
 } from './printer-prettier-library';
-
-import { prettyPrintLiteral, prettyPrintType, TypedComment } from 'samlang-core-ast/common-nodes';
-import type { SamlangExpression, IfElseExpression } from 'samlang-core-ast/samlang-expressions';
-import type {
-  ClassMemberDefinition,
-  ClassDefinition,
-  ModuleMembersImport,
-  SamlangModule,
-} from 'samlang-core-ast/samlang-toplevel';
-import { checkNotNull } from 'samlang-core-utils';
 
 const createPrettierDocumentForAssociatedComments = (
   associatedComments: readonly TypedComment[],

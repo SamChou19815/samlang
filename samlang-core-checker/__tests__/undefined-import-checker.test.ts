@@ -1,9 +1,9 @@
-import checkUndefinedImportsError from '../undefined-imports-checker';
-
 import { ModuleReference, Range, Sources } from 'samlang-core-ast/common-nodes';
 import type { SamlangModule, ClassDefinition } from 'samlang-core-ast/samlang-toplevel';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { hashMapOf } from 'samlang-core-utils';
+
+import checkUndefinedImportsError from '../undefined-imports-checker';
 
 const createMockClass = (name: string): ClassDefinition => ({
   range: Range.DUMMY,

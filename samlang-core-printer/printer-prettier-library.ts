@@ -3,6 +3,8 @@
  * but commonly used enough that deserves its own file
  */
 
+import { checkNotNull } from 'samlang-core-utils';
+
 import {
   PrettierDocument,
   PRETTIER_NIL,
@@ -13,8 +15,6 @@ import {
   PRETTIER_NO_SPACE_BRACKET,
   PRETTIER_SPACED_BRACKET,
 } from './printer-prettier-core';
-
-import { checkNotNull } from 'samlang-core-utils';
 
 export const createCommaSeparatedList = <E>(
   elements: readonly E[],

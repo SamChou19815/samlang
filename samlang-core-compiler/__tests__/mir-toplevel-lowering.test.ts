@@ -1,5 +1,3 @@
-import compileSamlangSourcesToMidIRSources from '../mir-toplevel-lowering';
-
 import {
   unitType,
   boolType,
@@ -23,6 +21,8 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { mapOf } from 'samlang-core-utils';
+
+import compileSamlangSourcesToMidIRSources from '../mir-toplevel-lowering';
 
 const THIS = EXPRESSION_THIS({
   range: Range.DUMMY,

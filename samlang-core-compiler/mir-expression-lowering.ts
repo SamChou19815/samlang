@@ -1,7 +1,3 @@
-import type HighIRStringManager from './hir-string-manager';
-import type MidIRTypeSynthesizer from './mir-type-synthesizer';
-import lowerSamlangType from './mir-types-lowering';
-
 import {
   encodeFunctionNameGlobally,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
@@ -58,6 +54,10 @@ import type {
   StatementBlockExpression,
 } from 'samlang-core-ast/samlang-expressions';
 import { LocalStackedContext, assert, checkNotNull, zip } from 'samlang-core-utils';
+
+import type HighIRStringManager from './hir-string-manager';
+import type MidIRTypeSynthesizer from './mir-type-synthesizer';
+import lowerSamlangType from './mir-types-lowering';
 
 type MidIRExpressionLoweringResult = {
   readonly statements: readonly MidIRStatement[];

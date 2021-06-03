@@ -1,7 +1,7 @@
-import lexSamlangProgram, { samlangTokenToString } from '../samlang-lexer';
-
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
+
+import lexSamlangProgram, { samlangTokenToString } from '../samlang-lexer';
 
 const lex = (source: string): readonly string[] =>
   lexSamlangProgram(

@@ -1,7 +1,3 @@
-import optimizeMidIRFunctionByConditionalConstantPropagation from './mir-conditional-constant-propagation-optimization';
-import { LocalValueContextForOptimization } from './mir-optimization-common';
-import type OptimizationResourceAllocator from './optimization-resource-allocator';
-
 import {
   MidIRStatement,
   MidIRExpression,
@@ -10,6 +6,10 @@ import {
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRFunction, MidIRType } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull, isNotNull, zip, zip3 } from 'samlang-core-utils';
+
+import optimizeMidIRFunctionByConditionalConstantPropagation from './mir-conditional-constant-propagation-optimization';
+import { LocalValueContextForOptimization } from './mir-optimization-common';
+import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
 /** The threshold max tolerable cost of inlining.  */
 const INLINE_THRESHOLD = 20;

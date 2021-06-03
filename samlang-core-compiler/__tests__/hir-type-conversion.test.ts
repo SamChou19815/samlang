@@ -1,11 +1,4 @@
 import {
-  HighIRTypeSynthesizer,
-  collectUsedGenericTypes,
-  lowerSamlangType,
-  lowerSamlangFunctionTypeForTopLevel,
-} from '../hir-type-conversion';
-
-import {
   boolType,
   functionType,
   identifierType,
@@ -24,6 +17,13 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_FUNCTION_TYPE,
 } from 'samlang-core-ast/hir-nodes';
+
+import {
+  HighIRTypeSynthesizer,
+  collectUsedGenericTypes,
+  lowerSamlangType,
+  lowerSamlangFunctionTypeForTopLevel,
+} from '../hir-type-conversion';
 
 it('HighIRTypeSynthesizer works', () => {
   const synthesizer = new HighIRTypeSynthesizer();

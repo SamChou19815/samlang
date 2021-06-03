@@ -1,3 +1,5 @@
+import type { MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-nodes';
+
 import optimizeMidIRFunctionByCommonSubExpressionElimination from './mir-common-subexpression-elimination-optimization';
 import optimizeMidIRFunctionByConditionalConstantPropagation from './mir-conditional-constant-propagation-optimization';
 import optimizeMidIRFunctionByDeadCodeElimination from './mir-dead-code-elimination-optimization';
@@ -7,8 +9,6 @@ import optimizeMidIRFunctionWithAllLoopOptimizations from './mir-loop-optimizati
 import optimizeMidIRFunctionByTailRecursionRewrite from './mir-tail-recursion-optimization';
 import optimizeMidIRModuleByEliminatingUnusedOnes from './mir-unused-name-elimination-optimization';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
-
-import type { MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-nodes';
 
 export type OptimizationConfiguration = {
   doesPerformLocalValueNumbering?: boolean;

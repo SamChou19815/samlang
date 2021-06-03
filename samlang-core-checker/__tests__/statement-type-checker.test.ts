@@ -1,6 +1,3 @@
-import StatementTypeChecker from '../statement-type-checker';
-import { AccessibleGlobalTypingContext } from '../typing-context';
-
 import {
   Type,
   boolType,
@@ -24,6 +21,9 @@ import {
 import type { Pattern } from 'samlang-core-ast/samlang-pattern';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { hashMapOf, LocalStackedContext } from 'samlang-core-utils';
+
+import StatementTypeChecker from '../statement-type-checker';
+import { AccessibleGlobalTypingContext } from '../typing-context';
 
 const STATEMENT = (
   pattern: Pattern,

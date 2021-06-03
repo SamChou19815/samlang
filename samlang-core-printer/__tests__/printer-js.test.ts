@@ -1,12 +1,4 @@
 import {
-  createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING,
-  createPrettierDocumentFromMidIRStatement_EXPOSED_FOR_TESTING,
-  createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING,
-  createPrettierDocumentFromMidIRModule,
-} from '../printer-js';
-import { prettyPrintAccordingToPrettierAlgorithm } from '../printer-prettier-core';
-
-import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_PRINTLN,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
@@ -35,6 +27,14 @@ import {
   MIR_BOOL_TYPE,
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRModule } from 'samlang-core-ast/mir-nodes';
+
+import {
+  createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING,
+  createPrettierDocumentFromMidIRStatement_EXPOSED_FOR_TESTING,
+  createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING,
+  createPrettierDocumentFromMidIRModule,
+} from '../printer-js';
+import { prettyPrintAccordingToPrettierAlgorithm } from '../printer-prettier-core';
 
 const midIRExpressionToString = (e: MidIRExpression): string =>
   prettyPrintAccordingToPrettierAlgorithm(

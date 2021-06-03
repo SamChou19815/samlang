@@ -10,8 +10,6 @@ import {
 } from 'fs';
 import { join, normalize, dirname, resolve, relative, sep } from 'path';
 
-import type { SamlangProjectConfiguration } from './configuration';
-
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import type { MidIRModule } from 'samlang-core-ast/mir-nodes';
@@ -22,6 +20,8 @@ import {
   lowerMidIRModuleToLLVMModule,
 } from 'samlang-core-compiler';
 import { prettyPrintMidIRModuleAsJS } from 'samlang-core-printer';
+
+import type { SamlangProjectConfiguration } from './configuration';
 
 const walk = (startPath: string, visitor: (file: string) => void): void => {
   const recursiveVisit = (path: string): void => {

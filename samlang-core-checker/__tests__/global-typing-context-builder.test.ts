@@ -1,12 +1,12 @@
-import {
-  buildGlobalTypingContext,
-  updateGlobalTypingContext,
-} from '../global-typing-context-builder';
-
 import { functionType, intType, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
 import { EXPRESSION_FALSE } from 'samlang-core-ast/samlang-expressions';
 import type { ClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { mapOf } from 'samlang-core-utils';
+
+import {
+  buildGlobalTypingContext,
+  updateGlobalTypingContext,
+} from '../global-typing-context-builder';
 
 const module0Reference = new ModuleReference(['Module0']);
 const module1Reference = new ModuleReference(['Module1']);

@@ -1,5 +1,3 @@
-import optimizeMidIRFunctionByTailRecursionRewrite from '../mir-tail-recursion-optimization';
-
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -15,6 +13,8 @@ import {
   MIR_INT_TYPE,
 } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
+
+import optimizeMidIRFunctionByTailRecursionRewrite from '../mir-tail-recursion-optimization';
 
 const assertOptimizationFails = (midIRFunction: MidIRFunction): void =>
   expect(optimizeMidIRFunctionByTailRecursionRewrite(midIRFunction)).toBeNull();

@@ -1,5 +1,3 @@
-import type { AccessibleGlobalTypingContext } from './typing-context';
-
 import { Type, unitType } from 'samlang-core-ast/common-nodes';
 import {
   SamlangExpression,
@@ -11,6 +9,8 @@ import type { Pattern, ObjectPatternDestucturedName } from 'samlang-core-ast/sam
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { checkNotNull, zip, LocalStackedContext, assert } from 'samlang-core-utils';
+
+import type { AccessibleGlobalTypingContext } from './typing-context';
 
 export default class StatementTypeChecker {
   constructor(

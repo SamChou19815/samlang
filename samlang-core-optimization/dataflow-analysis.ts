@@ -1,8 +1,8 @@
 /* eslint-disable no-param-reassign */
 
-import type ControlFlowGraph from './control-flow-graph';
-
 import { checkNotNull } from 'samlang-core-utils';
+
+import type ControlFlowGraph from './control-flow-graph';
 
 /** Defines how to compute stuff on the graph. */
 export interface DataflowAnalysisGraphOperator<Instruction, DataEdge> {

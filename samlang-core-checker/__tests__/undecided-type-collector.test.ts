@@ -1,5 +1,3 @@
-import collectUndecidedTypeIndices from '../undecided-type-collector';
-
 import {
   unitType,
   boolType,
@@ -8,6 +6,8 @@ import {
   functionType,
   ModuleReference,
 } from 'samlang-core-ast/common-nodes';
+
+import collectUndecidedTypeIndices from '../undecided-type-collector';
 
 it('can collect all undecided types', () => {
   expect(

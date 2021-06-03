@@ -1,5 +1,3 @@
-import PanicException from './panic-exception';
-
 import type { IdentifierType } from 'samlang-core-ast/common-nodes';
 import {
   SamlangExpression,
@@ -8,6 +6,8 @@ import {
 } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule, ClassDefinition } from 'samlang-core-ast/samlang-toplevel';
 import { assert, checkNotNull, zip } from 'samlang-core-utils';
+
+import PanicException from './panic-exception';
 
 export type Value =
   | UnitValue

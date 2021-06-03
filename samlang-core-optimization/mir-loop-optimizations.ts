@@ -1,18 +1,3 @@
-import optimizeMidIRStatementsByConditionalConstantPropagation from './mir-conditional-constant-propagation-optimization';
-import {
-  collectUseFromMidIRExpression,
-  collectUseFromMidIRStatement,
-} from './mir-dead-code-elimination-optimization';
-import midIRLoopAlgebraicOptimization from './mir-loop-algebraic-optimization';
-import extractOptimizableWhileLoop, {
-  MidIROptimizableWhileLoop,
-  invertGuardOperator,
-} from './mir-loop-induction-analysis';
-import midIRLoopInductionVariableEliminationOptimization from './mir-loop-induction-variable-elimination';
-import optimizeMidIRWhileStatementByLoopInvariantCodeMotion from './mir-loop-invariant-code-motion';
-import midIRLoopStrengthReductionOptimization from './mir-loop-strength-reduction';
-import type OptimizationResourceAllocator from './optimization-resource-allocator';
-
 import createMidIRFlexibleOrderOperatorNode from 'samlang-core-ast/mir-flexible-op';
 import {
   MidIRStatement,
@@ -27,6 +12,21 @@ import {
   MIR_INT_TYPE,
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
+
+import optimizeMidIRStatementsByConditionalConstantPropagation from './mir-conditional-constant-propagation-optimization';
+import {
+  collectUseFromMidIRExpression,
+  collectUseFromMidIRStatement,
+} from './mir-dead-code-elimination-optimization';
+import midIRLoopAlgebraicOptimization from './mir-loop-algebraic-optimization';
+import extractOptimizableWhileLoop, {
+  MidIROptimizableWhileLoop,
+  invertGuardOperator,
+} from './mir-loop-induction-analysis';
+import midIRLoopInductionVariableEliminationOptimization from './mir-loop-induction-variable-elimination';
+import optimizeMidIRWhileStatementByLoopInvariantCodeMotion from './mir-loop-invariant-code-motion';
+import midIRLoopStrengthReductionOptimization from './mir-loop-strength-reduction';
+import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
 const expandOptimizableWhileLoop = (
   {

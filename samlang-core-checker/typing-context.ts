@@ -1,7 +1,3 @@
-import replaceTypeIdentifier from './type-identifier-replacer';
-import { undecideTypeParameters } from './type-undecider';
-import type { IdentifierTypeValidator } from './type-validator';
-
 import {
   IdentifierType,
   FunctionType,
@@ -11,6 +7,10 @@ import {
 } from 'samlang-core-ast/common-nodes';
 import type { FieldType, TypeDefinition } from 'samlang-core-ast/samlang-toplevel';
 import { checkNotNull, HashMap, ReadonlyHashMap, zip } from 'samlang-core-utils';
+
+import replaceTypeIdentifier from './type-identifier-replacer';
+import { undecideTypeParameters } from './type-undecider';
+import type { IdentifierTypeValidator } from './type-validator';
 
 export interface MemberTypeInformation {
   readonly isPublic: boolean;

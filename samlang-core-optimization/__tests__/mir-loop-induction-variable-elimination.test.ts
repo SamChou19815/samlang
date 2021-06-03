@@ -1,6 +1,3 @@
-import midIRLoopInductionVariableEliminationOptimization from '../mir-loop-induction-variable-elimination';
-import OptimizationResourceAllocator from '../optimization-resource-allocator';
-
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -17,6 +14,9 @@ import {
   MIR_STRUCT_INITIALIZATION,
   MIR_INT_TYPE,
 } from 'samlang-core-ast/mir-nodes';
+
+import midIRLoopInductionVariableEliminationOptimization from '../mir-loop-induction-variable-elimination';
+import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 it('midIRLoopInductionVariableEliminationOptimization rejects unoptimizable loops', () => {
   const allocator = new OptimizationResourceAllocator();

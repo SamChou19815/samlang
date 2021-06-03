@@ -1,11 +1,4 @@
 import {
-  SamlangKeywordString,
-  SamlangOperatorString,
-  SamlangToken,
-  samlangTokenContentToString,
-} from './samlang-lexer';
-
-import {
   Type,
   UndecidedTypes,
   unitType,
@@ -69,6 +62,13 @@ import type {
 } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import { checkNotNull } from 'samlang-core-utils';
+
+import {
+  SamlangKeywordString,
+  SamlangOperatorString,
+  SamlangToken,
+  samlangTokenContentToString,
+} from './samlang-lexer';
 
 /** @internal */
 export class BaseParser {

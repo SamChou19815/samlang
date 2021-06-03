@@ -1,8 +1,3 @@
-import optimizeMidIRFunctionsByInlining, {
-  estimateFunctionInlineCost_EXPOSED_FOR_TESTING,
-} from '../mir-inline-optimization';
-import OptimizationResourceAllocator from '../optimization-resource-allocator';
-
 import {
   MIR_ZERO,
   MIR_ONE,
@@ -25,6 +20,11 @@ import {
   MIR_FUNCTION_TYPE,
   MIR_INT_TYPE,
 } from 'samlang-core-ast/mir-nodes';
+
+import optimizeMidIRFunctionsByInlining, {
+  estimateFunctionInlineCost_EXPOSED_FOR_TESTING,
+} from '../mir-inline-optimization';
+import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
 it('estimateFunctionInlineCost test', () => {
   expect(

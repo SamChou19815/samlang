@@ -1,3 +1,5 @@
+import { assert, zip } from 'samlang-core-utils';
+
 import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_MALLOC,
@@ -9,8 +11,6 @@ import {
 import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
 import type { MidIRIdentifierType } from './mir-nodes';
-
-import { assert, zip } from 'samlang-core-utils';
 
 export type LLVMPrimitiveType = { readonly __type__: 'PrimitiveType'; readonly type: 'i1' | 'i32' };
 export type LLVMStringType = { readonly __type__: 'StringType'; readonly length?: number };

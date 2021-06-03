@@ -1,11 +1,11 @@
-import MidIRTypeSynthesizer from '../mir-type-synthesizer';
-
 import {
   MIR_ANY_TYPE,
   MIR_BOOL_TYPE,
   MIR_FUNCTION_TYPE,
   MIR_INT_TYPE,
 } from 'samlang-core-ast/mir-nodes';
+
+import MidIRTypeSynthesizer from '../mir-type-synthesizer';
 
 it('MidIRTypeSynthesizer works', () => {
   const synthesizer = new MidIRTypeSynthesizer();

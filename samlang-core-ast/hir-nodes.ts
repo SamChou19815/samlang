@@ -1,7 +1,7 @@
+import { zip } from 'samlang-core-utils';
+
 import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
-
-import { zip } from 'samlang-core-utils';
 
 export type HighIRPrimitiveType = {
   readonly __type__: 'PrimitiveType';
