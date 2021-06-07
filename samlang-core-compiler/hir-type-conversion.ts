@@ -170,4 +170,9 @@ export const lowerSamlangFunctionTypeForTopLevel = (
   // function context type information might need to go through a process like constant propagation.
   // This kind of constant propagation also cannot just focus on the type. Since two expressions with
   // both (int) -> int type at source level might have completely different context type in HIR.
+  //
+  // Due to the discussion above, it looks like another pass of "type-checking" is necessary during
+  // HIR generation. It's not really a full type-checking like the source-level one, but it's
+  // necessary, since all the existing type annotations are unreliable and needs to be replaced by
+  // propogated types.
 };
