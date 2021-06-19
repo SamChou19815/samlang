@@ -154,25 +154,4 @@ export const lowerSamlangFunctionTypeForTopLevel = (
   //
   // Explanation:
   // First lambda has context {x:3}. Second lambda has context {y:false}.
-  //
-  //
-  // The above section describes how to lower function types at the function toplevel.
-  // However, it turns out that the statement/expression level function types are more tricky.
-  // Consider the following statements:
-  //
-  // val x: int = 4;
-  // val f: (int) -> int = (y) -> x + y;
-  // val g: (int) -> int = f;
-  //
-  // The RHS of f init statement has HIR type ({x:int}, int) -> int.
-  // The concrete context type information is simply not available when we are translating the
-  // function type *locally*. The g assignment statement also seems to suggest that this kind of
-  // function context type information might need to go through a process like constant propagation.
-  // This kind of constant propagation also cannot just focus on the type. Since two expressions with
-  // both (int) -> int type at source level might have completely different context type in HIR.
-  //
-  // Due to the discussion above, it looks like another pass of "type-checking" is necessary during
-  // HIR generation. It's not really a full type-checking like the source-level one, but it's
-  // necessary, since all the existing type annotations are unreliable and needs to be replaced by
-  // propogated types.
 };
