@@ -52,7 +52,7 @@ import type {
 import { LocalStackedContext, assert, checkNotNull } from 'samlang-core-utils';
 
 import type HighIRStringManager from './hir-string-manager';
-import type { HighIRTypeSynthesizer } from './hir-type-conversion';
+import { HighIRTypeSynthesizer, lowerSamlangType } from './hir-type-conversion';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -96,6 +96,7 @@ class HighIRExpressionLoweringManager {
     private readonly encodedFunctionName: string,
     private readonly typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
     private readonly functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
+    private readonly typeParameters: ReadonlySet<string>,
     private readonly typeSynthesizer: HighIRTypeSynthesizer,
     private readonly stringManager: HighIRStringManager
   ) {}
@@ -126,7 +127,7 @@ class HighIRExpressionLoweringManager {
   }
 
   private lowerType(type: Type): HighIRType {
-    throw new Error(this.encodedFunctionName + type);
+    return lowerSamlangType(type, this.typeParameters, this.typeSynthesizer);
   }
 
   private getTypeMapping(identifier: string): readonly HighIRType[] {
@@ -329,8 +330,15 @@ class HighIRExpressionLoweringManager {
 
   private lowerMethodAccess(expression: MethodAccessExpression): HighIRExpressionLoweringResult {
     const structVariableName = this.allocateTemporaryVariable();
-    const methodType = this.lowerType(expression.type);
     const result = this.lower(expression.expression);
+    const sourceLevelMethodType = expression.type as FunctionType;
+    const methodType = HIR_FUNCTION_TYPE(
+      [
+        result.expression.type,
+        ...sourceLevelMethodType.argumentTypes.map((it) => this.lowerType(it)),
+      ],
+      this.lowerType(sourceLevelMethodType.returnType)
+    );
     const closureType = HIR_IDENTIFIER_TYPE(
       this.typeSynthesizer.synthesizeTupleType([methodType, result.expression.type], []).identifier,
       []
@@ -955,6 +963,7 @@ const lowerSamlangExpression = (
   encodedFunctionName: string,
   typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
   functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
+  typeParameters: ReadonlySet<string>,
   typeSynthesizer: HighIRTypeSynthesizer,
   stringManager: HighIRStringManager,
   expression: SamlangExpression
@@ -964,6 +973,7 @@ const lowerSamlangExpression = (
     encodedFunctionName,
     typeDefinitionMapping,
     functionTypeMapping,
+    typeParameters,
     typeSynthesizer,
     stringManager
   );
