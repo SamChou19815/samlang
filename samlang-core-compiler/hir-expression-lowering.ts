@@ -91,6 +91,7 @@ class HighIRExpressionLoweringManager {
     private readonly encodedFunctionName: string,
     private readonly typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
     private readonly functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
+    private readonly thisType: HighIRType | null,
     private readonly typeLoweringManager: SamlangTypeLoweringManager,
     private readonly typeSynthesizer: HighIRTypeSynthesizer,
     private readonly stringManager: HighIRStringManager
@@ -155,10 +156,7 @@ class HighIRExpressionLoweringManager {
           }
         }
       case 'ThisExpression':
-        return {
-          statements: [],
-          expression: HIR_VARIABLE('_this', this.lowerType(expression.type)),
-        };
+        return { statements: [], expression: HIR_VARIABLE('_this', checkNotNull(this.thisType)) };
       case 'VariableExpression': {
         const stored = this.varibleContext.getLocalValueType(expression.name);
         if (stored != null) return { statements: [], expression: stored };
@@ -873,9 +871,11 @@ class HighIRExpressionLoweringManager {
         );
         switch (pattern.type) {
           case 'TuplePattern': {
-            pattern.destructedNames.forEach(({ name, type }, index) => {
+            const identifierType = loweredAssignedExpression.type;
+            assert(identifierType.__type__ === 'IdentifierType');
+            pattern.destructedNames.forEach(({ name }, index) => {
               if (name == null) return;
-              const fieldType = this.lowerType(type);
+              const fieldType = checkNotNull(this.getTypeMapping(identifierType.name)[index]);
               const mangledName = this.getRenamedVariableForNesting(name, fieldType);
               loweredStatements.push(
                 HIR_INDEX_ACCESS({
@@ -890,6 +890,8 @@ class HighIRExpressionLoweringManager {
             break;
           }
           case 'ObjectPattern': {
+            const identifierType = loweredAssignedExpression.type;
+            assert(identifierType.__type__ === 'IdentifierType');
             pattern.destructedNames.forEach(({ fieldName, fieldOrder, type, alias }) => {
               const fieldType = this.lowerType(type);
               const mangledName = this.getRenamedVariableForNesting(
@@ -938,6 +940,7 @@ const lowerSamlangExpression = (
   encodedFunctionName: string,
   typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
   functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
+  thisType: HighIRType | null,
   typeLoweringManager: SamlangTypeLoweringManager,
   typeSynthesizer: HighIRTypeSynthesizer,
   stringManager: HighIRStringManager,
@@ -948,6 +951,7 @@ const lowerSamlangExpression = (
     encodedFunctionName,
     typeDefinitionMapping,
     functionTypeMapping,
+    thisType,
     typeLoweringManager,
     typeSynthesizer,
     stringManager
