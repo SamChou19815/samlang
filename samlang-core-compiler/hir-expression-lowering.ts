@@ -2,12 +2,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   encodeFunctionNameGlobally,
 } from 'samlang-core-ast/common-names';
-import type {
-  ModuleReference,
-  Type,
-  IdentifierType,
-  FunctionType,
-} from 'samlang-core-ast/common-nodes';
+import type { ModuleReference, Type, IdentifierType } from 'samlang-core-ast/common-nodes';
 import {
   HighIRType,
   HighIRFunctionType,
@@ -52,7 +47,7 @@ import type {
 import { LocalStackedContext, assert, checkNotNull } from 'samlang-core-utils';
 
 import type HighIRStringManager from './hir-string-manager';
-import { HighIRTypeSynthesizer, lowerSamlangType } from './hir-type-conversion';
+import type { HighIRTypeSynthesizer, SamlangTypeLoweringManager } from './hir-type-conversion';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -96,7 +91,7 @@ class HighIRExpressionLoweringManager {
     private readonly encodedFunctionName: string,
     private readonly typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
     private readonly functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
-    private readonly typeParameters: ReadonlySet<string>,
+    private readonly typeLoweringManager: SamlangTypeLoweringManager,
     private readonly typeSynthesizer: HighIRTypeSynthesizer,
     private readonly stringManager: HighIRStringManager
   ) {}
@@ -126,9 +121,13 @@ class HighIRExpressionLoweringManager {
     return result.expression;
   }
 
-  private lowerType(type: Type): HighIRType {
-    return lowerSamlangType(type, this.typeParameters, this.typeSynthesizer);
-  }
+  // TODO: avoid calling this most of the time
+  private lowerType = (type: Type): HighIRType => this.typeLoweringManager.lowerSamlangType(type);
+
+  private getSyntheticIdentifierTypeFromTuple = (
+    mappings: readonly HighIRType[]
+  ): HighIRIdentifierType =>
+    HIR_IDENTIFIER_TYPE(this.typeSynthesizer.synthesizeTupleType(mappings, []).identifier, []);
 
   private getTypeMapping(identifier: string): readonly HighIRType[] {
     return checkNotNull(
@@ -198,23 +197,23 @@ class HighIRExpressionLoweringManager {
   };
 
   private lowerClassMember(expression: ClassMemberExpression): HighIRExpressionLoweringResult {
-    const structVariableName = this.allocateTemporaryVariable();
-    const sourceLevelFunctionType = expression.type as FunctionType;
-    const withContextIRFunctionType = HIR_FUNCTION_TYPE(
-      [HIR_INT_TYPE, ...sourceLevelFunctionType.argumentTypes.map((it) => this.lowerType(it))],
-      this.lowerType(sourceLevelFunctionType.returnType)
-    );
-    const closureType = HIR_IDENTIFIER_TYPE(
-      this.typeSynthesizer.synthesizeTupleType([withContextIRFunctionType, HIR_INT_TYPE], [])
-        .identifier,
-      []
-    );
-    const statements: HighIRStatement[] = [];
     const encodedOriginalFunctionName = encodeFunctionNameGlobally(
       expression.moduleReference,
       expression.className,
       expression.memberName
     );
+    const functionTypeWithoutContext = this.functionTypeMapping[encodedOriginalFunctionName];
+    assert(functionTypeWithoutContext != null, `Missing function: ${encodedOriginalFunctionName}`);
+    const structVariableName = this.allocateTemporaryVariable();
+    const withContextIRFunctionType = HIR_FUNCTION_TYPE(
+      [HIR_INT_TYPE, ...functionTypeWithoutContext.argumentTypes],
+      functionTypeWithoutContext.returnType
+    );
+    const closureType = this.getSyntheticIdentifierTypeFromTuple([
+      withContextIRFunctionType,
+      HIR_INT_TYPE,
+    ]);
+    const statements: HighIRStatement[] = [];
     statements.push(
       HIR_STRUCT_INITIALIZATION({
         structVariableName,
@@ -329,20 +328,23 @@ class HighIRExpressionLoweringManager {
   }
 
   private lowerMethodAccess(expression: MethodAccessExpression): HighIRExpressionLoweringResult {
+    const functionName = encodeFunctionNameGlobally(
+      (expression.expression.type as IdentifierType).moduleReference,
+      (expression.expression.type as IdentifierType).identifier,
+      expression.methodName
+    );
+    const functionTypeWithoutContext = this.functionTypeMapping[functionName];
+    assert(functionTypeWithoutContext != null, `Missing function: ${functionName}`);
     const structVariableName = this.allocateTemporaryVariable();
     const result = this.lower(expression.expression);
-    const sourceLevelMethodType = expression.type as FunctionType;
     const methodType = HIR_FUNCTION_TYPE(
-      [
-        result.expression.type,
-        ...sourceLevelMethodType.argumentTypes.map((it) => this.lowerType(it)),
-      ],
-      this.lowerType(sourceLevelMethodType.returnType)
+      [result.expression.type, ...functionTypeWithoutContext.argumentTypes],
+      functionTypeWithoutContext.returnType
     );
-    const closureType = HIR_IDENTIFIER_TYPE(
-      this.typeSynthesizer.synthesizeTupleType([methodType, result.expression.type], []).identifier,
-      []
-    );
+    const closureType = this.getSyntheticIdentifierTypeFromTuple([
+      methodType,
+      result.expression.type,
+    ]);
     const finalVariableExpression = HIR_VARIABLE(structVariableName, closureType);
     this.varibleContext.bind(structVariableName, finalVariableExpression);
     return {
@@ -351,22 +353,13 @@ class HighIRExpressionLoweringManager {
         HIR_STRUCT_INITIALIZATION({
           structVariableName,
           type: closureType,
-          expressionList: [
-            HIR_NAME(
-              encodeFunctionNameGlobally(
-                (expression.expression.type as IdentifierType).moduleReference,
-                (expression.expression.type as IdentifierType).identifier,
-                expression.methodName
-              ),
-              methodType
-            ),
-            result.expression,
-          ],
+          expressionList: [HIR_NAME(functionName, methodType), result.expression],
         }),
       ],
       expression: finalVariableExpression,
     };
   }
+
   private lowerUnary(expression: UnaryExpression): HighIRExpressionLoweringResult {
     const result = this.lower(expression.expression);
     const valueName = this.allocateTemporaryVariable();
@@ -450,49 +443,36 @@ class HighIRExpressionLoweringManager {
         break;
       }
       default: {
-        const sourceLevelFunctionTypeWithoutContext = functionExpression.type as FunctionType;
-        const functionTypeWithoutContext = HIR_FUNCTION_TYPE(
-          sourceLevelFunctionTypeWithoutContext.argumentTypes.map((it) => this.lowerType(it)),
-          this.lowerType(sourceLevelFunctionTypeWithoutContext.returnType)
-        );
-        const loweredFunctionExpression = this.loweredAndAddStatements(
+        const pointerExpression = this.loweredAndAddStatements(
           functionExpression,
           loweredStatements
         );
-        const closureType = loweredFunctionExpression.type;
+        const closureType = pointerExpression.type;
         assert(closureType.__type__ === 'IdentifierType');
-        const [functionWithContextArgumentType, contextType] = this.getTypeMapping(
-          closureType.name
-        ) as readonly [HighIRType, HighIRType];
+        const [functionType, contextType] = this.getTypeMapping(closureType.name) as readonly [
+          HighIRType,
+          HighIRType
+        ];
+        assert(functionType.__type__ === 'FunctionType');
         const loweredFunctionArguments = expression.functionArguments.map((oneArgument) =>
           this.loweredAndAddStatements(oneArgument, loweredStatements)
         );
         const functionTemp = this.allocateTemporaryVariable();
         const contextTemp = this.allocateTemporaryVariable();
         loweredStatements.push(
-          HIR_INDEX_ACCESS({
-            name: functionTemp,
-            type: functionWithContextArgumentType,
-            pointerExpression: loweredFunctionExpression,
-            index: 0,
-          }),
-          HIR_INDEX_ACCESS({
-            name: contextTemp,
-            type: contextType,
-            pointerExpression: loweredFunctionExpression,
-            index: 1,
-          })
+          HIR_INDEX_ACCESS({ name: functionTemp, type: functionType, pointerExpression, index: 0 }),
+          HIR_INDEX_ACCESS({ name: contextTemp, type: contextType, pointerExpression, index: 1 })
         );
-        const functionTempVariable = HIR_VARIABLE(functionTemp, functionWithContextArgumentType);
+        const functionTempVariable = HIR_VARIABLE(functionTemp, functionType);
         const contextTempVariable = HIR_VARIABLE(contextTemp, contextType);
         this.varibleContext.bind(functionTemp, functionTempVariable);
         this.varibleContext.bind(contextTemp, contextTempVariable);
 
-        functionReturnCollectorType = functionTypeWithoutContext.returnType;
+        functionReturnCollectorType = functionType.returnType;
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: functionTempVariable,
           functionArguments: [contextTempVariable, ...loweredFunctionArguments],
-          returnType: functionTypeWithoutContext.returnType,
+          returnType: functionType.returnType,
           returnCollector: isVoidReturn ? undefined : returnCollectorName,
         });
         break;
@@ -963,7 +943,7 @@ const lowerSamlangExpression = (
   encodedFunctionName: string,
   typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
   functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
-  typeParameters: ReadonlySet<string>,
+  typeLoweringManager: SamlangTypeLoweringManager,
   typeSynthesizer: HighIRTypeSynthesizer,
   stringManager: HighIRStringManager,
   expression: SamlangExpression
@@ -973,7 +953,7 @@ const lowerSamlangExpression = (
     encodedFunctionName,
     typeDefinitionMapping,
     functionTypeMapping,
-    typeParameters,
+    typeLoweringManager,
     typeSynthesizer,
     stringManager
   );
