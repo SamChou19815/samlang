@@ -70,88 +70,93 @@ export const collectUsedGenericTypes = (
   return collector;
 };
 
-const SYNTHETIC_CONTEXT_TYPE_PARAMETER = '_Context';
+export class SamlangTypeLoweringManager {
+  private contextIDCount = 0;
 
-export const lowerSamlangType = (
-  type: Type,
-  genericTypes: ReadonlySet<string>,
-  typeSynthesizer: HighIRTypeSynthesizer
-): HighIRType => {
-  assert(type.type !== 'UndecidedType', 'Unreachable!');
-  switch (type.type) {
-    case 'PrimitiveType':
-      switch (type.name) {
-        case 'bool':
-          return HIR_BOOL_TYPE;
-        case 'int':
-        case 'unit':
-          return HIR_INT_TYPE;
-        case 'string':
-          return HIR_STRING_TYPE;
-      }
-    case 'IdentifierType': {
-      if (genericTypes.has(type.identifier)) return HIR_IDENTIFIER_TYPE(type.identifier, []);
-      return HIR_IDENTIFIER_TYPE(
-        `${type.moduleReference.parts.join('_')}_${type.identifier}`,
-        type.typeArguments.map((it) => lowerSamlangType(it, genericTypes, typeSynthesizer))
-      );
-    }
-    case 'TupleType': {
-      const typeMappings = type.mappings.map((it) =>
-        lowerSamlangType(it, genericTypes, typeSynthesizer)
-      );
-      const typeParameters = Array.from(
-        collectUsedGenericTypes(HIR_FUNCTION_TYPE(typeMappings, HIR_BOOL_TYPE), genericTypes)
-      );
-      const typeDefinition = typeSynthesizer.synthesizeTupleType(typeMappings, typeParameters);
-      return HIR_IDENTIFIER_TYPE(
-        typeDefinition.identifier,
-        typeParameters.map((name) => HIR_IDENTIFIER_TYPE(name, []))
-      );
-    }
-    case 'FunctionType': {
-      const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
-        [...type.argumentTypes.map((it) => lowerSamlangType(it, genericTypes, typeSynthesizer))],
-        lowerSamlangType(type.returnType, genericTypes, typeSynthesizer)
-      );
-      const usedGenericTypes = collectUsedGenericTypes(hirFunctionTypeWithoutContext, genericTypes);
-      const typeParameters = Array.from(usedGenericTypes);
-      const contextGenericType = HIR_IDENTIFIER_TYPE(SYNTHETIC_CONTEXT_TYPE_PARAMETER, []);
-      const typeDefinition = typeSynthesizer.synthesizeTupleType(
-        [
-          HIR_FUNCTION_TYPE(
-            [contextGenericType, ...hirFunctionTypeWithoutContext.argumentTypes],
-            hirFunctionTypeWithoutContext.returnType
-          ),
-          contextGenericType,
-        ],
-        [...typeParameters, SYNTHETIC_CONTEXT_TYPE_PARAMETER]
-      );
-      return HIR_IDENTIFIER_TYPE(
-        typeDefinition.identifier,
-        typeDefinition.typeParameters.map((name) => HIR_IDENTIFIER_TYPE(name, []))
-      );
-    }
+  constructor(
+    private readonly genericTypes: ReadonlySet<string>,
+    private readonly typeSynthesizer: HighIRTypeSynthesizer
+  ) {}
+
+  private allocateContextTypeParameter() {
+    const typeParameter = `_TypeContext${this.contextIDCount}`;
+    this.contextIDCount += 1;
+    return typeParameter;
   }
-};
 
-export const lowerSamlangFunctionTypeForTopLevel = (
-  { argumentTypes, returnType }: FunctionType,
-  genericTypes: ReadonlySet<string>,
-  typeSynthesizer: HighIRTypeSynthesizer
-): HighIRFunctionType => {
-  const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
-    [...argumentTypes.map((it) => lowerSamlangType(it, genericTypes, typeSynthesizer))],
-    lowerSamlangType(returnType, genericTypes, typeSynthesizer)
-  );
-  return hirFunctionTypeWithoutContext;
-  // TODO: Must have different context parameter for every context!
-  //
-  // Example:
-  // function foo(a: (int) -> bool, b: (bool) -> int);
-  // val x = 3; val y = false;
-  // foo((k) -> k + x, (k) -> k && y);
-  //
-  // Explanation:
-  // First lambda has context {x:3}. Second lambda has context {y:false}.
-};
+  lowerSamlangFunctionTypeForTopLevel = ({
+    argumentTypes,
+    returnType,
+  }: FunctionType): HighIRFunctionType => {
+    const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
+      [...argumentTypes.map(this.lowerSamlangType)],
+      this.lowerSamlangType(returnType)
+    );
+    // TODO: collect context parameters
+    return hirFunctionTypeWithoutContext;
+  };
+
+  lowerSamlangType = (type: Type): HighIRType => {
+    assert(type.type !== 'UndecidedType', 'Unreachable!');
+    switch (type.type) {
+      case 'PrimitiveType':
+        switch (type.name) {
+          case 'bool':
+            return HIR_BOOL_TYPE;
+          case 'int':
+          case 'unit':
+            return HIR_INT_TYPE;
+          case 'string':
+            return HIR_STRING_TYPE;
+        }
+      case 'IdentifierType': {
+        if (this.genericTypes.has(type.identifier)) return HIR_IDENTIFIER_TYPE(type.identifier, []);
+        return HIR_IDENTIFIER_TYPE(
+          `${type.moduleReference.parts.join('_')}_${type.identifier}`,
+          type.typeArguments.map(this.lowerSamlangType)
+        );
+      }
+      case 'TupleType': {
+        const typeMappings = type.mappings.map(this.lowerSamlangType);
+        const typeParameters = Array.from(
+          collectUsedGenericTypes(HIR_FUNCTION_TYPE(typeMappings, HIR_BOOL_TYPE), this.genericTypes)
+        );
+        const typeDefinition = this.typeSynthesizer.synthesizeTupleType(
+          typeMappings,
+          typeParameters
+        );
+        return HIR_IDENTIFIER_TYPE(
+          typeDefinition.identifier,
+          typeParameters.map((name) => HIR_IDENTIFIER_TYPE(name, []))
+        );
+      }
+      case 'FunctionType': {
+        const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
+          [...type.argumentTypes.map(this.lowerSamlangType)],
+          this.lowerSamlangType(type.returnType)
+        );
+        const usedGenericTypes = collectUsedGenericTypes(
+          hirFunctionTypeWithoutContext,
+          this.genericTypes
+        );
+        const typeParameters = Array.from(usedGenericTypes);
+        const contextTypeParameter = this.allocateContextTypeParameter();
+        const contextGenericType = HIR_IDENTIFIER_TYPE(contextTypeParameter, []);
+        const typeDefinition = this.typeSynthesizer.synthesizeTupleType(
+          [
+            HIR_FUNCTION_TYPE(
+              [contextGenericType, ...hirFunctionTypeWithoutContext.argumentTypes],
+              hirFunctionTypeWithoutContext.returnType
+            ),
+            contextGenericType,
+          ],
+          [...typeParameters, contextTypeParameter]
+        );
+        return HIR_IDENTIFIER_TYPE(
+          typeDefinition.identifier,
+          typeDefinition.typeParameters.map((name) => HIR_IDENTIFIER_TYPE(name, []))
+        );
+      }
+    }
+  };
+}

@@ -44,7 +44,7 @@ import {
 
 import lowerSamlangExpression from '../hir-expression-lowering';
 import HighIRStringManager from '../hir-string-manager';
-import { HighIRTypeSynthesizer } from '../hir-type-conversion';
+import { HighIRTypeSynthesizer, SamlangTypeLoweringManager } from '../hir-type-conversion';
 
 const DUMMY_IDENTIFIER_TYPE = identifierType(ModuleReference.DUMMY, 'Dummy');
 const THIS = EXPRESSION_THIS({
@@ -58,6 +58,7 @@ const expectCorrectlyLowered = (
   expectedString: string
 ): void => {
   const typeSynthesizer = new HighIRTypeSynthesizer();
+  const typeLoweringManager = new SamlangTypeLoweringManager(new Set(), typeSynthesizer);
   const stringManager = new HighIRStringManager();
   const { statements, expression, syntheticFunctions } = lowerSamlangExpression(
     ModuleReference.DUMMY,
@@ -81,10 +82,12 @@ const expectCorrectlyLowered = (
         [HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', []), HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])],
         HIR_INT_TYPE
       ),
+      _module___DUMMY___class_Dummy_function_foo: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
       _module___DUMMY___class_Dummy_function_fooBar: HIR_FUNCTION_TYPE(
         [HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', []), HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])],
         HIR_INT_TYPE
       ),
+      _module___DUMMY___class_A_function_b: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
       _module___DUMMY___class_C_function_m1: HIR_FUNCTION_TYPE(
         [HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])],
         HIR_INT_TYPE
@@ -94,7 +97,7 @@ const expectCorrectlyLowered = (
         HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])
       ),
     },
-    new Set(),
+    typeLoweringManager,
     typeSynthesizer,
     stringManager,
     samlangExpression
@@ -142,7 +145,7 @@ describe('hir-expression-lowering', () => {
     expectCorrectlyLowered(
       EXPRESSION_CLASS_MEMBER({
         range: Range.DUMMY,
-        type: functionType([intType], intType),
+        type: unitType,
         associatedComments: [],
         typeArguments: [],
         moduleReference: ModuleReference.DUMMY,
@@ -237,7 +240,7 @@ return (_t0: __DUMMY___Foo);`
     expectCorrectlyLowered(
       EXPRESSION_METHOD_ACCESS({
         range: Range.DUMMY,
-        type: functionType([intType], unitType),
+        type: unitType,
         associatedComments: [],
         expression: THIS,
         methodPrecedingComments: [],
@@ -334,10 +337,10 @@ return (_t0: int);`
           }),
           functionArguments: [THIS, THIS],
         }),
-        `object type _SYNTHETIC_ID_TYPE_0<_Context> = [(_Context, __DUMMY___Dummy, __DUMMY___Dummy) -> int, _Context]
-let _t1: (_Context, __DUMMY___Dummy, __DUMMY___Dummy) -> int = (closure: _SYNTHETIC_ID_TYPE_0<_Context>)[0];
-let _t2: _Context = (closure: _SYNTHETIC_ID_TYPE_0<_Context>)[1];
-let _t0: int = (_t1: (_Context, __DUMMY___Dummy, __DUMMY___Dummy) -> int)((_t2: _Context), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+        `object type _SYNTHETIC_ID_TYPE_0<_TypeContext0> = [(_TypeContext0, __DUMMY___Dummy, __DUMMY___Dummy) -> int, _TypeContext0]
+let _t1: (_TypeContext0, __DUMMY___Dummy, __DUMMY___Dummy) -> int = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[0];
+let _t2: _TypeContext0 = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[1];
+let _t0: int = (_t1: (_TypeContext0, __DUMMY___Dummy, __DUMMY___Dummy) -> int)((_t2: _TypeContext0), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: int);`
       );
     });
@@ -356,10 +359,10 @@ return (_t0: int);`
           }),
           functionArguments: [THIS, THIS],
         }),
-        `object type _SYNTHETIC_ID_TYPE_0<_Context> = [(_Context, __DUMMY___Dummy, __DUMMY___Dummy) -> int, _Context]
-let _t1: (_Context, __DUMMY___Dummy, __DUMMY___Dummy) -> int = (closure: _SYNTHETIC_ID_TYPE_0<_Context>)[0];
-let _t2: _Context = (closure: _SYNTHETIC_ID_TYPE_0<_Context>)[1];
-(_t1: (_Context, __DUMMY___Dummy, __DUMMY___Dummy) -> int)((_t2: _Context), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+        `object type _SYNTHETIC_ID_TYPE_0<_TypeContext0> = [(_TypeContext0, __DUMMY___Dummy, __DUMMY___Dummy) -> int, _TypeContext0]
+let _t1: (_TypeContext0, __DUMMY___Dummy, __DUMMY___Dummy) -> int = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[0];
+let _t2: _TypeContext0 = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[1];
+(_t1: (_TypeContext0, __DUMMY___Dummy, __DUMMY___Dummy) -> int)((_t2: _TypeContext0), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return 0;`
       );
     });
@@ -428,10 +431,10 @@ return (_t0: __DUMMY___Dummy);`
           }),
           functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
         }),
-        `object type _SYNTHETIC_ID_TYPE_0<_Context> = [(_Context, __DUMMY___Dummy) -> __DUMMY___Dummy, _Context]
-let _t1: (_Context, __DUMMY___Dummy) -> __DUMMY___Dummy = (closure: _SYNTHETIC_ID_TYPE_0<_Context>)[0];
-let _t2: _Context = (closure: _SYNTHETIC_ID_TYPE_0<_Context>)[1];
-let _t0: __DUMMY___Dummy = (_t1: (_Context, __DUMMY___Dummy) -> __DUMMY___Dummy)((_t2: _Context), 0);
+        `object type _SYNTHETIC_ID_TYPE_0<_TypeContext0> = [(_TypeContext0, __DUMMY___Dummy) -> __DUMMY___Dummy, _TypeContext0]
+let _t1: (_TypeContext0, __DUMMY___Dummy) -> __DUMMY___Dummy = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[0];
+let _t2: _TypeContext0 = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[1];
+let _t0: __DUMMY___Dummy = (_t1: (_TypeContext0, __DUMMY___Dummy) -> __DUMMY___Dummy)((_t2: _TypeContext0), 0);
 return (_t0: __DUMMY___Dummy);`
       );
     });

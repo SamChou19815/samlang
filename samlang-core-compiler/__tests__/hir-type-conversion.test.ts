@@ -19,145 +19,134 @@ import {
 } from 'samlang-core-ast/hir-nodes';
 
 import {
-  HighIRTypeSynthesizer,
   collectUsedGenericTypes,
-  lowerSamlangType,
-  lowerSamlangFunctionTypeForTopLevel,
+  HighIRTypeSynthesizer,
+  SamlangTypeLoweringManager,
 } from '../hir-type-conversion';
 
-it('HighIRTypeSynthesizer works', () => {
-  const synthesizer = new HighIRTypeSynthesizer();
+describe('hir-type-conversion', () => {
+  it('HighIRTypeSynthesizer works', () => {
+    const synthesizer = new HighIRTypeSynthesizer();
 
-  expect(
-    synthesizer.synthesizeTupleType(
-      [HIR_BOOL_TYPE, HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)],
+    expect(
+      synthesizer.synthesizeTupleType(
+        [HIR_BOOL_TYPE, HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)],
+        []
+      ).identifier
+    ).toBe('_SYNTHETIC_ID_TYPE_0');
+    expect(
+      synthesizer.synthesizeTupleType(
+        [HIR_INT_TYPE, HIR_FUNCTION_TYPE([HIR_BOOL_TYPE], HIR_BOOL_TYPE)],
+        []
+      ).identifier
+    ).toBe('_SYNTHETIC_ID_TYPE_1');
+
+    expect(
+      synthesizer.synthesizeTupleType(
+        [HIR_BOOL_TYPE, HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)],
+        []
+      ).identifier
+    ).toBe('_SYNTHETIC_ID_TYPE_0');
+    expect(
+      synthesizer.synthesizeTupleType(
+        [HIR_INT_TYPE, HIR_FUNCTION_TYPE([HIR_BOOL_TYPE], HIR_BOOL_TYPE)],
+        []
+      ).identifier
+    ).toBe('_SYNTHETIC_ID_TYPE_1');
+
+    expect(synthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
+      'object type _SYNTHETIC_ID_TYPE_0 = [bool, (int) -> bool]',
+      'object type _SYNTHETIC_ID_TYPE_1 = [int, (bool) -> bool]',
+    ]);
+    expect(Array.from(synthesizer.mappings.keys())).toEqual([
+      '_SYNTHETIC_ID_TYPE_0',
+      '_SYNTHETIC_ID_TYPE_1',
+    ]);
+  });
+
+  it('collectUsedGenericTypes works', () => {
+    const genericTypes = new Set(['A', 'B']);
+    expect(Array.from(collectUsedGenericTypes(HIR_BOOL_TYPE, genericTypes))).toEqual([]);
+
+    expect(Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('C', []), genericTypes))).toEqual(
       []
-    ).identifier
-  ).toBe('_SYNTHETIC_ID_TYPE_0');
-  expect(
-    synthesizer.synthesizeTupleType(
-      [HIR_INT_TYPE, HIR_FUNCTION_TYPE([HIR_BOOL_TYPE], HIR_BOOL_TYPE)],
-      []
-    ).identifier
-  ).toBe('_SYNTHETIC_ID_TYPE_1');
-
-  expect(
-    synthesizer.synthesizeTupleType(
-      [HIR_BOOL_TYPE, HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)],
-      []
-    ).identifier
-  ).toBe('_SYNTHETIC_ID_TYPE_0');
-  expect(
-    synthesizer.synthesizeTupleType(
-      [HIR_INT_TYPE, HIR_FUNCTION_TYPE([HIR_BOOL_TYPE], HIR_BOOL_TYPE)],
-      []
-    ).identifier
-  ).toBe('_SYNTHETIC_ID_TYPE_1');
-
-  expect(synthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
-    'object type _SYNTHETIC_ID_TYPE_0 = [bool, (int) -> bool]',
-    'object type _SYNTHETIC_ID_TYPE_1 = [int, (bool) -> bool]',
-  ]);
-  expect(Array.from(synthesizer.mappings.keys())).toEqual([
-    '_SYNTHETIC_ID_TYPE_0',
-    '_SYNTHETIC_ID_TYPE_1',
-  ]);
-});
-
-it('collectUsedGenericTypes works', () => {
-  const genericTypes = new Set(['A', 'B']);
-  expect(Array.from(collectUsedGenericTypes(HIR_BOOL_TYPE, genericTypes))).toEqual([]);
-
-  expect(Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('C', []), genericTypes))).toEqual(
-    []
-  );
-  expect(
-    Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('A', [HIR_BOOL_TYPE]), genericTypes))
-  ).toEqual([]);
-  expect(Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('A', []), genericTypes))).toEqual([
-    'A',
-  ]);
-  expect(Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('B', []), genericTypes))).toEqual([
-    'B',
-  ]);
-  expect(
-    Array.from(
-      collectUsedGenericTypes(
-        HIR_IDENTIFIER_TYPE('A', [HIR_IDENTIFIER_TYPE('B', [])]),
-        genericTypes
+    );
+    expect(
+      Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('A', [HIR_BOOL_TYPE]), genericTypes))
+    ).toEqual([]);
+    expect(Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('A', []), genericTypes))).toEqual(
+      ['A']
+    );
+    expect(Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('B', []), genericTypes))).toEqual(
+      ['B']
+    );
+    expect(
+      Array.from(
+        collectUsedGenericTypes(
+          HIR_IDENTIFIER_TYPE('A', [HIR_IDENTIFIER_TYPE('B', [])]),
+          genericTypes
+        )
       )
-    )
-  ).toEqual(['B']);
+    ).toEqual(['B']);
 
-  expect(
-    Array.from(
-      collectUsedGenericTypes(
-        HIR_FUNCTION_TYPE([HIR_IDENTIFIER_TYPE('A', [])], HIR_IDENTIFIER_TYPE('B', [])),
-        genericTypes
+    expect(
+      Array.from(
+        collectUsedGenericTypes(
+          HIR_FUNCTION_TYPE([HIR_IDENTIFIER_TYPE('A', [])], HIR_IDENTIFIER_TYPE('B', [])),
+          genericTypes
+        )
       )
-    )
-  ).toEqual(['A', 'B']);
-});
+    ).toEqual(['A', 'B']);
+  });
 
-it('lowerSamlangType works', () => {
-  const typeSynthesizer = new HighIRTypeSynthesizer();
-  expect(lowerSamlangType(boolType, new Set(), typeSynthesizer)).toEqual(HIR_BOOL_TYPE);
-  expect(lowerSamlangType(intType, new Set(), typeSynthesizer)).toEqual(HIR_INT_TYPE);
-  expect(lowerSamlangType(unitType, new Set(), typeSynthesizer)).toEqual(HIR_INT_TYPE);
-  expect(lowerSamlangType(stringType, new Set([]), typeSynthesizer)).toEqual(HIR_STRING_TYPE);
+  it('SamlangTypeLoweringManager works', () => {
+    const typeSynthesizer = new HighIRTypeSynthesizer();
+    const manager = new SamlangTypeLoweringManager(new Set(), typeSynthesizer);
 
-  expect(
-    prettyPrintHighIRType(
-      lowerSamlangType(
-        identifierType(ModuleReference.DUMMY, 'A', [intType]),
-        new Set(),
-        typeSynthesizer
+    expect(manager.lowerSamlangType(boolType)).toEqual(HIR_BOOL_TYPE);
+    expect(manager.lowerSamlangType(intType)).toEqual(HIR_INT_TYPE);
+    expect(manager.lowerSamlangType(unitType)).toEqual(HIR_INT_TYPE);
+    expect(manager.lowerSamlangType(stringType)).toEqual(HIR_STRING_TYPE);
+
+    expect(
+      prettyPrintHighIRType(
+        manager.lowerSamlangType(identifierType(ModuleReference.DUMMY, 'A', [intType]))
       )
-    )
-  ).toBe('__DUMMY___A<int>');
+    ).toBe('__DUMMY___A<int>');
 
-  expect(
-    prettyPrintHighIRType(
-      lowerSamlangType(tupleType([intType, boolType]), new Set('T'), typeSynthesizer)
-    )
-  ).toBe('_SYNTHETIC_ID_TYPE_0');
-  expect(
-    prettyPrintHighIRType(
-      lowerSamlangType(
-        tupleType([intType, identifierType(ModuleReference.DUMMY, 'T')]),
-        new Set('T'),
-        typeSynthesizer
+    expect(
+      prettyPrintHighIRType(
+        new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
+          tupleType([intType, boolType])
+        )
       )
-    )
-  ).toBe('_SYNTHETIC_ID_TYPE_1<T>');
-
-  expect(
-    prettyPrintHighIRType(
-      lowerSamlangType(
-        functionType([identifierType(ModuleReference.DUMMY, 'T'), boolType], intType),
-        new Set('T'),
-        typeSynthesizer
+    ).toBe('_SYNTHETIC_ID_TYPE_0');
+    expect(
+      prettyPrintHighIRType(
+        new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
+          tupleType([intType, identifierType(ModuleReference.DUMMY, 'T')])
+        )
       )
-    )
-  ).toBe('_SYNTHETIC_ID_TYPE_2<T, _Context>');
+    ).toBe('_SYNTHETIC_ID_TYPE_1<T>');
 
-  expect(() =>
-    lowerSamlangType({ type: 'UndecidedType', index: 0 }, new Set(), typeSynthesizer)
-  ).toThrow();
+    expect(
+      prettyPrintHighIRType(
+        new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
+          functionType([identifierType(ModuleReference.DUMMY, 'T'), boolType], intType)
+        )
+      )
+    ).toBe('_SYNTHETIC_ID_TYPE_2<T, _TypeContext0>');
 
-  expect(typeSynthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
-    'object type _SYNTHETIC_ID_TYPE_0 = [int, bool]',
-    'object type _SYNTHETIC_ID_TYPE_1<T> = [int, T]',
-    'object type _SYNTHETIC_ID_TYPE_2<T, _Context> = [(_Context, T, bool) -> int, _Context]',
-  ]);
-});
+    expect(() => manager.lowerSamlangType({ type: 'UndecidedType', index: 0 })).toThrow();
 
-it('lowerSamlangFunctionTypeForTopLevel works for simple case', () => {
-  expect(
-    lowerSamlangFunctionTypeForTopLevel(
-      functionType([intType], boolType),
-      new Set(),
-      new HighIRTypeSynthesizer()
-    )
-  ).toEqual(HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));
+    expect(typeSynthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
+      'object type _SYNTHETIC_ID_TYPE_0 = [int, bool]',
+      'object type _SYNTHETIC_ID_TYPE_1<T> = [int, T]',
+      'object type _SYNTHETIC_ID_TYPE_2<T, _TypeContext0> = [(_TypeContext0, T, bool) -> int, _TypeContext0]',
+    ]);
+
+    expect(manager.lowerSamlangFunctionTypeForTopLevel(functionType([intType], boolType))).toEqual(
+      HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)
+    );
+  });
 });
