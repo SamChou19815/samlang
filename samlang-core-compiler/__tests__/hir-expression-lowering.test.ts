@@ -97,6 +97,7 @@ const expectCorrectlyLowered = (
         HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])
       ),
     },
+    HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', []),
     typeLoweringManager,
     typeSynthesizer,
     stringManager,
@@ -1000,9 +1001,8 @@ return (_t4: __DUMMY___Dummy);`
             ],
           },
         }),
-        `object type _SYNTHETIC_ID_TYPE_0 = [int, int]
-let ignored: int = (_this: _SYNTHETIC_ID_TYPE_0)[0];
-let a__depth_1__block_0: int = (_this: _SYNTHETIC_ID_TYPE_0)[0];
+        `let ignored: int = (_this: __DUMMY___Dummy)[0];
+let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
 let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
 let c__depth_1__block_0: int = (_this: __DUMMY___Dummy)[1];
 return 0;`
