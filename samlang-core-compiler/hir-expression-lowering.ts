@@ -237,12 +237,8 @@ class HighIRExpressionLoweringManager {
     const loweredExpressions = expression.expressions.map((subExpression) =>
       this.loweredAndAddStatements(subExpression, loweredStatements)
     );
-    const loweredTupleIdentifierType = HIR_IDENTIFIER_TYPE(
-      this.typeSynthesizer.synthesizeTupleType(
-        loweredExpressions.map((it) => it.type),
-        []
-      ).identifier,
-      []
+    const loweredTupleIdentifierType = this.getSyntheticIdentifierTypeFromTuple(
+      loweredExpressions.map((it) => it.type)
     );
     loweredStatements.push(
       HIR_STRUCT_INITIALIZATION({
@@ -260,7 +256,6 @@ class HighIRExpressionLoweringManager {
     expression: ObjectConstructorExpression
   ): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
-    const loweredIdentifierType = this.lowerType(expression.type);
     const loweredFields = expression.fieldDeclarations.map((fieldDeclaration) => {
       const fieldExpression = fieldDeclaration.expression ?? {
         __type__: 'VariableExpression',
@@ -273,6 +268,7 @@ class HighIRExpressionLoweringManager {
       return this.loweredAndAddStatements(fieldExpression, loweredStatements);
     });
     const structVariableName = this.allocateTemporaryVariable();
+    const loweredIdentifierType = this.lowerType(expression.type);
     loweredStatements.push(
       HIR_STRUCT_INITIALIZATION({
         structVariableName,
@@ -307,7 +303,7 @@ class HighIRExpressionLoweringManager {
   private lowerFieldAccess(expression: FieldAccessExpression): HighIRExpressionLoweringResult {
     const result = this.lower(expression.expression);
     const mappingsForIdentifierType = this.getTypeMapping(
-      (this.lowerType(expression.expression.type) as HighIRIdentifierType).name
+      (result.expression.type as HighIRIdentifierType).name
     );
     const extractedFieldType = checkNotNull(mappingsForIdentifierType[expression.fieldOrder]);
     const valueName = this.allocateTemporaryVariable();
@@ -386,7 +382,6 @@ class HighIRExpressionLoweringManager {
   private lowerFunctionCall(expression: FunctionCallExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
     const functionExpression = expression.functionExpression;
-    const loweredReturnType = this.lowerType(expression.type);
     const isVoidReturn =
       expression.type.type === 'PrimitiveType' && expression.type.name === 'unit';
     const returnCollectorName = this.allocateTemporaryVariable();
@@ -420,19 +415,20 @@ class HighIRExpressionLoweringManager {
         );
         const functionTypeWithoutContext = checkNotNull(this.functionTypeMapping[functionName]);
         functionReturnCollectorType = functionTypeWithoutContext.returnType;
+        const highIRFunctionExpression = this.loweredAndAddStatements(
+          functionExpression.expression,
+          loweredStatements
+        );
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME(
             functionName,
             HIR_FUNCTION_TYPE(
-              [
-                this.lowerType(functionExpression.expression.type),
-                ...functionTypeWithoutContext.argumentTypes,
-              ],
-              loweredReturnType
+              [highIRFunctionExpression.type, ...functionTypeWithoutContext.argumentTypes],
+              functionTypeWithoutContext.returnType
             )
           ),
           functionArguments: [
-            this.loweredAndAddStatements(functionExpression.expression, loweredStatements),
+            highIRFunctionExpression,
             ...expression.functionArguments.map((oneArgument) =>
               this.loweredAndAddStatements(oneArgument, loweredStatements)
             ),
@@ -630,7 +626,6 @@ class HighIRExpressionLoweringManager {
 
   private lowerIfElse(expression: IfElseExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
-    const loweredReturnType = this.lowerType(expression.type);
     const isVoidReturn =
       expression.type.type === 'PrimitiveType' && expression.type.name === 'unit';
     const loweredBoolExpression = this.loweredAndAddStatements(
@@ -640,34 +635,40 @@ class HighIRExpressionLoweringManager {
     const e1LoweringResult = this.lower(expression.e1);
     const e2LoweringResult = this.lower(expression.e2);
     const variableForIfElseAssign = this.allocateTemporaryVariable();
+    if (isVoidReturn) {
+      loweredStatements.push(
+        HIR_IF_ELSE({
+          booleanExpression: loweredBoolExpression,
+          s1: e1LoweringResult.statements,
+          s2: e2LoweringResult.statements,
+          finalAssignments: [],
+        })
+      );
+      return { statements: loweredStatements, expression: HIR_ZERO };
+    }
+    const loweredReturnType = e1LoweringResult.expression.type;
     loweredStatements.push(
       HIR_IF_ELSE({
         booleanExpression: loweredBoolExpression,
         s1: e1LoweringResult.statements,
         s2: e2LoweringResult.statements,
-        finalAssignments: isVoidReturn
-          ? []
-          : [
-              {
-                name: variableForIfElseAssign,
-                type: loweredReturnType,
-                branch1Value: e1LoweringResult.expression,
-                branch2Value: e2LoweringResult.expression,
-              },
-            ],
+        finalAssignments: [
+          {
+            name: variableForIfElseAssign,
+            type: loweredReturnType,
+            branch1Value: e1LoweringResult.expression,
+            branch2Value: e2LoweringResult.expression,
+          },
+        ],
       })
     );
-    return {
-      statements: loweredStatements,
-      expression: isVoidReturn
-        ? HIR_ZERO
-        : HIR_VARIABLE(variableForIfElseAssign, loweredReturnType),
-    };
+    const finalVariable = HIR_VARIABLE(variableForIfElseAssign, loweredReturnType);
+    this.varibleContext.bind(variableForIfElseAssign, finalVariable);
+    return { statements: loweredStatements, expression: finalVariable };
   }
 
   private lowerMatch(expression: MatchExpression): HighIRExpressionLoweringResult {
     const loweredStatements: HighIRStatement[] = [];
-    const loweredReturnType = this.lowerType(expression.type);
     const isVoidReturn =
       expression.type.type === 'PrimitiveType' && expression.type.name === 'unit';
     const matchedExpression = this.loweredAndAddStatements(
@@ -743,6 +744,7 @@ class HighIRExpressionLoweringManager {
           (acc, oneCase) => {
             const comparisonTemporary = this.allocateTemporaryVariable();
             const finalAssignmentTemporary = this.allocateTemporaryVariable();
+            const loweredReturnType = acc.e.type;
             return {
               s: [
                 HIR_BINARY({
@@ -774,10 +776,7 @@ class HighIRExpressionLoweringManager {
       finalExpression = finalValue;
     }
 
-    return {
-      statements: loweredStatements,
-      expression: finalExpression,
-    };
+    return { statements: loweredStatements, expression: finalExpression };
   }
 
   private lowerLambda(expression: LambdaExpression): HighIRExpressionLoweringResult {
@@ -795,12 +794,8 @@ class HighIRExpressionLoweringManager {
       const expressionList = captured.map(([variableName, variableType]) =>
         HIR_VARIABLE(variableName, this.lowerType(variableType))
       );
-      const contextType = HIR_IDENTIFIER_TYPE(
-        this.typeSynthesizer.synthesizeTupleType(
-          expressionList.map((it) => it.type),
-          []
-        ).identifier,
-        []
+      const contextType = this.getSyntheticIdentifierTypeFromTuple(
+        expressionList.map((it) => it.type)
       );
       loweredStatements.push(
         HIR_STRUCT_INITIALIZATION({
@@ -812,10 +807,10 @@ class HighIRExpressionLoweringManager {
       context = HIR_VARIABLE(contextName, contextType);
       this.varibleContext.bind(contextName, context);
     }
-    const closureType = HIR_IDENTIFIER_TYPE(
-      this.typeSynthesizer.synthesizeTupleType([syntheticLambda.type, context.type], []).identifier,
-      []
-    );
+    const closureType = this.getSyntheticIdentifierTypeFromTuple([
+      syntheticLambda.type,
+      context.type,
+    ]);
     loweredStatements.push(
       HIR_STRUCT_INITIALIZATION({
         structVariableName,
