@@ -67,6 +67,8 @@ const expectCorrectlyLowered = (
     [
       ['foo', HIR_INT_TYPE],
       ['bar', HIR_BOOL_TYPE],
+      ['closure', HIR_IDENTIFIER_TYPE('TestClosure', [HIR_BOOL_TYPE])],
+      ['closure_unit_return', HIR_IDENTIFIER_TYPE('TestClosure', [HIR_INT_TYPE])],
     ],
     /* typeDefinitionMapping */ {
       __DUMMY___Foo: {
@@ -80,6 +82,12 @@ const expectCorrectlyLowered = (
         type: 'object',
         typeParameters: [],
         mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
+      },
+      TestClosure: {
+        identifier: 'TestClosure',
+        type: 'object',
+        typeParameters: ['_Context'],
+        mappings: [HIR_FUNCTION_TYPE([HIR_INT_TYPE, HIR_BOOL_TYPE], HIR_INT_TYPE), HIR_INT_TYPE],
       },
     },
     /* functionTypeMapping */ {
@@ -393,10 +401,9 @@ return (_t0: int);`
           }),
           functionArguments: [EXPRESSION_TRUE(Range.DUMMY, [])],
         }),
-        `object type _SYNTHETIC_ID_TYPE_0<_TypeContext0> = [(_TypeContext0, bool) -> int, _TypeContext0]
-let _t1: (_TypeContext0, bool) -> int = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[0];
-let _t2: _TypeContext0 = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[1];
-let _t0: int = (_t1: (_TypeContext0, bool) -> int)((_t2: _TypeContext0), 1);
+        `let _t1: (int, bool) -> int = (closure: TestClosure<bool>)[0];
+let _t2: int = (closure: TestClosure<bool>)[1];
+let _t0: int = (_t1: (int, bool) -> int)((_t2: int), 1);
 return (_t0: int);`
       );
     });
@@ -415,10 +422,9 @@ return (_t0: int);`
           }),
           functionArguments: [EXPRESSION_TRUE(Range.DUMMY, [])],
         }),
-        `object type _SYNTHETIC_ID_TYPE_0<_TypeContext0> = [(_TypeContext0, bool) -> int, _TypeContext0]
-let _t1: (_TypeContext0, bool) -> int = (closure_unit_return: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[0];
-let _t2: _TypeContext0 = (closure_unit_return: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[1];
-(_t1: (_TypeContext0, bool) -> int)((_t2: _TypeContext0), 1);
+        `let _t1: (int, bool) -> int = (closure_unit_return: TestClosure<int>)[0];
+let _t2: int = (closure_unit_return: TestClosure<int>)[1];
+(_t1: (int, bool) -> int)((_t2: int), 1);
 return 0;`
       );
     });
@@ -898,7 +904,15 @@ return (_t4: __DUMMY___Dummy);`
                   ],
                 },
                 typeAnnotation: tupleType([intType, intType]),
-                assignedExpression: { ...THIS, type: tupleType([intType, intType]) },
+                assignedExpression: EXPRESSION_TUPLE_CONSTRUCTOR({
+                  range: Range.DUMMY,
+                  type: tupleType([intType, intType]),
+                  associatedComments: [],
+                  expressions: [
+                    EXPRESSION_INT(Range.DUMMY, [], 1),
+                    EXPRESSION_INT(Range.DUMMY, [], 2),
+                  ],
+                }),
                 associatedComments: [],
               },
               {
@@ -974,7 +988,9 @@ return (_t4: __DUMMY___Dummy);`
             ],
           },
         }),
-        `let ignored: int = (_this: __DUMMY___Dummy)[0];
+        `object type _SYNTHETIC_ID_TYPE_0 = [int, int]
+let _t0: _SYNTHETIC_ID_TYPE_0 = [1, 2];
+let ignored: int = (_t0: _SYNTHETIC_ID_TYPE_0)[0];
 let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
 let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
 let c__depth_1__block_0: int = (_this: __DUMMY___Dummy)[1];

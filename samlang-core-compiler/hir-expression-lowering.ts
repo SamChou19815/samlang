@@ -139,6 +139,9 @@ class HighIRExpressionLoweringManager {
   ): HighIRIdentifierType =>
     HIR_IDENTIFIER_TYPE(this.typeSynthesizer.synthesizeTupleType(mappings, []).identifier, []);
 
+  private resolveVariable = (variableName: string): HighIRExpression =>
+    checkNotNull(this.varibleContext.getLocalValueType(variableName));
+
   private resolveTypeMappingOfIdentifierType({
     name,
     typeArguments,
@@ -170,16 +173,8 @@ class HighIRExpressionLoweringManager {
         }
       case 'ThisExpression':
         return { statements: [], expression: HIR_VARIABLE('_this', checkNotNull(this.thisType)) };
-      case 'VariableExpression': {
-        const stored = this.varibleContext.getLocalValueType(expression.name);
-        if (stored == null) {
-          return {
-            statements: [],
-            expression: HIR_VARIABLE(expression.name, this.lowerType(expression.type)),
-          };
-        }
-        return { statements: [], expression: stored };
-      }
+      case 'VariableExpression':
+        return { statements: [], expression: this.resolveVariable(expression.name) };
       case 'ClassMemberExpression':
         return this.lowerClassMember(expression);
       case 'TupleConstructorExpression':
