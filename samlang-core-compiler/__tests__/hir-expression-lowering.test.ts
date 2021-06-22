@@ -18,6 +18,7 @@ import {
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_INT_TYPE,
+  HIR_BOOL_TYPE,
 } from 'samlang-core-ast/hir-nodes';
 import {
   SamlangExpression,
@@ -61,9 +62,13 @@ const expectCorrectlyLowered = (
   const typeLoweringManager = new SamlangTypeLoweringManager(new Set(), typeSynthesizer);
   const stringManager = new HighIRStringManager();
   const { statements, expression, syntheticFunctions } = lowerSamlangExpression(
-    ModuleReference.DUMMY,
-    'ENCODED_FUNCTION_NAME',
-    {
+    /* moduleReference */ ModuleReference.DUMMY,
+    /* encodedFunctionName */ 'ENCODED_FUNCTION_NAME',
+    [
+      ['foo', HIR_INT_TYPE],
+      ['bar', HIR_BOOL_TYPE],
+    ],
+    /* typeDefinitionMapping */ {
       __DUMMY___Foo: {
         identifier: '__DUMMY___Foo',
         type: 'object',
@@ -77,7 +82,7 @@ const expectCorrectlyLowered = (
         mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
       },
     },
-    {
+    /* functionTypeMapping */ {
       _module_ModuleModule_class_ImportedClass_function_bar: HIR_FUNCTION_TYPE(
         [HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', []), HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])],
         HIR_INT_TYPE
@@ -97,11 +102,11 @@ const expectCorrectlyLowered = (
         HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])
       ),
     },
-    HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', []),
-    typeLoweringManager,
-    typeSynthesizer,
-    stringManager,
-    samlangExpression
+    /* thisType */ HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', []),
+    /* typeLoweringManager */ typeLoweringManager,
+    /* typeSynthesizer */ typeSynthesizer,
+    /* stringManager */ stringManager,
+    /* expression */ samlangExpression
   );
   const syntheticModule: HighIRModule = {
     globalVariables: stringManager.globalVariables,
@@ -195,13 +200,13 @@ return (_t0: _SYNTHETIC_ID_TYPE_0);`
             {
               range: Range.DUMMY,
               associatedComments: [],
-              type: DUMMY_IDENTIFIER_TYPE,
+              type: boolType,
               name: 'bar',
               nameRange: Range.DUMMY,
             },
           ],
         }),
-        `let _t0: __DUMMY___Foo = [(_this: __DUMMY___Dummy), (bar: __DUMMY___Dummy)];
+        `let _t0: __DUMMY___Foo = [(_this: __DUMMY___Dummy), (bar: bool)];
 return (_t0: __DUMMY___Foo);`
       );
     });
@@ -303,72 +308,7 @@ return (_t0: int);`
       );
     });
 
-    it('2/n method call with return', () => {
-      expectCorrectlyLowered(
-        EXPRESSION_FUNCTION_CALL({
-          range: Range.DUMMY,
-          type: intType,
-          associatedComments: [],
-          functionExpression: EXPRESSION_METHOD_ACCESS({
-            range: Range.DUMMY,
-            type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], intType),
-            associatedComments: [],
-            expression: THIS,
-            methodPrecedingComments: [],
-            methodName: 'fooBar',
-          }),
-          functionArguments: [THIS, THIS],
-        }),
-        `let _t0: int = _module___DUMMY___class_Dummy_function_fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t0: int);`
-      );
-    });
-
-    it('3/n closure call with return', () => {
-      expectCorrectlyLowered(
-        EXPRESSION_FUNCTION_CALL({
-          range: Range.DUMMY,
-          type: intType,
-          associatedComments: [],
-          functionExpression: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            name: 'closure',
-            type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], intType),
-            associatedComments: [],
-          }),
-          functionArguments: [THIS, THIS],
-        }),
-        `object type _SYNTHETIC_ID_TYPE_0<_TypeContext0> = [(_TypeContext0, __DUMMY___Dummy, __DUMMY___Dummy) -> int, _TypeContext0]
-let _t1: (_TypeContext0, __DUMMY___Dummy, __DUMMY___Dummy) -> int = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[0];
-let _t2: _TypeContext0 = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[1];
-let _t0: int = (_t1: (_TypeContext0, __DUMMY___Dummy, __DUMMY___Dummy) -> int)((_t2: _TypeContext0), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return (_t0: int);`
-      );
-    });
-
-    it('4/n closure call without return', () => {
-      expectCorrectlyLowered(
-        EXPRESSION_FUNCTION_CALL({
-          range: Range.DUMMY,
-          type: unitType,
-          associatedComments: [],
-          functionExpression: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            name: 'closure',
-            type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], unitType),
-            associatedComments: [],
-          }),
-          functionArguments: [THIS, THIS],
-        }),
-        `object type _SYNTHETIC_ID_TYPE_0<_TypeContext0> = [(_TypeContext0, __DUMMY___Dummy, __DUMMY___Dummy) -> int, _TypeContext0]
-let _t1: (_TypeContext0, __DUMMY___Dummy, __DUMMY___Dummy) -> int = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[0];
-let _t2: _TypeContext0 = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[1];
-(_t1: (_TypeContext0, __DUMMY___Dummy, __DUMMY___Dummy) -> int)((_t2: _TypeContext0), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
-return 0;`
-      );
-    });
-
-    it('5/n class member call without return', () => {
+    it('2/n class member call without return', () => {
       expectCorrectlyLowered(
         EXPRESSION_FUNCTION_CALL({
           range: Range.DUMMY,
@@ -393,7 +333,7 @@ return 0;`
       );
     });
 
-    it('6/n class member call with return', () => {
+    it('3/n class member call with return', () => {
       expectCorrectlyLowered(
         EXPRESSION_FUNCTION_CALL({
           range: Range.DUMMY,
@@ -418,7 +358,28 @@ return (_t0: __DUMMY___Dummy);`
       );
     });
 
-    it('7/n closure call with return', () => {
+    it('4/n method call with return', () => {
+      expectCorrectlyLowered(
+        EXPRESSION_FUNCTION_CALL({
+          range: Range.DUMMY,
+          type: intType,
+          associatedComments: [],
+          functionExpression: EXPRESSION_METHOD_ACCESS({
+            range: Range.DUMMY,
+            type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], intType),
+            associatedComments: [],
+            expression: THIS,
+            methodPrecedingComments: [],
+            methodName: 'fooBar',
+          }),
+          functionArguments: [THIS, THIS],
+        }),
+        `let _t0: int = _module___DUMMY___class_Dummy_function_fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+return (_t0: int);`
+      );
+    });
+
+    it('5/n closure call with return', () => {
       expectCorrectlyLowered(
         EXPRESSION_FUNCTION_CALL({
           range: Range.DUMMY,
@@ -427,16 +388,38 @@ return (_t0: __DUMMY___Dummy);`
           functionExpression: EXPRESSION_VARIABLE({
             range: Range.DUMMY,
             name: 'closure',
-            type: functionType([DUMMY_IDENTIFIER_TYPE], DUMMY_IDENTIFIER_TYPE),
+            type: functionType([boolType], intType),
             associatedComments: [],
           }),
-          functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
+          functionArguments: [EXPRESSION_TRUE(Range.DUMMY, [])],
         }),
-        `object type _SYNTHETIC_ID_TYPE_0<_TypeContext0> = [(_TypeContext0, __DUMMY___Dummy) -> __DUMMY___Dummy, _TypeContext0]
-let _t1: (_TypeContext0, __DUMMY___Dummy) -> __DUMMY___Dummy = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[0];
+        `object type _SYNTHETIC_ID_TYPE_0<_TypeContext0> = [(_TypeContext0, bool) -> int, _TypeContext0]
+let _t1: (_TypeContext0, bool) -> int = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[0];
 let _t2: _TypeContext0 = (closure: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[1];
-let _t0: __DUMMY___Dummy = (_t1: (_TypeContext0, __DUMMY___Dummy) -> __DUMMY___Dummy)((_t2: _TypeContext0), 0);
-return (_t0: __DUMMY___Dummy);`
+let _t0: int = (_t1: (_TypeContext0, bool) -> int)((_t2: _TypeContext0), 1);
+return (_t0: int);`
+      );
+    });
+
+    it('6/n closure call without return', () => {
+      expectCorrectlyLowered(
+        EXPRESSION_FUNCTION_CALL({
+          range: Range.DUMMY,
+          type: unitType,
+          associatedComments: [],
+          functionExpression: EXPRESSION_VARIABLE({
+            range: Range.DUMMY,
+            name: 'closure_unit_return',
+            type: functionType([boolType], unitType),
+            associatedComments: [],
+          }),
+          functionArguments: [EXPRESSION_TRUE(Range.DUMMY, [])],
+        }),
+        `object type _SYNTHETIC_ID_TYPE_0<_TypeContext0> = [(_TypeContext0, bool) -> int, _TypeContext0]
+let _t1: (_TypeContext0, bool) -> int = (closure_unit_return: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[0];
+let _t2: _TypeContext0 = (closure_unit_return: _SYNTHETIC_ID_TYPE_0<_TypeContext0>)[1];
+(_t1: (_TypeContext0, bool) -> int)((_t2: _TypeContext0), 1);
+return 0;`
       );
     });
   });
@@ -494,7 +477,7 @@ return (_t0: __DUMMY___Dummy);`
           }),
         }),
         `let _t0: bool;
-if (foo: bool) {
+if (foo: int) {
   _t0 = (bar: bool);
 } else {
   _t0 = 0;
@@ -512,12 +495,12 @@ return (_t0: bool);`
           e1: EXPRESSION_TRUE(Range.DUMMY, []),
           e2: EXPRESSION_VARIABLE({
             range: Range.DUMMY,
-            type: boolType,
+            type: intType,
             name: 'foo',
             associatedComments: [],
           }),
         }),
-        'return (foo: bool);'
+        'return (foo: int);'
       );
 
       expectCorrectlyLowered(
@@ -530,7 +513,7 @@ return (_t0: bool);`
           e1: EXPRESSION_FALSE(Range.DUMMY, []),
           e2: EXPRESSION_VARIABLE({
             range: Range.DUMMY,
-            type: boolType,
+            type: intType,
             name: 'foo',
             associatedComments: [],
           }),
@@ -548,12 +531,7 @@ return (_t0: bool);`
           associatedComments: [],
           operatorPrecedingComments: [],
           e1: EXPRESSION_TRUE(Range.DUMMY, []),
-          e2: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            type: boolType,
-            name: 'foo',
-            associatedComments: [],
-          }),
+          e2: EXPRESSION_INT(Range.DUMMY, [], 65536),
         }),
         'return 1;'
       );
@@ -566,14 +544,9 @@ return (_t0: bool);`
           operatorPrecedingComments: [],
           operator: OR,
           e1: EXPRESSION_FALSE(Range.DUMMY, []),
-          e2: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            type: boolType,
-            name: 'foo',
-            associatedComments: [],
-          }),
+          e2: EXPRESSION_INT(Range.DUMMY, [], 65536),
         }),
-        'return (foo: bool);'
+        'return 65536;'
       );
 
       expectCorrectlyLowered(
@@ -597,7 +570,7 @@ return (_t0: bool);`
           }),
         }),
         `let _t0: bool;
-if (foo: bool) {
+if (foo: int) {
   _t0 = 1;
 } else {
   _t0 = (bar: bool);
@@ -782,7 +755,7 @@ return 0;`
               range: Range.DUMMY,
               tag: 'Foo',
               tagOrder: 0,
-              dataVariable: ['bar', Range.DUMMY, stringType],
+              dataVariable: ['bar', Range.DUMMY, intType],
               expression: THIS,
             },
             {
@@ -797,7 +770,7 @@ return 0;`
 let _t1: bool = (_t0: int) == 0;
 let _t2: __DUMMY___Dummy;
 if (_t1: bool) {
-  let bar: string = (_this: __DUMMY___Dummy)[1];
+  let bar: int = (_this: __DUMMY___Dummy)[1];
   _t2 = (_this: __DUMMY___Dummy);
 } else {
   _t2 = (_this: __DUMMY___Dummy);
@@ -818,7 +791,7 @@ return (_t2: __DUMMY___Dummy);`
               range: Range.DUMMY,
               tag: 'Foo',
               tagOrder: 0,
-              dataVariable: ['bar', Range.DUMMY, stringType],
+              dataVariable: ['bar', Range.DUMMY, intType],
               expression: THIS,
             },
             {
@@ -838,7 +811,7 @@ return (_t2: __DUMMY___Dummy);`
         `let _t0: int = (_this: __DUMMY___Dummy)[0];
 let _t2: bool = (_t0: int) == 0;
 if (_t2: bool) {
-  let bar: string = (_this: __DUMMY___Dummy)[1];
+  let bar: int = (_this: __DUMMY___Dummy)[1];
 } else {
   let _t1: bool = (_t0: int) == 1;
   if (_t1: bool) {
@@ -892,8 +865,8 @@ if (_t3: bool) {
   let _t1: bool = (_t0: int) == 1;
   let _t2: __DUMMY___Dummy;
   if (_t1: bool) {
-    let bar: __DUMMY___Dummy = (_this: __DUMMY___Dummy)[1];
-    _t2 = (bar: __DUMMY___Dummy);
+    let bar: int = (_this: __DUMMY___Dummy)[1];
+    _t2 = (bar: int);
   } else {
     _t2 = (_this: __DUMMY___Dummy);
   }
