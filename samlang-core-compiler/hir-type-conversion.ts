@@ -70,6 +70,24 @@ export const collectUsedGenericTypes = (
   return collector;
 };
 
+export const highIRTypeApplication = (
+  type: HighIRType,
+  replacementMap: Readonly<Record<string, HighIRType>>
+): HighIRType => {
+  switch (type.__type__) {
+    case 'PrimitiveType':
+      return type;
+    case 'IdentifierType':
+      if (type.typeArguments.length !== 0) return type;
+      return replacementMap[type.name] ?? type;
+    case 'FunctionType':
+      return HIR_FUNCTION_TYPE(
+        type.argumentTypes.map((it) => highIRTypeApplication(it, replacementMap)),
+        highIRTypeApplication(type.returnType, replacementMap)
+      );
+  }
+};
+
 export class SamlangTypeLoweringManager {
   private contextIDCount = 0;
 

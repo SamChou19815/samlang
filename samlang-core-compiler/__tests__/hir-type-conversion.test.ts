@@ -20,6 +20,7 @@ import {
 
 import {
   collectUsedGenericTypes,
+  highIRTypeApplication,
   HighIRTypeSynthesizer,
   SamlangTypeLoweringManager,
 } from '../hir-type-conversion';
@@ -97,6 +98,29 @@ describe('hir-type-conversion', () => {
         )
       )
     ).toEqual(['A', 'B']);
+  });
+
+  it('highIRTypeApplication works', () => {
+    expect(highIRTypeApplication(HIR_BOOL_TYPE, {})).toEqual(HIR_BOOL_TYPE);
+    expect(highIRTypeApplication(HIR_INT_TYPE, {})).toEqual(HIR_INT_TYPE);
+    expect(highIRTypeApplication(HIR_STRING_TYPE, {})).toEqual(HIR_STRING_TYPE);
+
+    expect(
+      highIRTypeApplication(HIR_IDENTIFIER_TYPE('A', [HIR_INT_TYPE]), { A: HIR_INT_TYPE })
+    ).toEqual(HIR_IDENTIFIER_TYPE('A', [HIR_INT_TYPE]));
+    expect(highIRTypeApplication(HIR_IDENTIFIER_TYPE('A', []), { B: HIR_INT_TYPE })).toEqual(
+      HIR_IDENTIFIER_TYPE('A', [])
+    );
+    expect(highIRTypeApplication(HIR_IDENTIFIER_TYPE('A', []), { A: HIR_INT_TYPE })).toEqual(
+      HIR_INT_TYPE
+    );
+
+    expect(
+      highIRTypeApplication(
+        HIR_FUNCTION_TYPE([HIR_IDENTIFIER_TYPE('A', [])], HIR_IDENTIFIER_TYPE('B', [])),
+        { A: HIR_INT_TYPE, B: HIR_BOOL_TYPE }
+      )
+    ).toEqual(HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));
   });
 
   it('SamlangTypeLoweringManager works', () => {
