@@ -69,6 +69,7 @@ const expectCorrectlyLowered = (
       ['bar', HIR_BOOL_TYPE],
       ['closure', HIR_IDENTIFIER_TYPE('TestClosure', [HIR_BOOL_TYPE])],
       ['closure_unit_return', HIR_IDENTIFIER_TYPE('TestClosure', [HIR_INT_TYPE])],
+      ['captured_a', HIR_INT_TYPE],
     ],
     /* typeDefinitionMapping */ {
       __DUMMY___Foo: {
@@ -625,17 +626,17 @@ return (_t0: string);`
           type: functionType([], unitType),
           associatedComments: [],
           parameters: [['a', Range.DUMMY, unitType]],
-          captured: { a: unitType },
+          captured: { captured_a: unitType },
           body: THIS,
         }),
         `object type _SYNTHETIC_ID_TYPE_0 = [int]
 object type _SYNTHETIC_ID_TYPE_1 = [(_SYNTHETIC_ID_TYPE_0, int) -> int, _SYNTHETIC_ID_TYPE_0]
 function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): int {
-  let a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
+  let captured_a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
   return (_this: __DUMMY___Dummy);
 }
 
-let _t1: _SYNTHETIC_ID_TYPE_0 = [(a: int)];
+let _t1: _SYNTHETIC_ID_TYPE_0 = [(captured_a: int)];
 let _t0: _SYNTHETIC_ID_TYPE_1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, (_t1: _SYNTHETIC_ID_TYPE_0)];
 return (_t0: _SYNTHETIC_ID_TYPE_1);`
       );
@@ -648,17 +649,17 @@ return (_t0: _SYNTHETIC_ID_TYPE_1);`
           type: functionType([], intType),
           associatedComments: [],
           parameters: [['a', Range.DUMMY, unitType]],
-          captured: { a: unitType },
+          captured: { captured_a: unitType },
           body: THIS,
         }),
         `object type _SYNTHETIC_ID_TYPE_0 = [int]
 object type _SYNTHETIC_ID_TYPE_1 = [(_SYNTHETIC_ID_TYPE_0, int) -> int, _SYNTHETIC_ID_TYPE_0]
 function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): int {
-  let a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
+  let captured_a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
   return (_this: __DUMMY___Dummy);
 }
 
-let _t1: _SYNTHETIC_ID_TYPE_0 = [(a: int)];
+let _t1: _SYNTHETIC_ID_TYPE_0 = [(captured_a: int)];
 let _t0: _SYNTHETIC_ID_TYPE_1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, (_t1: _SYNTHETIC_ID_TYPE_0)];
 return (_t0: _SYNTHETIC_ID_TYPE_1);`
       );
@@ -671,17 +672,17 @@ return (_t0: _SYNTHETIC_ID_TYPE_1);`
           type: functionType([], DUMMY_IDENTIFIER_TYPE),
           associatedComments: [],
           parameters: [['a', Range.DUMMY, unitType]],
-          captured: { a: unitType },
+          captured: { captured_a: unitType },
           body: THIS,
         }),
         `object type _SYNTHETIC_ID_TYPE_0 = [int]
 object type _SYNTHETIC_ID_TYPE_1 = [(_SYNTHETIC_ID_TYPE_0, int) -> __DUMMY___Dummy, _SYNTHETIC_ID_TYPE_0]
 function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): __DUMMY___Dummy {
-  let a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
+  let captured_a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
   return (_this: __DUMMY___Dummy);
 }
 
-let _t1: _SYNTHETIC_ID_TYPE_0 = [(a: int)];
+let _t1: _SYNTHETIC_ID_TYPE_0 = [(captured_a: int)];
 let _t0: _SYNTHETIC_ID_TYPE_1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, (_t1: _SYNTHETIC_ID_TYPE_0)];
 return (_t0: _SYNTHETIC_ID_TYPE_1);`
       );
@@ -697,14 +698,13 @@ return (_t0: _SYNTHETIC_ID_TYPE_1);`
           captured: {},
           body: THIS,
         }),
-        `object type _SYNTHETIC_ID_TYPE_0 = []
-object type _SYNTHETIC_ID_TYPE_1 = [(_SYNTHETIC_ID_TYPE_0, int) -> __DUMMY___Dummy, int]
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): __DUMMY___Dummy {
+        `object type _SYNTHETIC_ID_TYPE_0 = [(int, int) -> __DUMMY___Dummy, int]
+function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: int, a: int): __DUMMY___Dummy {
   return (_this: __DUMMY___Dummy);
 }
 
-let _t0: _SYNTHETIC_ID_TYPE_1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, 0];
-return (_t0: _SYNTHETIC_ID_TYPE_1);`
+let _t0: _SYNTHETIC_ID_TYPE_0 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, 0];
+return (_t0: _SYNTHETIC_ID_TYPE_0);`
       );
     });
   });

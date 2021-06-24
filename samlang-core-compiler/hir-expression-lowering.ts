@@ -791,10 +791,10 @@ class HighIRExpressionLoweringManager {
   }
 
   private lowerLambda(expression: LambdaExpression): HighIRExpressionLoweringResult {
-    const syntheticLambda = this.createSyntheticLambdaFunction(expression);
-    this.syntheticFunctions.push(syntheticLambda);
+    const captured = Object.keys(expression.captured).map(
+      (name) => [name, this.resolveVariable(name)] as const
+    );
 
-    const captured = Object.entries(expression.captured);
     const loweredStatements: HighIRStatement[] = [];
     const structVariableName = this.allocateTemporaryVariable();
     let context: HighIRExpression;
@@ -802,22 +802,21 @@ class HighIRExpressionLoweringManager {
       context = HIR_ZERO;
     } else {
       const contextName = this.allocateTemporaryVariable();
-      const expressionList = captured.map(([variableName, variableType]) =>
-        HIR_VARIABLE(variableName, this.lowerType(variableType))
-      );
       const contextType = this.getSyntheticIdentifierTypeFromTuple(
-        expressionList.map((it) => it.type)
+        captured.map(([, variable]) => variable.type)
       );
       loweredStatements.push(
         HIR_STRUCT_INITIALIZATION({
           structVariableName: contextName,
           type: contextType,
-          expressionList,
+          expressionList: captured.map(([, variable]) => variable),
         })
       );
       context = HIR_VARIABLE(contextName, contextType);
       this.varibleContext.bind(contextName, context);
     }
+    const syntheticLambda = this.createSyntheticLambdaFunction(expression, captured, context.type);
+    this.syntheticFunctions.push(syntheticLambda);
     const closureType = this.getSyntheticIdentifierTypeFromTuple([
       syntheticLambda.type,
       context.type,
@@ -834,21 +833,18 @@ class HighIRExpressionLoweringManager {
     return { statements: loweredStatements, expression: finalLambdaVariable };
   }
 
-  private createSyntheticLambdaFunction(expression: LambdaExpression): HighIRFunction {
+  private createSyntheticLambdaFunction(
+    expression: LambdaExpression,
+    captured: readonly (readonly [string, HighIRExpression])[],
+    contextType: HighIRType
+  ): HighIRFunction {
     const loweringResult = this.lower(expression.body);
     const lambdaStatements: HighIRStatement[] = [];
-    const contextType = HIR_IDENTIFIER_TYPE(
-      this.typeSynthesizer.synthesizeTupleType(
-        Object.values(expression.captured).map((it) => this.lowerType(it)),
-        []
-      ).identifier,
-      []
-    );
-    Object.entries(expression.captured).forEach(([variable, variableType], index) => {
+    captured.forEach(([variableName, { type }], index) => {
       lambdaStatements.push(
         HIR_INDEX_ACCESS({
-          name: variable,
-          type: this.lowerType(variableType),
+          name: variableName,
+          type,
           pointerExpression: HIR_VARIABLE('_context', contextType),
           index,
         })
