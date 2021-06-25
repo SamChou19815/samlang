@@ -95,6 +95,9 @@ const testCases: readonly (readonly [CompileTimeError, string])[] = [
   ],
 ];
 
-testCases.forEach(([error, expectedErrorString], index) =>
-  it(`error toString() test ${index + 1}`, () => expect(error.toString()).toBe(expectedErrorString))
-);
+describe('samlang-core-errors', () => {
+  testCases.forEach(([error, expectedErrorString], index) =>
+    it(`error toString() test ${index + 1}`, () =>
+      expect(error.toString()).toBe(expectedErrorString))
+  );
+});

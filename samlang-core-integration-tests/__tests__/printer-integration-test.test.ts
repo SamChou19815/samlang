@@ -20,14 +20,16 @@ const getTypeCheckedModule = (code: string): SamlangModule => {
   return checkedModule;
 };
 
-// @ts-expect-error: process type is in @types/node, but we deliberatively excludes it to prevent core package depending on node.
-if (process.env.CI) {
-  runnableSamlangProgramTestCases.forEach(({ testCaseName: id, sourceCode: code }) => {
-    it(`samlang source level pretty printer is self-consistent for ${id}`, () => {
-      const prettyCode = prettyPrintSamlangModule(100, getTypeCheckedModule(code));
-      getTypeCheckedModule(prettyCode);
+describe('printer-integration-test', () => {
+  // @ts-expect-error: process type is in @types/node, but we deliberatively excludes it to prevent core package depending on node.
+  if (process.env.CI) {
+    runnableSamlangProgramTestCases.forEach(({ testCaseName: id, sourceCode: code }) => {
+      it(`samlang source level pretty printer is self-consistent for ${id}`, () => {
+        const prettyCode = prettyPrintSamlangModule(100, getTypeCheckedModule(code));
+        getTypeCheckedModule(prettyCode);
+      });
     });
-  });
-} else {
-  it("dummy printer integration test when we don't run full tests", () => {});
-}
+  } else {
+    it("dummy printer integration test when we don't run full tests", () => {});
+  }
+});

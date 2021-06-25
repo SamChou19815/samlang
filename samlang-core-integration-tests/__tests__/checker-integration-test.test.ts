@@ -44,18 +44,20 @@ const expectedErrors: readonly string[] = [
   'undefined-variable.sam:3:29-3:39: [UnresolvedName]: Name `helloWorld` is not resolved.',
 ];
 
-it('samlang type checker integration test', () => {
-  const { compileTimeErrors } = checkSources(
-    samlangProgramCheckerTestSources.map((it) => [
-      new ModuleReference([it.testName]),
-      it.sourceCode,
-    ]),
-    DEFAULT_BUILTIN_TYPING_CONTEXT
-  );
+describe('checker-integration-test', () => {
+  it('samlang type checker integration test', () => {
+    const { compileTimeErrors } = checkSources(
+      samlangProgramCheckerTestSources.map((it) => [
+        new ModuleReference([it.testName]),
+        it.sourceCode,
+      ]),
+      DEFAULT_BUILTIN_TYPING_CONTEXT
+    );
 
-  const actualErrors = compileTimeErrors
-    .map((it) => it.toString())
-    .sort((a, b) => a.localeCompare(b));
+    const actualErrors = compileTimeErrors
+      .map((it) => it.toString())
+      .sort((a, b) => a.localeCompare(b));
 
-  expect(actualErrors).toEqual(expectedErrors);
+    expect(actualErrors).toEqual(expectedErrors);
+  });
 });

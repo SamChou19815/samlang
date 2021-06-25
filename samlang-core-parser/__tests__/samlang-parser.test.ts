@@ -3,51 +3,53 @@ import { createGlobalErrorCollector } from 'samlang-core-errors';
 
 import SamlangParser, { BaseParser } from '../samlang-parser';
 
-it('BaseParser test', () => {
-  class P extends BaseParser {
-    constructor() {
-      super([], createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.DUMMY));
+describe('samlang-parser', () => {
+  it('BaseParser test', () => {
+    class P extends BaseParser {
+      constructor() {
+        super([], createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.DUMMY));
+      }
+
+      test() {
+        this.consume();
+        this.peek();
+      }
     }
 
-    test() {
-      this.consume();
-      this.peek();
-    }
-  }
+    const parser = new P();
+    parser.test();
+  });
 
-  const parser = new P();
-  parser.test();
-});
+  it('SamlangParser empty robustness test', () => {
+    const parser = new SamlangParser(
+      [],
+      createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.DUMMY),
+      ModuleReference.DUMMY,
+      new Set()
+    );
+    parser.parseClass();
+    parser.parseClassMemberDefinition();
+    parser.parseExpression();
+    parser.parseModule();
+    parser.parsePattern();
+    parser.parseStatement();
+    parser.parseType();
+  });
 
-it('SamlangParser empty robustness test', () => {
-  const parser = new SamlangParser(
-    [],
-    createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.DUMMY),
-    ModuleReference.DUMMY,
-    new Set()
-  );
-  parser.parseClass();
-  parser.parseClassMemberDefinition();
-  parser.parseExpression();
-  parser.parseModule();
-  parser.parsePattern();
-  parser.parseStatement();
-  parser.parseType();
-});
+  it('SamlangParser error robustness test', () => {
+    const parser = new SamlangParser(
+      [{ range: Range.DUMMY, content: { __type__: 'Error', content: 'fooooo' } }],
+      createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.DUMMY),
+      ModuleReference.DUMMY,
+      new Set()
+    );
 
-it('SamlangParser error robustness test', () => {
-  const parser = new SamlangParser(
-    [{ range: Range.DUMMY, content: { __type__: 'Error', content: 'fooooo' } }],
-    createGlobalErrorCollector().getModuleErrorCollector(ModuleReference.DUMMY),
-    ModuleReference.DUMMY,
-    new Set()
-  );
-
-  parser.parseClass();
-  parser.parseClassMemberDefinition();
-  parser.parseExpression();
-  parser.parseModule();
-  parser.parsePattern();
-  parser.parseStatement();
-  parser.parseType();
+    parser.parseClass();
+    parser.parseClassMemberDefinition();
+    parser.parseExpression();
+    parser.parseModule();
+    parser.parsePattern();
+    parser.parseStatement();
+    parser.parseType();
+  });
 });

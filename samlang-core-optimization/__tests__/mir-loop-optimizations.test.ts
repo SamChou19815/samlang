@@ -122,23 +122,24 @@ const optimizableWhile3 = MIR_WHILE({
   breakCollector: { name: 'bc', type: MIR_INT_TYPE },
 });
 
-it('optimizeMidIRWhileStatementWithAllLoopOptimizations works', () => {
-  assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
-    MIR_WHILE({
-      loopVariables: [],
-      statements: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
-    }),
-    'let a: int = 0;\nwhile (true) {\n}'
-  );
+describe('mir-loop-optimizations', () => {
+  it('optimizeMidIRWhileStatementWithAllLoopOptimizations works', () => {
+    assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
+      MIR_WHILE({
+        loopVariables: [],
+        statements: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
+      }),
+      'let a: int = 0;\nwhile (true) {\n}'
+    );
 
-  assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
-    optimizableWhile1,
-    'let _loop_0: int = 10 * 10;\nlet bc: int = (_loop_0: int) + 0;'
-  );
+    assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
+      optimizableWhile1,
+      'let _loop_0: int = 10 * 10;\nlet bc: int = (_loop_0: int) + 0;'
+    );
 
-  assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
-    optimizableWhile2,
-    `let _loop_0: int = 1 * 0;
+    assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
+      optimizableWhile2,
+      `let _loop_0: int = 1 * 0;
 let _loop_1: int = (_loop_0: int) + 11;
 let _loop_2: int = 10 * 1;
 let _loop_3: int = (_loop_2: int) + 11;
@@ -155,11 +156,11 @@ while (true) {
   j = (tmp_j: int);
   tmp_j = (_loop_4: int);
 }`
-  );
+    );
 
-  assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
-    optimizableWhile3,
-    `let _loop_0: int = 1 * 0;
+    assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
+      optimizableWhile3,
+      `let _loop_0: int = 1 * 0;
 let _loop_1: int = (_loop_0: int) + 10;
 let _loop_2: int = 1 * 0;
 let _loop_3: int = (_loop_2: int) + 10;
@@ -182,37 +183,37 @@ while (true) {
   tmp_j = (_loop_5: int);
   tmp_k = (_loop_6: int);
 }`
-  );
+    );
 
-  assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
-    MIR_WHILE({
-      loopVariables: [
-        { name: 'i', type: MIR_INT_TYPE, initialValue: MIR_ZERO, loopValue: VARIABLE_TMP_I },
-        { name: 'j', type: MIR_INT_TYPE, initialValue: MIR_ZERO, loopValue: VARIABLE_TMP_J },
-      ],
-      statements: [
-        MIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: MIR_INT(10) }),
-        MIR_SINGLE_IF({
-          booleanExpression: MIR_VARIABLE('cc', MIR_BOOL_TYPE),
-          invertCondition: false,
-          statements: [MIR_BREAK(VARIABLE_J)],
-        }),
-        MIR_BINARY({
-          name: 'tmp_i',
-          operator: '+',
-          e1: VARIABLE_I,
-          e2: MIR_VARIABLE('a', MIR_INT_TYPE),
-        }),
-        MIR_BINARY({
-          name: 'tmp_j',
-          operator: '*',
-          e1: VARIABLE_I,
-          e2: MIR_INT(2),
-        }),
-      ],
-      breakCollector: { name: 'bc', type: MIR_INT_TYPE },
-    }),
-    `let j: int = 0;
+    assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
+      MIR_WHILE({
+        loopVariables: [
+          { name: 'i', type: MIR_INT_TYPE, initialValue: MIR_ZERO, loopValue: VARIABLE_TMP_I },
+          { name: 'j', type: MIR_INT_TYPE, initialValue: MIR_ZERO, loopValue: VARIABLE_TMP_J },
+        ],
+        statements: [
+          MIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: MIR_INT(10) }),
+          MIR_SINGLE_IF({
+            booleanExpression: MIR_VARIABLE('cc', MIR_BOOL_TYPE),
+            invertCondition: false,
+            statements: [MIR_BREAK(VARIABLE_J)],
+          }),
+          MIR_BINARY({
+            name: 'tmp_i',
+            operator: '+',
+            e1: VARIABLE_I,
+            e2: MIR_VARIABLE('a', MIR_INT_TYPE),
+          }),
+          MIR_BINARY({
+            name: 'tmp_j',
+            operator: '*',
+            e1: VARIABLE_I,
+            e2: MIR_INT(2),
+          }),
+        ],
+        breakCollector: { name: 'bc', type: MIR_INT_TYPE },
+      }),
+      `let j: int = 0;
 let i: int = 0;
 let bc: int;
 while (true) {
@@ -227,26 +228,26 @@ while (true) {
   j = (tmp_j: int);
   i = (_loop_0: int);
 }`
-  );
+    );
 
-  assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
-    MIR_WHILE({
-      loopVariables: [
-        { name: 'i', type: MIR_INT_TYPE, initialValue: MIR_ZERO, loopValue: VARIABLE_TMP_I },
-        { name: 'j', type: MIR_INT_TYPE, initialValue: MIR_ZERO, loopValue: VARIABLE_TMP_J },
-      ],
-      statements: [
-        MIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: MIR_INT(10) }),
-        MIR_SINGLE_IF({
-          booleanExpression: MIR_VARIABLE('cc', MIR_BOOL_TYPE),
-          invertCondition: false,
-          statements: [MIR_BREAK(VARIABLE_J)],
-        }),
-        MIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: MIR_ONE }),
-        MIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_TMP_I, e2: MIR_INT(10) }),
-      ],
-    }),
-    `let _loop_0: int = 1 * 0;
+    assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
+      MIR_WHILE({
+        loopVariables: [
+          { name: 'i', type: MIR_INT_TYPE, initialValue: MIR_ZERO, loopValue: VARIABLE_TMP_I },
+          { name: 'j', type: MIR_INT_TYPE, initialValue: MIR_ZERO, loopValue: VARIABLE_TMP_J },
+        ],
+        statements: [
+          MIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: MIR_INT(10) }),
+          MIR_SINGLE_IF({
+            booleanExpression: MIR_VARIABLE('cc', MIR_BOOL_TYPE),
+            invertCondition: false,
+            statements: [MIR_BREAK(VARIABLE_J)],
+          }),
+          MIR_BINARY({ name: 'tmp_i', operator: '+', e1: VARIABLE_I, e2: MIR_ONE }),
+          MIR_BINARY({ name: 'tmp_j', operator: '+', e1: VARIABLE_TMP_I, e2: MIR_INT(10) }),
+        ],
+      }),
+      `let _loop_0: int = 1 * 0;
 let _loop_1: int = (_loop_0: int) + 11;
 let _loop_2: int = 10 * 1;
 let _loop_3: int = (_loop_2: int) + 11;
@@ -260,46 +261,46 @@ while (true) {
   let _loop_4: int = (tmp_j: int) + 1;
   tmp_j = (_loop_4: int);
 }`
-  );
-});
+    );
+  });
 
-it('optimizeMidIRStatementsWithAllLoopOptimizations works', () => {
-  assertOptimizeMidIRStatementsWithAllLoopOptimizations(
-    [
-      MIR_IF_ELSE({
-        booleanExpression: MIR_ZERO,
-        s1: [
-          MIR_SINGLE_IF({
-            booleanExpression: MIR_ZERO,
-            invertCondition: true,
-            statements: [MIR_BREAK(MIR_ZERO)],
-          }),
-        ],
-        s2: [
-          MIR_BINARY({
-            name: 'tmp_j',
-            operator: '*',
-            e1: VARIABLE_I,
-            e2: MIR_INT(2),
-          }),
-        ],
-        finalAssignments: [],
-      }),
-    ],
-    MIR_ZERO,
-    'let tmp_j: int = (i: int) * 2;\nreturn 0;'
-  );
+  it('optimizeMidIRStatementsWithAllLoopOptimizations works', () => {
+    assertOptimizeMidIRStatementsWithAllLoopOptimizations(
+      [
+        MIR_IF_ELSE({
+          booleanExpression: MIR_ZERO,
+          s1: [
+            MIR_SINGLE_IF({
+              booleanExpression: MIR_ZERO,
+              invertCondition: true,
+              statements: [MIR_BREAK(MIR_ZERO)],
+            }),
+          ],
+          s2: [
+            MIR_BINARY({
+              name: 'tmp_j',
+              operator: '*',
+              e1: VARIABLE_I,
+              e2: MIR_INT(2),
+            }),
+          ],
+          finalAssignments: [],
+        }),
+      ],
+      MIR_ZERO,
+      'let tmp_j: int = (i: int) * 2;\nreturn 0;'
+    );
 
-  assertOptimizeMidIRStatementsWithAllLoopOptimizations(
-    [optimizableWhile1],
-    MIR_VARIABLE('bc', MIR_INT_TYPE),
-    '\nreturn 100;'
-  );
+    assertOptimizeMidIRStatementsWithAllLoopOptimizations(
+      [optimizableWhile1],
+      MIR_VARIABLE('bc', MIR_INT_TYPE),
+      '\nreturn 100;'
+    );
 
-  assertOptimizeMidIRStatementsWithAllLoopOptimizations(
-    [optimizableWhile2],
-    MIR_VARIABLE('bc', MIR_INT_TYPE),
-    `let j: int = 16;
+    assertOptimizeMidIRStatementsWithAllLoopOptimizations(
+      [optimizableWhile2],
+      MIR_VARIABLE('bc', MIR_INT_TYPE),
+      `let j: int = 16;
 let tmp_j: int = 17;
 let bc: int;
 while (true) {
@@ -313,12 +314,12 @@ while (true) {
   tmp_j = (_loop_4: int);
 }
 return (bc: int);`
-  );
+    );
 
-  assertOptimizeMidIRStatementsWithAllLoopOptimizations(
-    [optimizableWhile3],
-    MIR_VARIABLE('bc', MIR_INT_TYPE),
-    `let j: int = 15;
+    assertOptimizeMidIRStatementsWithAllLoopOptimizations(
+      [optimizableWhile3],
+      MIR_VARIABLE('bc', MIR_INT_TYPE),
+      `let j: int = 15;
 let i: int = 6;
 let tmp_j: int = 16;
 let tmp_k: int = 16;
@@ -338,88 +339,88 @@ while (true) {
   tmp_k = (_loop_6: int);
 }
 return (bc: int);`
-  );
+    );
 
-  assertOptimizeMidIRStatementsWithAllLoopOptimizations(
-    [
-      MIR_WHILE({
-        loopVariables: [
-          { name: 'i', type: MIR_INT_TYPE, initialValue: MIR_INT(4), loopValue: VARIABLE_TMP_I },
-          { name: 'acc', type: MIR_INT_TYPE, initialValue: MIR_ONE, loopValue: VARIABLE_TMP_J },
-        ],
-        statements: [
-          MIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: MIR_INT(1) }),
-          MIR_SINGLE_IF({
-            booleanExpression: MIR_VARIABLE('cc', MIR_BOOL_TYPE),
-            invertCondition: false,
-            statements: [MIR_BREAK(MIR_VARIABLE('acc', MIR_INT_TYPE))],
-          }),
-          MIR_BINARY({
-            name: 'tmp_i',
-            operator: '+',
-            e1: VARIABLE_I,
-            e2: MIR_INT(-1),
-          }),
-          MIR_BINARY({
-            name: 'tmp_j',
-            operator: '*',
-            e1: VARIABLE_I,
-            e2: MIR_VARIABLE('acc', MIR_INT_TYPE),
-          }),
-        ],
-        breakCollector: { name: 'bc', type: MIR_INT_TYPE },
-      }),
-    ],
-    MIR_VARIABLE('bc', MIR_INT_TYPE),
-    '\nreturn 24;'
-  );
+    assertOptimizeMidIRStatementsWithAllLoopOptimizations(
+      [
+        MIR_WHILE({
+          loopVariables: [
+            { name: 'i', type: MIR_INT_TYPE, initialValue: MIR_INT(4), loopValue: VARIABLE_TMP_I },
+            { name: 'acc', type: MIR_INT_TYPE, initialValue: MIR_ONE, loopValue: VARIABLE_TMP_J },
+          ],
+          statements: [
+            MIR_BINARY({ name: 'cc', operator: '<', e1: VARIABLE_I, e2: MIR_INT(1) }),
+            MIR_SINGLE_IF({
+              booleanExpression: MIR_VARIABLE('cc', MIR_BOOL_TYPE),
+              invertCondition: false,
+              statements: [MIR_BREAK(MIR_VARIABLE('acc', MIR_INT_TYPE))],
+            }),
+            MIR_BINARY({
+              name: 'tmp_i',
+              operator: '+',
+              e1: VARIABLE_I,
+              e2: MIR_INT(-1),
+            }),
+            MIR_BINARY({
+              name: 'tmp_j',
+              operator: '*',
+              e1: VARIABLE_I,
+              e2: MIR_VARIABLE('acc', MIR_INT_TYPE),
+            }),
+          ],
+          breakCollector: { name: 'bc', type: MIR_INT_TYPE },
+        }),
+      ],
+      MIR_VARIABLE('bc', MIR_INT_TYPE),
+      '\nreturn 24;'
+    );
 
-  assertOptimizeMidIRStatementsWithAllLoopOptimizations(
-    [
-      MIR_WHILE({
-        loopVariables: [
-          {
-            name: 'i',
-            type: MIR_INT_TYPE,
-            initialValue: MIR_VARIABLE('init_i', MIR_INT_TYPE),
-            loopValue: VARIABLE_TMP_I,
-          },
-        ],
-        statements: [
-          MIR_BINARY({
-            name: 'cc',
-            operator: '<',
-            e1: VARIABLE_I,
-            e2: MIR_VARIABLE('L', MIR_INT_TYPE),
-          }),
-          MIR_SINGLE_IF({
-            booleanExpression: MIR_VARIABLE('cc', MIR_BOOL_TYPE),
-            invertCondition: true,
-            statements: [MIR_BREAK(MIR_ZERO)],
-          }),
-          MIR_BINARY({ name: 't', operator: '*', e1: VARIABLE_I, e2: MIR_INT(3) }),
-          MIR_BINARY({
-            name: 'j',
-            operator: '+',
-            e1: MIR_VARIABLE('a', MIR_INT_TYPE),
-            e2: MIR_VARIABLE('t', MIR_INT_TYPE),
-          }),
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_ZERO,
-            functionArguments: [VARIABLE_J],
-            returnType: MIR_INT_TYPE,
-          }),
-          MIR_BINARY({
-            name: 'tmp_i',
-            operator: '+',
-            e1: VARIABLE_I,
-            e2: MIR_INT(2),
-          }),
-        ],
-      }),
-    ],
-    MIR_ZERO,
-    `let _loop_0: int = (init_i: int) * 3;
+    assertOptimizeMidIRStatementsWithAllLoopOptimizations(
+      [
+        MIR_WHILE({
+          loopVariables: [
+            {
+              name: 'i',
+              type: MIR_INT_TYPE,
+              initialValue: MIR_VARIABLE('init_i', MIR_INT_TYPE),
+              loopValue: VARIABLE_TMP_I,
+            },
+          ],
+          statements: [
+            MIR_BINARY({
+              name: 'cc',
+              operator: '<',
+              e1: VARIABLE_I,
+              e2: MIR_VARIABLE('L', MIR_INT_TYPE),
+            }),
+            MIR_SINGLE_IF({
+              booleanExpression: MIR_VARIABLE('cc', MIR_BOOL_TYPE),
+              invertCondition: true,
+              statements: [MIR_BREAK(MIR_ZERO)],
+            }),
+            MIR_BINARY({ name: 't', operator: '*', e1: VARIABLE_I, e2: MIR_INT(3) }),
+            MIR_BINARY({
+              name: 'j',
+              operator: '+',
+              e1: MIR_VARIABLE('a', MIR_INT_TYPE),
+              e2: MIR_VARIABLE('t', MIR_INT_TYPE),
+            }),
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_ZERO,
+              functionArguments: [VARIABLE_J],
+              returnType: MIR_INT_TYPE,
+            }),
+            MIR_BINARY({
+              name: 'tmp_i',
+              operator: '+',
+              e1: VARIABLE_I,
+              e2: MIR_INT(2),
+            }),
+          ],
+        }),
+      ],
+      MIR_ZERO,
+      `let _loop_0: int = (init_i: int) * 3;
 let _loop_2: int = (init_i: int) * 3;
 let _loop_3: int = (a: int) + (_loop_2: int);
 let i: int = (init_i: int);
@@ -437,5 +438,6 @@ while (true) {
   j = (_loop_5: int);
 }
 return 0;`
-  );
+    );
+  });
 });

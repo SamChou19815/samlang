@@ -1,12 +1,13 @@
 import runSamlangDemo from '..';
 
-it('runSamlangDemo works when given good program.', () => {
-  expect(
-    runSamlangDemo('class Main { function main(): unit = Builtins.println("hello world") }')
-  ).toEqual({
-    interpreterPrinted: 'hello world\n',
-    prettyPrintedProgram: `class Main { function main(): unit = Builtins.println("hello world")  }\n`,
-    jsString: `const _builtin_stringConcat = (a, b) => a + b;
+describe('samlang-demo', () => {
+  it('runSamlangDemo works when given good program.', () => {
+    expect(
+      runSamlangDemo('class Main { function main(): unit = Builtins.println("hello world") }')
+    ).toEqual({
+      interpreterPrinted: 'hello world\n',
+      prettyPrintedProgram: `class Main { function main(): unit = Builtins.println("hello world")  }\n`,
+      jsString: `const _builtin_stringConcat = (a, b) => a + b;
 const _module__class_Builtins_function_println = (line) => console.log(line);
 const _module__class_Builtins_function_stringToInt = (v) => parseInt(v, 10);
 const _module__class_Builtins_function_intToString = (v) => String(v);
@@ -19,7 +20,7 @@ const _compiled_program_main = () => {
 };
 
 _compiled_program_main();`,
-    llvmString: `declare i32* @_builtin_malloc(i32) nounwind
+      llvmString: `declare i32* @_builtin_malloc(i32) nounwind
 declare i32 @_module__class_Builtins_function_println(i32*) nounwind
 declare i32* @_module__class_Builtins_function_panic(i32*) nounwind
 declare i32* @_module__class_Builtins_function_intToString(i32) nounwind
@@ -34,25 +35,26 @@ l0_start:
   call i32 @_module__class_Builtins_function_println(i32* %_temp_0_string_name_cast) nounwind
   ret i32 0
 }`,
-    errors: [],
+      errors: [],
+    });
   });
-});
 
-it('runSamlangDemo works when given non-runnable program', () => {
-  expect(runSamlangDemo('class Main {}')).toEqual({
-    prettyPrintedProgram: 'class Main {  }\n',
-    interpreterPrinted: '',
-    jsString: '// No JS output because there is no Main.main() function\n',
-    assemblyString: undefined,
-    errors: [],
+  it('runSamlangDemo works when given non-runnable program', () => {
+    expect(runSamlangDemo('class Main {}')).toEqual({
+      prettyPrintedProgram: 'class Main {  }\n',
+      interpreterPrinted: '',
+      jsString: '// No JS output because there is no Main.main() function\n',
+      assemblyString: undefined,
+      errors: [],
+    });
   });
-});
 
-it('runSamlangDemo works when program with type error.', () => {
-  expect(runSamlangDemo('class Main { function main(): string = 42 + "" }')).toEqual({
-    errors: [
-      'Demo.sam:1:40-1:47: [UnexpectedType]: Expected: `string`, actual: `int`.',
-      'Demo.sam:1:45-1:47: [UnexpectedType]: Expected: `int`, actual: `string`.',
-    ],
+  it('runSamlangDemo works when program with type error.', () => {
+    expect(runSamlangDemo('class Main { function main(): string = 42 + "" }')).toEqual({
+      errors: [
+        'Demo.sam:1:40-1:47: [UnexpectedType]: Expected: `string`, actual: `int`.',
+        'Demo.sam:1:45-1:47: [UnexpectedType]: Expected: `int`, actual: `string`.',
+      ],
+    });
   });
 });

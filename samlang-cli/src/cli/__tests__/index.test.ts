@@ -17,20 +17,22 @@ const assertCalled = (commandLineArguments: readonly string[], called: keyof CLI
   });
 };
 
-it('Commands are correctly triggered', () => {
-  assertCalled([], 'typeCheck');
-  assertCalled(['format'], 'format');
-  assertCalled(['check'], 'typeCheck');
-  assertCalled(['compile'], 'compile');
-  assertCalled(['lsp'], 'lsp');
-  assertCalled(['format', '--help'], 'format');
-  assertCalled(['check', '--help'], 'typeCheck');
-  assertCalled(['compile', '--help'], 'compile');
-  assertCalled(['lsp', '--help'], 'lsp');
-  assertCalled(['check', '-h'], 'typeCheck');
-  assertCalled(['compile', '-h'], 'compile');
-  assertCalled(['lsp', '-h'], 'lsp');
-  assertCalled(['version'], 'version');
-  assertCalled(['dfasfsdf'], 'help');
-  assertCalled(['help'], 'help');
+describe('samlang-cli/cli', () => {
+  it('Commands are correctly triggered', () => {
+    assertCalled([], 'typeCheck');
+    assertCalled(['format'], 'format');
+    assertCalled(['check'], 'typeCheck');
+    assertCalled(['compile'], 'compile');
+    assertCalled(['lsp'], 'lsp');
+    assertCalled(['format', '--help'], 'format');
+    assertCalled(['check', '--help'], 'typeCheck');
+    assertCalled(['compile', '--help'], 'compile');
+    assertCalled(['lsp', '--help'], 'lsp');
+    assertCalled(['check', '-h'], 'typeCheck');
+    assertCalled(['compile', '-h'], 'compile');
+    assertCalled(['lsp', '-h'], 'lsp');
+    assertCalled(['version'], 'version');
+    assertCalled(['dfasfsdf'], 'help');
+    assertCalled(['help'], 'help');
+  });
 });
