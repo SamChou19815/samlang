@@ -55,43 +55,49 @@ const checkErrors = (
   expect(errors).toEqual(globalErrorCollector.getErrors().map((it) => it.toString()));
 };
 
-it('Empty sources have no errors.', () => checkErrors([], []));
+describe('undefined-import-checker', () => {
+  it('Empty sources have no errors.', () => checkErrors([], []));
 
-it('No import sources have no errors.', () => {
-  checkErrors(
-    [createMockModule('A'), createMockModule('B', [], ['Foo']), createMockModule('C', [], ['Bar'])],
-    []
-  );
-});
+  it('No import sources have no errors.', () => {
+    checkErrors(
+      [
+        createMockModule('A'),
+        createMockModule('B', [], ['Foo']),
+        createMockModule('C', [], ['Bar']),
+      ],
+      []
+    );
+  });
 
-it('Cyclic dependency causes no errors.', () => {
-  checkErrors(
-    [
-      createMockModule('A', [['B', ['Bar']]], ['Foo']),
-      createMockModule('B', [['A', ['Foo']]], ['Bar']),
-    ],
-    []
-  );
-});
+  it('Cyclic dependency causes no errors.', () => {
+    checkErrors(
+      [
+        createMockModule('A', [['B', ['Bar']]], ['Foo']),
+        createMockModule('B', [['A', ['Foo']]], ['Bar']),
+      ],
+      []
+    );
+  });
 
-it('Missing classes cause errors.', () => {
-  checkErrors(
-    [
-      createMockModule('A', [['B', ['Foo', 'Bar']]]),
-      createMockModule('B', [['A', ['Foo', 'Bar']]]),
-    ],
-    [
-      'A.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.',
-      'A.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved.',
-      'B.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.',
-      'B.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved.',
-    ]
-  );
-});
+  it('Missing classes cause errors.', () => {
+    checkErrors(
+      [
+        createMockModule('A', [['B', ['Foo', 'Bar']]]),
+        createMockModule('B', [['A', ['Foo', 'Bar']]]),
+      ],
+      [
+        'A.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.',
+        'A.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved.',
+        'B.sam:0:0-0:0: [UnresolvedName]: Name `Foo` is not resolved.',
+        'B.sam:0:0-0:0: [UnresolvedName]: Name `Bar` is not resolved.',
+      ]
+    );
+  });
 
-it('Importing missing module causes errors.', () => {
-  checkErrors(
-    [createMockModule('A', [['B', []]])],
-    ['A.sam:0:0-0:0: [UnresolvedName]: Name `B` is not resolved.']
-  );
+  it('Importing missing module causes errors.', () => {
+    checkErrors(
+      [createMockModule('A', [['B', []]])],
+      ['A.sam:0:0-0:0: [UnresolvedName]: Name `B` is not resolved.']
+    );
+  });
 });

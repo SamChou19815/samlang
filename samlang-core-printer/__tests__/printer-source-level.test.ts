@@ -38,35 +38,40 @@ const reprintModule = (rawSourceWithTypeAnnotation: string, width = 40): string 
   return `\n${prettyPrintSamlangModule(width, samlangModule).trimEnd()}`;
 };
 
-it('prettyPrintSamlangExpression test', () => {
-  expect(reprintExpression('1')).toBe('1');
-  expect(reprintExpression('/* dsfsd */ 1')).toBe('/* dsfsd */ 1');
-  expect(reprintExpression('/* long long long long long long long long long long */ 1')).toBe(
-    `/*
+describe('printer-source-level', () => {
+  it('prettyPrintSamlangExpression test', () => {
+    expect(reprintExpression('1')).toBe('1');
+    expect(reprintExpression('/* dsfsd */ 1')).toBe('/* dsfsd */ 1');
+    expect(reprintExpression('/* long long long long long long long long long long */ 1')).toBe(
+      `/*
  * long long long long long long long
  * long long long
  */
 1`
-  );
-  expect(reprintExpression('hi')).toBe('hi');
-  expect(reprintExpression('this')).toBe('this');
-  expect(reprintExpression('ClassName.classMember')).toBe('ClassName.classMember');
-  expect(reprintExpression('ClassName/* a */.classMember')).toBe('ClassName /* a */ .classMember');
-  expect(reprintExpression('ClassName. /* b */classMember')).toBe('ClassName /* b */ .classMember');
-  expect(reprintExpression('ClassName/* a */. /* b */classMember')).toBe(
-    'ClassName /* a */ /* b */ .classMember'
-  );
+    );
+    expect(reprintExpression('hi')).toBe('hi');
+    expect(reprintExpression('this')).toBe('this');
+    expect(reprintExpression('ClassName.classMember')).toBe('ClassName.classMember');
+    expect(reprintExpression('ClassName/* a */.classMember')).toBe(
+      'ClassName /* a */ .classMember'
+    );
+    expect(reprintExpression('ClassName. /* b */classMember')).toBe(
+      'ClassName /* b */ .classMember'
+    );
+    expect(reprintExpression('ClassName/* a */. /* b */classMember')).toBe(
+      'ClassName /* a */ /* b */ .classMember'
+    );
 
-  expect(reprintExpression('[1,2,3,4,5,6,7,8,9]')).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9]');
-  expect(reprintExpression('// a\n[/* a*/ 1,// abc\n2,3]')).toBe(`// a
+    expect(reprintExpression('[1,2,3,4,5,6,7,8,9]')).toBe('[1, 2, 3, 4, 5, 6, 7, 8, 9]');
+    expect(reprintExpression('// a\n[/* a*/ 1,// abc\n2,3]')).toBe(`// a
 [
   /* a */ 1,
   // abc
   2,
   3
 ]`);
-  expect(reprintExpression('[1,2,3,4,5,6,7,8,9,10,11,12,13,14]')).toBe(
-    `[
+    expect(reprintExpression('[1,2,3,4,5,6,7,8,9,10,11,12,13,14]')).toBe(
+      `[
   1,
   2,
   3,
@@ -82,14 +87,14 @@ it('prettyPrintSamlangExpression test', () => {
   13,
   14
 ]`
-  );
-  expect(
-    reprintExpression(
-      '[/* a */ 1, /* a */ 2, /* a */ 3, /* a */ 4, /* a */ 5, /* a */ 6, /* a */ 7, ' +
-        '/* a */ 8, /* a */ 9, /* a */ 10, /* a */ 11, /* a */ 12, /* a */ 13, /* a */ 14]'
-    )
-  ).toBe(
-    `[
+    );
+    expect(
+      reprintExpression(
+        '[/* a */ 1, /* a */ 2, /* a */ 3, /* a */ 4, /* a */ 5, /* a */ 6, /* a */ 7, ' +
+          '/* a */ 8, /* a */ 9, /* a */ 10, /* a */ 11, /* a */ 12, /* a */ 13, /* a */ 14]'
+      )
+    ).toBe(
+      `[
   /* a */ 1,
   /* a */ 2,
   /* a */ 3,
@@ -105,12 +110,12 @@ it('prettyPrintSamlangExpression test', () => {
   /* a */ 13,
   /* a */ 14
 ]`
-  );
+    );
 
-  expect(reprintExpression('{foo:bar,baz}')).toBe('{ foo: bar, baz }');
-  expect(reprintExpression('{/*d*/foo:bar,/*f */baz}')).toBe('{ /* d */ foo: bar, /* f */ baz }');
-  expect(reprintExpression('{foo:bar,baz0,baz1,baz2,baz3,baz4,baz5}')).toBe(
-    `{
+    expect(reprintExpression('{foo:bar,baz}')).toBe('{ foo: bar, baz }');
+    expect(reprintExpression('{/*d*/foo:bar,/*f */baz}')).toBe('{ /* d */ foo: bar, /* f */ baz }');
+    expect(reprintExpression('{foo:bar,baz0,baz1,baz2,baz3,baz4,baz5}')).toBe(
+      `{
   foo: bar,
   baz0,
   baz1,
@@ -119,9 +124,9 @@ it('prettyPrintSamlangExpression test', () => {
   baz4,
   baz5
 }`
-  );
-  expect(reprintExpression('{/*dsf*/foo:bar,baz0,baz1,//dd\nbaz2,baz3,baz4,baz5}')).toBe(
-    `{
+    );
+    expect(reprintExpression('{/*dsf*/foo:bar,baz0,baz1,//dd\nbaz2,baz3,baz4,baz5}')).toBe(
+      `{
   /* dsf */
   foo: bar,
   baz0,
@@ -132,51 +137,51 @@ it('prettyPrintSamlangExpression test', () => {
   baz4,
   baz5
 }`
-  );
+    );
 
-  expect(reprintExpression('VariantName(42)')).toBe('VariantName(42)');
-  expect(reprintExpression('/* a */VariantName(/* b */42)')).toBe(
-    '/* a */ VariantName(/* b */ 42)'
-  );
-  expect(reprintExpression('VariantName(aVariableNameThatIsVeryVeryVeryLong)')).toBe(
-    `VariantName(
+    expect(reprintExpression('VariantName(42)')).toBe('VariantName(42)');
+    expect(reprintExpression('/* a */VariantName(/* b */42)')).toBe(
+      '/* a */ VariantName(/* b */ 42)'
+    );
+    expect(reprintExpression('VariantName(aVariableNameThatIsVeryVeryVeryLong)')).toBe(
+      `VariantName(
   aVariableNameThatIsVeryVeryVeryLong
 )`
-  );
+    );
 
-  expect(reprintExpression('foo.bar')).toBe('foo.bar');
+    expect(reprintExpression('foo.bar')).toBe('foo.bar');
 
-  expect(
-    prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(
-      40,
-      EXPRESSION_METHOD_ACCESS({
-        range: Range.DUMMY,
-        type: intType,
-        associatedComments: [],
-        expression: EXPRESSION_VARIABLE({
+    expect(
+      prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(
+        40,
+        EXPRESSION_METHOD_ACCESS({
           range: Range.DUMMY,
           type: intType,
           associatedComments: [],
-          name: 'foo',
-        }),
-        methodPrecedingComments: [],
-        methodName: 'bar',
-      })
-    ).trimEnd()
-  ).toBe('foo.bar');
+          expression: EXPRESSION_VARIABLE({
+            range: Range.DUMMY,
+            type: intType,
+            associatedComments: [],
+            name: 'foo',
+          }),
+          methodPrecedingComments: [],
+          methodName: 'bar',
+        })
+      ).trimEnd()
+    ).toBe('foo.bar');
 
-  expect(reprintExpression('-42')).toBe('-42');
-  expect(reprintExpression('!(1+aVariableNameThatIsVeryVeryVeryVeryVeryLong)')).toBe(`!(
+    expect(reprintExpression('-42')).toBe('-42');
+    expect(reprintExpression('!(1+aVariableNameThatIsVeryVeryVeryVeryVeryLong)')).toBe(`!(
   1 + aVariableNameThatIsVeryVeryVeryVeryVeryLong
 )`);
 
-  expect(reprintExpression('panic(ah)')).toBe('panic(ah)');
-  expect(reprintExpression('println(ah)')).toBe('println(ah)');
-  expect(reprintExpression('foo()')).toBe('foo()');
-  expect(reprintExpression('foo(bar)')).toBe('foo(bar)');
-  expect(reprintExpression('foo(bar,baz)')).toBe('foo(bar, baz)');
-  expect(reprintExpression('foo(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10)')).toBe(
-    `foo(
+    expect(reprintExpression('panic(ah)')).toBe('panic(ah)');
+    expect(reprintExpression('println(ah)')).toBe('println(ah)');
+    expect(reprintExpression('foo()')).toBe('foo()');
+    expect(reprintExpression('foo(bar)')).toBe('foo(bar)');
+    expect(reprintExpression('foo(bar,baz)')).toBe('foo(bar, baz)');
+    expect(reprintExpression('foo(v1, v2, v3, v4, v5, v6, v7, v8, v9, v10)')).toBe(
+      `foo(
   v1,
   v2,
   v3,
@@ -188,28 +193,28 @@ it('prettyPrintSamlangExpression test', () => {
   v9,
   v10
 )`
-  );
+    );
 
-  expect(reprintExpression('1 + 1')).toBe('1 + 1');
-  expect(reprintExpression('/* a */ 1 /* plus */ + /* b */ 1')).toBe(
-    '/* a */ 1 /* plus */ + /* b */ 1'
-  );
-  expect(reprintExpression('1 + 1 * 1')).toBe('1 + 1 * 1');
-  expect(reprintExpression('(1 + 1) * 1')).toBe('(1 + 1) * 1');
-  expect(reprintExpression('1 - (1 + 1)')).toBe('1 - (1 + 1)');
-  expect(reprintExpression('1 + (1 + 1)')).toBe('1 + 1 + 1');
-  expect(reprintExpression('1 + 1 + 1 + 1')).toBe('1 + 1 + 1 + 1');
-  expect(reprintExpression('1 + 1 + 1 - 1')).toBe('1 + 1 + 1 - 1');
-  expect(reprintExpression('1 * 1 * 1')).toBe('1 * 1 * 1');
-  expect(reprintExpression('1 / 1 % 1 * 1')).toBe('1 / 1 % 1 * 1');
-  expect(reprintExpression('true && false && true')).toBe('true && false && true');
-  expect(reprintExpression('true || false || true')).toBe('true || false || true');
-  expect(reprintExpression('"dev" :: "meggo" :: "vibez"')).toBe('"dev" :: "meggo" :: "vibez"');
+    expect(reprintExpression('1 + 1')).toBe('1 + 1');
+    expect(reprintExpression('/* a */ 1 /* plus */ + /* b */ 1')).toBe(
+      '/* a */ 1 /* plus */ + /* b */ 1'
+    );
+    expect(reprintExpression('1 + 1 * 1')).toBe('1 + 1 * 1');
+    expect(reprintExpression('(1 + 1) * 1')).toBe('(1 + 1) * 1');
+    expect(reprintExpression('1 - (1 + 1)')).toBe('1 - (1 + 1)');
+    expect(reprintExpression('1 + (1 + 1)')).toBe('1 + 1 + 1');
+    expect(reprintExpression('1 + 1 + 1 + 1')).toBe('1 + 1 + 1 + 1');
+    expect(reprintExpression('1 + 1 + 1 - 1')).toBe('1 + 1 + 1 - 1');
+    expect(reprintExpression('1 * 1 * 1')).toBe('1 * 1 * 1');
+    expect(reprintExpression('1 / 1 % 1 * 1')).toBe('1 / 1 % 1 * 1');
+    expect(reprintExpression('true && false && true')).toBe('true && false && true');
+    expect(reprintExpression('true || false || true')).toBe('true || false || true');
+    expect(reprintExpression('"dev" :: "meggo" :: "vibez"')).toBe('"dev" :: "meggo" :: "vibez"');
 
-  expect(reprintExpression('if (b) then a else c')).toBe('if (b) then a else c');
-  expect(
-    reprintExpression(
-      `
+    expect(reprintExpression('if (b) then a else c')).toBe('if (b) then a else c');
+    expect(
+      reprintExpression(
+        `
       if (b) then {
         // fff
         val _ = println("");
@@ -228,8 +233,8 @@ it('prettyPrintSamlangExpression test', () => {
         val _ = println("");
         val _ = println("");
       }`
-    )
-  ).toBe(`if (b) then {
+      )
+    ).toBe(`if (b) then {
   // fff
   val _ = println("");
   val _ = println("");
@@ -248,40 +253,40 @@ it('prettyPrintSamlangExpression test', () => {
   val _ = println("");
 }`);
 
-  expect(reprintExpression('match (v) { | None _ -> fooBar | Some bazBaz -> bazBaz }'))
-    .toBe(`match (v) {
+    expect(reprintExpression('match (v) { | None _ -> fooBar | Some bazBaz -> bazBaz }'))
+      .toBe(`match (v) {
   | None _ -> fooBar
   | Some bazBaz -> bazBaz
 }`);
 
-  expect(reprintExpression('() -> 1')).toBe('() -> 1');
-  expect(reprintExpression('(a: int) -> 1')).toBe('(a: int) -> 1');
-  expect(reprintExpression('(a) -> 1')).toBe('(a) -> 1');
-  expect(reprintExpression('(a: int) -> 1 + 1')).toBe('(a: int) -> 1 + 1');
-  expect(reprintExpression('(() -> 1)()')).toBe('(() -> 1)()');
+    expect(reprintExpression('() -> 1')).toBe('() -> 1');
+    expect(reprintExpression('(a: int) -> 1')).toBe('(a: int) -> 1');
+    expect(reprintExpression('(a) -> 1')).toBe('(a) -> 1');
+    expect(reprintExpression('(a: int) -> 1 + 1')).toBe('(a: int) -> 1 + 1');
+    expect(reprintExpression('(() -> 1)()')).toBe('(() -> 1)()');
 
-  expect(reprintExpression('{}')).toBe('{  }');
-  expect(reprintExpression('{3}')).toBe('{ 3 }');
-  expect(reprintExpression('{ val _:int=0;val _=0; }')).toBe(
-    `{
+    expect(reprintExpression('{}')).toBe('{  }');
+    expect(reprintExpression('{3}')).toBe('{ 3 }');
+    expect(reprintExpression('{ val _:int=0;val _=0; }')).toBe(
+      `{
   val _: int = 0;
   val _ = 0;
 }`
-  );
-  expect(reprintExpression('{ val a:int=1;val [b,_]:[int*int]=2; 3 }')).toBe(`{
+    );
+    expect(reprintExpression('{ val a:int=1;val [b,_]:[int*int]=2; 3 }')).toBe(`{
   val a: int = 1;
   val [b, _]: [int * int] = 2;
   3
 }`);
-  expect(reprintExpression('{ val {a, b as c}: int = 3 }')).toBe(`{
+    expect(reprintExpression('{ val {a, b as c}: int = 3 }')).toBe(`{
   val { a, b as c }: int = 3;
 }`);
 
-  expect(
-    reprintExpression(
-      '{ val a: unit = { val b: unit = { val c: unit = { val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong } } } }'
-    )
-  ).toBe(`{
+    expect(
+      reprintExpression(
+        '{ val a: unit = { val b: unit = { val c: unit = { val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong } } } }'
+      )
+    ).toBe(`{
   val a: unit = {
     val b: unit = {
       val c: unit = {
@@ -290,11 +295,11 @@ it('prettyPrintSamlangExpression test', () => {
     };
   };
 }`);
-  expect(
-    reprintExpression(
-      '() -> () -> () -> { val a: unit = { val b: unit = { val c: unit = { val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong } } } }'
-    )
-  ).toBe(`() -> (
+    expect(
+      reprintExpression(
+        '() -> () -> () -> { val a: unit = { val b: unit = { val c: unit = { val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong } } } }'
+      )
+    ).toBe(`() -> (
   () -> (
     () -> {
       val a: unit = {
@@ -307,13 +312,13 @@ it('prettyPrintSamlangExpression test', () => {
     }
   )
 )`);
-});
+  });
 
-it('prettyPrintSamlangModule test', () => {
-  expect(reprintModule('')).toBe('\n');
+  it('prettyPrintSamlangModule test', () => {
+    expect(reprintModule('')).toBe('\n');
 
-  expect(
-    reprintModule(`
+    expect(
+      reprintModule(`
 import {Foo} from Bar.Baz
 import {F1,F2,F3,F4,F5,F6,F7,F8,F9,F10} from Bar.Baz
 
@@ -350,7 +355,7 @@ class A(val a: int) {}
  */
 class Main {}
 `)
-  ).toBe(`
+    ).toBe(`
 import { Foo } from Bar.Baz
 import {
   F1,
@@ -409,4 +414,5 @@ class A(val a: int) {  }
  * document string
  */
 class Main {  }`);
+  });
 });

@@ -5,46 +5,47 @@ import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { LocationLookup, SamlangExpressionLocationLookupBuilder } from '../location-service';
 import { checkSources } from '../source-processor';
 
-it('LocationLookupTest self consistent test', () => {
-  const lookup = new LocationLookup<string>();
-  const farPosition = new Position(100, 100);
-  const range = new Range(new Position(1, 1), new Position(2, 2));
-  const moduleReference = new ModuleReference(['foo']);
-  const location = { moduleReference, range };
-  lookup.set(location, 'exist');
-  expect(lookup.getBestLocation(moduleReference, range.start)).toEqual(location);
-  expect(lookup.getBestLocation(moduleReference, range.end)).toEqual(location);
-  expect(lookup.getBestLocation(moduleReference, farPosition)).toBeNull();
-  expect(lookup.getBestLocation(new ModuleReference(['oof']), farPosition)).toBeNull();
-  expect(lookup.get(moduleReference, range.start)).toBe('exist');
-  expect(lookup.get(moduleReference, range.end)).toBe('exist');
-  expect(lookup.get(moduleReference, farPosition)).toBeNull();
-});
+describe('location-service', () => {
+  it('LocationLookupTest self consistent test', () => {
+    const lookup = new LocationLookup<string>();
+    const farPosition = new Position(100, 100);
+    const range = new Range(new Position(1, 1), new Position(2, 2));
+    const moduleReference = new ModuleReference(['foo']);
+    const location = { moduleReference, range };
+    lookup.set(location, 'exist');
+    expect(lookup.getBestLocation(moduleReference, range.start)).toEqual(location);
+    expect(lookup.getBestLocation(moduleReference, range.end)).toEqual(location);
+    expect(lookup.getBestLocation(moduleReference, farPosition)).toBeNull();
+    expect(lookup.getBestLocation(new ModuleReference(['oof']), farPosition)).toBeNull();
+    expect(lookup.get(moduleReference, range.start)).toBe('exist');
+    expect(lookup.get(moduleReference, range.end)).toBe('exist');
+    expect(lookup.get(moduleReference, farPosition)).toBeNull();
+  });
 
-it('LocationLookupTest favors small range test', () => {
-  const lookup = new LocationLookup<number>();
-  const moduleReference = new ModuleReference(['foo']);
-  const smallRange = new Range(new Position(2, 1), new Position(3, 2));
-  const smallLocation = { moduleReference, range: smallRange };
-  const bigRange = new Range(new Position(1, 1), new Position(30, 2));
-  const bigLocation = { moduleReference, range: bigRange };
-  lookup.set(smallLocation, 1);
-  lookup.set(bigLocation, 2);
-  expect(lookup.getBestLocation(moduleReference, new Position(3, 1))).toEqual(smallLocation);
-  expect(lookup.getBestLocation(moduleReference, new Position(10, 2))).toEqual(bigLocation);
-  expect(lookup.getBestLocation(moduleReference, new Position(100, 100))).toBeNull();
-  expect(lookup.get(moduleReference, new Position(3, 1))).toBe(1);
-  expect(lookup.get(moduleReference, new Position(10, 2))).toBe(2);
-  expect(lookup.get(moduleReference, new Position(100, 100))).toBeNull();
-});
+  it('LocationLookupTest favors small range test', () => {
+    const lookup = new LocationLookup<number>();
+    const moduleReference = new ModuleReference(['foo']);
+    const smallRange = new Range(new Position(2, 1), new Position(3, 2));
+    const smallLocation = { moduleReference, range: smallRange };
+    const bigRange = new Range(new Position(1, 1), new Position(30, 2));
+    const bigLocation = { moduleReference, range: bigRange };
+    lookup.set(smallLocation, 1);
+    lookup.set(bigLocation, 2);
+    expect(lookup.getBestLocation(moduleReference, new Position(3, 1))).toEqual(smallLocation);
+    expect(lookup.getBestLocation(moduleReference, new Position(10, 2))).toEqual(bigLocation);
+    expect(lookup.getBestLocation(moduleReference, new Position(100, 100))).toBeNull();
+    expect(lookup.get(moduleReference, new Position(3, 1))).toBe(1);
+    expect(lookup.get(moduleReference, new Position(10, 2))).toBe(2);
+    expect(lookup.get(moduleReference, new Position(100, 100))).toBeNull();
+  });
 
-it('SamlangExpressionLocationLookupBuilder test', () => {
-  const moduleReference = new ModuleReference(['foo']);
-  const { checkedSources, compileTimeErrors } = checkSources(
-    [
+  it('SamlangExpressionLocationLookupBuilder test', () => {
+    const moduleReference = new ModuleReference(['foo']);
+    const { checkedSources, compileTimeErrors } = checkSources(
       [
-        moduleReference,
-        `class Foo(val a: int) {
+        [
+          moduleReference,
+          `class Foo(val a: int) {
     function bar(): int = 3
   }
 
@@ -109,14 +110,15 @@ it('SamlangExpressionLocationLookupBuilder test', () => {
       Foo.bar() * Main.oof() * Obj.valExample() / Main.div(4, 2) + Main.nestedVal() - 5
     )))
   }`,
+        ],
       ],
-    ],
-    DEFAULT_BUILTIN_TYPING_CONTEXT
-  );
-  expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
+      DEFAULT_BUILTIN_TYPING_CONTEXT
+    );
+    expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
 
-  const lookup = new LocationLookup<SamlangExpression>();
-  const builder = new SamlangExpressionLocationLookupBuilder(lookup);
-  const samlangModule = checkedSources.forceGet(moduleReference);
-  builder.rebuild(moduleReference, samlangModule);
+    const lookup = new LocationLookup<SamlangExpression>();
+    const builder = new SamlangExpressionLocationLookupBuilder(lookup);
+    const samlangModule = checkedSources.forceGet(moduleReference);
+    builder.rebuild(moduleReference, samlangModule);
+  });
 });

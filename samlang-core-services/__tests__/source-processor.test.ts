@@ -4,38 +4,39 @@ import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 
 import { parseSources, checkSources, lowerSourcesToLLVMModules } from '../source-processor';
 
-it('parseSources test', () => {
-  expect(
-    parseSources(
-      [
-        [new ModuleReference(['Test1']), 'class Main { function main(): unit = {} }'],
-        // with syntax error
-        [new ModuleReference(['Test2']), 'class Main { function main(): unt = {} }'],
-      ],
-      new Set()
-    ).length
-  ).toBe(1);
-});
+describe('source-processor', () => {
+  it('parseSources test', () => {
+    expect(
+      parseSources(
+        [
+          [new ModuleReference(['Test1']), 'class Main { function main(): unit = {} }'],
+          // with syntax error
+          [new ModuleReference(['Test2']), 'class Main { function main(): unt = {} }'],
+        ],
+        new Set()
+      ).length
+    ).toBe(1);
+  });
 
-it('hello world processor test', () => {
-  const moduleReference = new ModuleReference(['Test']);
-  const sourceCode = `
+  it('hello world processor test', () => {
+    const moduleReference = new ModuleReference(['Test']);
+    const sourceCode = `
   class Main {
     function main(): unit = Builtins.println("Hello "::"World!")
   }
   `;
 
-  const { checkedSources, compileTimeErrors } = checkSources(
-    [[moduleReference, sourceCode]],
-    DEFAULT_BUILTIN_TYPING_CONTEXT
-  );
-  expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
+    const { checkedSources, compileTimeErrors } = checkSources(
+      [[moduleReference, sourceCode]],
+      DEFAULT_BUILTIN_TYPING_CONTEXT
+    );
+    expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
 
-  const llvmModule = lowerSourcesToLLVMModules(
-    checkedSources,
-    DEFAULT_BUILTIN_TYPING_CONTEXT
-  ).forceGet(moduleReference);
-  expect(prettyPrintLLVMModule(llvmModule)).toBe(`declare i32* @_builtin_malloc(i32) nounwind
+    const llvmModule = lowerSourcesToLLVMModules(
+      checkedSources,
+      DEFAULT_BUILTIN_TYPING_CONTEXT
+    ).forceGet(moduleReference);
+    expect(prettyPrintLLVMModule(llvmModule)).toBe(`declare i32* @_builtin_malloc(i32) nounwind
 declare i32 @_module__class_Builtins_function_println(i32*) nounwind
 declare i32* @_module__class_Builtins_function_panic(i32*) nounwind
 declare i32* @_module__class_Builtins_function_intToString(i32) nounwind
@@ -50,4 +51,5 @@ l0_start:
   call i32 @_module__class_Builtins_function_println(i32* %_temp_0_string_name_cast) nounwind
   ret i32 0
 }`);
+  });
 });

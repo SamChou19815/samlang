@@ -4,143 +4,144 @@ import { prettyPrintSamlangModule } from 'samlang-core-printer';
 
 import { LanguageServiceState, LanguageServices, CompletionItemKinds } from '../language-service';
 
-it('Language server state can update.', () => {
-  const state = new LanguageServiceState([], {});
-  state.update(
-    new ModuleReference(['test']),
-    `
+describe('language-service', () => {
+  it('Language server state can update.', () => {
+    const state = new LanguageServiceState([], {});
+    state.update(
+      new ModuleReference(['test']),
+      `
 class Test {
   function test(): int = "haha"
 }
 `
-  );
+    );
 
-  expect(state.allErrors.length).toBe(1);
-  expect(state.allModulesWithError.length).toBe(1);
-  expect(state.getErrors(new ModuleReference(['test-test']))).toEqual([]);
-  expect(state.getErrors(new ModuleReference(['test'])).map((it) => it.toString())).toEqual([
-    'test.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`.',
-  ]);
-  expect(state.globalTypingContext.size).toBe(2);
-  expect(state.expressionLocationLookup).toBeTruthy();
-  expect(state.classLocationLookup).toBeTruthy();
-  expect(state.classMemberLocationLookup).toBeTruthy();
-  expect(state.getCheckedModule(new ModuleReference(['test']))).toBeTruthy();
-  expect(state.getCheckedModule(new ModuleReference(['test2']))).toBeUndefined();
+    expect(state.allErrors.length).toBe(1);
+    expect(state.allModulesWithError.length).toBe(1);
+    expect(state.getErrors(new ModuleReference(['test-test']))).toEqual([]);
+    expect(state.getErrors(new ModuleReference(['test'])).map((it) => it.toString())).toEqual([
+      'test.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`.',
+    ]);
+    expect(state.globalTypingContext.size).toBe(2);
+    expect(state.expressionLocationLookup).toBeTruthy();
+    expect(state.classLocationLookup).toBeTruthy();
+    expect(state.classMemberLocationLookup).toBeTruthy();
+    expect(state.getCheckedModule(new ModuleReference(['test']))).toBeTruthy();
+    expect(state.getCheckedModule(new ModuleReference(['test2']))).toBeUndefined();
 
-  state.remove(new ModuleReference(['test']));
-  expect(state.allErrors.length).toBe(0);
-  expect(state.allModulesWithError.length).toBe(0);
-  expect(state.getErrors(new ModuleReference(['test']))).toEqual([]);
-});
+    state.remove(new ModuleReference(['test']));
+    expect(state.allErrors.length).toBe(0);
+    expect(state.allModulesWithError.length).toBe(0);
+    expect(state.getErrors(new ModuleReference(['test']))).toEqual([]);
+  });
 
-it('Language server state can handle complex dependency patterns', () => {
-  const test1ModuleReference = new ModuleReference(['Test1']);
-  const test2ModuleReference = new ModuleReference(['Test2']);
-  const state = new LanguageServiceState(
-    [
+  it('Language server state can handle complex dependency patterns', () => {
+    const test1ModuleReference = new ModuleReference(['Test1']);
+    const test2ModuleReference = new ModuleReference(['Test2']);
+    const state = new LanguageServiceState(
       [
-        test1ModuleReference,
-        `
+        [
+          test1ModuleReference,
+          `
 class Test1 {
   function test(): int = "haha"
 }
 `,
-      ],
-      [
-        test2ModuleReference,
-        `
+        ],
+        [
+          test2ModuleReference,
+          `
 import { Test1, Test2 } from Test1
 
 class Test2 {
   function test(): string = 3
 }
 `,
+        ],
       ],
-    ],
-    {}
-  );
+      {}
+    );
 
-  expect(state.getErrors(test1ModuleReference).map((it) => it.toString())).toEqual([
-    'Test1.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`.',
-  ]);
-  expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
-    'Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.',
-    'Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.',
-  ]);
+    expect(state.getErrors(test1ModuleReference).map((it) => it.toString())).toEqual([
+      'Test1.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`.',
+    ]);
+    expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
+      'Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.',
+      'Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.',
+    ]);
 
-  // Adding Test2 can clear one error of its reverse dependency.
-  state.update(
-    test1ModuleReference,
-    `
+    // Adding Test2 can clear one error of its reverse dependency.
+    state.update(
+      test1ModuleReference,
+      `
 class Test1 {
   function test(): int = "haha"
 }
 class Test2 {}
 `
-  );
-  expect(state.getErrors(test1ModuleReference).map((it) => it.toString())).toEqual([
-    'Test1.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`.',
-  ]);
-  expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
-    'Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.',
-  ]);
+    );
+    expect(state.getErrors(test1ModuleReference).map((it) => it.toString())).toEqual([
+      'Test1.sam:3:26-3:32: [UnexpectedType]: Expected: `int`, actual: `string`.',
+    ]);
+    expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
+      'Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.',
+    ]);
 
-  // Clearing local error of Test1
-  state.update(
-    test1ModuleReference,
-    `
+    // Clearing local error of Test1
+    state.update(
+      test1ModuleReference,
+      `
 class Test1 {
   function test(): int = 3
 }
 `
-  );
-  expect(state.getErrors(test1ModuleReference)).toEqual([]);
-  expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
-    'Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.',
-    'Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.',
-  ]);
+    );
+    expect(state.getErrors(test1ModuleReference)).toEqual([]);
+    expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
+      'Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.',
+      'Test2.sam:5:29-5:30: [UnexpectedType]: Expected: `string`, actual: `int`.',
+    ]);
 
-  // Clearing local error of Test2
-  state.update(
-    test2ModuleReference,
-    `
+    // Clearing local error of Test2
+    state.update(
+      test2ModuleReference,
+      `
 import { Test1, Test2 } from Test1
 
 class Test2 {
   function test(): string = "haha"
 }
 `
-  );
-  expect(state.getErrors(test1ModuleReference)).toEqual([]);
-  expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
-    'Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.',
-  ]);
+    );
+    expect(state.getErrors(test1ModuleReference)).toEqual([]);
+    expect(state.getErrors(test2ModuleReference).map((it) => it.toString())).toEqual([
+      'Test2.sam:2:17-2:22: [UnresolvedName]: Name `Test2` is not resolved.',
+    ]);
 
-  // Clearing all errors of Test2
-  state.update(
-    test2ModuleReference,
-    `
+    // Clearing all errors of Test2
+    state.update(
+      test2ModuleReference,
+      `
 import { Test1 } from Test1
 
 class Test2 {
   function test(): string = "haha"
 }
   `
-  );
-  expect(state.getErrors(test1ModuleReference)).toEqual([]);
-  expect(state.getErrors(test2ModuleReference)).toEqual([]);
-});
+    );
+    expect(state.getErrors(test1ModuleReference)).toEqual([]);
+    expect(state.getErrors(test2ModuleReference)).toEqual([]);
+  });
 
-it('LanguageServices type query test 1', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const test2ModuleReference = new ModuleReference(['Test2']);
-  const test3ModuleReference = new ModuleReference(['Test3']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices type query test 1', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const test2ModuleReference = new ModuleReference(['Test2']);
+    const test3ModuleReference = new ModuleReference(['Test3']);
+    const state = new LanguageServiceState(
       [
-        testModuleReference,
-        `/** Test */
+        [
+          testModuleReference,
+          `/** Test */
 class Test1 {
   /** test */
   function test(): int = "haha"
@@ -148,54 +149,54 @@ class Test1 {
   function test2(): int = Test1.test()
 }
 `,
-      ],
-      [
-        test2ModuleReference,
-        `
+        ],
+        [
+          test2ModuleReference,
+          `
 class Test1(val a: int) {
   method test(): int = 1
 
   function test2(): int = {a: 3}.test()
 }
 `,
+        ],
+        [test3ModuleReference, 'class Test1 { function test(): int = NonExisting.test() }'],
       ],
-      [test3ModuleReference, 'class Test1 { function test(): int = NonExisting.test() }'],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, () => '');
+      {}
+    );
+    const service = new LanguageServices(state, () => '');
 
-  expect(service.queryForHover(testModuleReference, new Position(100, 100))).toBeNull();
-  expect(service.queryForHover(testModuleReference, new Position(3, 27))?.[0]).toEqual([
-    { language: 'samlang', value: 'string' },
-  ]);
-  expect(service.queryForHover(testModuleReference, new Position(1, 9))?.[0]).toEqual([
-    { language: 'samlang', value: 'class Test1' },
-    { language: 'markdown', value: 'Test' },
-  ]);
-  expect(service.queryForHover(testModuleReference, new Position(5, 34))?.[0]).toEqual([
-    { language: 'samlang', value: '() -> int' },
-    { language: 'markdown', value: 'test' },
-  ]);
-  expect(service.queryForHover(test2ModuleReference, new Position(1, 9))?.[0]).toEqual([
-    { language: 'samlang', value: 'class Test1' },
-  ]);
-  expect(service.queryForHover(test2ModuleReference, new Position(4, 36))?.[0]).toEqual([
-    { language: 'samlang', value: '() -> int' },
-  ]);
-  expect(service.queryForHover(test3ModuleReference, new Position(0, 45))?.[0]).toEqual([
-    { language: 'samlang', value: 'class NonExisting' },
-  ]);
-});
+    expect(service.queryForHover(testModuleReference, new Position(100, 100))).toBeNull();
+    expect(service.queryForHover(testModuleReference, new Position(3, 27))?.[0]).toEqual([
+      { language: 'samlang', value: 'string' },
+    ]);
+    expect(service.queryForHover(testModuleReference, new Position(1, 9))?.[0]).toEqual([
+      { language: 'samlang', value: 'class Test1' },
+      { language: 'markdown', value: 'Test' },
+    ]);
+    expect(service.queryForHover(testModuleReference, new Position(5, 34))?.[0]).toEqual([
+      { language: 'samlang', value: '() -> int' },
+      { language: 'markdown', value: 'test' },
+    ]);
+    expect(service.queryForHover(test2ModuleReference, new Position(1, 9))?.[0]).toEqual([
+      { language: 'samlang', value: 'class Test1' },
+    ]);
+    expect(service.queryForHover(test2ModuleReference, new Position(4, 36))?.[0]).toEqual([
+      { language: 'samlang', value: '() -> int' },
+    ]);
+    expect(service.queryForHover(test3ModuleReference, new Position(0, 45))?.[0]).toEqual([
+      { language: 'samlang', value: 'class NonExisting' },
+    ]);
+  });
 
-it('LanguageServices type query test 2', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const test2ModuleReference = new ModuleReference(['Test2']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices type query test 2', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const test2ModuleReference = new ModuleReference(['Test2']);
+    const state = new LanguageServiceState(
       [
-        testModuleReference,
-        `/** Test */
+        [
+          testModuleReference,
+          `/** Test */
 class Test1 {
   /** test */
   // function test(): int = "haha"
@@ -203,33 +204,33 @@ class Test1 {
   function test2(): int = Test1.test()
 }
 `,
-      ],
-      [
-        test2ModuleReference,
-        `import {Test1} from Test
+        ],
+        [
+          test2ModuleReference,
+          `import {Test1} from Test
 class Test2(val a: int) {
   method test(): int = 1
 
   function test2(): int = Test1.test()
 }
 `,
+        ],
       ],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, () => '');
+      {}
+    );
+    const service = new LanguageServices(state, () => '');
 
-  expect(service.queryForHover(test2ModuleReference, new Position(4, 36))?.[0]).toBeUndefined();
-});
+    expect(service.queryForHover(test2ModuleReference, new Position(4, 36))?.[0]).toBeUndefined();
+  });
 
-it('LanguageServices type query test 3', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const test2ModuleReference = new ModuleReference(['Test2']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices type query test 3', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const test2ModuleReference = new ModuleReference(['Test2']);
+    const state = new LanguageServiceState(
       [
-        testModuleReference,
-        `/** Test */
+        [
+          testModuleReference,
+          `/** Test */
 class Test1 {
   /** test */
   // function test(): int = -1
@@ -237,40 +238,40 @@ class Test1 {
   function test2(): int = Builtins.stringToInt("")
 }
 `,
-      ],
-      [
-        test2ModuleReference,
-        `import {Test1} from Test
+        ],
+        [
+          test2ModuleReference,
+          `import {Test1} from Test
 class Test2(val a: int) {
   method test(): int = -1
 
   function test2(): int = Builtins.panic("")
 }
 `,
+        ],
       ],
-    ],
-    DEFAULT_BUILTIN_TYPING_CONTEXT
-  );
-  const service = new LanguageServices(state, () => '');
+      DEFAULT_BUILTIN_TYPING_CONTEXT
+    );
+    const service = new LanguageServices(state, () => '');
 
-  expect(service.queryDefinitionLocation(testModuleReference, new Position(4, 33))).toBeNull();
-  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(2, 23))).toBeNull();
-  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 30))).toBeNull();
-  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 33))).toBeNull();
-  expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 37))).toBeNull();
-});
+    expect(service.queryDefinitionLocation(testModuleReference, new Position(4, 33))).toBeNull();
+    expect(service.queryDefinitionLocation(test2ModuleReference, new Position(2, 23))).toBeNull();
+    expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 30))).toBeNull();
+    expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 33))).toBeNull();
+    expect(service.queryDefinitionLocation(test2ModuleReference, new Position(4, 37))).toBeNull();
+  });
 
-it('LanguageServices.queryDefinitionLocation test 1', () => {
-  const moduleReference1 = new ModuleReference(['Test1']);
-  const moduleReference2 = new ModuleReference(['Test2']);
-  const moduleReference3 = new ModuleReference(['Test3']);
-  const state = new LanguageServiceState(
-    [
-      [moduleReference3, 'class ABC { function a(): unit = { val _ = [1,2]; } }'],
-      [moduleReference2, 'class TTT { method test(): int = this.test() }'],
+  it('LanguageServices.queryDefinitionLocation test 1', () => {
+    const moduleReference1 = new ModuleReference(['Test1']);
+    const moduleReference2 = new ModuleReference(['Test2']);
+    const moduleReference3 = new ModuleReference(['Test3']);
+    const state = new LanguageServiceState(
       [
-        moduleReference1,
-        `import {ABC} from Test3
+        [moduleReference3, 'class ABC { function a(): unit = { val _ = [1,2]; } }'],
+        [moduleReference2, 'class TTT { method test(): int = this.test() }'],
+        [
+          moduleReference1,
+          `import {ABC} from Test3
 import {TTT} from Test2
 class Test1(val a: int) {
   function test1(): int = 42
@@ -285,75 +286,75 @@ class Test1(val a: int) {
   }
 }
 `,
+        ],
       ],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, () => '');
+      {}
+    );
+    const service = new LanguageServices(state, () => '');
 
-  expect(state.allErrors.map((it) => it.toString())).toEqual([]);
+    expect(state.allErrors.map((it) => it.toString())).toEqual([]);
 
-  expect(service.queryDefinitionLocation(moduleReference1, new Position(100, 100))).toBeNull();
-  expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 46))).toBeNull();
-  expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 59))).toBeNull();
-  expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 60))).toBeNull();
+    expect(service.queryDefinitionLocation(moduleReference1, new Position(100, 100))).toBeNull();
+    expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 46))).toBeNull();
+    expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 59))).toBeNull();
+    expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 60))).toBeNull();
 
-  const actualLocation0 = service.queryDefinitionLocation(moduleReference1, new Position(4, 34));
-  expect(actualLocation0?.moduleReference.toString()).toEqual(moduleReference1.toString());
-  expect(actualLocation0?.range.toString()).toEqual(
-    new Range(new Position(2, 0), new Position(13, 1)).toString()
-  );
+    const actualLocation0 = service.queryDefinitionLocation(moduleReference1, new Position(4, 34));
+    expect(actualLocation0?.moduleReference.toString()).toEqual(moduleReference1.toString());
+    expect(actualLocation0?.range.toString()).toEqual(
+      new Range(new Position(2, 0), new Position(13, 1)).toString()
+    );
 
-  const actualLocation1 = service.queryDefinitionLocation(moduleReference1, new Position(4, 40));
-  expect(actualLocation1?.moduleReference.toString()).toEqual(moduleReference1.toString());
-  expect(actualLocation1?.range.toString()).toEqual(
-    new Range(new Position(4, 2), new Position(4, 59)).toString()
-  );
+    const actualLocation1 = service.queryDefinitionLocation(moduleReference1, new Position(4, 40));
+    expect(actualLocation1?.moduleReference.toString()).toEqual(moduleReference1.toString());
+    expect(actualLocation1?.range.toString()).toEqual(
+      new Range(new Position(4, 2), new Position(4, 59)).toString()
+    );
 
-  const actualLocation21 = service.queryDefinitionLocation(moduleReference1, new Position(4, 47));
-  expect(actualLocation21?.moduleReference.toString()).toEqual(moduleReference1.toString());
-  expect(actualLocation21?.range.toString()).toEqual(
-    new Range(new Position(4, 16), new Position(4, 17)).toString()
-  );
+    const actualLocation21 = service.queryDefinitionLocation(moduleReference1, new Position(4, 47));
+    expect(actualLocation21?.moduleReference.toString()).toEqual(moduleReference1.toString());
+    expect(actualLocation21?.range.toString()).toEqual(
+      new Range(new Position(4, 16), new Position(4, 17)).toString()
+    );
 
-  const actualLocation22 = service.queryDefinitionLocation(moduleReference1, new Position(4, 51));
-  expect(actualLocation22?.moduleReference.toString()).toEqual(moduleReference2.toString());
-  expect(actualLocation22?.range.toString()).toEqual(
-    new Range(new Position(0, 12), new Position(0, 44)).toString()
-  );
+    const actualLocation22 = service.queryDefinitionLocation(moduleReference1, new Position(4, 51));
+    expect(actualLocation22?.moduleReference.toString()).toEqual(moduleReference2.toString());
+    expect(actualLocation22?.range.toString()).toEqual(
+      new Range(new Position(0, 12), new Position(0, 44)).toString()
+    );
 
-  const actualLocation3 = service.queryDefinitionLocation(moduleReference1, new Position(5, 30));
-  expect(actualLocation3?.moduleReference.toString()).toEqual(moduleReference3.toString());
-  expect(actualLocation3?.range.toString()).toEqual(
-    new Range(new Position(0, 0), new Position(0, 53)).toString()
-  );
+    const actualLocation3 = service.queryDefinitionLocation(moduleReference1, new Position(5, 30));
+    expect(actualLocation3?.moduleReference.toString()).toEqual(moduleReference3.toString());
+    expect(actualLocation3?.range.toString()).toEqual(
+      new Range(new Position(0, 0), new Position(0, 53)).toString()
+    );
 
-  const actualLocation4 = service.queryDefinitionLocation(moduleReference1, new Position(6, 28));
-  expect(actualLocation4?.moduleReference.toString()).toEqual(moduleReference1.toString());
-  expect(actualLocation4?.range.toString()).toEqual(
-    new Range(new Position(2, 11), new Position(2, 23)).toString()
-  );
+    const actualLocation4 = service.queryDefinitionLocation(moduleReference1, new Position(6, 28));
+    expect(actualLocation4?.moduleReference.toString()).toEqual(moduleReference1.toString());
+    expect(actualLocation4?.range.toString()).toEqual(
+      new Range(new Position(2, 11), new Position(2, 23)).toString()
+    );
 
-  const actualLocation5 = service.queryDefinitionLocation(moduleReference1, new Position(6, 36));
-  expect(actualLocation5?.moduleReference.toString()).toEqual(moduleReference1.toString());
-  expect(actualLocation5?.range.toString()).toEqual(
-    new Range(new Position(2, 11), new Position(2, 23)).toString()
-  );
+    const actualLocation5 = service.queryDefinitionLocation(moduleReference1, new Position(6, 36));
+    expect(actualLocation5?.moduleReference.toString()).toEqual(moduleReference1.toString());
+    expect(actualLocation5?.range.toString()).toEqual(
+      new Range(new Position(2, 11), new Position(2, 23)).toString()
+    );
 
-  const actualLocation6 = service.queryDefinitionLocation(moduleReference1, new Position(10, 15));
-  expect(actualLocation6?.moduleReference.toString()).toEqual(moduleReference1.toString());
-  expect(actualLocation6?.range.toString()).toEqual(
-    new Range(new Position(9, 10), new Position(9, 11)).toString()
-  );
-});
+    const actualLocation6 = service.queryDefinitionLocation(moduleReference1, new Position(10, 15));
+    expect(actualLocation6?.moduleReference.toString()).toEqual(moduleReference1.toString());
+    expect(actualLocation6?.range.toString()).toEqual(
+      new Range(new Position(9, 10), new Position(9, 11)).toString()
+    );
+  });
 
-it('LanguageServices.queryDefinitionLocation test 2', () => {
-  const moduleReference1 = new ModuleReference(['Test1']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices.queryDefinitionLocation test 2', () => {
+    const moduleReference1 = new ModuleReference(['Test1']);
+    const state = new LanguageServiceState(
       [
-        moduleReference1,
-        `class Test1(val a: int) {
+        [
+          moduleReference1,
+          `class Test1(val a: int) {
   function test(): int = {
     val [c, b] = [1, 2];
 
@@ -361,21 +362,21 @@ it('LanguageServices.queryDefinitionLocation test 2', () => {
   }
 }
 `,
+        ],
       ],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, () => '');
-  expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 4))).toBeNull();
-});
+      {}
+    );
+    const service = new LanguageServices(state, () => '');
+    expect(service.queryDefinitionLocation(moduleReference1, new Position(4, 4))).toBeNull();
+  });
 
-it('LanguageServices.queryFoldingRanges test', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices.queryFoldingRanges test', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const state = new LanguageServiceState(
       [
-        testModuleReference,
-        `
+        [
+          testModuleReference,
+          `
 class List<T>(Nil(unit), Cons([T * List<T>])) {
   function <T> of(t: T): List<T> =
     Cons([t, Nil({})])
@@ -396,32 +397,32 @@ class Main {
   function main(): Developer = Developer.sam()
 }
 `,
+        ],
       ],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, () => 'foo bar');
-  expect(
-    service.queryFoldingRanges(testModuleReference)?.map((module) => module.toString())
-  ).toMatchObject([
-    new Range(new Position(2, 2), new Position(3, 22)).toString(),
-    new Range(new Position(4, 2), new Position(5, 19)).toString(),
-    new Range(new Position(1, 0), new Position(6, 1)).toString(),
-    new Range(new Position(11, 2), new Position(15, 3)).toString(),
-    new Range(new Position(7, 0), new Position(16, 1)).toString(),
-    new Range(new Position(18, 2), new Position(18, 46)).toString(),
-    new Range(new Position(17, 0), new Position(19, 1)).toString(),
-  ]);
-  expect(service.queryFoldingRanges(new ModuleReference(['dsafadfasd']))).toBe(null);
-});
+      {}
+    );
+    const service = new LanguageServices(state, () => 'foo bar');
+    expect(
+      service.queryFoldingRanges(testModuleReference)?.map((module) => module.toString())
+    ).toMatchObject([
+      new Range(new Position(2, 2), new Position(3, 22)).toString(),
+      new Range(new Position(4, 2), new Position(5, 19)).toString(),
+      new Range(new Position(1, 0), new Position(6, 1)).toString(),
+      new Range(new Position(11, 2), new Position(15, 3)).toString(),
+      new Range(new Position(7, 0), new Position(16, 1)).toString(),
+      new Range(new Position(18, 2), new Position(18, 46)).toString(),
+      new Range(new Position(17, 0), new Position(19, 1)).toString(),
+    ]);
+    expect(service.queryFoldingRanges(new ModuleReference(['dsafadfasd']))).toBe(null);
+  });
 
-it('LanguageServices autocompletion test 1', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices autocompletion test 1', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const state = new LanguageServiceState(
       [
-        testModuleReference,
-        `
+        [
+          testModuleReference,
+          `
 class List<T>(Nil(unit), Cons([T * List<T>])) {
   function <T> of(t: T): List<T> =
     Cons([t, Nil({})])
@@ -442,72 +443,72 @@ class Main {
   function main(): Developer = Developer.sam()
 }
 `,
+        ],
       ],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, () => '');
+      {}
+    );
+    const service = new LanguageServices(state, () => '');
 
-  expect(service.autoComplete(testModuleReference, new Position(3, 5))).toEqual([]);
-  expect(service.autoComplete(testModuleReference, new Position(12, 17))).toEqual([
-    {
-      isSnippet: true,
-      kind: CompletionItemKinds.FUNCTION,
-      name: 'of(a0: T): List<T>',
-      text: 'of($0)$1',
-      type: '<T>((T) -> List<T>)',
-    },
-  ]);
-  expect(service.autoComplete(testModuleReference, new Position(12, 31))).toEqual([
-    {
-      isSnippet: true,
-      kind: CompletionItemKinds.METHOD,
-      name: 'cons(a0: T): List<T>',
-      text: 'cons($0)$1',
-      type: '(T) -> List<T>',
-    },
-  ]);
-  expect(service.autoComplete(testModuleReference, new Position(14, 46))).toEqual([
-    {
-      isSnippet: false,
-      kind: CompletionItemKinds.FIELD,
-      name: 'name',
-      text: 'name',
-      type: 'string',
-    },
-    {
-      isSnippet: false,
-      kind: CompletionItemKinds.FIELD,
-      name: 'github',
-      text: 'github',
-      type: 'string',
-    },
-    {
-      isSnippet: false,
-      kind: CompletionItemKinds.FIELD,
-      name: 'projects',
-      text: 'projects',
-      type: 'List<string>',
-    },
-  ]);
-  expect(service.autoComplete(testModuleReference, new Position(18, 41))).toEqual([
-    {
-      isSnippet: false,
-      kind: CompletionItemKinds.FUNCTION,
-      name: 'sam(): Developer',
-      text: 'sam()',
-      type: '() -> Developer',
-    },
-  ]);
-});
+    expect(service.autoComplete(testModuleReference, new Position(3, 5))).toEqual([]);
+    expect(service.autoComplete(testModuleReference, new Position(12, 17))).toEqual([
+      {
+        isSnippet: true,
+        kind: CompletionItemKinds.FUNCTION,
+        name: 'of(a0: T): List<T>',
+        text: 'of($0)$1',
+        type: '<T>((T) -> List<T>)',
+      },
+    ]);
+    expect(service.autoComplete(testModuleReference, new Position(12, 31))).toEqual([
+      {
+        isSnippet: true,
+        kind: CompletionItemKinds.METHOD,
+        name: 'cons(a0: T): List<T>',
+        text: 'cons($0)$1',
+        type: '(T) -> List<T>',
+      },
+    ]);
+    expect(service.autoComplete(testModuleReference, new Position(14, 46))).toEqual([
+      {
+        isSnippet: false,
+        kind: CompletionItemKinds.FIELD,
+        name: 'name',
+        text: 'name',
+        type: 'string',
+      },
+      {
+        isSnippet: false,
+        kind: CompletionItemKinds.FIELD,
+        name: 'github',
+        text: 'github',
+        type: 'string',
+      },
+      {
+        isSnippet: false,
+        kind: CompletionItemKinds.FIELD,
+        name: 'projects',
+        text: 'projects',
+        type: 'List<string>',
+      },
+    ]);
+    expect(service.autoComplete(testModuleReference, new Position(18, 41))).toEqual([
+      {
+        isSnippet: false,
+        kind: CompletionItemKinds.FUNCTION,
+        name: 'sam(): Developer',
+        text: 'sam()',
+        type: '() -> Developer',
+      },
+    ]);
+  });
 
-it('LanguageServices autocompletion test 2', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices autocompletion test 2', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const state = new LanguageServiceState(
       [
-        testModuleReference,
-        `
+        [
+          testModuleReference,
+          `
 class List<T>(Nil(unit), Cons([T * List<T>])) {
   function <T> of(t: T): List<T> =
     Cons([t, Nil({})])
@@ -529,87 +530,87 @@ class Main {
   function main(): Developer = Developer.sam()
 }
 `,
+        ],
       ],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, () => '');
+      {}
+    );
+    const service = new LanguageServices(state, () => '');
 
-  expect(service.autoComplete(testModuleReference, new Position(13, 31))).toEqual([
-    {
-      isSnippet: true,
-      kind: CompletionItemKinds.METHOD,
-      name: 'cons(a0: T): List<T>',
-      text: 'cons($0)$1',
-      type: '(T) -> List<T>',
-    },
-  ]);
-});
+    expect(service.autoComplete(testModuleReference, new Position(13, 31))).toEqual([
+      {
+        isSnippet: true,
+        kind: CompletionItemKinds.METHOD,
+        name: 'cons(a0: T): List<T>',
+        text: 'cons($0)$1',
+        type: '(T) -> List<T>',
+      },
+    ]);
+  });
 
-it('LanguageServices autocompletion test 3', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const state = new LanguageServiceState([[testModuleReference, '.']], {});
-  const service = new LanguageServices(state, () => '');
+  it('LanguageServices autocompletion test 3', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const state = new LanguageServiceState([[testModuleReference, '.']], {});
+    const service = new LanguageServices(state, () => '');
 
-  expect(service.autoComplete(testModuleReference, new Position(0, 1))).toEqual([]);
-});
+    expect(service.autoComplete(testModuleReference, new Position(0, 1))).toEqual([]);
+  });
 
-it('LanguageServices autocompletion test 4', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices autocompletion test 4', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const state = new LanguageServiceState(
       [
-        testModuleReference,
-        `
+        [
+          testModuleReference,
+          `
 class Main {
   function main(): Developer = Developer.
 }
   `,
+        ],
       ],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, () => '');
+      {}
+    );
+    const service = new LanguageServices(state, () => '');
 
-  expect(service.autoComplete(testModuleReference, new Position(2, 41))).toEqual([]);
-});
+    expect(service.autoComplete(testModuleReference, new Position(2, 41))).toEqual([]);
+  });
 
-it('LanguageServices autocompletion test 5', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices autocompletion test 5', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const state = new LanguageServiceState(
       [
-        testModuleReference,
-        `
+        [
+          testModuleReference,
+          `
 class Main {
   function main(a: Developer): Developer = a.
 }
   `,
+        ],
       ],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, () => '');
+      {}
+    );
+    const service = new LanguageServices(state, () => '');
 
-  expect(service.autoComplete(testModuleReference, new Position(2, 45))).toEqual([]);
-});
+    expect(service.autoComplete(testModuleReference, new Position(2, 45))).toEqual([]);
+  });
 
-it('LanguageServices rename bad identifier tests', () => {
-  const state = new LanguageServiceState([], {});
-  const service = new LanguageServices(state, () => '');
-  const testModuleReference = new ModuleReference(['Test']);
-  expect(service.renameVariable(testModuleReference, new Position(2, 45), '3')).toBe('Invalid');
-  expect(service.renameVariable(testModuleReference, new Position(2, 45), 'A3')).toBe('Invalid');
-  expect(service.renameVariable(testModuleReference, new Position(2, 45), 'a3')).toBeNull();
-});
+  it('LanguageServices rename bad identifier tests', () => {
+    const state = new LanguageServiceState([], {});
+    const service = new LanguageServices(state, () => '');
+    const testModuleReference = new ModuleReference(['Test']);
+    expect(service.renameVariable(testModuleReference, new Position(2, 45), '3')).toBe('Invalid');
+    expect(service.renameVariable(testModuleReference, new Position(2, 45), 'A3')).toBe('Invalid');
+    expect(service.renameVariable(testModuleReference, new Position(2, 45), 'a3')).toBeNull();
+  });
 
-it('LanguageServices rename not-found tests', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices rename not-found tests', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const state = new LanguageServiceState(
       [
-        testModuleReference,
-        `/** Test */
+        [
+          testModuleReference,
+          `/** Test */
 class Test1 {
   /** test */
   function test(): int = "haha"
@@ -617,49 +618,49 @@ class Test1 {
   function test2(): int = Test1.test()
 }
 `,
+        ],
       ],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, () => '');
+      {}
+    );
+    const service = new LanguageServices(state, () => '');
 
-  expect(service.renameVariable(testModuleReference, new Position(100, 100), 'a')).toBeNull();
-  expect(service.renameVariable(testModuleReference, new Position(3, 27), 'a')).toBeNull();
-  expect(service.renameVariable(testModuleReference, new Position(1, 9), 'a')).toBeNull();
-});
+    expect(service.renameVariable(testModuleReference, new Position(100, 100), 'a')).toBeNull();
+    expect(service.renameVariable(testModuleReference, new Position(3, 27), 'a')).toBeNull();
+    expect(service.renameVariable(testModuleReference, new Position(1, 9), 'a')).toBeNull();
+  });
 
-it('LanguageServices failed to rename due to undefined variable tests', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices failed to rename due to undefined variable tests', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const state = new LanguageServiceState(
       [
-        testModuleReference,
-        `
+        [
+          testModuleReference,
+          `
 class Test {
   function main(): unit = { val a = b; }
 }
 `,
+        ],
       ],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, (m) => prettyPrintSamlangModule(60, m));
-  expect(service.renameVariable(testModuleReference, new Position(2, 36), 'a')).toBeNull();
-  expect(service.renameVariable(testModuleReference, new Position(2, 32), 'a')).toBe(
-    'class Test { function main(): unit = { val a = b; }  }\n'
-  );
-  expect(service.renameVariable(testModuleReference, new Position(2, 32), 'c')).toBe(
-    'class Test { function main(): unit = { val c = b; }  }\n'
-  );
-});
+      {}
+    );
+    const service = new LanguageServices(state, (m) => prettyPrintSamlangModule(60, m));
+    expect(service.renameVariable(testModuleReference, new Position(2, 36), 'a')).toBeNull();
+    expect(service.renameVariable(testModuleReference, new Position(2, 32), 'a')).toBe(
+      'class Test { function main(): unit = { val a = b; }  }\n'
+    );
+    expect(service.renameVariable(testModuleReference, new Position(2, 32), 'c')).toBe(
+      'class Test { function main(): unit = { val c = b; }  }\n'
+    );
+  });
 
-it('LanguageServices format test with good programs', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices format test with good programs', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const state = new LanguageServiceState(
       [
-        testModuleReference,
-        `
+        [
+          testModuleReference,
+          `
 class List<T>(Nil(unit), Cons([T * List<T>])) {
   function <T> of(t: T): List<T> =
     Cons([t, Nil({})])
@@ -680,22 +681,22 @@ class Main {
   function main(): Developer = Developer.sam()
 }
 `,
+        ],
       ],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, () => 'foo bar');
-  expect(service.formatEntireDocument(testModuleReference)).toBe('foo bar');
-  expect(service.formatEntireDocument(new ModuleReference(['dsafadfasd']))).toBe(null);
-});
+      {}
+    );
+    const service = new LanguageServices(state, () => 'foo bar');
+    expect(service.formatEntireDocument(testModuleReference)).toBe('foo bar');
+    expect(service.formatEntireDocument(new ModuleReference(['dsafadfasd']))).toBe(null);
+  });
 
-it('LanguageServices format test with bad programs', () => {
-  const testModuleReference = new ModuleReference(['Test']);
-  const state = new LanguageServiceState(
-    [
+  it('LanguageServices format test with bad programs', () => {
+    const testModuleReference = new ModuleReference(['Test']);
+    const state = new LanguageServiceState(
       [
-        testModuleReference,
-        `
+        [
+          testModuleReference,
+          `
 class Developer(
   val name: string, val github: string,
   val projects: List<string>
@@ -705,10 +706,11 @@ class Developer(
   }
 }
 `,
+        ],
       ],
-    ],
-    {}
-  );
-  const service = new LanguageServices(state, () => 'foo bar');
-  expect(service.formatEntireDocument(testModuleReference)).toBe(null);
+      {}
+    );
+    const service = new LanguageServices(state, () => 'foo bar');
+    expect(service.formatEntireDocument(testModuleReference)).toBe(null);
+  });
 });

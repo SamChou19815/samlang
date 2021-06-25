@@ -26,13 +26,133 @@ import optimizeMidIRFunctionsByInlining, {
 } from '../mir-inline-optimization';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
-it('estimateFunctionInlineCost test', () => {
-  expect(
-    estimateFunctionInlineCost_EXPOSED_FOR_TESTING({
-      name: '',
-      parameters: [],
-      type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-      body: [
+describe('mir-inline-optimization', () => {
+  it('estimateFunctionInlineCost test', () => {
+    expect(
+      estimateFunctionInlineCost_EXPOSED_FOR_TESTING({
+        name: '',
+        parameters: [],
+        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+        body: [
+          MIR_INDEX_ACCESS({
+            name: 'i0',
+            type: MIR_INT_TYPE,
+            pointerExpression: MIR_VARIABLE('a', MIR_INT_TYPE),
+            index: 2,
+          }),
+          MIR_BINARY({
+            name: 'b0',
+            operator: '+',
+            e1: MIR_VARIABLE('i1', MIR_INT_TYPE),
+            e2: MIR_INT(3),
+          }),
+          MIR_STRUCT_INITIALIZATION({
+            structVariableName: 's',
+            type: MIR_INT_TYPE,
+            expressionList: [
+              MIR_VARIABLE('i1', MIR_INT_TYPE),
+              MIR_VARIABLE('b1', MIR_INT_TYPE),
+              MIR_VARIABLE('b3', MIR_INT_TYPE),
+            ],
+          }),
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME('fff', MIR_INT_TYPE),
+            functionArguments: [
+              MIR_VARIABLE('i1', MIR_INT_TYPE),
+              MIR_VARIABLE('b1', MIR_INT_TYPE),
+              MIR_VARIABLE('b3', MIR_INT_TYPE),
+            ],
+            returnType: MIR_INT_TYPE,
+          }),
+          MIR_CAST({
+            name: 'ss',
+            type: MIR_INT_TYPE,
+            assignedExpression: MIR_VARIABLE('b3', MIR_INT_TYPE),
+          }),
+          MIR_IF_ELSE({
+            booleanExpression: MIR_ZERO,
+            s1: [
+              MIR_BINARY({
+                name: '',
+                operator: '+',
+                e1: MIR_VARIABLE('', MIR_INT_TYPE),
+                e2: MIR_INT(3),
+              }),
+            ],
+            s2: [
+              MIR_BINARY({
+                name: '',
+                operator: '+',
+                e1: MIR_VARIABLE('', MIR_INT_TYPE),
+                e2: MIR_INT(3),
+              }),
+            ],
+            finalAssignments: [],
+          }),
+          MIR_IF_ELSE({
+            booleanExpression: MIR_ZERO,
+            s1: [],
+            s2: [],
+            finalAssignments: [
+              {
+                name: 'a',
+                type: MIR_INT_TYPE,
+                branch1Value: MIR_ZERO,
+                branch2Value: MIR_ZERO,
+              },
+            ],
+          }),
+          MIR_SINGLE_IF({
+            booleanExpression: MIR_ZERO,
+            invertCondition: false,
+            statements: [
+              MIR_BINARY({
+                name: '',
+                operator: '+',
+                e1: MIR_VARIABLE('', MIR_INT_TYPE),
+                e2: MIR_INT(3),
+              }),
+            ],
+          }),
+          MIR_WHILE({
+            loopVariables: [
+              { name: '', type: MIR_INT_TYPE, initialValue: MIR_ZERO, loopValue: MIR_ZERO },
+            ],
+            statements: [
+              MIR_BINARY({
+                name: '',
+                operator: '+',
+                e1: MIR_VARIABLE('', MIR_INT_TYPE),
+                e2: MIR_INT(3),
+              }),
+            ],
+          }),
+        ],
+        returnValue: MIR_VARIABLE('ss', MIR_INT_TYPE),
+      })
+    ).toBe(30);
+  });
+
+  const assertCorrectlyInlined = (functions: readonly MidIRFunction[], expected: string): void => {
+    expect(
+      optimizeMidIRFunctionsByInlining(functions, new OptimizationResourceAllocator())
+        .map(debugPrintMidIRFunction)
+        .join('\n')
+    ).toBe(expected);
+  };
+
+  it('optimizeMidIRFunctionsByInlining empty test', () => {
+    expect(optimizeMidIRFunctionsByInlining([], new OptimizationResourceAllocator()).length).toBe(
+      0
+    );
+  });
+
+  it('optimizeMidIRFunctionsByInlining abort test', () => {
+    const bigStatement = MIR_WHILE({
+      loopVariables: [
+        { name: '', type: MIR_INT_TYPE, initialValue: MIR_ZERO, loopValue: MIR_ZERO },
+      ],
+      statements: [
         MIR_INDEX_ACCESS({
           name: 'i0',
           type: MIR_INT_TYPE,
@@ -113,326 +233,211 @@ it('estimateFunctionInlineCost test', () => {
             }),
           ],
         }),
-        MIR_WHILE({
-          loopVariables: [
-            { name: '', type: MIR_INT_TYPE, initialValue: MIR_ZERO, loopValue: MIR_ZERO },
-          ],
-          statements: [
-            MIR_BINARY({
-              name: '',
-              operator: '+',
-              e1: MIR_VARIABLE('', MIR_INT_TYPE),
-              e2: MIR_INT(3),
-            }),
-          ],
+        MIR_BINARY({
+          name: '',
+          operator: '+',
+          e1: MIR_VARIABLE('', MIR_INT_TYPE),
+          e2: MIR_INT(3),
         }),
       ],
-      returnValue: MIR_VARIABLE('ss', MIR_INT_TYPE),
-    })
-  ).toBe(30);
-});
+    });
 
-const assertCorrectlyInlined = (functions: readonly MidIRFunction[], expected: string): void => {
-  expect(
-    optimizeMidIRFunctionsByInlining(functions, new OptimizationResourceAllocator())
-      .map(debugPrintMidIRFunction)
-      .join('\n')
-  ).toBe(expected);
-};
+    const statements: MidIRStatement[] = [];
+    for (let i = 0; i < 100; i += 1) {
+      statements.push(bigStatement);
+    }
 
-it('optimizeMidIRFunctionsByInlining empty test', () => {
-  expect(optimizeMidIRFunctionsByInlining([], new OptimizationResourceAllocator()).length).toBe(0);
-});
+    optimizeMidIRFunctionsByInlining(
+      [
+        {
+          name: '',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: statements,
+          returnValue: MIR_ZERO,
+        },
+      ],
+      new OptimizationResourceAllocator()
+    );
 
-it('optimizeMidIRFunctionsByInlining abort test', () => {
-  const bigStatement = MIR_WHILE({
-    loopVariables: [{ name: '', type: MIR_INT_TYPE, initialValue: MIR_ZERO, loopValue: MIR_ZERO }],
-    statements: [
-      MIR_INDEX_ACCESS({
-        name: 'i0',
-        type: MIR_INT_TYPE,
-        pointerExpression: MIR_VARIABLE('a', MIR_INT_TYPE),
-        index: 2,
-      }),
-      MIR_BINARY({
-        name: 'b0',
-        operator: '+',
-        e1: MIR_VARIABLE('i1', MIR_INT_TYPE),
-        e2: MIR_INT(3),
-      }),
-      MIR_STRUCT_INITIALIZATION({
-        structVariableName: 's',
-        type: MIR_INT_TYPE,
-        expressionList: [
-          MIR_VARIABLE('i1', MIR_INT_TYPE),
-          MIR_VARIABLE('b1', MIR_INT_TYPE),
-          MIR_VARIABLE('b3', MIR_INT_TYPE),
-        ],
-      }),
-      MIR_FUNCTION_CALL({
-        functionExpression: MIR_NAME('fff', MIR_INT_TYPE),
-        functionArguments: [
-          MIR_VARIABLE('i1', MIR_INT_TYPE),
-          MIR_VARIABLE('b1', MIR_INT_TYPE),
-          MIR_VARIABLE('b3', MIR_INT_TYPE),
-        ],
-        returnType: MIR_INT_TYPE,
-      }),
-      MIR_CAST({
-        name: 'ss',
-        type: MIR_INT_TYPE,
-        assignedExpression: MIR_VARIABLE('b3', MIR_INT_TYPE),
-      }),
-      MIR_IF_ELSE({
-        booleanExpression: MIR_ZERO,
-        s1: [
-          MIR_BINARY({
-            name: '',
-            operator: '+',
-            e1: MIR_VARIABLE('', MIR_INT_TYPE),
-            e2: MIR_INT(3),
-          }),
-        ],
-        s2: [
-          MIR_BINARY({
-            name: '',
-            operator: '+',
-            e1: MIR_VARIABLE('', MIR_INT_TYPE),
-            e2: MIR_INT(3),
-          }),
-        ],
-        finalAssignments: [],
-      }),
-      MIR_IF_ELSE({
-        booleanExpression: MIR_ZERO,
-        s1: [],
-        s2: [],
-        finalAssignments: [
-          {
-            name: 'a',
-            type: MIR_INT_TYPE,
-            branch1Value: MIR_ZERO,
-            branch2Value: MIR_ZERO,
-          },
-        ],
-      }),
-      MIR_SINGLE_IF({
-        booleanExpression: MIR_ZERO,
-        invertCondition: false,
-        statements: [
-          MIR_BINARY({
-            name: '',
-            operator: '+',
-            e1: MIR_VARIABLE('', MIR_INT_TYPE),
-            e2: MIR_INT(3),
-          }),
-        ],
-      }),
-      MIR_BINARY({
-        name: '',
-        operator: '+',
-        e1: MIR_VARIABLE('', MIR_INT_TYPE),
-        e2: MIR_INT(3),
-      }),
-    ],
-  });
-
-  const statements: MidIRStatement[] = [];
-  for (let i = 0; i < 100; i += 1) {
-    statements.push(bigStatement);
-  }
-
-  optimizeMidIRFunctionsByInlining(
-    [
-      {
-        name: '',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: statements,
-        returnValue: MIR_ZERO,
-      },
-    ],
-    new OptimizationResourceAllocator()
-  );
-
-  optimizeMidIRFunctionsByInlining(
-    [
-      {
-        name: 'loop',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_NAME('loop', MIR_FUNCTION_TYPE([], MIR_INT_TYPE)),
-            functionArguments: [],
-            returnType: MIR_INT_TYPE,
-          }),
-        ],
-        returnValue: MIR_ZERO,
-      },
-      {
-        name: '',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: statements,
-        returnValue: MIR_ZERO,
-      },
-    ],
-    new OptimizationResourceAllocator()
-  );
-});
-
-it('optimizeFunctionsByInlining test 1', () => {
-  assertCorrectlyInlined(
-    [
-      {
-        name: 'factorial',
-        parameters: ['n', 'acc'],
-        type: MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE),
-        body: [
-          MIR_BINARY({
-            name: 'c',
-            operator: '==',
-            e1: MIR_VARIABLE('n', MIR_INT_TYPE),
-            e2: MIR_ZERO,
-          }),
-          MIR_IF_ELSE({
-            booleanExpression: MIR_VARIABLE('c', MIR_BOOL_TYPE),
-            s1: [],
-            s2: [
-              MIR_BINARY({
-                name: 'n1',
-                operator: '-',
-                e1: MIR_VARIABLE('n', MIR_INT_TYPE),
-                e2: MIR_ONE,
-              }),
-              MIR_BINARY({
-                name: 'acc1',
-                operator: '*',
-                e1: MIR_VARIABLE('n', MIR_INT_TYPE),
-                e2: MIR_VARIABLE('acc', MIR_INT_TYPE),
-              }),
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME(
-                  'factorial',
-                  MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE)
-                ),
-                functionArguments: [
-                  MIR_VARIABLE('n1', MIR_INT_TYPE),
-                  MIR_VARIABLE('acc1', MIR_INT_TYPE),
-                ],
-                returnType: MIR_INT_TYPE,
-                returnCollector: 'v',
-              }),
-            ],
-            finalAssignments: [
-              {
-                name: 'fa',
-                type: MIR_INT_TYPE,
-                branch1Value: MIR_VARIABLE('acc', MIR_INT_TYPE),
-                branch2Value: MIR_VARIABLE('v', MIR_INT_TYPE),
-              },
-            ],
-          }),
-        ],
-        returnValue: MIR_VARIABLE('fa', MIR_INT_TYPE),
-      },
-      {
-        name: 'loop',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_NAME('loop', MIR_FUNCTION_TYPE([], MIR_INT_TYPE)),
-            functionArguments: [],
-            returnType: MIR_INT_TYPE,
-          }),
-        ],
-        returnValue: MIR_ZERO,
-      },
-      {
-        name: 'insanelyBigFunction',
-        parameters: ['a'],
-        type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE),
-        body: [
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_NAME('bb', MIR_FUNCTION_TYPE([], MIR_INT_TYPE)),
-            functionArguments: [],
-            returnType: MIR_INT_TYPE,
-          }),
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_NAME(
-              'moveMove',
-              MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE)
-            ),
-            functionArguments: [MIR_VARIABLE('a', MIR_INT_TYPE)],
-            returnType: MIR_INT_TYPE,
-          }),
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_VARIABLE('a', MIR_INT_TYPE),
-            functionArguments: [],
-            returnType: MIR_INT_TYPE,
-          }),
-          ...Array.from(new Array(10).keys()).map(() =>
+    optimizeMidIRFunctionsByInlining(
+      [
+        {
+          name: 'loop',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
             MIR_FUNCTION_CALL({
-              functionExpression: MIR_NAME(
-                'non-existing-function',
-                MIR_FUNCTION_TYPE([], MIR_INT_TYPE)
-              ),
+              functionExpression: MIR_NAME('loop', MIR_FUNCTION_TYPE([], MIR_INT_TYPE)),
               functionArguments: [],
               returnType: MIR_INT_TYPE,
-            })
-          ),
-        ],
-        returnValue: MIR_ZERO,
-      },
-      {
-        name: 'moveMove',
-        parameters: ['a'],
-        type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE),
-        body: [
-          MIR_CAST({
-            name: 'b',
-            type: MIR_INT_TYPE,
-            assignedExpression: MIR_VARIABLE('a', MIR_INT_TYPE),
-          }),
-          MIR_INDEX_ACCESS({
-            name: 'c',
-            type: MIR_INT_TYPE,
-            pointerExpression: MIR_VARIABLE('a', MIR_INT_TYPE),
-            index: 0,
-          }),
-        ],
-        returnValue: MIR_ZERO,
-      },
-      {
-        name: 'bb',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_IF_ELSE({
-            booleanExpression: MIR_ZERO,
-            s1: [
-              MIR_CAST({
-                name: 'b',
-                type: MIR_INT_TYPE,
-                assignedExpression: MIR_ZERO,
-              }),
-            ],
-            s2: [
-              MIR_CAST({
-                name: 'c',
-                type: MIR_INT_TYPE,
-                assignedExpression: MIR_ZERO,
-              }),
-            ],
-            finalAssignments: [],
-          }),
-        ],
-        returnValue: MIR_ZERO,
-      },
-    ],
-    `function factorial(n: int, acc: int): int {
+            }),
+          ],
+          returnValue: MIR_ZERO,
+        },
+        {
+          name: '',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: statements,
+          returnValue: MIR_ZERO,
+        },
+      ],
+      new OptimizationResourceAllocator()
+    );
+  });
+
+  it('optimizeFunctionsByInlining test 1', () => {
+    assertCorrectlyInlined(
+      [
+        {
+          name: 'factorial',
+          parameters: ['n', 'acc'],
+          type: MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE),
+          body: [
+            MIR_BINARY({
+              name: 'c',
+              operator: '==',
+              e1: MIR_VARIABLE('n', MIR_INT_TYPE),
+              e2: MIR_ZERO,
+            }),
+            MIR_IF_ELSE({
+              booleanExpression: MIR_VARIABLE('c', MIR_BOOL_TYPE),
+              s1: [],
+              s2: [
+                MIR_BINARY({
+                  name: 'n1',
+                  operator: '-',
+                  e1: MIR_VARIABLE('n', MIR_INT_TYPE),
+                  e2: MIR_ONE,
+                }),
+                MIR_BINARY({
+                  name: 'acc1',
+                  operator: '*',
+                  e1: MIR_VARIABLE('n', MIR_INT_TYPE),
+                  e2: MIR_VARIABLE('acc', MIR_INT_TYPE),
+                }),
+                MIR_FUNCTION_CALL({
+                  functionExpression: MIR_NAME(
+                    'factorial',
+                    MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE)
+                  ),
+                  functionArguments: [
+                    MIR_VARIABLE('n1', MIR_INT_TYPE),
+                    MIR_VARIABLE('acc1', MIR_INT_TYPE),
+                  ],
+                  returnType: MIR_INT_TYPE,
+                  returnCollector: 'v',
+                }),
+              ],
+              finalAssignments: [
+                {
+                  name: 'fa',
+                  type: MIR_INT_TYPE,
+                  branch1Value: MIR_VARIABLE('acc', MIR_INT_TYPE),
+                  branch2Value: MIR_VARIABLE('v', MIR_INT_TYPE),
+                },
+              ],
+            }),
+          ],
+          returnValue: MIR_VARIABLE('fa', MIR_INT_TYPE),
+        },
+        {
+          name: 'loop',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('loop', MIR_FUNCTION_TYPE([], MIR_INT_TYPE)),
+              functionArguments: [],
+              returnType: MIR_INT_TYPE,
+            }),
+          ],
+          returnValue: MIR_ZERO,
+        },
+        {
+          name: 'insanelyBigFunction',
+          parameters: ['a'],
+          type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE),
+          body: [
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('bb', MIR_FUNCTION_TYPE([], MIR_INT_TYPE)),
+              functionArguments: [],
+              returnType: MIR_INT_TYPE,
+            }),
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME(
+                'moveMove',
+                MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE)
+              ),
+              functionArguments: [MIR_VARIABLE('a', MIR_INT_TYPE)],
+              returnType: MIR_INT_TYPE,
+            }),
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_VARIABLE('a', MIR_INT_TYPE),
+              functionArguments: [],
+              returnType: MIR_INT_TYPE,
+            }),
+            ...Array.from(new Array(10).keys()).map(() =>
+              MIR_FUNCTION_CALL({
+                functionExpression: MIR_NAME(
+                  'non-existing-function',
+                  MIR_FUNCTION_TYPE([], MIR_INT_TYPE)
+                ),
+                functionArguments: [],
+                returnType: MIR_INT_TYPE,
+              })
+            ),
+          ],
+          returnValue: MIR_ZERO,
+        },
+        {
+          name: 'moveMove',
+          parameters: ['a'],
+          type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE),
+          body: [
+            MIR_CAST({
+              name: 'b',
+              type: MIR_INT_TYPE,
+              assignedExpression: MIR_VARIABLE('a', MIR_INT_TYPE),
+            }),
+            MIR_INDEX_ACCESS({
+              name: 'c',
+              type: MIR_INT_TYPE,
+              pointerExpression: MIR_VARIABLE('a', MIR_INT_TYPE),
+              index: 0,
+            }),
+          ],
+          returnValue: MIR_ZERO,
+        },
+        {
+          name: 'bb',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
+            MIR_IF_ELSE({
+              booleanExpression: MIR_ZERO,
+              s1: [
+                MIR_CAST({
+                  name: 'b',
+                  type: MIR_INT_TYPE,
+                  assignedExpression: MIR_ZERO,
+                }),
+              ],
+              s2: [
+                MIR_CAST({
+                  name: 'c',
+                  type: MIR_INT_TYPE,
+                  assignedExpression: MIR_ZERO,
+                }),
+              ],
+              finalAssignments: [],
+            }),
+          ],
+          returnValue: MIR_ZERO,
+        },
+      ],
+      `function factorial(n: int, acc: int): int {
   let c: bool = (n: int) == 0;
   let fa: int;
   if (c: bool) {
@@ -480,48 +485,48 @@ function bb(): int {
   return 0;
 }
 `
-  );
-});
+    );
+  });
 
-it('optimizeFunctionsByInlining test 2', () => {
-  assertCorrectlyInlined(
-    [
-      {
-        name: 'fooBar',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_IF_ELSE({
-            booleanExpression: MIR_VARIABLE('bar', MIR_INT_TYPE),
-            s1: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
-            s2: [
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME('fooBar', MIR_FUNCTION_TYPE([], MIR_INT_TYPE)),
-                functionArguments: [],
-                returnType: MIR_INT_TYPE,
-              }),
-            ],
-            finalAssignments: [],
-          }),
-        ],
-        returnValue: MIR_ZERO,
-      },
-      {
-        name: 'main',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_NAME('fooBar', MIR_INT_TYPE),
-            functionArguments: [],
-            returnType: MIR_INT_TYPE,
-            returnCollector: 'v',
-          }),
-        ],
-        returnValue: MIR_VARIABLE('v', MIR_INT_TYPE),
-      },
-    ],
-    `function fooBar(): int {
+  it('optimizeFunctionsByInlining test 2', () => {
+    assertCorrectlyInlined(
+      [
+        {
+          name: 'fooBar',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
+            MIR_IF_ELSE({
+              booleanExpression: MIR_VARIABLE('bar', MIR_INT_TYPE),
+              s1: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
+              s2: [
+                MIR_FUNCTION_CALL({
+                  functionExpression: MIR_NAME('fooBar', MIR_FUNCTION_TYPE([], MIR_INT_TYPE)),
+                  functionArguments: [],
+                  returnType: MIR_INT_TYPE,
+                }),
+              ],
+              finalAssignments: [],
+            }),
+          ],
+          returnValue: MIR_ZERO,
+        },
+        {
+          name: 'main',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('fooBar', MIR_INT_TYPE),
+              functionArguments: [],
+              returnType: MIR_INT_TYPE,
+              returnCollector: 'v',
+            }),
+          ],
+          returnValue: MIR_VARIABLE('v', MIR_INT_TYPE),
+        },
+      ],
+      `function fooBar(): int {
   if (bar: int) {
     let a: int = 0;
   } else {
@@ -555,48 +560,48 @@ function main(): int {
   return 0;
 }
 `
-  );
-});
+    );
+  });
 
-it('optimizeFunctionsByInlining test 3', () => {
-  assertCorrectlyInlined(
-    [
-      {
-        name: 'fooBar',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_IF_ELSE({
-            booleanExpression: MIR_VARIABLE('bar', MIR_INT_TYPE),
-            s1: [
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME('fooBar', MIR_FUNCTION_TYPE([], MIR_INT_TYPE)),
-                functionArguments: [],
-                returnType: MIR_INT_TYPE,
-              }),
-            ],
-            s2: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
-            finalAssignments: [],
-          }),
-        ],
-        returnValue: MIR_ZERO,
-      },
-      {
-        name: 'main',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_NAME('fooBar', MIR_INT_TYPE),
-            functionArguments: [],
-            returnType: MIR_INT_TYPE,
-            returnCollector: 'v',
-          }),
-        ],
-        returnValue: MIR_VARIABLE('v', MIR_INT_TYPE),
-      },
-    ],
-    `function fooBar(): int {
+  it('optimizeFunctionsByInlining test 3', () => {
+    assertCorrectlyInlined(
+      [
+        {
+          name: 'fooBar',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
+            MIR_IF_ELSE({
+              booleanExpression: MIR_VARIABLE('bar', MIR_INT_TYPE),
+              s1: [
+                MIR_FUNCTION_CALL({
+                  functionExpression: MIR_NAME('fooBar', MIR_FUNCTION_TYPE([], MIR_INT_TYPE)),
+                  functionArguments: [],
+                  returnType: MIR_INT_TYPE,
+                }),
+              ],
+              s2: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
+              finalAssignments: [],
+            }),
+          ],
+          returnValue: MIR_ZERO,
+        },
+        {
+          name: 'main',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('fooBar', MIR_INT_TYPE),
+              functionArguments: [],
+              returnType: MIR_INT_TYPE,
+              returnCollector: 'v',
+            }),
+          ],
+          returnValue: MIR_VARIABLE('v', MIR_INT_TYPE),
+        },
+      ],
+      `function fooBar(): int {
   if (bar: int) {
     fooBar();
   } else {
@@ -630,55 +635,55 @@ function main(): int {
   return 0;
 }
 `
-  );
-});
+    );
+  });
 
-it('optimizeFunctionsByInlining test 4', () => {
-  assertCorrectlyInlined(
-    [
-      {
-        name: 'fooBar',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_IF_ELSE({
-            booleanExpression: MIR_VARIABLE('bar', MIR_INT_TYPE),
-            s1: [
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME('fooBar', MIR_FUNCTION_TYPE([], MIR_INT_TYPE)),
-                functionArguments: [],
-                returnType: MIR_INT_TYPE,
-              }),
-            ],
-            s2: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
-            finalAssignments: [
-              {
-                name: 'b',
-                type: MIR_INT_TYPE,
-                branch1Value: MIR_ZERO,
-                branch2Value: MIR_VARIABLE('a', MIR_INT_TYPE),
-              },
-            ],
-          }),
-        ],
-        returnValue: MIR_ZERO,
-      },
-      {
-        name: 'main',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_NAME('fooBar', MIR_INT_TYPE),
-            functionArguments: [],
-            returnType: MIR_INT_TYPE,
-            returnCollector: 'v',
-          }),
-        ],
-        returnValue: MIR_VARIABLE('v', MIR_INT_TYPE),
-      },
-    ],
-    `function fooBar(): int {
+  it('optimizeFunctionsByInlining test 4', () => {
+    assertCorrectlyInlined(
+      [
+        {
+          name: 'fooBar',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
+            MIR_IF_ELSE({
+              booleanExpression: MIR_VARIABLE('bar', MIR_INT_TYPE),
+              s1: [
+                MIR_FUNCTION_CALL({
+                  functionExpression: MIR_NAME('fooBar', MIR_FUNCTION_TYPE([], MIR_INT_TYPE)),
+                  functionArguments: [],
+                  returnType: MIR_INT_TYPE,
+                }),
+              ],
+              s2: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
+              finalAssignments: [
+                {
+                  name: 'b',
+                  type: MIR_INT_TYPE,
+                  branch1Value: MIR_ZERO,
+                  branch2Value: MIR_VARIABLE('a', MIR_INT_TYPE),
+                },
+              ],
+            }),
+          ],
+          returnValue: MIR_ZERO,
+        },
+        {
+          name: 'main',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('fooBar', MIR_INT_TYPE),
+              functionArguments: [],
+              returnType: MIR_INT_TYPE,
+              returnCollector: 'v',
+            }),
+          ],
+          returnValue: MIR_VARIABLE('v', MIR_INT_TYPE),
+        },
+      ],
+      `function fooBar(): int {
   let b: int;
   if (bar: int) {
     fooBar();
@@ -730,43 +735,46 @@ function main(): int {
   return 0;
 }
 `
-  );
-});
+    );
+  });
 
-it('optimizeFunctionsByInlining test 5', () => {
-  assertCorrectlyInlined(
-    [
-      {
-        name: 'fooBar',
-        parameters: ['bar', 'baz'],
-        type: MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE),
-        body: [
-          MIR_STRUCT_INITIALIZATION({
-            structVariableName: 'ff',
-            type: MIR_INT_TYPE,
-            expressionList: [MIR_VARIABLE('bar', MIR_INT_TYPE), MIR_VARIABLE('baz', MIR_INT_TYPE)],
-          }),
-        ],
-        returnValue: MIR_ZERO,
-      },
-      {
-        name: 'main',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_NAME(
-              'fooBar',
-              MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE)
-            ),
-            functionArguments: [MIR_ONE, MIR_ZERO],
-            returnType: MIR_INT_TYPE,
-          }),
-        ],
-        returnValue: MIR_ZERO,
-      },
-    ],
-    `function fooBar(bar: int, baz: int): int {
+  it('optimizeFunctionsByInlining test 5', () => {
+    assertCorrectlyInlined(
+      [
+        {
+          name: 'fooBar',
+          parameters: ['bar', 'baz'],
+          type: MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE),
+          body: [
+            MIR_STRUCT_INITIALIZATION({
+              structVariableName: 'ff',
+              type: MIR_INT_TYPE,
+              expressionList: [
+                MIR_VARIABLE('bar', MIR_INT_TYPE),
+                MIR_VARIABLE('baz', MIR_INT_TYPE),
+              ],
+            }),
+          ],
+          returnValue: MIR_ZERO,
+        },
+        {
+          name: 'main',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME(
+                'fooBar',
+                MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE)
+              ),
+              functionArguments: [MIR_ONE, MIR_ZERO],
+              returnType: MIR_INT_TYPE,
+            }),
+          ],
+          returnValue: MIR_ZERO,
+        },
+      ],
+      `function fooBar(bar: int, baz: int): int {
   let ff: int = [(bar: int), (baz: int)];
   return 0;
 }
@@ -776,91 +784,91 @@ function main(): int {
   return 0;
 }
 `
-  );
-});
+    );
+  });
 
-it('optimizeFunctionsByInlining test 6', () => {
-  assertCorrectlyInlined(
-    [
-      {
-        name: 'fooBar',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_WHILE({
-            loopVariables: [
-              {
-                name: 'n',
-                type: MIR_INT_TYPE,
-                initialValue: MIR_INT(10),
-                loopValue: MIR_VARIABLE('_tmp_n', MIR_INT_TYPE),
-              },
-            ],
-            statements: [
-              MIR_SINGLE_IF({
-                booleanExpression: MIR_VARIABLE('n', MIR_BOOL_TYPE),
-                invertCondition: false,
-                statements: [MIR_BREAK(MIR_ZERO)],
-              }),
-            ],
-            breakCollector: { name: 'v', type: MIR_INT_TYPE },
-          }),
-        ],
-        returnValue: MIR_VARIABLE('v', MIR_INT_TYPE),
-      },
-    ],
-    `function fooBar(): int {
+  it('optimizeFunctionsByInlining test 6', () => {
+    assertCorrectlyInlined(
+      [
+        {
+          name: 'fooBar',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
+            MIR_WHILE({
+              loopVariables: [
+                {
+                  name: 'n',
+                  type: MIR_INT_TYPE,
+                  initialValue: MIR_INT(10),
+                  loopValue: MIR_VARIABLE('_tmp_n', MIR_INT_TYPE),
+                },
+              ],
+              statements: [
+                MIR_SINGLE_IF({
+                  booleanExpression: MIR_VARIABLE('n', MIR_BOOL_TYPE),
+                  invertCondition: false,
+                  statements: [MIR_BREAK(MIR_ZERO)],
+                }),
+              ],
+              breakCollector: { name: 'v', type: MIR_INT_TYPE },
+            }),
+          ],
+          returnValue: MIR_VARIABLE('v', MIR_INT_TYPE),
+        },
+      ],
+      `function fooBar(): int {
   return 0;
 }
 `
-  );
-});
+    );
+  });
 
-it('optimizeFunctionsByInlining test 7', () => {
-  assertCorrectlyInlined(
-    [
-      {
-        name: 'fooBar',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_WHILE({
-            loopVariables: [
-              {
-                name: 'n',
-                type: MIR_INT_TYPE,
-                initialValue: MIR_INT(10),
-                loopValue: MIR_VARIABLE('_tmp_n', MIR_INT_TYPE),
-              },
-            ],
-            statements: [
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME('fooBar', MIR_INT_TYPE),
-                functionArguments: [],
-                returnType: MIR_INT_TYPE,
-                returnCollector: '_tmp_n',
-              }),
-            ],
-          }),
-        ],
-        returnValue: MIR_VARIABLE('v', MIR_INT_TYPE),
-      },
-      {
-        name: 'main',
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_NAME('fooBar', MIR_INT_TYPE),
-            functionArguments: [],
-            returnType: MIR_INT_TYPE,
-            returnCollector: 'v',
-          }),
-        ],
-        returnValue: MIR_VARIABLE('v', MIR_INT_TYPE),
-      },
-    ],
-    `function fooBar(): int {
+  it('optimizeFunctionsByInlining test 7', () => {
+    assertCorrectlyInlined(
+      [
+        {
+          name: 'fooBar',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
+            MIR_WHILE({
+              loopVariables: [
+                {
+                  name: 'n',
+                  type: MIR_INT_TYPE,
+                  initialValue: MIR_INT(10),
+                  loopValue: MIR_VARIABLE('_tmp_n', MIR_INT_TYPE),
+                },
+              ],
+              statements: [
+                MIR_FUNCTION_CALL({
+                  functionExpression: MIR_NAME('fooBar', MIR_INT_TYPE),
+                  functionArguments: [],
+                  returnType: MIR_INT_TYPE,
+                  returnCollector: '_tmp_n',
+                }),
+              ],
+            }),
+          ],
+          returnValue: MIR_VARIABLE('v', MIR_INT_TYPE),
+        },
+        {
+          name: 'main',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          body: [
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('fooBar', MIR_INT_TYPE),
+              functionArguments: [],
+              returnType: MIR_INT_TYPE,
+              returnCollector: 'v',
+            }),
+          ],
+          returnValue: MIR_VARIABLE('v', MIR_INT_TYPE),
+        },
+      ],
+      `function fooBar(): int {
   let n: int = 10;
   while (true) {
     let _tmp_n: int = fooBar();
@@ -894,5 +902,6 @@ function main(): int {
   return (v: int);
 }
 `
-  );
+    );
+  });
 });

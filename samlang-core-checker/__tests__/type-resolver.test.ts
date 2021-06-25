@@ -30,49 +30,51 @@ export const undecidedTypeResolver = ({ index }: UndecidedType): Type => {
 };
 const resolve = (type: Type): Type => typeResolver(type, undecidedTypeResolver);
 
-it("won't affect primitive types", () => {
-  expect(resolve(unitType)).toEqual(unitType);
-  expect(resolve(boolType)).toEqual(boolType);
-  expect(resolve(intType)).toEqual(intType);
-  expect(resolve(stringType)).toEqual(stringType);
-});
+describe('type-resolver', () => {
+  it("won't affect primitive types", () => {
+    expect(resolve(unitType)).toEqual(unitType);
+    expect(resolve(boolType)).toEqual(boolType);
+    expect(resolve(intType)).toEqual(intType);
+    expect(resolve(stringType)).toEqual(stringType);
+  });
 
-it('Undecided types will always be resolved', () => {
-  for (let index = 0; index < 1000; index += 1) {
-    expect(resolve({ type: 'UndecidedType', index })).toEqual(
-      undecidedTypeResolver({ type: 'UndecidedType', index })
-    );
-  }
-});
+  it('Undecided types will always be resolved', () => {
+    for (let index = 0; index < 1000; index += 1) {
+      expect(resolve({ type: 'UndecidedType', index })).toEqual(
+        undecidedTypeResolver({ type: 'UndecidedType', index })
+      );
+    }
+  });
 
-it('Recursive types will be resolved', () => {
-  expect(
-    resolve(
-      identifierType(ModuleReference.DUMMY, 'A', [
-        { type: 'UndecidedType', index: 0 },
-        { type: 'UndecidedType', index: 1 },
-      ])
-    )
-  ).toEqual(identifierType(ModuleReference.DUMMY, 'A', [unitType, boolType]));
-
-  expect(
-    resolve(
-      tupleType([
-        { type: 'UndecidedType', index: 0 },
-        { type: 'UndecidedType', index: 1 },
-      ])
-    )
-  ).toEqual(tupleType([unitType, boolType]));
-
-  expect(
-    resolve(
-      functionType(
-        [
+  it('Recursive types will be resolved', () => {
+    expect(
+      resolve(
+        identifierType(ModuleReference.DUMMY, 'A', [
           { type: 'UndecidedType', index: 0 },
           { type: 'UndecidedType', index: 1 },
-        ],
-        { type: 'UndecidedType', index: 2 }
+        ])
       )
-    )
-  ).toEqual(functionType([unitType, boolType], intType));
+    ).toEqual(identifierType(ModuleReference.DUMMY, 'A', [unitType, boolType]));
+
+    expect(
+      resolve(
+        tupleType([
+          { type: 'UndecidedType', index: 0 },
+          { type: 'UndecidedType', index: 1 },
+        ])
+      )
+    ).toEqual(tupleType([unitType, boolType]));
+
+    expect(
+      resolve(
+        functionType(
+          [
+            { type: 'UndecidedType', index: 0 },
+            { type: 'UndecidedType', index: 1 },
+          ],
+          { type: 'UndecidedType', index: 2 }
+        )
+      )
+    ).toEqual(functionType([unitType, boolType], intType));
+  });
 });

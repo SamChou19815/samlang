@@ -658,15 +658,17 @@ const failingTypeCheckerTestCases: readonly (readonly [
   ],
 ];
 
-passingTypeCheckerTestCases.forEach(([name, block, expectedType, expectedResult]) => {
-  it(`It passes: ${name}`, () => {
-    const [actualResult, actualErrors] = typeCheckInSandbox(block, expectedType);
-    expect(actualResult).toEqual(expectedResult);
-    expect(actualErrors).toEqual([]);
+describe('statement-type-checker', () => {
+  passingTypeCheckerTestCases.forEach(([name, block, expectedType, expectedResult]) => {
+    it(`It passes: ${name}`, () => {
+      const [actualResult, actualErrors] = typeCheckInSandbox(block, expectedType);
+      expect(actualResult).toEqual(expectedResult);
+      expect(actualErrors).toEqual([]);
+    });
   });
-});
 
-failingTypeCheckerTestCases.forEach(([name, block, expectedType, expectedErrors]) => {
-  it(`It fails: ${name}`, () =>
-    expect(typeCheckInSandbox(block, expectedType)[1]).toEqual(expectedErrors));
+  failingTypeCheckerTestCases.forEach(([name, block, expectedType, expectedErrors]) => {
+    it(`It fails: ${name}`, () =>
+      expect(typeCheckInSandbox(block, expectedType)[1]).toEqual(expectedErrors));
+  });
 });
