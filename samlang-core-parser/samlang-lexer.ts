@@ -183,6 +183,8 @@ export type SamlangKeywordString =
   | 'var'
   | 'type'
   | 'interface'
+  | 'constructor'
+  | 'destructor'
   | 'functor'
   | 'extends'
   | 'implements'
@@ -226,6 +228,8 @@ const SAMLANG_KEYWORDS: SamlangKeywordString[] = [
   'var',
   'type',
   'interface',
+  'constructor',
+  'destructor',
   'functor',
   'extends',
   'implements',
