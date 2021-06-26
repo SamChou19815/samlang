@@ -201,10 +201,18 @@ const fixExpressionType = (
           expression.matchedExpression,
           getExpressionFixedType(expression.matchedExpression, null) as IdentifierType
         ),
-        matchingList: expression.matchingList.map((it) => ({
-          ...it,
-          expression: tryFixExpressionType(it.expression, expectedType),
-        })),
+        matchingList: expression.matchingList.map(
+          ({ range, tag, tagOrder, dataVariable, expression: body }) => ({
+            range,
+            tag,
+            tagOrder,
+            dataVariable:
+              dataVariable != null
+                ? [dataVariable[0], dataVariable[1], typeFixItself(dataVariable[2], null)]
+                : undefined,
+            expression: tryFixExpressionType(body, expectedType),
+          })
+        ),
       };
     }
     case 'LambdaExpression': {

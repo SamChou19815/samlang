@@ -1385,6 +1385,9 @@ class Option<T>(Some(T), None(bool)) {
       | None _ -> None(true)
       | Some t -> Some(f(t))
     }
+  function test(): unit = {
+    val _ = match (None(false)) { | None _ -> "" | Some f -> Builtins.intToString(f("")) };
+  }
 }
 
 class List<T>(Nil(bool), Cons([T * List<T>])) {
