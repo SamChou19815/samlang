@@ -107,14 +107,14 @@ export class SamlangTypeLoweringManager {
     returnType,
   }: FunctionType): HighIRFunctionType => {
     const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
-      [...argumentTypes.map(this.lowerSamlangType)],
-      this.lowerSamlangType(returnType)
+      argumentTypes.map((it) => this.lowerSamlangType(it, /* functionTypeToClosureType */ true)),
+      this.lowerSamlangType(returnType, /* functionTypeToClosureType */ true)
     );
     // TODO: collect context parameters
     return hirFunctionTypeWithoutContext;
   };
 
-  lowerSamlangType = (type: Type): HighIRType => {
+  lowerSamlangType = (type: Type, functionTypeToClosureType: boolean): HighIRType => {
     assert(type.type !== 'UndecidedType', 'Unreachable!');
     switch (type.type) {
       case 'PrimitiveType':
@@ -131,11 +131,13 @@ export class SamlangTypeLoweringManager {
         if (this.genericTypes.has(type.identifier)) return HIR_IDENTIFIER_TYPE(type.identifier, []);
         return HIR_IDENTIFIER_TYPE(
           `${type.moduleReference.parts.join('_')}_${type.identifier}`,
-          type.typeArguments.map(this.lowerSamlangType)
+          type.typeArguments.map((it) => this.lowerSamlangType(it, functionTypeToClosureType))
         );
       }
       case 'TupleType': {
-        const typeMappings = type.mappings.map(this.lowerSamlangType);
+        const typeMappings = type.mappings.map((it) =>
+          this.lowerSamlangType(it, functionTypeToClosureType)
+        );
         const typeParameters = Array.from(
           collectUsedGenericTypes(HIR_FUNCTION_TYPE(typeMappings, HIR_BOOL_TYPE), this.genericTypes)
         );
@@ -150,9 +152,10 @@ export class SamlangTypeLoweringManager {
       }
       case 'FunctionType': {
         const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
-          [...type.argumentTypes.map(this.lowerSamlangType)],
-          this.lowerSamlangType(type.returnType)
+          type.argumentTypes.map((it) => this.lowerSamlangType(it, functionTypeToClosureType)),
+          this.lowerSamlangType(type.returnType, functionTypeToClosureType)
         );
+        if (!functionTypeToClosureType) return hirFunctionTypeWithoutContext;
         const usedGenericTypes = collectUsedGenericTypes(
           hirFunctionTypeWithoutContext,
           this.genericTypes

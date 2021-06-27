@@ -132,7 +132,8 @@ class HighIRExpressionLoweringManager {
   }
 
   // TODO: avoid calling this most of the time
-  private lowerType = (type: Type): HighIRType => this.typeLoweringManager.lowerSamlangType(type);
+  private lowerType = (type: Type): HighIRType =>
+    this.typeLoweringManager.lowerSamlangType(type, false);
 
   private getSyntheticIdentifierTypeFromTuple = (
     mappings: readonly HighIRType[]
