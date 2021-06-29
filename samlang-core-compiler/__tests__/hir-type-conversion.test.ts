@@ -162,7 +162,7 @@ describe('hir-type-conversion', () => {
           false
         )
       )
-    ).toBe('(T, bool) -> int');
+    ).toBe('_SYNTHETIC_ID_TYPE_2<T>');
     expect(
       prettyPrintHighIRType(
         new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
@@ -170,14 +170,15 @@ describe('hir-type-conversion', () => {
           true
         )
       )
-    ).toBe('_SYNTHETIC_ID_TYPE_2<T, _TypeContext0>');
+    ).toBe('_SYNTHETIC_ID_TYPE_3<T, _TypeContext0>');
 
     expect(() => manager.lowerSamlangType({ type: 'UndecidedType', index: 0 }, false)).toThrow();
 
     expect(typeSynthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
       'object type _SYNTHETIC_ID_TYPE_0 = [int, bool]',
       'object type _SYNTHETIC_ID_TYPE_1<T> = [int, T]',
-      'object type _SYNTHETIC_ID_TYPE_2<T, _TypeContext0> = [(_TypeContext0, T, bool) -> int, _TypeContext0]',
+      'object type _SYNTHETIC_ID_TYPE_2<T> = [(int, T, bool) -> int, int]',
+      'object type _SYNTHETIC_ID_TYPE_3<T, _TypeContext0> = [(_TypeContext0, T, bool) -> int, _TypeContext0]',
     ]);
 
     expect(manager.lowerSamlangFunctionTypeForTopLevel(functionType([intType], boolType))).toEqual(
