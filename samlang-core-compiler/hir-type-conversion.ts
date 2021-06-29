@@ -107,14 +107,14 @@ export class SamlangTypeLoweringManager {
     returnType,
   }: FunctionType): HighIRFunctionType => {
     const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
-      argumentTypes.map((it) => this.lowerSamlangType(it, /* functionTypeToClosureType */ true)),
-      this.lowerSamlangType(returnType, /* functionTypeToClosureType */ true)
+      argumentTypes.map((it) => this.lowerSamlangType(it, /* genericContext */ true)),
+      this.lowerSamlangType(returnType, /* genericContext */ true)
     );
     // TODO: collect context parameters
     return hirFunctionTypeWithoutContext;
   };
 
-  lowerSamlangType = (type: Type, functionTypeToClosureType: boolean): HighIRType => {
+  lowerSamlangType = (type: Type, genericContext: boolean): HighIRType => {
     assert(type.type !== 'UndecidedType', 'Unreachable!');
     switch (type.type) {
       case 'PrimitiveType':
@@ -131,13 +131,11 @@ export class SamlangTypeLoweringManager {
         if (this.genericTypes.has(type.identifier)) return HIR_IDENTIFIER_TYPE(type.identifier, []);
         return HIR_IDENTIFIER_TYPE(
           `${type.moduleReference.parts.join('_')}_${type.identifier}`,
-          type.typeArguments.map((it) => this.lowerSamlangType(it, functionTypeToClosureType))
+          type.typeArguments.map((it) => this.lowerSamlangType(it, genericContext))
         );
       }
       case 'TupleType': {
-        const typeMappings = type.mappings.map((it) =>
-          this.lowerSamlangType(it, functionTypeToClosureType)
-        );
+        const typeMappings = type.mappings.map((it) => this.lowerSamlangType(it, genericContext));
         const typeParameters = Array.from(
           collectUsedGenericTypes(HIR_FUNCTION_TYPE(typeMappings, HIR_BOOL_TYPE), this.genericTypes)
         );
@@ -152,31 +150,47 @@ export class SamlangTypeLoweringManager {
       }
       case 'FunctionType': {
         const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
-          type.argumentTypes.map((it) => this.lowerSamlangType(it, functionTypeToClosureType)),
-          this.lowerSamlangType(type.returnType, functionTypeToClosureType)
+          type.argumentTypes.map((it) => this.lowerSamlangType(it, genericContext)),
+          this.lowerSamlangType(type.returnType, genericContext)
         );
-        if (!functionTypeToClosureType) return hirFunctionTypeWithoutContext;
         const usedGenericTypes = collectUsedGenericTypes(
           hirFunctionTypeWithoutContext,
           this.genericTypes
         );
         const typeParameters = Array.from(usedGenericTypes);
-        const contextTypeParameter = this.allocateContextTypeParameter();
-        const contextGenericType = HIR_IDENTIFIER_TYPE(contextTypeParameter, []);
-        const typeDefinition = this.typeSynthesizer.synthesizeTupleType(
-          [
-            HIR_FUNCTION_TYPE(
-              [contextGenericType, ...hirFunctionTypeWithoutContext.argumentTypes],
-              hirFunctionTypeWithoutContext.returnType
-            ),
-            contextGenericType,
-          ],
-          [...typeParameters, contextTypeParameter]
-        );
-        return HIR_IDENTIFIER_TYPE(
-          typeDefinition.identifier,
-          typeDefinition.typeParameters.map((name) => HIR_IDENTIFIER_TYPE(name, []))
-        );
+        if (genericContext) {
+          const contextTypeParameter = this.allocateContextTypeParameter();
+          const contextGenericType = HIR_IDENTIFIER_TYPE(contextTypeParameter, []);
+          const typeDefinition = this.typeSynthesizer.synthesizeTupleType(
+            [
+              HIR_FUNCTION_TYPE(
+                [contextGenericType, ...hirFunctionTypeWithoutContext.argumentTypes],
+                hirFunctionTypeWithoutContext.returnType
+              ),
+              contextGenericType,
+            ],
+            [...typeParameters, contextTypeParameter]
+          );
+          return HIR_IDENTIFIER_TYPE(
+            typeDefinition.identifier,
+            typeDefinition.typeParameters.map((name) => HIR_IDENTIFIER_TYPE(name, []))
+          );
+        } else {
+          const typeDefinition = this.typeSynthesizer.synthesizeTupleType(
+            [
+              HIR_FUNCTION_TYPE(
+                [HIR_INT_TYPE, ...hirFunctionTypeWithoutContext.argumentTypes],
+                hirFunctionTypeWithoutContext.returnType
+              ),
+              HIR_INT_TYPE,
+            ],
+            typeParameters
+          );
+          return HIR_IDENTIFIER_TYPE(
+            typeDefinition.identifier,
+            typeDefinition.typeParameters.map((name) => HIR_IDENTIFIER_TYPE(name, []))
+          );
+        }
       }
     }
   };
