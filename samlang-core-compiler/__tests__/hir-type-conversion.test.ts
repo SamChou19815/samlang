@@ -1,9 +1,10 @@
 import {
+  ModuleReference,
+  Range,
   boolType,
   functionType,
   identifierType,
   intType,
-  ModuleReference,
   stringType,
   tupleType,
   unitType,
@@ -123,7 +124,7 @@ describe('hir-type-conversion', () => {
     ).toEqual(HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));
   });
 
-  it('SamlangTypeLoweringManager works', () => {
+  it('SamlangTypeLoweringManager.lowerSamlangType() works', () => {
     const typeSynthesizer = new HighIRTypeSynthesizer();
     const manager = new SamlangTypeLoweringManager(new Set(), typeSynthesizer);
 
@@ -180,9 +181,77 @@ describe('hir-type-conversion', () => {
       'object type _SYNTHETIC_ID_TYPE_2<T> = [(int, T, bool) -> int, int]',
       'object type _SYNTHETIC_ID_TYPE_3<T, _TypeContext0> = [(_TypeContext0, T, bool) -> int, _TypeContext0]',
     ]);
+  });
 
-    expect(manager.lowerSamlangFunctionTypeForTopLevel(functionType([intType], boolType))).toEqual(
-      HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)
+  it('SamlangTypeLoweringManager.lowerSamlangTypeDefinition() works', () => {
+    const typeSynthesizer = new HighIRTypeSynthesizer();
+
+    expect(
+      prettyPrintHighIRTypeDefinition(
+        SamlangTypeLoweringManager.lowerSamlangTypeDefinition(
+          new Set(['A']),
+          typeSynthesizer,
+          'Foo',
+          {
+            range: Range.DUMMY,
+            type: 'object',
+            names: ['a', 'b'],
+            mappings: {
+              a: {
+                type: functionType(
+                  [functionType([identifierType(ModuleReference.ROOT, 'A')], boolType)],
+                  boolType
+                ),
+                isPublic: true,
+              },
+              b: {
+                type: functionType(
+                  [functionType([identifierType(ModuleReference.ROOT, 'A')], boolType)],
+                  boolType
+                ),
+                isPublic: false,
+              },
+            },
+          }
+        )
+      )
+    ).toBe(
+      'object type Foo<A, _TypeContext1, _TypeContext3> = ' +
+        '[_SYNTHETIC_ID_TYPE_1<A, _TypeContext1>, _SYNTHETIC_ID_TYPE_3<A, _TypeContext3>]'
     );
+    expect(typeSynthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
+      'object type _SYNTHETIC_ID_TYPE_0<A, _TypeContext0> = ' +
+        '[(_TypeContext0, A) -> bool, _TypeContext0]',
+      'object type _SYNTHETIC_ID_TYPE_1<A, _TypeContext1> = ' +
+        '[(_TypeContext1, _SYNTHETIC_ID_TYPE_0<A, _TypeContext0>) -> bool, _TypeContext1]',
+      'object type _SYNTHETIC_ID_TYPE_2<A, _TypeContext2> = ' +
+        '[(_TypeContext2, A) -> bool, _TypeContext2]',
+      'object type _SYNTHETIC_ID_TYPE_3<A, _TypeContext3> = ' +
+        '[(_TypeContext3, _SYNTHETIC_ID_TYPE_2<A, _TypeContext2>) -> bool, _TypeContext3]',
+    ]);
+  });
+
+  it('SamlangTypeLoweringManager.lowerSamlangFunctionTypeForTopLevel() works', () => {
+    expect(
+      SamlangTypeLoweringManager.lowerSamlangFunctionTypeForTopLevel(
+        new Set(),
+        new HighIRTypeSynthesizer(),
+        functionType([intType], boolType)
+      )
+    ).toEqual([[], HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)]);
+
+    expect(
+      SamlangTypeLoweringManager.lowerSamlangFunctionTypeForTopLevel(
+        new Set(),
+        new HighIRTypeSynthesizer(),
+        functionType([functionType([intType], boolType)], boolType)
+      )
+    ).toEqual([
+      ['_TypeContext0'],
+      HIR_FUNCTION_TYPE(
+        [HIR_IDENTIFIER_TYPE('_SYNTHETIC_ID_TYPE_0', [HIR_IDENTIFIER_TYPE('_TypeContext0', [])])],
+        HIR_BOOL_TYPE
+      ),
+    ]);
   });
 });

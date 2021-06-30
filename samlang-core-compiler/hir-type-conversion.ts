@@ -10,6 +10,7 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_FUNCTION_TYPE,
 } from 'samlang-core-ast/hir-nodes';
+import type { TypeDefinition } from 'samlang-core-ast/samlang-toplevel';
 import { assert, checkNotNull } from 'samlang-core-utils';
 
 /** A helper class to generate an identifier type for each struct type. */
@@ -102,17 +103,55 @@ export class SamlangTypeLoweringManager {
     return typeParameter;
   }
 
-  lowerSamlangFunctionTypeForTopLevel = ({
-    argumentTypes,
-    returnType,
-  }: FunctionType): HighIRFunctionType => {
-    const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
-      argumentTypes.map((it) => this.lowerSamlangType(it, /* genericContext */ true)),
-      this.lowerSamlangType(returnType, /* genericContext */ true)
+  private get syntheticTypeContexts() {
+    const syntheticTypeContexts: string[] = [];
+    for (let i = 0; i < this.contextIDCount; i += 1) {
+      syntheticTypeContexts.push(`_TypeContext${i}`);
+    }
+    return syntheticTypeContexts;
+  }
+
+  static lowerSamlangTypeDefinition(
+    genericTypes: ReadonlySet<string>,
+    typeSynthesizer: HighIRTypeSynthesizer,
+    identifier: string,
+    { type, names, mappings: sourceLevelMappings }: TypeDefinition
+  ): HighIRTypeDefinition {
+    const manager = new SamlangTypeLoweringManager(genericTypes, typeSynthesizer);
+    const mappings = names.map((it) =>
+      manager.lowerSamlangType(
+        checkNotNull(sourceLevelMappings[it]).type,
+        /* genericContext */ true
+      )
     );
-    // TODO: collect context parameters
-    return hirFunctionTypeWithoutContext;
-  };
+    const allGenericTypes = new Set(genericTypes);
+    manager.syntheticTypeContexts.forEach((it) => allGenericTypes.add(it));
+    const usedGenericTypes = collectUsedGenericTypes(
+      // Hack: Wrap mappings inside a function type
+      HIR_FUNCTION_TYPE(mappings, HIR_INT_TYPE),
+      allGenericTypes
+    );
+    return { identifier, type, typeParameters: Array.from(usedGenericTypes), mappings };
+  }
+
+  static lowerSamlangFunctionTypeForTopLevel(
+    genericTypes: ReadonlySet<string>,
+    typeSynthesizer: HighIRTypeSynthesizer,
+    { argumentTypes, returnType }: FunctionType
+  ): [readonly string[], HighIRFunctionType] {
+    const manager = new SamlangTypeLoweringManager(genericTypes, typeSynthesizer);
+    const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
+      argumentTypes.map((it) => manager.lowerSamlangType(it, /* genericContext */ true)),
+      manager.lowerSamlangType(returnType, /* genericContext */ true)
+    );
+    const allGenericTypes = new Set(genericTypes);
+    manager.syntheticTypeContexts.forEach((it) => allGenericTypes.add(it));
+    const usedGenericTypes = collectUsedGenericTypes(
+      hirFunctionTypeWithoutContext,
+      allGenericTypes
+    );
+    return [Array.from(usedGenericTypes), hirFunctionTypeWithoutContext];
+  }
 
   lowerSamlangType = (type: Type, genericContext: boolean): HighIRType => {
     assert(type.type !== 'UndecidedType', 'Unreachable!');
