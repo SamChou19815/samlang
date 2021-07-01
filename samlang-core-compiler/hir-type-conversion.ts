@@ -144,14 +144,17 @@ export class SamlangTypeLoweringManager {
         /* genericContext */ true
       )
     );
-    const allGenericTypes = new Set(genericTypes);
-    manager.syntheticTypeContexts.forEach((it) => allGenericTypes.add(it));
-    const usedGenericTypes = collectUsedGenericTypes(
-      // Hack: Wrap mappings inside a function type
-      HIR_FUNCTION_TYPE(mappings, HIR_INT_TYPE),
-      allGenericTypes
-    );
-    return { identifier, type, typeParameters: Array.from(usedGenericTypes), mappings };
+    const typeParameters = [
+      ...genericTypes,
+      ...Array.from(
+        collectUsedGenericTypes(
+          // Hack: Wrap mappings inside a function type
+          HIR_FUNCTION_TYPE(mappings, HIR_INT_TYPE),
+          new Set(manager.syntheticTypeContexts)
+        )
+      ),
+    ];
+    return { identifier, type, typeParameters, mappings };
   }
 
   static lowerSamlangFunctionTypeForTopLevel(
@@ -166,11 +169,16 @@ export class SamlangTypeLoweringManager {
     );
     const allGenericTypes = new Set(genericTypes);
     manager.syntheticTypeContexts.forEach((it) => allGenericTypes.add(it));
-    const usedGenericTypes = collectUsedGenericTypes(
-      hirFunctionTypeWithoutContext,
-      allGenericTypes
-    );
-    return [Array.from(usedGenericTypes), hirFunctionTypeWithoutContext];
+    const typeParameters = [
+      ...genericTypes,
+      ...Array.from(
+        collectUsedGenericTypes(
+          hirFunctionTypeWithoutContext,
+          new Set(manager.syntheticTypeContexts)
+        )
+      ),
+    ];
+    return [typeParameters, hirFunctionTypeWithoutContext];
   }
 
   lowerSamlangType(type: Type, genericContext: boolean): HighIRType {
@@ -187,10 +195,7 @@ export class SamlangTypeLoweringManager {
     }
   }
 
-  private lowerSamlangIdentifierType(
-    type: IdentifierType,
-    genericContext: boolean
-  ): HighIRIdentifierType {
+  lowerSamlangIdentifierType(type: IdentifierType, genericContext: boolean): HighIRIdentifierType {
     if (this.genericTypes.has(type.identifier)) return HIR_IDENTIFIER_TYPE(type.identifier, []);
     return HIR_IDENTIFIER_TYPE(
       `${type.moduleReference.parts.join('_')}_${type.identifier}`,
@@ -198,7 +203,7 @@ export class SamlangTypeLoweringManager {
     );
   }
 
-  private lowerSamlangTupleType(type: TupleType, genericContext: boolean): HighIRIdentifierType {
+  lowerSamlangTupleType(type: TupleType, genericContext: boolean): HighIRIdentifierType {
     const typeMappings = type.mappings.map((it) => this.lowerSamlangType(it, genericContext));
     const typeParameters = Array.from(
       collectUsedGenericTypes(HIR_FUNCTION_TYPE(typeMappings, HIR_BOOL_TYPE), this.genericTypes)
@@ -210,10 +215,7 @@ export class SamlangTypeLoweringManager {
     );
   }
 
-  private lowerSamlangFunctionType(
-    type: FunctionType,
-    genericContext: boolean
-  ): HighIRIdentifierType {
+  lowerSamlangFunctionType(type: FunctionType, genericContext: boolean): HighIRIdentifierType {
     const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
       type.argumentTypes.map((it) => this.lowerSamlangType(it, genericContext)),
       this.lowerSamlangType(type.returnType, genericContext)
