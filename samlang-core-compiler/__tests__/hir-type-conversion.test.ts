@@ -182,62 +182,58 @@ describe('hir-type-conversion', () => {
     ]);
   });
 
-  it('SamlangTypeLoweringManager.lowerSamlangType() works', () => {
+  it('SamlangTypeLoweringManager.lowerSamlangTypeForTypeDefinition() works', () => {
     const typeSynthesizer = new HighIRTypeSynthesizer();
     const manager = new SamlangTypeLoweringManager(new Set(), typeSynthesizer);
 
-    expect(manager.lowerSamlangType(boolType, false)).toEqual(HIR_BOOL_TYPE);
-    expect(manager.lowerSamlangType(intType, false)).toEqual(HIR_INT_TYPE);
-    expect(manager.lowerSamlangType(unitType, false)).toEqual(HIR_INT_TYPE);
-    expect(manager.lowerSamlangType(stringType, false)).toEqual(HIR_STRING_TYPE);
+    expect(manager.lowerSamlangTypeForTypeDefinition(boolType)).toEqual(HIR_BOOL_TYPE);
 
     expect(
       prettyPrintHighIRType(
-        manager.lowerSamlangType(identifierType(ModuleReference.DUMMY, 'A', [intType]), false)
+        manager.lowerSamlangTypeForTypeDefinition(
+          identifierType(ModuleReference.DUMMY, 'A', [intType])
+        )
       )
     ).toBe('__DUMMY___A<int>');
 
     expect(
       prettyPrintHighIRType(
-        new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
-          tupleType([intType, boolType]),
-          false
-        )
+        new SamlangTypeLoweringManager(
+          new Set(['T']),
+          typeSynthesizer
+        ).lowerSamlangTypeForTypeDefinition(tupleType([intType, boolType]))
       )
     ).toBe('$SyntheticIDType0');
     expect(
       prettyPrintHighIRType(
-        new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
-          tupleType([intType, identifierType(ModuleReference.DUMMY, 'T')]),
-          false
+        new SamlangTypeLoweringManager(
+          new Set(['T']),
+          typeSynthesizer
+        ).lowerSamlangTypeForTypeDefinition(
+          tupleType([intType, identifierType(ModuleReference.DUMMY, 'T')])
         )
       )
     ).toBe('$SyntheticIDType1<T>');
 
     expect(
       prettyPrintHighIRType(
-        new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
-          functionType([identifierType(ModuleReference.DUMMY, 'T'), boolType], intType),
-          false
+        new SamlangTypeLoweringManager(
+          new Set(['T']),
+          typeSynthesizer
+        ).lowerSamlangTypeForTypeDefinition(
+          functionType([identifierType(ModuleReference.DUMMY, 'T'), boolType], intType)
         )
       )
-    ).toBe('$SyntheticIDType2<T>');
-    expect(
-      prettyPrintHighIRType(
-        new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
-          functionType([identifierType(ModuleReference.DUMMY, 'T'), boolType], intType),
-          true
-        )
-      )
-    ).toBe('$SyntheticIDType3<T, $TC0>');
+    ).toBe('$SyntheticIDType2<T, $TC0>');
 
-    expect(() => manager.lowerSamlangType({ type: 'UndecidedType', index: 0 }, false)).toThrow();
+    expect(() =>
+      manager.lowerSamlangTypeForTypeDefinition({ type: 'UndecidedType', index: 0 })
+    ).toThrow();
 
     expect(typeSynthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
       'object type $SyntheticIDType0 = [int, bool]',
       'object type $SyntheticIDType1<T> = [int, T]',
-      'object type $SyntheticIDType2<T> = [(int, T, bool) -> int, int]',
-      'object type $SyntheticIDType3<T, $TC> = [($TC, T, bool) -> int, $TC]',
+      'object type $SyntheticIDType2<T, $TC> = [($TC, T, bool) -> int, $TC]',
     ]);
   });
 
