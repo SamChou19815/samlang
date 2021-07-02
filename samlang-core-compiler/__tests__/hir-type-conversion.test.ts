@@ -204,16 +204,6 @@ describe('hir-type-conversion', () => {
         ).lowerSamlangTypeForTypeDefinition(tupleType([intType, boolType]))
       )
     ).toBe('$SyntheticIDType0');
-    expect(
-      prettyPrintHighIRType(
-        new SamlangTypeLoweringManager(
-          new Set(['T']),
-          typeSynthesizer
-        ).lowerSamlangTypeForTypeDefinition(
-          tupleType([intType, identifierType(ModuleReference.DUMMY, 'T')])
-        )
-      )
-    ).toBe('$SyntheticIDType1<T>');
 
     expect(
       prettyPrintHighIRType(
@@ -224,7 +214,7 @@ describe('hir-type-conversion', () => {
           functionType([identifierType(ModuleReference.DUMMY, 'T'), boolType], intType)
         )
       )
-    ).toBe('$SyntheticIDType2<T, $TC0>');
+    ).toBe('$SyntheticIDType1<T, $TC0>');
 
     expect(() =>
       manager.lowerSamlangTypeForTypeDefinition({ type: 'UndecidedType', index: 0 })
@@ -232,8 +222,7 @@ describe('hir-type-conversion', () => {
 
     expect(typeSynthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
       'object type $SyntheticIDType0 = [int, bool]',
-      'object type $SyntheticIDType1<T> = [int, T]',
-      'object type $SyntheticIDType2<T, $TC> = [($TC, T, bool) -> int, $TC]',
+      'object type $SyntheticIDType1<T, $TC> = [($TC, T, bool) -> int, $TC]',
     ]);
   });
 
