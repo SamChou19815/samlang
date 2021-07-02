@@ -97,7 +97,7 @@ export const highIRTypeApplication = (
   }
 };
 
-const lowerSamlangPrimitiveType = (type: PrimitiveType): HighIRPrimitiveType => {
+export const lowerSamlangPrimitiveType = (type: PrimitiveType): HighIRPrimitiveType => {
   switch (type.name) {
     case 'bool':
       return HIR_BOOL_TYPE;
@@ -213,6 +213,67 @@ export class SamlangTypeLoweringManager {
     return [typeParameters, hirFunctionTypeWithoutContext];
   }
 
+  lowerSamlangTypeForLocalValues = (type: Type): HighIRType => {
+    assert(type.type !== 'UndecidedType', 'Unreachable!');
+    switch (type.type) {
+      case 'PrimitiveType':
+        return lowerSamlangPrimitiveType(type);
+      case 'IdentifierType':
+        return this.lowerSamlangIdentifierTypeForLocalValues(type);
+      case 'TupleType':
+        return this.lowerSamlangTupleTypeForLocalValues(type);
+      case 'FunctionType':
+        return this.lowerSamlangFunctionTypeForLocalValues(type);
+    }
+  };
+
+  lowerSamlangIdentifierTypeForLocalValues(type: IdentifierType): HighIRIdentifierType {
+    if (this.genericTypes.has(type.identifier)) return HIR_IDENTIFIER_TYPE(type.identifier, []);
+    // TODO: add more dummy type arguments from type definition
+    return HIR_IDENTIFIER_TYPE(
+      `${type.moduleReference.parts.join('_')}_${type.identifier}`,
+      type.typeArguments.map(this.lowerSamlangTypeForLocalValues)
+    );
+  }
+
+  lowerSamlangTupleTypeForLocalValues(type: TupleType): HighIRIdentifierType {
+    const typeMappings = type.mappings.map(this.lowerSamlangTypeForLocalValues);
+    const typeParameters = Array.from(
+      collectUsedGenericTypes(HIR_FUNCTION_TYPE(typeMappings, HIR_BOOL_TYPE), this.genericTypes)
+    );
+    const typeDefinition = this.typeSynthesizer.synthesizeTupleType(typeMappings, typeParameters);
+    return HIR_IDENTIFIER_TYPE(
+      typeDefinition.identifier,
+      typeParameters.map((name) => HIR_IDENTIFIER_TYPE(name, []))
+    );
+  }
+
+  lowerSamlangFunctionTypeForLocalValues(type: FunctionType): HighIRIdentifierType {
+    const hirFunctionTypeWithoutContext = HIR_FUNCTION_TYPE(
+      type.argumentTypes.map(this.lowerSamlangTypeForLocalValues),
+      this.lowerSamlangTypeForLocalValues(type.returnType)
+    );
+    const usedGenericTypes = collectUsedGenericTypes(
+      hirFunctionTypeWithoutContext,
+      this.genericTypes
+    );
+    const typeParameters = Array.from(usedGenericTypes);
+    const typeDefinition = this.typeSynthesizer.synthesizeTupleType(
+      [
+        HIR_FUNCTION_TYPE(
+          [HIR_INT_TYPE, ...hirFunctionTypeWithoutContext.argumentTypes],
+          hirFunctionTypeWithoutContext.returnType
+        ),
+        HIR_INT_TYPE,
+      ],
+      typeParameters
+    );
+    return HIR_IDENTIFIER_TYPE(
+      typeDefinition.identifier,
+      typeDefinition.typeParameters.map((name) => HIR_IDENTIFIER_TYPE(name, []))
+    );
+  }
+
   lowerSamlangType(type: Type, genericContext: boolean): HighIRType {
     assert(type.type !== 'UndecidedType', 'Unreachable!');
     switch (type.type) {
@@ -229,6 +290,7 @@ export class SamlangTypeLoweringManager {
 
   lowerSamlangIdentifierType(type: IdentifierType, genericContext: boolean): HighIRIdentifierType {
     if (this.genericTypes.has(type.identifier)) return HIR_IDENTIFIER_TYPE(type.identifier, []);
+    // TODO: add more dummy type arguments from type definition
     return HIR_IDENTIFIER_TYPE(
       `${type.moduleReference.parts.join('_')}_${type.identifier}`,
       type.typeArguments.map((it) => this.lowerSamlangType(it, genericContext))
