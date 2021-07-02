@@ -171,9 +171,11 @@ describe('hir-expression-lowering', () => {
         memberName: 'b',
         memberNameRange: Range.DUMMY,
       }),
-      `object type $SyntheticIDType0 = [(int, int) -> int, int]
-let _t0: $SyntheticIDType0 = [_module___DUMMY___class_A_function_b_with_context, 0];
-return (_t0: $SyntheticIDType0);`
+      `let _t0: (int) -> int = Closure {
+  fun: (_module___DUMMY___class_A_function_b_with_context: (int, int) -> int),
+  context: 0,
+};
+return (_t0: (int) -> int);`
     );
   });
 
@@ -262,9 +264,11 @@ return (_t0: __DUMMY___Foo);`
         methodPrecedingComments: [],
         methodName: 'foo',
       }),
-      `object type $SyntheticIDType0 = [(__DUMMY___Dummy, int) -> int, __DUMMY___Dummy]
-let _t0: $SyntheticIDType0 = [_module___DUMMY___class_Dummy_function_foo, (_this: __DUMMY___Dummy)];
-return (_t0: $SyntheticIDType0);`
+      `let _t0: (int) -> int = Closure {
+  fun: (_module___DUMMY___class_Dummy_function_foo: (__DUMMY___Dummy, int) -> int),
+  context: (_this: __DUMMY___Dummy),
+};
+return (_t0: (int) -> int);`
     );
   });
 
@@ -631,15 +635,17 @@ return (_t0: string);`
           body: THIS,
         }),
         `object type $SyntheticIDType0 = [int]
-object type $SyntheticIDType1 = [($SyntheticIDType0, int) -> int, $SyntheticIDType0]
 function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: $SyntheticIDType0, a: int): int {
   let captured_a: int = (_context: $SyntheticIDType0)[0];
   return (_this: __DUMMY___Dummy);
 }
 
 let _t1: $SyntheticIDType0 = [(captured_a: int)];
-let _t0: $SyntheticIDType1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, (_t1: $SyntheticIDType0)];
-return (_t0: $SyntheticIDType1);`
+let _t0: (int) -> int = Closure {
+  fun: (_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0: ($SyntheticIDType0, int) -> int),
+  context: (_t1: $SyntheticIDType0),
+};
+return (_t0: (int) -> int);`
       );
     });
 
@@ -654,15 +660,17 @@ return (_t0: $SyntheticIDType1);`
           body: THIS,
         }),
         `object type $SyntheticIDType0 = [int]
-object type $SyntheticIDType1 = [($SyntheticIDType0, int) -> int, $SyntheticIDType0]
 function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: $SyntheticIDType0, a: int): int {
   let captured_a: int = (_context: $SyntheticIDType0)[0];
   return (_this: __DUMMY___Dummy);
 }
 
 let _t1: $SyntheticIDType0 = [(captured_a: int)];
-let _t0: $SyntheticIDType1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, (_t1: $SyntheticIDType0)];
-return (_t0: $SyntheticIDType1);`
+let _t0: (int) -> int = Closure {
+  fun: (_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0: ($SyntheticIDType0, int) -> int),
+  context: (_t1: $SyntheticIDType0),
+};
+return (_t0: (int) -> int);`
       );
     });
 
@@ -677,15 +685,17 @@ return (_t0: $SyntheticIDType1);`
           body: THIS,
         }),
         `object type $SyntheticIDType0 = [int]
-object type $SyntheticIDType1 = [($SyntheticIDType0, int) -> __DUMMY___Dummy, $SyntheticIDType0]
 function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: $SyntheticIDType0, a: int): __DUMMY___Dummy {
   let captured_a: int = (_context: $SyntheticIDType0)[0];
   return (_this: __DUMMY___Dummy);
 }
 
 let _t1: $SyntheticIDType0 = [(captured_a: int)];
-let _t0: $SyntheticIDType1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, (_t1: $SyntheticIDType0)];
-return (_t0: $SyntheticIDType1);`
+let _t0: (int) -> __DUMMY___Dummy = Closure {
+  fun: (_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0: ($SyntheticIDType0, int) -> __DUMMY___Dummy),
+  context: (_t1: $SyntheticIDType0),
+};
+return (_t0: (int) -> __DUMMY___Dummy);`
       );
     });
 
@@ -699,13 +709,15 @@ return (_t0: $SyntheticIDType1);`
           captured: {},
           body: THIS,
         }),
-        `object type $SyntheticIDType0 = [(int, int) -> __DUMMY___Dummy, int]
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: int, a: int): __DUMMY___Dummy {
+        `function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: int, a: int): __DUMMY___Dummy {
   return (_this: __DUMMY___Dummy);
 }
 
-let _t0: $SyntheticIDType0 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, 0];
-return (_t0: $SyntheticIDType0);`
+let _t0: (int) -> __DUMMY___Dummy = Closure {
+  fun: (_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0: (int, int) -> __DUMMY___Dummy),
+  context: 0,
+};
+return (_t0: (int) -> __DUMMY___Dummy);`
       );
     });
   });
