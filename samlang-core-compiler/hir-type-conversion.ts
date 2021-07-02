@@ -109,6 +109,42 @@ const lowerSamlangPrimitiveType = (type: PrimitiveType): HighIRPrimitiveType => 
   }
 };
 
+/**
+ * Unlike other type lowering functions, we need a manager to keep track of additional globally
+ * relevant informations.
+ *
+ * The core issue is that the type lowering from source level to HIR level may introduces additional
+ * generic type parameters. For example, the type definition at the source level:
+ *
+ * ```samlang
+ * class Foo<A, B>(bar: () -> A, baz: (bool) -> B) {}
+ * ```
+ *
+ * should be lowered into something like
+ *
+ * ```typescript
+ * // For `() -> A`
+ * type Synthetic0<A, Context0> = readonly [(Context0) -> A, Context0];
+ * // For `() -> B`
+ * type Synthetic1<B, Context0> = readonly [(Context0, bool) -> B, Context0];
+ * // Finally, for `Foo`
+ * type Foo<A, B, Context0, Context1> = readonly [Synthetic0<A, Context0>, Synthetic0<B, Context1>];
+ * ```
+ *
+ * At the source level, there are possible phantom type issues, but they got resolved during
+ * type inference and type fixing at the end. At the source -> HIR level, we need to resolve new
+ * phantom type issues that arises during translation.
+ *
+ * Complicating the effort is that we have two different strategies to deal with phantom types.
+ * At the type definition and toplevel function levels, types can have generic parameters, so a
+ * function type like `(bool) -> int` can be turned into
+ * `type Synthetic1<Context0> = [(Context0, bool) -> int, Context0]`. However, at the expression
+ * level, everything must not have any unresolved generic parameters, and we resolve unused generic
+ * parameters to `int`, so we have `type Synthetic1 = [(int, bool) -> int, int]`.
+ *
+ * TODO: ensure two strategies give the same number of generic parameter/arguments for the same
+ * type.
+ */
 export class SamlangTypeLoweringManager {
   private contextIDCount = 0;
 
