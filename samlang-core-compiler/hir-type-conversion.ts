@@ -210,6 +210,97 @@ export class SamlangTypeLoweringManager {
     return [typeParameters, hirFunctionTypeWithoutContext];
   }
 
+  /**
+   * General Idea:
+   * Suppose at the source level we have the following typedefs:
+   *
+   * ```samlang
+   * class Obj(v: (bool) -> int))
+   * class Var(A((int) -> Obj), B((bool) -> int))
+   * ```
+   *
+   * It should give us typedefs in HIR:
+   *
+   * ```typescript
+   * type $SyntheticIDType0<T> = readonly [(T, bool) => int, T];
+   * type $SyntheticIDType1<C0, T> = readonly [(T, int) => Obj<C0>, T];
+   * type Obj<C0> = readonly [$SyntheticIDType0<C0>];
+   * type Var<C0, C1, C2> = readonly [$SyntheticIDType1<C0, C1>, $SyntheticIDType0<C2>];
+   * ```
+   *
+   * In addition, given these values in source level:
+   *
+   * ```samlang
+   * val a: bool = false;
+   * val b: Var = B((b) -> a && b);
+   * ```
+   *
+   * We have the following constraint for Var:
+   *
+   * ```typescript
+   * type $SyntheticIDType2 = readonly [bool];
+   * type $SyntheticIDType3 = readonly [($SyntheticIDType2, bool) => int, $SyntheticIDType2];
+   * $SyntheticIDType0<C2> == $SyntheticIDType3; // constraint
+   * ```
+   *
+   * Then we perform some recursive solving, including digging into identifier typedefs.
+   * The process is shown below:
+   *
+   * ```typescript
+   * $SyntheticIDType0<C2> == $SyntheticIDType3
+   * [(C2, bool) => int, C2] == [($SyntheticIDType2, bool) => int, $SyntheticIDType2]
+   * C2 == $SyntheticIDType2
+   * ```
+   *
+   * Then `C0, C1` are under constrained, so we make them `int`.
+   * Thus, we finally inferred that the type of `b` in HIR is `Var<int, int, $SyntheticIDType2>`.
+   */
+  /*
+  solveIdentifierTypeUnderConstraint(
+    identifierType: IdentifierType,
+    { typeParameters, mappings }: HighIRTypeDefinition,
+    constraints: readonly (readonly [number, HighIRType])[]
+  ): HighIRIdentifierType {
+    const typeParameterSet = new Set(typeParameters);
+    const solvedTypeParameters = new Map<string, HighIRType>();
+    const solve = (typeInTypeDefinition: HighIRType, typeInValue: HighIRType) => {
+      switch (typeInTypeDefinition.__type__) {
+        case 'PrimitiveType':
+          assert(
+            typeInValue.__type__ === 'PrimitiveType' &&
+              typeInTypeDefinition.type === typeInValue.type
+          );
+          return;
+        case 'IdentifierType':
+          assert(typeInValue.__type__ === 'IdentifierType');
+          if (typeParameterSet.has(typeInTypeDefinition.name)) {
+            solvedTypeParameters.set(typeInTypeDefinition.name, typeInValue);
+          } else {
+            zip(typeInTypeDefinition.typeArguments, typeInValue.typeArguments).forEach(([t1, t2]) =>
+              solve(t1, t2)
+            );
+          }
+          return;
+        case 'FunctionType':
+          assert(typeInValue.__type__ === 'FunctionType');
+          zip(typeInTypeDefinition.argumentTypes, typeInValue.argumentTypes).forEach(([t1, t2]) =>
+            solve(t1, t2)
+          );
+          solve(typeInTypeDefinition.returnType, typeInValue.returnType);
+          return;
+      }
+    };
+    // TODO: what to do?
+    const loweredIdentifierTypeWithoutConsideringConstraints =
+      this.lowerSamlangTypeForLocalValues(identifierType);
+    assert(loweredIdentifierTypeWithoutConsideringConstraints.__type__ === 'IdentifierType');
+    // TODO: what to do?
+    constraints.forEach(([id, typeInValue]) => solve(checkNotNull(mappings[id]), typeInValue));
+    // TODO
+    throw new Error('NOT FINISHED');
+  }
+  */
+
   lowerSamlangTypeForLocalValues = (type: Type): HighIRType => {
     assert(type.type !== 'UndecidedType', 'Unreachable!');
     switch (type.type) {
