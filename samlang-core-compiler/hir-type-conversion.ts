@@ -42,7 +42,7 @@ export class HighIRTypeSynthesizer {
     const key = mappings.map(prettyPrintHighIRType).join(',');
     const existingIdentifier = this.reverseMap.get(key);
     if (existingIdentifier != null) return checkNotNull(this._synthesized.get(existingIdentifier));
-    const identifier = `_SYNTHETIC_ID_TYPE_${this.nextID}`;
+    const identifier = `$SyntheticIDType${this.nextID}`;
     this.nextID += 1;
     this.reverseMap.set(key, identifier);
     const typeDefinition: HighIRTypeDefinition = {
@@ -109,6 +109,8 @@ const lowerSamlangPrimitiveType = (type: PrimitiveType): HighIRPrimitiveType => 
   }
 };
 
+const GENERAL_SYNTHETIC_TYPE_CONTEXT = '$TC';
+
 /**
  * Unlike other type lowering functions, we need a manager to keep track of additional globally
  * relevant informations.
@@ -154,7 +156,7 @@ export class SamlangTypeLoweringManager {
   ) {}
 
   private allocateContextTypeParameter() {
-    const typeParameter = `_TypeContext${this.contextIDCount}`;
+    const typeParameter = `$TC${this.contextIDCount}`;
     this.contextIDCount += 1;
     return typeParameter;
   }
@@ -162,9 +164,13 @@ export class SamlangTypeLoweringManager {
   private get syntheticTypeContexts() {
     const syntheticTypeContexts: string[] = [];
     for (let i = 0; i < this.contextIDCount; i += 1) {
-      syntheticTypeContexts.push(`_TypeContext${i}`);
+      syntheticTypeContexts.push(`$TC${i}`);
     }
     return syntheticTypeContexts;
+  }
+
+  private getUsedSyntheticTypeContexts(type: HighIRType) {
+    return Array.from(collectUsedGenericTypes(type, new Set(this.syntheticTypeContexts)));
   }
 
   static lowerSamlangTypeDefinition(
@@ -182,12 +188,9 @@ export class SamlangTypeLoweringManager {
     );
     const typeParameters = [
       ...genericTypes,
-      ...Array.from(
-        collectUsedGenericTypes(
-          // Hack: Wrap mappings inside a function type
-          HIR_FUNCTION_TYPE(mappings, HIR_INT_TYPE),
-          new Set(manager.syntheticTypeContexts)
-        )
+      ...manager.getUsedSyntheticTypeContexts(
+        // Hack: Wrap mappings inside a function type
+        HIR_FUNCTION_TYPE(mappings, HIR_INT_TYPE)
       ),
     ];
     return { identifier, type, typeParameters, mappings };
@@ -203,16 +206,9 @@ export class SamlangTypeLoweringManager {
       argumentTypes.map((it) => manager.lowerSamlangType(it, /* genericContext */ true)),
       manager.lowerSamlangType(returnType, /* genericContext */ true)
     );
-    const allGenericTypes = new Set(genericTypes);
-    manager.syntheticTypeContexts.forEach((it) => allGenericTypes.add(it));
     const typeParameters = [
       ...genericTypes,
-      ...Array.from(
-        collectUsedGenericTypes(
-          hirFunctionTypeWithoutContext,
-          new Set(manager.syntheticTypeContexts)
-        )
-      ),
+      ...manager.getUsedSyntheticTypeContexts(hirFunctionTypeWithoutContext),
     ];
     return [typeParameters, hirFunctionTypeWithoutContext];
   }
@@ -262,21 +258,28 @@ export class SamlangTypeLoweringManager {
     );
     const typeParameters = Array.from(usedGenericTypes);
     if (genericContext) {
-      const contextTypeParameter = this.allocateContextTypeParameter();
-      const contextGenericType = HIR_IDENTIFIER_TYPE(contextTypeParameter, []);
+      const contextGenericType = HIR_IDENTIFIER_TYPE(GENERAL_SYNTHETIC_TYPE_CONTEXT, []);
+      const functionTypeWithContext = HIR_FUNCTION_TYPE(
+        [contextGenericType, ...hirFunctionTypeWithoutContext.argumentTypes],
+        hirFunctionTypeWithoutContext.returnType
+      );
+      const instanceSpecificTypeContext = this.allocateContextTypeParameter();
       const typeDefinition = this.typeSynthesizer.synthesizeTupleType(
+        [functionTypeWithContext, contextGenericType],
         [
-          HIR_FUNCTION_TYPE(
-            [contextGenericType, ...hirFunctionTypeWithoutContext.argumentTypes],
-            hirFunctionTypeWithoutContext.returnType
-          ),
-          contextGenericType,
-        ],
-        [...typeParameters, contextTypeParameter]
+          ...typeParameters,
+          ...this.getUsedSyntheticTypeContexts(functionTypeWithContext),
+          GENERAL_SYNTHETIC_TYPE_CONTEXT,
+        ]
       );
       return HIR_IDENTIFIER_TYPE(
         typeDefinition.identifier,
-        typeDefinition.typeParameters.map((name) => HIR_IDENTIFIER_TYPE(name, []))
+        typeDefinition.typeParameters.map((name, index) =>
+          HIR_IDENTIFIER_TYPE(
+            index === typeDefinition.typeParameters.length - 1 ? instanceSpecificTypeContext : name,
+            []
+          )
+        )
       );
     } else {
       const typeDefinition = this.typeSynthesizer.synthesizeTupleType(
