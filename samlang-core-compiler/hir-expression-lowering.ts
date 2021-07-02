@@ -97,6 +97,7 @@ class HighIRExpressionLoweringManager {
     private readonly typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
     private readonly functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
     private readonly thisType: HighIRType | null,
+    private readonly typeParameters: ReadonlySet<string>,
     private readonly typeLoweringManager: SamlangTypeLoweringManager,
     private readonly typeSynthesizer: HighIRTypeSynthesizer,
     private readonly stringManager: HighIRStringManager
@@ -852,13 +853,24 @@ class HighIRExpressionLoweringManager {
       );
     });
     lambdaStatements.push(...loweringResult.statements);
+
+    const [typeParameters, functionTypeWithoutContext] =
+      SamlangTypeLoweringManager.lowerSamlangFunctionTypeForTopLevel(
+        this.typeParameters,
+        this.typeSynthesizer,
+        {
+          type: 'FunctionType',
+          argumentTypes: expression.parameters.map(([, , type]) => type),
+          returnType: expression.type.returnType,
+        }
+      );
     return {
       name: this.allocateSyntheticFunctionName(),
-      typeParameters: [],
+      typeParameters,
       parameters: ['_context', ...expression.parameters.map(([name]) => name)],
       type: HIR_FUNCTION_TYPE(
-        [contextType, ...expression.parameters.map(([, , type]) => this.lowerType(type))],
-        this.lowerType(expression.type.returnType)
+        [contextType, ...functionTypeWithoutContext.argumentTypes],
+        functionTypeWithoutContext.returnType
       ),
       body: lambdaStatements,
       returnValue: loweringResult.expression,
@@ -956,6 +968,7 @@ const lowerSamlangExpression = (
   typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
   functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
   thisType: HighIRType | null,
+  typeParameters: ReadonlySet<string>,
   typeLoweringManager: SamlangTypeLoweringManager,
   typeSynthesizer: HighIRTypeSynthesizer,
   stringManager: HighIRStringManager,
@@ -968,6 +981,7 @@ const lowerSamlangExpression = (
     typeDefinitionMapping,
     functionTypeMapping,
     thisType,
+    typeParameters,
     typeLoweringManager,
     typeSynthesizer,
     stringManager
