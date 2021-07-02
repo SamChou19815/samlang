@@ -124,6 +124,64 @@ describe('hir-type-conversion', () => {
     ).toEqual(HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));
   });
 
+  it('SamlangTypeLoweringManager.lowerSamlangTypeForLocalValues() works', () => {
+    const typeSynthesizer = new HighIRTypeSynthesizer();
+    const manager = new SamlangTypeLoweringManager(new Set(), typeSynthesizer);
+
+    expect(manager.lowerSamlangTypeForLocalValues(boolType)).toEqual(HIR_BOOL_TYPE);
+    expect(manager.lowerSamlangTypeForLocalValues(intType)).toEqual(HIR_INT_TYPE);
+    expect(manager.lowerSamlangTypeForLocalValues(unitType)).toEqual(HIR_INT_TYPE);
+    expect(manager.lowerSamlangTypeForLocalValues(stringType)).toEqual(HIR_STRING_TYPE);
+
+    expect(
+      prettyPrintHighIRType(
+        manager.lowerSamlangTypeForLocalValues(
+          identifierType(ModuleReference.DUMMY, 'A', [intType])
+        )
+      )
+    ).toBe('__DUMMY___A<int>');
+
+    expect(
+      prettyPrintHighIRType(
+        new SamlangTypeLoweringManager(
+          new Set(['T']),
+          typeSynthesizer
+        ).lowerSamlangTypeForLocalValues(tupleType([intType, boolType]))
+      )
+    ).toBe('$SyntheticIDType0');
+    expect(
+      prettyPrintHighIRType(
+        new SamlangTypeLoweringManager(
+          new Set(['T']),
+          typeSynthesizer
+        ).lowerSamlangTypeForLocalValues(
+          tupleType([intType, identifierType(ModuleReference.DUMMY, 'T')])
+        )
+      )
+    ).toBe('$SyntheticIDType1<T>');
+
+    expect(
+      prettyPrintHighIRType(
+        new SamlangTypeLoweringManager(
+          new Set(['T']),
+          typeSynthesizer
+        ).lowerSamlangTypeForLocalValues(
+          functionType([identifierType(ModuleReference.DUMMY, 'T'), boolType], intType)
+        )
+      )
+    ).toBe('$SyntheticIDType2<T>');
+
+    expect(() =>
+      manager.lowerSamlangTypeForLocalValues({ type: 'UndecidedType', index: 0 })
+    ).toThrow();
+
+    expect(typeSynthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
+      'object type $SyntheticIDType0 = [int, bool]',
+      'object type $SyntheticIDType1<T> = [int, T]',
+      'object type $SyntheticIDType2<T> = [(int, T, bool) -> int, int]',
+    ]);
+  });
+
   it('SamlangTypeLoweringManager.lowerSamlangType() works', () => {
     const typeSynthesizer = new HighIRTypeSynthesizer();
     const manager = new SamlangTypeLoweringManager(new Set(), typeSynthesizer);
