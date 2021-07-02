@@ -170,9 +170,9 @@ describe('hir-expression-lowering', () => {
         memberName: 'b',
         memberNameRange: Range.DUMMY,
       }),
-      `object type _SYNTHETIC_ID_TYPE_0 = [(int, int) -> int, int]
-let _t0: _SYNTHETIC_ID_TYPE_0 = [_module___DUMMY___class_A_function_b_with_context, 0];
-return (_t0: _SYNTHETIC_ID_TYPE_0);`
+      `object type $SyntheticIDType0 = [(int, int) -> int, int]
+let _t0: $SyntheticIDType0 = [_module___DUMMY___class_A_function_b_with_context, 0];
+return (_t0: $SyntheticIDType0);`
     );
   });
 
@@ -185,9 +185,9 @@ return (_t0: _SYNTHETIC_ID_TYPE_0);`
           associatedComments: [],
           expressions: [THIS],
         }),
-        `object type _SYNTHETIC_ID_TYPE_0 = [__DUMMY___Dummy]
-let _t0: _SYNTHETIC_ID_TYPE_0 = [(_this: __DUMMY___Dummy)];
-return (_t0: _SYNTHETIC_ID_TYPE_0);`
+        `object type $SyntheticIDType0 = [__DUMMY___Dummy]
+let _t0: $SyntheticIDType0 = [(_this: __DUMMY___Dummy)];
+return (_t0: $SyntheticIDType0);`
       );
     });
 
@@ -261,9 +261,9 @@ return (_t0: __DUMMY___Foo);`
         methodPrecedingComments: [],
         methodName: 'foo',
       }),
-      `object type _SYNTHETIC_ID_TYPE_0 = [(__DUMMY___Dummy, int) -> int, __DUMMY___Dummy]
-let _t0: _SYNTHETIC_ID_TYPE_0 = [_module___DUMMY___class_Dummy_function_foo, (_this: __DUMMY___Dummy)];
-return (_t0: _SYNTHETIC_ID_TYPE_0);`
+      `object type $SyntheticIDType0 = [(__DUMMY___Dummy, int) -> int, __DUMMY___Dummy]
+let _t0: $SyntheticIDType0 = [_module___DUMMY___class_Dummy_function_foo, (_this: __DUMMY___Dummy)];
+return (_t0: $SyntheticIDType0);`
     );
   });
 
@@ -629,16 +629,16 @@ return (_t0: string);`
           captured: { captured_a: unitType },
           body: THIS,
         }),
-        `object type _SYNTHETIC_ID_TYPE_0 = [int]
-object type _SYNTHETIC_ID_TYPE_1 = [(_SYNTHETIC_ID_TYPE_0, int) -> int, _SYNTHETIC_ID_TYPE_0]
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): int {
-  let captured_a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
+        `object type $SyntheticIDType0 = [int]
+object type $SyntheticIDType1 = [($SyntheticIDType0, int) -> int, $SyntheticIDType0]
+function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: $SyntheticIDType0, a: int): int {
+  let captured_a: int = (_context: $SyntheticIDType0)[0];
   return (_this: __DUMMY___Dummy);
 }
 
-let _t1: _SYNTHETIC_ID_TYPE_0 = [(captured_a: int)];
-let _t0: _SYNTHETIC_ID_TYPE_1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, (_t1: _SYNTHETIC_ID_TYPE_0)];
-return (_t0: _SYNTHETIC_ID_TYPE_1);`
+let _t1: $SyntheticIDType0 = [(captured_a: int)];
+let _t0: $SyntheticIDType1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, (_t1: $SyntheticIDType0)];
+return (_t0: $SyntheticIDType1);`
       );
     });
 
@@ -652,16 +652,16 @@ return (_t0: _SYNTHETIC_ID_TYPE_1);`
           captured: { captured_a: unitType },
           body: THIS,
         }),
-        `object type _SYNTHETIC_ID_TYPE_0 = [int]
-object type _SYNTHETIC_ID_TYPE_1 = [(_SYNTHETIC_ID_TYPE_0, int) -> int, _SYNTHETIC_ID_TYPE_0]
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): int {
-  let captured_a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
+        `object type $SyntheticIDType0 = [int]
+object type $SyntheticIDType1 = [($SyntheticIDType0, int) -> int, $SyntheticIDType0]
+function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: $SyntheticIDType0, a: int): int {
+  let captured_a: int = (_context: $SyntheticIDType0)[0];
   return (_this: __DUMMY___Dummy);
 }
 
-let _t1: _SYNTHETIC_ID_TYPE_0 = [(captured_a: int)];
-let _t0: _SYNTHETIC_ID_TYPE_1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, (_t1: _SYNTHETIC_ID_TYPE_0)];
-return (_t0: _SYNTHETIC_ID_TYPE_1);`
+let _t1: $SyntheticIDType0 = [(captured_a: int)];
+let _t0: $SyntheticIDType1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, (_t1: $SyntheticIDType0)];
+return (_t0: $SyntheticIDType1);`
       );
     });
 
@@ -675,16 +675,16 @@ return (_t0: _SYNTHETIC_ID_TYPE_1);`
           captured: { captured_a: unitType },
           body: THIS,
         }),
-        `object type _SYNTHETIC_ID_TYPE_0 = [int]
-object type _SYNTHETIC_ID_TYPE_1 = [(_SYNTHETIC_ID_TYPE_0, int) -> __DUMMY___Dummy, _SYNTHETIC_ID_TYPE_0]
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): __DUMMY___Dummy {
-  let captured_a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
+        `object type $SyntheticIDType0 = [int]
+object type $SyntheticIDType1 = [($SyntheticIDType0, int) -> __DUMMY___Dummy, $SyntheticIDType0]
+function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: $SyntheticIDType0, a: int): __DUMMY___Dummy {
+  let captured_a: int = (_context: $SyntheticIDType0)[0];
   return (_this: __DUMMY___Dummy);
 }
 
-let _t1: _SYNTHETIC_ID_TYPE_0 = [(captured_a: int)];
-let _t0: _SYNTHETIC_ID_TYPE_1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, (_t1: _SYNTHETIC_ID_TYPE_0)];
-return (_t0: _SYNTHETIC_ID_TYPE_1);`
+let _t1: $SyntheticIDType0 = [(captured_a: int)];
+let _t0: $SyntheticIDType1 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, (_t1: $SyntheticIDType0)];
+return (_t0: $SyntheticIDType1);`
       );
     });
 
@@ -698,13 +698,13 @@ return (_t0: _SYNTHETIC_ID_TYPE_1);`
           captured: {},
           body: THIS,
         }),
-        `object type _SYNTHETIC_ID_TYPE_0 = [(int, int) -> __DUMMY___Dummy, int]
+        `object type $SyntheticIDType0 = [(int, int) -> __DUMMY___Dummy, int]
 function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: int, a: int): __DUMMY___Dummy {
   return (_this: __DUMMY___Dummy);
 }
 
-let _t0: _SYNTHETIC_ID_TYPE_0 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, 0];
-return (_t0: _SYNTHETIC_ID_TYPE_0);`
+let _t0: $SyntheticIDType0 = [_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0, 0];
+return (_t0: $SyntheticIDType0);`
       );
     });
   });
@@ -988,9 +988,9 @@ return (_t4: __DUMMY___Dummy);`
             ],
           },
         }),
-        `object type _SYNTHETIC_ID_TYPE_0 = [int, int]
-let _t0: _SYNTHETIC_ID_TYPE_0 = [1, 2];
-let ignored: int = (_t0: _SYNTHETIC_ID_TYPE_0)[0];
+        `object type $SyntheticIDType0 = [int, int]
+let _t0: $SyntheticIDType0 = [1, 2];
+let ignored: int = (_t0: $SyntheticIDType0)[0];
 let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
 let a__depth_1__block_0: int = (_this: __DUMMY___Dummy)[0];
 let c__depth_1__block_0: int = (_this: __DUMMY___Dummy)[1];

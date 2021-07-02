@@ -35,34 +35,34 @@ describe('hir-type-conversion', () => {
         [HIR_BOOL_TYPE, HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)],
         []
       ).identifier
-    ).toBe('_SYNTHETIC_ID_TYPE_0');
+    ).toBe('$SyntheticIDType0');
     expect(
       synthesizer.synthesizeTupleType(
         [HIR_INT_TYPE, HIR_FUNCTION_TYPE([HIR_BOOL_TYPE], HIR_BOOL_TYPE)],
         []
       ).identifier
-    ).toBe('_SYNTHETIC_ID_TYPE_1');
+    ).toBe('$SyntheticIDType1');
 
     expect(
       synthesizer.synthesizeTupleType(
         [HIR_BOOL_TYPE, HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)],
         []
       ).identifier
-    ).toBe('_SYNTHETIC_ID_TYPE_0');
+    ).toBe('$SyntheticIDType0');
     expect(
       synthesizer.synthesizeTupleType(
         [HIR_INT_TYPE, HIR_FUNCTION_TYPE([HIR_BOOL_TYPE], HIR_BOOL_TYPE)],
         []
       ).identifier
-    ).toBe('_SYNTHETIC_ID_TYPE_1');
+    ).toBe('$SyntheticIDType1');
 
     expect(synthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
-      'object type _SYNTHETIC_ID_TYPE_0 = [bool, (int) -> bool]',
-      'object type _SYNTHETIC_ID_TYPE_1 = [int, (bool) -> bool]',
+      'object type $SyntheticIDType0 = [bool, (int) -> bool]',
+      'object type $SyntheticIDType1 = [int, (bool) -> bool]',
     ]);
     expect(Array.from(synthesizer.mappings.keys())).toEqual([
-      '_SYNTHETIC_ID_TYPE_0',
-      '_SYNTHETIC_ID_TYPE_1',
+      '$SyntheticIDType0',
+      '$SyntheticIDType1',
     ]);
   });
 
@@ -146,7 +146,7 @@ describe('hir-type-conversion', () => {
           false
         )
       )
-    ).toBe('_SYNTHETIC_ID_TYPE_0');
+    ).toBe('$SyntheticIDType0');
     expect(
       prettyPrintHighIRType(
         new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
@@ -154,7 +154,7 @@ describe('hir-type-conversion', () => {
           false
         )
       )
-    ).toBe('_SYNTHETIC_ID_TYPE_1<T>');
+    ).toBe('$SyntheticIDType1<T>');
 
     expect(
       prettyPrintHighIRType(
@@ -163,7 +163,7 @@ describe('hir-type-conversion', () => {
           false
         )
       )
-    ).toBe('_SYNTHETIC_ID_TYPE_2<T>');
+    ).toBe('$SyntheticIDType2<T>');
     expect(
       prettyPrintHighIRType(
         new SamlangTypeLoweringManager(new Set(['T']), typeSynthesizer).lowerSamlangType(
@@ -171,63 +171,54 @@ describe('hir-type-conversion', () => {
           true
         )
       )
-    ).toBe('_SYNTHETIC_ID_TYPE_3<T, _TypeContext0>');
+    ).toBe('$SyntheticIDType3<T, $TC0>');
 
     expect(() => manager.lowerSamlangType({ type: 'UndecidedType', index: 0 }, false)).toThrow();
 
     expect(typeSynthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
-      'object type _SYNTHETIC_ID_TYPE_0 = [int, bool]',
-      'object type _SYNTHETIC_ID_TYPE_1<T> = [int, T]',
-      'object type _SYNTHETIC_ID_TYPE_2<T> = [(int, T, bool) -> int, int]',
-      'object type _SYNTHETIC_ID_TYPE_3<T, _TypeContext0> = [(_TypeContext0, T, bool) -> int, _TypeContext0]',
+      'object type $SyntheticIDType0 = [int, bool]',
+      'object type $SyntheticIDType1<T> = [int, T]',
+      'object type $SyntheticIDType2<T> = [(int, T, bool) -> int, int]',
+      'object type $SyntheticIDType3<T, $TC> = [($TC, T, bool) -> int, $TC]',
     ]);
   });
 
   it('SamlangTypeLoweringManager.lowerSamlangTypeDefinition() works', () => {
     const typeSynthesizer = new HighIRTypeSynthesizer();
 
-    expect(
-      prettyPrintHighIRTypeDefinition(
-        SamlangTypeLoweringManager.lowerSamlangTypeDefinition(
-          new Set(['A']),
-          typeSynthesizer,
-          'Foo',
-          {
-            range: Range.DUMMY,
-            type: 'object',
-            names: ['a', 'b'],
-            mappings: {
-              a: {
-                type: functionType(
-                  [functionType([identifierType(ModuleReference.ROOT, 'A')], boolType)],
-                  boolType
-                ),
-                isPublic: true,
-              },
-              b: {
-                type: functionType(
-                  [functionType([identifierType(ModuleReference.ROOT, 'A')], boolType)],
-                  boolType
-                ),
-                isPublic: false,
-              },
-            },
-          }
-        )
-      )
-    ).toBe(
-      'object type Foo<A, _TypeContext1, _TypeContext3> = ' +
-        '[_SYNTHETIC_ID_TYPE_1<A, _TypeContext1>, _SYNTHETIC_ID_TYPE_3<A, _TypeContext3>]'
+    const typeDefinition = SamlangTypeLoweringManager.lowerSamlangTypeDefinition(
+      new Set(['A']),
+      typeSynthesizer,
+      'Foo',
+      {
+        range: Range.DUMMY,
+        type: 'object',
+        names: ['a', 'b'],
+        mappings: {
+          a: {
+            type: functionType(
+              [functionType([identifierType(ModuleReference.ROOT, 'A')], boolType)],
+              boolType
+            ),
+            isPublic: true,
+          },
+          b: {
+            type: functionType(
+              [functionType([identifierType(ModuleReference.ROOT, 'A')], boolType)],
+              boolType
+            ),
+            isPublic: false,
+          },
+        },
+      }
     );
-    expect(typeSynthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
-      'object type _SYNTHETIC_ID_TYPE_0<A, _TypeContext0> = ' +
-        '[(_TypeContext0, A) -> bool, _TypeContext0]',
-      'object type _SYNTHETIC_ID_TYPE_1<A, _TypeContext1> = ' +
-        '[(_TypeContext1, _SYNTHETIC_ID_TYPE_0<A, _TypeContext0>) -> bool, _TypeContext1]',
-      'object type _SYNTHETIC_ID_TYPE_2<A, _TypeContext2> = ' +
-        '[(_TypeContext2, A) -> bool, _TypeContext2]',
-      'object type _SYNTHETIC_ID_TYPE_3<A, _TypeContext3> = ' +
-        '[(_TypeContext3, _SYNTHETIC_ID_TYPE_2<A, _TypeContext2>) -> bool, _TypeContext3]',
+    expect(
+      [...typeSynthesizer.synthesized, typeDefinition].map(prettyPrintHighIRTypeDefinition)
+    ).toEqual([
+      'object type $SyntheticIDType0<A, $TC> = [($TC, A) -> bool, $TC]',
+      'object type $SyntheticIDType1<A, $TC0, $TC> = [($TC, $SyntheticIDType0<A, $TC0>) -> bool, $TC]',
+      'object type $SyntheticIDType2<A, $TC2, $TC> = [($TC, $SyntheticIDType0<A, $TC2>) -> bool, $TC]',
+      'object type Foo<A, $TC0, $TC1, $TC2, $TC3> = [$SyntheticIDType1<A, $TC0, $TC1>, $SyntheticIDType2<A, $TC2, $TC3>]',
     ]);
   });
 
@@ -247,9 +238,9 @@ describe('hir-type-conversion', () => {
         functionType([functionType([intType], boolType)], boolType)
       )
     ).toEqual([
-      ['_TypeContext0'],
+      ['$TC0'],
       HIR_FUNCTION_TYPE(
-        [HIR_IDENTIFIER_TYPE('_SYNTHETIC_ID_TYPE_0', [HIR_IDENTIFIER_TYPE('_TypeContext0', [])])],
+        [HIR_IDENTIFIER_TYPE('$SyntheticIDType0', [HIR_IDENTIFIER_TYPE('$TC0', [])])],
         HIR_BOOL_TYPE
       ),
     ]);
