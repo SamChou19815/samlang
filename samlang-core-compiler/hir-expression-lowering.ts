@@ -5,6 +5,7 @@ import {
 import type { ModuleReference, Type, IdentifierType } from 'samlang-core-ast/common-nodes';
 import {
   HighIRType,
+  HighIRIdentifierType,
   HighIRFunctionType,
   HighIRTypeDefinition,
   HighIRExpression,
@@ -26,7 +27,7 @@ import {
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_STRUCT_INITIALIZATION,
-  HighIRIdentifierType,
+  HIR_CLOSURE_INITIALIZATION,
 } from 'samlang-core-ast/hir-nodes';
 import type {
   SamlangExpression,
@@ -212,30 +213,24 @@ class HighIRExpressionLoweringManager {
       expression.className,
       expression.memberName
     );
-    const functionTypeWithoutContext = this.functionTypeMapping[encodedOriginalFunctionName];
-    assert(functionTypeWithoutContext != null, `Missing function: ${encodedOriginalFunctionName}`);
-    const structVariableName = this.allocateTemporaryVariable();
-    const withContextIRFunctionType = HIR_FUNCTION_TYPE(
-      [HIR_INT_TYPE, ...functionTypeWithoutContext.argumentTypes],
-      functionTypeWithoutContext.returnType
+    const closureType = this.functionTypeMapping[encodedOriginalFunctionName];
+    assert(closureType != null, `Missing function: ${encodedOriginalFunctionName}`);
+    const closureVariableName = this.allocateTemporaryVariable();
+    const functionType = HIR_FUNCTION_TYPE(
+      [HIR_INT_TYPE, ...closureType.argumentTypes],
+      closureType.returnType
     );
-    const closureType = this.getSyntheticIdentifierTypeFromTuple([
-      withContextIRFunctionType,
-      HIR_INT_TYPE,
-    ]);
-    const statements: HighIRStatement[] = [];
-    statements.push(
-      HIR_STRUCT_INITIALIZATION({
-        structVariableName,
-        type: closureType,
-        expressionList: [
-          HIR_NAME(`${encodedOriginalFunctionName}_with_context`, withContextIRFunctionType),
-          HIR_ZERO,
-        ],
-      })
-    );
-    const finalVariableExpression = HIR_VARIABLE(structVariableName, closureType);
-    this.varibleContext.bind(structVariableName, finalVariableExpression);
+    const statements: HighIRStatement[] = [
+      HIR_CLOSURE_INITIALIZATION({
+        closureVariableName,
+        closureType,
+        functionName: `${encodedOriginalFunctionName}_with_context`,
+        functionType,
+        context: HIR_ZERO,
+      }),
+    ];
+    const finalVariableExpression = HIR_VARIABLE(closureVariableName, closureType);
+    this.varibleContext.bind(closureVariableName, finalVariableExpression);
     return { statements, expression: finalVariableExpression };
   }
 
@@ -278,7 +273,7 @@ class HighIRExpressionLoweringManager {
       return this.loweredAndAddStatements(fieldExpression, loweredStatements);
     });
     const structVariableName = this.allocateTemporaryVariable();
-    const loweredIdentifierType = this.lowerType(expression.type);
+    const loweredIdentifierType = this.lowerType(expression.type) as HighIRIdentifierType;
     loweredStatements.push(
       HIR_STRUCT_INITIALIZATION({
         structVariableName,
@@ -296,7 +291,7 @@ class HighIRExpressionLoweringManager {
   ): HighIRExpressionLoweringResult {
     const structVariableName = this.allocateTemporaryVariable();
     const statements: HighIRStatement[] = [];
-    const variantType = this.lowerType(expression.type);
+    const variantType = this.lowerType(expression.type) as HighIRIdentifierType;
     const dataExpression = this.loweredAndAddStatements(expression.data, statements);
     statements.push(
       HIR_STRUCT_INITIALIZATION({
@@ -339,27 +334,25 @@ class HighIRExpressionLoweringManager {
       (expression.expression.type as IdentifierType).identifier,
       expression.methodName
     );
-    const functionTypeWithoutContext = this.functionTypeMapping[functionName];
-    assert(functionTypeWithoutContext != null, `Missing function: ${functionName}`);
-    const structVariableName = this.allocateTemporaryVariable();
+    const closureType = this.functionTypeMapping[functionName];
+    assert(closureType != null, `Missing function: ${functionName}`);
+    const closureVariableName = this.allocateTemporaryVariable();
     const result = this.lower(expression.expression);
     const methodType = HIR_FUNCTION_TYPE(
-      [result.expression.type, ...functionTypeWithoutContext.argumentTypes],
-      functionTypeWithoutContext.returnType
+      [result.expression.type, ...closureType.argumentTypes],
+      closureType.returnType
     );
-    const closureType = this.getSyntheticIdentifierTypeFromTuple([
-      methodType,
-      result.expression.type,
-    ]);
-    const finalVariableExpression = HIR_VARIABLE(structVariableName, closureType);
-    this.varibleContext.bind(structVariableName, finalVariableExpression);
+    const finalVariableExpression = HIR_VARIABLE(closureVariableName, closureType);
+    this.varibleContext.bind(closureVariableName, finalVariableExpression);
     return {
       statements: [
         ...result.statements,
-        HIR_STRUCT_INITIALIZATION({
-          structVariableName,
-          type: closureType,
-          expressionList: [HIR_NAME(functionName, methodType), result.expression],
+        HIR_CLOSURE_INITIALIZATION({
+          closureVariableName,
+          closureType,
+          functionName,
+          functionType: methodType,
+          context: result.expression,
         }),
       ],
       expression: finalVariableExpression,
@@ -798,7 +791,7 @@ class HighIRExpressionLoweringManager {
     );
 
     const loweredStatements: HighIRStatement[] = [];
-    const structVariableName = this.allocateTemporaryVariable();
+    const closureVariableName = this.allocateTemporaryVariable();
     let context: HighIRExpression;
     if (captured.length === 0) {
       context = HIR_ZERO;
@@ -819,19 +812,21 @@ class HighIRExpressionLoweringManager {
     }
     const syntheticLambda = this.createSyntheticLambdaFunction(expression, captured, context.type);
     this.syntheticFunctions.push(syntheticLambda);
-    const closureType = this.getSyntheticIdentifierTypeFromTuple([
-      syntheticLambda.type,
-      context.type,
-    ]);
+    const closureType = HIR_FUNCTION_TYPE(
+      syntheticLambda.type.argumentTypes.slice(1),
+      syntheticLambda.type.returnType
+    );
     loweredStatements.push(
-      HIR_STRUCT_INITIALIZATION({
-        structVariableName,
-        type: closureType,
-        expressionList: [HIR_NAME(syntheticLambda.name, syntheticLambda.type), context],
+      HIR_CLOSURE_INITIALIZATION({
+        closureVariableName,
+        closureType,
+        functionName: syntheticLambda.name,
+        functionType: syntheticLambda.type,
+        context,
       })
     );
-    const finalLambdaVariable = HIR_VARIABLE(structVariableName, closureType);
-    this.varibleContext.bind(structVariableName, finalLambdaVariable);
+    const finalLambdaVariable = HIR_VARIABLE(closureVariableName, closureType);
+    this.varibleContext.bind(closureVariableName, finalLambdaVariable);
     return { statements: loweredStatements, expression: finalLambdaVariable };
   }
 

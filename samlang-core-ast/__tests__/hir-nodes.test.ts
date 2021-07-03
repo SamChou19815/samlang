@@ -12,6 +12,7 @@ import {
   HIR_IF_ELSE,
   HIR_INDEX_ACCESS,
   HIR_STRUCT_INITIALIZATION,
+  HIR_CLOSURE_INITIALIZATION,
   HIR_ZERO,
   HIR_INT,
   HIR_NAME,
@@ -64,6 +65,13 @@ describe('hir-nodes', () => {
               type: HIR_IDENTIFIER_TYPE('FooBar', []),
               expressionList: [HIR_NAME('meggo', HIR_STRING_TYPE)],
             }),
+            HIR_CLOSURE_INITIALIZATION({
+              closureVariableName: 'closure',
+              closureType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+              functionName: 'foo',
+              functionType: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
+              context: HIR_ZERO,
+            }),
             HIR_BINARY({ name: 'dd', operator: '<', e1: HIR_INT(0), e2: HIR_INT(0) }),
             HIR_BINARY({ name: 'dd', operator: '^', e1: HIR_INT(0), e2: HIR_INT(0) }),
           ],
@@ -104,6 +112,10 @@ describe('hir-nodes', () => {
     ).toBe(`let bar: int;
 if 0 {
   let baz: FooBar = [meggo];
+  let closure: () -> int = Closure {
+    fun: (foo: (int) -> int),
+    context: 0,
+  };
   let dd: bool = 0 < 0;
   let dd: bool = 0 ^ 0;
   bar = (b1: int);

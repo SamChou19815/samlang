@@ -14,6 +14,11 @@ export type HighIRIdentifierType = {
   readonly typeArguments: readonly HighIRType[];
 };
 
+/**
+ * The function type in HIR has overloaded meanings.
+ * In the context of toplevel function definition, it means exactly what's declared.
+ * In anywhere else, it means a closure type.
+ */
 export type HighIRFunctionType = {
   readonly __type__: 'FunctionType';
   readonly argumentTypes: readonly HighIRType[];
@@ -143,8 +148,17 @@ export interface HighIRIfElseStatement extends BaseHighIRStatement {
 export interface HighIRStructInitializationStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRStructInitializationStatement';
   readonly structVariableName: string;
-  readonly type: HighIRType;
+  readonly type: HighIRIdentifierType;
   readonly expressionList: readonly HighIRExpression[];
+}
+
+export interface HighIRClosureInitializationStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRClosureInitializationStatement';
+  readonly closureVariableName: string;
+  readonly closureType: HighIRFunctionType;
+  readonly functionName: string;
+  readonly functionType: HighIRFunctionType;
+  readonly context: HighIRExpression;
 }
 
 export type HighIRStatement =
@@ -152,7 +166,8 @@ export type HighIRStatement =
   | HighIRIndexAccessStatement
   | HighIRFunctionCallStatement
   | HighIRIfElseStatement
-  | HighIRStructInitializationStatement;
+  | HighIRStructInitializationStatement
+  | HighIRClosureInitializationStatement;
 
 type ConstructorArgumentObject<E extends BaseHighIRExpression | BaseHighIRStatement> = Omit<
   E,
@@ -275,6 +290,21 @@ export const HIR_STRUCT_INITIALIZATION = ({
   expressionList,
 });
 
+export const HIR_CLOSURE_INITIALIZATION = ({
+  closureVariableName,
+  closureType,
+  functionName,
+  functionType,
+  context,
+}: ConstructorArgumentObject<HighIRClosureInitializationStatement>): HighIRClosureInitializationStatement => ({
+  __type__: 'HighIRClosureInitializationStatement',
+  closureVariableName,
+  closureType,
+  functionName,
+  functionType,
+  context,
+});
+
 export const debugPrintHighIRExpression = (expression: HighIRExpression): string => {
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
@@ -299,14 +329,14 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
           '  '.repeat(level),
           `let ${s.name}: ${type} = ${pointerExpression}[${s.index}];\n`
         );
-        break;
+        return;
       }
       case 'HighIRBinaryStatement': {
         const type = prettyPrintHighIRType(s.type);
         const e1 = debugPrintHighIRExpression(s.e1);
         const e2 = debugPrintHighIRExpression(s.e2);
         collector.push('  '.repeat(level), `let ${s.name}: ${type} = ${e1} ${s.operator} ${e2};\n`);
-        break;
+        return;
       }
       case 'HighIRFunctionCallStatement': {
         const functionString = debugPrintHighIRExpression(s.functionExpression);
@@ -319,7 +349,7 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
           '  '.repeat(level),
           `${collectorString}${functionString}(${argumentString});\n`
         );
-        break;
+        return;
       }
       case 'HighIRIfElseStatement':
         s.finalAssignments.forEach((finalAssignment) => {
@@ -346,7 +376,7 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         });
         level -= 1;
         collector.push('  '.repeat(level), `}\n`);
-        break;
+        return;
       case 'HighIRStructInitializationStatement': {
         const expressionString = s.expressionList.map(debugPrintHighIRExpression).join(', ');
         collector.push(
@@ -355,6 +385,18 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         );
         break;
       }
+      case 'HighIRClosureInitializationStatement':
+        collector.push(
+          '  '.repeat(level),
+          `let ${s.closureVariableName}: ${prettyPrintHighIRType(s.closureType)} = Closure {\n`,
+          '  '.repeat(level),
+          `  fun: (${s.functionName}: ${prettyPrintHighIRType(s.functionType)}),\n`,
+          '  '.repeat(level),
+          `  context: ${debugPrintHighIRExpression(s.context)},\n`,
+          '  '.repeat(level),
+          `};\n`
+        );
+        return;
     }
   };
 
