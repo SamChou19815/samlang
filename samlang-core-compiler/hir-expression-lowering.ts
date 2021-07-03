@@ -2,7 +2,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   encodeFunctionNameGlobally,
 } from 'samlang-core-ast/common-names';
-import type { ModuleReference, Type, IdentifierType } from 'samlang-core-ast/common-nodes';
+import type { ModuleReference, IdentifierType } from 'samlang-core-ast/common-nodes';
 import {
   HighIRType,
   HighIRIdentifierType,
@@ -98,7 +98,6 @@ class HighIRExpressionLoweringManager {
     private readonly typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
     private readonly functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
     private readonly thisType: HighIRType | null,
-    private readonly typeParameters: ReadonlySet<string>,
     private readonly typeLoweringManager: SamlangTypeLoweringManager,
     private readonly typeSynthesizer: HighIRTypeSynthesizer,
     private readonly stringManager: HighIRStringManager
@@ -132,10 +131,6 @@ class HighIRExpressionLoweringManager {
     statements.push(...result.statements);
     return result.expression;
   }
-
-  // TODO: avoid calling this most of the time
-  private lowerType = (type: Type): HighIRType =>
-    this.typeLoweringManager.lowerSamlangTypeForLocalValues(type);
 
   private getSyntheticIdentifierTypeFromTuple = (
     mappings: readonly HighIRType[]
@@ -273,7 +268,9 @@ class HighIRExpressionLoweringManager {
       return this.loweredAndAddStatements(fieldExpression, loweredStatements);
     });
     const structVariableName = this.allocateTemporaryVariable();
-    const loweredIdentifierType = this.lowerType(expression.type) as HighIRIdentifierType;
+    const loweredIdentifierType = this.typeLoweringManager.lowerSamlangType(
+      expression.type
+    ) as HighIRIdentifierType;
     loweredStatements.push(
       HIR_STRUCT_INITIALIZATION({
         structVariableName,
@@ -291,7 +288,9 @@ class HighIRExpressionLoweringManager {
   ): HighIRExpressionLoweringResult {
     const structVariableName = this.allocateTemporaryVariable();
     const statements: HighIRStatement[] = [];
-    const variantType = this.lowerType(expression.type) as HighIRIdentifierType;
+    const variantType = this.typeLoweringManager.lowerSamlangType(
+      expression.type
+    ) as HighIRIdentifierType;
     const dataExpression = this.loweredAndAddStatements(expression.data, statements);
     statements.push(
       HIR_STRUCT_INITIALIZATION({
@@ -850,15 +849,11 @@ class HighIRExpressionLoweringManager {
     lambdaStatements.push(...loweringResult.statements);
 
     const [typeParameters, functionTypeWithoutContext] =
-      SamlangTypeLoweringManager.lowerSamlangFunctionTypeForTopLevel(
-        this.typeParameters,
-        this.typeSynthesizer,
-        {
-          type: 'FunctionType',
-          argumentTypes: expression.parameters.map(([, , type]) => type),
-          returnType: expression.type.returnType,
-        }
-      );
+      this.typeLoweringManager.lowerSamlangFunctionTypeForTopLevel({
+        type: 'FunctionType',
+        argumentTypes: expression.parameters.map(([, , type]) => type),
+        returnType: expression.type.returnType,
+      });
     return {
       name: this.allocateSyntheticFunctionName(),
       typeParameters,
@@ -963,7 +958,6 @@ const lowerSamlangExpression = (
   typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
   functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
   thisType: HighIRType | null,
-  typeParameters: ReadonlySet<string>,
   typeLoweringManager: SamlangTypeLoweringManager,
   typeSynthesizer: HighIRTypeSynthesizer,
   stringManager: HighIRStringManager,
@@ -976,7 +970,6 @@ const lowerSamlangExpression = (
     typeDefinitionMapping,
     functionTypeMapping,
     thisType,
-    typeParameters,
     typeLoweringManager,
     typeSynthesizer,
     stringManager
