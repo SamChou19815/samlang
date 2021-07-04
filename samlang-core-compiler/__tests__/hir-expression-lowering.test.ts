@@ -113,7 +113,6 @@ const expectCorrectlyLowered = (
     },
     /* thisType */ HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', []),
     /* typeLoweringManager */ typeLoweringManager,
-    /* typeSynthesizer */ typeSynthesizer,
     /* stringManager */ stringManager,
     /* expression */ samlangExpression
   );
