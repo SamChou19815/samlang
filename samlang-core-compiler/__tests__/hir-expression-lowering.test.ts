@@ -17,6 +17,7 @@ import {
   HighIRSources,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
+  HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_INT_TYPE,
   HIR_BOOL_TYPE,
 } from 'samlang-core-ast/hir-nodes';
@@ -65,7 +66,7 @@ const expectCorrectlyLowered = (
     /* moduleReference */ ModuleReference.DUMMY,
     /* encodedFunctionName */ 'ENCODED_FUNCTION_NAME',
     [
-      ['_this', HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])],
+      ['_this', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy')],
       ['foo', HIR_INT_TYPE],
       ['bar', HIR_BOOL_TYPE],
       ['closure', HIR_IDENTIFIER_TYPE('TestClosure', [HIR_BOOL_TYPE])],
@@ -94,22 +95,28 @@ const expectCorrectlyLowered = (
     },
     /* functionTypeMapping */ {
       _module_ModuleModule_class_ImportedClass_function_bar: HIR_FUNCTION_TYPE(
-        [HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', []), HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])],
+        [
+          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy'),
+          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy'),
+        ],
         HIR_INT_TYPE
       ),
       _module___DUMMY___class_Dummy_function_foo: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
       _module___DUMMY___class_Dummy_function_fooBar: HIR_FUNCTION_TYPE(
-        [HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', []), HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])],
+        [
+          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy'),
+          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy'),
+        ],
         HIR_INT_TYPE
       ),
       _module___DUMMY___class_A_function_b: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
       _module___DUMMY___class_C_function_m1: HIR_FUNCTION_TYPE(
-        [HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])],
+        [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy')],
         HIR_INT_TYPE
       ),
       _module___DUMMY___class_C_function_m2: HIR_FUNCTION_TYPE(
         [HIR_INT_TYPE],
-        HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])
+        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy')
       ),
     },
     /* typeLoweringManager */ typeLoweringManager,

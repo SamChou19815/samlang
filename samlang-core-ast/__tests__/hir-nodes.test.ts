@@ -7,6 +7,7 @@ import {
   HIR_INT_TYPE,
   HIR_STRING_TYPE,
   HIR_IDENTIFIER_TYPE,
+  HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
@@ -27,7 +28,10 @@ describe('hir-nodes', () => {
         HIR_FUNCTION_TYPE(
           [HIR_INT_TYPE, HIR_BOOL_TYPE],
           HIR_FUNCTION_TYPE(
-            [HIR_IDENTIFIER_TYPE('Foo', [HIR_STRING_TYPE]), HIR_IDENTIFIER_TYPE('Foo', [])],
+            [
+              HIR_IDENTIFIER_TYPE('Foo', [HIR_STRING_TYPE]),
+              HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Foo'),
+            ],
             HIR_STRING_TYPE
           )
         )
@@ -49,7 +53,7 @@ describe('hir-nodes', () => {
         identifier: 'B',
         type: 'variant',
         typeParameters: ['C'],
-        mappings: [HIR_INT_TYPE, HIR_IDENTIFIER_TYPE('C', [])],
+        mappings: [HIR_INT_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('C')],
       })
     ).toBe('variant type B<C> = [int, C]');
   });
@@ -62,7 +66,7 @@ describe('hir-nodes', () => {
           s1: [
             HIR_STRUCT_INITIALIZATION({
               structVariableName: 'baz',
-              type: HIR_IDENTIFIER_TYPE('FooBar', []),
+              type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('FooBar'),
               expressionList: [HIR_NAME('meggo', HIR_STRING_TYPE)],
             }),
             HIR_CLOSURE_INITIALIZATION({
@@ -83,7 +87,9 @@ describe('hir-nodes', () => {
             HIR_BINARY({ name: 'dd', operator: '%', e1: HIR_INT(0), e2: HIR_INT(0) }),
             HIR_FUNCTION_CALL({
               functionExpression: HIR_NAME('h', HIR_INT_TYPE),
-              functionArguments: [HIR_VARIABLE('big', HIR_IDENTIFIER_TYPE('FooBar', []))],
+              functionArguments: [
+                HIR_VARIABLE('big', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('FooBar')),
+              ],
               returnType: HIR_INT_TYPE,
               returnCollector: 'vibez',
             }),
@@ -95,7 +101,10 @@ describe('hir-nodes', () => {
             HIR_INDEX_ACCESS({
               name: 'f',
               type: HIR_INT_TYPE,
-              pointerExpression: HIR_VARIABLE('big', HIR_IDENTIFIER_TYPE('FooBar', [])),
+              pointerExpression: HIR_VARIABLE(
+                'big',
+                HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('FooBar')
+              ),
               index: 0,
             }),
           ],
@@ -155,7 +164,10 @@ if 0 {
               HIR_INDEX_ACCESS({
                 name: 'f',
                 type: HIR_INT_TYPE,
-                pointerExpression: HIR_VARIABLE('big', HIR_IDENTIFIER_TYPE('FooBar', [])),
+                pointerExpression: HIR_VARIABLE(
+                  'big',
+                  HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('FooBar')
+                ),
                 index: 0,
               }),
             ],

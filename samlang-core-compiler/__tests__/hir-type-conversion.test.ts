@@ -16,6 +16,7 @@ import {
   HIR_INT_TYPE,
   HIR_STRING_TYPE,
   HIR_IDENTIFIER_TYPE,
+  HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
 } from 'samlang-core-ast/hir-nodes';
 
@@ -70,22 +71,22 @@ describe('hir-type-conversion', () => {
     const genericTypes = new Set(['A', 'B']);
     expect(Array.from(collectUsedGenericTypes(HIR_BOOL_TYPE, genericTypes))).toEqual([]);
 
-    expect(Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('C', []), genericTypes))).toEqual(
-      []
-    );
+    expect(
+      Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('C'), genericTypes))
+    ).toEqual([]);
     expect(
       Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('A', [HIR_BOOL_TYPE]), genericTypes))
     ).toEqual([]);
-    expect(Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('A', []), genericTypes))).toEqual(
-      ['A']
-    );
-    expect(Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE('B', []), genericTypes))).toEqual(
-      ['B']
-    );
+    expect(
+      Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'), genericTypes))
+    ).toEqual(['A']);
+    expect(
+      Array.from(collectUsedGenericTypes(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'), genericTypes))
+    ).toEqual(['B']);
     expect(
       Array.from(
         collectUsedGenericTypes(
-          HIR_IDENTIFIER_TYPE('A', [HIR_IDENTIFIER_TYPE('B', [])]),
+          HIR_IDENTIFIER_TYPE('A', [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')]),
           genericTypes
         )
       )
@@ -94,7 +95,10 @@ describe('hir-type-conversion', () => {
     expect(
       Array.from(
         collectUsedGenericTypes(
-          HIR_FUNCTION_TYPE([HIR_IDENTIFIER_TYPE('A', [])], HIR_IDENTIFIER_TYPE('B', [])),
+          HIR_FUNCTION_TYPE(
+            [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A')],
+            HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')
+          ),
           genericTypes
         )
       )
@@ -109,16 +113,19 @@ describe('hir-type-conversion', () => {
     expect(
       highIRTypeApplication(HIR_IDENTIFIER_TYPE('A', [HIR_INT_TYPE]), { A: HIR_INT_TYPE })
     ).toEqual(HIR_IDENTIFIER_TYPE('A', [HIR_INT_TYPE]));
-    expect(highIRTypeApplication(HIR_IDENTIFIER_TYPE('A', []), { B: HIR_INT_TYPE })).toEqual(
-      HIR_IDENTIFIER_TYPE('A', [])
-    );
-    expect(highIRTypeApplication(HIR_IDENTIFIER_TYPE('A', []), { A: HIR_INT_TYPE })).toEqual(
-      HIR_INT_TYPE
-    );
+    expect(
+      highIRTypeApplication(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'), { B: HIR_INT_TYPE })
+    ).toEqual(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'));
+    expect(
+      highIRTypeApplication(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'), { A: HIR_INT_TYPE })
+    ).toEqual(HIR_INT_TYPE);
 
     expect(
       highIRTypeApplication(
-        HIR_FUNCTION_TYPE([HIR_IDENTIFIER_TYPE('A', [])], HIR_IDENTIFIER_TYPE('B', [])),
+        HIR_FUNCTION_TYPE(
+          [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A')],
+          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')
+        ),
         { A: HIR_INT_TYPE, B: HIR_BOOL_TYPE }
       )
     ).toEqual(HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));

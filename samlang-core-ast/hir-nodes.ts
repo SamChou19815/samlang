@@ -40,6 +40,12 @@ export const HIR_IDENTIFIER_TYPE = (
   typeArguments,
 });
 
+export const HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS = (name: string): HighIRIdentifierType => ({
+  __type__: 'IdentifierType',
+  name,
+  typeArguments: [],
+});
+
 export const HIR_FUNCTION_TYPE = (
   argumentTypes: readonly HighIRType[],
   returnType: HighIRType
