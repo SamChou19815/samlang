@@ -173,35 +173,33 @@ describe('hir-type-conversion', () => {
   it('SamlangTypeLoweringManager.lowerSamlangTypeDefinition() works', () => {
     const typeSynthesizer = new HighIRTypeSynthesizer();
 
-    const typeDefinition = SamlangTypeLoweringManager.lowerSamlangTypeDefinition(
+    const typeDefinition = new SamlangTypeLoweringManager(
       new Set(['A']),
-      typeSynthesizer,
-      'Foo',
-      {
-        range: Range.DUMMY,
-        type: 'object',
-        names: ['a', 'b'],
-        mappings: {
-          a: {
-            type: functionType(
-              [functionType([identifierType(ModuleReference.ROOT, 'A')], boolType)],
-              boolType
-            ),
-            isPublic: true,
-          },
-          b: {
-            type: functionType(
-              [functionType([identifierType(ModuleReference.ROOT, 'A')], boolType)],
-              boolType
-            ),
-            isPublic: false,
-          },
+      typeSynthesizer
+    ).lowerSamlangTypeDefinition(ModuleReference.ROOT, 'Foo', {
+      range: Range.DUMMY,
+      type: 'object',
+      names: ['a', 'b'],
+      mappings: {
+        a: {
+          type: functionType(
+            [functionType([identifierType(ModuleReference.ROOT, 'A')], boolType)],
+            boolType
+          ),
+          isPublic: true,
         },
-      }
-    );
+        b: {
+          type: functionType(
+            [functionType([identifierType(ModuleReference.ROOT, 'A')], boolType)],
+            boolType
+          ),
+          isPublic: false,
+        },
+      },
+    });
     expect(
       [...typeSynthesizer.synthesized, typeDefinition].map(prettyPrintHighIRTypeDefinition)
-    ).toEqual(['object type Foo<A> = [((A) -> bool) -> bool, ((A) -> bool) -> bool]']);
+    ).toEqual(['object type _Foo<A> = [((A) -> bool) -> bool, ((A) -> bool) -> bool]']);
   });
 
   it('SamlangTypeLoweringManager.lowerSamlangFunctionTypeForTopLevel() works', () => {

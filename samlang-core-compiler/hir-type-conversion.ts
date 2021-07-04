@@ -1,8 +1,8 @@
 import type {
   Type,
   PrimitiveType,
-  IdentifierType,
   FunctionType,
+  ModuleReference,
 } from 'samlang-core-ast/common-nodes';
 import {
   prettyPrintHighIRType,
@@ -95,8 +95,8 @@ export const highIRTypeApplication = (
   }
 };
 
-export const encodeHighIRType = (type: IdentifierType): string =>
-  `${type.moduleReference.parts.join('_')}_${type.identifier}`;
+export const encodeHighIRType = (moduleReference: ModuleReference, identifier: string): string =>
+  `${moduleReference.parts.join('_')}_${identifier}`;
 
 const lowerSamlangPrimitiveType = (type: PrimitiveType): HighIRPrimitiveType => {
   switch (type.name) {
@@ -116,19 +116,6 @@ export class SamlangTypeLoweringManager {
     public readonly typeSynthesizer: HighIRTypeSynthesizer
   ) {}
 
-  static lowerSamlangTypeDefinition(
-    genericTypes: ReadonlySet<string>,
-    typeSynthesizer: HighIRTypeSynthesizer,
-    identifier: string,
-    { type, names, mappings: sourceLevelMappings }: TypeDefinition
-  ): HighIRTypeDefinition {
-    const manager = new SamlangTypeLoweringManager(genericTypes, typeSynthesizer);
-    const mappings = names.map((it) =>
-      manager.lowerSamlangType(checkNotNull(sourceLevelMappings[it]).type)
-    );
-    return { identifier, type, typeParameters: Array.from(genericTypes), mappings };
-  }
-
   lowerSamlangType = (type: Type): HighIRType => {
     assert(type.type !== 'UndecidedType', 'Unreachable!');
     switch (type.type) {
@@ -137,7 +124,7 @@ export class SamlangTypeLoweringManager {
       case 'IdentifierType':
         if (this.genericTypes.has(type.identifier)) return HIR_IDENTIFIER_TYPE(type.identifier, []);
         return HIR_IDENTIFIER_TYPE(
-          encodeHighIRType(type),
+          encodeHighIRType(type.moduleReference, type.identifier),
           type.typeArguments.map(this.lowerSamlangType)
         );
       case 'TupleType': {
@@ -164,6 +151,17 @@ export class SamlangTypeLoweringManager {
       type.argumentTypes.map(this.lowerSamlangType),
       this.lowerSamlangType(type.returnType)
     );
+
+  lowerSamlangTypeDefinition = (
+    moduleReference: ModuleReference,
+    identifier: string,
+    { type, names, mappings: sourceLevelMappings }: TypeDefinition
+  ): HighIRTypeDefinition => ({
+    identifier: encodeHighIRType(moduleReference, identifier),
+    type,
+    typeParameters: Array.from(this.genericTypes),
+    mappings: names.map((it) => this.lowerSamlangType(checkNotNull(sourceLevelMappings[it]).type)),
+  });
 
   lowerSamlangFunctionTypeForTopLevel(type: FunctionType): [readonly string[], HighIRFunctionType] {
     const hirFunctionType = this.lowerSamlangFunctionType(type);
