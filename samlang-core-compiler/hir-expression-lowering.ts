@@ -93,7 +93,6 @@ class HighIRExpressionLoweringManager {
     definedVariables: readonly (readonly [string, HighIRType])[],
     private readonly typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
     private readonly functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
-    private readonly thisType: HighIRType | null,
     private readonly typeLoweringManager: SamlangTypeLoweringManager,
     private readonly stringManager: HighIRStringManager
   ) {
@@ -169,7 +168,7 @@ class HighIRExpressionLoweringManager {
           }
         }
       case 'ThisExpression':
-        return { statements: [], expression: HIR_VARIABLE('_this', checkNotNull(this.thisType)) };
+        return { statements: [], expression: this.resolveVariable('_this') };
       case 'VariableExpression':
         return { statements: [], expression: this.resolveVariable(expression.name) };
       case 'ClassMemberExpression':
@@ -956,7 +955,6 @@ const lowerSamlangExpression = (
   definedVariables: readonly (readonly [string, HighIRType])[],
   typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
   functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
-  thisType: HighIRType | null,
   typeLoweringManager: SamlangTypeLoweringManager,
   stringManager: HighIRStringManager,
   expression: SamlangExpression
@@ -967,7 +965,6 @@ const lowerSamlangExpression = (
     definedVariables,
     typeDefinitionMapping,
     functionTypeMapping,
-    thisType,
     typeLoweringManager,
     stringManager
   );
