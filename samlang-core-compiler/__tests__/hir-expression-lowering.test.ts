@@ -13,8 +13,8 @@ import { PLUS, MUL, AND, OR, CONCAT } from 'samlang-core-ast/common-operators';
 import {
   debugPrintHighIRExpression,
   debugPrintHighIRStatement,
-  debugPrintHighIRModule,
-  HighIRModule,
+  debugPrintHighIRSources,
+  HighIRSources,
   HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE,
   HIR_INT_TYPE,
@@ -116,13 +116,14 @@ const expectCorrectlyLowered = (
     /* stringManager */ stringManager,
     /* expression */ samlangExpression
   );
-  const syntheticModule: HighIRModule = {
+  const syntheticModule: HighIRSources = {
     globalVariables: stringManager.globalVariables,
     typeDefinitions: typeSynthesizer.synthesized,
+    mainFunctionNames: [],
     functions: syntheticFunctions,
   };
   expect(
-    `${debugPrintHighIRModule(syntheticModule)}
+    `${debugPrintHighIRSources(syntheticModule)}
 ${statements.map((it) => debugPrintHighIRStatement(it)).join('\n')}
 return ${debugPrintHighIRExpression(expression)};`.trim()
   ).toBe(expectedString);

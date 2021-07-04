@@ -2,7 +2,7 @@ import {
   prettyPrintHighIRType,
   prettyPrintHighIRTypeDefinition,
   debugPrintHighIRStatement,
-  debugPrintHighIRModule,
+  debugPrintHighIRSources,
   HIR_BOOL_TYPE,
   HIR_INT_TYPE,
   HIR_STRING_TYPE,
@@ -134,7 +134,7 @@ if 0 {
 
   it('debugPrintHighIRModule works', () => {
     expect(
-      debugPrintHighIRModule({
+      debugPrintHighIRSources({
         globalVariables: [{ name: 'dev_meggo', content: 'vibez' }],
         typeDefinitions: [
           {
@@ -144,6 +144,7 @@ if 0 {
             mappings: [HIR_INT_TYPE, HIR_BOOL_TYPE],
           },
         ],
+        mainFunctionNames: ['ddd'],
         functions: [
           {
             name: 'Bar',
@@ -169,12 +170,14 @@ function Bar(f: int): int {
   let f: int = (big: FooBar)[0];
   return 0;
 }
-`);
+
+sources.mains = [ddd]`);
 
     expect(
-      debugPrintHighIRModule({
+      debugPrintHighIRSources({
         globalVariables: [],
         typeDefinitions: [],
+        mainFunctionNames: [],
         functions: [
           {
             name: 'Bar',

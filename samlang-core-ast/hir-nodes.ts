@@ -414,9 +414,10 @@ export interface HighIRFunction {
   readonly returnValue: HighIRExpression;
 }
 
-export interface HighIRModule {
+export interface HighIRSources {
   readonly globalVariables: readonly GlobalVariable[];
   readonly typeDefinitions: readonly HighIRTypeDefinition[];
+  readonly mainFunctionNames: readonly string[];
   readonly functions: readonly HighIRFunction[];
 }
 
@@ -442,13 +443,17 @@ export const debugPrintHighIRFunction = ({
   return `${header}\n${body}\n}\n`;
 };
 
-export const debugPrintHighIRModule = ({
+export const debugPrintHighIRSources = ({
   globalVariables,
   typeDefinitions,
+  mainFunctionNames,
   functions,
-}: HighIRModule): string =>
+}: HighIRSources): string =>
   [
     ...globalVariables.map(({ name, content }) => `const ${name} = '${content}';\n`),
     ...typeDefinitions.map(prettyPrintHighIRTypeDefinition),
     ...functions.map((it) => debugPrintHighIRFunction(it)),
+    ...(mainFunctionNames.length === 0
+      ? []
+      : [`sources.mains = [${mainFunctionNames.join(', ')}]`]),
   ].join('\n');
