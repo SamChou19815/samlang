@@ -48,11 +48,7 @@ import type {
 import { LocalStackedContext, assert, checkNotNull, zip } from 'samlang-core-utils';
 
 import type HighIRStringManager from './hir-string-manager';
-import {
-  highIRTypeApplication,
-  HighIRTypeSynthesizer,
-  SamlangTypeLoweringManager,
-} from './hir-type-conversion';
+import { highIRTypeApplication, SamlangTypeLoweringManager } from './hir-type-conversion';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -99,12 +95,11 @@ class HighIRExpressionLoweringManager {
     private readonly functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
     private readonly thisType: HighIRType | null,
     private readonly typeLoweringManager: SamlangTypeLoweringManager,
-    private readonly typeSynthesizer: HighIRTypeSynthesizer,
     private readonly stringManager: HighIRStringManager
   ) {
-    definedVariables.forEach(([name, type]) => {
-      this.varibleContext.bind(name, HIR_VARIABLE(name, type));
-    });
+    definedVariables.forEach(([name, type]) =>
+      this.varibleContext.bind(name, HIR_VARIABLE(name, type))
+    );
   }
 
   private allocateTemporaryVariable(): string {
@@ -135,7 +130,10 @@ class HighIRExpressionLoweringManager {
   private getSyntheticIdentifierTypeFromTuple = (
     mappings: readonly HighIRType[]
   ): HighIRIdentifierType =>
-    HIR_IDENTIFIER_TYPE(this.typeSynthesizer.synthesizeTupleType(mappings, []).identifier, []);
+    HIR_IDENTIFIER_TYPE(
+      this.typeLoweringManager.typeSynthesizer.synthesizeTupleType(mappings, []).identifier,
+      []
+    );
 
   private resolveVariable = (variableName: string): HighIRExpression =>
     checkNotNull(this.varibleContext.getLocalValueType(variableName));
@@ -145,7 +143,8 @@ class HighIRExpressionLoweringManager {
     typeArguments,
   }: HighIRIdentifierType): readonly HighIRType[] {
     const typeDefinition = checkNotNull(
-      this.typeDefinitionMapping[name] ?? this.typeSynthesizer.mappings.get(name)
+      this.typeDefinitionMapping[name] ??
+        this.typeLoweringManager.typeSynthesizer.mappings.get(name)
     );
     const replacementMap = Object.fromEntries(zip(typeDefinition.typeParameters, typeArguments));
     return typeDefinition.mappings.map((type) => highIRTypeApplication(type, replacementMap));
@@ -959,7 +958,6 @@ const lowerSamlangExpression = (
   functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
   thisType: HighIRType | null,
   typeLoweringManager: SamlangTypeLoweringManager,
-  typeSynthesizer: HighIRTypeSynthesizer,
   stringManager: HighIRStringManager,
   expression: SamlangExpression
 ): HighIRExpressionLoweringResultWithSyntheticFunctions => {
@@ -971,7 +969,6 @@ const lowerSamlangExpression = (
     functionTypeMapping,
     thisType,
     typeLoweringManager,
-    typeSynthesizer,
     stringManager
   );
   if (expression.__type__ === 'StatementBlockExpression') manager.depth = -1;

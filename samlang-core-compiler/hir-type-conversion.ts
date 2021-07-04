@@ -1,4 +1,9 @@
-import type { Type, PrimitiveType, FunctionType } from 'samlang-core-ast/common-nodes';
+import type {
+  Type,
+  PrimitiveType,
+  IdentifierType,
+  FunctionType,
+} from 'samlang-core-ast/common-nodes';
 import {
   prettyPrintHighIRType,
   HighIRType,
@@ -90,6 +95,9 @@ export const highIRTypeApplication = (
   }
 };
 
+export const encodeHighIRType = (type: IdentifierType): string =>
+  `${type.moduleReference.parts.join('_')}_${type.identifier}`;
+
 const lowerSamlangPrimitiveType = (type: PrimitiveType): HighIRPrimitiveType => {
   switch (type.name) {
     case 'bool':
@@ -104,8 +112,8 @@ const lowerSamlangPrimitiveType = (type: PrimitiveType): HighIRPrimitiveType => 
 
 export class SamlangTypeLoweringManager {
   constructor(
-    private readonly genericTypes: ReadonlySet<string>,
-    private readonly typeSynthesizer: HighIRTypeSynthesizer
+    public readonly genericTypes: ReadonlySet<string>,
+    public readonly typeSynthesizer: HighIRTypeSynthesizer
   ) {}
 
   static lowerSamlangTypeDefinition(
@@ -129,7 +137,7 @@ export class SamlangTypeLoweringManager {
       case 'IdentifierType':
         if (this.genericTypes.has(type.identifier)) return HIR_IDENTIFIER_TYPE(type.identifier, []);
         return HIR_IDENTIFIER_TYPE(
-          `${type.moduleReference.parts.join('_')}_${type.identifier}`,
+          encodeHighIRType(type),
           type.typeArguments.map(this.lowerSamlangType)
         );
       case 'TupleType': {
