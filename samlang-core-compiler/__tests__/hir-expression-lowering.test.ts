@@ -65,6 +65,7 @@ const expectCorrectlyLowered = (
     /* moduleReference */ ModuleReference.DUMMY,
     /* encodedFunctionName */ 'ENCODED_FUNCTION_NAME',
     [
+      ['_this', HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])],
       ['foo', HIR_INT_TYPE],
       ['bar', HIR_BOOL_TYPE],
       ['closure', HIR_IDENTIFIER_TYPE('TestClosure', [HIR_BOOL_TYPE])],
@@ -111,7 +112,6 @@ const expectCorrectlyLowered = (
         HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', [])
       ),
     },
-    /* thisType */ HIR_IDENTIFIER_TYPE('__DUMMY___Dummy', []),
     /* typeLoweringManager */ typeLoweringManager,
     /* stringManager */ stringManager,
     /* expression */ samlangExpression
