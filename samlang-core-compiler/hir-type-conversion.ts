@@ -14,6 +14,7 @@ import {
   HIR_INT_TYPE,
   HIR_STRING_TYPE,
   HIR_IDENTIFIER_TYPE,
+  HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
 } from 'samlang-core-ast/hir-nodes';
 import type { TypeDefinition } from 'samlang-core-ast/samlang-toplevel';
@@ -122,7 +123,9 @@ export class SamlangTypeLoweringManager {
       case 'PrimitiveType':
         return lowerSamlangPrimitiveType(type);
       case 'IdentifierType':
-        if (this.genericTypes.has(type.identifier)) return HIR_IDENTIFIER_TYPE(type.identifier, []);
+        if (this.genericTypes.has(type.identifier)) {
+          return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(type.identifier);
+        }
         return HIR_IDENTIFIER_TYPE(
           encodeHighIRType(type.moduleReference, type.identifier),
           type.typeArguments.map(this.lowerSamlangType)
@@ -138,7 +141,7 @@ export class SamlangTypeLoweringManager {
         );
         return HIR_IDENTIFIER_TYPE(
           typeDefinition.identifier,
-          typeParameters.map((name) => HIR_IDENTIFIER_TYPE(name, []))
+          typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS)
         );
       }
       case 'FunctionType':
@@ -146,7 +149,7 @@ export class SamlangTypeLoweringManager {
     }
   };
 
-  private lowerSamlangFunctionType = (type: FunctionType): HighIRFunctionType =>
+  lowerSamlangFunctionType = (type: FunctionType): HighIRFunctionType =>
     HIR_FUNCTION_TYPE(
       type.argumentTypes.map(this.lowerSamlangType),
       this.lowerSamlangType(type.returnType)

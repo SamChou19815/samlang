@@ -14,7 +14,7 @@ import {
   HIR_BOOL_TYPE,
   HIR_INT_TYPE,
   HIR_STRING_TYPE,
-  HIR_IDENTIFIER_TYPE,
+  HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
   HIR_TRUE,
   HIR_FALSE,
@@ -129,9 +129,8 @@ class HighIRExpressionLoweringManager {
   private getSyntheticIdentifierTypeFromTuple = (
     mappings: readonly HighIRType[]
   ): HighIRIdentifierType =>
-    HIR_IDENTIFIER_TYPE(
-      this.typeLoweringManager.typeSynthesizer.synthesizeTupleType(mappings, []).identifier,
-      []
+    HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(
+      this.typeLoweringManager.typeSynthesizer.synthesizeTupleType(mappings, []).identifier
     );
 
   private resolveVariable = (variableName: string): HighIRExpression =>
