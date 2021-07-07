@@ -16,6 +16,7 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
+  HIR_CLOSURE_TYPE,
 } from 'samlang-core-ast/hir-nodes';
 import type { TypeDefinition } from 'samlang-core-ast/samlang-toplevel';
 import { assert, checkNotNull } from 'samlang-core-utils';
@@ -93,6 +94,11 @@ export const highIRTypeApplication = (
         type.argumentTypes.map((it) => highIRTypeApplication(it, replacementMap)),
         highIRTypeApplication(type.returnType, replacementMap)
       );
+    case 'ClosureType':
+      return HIR_CLOSURE_TYPE(
+        type.argumentTypes.map((it) => highIRTypeApplication(it, replacementMap)),
+        highIRTypeApplication(type.returnType, replacementMap)
+      );
   }
 };
 
@@ -145,15 +151,12 @@ export class SamlangTypeLoweringManager {
         );
       }
       case 'FunctionType':
-        return this.lowerSamlangFunctionType(type);
+        return HIR_CLOSURE_TYPE(
+          type.argumentTypes.map(this.lowerSamlangType),
+          this.lowerSamlangType(type.returnType)
+        );
     }
   };
-
-  lowerSamlangFunctionType = (type: FunctionType): HighIRFunctionType =>
-    HIR_FUNCTION_TYPE(
-      type.argumentTypes.map(this.lowerSamlangType),
-      this.lowerSamlangType(type.returnType)
-    );
 
   lowerSamlangTypeDefinition = (
     moduleReference: ModuleReference,
@@ -167,7 +170,10 @@ export class SamlangTypeLoweringManager {
   });
 
   lowerSamlangFunctionTypeForTopLevel(type: FunctionType): [readonly string[], HighIRFunctionType] {
-    const hirFunctionType = this.lowerSamlangFunctionType(type);
+    const hirFunctionType = HIR_FUNCTION_TYPE(
+      type.argumentTypes.map(this.lowerSamlangType),
+      this.lowerSamlangType(type.returnType)
+    );
     const typeParameters = Array.from(collectUsedGenericTypes(hirFunctionType, this.genericTypes));
     return [typeParameters, hirFunctionType];
   }

@@ -9,6 +9,7 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
+  HIR_CLOSURE_TYPE,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_INDEX_ACCESS,
@@ -25,7 +26,7 @@ describe('hir-nodes', () => {
   it('prettyPrintHighIRType works', () => {
     expect(
       prettyPrintHighIRType(
-        HIR_FUNCTION_TYPE(
+        HIR_CLOSURE_TYPE(
           [HIR_INT_TYPE, HIR_BOOL_TYPE],
           HIR_FUNCTION_TYPE(
             [
@@ -36,7 +37,7 @@ describe('hir-nodes', () => {
           )
         )
       )
-    ).toBe('(int, bool) -> (Foo<string>, Foo) -> string');
+    ).toBe('$Closure<(int, bool) -> (Foo<string>, Foo) -> string>');
   });
 
   it('prettyPrintHighIRTypeDefinition works', () => {
@@ -71,7 +72,7 @@ describe('hir-nodes', () => {
             }),
             HIR_CLOSURE_INITIALIZATION({
               closureVariableName: 'closure',
-              closureType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+              closureType: HIR_CLOSURE_TYPE([], HIR_INT_TYPE),
               functionName: 'foo',
               functionType: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
               context: HIR_ZERO,
@@ -121,7 +122,7 @@ describe('hir-nodes', () => {
     ).toBe(`let bar: int;
 if 0 {
   let baz: FooBar = [meggo];
-  let closure: () -> int = Closure {
+  let closure: $Closure<() -> int> = Closure {
     fun: (foo: (int) -> int),
     context: 0,
   };

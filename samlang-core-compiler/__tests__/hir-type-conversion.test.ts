@@ -18,6 +18,7 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
+  HIR_CLOSURE_TYPE,
 } from 'samlang-core-ast/hir-nodes';
 
 import {
@@ -129,6 +130,15 @@ describe('hir-type-conversion', () => {
         { A: HIR_INT_TYPE, B: HIR_BOOL_TYPE }
       )
     ).toEqual(HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));
+    expect(
+      highIRTypeApplication(
+        HIR_CLOSURE_TYPE(
+          [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A')],
+          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')
+        ),
+        { A: HIR_INT_TYPE, B: HIR_BOOL_TYPE }
+      )
+    ).toEqual(HIR_CLOSURE_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));
   });
 
   it('SamlangTypeLoweringManager.lowerSamlangType() works', () => {
@@ -167,7 +177,7 @@ describe('hir-type-conversion', () => {
           functionType([identifierType(ModuleReference.DUMMY, 'T'), boolType], intType)
         )
       )
-    ).toBe('(T, bool) -> int');
+    ).toBe('$Closure<(T, bool) -> int>');
 
     expect(() => manager.lowerSamlangType({ type: 'UndecidedType', index: 0 })).toThrow();
 
@@ -206,7 +216,9 @@ describe('hir-type-conversion', () => {
     });
     expect(
       [...typeSynthesizer.synthesized, typeDefinition].map(prettyPrintHighIRTypeDefinition)
-    ).toEqual(['object type _Foo<A> = [((A) -> bool) -> bool, ((A) -> bool) -> bool]']);
+    ).toEqual([
+      'object type _Foo<A> = [$Closure<($Closure<(A) -> bool>) -> bool>, $Closure<($Closure<(A) -> bool>) -> bool>]',
+    ]);
   });
 
   it('SamlangTypeLoweringManager.lowerSamlangFunctionTypeForTopLevel() works', () => {
@@ -222,7 +234,7 @@ describe('hir-type-conversion', () => {
       )
     ).toEqual([
       [],
-      HIR_FUNCTION_TYPE([HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)], HIR_BOOL_TYPE),
+      HIR_FUNCTION_TYPE([HIR_CLOSURE_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)], HIR_BOOL_TYPE),
     ]);
   });
 });
