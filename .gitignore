@@ -29,6 +29,7 @@ workspaces.json
 **/node_modules
 **/.pnp
 **/.pnp.js
+**/.pnp.cjs
 
 ## Cache
 .eslintcache
