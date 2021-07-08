@@ -106,17 +106,14 @@ function compileSamlangFunctionToHighIRFunctions(
   return [compiledFunctions, null];
 }
 
-export default function compileSamlangSourcesToHighIRSources(
+function buildHighIRCompilationContextFromSources(
   sources: Sources<SamlangModule>,
   builtinModuleTypes: ModuleTypingContext
-): HighIRSources {
-  const compiledTypeDefinitions: HighIRTypeDefinition[] = [];
-  const compiledFunctionsWithAddedDummyContext: HighIRFunction[] = [];
-  const compiledFunctions: HighIRFunction[] = [];
-  const mainFunctionNames: string[] = [];
-  const stringManager = new HighIRStringManager();
-  const functionTypeMapping: Record<string, HighIRFunctionType> = {};
+) {
   const typeSynthesizer = new HighIRTypeSynthesizer();
+  const functionTypeMapping: Record<string, HighIRFunctionType> = {};
+  const compiledTypeDefinitions: HighIRTypeDefinition[] = [];
+
   Object.entries(builtinModuleTypes).forEach(([builtinClass, builtinClassContext]) => {
     Object.entries(builtinClassContext.functions).forEach(
       ([builtinFunctionName, builtinFuncionType]) => {
@@ -156,10 +153,23 @@ export default function compileSamlangSourcesToHighIRSources(
       });
     });
   });
+  return { typeSynthesizer, compiledTypeDefinitions, functionTypeMapping };
+}
+
+function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
+  sources: Sources<SamlangModule>,
+  builtinModuleTypes: ModuleTypingContext
+): HighIRSources {
+  const { typeSynthesizer, compiledTypeDefinitions, functionTypeMapping } =
+    buildHighIRCompilationContextFromSources(sources, builtinModuleTypes);
   const typeDefinitionMapping = Object.fromEntries(
     compiledTypeDefinitions.map((it) => [it.identifier, it])
   );
 
+  const stringManager = new HighIRStringManager();
+  const compiledFunctionsWithAddedDummyContext: HighIRFunction[] = [];
+  const compiledFunctions: HighIRFunction[] = [];
+  const mainFunctionNames: string[] = [];
   sources.forEach((samlangModule, moduleReference) => {
     const entryPointFunctionName = encodeMainFunctionName(moduleReference);
     if (functionTypeMapping[entryPointFunctionName]) mainFunctionNames.push(entryPointFunctionName);
@@ -181,12 +191,17 @@ export default function compileSamlangSourcesToHighIRSources(
     });
   });
 
-  compiledTypeDefinitions.push(...typeSynthesizer.synthesized);
-
   return {
     globalVariables: stringManager.globalVariables,
-    typeDefinitions: compiledTypeDefinitions,
+    typeDefinitions: [...compiledTypeDefinitions, ...typeSynthesizer.synthesized],
     mainFunctionNames,
     functions: [...compiledFunctionsWithAddedDummyContext, ...compiledFunctions],
   };
+}
+
+export default function compileSamlangSourcesToHighIRSources(
+  sources: Sources<SamlangModule>,
+  builtinModuleTypes: ModuleTypingContext
+): HighIRSources {
+  return compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources, builtinModuleTypes);
 }
