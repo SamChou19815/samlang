@@ -126,7 +126,7 @@ export default function compileSamlangSourcesToHighIRSources(
         );
         functionTypeMapping[
           encodeFunctionNameGlobally(ModuleReference.ROOT, builtinClass, builtinFunctionName)
-        ] = manager.lowerSamlangFunctionType(builtinFuncionType.type);
+        ] = manager.lowerSamlangFunctionTypeForTopLevel(builtinFuncionType.type)[1];
       }
     );
   });

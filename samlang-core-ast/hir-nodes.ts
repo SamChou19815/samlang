@@ -5,7 +5,7 @@ import type { IROperator } from './common-operators';
 
 export type HighIRPrimitiveType = {
   readonly __type__: 'PrimitiveType';
-  readonly type: 'bool' | 'int' | 'string';
+  readonly type: 'bool' | 'int' | 'string' | 'context';
 };
 
 export type HighIRIdentifierType = {
@@ -14,22 +14,28 @@ export type HighIRIdentifierType = {
   readonly typeArguments: readonly HighIRType[];
 };
 
-/**
- * The function type in HIR has overloaded meanings.
- * In the context of toplevel function definition, it means exactly what's declared.
- * In anywhere else, it means a closure type.
- */
 export type HighIRFunctionType = {
   readonly __type__: 'FunctionType';
   readonly argumentTypes: readonly HighIRType[];
   readonly returnType: HighIRType;
 };
 
-export type HighIRType = HighIRPrimitiveType | HighIRIdentifierType | HighIRFunctionType;
+export type HighIRClosureType = {
+  readonly __type__: 'ClosureType';
+  readonly argumentTypes: readonly HighIRType[];
+  readonly returnType: HighIRType;
+};
+
+export type HighIRType =
+  | HighIRPrimitiveType
+  | HighIRIdentifierType
+  | HighIRFunctionType
+  | HighIRClosureType;
 
 export const HIR_BOOL_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'bool' };
 export const HIR_INT_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'int' };
 export const HIR_STRING_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'string' };
+export const HIR_CONTEXT_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'context' };
 
 export const HIR_IDENTIFIER_TYPE = (
   name: string,
@@ -51,6 +57,11 @@ export const HIR_FUNCTION_TYPE = (
   returnType: HighIRType
 ): HighIRFunctionType => ({ __type__: 'FunctionType', argumentTypes, returnType });
 
+export const HIR_CLOSURE_TYPE = (
+  argumentTypes: readonly HighIRType[],
+  returnType: HighIRType
+): HighIRClosureType => ({ __type__: 'ClosureType', argumentTypes, returnType });
+
 export const prettyPrintHighIRType = (type: HighIRType): string => {
   switch (type.__type__) {
     case 'PrimitiveType':
@@ -63,6 +74,10 @@ export const prettyPrintHighIRType = (type: HighIRType): string => {
       return `(${type.argumentTypes
         .map(prettyPrintHighIRType)
         .join(', ')}) -> ${prettyPrintHighIRType(type.returnType)}`;
+    case 'ClosureType':
+      return `$Closure<(${type.argumentTypes
+        .map(prettyPrintHighIRType)
+        .join(', ')}) -> ${prettyPrintHighIRType(type.returnType)}>`;
   }
 };
 
@@ -161,7 +176,7 @@ export interface HighIRStructInitializationStatement extends BaseHighIRStatement
 export interface HighIRClosureInitializationStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRClosureInitializationStatement';
   readonly closureVariableName: string;
-  readonly closureType: HighIRFunctionType;
+  readonly closureType: HighIRClosureType;
   readonly functionName: string;
   readonly functionType: HighIRFunctionType;
   readonly context: HighIRExpression;

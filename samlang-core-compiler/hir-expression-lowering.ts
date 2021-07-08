@@ -7,6 +7,7 @@ import {
   HighIRType,
   HighIRIdentifierType,
   HighIRFunctionType,
+  HighIRClosureType,
   HighIRTypeDefinition,
   HighIRExpression,
   HighIRStatement,
@@ -14,8 +15,10 @@ import {
   HIR_BOOL_TYPE,
   HIR_INT_TYPE,
   HIR_STRING_TYPE,
+  HIR_CONTEXT_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
+  HIR_CLOSURE_TYPE,
   HIR_TRUE,
   HIR_FALSE,
   HIR_ZERO,
@@ -205,12 +208,13 @@ class HighIRExpressionLoweringManager {
       expression.className,
       expression.memberName
     );
-    const closureType = this.functionTypeMapping[encodedOriginalFunctionName];
-    assert(closureType != null, `Missing function: ${encodedOriginalFunctionName}`);
+    const originalFunctionType = this.functionTypeMapping[encodedOriginalFunctionName];
+    assert(originalFunctionType != null, `Missing function: ${encodedOriginalFunctionName}`);
+    const closureType: HighIRClosureType = { ...originalFunctionType, __type__: 'ClosureType' };
     const closureVariableName = this.allocateTemporaryVariable();
     const functionType = HIR_FUNCTION_TYPE(
-      [HIR_INT_TYPE, ...closureType.argumentTypes],
-      closureType.returnType
+      [HIR_INT_TYPE, ...originalFunctionType.argumentTypes],
+      originalFunctionType.returnType
     );
     const statements: HighIRStatement[] = [
       HIR_CLOSURE_INITIALIZATION({
@@ -330,13 +334,14 @@ class HighIRExpressionLoweringManager {
       (expression.expression.type as IdentifierType).identifier,
       expression.methodName
     );
-    const closureType = this.functionTypeMapping[functionName];
-    assert(closureType != null, `Missing function: ${functionName}`);
+    const originalFunctionType = this.functionTypeMapping[functionName];
+    assert(originalFunctionType != null, `Missing function: ${functionName}`);
+    const closureType: HighIRClosureType = { ...originalFunctionType, __type__: 'ClosureType' };
     const closureVariableName = this.allocateTemporaryVariable();
     const result = this.lower(expression.expression);
     const methodType = HIR_FUNCTION_TYPE(
-      [result.expression.type, ...closureType.argumentTypes],
-      closureType.returnType
+      [result.expression.type, ...originalFunctionType.argumentTypes],
+      originalFunctionType.returnType
     );
     const finalVariableExpression = HIR_VARIABLE(closureVariableName, closureType);
     this.varibleContext.bind(closureVariableName, finalVariableExpression);
@@ -443,11 +448,11 @@ class HighIRExpressionLoweringManager {
           loweredStatements
         );
         const closureType = pointerExpression.type;
-        assert(closureType.__type__ === 'IdentifierType');
-        const [functionType, contextType] = this.resolveTypeMappingOfIdentifierType(
-          closureType
-        ) as readonly [HighIRType, HighIRType];
-        assert(functionType.__type__ === 'FunctionType');
+        assert(closureType.__type__ === 'ClosureType');
+        const functionType = HIR_FUNCTION_TYPE(
+          [HIR_CONTEXT_TYPE, ...closureType.argumentTypes],
+          closureType.returnType
+        );
         const loweredFunctionArguments = expression.functionArguments.map((oneArgument) =>
           this.loweredAndAddStatements(oneArgument, loweredStatements)
         );
@@ -455,10 +460,15 @@ class HighIRExpressionLoweringManager {
         const contextTemp = this.allocateTemporaryVariable();
         loweredStatements.push(
           HIR_INDEX_ACCESS({ name: functionTemp, type: functionType, pointerExpression, index: 0 }),
-          HIR_INDEX_ACCESS({ name: contextTemp, type: contextType, pointerExpression, index: 1 })
+          HIR_INDEX_ACCESS({
+            name: contextTemp,
+            type: HIR_CONTEXT_TYPE,
+            pointerExpression,
+            index: 1,
+          })
         );
         const functionTempVariable = HIR_VARIABLE(functionTemp, functionType);
-        const contextTempVariable = HIR_VARIABLE(contextTemp, contextType);
+        const contextTempVariable = HIR_VARIABLE(contextTemp, HIR_CONTEXT_TYPE);
         this.varibleContext.bind(functionTemp, functionTempVariable);
         this.varibleContext.bind(contextTemp, contextTempVariable);
 
@@ -808,7 +818,7 @@ class HighIRExpressionLoweringManager {
     }
     const syntheticLambda = this.createSyntheticLambdaFunction(expression, captured, context.type);
     this.syntheticFunctions.push(syntheticLambda);
-    const closureType = HIR_FUNCTION_TYPE(
+    const closureType = HIR_CLOSURE_TYPE(
       syntheticLambda.type.argumentTypes.slice(1),
       syntheticLambda.type.returnType
     );

@@ -275,7 +275,7 @@ describe('mir-toplevel-lowering', () => {
       `object type __DUMMY___Main = []
 object type __DUMMY___Class1 = [int]
 variant type __DUMMY___Class2 = []
-object type __DUMMY___Class3<T> = [($SyntheticIDType0<T>) -> int]
+object type __DUMMY___Class3<T> = [$Closure<($SyntheticIDType0<T>) -> int>]
 object type $SyntheticIDType0<T> = [__DUMMY___A<int>, T]
 function _module___DUMMY___class_Main_function_main_with_context(_context: int): int {
   let _ret: int = _module___DUMMY___class_Main_function_main();
