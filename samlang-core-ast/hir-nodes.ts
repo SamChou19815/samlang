@@ -112,6 +112,7 @@ export interface HighIRIntLiteralExpression extends BaseHighIRExpression {
 export interface HighIRNameExpression extends BaseHighIRExpression {
   readonly __type__: 'HighIRNameExpression';
   readonly name: string;
+  readonly type: HighIRPrimitiveType | HighIRFunctionType;
 }
 
 export interface HighIRVariableExpression extends BaseHighIRExpression {
@@ -216,7 +217,10 @@ export const HIR_INT = (value: number): HighIRIntLiteralExpression => ({
 export const HIR_ZERO: HighIRIntLiteralExpression = HIR_INT(0);
 export const HIR_ONE: HighIRIntLiteralExpression = HIR_INT(1);
 
-export const HIR_NAME = (name: string, type: HighIRType): HighIRNameExpression => ({
+export const HIR_NAME = (
+  name: string,
+  type: HighIRPrimitiveType | HighIRFunctionType
+): HighIRNameExpression => ({
   __type__: 'HighIRNameExpression',
   type,
   name,
