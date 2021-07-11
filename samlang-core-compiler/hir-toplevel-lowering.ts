@@ -172,7 +172,10 @@ function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
   const mainFunctionNames: string[] = [];
   sources.forEach((samlangModule, moduleReference) => {
     const entryPointFunctionName = encodeMainFunctionName(moduleReference);
-    if (functionTypeMapping[entryPointFunctionName]) mainFunctionNames.push(entryPointFunctionName);
+    const mainFunctionType = functionTypeMapping[entryPointFunctionName];
+    if (mainFunctionType) {
+      mainFunctionNames.push(entryPointFunctionName);
+    }
     samlangModule.classes.map(({ name: className, typeParameters, members }) => {
       members.forEach((member) => {
         const [compiledFunctionsToAdd, withContext] = compileSamlangFunctionToHighIRFunctions(
