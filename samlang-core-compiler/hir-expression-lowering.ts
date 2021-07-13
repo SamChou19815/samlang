@@ -2,7 +2,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   encodeFunctionNameGlobally,
 } from 'samlang-core-ast/common-names';
-import type { ModuleReference, IdentifierType } from 'samlang-core-ast/common-nodes';
+import type { ModuleReference, Type, IdentifierType } from 'samlang-core-ast/common-nodes';
 import {
   HighIRType,
   HighIRIdentifierType,
@@ -95,7 +95,6 @@ class HighIRExpressionLoweringManager {
     private readonly encodedFunctionName: string,
     definedVariables: readonly (readonly [string, HighIRType])[],
     private readonly typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
-    private readonly functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
     private readonly typeLoweringManager: SamlangTypeLoweringManager,
     private readonly stringManager: HighIRStringManager
   ) {
@@ -149,6 +148,11 @@ class HighIRExpressionLoweringManager {
     );
     const replacementMap = Object.fromEntries(zip(typeDefinition.typeParameters, typeArguments));
     return typeDefinition.mappings.map((type) => highIRTypeApplication(type, replacementMap));
+  }
+
+  private getFunctionTypeWithoutContext(type: Type): HighIRFunctionType {
+    assert(type.type === 'FunctionType');
+    return this.typeLoweringManager.lowerSamlangFunctionTypeForTopLevel(type)[1];
   }
 
   readonly lower = (expression: SamlangExpression): HighIRExpressionLoweringResult => {
@@ -208,8 +212,7 @@ class HighIRExpressionLoweringManager {
       expression.className,
       expression.memberName
     );
-    const originalFunctionType = this.functionTypeMapping[encodedOriginalFunctionName];
-    assert(originalFunctionType != null, `Missing function: ${encodedOriginalFunctionName}`);
+    const originalFunctionType = this.getFunctionTypeWithoutContext(expression.type);
     const closureType: HighIRClosureType = { ...originalFunctionType, __type__: 'ClosureType' };
     const closureVariableName = this.allocateTemporaryVariable();
     const functionType = HIR_FUNCTION_TYPE(
@@ -334,8 +337,7 @@ class HighIRExpressionLoweringManager {
       (expression.expression.type as IdentifierType).identifier,
       expression.methodName
     );
-    const originalFunctionType = this.functionTypeMapping[functionName];
-    assert(originalFunctionType != null, `Missing function: ${functionName}`);
+    const originalFunctionType = this.getFunctionTypeWithoutContext(expression.type);
     const closureType: HighIRClosureType = { ...originalFunctionType, __type__: 'ClosureType' };
     const closureVariableName = this.allocateTemporaryVariable();
     const result = this.lower(expression.expression);
@@ -398,8 +400,9 @@ class HighIRExpressionLoweringManager {
           functionExpression.className,
           functionExpression.memberName
         );
-        const functionTypeWithoutContext = this.functionTypeMapping[functionName];
-        assert(functionTypeWithoutContext != null, `Missing function: ${functionName}`);
+        const functionTypeWithoutContext = this.getFunctionTypeWithoutContext(
+          functionExpression.type
+        );
         functionReturnCollectorType = functionTypeWithoutContext.returnType;
         functionCall = HIR_FUNCTION_CALL({
           functionExpression: HIR_NAME(functionName, functionTypeWithoutContext),
@@ -417,7 +420,9 @@ class HighIRExpressionLoweringManager {
           (functionExpression.expression.type as IdentifierType).identifier,
           functionExpression.methodName
         );
-        const functionTypeWithoutContext = checkNotNull(this.functionTypeMapping[functionName]);
+        const functionTypeWithoutContext = this.getFunctionTypeWithoutContext(
+          functionExpression.type
+        );
         functionReturnCollectorType = functionTypeWithoutContext.returnType;
         const highIRFunctionExpression = this.loweredAndAddStatements(
           functionExpression.expression,
@@ -963,7 +968,6 @@ const lowerSamlangExpression = (
   encodedFunctionName: string,
   definedVariables: readonly (readonly [string, HighIRType])[],
   typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
-  functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
   typeLoweringManager: SamlangTypeLoweringManager,
   stringManager: HighIRStringManager,
   expression: SamlangExpression
@@ -973,7 +977,6 @@ const lowerSamlangExpression = (
     encodedFunctionName,
     definedVariables,
     typeDefinitionMapping,
-    functionTypeMapping,
     typeLoweringManager,
     stringManager
   );

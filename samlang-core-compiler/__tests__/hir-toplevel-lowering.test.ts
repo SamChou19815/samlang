@@ -20,7 +20,6 @@ import {
   EXPRESSION_CLASS_MEMBER,
 } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { mapOf } from 'samlang-core-utils';
 
 import compileSamlangSourcesToHighIRSources from '../hir-toplevel-lowering';
@@ -267,8 +266,7 @@ describe('mir-toplevel-lowering', () => {
       mapOf(
         [ModuleReference.DUMMY, sourceModule],
         [new ModuleReference(['Foo']), { imports: [], classes: [] }]
-      ),
-      DEFAULT_BUILTIN_TYPING_CONTEXT
+      )
     );
 
     expect(debugPrintHighIRSources(actualCompiledSources)).toBe(
