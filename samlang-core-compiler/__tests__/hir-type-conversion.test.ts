@@ -23,6 +23,7 @@ import {
 
 import {
   collectUsedGenericTypes,
+  solveTypeArguments,
   highIRTypeApplication,
   HighIRTypeSynthesizer,
   SamlangTypeLoweringManager,
@@ -104,6 +105,36 @@ describe('hir-type-conversion', () => {
         )
       )
     ).toEqual(['A', 'B']);
+  });
+
+  it('solveTypeArguments works', () => {
+    expect(
+      solveTypeArguments(
+        ['A'],
+        HIR_CLOSURE_TYPE(
+          [HIR_INT_TYPE, HIR_BOOL_TYPE],
+          HIR_FUNCTION_TYPE(
+            [
+              HIR_IDENTIFIER_TYPE('Foo', [HIR_STRING_TYPE]),
+              HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
+              HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
+            ],
+            HIR_STRING_TYPE
+          )
+        ),
+        HIR_CLOSURE_TYPE(
+          [HIR_INT_TYPE, HIR_BOOL_TYPE],
+          HIR_FUNCTION_TYPE(
+            [
+              HIR_IDENTIFIER_TYPE('Foo', [HIR_STRING_TYPE]),
+              HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+              HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
+            ],
+            HIR_STRING_TYPE
+          )
+        )
+      )
+    ).toEqual([HIR_FUNCTION_TYPE([], HIR_INT_TYPE)]);
   });
 
   it('highIRTypeApplication works', () => {

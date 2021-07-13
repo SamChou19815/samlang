@@ -19,7 +19,7 @@ import {
   HIR_CLOSURE_TYPE,
 } from 'samlang-core-ast/hir-nodes';
 import type { TypeDefinition } from 'samlang-core-ast/samlang-toplevel';
-import { assert, checkNotNull } from 'samlang-core-utils';
+import { assert, checkNotNull, zip } from 'samlang-core-utils';
 
 /** A helper class to generate an identifier type for each struct type. */
 export class HighIRTypeSynthesizer {
@@ -77,6 +77,52 @@ export const collectUsedGenericTypes = (
   };
   visit(highIRType);
   return collector;
+};
+
+export const solveTypeArguments = (
+  genericTypeParameters: readonly string[],
+  specializedType: HighIRType,
+  parameterizedTypeDefinition: HighIRType
+): readonly HighIRType[] => {
+  const genericTypeParameterSet = new Set(genericTypeParameters);
+  const solved = new Map<string, HighIRType>();
+
+  const solve = (t1: HighIRType, t2: HighIRType): void => {
+    switch (t1.__type__) {
+      case 'PrimitiveType':
+        assert(t2.__type__ === 'PrimitiveType' && t1.type === t2.type);
+        return;
+      case 'IdentifierType':
+        if (t1.typeArguments.length === 0 && genericTypeParameterSet.has(t1.name)) {
+          solved.set(t1.name, t2);
+          return;
+        }
+        assert(
+          t2.__type__ === 'IdentifierType' &&
+            t1.name === t2.name &&
+            t1.typeArguments.length === t2.typeArguments.length
+        );
+        zip(t1.typeArguments, t2.typeArguments).forEach(([a1, a2]) => solve(a1, a2));
+        return;
+      case 'FunctionType':
+        assert(
+          t2.__type__ === 'FunctionType' && t1.argumentTypes.length === t2.argumentTypes.length
+        );
+        zip(t1.argumentTypes, t2.argumentTypes).forEach(([a1, a2]) => solve(a1, a2));
+        solve(t1.returnType, t2.returnType);
+        return;
+      case 'ClosureType':
+        assert(
+          t2.__type__ === 'ClosureType' && t1.argumentTypes.length === t2.argumentTypes.length
+        );
+        zip(t1.argumentTypes, t2.argumentTypes).forEach(([a1, a2]) => solve(a1, a2));
+        solve(t1.returnType, t2.returnType);
+        return;
+    }
+  };
+
+  solve(specializedType, parameterizedTypeDefinition);
+  return genericTypeParameters.map((it) => checkNotNull(solved.get(it)));
 };
 
 export const highIRTypeApplication = (
