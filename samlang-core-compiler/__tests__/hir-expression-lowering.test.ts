@@ -87,32 +87,6 @@ const expectCorrectlyLowered = (
         mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
       },
     },
-    /* functionTypeMapping */ {
-      _module_ModuleModule_class_ImportedClass_function_bar: HIR_FUNCTION_TYPE(
-        [
-          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy'),
-          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy'),
-        ],
-        HIR_INT_TYPE
-      ),
-      _module___DUMMY___class_Dummy_function_foo: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
-      _module___DUMMY___class_Dummy_function_fooBar: HIR_FUNCTION_TYPE(
-        [
-          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy'),
-          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy'),
-        ],
-        HIR_INT_TYPE
-      ),
-      _module___DUMMY___class_A_function_b: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
-      _module___DUMMY___class_C_function_m1: HIR_FUNCTION_TYPE(
-        [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy')],
-        HIR_INT_TYPE
-      ),
-      _module___DUMMY___class_C_function_m2: HIR_FUNCTION_TYPE(
-        [HIR_INT_TYPE],
-        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('__DUMMY___Dummy')
-      ),
-    },
     /* typeLoweringManager */ typeLoweringManager,
     /* stringManager */ stringManager,
     /* expression */ samlangExpression
@@ -161,7 +135,7 @@ describe('hir-expression-lowering', () => {
     expectCorrectlyLowered(
       EXPRESSION_CLASS_MEMBER({
         range: Range.DUMMY,
-        type: unitType,
+        type: functionType([intType], intType),
         associatedComments: [],
         typeArguments: [],
         moduleReference: ModuleReference.DUMMY,
@@ -258,7 +232,7 @@ return (_t0: __DUMMY___Foo);`
     expectCorrectlyLowered(
       EXPRESSION_METHOD_ACCESS({
         range: Range.DUMMY,
-        type: unitType,
+        type: functionType([intType], intType),
         associatedComments: [],
         expression: THIS,
         methodPrecedingComments: [],

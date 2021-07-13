@@ -1,7 +1,6 @@
 import { encodeMainFunctionName, encodeFunctionNameGlobally } from 'samlang-core-ast/common-names';
-import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import {
-  HighIRFunctionType,
   HighIRTypeDefinition,
   HighIRFunction,
   HighIRSources,
@@ -14,8 +13,6 @@ import {
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
 } from 'samlang-core-ast/hir-nodes';
 import type { ClassMemberDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-// eslint-disable-next-line import/no-internal-modules
-import type { ModuleTypingContext } from 'samlang-core-checker/typing-context';
 
 import lowerSamlangExpression from './hir-expression-lowering';
 import HighIRStringManager from './hir-string-manager';
@@ -29,7 +26,6 @@ function compileSamlangFunctionToHighIRFunctions(
   moduleReference: ModuleReference,
   className: string,
   typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
-  functionTypeMapping: Readonly<Record<string, HighIRFunctionType>>,
   classTypeParameters: readonly string[],
   typeSynthesizer: HighIRTypeSynthesizer,
   stringManager: HighIRStringManager,
@@ -62,7 +58,6 @@ function compileSamlangFunctionToHighIRFunctions(
     encodedName,
     mainFunctionParamterWithTypes,
     typeDefinitionMapping,
-    functionTypeMapping,
     typeLoweringManager,
     stringManager,
     classMember.body
@@ -106,27 +101,12 @@ function compileSamlangFunctionToHighIRFunctions(
   return [compiledFunctions, null];
 }
 
-function buildHighIRCompilationContextFromSources(
-  sources: Sources<SamlangModule>,
-  builtinModuleTypes: ModuleTypingContext
-) {
+function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
+  sources: Sources<SamlangModule>
+): HighIRSources {
   const typeSynthesizer = new HighIRTypeSynthesizer();
-  const functionTypeMapping: Record<string, HighIRFunctionType> = {};
   const compiledTypeDefinitions: HighIRTypeDefinition[] = [];
-
-  Object.entries(builtinModuleTypes).forEach(([builtinClass, builtinClassContext]) => {
-    Object.entries(builtinClassContext.functions).forEach(
-      ([builtinFunctionName, builtinFuncionType]) => {
-        const manager = new SamlangTypeLoweringManager(
-          new Set(builtinFuncionType.typeParameters),
-          typeSynthesizer
-        );
-        functionTypeMapping[
-          encodeFunctionNameGlobally(ModuleReference.ROOT, builtinClass, builtinFunctionName)
-        ] = manager.lowerSamlangFunctionTypeForTopLevel(builtinFuncionType.type)[1];
-      }
-    );
-  });
+  const mainFunctionNames: string[] = [];
   sources.forEach((samlangModule, moduleReference) => {
     samlangModule.classes.map(({ name: className, typeParameters, typeDefinition, members }) => {
       compiledTypeDefinitions.push(
@@ -135,33 +115,19 @@ function buildHighIRCompilationContextFromSources(
           typeSynthesizer
         ).lowerSamlangTypeDefinition(moduleReference, className, typeDefinition)
       );
-      members.forEach((classMember) => {
-        const manager = new SamlangTypeLoweringManager(
-          new Set(
-            classMember.isMethod
-              ? [...typeParameters, ...classMember.typeParameters]
-              : classMember.typeParameters
-          ),
-          typeSynthesizer
-        );
-        functionTypeMapping[
-          encodeFunctionNameGlobally(moduleReference, className, classMember.name)
-        ] = HIR_FUNCTION_TYPE(
-          classMember.parameters.map(({ type }) => manager.lowerSamlangType(type)),
-          manager.lowerSamlangType(classMember.type.returnType)
-        );
-      });
+      if (
+        className === 'Main' &&
+        members.some(
+          (member) =>
+            member.name === 'main' &&
+            member.parameters.length === 0 &&
+            member.typeParameters.length === 0
+        )
+      ) {
+        mainFunctionNames.push(encodeMainFunctionName(moduleReference));
+      }
     });
   });
-  return { typeSynthesizer, compiledTypeDefinitions, functionTypeMapping };
-}
-
-function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
-  sources: Sources<SamlangModule>,
-  builtinModuleTypes: ModuleTypingContext
-): HighIRSources {
-  const { typeSynthesizer, compiledTypeDefinitions, functionTypeMapping } =
-    buildHighIRCompilationContextFromSources(sources, builtinModuleTypes);
   const typeDefinitionMapping = Object.fromEntries(
     compiledTypeDefinitions.map((it) => [it.identifier, it])
   );
@@ -169,20 +135,13 @@ function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
   const stringManager = new HighIRStringManager();
   const compiledFunctionsWithAddedDummyContext: HighIRFunction[] = [];
   const compiledFunctions: HighIRFunction[] = [];
-  const mainFunctionNames: string[] = [];
   sources.forEach((samlangModule, moduleReference) => {
-    const entryPointFunctionName = encodeMainFunctionName(moduleReference);
-    const mainFunctionType = functionTypeMapping[entryPointFunctionName];
-    if (mainFunctionType) {
-      mainFunctionNames.push(entryPointFunctionName);
-    }
     samlangModule.classes.map(({ name: className, typeParameters, members }) => {
       members.forEach((member) => {
         const [compiledFunctionsToAdd, withContext] = compileSamlangFunctionToHighIRFunctions(
           moduleReference,
           className,
           typeDefinitionMapping,
-          functionTypeMapping,
           typeParameters,
           typeSynthesizer,
           stringManager,
@@ -203,8 +162,7 @@ function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
 }
 
 export default function compileSamlangSourcesToHighIRSources(
-  sources: Sources<SamlangModule>,
-  builtinModuleTypes: ModuleTypingContext
+  sources: Sources<SamlangModule>
 ): HighIRSources {
-  return compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources, builtinModuleTypes);
+  return compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources);
 }
