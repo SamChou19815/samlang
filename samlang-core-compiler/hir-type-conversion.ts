@@ -148,7 +148,7 @@ export const highIRTypeApplication = (
   }
 };
 
-export const encodeHighIRType = (moduleReference: ModuleReference, identifier: string): string =>
+export const encodeSamlangType = (moduleReference: ModuleReference, identifier: string): string =>
   `${moduleReference.parts.join('_')}_${identifier}`;
 
 const lowerSamlangPrimitiveType = (type: PrimitiveType): HighIRPrimitiveType => {
@@ -179,7 +179,7 @@ export class SamlangTypeLoweringManager {
           return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(type.identifier);
         }
         return HIR_IDENTIFIER_TYPE(
-          encodeHighIRType(type.moduleReference, type.identifier),
+          encodeSamlangType(type.moduleReference, type.identifier),
           type.typeArguments.map(this.lowerSamlangType)
         );
       case 'TupleType': {
@@ -209,7 +209,7 @@ export class SamlangTypeLoweringManager {
     identifier: string,
     { type, names, mappings: sourceLevelMappings }: TypeDefinition
   ): HighIRTypeDefinition => ({
-    identifier: encodeHighIRType(moduleReference, identifier),
+    identifier: encodeSamlangType(moduleReference, identifier),
     type,
     typeParameters: Array.from(this.genericTypes),
     mappings: names.map((it) => this.lowerSamlangType(checkNotNull(sourceLevelMappings[it]).type)),

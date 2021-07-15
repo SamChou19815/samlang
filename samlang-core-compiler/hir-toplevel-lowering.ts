@@ -17,7 +17,7 @@ import type { ClassMemberDefinition, SamlangModule } from 'samlang-core-ast/saml
 import lowerSamlangExpression from './hir-expression-lowering';
 import HighIRStringManager from './hir-string-manager';
 import {
-  encodeHighIRType,
+  encodeSamlangType,
   HighIRTypeSynthesizer,
   SamlangTypeLoweringManager,
 } from './hir-type-conversion';
@@ -46,7 +46,7 @@ function compileSamlangFunctionToHighIRFunctions(
     mainFunctionParamterWithTypes.unshift([
       '_this',
       HIR_IDENTIFIER_TYPE(
-        encodeHighIRType(moduleReference, className),
+        encodeSamlangType(moduleReference, className),
         classTypeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS)
       ),
     ]);
