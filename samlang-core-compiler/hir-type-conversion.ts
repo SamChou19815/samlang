@@ -8,6 +8,7 @@ import {
   prettyPrintHighIRType,
   HighIRType,
   HighIRPrimitiveType,
+  HighIRIdentifierType,
   HighIRFunctionType,
   HighIRTypeDefinition,
   HIR_BOOL_TYPE,
@@ -150,6 +151,32 @@ export const highIRTypeApplication = (
 
 export const encodeSamlangType = (moduleReference: ModuleReference, identifier: string): string =>
   `${moduleReference.parts.join('_')}_${identifier}`;
+
+/** A encoder ensures that all the characters are good for function names. */
+const encodeHighIRTypeForGenericsSpecialization = (type: HighIRType): string => {
+  switch (type.__type__) {
+    case 'PrimitiveType':
+      return type.type;
+    case 'IdentifierType':
+      assert(
+        type.typeArguments.length === 0,
+        'The identifier type argument should already be specialized.'
+      );
+      return type.name;
+    case 'FunctionType':
+      assert(false, 'Function type should never appear in generics specialization positions.');
+    case 'ClosureType':
+      return `$${type.argumentTypes
+        .map(encodeHighIRTypeForGenericsSpecialization)
+        .join('_')}_${encodeHighIRTypeForGenericsSpecialization(type.returnType)}$`;
+  }
+};
+
+export const encodeHighIRIdentifierTypeAfterGenericsSpecialization = ({
+  name,
+  typeArguments,
+}: HighIRIdentifierType): string =>
+  `${name}_${typeArguments.map(encodeHighIRTypeForGenericsSpecialization).join('_')}`;
 
 const lowerSamlangPrimitiveType = (type: PrimitiveType): HighIRPrimitiveType => {
   switch (type.name) {
