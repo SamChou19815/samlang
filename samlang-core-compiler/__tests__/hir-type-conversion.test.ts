@@ -26,7 +26,7 @@ import {
   solveTypeArguments,
   highIRTypeApplication,
   HighIRTypeSynthesizer,
-  encodeHighIRIdentifierTypeAfterGenericsSpecialization,
+  encodeHighIRNameAfterGenericsSpecialization,
   SamlangTypeLoweringManager,
 } from '../hir-type-conversion';
 
@@ -175,18 +175,14 @@ describe('hir-type-conversion', () => {
 
   it('encodeHighIRIdentifierTypeAfterGenericsSpecialization works', () => {
     expect(() =>
-      encodeHighIRIdentifierTypeAfterGenericsSpecialization(
-        HIR_IDENTIFIER_TYPE('A', [HIR_FUNCTION_TYPE([], HIR_INT_TYPE)])
-      )
+      encodeHighIRNameAfterGenericsSpecialization('A', [HIR_FUNCTION_TYPE([], HIR_INT_TYPE)])
     ).toThrow();
 
     expect(
-      encodeHighIRIdentifierTypeAfterGenericsSpecialization(
-        HIR_IDENTIFIER_TYPE('A', [
-          HIR_INT_TYPE,
-          HIR_CLOSURE_TYPE([HIR_INT_TYPE], HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')),
-        ])
-      )
+      encodeHighIRNameAfterGenericsSpecialization('A', [
+        HIR_INT_TYPE,
+        HIR_CLOSURE_TYPE([HIR_INT_TYPE], HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')),
+      ])
     ).toBe('A_int_$int_B$');
   });
 

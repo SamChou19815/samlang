@@ -8,7 +8,6 @@ import {
   prettyPrintHighIRType,
   HighIRType,
   HighIRPrimitiveType,
-  HighIRIdentifierType,
   HighIRFunctionType,
   HighIRTypeDefinition,
   HIR_BOOL_TYPE,
@@ -172,11 +171,10 @@ const encodeHighIRTypeForGenericsSpecialization = (type: HighIRType): string => 
   }
 };
 
-export const encodeHighIRIdentifierTypeAfterGenericsSpecialization = ({
-  name,
-  typeArguments,
-}: HighIRIdentifierType): string =>
-  `${name}_${typeArguments.map(encodeHighIRTypeForGenericsSpecialization).join('_')}`;
+export const encodeHighIRNameAfterGenericsSpecialization = (
+  name: string,
+  typeArguments: readonly HighIRType[]
+): string => `${name}_${typeArguments.map(encodeHighIRTypeForGenericsSpecialization).join('_')}`;
 
 const lowerSamlangPrimitiveType = (type: PrimitiveType): HighIRPrimitiveType => {
   switch (type.name) {
