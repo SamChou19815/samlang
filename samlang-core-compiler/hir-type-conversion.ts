@@ -90,7 +90,8 @@ export const solveTypeArguments = (
   const solve = (t1: HighIRType, t2: HighIRType): void => {
     switch (t1.__type__) {
       case 'PrimitiveType':
-        assert(t2.__type__ === 'PrimitiveType' && t1.type === t2.type);
+        assert(t2.__type__ === 'PrimitiveType', `t2 has type ${t2.__type__}`);
+        assert(t1.type === t2.type);
         return;
       case 'IdentifierType':
         if (t1.typeArguments.length === 0 && genericTypeParameterSet.has(t1.name)) {
@@ -121,7 +122,7 @@ export const solveTypeArguments = (
     }
   };
 
-  solve(specializedType, parameterizedTypeDefinition);
+  solve(parameterizedTypeDefinition, specializedType);
   return genericTypeParameters.map((it) => checkNotNull(solved.get(it)));
 };
 
