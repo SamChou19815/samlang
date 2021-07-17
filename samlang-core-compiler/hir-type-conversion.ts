@@ -98,12 +98,12 @@ export const solveTypeArguments = (
           solved.set(t1.name, t2);
           return;
         }
-        assert(
-          t2.__type__ === 'IdentifierType' &&
-            t1.name === t2.name &&
-            t1.typeArguments.length === t2.typeArguments.length
-        );
-        zip(t1.typeArguments, t2.typeArguments).forEach(([a1, a2]) => solve(a1, a2));
+        assert(t2.__type__ === 'IdentifierType', `t2 has type ${t2.__type__}`);
+        if (t1.name === t2.name) {
+          // Things might already been specialized.
+          assert(t1.typeArguments.length === t2.typeArguments.length);
+          zip(t1.typeArguments, t2.typeArguments).forEach(([a1, a2]) => solve(a1, a2));
+        }
         return;
       case 'FunctionType':
         assert(

@@ -111,6 +111,14 @@ describe('hir-type-conversion', () => {
   it('solveTypeArguments works', () => {
     expect(
       solveTypeArguments(
+        [],
+        HIR_IDENTIFIER_TYPE('Foo', []),
+        HIR_IDENTIFIER_TYPE('Foo_string', [HIR_STRING_TYPE])
+      )
+    ).toEqual([]);
+
+    expect(
+      solveTypeArguments(
         ['A'],
         HIR_CLOSURE_TYPE(
           [HIR_INT_TYPE, HIR_BOOL_TYPE],
