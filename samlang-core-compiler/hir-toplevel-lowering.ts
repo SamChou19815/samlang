@@ -15,6 +15,7 @@ import {
 import type { ClassMemberDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 
 import lowerSamlangExpression from './hir-expression-lowering';
+import performGenericsSpecializationOnHighIRSources from './hir-generics-specialization';
 import HighIRStringManager from './hir-string-manager';
 import {
   encodeSamlangType,
@@ -101,7 +102,8 @@ function compileSamlangFunctionToHighIRFunctions(
   return [compiledFunctions, null];
 }
 
-function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
+/** @internal */
+export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
   sources: Sources<SamlangModule>
 ): HighIRSources {
   const typeSynthesizer = new HighIRTypeSynthesizer();
@@ -164,5 +166,7 @@ function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
 export default function compileSamlangSourcesToHighIRSources(
   sources: Sources<SamlangModule>
 ): HighIRSources {
-  return compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources);
+  return performGenericsSpecializationOnHighIRSources(
+    compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources)
+  );
 }
