@@ -36,7 +36,7 @@ import lowerSamlangExpression from './mir-expression-lowering';
 import MidIRTypeSynthesizer from './mir-type-synthesizer';
 import lowerSamlangType from './mir-types-lowering';
 
-const compileTypeDefinition = (
+const compileSamlangTypeDefinitionToMidIRTypeDefinition = (
   moduleReference: ModuleReference,
   identifier: string,
   typeParameters: ReadonlySet<string>,
@@ -64,7 +64,7 @@ const compileTypeDefinition = (
   };
 };
 
-const compileFunction = (
+const compileSamlangFunctionToMidIRFunction = (
   moduleReference: ModuleReference,
   className: string,
   typeDefinitionMapping: Readonly<Record<string, readonly MidIRType[]>>,
@@ -178,7 +178,7 @@ const compileSamlangSourcesToMidIRSources = (
   });
   sources.forEach((samlangModule, moduleReference) => {
     samlangModule.classes.map(({ name: className, typeParameters, typeDefinition, members }) => {
-      const compiledTypeDefinition = compileTypeDefinition(
+      const compiledTypeDefinition = compileSamlangTypeDefinitionToMidIRTypeDefinition(
         moduleReference,
         className,
         new Set(typeParameters),
@@ -210,7 +210,7 @@ const compileSamlangSourcesToMidIRSources = (
   sources.forEach((samlangModule, moduleReference) => {
     samlangModule.classes.map(({ name: className, typeParameters, members }) => {
       members.forEach((member) => {
-        const [compiledFunctionsToAdd, withContext] = compileFunction(
+        const [compiledFunctionsToAdd, withContext] = compileSamlangFunctionToMidIRFunction(
           moduleReference,
           className,
           typeDefinitionMapping,
