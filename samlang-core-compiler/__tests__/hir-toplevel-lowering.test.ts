@@ -22,7 +22,9 @@ import {
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { mapOf } from 'samlang-core-utils';
 
-import compileSamlangSourcesToHighIRSources from '../hir-toplevel-lowering';
+import compileSamlangSourcesToHighIRSources, {
+  compileSamlangSourcesToHighIRSourcesWithGenericsPreserved,
+} from '../hir-toplevel-lowering';
 
 const THIS = EXPRESSION_THIS({
   range: Range.DUMMY,
@@ -41,12 +43,7 @@ describe('mir-toplevel-lowering', () => {
           name: 'Main',
           nameRange: Range.DUMMY,
           typeParameters: [],
-          typeDefinition: {
-            range: Range.DUMMY,
-            type: 'object',
-            names: [],
-            mappings: {},
-          },
+          typeDefinition: { range: Range.DUMMY, type: 'object', names: [], mappings: {} },
           members: [
             {
               associatedComments: [],
@@ -262,14 +259,14 @@ describe('mir-toplevel-lowering', () => {
       ],
     };
 
-    const actualCompiledSources = compileSamlangSourcesToHighIRSources(
-      mapOf(
-        [ModuleReference.DUMMY, sourceModule],
-        [new ModuleReference(['Foo']), { imports: [], classes: [] }]
-      )
+    const sources = mapOf(
+      [ModuleReference.DUMMY, sourceModule],
+      [new ModuleReference(['Foo']), { imports: [], classes: [] }]
     );
 
-    expect(debugPrintHighIRSources(actualCompiledSources)).toBe(
+    expect(
+      debugPrintHighIRSources(compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources))
+    ).toBe(
       `object type __DUMMY___Main = []
 object type __DUMMY___Class1 = [int]
 variant type __DUMMY___Class2 = []
@@ -320,5 +317,18 @@ function _module___DUMMY___class_Class1_function_factorial(n: int, acc: int): in
 
 sources.mains = [_module___DUMMY___class_Main_function_main]`
     );
+
+    expect(`\n${debugPrintHighIRSources(compileSamlangSourcesToHighIRSources(sources))}`).toBe(`
+function _module___DUMMY___class_Class1_function_infiniteLoop(): int {
+  _module___DUMMY___class_Class1_function_infiniteLoop();
+  return 0;
+}
+
+function _module___DUMMY___class_Main_function_main(): int {
+  _module___DUMMY___class_Class1_function_infiniteLoop();
+  return 0;
+}
+
+sources.mains = [_module___DUMMY___class_Main_function_main]`);
   });
 });
