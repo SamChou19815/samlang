@@ -30,6 +30,7 @@ class GenericsSpecializationRewriter {
   private readonly originalTypeDefinitions: Readonly<Record<string, HighIRTypeDefinition>>;
   private readonly originalFunctions: Readonly<Record<string, HighIRFunction>>;
 
+  public readonly usedStringNames: Set<string> = new Set();
   public readonly specializedTypeDefinitions: Record<string, HighIRTypeDefinition> = {};
   public readonly specializedFunctions: Record<string, HighIRFunction> = {};
 
@@ -146,7 +147,10 @@ class GenericsSpecializationRewriter {
       case 'HighIRVariableExpression':
         return { ...expression, type: this.rewriteType(expression.type, genericsReplacementMap) };
       case 'HighIRNameExpression': {
-        if (expression.type.__type__ === 'PrimitiveType') return expression;
+        if (expression.type.__type__ === 'PrimitiveType') {
+          this.usedStringNames.add(expression.name);
+          return expression;
+        }
         const functionType = HIR_FUNCTION_TYPE(
           expression.type.argumentTypes.map((it) => this.rewriteType(it, genericsReplacementMap)),
           this.rewriteType(expression.type.returnType, genericsReplacementMap)
@@ -259,7 +263,7 @@ export default function performGenericsSpecializationOnHighIRSources(
 ): HighIRSources {
   const rewriter = new GenericsSpecializationRewriter(sources);
   return {
-    globalVariables: sources.globalVariables,
+    globalVariables: sources.globalVariables.filter((it) => rewriter.usedStringNames.has(it.name)),
     typeDefinitions: Object.values(rewriter.specializedTypeDefinitions),
     mainFunctionNames: sources.mainFunctionNames,
     functions: Object.values(rewriter.specializedFunctions),
