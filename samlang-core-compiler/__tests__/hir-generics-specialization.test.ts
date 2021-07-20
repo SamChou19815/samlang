@@ -209,8 +209,6 @@ sources.mains = [main]
       `
 const G1 = '';
 
-const G2 = '';
-
 variant type I_int_string = [int, string]
 variant type I_string_string = [string, string]
 object type J = [int]
