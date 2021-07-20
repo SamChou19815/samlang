@@ -186,6 +186,8 @@ describe('hir-type-conversion', () => {
       encodeHighIRNameAfterGenericsSpecialization('A', [HIR_FUNCTION_TYPE([], HIR_INT_TYPE)])
     ).toThrow();
 
+    expect(encodeHighIRNameAfterGenericsSpecialization('A', [])).toBe('A');
+
     expect(
       encodeHighIRNameAfterGenericsSpecialization('A', [
         HIR_INT_TYPE,
