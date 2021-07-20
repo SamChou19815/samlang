@@ -175,7 +175,10 @@ const encodeHighIRTypeForGenericsSpecialization = (type: HighIRType): string => 
 export const encodeHighIRNameAfterGenericsSpecialization = (
   name: string,
   typeArguments: readonly HighIRType[]
-): string => `${name}_${typeArguments.map(encodeHighIRTypeForGenericsSpecialization).join('_')}`;
+): string =>
+  typeArguments.length === 0
+    ? name
+    : `${name}_${typeArguments.map(encodeHighIRTypeForGenericsSpecialization).join('_')}`;
 
 const lowerSamlangPrimitiveType = (type: PrimitiveType): HighIRPrimitiveType => {
   switch (type.name) {
