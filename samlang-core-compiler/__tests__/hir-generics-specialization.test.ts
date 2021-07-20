@@ -255,4 +255,76 @@ sources.mains = [main]
       `
     );
   });
+
+  it('Generics specialization rewrite no-arg function/typedef test.', () => {
+    const typeIConcrete = HIR_IDENTIFIER_TYPE('I', [HIR_INT_TYPE, HIR_INT_TYPE]);
+    const typeJ = HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('J');
+    expectSpecialized(
+      {
+        globalVariables: [],
+        typeDefinitions: [
+          {
+            identifier: 'I',
+            type: 'variant',
+            typeParameters: ['A', 'B'],
+            mappings: [
+              HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
+              HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
+            ],
+          },
+          { identifier: 'J', type: 'object', typeParameters: [], mappings: [typeIConcrete] },
+        ],
+        mainFunctionNames: ['main'],
+        functions: [
+          {
+            name: 'creatorJ',
+            parameters: [],
+            typeParameters: [],
+            type: HIR_FUNCTION_TYPE([], typeJ),
+            body: [
+              HIR_STRUCT_INITIALIZATION({
+                structVariableName: 'v1',
+                type: typeIConcrete,
+                expressionList: [],
+              }),
+              HIR_STRUCT_INITIALIZATION({
+                structVariableName: 'v2',
+                type: typeJ,
+                expressionList: [HIR_ZERO, HIR_ZERO],
+              }),
+            ],
+            returnValue: HIR_VARIABLE('v2', typeJ),
+          },
+          {
+            name: 'main',
+            parameters: [],
+            typeParameters: [],
+            type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+            body: [
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME('creatorJ', HIR_FUNCTION_TYPE([], typeJ)),
+                functionArguments: [],
+                returnType: typeJ,
+              }),
+            ],
+            returnValue: HIR_ZERO,
+          },
+        ],
+      },
+      `object type J = [I_int_int]
+variant type I_int_int = [int, int]
+function creatorJ(): J {
+  let v1: I_int_int = [];
+  let v2: J = [0, 0];
+  return (v2: J);
+}
+
+function main(): int {
+  creatorJ();
+  return 0;
+}
+
+sources.mains = [main]`
+    );
+  });
 });

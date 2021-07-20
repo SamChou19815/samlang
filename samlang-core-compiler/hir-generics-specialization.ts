@@ -165,10 +165,6 @@ class GenericsSpecializationRewriter {
       functionType,
       existingFunction.type
     );
-    if (solvedFunctionTypeArguments.length === 0) {
-      this.specializedFunctions[originalName] = existingFunction;
-      return originalName;
-    }
     const encodedSpecializedFunctionName = encodeHighIRNameAfterGenericsSpecialization(
       originalName,
       solvedFunctionTypeArguments
@@ -219,10 +215,6 @@ class GenericsSpecializationRewriter {
     if (type.typeArguments.length === 0) {
       const replacement = genericsReplacementMap[type.name];
       if (replacement != null) return replacement;
-      const originalTypeDefinition = this.originalTypeDefinitions[type.name];
-      assert(originalTypeDefinition != null, `Missing "${type.name}"`);
-      this.specializedTypeDefinitions[type.name] = originalTypeDefinition;
-      return type;
     }
     const concreteType = {
       ...type,
@@ -248,12 +240,13 @@ class GenericsSpecializationRewriter {
           )
         )
       );
+      this.specializedTypeDefinitions[encodedName] = typeDefinition;
       this.specializedTypeDefinitions[encodedName] = {
         identifier: encodedName,
         typeParameters: [],
         type: typeDefinition.type,
         mappings: typeDefinition.mappings.map((it) =>
-          highIRTypeApplication(it, solvedTypeArgumentsReplacementMap)
+          this.rewriteType(highIRTypeApplication(it, solvedTypeArgumentsReplacementMap), {})
         ),
       };
     }
