@@ -11,6 +11,7 @@ import {
 } from 'samlang-core-ast/common-nodes';
 import {
   prettyPrintHighIRType,
+  prettyPrintHighIRClosureTypeDefinition,
   prettyPrintHighIRTypeDefinition,
   HIR_BOOL_TYPE,
   HIR_INT_TYPE,
@@ -18,7 +19,6 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
-  HIR_CLOSURE_TYPE,
 } from 'samlang-core-ast/hir-nodes';
 
 import {
@@ -60,13 +60,33 @@ describe('hir-type-conversion', () => {
       ).identifier
     ).toBe('$SyntheticIDType1');
 
-    expect(synthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
+    expect(
+      synthesizer.synthesizeClosureType(HIR_FUNCTION_TYPE([], HIR_INT_TYPE), []).identifier
+    ).toBe('$SyntheticIDType2');
+    expect(
+      synthesizer.synthesizeClosureType(HIR_FUNCTION_TYPE([], HIR_INT_TYPE), []).identifier
+    ).toBe('$SyntheticIDType2');
+    expect(
+      synthesizer.synthesizeClosureType(HIR_FUNCTION_TYPE([], HIR_BOOL_TYPE), []).identifier
+    ).toBe('$SyntheticIDType3');
+    expect(
+      synthesizer.synthesizeClosureType(HIR_FUNCTION_TYPE([], HIR_BOOL_TYPE), []).identifier
+    ).toBe('$SyntheticIDType3');
+
+    expect(synthesizer.synthesizedTupleTypes.map(prettyPrintHighIRTypeDefinition)).toEqual([
       'object type $SyntheticIDType0 = [bool, (int) -> bool]',
       'object type $SyntheticIDType1 = [int, (bool) -> bool]',
     ]);
-    expect(Array.from(synthesizer.mappings.keys())).toEqual([
+    expect(Array.from(synthesizer.tupleMappings.keys())).toEqual([
       '$SyntheticIDType0',
       '$SyntheticIDType1',
+    ]);
+    expect(synthesizer.synthesizedClosureTypes.map(prettyPrintHighIRClosureTypeDefinition)).toEqual(
+      ['closure type $SyntheticIDType2 = () -> int', 'closure type $SyntheticIDType3 = () -> bool']
+    );
+    expect(Array.from(synthesizer.closureMappings.keys())).toEqual([
+      '$SyntheticIDType2',
+      '$SyntheticIDType3',
     ]);
   });
 
@@ -120,7 +140,7 @@ describe('hir-type-conversion', () => {
     expect(
       solveTypeArguments(
         ['A'],
-        HIR_CLOSURE_TYPE(
+        HIR_FUNCTION_TYPE(
           [HIR_INT_TYPE, HIR_BOOL_TYPE],
           HIR_FUNCTION_TYPE(
             [
@@ -131,7 +151,7 @@ describe('hir-type-conversion', () => {
             HIR_STRING_TYPE
           )
         ),
-        HIR_CLOSURE_TYPE(
+        HIR_FUNCTION_TYPE(
           [HIR_INT_TYPE, HIR_BOOL_TYPE],
           HIR_FUNCTION_TYPE(
             [
@@ -170,15 +190,6 @@ describe('hir-type-conversion', () => {
         { A: HIR_INT_TYPE, B: HIR_BOOL_TYPE }
       )
     ).toEqual(HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));
-    expect(
-      highIRTypeApplication(
-        HIR_CLOSURE_TYPE(
-          [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A')],
-          HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')
-        ),
-        { A: HIR_INT_TYPE, B: HIR_BOOL_TYPE }
-      )
-    ).toEqual(HIR_CLOSURE_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));
   });
 
   it('encodeHighIRIdentifierTypeAfterGenericsSpecialization works', () => {
@@ -191,9 +202,9 @@ describe('hir-type-conversion', () => {
     expect(
       encodeHighIRNameAfterGenericsSpecialization('A', [
         HIR_INT_TYPE,
-        HIR_CLOSURE_TYPE([HIR_INT_TYPE], HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')),
+        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B'),
       ])
-    ).toBe('A_int_$int_B$');
+    ).toBe('A_int_B');
   });
 
   it('SamlangTypeLoweringManager.lowerSamlangType() works', () => {
@@ -232,14 +243,17 @@ describe('hir-type-conversion', () => {
           functionType([identifierType(ModuleReference.DUMMY, 'T'), boolType], intType)
         )
       )
-    ).toBe('$Closure<(T, bool) -> int>');
+    ).toBe('$SyntheticIDType2<T>');
 
     expect(() => manager.lowerSamlangType({ type: 'UndecidedType', index: 0 })).toThrow();
 
-    expect(typeSynthesizer.synthesized.map(prettyPrintHighIRTypeDefinition)).toEqual([
+    expect(typeSynthesizer.synthesizedTupleTypes.map(prettyPrintHighIRTypeDefinition)).toEqual([
       'object type $SyntheticIDType0 = [int, bool]',
       'object type $SyntheticIDType1<T> = [int, T]',
     ]);
+    expect(
+      typeSynthesizer.synthesizedClosureTypes.map(prettyPrintHighIRClosureTypeDefinition)
+    ).toEqual(['closure type $SyntheticIDType2<T> = (T, bool) -> int']);
   });
 
   it('SamlangTypeLoweringManager.lowerSamlangTypeDefinition() works', () => {
@@ -270,9 +284,15 @@ describe('hir-type-conversion', () => {
       },
     });
     expect(
-      [...typeSynthesizer.synthesized, typeDefinition].map(prettyPrintHighIRTypeDefinition)
+      [...typeSynthesizer.synthesizedTupleTypes, typeDefinition].map(
+        prettyPrintHighIRTypeDefinition
+      )
+    ).toEqual(['object type _Foo<A> = [$SyntheticIDType1<A>, $SyntheticIDType1<A>]']);
+    expect(
+      typeSynthesizer.synthesizedClosureTypes.map(prettyPrintHighIRClosureTypeDefinition)
     ).toEqual([
-      'object type _Foo<A> = [$Closure<($Closure<(A) -> bool>) -> bool>, $Closure<($Closure<(A) -> bool>) -> bool>]',
+      'closure type $SyntheticIDType0<A> = (A) -> bool',
+      'closure type $SyntheticIDType1<A> = ($SyntheticIDType0<A>) -> bool',
     ]);
   });
 
@@ -289,7 +309,10 @@ describe('hir-type-conversion', () => {
       )
     ).toEqual([
       [],
-      HIR_FUNCTION_TYPE([HIR_CLOSURE_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE)], HIR_BOOL_TYPE),
+      HIR_FUNCTION_TYPE(
+        [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('$SyntheticIDType0')],
+        HIR_BOOL_TYPE
+      ),
     ]);
   });
 });

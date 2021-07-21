@@ -157,7 +157,8 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
 
   return {
     globalVariables: stringManager.globalVariables,
-    typeDefinitions: [...compiledTypeDefinitions, ...typeSynthesizer.synthesized],
+    closureTypes: typeSynthesizer.synthesizedClosureTypes,
+    typeDefinitions: [...compiledTypeDefinitions, ...typeSynthesizer.synthesizedTupleTypes],
     mainFunctionNames,
     functions: [...compiledFunctionsWithAddedDummyContext, ...compiledFunctions],
   };
