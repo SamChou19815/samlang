@@ -2,6 +2,7 @@ import {
   HighIRType,
   HighIRIdentifierType,
   HighIRFunctionType,
+  HighIRClosureTypeDefinition,
   HighIRTypeDefinition,
   HighIRExpression,
   HighIRStatement,
@@ -9,6 +10,7 @@ import {
   HighIRSources,
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
+  HIR_FUNCTION_TYPE,
   HIR_NAME,
   HIR_INDEX_ACCESS,
   HIR_BINARY,
@@ -16,7 +18,6 @@ import {
   HIR_IF_ELSE,
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
-  HIR_FUNCTION_TYPE,
 } from 'samlang-core-ast/hir-nodes';
 import { assert, checkNotNull, zip } from 'samlang-core-utils';
 
@@ -27,14 +28,22 @@ import {
 } from './hir-type-conversion';
 
 class GenericsSpecializationRewriter {
+  private readonly originalClosureTypeDefinitions: Readonly<
+    Record<string, HighIRClosureTypeDefinition>
+  >;
   private readonly originalTypeDefinitions: Readonly<Record<string, HighIRTypeDefinition>>;
   private readonly originalFunctions: Readonly<Record<string, HighIRFunction>>;
 
   public readonly usedStringNames: Set<string> = new Set();
+  public readonly specializedClosureTypeDefinitions: Record<string, HighIRClosureTypeDefinition> =
+    {};
   public readonly specializedTypeDefinitions: Record<string, HighIRTypeDefinition> = {};
   public readonly specializedFunctions: Record<string, HighIRFunction> = {};
 
   constructor(sources: HighIRSources) {
+    this.originalClosureTypeDefinitions = Object.fromEntries(
+      sources.closureTypes.map((it) => [it.identifier, it])
+    );
     this.originalTypeDefinitions = Object.fromEntries(
       sources.typeDefinitions.map((it) => [it.identifier, it])
     );
@@ -123,7 +132,7 @@ class GenericsSpecializationRewriter {
       }
       case 'HighIRClosureInitializationStatement': {
         const closureType = this.rewriteType(statement.closureType, genericsReplacementMap);
-        assert(closureType.__type__ === 'ClosureType');
+        assert(closureType.__type__ === 'IdentifierType');
         const functionType = this.rewriteType(statement.functionType, genericsReplacementMap);
         assert(functionType.__type__ === 'FunctionType');
         return HIR_CLOSURE_INITIALIZATION({
@@ -199,14 +208,10 @@ class GenericsSpecializationRewriter {
       case 'PrimitiveType':
         return type;
       case 'FunctionType':
-      case 'ClosureType':
-        return {
-          ...type,
-          argumentTypes: type.argumentTypes.map((it) =>
-            this.rewriteType(it, genericsReplacementMap)
-          ),
-          returnType: this.rewriteType(type.returnType, genericsReplacementMap),
-        };
+        return HIR_FUNCTION_TYPE(
+          type.argumentTypes.map((it) => this.rewriteType(it, genericsReplacementMap)),
+          this.rewriteType(type.returnType, genericsReplacementMap)
+        );
       case 'IdentifierType':
         return this.rewriteHighIRIdentifierType(type, genericsReplacementMap);
     }
@@ -230,7 +235,44 @@ class GenericsSpecializationRewriter {
     );
     const existingSpecializedTypeDefinition = this.specializedTypeDefinitions[encodedName];
     if (existingSpecializedTypeDefinition == null) {
-      const typeDefinition = checkNotNull(this.originalTypeDefinitions[concreteType.name]);
+      const typeDefinition = this.originalTypeDefinitions[concreteType.name];
+      if (typeDefinition == null) {
+        const existingSpecializedClosureTypeDefinition =
+          this.specializedClosureTypeDefinitions[encodedName];
+        if (existingSpecializedClosureTypeDefinition == null) {
+          const closureTypeDefinition = checkNotNull(
+            this.originalClosureTypeDefinitions[concreteType.name]
+          );
+          const solvedTypeArgumentsReplacementMap = Object.fromEntries(
+            zip(
+              closureTypeDefinition.typeParameters,
+              solveTypeArguments(
+                closureTypeDefinition.typeParameters,
+                concreteType,
+                HIR_IDENTIFIER_TYPE(
+                  concreteType.name,
+                  closureTypeDefinition.typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS)
+                )
+              )
+            )
+          );
+          this.specializedClosureTypeDefinitions[encodedName] = closureTypeDefinition;
+          const rewrittenFunctionType = this.rewriteType(
+            highIRTypeApplication(
+              closureTypeDefinition.functionType,
+              solvedTypeArgumentsReplacementMap
+            ),
+            {}
+          );
+          assert(rewrittenFunctionType.__type__ === 'FunctionType');
+          this.specializedClosureTypeDefinitions[encodedName] = {
+            identifier: encodedName,
+            typeParameters: [],
+            functionType: rewrittenFunctionType,
+          };
+        }
+        return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(encodedName);
+      }
       const solvedTypeArgumentsReplacementMap = Object.fromEntries(
         zip(
           typeDefinition.typeParameters,
@@ -264,6 +306,7 @@ export default function performGenericsSpecializationOnHighIRSources(
   const rewriter = new GenericsSpecializationRewriter(sources);
   return {
     globalVariables: sources.globalVariables.filter((it) => rewriter.usedStringNames.has(it.name)),
+    closureTypes: Object.values(rewriter.specializedClosureTypeDefinitions),
     typeDefinitions: Object.values(rewriter.specializedTypeDefinitions),
     mainFunctionNames: sources.mainFunctionNames,
     functions: Object.values(rewriter.specializedFunctions),

@@ -9,7 +9,6 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
-  HIR_CLOSURE_TYPE,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
   HIR_INDEX_ACCESS,
@@ -26,18 +25,15 @@ describe('hir-nodes', () => {
   it('prettyPrintHighIRType works', () => {
     expect(
       prettyPrintHighIRType(
-        HIR_CLOSURE_TYPE(
-          [HIR_INT_TYPE, HIR_BOOL_TYPE],
-          HIR_FUNCTION_TYPE(
-            [
-              HIR_IDENTIFIER_TYPE('Foo', [HIR_STRING_TYPE]),
-              HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Foo'),
-            ],
-            HIR_STRING_TYPE
-          )
+        HIR_FUNCTION_TYPE(
+          [
+            HIR_IDENTIFIER_TYPE('Foo', [HIR_STRING_TYPE]),
+            HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Foo'),
+          ],
+          HIR_STRING_TYPE
         )
       )
-    ).toBe('$Closure<(int, bool) -> (Foo<string>, Foo) -> string>');
+    ).toBe('(Foo<string>, Foo) -> string');
   });
 
   it('prettyPrintHighIRTypeDefinition works', () => {
@@ -72,7 +68,7 @@ describe('hir-nodes', () => {
             }),
             HIR_CLOSURE_INITIALIZATION({
               closureVariableName: 'closure',
-              closureType: HIR_CLOSURE_TYPE([], HIR_INT_TYPE),
+              closureType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('CCC'),
               functionName: 'foo',
               functionType: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
               context: HIR_ZERO,
@@ -122,7 +118,7 @@ describe('hir-nodes', () => {
     ).toBe(`let bar: int;
 if 0 {
   let baz: FooBar = [meggo];
-  let closure: $Closure<() -> int> = Closure {
+  let closure: CCC = Closure {
     fun: (foo: (int) -> int),
     context: 0,
   };
@@ -146,6 +142,13 @@ if 0 {
     expect(
       debugPrintHighIRSources({
         globalVariables: [{ name: 'dev_meggo', content: 'vibez' }],
+        closureTypes: [
+          {
+            identifier: 'c',
+            typeParameters: [],
+            functionType: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+          },
+        ],
         typeDefinitions: [
           {
             identifier: 'Foo',
@@ -178,6 +181,7 @@ if 0 {
       })
     ).toBe(`const dev_meggo = 'vibez';
 
+closure type c = () -> int
 object type Foo = [int, bool]
 function Bar(f: int): int {
   let f: int = (big: FooBar)[0];
@@ -189,6 +193,7 @@ sources.mains = [ddd]`);
     expect(
       debugPrintHighIRSources({
         globalVariables: [],
+        closureTypes: [],
         typeDefinitions: [],
         mainFunctionNames: [],
         functions: [

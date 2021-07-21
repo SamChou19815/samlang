@@ -6,7 +6,6 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
-  HIR_CLOSURE_TYPE,
   HIR_ZERO,
   HIR_TRUE,
   HIR_INT,
@@ -30,7 +29,13 @@ const expectSpecialized = (sources: HighIRSources, expected: string) =>
 describe('hir-generics-specialization', () => {
   it('Empty source works.', () => {
     expectSpecialized(
-      { globalVariables: [], typeDefinitions: [], mainFunctionNames: [], functions: [] },
+      {
+        globalVariables: [],
+        closureTypes: [],
+        typeDefinitions: [],
+        mainFunctionNames: [],
+        functions: [],
+      },
       ''
     );
   });
@@ -41,6 +46,7 @@ describe('hir-generics-specialization', () => {
     expectSpecialized(
       {
         globalVariables: [],
+        closureTypes: [],
         typeDefinitions: [],
         mainFunctionNames: ['main'],
         functions: [
@@ -71,6 +77,13 @@ sources.mains = [main]
         globalVariables: [
           { name: 'G1', content: '' },
           { name: 'G2', content: '' },
+        ],
+        closureTypes: [
+          {
+            identifier: 'CC',
+            typeParameters: ['A', 'B'],
+            functionType: HIR_FUNCTION_TYPE([typeA], typeB),
+          },
         ],
         typeDefinitions: [
           {
@@ -179,11 +192,18 @@ sources.mains = [main]
                     index: 0,
                   }),
                   HIR_CLOSURE_INITIALIZATION({
-                    closureVariableName: 'c',
-                    closureType: HIR_CLOSURE_TYPE(
-                      [],
+                    closureVariableName: 'c1',
+                    closureType: HIR_IDENTIFIER_TYPE('CC', [HIR_STRING_TYPE, HIR_STRING_TYPE]),
+                    functionName: 'creatorIB',
+                    functionType: HIR_FUNCTION_TYPE(
+                      [HIR_STRING_TYPE],
                       HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE])
                     ),
+                    context: G1,
+                  }),
+                  HIR_CLOSURE_INITIALIZATION({
+                    closureVariableName: 'c2',
+                    closureType: HIR_IDENTIFIER_TYPE('CC', [HIR_INT_TYPE, HIR_STRING_TYPE]),
                     functionName: 'creatorIB',
                     functionType: HIR_FUNCTION_TYPE(
                       [HIR_STRING_TYPE],
@@ -209,6 +229,8 @@ sources.mains = [main]
       `
 const G1 = '';
 
+closure type CC_string_string = (string) -> string
+closure type CC_int_string = (int) -> string
 variant type I_int_string = [int, string]
 variant type I_string_string = [string, string]
 object type J = [int]
@@ -240,7 +262,11 @@ function main(): int {
     let v1: int = 0 + 0;
     let j: J = [0];
     let v2: int = (j: J)[0];
-    let c: $Closure<() -> I_string_string> = Closure {
+    let c1: CC_string_string = Closure {
+      fun: (creatorIB_string: (string) -> I_string_string),
+      context: G1,
+    };
+    let c2: CC_int_string = Closure {
       fun: (creatorIB_string: (string) -> I_string_string),
       context: G1,
     };
@@ -260,6 +286,7 @@ sources.mains = [main]
     expectSpecialized(
       {
         globalVariables: [],
+        closureTypes: [],
         typeDefinitions: [
           {
             identifier: 'I',

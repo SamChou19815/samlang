@@ -9,6 +9,7 @@ import {
   HighIRType,
   HighIRPrimitiveType,
   HighIRFunctionType,
+  HighIRClosureTypeDefinition,
   HighIRTypeDefinition,
   HIR_BOOL_TYPE,
   HIR_INT_TYPE,
@@ -16,42 +17,70 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
-  HIR_CLOSURE_TYPE,
 } from 'samlang-core-ast/hir-nodes';
 import type { TypeDefinition } from 'samlang-core-ast/samlang-toplevel';
 import { assert, checkNotNull, zip } from 'samlang-core-utils';
 
 /** A helper class to generate an identifier type for each struct type. */
 export class HighIRTypeSynthesizer {
-  private readonly _synthesized = new Map<string, HighIRTypeDefinition>();
-  private readonly reverseMap = new Map<string, string>();
+  private readonly _synthesizedClosureTypes = new Map<string, HighIRClosureTypeDefinition>();
+  private readonly _synthesizedTupleTypes = new Map<string, HighIRTypeDefinition>();
+  private readonly reverseFunctionMap = new Map<string, string>();
+  private readonly reverseTupleMap = new Map<string, string>();
   private nextID = 0;
 
-  public get mappings(): ReadonlyMap<string, HighIRTypeDefinition> {
-    return this._synthesized;
+  public get closureMappings(): ReadonlyMap<string, HighIRClosureTypeDefinition> {
+    return this._synthesizedClosureTypes;
   }
 
-  public get synthesized(): readonly HighIRTypeDefinition[] {
-    return Array.from(this._synthesized.values());
+  public get tupleMappings(): ReadonlyMap<string, HighIRTypeDefinition> {
+    return this._synthesizedTupleTypes;
+  }
+
+  public get synthesizedClosureTypes(): readonly HighIRClosureTypeDefinition[] {
+    return Array.from(this._synthesizedClosureTypes.values());
+  }
+
+  public get synthesizedTupleTypes(): readonly HighIRTypeDefinition[] {
+    return Array.from(this._synthesizedTupleTypes.values());
+  }
+
+  public synthesizeClosureType(
+    functionType: HighIRFunctionType,
+    typeParameters: readonly string[]
+  ): HighIRClosureTypeDefinition {
+    const key = `${prettyPrintHighIRType(functionType)}_${typeParameters.join(',')}`;
+    const existingIdentifier = this.reverseFunctionMap.get(key);
+    if (existingIdentifier != null) {
+      return checkNotNull(this._synthesizedClosureTypes.get(existingIdentifier));
+    }
+    const identifier = `$SyntheticIDType${this.nextID}`;
+    this.nextID += 1;
+    this.reverseFunctionMap.set(key, identifier);
+    const definition: HighIRClosureTypeDefinition = { identifier, typeParameters, functionType };
+    this._synthesizedClosureTypes.set(identifier, definition);
+    return definition;
   }
 
   public synthesizeTupleType(
     mappings: readonly HighIRType[],
     typeParameters: readonly string[]
   ): HighIRTypeDefinition {
-    const key = mappings.map(prettyPrintHighIRType).join(',');
-    const existingIdentifier = this.reverseMap.get(key);
-    if (existingIdentifier != null) return checkNotNull(this._synthesized.get(existingIdentifier));
+    const key = `${mappings.map(prettyPrintHighIRType).join(',')}_${typeParameters.join(',')}`;
+    const existingIdentifier = this.reverseTupleMap.get(key);
+    if (existingIdentifier != null) {
+      return checkNotNull(this._synthesizedTupleTypes.get(existingIdentifier));
+    }
     const identifier = `$SyntheticIDType${this.nextID}`;
     this.nextID += 1;
-    this.reverseMap.set(key, identifier);
+    this.reverseTupleMap.set(key, identifier);
     const typeDefinition: HighIRTypeDefinition = {
       identifier,
       type: 'object',
       typeParameters,
       mappings,
     };
-    this._synthesized.set(identifier, typeDefinition);
+    this._synthesizedTupleTypes.set(identifier, typeDefinition);
     return typeDefinition;
   }
 }
@@ -112,13 +141,6 @@ export const solveTypeArguments = (
         zip(t1.argumentTypes, t2.argumentTypes).forEach(([a1, a2]) => solve(a1, a2));
         solve(t1.returnType, t2.returnType);
         return;
-      case 'ClosureType':
-        assert(
-          t2.__type__ === 'ClosureType' && t1.argumentTypes.length === t2.argumentTypes.length
-        );
-        zip(t1.argumentTypes, t2.argumentTypes).forEach(([a1, a2]) => solve(a1, a2));
-        solve(t1.returnType, t2.returnType);
-        return;
     }
   };
 
@@ -141,11 +163,6 @@ export const highIRTypeApplication = (
         type.argumentTypes.map((it) => highIRTypeApplication(it, replacementMap)),
         highIRTypeApplication(type.returnType, replacementMap)
       );
-    case 'ClosureType':
-      return HIR_CLOSURE_TYPE(
-        type.argumentTypes.map((it) => highIRTypeApplication(it, replacementMap)),
-        highIRTypeApplication(type.returnType, replacementMap)
-      );
   }
 };
 
@@ -165,10 +182,6 @@ const encodeHighIRTypeForGenericsSpecialization = (type: HighIRType): string => 
       return type.name;
     case 'FunctionType':
       assert(false, 'Function type should never appear in generics specialization positions.');
-    case 'ClosureType':
-      return `$${type.argumentTypes
-        .map(encodeHighIRTypeForGenericsSpecialization)
-        .join('_')}_${encodeHighIRTypeForGenericsSpecialization(type.returnType)}$`;
   }
 };
 
@@ -225,11 +238,23 @@ export class SamlangTypeLoweringManager {
           typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS)
         );
       }
-      case 'FunctionType':
-        return HIR_CLOSURE_TYPE(
+      case 'FunctionType': {
+        const rewrittenFunctionType = HIR_FUNCTION_TYPE(
           type.argumentTypes.map(this.lowerSamlangType),
           this.lowerSamlangType(type.returnType)
         );
+        const typeParameters = Array.from(
+          collectUsedGenericTypes(rewrittenFunctionType, this.genericTypes)
+        );
+        const closureTypeDefinition = this.typeSynthesizer.synthesizeClosureType(
+          rewrittenFunctionType,
+          typeParameters
+        );
+        return HIR_IDENTIFIER_TYPE(
+          closureTypeDefinition.identifier,
+          typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS)
+        );
+      }
     }
   };
 

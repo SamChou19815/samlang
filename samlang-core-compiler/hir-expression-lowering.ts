@@ -7,7 +7,6 @@ import {
   HighIRType,
   HighIRIdentifierType,
   HighIRFunctionType,
-  HighIRClosureType,
   HighIRTypeDefinition,
   HighIRExpression,
   HighIRStatement,
@@ -16,9 +15,9 @@ import {
   HIR_INT_TYPE,
   HIR_STRING_TYPE,
   HIR_CONTEXT_TYPE,
+  HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
-  HIR_CLOSURE_TYPE,
   HIR_TRUE,
   HIR_FALSE,
   HIR_ZERO,
@@ -51,7 +50,11 @@ import type {
 import { LocalStackedContext, assert, checkNotNull, zip } from 'samlang-core-utils';
 
 import type HighIRStringManager from './hir-string-manager';
-import { highIRTypeApplication, SamlangTypeLoweringManager } from './hir-type-conversion';
+import {
+  collectUsedGenericTypes,
+  highIRTypeApplication,
+  SamlangTypeLoweringManager,
+} from './hir-type-conversion';
 
 type HighIRExpressionLoweringResult = {
   readonly statements: readonly HighIRStatement[];
@@ -130,10 +133,32 @@ class HighIRExpressionLoweringManager {
 
   private getSyntheticIdentifierTypeFromTuple = (
     mappings: readonly HighIRType[]
-  ): HighIRIdentifierType =>
-    HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(
-      this.typeLoweringManager.typeSynthesizer.synthesizeTupleType(mappings, []).identifier
+  ): HighIRIdentifierType => {
+    const typeParameters = Array.from(
+      collectUsedGenericTypes(
+        HIR_FUNCTION_TYPE(mappings, HIR_BOOL_TYPE),
+        this.typeLoweringManager.genericTypes
+      )
     );
+    return HIR_IDENTIFIER_TYPE(
+      this.typeLoweringManager.typeSynthesizer.synthesizeTupleType(mappings, typeParameters)
+        .identifier,
+      typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS)
+    );
+  };
+
+  private getSyntheticIdentifierTypeFromClosure = (
+    functionType: HighIRFunctionType
+  ): HighIRIdentifierType => {
+    const typeParameters = Array.from(
+      collectUsedGenericTypes(functionType, this.typeLoweringManager.genericTypes)
+    );
+    return HIR_IDENTIFIER_TYPE(
+      this.typeLoweringManager.typeSynthesizer.synthesizeClosureType(functionType, typeParameters)
+        .identifier,
+      typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS)
+    );
+  };
 
   private resolveVariable = (variableName: string): HighIRExpression =>
     checkNotNull(this.varibleContext.getLocalValueType(variableName));
@@ -144,7 +169,7 @@ class HighIRExpressionLoweringManager {
   }: HighIRIdentifierType): readonly HighIRType[] {
     const typeDefinition = checkNotNull(
       this.typeDefinitionMapping[name] ??
-        this.typeLoweringManager.typeSynthesizer.mappings.get(name)
+        this.typeLoweringManager.typeSynthesizer.tupleMappings.get(name)
     );
     const replacementMap = Object.fromEntries(zip(typeDefinition.typeParameters, typeArguments));
     return typeDefinition.mappings.map((type) => highIRTypeApplication(type, replacementMap));
@@ -213,7 +238,7 @@ class HighIRExpressionLoweringManager {
       expression.memberName
     );
     const originalFunctionType = this.getFunctionTypeWithoutContext(expression.type);
-    const closureType: HighIRClosureType = { ...originalFunctionType, __type__: 'ClosureType' };
+    const closureType = this.getSyntheticIdentifierTypeFromClosure(originalFunctionType);
     const closureVariableName = this.allocateTemporaryVariable();
     const functionType = HIR_FUNCTION_TYPE(
       [HIR_INT_TYPE, ...originalFunctionType.argumentTypes],
@@ -338,7 +363,7 @@ class HighIRExpressionLoweringManager {
       expression.methodName
     );
     const originalFunctionType = this.getFunctionTypeWithoutContext(expression.type);
-    const closureType: HighIRClosureType = { ...originalFunctionType, __type__: 'ClosureType' };
+    const closureType = this.getSyntheticIdentifierTypeFromClosure(originalFunctionType);
     const closureVariableName = this.allocateTemporaryVariable();
     const result = this.lower(expression.expression);
     const methodType = HIR_FUNCTION_TYPE(
@@ -452,11 +477,13 @@ class HighIRExpressionLoweringManager {
           functionExpression,
           loweredStatements
         );
-        const closureType = pointerExpression.type;
-        assert(closureType.__type__ === 'ClosureType');
+        assert(functionExpression.type.type === 'FunctionType');
         const functionType = HIR_FUNCTION_TYPE(
-          [HIR_CONTEXT_TYPE, ...closureType.argumentTypes],
-          closureType.returnType
+          [
+            HIR_CONTEXT_TYPE,
+            ...functionExpression.type.argumentTypes.map(this.typeLoweringManager.lowerSamlangType),
+          ],
+          this.typeLoweringManager.lowerSamlangType(functionExpression.type.returnType)
         );
         const loweredFunctionArguments = expression.functionArguments.map((oneArgument) =>
           this.loweredAndAddStatements(oneArgument, loweredStatements)
@@ -823,9 +850,11 @@ class HighIRExpressionLoweringManager {
     }
     const syntheticLambda = this.createSyntheticLambdaFunction(expression, captured, context.type);
     this.syntheticFunctions.push(syntheticLambda);
-    const closureType = HIR_CLOSURE_TYPE(
-      syntheticLambda.type.argumentTypes.slice(1),
-      syntheticLambda.type.returnType
+    const closureType = this.getSyntheticIdentifierTypeFromClosure(
+      HIR_FUNCTION_TYPE(
+        syntheticLambda.type.argumentTypes.slice(1),
+        syntheticLambda.type.returnType
+      )
     );
     loweredStatements.push(
       HIR_CLOSURE_INITIALIZATION({

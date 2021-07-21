@@ -3,34 +3,24 @@ import { zip } from 'samlang-core-utils';
 import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
 
-export type HighIRPrimitiveType = {
+export interface HighIRPrimitiveType {
   readonly __type__: 'PrimitiveType';
   readonly type: 'bool' | 'int' | 'string' | 'context';
-};
+}
 
-export type HighIRIdentifierType = {
+export interface HighIRIdentifierType {
   readonly __type__: 'IdentifierType';
   readonly name: string;
   readonly typeArguments: readonly HighIRType[];
-};
+}
 
-export type HighIRFunctionType = {
+export interface HighIRFunctionType {
   readonly __type__: 'FunctionType';
   readonly argumentTypes: readonly HighIRType[];
   readonly returnType: HighIRType;
-};
+}
 
-export type HighIRClosureType = {
-  readonly __type__: 'ClosureType';
-  readonly argumentTypes: readonly HighIRType[];
-  readonly returnType: HighIRType;
-};
-
-export type HighIRType =
-  | HighIRPrimitiveType
-  | HighIRIdentifierType
-  | HighIRFunctionType
-  | HighIRClosureType;
+export type HighIRType = HighIRPrimitiveType | HighIRIdentifierType | HighIRFunctionType;
 
 export const HIR_BOOL_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'bool' };
 export const HIR_INT_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'int' };
@@ -57,11 +47,6 @@ export const HIR_FUNCTION_TYPE = (
   returnType: HighIRType
 ): HighIRFunctionType => ({ __type__: 'FunctionType', argumentTypes, returnType });
 
-export const HIR_CLOSURE_TYPE = (
-  argumentTypes: readonly HighIRType[],
-  returnType: HighIRType
-): HighIRClosureType => ({ __type__: 'ClosureType', argumentTypes, returnType });
-
 export const prettyPrintHighIRType = (type: HighIRType): string => {
   switch (type.__type__) {
     case 'PrimitiveType':
@@ -74,12 +59,26 @@ export const prettyPrintHighIRType = (type: HighIRType): string => {
       return `(${type.argumentTypes
         .map(prettyPrintHighIRType)
         .join(', ')}) -> ${prettyPrintHighIRType(type.returnType)}`;
-    case 'ClosureType':
-      return `$Closure<(${type.argumentTypes
-        .map(prettyPrintHighIRType)
-        .join(', ')}) -> ${prettyPrintHighIRType(type.returnType)}>`;
   }
 };
+
+export interface HighIRClosureTypeDefinition {
+  readonly identifier: string;
+  readonly typeParameters: readonly string[];
+  readonly functionType: HighIRFunctionType;
+}
+
+const nameWithTypeParameter = (identifier: string, typeParameters: readonly string[]): string =>
+  typeParameters.length === 0 ? identifier : `${identifier}<${typeParameters.join(', ')}>`;
+
+export const prettyPrintHighIRClosureTypeDefinition = ({
+  identifier,
+  typeParameters,
+  functionType,
+}: HighIRClosureTypeDefinition): string =>
+  `closure type ${nameWithTypeParameter(identifier, typeParameters)} = ${prettyPrintHighIRType(
+    functionType
+  )}`;
 
 export interface HighIRTypeDefinition {
   readonly identifier: string;
@@ -94,8 +93,7 @@ export const prettyPrintHighIRTypeDefinition = ({
   typeParameters,
   mappings,
 }: HighIRTypeDefinition): string => {
-  const idPart =
-    typeParameters.length === 0 ? identifier : `${identifier}<${typeParameters.join(', ')}>`;
+  const idPart = nameWithTypeParameter(identifier, typeParameters);
   return `${type} type ${idPart} = [${mappings.map(prettyPrintHighIRType).join(', ')}]`;
 };
 
@@ -177,7 +175,7 @@ export interface HighIRStructInitializationStatement extends BaseHighIRStatement
 export interface HighIRClosureInitializationStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRClosureInitializationStatement';
   readonly closureVariableName: string;
-  readonly closureType: HighIRClosureType;
+  readonly closureType: HighIRIdentifierType;
   readonly functionName: string;
   readonly functionType: HighIRFunctionType;
   readonly context: HighIRExpression;
@@ -441,6 +439,7 @@ export interface HighIRFunction {
 
 export interface HighIRSources {
   readonly globalVariables: readonly GlobalVariable[];
+  readonly closureTypes: readonly HighIRClosureTypeDefinition[];
   readonly typeDefinitions: readonly HighIRTypeDefinition[];
   readonly mainFunctionNames: readonly string[];
   readonly functions: readonly HighIRFunction[];
@@ -470,12 +469,14 @@ export const debugPrintHighIRFunction = ({
 
 export const debugPrintHighIRSources = ({
   globalVariables,
+  closureTypes,
   typeDefinitions,
   mainFunctionNames,
   functions,
 }: HighIRSources): string =>
   [
     ...globalVariables.map(({ name, content }) => `const ${name} = '${content}';\n`),
+    ...closureTypes.map(prettyPrintHighIRClosureTypeDefinition),
     ...typeDefinitions.map(prettyPrintHighIRTypeDefinition),
     ...functions.map((it) => debugPrintHighIRFunction(it)),
     ...(mainFunctionNames.length === 0
