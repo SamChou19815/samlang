@@ -146,6 +146,7 @@ export interface HighIRBinaryStatement extends BaseHighIRExpression {
 
 export interface HighIRFunctionCallStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRFunctionCallStatement';
+  /** When `functionExpression` is a variable, it's interpreted as a closure call. */
   readonly functionExpression: HighIRNameExpression | HighIRVariableExpression;
   readonly functionArguments: readonly HighIRExpression[];
   readonly returnType: HighIRType;

@@ -383,9 +383,7 @@ return (_t0: int);`
           }),
           functionArguments: [EXPRESSION_TRUE(Range.DUMMY, [])],
         }),
-        `let _t1: (context, bool) -> int = (closure: Closure)[0];
-let _t2: context = (closure: Closure)[1];
-let _t0: int = (_t1: (context, bool) -> int)((_t2: context), 1);
+        `let _t0: int = (closure: Closure)(1);
 return (_t0: int);`
       );
     });
@@ -404,9 +402,7 @@ return (_t0: int);`
           }),
           functionArguments: [EXPRESSION_TRUE(Range.DUMMY, [])],
         }),
-        `let _t1: (context, bool) -> int = (closure_unit_return: Closure)[0];
-let _t2: context = (closure_unit_return: Closure)[1];
-(_t1: (context, bool) -> int)((_t2: context), 1);
+        `(closure_unit_return: Closure)(1);
 return 0;`
       );
     });

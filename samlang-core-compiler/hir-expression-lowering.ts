@@ -473,42 +473,23 @@ class HighIRExpressionLoweringManager {
         break;
       }
       default: {
-        const pointerExpression = this.loweredAndAddStatements(
+        const loweredFunctionExpression = this.loweredAndAddStatements(
           functionExpression,
           loweredStatements
         );
+        assert(loweredFunctionExpression.__type__ === 'HighIRVariableExpression');
         assert(functionExpression.type.type === 'FunctionType');
-        const functionType = HIR_FUNCTION_TYPE(
-          [
-            HIR_CONTEXT_TYPE,
-            ...functionExpression.type.argumentTypes.map(this.typeLoweringManager.lowerSamlangType),
-          ],
-          this.typeLoweringManager.lowerSamlangType(functionExpression.type.returnType)
+        const returnType = this.typeLoweringManager.lowerSamlangType(
+          functionExpression.type.returnType
         );
         const loweredFunctionArguments = expression.functionArguments.map((oneArgument) =>
           this.loweredAndAddStatements(oneArgument, loweredStatements)
         );
-        const functionTemp = this.allocateTemporaryVariable();
-        const contextTemp = this.allocateTemporaryVariable();
-        loweredStatements.push(
-          HIR_INDEX_ACCESS({ name: functionTemp, type: functionType, pointerExpression, index: 0 }),
-          HIR_INDEX_ACCESS({
-            name: contextTemp,
-            type: HIR_CONTEXT_TYPE,
-            pointerExpression,
-            index: 1,
-          })
-        );
-        const functionTempVariable = HIR_VARIABLE(functionTemp, functionType);
-        const contextTempVariable = HIR_VARIABLE(contextTemp, HIR_CONTEXT_TYPE);
-        this.varibleContext.bind(functionTemp, functionTempVariable);
-        this.varibleContext.bind(contextTemp, contextTempVariable);
-
-        functionReturnCollectorType = functionType.returnType;
+        functionReturnCollectorType = returnType;
         functionCall = HIR_FUNCTION_CALL({
-          functionExpression: functionTempVariable,
-          functionArguments: [contextTempVariable, ...loweredFunctionArguments],
-          returnType: functionType.returnType,
+          functionExpression: loweredFunctionExpression,
+          functionArguments: loweredFunctionArguments,
+          returnType,
           returnCollector: isVoidReturn ? undefined : returnCollectorName,
         });
         break;
