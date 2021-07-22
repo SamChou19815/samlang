@@ -90,18 +90,21 @@ class GenericsSpecializationRewriter {
           e1: this.rewriteExpression(statement.e1, genericsReplacementMap),
           e2: this.rewriteExpression(statement.e2, genericsReplacementMap),
         });
-      case 'HighIRFunctionCallStatement':
+      case 'HighIRFunctionCallStatement': {
+        const functionExpression = this.rewriteExpression(
+          statement.functionExpression,
+          genericsReplacementMap
+        );
+        assert(functionExpression.__type__ !== 'HighIRIntLiteralExpression');
         return HIR_FUNCTION_CALL({
-          functionExpression: this.rewriteExpression(
-            statement.functionExpression,
-            genericsReplacementMap
-          ),
+          functionExpression,
           functionArguments: statement.functionArguments.map((it) =>
             this.rewriteExpression(it, genericsReplacementMap)
           ),
           returnType: this.rewriteType(statement.returnType, genericsReplacementMap),
           returnCollector: statement.returnCollector,
         });
+      }
       case 'HighIRIfElseStatement':
         return HIR_IF_ELSE({
           booleanExpression: this.rewriteExpression(
