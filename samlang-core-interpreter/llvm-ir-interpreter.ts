@@ -56,11 +56,11 @@ type GeneralIREnvironment = {
   printed: string;
 };
 
-const handleBuiltInFunctionCall = (
+function handleBuiltInFunctionCall(
   environment: GeneralIREnvironment,
   functionName: string,
   functionArgumentValues: readonly number[]
-): number | null => {
+): number | null {
   switch (functionName) {
     case ENCODED_FUNCTION_NAME_MALLOC: {
       const start = environment.heapPointer;
@@ -104,11 +104,11 @@ const handleBuiltInFunctionCall = (
     default:
       return null;
   }
-};
+}
 
 const longOfBool = (b: boolean) => (b ? 1 : 0);
 
-const computeBinary = (operator: IROperator, value1: number, value2: number): number => {
+function computeBinary(operator: IROperator, value1: number, value2: number): number {
   switch (operator) {
     case '+':
       return value1 + value2;
@@ -139,18 +139,18 @@ const computeBinary = (operator: IROperator, value1: number, value2: number): nu
     case '!=':
       return longOfBool(value1 !== value2);
   }
-};
+}
 
 type LLVMInterpreterMutableGlobalEnvironment = {
   // A collection of all available functions.
   readonly functions: ReadonlyMap<string, LLVMFunction>;
 } & GeneralIREnvironment;
 
-const interpretLLVMValue = (
+function interpretLLVMValue(
   environment: LLVMInterpreterMutableGlobalEnvironment,
   stackFrame: StackFrame,
   expression: LLVMValue
-): number => {
+): number {
   switch (expression.__type__) {
     case 'LLVMLiteral':
       return expression.value;
@@ -162,13 +162,13 @@ const interpretLLVMValue = (
     case 'LLVMVariable':
       return stackFrame.getLocalValue(expression.name);
   }
-};
+}
 
-const interpretLLVMFunction = (
+function interpretLLVMFunction(
   environment: LLVMInterpreterMutableGlobalEnvironment,
   llvmFunction: LLVMFunction,
   functionArguments: readonly number[]
-): number => {
+): number {
   assert(functionArguments.length === llvmFunction.parameters.length);
   const stackFrame = new StackFrame();
   zip(llvmFunction.parameters, functionArguments).forEach(([{ parameterName }, argument]) => {
@@ -327,7 +327,7 @@ const interpretLLVMFunction = (
   }
 
   return returnedValue;
-};
+}
 
 const setupLLVMInterpretationEnvironment = (
   llvmModule: LLVMModule
@@ -360,12 +360,13 @@ const setupLLVMInterpretationEnvironment = (
   };
 };
 
-const interpretLLVMModule = (llvmModule: LLVMModule): string => {
+export default function interpretLLVMModule(
+  llvmModule: LLVMModule,
+  mainFunctionName: string
+): string {
   const environment = setupLLVMInterpretationEnvironment(llvmModule);
-  const mainFunction = environment.functions.get(ENCODED_COMPILED_PROGRAM_MAIN);
+  const mainFunction = environment.functions.get(mainFunctionName);
   assert(mainFunction != null, 'Missing new function!');
   interpretLLVMFunction(environment, mainFunction, []);
   return environment.printed;
-};
-
-export default interpretLLVMModule;
+}
