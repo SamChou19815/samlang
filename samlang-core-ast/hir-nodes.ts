@@ -5,7 +5,7 @@ import type { IROperator } from './common-operators';
 
 export interface HighIRPrimitiveType {
   readonly __type__: 'PrimitiveType';
-  readonly type: 'bool' | 'int' | 'string' | 'context';
+  readonly type: 'bool' | 'int' | 'string';
 }
 
 export interface HighIRIdentifierType {
@@ -25,7 +25,6 @@ export type HighIRType = HighIRPrimitiveType | HighIRIdentifierType | HighIRFunc
 export const HIR_BOOL_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'bool' };
 export const HIR_INT_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'int' };
 export const HIR_STRING_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'string' };
-export const HIR_CONTEXT_TYPE: HighIRPrimitiveType = { __type__: 'PrimitiveType', type: 'context' };
 
 export const HIR_IDENTIFIER_TYPE = (
   name: string,
