@@ -1,7 +1,7 @@
-import type { MidIRModule } from 'samlang-core-ast/mir-nodes';
+import type { MidIRSources } from 'samlang-core-ast/mir-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 
-import { createPrettierDocumentFromMidIRModule } from './printer-js';
+import { createPrettierDocumentFromMidIRSources } from './printer-js';
 import { prettyPrintAccordingToPrettierAlgorithm } from './printer-prettier-core';
 import createPrettierDocumentForSamlangModule from './printer-source-level';
 
@@ -14,11 +14,11 @@ export const prettyPrintSamlangModule = (
     createPrettierDocumentForSamlangModule(samlangModule)
   ).trimEnd()}\n`;
 
-export const prettyPrintMidIRModuleAsJS = (
+export const prettyPrintMidIRSourcesAsJS = (
   availableWidth: number,
-  midIRModule: MidIRModule
+  sources: MidIRSources
 ): string =>
   prettyPrintAccordingToPrettierAlgorithm(
     availableWidth,
-    createPrettierDocumentFromMidIRModule(midIRModule, /* forInterpreter */ false)
+    createPrettierDocumentFromMidIRSources(sources, /* forInterpreter */ false)
   ).trimEnd();

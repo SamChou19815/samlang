@@ -1,10 +1,9 @@
-import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
 import type {
   MidIRExpression,
   MidIRStatement,
   MidIRFunction,
-  MidIRModule,
   MidIRType,
+  MidIRSources,
 } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
@@ -105,15 +104,16 @@ const getOtherFunctionsUsedByGivenFunction = (
 };
 
 const analyzeUsedFunctionNamesAndTypeNames = (
-  functions: readonly MidIRFunction[]
+  functions: readonly MidIRFunction[],
+  entryPoints: readonly string[]
 ): readonly [ReadonlySet<string>, ReadonlySet<string>] => {
   const usedFunctionMap = new Map(
     functions.map((it) => [it.name, getOtherFunctionsUsedByGivenFunction(it)])
   );
 
   const usedNames = new Set<string>();
-  usedNames.add(ENCODED_COMPILED_PROGRAM_MAIN);
-  const stack = [ENCODED_COMPILED_PROGRAM_MAIN];
+  entryPoints.forEach((it) => usedNames.add(it));
+  const stack = [...entryPoints];
   while (stack.length > 0) {
     const functionName = checkNotNull(stack.pop());
     const usedByThisFunction = usedFunctionMap.get(functionName)?.[0];
@@ -135,12 +135,20 @@ const analyzeUsedFunctionNamesAndTypeNames = (
   return [usedNames, usedTypes];
 };
 
-const optimizeMidIRModuleByEliminatingUnusedOnes = (midIRModule: MidIRModule): MidIRModule => {
-  const [usedNames, usedTypes] = analyzeUsedFunctionNamesAndTypeNames(midIRModule.functions);
-  const globalVariables = midIRModule.globalVariables.filter((it) => usedNames.has(it.name));
-  const typeDefinitions = midIRModule.typeDefinitions.filter((it) => usedTypes.has(it.identifier));
-  const functions = midIRModule.functions.filter((it) => usedNames.has(it.name));
-  return { globalVariables, typeDefinitions, functions };
-};
-
-export default optimizeMidIRModuleByEliminatingUnusedOnes;
+export default function optimizeMidIRSourcesByEliminatingUnusedOnes(
+  sources: MidIRSources
+): MidIRSources {
+  const [usedNames, usedTypes] = analyzeUsedFunctionNamesAndTypeNames(
+    sources.functions,
+    sources.mainFunctionNames
+  );
+  const globalVariables = sources.globalVariables.filter((it) => usedNames.has(it.name));
+  const typeDefinitions = sources.typeDefinitions.filter((it) => usedTypes.has(it.identifier));
+  const functions = sources.functions.filter((it) => usedNames.has(it.name));
+  return {
+    globalVariables,
+    typeDefinitions,
+    mainFunctionNames: sources.mainFunctionNames,
+    functions,
+  };
+}

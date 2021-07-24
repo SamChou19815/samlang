@@ -10,7 +10,7 @@ import type {
   MidIRStatement,
   MidIRExpression,
   MidIRFunction,
-  MidIRModule,
+  MidIRSources,
 } from 'samlang-core-ast/mir-nodes';
 
 import {
@@ -258,8 +258,8 @@ export const createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING = (
   );
 };
 
-export const createPrettierDocumentFromMidIRModule = (
-  midIRModule: MidIRModule,
+export const createPrettierDocumentFromMidIRSources = (
+  sources: MidIRSources,
   forInterpreter: boolean
 ): PrettierDocument => {
   const segments: PrettierDocument[] = [
@@ -280,13 +280,13 @@ export const createPrettierDocumentFromMidIRModule = (
     PRETTIER_LINE,
     PRETTIER_LINE,
   ];
-  midIRModule.globalVariables.forEach(({ name, content }) => {
+  sources.globalVariables.forEach(({ name, content }) => {
     segments.push(
       PRETTIER_TEXT(`const ${name} = "${escapeDoubleQuotes(content)}";`),
       PRETTIER_LINE
     );
   });
-  midIRModule.functions.forEach((midIRFunction) =>
+  sources.functions.forEach((midIRFunction) =>
     segments.push(
       createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING(midIRFunction),
       PRETTIER_LINE

@@ -1,4 +1,4 @@
-import type { MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-nodes';
+import type { MidIRFunction, MidIRSources } from 'samlang-core-ast/mir-nodes';
 
 import optimizeMidIRFunctionByCommonSubExpressionElimination from './mir-common-subexpression-elimination-optimization';
 import optimizeMidIRFunctionByConditionalConstantPropagation from './mir-conditional-constant-propagation-optimization';
@@ -7,7 +7,7 @@ import optimizeMidIRFunctionsByInlining from './mir-inline-optimization';
 import optimizeMidIRFunctionByLocalValueNumbering from './mir-local-value-numbering-optimization';
 import optimizeMidIRFunctionWithAllLoopOptimizations from './mir-loop-optimizations';
 import optimizeMidIRFunctionByTailRecursionRewrite from './mir-tail-recursion-optimization';
-import optimizeMidIRModuleByEliminatingUnusedOnes from './mir-unused-name-elimination-optimization';
+import optimizeMidIRSourcesByEliminatingUnusedOnes from './mir-unused-name-elimination-optimization';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
 
 export type OptimizationConfiguration = {
@@ -67,25 +67,25 @@ const optimizeFunctionForRounds = (
   );
 };
 
-export const optimizeMidIRModuleByUnusedNameEliminationAndTailRecursionRewrite = (
-  midIRModule: MidIRModule
-): MidIRModule => {
-  const intermediate = optimizeMidIRModuleByEliminatingUnusedOnes(midIRModule);
-  return {
-    ...intermediate,
-    functions: intermediate.functions.map(
-      (it) => optimizeMidIRFunctionByTailRecursionRewrite(it) ?? it
-    ),
-  };
-};
+export const optimizeMidIRSourcesByTailRecursionRewrite = (
+  sources: MidIRSources
+): MidIRSources => ({
+  ...sources,
+  functions: sources.functions.map((it) => optimizeMidIRFunctionByTailRecursionRewrite(it) ?? it),
+});
 
-export const optimizeMidIRModuleAccordingToConfiguration = (
-  midIRModule: MidIRModule,
+export const optimizeMidIRSourcesByUnusedNameEliminationAndTailRecursionRewrite = (
+  sources: MidIRSources
+): MidIRSources =>
+  optimizeMidIRSourcesByTailRecursionRewrite(optimizeMidIRSourcesByEliminatingUnusedOnes(sources));
+
+export const optimizeMidIRSourcesAccordingToConfiguration = (
+  sources: MidIRSources,
   optimizationConfiguration: OptimizationConfiguration = allEnabledOptimizationConfiguration
-): MidIRModule => {
+): MidIRSources => {
   const allocator = new OptimizationResourceAllocator();
 
-  let intermediate = midIRModule;
+  let intermediate = sources;
   for (let i = 0; i < 4; i += 1) {
     let optimizedFunctions: readonly MidIRFunction[] = intermediate.functions.map((it) =>
       optimizeFunctionForRounds(it, allocator, optimizationConfiguration)
@@ -93,8 +93,8 @@ export const optimizeMidIRModuleAccordingToConfiguration = (
     if (optimizationConfiguration.doesPerformInlining) {
       optimizedFunctions = optimizeMidIRFunctionsByInlining(optimizedFunctions, allocator);
     }
-    intermediate = optimizeMidIRModuleByEliminatingUnusedOnes({
-      ...midIRModule,
+    intermediate = optimizeMidIRSourcesByEliminatingUnusedOnes({
+      ...sources,
       functions: optimizedFunctions,
     });
   }

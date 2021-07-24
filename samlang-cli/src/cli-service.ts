@@ -19,7 +19,7 @@ import {
   compileSamlangSourcesToMidIRSources,
   lowerMidIRModuleToLLVMModule,
 } from 'samlang-core-compiler';
-import { prettyPrintMidIRModuleAsJS } from 'samlang-core-printer';
+import { prettyPrintMidIRSourcesAsJS } from 'samlang-core-printer';
 
 import type { SamlangProjectConfiguration } from './configuration';
 
@@ -61,7 +61,10 @@ const compileToJS = (sources: Sources<MidIRModule>, outputDirectory: string): vo
   sources.forEach((program, moduleReference) => {
     const outputJSFilePath = join(outputDirectory, `${moduleReference}.js`);
     mkdirSync(dirname(outputJSFilePath), { recursive: true });
-    writeFileSync(outputJSFilePath, prettyPrintMidIRModuleAsJS(/* availableWidth */ 100, program));
+    writeFileSync(
+      outputJSFilePath,
+      prettyPrintMidIRSourcesAsJS(/* availableWidth */ 100, { ...program, mainFunctionNames: [] })
+    );
   });
 };
 

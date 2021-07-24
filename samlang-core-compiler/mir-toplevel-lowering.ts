@@ -26,8 +26,8 @@ import type {
 import type { ModuleTypingContext } from 'samlang-core-checker/typing-context';
 import {
   OptimizationConfiguration,
-  optimizeMidIRModuleByUnusedNameEliminationAndTailRecursionRewrite,
-  optimizeMidIRModuleAccordingToConfiguration,
+  optimizeMidIRSourcesByUnusedNameEliminationAndTailRecursionRewrite,
+  optimizeMidIRSourcesAccordingToConfiguration,
 } from 'samlang-core-optimization';
 import { checkNotNull, HashMap, hashMapOf, zip } from 'samlang-core-utils';
 
@@ -257,10 +257,11 @@ const compileSamlangSourcesToMidIRSources = (
     ];
     irSources.set(
       moduleReference,
-      optimizeMidIRModuleAccordingToConfiguration(
-        optimizeMidIRModuleByUnusedNameEliminationAndTailRecursionRewrite({
+      optimizeMidIRSourcesAccordingToConfiguration(
+        optimizeMidIRSourcesByUnusedNameEliminationAndTailRecursionRewrite({
           globalVariables: stringManager.globalVariables,
           typeDefinitions: compiledTypeDefinitions,
+          mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN],
           functions: allFunctions,
         }),
         optimizationConfiguration
