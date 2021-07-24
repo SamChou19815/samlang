@@ -515,6 +515,10 @@ export interface MidIRModule {
   readonly functions: readonly MidIRFunction[];
 }
 
+export interface MidIRSources extends MidIRModule {
+  readonly mainFunctionNames: readonly string[];
+}
+
 export const debugPrintMidIRFunction = ({
   name,
   parameters,
