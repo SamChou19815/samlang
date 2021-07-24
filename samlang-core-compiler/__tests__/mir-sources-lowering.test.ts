@@ -1,3 +1,4 @@
+import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
 import {
   HighIRSources,
   HIR_INT_TYPE,
@@ -25,7 +26,11 @@ const assertLowered = (
 ) =>
   expect(
     debugPrintMidIRModule(
-      lowerHighIRSourcesToMidIRSources({ ...sources, globalVariables: [], mainFunctionNames: [] })
+      lowerHighIRSourcesToMidIRSources({
+        ...sources,
+        globalVariables: [],
+        mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN],
+      })
     )
   ).toBe(expected);
 
@@ -63,7 +68,7 @@ describe('mir-sources-lowering', () => {
         ],
         functions: [
           {
-            name: 'main',
+            name: ENCODED_COMPILED_PROGRAM_MAIN,
             parameters: [],
             typeParameters: [],
             type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
@@ -158,7 +163,7 @@ type Object = (int, int);
 
 type Variant = (int, any);
 
-function main(): int {
+function _compiled_program_main(): int {
   let finalV: int;
   if 1 {
     main(0);

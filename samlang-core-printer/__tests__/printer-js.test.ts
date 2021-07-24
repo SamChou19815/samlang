@@ -6,6 +6,9 @@ import {
   ENCODED_FUNCTION_NAME_THROW,
 } from 'samlang-core-ast/common-names';
 import {
+  MidIRExpression,
+  MidIRStatement,
+  MidIRSources,
   MIR_BINARY,
   MIR_IF_ELSE,
   MIR_SINGLE_IF,
@@ -19,20 +22,17 @@ import {
   MIR_STRUCT_INITIALIZATION,
   MIR_INDEX_ACCESS,
   MIR_VARIABLE,
-  MidIRExpression,
-  MidIRStatement,
   MIR_INT_TYPE,
   MIR_STRING_TYPE,
   MIR_FUNCTION_TYPE,
   MIR_BOOL_TYPE,
 } from 'samlang-core-ast/mir-nodes';
-import type { MidIRModule } from 'samlang-core-ast/mir-nodes';
 
 import {
   createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING,
   createPrettierDocumentFromMidIRStatement_EXPOSED_FOR_TESTING,
   createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING,
-  createPrettierDocumentFromMidIRModule,
+  createPrettierDocumentFromMidIRSources,
 } from '../printer-js';
 import { prettyPrintAccordingToPrettierAlgorithm } from '../printer-prettier-core';
 
@@ -48,19 +48,19 @@ const midIRStatementToString = (s: MidIRStatement): string =>
     createPrettierDocumentFromMidIRStatement_EXPOSED_FOR_TESTING(s)
   ).trimEnd();
 
-const midIRModuleToJSString = (
+const midIRSourcesToJSString = (
   availableWidth: number,
-  midIRModule: MidIRModule,
+  sources: MidIRSources,
   forInterpreter = false
 ): string =>
   prettyPrintAccordingToPrettierAlgorithm(
     availableWidth,
-    createPrettierDocumentFromMidIRModule(midIRModule, forInterpreter)
+    createPrettierDocumentFromMidIRSources(sources, forInterpreter)
   ).trimEnd();
 
 describe('printer-js', () => {
   it('compile hello world to JS integration test', () => {
-    const mirModule: MidIRModule = {
+    const sources: MidIRSources = {
       globalVariables: [
         { name: 'h', content: 'Hello ' },
         { name: 'w', content: 'World!' },
@@ -68,6 +68,7 @@ describe('printer-js', () => {
         { name: 'f2', content: "'foo" },
       ],
       typeDefinitions: [],
+      mainFunctionNames: [],
       functions: [
         {
           name: '_module_Test_class_Main_function_main',
@@ -104,7 +105,7 @@ describe('printer-js', () => {
         },
       ],
     };
-    expect(midIRModuleToJSString(100, mirModule)).toBe(
+    expect(midIRSourcesToJSString(100, sources)).toBe(
       `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
 const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => console.log(line);
 const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => parseInt(v, 10);
@@ -129,9 +130,9 @@ _compiled_program_main();`
     );
   });
 
-  const setupMIRIntegration = (mirModule: MidIRModule): string => {
+  const setupMIRIntegration = (mirSources: MidIRSources): string => {
     // eslint-disable-next-line no-eval
-    return eval(midIRModuleToJSString(100, mirModule, true));
+    return eval(midIRSourcesToJSString(100, mirSources, true));
   };
 
   it('confirm samlang & equivalent JS have same print output', () => {
@@ -142,6 +143,7 @@ _compiled_program_main();`
           { name: 'w', content: 'World!' },
         ],
         typeDefinitions: [],
+        mainFunctionNames: [],
         functions: [
           {
             name: '_compiled_program_main',
@@ -174,6 +176,7 @@ _compiled_program_main();`
       setupMIRIntegration({
         globalVariables: [],
         typeDefinitions: [],
+        mainFunctionNames: [],
         functions: [
           {
             name: '_compiled_program_main',
@@ -190,6 +193,7 @@ _compiled_program_main();`
       setupMIRIntegration({
         globalVariables: [],
         typeDefinitions: [],
+        mainFunctionNames: [],
         functions: [
           {
             name: 'sum',
@@ -248,6 +252,7 @@ _compiled_program_main();`
           { name: 'n', content: 'Not the meaning of life... keep looking' },
         ],
         typeDefinitions: [],
+        mainFunctionNames: [],
         functions: [
           {
             name: 'MeaningOfLifeConditional',
@@ -327,6 +332,7 @@ _compiled_program_main();`
       setupMIRIntegration({
         globalVariables: [{ name: 'rb', content: 'RANDOM_BABY' }],
         typeDefinitions: [],
+        mainFunctionNames: [],
         functions: [
           {
             name: 'dummyStudent',
@@ -391,6 +397,7 @@ _compiled_program_main();`
       setupMIRIntegration({
         globalVariables: [{ name: 'illegal', content: 'Division by zero is illegal!' }],
         typeDefinitions: [],
+        mainFunctionNames: [],
         functions: [
           {
             name: 'sum',

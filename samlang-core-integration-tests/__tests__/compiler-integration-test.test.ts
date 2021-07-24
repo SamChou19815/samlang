@@ -1,3 +1,4 @@
+import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import type { MidIRModule } from 'samlang-core-ast/mir-nodes';
@@ -10,10 +11,10 @@ import interpretLLVMModule from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import {
   OptimizationConfiguration,
-  optimizeMidIRModuleAccordingToConfiguration,
+  optimizeMidIRSourcesAccordingToConfiguration,
 } from 'samlang-core-optimization';
 // eslint-disable-next-line import/no-internal-modules
-import { createPrettierDocumentFromMidIRModule } from 'samlang-core-printer/printer-js';
+import { createPrettierDocumentFromMidIRSources } from 'samlang-core-printer/printer-js';
 // eslint-disable-next-line import/no-internal-modules
 import { prettyPrintAccordingToPrettierAlgorithm } from 'samlang-core-printer/printer-prettier-core';
 import { checkSources } from 'samlang-core-services';
@@ -49,7 +50,7 @@ describe('compiler-integration-tests', () => {
   const midIRModuleToJSCode = (midIRModule: MidIRModule): string =>
     prettyPrintAccordingToPrettierAlgorithm(
       100,
-      createPrettierDocumentFromMidIRModule(midIRModule, true)
+      createPrettierDocumentFromMidIRSources({ ...midIRModule, mainFunctionNames: [] }, true)
     );
 
   const testMIR = (
@@ -58,7 +59,10 @@ describe('compiler-integration-tests', () => {
     optimizationConfig?: OptimizationConfiguration
   ): void => {
     const jsCode = midIRModuleToJSCode(
-      optimizeMidIRModuleAccordingToConfiguration(program, optimizationConfig)
+      optimizeMidIRSourcesAccordingToConfiguration(
+        { ...program, mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN] },
+        optimizationConfig
+      )
     );
     let interpretationResult: string;
     try {
@@ -102,9 +106,10 @@ describe('compiler-integration-tests', () => {
   runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) => {
     it(`LLVM: ${testCaseName}`, () => {
       const compilationUnit = lowerMidIRModuleToLLVMModule(
-        optimizeMidIRModuleAccordingToConfiguration(
-          midSources.forceGet(new ModuleReference([testCaseName]))
-        )
+        optimizeMidIRSourcesAccordingToConfiguration({
+          ...midSources.forceGet(new ModuleReference([testCaseName])),
+          mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN],
+        })
       );
 
       let result: string;

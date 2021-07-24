@@ -30,6 +30,7 @@ import {
   MIR_STRUCT_INITIALIZATION,
   isTheSameMidIRType,
 } from 'samlang-core-ast/mir-nodes';
+import { optimizeMidIRSourcesByTailRecursionRewrite } from 'samlang-core-optimization';
 import { assert } from 'samlang-core-utils';
 
 function lowerHighIRType(type: HighIRType): MidIRType {
@@ -301,10 +302,10 @@ export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources)
       typeDefinitionMapForLowering
     ).lowerHighIRFunction(highIRFunction)
   );
-  return {
+  return optimizeMidIRSourcesByTailRecursionRewrite({
     globalVariables: sources.globalVariables,
     typeDefinitions,
     mainFunctionNames: sources.mainFunctionNames,
     functions,
-  };
+  });
 }

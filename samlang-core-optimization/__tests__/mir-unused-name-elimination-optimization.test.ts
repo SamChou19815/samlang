@@ -16,11 +16,11 @@ import {
   MIR_IDENTIFIER_TYPE,
 } from 'samlang-core-ast/mir-nodes';
 
-import optimizeMidIRModuleByEliminatingUnusedOnes from '../mir-unused-name-elimination-optimization';
+import optimizeMidIRSourcesByEliminatingUnusedOnes from '../mir-unused-name-elimination-optimization';
 
 describe('mir-unused-name-elimination-optimization', () => {
-  it('optimizeMidIRModuleByEliminatingUnusedOnes test', () => {
-    const optimized = optimizeMidIRModuleByEliminatingUnusedOnes({
+  it('optimizeMidIRSourcesByEliminatingUnusedOnes test', () => {
+    const optimized = optimizeMidIRSourcesByEliminatingUnusedOnes({
       globalVariables: [
         { name: 'bar', content: 'fff' },
         { name: 'fsdfsdf', content: '' },
@@ -29,6 +29,7 @@ describe('mir-unused-name-elimination-optimization', () => {
         { identifier: 'Foo', mappings: [MIR_INT_TYPE] },
         { identifier: 'Baz', mappings: [MIR_INT_TYPE] },
       ],
+      mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN],
       functions: [
         {
           name: ENCODED_COMPILED_PROGRAM_MAIN,
