@@ -9,6 +9,7 @@ on:
       - scripts/snapshot.txt
       - test/*.sam
       - samlang-runtime/*
+      - samlang-cli/samlang-runtime/*
 
 jobs:
   test:
@@ -29,7 +30,7 @@ jobs:
       - name: Install LLVM and Clang
         uses: KyleMayes/install-llvm-action@master
         with:
-          version: '12'
+          version: '11'
           directory: ${{ runner.temp }}/llvm
       - name: Compile Runtime
         run: make && cp samlang-runtime/runtime.bc samlang-cli/samlang-runtime/libsam-linux.bc
