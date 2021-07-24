@@ -9,6 +9,7 @@ on:
       - scripts/snapshot.txt
       - test/*.sam
       - samlang-runtime/*
+      - samlang-cli/samlang-runtime/*
 
 jobs:
   test:
