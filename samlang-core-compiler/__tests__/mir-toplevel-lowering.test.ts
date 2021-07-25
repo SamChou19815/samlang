@@ -269,9 +269,14 @@ describe('mir-toplevel-lowering', () => {
 
     expect(debugPrintMidIRModule(actualCompiledModule)).toEqual(
       `
-function _compiled_program_main(): int {
+function ___DUMMY___Main_main(): int {
   while (true) {
   }
+  return 0;
+}
+
+function _compiled_program_main(): int {
+  ___DUMMY___Main_main();
   return 0;
 }
 `.trimLeft()
