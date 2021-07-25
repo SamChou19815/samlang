@@ -95,7 +95,7 @@ class HighIRExpressionLoweringManager {
   constructor(
     private readonly moduleReference: ModuleReference,
     private readonly encodedFunctionName: string,
-    definedVariables: readonly (readonly [string, HighIRType])[],
+    private readonly definedVariables: readonly (readonly [string, HighIRType])[],
     private readonly typeDefinitionMapping: Readonly<Record<string, HighIRTypeDefinition>>,
     private readonly typeLoweringManager: SamlangTypeLoweringManager,
     private readonly stringManager: HighIRStringManager
@@ -858,7 +858,6 @@ class HighIRExpressionLoweringManager {
     captured: readonly (readonly [string, HighIRExpression])[],
     contextType: HighIRType
   ): HighIRFunction {
-    const loweringResult = this.lower(expression.body);
     const lambdaStatements: HighIRStatement[] = [];
     captured.forEach(([variableName, { type }], index) => {
       lambdaStatements.push(
@@ -870,16 +869,30 @@ class HighIRExpressionLoweringManager {
         })
       );
     });
-    lambdaStatements.push(...loweringResult.statements);
 
+    const parameters = expression.parameters.map(([name]) => name);
     const [typeParameters, functionTypeWithoutContext] =
       this.typeLoweringManager.lowerSamlangFunctionTypeForTopLevel({
         type: 'FunctionType',
         argumentTypes: expression.parameters.map(([, , type]) => type),
         returnType: expression.type.returnType,
       });
+    const functionName = this.allocateSyntheticFunctionName();
+    const loweringResult = new HighIRExpressionLoweringManager(
+      this.moduleReference,
+      functionName,
+      [
+        ...zip(parameters, functionTypeWithoutContext.argumentTypes),
+        ...this.definedVariables,
+        ...captured.map(([variableName, { type }]) => [variableName, type] as const),
+      ],
+      this.typeDefinitionMapping,
+      this.typeLoweringManager,
+      this.stringManager
+    ).lower(expression.body);
+    lambdaStatements.push(...loweringResult.statements);
     return {
-      name: this.allocateSyntheticFunctionName(),
+      name: functionName,
       typeParameters,
       parameters: ['_context', ...expression.parameters.map(([name]) => name)],
       type: HIR_FUNCTION_TYPE(
