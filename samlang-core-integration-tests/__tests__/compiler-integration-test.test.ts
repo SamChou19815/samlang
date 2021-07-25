@@ -114,7 +114,7 @@ describe('compiler-integration-tests', () => {
 
       let result: string;
       try {
-        result = interpretLLVMModule(compilationUnit);
+        result = interpretLLVMModule(compilationUnit, ENCODED_COMPILED_PROGRAM_MAIN);
       } catch {
         fail(prettyPrintLLVMModule(compilationUnit));
       }

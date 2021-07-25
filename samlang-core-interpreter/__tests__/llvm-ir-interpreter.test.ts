@@ -8,6 +8,7 @@ import {
   ENCODED_COMPILED_PROGRAM_MAIN,
 } from 'samlang-core-ast/common-names';
 import {
+  LLVMModule,
   LLVM_INT_TYPE,
   LLVM_STRING_TYPE,
   LLVM_INT,
@@ -26,11 +27,14 @@ import {
   LLVM_RETURN,
 } from 'samlang-core-ast/llvm-nodes';
 
-import interpretLLVMModule from '../llvm-ir-interpreter';
+import interpretLLVMModuleWithoutMainFunction from '../llvm-ir-interpreter';
 
 const ZERO = LLVM_INT(0);
 const ONE = LLVM_INT(1);
 const EIGHT = LLVM_INT(8);
+
+const interpretLLVMModule = (llvmModule: LLVMModule) =>
+  interpretLLVMModuleWithoutMainFunction(llvmModule, ENCODED_COMPILED_PROGRAM_MAIN);
 
 describe('llvm-ir-interpreter', () => {
   it('interpretLLVMModule arithmetic normal test', () => {
