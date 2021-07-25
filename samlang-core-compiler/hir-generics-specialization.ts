@@ -175,7 +175,7 @@ class GenericsSpecializationRewriter {
 
   private rewriteFunctionName(originalName: string, functionType: HighIRFunctionType): string {
     const existingFunction = this.originalFunctions[originalName];
-    assert(existingFunction != null, `Missing ${originalName}.`);
+    if (existingFunction == null) return originalName;
     const solvedFunctionTypeArguments = solveTypeArguments(
       existingFunction.typeParameters,
       functionType,
