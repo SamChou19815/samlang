@@ -1,20 +1,25 @@
-import { ENCODED_COMPILED_PROGRAM_MAIN } from 'samlang-core-ast/common-names';
+import {
+  ENCODED_COMPILED_PROGRAM_MAIN,
+  encodeMainFunctionName,
+} from 'samlang-core-ast/common-names';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
-import type { MidIRModule } from 'samlang-core-ast/mir-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import {
+  compileSamlangSourcesToHighIRSources,
   compileSamlangSourcesToMidIRSources,
+  lowerHighIRSourcesToMidIRSources,
   lowerMidIRModuleToLLVMModule,
 } from 'samlang-core-compiler';
 import interpretLLVMModule from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
+import { optimizeMidIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
+import { prettyPrintMidIRSourcesAsJS } from 'samlang-core-printer';
 import {
-  OptimizationConfiguration,
-  optimizeMidIRSourcesAccordingToConfiguration,
-} from 'samlang-core-optimization';
-// eslint-disable-next-line import/no-internal-modules
-import { createPrettierDocumentFromMidIRSources } from 'samlang-core-printer/printer-js';
+  createPrettierDocumentForInterpreterFromMidIRSources,
+  createPrettierDocumentFromMidIRSources,
+  // eslint-disable-next-line import/no-internal-modules
+} from 'samlang-core-printer/printer-js';
 // eslint-disable-next-line import/no-internal-modules
 import { prettyPrintAccordingToPrettierAlgorithm } from 'samlang-core-printer/printer-prettier-core';
 import { checkSources } from 'samlang-core-services';
@@ -42,28 +47,28 @@ describe('compiler-integration-tests', () => {
     });
   }
 
-  const midSources = compileSamlangSourcesToMidIRSources(
+  const midIRUnoptimizedSingleSource = lowerHighIRSourcesToMidIRSources(
+    compileSamlangSourcesToHighIRSources(checkedSources)
+  );
+  const midIRUnoptimizedCommonJSSource = prettyPrintAccordingToPrettierAlgorithm(
+    100,
+    createPrettierDocumentFromMidIRSources(midIRUnoptimizedSingleSource, true)
+  );
+  prettyPrintMidIRSourcesAsJS(100, midIRUnoptimizedSingleSource);
+  const midIRMultipleSources = compileSamlangSourcesToMidIRSources(
     checkedSources,
     DEFAULT_BUILTIN_TYPING_CONTEXT
   );
 
-  const midIRModuleToJSCode = (midIRModule: MidIRModule): string =>
-    prettyPrintAccordingToPrettierAlgorithm(
-      100,
-      createPrettierDocumentFromMidIRSources({ ...midIRModule, mainFunctionNames: [] }, true)
-    );
-
   const testMIR = (
-    program: MidIRModule,
-    expectedStandardOut: string,
-    optimizationConfig?: OptimizationConfiguration
+    commonJSCode: string,
+    testCaseName: string,
+    expectedStandardOut: string
   ): void => {
-    const jsCode = midIRModuleToJSCode(
-      optimizeMidIRSourcesAccordingToConfiguration(
-        { ...program, mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN] },
-        optimizationConfig
-      )
-    );
+    const jsCode = `let printed = '';
+${commonJSCode}
+${encodeMainFunctionName(new ModuleReference([testCaseName]))}();
+printed`;
     let interpretationResult: string;
     try {
       // eslint-disable-next-line no-eval
@@ -73,41 +78,95 @@ describe('compiler-integration-tests', () => {
       return;
     }
     if (interpretationResult !== expectedStandardOut) {
-      const unoptimizedJSCode = midIRModuleToJSCode(program);
       fail(
-        `Expected:\n${expectedStandardOut}\nActual:\n${interpretationResult}\nCode:\n${jsCode}\n\nUnoptimized Code:\n${unoptimizedJSCode}`
+        `Expected:\n${expectedStandardOut}\nActual:\n${interpretationResult}\nCode:\n${jsCode}\n\nUnoptimized Code:\n${midIRUnoptimizedCommonJSSource}`
       );
     }
   };
 
-  runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) => {
-    const program = midSources.forceGet(new ModuleReference([testCaseName]));
+  describe('MIR[no-opt]', () => {
+    const commonJSCode = prettyPrintAccordingToPrettierAlgorithm(
+      100,
+      createPrettierDocumentForInterpreterFromMidIRSources(midIRUnoptimizedSingleSource)
+    );
+    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
+      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
+    );
+  });
 
-    it(`MIR[no-opt]: ${testCaseName}`, () => {
-      testMIR(program, expectedStandardOut, {});
-    });
-    it(`MIR[lvn]: ${testCaseName}`, () => {
-      testMIR(program, expectedStandardOut, { doesPerformLocalValueNumbering: true });
-    });
-    it(`MIR[cse]: ${testCaseName}`, () => {
-      testMIR(program, expectedStandardOut, { doesPerformCommonSubExpressionElimination: true });
-    });
-    it(`MIR[inl]: ${testCaseName}`, () => {
-      testMIR(program, expectedStandardOut, { doesPerformInlining: true });
-    });
-    it(`MIR[loop]: ${testCaseName}`, () => {
-      testMIR(program, expectedStandardOut, { doesPerformLoopOptimization: true });
-    });
-    it(`MIR[all]: ${testCaseName}`, () => {
-      testMIR(program, expectedStandardOut);
-    });
+  describe('MIR[lvn]', () => {
+    const commonJSCode = prettyPrintAccordingToPrettierAlgorithm(
+      100,
+      createPrettierDocumentForInterpreterFromMidIRSources(
+        optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource, {
+          doesPerformLocalValueNumbering: true,
+        })
+      )
+    );
+    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
+      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
+    );
+  });
+
+  describe('MIR[cse]', () => {
+    const commonJSCode = prettyPrintAccordingToPrettierAlgorithm(
+      100,
+      createPrettierDocumentForInterpreterFromMidIRSources(
+        optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource, {
+          doesPerformCommonSubExpressionElimination: true,
+        })
+      )
+    );
+    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
+      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
+    );
+  });
+
+  describe('MIR[inl]', () => {
+    const commonJSCode = prettyPrintAccordingToPrettierAlgorithm(
+      100,
+      createPrettierDocumentForInterpreterFromMidIRSources(
+        optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource, {
+          doesPerformInlining: true,
+        })
+      )
+    );
+    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
+      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
+    );
+  });
+
+  describe('MIR[loop]', () => {
+    const commonJSCode = prettyPrintAccordingToPrettierAlgorithm(
+      100,
+      createPrettierDocumentForInterpreterFromMidIRSources(
+        optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource, {
+          doesPerformLoopOptimization: true,
+        })
+      )
+    );
+    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
+      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
+    );
+  });
+
+  describe('MIR[all]', () => {
+    const commonJSCode = prettyPrintAccordingToPrettierAlgorithm(
+      100,
+      createPrettierDocumentForInterpreterFromMidIRSources(
+        optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource)
+      )
+    );
+    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
+      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
+    );
   });
 
   runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) => {
     it(`LLVM: ${testCaseName}`, () => {
       const compilationUnit = lowerMidIRModuleToLLVMModule(
         optimizeMidIRSourcesAccordingToConfiguration({
-          ...midSources.forceGet(new ModuleReference([testCaseName])),
+          ...midIRMultipleSources.forceGet(new ModuleReference([testCaseName])),
           mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN],
         })
       );

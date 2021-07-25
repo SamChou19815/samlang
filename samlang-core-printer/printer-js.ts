@@ -316,6 +316,16 @@ export const createPrettierDocumentForExportingModuleFromMidIRSources = (
     ],
   });
 
+export const createPrettierDocumentForInterpreterFromMidIRSources = (
+  sources: MidIRSources
+): PrettierDocument =>
+  createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation({
+    sources,
+    printerImplementation: '{ printed += line; printed += "\\n" };',
+    prolog: [],
+    epilog: [],
+  });
+
 export const createPrettierDocumentFromMidIRSources = (
   sources: MidIRSources,
   forInterpreter: boolean
