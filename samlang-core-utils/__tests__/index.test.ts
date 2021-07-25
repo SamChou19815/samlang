@@ -34,6 +34,7 @@ describe('samlang-utils', () => {
   it('checkNotNull tests', () => {
     expect(checkNotNull(2)).toBe(2);
     expect(() => checkNotNull(null)).toThrow();
+    expect(() => checkNotNull(null, '')).toThrow();
   });
 
   it('assert test', () => {

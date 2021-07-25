@@ -53,7 +53,7 @@ import type {
   LambdaExpression,
   StatementBlockExpression,
 } from 'samlang-core-ast/samlang-expressions';
-import { LocalStackedContext, assert, checkNotNull, zip } from 'samlang-core-utils';
+import { LocalStackedContext, checkNotNull, zip } from 'samlang-core-utils';
 
 import type HighIRStringManager from './hir-string-manager';
 import type MidIRTypeSynthesizer from './mir-type-synthesizer';
@@ -446,8 +446,10 @@ class MidIRExpressionLoweringManager {
           functionExpression.className,
           functionExpression.memberName
         );
-        const functionTypeWithoutContext = this.functionTypeMapping[functionName];
-        assert(functionTypeWithoutContext != null, `Missing function: ${functionName}`);
+        const functionTypeWithoutContext = checkNotNull(
+          this.functionTypeMapping[functionName],
+          `Missing function: ${functionName}`
+        );
         functionReturnCollectorType = functionTypeWithoutContext.returnType;
         functionCall = MIR_FUNCTION_CALL({
           functionExpression: MIR_NAME(functionName, functionTypeWithoutContext),

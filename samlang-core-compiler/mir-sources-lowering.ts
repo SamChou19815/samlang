@@ -31,7 +31,7 @@ import {
   isTheSameMidIRType,
 } from 'samlang-core-ast/mir-nodes';
 import { optimizeMidIRSourcesByTailRecursionRewrite } from 'samlang-core-optimization';
-import { assert } from 'samlang-core-utils';
+import { assert, checkNotNull } from 'samlang-core-utils';
 
 function lowerHighIRType(type: HighIRType): MidIRType {
   switch (type.__type__) {
@@ -108,8 +108,10 @@ class HighIRToMidIRLoweringManager {
         const pointerType = pointerExpression.type;
         assert(pointerType.__type__ === 'IdentifierType');
         const variableType = lowerHighIRType(statement.type);
-        const typeDefinition = this.typeDefinitions[pointerType.name];
-        assert(typeDefinition != null, `Missing ${pointerType.name}`);
+        const typeDefinition = checkNotNull(
+          this.typeDefinitions[pointerType.name],
+          `Missing ${pointerType.name}`
+        );
         if (typeDefinition.type === 'object') {
           return [MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index })];
         }
@@ -152,8 +154,10 @@ class HighIRToMidIRLoweringManager {
             closureHighIRType.__type__ === 'IdentifierType' &&
               closureHighIRType.typeArguments.length === 0
           );
-          const functionType = this.closureTypeDefinitions[closureHighIRType.name];
-          assert(functionType != null, `Missing ${closureHighIRType.name}`);
+          const functionType = checkNotNull(
+            this.closureTypeDefinitions[closureHighIRType.name],
+            `Missing ${closureHighIRType.name}`
+          );
           const pointerExpression = lowerHighIRExpression(statement.functionExpression);
           // TODO(closure)
           const tempFunction = this.tempAllocator();
