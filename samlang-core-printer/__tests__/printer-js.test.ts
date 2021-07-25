@@ -157,10 +157,7 @@ _compiled_program_main();`
                 returnCollector: '_t0',
               }),
               MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME(
-                  '_module__class_Builtins_function_println',
-                  MIR_INT_TYPE
-                ),
+                functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, MIR_INT_TYPE),
                 functionArguments: [MIR_VARIABLE('_t0', MIR_INT_TYPE)],
                 returnType: MIR_STRING_TYPE,
                 returnCollector: '_t1',
@@ -221,19 +218,13 @@ _compiled_program_main();`
                 returnCollector: '_t0',
               }),
               MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME(
-                  '_module__class_Builtins_function_intToString',
-                  MIR_INT_TYPE
-                ),
+                functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_INT_TO_STRING, MIR_INT_TYPE),
                 functionArguments: [MIR_VARIABLE('_t0', MIR_INT_TYPE)],
                 returnType: MIR_INT_TYPE,
                 returnCollector: '_t1',
               }),
               MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME(
-                  '_module__class_Builtins_function_println',
-                  MIR_INT_TYPE
-                ),
+                functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, MIR_INT_TYPE),
                 functionArguments: [MIR_VARIABLE('_t1', MIR_INT_TYPE)],
                 returnType: MIR_INT_TYPE,
                 returnCollector: '_t2',
@@ -313,10 +304,7 @@ _compiled_program_main();`
                 returnCollector: '_t1',
               }),
               MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME(
-                  '_module__class_Builtins_function_println',
-                  MIR_INT_TYPE
-                ),
+                functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, MIR_INT_TYPE),
                 functionArguments: [MIR_VARIABLE('_t1', MIR_INT_TYPE)],
                 returnType: MIR_INT_TYPE,
                 returnCollector: '_t2',
@@ -379,10 +367,7 @@ _compiled_program_main();`
                 returnCollector: '_t1',
               }),
               MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME(
-                  '_module__class_Builtins_function_println',
-                  MIR_INT_TYPE
-                ),
+                functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, MIR_INT_TYPE),
                 functionArguments: [MIR_VARIABLE('_t1', MIR_INT_TYPE)],
                 returnType: MIR_INT_TYPE,
               }),
@@ -422,10 +407,7 @@ _compiled_program_main();`
                 booleanExpression: MIR_INT(1),
                 s1: [
                   MIR_FUNCTION_CALL({
-                    functionExpression: MIR_NAME(
-                      '_module__class_Builtins_function_panic',
-                      MIR_INT_TYPE
-                    ),
+                    functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_THROW, MIR_INT_TYPE),
                     functionArguments: [MIR_NAME('illegal', MIR_STRING_TYPE)],
                     returnType: MIR_INT_TYPE,
                   }),

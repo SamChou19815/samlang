@@ -273,36 +273,36 @@ object type __DUMMY___Class1 = [int]
 variant type __DUMMY___Class2 = []
 object type __DUMMY___Class3<T> = [$SyntheticIDType1<T>]
 object type $SyntheticIDType0<T> = [__DUMMY___A<int>, T]
-function _module___DUMMY___class_Main_function_main_with_context(_context: int): int {
-  let _ret: int = _module___DUMMY___class_Main_function_main();
+function ___DUMMY___Main_main_with_context(_context: int): int {
+  let _ret: int = ___DUMMY___Main_main();
   return (_ret: int);
 }
 
-function _module___DUMMY___class_Class1_function_infiniteLoop_with_context(_context: int): int {
-  let _ret: int = _module___DUMMY___class_Class1_function_infiniteLoop();
+function ___DUMMY___Class1_infiniteLoop_with_context(_context: int): int {
+  let _ret: int = ___DUMMY___Class1_infiniteLoop();
   return (_ret: int);
 }
 
-function _module___DUMMY___class_Class1_function_factorial_with_context(_context: int, n: int, acc: int): int {
-  let _ret: int = _module___DUMMY___class_Class1_function_factorial((n: int), (acc: int));
+function ___DUMMY___Class1_factorial_with_context(_context: int, n: int, acc: int): int {
+  let _ret: int = ___DUMMY___Class1_factorial((n: int), (acc: int));
   return (_ret: int);
 }
 
-function _module___DUMMY___class_Main_function_main(): int {
-  _module___DUMMY___class_Class1_function_infiniteLoop();
+function ___DUMMY___Main_main(): int {
+  ___DUMMY___Class1_infiniteLoop();
   return 0;
 }
 
-function _module___DUMMY___class_Class1_function_foo(_this: __DUMMY___Class1, a: int): int {
+function ___DUMMY___Class1_foo(_this: __DUMMY___Class1, a: int): int {
   return (_this: __DUMMY___Class1);
 }
 
-function _module___DUMMY___class_Class1_function_infiniteLoop(): int {
-  _module___DUMMY___class_Class1_function_infiniteLoop();
+function ___DUMMY___Class1_infiniteLoop(): int {
+  ___DUMMY___Class1_infiniteLoop();
   return 0;
 }
 
-function _module___DUMMY___class_Class1_function_factorial(n: int, acc: int): int {
+function ___DUMMY___Class1_factorial(n: int, acc: int): int {
   let _t0: bool = (n: int) == 0;
   let _t4: int;
   if (_t0: bool) {
@@ -310,26 +310,26 @@ function _module___DUMMY___class_Class1_function_factorial(n: int, acc: int): in
   } else {
     let _t2: int = (n: int) - 1;
     let _t3: int = (n: int) * (acc: int);
-    let _t1: int = _module___DUMMY___class_Class1_function_factorial((_t2: int), (_t3: int));
+    let _t1: int = ___DUMMY___Class1_factorial((_t2: int), (_t3: int));
     _t4 = (_t1: int);
   }
   return (_t4: int);
 }
 
-sources.mains = [_module___DUMMY___class_Main_function_main]`
+sources.mains = [___DUMMY___Main_main]`
     );
 
     expect(`\n${debugPrintHighIRSources(compileSamlangSourcesToHighIRSources(sources))}`).toBe(`
-function _module___DUMMY___class_Class1_function_infiniteLoop(): int {
-  _module___DUMMY___class_Class1_function_infiniteLoop();
+function ___DUMMY___Class1_infiniteLoop(): int {
+  ___DUMMY___Class1_infiniteLoop();
   return 0;
 }
 
-function _module___DUMMY___class_Main_function_main(): int {
-  _module___DUMMY___class_Class1_function_infiniteLoop();
+function ___DUMMY___Main_main(): int {
+  ___DUMMY___Class1_infiniteLoop();
   return 0;
 }
 
-sources.mains = [_module___DUMMY___class_Main_function_main]`);
+sources.mains = [___DUMMY___Main_main]`);
   });
 });

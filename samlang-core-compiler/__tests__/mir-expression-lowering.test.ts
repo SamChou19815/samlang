@@ -64,22 +64,16 @@ const expectCorrectlyLowered = (
     'ENCODED_FUNCTION_NAME',
     { __DUMMY___Foo: [MIR_INT_TYPE, MIR_INT_TYPE], __DUMMY___Dummy: [MIR_INT_TYPE, MIR_INT_TYPE] },
     {
-      _module_ModuleModule_class_ImportedClass_function_bar: MIR_FUNCTION_TYPE(
+      _ModuleModule_ImportedClass_bar: MIR_FUNCTION_TYPE(
         [MIR_IDENTIFIER_TYPE('__DUMMY___Dummy'), MIR_IDENTIFIER_TYPE('__DUMMY___Dummy')],
         MIR_INT_TYPE
       ),
-      _module___DUMMY___class_Dummy_function_fooBar: MIR_FUNCTION_TYPE(
+      ___DUMMY___Dummy_fooBar: MIR_FUNCTION_TYPE(
         [MIR_IDENTIFIER_TYPE('__DUMMY___Dummy'), MIR_IDENTIFIER_TYPE('__DUMMY___Dummy')],
         MIR_INT_TYPE
       ),
-      _module___DUMMY___class_C_function_m1: MIR_FUNCTION_TYPE(
-        [MIR_IDENTIFIER_TYPE('__DUMMY___Dummy')],
-        MIR_INT_TYPE
-      ),
-      _module___DUMMY___class_C_function_m2: MIR_FUNCTION_TYPE(
-        [MIR_INT_TYPE],
-        MIR_IDENTIFIER_TYPE('__DUMMY___Dummy')
-      ),
+      ___DUMMY___C_m1: MIR_FUNCTION_TYPE([MIR_IDENTIFIER_TYPE('__DUMMY___Dummy')], MIR_INT_TYPE),
+      ___DUMMY___C_m2: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_IDENTIFIER_TYPE('__DUMMY___Dummy')),
     },
     new Set(),
     typeSynthesizer,
@@ -141,7 +135,7 @@ describe('mir-expression-lowering', () => {
         memberNameRange: Range.DUMMY,
       }),
       `type _SYNTHETIC_ID_TYPE_0 = (any, any);
-let _t1: any = _module___DUMMY___class_A_function_b_with_context;
+let _t1: any = ___DUMMY___A_b_with_context;
 let _t2: any = 1;
 let _t0: _SYNTHETIC_ID_TYPE_0 = [(_t1: any), (_t2: any)];
 return (_t0: _SYNTHETIC_ID_TYPE_0);`
@@ -235,7 +229,7 @@ return (_t0: __DUMMY___Foo);`
         methodName: 'foo',
       }),
       `type _SYNTHETIC_ID_TYPE_0 = (any, any);
-let _t0: _SYNTHETIC_ID_TYPE_0 = [_module___DUMMY___class_Dummy_function_foo, (_this: __DUMMY___Dummy)];
+let _t0: _SYNTHETIC_ID_TYPE_0 = [___DUMMY___Dummy_foo, (_this: __DUMMY___Dummy)];
 return (_t0: _SYNTHETIC_ID_TYPE_0);`
     );
   });
@@ -284,7 +278,7 @@ return (_t0: _SYNTHETIC_ID_TYPE_0);`
         }),
         functionArguments: [THIS, THIS],
       }),
-      `let _t0: int = _module_ModuleModule_class_ImportedClass_function_bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+      `let _t0: int = _ModuleModule_ImportedClass_bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: int);`
     );
   });
@@ -305,7 +299,7 @@ return (_t0: int);`
         }),
         functionArguments: [THIS, THIS],
       }),
-      `let _t0: int = _module___DUMMY___class_Dummy_function_fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+      `let _t0: int = ___DUMMY___Dummy_fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: int);`
     );
   });
@@ -377,7 +371,7 @@ return 0;`
         functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
       }),
       `let _t1: __DUMMY___Dummy = 0;
-_module___DUMMY___class_C_function_m1((_t1: __DUMMY___Dummy));
+___DUMMY___C_m1((_t1: __DUMMY___Dummy));
 return 0;`
     );
   });
@@ -402,7 +396,7 @@ return 0;`
         }),
         functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
       }),
-      `let _t0: __DUMMY___Dummy = _module___DUMMY___class_C_function_m2(0);
+      `let _t0: __DUMMY___Dummy = ___DUMMY___C_m2(0);
 let _t1: int = (_t0: __DUMMY___Dummy);
 return (_t1: int);`
     );
@@ -610,12 +604,12 @@ return (_t0: bool);`
 
 type _SYNTHETIC_ID_TYPE_1 = (any, any);
 
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): int {
+function ___DUMMY___ENCODED_FUNCTION_NAME__SYNTHETIC_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): int {
   let a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
   return (_this: __DUMMY___Dummy);
 }
 let _t1: _SYNTHETIC_ID_TYPE_0 = [(a: int)];
-let _t2: any = _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
+let _t2: any = ___DUMMY___ENCODED_FUNCTION_NAME__SYNTHETIC_0;
 let _t3: any = (_t1: _SYNTHETIC_ID_TYPE_0);
 let _t0: _SYNTHETIC_ID_TYPE_1 = [(_t2: any), (_t3: any)];
 return (_t0: _SYNTHETIC_ID_TYPE_1);`
@@ -636,12 +630,12 @@ return (_t0: _SYNTHETIC_ID_TYPE_1);`
 
 type _SYNTHETIC_ID_TYPE_1 = (any, any);
 
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): int {
+function ___DUMMY___ENCODED_FUNCTION_NAME__SYNTHETIC_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): int {
   let a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
   return (_this: __DUMMY___Dummy);
 }
 let _t1: _SYNTHETIC_ID_TYPE_0 = [(a: int)];
-let _t2: any = _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
+let _t2: any = ___DUMMY___ENCODED_FUNCTION_NAME__SYNTHETIC_0;
 let _t3: any = (_t1: _SYNTHETIC_ID_TYPE_0);
 let _t0: _SYNTHETIC_ID_TYPE_1 = [(_t2: any), (_t3: any)];
 return (_t0: _SYNTHETIC_ID_TYPE_1);`
@@ -662,12 +656,12 @@ return (_t0: _SYNTHETIC_ID_TYPE_1);`
 
 type _SYNTHETIC_ID_TYPE_1 = (any, any);
 
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): __DUMMY___Dummy {
+function ___DUMMY___ENCODED_FUNCTION_NAME__SYNTHETIC_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): __DUMMY___Dummy {
   let a: int = (_context: _SYNTHETIC_ID_TYPE_0)[0];
   return (_this: __DUMMY___Dummy);
 }
 let _t1: _SYNTHETIC_ID_TYPE_0 = [(a: int)];
-let _t2: any = _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
+let _t2: any = ___DUMMY___ENCODED_FUNCTION_NAME__SYNTHETIC_0;
 let _t3: any = (_t1: _SYNTHETIC_ID_TYPE_0);
 let _t0: _SYNTHETIC_ID_TYPE_1 = [(_t2: any), (_t3: any)];
 return (_t0: _SYNTHETIC_ID_TYPE_1);`
@@ -688,10 +682,10 @@ return (_t0: _SYNTHETIC_ID_TYPE_1);`
 
 type _SYNTHETIC_ID_TYPE_1 = (any, any);
 
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): __DUMMY___Dummy {
+function ___DUMMY___ENCODED_FUNCTION_NAME__SYNTHETIC_0(_context: _SYNTHETIC_ID_TYPE_0, a: int): __DUMMY___Dummy {
   return (_this: __DUMMY___Dummy);
 }
-let _t1: any = _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__SYNTHETIC_0;
+let _t1: any = ___DUMMY___ENCODED_FUNCTION_NAME__SYNTHETIC_0;
 let _t2: any = 1;
 let _t0: _SYNTHETIC_ID_TYPE_1 = [(_t1: any), (_t2: any)];
 return (_t0: _SYNTHETIC_ID_TYPE_1);`

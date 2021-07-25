@@ -77,7 +77,7 @@ static void printUcs4char(const long int c, FILE *stream) {
   }
 }
 
-samlang_int _module__class_Builtins_function_println(samlang_string str) {
+samlang_int __Builtins_println(samlang_string str) {
   int c;
   int len = str[0];
   for (c = 1; c <= len; ++c) {
@@ -87,7 +87,7 @@ samlang_int _module__class_Builtins_function_println(samlang_string str) {
   return 0;
 }
 
-samlang_string _module__class_Builtins_function_intToString(samlang_int in) {
+samlang_string __Builtins_intToString(samlang_int in) {
   if (in == 0) return mkString("0");
   if (in == -2147483648) return mkString("-2147483648");
   char buffer[16]; // more than enough to represent 32-bit numbers
@@ -115,8 +115,8 @@ samlang_string _module__class_Builtins_function_intToString(samlang_int in) {
   return mkString(buffer);
 }
 
-samlang_int _module__class_Builtins_function_panic(samlang_string in) {
-  _module__class_Builtins_function_println(in);
+samlang_int __Builtins_panic(samlang_string in) {
+  __Builtins_println(in);
   exit(1);
   return 0;
 }
