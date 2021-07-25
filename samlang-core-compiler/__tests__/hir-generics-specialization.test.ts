@@ -64,6 +64,47 @@ sources.mains = [main]
     );
   });
 
+  it('Calling builtin function is accepted.', () => {
+    const type = HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE);
+    const returnValue = HIR_ZERO;
+    expectSpecialized(
+      {
+        globalVariables: [{ name: 'G1', content: '' }],
+        closureTypes: [],
+        typeDefinitions: [],
+        mainFunctionNames: ['main'],
+        functions: [
+          {
+            name: 'main',
+            parameters: [],
+            typeParameters: [],
+            type,
+            body: [
+              HIR_FUNCTION_CALL({
+                functionExpression: HIR_NAME(
+                  '__builtins_println',
+                  HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE)
+                ),
+                functionArguments: [HIR_NAME('G1', HIR_STRING_TYPE)],
+                returnType: HIR_INT_TYPE,
+              }),
+            ],
+            returnValue,
+          },
+        ],
+      },
+      `const G1 = '';
+
+function main(): int {
+  __builtins_println(G1);
+  return 0;
+}
+
+sources.mains = [main]
+`
+    );
+  });
+
   it('Generics specialization comprehensive test.', () => {
     const typeA = HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A');
     const typeB = HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B');
