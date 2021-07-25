@@ -32,6 +32,7 @@ import {
   createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING,
   createPrettierDocumentFromMidIRStatement_EXPOSED_FOR_TESTING,
   createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING,
+  createPrettierDocumentForExportingModuleFromMidIRSources,
   createPrettierDocumentFromMidIRSources,
 } from '../printer-js';
 import { prettyPrintAccordingToPrettierAlgorithm } from '../printer-prettier-core';
@@ -732,5 +733,50 @@ while (true) {
     expect(midIRExpressionToString(MIR_INT(1305))).toBe('1305');
     expect(midIRExpressionToString(MIR_VARIABLE('ts', MIR_INT_TYPE))).toBe('ts');
     expect(midIRExpressionToString(MIR_NAME('key', MIR_INT_TYPE))).toBe('key');
+  });
+
+  it('createPrettierDocumentForExportingModuleFromMidIRSources works', () => {
+    expect(
+      prettyPrintAccordingToPrettierAlgorithm(
+        80,
+        createPrettierDocumentForExportingModuleFromMidIRSources({
+          globalVariables: [],
+          typeDefinitions: [],
+          mainFunctionNames: ['foo', 'bar'],
+          functions: [],
+        })
+      )
+    ).toBe(`const _builtin_stringConcat = (a, b) => a + b;
+const __Builtins_println = (line) => console.log(line);
+const __Builtins_stringToInt = (v) => parseInt(v, 10);
+const __Builtins_intToString = (v) => String(v);
+const __Builtins_panic = (v) => { throw Error(v); };
+
+
+module.exports = [foo, bar];
+`);
+
+    expect(
+      prettyPrintAccordingToPrettierAlgorithm(
+        10,
+        createPrettierDocumentForExportingModuleFromMidIRSources({
+          globalVariables: [],
+          typeDefinitions: [],
+          mainFunctionNames: ['foo', 'bar'],
+          functions: [],
+        })
+      )
+    ).toBe(`const _builtin_stringConcat = (a, b) => a + b;
+const __Builtins_println = (line) => console.log(line);
+const __Builtins_stringToInt = (v) => parseInt(v, 10);
+const __Builtins_intToString = (v) => String(v);
+const __Builtins_panic = (v) => { throw Error(v); };
+
+
+module.exports = [
+  foo,
+  bar
+];
+`);
   });
 });

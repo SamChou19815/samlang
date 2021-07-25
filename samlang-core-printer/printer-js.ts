@@ -30,9 +30,9 @@ import {
 // Thanks https://gist.github.com/getify/3667624
 const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
 
-export const createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING = (
+export function createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(
   midIRExpression: MidIRExpression
-): PrettierDocument => {
+): PrettierDocument {
   switch (midIRExpression.__type__) {
     case 'MidIRIntLiteralExpression':
       return PRETTIER_TEXT(String(midIRExpression.value));
@@ -40,7 +40,7 @@ export const createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING = (
     case 'MidIRNameExpression':
       return PRETTIER_TEXT(midIRExpression.name);
   }
-};
+}
 
 class WhileLabelManager {
   private stack: (string | undefined)[] = [];
@@ -57,18 +57,18 @@ class WhileLabelManager {
   };
 }
 
-const concatStatements = (statements: readonly MidIRStatement[], manager: WhileLabelManager) => {
+function concatStatements(statements: readonly MidIRStatement[], manager: WhileLabelManager) {
   const documents = statements
     .map((it) => [createPrettierDocumentFromMidIRStatement(it, manager), PRETTIER_LINE])
     .flat();
   if (documents.length === 0) return documents;
   return documents.slice(0, documents.length - 1);
-};
+}
 
-export const createPrettierDocumentFromMidIRStatement = (
+export function createPrettierDocumentFromMidIRStatement(
   midIRStatement: MidIRStatement,
   manager: WhileLabelManager
-): PrettierDocument => {
+): PrettierDocument {
   switch (midIRStatement.__type__) {
     case 'MidIRIndexAccessStatement': {
       const { pointerExpression, index } = midIRStatement;
@@ -224,16 +224,16 @@ export const createPrettierDocumentFromMidIRStatement = (
         PRETTIER_TEXT(';')
       );
   }
-};
+}
 
 export const createPrettierDocumentFromMidIRStatement_EXPOSED_FOR_TESTING = (
   midIRStatement: MidIRStatement
 ): PrettierDocument =>
   createPrettierDocumentFromMidIRStatement(midIRStatement, new WhileLabelManager());
 
-export const createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING = (
+export function createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING(
   midIRFunction: MidIRFunction
-): PrettierDocument => {
+): PrettierDocument {
   const returnStatementDocument = PRETTIER_CONCAT(
     PRETTIER_TEXT('return '),
     createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(midIRFunction.returnValue),
@@ -256,21 +256,24 @@ export const createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING = (
     ),
     PRETTIER_TEXT(';')
   );
-};
+}
 
-export const createPrettierDocumentFromMidIRSources = (
-  sources: MidIRSources,
-  forInterpreter: boolean
-): PrettierDocument => {
-  const segments: PrettierDocument[] = [
-    ...(forInterpreter ? [PRETTIER_TEXT("var printed = '';"), PRETTIER_LINE, PRETTIER_LINE] : []),
+function createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation({
+  sources,
+  printerImplementation,
+  prolog,
+  epilog,
+}: {
+  readonly sources: MidIRSources;
+  readonly printerImplementation: string;
+  readonly prolog: readonly PrettierDocument[];
+  readonly epilog: readonly PrettierDocument[];
+}): PrettierDocument {
+  const segments: PrettierDocument[] = [...prolog];
+  segments.push(
     PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;`),
     PRETTIER_LINE,
-    PRETTIER_TEXT(
-      forInterpreter
-        ? `const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => { printed += line; printed += "\\n" };`
-        : `const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => console.log(line);`
-    ),
+    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => ${printerImplementation}`),
     PRETTIER_LINE,
     PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => parseInt(v, 10);`),
     PRETTIER_LINE,
@@ -278,8 +281,8 @@ export const createPrettierDocumentFromMidIRSources = (
     PRETTIER_LINE,
     PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };`),
     PRETTIER_LINE,
-    PRETTIER_LINE,
-  ];
+    PRETTIER_LINE
+  );
   sources.globalVariables.forEach(({ name, content }) => {
     segments.push(
       PRETTIER_TEXT(`const ${name} = "${escapeDoubleQuotes(content)}";`),
@@ -292,11 +295,43 @@ export const createPrettierDocumentFromMidIRSources = (
       PRETTIER_LINE
     )
   );
-  segments.push(
-    PRETTIER_LINE,
-    PRETTIER_TEXT(`${ENCODED_COMPILED_PROGRAM_MAIN}();`),
-    PRETTIER_LINE,
-    ...(forInterpreter ? [PRETTIER_TEXT('printed')] : [])
-  );
+  segments.push(...epilog);
   return PRETTIER_CONCAT(...segments);
-};
+}
+
+export const createPrettierDocumentForExportingModuleFromMidIRSources = (
+  sources: MidIRSources
+): PrettierDocument =>
+  createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation({
+    sources,
+    printerImplementation: 'console.log(line);',
+    prolog: [],
+    epilog: [
+      PRETTIER_LINE,
+      PRETTIER_TEXT(`module.exports = `),
+      createBracketSurroundedDocument(
+        createCommaSeparatedList(sources.mainFunctionNames, PRETTIER_TEXT)
+      ),
+      PRETTIER_TEXT(';'),
+    ],
+  });
+
+export const createPrettierDocumentFromMidIRSources = (
+  sources: MidIRSources,
+  forInterpreter: boolean
+): PrettierDocument =>
+  createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation({
+    sources,
+    printerImplementation: forInterpreter
+      ? '{ printed += line; printed += "\\n" };'
+      : 'console.log(line);',
+    prolog: forInterpreter
+      ? [PRETTIER_TEXT("var printed = '';"), PRETTIER_LINE, PRETTIER_LINE]
+      : [],
+    epilog: [
+      PRETTIER_LINE,
+      PRETTIER_TEXT(`${ENCODED_COMPILED_PROGRAM_MAIN}();`),
+      PRETTIER_LINE,
+      ...(forInterpreter ? [PRETTIER_TEXT('printed')] : []),
+    ],
+  });
