@@ -10,8 +10,8 @@ export function assert(condition: unknown, msg?: string): asserts condition {
   }
 }
 
-export const checkNotNull = <V>(value: V | null | undefined): V => {
-  assert(value != null, `Value is asserted to be not null, but it is ${value}.`);
+export const checkNotNull = <V>(value: V | null | undefined, msg?: string): V => {
+  assert(value != null, msg ?? `Value is asserted to be not null, but it is ${value}.`);
   return value;
 };
 

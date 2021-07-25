@@ -68,13 +68,17 @@ function handleBuiltInFunctionCall(
       return start;
     }
     case ENCODED_FUNCTION_NAME_THROW: {
-      const string = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
-      assert(string != null, 'Bad string!');
+      const string = checkNotNull(
+        environment.strings.get(checkNotNull(functionArgumentValues[0]).toString()),
+        'Bad string!'
+      );
       throw new PanicException(string);
     }
     case ENCODED_FUNCTION_NAME_STRING_TO_INT: {
-      const string = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
-      assert(string != null, 'Bad string!');
+      const string = checkNotNull(
+        environment.strings.get(checkNotNull(functionArgumentValues[0]).toString()),
+        'Bad string!'
+      );
       const result = parseInt(string, 10);
       if (isNaN(result)) throw new PanicException(`Bad string: ${string}`);
       return result;
@@ -96,8 +100,10 @@ function handleBuiltInFunctionCall(
       return location;
     }
     case ENCODED_FUNCTION_NAME_PRINTLN: {
-      const string = environment.strings.get(checkNotNull(functionArgumentValues[0]).toString());
-      assert(string != null, 'Bad string!');
+      const string = checkNotNull(
+        environment.strings.get(checkNotNull(functionArgumentValues[0]).toString()),
+        'Bad string!'
+      );
       environment.printed += `${string}\n`;
       return 0;
     }
@@ -155,8 +161,10 @@ function interpretLLVMValue(
     case 'LLVMLiteral':
       return expression.value;
     case 'LLVMName': {
-      const value = environment.globalVariables.get(expression.name);
-      assert(value != null, `Referencing undefined global ${expression.name}.`);
+      const value = checkNotNull(
+        environment.globalVariables.get(expression.name),
+        `Referencing undefined global ${expression.name}.`
+      );
       return value;
     }
     case 'LLVMVariable':
@@ -260,8 +268,10 @@ function interpretLLVMFunction(
         break;
 
       case 'LLVMJumpInstruction': {
-        const target = labelMapping.get(instructionToInterpret.branch);
-        assert(target != null, `Bad label ${instructionToInterpret.branch}!`);
+        const target = checkNotNull(
+          labelMapping.get(instructionToInterpret.branch),
+          `Bad label ${instructionToInterpret.branch}!`
+        );
         programCounter = target;
         break;
       }
@@ -273,8 +283,7 @@ function interpretLLVMFunction(
           instructionToInterpret.condition
         );
         const labelToJump = condition !== 0 ? instructionToInterpret.b1 : instructionToInterpret.b2;
-        const target = labelMapping.get(labelToJump);
-        assert(target != null, `Bad label ${labelToJump}!`);
+        const target = checkNotNull(labelMapping.get(labelToJump), `Bad label ${labelToJump}!`);
         programCounter = target;
         break;
       }
@@ -307,13 +316,16 @@ function interpretLLVMFunction(
           }
         } else {
           const functionAddress = interpretLLVMValue(environment, stackFrame, functionExpression);
-          const nullableName = environment.functionsGlobals.get(functionAddress);
-          assert(nullableName != null, `Undefined function at ${functionAddress}!`);
-          functionName = nullableName;
+          functionName = checkNotNull(
+            environment.functionsGlobals.get(functionAddress),
+            `Undefined function at ${functionAddress}!`
+          );
         }
 
-        const functionToCall = environment.functions.get(functionName);
-        assert(functionToCall != null, `Missing function ${functionName}`);
+        const functionToCall = checkNotNull(
+          environment.functions.get(functionName),
+          `Missing function ${functionName}`
+        );
         const result = interpretLLVMFunction(environment, functionToCall, functionArgumentValues);
         if (instructionToInterpret.resultVariable != null) {
           stackFrame.setLocalValue(instructionToInterpret.resultVariable, result);
@@ -365,8 +377,10 @@ export default function interpretLLVMModule(
   mainFunctionName: string
 ): string {
   const environment = setupLLVMInterpretationEnvironment(llvmModule);
-  const mainFunction = environment.functions.get(mainFunctionName);
-  assert(mainFunction != null, 'Missing new function!');
+  const mainFunction = checkNotNull(
+    environment.functions.get(mainFunctionName),
+    'Missing new function!'
+  );
   interpretLLVMFunction(environment, mainFunction, []);
   return environment.printed;
 }
