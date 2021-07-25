@@ -37,10 +37,10 @@ describe('source-processor', () => {
       DEFAULT_BUILTIN_TYPING_CONTEXT
     ).forceGet(moduleReference);
     expect(prettyPrintLLVMModule(llvmModule)).toBe(`declare i32* @_builtin_malloc(i32) nounwind
-declare i32 @_module__class_Builtins_function_println(i32*) nounwind
-declare i32* @_module__class_Builtins_function_panic(i32*) nounwind
-declare i32* @_module__class_Builtins_function_intToString(i32) nounwind
-declare i32 @_module__class_Builtins_function_stringToInt(i32*) nounwind
+declare i32 @__Builtins_println(i32*) nounwind
+declare i32* @__Builtins_panic(i32*) nounwind
+declare i32* @__Builtins_intToString(i32) nounwind
+declare i32 @__Builtins_stringToInt(i32*) nounwind
 declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
 
 ; @GLOBAL_STRING_0 = 'Hello World!'
@@ -48,7 +48,7 @@ declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
 define i32 @_compiled_program_main() local_unnamed_addr nounwind {
 l0_start:
   %_temp_0_string_name_cast = bitcast [13 x i32]* @GLOBAL_STRING_0 to i32*
-  call i32 @_module__class_Builtins_function_println(i32* %_temp_0_string_name_cast) nounwind
+  call i32 @__Builtins_println(i32* %_temp_0_string_name_cast) nounwind
   ret i32 0
 }`);
   });

@@ -147,7 +147,7 @@ describe('hir-expression-lowering', () => {
       }),
       `closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure {
-  fun: (_module___DUMMY___class_A_function_b_with_context: (int, int) -> int),
+  fun: (___DUMMY___A_b_with_context: (int, int) -> int),
   context: 0,
 };
 return (_t0: $SyntheticIDType0);`
@@ -241,7 +241,7 @@ return (_t0: __DUMMY___Foo);`
       }),
       `closure type $SyntheticIDType0 = (int) -> int
 let _t0: $SyntheticIDType0 = Closure {
-  fun: (_module___DUMMY___class_Dummy_function_foo: (__DUMMY___Dummy, int) -> int),
+  fun: (___DUMMY___Dummy_foo: (__DUMMY___Dummy, int) -> int),
   context: (_this: __DUMMY___Dummy),
 };
 return (_t0: $SyntheticIDType0);`
@@ -293,7 +293,7 @@ return (_t0: $SyntheticIDType0);`
           }),
           functionArguments: [THIS, THIS],
         }),
-        `let _t0: int = _module_ModuleModule_class_ImportedClass_function_bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+        `let _t0: int = _ModuleModule_ImportedClass_bar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: int);`
       );
     });
@@ -318,7 +318,7 @@ return (_t0: int);`
           }),
           functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
         }),
-        `_module___DUMMY___class_C_function_m1(0);
+        `___DUMMY___C_m1(0);
 return 0;`
       );
     });
@@ -343,7 +343,7 @@ return 0;`
           }),
           functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
         }),
-        `let _t0: __DUMMY___Dummy = _module___DUMMY___class_C_function_m2(0);
+        `let _t0: __DUMMY___Dummy = ___DUMMY___C_m2(0);
 return (_t0: __DUMMY___Dummy);`
       );
     });
@@ -364,7 +364,7 @@ return (_t0: __DUMMY___Dummy);`
           }),
           functionArguments: [THIS, THIS],
         }),
-        `let _t0: int = _module___DUMMY___class_Dummy_function_fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
+        `let _t0: int = ___DUMMY___Dummy_fooBar((_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy), (_this: __DUMMY___Dummy));
 return (_t0: int);`
       );
     });
@@ -608,14 +608,14 @@ return (_t0: string);`
         }),
         `closure type $SyntheticIDType1 = (int) -> int
 object type $SyntheticIDType0 = [int]
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: $SyntheticIDType0, a: int): int {
+function ___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0(_context: $SyntheticIDType0, a: int): int {
   let captured_a: int = (_context: $SyntheticIDType0)[0];
   return (_this: __DUMMY___Dummy);
 }
 
 let _t1: $SyntheticIDType0 = [(captured_a: int)];
 let _t0: $SyntheticIDType1 = Closure {
-  fun: (_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0: ($SyntheticIDType0, int) -> int),
+  fun: (___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0: ($SyntheticIDType0, int) -> int),
   context: (_t1: $SyntheticIDType0),
 };
 return (_t0: $SyntheticIDType1);`
@@ -634,14 +634,14 @@ return (_t0: $SyntheticIDType1);`
         }),
         `closure type $SyntheticIDType1 = (int) -> int
 object type $SyntheticIDType0 = [int]
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: $SyntheticIDType0, a: int): int {
+function ___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0(_context: $SyntheticIDType0, a: int): int {
   let captured_a: int = (_context: $SyntheticIDType0)[0];
   return (_this: __DUMMY___Dummy);
 }
 
 let _t1: $SyntheticIDType0 = [(captured_a: int)];
 let _t0: $SyntheticIDType1 = Closure {
-  fun: (_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0: ($SyntheticIDType0, int) -> int),
+  fun: (___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0: ($SyntheticIDType0, int) -> int),
   context: (_t1: $SyntheticIDType0),
 };
 return (_t0: $SyntheticIDType1);`
@@ -660,14 +660,14 @@ return (_t0: $SyntheticIDType1);`
         }),
         `closure type $SyntheticIDType1 = (int) -> __DUMMY___Dummy
 object type $SyntheticIDType0 = [int]
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: $SyntheticIDType0, a: int): __DUMMY___Dummy {
+function ___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0(_context: $SyntheticIDType0, a: int): __DUMMY___Dummy {
   let captured_a: int = (_context: $SyntheticIDType0)[0];
   return (_this: __DUMMY___Dummy);
 }
 
 let _t1: $SyntheticIDType0 = [(captured_a: int)];
 let _t0: $SyntheticIDType1 = Closure {
-  fun: (_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0: ($SyntheticIDType0, int) -> __DUMMY___Dummy),
+  fun: (___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0: ($SyntheticIDType0, int) -> __DUMMY___Dummy),
   context: (_t1: $SyntheticIDType0),
 };
 return (_t0: $SyntheticIDType1);`
@@ -685,12 +685,12 @@ return (_t0: $SyntheticIDType1);`
           body: THIS,
         }),
         `closure type $SyntheticIDType0 = (int) -> __DUMMY___Dummy
-function _module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0(_context: int, a: int): __DUMMY___Dummy {
+function ___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0(_context: int, a: int): __DUMMY___Dummy {
   return (_this: __DUMMY___Dummy);
 }
 
 let _t0: $SyntheticIDType0 = Closure {
-  fun: (_module___DUMMY___class_ENCODED_FUNCTION_NAME_function__Synthetic_0: (int, int) -> __DUMMY___Dummy),
+  fun: (___DUMMY___ENCODED_FUNCTION_NAME__Synthetic_0: (int, int) -> __DUMMY___Dummy),
   context: 0,
 };
 return (_t0: $SyntheticIDType0);`

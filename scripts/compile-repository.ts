@@ -84,7 +84,7 @@ const compare = (expected: string, actual: string) => {
 };
 
 console.error('Bundling...');
-runWithErrorCheck('yarn', ['workspace', '@dev-sam/samlang-cli', 'bundle ']);
+runWithErrorCheck('yarn', ['workspace', '@dev-sam/samlang-cli', 'bundle']);
 console.error('Bundled!');
 console.error('Compiling...');
 runWithErrorCheck('./samlang-cli/bin/index.js', ['compile']);
