@@ -74,10 +74,7 @@ export const optimizeMidIRSourcesByTailRecursionRewrite = (
   functions: sources.functions.map((it) => optimizeMidIRFunctionByTailRecursionRewrite(it) ?? it),
 });
 
-export const optimizeMidIRSourcesByUnusedNameEliminationAndTailRecursionRewrite = (
-  sources: MidIRSources
-): MidIRSources =>
-  optimizeMidIRSourcesByTailRecursionRewrite(optimizeMidIRSourcesByEliminatingUnusedOnes(sources));
+export { optimizeMidIRSourcesByEliminatingUnusedOnes };
 
 export const optimizeMidIRSourcesAccordingToConfiguration = (
   sources: MidIRSources,

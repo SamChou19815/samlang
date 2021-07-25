@@ -45,10 +45,15 @@ declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
 
 ; @GLOBAL_STRING_0 = 'Hello World!'
 @GLOBAL_STRING_0 = private unnamed_addr constant [13 x i32] [i32 12, i32 72, i32 101, i32 108, i32 108, i32 111, i32 32, i32 87, i32 111, i32 114, i32 108, i32 100, i32 33], align 8
-define i32 @_compiled_program_main() local_unnamed_addr nounwind {
+define i32 @_Test_Main_main() local_unnamed_addr nounwind {
 l0_start:
   %_temp_0_string_name_cast = bitcast [13 x i32]* @GLOBAL_STRING_0 to i32*
   call i32 @__Builtins_println(i32* %_temp_0_string_name_cast) nounwind
+  ret i32 0
+}
+define i32 @_compiled_program_main() local_unnamed_addr nounwind {
+l0_start:
+  call i32 @_Test_Main_main() nounwind
   ret i32 0
 }`);
   });

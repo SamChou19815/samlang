@@ -15,6 +15,7 @@ import {
   MidIRType,
   MidIRFunctionType,
   MIR_VARIABLE,
+  MidIRSources,
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRTypeDefinition, MidIRFunction, MidIRModule } from 'samlang-core-ast/mir-nodes';
 import type {
@@ -26,7 +27,8 @@ import type {
 import type { ModuleTypingContext } from 'samlang-core-checker/typing-context';
 import {
   OptimizationConfiguration,
-  optimizeMidIRSourcesByUnusedNameEliminationAndTailRecursionRewrite,
+  optimizeMidIRSourcesByEliminatingUnusedOnes,
+  optimizeMidIRSourcesByTailRecursionRewrite,
   optimizeMidIRSourcesAccordingToConfiguration,
 } from 'samlang-core-optimization';
 import { checkNotNull, HashMap, hashMapOf, zip } from 'samlang-core-utils';
@@ -36,13 +38,13 @@ import lowerSamlangExpression from './mir-expression-lowering';
 import MidIRTypeSynthesizer from './mir-type-synthesizer';
 import lowerSamlangType from './mir-types-lowering';
 
-const compileSamlangTypeDefinitionToMidIRTypeDefinition = (
+function compileSamlangTypeDefinitionToMidIRTypeDefinition(
   moduleReference: ModuleReference,
   identifier: string,
   typeParameters: ReadonlySet<string>,
   typeDefinition: TypeDefinition,
   typeSynthesizer: MidIRTypeSynthesizer
-): MidIRTypeDefinition | null => {
+): MidIRTypeDefinition | null {
   if (typeDefinition.type === 'variant') {
     // LLVM can't understand variant, so the second type is always any.
     // We will rely on bitcast during LLVM translation.
@@ -62,9 +64,9 @@ const compileSamlangTypeDefinitionToMidIRTypeDefinition = (
       )
     ),
   };
-};
+}
 
-const compileSamlangFunctionToMidIRFunction = (
+function compileSamlangFunctionToMidIRFunction(
   moduleReference: ModuleReference,
   className: string,
   typeDefinitionMapping: Readonly<Record<string, readonly MidIRType[]>>,
@@ -73,7 +75,7 @@ const compileSamlangFunctionToMidIRFunction = (
   typeSynthesizer: MidIRTypeSynthesizer,
   stringManager: HighIRStringManager,
   classMember: ClassMemberDefinition
-) => {
+) {
   const encodedName = encodeFunctionNameGlobally(moduleReference, className, classMember.name);
   const typeParametersSet = new Set(
     classMember.isMethod
@@ -145,13 +147,13 @@ const compileSamlangFunctionToMidIRFunction = (
     return [compiledFunctions, functionWithContext] as const;
   }
   return [compiledFunctions, null] as const;
-};
+}
 
-const compileSamlangSourcesToMidIRSources = (
+function compileSamlangSourcesToSingleMidIRSources(
   sources: Sources<SamlangModule>,
   builtinModuleTypes: ModuleTypingContext,
   optimizationConfiguration?: OptimizationConfiguration
-): Sources<MidIRModule> => {
+): MidIRSources {
   const compiledTypeDefinitions: MidIRTypeDefinition[] = [];
   const compiledFunctionsWithAddedDummyContext: MidIRFunction[] = [];
   const compiledFunctions: MidIRFunction[] = [];
@@ -228,47 +230,67 @@ const compileSamlangSourcesToMidIRSources = (
 
   compiledTypeDefinitions.push(...typeSynthesizer.synthesized);
 
+  const mainFunctionNames: string[] = [];
+  sources.forEach((_, moduleReference) => {
+    const entryPointFunctionName = encodeMainFunctionName(moduleReference);
+    if (compiledFunctions.some(({ name }) => name === entryPointFunctionName)) {
+      mainFunctionNames.push(entryPointFunctionName);
+    }
+  });
+  return optimizeMidIRSourcesAccordingToConfiguration(
+    optimizeMidIRSourcesByTailRecursionRewrite({
+      globalVariables: stringManager.globalVariables,
+      typeDefinitions: compiledTypeDefinitions,
+      mainFunctionNames,
+      functions: [...compiledFunctionsWithAddedDummyContext, ...compiledFunctions],
+    }),
+    optimizationConfiguration
+  );
+}
+
+export default function compileSamlangSourcesToMidIRSources(
+  sources: Sources<SamlangModule>,
+  builtinModuleTypes: ModuleTypingContext,
+  optimizationConfiguration?: OptimizationConfiguration
+): Sources<MidIRModule> {
+  const midIRSources = compileSamlangSourcesToSingleMidIRSources(
+    sources,
+    builtinModuleTypes,
+    optimizationConfiguration
+  );
+  const mainFunctionNames = new Set(midIRSources.mainFunctionNames);
+
   const irSources: HashMap<ModuleReference, MidIRModule> = hashMapOf();
   sources.forEach((_, moduleReference) => {
     const entryPointFunctionName = encodeMainFunctionName(moduleReference);
-    if (!compiledFunctions.some(({ name }) => name === entryPointFunctionName)) {
-      return;
-    }
-    const allFunctions = [
-      // Put these functions at first so they can always be referenced as global values.
-      ...compiledFunctionsWithAddedDummyContext,
-      ...compiledFunctions,
-      {
-        name: ENCODED_COMPILED_PROGRAM_MAIN,
-        parameters: [],
-        type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-        body: [
-          MIR_FUNCTION_CALL({
-            functionExpression: MIR_NAME(
-              entryPointFunctionName,
-              MIR_FUNCTION_TYPE([], MIR_INT_TYPE)
-            ),
-            functionArguments: [],
-            returnType: MIR_INT_TYPE,
-          }),
-        ],
-        returnValue: MIR_ZERO,
-      },
-    ];
+    if (!mainFunctionNames.has(entryPointFunctionName)) return;
     irSources.set(
       moduleReference,
-      optimizeMidIRSourcesAccordingToConfiguration(
-        optimizeMidIRSourcesByUnusedNameEliminationAndTailRecursionRewrite({
-          globalVariables: stringManager.globalVariables,
-          typeDefinitions: compiledTypeDefinitions,
-          mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN],
-          functions: allFunctions,
-        }),
-        optimizationConfiguration
-      )
+      optimizeMidIRSourcesByEliminatingUnusedOnes({
+        globalVariables: midIRSources.globalVariables,
+        typeDefinitions: midIRSources.typeDefinitions,
+        mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN],
+        functions: [
+          ...midIRSources.functions,
+          {
+            name: ENCODED_COMPILED_PROGRAM_MAIN,
+            parameters: [],
+            type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+            body: [
+              MIR_FUNCTION_CALL({
+                functionExpression: MIR_NAME(
+                  entryPointFunctionName,
+                  MIR_FUNCTION_TYPE([], MIR_INT_TYPE)
+                ),
+                functionArguments: [],
+                returnType: MIR_INT_TYPE,
+              }),
+            ],
+            returnValue: MIR_ZERO,
+          },
+        ],
+      })
     );
   });
   return irSources;
-};
-
-export default compileSamlangSourcesToMidIRSources;
+}
