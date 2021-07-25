@@ -159,8 +159,11 @@ class HighIRExpressionLoweringManager {
     );
   };
 
-  private resolveVariable = (variableName: string): HighIRExpression =>
-    checkNotNull(this.varibleContext.getLocalValueType(variableName));
+  private resolveVariable = (variableName: string): HighIRExpression => {
+    const resolved = this.varibleContext.getLocalValueType(variableName);
+    assert(resolved != null, `Variable not resolved: ${variableName}`);
+    return resolved;
+  };
 
   private resolveTypeMappingOfIdentifierType({
     name,
