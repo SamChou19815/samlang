@@ -132,10 +132,38 @@ describe('hir-type-conversion', () => {
     expect(
       solveTypeArguments(
         [],
-        HIR_IDENTIFIER_TYPE('Foo', []),
-        HIR_IDENTIFIER_TYPE('Foo_string', [HIR_STRING_TYPE])
+        HIR_IDENTIFIER_TYPE('Foo_bool', []),
+        HIR_IDENTIFIER_TYPE('Foo', [HIR_BOOL_TYPE])
       )
     ).toEqual([]);
+    expect(
+      solveTypeArguments(
+        [],
+        HIR_IDENTIFIER_TYPE('Foo_int', []),
+        HIR_IDENTIFIER_TYPE('Foo', [HIR_INT_TYPE])
+      )
+    ).toEqual([]);
+    expect(
+      solveTypeArguments(
+        [],
+        HIR_IDENTIFIER_TYPE('Foo_string', []),
+        HIR_IDENTIFIER_TYPE('Foo', [HIR_STRING_TYPE])
+      )
+    ).toEqual([]);
+    expect(
+      solveTypeArguments(
+        [],
+        HIR_IDENTIFIER_TYPE('Foo_A', []),
+        HIR_IDENTIFIER_TYPE('Foo', [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A')])
+      )
+    ).toEqual([]);
+    expect(() =>
+      solveTypeArguments(
+        [],
+        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
+        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')
+      )
+    ).toThrow();
 
     expect(
       solveTypeArguments(

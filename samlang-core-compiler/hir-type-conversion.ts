@@ -126,7 +126,7 @@ export const solveTypeArguments = (
     switch (t1.__type__) {
       case 'PrimitiveType':
         assert(t2.__type__ === 'PrimitiveType', `t2 has type ${t2.__type__}`);
-        assert(t1.type === t2.type);
+        assert(t1.type === t2.type, `t1=${t1.type}, t2=${t2.type}`);
         return;
       case 'IdentifierType':
         if (t1.typeArguments.length === 0 && genericTypeParameterSet.has(t1.name)) {
@@ -138,7 +138,23 @@ export const solveTypeArguments = (
           // Things might already been specialized.
           assert(t1.typeArguments.length === t2.typeArguments.length);
           zip(t1.typeArguments, t2.typeArguments).forEach(([a1, a2]) => solve(a1, a2));
+        } else if (t2.name.startsWith(t1.name)) {
+          const t2TypeArgumentsInString = t2.name.substring(t1.name.length + 1).split('_');
+          const t2TypeArguments = t2TypeArgumentsInString.map((string): HighIRType => {
+            switch (string) {
+              case 'bool':
+              case 'int':
+              case 'string':
+                return { __type__: 'PrimitiveType', type: string };
+              default:
+                return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(string);
+            }
+          });
+          zip(t1.typeArguments, t2TypeArguments).forEach(([a1, a2]) => solve(a1, a2));
+        } else {
+          assert(false, `t1=${prettyPrintHighIRType(t1)}, t2=${prettyPrintHighIRType(t2)}`);
         }
+
         return;
       case 'FunctionType':
         assert(
@@ -151,7 +167,9 @@ export const solveTypeArguments = (
   };
 
   solve(parameterizedTypeDefinition, specializedType);
-  return genericTypeParameters.map((it) => checkNotNull(solved.get(it), `Unsolved: ${it}`));
+  return genericTypeParameters.map((it) =>
+    checkNotNull(solved.get(it), `Unsolved parameter <${it}>`)
+  );
 };
 
 export const highIRTypeApplication = (

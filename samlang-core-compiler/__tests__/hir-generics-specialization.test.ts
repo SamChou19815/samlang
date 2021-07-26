@@ -158,7 +158,7 @@ sources.mains = [main]
             name: 'creatorIB',
             parameters: ['b'],
             typeParameters: ['B'],
-            type: HIR_FUNCTION_TYPE([typeB], typeIA),
+            type: HIR_FUNCTION_TYPE([typeB], typeIB),
             body: [
               HIR_STRUCT_INITIALIZATION({
                 structVariableName: 'v',
@@ -235,7 +235,7 @@ sources.mains = [main]
                   HIR_CLOSURE_INITIALIZATION({
                     closureVariableName: 'c1',
                     closureType: HIR_IDENTIFIER_TYPE('CC', [HIR_STRING_TYPE, HIR_STRING_TYPE]),
-                    functionName: 'creatorIB',
+                    functionName: 'creatorIA',
                     functionType: HIR_FUNCTION_TYPE(
                       [HIR_STRING_TYPE],
                       HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE])
@@ -245,7 +245,7 @@ sources.mains = [main]
                   HIR_CLOSURE_INITIALIZATION({
                     closureVariableName: 'c2',
                     closureType: HIR_IDENTIFIER_TYPE('CC', [HIR_INT_TYPE, HIR_STRING_TYPE]),
-                    functionName: 'creatorIB',
+                    functionName: 'creatorIA',
                     functionType: HIR_FUNCTION_TYPE(
                       [HIR_STRING_TYPE],
                       HIR_IDENTIFIER_TYPE('I', [HIR_STRING_TYPE, HIR_STRING_TYPE])
@@ -304,11 +304,11 @@ function main(): int {
     let j: J = [0];
     let v2: int = (j: J)[0];
     let c1: CC_string_string = Closure {
-      fun: (creatorIB_string: (string) -> I_string_string),
+      fun: (creatorIA_string: (string) -> I_string_string),
       context: G1,
     };
     let c2: CC_int_string = Closure {
-      fun: (creatorIB_string: (string) -> I_string_string),
+      fun: (creatorIA_string: (string) -> I_string_string),
       context: G1,
     };
     finalV = (v2: int);
