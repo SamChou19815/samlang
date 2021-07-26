@@ -241,7 +241,7 @@ const performInlineRewriteOnFunction = (
           parameters: argumentNamesOfFunctionToBeInlined,
           body: mainBodyStatementsOfFunctionToBeInlined,
           returnValue: returnValueOfFunctionToBeInlined,
-        } = checkNotNull(allFunctions[functionName]);
+        } = checkNotNull(allFunctions[functionName], `Missing ${functionName}`);
         const temporaryPrefix = allocator.allocateInliningTemporaryPrefix();
         const context = new LocalValueContextForOptimization();
         // Inline step 1: Bind args to args temp

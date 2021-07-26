@@ -401,7 +401,10 @@ export class LanguageServices {
     moduleReference: ModuleReference,
     className: string
   ): readonly [ModuleReference, ClassDefinition] | undefined {
-    const samlangModule = checkNotNull(this.state.getCheckedModule(moduleReference));
+    const samlangModule = checkNotNull(
+      this.state.getCheckedModule(moduleReference),
+      `Missing ${moduleReference}`
+    );
     const { imports, classes } = samlangModule;
     for (let i = 0; i < classes.length; i += 1) {
       const samlangClass = checkNotNull(classes[i]);
@@ -429,7 +432,8 @@ export class LanguageServices {
     if (nullableClassDefinition == null) return null;
     const [moduleReferenceOfClass, classDefinition] = nullableClassDefinition;
     const matchingMember = checkNotNull(
-      classDefinition.members.find((it) => it.name === memberName)
+      classDefinition.members.find((it) => it.name === memberName),
+      `Missing ${memberName}`
     );
     return { moduleReference: moduleReferenceOfClass, range: matchingMember.range };
   }
@@ -567,7 +571,7 @@ export class LanguageServices {
     if (definitionAndUses == null) return null;
     return this.formatter(
       applyRenamingWithDefinitionAndUse(
-        checkNotNull(this.state.getCheckedModule(moduleReference)),
+        checkNotNull(this.state.getCheckedModule(moduleReference), `Missing ${moduleReference}`),
         definitionAndUses,
         newName
       )

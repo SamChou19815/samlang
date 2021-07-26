@@ -34,7 +34,8 @@ const midIRLoopStrengthReductionOptimization = (
   const remainingDerivedInductionVariables = derivedInductionVariables
     .map((derivedInductionVariable) => {
       const associatedBasicInductionVariable = checkNotNull(
-        basicInductionVariablesMap[derivedInductionVariable.baseName]
+        basicInductionVariablesMap[derivedInductionVariable.baseName],
+        `Missing ${derivedInductionVariable.baseName}`
       );
       const addedInvariantExpressionInLoop = mergeInvariantMultiplicationForLoopOptimization(
         associatedBasicInductionVariable.incrementAmount,

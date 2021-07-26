@@ -62,7 +62,7 @@ export default class ControlFlowGraph<I> {
       if (conditionalJumpLabel != null) {
         this.childrenMap.set(
           id,
-          conditionalJumpLabel.map((it) => checkNotNull(labelIdMap.get(it)))
+          conditionalJumpLabel.map((it) => checkNotNull(labelIdMap.get(it), `Missing ${it}`))
         );
         return;
       }
@@ -100,10 +100,7 @@ export default class ControlFlowGraph<I> {
   }
 
   getChildren(id: number): readonly ControlFlowGraphNode<I>[] {
-    return this.getChildrenIds(id).map((childId) => {
-      const node = checkNotNull(this.nodeMap.get(childId));
-      return node;
-    });
+    return this.getChildrenIds(id).map((childId) => checkNotNull(this.nodeMap.get(childId)));
   }
 
   dfs(visitor: (node: ControlFlowGraphNode<I>) => void): void {

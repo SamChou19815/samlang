@@ -50,7 +50,7 @@ class GenericsSpecializationRewriter {
     this.originalFunctions = Object.fromEntries(sources.functions.map((it) => [it.name, it]));
     sources.mainFunctionNames.forEach((mainFunctionName) => {
       this.specializedFunctions[mainFunctionName] = this.rewriteFunction(
-        checkNotNull(this.originalFunctions[mainFunctionName]),
+        checkNotNull(this.originalFunctions[mainFunctionName], `Missing ${mainFunctionName}`),
         {}
       );
     });
@@ -244,7 +244,8 @@ class GenericsSpecializationRewriter {
           this.specializedClosureTypeDefinitions[encodedName];
         if (existingSpecializedClosureTypeDefinition == null) {
           const closureTypeDefinition = checkNotNull(
-            this.originalClosureTypeDefinitions[concreteType.name]
+            this.originalClosureTypeDefinitions[concreteType.name],
+            `Missing ${concreteType.name}`
           );
           const solvedTypeArgumentsReplacementMap = Object.fromEntries(
             zip(

@@ -19,7 +19,12 @@ export default class MidIRTypeSynthesizer {
   public synthesize(mappings: readonly MidIRType[]): MidIRTypeDefinition {
     const key = mappings.map(prettyPrintMidIRType).join(',');
     const existingIdentifier = this.reverseMap.get(key);
-    if (existingIdentifier != null) return checkNotNull(this._synthesized.get(existingIdentifier));
+    if (existingIdentifier != null) {
+      return checkNotNull(
+        this._synthesized.get(existingIdentifier),
+        `Missing ${existingIdentifier}`
+      );
+    }
     const identifier = `_SYNTHETIC_ID_TYPE_${this.nextID}`;
     this.nextID += 1;
     this.reverseMap.set(key, identifier);
