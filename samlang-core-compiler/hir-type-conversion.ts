@@ -52,7 +52,10 @@ export class HighIRTypeSynthesizer {
     const key = `${prettyPrintHighIRType(functionType)}_${typeParameters.join(',')}`;
     const existingIdentifier = this.reverseFunctionMap.get(key);
     if (existingIdentifier != null) {
-      return checkNotNull(this._synthesizedClosureTypes.get(existingIdentifier));
+      return checkNotNull(
+        this._synthesizedClosureTypes.get(existingIdentifier),
+        `Missing ${existingIdentifier}`
+      );
     }
     const identifier = `$SyntheticIDType${this.nextID}`;
     this.nextID += 1;
@@ -69,7 +72,10 @@ export class HighIRTypeSynthesizer {
     const key = `${mappings.map(prettyPrintHighIRType).join(',')}_${typeParameters.join(',')}`;
     const existingIdentifier = this.reverseTupleMap.get(key);
     if (existingIdentifier != null) {
-      return checkNotNull(this._synthesizedTupleTypes.get(existingIdentifier));
+      return checkNotNull(
+        this._synthesizedTupleTypes.get(existingIdentifier),
+        `Missing ${existingIdentifier}`
+      );
     }
     const identifier = `$SyntheticIDType${this.nextID}`;
     this.nextID += 1;
@@ -145,7 +151,7 @@ export const solveTypeArguments = (
   };
 
   solve(parameterizedTypeDefinition, specializedType);
-  return genericTypeParameters.map((it) => checkNotNull(solved.get(it)));
+  return genericTypeParameters.map((it) => checkNotNull(solved.get(it), `Unsolved: ${it}`));
 };
 
 export const highIRTypeApplication = (

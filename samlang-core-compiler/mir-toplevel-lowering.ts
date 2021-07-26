@@ -58,7 +58,7 @@ function compileSamlangTypeDefinitionToMidIRTypeDefinition(
     identifier: `${moduleReference.parts.join('_')}_${identifier}`,
     mappings: typeDefinition.names.map((name) =>
       lowerSamlangType(
-        checkNotNull(typeDefinition.mappings[name]).type,
+        checkNotNull(typeDefinition.mappings[name], `Missing ${name}`).type,
         typeParameters,
         typeSynthesizer
       )
