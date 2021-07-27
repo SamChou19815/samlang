@@ -25,6 +25,7 @@ import {
   collectUsedGenericTypes,
   solveTypeArguments,
   highIRTypeApplication,
+  resolveIdentifierTypeMappings,
   HighIRTypeSynthesizer,
   encodeHighIRNameAfterGenericsSpecialization,
   SamlangTypeLoweringManager,
@@ -133,37 +134,10 @@ describe('hir-type-conversion', () => {
       solveTypeArguments(
         [],
         HIR_IDENTIFIER_TYPE('Foo_bool', []),
-        HIR_IDENTIFIER_TYPE('Foo', [HIR_BOOL_TYPE])
+        HIR_IDENTIFIER_TYPE('Foo', [HIR_BOOL_TYPE]),
+        () => [HIR_BOOL_TYPE]
       )
     ).toEqual([]);
-    expect(
-      solveTypeArguments(
-        [],
-        HIR_IDENTIFIER_TYPE('Foo_int', []),
-        HIR_IDENTIFIER_TYPE('Foo', [HIR_INT_TYPE])
-      )
-    ).toEqual([]);
-    expect(
-      solveTypeArguments(
-        [],
-        HIR_IDENTIFIER_TYPE('Foo_string', []),
-        HIR_IDENTIFIER_TYPE('Foo', [HIR_STRING_TYPE])
-      )
-    ).toEqual([]);
-    expect(
-      solveTypeArguments(
-        [],
-        HIR_IDENTIFIER_TYPE('Foo_A', []),
-        HIR_IDENTIFIER_TYPE('Foo', [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A')])
-      )
-    ).toEqual([]);
-    expect(() =>
-      solveTypeArguments(
-        [],
-        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
-        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')
-      )
-    ).toThrow();
 
     expect(
       solveTypeArguments(
@@ -189,7 +163,8 @@ describe('hir-type-conversion', () => {
             ],
             HIR_STRING_TYPE
           )
-        )
+        ),
+        () => []
       )
     ).toEqual([HIR_FUNCTION_TYPE([], HIR_INT_TYPE)]);
   });
@@ -218,6 +193,41 @@ describe('hir-type-conversion', () => {
         { A: HIR_INT_TYPE, B: HIR_BOOL_TYPE }
       )
     ).toEqual(HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_BOOL_TYPE));
+  });
+
+  it('resolveIdentifierTypeMappings works', () => {
+    expect(() =>
+      resolveIdentifierTypeMappings(
+        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
+        () => undefined,
+        () => undefined
+      )
+    ).toThrow();
+
+    expect(
+      resolveIdentifierTypeMappings(
+        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
+        () => ({
+          identifier: 'A',
+          typeParameters: [],
+          functionType: HIR_FUNCTION_TYPE([], HIR_BOOL_TYPE),
+        }),
+        () => undefined
+      )
+    ).toEqual([HIR_FUNCTION_TYPE([], HIR_BOOL_TYPE)]);
+
+    expect(
+      resolveIdentifierTypeMappings(
+        HIR_IDENTIFIER_TYPE('A', [HIR_INT_TYPE]),
+        () => undefined,
+        () => ({
+          identifier: 'A',
+          type: 'object',
+          typeParameters: ['B'],
+          mappings: [HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('B')],
+        })
+      )
+    ).toEqual([HIR_INT_TYPE]);
   });
 
   it('encodeHighIRIdentifierTypeAfterGenericsSpecialization works', () => {

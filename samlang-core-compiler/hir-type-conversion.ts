@@ -17,6 +17,7 @@ import {
   HIR_IDENTIFIER_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_FUNCTION_TYPE,
+  HighIRIdentifierType,
 } from 'samlang-core-ast/hir-nodes';
 import type { TypeDefinition } from 'samlang-core-ast/samlang-toplevel';
 import { assert, checkNotNull, zip } from 'samlang-core-utils';
@@ -117,7 +118,8 @@ export const collectUsedGenericTypes = (
 export const solveTypeArguments = (
   genericTypeParameters: readonly string[],
   specializedType: HighIRType,
-  parameterizedTypeDefinition: HighIRType
+  parameterizedTypeDefinition: HighIRType,
+  resolveIdentifierTypeMappings: (type: HighIRIdentifierType) => readonly HighIRType[]
 ): readonly HighIRType[] => {
   const genericTypeParameterSet = new Set(genericTypeParameters);
   const solved = new Map<string, HighIRType>();
@@ -138,21 +140,14 @@ export const solveTypeArguments = (
           // Things might already been specialized.
           assert(t1.typeArguments.length === t2.typeArguments.length);
           zip(t1.typeArguments, t2.typeArguments).forEach(([a1, a2]) => solve(a1, a2));
-        } else if (t2.name.startsWith(t1.name)) {
-          const t2TypeArgumentsInString = t2.name.substring(t1.name.length + 1).split('_');
-          const t2TypeArguments = t2TypeArgumentsInString.map((string): HighIRType => {
-            switch (string) {
-              case 'bool':
-              case 'int':
-              case 'string':
-                return { __type__: 'PrimitiveType', type: string };
-              default:
-                return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(string);
-            }
-          });
-          zip(t1.typeArguments, t2TypeArguments).forEach(([a1, a2]) => solve(a1, a2));
         } else {
-          assert(false, `t1=${prettyPrintHighIRType(t1)}, t2=${prettyPrintHighIRType(t2)}`);
+          const resolvedT1 = resolveIdentifierTypeMappings(t1);
+          const resolvedT2 = resolveIdentifierTypeMappings(t2);
+          assert(
+            resolvedT1.length === resolvedT2.length,
+            `t1.length=${resolvedT1.length}, t2.length=${resolvedT2.length}`
+          );
+          zip(resolvedT1, resolvedT2).forEach(([a1, a2]) => solve(a1, a2));
         }
 
         return;
@@ -188,6 +183,30 @@ export const highIRTypeApplication = (
         highIRTypeApplication(type.returnType, replacementMap)
       );
   }
+};
+
+export const resolveIdentifierTypeMappings = (
+  identifierType: HighIRIdentifierType,
+  getClosureTypeDefinition: (name: string) => HighIRClosureTypeDefinition | undefined,
+  getTypeDefinition: (name: string) => HighIRTypeDefinition | undefined
+): readonly HighIRType[] => {
+  const closureType = getClosureTypeDefinition(identifierType.name);
+  if (closureType != null) {
+    return [
+      highIRTypeApplication(
+        closureType.functionType,
+        Object.fromEntries(zip(closureType.typeParameters, identifierType.typeArguments))
+      ),
+    ];
+  }
+  const typeDefinition = checkNotNull(
+    getTypeDefinition(identifierType.name),
+    `Missing ${identifierType.name}`
+  );
+  const replacementMap = Object.fromEntries(
+    zip(typeDefinition.typeParameters, identifierType.typeArguments)
+  );
+  return typeDefinition.mappings.map((it) => highIRTypeApplication(it, replacementMap));
 };
 
 export const encodeSamlangType = (moduleReference: ModuleReference, identifier: string): string =>

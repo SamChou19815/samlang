@@ -24,6 +24,7 @@ import { assert, checkNotNull, zip } from 'samlang-core-utils';
 import {
   solveTypeArguments,
   highIRTypeApplication,
+  resolveIdentifierTypeMappings,
   encodeHighIRNameAfterGenericsSpecialization,
 } from './hir-type-conversion';
 
@@ -179,7 +180,8 @@ class GenericsSpecializationRewriter {
     const solvedFunctionTypeArguments = solveTypeArguments(
       existingFunction.typeParameters,
       functionType,
-      existingFunction.type
+      existingFunction.type,
+      this.resolveIdentifierType
     );
     const encodedSpecializedFunctionName = encodeHighIRNameAfterGenericsSpecialization(
       originalName,
@@ -256,7 +258,8 @@ class GenericsSpecializationRewriter {
                 HIR_IDENTIFIER_TYPE(
                   concreteType.name,
                   closureTypeDefinition.typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS)
-                )
+                ),
+                this.resolveIdentifierType
               )
             )
           );
@@ -286,7 +289,8 @@ class GenericsSpecializationRewriter {
             HIR_IDENTIFIER_TYPE(
               concreteType.name,
               typeDefinition.typeParameters.map(HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS)
-            )
+            ),
+            this.resolveIdentifierType
           )
         )
       );
@@ -302,6 +306,14 @@ class GenericsSpecializationRewriter {
     }
     return HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(encodedName);
   }
+
+  private resolveIdentifierType = (identifierType: HighIRIdentifierType): readonly HighIRType[] =>
+    resolveIdentifierTypeMappings(
+      identifierType,
+      (name) =>
+        this.specializedClosureTypeDefinitions[name] ?? this.originalClosureTypeDefinitions[name],
+      (name) => this.specializedTypeDefinitions[name] ?? this.originalTypeDefinitions[name]
+    );
 }
 
 export default function performGenericsSpecializationOnHighIRSources(
