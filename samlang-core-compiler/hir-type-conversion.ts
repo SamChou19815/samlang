@@ -175,7 +175,12 @@ export const highIRTypeApplication = (
     case 'PrimitiveType':
       return type;
     case 'IdentifierType':
-      if (type.typeArguments.length !== 0) return type;
+      if (type.typeArguments.length !== 0) {
+        return HIR_IDENTIFIER_TYPE(
+          type.name,
+          type.typeArguments.map((it) => highIRTypeApplication(it, replacementMap))
+        );
+      }
       return replacementMap[type.name] ?? type;
     case 'FunctionType':
       return HIR_FUNCTION_TYPE(
