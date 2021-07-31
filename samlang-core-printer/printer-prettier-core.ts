@@ -213,34 +213,21 @@ const flattenPrettierDocument = (document: PrettierDocument): PrettierDocument |
  * The representation of a document that is most useful for pretty-printing.
  * Each variant can be translated easily into a printable form without extra state.
  */
-type PrettierIntermediateDocumentForPrinting =
-  | { readonly __type__: 'NIL' }
-  | {
-      readonly __type__: 'TEXT';
-      readonly text: string;
-      readonly next: PrettierIntermediateDocumentForPrinting;
-    }
-  | {
-      readonly __type__: 'LINE';
-      readonly indentation: number;
-      readonly next: PrettierIntermediateDocumentForPrinting;
-    };
+type PrettierIntermediateDocumentTokenForPrinting =
+  | { readonly __type__: 'TEXT'; readonly text: string }
+  | { readonly __type__: 'LINE'; readonly indentation: number };
 
 const intermediateDocumentFitsInAvailableWidth = (
   availableWidth: number,
-  document: PrettierIntermediateDocumentForPrinting
+  documents: readonly PrettierIntermediateDocumentTokenForPrinting[]
 ): boolean => {
   let remainingWidth = availableWidth;
-  let doc = document;
+  let index = 0;
   while (remainingWidth >= 0) {
-    switch (doc.__type__) {
-      case 'NIL':
-      case 'LINE':
-        return true;
-      case 'TEXT':
-        remainingWidth -= doc.text.length;
-        doc = doc.next;
-    }
+    const doc = documents[index];
+    if (doc == null || doc.__type__ === 'LINE') return true;
+    remainingWidth -= doc.text.length;
+    index += 1;
   }
   return false;
 };
@@ -257,47 +244,59 @@ type ImmutablePrettierDocumentList =
  */
 const generateBestDoc = (
   availableWidth: number,
-  consumed: number,
-  list: ImmutablePrettierDocumentList
-): PrettierIntermediateDocumentForPrinting => {
-  if (list === null) return { __type__: 'NIL' };
-  const [[indentation, document], rest] = list;
-  switch (document.__type__) {
-    case 'NIL':
-      return generateBestDoc(availableWidth, consumed, rest);
-    case 'CONCAT':
-      return generateBestDoc(availableWidth, consumed, [
-        [indentation, document.doc1],
-        [[indentation, document.doc2], rest],
-      ]);
-    case 'NEST':
-      return generateBestDoc(availableWidth, consumed, [
-        [indentation + document.indentation, document.doc],
-        rest,
-      ]);
-    case 'TEXT':
-      return {
-        __type__: 'TEXT',
-        text: document.text,
-        next: generateBestDoc(availableWidth, consumed + document.text.length, rest),
-      };
-    case 'LINE':
-    case 'LINE_FLATTEN_TO_NIL':
-    case 'LINE_HARD':
-      return {
-        __type__: 'LINE',
-        indentation,
-        next: generateBestDoc(availableWidth, indentation, rest),
-      };
-    case 'UNION': {
-      const choice1 = generateBestDoc(availableWidth, consumed, [
-        [indentation, document.doc1],
-        rest,
-      ]);
-      if (intermediateDocumentFitsInAvailableWidth(availableWidth - consumed, choice1)) {
-        return choice1;
+  initialConsumed: number,
+  initialList: ImmutablePrettierDocumentList,
+  intermediateDocuments: PrettierIntermediateDocumentTokenForPrinting[]
+): void => {
+  let consumed = initialConsumed;
+  let list = initialList;
+  while (list !== null) {
+    const [[indentation, document], rest] = list;
+    switch (document.__type__) {
+      case 'NIL':
+        list = rest;
+        break;
+      case 'CONCAT':
+        list = [
+          [indentation, document.doc1],
+          [[indentation, document.doc2], rest],
+        ];
+        break;
+      case 'NEST':
+        list = [[indentation + document.indentation, document.doc], rest];
+        break;
+      case 'TEXT':
+        intermediateDocuments.push({ __type__: 'TEXT', text: document.text });
+        consumed = consumed + document.text.length;
+        list = rest;
+        break;
+      case 'LINE':
+      case 'LINE_FLATTEN_TO_NIL':
+      case 'LINE_HARD':
+        intermediateDocuments.push({ __type__: 'LINE', indentation });
+        consumed = indentation;
+        list = rest;
+        break;
+      case 'UNION': {
+        const oldLength = intermediateDocuments.length;
+        generateBestDoc(
+          availableWidth,
+          consumed,
+          [[indentation, document.doc1], rest],
+          intermediateDocuments
+        );
+        if (
+          intermediateDocumentFitsInAvailableWidth(
+            availableWidth - consumed,
+            intermediateDocuments.slice(oldLength)
+          )
+        ) {
+          return;
+        }
+        intermediateDocuments.splice(oldLength, intermediateDocuments.length - oldLength);
+        list = [[indentation, document.doc2], rest];
+        break;
       }
-      return generateBestDoc(availableWidth, consumed, [[indentation, document.doc2], rest]);
     }
   }
 };
@@ -306,27 +305,24 @@ export const prettyPrintAccordingToPrettierAlgorithm = (
   availableWidth: number,
   document: PrettierDocument
 ): string => {
-  let doc = generateBestDoc(availableWidth, 0, [[0, document], null]);
+  const intermediateDocuments: PrettierIntermediateDocumentTokenForPrinting[] = [];
+  generateBestDoc(availableWidth, 0, [[0, document], null], intermediateDocuments);
   const collector: string[] = [];
 
-  while (true) {
+  intermediateDocuments.forEach((doc) => {
     switch (doc.__type__) {
-      case 'NIL': {
-        const postProcessed = collector
-          .join('')
-          .split('\n')
-          .map((line) => line.trimEnd())
-          .join('\n');
-        return `${postProcessed}\n`;
-      }
       case 'TEXT':
         collector.push(doc.text);
-        doc = doc.next;
-        break;
+        return;
       case 'LINE':
         collector.push(`\n${' '.repeat(doc.indentation)}`);
-        doc = doc.next;
-        break;
+        return;
     }
-  }
+  });
+  const postProcessed = collector
+    .join('')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n');
+  return `${postProcessed}\n`;
 };
