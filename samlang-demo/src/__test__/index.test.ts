@@ -23,7 +23,7 @@ const _compiled_program_main = () => {
   return 0;
 };
 
-_compiled_program_main();`,
+module.exports = [];`,
       llvmString: `declare i32* @_builtin_malloc(i32) nounwind
 declare i32 @__Builtins_println(i32*) nounwind
 declare i32* @__Builtins_panic(i32*) nounwind

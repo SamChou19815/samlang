@@ -3,7 +3,10 @@ import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { compileSamlangSourcesToMidIRSources } from 'samlang-core-compiler';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
-import { prettyPrintSamlangModule, prettyPrintMidIRSourcesAsJS } from 'samlang-core-printer';
+import {
+  prettyPrintSamlangModule,
+  prettyPrintMidIRSourcesAsJSExportingModule,
+} from 'samlang-core-printer';
 import { checkSources, lowerSourcesToLLVMModules } from 'samlang-core-services';
 
 type SamlangDemoResult = {
@@ -46,7 +49,7 @@ const runSamlangDemo = (programString: string): SamlangDemoResult => {
   const prettyPrintedProgram = prettyPrintSamlangModule(100, demoSamlangModule);
   const jsString =
     jsProgram != null
-      ? prettyPrintMidIRSourcesAsJS(100, { ...jsProgram, mainFunctionNames: [] })
+      ? prettyPrintMidIRSourcesAsJSExportingModule(100, { ...jsProgram, mainFunctionNames: [] })
       : '// No JS output because there is no Main.main() function\n';
   const llvmString = demoLLVMModule != null ? prettyPrintLLVMModule(demoLLVMModule) : undefined;
 
