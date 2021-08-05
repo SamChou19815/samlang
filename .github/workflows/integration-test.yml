@@ -10,15 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - uses: actions/setup-node@v2-beta
-      - uses: actions/cache@v2
+      - uses: actions/setup-node@v2
         with:
-          path: |
-            .yarn/cache
-            .pnp.js
-          key: yarn-berry-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            yarn-berry-
+          cache: 'yarn'
       - name: Yarn Install
         run: yarn
       - name: Compile samlang Programs
