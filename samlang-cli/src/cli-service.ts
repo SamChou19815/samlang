@@ -23,7 +23,7 @@ import { prettyPrintMidIRSourcesAsJS } from 'samlang-core-printer';
 
 import type { SamlangProjectConfiguration } from './configuration';
 
-const walk = (startPath: string, visitor: (file: string) => void): void => {
+function walk(startPath: string, visitor: (file: string) => void): void {
   const recursiveVisit = (path: string): void => {
     if (lstatSync(path).isFile()) {
       visitor(path);
@@ -36,11 +36,11 @@ const walk = (startPath: string, visitor: (file: string) => void): void => {
   };
 
   return recursiveVisit(startPath);
-};
+}
 
-export const collectSources = ({
+export function collectSources({
   sourceDirectory,
-}: SamlangProjectConfiguration): readonly (readonly [ModuleReference, string])[] => {
+}: SamlangProjectConfiguration): readonly (readonly [ModuleReference, string])[] {
   const sourcePath = resolve(sourceDirectory);
   const sources: (readonly [ModuleReference, string])[] = [];
 
@@ -55,9 +55,9 @@ export const collectSources = ({
   });
 
   return sources;
-};
+}
 
-const compileToJS = (sources: Sources<MidIRModule>, outputDirectory: string): void => {
+function compileToJS(sources: Sources<MidIRModule>, outputDirectory: string): void {
   sources.forEach((program, moduleReference) => {
     const outputJSFilePath = join(outputDirectory, `${moduleReference}.js`);
     mkdirSync(dirname(outputJSFilePath), { recursive: true });
@@ -66,12 +66,12 @@ const compileToJS = (sources: Sources<MidIRModule>, outputDirectory: string): vo
       prettyPrintMidIRSourcesAsJS(/* availableWidth */ 100, { ...program, mainFunctionNames: [] })
     );
   });
-};
+}
 
-const compileToLLVMModules = (
+function compileToLLVMModules(
   sources: Sources<MidIRModule>,
   outputDirectory: string
-): readonly string[] => {
+): readonly string[] {
   const paths: string[] = [];
   sources.forEach((midIRModule, moduleReference) => {
     const llvmModule = lowerMidIRModuleToLLVMModule(midIRModule);
@@ -81,23 +81,22 @@ const compileToLLVMModules = (
     paths.push(outputLLVMModuleFilePath);
   });
   return paths;
-};
+}
 
 const RUNTIME_PATH = join(__dirname, '..', 'samlang-runtime');
 const LLVM_LIBRARY_PATH = join(RUNTIME_PATH, `libsam-${process.platform}.bc`);
 
-const shellOut = (program: string, ...programArguments: readonly string[]): boolean => {
-  return spawnSync(program, programArguments, { shell: true, stdio: 'inherit' }).status === 0;
-};
+const shellOut = (program: string, ...programArguments: readonly string[]): boolean =>
+  spawnSync(program, programArguments, { shell: true, stdio: 'inherit' }).status === 0;
 
-const unlinkIfExist = (file: string): void => {
+function unlinkIfExist(file: string): void {
   if (existsSync(file)) unlinkSync(file);
-};
+}
 
-export const compileEverything = (
+export function compileEverything(
   sources: Sources<SamlangModule>,
   outputDirectory: string
-): boolean => {
+): boolean {
   const midIRSources = compileSamlangSourcesToMidIRSources(sources, DEFAULT_BUILTIN_TYPING_CONTEXT);
 
   compileToJS(midIRSources, outputDirectory);
@@ -121,4 +120,4 @@ export const compileEverything = (
     return success;
   });
   return assembleResults.every((it) => it);
-};
+}

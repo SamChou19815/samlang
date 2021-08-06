@@ -12,7 +12,7 @@ import {
 } from 'samlang-core-printer';
 import { checkSources } from 'samlang-core-services';
 
-type SamlangDemoResult = {
+export type SamlangDemoResult = {
   readonly interpreterPrinted?: string;
   readonly prettyPrintedProgram?: string;
   readonly jsString?: string;
@@ -24,7 +24,7 @@ type SamlangDemoResult = {
  * @param programString source code of a samlang program.
  * @returns result of running demo operation on it. See the type definition of `DemoResult`.
  */
-const runSamlangDemo = (programString: string): SamlangDemoResult => {
+export default function runSamlangDemo(programString: string): SamlangDemoResult {
   const demoModuleReference = new ModuleReference(['Demo']);
 
   const { checkedSources, compileTimeErrors } = checkSources(
@@ -60,6 +60,4 @@ const runSamlangDemo = (programString: string): SamlangDemoResult => {
     llvmString,
     errors: [],
   };
-};
-
-export default runSamlangDemo;
+}
