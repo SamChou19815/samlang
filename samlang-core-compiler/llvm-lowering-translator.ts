@@ -390,11 +390,11 @@ class LLVMLoweringManager {
   }
 }
 
-export const lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING = (
+export function lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(
   { name, type: { argumentTypes, returnType }, parameters, body, returnValue }: MidIRFunction,
   /** Mapping between global variable name and their length */
   globalVariables: Readonly<Record<string, number>>
-): LLVMFunction => {
+): LLVMFunction {
   const annotatedParameters = zip(parameters, argumentTypes).map(([parameterName, type]) => ({
     parameterName,
     parameterType: lowerMidIRTypeToLLVMType(type),
@@ -413,9 +413,9 @@ export const lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING = (
     returnType: lowerMidIRTypeToLLVMType(returnType),
     body: withoutUnreachableLLVMCode(manager.llvmInstructionCollector),
   };
-};
+}
 
-const lowerMidIRModuleToLLVMModule = (midIRModule: MidIRModule): LLVMModule => {
+export default function lowerMidIRModuleToLLVMModule(midIRModule: MidIRModule): LLVMModule {
   const globalVariablesMapping = Object.fromEntries(
     midIRModule.globalVariables.map((it) => [it.name, it.content.length + 1])
   );
@@ -430,6 +430,4 @@ const lowerMidIRModuleToLLVMModule = (midIRModule: MidIRModule): LLVMModule => {
       lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(it, globalVariablesMapping)
     ),
   };
-};
-
-export default lowerMidIRModuleToLLVMModule;
+}
