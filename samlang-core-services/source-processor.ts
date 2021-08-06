@@ -1,13 +1,8 @@
 import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
-import type { LLVMModule } from 'samlang-core-ast/llvm-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { typeCheckSources, GlobalTypingContext } from 'samlang-core-checker';
 // eslint-disable-next-line import/no-internal-modules
 import type { ModuleTypingContext } from 'samlang-core-checker/typing-context';
-import {
-  compileSamlangSourcesToMidIRSources,
-  lowerMidIRModuleToLLVMModule,
-} from 'samlang-core-compiler';
 import { CompileTimeError, createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import { hashMapOf, isNotNull } from 'samlang-core-utils';
@@ -63,16 +58,3 @@ export const checkSources = (
   );
   return { checkedSources, globalTypingContext, compileTimeErrors: errorCollector.getErrors() };
 };
-
-export const lowerSourcesToLLVMModules = (
-  sources: Sources<SamlangModule>,
-  builtinModuleTypes: ModuleTypingContext
-): Sources<LLVMModule> =>
-  hashMapOf(
-    ...compileSamlangSourcesToMidIRSources(sources, builtinModuleTypes)
-      .entries()
-      .map(
-        ([moduleReference, midIRModule]) =>
-          [moduleReference, lowerMidIRModuleToLLVMModule(midIRModule)] as const
-      )
-  );

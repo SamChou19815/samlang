@@ -1,8 +1,7 @@
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
-import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 
-import { parseSources, checkSources, lowerSourcesToLLVMModules } from '../source-processor';
+import { parseSources, checkSources } from '../source-processor';
 
 describe('source-processor', () => {
   it('parseSources test', () => {
@@ -26,35 +25,10 @@ describe('source-processor', () => {
   }
   `;
 
-    const { checkedSources, compileTimeErrors } = checkSources(
+    const { compileTimeErrors } = checkSources(
       [[moduleReference, sourceCode]],
       DEFAULT_BUILTIN_TYPING_CONTEXT
     );
     expect(compileTimeErrors.map((it) => it.toString())).toEqual([]);
-
-    const llvmModule = lowerSourcesToLLVMModules(
-      checkedSources,
-      DEFAULT_BUILTIN_TYPING_CONTEXT
-    ).forceGet(moduleReference);
-    expect(prettyPrintLLVMModule(llvmModule)).toBe(`declare i32* @_builtin_malloc(i32) nounwind
-declare i32 @__Builtins_println(i32*) nounwind
-declare i32* @__Builtins_panic(i32*) nounwind
-declare i32* @__Builtins_intToString(i32) nounwind
-declare i32 @__Builtins_stringToInt(i32*) nounwind
-declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
-
-; @GLOBAL_STRING_0 = 'Hello World!'
-@GLOBAL_STRING_0 = private unnamed_addr constant [13 x i32] [i32 12, i32 72, i32 101, i32 108, i32 108, i32 111, i32 32, i32 87, i32 111, i32 114, i32 108, i32 100, i32 33], align 8
-define i32 @_Test_Main_main() local_unnamed_addr nounwind {
-l0_start:
-  %_temp_0_string_name_cast = bitcast [13 x i32]* @GLOBAL_STRING_0 to i32*
-  call i32 @__Builtins_println(i32* %_temp_0_string_name_cast) nounwind
-  ret i32 0
-}
-define i32 @_compiled_program_main() local_unnamed_addr nounwind {
-l0_start:
-  call i32 @_Test_Main_main() nounwind
-  ret i32 0
-}`);
   });
 });
