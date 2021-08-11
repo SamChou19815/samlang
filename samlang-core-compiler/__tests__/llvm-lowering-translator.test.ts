@@ -1,3 +1,4 @@
+import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMFunction, prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import {
   MidIRExpression,
@@ -27,6 +28,7 @@ import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
 
 import lowerMidIRModuleToLLVMModule, {
   lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING,
+  lowerMidIRSourcesToLLVMSources,
 } from '../llvm-lowering-translator';
 
 const assertLoweringWorks = (
@@ -616,6 +618,65 @@ l2_loop_end:
     assertStatementLoweringWorks(
       [MIR_CAST({ name: 's', type: MIR_STRING_TYPE, assignedExpression: MIR_ZERO })],
       '  %s = inttoptr i32 0 to i32*'
+    );
+  });
+
+  it('lowerMidIRSourcesToLLVMSources works', () => {
+    const sources = lowerMidIRSourcesToLLVMSources(
+      {
+        globalVariables: [{ name: 'ss', content: 'S' }],
+        typeDefinitions: [{ identifier: 'A', mappings: [INT, INT] }],
+        mainFunctionNames: ['___DUMMY___Main_main'],
+        functions: [
+          {
+            name: '___DUMMY___Main_main',
+            parameters: [],
+            type: MIR_FUNCTION_TYPE([], INT),
+            body: [
+              MIR_FUNCTION_CALL({
+                functionExpression: MIR_NAME('println', MIR_FUNCTION_TYPE([MIR_STRING_TYPE], INT)),
+                functionArguments: [MIR_NAME('ss', MIR_STRING_TYPE)],
+                returnType: INT,
+              }),
+              MIR_FUNCTION_CALL({
+                functionExpression: MIR_NAME(
+                  'stringToInt',
+                  MIR_FUNCTION_TYPE([MIR_STRING_TYPE], INT)
+                ),
+                functionArguments: [MIR_NAME('ss', MIR_STRING_TYPE)],
+                returnType: INT,
+                returnCollector: 'r',
+              }),
+            ],
+            returnValue: MIR_ZERO,
+          },
+        ],
+      },
+      [ModuleReference.DUMMY, ModuleReference.ROOT]
+    );
+    expect(prettyPrintLLVMModule(sources.forceGet(ModuleReference.DUMMY))).toBe(
+      `declare i32* @_builtin_malloc(i32) nounwind
+declare i32 @__Builtins_println(i32*) nounwind
+declare i32* @__Builtins_panic(i32*) nounwind
+declare i32* @__Builtins_intToString(i32) nounwind
+declare i32 @__Builtins_stringToInt(i32*) nounwind
+declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
+
+; @ss = 'S'
+@ss = private unnamed_addr constant [2 x i32] [i32 1, i32 83], align 8
+%A = type { i32, i32 }
+define i32 @___DUMMY___Main_main() local_unnamed_addr nounwind {
+l0_start:
+  %_temp_0_string_name_cast = bitcast [2 x i32]* @ss to i32*
+  call i32 @println(i32* %_temp_0_string_name_cast) nounwind
+  %_temp_1_string_name_cast = bitcast [2 x i32]* @ss to i32*
+  %r = call i32 @stringToInt(i32* %_temp_1_string_name_cast) nounwind
+  ret i32 0
+}
+define i32 @_compiled_program_main() local_unnamed_addr nounwind {
+  call i32 @___DUMMY___Main_main() nounwind
+  ret i32 0
+}`
     );
   });
 

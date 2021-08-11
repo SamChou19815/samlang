@@ -1,4 +1,9 @@
-import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
+import {
+  ENCODED_COMPILED_PROGRAM_MAIN,
+  ENCODED_FUNCTION_NAME_MALLOC,
+  encodeMainFunctionName,
+} from 'samlang-core-ast/common-names';
+import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import {
   LLVMAnnotatedValue,
   LLVMInstruction,
@@ -32,9 +37,10 @@ import type {
   MidIRStructInitializationStatement,
   MidIRFunction,
   MidIRModule,
+  MidIRSources,
 } from 'samlang-core-ast/mir-nodes';
 import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
-import { checkNotNull, zip, zip3 } from 'samlang-core-utils';
+import { checkNotNull, hashMapOf, zip, zip3 } from 'samlang-core-utils';
 
 import lowerMidIRTypeToLLVMType from './llvm-types-lowering';
 
@@ -413,6 +419,53 @@ export function lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(
     returnType: lowerMidIRTypeToLLVMType(returnType),
     body: withoutUnreachableLLVMCode(manager.llvmInstructionCollector),
   };
+}
+
+export function lowerMidIRSourcesToLLVMSources(
+  midIRSources: MidIRSources,
+  moduleReferences: readonly ModuleReference[]
+): Sources<LLVMModule> {
+  const globalVariablesMapping = Object.fromEntries(
+    midIRSources.globalVariables.map((it) => [it.name, it.content.length + 1])
+  );
+  const mainFunctionNames = new Set(midIRSources.mainFunctionNames);
+
+  const common = {
+    globalVariables: midIRSources.globalVariables,
+    typeDefinitions: midIRSources.typeDefinitions.map((it) => ({
+      identifier: it.identifier,
+      mappings: it.mappings.map(lowerMidIRTypeToLLVMType),
+    })),
+    functions: midIRSources.functions.map((it) =>
+      lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(it, globalVariablesMapping)
+    ),
+  } as const;
+
+  const sources = hashMapOf<ModuleReference, LLVMModule>();
+  moduleReferences.forEach((moduleReference) => {
+    const mainFunctionName = encodeMainFunctionName(moduleReference);
+    if (!mainFunctionNames.has(mainFunctionName)) return;
+    sources.set(moduleReference, {
+      ...common,
+      functions: [
+        ...common.functions,
+        {
+          name: ENCODED_COMPILED_PROGRAM_MAIN,
+          parameters: [],
+          returnType: LLVM_INT_TYPE,
+          body: [
+            LLVM_CALL({
+              resultType: LLVM_INT_TYPE,
+              functionName: LLVM_NAME(mainFunctionName),
+              functionArguments: [],
+            }),
+            LLVM_RETURN(LLVM_INT(0), LLVM_INT_TYPE),
+          ],
+        },
+      ],
+    });
+  });
+  return sources;
 }
 
 export default function lowerMidIRModuleToLLVMModule(midIRModule: MidIRModule): LLVMModule {
