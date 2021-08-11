@@ -2,8 +2,9 @@ import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import {
-  compileSamlangSourcesToMidIRSources,
-  lowerMidIRModuleToLLVMModule,
+  compileSamlangSourcesToHighIRSources,
+  lowerHighIRSourcesToMidIRSources,
+  lowerMidIRSourcesToLLVMSources,
 } from 'samlang-core-compiler';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import {
@@ -39,18 +40,15 @@ export default function runSamlangDemo(programString: string): SamlangDemoResult
   }
 
   const demoSamlangModule = checkedSources.forceGet(demoModuleReference);
-  const jsProgram = compileSamlangSourcesToMidIRSources(
-    checkedSources,
-    DEFAULT_BUILTIN_TYPING_CONTEXT
-  ).get(demoModuleReference);
-  const demoLLVMModule = jsProgram == null ? null : lowerMidIRModuleToLLVMModule(jsProgram);
+  const midIRSources = lowerHighIRSourcesToMidIRSources(
+    compileSamlangSourcesToHighIRSources(checkedSources)
+  );
+  const llvmSources = lowerMidIRSourcesToLLVMSources(midIRSources, [demoModuleReference]);
+  const demoLLVMModule = llvmSources.get(demoModuleReference);
 
   const interpreterPrinted = interpretSamlangModule(demoSamlangModule);
   const prettyPrintedProgram = prettyPrintSamlangModule(100, demoSamlangModule);
-  const jsString =
-    jsProgram != null
-      ? prettyPrintMidIRSourcesAsJSExportingModule(100, { ...jsProgram, mainFunctionNames: [] })
-      : '// No JS output because there is no Main.main() function\n';
+  const jsString = prettyPrintMidIRSourcesAsJSExportingModule(100, midIRSources);
   const llvmString = demoLLVMModule != null ? prettyPrintLLVMModule(demoLLVMModule) : undefined;
 
   return {

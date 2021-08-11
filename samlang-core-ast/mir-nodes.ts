@@ -509,14 +509,11 @@ export interface MidIRFunction {
   readonly returnValue: MidIRExpression;
 }
 
-export interface MidIRModule {
+export interface MidIRSources {
   readonly globalVariables: readonly GlobalVariable[];
   readonly typeDefinitions: readonly MidIRTypeDefinition[];
-  readonly functions: readonly MidIRFunction[];
-}
-
-export interface MidIRSources extends MidIRModule {
   readonly mainFunctionNames: readonly string[];
+  readonly functions: readonly MidIRFunction[];
 }
 
 export const debugPrintMidIRFunction = ({
@@ -537,11 +534,11 @@ export const debugPrintMidIRFunction = ({
   return `${header}\n${body}\n}\n`;
 };
 
-export const debugPrintMidIRModule = ({
+export const debugPrintMidIRSources = ({
   globalVariables,
   typeDefinitions,
   functions,
-}: MidIRModule): string =>
+}: MidIRSources): string =>
   [
     ...globalVariables.map(({ name, content }) => `const ${name} = '${content}';\n`),
     ...typeDefinitions.map(

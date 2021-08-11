@@ -25,6 +25,7 @@ import {
   createParenthesisSurroundedDocument,
   createBracketSurroundedDocument,
   createBracesSurroundedBlockDocument,
+  createBracesSurroundedDocument,
 } from './printer-prettier-library';
 
 // Thanks https://gist.github.com/getify/3667624
@@ -309,7 +310,7 @@ export const createPrettierDocumentForExportingModuleFromMidIRSources = (
     epilog: [
       PRETTIER_LINE,
       PRETTIER_TEXT(`module.exports = `),
-      createBracketSurroundedDocument(
+      createBracesSurroundedDocument(
         createCommaSeparatedList(sources.mainFunctionNames, PRETTIER_TEXT)
       ),
       PRETTIER_TEXT(';'),

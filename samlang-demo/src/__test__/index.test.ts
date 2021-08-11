@@ -18,15 +18,11 @@ const _Demo_Main_main = () => {
   __Builtins_println(GLOBAL_STRING_0);
   return 0;
 };
-const _compiled_program_main = () => {
-  _Demo_Main_main();
-  return 0;
-};
 
-module.exports = [];`,
+module.exports = { _Demo_Main_main };`,
       llvmString: `declare i32* @_builtin_malloc(i32) nounwind
 declare i32 @__Builtins_println(i32*) nounwind
-declare i32* @__Builtins_panic(i32*) nounwind
+declare i32 @__Builtins_panic(i32*) nounwind
 declare i32* @__Builtins_intToString(i32) nounwind
 declare i32 @__Builtins_stringToInt(i32*) nounwind
 declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
@@ -40,7 +36,6 @@ l0_start:
   ret i32 0
 }
 define i32 @_compiled_program_main() local_unnamed_addr nounwind {
-l0_start:
   call i32 @_Demo_Main_main() nounwind
   ret i32 0
 }`,
@@ -52,7 +47,14 @@ l0_start:
     expect(runSamlangDemo('class Main {}')).toEqual({
       prettyPrintedProgram: 'class Main {  }\n',
       interpreterPrinted: '',
-      jsString: '// No JS output because there is no Main.main() function\n',
+      jsString: `const _builtin_stringConcat = (a, b) => a + b;
+const __Builtins_println = (line) => console.log(line);
+const __Builtins_stringToInt = (v) => parseInt(v, 10);
+const __Builtins_intToString = (v) => String(v);
+const __Builtins_panic = (v) => { throw Error(v); };
+
+
+module.exports = {  };`,
       assemblyString: undefined,
       errors: [],
     });

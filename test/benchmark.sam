@@ -1,14 +1,11 @@
 class Main {
   function mathTailRec(n: int, acc: int): int =
-    if (n == 0) then acc else Main.mathTailRec(
-      n - 1,
-      (acc % 1000000007 + n % 1000000007) % 1000000007
-    )
+    if (n == 0) then acc else Main.mathTailRec(n - 1, (acc % 10007 + n % 10007) % 10007)
 
   function main(): unit = {
-    val bigNum = 200000000;
+    val bigNum = 20000000;
     val actual = Main.mathTailRec(bigNum, 0);
-    val expected = (1 + bigNum) % 1000000007 * bigNum / 2 % 1000000007;
+    val expected = (1 + bigNum) % 10007 * (bigNum % 10007 / 2) % 10007;
     if (actual == expected) then Builtins.println("Yay") else Builtins.panic(
       "Actual: " :: Builtins.intToString(actual) :: ", expected: " :: Builtins.intToString(expected)
     )

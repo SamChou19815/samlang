@@ -2,7 +2,7 @@ import {
   prettyPrintMidIRType,
   isTheSameMidIRType,
   debugPrintMidIRStatement,
-  debugPrintMidIRModule,
+  debugPrintMidIRSources,
   MIR_FUNCTION_CALL,
   MIR_IF_ELSE,
   MIR_SINGLE_IF,
@@ -238,11 +238,12 @@ if 0 {
 }`);
   });
 
-  it('debugPrintMidIRModule works', () => {
+  it('debugPrintMidIRSources works', () => {
     expect(
-      debugPrintMidIRModule({
+      debugPrintMidIRSources({
         globalVariables: [{ name: 'dev_meggo', content: 'vibez' }],
         typeDefinitions: [{ identifier: 'Foo', mappings: [MIR_INT_TYPE, MIR_ANY_TYPE] }],
+        mainFunctionNames: [],
         functions: [
           {
             name: 'Bar',

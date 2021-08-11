@@ -10,16 +10,17 @@ import {
 } from 'fs';
 import { join, normalize, dirname, resolve, relative, sep } from 'path';
 
+import { encodeMainFunctionName } from 'samlang-core-ast/common-names';
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
-import type { MidIRModule } from 'samlang-core-ast/mir-nodes';
+import type { MidIRSources } from 'samlang-core-ast/mir-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import {
-  compileSamlangSourcesToMidIRSources,
-  lowerMidIRModuleToLLVMModule,
+  compileSamlangSourcesToHighIRSources,
+  lowerHighIRSourcesToMidIRSources,
+  lowerMidIRSourcesToLLVMSources,
 } from 'samlang-core-compiler';
-import { prettyPrintMidIRSourcesAsJS } from 'samlang-core-printer';
+import { prettyPrintMidIRSourcesAsJSExportingModule } from 'samlang-core-printer';
 
 import type { SamlangProjectConfiguration } from './configuration';
 
@@ -57,24 +58,37 @@ export function collectSources({
   return sources;
 }
 
-function compileToJS(sources: Sources<MidIRModule>, outputDirectory: string): void {
-  sources.forEach((program, moduleReference) => {
+function compileToJS(
+  midIRSources: MidIRSources,
+  moduleReferences: readonly ModuleReference[],
+  outputDirectory: string
+): void {
+  const exportingJSFilePath = join(outputDirectory, 'exports.js');
+  mkdirSync(outputDirectory, { recursive: true });
+  writeFileSync(
+    exportingJSFilePath,
+    prettyPrintMidIRSourcesAsJSExportingModule(/* availableWidth */ 100, midIRSources)
+  );
+  const mainFunctions = new Set(midIRSources.mainFunctionNames);
+  moduleReferences.forEach((moduleReference) => {
+    const mainFunctionName = encodeMainFunctionName(moduleReference);
+    if (!mainFunctions.has(mainFunctionName)) return;
     const outputJSFilePath = join(outputDirectory, `${moduleReference}.js`);
-    mkdirSync(dirname(outputJSFilePath), { recursive: true });
-    writeFileSync(
-      outputJSFilePath,
-      prettyPrintMidIRSourcesAsJS(/* availableWidth */ 100, { ...program, mainFunctionNames: [] })
-    );
+    writeFileSync(outputJSFilePath, `require('./exports').${mainFunctionName}();\n`);
   });
 }
 
 function compileToLLVMModules(
-  sources: Sources<MidIRModule>,
+  midIRSources: MidIRSources,
+  moduleReferences: readonly ModuleReference[],
   outputDirectory: string
 ): readonly string[] {
   const paths: string[] = [];
-  sources.forEach((midIRModule, moduleReference) => {
-    const llvmModule = lowerMidIRModuleToLLVMModule(midIRModule);
+  const llvmSources = lowerMidIRSourcesToLLVMSources(midIRSources, moduleReferences);
+
+  moduleReferences.forEach((moduleReference) => {
+    const llvmModule = llvmSources.get(moduleReference);
+    if (llvmModule == null) return;
     const outputLLVMModuleFilePath = join(outputDirectory, `${moduleReference}.ll`);
     mkdirSync(dirname(outputLLVMModuleFilePath), { recursive: true });
     writeFileSync(outputLLVMModuleFilePath, prettyPrintLLVMModule(llvmModule));
@@ -97,9 +111,12 @@ export function compileEverything(
   sources: Sources<SamlangModule>,
   outputDirectory: string
 ): boolean {
-  const midIRSources = compileSamlangSourcesToMidIRSources(sources, DEFAULT_BUILTIN_TYPING_CONTEXT);
+  const midIRSources = lowerHighIRSourcesToMidIRSources(
+    compileSamlangSourcesToHighIRSources(sources)
+  );
+  const moduleReferences = sources.entries().map(([moduleReference]) => moduleReference);
 
-  compileToJS(midIRSources, outputDirectory);
+  compileToJS(midIRSources, moduleReferences, outputDirectory);
 
   if (spawnSync('llc', ['--help'], { shell: true, stdio: 'pipe' }).status !== 0) {
     // eslint-disable-next-line no-console
@@ -107,7 +124,7 @@ export function compileEverything(
     return true;
   }
 
-  const modulePaths = compileToLLVMModules(midIRSources, outputDirectory);
+  const modulePaths = compileToLLVMModules(midIRSources, moduleReferences, outputDirectory);
   const assembleResults = modulePaths.map((modulePath) => {
     const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
     const bitcodePath = `${outputProgramPath}.bc`;
