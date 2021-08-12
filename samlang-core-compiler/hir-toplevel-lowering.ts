@@ -22,6 +22,7 @@ import {
   HighIRTypeSynthesizer,
   SamlangTypeLoweringManager,
 } from './hir-type-conversion';
+import deduplicateHighIRTypes from './hir-type-deduplication';
 
 function compileSamlangFunctionToHighIRFunctions(
   moduleReference: ModuleReference,
@@ -167,7 +168,9 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
 export default function compileSamlangSourcesToHighIRSources(
   sources: Sources<SamlangModule>
 ): HighIRSources {
-  return performGenericsSpecializationOnHighIRSources(
-    compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources)
+  return deduplicateHighIRTypes(
+    performGenericsSpecializationOnHighIRSources(
+      compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources)
+    )
   );
 }
