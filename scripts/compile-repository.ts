@@ -14,8 +14,10 @@ const runWithErrorCheck = (command: string, args: readonly string[] = []) => {
     shell: true,
     stdio: ['pipe', 'pipe', 'inherit'],
   });
-  if (result.status !== 0) throw new Error(`Command \`${command}\` failed with ${result.status}.`);
-  const resultString = result.stdout.toString();
+  const resultString =
+    result.status === 0
+      ? result.stdout.toString()
+      : `Command \`${command}\` failed with ${result.status}.`;
   const time = new Date().getTime() - startTime;
   return { resultString, time };
 };
