@@ -7,11 +7,10 @@ import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_PRINTLN,
-  ENCODED_COMPILED_PROGRAM_MAIN,
 } from 'samlang-core-ast/common-names';
 import type { IROperator } from 'samlang-core-ast/common-operators';
 import type {
-  LLVMModule,
+  LLVMSources,
   LLVMFunction,
   LLVMValue,
   LLVMLabelInstruction,
@@ -342,20 +341,20 @@ function interpretLLVMFunction(
 }
 
 const setupLLVMInterpretationEnvironment = (
-  llvmModule: LLVMModule
+  llvmSources: LLVMSources
 ): LLVMInterpreterMutableGlobalEnvironment => {
-  const functions = new Map(llvmModule.functions.map((it) => [it.name, it]));
+  const functions = new Map(llvmSources.functions.map((it) => [it.name, it]));
   const globalVariables = new Map<string, number>();
   const strings = new Map<string, string>();
   let heapPointer = 10000;
-  llvmModule.globalVariables.forEach(({ name, content }) => {
+  llvmSources.globalVariables.forEach(({ name, content }) => {
     const location = heapPointer;
     globalVariables.set(name, location);
     strings.set(location.toString(), content);
     heapPointer = heapPointer + 4;
   });
   const functionsGlobals = new Map<number, string>();
-  llvmModule.functions.forEach(({ name: functionName }) => {
+  llvmSources.functions.forEach(({ name: functionName }) => {
     const location = heapPointer;
     globalVariables.set(functionName, location);
     functionsGlobals.set(location, functionName);
@@ -372,11 +371,11 @@ const setupLLVMInterpretationEnvironment = (
   };
 };
 
-export default function interpretLLVMModule(
-  llvmModule: LLVMModule,
+export default function interpretLLVMSources(
+  llvmSources: LLVMSources,
   mainFunctionName: string
 ): string {
-  const environment = setupLLVMInterpretationEnvironment(llvmModule);
+  const environment = setupLLVMInterpretationEnvironment(llvmSources);
   const mainFunction = checkNotNull(
     environment.functions.get(mainFunctionName),
     'Missing new function!'

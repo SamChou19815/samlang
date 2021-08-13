@@ -12,7 +12,7 @@ import { join, normalize, dirname, resolve, relative, sep } from 'path';
 
 import { encodeMainFunctionName } from 'samlang-core-ast/common-names';
 import { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
-import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
+import { prettyPrintLLVMSources } from 'samlang-core-ast/llvm-nodes';
 import type { MidIRSources } from 'samlang-core-ast/mir-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import {
@@ -78,21 +78,34 @@ function compileToJS(
   });
 }
 
-function compileToLLVMModules(
+function compileToLLVMSources(
   midIRSources: MidIRSources,
   moduleReferences: readonly ModuleReference[],
   outputDirectory: string
 ): readonly string[] {
   const paths: string[] = [];
-  const llvmSources = lowerMidIRSourcesToLLVMSources(midIRSources, moduleReferences);
+  const llvmSources = lowerMidIRSourcesToLLVMSources(midIRSources);
 
+  const outputLLVMExportingFilePath = join(outputDirectory, `_all_.ll`);
+  mkdirSync(dirname(outputLLVMExportingFilePath), { recursive: true });
+  writeFileSync(outputLLVMExportingFilePath, prettyPrintLLVMSources(llvmSources));
+
+  const mainFunctions = new Set(llvmSources.mainFunctionNames);
   moduleReferences.forEach((moduleReference) => {
-    const llvmModule = llvmSources.get(moduleReference);
-    if (llvmModule == null) return;
-    const outputLLVMModuleFilePath = join(outputDirectory, `${moduleReference}.ll`);
-    mkdirSync(dirname(outputLLVMModuleFilePath), { recursive: true });
-    writeFileSync(outputLLVMModuleFilePath, prettyPrintLLVMModule(llvmModule));
-    paths.push(outputLLVMModuleFilePath);
+    const mainFunctionName = encodeMainFunctionName(moduleReference);
+    if (!mainFunctions.has(mainFunctionName)) return;
+    const outputLLVMFilePath = join(outputDirectory, `${moduleReference}.ll`);
+    mkdirSync(dirname(outputLLVMFilePath), { recursive: true });
+    writeFileSync(
+      outputLLVMFilePath,
+      `declare i32 @${mainFunctionName}() nounwind
+define i32 @_compiled_program_main() local_unnamed_addr nounwind {
+  call i32 @${mainFunctionName}() nounwind
+  ret i32 0
+}
+`
+    );
+    paths.push(outputLLVMFilePath);
   });
   return paths;
 }
@@ -124,13 +137,21 @@ export function compileEverything(
     return true;
   }
 
-  const modulePaths = compileToLLVMModules(midIRSources, moduleReferences, outputDirectory);
+  const outputLLVMExportingFilePath = join(outputDirectory, `_all_.ll`);
+  const modulePaths = compileToLLVMSources(midIRSources, moduleReferences, outputDirectory);
   const assembleResults = modulePaths.map((modulePath) => {
     const outputProgramPath = modulePath.substring(0, modulePath.length - 3);
     const bitcodePath = `${outputProgramPath}.bc`;
     const success =
-      shellOut('llvm-link', '-o', bitcodePath, modulePath, LLVM_LIBRARY_PATH) &&
-      shellOut('llc', '-O3', '-filetype=obj', '--relocation-model=pic', bitcodePath) &&
+      shellOut(
+        'llvm-link',
+        '-o',
+        bitcodePath,
+        modulePath,
+        outputLLVMExportingFilePath,
+        LLVM_LIBRARY_PATH
+      ) &&
+      shellOut('llc', '-O2', '-filetype=obj', '--relocation-model=pic', bitcodePath) &&
       shellOut('gcc', '-o', outputProgramPath, `${outputProgramPath}.o`);
     unlinkIfExist(bitcodePath);
     unlinkIfExist(`${outputProgramPath}.o`);

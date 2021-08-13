@@ -473,17 +473,18 @@ ${body
 }`;
 };
 
-export interface LLVMModule {
+export interface LLVMSources {
   readonly globalVariables: readonly GlobalVariable[];
   readonly typeDefinitions: readonly LLVMTypeDefinition[];
+  readonly mainFunctionNames: readonly string[];
   readonly functions: readonly LLVMFunction[];
 }
 
-export const prettyPrintLLVMModule = ({
+export const prettyPrintLLVMSources = ({
   globalVariables,
   typeDefinitions,
   functions,
-}: LLVMModule): string => {
+}: LLVMSources): string => {
   return [
     `declare i32* @${ENCODED_FUNCTION_NAME_MALLOC}(i32) nounwind
 declare i32 @${ENCODED_FUNCTION_NAME_PRINTLN}(i32*) nounwind

@@ -1,5 +1,4 @@
-import { ModuleReference } from 'samlang-core-ast/common-nodes';
-import { prettyPrintLLVMFunction, prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
+import { prettyPrintLLVMFunction, prettyPrintLLVMSources } from 'samlang-core-ast/llvm-nodes';
 import {
   MidIRExpression,
   MidIRStatement,
@@ -621,39 +620,36 @@ l2_loop_end:
   });
 
   it('lowerMidIRSourcesToLLVMSources works', () => {
-    const sources = lowerMidIRSourcesToLLVMSources(
-      {
-        globalVariables: [{ name: 'ss', content: 'S' }],
-        typeDefinitions: [{ identifier: 'A', mappings: [INT, INT] }],
-        mainFunctionNames: ['___DUMMY___Main_main'],
-        functions: [
-          {
-            name: '___DUMMY___Main_main',
-            parameters: [],
-            type: MIR_FUNCTION_TYPE([], INT),
-            body: [
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME('println', MIR_FUNCTION_TYPE([MIR_STRING_TYPE], INT)),
-                functionArguments: [MIR_NAME('ss', MIR_STRING_TYPE)],
-                returnType: INT,
-              }),
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME(
-                  'stringToInt',
-                  MIR_FUNCTION_TYPE([MIR_STRING_TYPE], INT)
-                ),
-                functionArguments: [MIR_NAME('ss', MIR_STRING_TYPE)],
-                returnType: INT,
-                returnCollector: 'r',
-              }),
-            ],
-            returnValue: MIR_ZERO,
-          },
-        ],
-      },
-      [ModuleReference.DUMMY, ModuleReference.ROOT]
-    );
-    expect(prettyPrintLLVMModule(sources.forceGet(ModuleReference.DUMMY))).toBe(
+    const sources = lowerMidIRSourcesToLLVMSources({
+      globalVariables: [{ name: 'ss', content: 'S' }],
+      typeDefinitions: [{ identifier: 'A', mappings: [INT, INT] }],
+      mainFunctionNames: ['___DUMMY___Main_main'],
+      functions: [
+        {
+          name: '___DUMMY___Main_main',
+          parameters: [],
+          type: MIR_FUNCTION_TYPE([], INT),
+          body: [
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('println', MIR_FUNCTION_TYPE([MIR_STRING_TYPE], INT)),
+              functionArguments: [MIR_NAME('ss', MIR_STRING_TYPE)],
+              returnType: INT,
+            }),
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME(
+                'stringToInt',
+                MIR_FUNCTION_TYPE([MIR_STRING_TYPE], INT)
+              ),
+              functionArguments: [MIR_NAME('ss', MIR_STRING_TYPE)],
+              returnType: INT,
+              returnCollector: 'r',
+            }),
+          ],
+          returnValue: MIR_ZERO,
+        },
+      ],
+    });
+    expect(prettyPrintLLVMSources(sources)).toBe(
       `declare i32* @_builtin_malloc(i32) nounwind
 declare i32 @__Builtins_println(i32*) nounwind
 declare i32 @__Builtins_panic(i32*) nounwind
@@ -670,10 +666,6 @@ l0_start:
   call i32 @println(i32* %_temp_0_string_name_cast) nounwind
   %_temp_1_string_name_cast = bitcast [2 x i32]* @ss to i32*
   %r = call i32 @stringToInt(i32* %_temp_1_string_name_cast) nounwind
-  ret i32 0
-}
-define i32 @_compiled_program_main() local_unnamed_addr nounwind {
-  call i32 @___DUMMY___Main_main() nounwind
   ret i32 0
 }`
     );

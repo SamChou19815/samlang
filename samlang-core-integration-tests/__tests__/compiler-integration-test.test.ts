@@ -1,16 +1,13 @@
-import {
-  ENCODED_COMPILED_PROGRAM_MAIN,
-  encodeMainFunctionName,
-} from 'samlang-core-ast/common-names';
+import { encodeMainFunctionName } from 'samlang-core-ast/common-names';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
-import { prettyPrintLLVMModule } from 'samlang-core-ast/llvm-nodes';
+import { prettyPrintLLVMSources } from 'samlang-core-ast/llvm-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import {
   compileSamlangSourcesToHighIRSources,
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToLLVMSources,
 } from 'samlang-core-compiler';
-import interpretLLVMModule from 'samlang-core-interpreter/llvm-ir-interpreter';
+import interpretLLVMSources from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import { optimizeMidIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
 import { prettyPrintMidIRSourcesAsJS } from 'samlang-core-printer';
@@ -158,19 +155,17 @@ printed`;
     );
   });
 
-  const llvmSources = lowerMidIRSourcesToLLVMSources(
-    midIROptimizedSingleSource,
-    runnableSamlangProgramTestCases.map(({ testCaseName }) => new ModuleReference([testCaseName]))
-  );
+  const llvmSources = lowerMidIRSourcesToLLVMSources(midIROptimizedSingleSource);
   runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) => {
     it(`LLVM: ${testCaseName}`, () => {
-      const compilationUnit = llvmSources.forceGet(new ModuleReference([testCaseName]));
-
       let result: string;
       try {
-        result = interpretLLVMModule(compilationUnit, ENCODED_COMPILED_PROGRAM_MAIN);
+        result = interpretLLVMSources(
+          llvmSources,
+          encodeMainFunctionName(new ModuleReference([testCaseName]))
+        );
       } catch {
-        fail(prettyPrintLLVMModule(compilationUnit));
+        fail(prettyPrintLLVMSources(llvmSources));
       }
       expect(result).toBe(expectedStandardOut);
     });
