@@ -51,7 +51,11 @@ const lowerHighIRFunctionType = (type: HighIRFunctionType): MidIRFunctionType =>
 function lowerHighIRExpression(expression: HighIRExpression): MidIRExpression {
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
-      return MIR_INT(expression.value);
+      return {
+        __type__: 'MidIRIntLiteralExpression',
+        type: lowerHighIRType(expression.type),
+        value: expression.value,
+      };
     case 'HighIRVariableExpression':
       return MIR_VARIABLE(expression.name, lowerHighIRType(expression.type));
     case 'HighIRNameExpression':

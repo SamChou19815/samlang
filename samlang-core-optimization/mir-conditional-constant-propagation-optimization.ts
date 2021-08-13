@@ -20,7 +20,14 @@ import {
   MidIRWhileStatement,
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
-import { isNotNull, zip3, LocalStackedContext, checkNotNull, assert } from 'samlang-core-utils';
+import {
+  LocalStackedContext,
+  assert,
+  checkNotNull,
+  isNotNull,
+  ignore,
+  zip3,
+} from 'samlang-core-utils';
 
 import {
   ifElseOrNull,
@@ -280,7 +287,7 @@ const optimizeMidIRStatement = (
             e1: partiallyOptimizedStatement.e1,
             e2: partiallyOptimizedStatement.e2,
           },
-          () => {}
+          ignore
         );
       }
       return [partiallyOptimizedStatement];

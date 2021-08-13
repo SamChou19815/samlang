@@ -55,8 +55,24 @@ class HighIRTypeDeduplicator {
     const { globalVariables, mainFunctionNames, functions } = this.sources;
     return {
       globalVariables,
-      closureTypes: Array.from(this.closureTypeDefinitionMapping.values()),
-      typeDefinitions: Array.from(this.typeDefinitionMapping.values()),
+      closureTypes: Array.from(this.closureTypeDefinitionMapping.values()).map(
+        ({ identifier, typeParameters, functionType }) => ({
+          identifier,
+          typeParameters,
+          functionType: HIR_FUNCTION_TYPE(
+            functionType.argumentTypes.map(this.rewriteType),
+            this.rewriteType(functionType.returnType)
+          ),
+        })
+      ),
+      typeDefinitions: Array.from(this.typeDefinitionMapping.values()).map(
+        ({ identifier, type, typeParameters, mappings }) => ({
+          identifier,
+          type,
+          typeParameters,
+          mappings: mappings.map(this.rewriteType),
+        })
+      ),
       mainFunctionNames,
       functions: functions.map(this.rewriteFunction),
     };

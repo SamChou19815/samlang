@@ -36,7 +36,6 @@ import type {
   MidIRWhileStatement,
   MidIRStructInitializationStatement,
   MidIRFunction,
-  MidIRModule,
   MidIRSources,
 } from 'samlang-core-ast/mir-nodes';
 import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
@@ -421,7 +420,7 @@ export function lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(
   };
 }
 
-export function lowerMidIRSourcesToLLVMSources(
+export default function lowerMidIRSourcesToLLVMSources(
   midIRSources: MidIRSources,
   moduleReferences: readonly ModuleReference[]
 ): Sources<LLVMModule> {
@@ -466,21 +465,4 @@ export function lowerMidIRSourcesToLLVMSources(
     });
   });
   return sources;
-}
-
-export default function lowerMidIRModuleToLLVMModule(midIRModule: MidIRModule): LLVMModule {
-  const globalVariablesMapping = Object.fromEntries(
-    midIRModule.globalVariables.map((it) => [it.name, it.content.length + 1])
-  );
-
-  return {
-    globalVariables: midIRModule.globalVariables,
-    typeDefinitions: midIRModule.typeDefinitions.map((it) => ({
-      identifier: it.identifier,
-      mappings: it.mappings.map(lowerMidIRTypeToLLVMType),
-    })),
-    functions: midIRModule.functions.map((it) =>
-      lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(it, globalVariablesMapping)
-    ),
-  };
 }

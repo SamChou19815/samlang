@@ -2,6 +2,7 @@ import {
   error,
   isNotNull,
   checkNotNull,
+  ignore,
   assert,
   zip,
   zip3,
@@ -35,6 +36,10 @@ describe('samlang-utils', () => {
     expect(checkNotNull(2)).toBe(2);
     expect(() => checkNotNull(null)).toThrow();
     expect(() => checkNotNull(null, '')).toThrow();
+  });
+
+  it('ignore test', () => {
+    expect(ignore()).toBeUndefined();
   });
 
   it('assert test', () => {

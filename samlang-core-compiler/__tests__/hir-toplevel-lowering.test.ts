@@ -33,7 +33,7 @@ const THIS = EXPRESSION_THIS({
 });
 
 describe('mir-toplevel-lowering', () => {
-  it('compileSamlangSourcesToMidIRSources integration test', () => {
+  it('compileSamlangSourcesToHighIRSourcesWithGenericsPreserved integration test', () => {
     const sourceModule: SamlangModule = {
       imports: [],
       classes: [

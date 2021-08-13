@@ -753,7 +753,7 @@ const __Builtins_intToString = (v) => String(v);
 const __Builtins_panic = (v) => { throw Error(v); };
 
 
-module.exports = [foo, bar];
+module.exports = { foo, bar };
 `);
 
     expect(
@@ -773,10 +773,10 @@ const __Builtins_intToString = (v) => String(v);
 const __Builtins_panic = (v) => { throw Error(v); };
 
 
-module.exports = [
+module.exports = {
   foo,
   bar
-];
+};
 `);
   });
 });

@@ -487,7 +487,7 @@ export const prettyPrintLLVMModule = ({
   return [
     `declare i32* @${ENCODED_FUNCTION_NAME_MALLOC}(i32) nounwind
 declare i32 @${ENCODED_FUNCTION_NAME_PRINTLN}(i32*) nounwind
-declare i32* @${ENCODED_FUNCTION_NAME_THROW}(i32*) nounwind
+declare i32 @${ENCODED_FUNCTION_NAME_THROW}(i32*) nounwind
 declare i32* @${ENCODED_FUNCTION_NAME_INT_TO_STRING}(i32) nounwind
 declare i32 @${ENCODED_FUNCTION_NAME_STRING_TO_INT}(i32*) nounwind
 declare i32* @${ENCODED_FUNCTION_NAME_STRING_CONCAT}(i32*, i32*) nounwind

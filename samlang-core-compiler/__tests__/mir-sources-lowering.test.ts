@@ -16,7 +16,7 @@ import {
   HIR_INDEX_ACCESS,
   HIR_CLOSURE_INITIALIZATION,
 } from 'samlang-core-ast/hir-nodes';
-import { debugPrintMidIRModule } from 'samlang-core-ast/mir-nodes';
+import { debugPrintMidIRSources } from 'samlang-core-ast/mir-nodes';
 
 import lowerHighIRSourcesToMidIRSources from '../mir-sources-lowering';
 
@@ -25,7 +25,7 @@ const assertLowered = (
   expected: string
 ) =>
   expect(
-    debugPrintMidIRModule(
+    debugPrintMidIRSources(
       lowerHighIRSourcesToMidIRSources({
         ...sources,
         globalVariables: [],

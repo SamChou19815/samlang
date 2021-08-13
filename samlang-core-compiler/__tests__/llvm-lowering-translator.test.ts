@@ -26,9 +26,8 @@ import {
 } from 'samlang-core-ast/mir-nodes';
 import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
 
-import lowerMidIRModuleToLLVMModule, {
+import lowerMidIRSourcesToLLVMSources, {
   lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING,
-  lowerMidIRSourcesToLLVMSources,
 } from '../llvm-lowering-translator';
 
 const assertLoweringWorks = (
@@ -657,7 +656,7 @@ l2_loop_end:
     expect(prettyPrintLLVMModule(sources.forceGet(ModuleReference.DUMMY))).toBe(
       `declare i32* @_builtin_malloc(i32) nounwind
 declare i32 @__Builtins_println(i32*) nounwind
-declare i32* @__Builtins_panic(i32*) nounwind
+declare i32 @__Builtins_panic(i32*) nounwind
 declare i32* @__Builtins_intToString(i32) nounwind
 declare i32 @__Builtins_stringToInt(i32*) nounwind
 declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
@@ -678,60 +677,5 @@ define i32 @_compiled_program_main() local_unnamed_addr nounwind {
   ret i32 0
 }`
     );
-  });
-
-  it('lowerMidIRModuleToLLVMModule works', () => {
-    expect(
-      prettyPrintLLVMModule(
-        lowerMidIRModuleToLLVMModule({
-          globalVariables: [{ name: 'ss', content: 'S' }],
-          typeDefinitions: [{ identifier: 'A', mappings: [INT, INT] }],
-          functions: [
-            {
-              name: 'test',
-              parameters: [],
-              type: MIR_FUNCTION_TYPE([], INT),
-              body: [
-                MIR_FUNCTION_CALL({
-                  functionExpression: MIR_NAME(
-                    'println',
-                    MIR_FUNCTION_TYPE([MIR_STRING_TYPE], INT)
-                  ),
-                  functionArguments: [MIR_NAME('ss', MIR_STRING_TYPE)],
-                  returnType: INT,
-                }),
-                MIR_FUNCTION_CALL({
-                  functionExpression: MIR_NAME(
-                    'stringToInt',
-                    MIR_FUNCTION_TYPE([MIR_STRING_TYPE], INT)
-                  ),
-                  functionArguments: [MIR_NAME('ss', MIR_STRING_TYPE)],
-                  returnType: INT,
-                  returnCollector: 'r',
-                }),
-              ],
-              returnValue: MIR_ZERO,
-            },
-          ],
-        })
-      )
-    ).toEqual(`declare i32* @_builtin_malloc(i32) nounwind
-declare i32 @__Builtins_println(i32*) nounwind
-declare i32* @__Builtins_panic(i32*) nounwind
-declare i32* @__Builtins_intToString(i32) nounwind
-declare i32 @__Builtins_stringToInt(i32*) nounwind
-declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
-
-; @ss = 'S'
-@ss = private unnamed_addr constant [2 x i32] [i32 1, i32 83], align 8
-%A = type { i32, i32 }
-define i32 @test() local_unnamed_addr nounwind {
-l0_start:
-  %_temp_0_string_name_cast = bitcast [2 x i32]* @ss to i32*
-  call i32 @println(i32* %_temp_0_string_name_cast) nounwind
-  %_temp_1_string_name_cast = bitcast [2 x i32]* @ss to i32*
-  %r = call i32 @stringToInt(i32* %_temp_1_string_name_cast) nounwind
-  ret i32 0
-}`);
   });
 });
