@@ -299,19 +299,15 @@ describe('printer-source-level', () => {
       reprintExpression(
         '() -> () -> () -> { val a: unit = { val b: unit = { val c: unit = { val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong } } } }'
       )
-    ).toBe(`() -> (
-  () -> (
-    () -> {
-      val a: unit = {
-        val b: unit = {
-          val c: unit = {
-            val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong;
-          };
-        };
+    ).toBe(`() -> () -> () -> {
+  val a: unit = {
+    val b: unit = {
+      val c: unit = {
+        val d: unit = aVariableNameThatIsVeryVeryVeryVeryVeryLong;
       };
-    }
-  )
-)`);
+    };
+  };
+}`);
   });
 
   it('prettyPrintSamlangModule test', () => {

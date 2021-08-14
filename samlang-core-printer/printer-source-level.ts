@@ -56,9 +56,13 @@ const createPrettierDocumentFromSamlangExpression = (
   expression: SamlangExpression
 ): PrettierDocument => {
   const createDocumentForSubExpressionConsideringPrecedenceLevel = (
-    subExpression: SamlangExpression
+    subExpression: SamlangExpression,
+    equalLevelParenthesis = false
   ): PrettierDocument => {
-    if (subExpression.precedence >= expression.precedence) {
+    const addParenthesis = equalLevelParenthesis
+      ? subExpression.precedence >= expression.precedence
+      : subExpression.precedence > expression.precedence;
+    if (addParenthesis) {
       return createParenthesisSurroundedDocument(
         createPrettierDocumentFromSamlangExpression(subExpression)
       );
@@ -195,7 +199,7 @@ const createPrettierDocumentFromSamlangExpression = (
             createPrettierDocumentFromSamlangExpression(expression.e1),
             operatorPrecedingCommentsDocs,
             PRETTIER_TEXT(` ${expression.operator.symbol} `),
-            createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
+            createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2, true)
           );
         }
         if (expression.e2.precedence === expression.precedence) {
@@ -207,7 +211,7 @@ const createPrettierDocumentFromSamlangExpression = (
               break;
             default:
               return PRETTIER_CONCAT(
-                createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
+                createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1, true),
                 operatorPrecedingCommentsDocs,
                 PRETTIER_TEXT(` ${expression.operator.symbol} `),
                 createPrettierDocumentFromSamlangExpression(expression.e2)
@@ -215,10 +219,10 @@ const createPrettierDocumentFromSamlangExpression = (
           }
         }
         return PRETTIER_CONCAT(
-          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1),
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e1, true),
           operatorPrecedingCommentsDocs,
           PRETTIER_TEXT(` ${expression.operator.symbol} `),
-          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2)
+          createDocumentForSubExpressionConsideringPrecedenceLevel(expression.e2, true)
         );
       }
       case 'IfElseExpression':

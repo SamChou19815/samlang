@@ -1,0 +1,93 @@
+import { List, ForTests } from Tests.StdLib
+
+class Foo(val a: int) { function bar(): int = 3  }
+
+class Obj(val d: int, val e: int) {
+  function valExample(): int = {
+    val a: int = 1;
+    val b: int = 2;
+    val [_, c]: [string * int] = ["dd", 3];
+    val { e as d }: Obj = { d: 5, e: 4 };
+    val _: int = 42;
+    a + b * c / d
+  }
+
+}
+
+class Clazz(val t: int) {
+  function of(): Clazz = { t: 42 }
+
+  method thisTest(): int = {
+    val i: int = this.t;
+    val { t as j }: Clazz = this;
+    i + j
+  }
+
+}
+
+class Option<T>(Some(T), None(bool)) {
+  function <T> none(): Option<T> = None(true)
+
+  method toSome(t: T): Option<T> = Some(t)
+
+  method isNone(): bool = match (this) { | None _ -> true | Some _ -> false }
+
+  method <R> map(f: (T) -> R): Option<R> =
+    match (this) { | None _ -> None(true) | Some t -> Some(f(t)) }
+
+  function test(): unit = {
+    val _ = match (None(false)) { | None _ -> "" | Some f -> Builtins.intToString(f("")) };
+  }
+
+}
+
+class DifferentExpressionDemo {
+  function identity(a: int): int = a
+
+  function random(): int = {
+    val a: int = 42;
+    a
+  }
+
+  function oof(): int = 14
+
+  function div(a: int, b: int): int =
+    if (b == 0) then Builtins.panic("Division by zero is illegal!") else a / b
+
+  function nestedVal(): int = {
+    val a: int = {
+      val b: int = 4;
+      val c: int = {
+        val c: int = b;
+        b
+      };
+      c
+    };
+    val [e, b, _]: [int * string * bool] = [1, "bool", true];
+    a + 1
+  }
+
+  function methodAndFunctionReference(): int = Clazz.of().thisTest()
+
+  function lambdaTest(a: int): string = {
+    val c: Option<string> = Option.none().toSome(3).map((x: int) -> "empty");
+    "hello world"
+  }
+
+  function run(): unit = {
+    val c = DifferentExpressionDemo.lambdaTest;
+    val _ = c(3);
+    val v = DifferentExpressionDemo.methodAndFunctionReference();
+    val _ = ForTests.assertIntEquals(84, v);
+    val _ = ForTests.assertIntEquals(
+      42,
+      DifferentExpressionDemo.identity(
+        Foo.bar() * DifferentExpressionDemo.oof() * Obj.valExample() / DifferentExpressionDemo.div(
+          4,
+          2
+        ) + DifferentExpressionDemo.nestedVal() - 5
+      )
+    );
+  }
+
+}

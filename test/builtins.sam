@@ -1,7 +1,0 @@
-class Main {
-  function main(): unit = {
-    val value: string = Builtins.intToString(Builtins.stringToInt("42"));
-    val _: unit = Builtins.println(value);
-  }
-
-}

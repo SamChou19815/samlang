@@ -141,6 +141,15 @@ describe('hir-type-conversion', () => {
 
     expect(
       solveTypeArguments(
+        [],
+        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('A'),
+        HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('T'),
+        (t) => [HIR_BOOL_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS(t.name)]
+      )
+    ).toEqual([]);
+
+    expect(
+      solveTypeArguments(
         ['A'],
         HIR_FUNCTION_TYPE(
           [HIR_INT_TYPE, HIR_BOOL_TYPE],

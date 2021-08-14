@@ -7,4 +7,4 @@ class Dev(Sam(unit), Megan(string)) {
 
 }
 
-class Main { function main(): unit = (Dev.meggo()).vibez()  }
+class DevMeggo { function run(): unit = Dev.meggo().vibez()  }

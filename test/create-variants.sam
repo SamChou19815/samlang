@@ -1,9 +1,0 @@
-class List(Nil(int), Cons([int * List])) { function of(i: int): List = Cons([i, Nil(0)])  }
-
-class Main {
-  function main(): unit = {
-    val _: List = List.of(1);
-    Builtins.println("hello")
-  }
-
-}

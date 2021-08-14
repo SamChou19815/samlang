@@ -1,0 +1,23 @@
+import { ForTests } from Tests.StdLib
+
+class EvaluationOrder {
+  private function intIdentity(order: int): int = {
+    val _ = ForTests.printlnInt(order);
+    2
+  }
+
+  private function boolIdentity(item: bool, order: int): bool = {
+    val _ = ForTests.printlnInt(order);
+    item
+  }
+
+  function run(): unit = {
+    val _ = EvaluationOrder.intIdentity(0) + EvaluationOrder.intIdentity(1);
+    val _ = EvaluationOrder.intIdentity(2) < EvaluationOrder.intIdentity(3);
+    val _ = EvaluationOrder.boolIdentity(false, 4) || EvaluationOrder.boolIdentity(false, 5);
+    val _ = EvaluationOrder.boolIdentity(true, 6) && EvaluationOrder.boolIdentity(true, 7);
+    val _ = EvaluationOrder.boolIdentity(true, 8) || EvaluationOrder.boolIdentity(false, 100);
+    val _ = EvaluationOrder.boolIdentity(false, 9) && EvaluationOrder.boolIdentity(true, 100);
+  }
+
+}

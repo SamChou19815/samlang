@@ -14,7 +14,7 @@ const getTypeCheckedModule = (code: string): SamlangModule => {
   );
   const errors = compileTimeErrors.map((it) => it.toString());
   if (errors.length > 0) {
-    fail(`Source: ${code}. Errors:\n${errors.join('\n')}`);
+    throw new Error(`Source: ${code}. Errors:\n${errors.join('\n')}`);
   }
   const checkedModule = checkedSources.forceGet(moduleReference);
   return checkedModule;
