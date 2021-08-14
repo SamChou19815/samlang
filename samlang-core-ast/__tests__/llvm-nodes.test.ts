@@ -4,7 +4,7 @@ import {
   prettyPrintLLVMValue,
   prettyPrintLLVMInstruction,
   prettyPrintLLVMFunction,
-  prettyPrintLLVMModule,
+  prettyPrintLLVMSources,
   LLVM_BOOL_TYPE,
   LLVM_INT_TYPE,
   LLVM_STRING_TYPE,
@@ -423,9 +423,9 @@ start:
 }`);
   });
 
-  it('prettyPrintLLVMModule works', () => {
+  it('prettyPrintLLVMSources works', () => {
     expect(
-      prettyPrintLLVMModule({
+      prettyPrintLLVMSources({
         globalVariables: [
           { name: 'hw', content: 'AA' },
           { name: 'empty', content: '' },
@@ -433,6 +433,7 @@ start:
         typeDefinitions: [
           { identifier: 'Foo', mappings: [LLVM_INT_TYPE, LLVM_IDENTIFIER_TYPE('Bar')] },
         ],
+        mainFunctionNames: [],
         functions: [
           {
             name: 'fact',

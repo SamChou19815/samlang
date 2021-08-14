@@ -1,9 +1,4 @@
-import {
-  ENCODED_COMPILED_PROGRAM_MAIN,
-  ENCODED_FUNCTION_NAME_MALLOC,
-  encodeMainFunctionName,
-} from 'samlang-core-ast/common-names';
-import type { ModuleReference, Sources } from 'samlang-core-ast/common-nodes';
+import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
 import {
   LLVMAnnotatedValue,
   LLVMInstruction,
@@ -25,7 +20,7 @@ import {
   LLVM_RETURN,
   LLVM_INT_TYPE,
   LLVMValue,
-  LLVMModule,
+  LLVMSources,
 } from 'samlang-core-ast/llvm-nodes';
 import type {
   MidIRExpression,
@@ -39,7 +34,7 @@ import type {
   MidIRSources,
 } from 'samlang-core-ast/mir-nodes';
 import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
-import { checkNotNull, hashMapOf, zip, zip3 } from 'samlang-core-utils';
+import { checkNotNull, zip, zip3 } from 'samlang-core-utils';
 
 import lowerMidIRTypeToLLVMType from './llvm-types-lowering';
 
@@ -420,49 +415,20 @@ export function lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(
   };
 }
 
-export default function lowerMidIRSourcesToLLVMSources(
-  midIRSources: MidIRSources,
-  moduleReferences: readonly ModuleReference[]
-): Sources<LLVMModule> {
+export default function lowerMidIRSourcesToLLVMSources(midIRSources: MidIRSources): LLVMSources {
   const globalVariablesMapping = Object.fromEntries(
     midIRSources.globalVariables.map((it) => [it.name, it.content.length + 1])
   );
-  const mainFunctionNames = new Set(midIRSources.mainFunctionNames);
 
-  const common = {
+  return {
     globalVariables: midIRSources.globalVariables,
     typeDefinitions: midIRSources.typeDefinitions.map((it) => ({
       identifier: it.identifier,
       mappings: it.mappings.map(lowerMidIRTypeToLLVMType),
     })),
+    mainFunctionNames: midIRSources.mainFunctionNames,
     functions: midIRSources.functions.map((it) =>
       lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(it, globalVariablesMapping)
     ),
-  } as const;
-
-  const sources = hashMapOf<ModuleReference, LLVMModule>();
-  moduleReferences.forEach((moduleReference) => {
-    const mainFunctionName = encodeMainFunctionName(moduleReference);
-    if (!mainFunctionNames.has(mainFunctionName)) return;
-    sources.set(moduleReference, {
-      ...common,
-      functions: [
-        ...common.functions,
-        {
-          name: ENCODED_COMPILED_PROGRAM_MAIN,
-          parameters: [],
-          returnType: LLVM_INT_TYPE,
-          body: [
-            LLVM_CALL({
-              resultType: LLVM_INT_TYPE,
-              functionName: LLVM_NAME(mainFunctionName),
-              functionArguments: [],
-            }),
-            LLVM_RETURN(LLVM_INT(0), LLVM_INT_TYPE),
-          ],
-        },
-      ],
-    });
-  });
-  return sources;
+  };
 }

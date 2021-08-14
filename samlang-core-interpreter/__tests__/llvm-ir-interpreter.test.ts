@@ -8,7 +8,7 @@ import {
   ENCODED_COMPILED_PROGRAM_MAIN,
 } from 'samlang-core-ast/common-names';
 import {
-  LLVMModule,
+  LLVMSources,
   LLVM_INT_TYPE,
   LLVM_STRING_TYPE,
   LLVM_INT,
@@ -27,18 +27,21 @@ import {
   LLVM_RETURN,
 } from 'samlang-core-ast/llvm-nodes';
 
-import interpretLLVMModuleWithoutMainFunction from '../llvm-ir-interpreter';
+import interpretLLVMSources from '../llvm-ir-interpreter';
 
 const ZERO = LLVM_INT(0);
 const ONE = LLVM_INT(1);
 const EIGHT = LLVM_INT(8);
 
-const interpretLLVMModule = (llvmModule: LLVMModule) =>
-  interpretLLVMModuleWithoutMainFunction(llvmModule, ENCODED_COMPILED_PROGRAM_MAIN);
+const interpretLLVMSourcesWithMain = (llvmSources: Omit<LLVMSources, 'mainFunctionNames'>) =>
+  interpretLLVMSources(
+    { ...llvmSources, mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN] },
+    ENCODED_COMPILED_PROGRAM_MAIN
+  );
 
 describe('llvm-ir-interpreter', () => {
-  it('interpretLLVMModule arithmetic normal test', () => {
-    interpretLLVMModule({
+  it('interpretLLVMSources arithmetic normal test', () => {
+    interpretLLVMSourcesWithMain({
       globalVariables: [{ name: 'HW', content: 'Hello World!' }],
       typeDefinitions: [],
       functions: [
@@ -59,7 +62,7 @@ describe('llvm-ir-interpreter', () => {
         },
       ],
     });
-    interpretLLVMModule({
+    interpretLLVMSourcesWithMain({
       globalVariables: [{ name: 'HW', content: 'Hello World!' }],
       typeDefinitions: [],
       functions: [
@@ -81,7 +84,7 @@ describe('llvm-ir-interpreter', () => {
       ],
     });
 
-    interpretLLVMModule({
+    interpretLLVMSourcesWithMain({
       globalVariables: [{ name: 'HW', content: 'Hello World!' }],
       typeDefinitions: [],
       functions: [
@@ -104,9 +107,9 @@ describe('llvm-ir-interpreter', () => {
     });
   });
 
-  it('interpretLLVMModule arithmetic panic test', () => {
+  it('interpretLLVMSources arithmetic panic test', () => {
     expect(() =>
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [{ name: 'HW', content: 'Hello World!' }],
         typeDefinitions: [],
         functions: [
@@ -130,7 +133,7 @@ describe('llvm-ir-interpreter', () => {
     ).toThrow();
 
     expect(() =>
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [{ name: 'HW', content: 'Hello World!' }],
         typeDefinitions: [],
         functions: [
@@ -154,9 +157,9 @@ describe('llvm-ir-interpreter', () => {
     ).toThrow();
   });
 
-  it('interpretLLVMModule hello world test', () => {
+  it('interpretLLVMSources hello world test', () => {
     expect(
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [{ name: 'HW', content: 'Hello World!' }],
         typeDefinitions: [],
         functions: [
@@ -198,9 +201,9 @@ describe('llvm-ir-interpreter', () => {
     ).toBe('Hello World!\n');
   });
 
-  it('interpretLLVMModule string-int conversion test', () => {
+  it('interpretLLVMSources string-int conversion test', () => {
     expect(
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [],
         typeDefinitions: [],
         functions: [
@@ -240,9 +243,9 @@ describe('llvm-ir-interpreter', () => {
     ).toBe('8\n');
   });
 
-  it('interpretLLVMModule failed string-int conversion test', () => {
+  it('interpretLLVMSources failed string-int conversion test', () => {
     expect(() =>
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [{ name: 'HW', content: 'Hello World!' }],
         typeDefinitions: [],
         functions: [
@@ -263,9 +266,9 @@ describe('llvm-ir-interpreter', () => {
     ).toThrow('Bad string: Hello World!');
   });
 
-  it('interpretLLVMModule string concat test', () => {
+  it('interpretLLVMSources string concat test', () => {
     expect(
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [
           { name: 'HW1', content: 'Hello World!' },
           { name: 'HW2', content: ' Hi World!' },
@@ -299,9 +302,9 @@ describe('llvm-ir-interpreter', () => {
     ).toBe('Hello World! Hi World!\n');
   });
 
-  it('interpretLLVMModule panic test', () => {
+  it('interpretLLVMSources panic test', () => {
     expect(() =>
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [{ name: 'Ahh', content: 'Panic!' }],
         typeDefinitions: [],
         functions: [
@@ -323,9 +326,9 @@ describe('llvm-ir-interpreter', () => {
     ).toThrow('Panic!');
   });
 
-  it('interpretLLVMModule setup tuple and print test', () => {
+  it('interpretLLVMSources setup tuple and print test', () => {
     expect(
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [],
         typeDefinitions: [],
         functions: [
@@ -390,9 +393,9 @@ describe('llvm-ir-interpreter', () => {
     ).toBe('50\n');
   });
 
-  it('interpretLLVMModule jump test', () => {
+  it('interpretLLVMSources jump test', () => {
     expect(
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [{ name: 'Ahh', content: 'Panic!' }],
         typeDefinitions: [],
         functions: [
@@ -416,9 +419,9 @@ describe('llvm-ir-interpreter', () => {
     ).toBe('');
   });
 
-  it('interpretLLVMModule cjump test 1', () => {
+  it('interpretLLVMSources cjump test 1', () => {
     expect(
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [{ name: 'Ahh', content: 'Panic!' }],
         typeDefinitions: [],
         functions: [
@@ -443,9 +446,9 @@ describe('llvm-ir-interpreter', () => {
     ).toBe('');
   });
 
-  it('interpretLLVMModule cjump test 2', () => {
+  it('interpretLLVMSources cjump test 2', () => {
     expect(
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [{ name: 'Ahh', content: 'Panic!' }],
         typeDefinitions: [],
         functions: [
@@ -470,9 +473,9 @@ describe('llvm-ir-interpreter', () => {
     ).toBe('');
   });
 
-  it('interpretLLVMModule dummy function call integration test', () => {
+  it('interpretLLVMSources dummy function call integration test', () => {
     expect(
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [],
         typeDefinitions: [],
         functions: [
@@ -500,9 +503,9 @@ describe('llvm-ir-interpreter', () => {
     ).toBe('');
   });
 
-  it('interpretLLVMModule factorial function call integration test', () => {
+  it('interpretLLVMSources factorial function call integration test', () => {
     expect(
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [],
         typeDefinitions: [],
         functions: [
@@ -592,9 +595,9 @@ describe('llvm-ir-interpreter', () => {
     ).toBe('24\n');
   });
 
-  it('interpretLLVMModule integration test', () => {
+  it('interpretLLVMSources integration test', () => {
     expect(
-      interpretLLVMModule({
+      interpretLLVMSourcesWithMain({
         globalVariables: [],
         typeDefinitions: [],
         functions: [
