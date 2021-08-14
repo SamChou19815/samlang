@@ -32,16 +32,16 @@ const fixExpressionType = (
   const typeFixItself = (type: Type, expected: Type | null): Type => {
     const resolvedPotentiallyUndecidedType = resolution.resolveType(type);
     const resolvedType = resolveType(resolvedPotentiallyUndecidedType, () => unitType);
-    if (expected === null) {
-      return resolvedType;
-    }
+    const resolvedTypePrettyPrinted = prettyPrintType(resolvedType);
+    assert(resolvedType.type !== 'UndecidedType', `Bad type: ${resolvedTypePrettyPrinted}`);
+    if (expected === null) return resolvedType;
     assert(
       isTheSameType(expected, resolvedType),
-      `resolvedType(${prettyPrintType(
-        resolvedType
-      )}) should be consistent with expectedType(${prettyPrintType(expected)})!`
+      `resolvedType(${resolvedTypePrettyPrinted}) should be consistent with expectedType(${prettyPrintType(
+        expected
+      )})!`
     );
-    return expected;
+    return resolvedType;
   };
 
   const getExpressionFixedType = (e: SamlangExpression, t: Type | null): Type =>
@@ -216,7 +216,7 @@ const fixExpressionType = (
       };
     }
     case 'LambdaExpression': {
-      const newType = getExpressionFixedType(expression, null) as FunctionType;
+      const newType = getExpressionFixedType(expression, expectedType) as FunctionType;
       return {
         ...expression,
         type: newType,

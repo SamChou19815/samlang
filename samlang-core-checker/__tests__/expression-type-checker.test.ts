@@ -413,7 +413,7 @@ describe('expression-type-checker', () => {
     assertTypeChecks('Builtins.panic("")', tupleType([int, bool]));
 
     assertTypeErrors('Builtins.panic(3)', unit, [
-      'Test.sam:1:1-1:15: [UnexpectedType]: Expected: `(int) -> unit`, actual: `(string) -> __UNDECIDED__`.',
+      'Test.sam:1:16-1:17: [UnexpectedType]: Expected: `string`, actual: `int`.',
     ]);
   });
 
@@ -424,27 +424,28 @@ describe('expression-type-checker', () => {
 
     assertTypeErrors('3(3)', unit, [
       'Test.sam:1:1-1:2: [UnexpectedTypeKind]: Expected kind: `function`, actual: `int`.',
-      'Test.sam:1:1-1:2: [UnexpectedType]: Expected: `(int) -> unit`, actual: `int`.',
+      'Test.sam:1:1-1:2: [UnexpectedType]: Expected: `(__UNDECIDED__) -> unit`, actual: `int`.',
     ]);
 
     assertTypeErrors('Test.helloWorld(3)', unit, [
-      'Test.sam:1:1-1:16: [UnexpectedType]: Expected: `(int) -> unit`, actual: `(string) -> unit`.',
+      'Test.sam:1:17-1:18: [UnexpectedType]: Expected: `string`, actual: `int`.',
     ]);
     assertTypeErrors('{foo:true,bar:3}.baz({})', bool, [
-      'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `(unit) -> bool`, actual: `(int) -> bool`.',
+      'Test.sam:1:22-1:24: [UnexpectedType]: Expected: `int`, actual: `unit`.',
     ]);
     assertTypeErrors('((i: int) -> true)({})', bool, [
-      'Test.sam:1:2-1:18: [UnexpectedType]: Expected: `(unit) -> bool`, actual: `(int) -> bool`.',
+      'Test.sam:1:20-1:22: [UnexpectedType]: Expected: `int`, actual: `unit`.',
     ]);
 
     assertTypeErrors('Test.helloWorld("")', bool, [
-      'Test.sam:1:1-1:16: [UnexpectedType]: Expected: `(string) -> bool`, actual: `(string) -> unit`.',
+      'Test.sam:1:1-1:16: [UnexpectedType]: Expected: `(__UNDECIDED__) -> bool`, actual: `(string) -> unit`.',
     ]);
     assertTypeErrors('{foo:true,bar:3}.baz(3)', int, [
-      'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `(int) -> int`, actual: `(int) -> bool`.',
+      'Test.sam:1:1-1:21: [UnexpectedType]: Expected: `(__UNDECIDED__) -> int`, actual: `(int) -> bool`.',
     ]);
     assertTypeErrors('((i) -> true)(3)', int, [
-      'Test.sam:1:2-1:13: [UnexpectedType]: Expected: `(int) -> int`, actual: `(__UNDECIDED__) -> bool`.',
+      'Test.sam:1:2-1:13: [UnexpectedType]: Expected: `(__UNDECIDED__) -> int`, actual: `(__UNDECIDED__) -> bool`.',
+      'Test.sam:1:2-1:13: [UnexpectedType]: Expected: `(__UNDECIDED__) -> int`, actual: `(__UNDECIDED__) -> bool`.',
     ]);
   });
 
