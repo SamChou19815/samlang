@@ -10,6 +10,7 @@ import {
   identifierType,
   tupleType,
   functionType,
+  UndecidedTypes,
 } from 'samlang-core-ast/common-nodes';
 import {
   SamlangExpression,
@@ -498,15 +499,22 @@ class ExpressionTypeChecker {
     expression: FunctionCallExpression,
     expectedType: Type
   ): SamlangExpression {
-    const checkedArguments = expression.functionArguments.map(this.basicTypeCheck);
     const expectedTypeForFunction = functionType(
-      checkedArguments.map((it) => it.type),
+      UndecidedTypes.nextN(expression.functionArguments.length),
       expectedType
     );
     const checkedFunctionExpression = this.typeCheck(
       expression.functionExpression,
       expectedTypeForFunction
     );
+    const moreRefinedCheckedFunctionType =
+      checkedFunctionExpression.type.type === 'FunctionType'
+        ? checkedFunctionExpression.type
+        : expectedTypeForFunction;
+    const checkedArguments = zip(
+      expression.functionArguments,
+      moreRefinedCheckedFunctionType.argumentTypes
+    ).map(([e, t]) => this.typeCheck(e, t));
     if (checkedFunctionExpression.type.type !== 'FunctionType') {
       this.errorCollector.reportUnexpectedTypeKindError(
         expression.functionExpression.range,
@@ -515,17 +523,11 @@ class ExpressionTypeChecker {
       );
       return { ...expression, type: expectedType, functionExpression: checkedFunctionExpression };
     }
-    const { argumentTypes: locallyInferredArgumentTypes, returnType: locallyInferredReturnType } =
-      checkedFunctionExpression.type;
+    const { returnType: locallyInferredReturnType } = moreRefinedCheckedFunctionType;
     const constraintInferredType = this.constraintAwareTypeChecker.checkAndInfer(
       expectedType,
       locallyInferredReturnType,
       expression.range
-    );
-    zip(checkedArguments, locallyInferredArgumentTypes).forEach(
-      ([{ type, range }, locallyInferredArgumentType]) => {
-        this.constraintAwareTypeChecker.checkAndInfer(type, locallyInferredArgumentType, range);
-      }
     );
     return EXPRESSION_FUNCTION_CALL({
       range: expression.range,
@@ -692,6 +694,11 @@ class ExpressionTypeChecker {
   private typeCheckLambda(expression: LambdaExpression, expectedType: Type): SamlangExpression {
     const [checkedBody, captured] = this.localTypingContext.withNestedScopeReturnCaptured(() => {
       // Validate parameters and add them to local context.
+      this.constraintAwareTypeChecker.checkAndInfer(
+        expectedType,
+        expression.type,
+        expression.range
+      );
       expression.parameters.forEach(([parameterName, , parameterType]) => {
         validateType(
           parameterType,
