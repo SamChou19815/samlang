@@ -705,7 +705,7 @@ export default class SamlangModuleParser extends BaseParser {
 
     if (peeked.content === '!') {
       this.consume();
-      const expression = this.parseBaseExpression();
+      const expression = this.parseFunctionCallOrFieldAccess();
       return EXPRESSION_UNARY({
         range: peeked.range.union(expression.range),
         type: boolType,
@@ -716,7 +716,7 @@ export default class SamlangModuleParser extends BaseParser {
     }
     if (peeked.content === '-') {
       this.consume();
-      const expression = this.parseBaseExpression();
+      const expression = this.parseFunctionCallOrFieldAccess();
       return EXPRESSION_UNARY({
         range: peeked.range.union(expression.range),
         type: intType,

@@ -396,7 +396,7 @@ export const EXPRESSION_FUNCTION_CALL = ({
   __type__: 'FunctionCallExpression',
   range,
   type,
-  precedence: 4,
+  precedence: 2,
   associatedComments,
   functionExpression,
   functionArguments,
