@@ -1,29 +1,20 @@
-#./out/Tests.AllTests
 ========================================
-Test Name: PrintHelloWorld
-Hello World!
+Test Name: AndOrInsideIf
 ========================================
-Test Name: MathFunctions
+Test Name: Benchmark
 ========================================
-Test Name: LoopOptimization
-100
-106
-112
-118
-124
+Test Name: BlockInIfElse
 ========================================
-Test Name: IntToString
-0
-1
-123
-1234567
-2147483647
--1
--123
--1234567
--2147483648
+Test Name: ConstantFoldingTest
 ========================================
-Test Name: GC
+Test Name: CSETest
+========================================
+Test Name: DevMeggo
+devmeggovibez
+========================================
+Test Name: DifferentExpressionDemo
+========================================
+Test Name: DifferentModulesDemo
 ========================================
 Test Name: EvaluationOrder
 0
@@ -37,20 +28,28 @@ Test Name: EvaluationOrder
 8
 9
 ========================================
-Test Name: DifferentModulesDemo
+Test Name: GC
 ========================================
-Test Name: DifferentExpressionDemo
+Test Name: IntToString
+0
+1
+123
+1234567
+2147483647
+-1
+-123
+-1234567
+-2147483648
 ========================================
-Test Name: DevMeggo
-devmeggovibez
+Test Name: LoopOptimization
+100
+106
+112
+118
+124
 ========================================
-Test Name: CSETest
+Test Name: MathFunctions
 ========================================
-Test Name: ConstantFoldingTest
-========================================
-Test Name: BlockInIfElse
-========================================
-Test Name: Benchmark
-========================================
-Test Name: AndOrInsideIf
+Test Name: PrintHelloWorld
+Hello World!
 ========================================

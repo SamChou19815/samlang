@@ -24,6 +24,17 @@ class List<T>(Nil(unit), Cons([T * List<T>])) {
       }
     }
 
+  private method reverseWithAccumulator(acc: List<T>): List<T> =
+    match (this) {
+      | Nil _ -> acc
+      | Cons tuple -> {
+        val [v, rest] = tuple;
+        rest.reverseWithAccumulator(Cons([v, acc]))
+      }
+    }
+
+  method reverse(): List<T> = this.reverseWithAccumulator(Nil({  }))
+
 }
 
 class ForTests {
