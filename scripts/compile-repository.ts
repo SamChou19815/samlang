@@ -24,58 +24,6 @@ const runWithErrorCheck = (command: string, args: readonly string[] = []) => {
 
 const basePath = './out';
 
-const getX86Programs = () => {
-  const programs = [];
-  fs.readdirSync(basePath).forEach((filename) => {
-    if (filename.startsWith('Tests') && path.extname(filename) !== '.ll') {
-      const fullRelativePath = `${basePath}/${filename}`;
-      try {
-        fs.accessSync(fullRelativePath, fs.constants.X_OK);
-        programs.push(fullRelativePath);
-      } catch (_) {
-        // Do nothing
-      }
-    }
-  });
-  programs.sort((a, b) => a.localeCompare(b));
-  return programs;
-};
-
-const getJSPrograms = () => {
-  const programs = [];
-  fs.readdirSync(basePath).forEach((filename) => {
-    if (filename.startsWith('Tests') && path.extname(filename) === '.js') {
-      programs.push(`${basePath}/${filename}`);
-    }
-  });
-  programs.sort((a, b) => a.localeCompare(b));
-  return programs;
-};
-
-const interpretPrograms = (programs: readonly string[]) => {
-  let totalTime = 0;
-  const result = programs
-    .map((program) => {
-      const { resultString, time } = runWithErrorCheck(program);
-      totalTime += time;
-      return `#${program}\n${resultString}`;
-    })
-    .join('\n');
-  return { result, totalTime };
-};
-
-const interpretJSPrograms = (programs: readonly string[]) => {
-  let totalTime = 0;
-  const result = programs
-    .map((program) => {
-      const { resultString, time } = runWithErrorCheck('node', [program]);
-      totalTime += time;
-      return `#${program.substring(0, program.length - 3)}\n${resultString}`;
-    })
-    .join('\n');
-  return { result, totalTime };
-};
-
 const compare = (expected: string, actual: string) => {
   if (expected === actual) {
     return true;
@@ -94,23 +42,18 @@ runWithErrorCheck('./samlang-cli/bin/index.js', ['compile']);
 console.error('Compiled!');
 if (!process.env.NO_JS) {
   console.error('Checking generated JS code...');
-  const { result: jsProgramResult, totalTime: jsTotalTime } = interpretJSPrograms(getJSPrograms());
-  if (!compare(read('./scripts/snapshot.txt'), jsProgramResult)) {
-    process.exit(1);
-  }
-  console.error('Generated JS code is good.');
-  console.error(`Generated JS code takes ${jsTotalTime}ms to run.`);
+  const { resultString, time } = runWithErrorCheck('node', [
+    path.join(basePath, 'Tests.AllTests.js'),
+  ]);
+  if (!compare(read('./scripts/snapshot.txt'), resultString)) process.exit(1);
+  console.error(`Generated JS code is good and takes ${time}ms to run.`);
 }
-if (spawnSync('llc', ['--help'], { shell: true, stdio: 'pipe' }).status === 0) {
-  const { result: nativeProgramResult, totalTime: nativeTotalTime } = interpretPrograms(
-    getX86Programs()
-  );
+if (
+  !process.env.NO_LLVM &&
+  spawnSync('llc', ['--help'], { shell: true, stdio: 'pipe' }).status === 0
+) {
+  const { resultString, time } = runWithErrorCheck(path.join(basePath, 'Tests.AllTests'));
   console.error('Checking generated machine code...');
-  if (!compare(read('./scripts/snapshot.txt'), nativeProgramResult)) {
-    process.exit(1);
-  }
-  console.error('Generated machine code is good.');
-  console.error(`Generated machine code takes ${nativeTotalTime}ms to run.`);
-} else {
-  console.log('No LLVM toolchain installation. Skipping LLVM IR verification.');
+  if (!compare(read('./scripts/snapshot.txt'), resultString)) process.exit(1);
+  console.error(`Generated machine code is good and takes ${time}ms to run.`);
 }

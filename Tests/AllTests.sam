@@ -40,7 +40,7 @@ class Main {
       TestCase.of("LoopOptimization", LoopOptimization.run)
     ).cons(TestCase.of("MathFunctions", MathFunctions.run)).cons(
       TestCase.of("PrintHelloWorld", PrintHelloWorld.run)
-    )
+    ).reverse()
 
   function main(): unit = {
     val _ = Main.getTests().iter((test) -> test.run());
