@@ -275,7 +275,7 @@ export const EXPRESSION_CLASS_MEMBER = ({
   __type__: 'ClassMemberExpression',
   range,
   type,
-  precedence: 0,
+  precedence: 1,
   associatedComments,
   typeArguments,
   moduleReference,

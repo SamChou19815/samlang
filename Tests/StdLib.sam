@@ -1,0 +1,39 @@
+class List<T>(Nil(unit), Cons([T * List<T>])) {
+  function <T> nil(): List<T> = Nil({  })
+
+  function <T> of(t: T): List<T> = Cons([t, Nil({  })])
+
+  method cons(t: T): List<T> = Cons([t, this])
+
+  method <R> map(f: (T) -> R): List<R> =
+    match (this) {
+      | Nil _ -> Nil({  })
+      | Cons tuple -> {
+        val [v, rest] = tuple;
+        Cons([f(v), rest.map(f)])
+      }
+    }
+
+  method iter(f: (T) -> unit): unit =
+    match (this) {
+      | Nil _ -> {  }
+      | Cons tuple -> {
+        val [v, rest] = tuple;
+        val _ = f(v);
+        rest.iter(f)
+      }
+    }
+
+}
+
+class ForTests {
+  function printlnInt(n: int): unit = Builtins.println(Builtins.intToString(n))
+
+  function boolToString(b: bool): string = if (b) then "true" else "false"
+
+  function assertIntEquals(expected: int, actual: int): unit =
+    if (actual == expected) then {  } else Builtins.panic(
+      "Actual: " :: Builtins.intToString(actual) :: ", expected: " :: Builtins.intToString(expected)
+    )
+
+}

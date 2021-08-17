@@ -1,0 +1,46 @@
+import { ForTests } from Tests.StdLib
+
+class ConstantFoldingTest {
+  function testI(acc: int, i: int): int =
+    // i >= 30
+    if (
+      i >= 30 + 100 / 100 - 2000 * 2000 / (10 * 10 * 10 * 4000)
+    ) then acc else ConstantFoldingTest.testI(ConstantFoldingTest.testJ(acc, 0), i + 1)
+
+  function testJ(acc: int, j: int): int =
+    // j >= 10
+    if (j >= 10 + 100 * 99 * 98 * 97 * 0) then acc else ConstantFoldingTest.testJ(
+      acc + /* 1156 */ 34 * 34 + 4 + 1 + /* 43 */ 1231 / 28,
+      /* j */ j /* plus */ + 1
+    )
+
+  function test2(acc: int, i: int): int =
+    if (i >= 10 * 10 * 2) then acc else {
+      val increase: int = 1 + 2 * 3 - 4 / 5 % 10000000 / 12334 + (
+        1 + 2 * 3 - 4 / 5 % 10000000 / 12334
+      ) + (1 + 2 * 3 - 4 / 5 % 10000000 / 12334) + (1 + 2 * 3 - 4 / 5 % 10000000 / 12334) + (
+        1 + 2 * 3 - 4 / 5 % 10000000 / 12334
+      );
+      ConstantFoldingTest.test2(acc + increase, i + 1)
+    }
+
+  function test3(acc: int, i: int): int =
+    if (i >= 10 * 10 * 2) then acc else {
+      ConstantFoldingTest.test3(acc + 1 + 2 * 3 - 4 / 5 % 10000000 / 1234, i + 1)
+    }
+
+  function run(): unit = {
+    val _ = // string -> terminal
+    ForTests.assertIntEquals(
+      /* expected */ 361200,
+      ConstantFoldingTest
+      /* a */
+      /* b */
+      // c
+      .testI(0, 0)
+    );
+    val _ = ForTests.assertIntEquals(7000, ConstantFoldingTest.test2(0, 0));
+    val _ = ForTests.assertIntEquals(1400, ConstantFoldingTest.test3(0, 0));
+  }
+
+}

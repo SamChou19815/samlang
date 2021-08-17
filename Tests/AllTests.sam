@@ -1,0 +1,50 @@
+import { List } from Tests.StdLib
+import { AndOrInsideIf } from Tests.AndOrInsideIf
+import { Benchmark } from Tests.Benchmark
+import { BlockInIfElse } from Tests.BlockInIfElse
+import { ConstantFoldingTest } from Tests.ConstantFoldingTest
+import { DevMeggo } from Tests.DevMeggo
+import { CSETest } from Tests.CSETest
+import { DifferentExpressionDemo } from Tests.DifferentExpressionDemo
+import { DifferentModulesDemo } from Tests.DifferentModulesDemo
+import { EvaluationOrder } from Tests.EvaluationOrder
+import { GC } from Tests.GC
+import { IntToString } from Tests.IntToString
+import { LoopOptimization } from Tests.LoopOptimization
+import { MathFunctions } from Tests.MathFunctions
+import { PrintHelloWorld } from Tests.PrintHelloWorld
+
+class TestCase(val name: string, val runner: () -> unit) {
+  function of(name: string, runner: () -> unit): TestCase = { name, runner }
+
+  method run(): unit = {
+    val { name, runner } = this;
+    val _ = Builtins.println("========================================");
+    val _ = Builtins.println("Test Name: " :: name);
+    val _ = runner();
+  }
+
+}
+
+class Main {
+  private function getTests(): List<TestCase> =
+    List.of(TestCase.of("AndOrInsideIf", AndOrInsideIf.run)).cons(
+      TestCase.of("Benchmark", Benchmark.run)
+    ).cons(TestCase.of("BlockInIfElse", BlockInIfElse.run)).cons(
+      TestCase.of("ConstantFoldingTest", ConstantFoldingTest.run)
+    ).cons(TestCase.of("CSETest", CSETest.run)).cons(TestCase.of("DevMeggo", DevMeggo.run)).cons(
+      TestCase.of("DifferentExpressionDemo", DifferentExpressionDemo.run)
+    ).cons(TestCase.of("DifferentModulesDemo", DifferentModulesDemo.run)).cons(
+      TestCase.of("EvaluationOrder", EvaluationOrder.run)
+    ).cons(TestCase.of("GC", GC.run)).cons(TestCase.of("IntToString", IntToString.run)).cons(
+      TestCase.of("LoopOptimization", LoopOptimization.run)
+    ).cons(TestCase.of("MathFunctions", MathFunctions.run)).cons(
+      TestCase.of("PrintHelloWorld", PrintHelloWorld.run)
+    )
+
+  function main(): unit = {
+    val _ = Main.getTests().iter((test) -> test.run());
+    Builtins.println("========================================")
+  }
+
+}

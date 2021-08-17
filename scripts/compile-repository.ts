@@ -27,7 +27,7 @@ const basePath = './out';
 const getX86Programs = () => {
   const programs = [];
   fs.readdirSync(basePath).forEach((filename) => {
-    if (filename.startsWith('test') && path.extname(filename) !== '.ll') {
+    if (filename.startsWith('Tests') && path.extname(filename) !== '.ll') {
       const fullRelativePath = `${basePath}/${filename}`;
       try {
         fs.accessSync(fullRelativePath, fs.constants.X_OK);
@@ -44,7 +44,7 @@ const getX86Programs = () => {
 const getJSPrograms = () => {
   const programs = [];
   fs.readdirSync(basePath).forEach((filename) => {
-    if (filename.startsWith('test') && path.extname(filename) === '.js') {
+    if (filename.startsWith('Tests') && path.extname(filename) === '.js') {
       programs.push(`${basePath}/${filename}`);
     }
   });
@@ -89,6 +89,7 @@ console.error('Bundling...');
 runWithErrorCheck('yarn', ['workspace', '@dev-sam/samlang-cli', 'bundle']);
 console.error('Bundled!');
 console.error('Compiling...');
+runWithErrorCheck('rm', ['-rf', basePath]);
 runWithErrorCheck('./samlang-cli/bin/index.js', ['compile']);
 console.error('Compiled!');
 if (!process.env.NO_JS) {

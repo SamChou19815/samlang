@@ -1,9 +1,6 @@
-class Math {
-  function plus(a: int, b: int): int = a + b
+import { ForTests } from Tests.StdLib
 
-  function cosine(angleInDegree: int): int = Builtins.panic("Not supported!")
-
-}
+class Math { function plus(a: int, b: int): int = a + b  }
 
 class Student(val name: string, val age: int) {
   method getName(): string = this.name
@@ -45,44 +42,34 @@ class Option<T>(None(unit), Some(T)) {
 
   function <T> getSome(d: T): Option<T> = Some(d)
 
-  method forceValue(): T = match (this) { | None _ -> Builtins.panic("Ah") | Some v -> v }
+  method forceValue(): T =
+    match (this) {
+      | None _ -> Builtins.panic("Trying to get value from Option.None")
+      | Some v -> v
+    }
 
   method <R> map(f: (T) -> R): Option<R> =
     match (this) { | None _ -> None({  }) | Some d -> Some(f(d)) }
 
 }
 
-class Main {
+class DifferentModulesDemo {
   private function assertTrue(condition: bool, message: string): unit =
     if (condition) then {  } else Builtins.panic(message)
 
   private function assertFalse(condition: bool, message: string): unit =
     if (!condition) then {  } else Builtins.panic(message)
 
-  private function assertEquals(e1: int, e2: int, message: string): unit =
-    if (e1 == e2) then {  } else Builtins.panic(
-      Builtins.intToString(e1) :: " " :: Builtins.intToString(e2) :: " " :: message
-    )
-
-  private function consistencyTest(): unit = {
-    val _: unit = Main.assertEquals(
-      ((Option.getSome(3)).map((i: int) -> i + 1)).forceValue(),
-      4,
-      "Ah1"
-    );
-    val _: unit = Main.assertEquals((Box.init(42)).getContent(), 42, "Ah2");
-    val _: unit = Main.assertEquals((FunctionExample.getIdentityFunction())(42), 42, "Ah3");
-    val _: unit = Main.assertEquals((Student.dummyStudent()).getAge(), 0, "Ah4");
-    val _: unit = Main.assertEquals(Math.plus(2, 2), 4, "Ah5");
-    val _: unit = Main.assertFalse((PrimitiveType.getUnit()).isTruthy(), "Ah6");
-    val _: unit = Main.assertTrue((PrimitiveType.getInteger()).isTruthy(), "Ah7");
-    val _: unit = Main.assertTrue((PrimitiveType.getString()).isTruthy(), "Ah8");
-    val _: unit = Main.assertFalse((PrimitiveType.getBool()).isTruthy(), "Ah9");
-  }
-
-  function main(): unit = {
-    val _: unit = Main.consistencyTest();
-    Builtins.println("OK")
+  function run(): unit = {
+    val _ = ForTests.assertIntEquals(Option.getSome(3).map((i: int) -> i + 1).forceValue(), 4);
+    val _ = ForTests.assertIntEquals(Box.init(42).getContent(), 42);
+    val _ = ForTests.assertIntEquals(FunctionExample.getIdentityFunction()(42), 42);
+    val _ = ForTests.assertIntEquals(Student.dummyStudent().getAge(), 0);
+    val _ = ForTests.assertIntEquals(Math.plus(2, 2), 4);
+    val _ = DifferentModulesDemo.assertFalse(PrimitiveType.getUnit().isTruthy(), "Ah6");
+    val _ = DifferentModulesDemo.assertTrue(PrimitiveType.getInteger().isTruthy(), "Ah7");
+    val _ = DifferentModulesDemo.assertTrue(PrimitiveType.getString().isTruthy(), "Ah8");
+    val _ = DifferentModulesDemo.assertFalse(PrimitiveType.getBool().isTruthy(), "Ah9");
   }
 
 }

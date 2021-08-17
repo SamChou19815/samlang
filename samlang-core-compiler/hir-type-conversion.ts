@@ -123,6 +123,7 @@ export const solveTypeArguments = (
 ): readonly HighIRType[] => {
   const genericTypeParameterSet = new Set(genericTypeParameters);
   const solved = new Map<string, HighIRType>();
+  const encountered = new Set<string>();
 
   const solve = (t1: HighIRType, t2: HighIRType): void => {
     switch (t1.__type__) {
@@ -135,6 +136,8 @@ export const solveTypeArguments = (
           solved.set(t1.name, t2);
           return;
         }
+        if (encountered.has(t1.name)) return;
+        encountered.add(t1.name);
         assert(t2.__type__ === 'IdentifierType', `t2 has type ${t2.__type__}`);
         if (t1.name === t2.name) {
           // Things might already been specialized.
