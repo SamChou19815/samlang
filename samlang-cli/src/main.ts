@@ -31,10 +31,12 @@ const format = () => {
   const sources = collectSources(getConfiguration());
   parseSources(sources, new Set(Object.keys(DEFAULT_BUILTIN_TYPING_CONTEXT))).forEach(
     ([moduleReference, samlangModule]) => {
-      {
-        console.error(`Formatting ${moduleReference.toFilename()}`);
-        writeFileSync(moduleReference.toFilename(), prettyPrintSamlangModule(100, samlangModule));
-      }
+      const start = new Date().getTime();
+      const filename = moduleReference.toFilename();
+      const newCode = prettyPrintSamlangModule(100, samlangModule);
+      const duration = new Date().getTime() - start;
+      writeFileSync(filename, newCode);
+      console.error(`Formatted ${filename} in ${duration}ms.`);
     }
   );
 };
