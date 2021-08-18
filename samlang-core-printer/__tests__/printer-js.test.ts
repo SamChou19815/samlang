@@ -6,7 +6,6 @@ import {
   ENCODED_FUNCTION_NAME_THROW,
 } from 'samlang-core-ast/common-names';
 import {
-  MidIRExpression,
   MidIRStatement,
   MidIRSources,
   MIR_BINARY,
@@ -25,22 +24,14 @@ import {
   MIR_INT_TYPE,
   MIR_STRING_TYPE,
   MIR_FUNCTION_TYPE,
-  MIR_BOOL_TYPE,
 } from 'samlang-core-ast/mir-nodes';
 
 import {
-  createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING,
   createPrettierDocumentFromMidIRStatement_EXPOSED_FOR_TESTING,
   createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING,
-  createPrettierDocumentForExportingModuleFromMidIRSources,
+  createPrettierDocumentsForExportingModuleFromMidIRSources,
 } from '../printer-js';
 import { prettyPrintAccordingToPrettierAlgorithm } from '../printer-prettier-core';
-
-const midIRExpressionToString = (e: MidIRExpression): string =>
-  prettyPrintAccordingToPrettierAlgorithm(
-    /* availableWidth */ 100,
-    createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(e)
-  ).trimEnd();
 
 const midIRStatementToString = (s: MidIRStatement): string =>
   prettyPrintAccordingToPrettierAlgorithm(
@@ -49,10 +40,10 @@ const midIRStatementToString = (s: MidIRStatement): string =>
   ).trimEnd();
 
 const midIRSourcesToJSString = (availableWidth: number, sources: MidIRSources): string =>
-  prettyPrintAccordingToPrettierAlgorithm(
-    availableWidth,
-    createPrettierDocumentForExportingModuleFromMidIRSources(sources)
-  ).trimEnd();
+  createPrettierDocumentsForExportingModuleFromMidIRSources(sources)
+    .map((doc) => prettyPrintAccordingToPrettierAlgorithm(availableWidth, doc))
+    .join('')
+    .trim();
 
 describe('printer-js', () => {
   it('compile hello world to JS integration test', () => {
@@ -102,27 +93,19 @@ describe('printer-js', () => {
       ],
     };
     expect(midIRSourcesToJSString(100, sources)).toBe(
-      `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => console.log(line);
-const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => parseInt(v, 10);
-const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
-const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
-
-const h = "Hello ";
+      `const h = "Hello ";
 const w = "World!";
 const f1 = "\\"foo";
 const f2 = "'foo";
-const _module_Test_class_Main_function_main = () => {
+function _module_Test_class_Main_function_main() {
   let _t0 = _builtin_stringConcat(h, w);
   let _t1 = _builtin_println(_t0);
   return 0;
-};
-const _compiled_program_main = () => {
+}
+function _compiled_program_main() {
   _module_Test_class_Main_function_main();
   return 0;
-};
-
-module.exports = {  };`
+}`
     );
   });
 
@@ -356,7 +339,7 @@ while (true) {
             MIR_CAST({
               name: 'foo',
               type: MIR_INT_TYPE,
-              assignedExpression: MIR_VARIABLE('dev', MIR_INT_TYPE),
+              assignedExpression: MIR_NAME('dev', MIR_INT_TYPE),
             }),
             MIR_SINGLE_IF({
               booleanExpression: MIR_ZERO,
@@ -406,10 +389,10 @@ while (true) {
           returnValue: MIR_ZERO,
         })
       )
-    ).toBe(`const baz = (d, t, i) => {
+    ).toBe(`function baz(d, t, i) {
   let b = 1857;
   return 0;
-};
+}
 `);
   });
 
@@ -425,57 +408,20 @@ while (true) {
           returnValue: MIR_INT(42),
         })
       )
-    ).toBe(`const baz = (d, t, i) => {
+    ).toBe(`function baz(d, t, i) {
   return 42;
-};
+}
 `);
   });
 
-  it('MIR expression to JS string test', () => {
-    expect(midIRExpressionToString(MIR_INT(1305))).toBe('1305');
-    expect(midIRExpressionToString(MIR_VARIABLE('ts', MIR_INT_TYPE))).toBe('ts');
-    expect(midIRExpressionToString(MIR_NAME('key', MIR_INT_TYPE))).toBe('key');
-  });
-
-  it('createPrettierDocumentForExportingModuleFromMidIRSources works', () => {
+  it('midIRSourcesToJSString works', () => {
     expect(
-      prettyPrintAccordingToPrettierAlgorithm(
-        80,
-        createPrettierDocumentForExportingModuleFromMidIRSources({
-          globalVariables: [],
-          typeDefinitions: [],
-          mainFunctionNames: ['foo', 'bar'],
-          functions: [],
-        })
-      )
-    ).toBe(`const _builtin_stringConcat = (a, b) => a + b;
-const __Builtins_println = (line) => console.log(line);
-const __Builtins_stringToInt = (v) => parseInt(v, 10);
-const __Builtins_intToString = (v) => String(v);
-const __Builtins_panic = (v) => { throw Error(v); };
-
-
-module.exports = { foo, bar };
-`);
-
-    expect(
-      prettyPrintAccordingToPrettierAlgorithm(
-        10,
-        createPrettierDocumentForExportingModuleFromMidIRSources({
-          globalVariables: [],
-          typeDefinitions: [],
-          mainFunctionNames: ['foo', 'bar'],
-          functions: [],
-        })
-      )
-    ).toBe(`const _builtin_stringConcat = (a, b) => a + b;
-const __Builtins_println = (line) => console.log(line);
-const __Builtins_stringToInt = (v) => parseInt(v, 10);
-const __Builtins_intToString = (v) => String(v);
-const __Builtins_panic = (v) => { throw Error(v); };
-
-
-module.exports = { foo, bar };
-`);
+      midIRSourcesToJSString(80, {
+        globalVariables: [],
+        typeDefinitions: [],
+        mainFunctionNames: [],
+        functions: [],
+      })
+    ).toBe('');
   });
 });

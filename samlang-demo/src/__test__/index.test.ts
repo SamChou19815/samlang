@@ -12,12 +12,11 @@ const __Builtins_println = (line) => console.log(line);
 const __Builtins_stringToInt = (v) => parseInt(v, 10);
 const __Builtins_intToString = (v) => String(v);
 const __Builtins_panic = (v) => { throw Error(v); };
-
 const GLOBAL_STRING_0 = "hello world";
-const _Demo_Main_main = () => {
+function _Demo_Main_main() {
   __Builtins_println(GLOBAL_STRING_0);
   return 0;
-};
+}
 
 module.exports = { _Demo_Main_main };`,
       llvmString: `declare i32* @_builtin_malloc(i32) nounwind
@@ -48,7 +47,6 @@ const __Builtins_println = (line) => console.log(line);
 const __Builtins_stringToInt = (v) => parseInt(v, 10);
 const __Builtins_intToString = (v) => String(v);
 const __Builtins_panic = (v) => { throw Error(v); };
-
 
 module.exports = {  };`,
       llvmString: `declare i32* @_builtin_malloc(i32) nounwind

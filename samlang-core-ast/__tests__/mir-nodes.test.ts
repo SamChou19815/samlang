@@ -1,6 +1,7 @@
 import {
   prettyPrintMidIRType,
   isTheSameMidIRType,
+  prettyPrintMidIRExpressionAsJSExpression,
   debugPrintMidIRStatement,
   debugPrintMidIRSources,
   MIR_FUNCTION_CALL,
@@ -34,6 +35,12 @@ describe('mir-nodes', () => {
         )
       )
     ).toBe('(int, int) -> (Foo, any) -> string');
+  });
+
+  it('prettyPrintMidIRExpressionAsJSExpression works', () => {
+    expect(prettyPrintMidIRExpressionAsJSExpression(MIR_ZERO)).toBe('0');
+    expect(prettyPrintMidIRExpressionAsJSExpression(MIR_NAME('a', MIR_STRING_TYPE))).toBe('a');
+    expect(prettyPrintMidIRExpressionAsJSExpression(MIR_VARIABLE('a', MIR_STRING_TYPE))).toBe('a');
   });
 
   it('isTheSameMidIRType works', () => {

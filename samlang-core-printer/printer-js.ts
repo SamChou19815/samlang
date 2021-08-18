@@ -1,16 +1,8 @@
 import {
-  ENCODED_FUNCTION_NAME_INT_TO_STRING,
-  ENCODED_FUNCTION_NAME_PRINTLN,
-  ENCODED_FUNCTION_NAME_STRING_TO_INT,
-  ENCODED_FUNCTION_NAME_STRING_CONCAT,
-  ENCODED_FUNCTION_NAME_THROW,
-  ENCODED_COMPILED_PROGRAM_MAIN,
-} from 'samlang-core-ast/common-names';
-import type {
   MidIRStatement,
-  MidIRExpression,
   MidIRFunction,
   MidIRSources,
+  prettyPrintMidIRExpressionAsJSExpression,
 } from 'samlang-core-ast/mir-nodes';
 
 import {
@@ -20,27 +12,7 @@ import {
   PRETTIER_LINE,
   PRETTIER_NIL,
 } from './printer-prettier-core';
-import {
-  createCommaSeparatedList,
-  createParenthesisSurroundedDocument,
-  createBracketSurroundedDocument,
-  createBracesSurroundedBlockDocument,
-} from './printer-prettier-library';
-
-// Thanks https://gist.github.com/getify/3667624
-const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
-
-export function createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(
-  midIRExpression: MidIRExpression
-): PrettierDocument {
-  switch (midIRExpression.__type__) {
-    case 'MidIRIntLiteralExpression':
-      return PRETTIER_TEXT(String(midIRExpression.value));
-    case 'MidIRVariableExpression':
-    case 'MidIRNameExpression':
-      return PRETTIER_TEXT(midIRExpression.name);
-  }
-}
+import { createBracesSurroundedBlockDocument } from './printer-prettier-library';
 
 class WhileLabelManager {
   private stack: (string | undefined)[] = [];
@@ -71,53 +43,33 @@ export function createPrettierDocumentFromMidIRStatement(
 ): PrettierDocument {
   switch (midIRStatement.__type__) {
     case 'MidIRIndexAccessStatement': {
-      const { pointerExpression, index } = midIRStatement;
-      const subExpressionDocument =
-        createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(pointerExpression);
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`let ${midIRStatement.name} = `),
-        subExpressionDocument,
-        PRETTIER_TEXT(`[${index}];`)
+      const pointerString = prettyPrintMidIRExpressionAsJSExpression(
+        midIRStatement.pointerExpression
+      );
+      return PRETTIER_TEXT(
+        `let ${midIRStatement.name} = ${pointerString}[${midIRStatement.index}];`
       );
     }
     case 'MidIRBinaryStatement': {
-      const { e1, e2, operator } = midIRStatement;
-      const binaryExpressionDocument = PRETTIER_CONCAT(
-        createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(e1),
-        PRETTIER_TEXT(` ${operator} `),
-        createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(e2)
-      );
+      const e1 = prettyPrintMidIRExpressionAsJSExpression(midIRStatement.e1);
+      const e2 = prettyPrintMidIRExpressionAsJSExpression(midIRStatement.e2);
+      const binaryExpressionString = `${e1} ${midIRStatement.operator} ${e2}`;
       const wrapped =
-        operator === '/'
-          ? PRETTIER_CONCAT(
-              PRETTIER_TEXT('Math.floor'),
-              createParenthesisSurroundedDocument(binaryExpressionDocument)
-            )
-          : binaryExpressionDocument;
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`let ${midIRStatement.name} = `),
-        wrapped,
-        PRETTIER_TEXT(';')
-      );
+        midIRStatement.operator === '/'
+          ? `Math.floor(${binaryExpressionString})`
+          : binaryExpressionString;
+      return PRETTIER_TEXT(`let ${midIRStatement.name} = ${wrapped};`);
     }
     case 'MidIRFunctionCallStatement': {
-      const segments: PrettierDocument[] = [];
-      if (midIRStatement.returnCollector != null) {
-        segments.push(PRETTIER_TEXT(`let ${midIRStatement.returnCollector} = `));
-      }
-      segments.push(
-        createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(
-          midIRStatement.functionExpression
-        ),
-        createParenthesisSurroundedDocument(
-          createCommaSeparatedList(
-            midIRStatement.functionArguments,
-            createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING
-          )
-        ),
-        PRETTIER_TEXT(';')
+      const functionExpression = prettyPrintMidIRExpressionAsJSExpression(
+        midIRStatement.functionExpression
       );
-      return PRETTIER_CONCAT(...segments);
+      const functionArguments = midIRStatement.functionArguments
+        .map(prettyPrintMidIRExpressionAsJSExpression)
+        .join(', ');
+      const functionCallString = `${functionExpression}(${functionArguments});`;
+      if (midIRStatement.returnCollector == null) return PRETTIER_TEXT(functionCallString);
+      return PRETTIER_TEXT(`let ${midIRStatement.returnCollector} = ${functionCallString}`);
     }
     case 'MidIRIfElseStatement':
       return PRETTIER_CONCAT(
@@ -125,20 +77,16 @@ export function createPrettierDocumentFromMidIRStatement(
           PRETTIER_TEXT(`let ${final.name};`),
           PRETTIER_LINE,
         ]),
-        PRETTIER_TEXT('if '),
-        createParenthesisSurroundedDocument(
-          createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(
-            midIRStatement.booleanExpression
-          )
+        PRETTIER_TEXT(
+          `if (${prettyPrintMidIRExpressionAsJSExpression(midIRStatement.booleanExpression)}) `
         ),
-        PRETTIER_TEXT(' '),
         createBracesSurroundedBlockDocument([
           ...concatStatements(midIRStatement.s1, manager),
           ...midIRStatement.finalAssignments.flatMap((final) => [
             PRETTIER_LINE,
-            PRETTIER_TEXT(`${final.name} = `),
-            createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(final.branch1Value),
-            PRETTIER_TEXT(';'),
+            PRETTIER_TEXT(
+              `${final.name} = ${prettyPrintMidIRExpressionAsJSExpression(final.branch1Value)};`
+            ),
           ]),
         ]),
         PRETTIER_TEXT(' else '),
@@ -146,45 +94,34 @@ export function createPrettierDocumentFromMidIRStatement(
           ...concatStatements(midIRStatement.s2, manager),
           ...midIRStatement.finalAssignments.flatMap((final) => [
             PRETTIER_LINE,
-            PRETTIER_TEXT(`${final.name} = `),
-            createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(final.branch2Value),
-            PRETTIER_TEXT(';'),
+            PRETTIER_TEXT(
+              `${final.name} = ${prettyPrintMidIRExpressionAsJSExpression(final.branch2Value)};`
+            ),
           ]),
         ])
       );
     case 'MidIRSingleIfStatement': {
-      const boolDocument = createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(
-        midIRStatement.booleanExpression
-      );
+      const boolString = prettyPrintMidIRExpressionAsJSExpression(midIRStatement.booleanExpression);
       return PRETTIER_CONCAT(
-        PRETTIER_TEXT('if '),
-        createParenthesisSurroundedDocument(
-          midIRStatement.invertCondition
-            ? PRETTIER_CONCAT(PRETTIER_TEXT('!'), boolDocument)
-            : boolDocument
-        ),
-        PRETTIER_TEXT(' '),
+        PRETTIER_TEXT(`if (${midIRStatement.invertCondition ? `!${boolString}` : boolString}) `),
         createBracesSurroundedBlockDocument(concatStatements(midIRStatement.statements, manager))
       );
     }
     case 'MidIRBreakStatement': {
       const breakCollector = manager.currentBreakCollector;
-      if (breakCollector == null) {
-        return PRETTIER_TEXT('break;');
-      }
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`${breakCollector} = `),
-        createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(midIRStatement.breakValue),
-        PRETTIER_TEXT('; break;')
-      );
+      if (breakCollector == null) return PRETTIER_TEXT('break;');
+      const breakValue = prettyPrintMidIRExpressionAsJSExpression(midIRStatement.breakValue);
+      return PRETTIER_TEXT(`${breakCollector} = ${breakValue}; break;`);
     }
     case 'MidIRWhileStatement': {
       const breakCollectorName = midIRStatement.breakCollector?.name;
       return PRETTIER_CONCAT(
         ...midIRStatement.loopVariables.flatMap((loopVariable) => [
-          PRETTIER_TEXT(`let ${loopVariable.name} = `),
-          createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(loopVariable.initialValue),
-          PRETTIER_TEXT(';'),
+          PRETTIER_TEXT(
+            `let ${loopVariable.name} = ${prettyPrintMidIRExpressionAsJSExpression(
+              loopVariable.initialValue
+            )};`
+          ),
           PRETTIER_LINE,
         ]),
         breakCollectorName != null
@@ -196,33 +133,26 @@ export function createPrettierDocumentFromMidIRStatement(
             ...concatStatements(midIRStatement.statements, manager),
             ...midIRStatement.loopVariables.flatMap((loopVariable) => [
               PRETTIER_LINE,
-              PRETTIER_TEXT(`${loopVariable.name} = `),
-              createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(loopVariable.loopValue),
-              PRETTIER_TEXT(';'),
+              PRETTIER_TEXT(
+                `${loopVariable.name} = ${prettyPrintMidIRExpressionAsJSExpression(
+                  loopVariable.loopValue
+                )};`
+              ),
             ]),
           ]),
         ])
       );
     }
-    case 'MidIRCastStatement':
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`let ${midIRStatement.name} = `),
-        createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(
-          midIRStatement.assignedExpression
-        ),
-        PRETTIER_TEXT(';')
-      );
-    case 'MidIRStructInitializationStatement':
-      return PRETTIER_CONCAT(
-        PRETTIER_TEXT(`let ${midIRStatement.structVariableName} = `),
-        createBracketSurroundedDocument(
-          createCommaSeparatedList(
-            midIRStatement.expressionList,
-            createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING
-          )
-        ),
-        PRETTIER_TEXT(';')
-      );
+    case 'MidIRCastStatement': {
+      const assigned = prettyPrintMidIRExpressionAsJSExpression(midIRStatement.assignedExpression);
+      return PRETTIER_CONCAT(PRETTIER_TEXT(`let ${midIRStatement.name} = ${assigned};`));
+    }
+    case 'MidIRStructInitializationStatement': {
+      const expressions = midIRStatement.expressionList
+        .map(prettyPrintMidIRExpressionAsJSExpression)
+        .join(', ');
+      return PRETTIER_TEXT(`let ${midIRStatement.structVariableName} = [${expressions}];`);
+    }
   }
 }
 
@@ -234,17 +164,11 @@ export const createPrettierDocumentFromMidIRStatement_EXPOSED_FOR_TESTING = (
 export function createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING(
   midIRFunction: MidIRFunction
 ): PrettierDocument {
-  const returnStatementDocument = PRETTIER_CONCAT(
-    PRETTIER_TEXT('return '),
-    createPrettierDocumentFromMidIRExpression_EXPOSED_FOR_TESTING(midIRFunction.returnValue),
-    PRETTIER_TEXT(';')
+  const returnStatementDocument = PRETTIER_TEXT(
+    `return ${prettyPrintMidIRExpressionAsJSExpression(midIRFunction.returnValue)};`
   );
   return PRETTIER_CONCAT(
-    PRETTIER_TEXT(`const ${midIRFunction.name} = `),
-    createParenthesisSurroundedDocument(
-      createCommaSeparatedList(midIRFunction.parameters, PRETTIER_TEXT)
-    ),
-    PRETTIER_TEXT(' => '),
+    PRETTIER_TEXT(`function ${midIRFunction.name}(${midIRFunction.parameters.join(', ')}) `),
     createBracesSurroundedBlockDocument(
       midIRFunction.body.length === 0
         ? [returnStatementDocument]
@@ -253,55 +177,20 @@ export function createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING(
             PRETTIER_LINE,
             returnStatementDocument,
           ]
-    ),
-    PRETTIER_TEXT(';')
-  );
-}
-
-function createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation(
-  sources: MidIRSources,
-  printerImplementation: string,
-  epilog?: string
-): PrettierDocument {
-  const segments: PrettierDocument[] = [];
-  segments.push(
-    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => ${printerImplementation}
-const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => parseInt(v, 10);
-const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
-const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
-`),
-    PRETTIER_LINE
-  );
-  sources.globalVariables.forEach(({ name, content }) => {
-    segments.push(
-      PRETTIER_TEXT(`const ${name} = "${escapeDoubleQuotes(content)}";`),
-      PRETTIER_LINE
-    );
-  });
-  sources.functions.forEach((midIRFunction) =>
-    segments.push(
-      createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING(midIRFunction),
-      PRETTIER_LINE
     )
   );
-  if (epilog != null) segments.push(PRETTIER_TEXT(epilog));
-  return PRETTIER_CONCAT(...segments);
 }
 
-export const createPrettierDocumentForExportingModuleFromMidIRSources = (
-  sources: MidIRSources
-): PrettierDocument =>
-  createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation(
-    sources,
-    'console.log(line);',
-    `\nmodule.exports = { ${sources.mainFunctionNames.join(', ')} };`
-  );
+// Thanks https://gist.github.com/getify/3667624
+const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
 
-export const createPrettierDocumentForInterpreterFromMidIRSources = (
+export const createPrettierDocumentsForExportingModuleFromMidIRSources = (
   sources: MidIRSources
-): PrettierDocument =>
-  createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation(
-    sources,
-    '{ printed += line; printed += "\\n" };'
-  );
+): readonly PrettierDocument[] => [
+  ...sources.globalVariables.map(({ name, content }) =>
+    PRETTIER_TEXT(`const ${name} = "${escapeDoubleQuotes(content)}";`)
+  ),
+  ...sources.functions.map((midIRFunction) =>
+    createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING(midIRFunction)
+  ),
+];

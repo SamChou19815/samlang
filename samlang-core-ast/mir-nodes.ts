@@ -365,6 +365,16 @@ export const debugPrintMidIRExpression = (expression: MidIRExpression): string =
   }
 };
 
+export const prettyPrintMidIRExpressionAsJSExpression = (expression: MidIRExpression): string => {
+  switch (expression.__type__) {
+    case 'MidIRIntLiteralExpression':
+      return expression.value.toString();
+    case 'MidIRVariableExpression':
+    case 'MidIRNameExpression':
+      return expression.name;
+  }
+};
+
 export const debugPrintMidIRStatement = (statement: MidIRStatement, startLevel = 0): string => {
   const collector: string[] = [];
   let level = startLevel;
