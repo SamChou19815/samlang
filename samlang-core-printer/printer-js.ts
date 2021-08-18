@@ -25,7 +25,6 @@ import {
   createParenthesisSurroundedDocument,
   createBracketSurroundedDocument,
   createBracesSurroundedBlockDocument,
-  createBracesSurroundedDocument,
 } from './printer-prettier-library';
 
 // Thanks https://gist.github.com/getify/3667624
@@ -259,29 +258,19 @@ export function createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING(
   );
 }
 
-function createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation({
-  sources,
-  printerImplementation,
-  prolog,
-  epilog,
-}: {
-  readonly sources: MidIRSources;
-  readonly printerImplementation: string;
-  readonly prolog: readonly PrettierDocument[];
-  readonly epilog: readonly PrettierDocument[];
-}): PrettierDocument {
-  const segments: PrettierDocument[] = [...prolog];
+function createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation(
+  sources: MidIRSources,
+  printerImplementation: string,
+  epilog?: string
+): PrettierDocument {
+  const segments: PrettierDocument[] = [];
   segments.push(
-    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;`),
-    PRETTIER_LINE,
-    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => ${printerImplementation}`),
-    PRETTIER_LINE,
-    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => parseInt(v, 10);`),
-    PRETTIER_LINE,
-    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);`),
-    PRETTIER_LINE,
-    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };`),
-    PRETTIER_LINE,
+    PRETTIER_TEXT(`const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
+const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => ${printerImplementation}
+const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => parseInt(v, 10);
+const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
+const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
+`),
     PRETTIER_LINE
   );
   sources.globalVariables.forEach(({ name, content }) => {
@@ -296,53 +285,23 @@ function createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation({
       PRETTIER_LINE
     )
   );
-  segments.push(...epilog);
+  if (epilog != null) segments.push(PRETTIER_TEXT(epilog));
   return PRETTIER_CONCAT(...segments);
 }
 
 export const createPrettierDocumentForExportingModuleFromMidIRSources = (
   sources: MidIRSources
 ): PrettierDocument =>
-  createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation({
+  createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation(
     sources,
-    printerImplementation: 'console.log(line);',
-    prolog: [],
-    epilog: [
-      PRETTIER_LINE,
-      PRETTIER_TEXT(`module.exports = `),
-      createBracesSurroundedDocument(
-        createCommaSeparatedList(sources.mainFunctionNames, PRETTIER_TEXT)
-      ),
-      PRETTIER_TEXT(';'),
-    ],
-  });
+    'console.log(line);',
+    `\nmodule.exports = { ${sources.mainFunctionNames.join(', ')} };`
+  );
 
 export const createPrettierDocumentForInterpreterFromMidIRSources = (
   sources: MidIRSources
 ): PrettierDocument =>
-  createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation({
+  createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation(
     sources,
-    printerImplementation: '{ printed += line; printed += "\\n" };',
-    prolog: [],
-    epilog: [],
-  });
-
-export const createPrettierDocumentFromMidIRSources = (
-  sources: MidIRSources,
-  forInterpreter: boolean
-): PrettierDocument =>
-  createPrettierDocumentFromMidIRSourcesWithCustomizedInvocation({
-    sources,
-    printerImplementation: forInterpreter
-      ? '{ printed += line; printed += "\\n" };'
-      : 'console.log(line);',
-    prolog: forInterpreter
-      ? [PRETTIER_TEXT("var printed = '';"), PRETTIER_LINE, PRETTIER_LINE]
-      : [],
-    epilog: [
-      PRETTIER_LINE,
-      PRETTIER_TEXT(`${ENCODED_COMPILED_PROGRAM_MAIN}();`),
-      PRETTIER_LINE,
-      ...(forInterpreter ? [PRETTIER_TEXT('printed')] : []),
-    ],
-  });
+    '{ printed += line; printed += "\\n" };'
+  );

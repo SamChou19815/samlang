@@ -10,10 +10,8 @@ import {
 import interpretLLVMSources from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import { optimizeMidIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
-import { prettyPrintMidIRSourcesAsJS } from 'samlang-core-printer';
 import {
   createPrettierDocumentForInterpreterFromMidIRSources,
-  createPrettierDocumentFromMidIRSources,
   // eslint-disable-next-line import/no-internal-modules
 } from 'samlang-core-printer/printer-js';
 // eslint-disable-next-line import/no-internal-modules
@@ -51,9 +49,8 @@ describe('compiler-integration-tests', () => {
   );
   const midIRUnoptimizedCommonJSSource = prettyPrintAccordingToPrettierAlgorithm(
     100,
-    createPrettierDocumentFromMidIRSources(midIRUnoptimizedSingleSource, true)
+    createPrettierDocumentForInterpreterFromMidIRSources(midIRUnoptimizedSingleSource)
   );
-  prettyPrintMidIRSourcesAsJS(100, midIRUnoptimizedSingleSource);
 
   const testMIR = (
     commonJSCode: string,
