@@ -33,7 +33,6 @@ import {
   createPrettierDocumentFromMidIRStatement_EXPOSED_FOR_TESTING,
   createPrettierDocumentFromMidIRFunction_EXPOSED_FOR_TESTING,
   createPrettierDocumentForExportingModuleFromMidIRSources,
-  createPrettierDocumentFromMidIRSources,
 } from '../printer-js';
 import { prettyPrintAccordingToPrettierAlgorithm } from '../printer-prettier-core';
 
@@ -49,14 +48,10 @@ const midIRStatementToString = (s: MidIRStatement): string =>
     createPrettierDocumentFromMidIRStatement_EXPOSED_FOR_TESTING(s)
   ).trimEnd();
 
-const midIRSourcesToJSString = (
-  availableWidth: number,
-  sources: MidIRSources,
-  forInterpreter = false
-): string =>
+const midIRSourcesToJSString = (availableWidth: number, sources: MidIRSources): string =>
   prettyPrintAccordingToPrettierAlgorithm(
     availableWidth,
-    createPrettierDocumentFromMidIRSources(sources, forInterpreter)
+    createPrettierDocumentForExportingModuleFromMidIRSources(sources)
   ).trimEnd();
 
 describe('printer-js', () => {
@@ -127,301 +122,8 @@ const _compiled_program_main = () => {
   return 0;
 };
 
-_compiled_program_main();`
+module.exports = {  };`
     );
-  });
-
-  const setupMIRIntegration = (mirSources: MidIRSources): string => {
-    // eslint-disable-next-line no-eval
-    return eval(midIRSourcesToJSString(100, mirSources, true));
-  };
-
-  it('confirm samlang & equivalent JS have same print output', () => {
-    expect(
-      setupMIRIntegration({
-        globalVariables: [
-          { name: 'h', content: 'Hello ' },
-          { name: 'w', content: 'World!' },
-        ],
-        typeDefinitions: [],
-        mainFunctionNames: [],
-        functions: [
-          {
-            name: '_compiled_program_main',
-            parameters: [],
-            type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-            body: [
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME('_builtin_stringConcat', MIR_INT_TYPE),
-                functionArguments: [MIR_NAME('h', MIR_STRING_TYPE), MIR_NAME('w', MIR_STRING_TYPE)],
-                returnType: MIR_STRING_TYPE,
-                returnCollector: '_t0',
-              }),
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, MIR_INT_TYPE),
-                functionArguments: [MIR_VARIABLE('_t0', MIR_INT_TYPE)],
-                returnType: MIR_STRING_TYPE,
-                returnCollector: '_t1',
-              }),
-            ],
-            returnValue: MIR_ZERO,
-          },
-        ],
-      })
-    ).toBe('Hello World!\n');
-
-    expect(
-      setupMIRIntegration({
-        globalVariables: [],
-        typeDefinitions: [],
-        mainFunctionNames: [],
-        functions: [
-          {
-            name: '_compiled_program_main',
-            parameters: [],
-            type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-            body: [],
-            returnValue: MIR_ZERO,
-          },
-        ],
-      })
-    ).toBe('');
-
-    expect(
-      setupMIRIntegration({
-        globalVariables: [],
-        typeDefinitions: [],
-        mainFunctionNames: [],
-        functions: [
-          {
-            name: 'sum',
-            parameters: ['a', 'b'],
-            type: MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE),
-            body: [
-              MIR_BINARY({
-                name: 'aaa',
-                operator: '+',
-                e1: MIR_VARIABLE('a', MIR_INT_TYPE),
-                e2: MIR_VARIABLE('b', MIR_INT_TYPE),
-              }),
-            ],
-            returnValue: MIR_VARIABLE('aaa', MIR_INT_TYPE),
-          },
-          {
-            name: '_compiled_program_main',
-            parameters: [],
-            type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-            body: [
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME('sum', MIR_INT_TYPE),
-                functionArguments: [MIR_INT(42), MIR_INT(7)],
-                returnType: MIR_INT_TYPE,
-                returnCollector: '_t0',
-              }),
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_INT_TO_STRING, MIR_INT_TYPE),
-                functionArguments: [MIR_VARIABLE('_t0', MIR_INT_TYPE)],
-                returnType: MIR_INT_TYPE,
-                returnCollector: '_t1',
-              }),
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, MIR_INT_TYPE),
-                functionArguments: [MIR_VARIABLE('_t1', MIR_INT_TYPE)],
-                returnType: MIR_INT_TYPE,
-                returnCollector: '_t2',
-              }),
-            ],
-            returnValue: MIR_ZERO,
-          },
-        ],
-      })
-    ).toBe('49\n');
-
-    expect(
-      setupMIRIntegration({
-        globalVariables: [
-          { name: 'y', content: 'Meaning of life' },
-          { name: 'n', content: 'Not the meaning of life... keep looking' },
-        ],
-        typeDefinitions: [],
-        mainFunctionNames: [],
-        functions: [
-          {
-            name: 'MeaningOfLifeConditional',
-            parameters: ['sum'],
-            type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_STRING_TYPE),
-            body: [
-              MIR_BINARY({
-                name: 'bb',
-                operator: '==',
-                e1: MIR_VARIABLE('sum', MIR_INT_TYPE),
-                e2: MIR_INT(42),
-              }),
-              MIR_IF_ELSE({
-                booleanExpression: MIR_VARIABLE('bb', MIR_BOOL_TYPE),
-                s1: [],
-                s2: [],
-                finalAssignments: [
-                  {
-                    name: 'rv',
-                    type: MIR_STRING_TYPE,
-                    branch1Value: MIR_NAME('y', MIR_STRING_TYPE),
-                    branch2Value: MIR_NAME('n', MIR_STRING_TYPE),
-                  },
-                ],
-              }),
-            ],
-            returnValue: MIR_VARIABLE('rv', MIR_INT_TYPE),
-          },
-          {
-            name: 'sum',
-            parameters: ['a', 'b'],
-            type: MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE),
-            body: [
-              MIR_BINARY({
-                name: 'aaa',
-                operator: '+',
-                e1: MIR_VARIABLE('a', MIR_INT_TYPE),
-                e2: MIR_VARIABLE('b', MIR_INT_TYPE),
-              }),
-            ],
-            returnValue: MIR_VARIABLE('aaa', MIR_INT_TYPE),
-          },
-          {
-            name: '_compiled_program_main',
-            parameters: [],
-            type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-            body: [
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME('sum', MIR_INT_TYPE),
-                functionArguments: [MIR_INT(42), MIR_INT(7)],
-                returnType: MIR_INT_TYPE,
-                returnCollector: '_t0',
-              }),
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME('MeaningOfLifeConditional', MIR_INT_TYPE),
-                functionArguments: [MIR_VARIABLE('_t0', MIR_INT_TYPE)],
-                returnType: MIR_INT_TYPE,
-                returnCollector: '_t1',
-              }),
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, MIR_INT_TYPE),
-                functionArguments: [MIR_VARIABLE('_t1', MIR_INT_TYPE)],
-                returnType: MIR_INT_TYPE,
-                returnCollector: '_t2',
-              }),
-            ],
-            returnValue: MIR_ZERO,
-          },
-        ],
-      })
-    ).toBe('Not the meaning of life... keep looking\n');
-
-    expect(
-      setupMIRIntegration({
-        globalVariables: [{ name: 'rb', content: 'RANDOM_BABY' }],
-        typeDefinitions: [],
-        mainFunctionNames: [],
-        functions: [
-          {
-            name: 'dummyStudent',
-            parameters: [],
-            type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-            body: [
-              MIR_STRUCT_INITIALIZATION({
-                structVariableName: 't0',
-                type: MIR_INT_TYPE,
-                expressionList: [MIR_NAME('rb', MIR_STRING_TYPE)],
-              }),
-            ],
-            returnValue: MIR_VARIABLE('t0', MIR_INT_TYPE),
-          },
-          {
-            name: 'getName',
-            parameters: ['s'],
-            type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE),
-            body: [
-              MIR_INDEX_ACCESS({
-                name: 'aa',
-                type: MIR_INT_TYPE,
-                pointerExpression: MIR_VARIABLE('s', MIR_INT_TYPE),
-                index: 0,
-              }),
-            ],
-            returnValue: MIR_VARIABLE('aa', MIR_INT_TYPE),
-          },
-          {
-            name: '_compiled_program_main',
-            parameters: [],
-            type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-            body: [
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME('dummyStudent', MIR_INT_TYPE),
-                functionArguments: [],
-                returnType: MIR_INT_TYPE,
-                returnCollector: '_t0',
-              }),
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME('getName', MIR_INT_TYPE),
-                functionArguments: [MIR_VARIABLE('_t0', MIR_INT_TYPE)],
-                returnType: MIR_INT_TYPE,
-                returnCollector: '_t1',
-              }),
-              MIR_FUNCTION_CALL({
-                functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_PRINTLN, MIR_INT_TYPE),
-                functionArguments: [MIR_VARIABLE('_t1', MIR_INT_TYPE)],
-                returnType: MIR_INT_TYPE,
-              }),
-            ],
-            returnValue: MIR_ZERO,
-          },
-        ],
-      })
-    ).toBe('RANDOM_BABY\n');
-
-    expect(() =>
-      setupMIRIntegration({
-        globalVariables: [{ name: 'illegal', content: 'Division by zero is illegal!' }],
-        typeDefinitions: [],
-        mainFunctionNames: [],
-        functions: [
-          {
-            name: 'sum',
-            parameters: ['a', 'b'],
-            type: MIR_FUNCTION_TYPE([MIR_INT_TYPE, MIR_INT_TYPE], MIR_INT_TYPE),
-            body: [
-              MIR_BINARY({
-                name: 'aaa',
-                operator: '+',
-                e1: MIR_VARIABLE('a', MIR_INT_TYPE),
-                e2: MIR_VARIABLE('b', MIR_INT_TYPE),
-              }),
-            ],
-            returnValue: MIR_VARIABLE('aaa', MIR_INT_TYPE),
-          },
-          {
-            name: '_compiled_program_main',
-            parameters: [],
-            type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
-            body: [
-              MIR_IF_ELSE({
-                booleanExpression: MIR_INT(1),
-                s1: [
-                  MIR_FUNCTION_CALL({
-                    functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_THROW, MIR_INT_TYPE),
-                    functionArguments: [MIR_NAME('illegal', MIR_STRING_TYPE)],
-                    returnType: MIR_INT_TYPE,
-                  }),
-                ],
-                s2: [],
-                finalAssignments: [],
-              }),
-            ],
-            returnValue: MIR_ZERO,
-          },
-        ],
-      })
-    ).toThrow(`Division by zero is illegal!`);
   });
 
   it('MIR statements to JS string test', () => {
@@ -773,10 +475,7 @@ const __Builtins_intToString = (v) => String(v);
 const __Builtins_panic = (v) => { throw Error(v); };
 
 
-module.exports = {
-  foo,
-  bar
-};
+module.exports = { foo, bar };
 `);
   });
 });
