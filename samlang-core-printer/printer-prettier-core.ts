@@ -217,24 +217,58 @@ type PrettierIntermediateDocumentTokenForPrinting =
   | { readonly __type__: 'TEXT'; readonly text: string }
   | { readonly __type__: 'LINE'; readonly indentation: number };
 
+type ImmutableList<T> = readonly [T, ImmutableList<T>] | null;
+type ImmutablePrettierDocumentList = ImmutableList<readonly [number, PrettierDocument]>;
+type ImmutableIntermediateDocumentList =
+  ImmutableList<PrettierIntermediateDocumentTokenForPrinting>;
+
 const intermediateDocumentFitsInAvailableWidth = (
   availableWidth: number,
-  documents: readonly PrettierIntermediateDocumentTokenForPrinting[]
+  documents: ImmutableIntermediateDocumentList
 ): boolean => {
   let remainingWidth = availableWidth;
-  let index = 0;
+  let docList = documents;
   while (remainingWidth >= 0) {
-    const doc = documents[index];
-    if (doc == null || doc.__type__ === 'LINE') return true;
+    if (docList == null) return true;
+    const [doc, rest] = docList;
+    if (doc.__type__ === 'LINE') return true;
     remainingWidth -= doc.text.length;
-    index += 1;
+    docList = rest;
   }
   return false;
 };
 
-type ImmutablePrettierDocumentList =
-  | readonly [readonly [number, PrettierDocument], ImmutablePrettierDocumentList]
-  | null;
+function getMemoized2ArgFunction<A, B, R>(f: (a: A, b: B) => R): (a: A, b: B) => R {
+  const memoizedResultMap = new Map<A, Map<B, R>>();
+
+  function memoized(a: A, b: B): R {
+    let level1Map = memoizedResultMap.get(a);
+    if (level1Map == null) {
+      level1Map = new Map();
+      memoizedResultMap.set(a, level1Map);
+    }
+    const resultCache = level1Map.get(b);
+    if (resultCache != null) return resultCache;
+    const result = f(a, b);
+    level1Map.set(b, result);
+    return result;
+  }
+
+  return memoized;
+}
+
+const createImmutablePrettierDocumentListItem = getMemoized2ArgFunction(
+  (indentation: number, doc: PrettierDocument): readonly [number, PrettierDocument] => [
+    indentation,
+    doc,
+  ]
+);
+const createImmutablePrettierDocumentList = getMemoized2ArgFunction(
+  (
+    item: readonly [number, PrettierDocument],
+    list: ImmutablePrettierDocumentList
+  ): ImmutablePrettierDocumentList => [item, list]
+);
 
 /**
  * This function inspects the number of available remaining width in a line, and try to produce
@@ -242,83 +276,90 @@ type ImmutablePrettierDocumentList =
  *
  * Correspond to the be/best function in the prettier paper.
  */
-const generateBestDoc = (
-  availableWidth: number,
-  initialConsumed: number,
-  initialList: ImmutablePrettierDocumentList,
-  intermediateDocuments: PrettierIntermediateDocumentTokenForPrinting[]
-): void => {
-  let consumed = initialConsumed;
-  let list = initialList;
-  while (list !== null) {
-    const [[indentation, document], rest] = list;
-    switch (document.__type__) {
-      case 'NIL':
-        list = rest;
-        break;
-      case 'CONCAT':
-        list = [
-          [indentation, document.doc1],
-          [[indentation, document.doc2], rest],
-        ];
-        break;
-      case 'NEST':
-        list = [[indentation + document.indentation, document.doc], rest];
-        break;
-      case 'TEXT':
-        intermediateDocuments.push({ __type__: 'TEXT', text: document.text });
-        consumed = consumed + document.text.length;
-        list = rest;
-        break;
-      case 'LINE':
-      case 'LINE_FLATTEN_TO_NIL':
-      case 'LINE_HARD':
-        intermediateDocuments.push({ __type__: 'LINE', indentation });
-        consumed = indentation;
-        list = rest;
-        break;
-      case 'UNION': {
-        const oldLength = intermediateDocuments.length;
-        generateBestDoc(
-          availableWidth,
-          consumed,
-          [[indentation, document.doc1], rest],
-          intermediateDocuments
-        );
-        if (
-          intermediateDocumentFitsInAvailableWidth(
-            availableWidth - consumed,
-            intermediateDocuments.slice(oldLength)
-          )
-        ) {
-          return;
+function generateBestDoc(availableWidth: number) {
+  const generateMemoized = getMemoized2ArgFunction(
+    (consumed: number, list: ImmutablePrettierDocumentList): ImmutableIntermediateDocumentList => {
+      if (list == null) return null;
+      const [[indentation, document], rest] = list;
+      switch (document.__type__) {
+        case 'NIL':
+          return generateMemoized(consumed, rest);
+        case 'CONCAT':
+          return generateMemoized(
+            consumed,
+            createImmutablePrettierDocumentList(
+              createImmutablePrettierDocumentListItem(indentation, document.doc1),
+              createImmutablePrettierDocumentList(
+                createImmutablePrettierDocumentListItem(indentation, document.doc2),
+                rest
+              )
+            )
+          );
+        case 'NEST':
+          return generateMemoized(
+            consumed,
+            createImmutablePrettierDocumentList(
+              createImmutablePrettierDocumentListItem(
+                indentation + document.indentation,
+                document.doc
+              ),
+              rest
+            )
+          );
+        case 'TEXT':
+          return [
+            { __type__: 'TEXT', text: document.text },
+            generateMemoized(consumed + document.text.length, rest),
+          ];
+        case 'LINE':
+        case 'LINE_FLATTEN_TO_NIL':
+        case 'LINE_HARD':
+          return [{ __type__: 'LINE', indentation }, generateMemoized(indentation, rest)];
+        case 'UNION': {
+          const choice1 = generateMemoized(
+            consumed,
+            createImmutablePrettierDocumentList(
+              createImmutablePrettierDocumentListItem(indentation, document.doc1),
+              rest
+            )
+          );
+          if (intermediateDocumentFitsInAvailableWidth(availableWidth - consumed, choice1)) {
+            return choice1;
+          } else {
+            return generateMemoized(
+              consumed,
+              createImmutablePrettierDocumentList(
+                createImmutablePrettierDocumentListItem(indentation, document.doc2),
+                rest
+              )
+            );
+          }
         }
-        intermediateDocuments.splice(oldLength, intermediateDocuments.length - oldLength);
-        list = [[indentation, document.doc2], rest];
-        break;
       }
     }
-  }
-};
+  );
+  return generateMemoized;
+}
 
 export const prettyPrintAccordingToPrettierAlgorithm = (
   availableWidth: number,
   document: PrettierDocument
 ): string => {
-  const intermediateDocuments: PrettierIntermediateDocumentTokenForPrinting[] = [];
-  generateBestDoc(availableWidth, 0, [[0, document], null], intermediateDocuments);
+  let documents = generateBestDoc(availableWidth)(0, [[0, document], null]);
   const collector: string[] = [];
 
-  intermediateDocuments.forEach((doc) => {
+  while (documents != null) {
+    const [doc, rest] = documents;
+    documents = rest;
     switch (doc.__type__) {
       case 'TEXT':
         collector.push(doc.text);
-        return;
+        break;
       case 'LINE':
         collector.push(`\n${' '.repeat(doc.indentation)}`);
-        return;
+        break;
     }
-  });
+  }
   const postProcessed = collector
     .join('')
     .split('\n')
