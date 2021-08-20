@@ -7,18 +7,12 @@ describe('samlang-demo', () => {
     ).toEqual({
       interpreterPrinted: 'hello world\n',
       prettyPrintedProgram: `class Main { function main(): unit = Builtins.println("hello world")  }\n`,
-      jsString: `const _builtin_stringConcat = (a, b) => a + b;
-const __Builtins_println = (line) => console.log(line);
-const __Builtins_stringToInt = (v) => parseInt(v, 10);
-const __Builtins_intToString = (v) => String(v);
-const __Builtins_panic = (v) => { throw Error(v); };
-const GLOBAL_STRING_0 = "hello world";
+      jsString: `const GLOBAL_STRING_0 = "hello world";
 function _Demo_Main_main() {
   __Builtins_println(GLOBAL_STRING_0);
   return 0;
 }
-
-module.exports = { _Demo_Main_main };`,
+`,
       llvmString: `declare i32* @_builtin_malloc(i32) nounwind
 declare i32 @__Builtins_println(i32*) nounwind
 declare i32 @__Builtins_panic(i32*) nounwind
@@ -42,13 +36,7 @@ l0_start:
     expect(runSamlangDemo('class Main {}')).toEqual({
       prettyPrintedProgram: 'class Main {  }\n',
       interpreterPrinted: '',
-      jsString: `const _builtin_stringConcat = (a, b) => a + b;
-const __Builtins_println = (line) => console.log(line);
-const __Builtins_stringToInt = (v) => parseInt(v, 10);
-const __Builtins_intToString = (v) => String(v);
-const __Builtins_panic = (v) => { throw Error(v); };
-
-module.exports = {  };`,
+      jsString: '',
       llvmString: `declare i32* @_builtin_malloc(i32) nounwind
 declare i32 @__Builtins_println(i32*) nounwind
 declare i32 @__Builtins_panic(i32*) nounwind

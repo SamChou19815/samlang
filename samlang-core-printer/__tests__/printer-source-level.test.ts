@@ -7,7 +7,7 @@ import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from 'samlang-core-parser';
 import { checkNotNull } from 'samlang-core-utils';
 
-import { prettyPrintSamlangModule } from '..';
+import prettyPrintSamlangModule from '..';
 import { prettyPrintSamlangExpression_EXPOSED_FOR_TESTING } from '../printer-source-level';
 
 const reprintExpression = (rawSourceWithTypeAnnotation: string, width = 40): string => {
