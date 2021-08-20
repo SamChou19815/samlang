@@ -2,6 +2,8 @@ import {
   prettyPrintMidIRType,
   isTheSameMidIRType,
   prettyPrintMidIRExpressionAsJSExpression,
+  prettyPrintMidIRStatementAsJSStatement,
+  prettyPrintMidIRSourcesAsJSSources,
   debugPrintMidIRStatement,
   debugPrintMidIRSources,
   MIR_FUNCTION_CALL,
@@ -41,6 +43,175 @@ describe('mir-nodes', () => {
     expect(prettyPrintMidIRExpressionAsJSExpression(MIR_ZERO)).toBe('0');
     expect(prettyPrintMidIRExpressionAsJSExpression(MIR_NAME('a', MIR_STRING_TYPE))).toBe('a');
     expect(prettyPrintMidIRExpressionAsJSExpression(MIR_VARIABLE('a', MIR_STRING_TYPE))).toBe('a');
+  });
+
+  it('prettyPrintMidIRStatementAsJSStatement works', () => {
+    expect(
+      prettyPrintMidIRStatementAsJSStatement(
+        MIR_IF_ELSE({
+          booleanExpression: MIR_ZERO,
+          s1: [
+            MIR_CAST({
+              name: 'foo',
+              type: MIR_IDENTIFIER_TYPE('Bar'),
+              assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
+            }),
+            MIR_WHILE({
+              loopVariables: [
+                {
+                  name: 'n',
+                  type: MIR_INT_TYPE,
+                  initialValue: MIR_VARIABLE('_tail_rec_param_n', MIR_INT_TYPE),
+                  loopValue: MIR_VARIABLE('_t0_n', MIR_INT_TYPE),
+                },
+                {
+                  name: 'acc',
+                  type: MIR_INT_TYPE,
+                  initialValue: MIR_VARIABLE('_tail_rec_param_acc', MIR_INT_TYPE),
+                  loopValue: MIR_VARIABLE('_t1_acc', MIR_INT_TYPE),
+                },
+              ],
+              statements: [
+                MIR_CAST({
+                  name: 'foo',
+                  type: MIR_IDENTIFIER_TYPE('Bar'),
+                  assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
+                }),
+                MIR_BREAK(MIR_ZERO),
+              ],
+            }),
+            MIR_WHILE({
+              loopVariables: [
+                {
+                  name: 'n',
+                  type: MIR_INT_TYPE,
+                  initialValue: MIR_VARIABLE('_tail_rec_param_n', MIR_INT_TYPE),
+                  loopValue: MIR_VARIABLE('_t0_n', MIR_INT_TYPE),
+                },
+                {
+                  name: 'acc',
+                  type: MIR_INT_TYPE,
+                  initialValue: MIR_VARIABLE('_tail_rec_param_acc', MIR_INT_TYPE),
+                  loopValue: MIR_VARIABLE('_t1_acc', MIR_INT_TYPE),
+                },
+              ],
+              statements: [
+                MIR_CAST({
+                  name: 'foo',
+                  type: MIR_IDENTIFIER_TYPE('Bar'),
+                  assignedExpression: MIR_VARIABLE('dev', MIR_IDENTIFIER_TYPE('Bar')),
+                }),
+                MIR_BREAK(MIR_ZERO),
+              ],
+              breakCollector: { name: 'v', type: MIR_INT_TYPE },
+            }),
+          ],
+          s2: [
+            MIR_BINARY({ name: 'dd', operator: '+', e1: MIR_INT(0), e2: MIR_INT(0) }),
+            MIR_BINARY({ name: 'dd', operator: '/', e1: MIR_INT(0), e2: MIR_INT(0) }),
+            MIR_STRUCT_INITIALIZATION({
+              structVariableName: 'baz',
+              type: MIR_IDENTIFIER_TYPE('FooBar'),
+              expressionList: [MIR_NAME('meggo', MIR_STRING_TYPE)],
+            }),
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('h', MIR_INT_TYPE),
+              functionArguments: [MIR_VARIABLE('big', MIR_IDENTIFIER_TYPE('FooBar'))],
+              returnType: MIR_INT_TYPE,
+              returnCollector: 'vibez',
+            }),
+            MIR_FUNCTION_CALL({
+              functionExpression: MIR_NAME('stresso', MIR_INT_TYPE),
+              functionArguments: [MIR_VARIABLE('d', MIR_INT_TYPE)],
+              returnType: MIR_INT_TYPE,
+            }),
+            MIR_INDEX_ACCESS({
+              name: 'f',
+              type: MIR_INT_TYPE,
+              pointerExpression: MIR_VARIABLE('big', MIR_IDENTIFIER_TYPE('FooBar')),
+              index: 0,
+            }),
+            MIR_SINGLE_IF({
+              booleanExpression: MIR_ZERO,
+              invertCondition: false,
+              statements: [MIR_BREAK(MIR_ZERO)],
+            }),
+            MIR_SINGLE_IF({
+              booleanExpression: MIR_ZERO,
+              invertCondition: true,
+              statements: [MIR_BREAK(MIR_ZERO)],
+            }),
+          ],
+          finalAssignments: [
+            {
+              name: 'bar',
+              type: MIR_INT_TYPE,
+              branch1Value: MIR_VARIABLE('b1', MIR_INT_TYPE),
+              branch2Value: MIR_VARIABLE('b2', MIR_INT_TYPE),
+            },
+          ],
+        })
+      )
+    ).toBe(`let bar;
+if (0) {
+  let foo = (dev: Bar);
+  let n = (_tail_rec_param_n: int);
+  let acc = (_tail_rec_param_acc: int);
+  while (true) {
+    let foo = (dev: Bar);
+    break;
+    n = (_t0_n: int);
+    acc = (_t1_acc: int);
+  }
+  let n = (_tail_rec_param_n: int);
+  let acc = (_tail_rec_param_acc: int);
+  let v;
+  while (true) {
+    let foo = (dev: Bar);
+    v = 0;
+    break;
+    n = (_t0_n: int);
+    acc = (_t1_acc: int);
+  }
+  bar = (b1: int);
+} else {
+  let dd = 0 + 0;
+  let dd = Math.floor(0 / 0);
+  let baz = [meggo];  let vibez = h(big);
+  stresso(d);
+  let f = big[0];
+  if 0 {
+    break;
+  }
+  if !0 {
+    break;
+  }
+  bar = (b2: int);
+}`);
+  });
+
+  it('prettyPrintMidIRSourcesAsJSSources works', () => {
+    expect(
+      prettyPrintMidIRSourcesAsJSSources({
+        globalVariables: [{ name: 'dev_meggo', content: 'vibez' }],
+        typeDefinitions: [],
+        mainFunctionNames: [],
+        functions: [
+          {
+            name: 'Bar',
+            parameters: ['f'],
+            type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE),
+            body: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
+            returnValue: MIR_ZERO,
+          },
+        ],
+      })
+    ).toBe(`const dev_meggo = "vibez";
+function Bar(f) {
+  let a = 0;
+  return 0;
+}
+`);
   });
 
   it('isTheSameMidIRType works', () => {
