@@ -154,39 +154,39 @@ describe('mir-nodes', () => {
       )
     ).toBe(`let bar;
 if (0) {
-  let foo = (dev: Bar);
-  let n = (_tail_rec_param_n: int);
-  let acc = (_tail_rec_param_acc: int);
+  let foo = dev;
+  let n = _tail_rec_param_n;
+  let acc = _tail_rec_param_acc;
   while (true) {
-    let foo = (dev: Bar);
+    let foo = dev;
     break;
-    n = (_t0_n: int);
-    acc = (_t1_acc: int);
+    n = _t0_n;
+    acc = _t1_acc;
   }
-  let n = (_tail_rec_param_n: int);
-  let acc = (_tail_rec_param_acc: int);
+  let n = _tail_rec_param_n;
+  let acc = _tail_rec_param_acc;
   let v;
   while (true) {
-    let foo = (dev: Bar);
+    let foo = dev;
     v = 0;
     break;
-    n = (_t0_n: int);
-    acc = (_t1_acc: int);
+    n = _t0_n;
+    acc = _t1_acc;
   }
-  bar = (b1: int);
+  bar = b1;
 } else {
   let dd = 0 + 0;
   let dd = Math.floor(0 / 0);
   let baz = [meggo];  let vibez = h(big);
   stresso(d);
   let f = big[0];
-  if 0 {
+  if (0) {
     break;
   }
-  if !0 {
+  if (!0) {
     break;
   }
-  bar = (b2: int);
+  bar = b2;
 }`);
   });
 

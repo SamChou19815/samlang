@@ -1,5 +1,6 @@
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMSources } from 'samlang-core-ast/llvm-nodes';
+import { prettyPrintMidIRSourcesAsJSSources } from 'samlang-core-ast/mir-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import {
   compileSamlangSourcesToHighIRSources,
@@ -7,10 +8,7 @@ import {
   lowerMidIRSourcesToLLVMSources,
 } from 'samlang-core-compiler';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
-import {
-  prettyPrintSamlangModule,
-  prettyPrintMidIRSourcesAsJSExportingModule,
-} from 'samlang-core-printer';
+import prettyPrintSamlangModule from 'samlang-core-printer';
 import { checkSources } from 'samlang-core-services';
 
 export type SamlangDemoResult = {
@@ -47,7 +45,7 @@ export default function runSamlangDemo(programString: string): SamlangDemoResult
 
   const interpreterPrinted = interpretSamlangModule(demoSamlangModule);
   const prettyPrintedProgram = prettyPrintSamlangModule(100, demoSamlangModule);
-  const jsString = prettyPrintMidIRSourcesAsJSExportingModule(100, midIRSources);
+  const jsString = prettyPrintMidIRSourcesAsJSSources(midIRSources);
   const llvmString = prettyPrintLLVMSources(llvmSources);
 
   return {

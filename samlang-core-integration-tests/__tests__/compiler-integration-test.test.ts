@@ -8,7 +8,7 @@ import {
 } from 'samlang-core-ast/common-names';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMSources } from 'samlang-core-ast/llvm-nodes';
-import type { MidIRSources } from 'samlang-core-ast/mir-nodes';
+import { prettyPrintMidIRSourcesAsJSSources } from 'samlang-core-ast/mir-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import {
   compileSamlangSourcesToHighIRSources,
@@ -18,10 +18,6 @@ import {
 import interpretLLVMSources from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import { optimizeMidIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
-// eslint-disable-next-line import/no-internal-modules
-import { createPrettierDocumentsForExportingModuleFromMidIRSources } from 'samlang-core-printer/printer-js';
-// eslint-disable-next-line import/no-internal-modules
-import { prettyPrintAccordingToPrettierAlgorithm } from 'samlang-core-printer/printer-prettier-core';
 import { checkSources } from 'samlang-core-services';
 
 import { runnableSamlangProgramTestCases } from '../test-programs';
@@ -47,18 +43,15 @@ describe('compiler-integration-tests', () => {
     });
   }
 
-  const getCommonJSCode = (source: MidIRSources) =>
-    createPrettierDocumentsForExportingModuleFromMidIRSources(source)
-      .map((doc) => prettyPrintAccordingToPrettierAlgorithm(100, doc))
-      .join('');
-
   const midIRUnoptimizedSingleSource = lowerHighIRSourcesToMidIRSources(
     compileSamlangSourcesToHighIRSources(checkedSources)
   );
   const midIROptimizedSingleSource = optimizeMidIRSourcesAccordingToConfiguration(
     midIRUnoptimizedSingleSource
   );
-  const midIRUnoptimizedCommonJSSource = getCommonJSCode(midIRUnoptimizedSingleSource);
+  const midIRUnoptimizedCommonJSSource = prettyPrintMidIRSourcesAsJSSources(
+    midIRUnoptimizedSingleSource
+  );
 
   const testMIR = (
     commonJSCode: string,
@@ -74,14 +67,8 @@ const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
 ${commonJSCode}
 ${encodeMainFunctionName(new ModuleReference([testCaseName]))}();
 printed`;
-    let interpretationResult: string;
-    try {
-      // eslint-disable-next-line no-eval
-      interpretationResult = eval(jsCode);
-    } catch (e) {
-      fail(`${e.message}\n\n${jsCode}`);
-      return;
-    }
+    // eslint-disable-next-line no-eval
+    const interpretationResult: string = eval(jsCode);
     if (interpretationResult !== expectedStandardOut) {
       fail(
         `Expected:\n${expectedStandardOut}\nActual:\n${interpretationResult}\nCode:\n${jsCode}\n\nUnoptimized Code:\n${midIRUnoptimizedCommonJSSource}`
@@ -90,14 +77,14 @@ printed`;
   };
 
   describe('MIR[no-opt]', () => {
-    const commonJSCode = getCommonJSCode(midIRUnoptimizedSingleSource);
+    const commonJSCode = prettyPrintMidIRSourcesAsJSSources(midIRUnoptimizedSingleSource);
     runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
       it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
     );
   });
 
   describe('MIR[lvn]', () => {
-    const commonJSCode = getCommonJSCode(
+    const commonJSCode = prettyPrintMidIRSourcesAsJSSources(
       optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource, {
         doesPerformLocalValueNumbering: true,
       })
@@ -108,7 +95,7 @@ printed`;
   });
 
   describe('MIR[cse]', () => {
-    const commonJSCode = getCommonJSCode(
+    const commonJSCode = prettyPrintMidIRSourcesAsJSSources(
       optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource, {
         doesPerformCommonSubExpressionElimination: true,
       })
@@ -119,7 +106,7 @@ printed`;
   });
 
   describe('MIR[inl]', () => {
-    const commonJSCode = getCommonJSCode(
+    const commonJSCode = prettyPrintMidIRSourcesAsJSSources(
       optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource, {
         doesPerformInlining: true,
       })
@@ -130,7 +117,7 @@ printed`;
   });
 
   describe('MIR[loop]', () => {
-    const commonJSCode = getCommonJSCode(
+    const commonJSCode = prettyPrintMidIRSourcesAsJSSources(
       optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource, {
         doesPerformLoopOptimization: true,
       })
@@ -141,10 +128,10 @@ printed`;
   });
 
   describe('MIR[all]', () => {
-    const commonJSCode = getCommonJSCode(midIROptimizedSingleSource);
-    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
-      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
-    );
+    const commonJSCode = prettyPrintMidIRSourcesAsJSSources(midIROptimizedSingleSource);
+    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) => {
+      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut));
+    });
   });
 
   const llvmSources = lowerMidIRSourcesToLLVMSources(midIROptimizedSingleSource);

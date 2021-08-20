@@ -163,7 +163,6 @@ class HighIRToMidIRLoweringManager {
             `Missing ${closureHighIRType.name}`
           );
           const pointerExpression = lowerHighIRExpression(statement.functionExpression);
-          // TODO(closure)
           const tempFunction = this.tempAllocator();
           const tempContext = this.tempAllocator();
           return [

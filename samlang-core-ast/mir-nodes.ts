@@ -556,7 +556,7 @@ export const prettyPrintMidIRStatementAsJSStatement = (
         level += 1;
         s.s1.forEach(printer);
         s.finalAssignments.forEach((finalAssignment) => {
-          const v1 = debugPrintMidIRExpression(finalAssignment.branch1Value);
+          const v1 = prettyPrintMidIRExpressionAsJSExpression(finalAssignment.branch1Value);
           collector.push('  '.repeat(level), `${finalAssignment.name} = ${v1};\n`);
         });
         level -= 1;
@@ -564,7 +564,7 @@ export const prettyPrintMidIRStatementAsJSStatement = (
         level += 1;
         s.s2.forEach(printer);
         s.finalAssignments.forEach((finalAssignment) => {
-          const v2 = debugPrintMidIRExpression(finalAssignment.branch2Value);
+          const v2 = prettyPrintMidIRExpressionAsJSExpression(finalAssignment.branch2Value);
           collector.push('  '.repeat(level), `${finalAssignment.name} = ${v2};\n`);
         });
         level -= 1;
@@ -573,7 +573,9 @@ export const prettyPrintMidIRStatementAsJSStatement = (
       case 'MidIRSingleIfStatement':
         collector.push(
           '  '.repeat(level),
-          `if ${s.invertCondition ? '!' : ''}${debugPrintMidIRExpression(s.booleanExpression)} {\n`
+          `if (${s.invertCondition ? '!' : ''}${prettyPrintMidIRExpressionAsJSExpression(
+            s.booleanExpression
+          )}) {\n`
         );
         level += 1;
         s.statements.forEach(printer);
@@ -584,7 +586,7 @@ export const prettyPrintMidIRStatementAsJSStatement = (
         if (breakCollector != null) {
           collector.push(
             '  '.repeat(level),
-            `${breakCollector} = ${debugPrintMidIRExpression(s.breakValue)};\n`
+            `${breakCollector} = ${prettyPrintMidIRExpressionAsJSExpression(s.breakValue)};\n`
           );
         }
         collector.push('  '.repeat(level), 'break;\n');
@@ -593,7 +595,7 @@ export const prettyPrintMidIRStatementAsJSStatement = (
         s.loopVariables.forEach((v) => {
           collector.push(
             '  '.repeat(level),
-            `let ${v.name} = ${debugPrintMidIRExpression(v.initialValue)};\n`
+            `let ${v.name} = ${prettyPrintMidIRExpressionAsJSExpression(v.initialValue)};\n`
           );
         });
         const previousBreakCollector = breakCollector;
@@ -607,7 +609,7 @@ export const prettyPrintMidIRStatementAsJSStatement = (
         s.loopVariables.forEach((v) => {
           collector.push(
             '  '.repeat(level),
-            `${v.name} = ${debugPrintMidIRExpression(v.loopValue)};\n`
+            `${v.name} = ${prettyPrintMidIRExpressionAsJSExpression(v.loopValue)};\n`
           );
         });
         level -= 1;
@@ -618,7 +620,7 @@ export const prettyPrintMidIRStatementAsJSStatement = (
       case 'MidIRCastStatement':
         collector.push(
           '  '.repeat(level),
-          `let ${s.name} = ${debugPrintMidIRExpression(s.assignedExpression)};\n`
+          `let ${s.name} = ${prettyPrintMidIRExpressionAsJSExpression(s.assignedExpression)};\n`
         );
         break;
       case 'MidIRStructInitializationStatement': {

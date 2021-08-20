@@ -1,7 +1,7 @@
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
-import { prettyPrintSamlangModule } from 'samlang-core-printer';
+import prettyPrintSamlangModule from 'samlang-core-printer';
 import { checkSources } from 'samlang-core-services';
 
 import { runnableSamlangProgramTestCases } from '../test-programs';
