@@ -13,13 +13,13 @@ import {
 import { PLUS } from 'samlang-core-ast/common-operators';
 import {
   SamlangExpression,
-  EXPRESSION_INT,
-  EXPRESSION_VARIABLE,
-  EXPRESSION_FUNCTION_CALL,
-  EXPRESSION_BINARY,
-  EXPRESSION_IF_ELSE,
-  EXPRESSION_STATEMENT_BLOCK,
-  EXPRESSION_LAMBDA,
+  SourceExpressionInt,
+  SourceExpressionVariable,
+  SourceExpressionFunctionCall,
+  SourceExpressionBinary,
+  SourceExpressionIfElse,
+  SourceExpressionStatementBlock,
+  SourceExpressionLambda,
 } from 'samlang-core-ast/samlang-expressions';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText } from 'samlang-core-parser';
@@ -642,10 +642,8 @@ describe('expression-type-checker', () => {
     assertTypeChecks(
       '{ val _ = (b, t, f: int) -> if b then t else f }',
       unit,
-      EXPRESSION_STATEMENT_BLOCK({
-        range: Range.DUMMY,
+      SourceExpressionStatementBlock({
         type: unit,
-        associatedComments: [],
         block: {
           range: Range.DUMMY,
           statements: [
@@ -653,38 +651,19 @@ describe('expression-type-checker', () => {
               range: Range.DUMMY,
               pattern: { type: 'WildCardPattern', range: Range.DUMMY },
               typeAnnotation: functionType([bool, int, int], int),
-              assignedExpression: EXPRESSION_LAMBDA({
-                range: Range.DUMMY,
+              assignedExpression: SourceExpressionLambda({
                 type: functionType([bool, int, int], int),
-                associatedComments: [],
                 parameters: [
                   ['b', Range.DUMMY, bool],
                   ['t', Range.DUMMY, int],
                   ['f', Range.DUMMY, int],
                 ],
                 captured: {},
-                body: EXPRESSION_IF_ELSE({
-                  range: Range.DUMMY,
+                body: SourceExpressionIfElse({
                   type: int,
-                  associatedComments: [],
-                  boolExpression: EXPRESSION_VARIABLE({
-                    range: Range.DUMMY,
-                    type: bool,
-                    associatedComments: [],
-                    name: 'b',
-                  }),
-                  e1: EXPRESSION_VARIABLE({
-                    range: Range.DUMMY,
-                    type: int,
-                    associatedComments: [],
-                    name: 't',
-                  }),
-                  e2: EXPRESSION_VARIABLE({
-                    range: Range.DUMMY,
-                    type: int,
-                    associatedComments: [],
-                    name: 'f',
-                  }),
+                  boolExpression: SourceExpressionVariable({ type: bool, name: 'b' }),
+                  e1: SourceExpressionVariable({ type: int, name: 't' }),
+                  e2: SourceExpressionVariable({ type: int, name: 'f' }),
                 }),
               }),
               associatedComments: [],
@@ -704,10 +683,8 @@ describe('expression-type-checker', () => {
     f(3, 4, 5)
 }
 `;
-    const expectedExpression = EXPRESSION_STATEMENT_BLOCK({
-      range: Range.DUMMY,
+    const expectedExpression = SourceExpressionStatementBlock({
       type: int,
-      associatedComments: [],
       block: {
         range: Range.DUMMY,
         statements: [
@@ -715,20 +692,16 @@ describe('expression-type-checker', () => {
             range: Range.DUMMY,
             pattern: { type: 'VariablePattern', range: Range.DUMMY, name: 'f' },
             typeAnnotation: functionType([int, int, int], int),
-            assignedExpression: EXPRESSION_LAMBDA({
-              range: Range.DUMMY,
+            assignedExpression: SourceExpressionLambda({
               type: functionType([int, int, int], int),
-              associatedComments: [],
               parameters: [
                 ['a', Range.DUMMY, int],
                 ['b', Range.DUMMY, int],
                 ['c', Range.DUMMY, int],
               ],
               captured: {},
-              body: EXPRESSION_STATEMENT_BLOCK({
-                range: Range.DUMMY,
+              body: SourceExpressionStatementBlock({
                 type: int,
-                associatedComments: [],
                 block: {
                   range: Range.DUMMY,
                   statements: [
@@ -736,91 +709,49 @@ describe('expression-type-checker', () => {
                       range: Range.DUMMY,
                       pattern: { type: 'VariablePattern', range: Range.DUMMY, name: 'f' },
                       typeAnnotation: functionType([int, int], int),
-                      assignedExpression: EXPRESSION_LAMBDA({
-                        range: Range.DUMMY,
+                      assignedExpression: SourceExpressionLambda({
                         type: functionType([int, int], int),
-                        associatedComments: [],
                         parameters: [
                           ['d', Range.DUMMY, int],
                           ['e', Range.DUMMY, int],
                         ],
                         captured: { a: int, b: int, c: int },
-                        body: EXPRESSION_BINARY({
-                          range: Range.DUMMY,
+                        body: SourceExpressionBinary({
                           type: int,
-                          associatedComments: [],
                           operatorPrecedingComments: [],
                           operator: PLUS,
-                          e1: EXPRESSION_BINARY({
-                            range: Range.DUMMY,
+                          e1: SourceExpressionBinary({
                             type: int,
-                            associatedComments: [],
                             operatorPrecedingComments: [],
                             operator: PLUS,
-                            e1: EXPRESSION_BINARY({
-                              range: Range.DUMMY,
+                            e1: SourceExpressionBinary({
                               type: int,
-                              associatedComments: [],
                               operatorPrecedingComments: [],
                               operator: PLUS,
-                              e1: EXPRESSION_BINARY({
-                                range: Range.DUMMY,
+                              e1: SourceExpressionBinary({
                                 type: int,
-                                associatedComments: [],
                                 operatorPrecedingComments: [],
                                 operator: PLUS,
-                                e1: EXPRESSION_VARIABLE({
-                                  range: Range.DUMMY,
-                                  type: int,
-                                  associatedComments: [],
-                                  name: 'a',
-                                }),
-                                e2: EXPRESSION_VARIABLE({
-                                  range: Range.DUMMY,
-                                  type: int,
-                                  associatedComments: [],
-                                  name: 'b',
-                                }),
+                                e1: SourceExpressionVariable({ type: int, name: 'a' }),
+                                e2: SourceExpressionVariable({ type: int, name: 'b' }),
                               }),
-                              e2: EXPRESSION_VARIABLE({
-                                range: Range.DUMMY,
-                                type: int,
-                                associatedComments: [],
-                                name: 'c',
-                              }),
+                              e2: SourceExpressionVariable({ type: int, name: 'c' }),
                             }),
-                            e2: EXPRESSION_VARIABLE({
-                              range: Range.DUMMY,
-                              type: int,
-                              associatedComments: [],
-                              name: 'd',
-                            }),
+                            e2: SourceExpressionVariable({ type: int, name: 'd' }),
                           }),
-                          e2: EXPRESSION_VARIABLE({
-                            range: Range.DUMMY,
-                            type: int,
-                            associatedComments: [],
-                            name: 'e',
-                          }),
+                          e2: SourceExpressionVariable({ type: int, name: 'e' }),
                         }),
                       }),
                       associatedComments: [],
                     },
                   ],
-                  expression: EXPRESSION_FUNCTION_CALL({
-                    range: Range.DUMMY,
+                  expression: SourceExpressionFunctionCall({
                     type: int,
-                    associatedComments: [],
-                    functionExpression: EXPRESSION_VARIABLE({
-                      range: Range.DUMMY,
+                    functionExpression: SourceExpressionVariable({
                       type: functionType([int, int], int),
-                      associatedComments: [],
                       name: 'f',
                     }),
-                    functionArguments: [
-                      EXPRESSION_INT(Range.DUMMY, [], 1),
-                      EXPRESSION_INT(Range.DUMMY, [], 2),
-                    ],
+                    functionArguments: [SourceExpressionInt(1), SourceExpressionInt(2)],
                   }),
                 },
               }),
@@ -828,20 +759,16 @@ describe('expression-type-checker', () => {
             associatedComments: [],
           },
         ],
-        expression: EXPRESSION_FUNCTION_CALL({
-          range: Range.DUMMY,
+        expression: SourceExpressionFunctionCall({
           type: int,
-          associatedComments: [],
-          functionExpression: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
+          functionExpression: SourceExpressionVariable({
             type: functionType([int, int, int], int),
-            associatedComments: [],
             name: 'f',
           }),
           functionArguments: [
-            EXPRESSION_INT(Range.DUMMY, [], 3),
-            EXPRESSION_INT(Range.DUMMY, [], 4),
-            EXPRESSION_INT(Range.DUMMY, [], 5),
+            SourceExpressionInt(3),
+            SourceExpressionInt(4),
+            SourceExpressionInt(5),
           ],
         }),
       },

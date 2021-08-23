@@ -13,10 +13,10 @@ import {
   StatementBlock,
   SamlangExpression,
   SamlangValStatement,
-  EXPRESSION_TRUE,
-  EXPRESSION_INT,
-  EXPRESSION_VARIABLE,
-  EXPRESSION_STATEMENT_BLOCK,
+  SourceExpressionTrue,
+  SourceExpressionInt,
+  SourceExpressionVariable,
+  SourceExpressionStatementBlock,
 } from 'samlang-core-ast/samlang-expressions';
 import type { Pattern } from 'samlang-core-ast/samlang-pattern';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
@@ -140,12 +140,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: tupleType([intType, boolType]),
-          associatedComments: [],
-          name: 'foo',
-        })
+        SourceExpressionVariable({ type: tupleType([intType, boolType]), name: 'foo' })
       ),
     ]),
     unitType,
@@ -160,12 +155,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         tupleType([intType, boolType]),
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: tupleType([intType, boolType]),
-          associatedComments: [],
-          name: 'foo',
-        })
+        SourceExpressionVariable({ type: tupleType([intType, boolType]), name: 'foo' })
       ),
     ]),
   ],
@@ -196,12 +186,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: identifierType(ModuleReference.DUMMY, 'A'),
-          associatedComments: [],
-          name: 'foo',
-        })
+        SourceExpressionVariable({ type: identifierType(ModuleReference.DUMMY, 'A'), name: 'foo' })
       ),
     ]),
     unitType,
@@ -229,12 +214,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         identifierType(ModuleReference.DUMMY, 'A'),
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: identifierType(ModuleReference.DUMMY, 'A'),
-          associatedComments: [],
-          name: 'foo',
-        })
+        SourceExpressionVariable({ type: identifierType(ModuleReference.DUMMY, 'A'), name: 'foo' })
       ),
     ]),
   ],
@@ -245,7 +225,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, [], 1)
+        SourceExpressionInt(1)
       ),
     ]),
     unitType,
@@ -253,7 +233,7 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, [], 1)
+        SourceExpressionInt(1)
       ),
     ]),
   ],
@@ -263,12 +243,12 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, [], 1)
+        SourceExpressionInt(1)
       ),
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'b' },
         boolType,
-        EXPRESSION_TRUE(Range.DUMMY, [])
+        SourceExpressionTrue()
       ),
     ]),
     unitType,
@@ -276,12 +256,12 @@ const passingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, [], 1)
+        SourceExpressionInt(1)
       ),
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'b' },
         boolType,
-        EXPRESSION_TRUE(Range.DUMMY, [])
+        SourceExpressionTrue()
       ),
     ]),
   ],
@@ -292,10 +272,10 @@ const passingTypeCheckerTestCases: readonly (readonly [
         STATEMENT(
           { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
           intType,
-          EXPRESSION_INT(Range.DUMMY, [], 1)
+          SourceExpressionInt(1)
         ),
       ],
-      EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, associatedComments: [], name: 'a' })
+      SourceExpressionVariable({ type: intType, name: 'a' })
     ),
     intType,
     BLOCK(
@@ -303,54 +283,30 @@ const passingTypeCheckerTestCases: readonly (readonly [
         STATEMENT(
           { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
           intType,
-          EXPRESSION_INT(Range.DUMMY, [], 1)
+          SourceExpressionInt(1)
         ),
       ],
-      EXPRESSION_VARIABLE({ range: Range.DUMMY, type: intType, associatedComments: [], name: 'a' })
+      SourceExpressionVariable({ type: intType, name: 'a' })
     ),
   ],
 
   [
     'wildcard pattern',
     BLOCK([
-      STATEMENT(
-        { range: Range.DUMMY, type: 'WildCardPattern' },
-        intType,
-        EXPRESSION_INT(Range.DUMMY, [], 1)
-      ),
+      STATEMENT({ range: Range.DUMMY, type: 'WildCardPattern' }, intType, SourceExpressionInt(1)),
     ]),
     unitType,
     BLOCK([
-      STATEMENT(
-        { range: Range.DUMMY, type: 'WildCardPattern' },
-        intType,
-        EXPRESSION_INT(Range.DUMMY, [], 1)
-      ),
+      STATEMENT({ range: Range.DUMMY, type: 'WildCardPattern' }, intType, SourceExpressionInt(1)),
     ]),
   ],
 
   ['de-facto unit literal', BLOCK([]), unitType, BLOCK([])],
   [
     'nested de-facto unit literal',
-    BLOCK(
-      [],
-      EXPRESSION_STATEMENT_BLOCK({
-        range: Range.DUMMY,
-        type: unitType,
-        associatedComments: [],
-        block: BLOCK([]),
-      })
-    ),
+    BLOCK([], SourceExpressionStatementBlock({ type: unitType, block: BLOCK([]) })),
     unitType,
-    BLOCK(
-      [],
-      EXPRESSION_STATEMENT_BLOCK({
-        range: Range.DUMMY,
-        type: unitType,
-        associatedComments: [],
-        block: BLOCK([]),
-      })
-    ),
+    BLOCK([], SourceExpressionStatementBlock({ type: unitType, block: BLOCK([]) })),
   ],
 ];
 
@@ -372,12 +328,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: tupleType([intType, boolType]),
-          associatedComments: [],
-          name: 'foo',
-        })
+        SourceExpressionVariable({ type: tupleType([intType, boolType]), name: 'foo' })
       ),
     ]),
     unitType,
@@ -395,12 +346,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: intType,
-          associatedComments: [],
-          name: 'foo',
-        })
+        SourceExpressionVariable({ type: intType, name: 'foo' })
       ),
     ]),
     unitType,
@@ -419,12 +365,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: tupleType([intType, boolType]),
-          associatedComments: [],
-          name: 'foo',
-        })
+        SourceExpressionVariable({ type: tupleType([intType, boolType]), name: 'foo' })
       ),
     ]),
     unitType,
@@ -457,12 +398,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: identifierType(ModuleReference.DUMMY, 'B'),
-          associatedComments: [],
-          name: 'foo',
-        })
+        SourceExpressionVariable({ type: identifierType(ModuleReference.DUMMY, 'B'), name: 'foo' })
       ),
     ]),
     unitType,
@@ -494,12 +430,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: identifierType(ModuleReference.DUMMY, 'C'),
-          associatedComments: [],
-          name: 'foo',
-        })
+        SourceExpressionVariable({ type: identifierType(ModuleReference.DUMMY, 'C'), name: 'foo' })
       ),
     ]),
     unitType,
@@ -533,12 +464,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: tupleType([]),
-          associatedComments: [],
-          name: 'foo',
-        })
+        SourceExpressionVariable({ type: tupleType([]), name: 'foo' })
       ),
     ]),
     unitType,
@@ -570,12 +496,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: identifierType(ModuleReference.DUMMY, 'A'),
-          associatedComments: [],
-          name: 'foo',
-        })
+        SourceExpressionVariable({ type: identifierType(ModuleReference.DUMMY, 'A'), name: 'foo' })
       ),
     ]),
     unitType,
@@ -607,12 +528,7 @@ const failingTypeCheckerTestCases: readonly (readonly [
           ],
         },
         { type: 'UndecidedType', index: 0 },
-        EXPRESSION_VARIABLE({
-          range: Range.DUMMY,
-          type: identifierType(ModuleReference.DUMMY, 'A'),
-          associatedComments: [],
-          name: 'foo',
-        })
+        SourceExpressionVariable({ type: identifierType(ModuleReference.DUMMY, 'A'), name: 'foo' })
       ),
     ]),
     unitType,
@@ -625,12 +541,12 @@ const failingTypeCheckerTestCases: readonly (readonly [
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         intType,
-        EXPRESSION_INT(Range.DUMMY, [], 1)
+        SourceExpressionInt(1)
       ),
       STATEMENT(
         { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
         boolType,
-        EXPRESSION_TRUE(Range.DUMMY, [])
+        SourceExpressionTrue()
       ),
     ]),
     unitType,
@@ -643,15 +559,10 @@ const failingTypeCheckerTestCases: readonly (readonly [
         STATEMENT(
           { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
           intType,
-          EXPRESSION_INT(Range.DUMMY, [], 1)
+          SourceExpressionInt(1)
         ),
       ],
-      EXPRESSION_VARIABLE({
-        range: Range.DUMMY,
-        type: boolType,
-        associatedComments: [],
-        name: 'a',
-      })
+      SourceExpressionVariable({ type: boolType, name: 'a' })
     ),
     intType,
     ['__DUMMY__.sam:0:0-0:0: [UnexpectedType]: Expected: `int`, actual: `bool`.'],

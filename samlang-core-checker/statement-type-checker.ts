@@ -3,7 +3,7 @@ import {
   SamlangExpression,
   SamlangValStatement,
   StatementBlock,
-  EXPRESSION_VARIABLE,
+  SourceExpressionVariable,
 } from 'samlang-core-ast/samlang-expressions';
 import type { Pattern, ObjectPatternDestucturedName } from 'samlang-core-ast/samlang-pattern';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
@@ -37,7 +37,7 @@ export default class StatementTypeChecker {
       }
       // Force the type checker to resolve expected type to unit.
       this.typeCheckExpression(
-        EXPRESSION_VARIABLE({
+        SourceExpressionVariable({
           range,
           type: unitType,
           associatedComments: [],
