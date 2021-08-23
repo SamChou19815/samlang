@@ -233,7 +233,7 @@ describe('samlang-core-parser/index', () => {
       new Set(),
       moduleErrorCollector
     );
-    if (parsed == null) fail();
+    if (parsed == null) throw new Error();
     expect(parsed.imports.length).toBe(1);
     expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
   });

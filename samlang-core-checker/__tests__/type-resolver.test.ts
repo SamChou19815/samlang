@@ -25,7 +25,7 @@ export const undecidedTypeResolver = ({ index }: UndecidedType): Type => {
     case 3:
       return stringType;
     default:
-      fail();
+      throw new Error('');
   }
 };
 const resolve = (type: Type): Type => typeResolver(type, undecidedTypeResolver);

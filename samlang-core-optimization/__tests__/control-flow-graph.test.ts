@@ -46,7 +46,7 @@ describe('control-flow-graph', () => {
   it('DFS should not be able to get to unreachable statements.', () => {
     llvmGraph.dfs((node) => {
       if (node.id > 7) {
-        fail('We should not hit the final unreachable return.');
+        throw new Error('We should not hit the final unreachable return.');
       }
     });
   });
