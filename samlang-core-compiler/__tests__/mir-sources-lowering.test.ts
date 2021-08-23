@@ -22,23 +22,24 @@ import lowerHighIRSourcesToMidIRSources from '../mir-sources-lowering';
 
 const assertLowered = (
   sources: Omit<HighIRSources, 'globalVariables' | 'mainFunctionNames'>,
+  referenceCounting: boolean,
   expected: string
 ) =>
   expect(
     debugPrintMidIRSources(
       lowerHighIRSourcesToMidIRSources(
         { ...sources, globalVariables: [], mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN] },
-        /* referenceCounting */ false
+        referenceCounting
       )
     )
   ).toBe(expected);
 
 describe('mir-sources-lowering', () => {
   it('lowerHighIRSourcesToMidIRSources smoke test', () => {
-    assertLowered({ closureTypes: [], typeDefinitions: [], functions: [] }, '');
+    assertLowered({ closureTypes: [], typeDefinitions: [], functions: [] }, false, '');
   });
 
-  it('lowerHighIRSourcesToMidIRSources comprehensive test', () => {
+  it('lowerHighIRSourcesToMidIRSources comprehensive test without reference counting', () => {
     const closureType = HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('CC');
     const objType = HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Object');
     const variantType = HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Variant');
@@ -156,6 +157,7 @@ describe('mir-sources-lowering', () => {
           },
         ],
       },
+      false,
       `type CC = ((any, int) -> int, any);
 
 type Object = (int, int);

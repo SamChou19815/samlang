@@ -74,7 +74,7 @@ printed`;
     // eslint-disable-next-line no-eval
     const interpretationResult: string = eval(jsCode);
     if (interpretationResult !== expectedStandardOut) {
-      fail(
+      throw new Error(
         `Expected:\n${expectedStandardOut}\nActual:\n${interpretationResult}\nCode:\n${jsCode}\n\nUnoptimized Code:\n${midIRUnoptimizedCommonJSSource}`
       );
     }
@@ -150,7 +150,7 @@ printed`;
         );
         llvmInterpretationEnvironment.printed = '';
       } catch {
-        fail(prettyPrintLLVMSources(llvmSources));
+        throw new Error(prettyPrintLLVMSources(llvmSources));
       }
       expect(result).toBe(expectedStandardOut);
     });
