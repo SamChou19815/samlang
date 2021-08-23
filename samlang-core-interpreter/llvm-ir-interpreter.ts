@@ -340,9 +340,9 @@ function interpretLLVMFunction(
   return returnedValue;
 }
 
-const setupLLVMInterpretationEnvironment = (
+export function setupLLVMInterpretationEnvironment(
   llvmSources: LLVMSources
-): LLVMInterpreterMutableGlobalEnvironment => {
+): LLVMInterpreterMutableGlobalEnvironment {
   const functions = new Map(llvmSources.functions.map((it) => [it.name, it]));
   const globalVariables = new Map<string, number>();
   const strings = new Map<string, string>();
@@ -369,16 +369,15 @@ const setupLLVMInterpretationEnvironment = (
     heapPointer,
     printed: '',
   };
-};
+}
 
-export default function interpretLLVMSources(
-  llvmSources: LLVMSources,
+export function interpretLLVMSources(
+  environment: LLVMInterpreterMutableGlobalEnvironment,
   mainFunctionName: string
 ): string {
-  const environment = setupLLVMInterpretationEnvironment(llvmSources);
   const mainFunction = checkNotNull(
     environment.functions.get(mainFunctionName),
-    'Missing new function!'
+    `Missing new function ${mainFunctionName}!`
   );
   interpretLLVMFunction(environment, mainFunction, []);
   return environment.printed;
