@@ -65,6 +65,7 @@ function lowerHighIRExpression(expression: HighIRExpression): MidIRExpression {
 
 class HighIRToMidIRLoweringManager {
   constructor(
+    private readonly referenceCounting: boolean,
     private readonly closureTypeDefinitions: Readonly<Record<string, MidIRFunctionType>>,
     private readonly typeDefinitions: Readonly<Record<string, HighIRTypeDefinition>>
   ) {}
@@ -277,7 +278,10 @@ class HighIRToMidIRLoweringManager {
   };
 }
 
-export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources): MidIRSources {
+export default function lowerHighIRSourcesToMidIRSources(
+  sources: HighIRSources,
+  referenceCounting: boolean
+): MidIRSources {
   const typeDefinitions: MidIRTypeDefinition[] = [];
   const closureTypeDefinitionMapForLowering = Object.fromEntries(
     sources.closureTypes.map((it) => {
@@ -305,6 +309,7 @@ export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources)
   );
   const functions = sources.functions.map((highIRFunction) =>
     new HighIRToMidIRLoweringManager(
+      referenceCounting,
       closureTypeDefinitionMapForLowering,
       typeDefinitionMapForLowering
     ).lowerHighIRFunction(highIRFunction)
