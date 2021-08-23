@@ -31,8 +31,8 @@ interface BaseExpression extends Node {
 
 type ExpressionConstructorArgumentObject<E extends BaseExpression> = Omit<
   E,
-  '__type__' | 'precedence'
->;
+  '__type__' | 'range' | 'precedence' | 'associatedComments'
+> & { readonly range?: Range; readonly associatedComments?: readonly TypedComment[] };
 
 export interface LiteralExpression extends BaseExpression {
   readonly __type__: 'LiteralExpression';
@@ -184,9 +184,9 @@ export type SamlangExpression =
   | LambdaExpression
   | StatementBlockExpression;
 
-export const EXPRESSION_TRUE = (
-  range: Range,
-  associatedComments: readonly TypedComment[]
+export const SourceExpressionTrue = (
+  range: Range = Range.DUMMY,
+  associatedComments: readonly TypedComment[] = []
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
@@ -196,9 +196,9 @@ export const EXPRESSION_TRUE = (
   literal: TRUE,
 });
 
-export const EXPRESSION_FALSE = (
-  range: Range,
-  associatedComments: readonly TypedComment[]
+export const SourceExpressionFalse = (
+  range: Range = Range.DUMMY,
+  associatedComments: readonly TypedComment[] = []
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
@@ -208,10 +208,10 @@ export const EXPRESSION_FALSE = (
   literal: FALSE,
 });
 
-export const EXPRESSION_INT = (
-  range: Range,
-  associatedComments: readonly TypedComment[],
-  value: number
+export const SourceExpressionInt = (
+  value: number,
+  range: Range = Range.DUMMY,
+  associatedComments: readonly TypedComment[] = []
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
@@ -221,10 +221,10 @@ export const EXPRESSION_INT = (
   literal: intLiteralOf(value),
 });
 
-export const EXPRESSION_STRING = (
-  range: Range,
-  associatedComments: readonly TypedComment[],
-  value: string
+export const SourceExpressionString = (
+  value: string,
+  range: Range = Range.DUMMY,
+  associatedComments: readonly TypedComment[] = []
 ): LiteralExpression => ({
   __type__: 'LiteralExpression',
   range,
@@ -234,10 +234,10 @@ export const EXPRESSION_STRING = (
   literal: stringLiteralOf(value),
 });
 
-export const EXPRESSION_THIS = ({
-  range,
+export const SourceExpressionThis = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
 }: ExpressionConstructorArgumentObject<ThisExpression>): ThisExpression => ({
   __type__: 'ThisExpression',
   range,
@@ -246,10 +246,10 @@ export const EXPRESSION_THIS = ({
   associatedComments,
 });
 
-export const EXPRESSION_VARIABLE = ({
-  range,
+export const SourceExpressionVariable = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   name,
 }: ExpressionConstructorArgumentObject<VariableExpression>): VariableExpression => ({
   __type__: 'VariableExpression',
@@ -260,10 +260,10 @@ export const EXPRESSION_VARIABLE = ({
   name,
 });
 
-export const EXPRESSION_CLASS_MEMBER = ({
-  range,
+export const SourceExpressionClassMember = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   typeArguments,
   moduleReference,
   className,
@@ -286,10 +286,10 @@ export const EXPRESSION_CLASS_MEMBER = ({
   memberNameRange,
 });
 
-export const EXPRESSION_TUPLE_CONSTRUCTOR = ({
-  range,
+export const SourceExpressionTupleConstructor = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   expressions,
 }: ExpressionConstructorArgumentObject<TupleConstructorExpression>): TupleConstructorExpression => ({
   __type__: 'TupleConstructorExpression',
@@ -300,10 +300,10 @@ export const EXPRESSION_TUPLE_CONSTRUCTOR = ({
   expressions,
 });
 
-export const EXPRESSION_OBJECT_CONSTRUCTOR = ({
-  range,
+export const SourceExpressionObjectConstructor = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   fieldDeclarations,
 }: ExpressionConstructorArgumentObject<ObjectConstructorExpression>): ObjectConstructorExpression => ({
   __type__: 'ObjectConstructorExpression',
@@ -314,10 +314,10 @@ export const EXPRESSION_OBJECT_CONSTRUCTOR = ({
   fieldDeclarations,
 });
 
-export const EXPRESSION_VARIANT_CONSTRUCTOR = ({
-  range,
+export const SourceExpressionVariantConstructor = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   tag,
   tagOrder,
   data,
@@ -332,10 +332,10 @@ export const EXPRESSION_VARIANT_CONSTRUCTOR = ({
   data,
 });
 
-export const EXPRESSION_FIELD_ACCESS = ({
-  range,
+export const SourceExpressionFieldAccess = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   expression,
   fieldPrecedingComments,
   fieldName,
@@ -352,10 +352,10 @@ export const EXPRESSION_FIELD_ACCESS = ({
   fieldOrder,
 });
 
-export const EXPRESSION_METHOD_ACCESS = ({
-  range,
+export const SourceExpressionMethodAccess = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   expression,
   methodPrecedingComments,
   methodName,
@@ -370,10 +370,10 @@ export const EXPRESSION_METHOD_ACCESS = ({
   methodName,
 });
 
-export const EXPRESSION_UNARY = ({
-  range,
+export const SourceExpressionUnary = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   operator,
   expression,
 }: ExpressionConstructorArgumentObject<UnaryExpression>): UnaryExpression => ({
@@ -386,10 +386,10 @@ export const EXPRESSION_UNARY = ({
   expression,
 });
 
-export const EXPRESSION_FUNCTION_CALL = ({
-  range,
+export const SourceExpressionFunctionCall = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   functionExpression,
   functionArguments,
 }: ExpressionConstructorArgumentObject<FunctionCallExpression>): FunctionCallExpression => ({
@@ -402,10 +402,10 @@ export const EXPRESSION_FUNCTION_CALL = ({
   functionArguments,
 });
 
-export const EXPRESSION_BINARY = ({
-  range,
+export const SourceExpressionBinary = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   operatorPrecedingComments,
   operator,
   e1,
@@ -422,10 +422,10 @@ export const EXPRESSION_BINARY = ({
   e2,
 });
 
-export const EXPRESSION_IF_ELSE = ({
-  range,
+export const SourceExpressionIfElse = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   boolExpression,
   e1,
   e2,
@@ -440,10 +440,10 @@ export const EXPRESSION_IF_ELSE = ({
   e2,
 });
 
-export const EXPRESSION_MATCH = ({
-  range,
+export const SourceExpressionMatch = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   matchedExpression,
   matchingList,
 }: ExpressionConstructorArgumentObject<MatchExpression>): MatchExpression => ({
@@ -456,10 +456,10 @@ export const EXPRESSION_MATCH = ({
   matchingList,
 });
 
-export const EXPRESSION_LAMBDA = ({
-  range,
+export const SourceExpressionLambda = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   parameters,
   captured,
   body,
@@ -474,10 +474,10 @@ export const EXPRESSION_LAMBDA = ({
   body,
 });
 
-export const EXPRESSION_STATEMENT_BLOCK = ({
-  range,
+export const SourceExpressionStatementBlock = ({
+  range = Range.DUMMY,
   type,
-  associatedComments,
+  associatedComments = [],
   block,
 }: ExpressionConstructorArgumentObject<StatementBlockExpression>): StatementBlockExpression => ({
   __type__: 'StatementBlockExpression',

@@ -31,12 +31,12 @@ import {
   MatchExpression,
   LambdaExpression,
   StatementBlockExpression,
-  EXPRESSION_VARIABLE,
-  EXPRESSION_OBJECT_CONSTRUCTOR,
-  EXPRESSION_METHOD_ACCESS,
-  EXPRESSION_FUNCTION_CALL,
-  EXPRESSION_MATCH,
-  EXPRESSION_LAMBDA,
+  SourceExpressionVariable,
+  SourceExpressionObjectConstructor,
+  SourceExpressionMethodAccess,
+  SourceExpressionFunctionCall,
+  SourceExpressionMatch,
+  SourceExpressionLambda,
 } from 'samlang-core-ast/samlang-expressions';
 import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
@@ -229,7 +229,7 @@ class ExpressionTypeChecker {
           });
         } else {
           const checkedExpression = this.basicTypeCheck(
-            EXPRESSION_VARIABLE({ range, type, associatedComments: [], name })
+            SourceExpressionVariable({ range, type, associatedComments: [], name })
           );
           const checkedType = checkedExpression.type;
           declaredFieldTypes[name] = checkedType;
@@ -316,7 +316,7 @@ class ExpressionTypeChecker {
         (field1, field2) =>
           checkNotNull(fieldOrderMap[field1.name]) - checkNotNull(fieldOrderMap[field2.name])
       );
-      return EXPRESSION_OBJECT_CONSTRUCTOR({
+      return SourceExpressionObjectConstructor({
         range: expression.range,
         type: constraintInferredType,
         associatedComments: expression.associatedComments,
@@ -400,7 +400,7 @@ class ExpressionTypeChecker {
     expectedType: Type
   ): SamlangExpression {
     const tryTypeCheckMethodAccessResult = this.tryTypeCheckMethodAccess(
-      EXPRESSION_METHOD_ACCESS({
+      SourceExpressionMethodAccess({
         range: expression.range,
         type: expression.type,
         associatedComments: expression.associatedComments,
@@ -416,7 +416,7 @@ class ExpressionTypeChecker {
         methodType,
         expression.range
       );
-      return EXPRESSION_METHOD_ACCESS({
+      return SourceExpressionMethodAccess({
         range: expression.range,
         type: constraintInferredType,
         associatedComments: expression.associatedComments,
@@ -529,7 +529,7 @@ class ExpressionTypeChecker {
       locallyInferredReturnType,
       expression.range
     );
-    return EXPRESSION_FUNCTION_CALL({
+    return SourceExpressionFunctionCall({
       range: expression.range,
       type: constraintInferredType,
       associatedComments: expression.associatedComments,
@@ -682,7 +682,7 @@ class ExpressionTypeChecker {
       .reduce((expected, actual) =>
         this.constraintAwareTypeChecker.checkAndInfer(expected, actual, expression.range)
       );
-    return EXPRESSION_MATCH({
+    return SourceExpressionMatch({
       range: expression.range,
       type: finalType,
       associatedComments: expression.associatedComments,
@@ -722,7 +722,7 @@ class ExpressionTypeChecker {
       constraintInferredType.type === 'FunctionType',
       'Should always be inferred as function type!'
     );
-    return EXPRESSION_LAMBDA({
+    return SourceExpressionLambda({
       range: expression.range,
       type: constraintInferredType,
       associatedComments: expression.associatedComments,

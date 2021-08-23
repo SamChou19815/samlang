@@ -1,8 +1,8 @@
 import type { IdentifierType } from 'samlang-core-ast/common-nodes';
 import {
   SamlangExpression,
-  EXPRESSION_VARIABLE,
-  EXPRESSION_LAMBDA,
+  SourceExpressionVariable,
+  SourceExpressionLambda,
 } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule, ClassDefinition } from 'samlang-core-ast/samlang-toplevel';
 import { assert, checkNotNull, zip } from 'samlang-core-utils';
@@ -138,7 +138,10 @@ export class ExpressionInterpreter {
             const { range, type, name } = declaration;
             objectContent.set(
               declaration.name,
-              this.eval(EXPRESSION_VARIABLE({ range, type, name, associatedComments: [] }), context)
+              this.eval(
+                SourceExpressionVariable({ range, type, name, associatedComments: [] }),
+                context
+              )
             );
           }
         });
@@ -421,7 +424,7 @@ class ModuleInterpreter {
     const functions: Record<string, FunctionValue> = {};
     const methods: Record<string, FunctionValue> = {};
     classDefinition.members.forEach((member) => {
-      const lambda = EXPRESSION_LAMBDA({
+      const lambda = SourceExpressionLambda({
         range: member.range,
         type: member.type,
         associatedComments: [],

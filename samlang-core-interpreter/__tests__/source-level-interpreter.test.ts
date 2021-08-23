@@ -1,16 +1,10 @@
-import {
-  stringType,
-  identifierType,
-  Range,
-  ModuleReference,
-  Position,
-} from 'samlang-core-ast/common-nodes';
+import { stringType, identifierType, ModuleReference } from 'samlang-core-ast/common-nodes';
 import {
   SamlangExpression,
   VariantConstructorExpression,
-  EXPRESSION_TRUE,
-  EXPRESSION_METHOD_ACCESS,
-  EXPRESSION_MATCH,
+  SourceExpressionTrue,
+  SourceExpressionMethodAccess,
+  SourceExpressionMatch,
 } from 'samlang-core-ast/samlang-expressions';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
@@ -136,10 +130,7 @@ describe('source-level-interpreter', () => {
       data: { type: 'int', value: 1 },
     });
 
-    const samlangExpression = EXPRESSION_TRUE(
-      new Range(new Position(1, 2), new Position(3, 4)),
-      []
-    );
+    const samlangExpression = SourceExpressionTrue();
     expect({
       type: 'functionValue',
       arguments: [],
@@ -171,10 +162,7 @@ describe('source-level-interpreter', () => {
   it('non-empty context equality check', () => {
     const testFunctions: Record<string, FunctionValue> = {};
     const testMethods: Record<string, FunctionValue> = {};
-    const samlangExpression = EXPRESSION_TRUE(
-      new Range(new Position(1, 2), new Position(3, 4)),
-      []
-    );
+    const samlangExpression = SourceExpressionTrue();
     const functionValue: FunctionValue = {
       type: 'functionValue',
       arguments: [],
@@ -266,10 +254,8 @@ describe('source-level-interpreter', () => {
   });
 
   it('method access expression evaluates correctly', () => {
-    const methodAccessExpression = EXPRESSION_METHOD_ACCESS({
-      range: Range.DUMMY,
+    const methodAccessExpression = SourceExpressionMethodAccess({
       type: identifierType(ModuleReference.DUMMY, 'C', []),
-      associatedComments: [],
       expression: {
         ...(getExpression('Tag(5)') as VariantConstructorExpression),
         type: identifierType(ModuleReference.DUMMY, 'C', []),
@@ -368,10 +354,8 @@ describe('source-level-interpreter', () => {
     expect(interpret('match (Tag(5)) { | Tag _ -> "value" }')).toEqual('value');
     expect(() =>
       new ExpressionInterpreter().eval(
-        EXPRESSION_MATCH({
-          range: Range.DUMMY,
+        SourceExpressionMatch({
           type: stringType,
-          associatedComments: [],
           matchedExpression: getExpression('Tag(5)'),
           matchingList: [],
         }),

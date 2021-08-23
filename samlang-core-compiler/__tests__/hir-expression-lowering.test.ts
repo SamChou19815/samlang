@@ -15,32 +15,31 @@ import {
   debugPrintHighIRStatement,
   debugPrintHighIRSources,
   HighIRSources,
-  HIR_FUNCTION_TYPE,
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
   HIR_INT_TYPE,
   HIR_BOOL_TYPE,
 } from 'samlang-core-ast/hir-nodes';
 import {
   SamlangExpression,
-  EXPRESSION_FALSE,
-  EXPRESSION_TRUE,
-  EXPRESSION_INT,
-  EXPRESSION_STRING,
-  EXPRESSION_THIS,
-  EXPRESSION_VARIABLE,
-  EXPRESSION_CLASS_MEMBER,
-  EXPRESSION_TUPLE_CONSTRUCTOR,
-  EXPRESSION_OBJECT_CONSTRUCTOR,
-  EXPRESSION_VARIANT_CONSTRUCTOR,
-  EXPRESSION_FIELD_ACCESS,
-  EXPRESSION_METHOD_ACCESS,
-  EXPRESSION_UNARY,
-  EXPRESSION_FUNCTION_CALL,
-  EXPRESSION_BINARY,
-  EXPRESSION_LAMBDA,
-  EXPRESSION_IF_ELSE,
-  EXPRESSION_MATCH,
-  EXPRESSION_STATEMENT_BLOCK,
+  SourceExpressionFalse,
+  SourceExpressionTrue,
+  SourceExpressionInt,
+  SourceExpressionString,
+  SourceExpressionThis,
+  SourceExpressionVariable,
+  SourceExpressionClassMember,
+  SourceExpressionTupleConstructor,
+  SourceExpressionObjectConstructor,
+  SourceExpressionVariantConstructor,
+  SourceExpressionFieldAccess,
+  SourceExpressionMethodAccess,
+  SourceExpressionUnary,
+  SourceExpressionFunctionCall,
+  SourceExpressionBinary,
+  SourceExpressionLambda,
+  SourceExpressionIfElse,
+  SourceExpressionMatch,
+  SourceExpressionStatementBlock,
 } from 'samlang-core-ast/samlang-expressions';
 
 import lowerSamlangExpression from '../hir-expression-lowering';
@@ -48,11 +47,7 @@ import HighIRStringManager from '../hir-string-manager';
 import { HighIRTypeSynthesizer, SamlangTypeLoweringManager } from '../hir-type-conversion';
 
 const DUMMY_IDENTIFIER_TYPE = identifierType(ModuleReference.DUMMY, 'Dummy');
-const THIS = EXPRESSION_THIS({
-  range: Range.DUMMY,
-  type: DUMMY_IDENTIFIER_TYPE,
-  associatedComments: [],
-});
+const THIS = SourceExpressionThis({ type: DUMMY_IDENTIFIER_TYPE });
 
 const expectCorrectlyLowered = (
   samlangExpression: SamlangExpression,
@@ -106,11 +101,11 @@ return ${debugPrintHighIRExpression(expression)};`.trim()
 
 describe('hir-expression-lowering', () => {
   it('Literal lowering works.', () => {
-    expectCorrectlyLowered(EXPRESSION_FALSE(Range.DUMMY, []), 'return 0;');
-    expectCorrectlyLowered(EXPRESSION_TRUE(Range.DUMMY, []), 'return 1;');
-    expectCorrectlyLowered(EXPRESSION_INT(Range.DUMMY, [], 0), 'return 0;');
+    expectCorrectlyLowered(SourceExpressionFalse(), 'return 0;');
+    expectCorrectlyLowered(SourceExpressionTrue(), 'return 1;');
+    expectCorrectlyLowered(SourceExpressionInt(0), 'return 0;');
     expectCorrectlyLowered(
-      EXPRESSION_STRING(Range.DUMMY, [], 'foo'),
+      SourceExpressionString('foo'),
       "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;"
     );
   });
@@ -121,22 +116,15 @@ describe('hir-expression-lowering', () => {
 
   it('Variable lowering works.', () => {
     expectCorrectlyLowered(
-      EXPRESSION_VARIABLE({
-        range: Range.DUMMY,
-        type: unitType,
-        name: 'foo',
-        associatedComments: [],
-      }),
+      SourceExpressionVariable({ type: unitType, name: 'foo' }),
       'return (foo: int);'
     );
   });
 
   it('ClassMember lowering works.', () => {
     expectCorrectlyLowered(
-      EXPRESSION_CLASS_MEMBER({
-        range: Range.DUMMY,
+      SourceExpressionClassMember({
         type: functionType([intType], intType),
-        associatedComments: [],
         typeArguments: [],
         moduleReference: ModuleReference.DUMMY,
         className: 'A',
@@ -157,10 +145,8 @@ return (_t0: $SyntheticIDType0);`
   describe('Lowering to StructConstructor works', () => {
     it('1/n.', () => {
       expectCorrectlyLowered(
-        EXPRESSION_TUPLE_CONSTRUCTOR({
-          range: Range.DUMMY,
+        SourceExpressionTupleConstructor({
           type: tupleType([DUMMY_IDENTIFIER_TYPE]),
-          associatedComments: [],
           expressions: [THIS],
         }),
         `object type $SyntheticIDType0 = [__DUMMY___Dummy]
@@ -171,10 +157,8 @@ return (_t0: $SyntheticIDType0);`
 
     it('2/n', () => {
       expectCorrectlyLowered(
-        EXPRESSION_OBJECT_CONSTRUCTOR({
-          range: Range.DUMMY,
+        SourceExpressionObjectConstructor({
           type: identifierType(ModuleReference.DUMMY, 'Foo'),
-          associatedComments: [],
           fieldDeclarations: [
             {
               range: Range.DUMMY,
@@ -200,10 +184,8 @@ return (_t0: __DUMMY___Foo);`
 
     it('3/n', () => {
       expectCorrectlyLowered(
-        EXPRESSION_VARIANT_CONSTRUCTOR({
-          range: Range.DUMMY,
+        SourceExpressionVariantConstructor({
           type: identifierType(ModuleReference.DUMMY, 'Foo'),
-          associatedComments: [],
           tag: 'Foo',
           tagOrder: 1,
           data: THIS,
@@ -216,10 +198,8 @@ return (_t0: __DUMMY___Foo);`
 
   it('FieldAccess lowering works.', () => {
     expectCorrectlyLowered(
-      EXPRESSION_FIELD_ACCESS({
-        range: Range.DUMMY,
+      SourceExpressionFieldAccess({
         type: unitType,
-        associatedComments: [],
         expression: THIS,
         fieldPrecedingComments: [],
         fieldName: 'foo',
@@ -231,10 +211,8 @@ return (_t0: __DUMMY___Foo);`
 
   it('MethodAccess lowering works.', () => {
     expectCorrectlyLowered(
-      EXPRESSION_METHOD_ACCESS({
-        range: Range.DUMMY,
+      SourceExpressionMethodAccess({
         type: functionType([intType], intType),
-        associatedComments: [],
         expression: THIS,
         methodPrecedingComments: [],
         methodName: 'foo',
@@ -250,24 +228,12 @@ return (_t0: $SyntheticIDType0);`
 
   it('Unary lowering works.', () => {
     expectCorrectlyLowered(
-      EXPRESSION_UNARY({
-        range: Range.DUMMY,
-        type: unitType,
-        associatedComments: [],
-        operator: '!',
-        expression: THIS,
-      }),
+      SourceExpressionUnary({ type: unitType, operator: '!', expression: THIS }),
       'let _t0: bool = (_this: __DUMMY___Dummy) ^ 1;\nreturn (_t0: bool);'
     );
 
     expectCorrectlyLowered(
-      EXPRESSION_UNARY({
-        range: Range.DUMMY,
-        type: unitType,
-        associatedComments: [],
-        operator: '-',
-        expression: THIS,
-      }),
+      SourceExpressionUnary({ type: unitType, operator: '-', expression: THIS }),
       'let _t0: int = 0 - (_this: __DUMMY___Dummy);\nreturn (_t0: int);'
     );
   });
@@ -275,14 +241,10 @@ return (_t0: $SyntheticIDType0);`
   describe('FunctionCall family lowering works', () => {
     it('1/n: class member call with return', () => {
       expectCorrectlyLowered(
-        EXPRESSION_FUNCTION_CALL({
-          range: Range.DUMMY,
+        SourceExpressionFunctionCall({
           type: intType,
-          associatedComments: [],
-          functionExpression: EXPRESSION_CLASS_MEMBER({
-            range: Range.DUMMY,
+          functionExpression: SourceExpressionClassMember({
             type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], intType),
-            associatedComments: [],
             typeArguments: [],
             moduleReference: new ModuleReference(['ModuleModule']),
             className: 'ImportedClass',
@@ -300,14 +262,10 @@ return (_t0: int);`
 
     it('2/n class member call without return', () => {
       expectCorrectlyLowered(
-        EXPRESSION_FUNCTION_CALL({
-          range: Range.DUMMY,
+        SourceExpressionFunctionCall({
           type: unitType,
-          associatedComments: [],
-          functionExpression: EXPRESSION_CLASS_MEMBER({
-            range: Range.DUMMY,
+          functionExpression: SourceExpressionClassMember({
             type: functionType([intType], unitType),
-            associatedComments: [],
             typeArguments: [],
             moduleReference: ModuleReference.DUMMY,
             className: 'C',
@@ -316,7 +274,7 @@ return (_t0: int);`
             memberName: 'm1',
             memberNameRange: Range.DUMMY,
           }),
-          functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
+          functionArguments: [SourceExpressionInt(0)],
         }),
         `___DUMMY___C_m1(0);
 return 0;`
@@ -325,14 +283,10 @@ return 0;`
 
     it('3/n class member call with return', () => {
       expectCorrectlyLowered(
-        EXPRESSION_FUNCTION_CALL({
-          range: Range.DUMMY,
+        SourceExpressionFunctionCall({
           type: DUMMY_IDENTIFIER_TYPE,
-          associatedComments: [],
-          functionExpression: EXPRESSION_CLASS_MEMBER({
-            range: Range.DUMMY,
+          functionExpression: SourceExpressionClassMember({
             type: functionType([intType], DUMMY_IDENTIFIER_TYPE),
-            associatedComments: [],
             typeArguments: [],
             moduleReference: ModuleReference.DUMMY,
             className: 'C',
@@ -341,7 +295,7 @@ return 0;`
             memberName: 'm2',
             memberNameRange: Range.DUMMY,
           }),
-          functionArguments: [EXPRESSION_INT(Range.DUMMY, [], 0)],
+          functionArguments: [SourceExpressionInt(0)],
         }),
         `let _t0: __DUMMY___Dummy = ___DUMMY___C_m2(0);
 return (_t0: __DUMMY___Dummy);`
@@ -350,14 +304,10 @@ return (_t0: __DUMMY___Dummy);`
 
     it('4/n method call with return', () => {
       expectCorrectlyLowered(
-        EXPRESSION_FUNCTION_CALL({
-          range: Range.DUMMY,
+        SourceExpressionFunctionCall({
           type: intType,
-          associatedComments: [],
-          functionExpression: EXPRESSION_METHOD_ACCESS({
-            range: Range.DUMMY,
+          functionExpression: SourceExpressionMethodAccess({
             type: functionType([DUMMY_IDENTIFIER_TYPE, DUMMY_IDENTIFIER_TYPE], intType),
-            associatedComments: [],
             expression: THIS,
             methodPrecedingComments: [],
             methodName: 'fooBar',
@@ -371,17 +321,13 @@ return (_t0: int);`
 
     it('5/n closure call with return', () => {
       expectCorrectlyLowered(
-        EXPRESSION_FUNCTION_CALL({
-          range: Range.DUMMY,
+        SourceExpressionFunctionCall({
           type: intType,
-          associatedComments: [],
-          functionExpression: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            name: 'closure',
+          functionExpression: SourceExpressionVariable({
             type: functionType([boolType], intType),
-            associatedComments: [],
+            name: 'closure',
           }),
-          functionArguments: [EXPRESSION_TRUE(Range.DUMMY, [])],
+          functionArguments: [SourceExpressionTrue(Range.DUMMY, [])],
         }),
         `let _t0: int = (closure: Closure)(1);
 return (_t0: int);`
@@ -390,17 +336,13 @@ return (_t0: int);`
 
     it('6/n closure call without return', () => {
       expectCorrectlyLowered(
-        EXPRESSION_FUNCTION_CALL({
-          range: Range.DUMMY,
+        SourceExpressionFunctionCall({
           type: unitType,
-          associatedComments: [],
-          functionExpression: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            name: 'closure_unit_return',
+          functionExpression: SourceExpressionVariable({
             type: functionType([boolType], unitType),
-            associatedComments: [],
+            name: 'closure_unit_return',
           }),
-          functionArguments: [EXPRESSION_TRUE(Range.DUMMY, [])],
+          functionArguments: [SourceExpressionTrue(Range.DUMMY, [])],
         }),
         `(closure_unit_return: Closure)(1);
 return 0;`
@@ -411,10 +353,8 @@ return 0;`
   describe('Binary lowering works.', () => {
     it('Normal +', () => {
       expectCorrectlyLowered(
-        EXPRESSION_BINARY({
-          range: Range.DUMMY,
+        SourceExpressionBinary({
           type: intType,
-          associatedComments: [],
           operatorPrecedingComments: [],
           operator: PLUS,
           e1: THIS,
@@ -426,10 +366,8 @@ return 0;`
 
     it('Normal *', () => {
       expectCorrectlyLowered(
-        EXPRESSION_BINARY({
-          range: Range.DUMMY,
+        SourceExpressionBinary({
           type: intType,
-          associatedComments: [],
           operatorPrecedingComments: [],
           operator: MUL,
           e1: THIS,
@@ -441,24 +379,12 @@ return 0;`
 
     it('Short circuiting &&', () => {
       expectCorrectlyLowered(
-        EXPRESSION_BINARY({
-          range: Range.DUMMY,
+        SourceExpressionBinary({
           type: boolType,
-          associatedComments: [],
           operatorPrecedingComments: [],
           operator: AND,
-          e1: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            type: boolType,
-            name: 'foo',
-            associatedComments: [],
-          }),
-          e2: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            type: boolType,
-            name: 'bar',
-            associatedComments: [],
-          }),
+          e1: SourceExpressionVariable({ type: boolType, name: 'foo' }),
+          e2: SourceExpressionVariable({ type: boolType, name: 'bar' }),
         }),
         `let _t0: bool;
 if (foo: int) {
@@ -470,37 +396,23 @@ return (_t0: bool);`
       );
 
       expectCorrectlyLowered(
-        EXPRESSION_BINARY({
-          range: Range.DUMMY,
+        SourceExpressionBinary({
           type: boolType,
-          associatedComments: [],
           operatorPrecedingComments: [],
           operator: AND,
-          e1: EXPRESSION_TRUE(Range.DUMMY, []),
-          e2: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            type: intType,
-            name: 'foo',
-            associatedComments: [],
-          }),
+          e1: SourceExpressionTrue(),
+          e2: SourceExpressionVariable({ type: intType, name: 'foo' }),
         }),
         'return (foo: int);'
       );
 
       expectCorrectlyLowered(
-        EXPRESSION_BINARY({
-          range: Range.DUMMY,
+        SourceExpressionBinary({
           type: boolType,
-          associatedComments: [],
           operatorPrecedingComments: [],
           operator: AND,
-          e1: EXPRESSION_FALSE(Range.DUMMY, []),
-          e2: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            type: intType,
-            name: 'foo',
-            associatedComments: [],
-          }),
+          e1: SourceExpressionFalse(),
+          e2: SourceExpressionVariable({ type: intType, name: 'foo' }),
         }),
         'return 0;'
       );
@@ -508,50 +420,34 @@ return (_t0: bool);`
 
     it('Short circuiting ||', () => {
       expectCorrectlyLowered(
-        EXPRESSION_BINARY({
-          range: Range.DUMMY,
+        SourceExpressionBinary({
           type: boolType,
           operator: OR,
-          associatedComments: [],
           operatorPrecedingComments: [],
-          e1: EXPRESSION_TRUE(Range.DUMMY, []),
-          e2: EXPRESSION_INT(Range.DUMMY, [], 65536),
+          e1: SourceExpressionTrue(),
+          e2: SourceExpressionInt(65536),
         }),
         'return 1;'
       );
 
       expectCorrectlyLowered(
-        EXPRESSION_BINARY({
-          range: Range.DUMMY,
+        SourceExpressionBinary({
           type: boolType,
-          associatedComments: [],
           operatorPrecedingComments: [],
           operator: OR,
-          e1: EXPRESSION_FALSE(Range.DUMMY, []),
-          e2: EXPRESSION_INT(Range.DUMMY, [], 65536),
+          e1: SourceExpressionFalse(),
+          e2: SourceExpressionInt(65536),
         }),
         'return 65536;'
       );
 
       expectCorrectlyLowered(
-        EXPRESSION_BINARY({
-          range: Range.DUMMY,
+        SourceExpressionBinary({
           type: boolType,
-          associatedComments: [],
           operatorPrecedingComments: [],
           operator: OR,
-          e1: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            type: boolType,
-            name: 'foo',
-            associatedComments: [],
-          }),
-          e2: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            type: boolType,
-            name: 'bar',
-            associatedComments: [],
-          }),
+          e1: SourceExpressionVariable({ type: boolType, name: 'foo' }),
+          e2: SourceExpressionVariable({ type: boolType, name: 'bar' }),
         }),
         `let _t0: bool;
 if (foo: int) {
@@ -565,10 +461,8 @@ return (_t0: bool);`
 
     it('Normal string concat', () => {
       expectCorrectlyLowered(
-        EXPRESSION_BINARY({
-          range: Range.DUMMY,
+        SourceExpressionBinary({
           type: stringType,
-          associatedComments: [],
           operatorPrecedingComments: [],
           operator: CONCAT,
           e1: THIS,
@@ -581,14 +475,12 @@ return (_t0: string);`
 
     it('Optimizing string concat', () => {
       expectCorrectlyLowered(
-        EXPRESSION_BINARY({
-          range: Range.DUMMY,
+        SourceExpressionBinary({
           type: stringType,
-          associatedComments: [],
           operatorPrecedingComments: [],
           operator: CONCAT,
-          e1: EXPRESSION_STRING(Range.DUMMY, [], 'hello '),
-          e2: EXPRESSION_STRING(Range.DUMMY, [], 'world'),
+          e1: SourceExpressionString('hello '),
+          e2: SourceExpressionString('world'),
         }),
         "const GLOBAL_STRING_0 = 'hello world';\n\n\nreturn GLOBAL_STRING_0;"
       );
@@ -598,10 +490,8 @@ return (_t0: string);`
   describe('Lambda lowering works', () => {
     it('1/n', () => {
       expectCorrectlyLowered(
-        EXPRESSION_LAMBDA({
-          range: Range.DUMMY,
+        SourceExpressionLambda({
           type: functionType([], unitType),
-          associatedComments: [],
           parameters: [['a', Range.DUMMY, unitType]],
           captured: { captured_a: unitType },
           body: THIS,
@@ -624,10 +514,8 @@ return (_t0: $SyntheticIDType1);`
 
     it('2/n', () => {
       expectCorrectlyLowered(
-        EXPRESSION_LAMBDA({
-          range: Range.DUMMY,
+        SourceExpressionLambda({
           type: functionType([], intType),
-          associatedComments: [],
           parameters: [['a', Range.DUMMY, unitType]],
           captured: { captured_a: unitType },
           body: THIS,
@@ -650,10 +538,8 @@ return (_t0: $SyntheticIDType1);`
 
     it('3/n', () => {
       expectCorrectlyLowered(
-        EXPRESSION_LAMBDA({
-          range: Range.DUMMY,
+        SourceExpressionLambda({
           type: functionType([], DUMMY_IDENTIFIER_TYPE),
-          associatedComments: [],
           parameters: [['a', Range.DUMMY, unitType]],
           captured: { captured_a: unitType },
           body: THIS,
@@ -676,10 +562,8 @@ return (_t0: $SyntheticIDType1);`
 
     it('4/n', () => {
       expectCorrectlyLowered(
-        EXPRESSION_LAMBDA({
-          range: Range.DUMMY,
+        SourceExpressionLambda({
           type: functionType([], DUMMY_IDENTIFIER_TYPE),
-          associatedComments: [],
           parameters: [['a', Range.DUMMY, unitType]],
           captured: {},
           body: THIS,
@@ -701,10 +585,8 @@ return (_t0: $SyntheticIDType0);`
   describe('IfElse lowering works', () => {
     it('1/n', () => {
       expectCorrectlyLowered(
-        EXPRESSION_IF_ELSE({
-          range: Range.DUMMY,
+        SourceExpressionIfElse({
           type: DUMMY_IDENTIFIER_TYPE,
-          associatedComments: [],
           boolExpression: THIS,
           e1: THIS,
           e2: THIS,
@@ -721,14 +603,7 @@ return (_t0: __DUMMY___Dummy);`
 
     it('2/n', () => {
       expectCorrectlyLowered(
-        EXPRESSION_IF_ELSE({
-          range: Range.DUMMY,
-          type: unitType,
-          associatedComments: [],
-          boolExpression: THIS,
-          e1: THIS,
-          e2: THIS,
-        }),
+        SourceExpressionIfElse({ type: unitType, boolExpression: THIS, e1: THIS, e2: THIS }),
         `if (_this: __DUMMY___Dummy) {
 } else {
 }
@@ -740,10 +615,8 @@ return 0;`
   describe('Match lowering works', () => {
     it('1/n', () => {
       expectCorrectlyLowered(
-        EXPRESSION_MATCH({
-          range: Range.DUMMY,
+        SourceExpressionMatch({
           type: DUMMY_IDENTIFIER_TYPE,
-          associatedComments: [],
           matchedExpression: THIS,
           matchingList: [
             {
@@ -776,10 +649,8 @@ return (_t2: __DUMMY___Dummy);`
 
     it('2/n', () => {
       expectCorrectlyLowered(
-        EXPRESSION_MATCH({
-          range: Range.DUMMY,
+        SourceExpressionMatch({
           type: unitType,
-          associatedComments: [],
           matchedExpression: THIS,
           matchingList: [
             {
@@ -819,10 +690,8 @@ return 0;`
 
     it('3/n', () => {
       expectCorrectlyLowered(
-        EXPRESSION_MATCH({
-          range: Range.DUMMY,
+        SourceExpressionMatch({
           type: DUMMY_IDENTIFIER_TYPE,
-          associatedComments: [],
           matchedExpression: THIS,
           matchingList: [
             {
@@ -836,12 +705,7 @@ return 0;`
               tag: 'Bar',
               tagOrder: 1,
               dataVariable: ['bar', Range.DUMMY, DUMMY_IDENTIFIER_TYPE],
-              expression: EXPRESSION_VARIABLE({
-                range: Range.DUMMY,
-                name: 'bar',
-                type: DUMMY_IDENTIFIER_TYPE,
-                associatedComments: [],
-              }),
+              expression: SourceExpressionVariable({ type: DUMMY_IDENTIFIER_TYPE, name: 'bar' }),
             },
             {
               range: Range.DUMMY,
@@ -875,10 +739,8 @@ return (_t4: __DUMMY___Dummy);`
   describe('StatementBlockExpression lowering works', () => {
     it('All syntax forms', () => {
       expectCorrectlyLowered(
-        EXPRESSION_STATEMENT_BLOCK({
-          range: Range.DUMMY,
+        SourceExpressionStatementBlock({
           type: unitType,
-          associatedComments: [],
           block: {
             range: Range.DUMMY,
             statements: [
@@ -893,14 +755,11 @@ return (_t4: __DUMMY___Dummy);`
                   ],
                 },
                 typeAnnotation: tupleType([intType, intType]),
-                assignedExpression: EXPRESSION_TUPLE_CONSTRUCTOR({
+                assignedExpression: SourceExpressionTupleConstructor({
                   range: Range.DUMMY,
                   type: tupleType([intType, intType]),
                   associatedComments: [],
-                  expressions: [
-                    EXPRESSION_INT(Range.DUMMY, [], 1),
-                    EXPRESSION_INT(Range.DUMMY, [], 2),
-                  ],
+                  expressions: [SourceExpressionInt(1), SourceExpressionInt(2)],
                 }),
                 associatedComments: [],
               },
@@ -908,10 +767,8 @@ return (_t4: __DUMMY___Dummy);`
                 range: Range.DUMMY,
                 pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
                 typeAnnotation: unitType,
-                assignedExpression: EXPRESSION_STATEMENT_BLOCK({
-                  range: Range.DUMMY,
+                assignedExpression: SourceExpressionStatementBlock({
                   type: unitType,
-                  associatedComments: [],
                   block: {
                     range: Range.DUMMY,
                     statements: [
@@ -964,12 +821,7 @@ return (_t4: __DUMMY___Dummy);`
                         associatedComments: [],
                       },
                     ],
-                    expression: EXPRESSION_VARIABLE({
-                      range: Range.DUMMY,
-                      type: unitType,
-                      associatedComments: [],
-                      name: 'a',
-                    }),
+                    expression: SourceExpressionVariable({ type: unitType, name: 'a' }),
                   },
                 }),
                 associatedComments: [],
@@ -989,10 +841,8 @@ return 0;`
 
     it('Copy propagation', () => {
       expectCorrectlyLowered(
-        EXPRESSION_STATEMENT_BLOCK({
-          range: Range.DUMMY,
+        SourceExpressionStatementBlock({
           type: unitType,
-          associatedComments: [],
           block: {
             range: Range.DUMMY,
             statements: [
@@ -1000,28 +850,18 @@ return 0;`
                 range: Range.DUMMY,
                 pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
                 typeAnnotation: unitType,
-                assignedExpression: EXPRESSION_STRING(Range.DUMMY, [], 'foo'),
+                assignedExpression: SourceExpressionString('foo'),
                 associatedComments: [],
               },
               {
                 range: Range.DUMMY,
                 pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'b' },
                 typeAnnotation: unitType,
-                assignedExpression: EXPRESSION_VARIABLE({
-                  range: Range.DUMMY,
-                  type: stringType,
-                  associatedComments: [],
-                  name: 'a',
-                }),
+                assignedExpression: SourceExpressionVariable({ type: stringType, name: 'a' }),
                 associatedComments: [],
               },
             ],
-            expression: EXPRESSION_VARIABLE({
-              range: Range.DUMMY,
-              type: stringType,
-              associatedComments: [],
-              name: 'b',
-            }),
+            expression: SourceExpressionVariable({ type: stringType, name: 'b' }),
           },
         }),
         "const GLOBAL_STRING_0 = 'foo';\n\n\nreturn GLOBAL_STRING_0;"
@@ -1030,10 +870,8 @@ return 0;`
 
     it('Shadowing', () => {
       expectCorrectlyLowered(
-        EXPRESSION_STATEMENT_BLOCK({
-          range: Range.DUMMY,
+        SourceExpressionStatementBlock({
           type: stringType,
-          associatedComments: [],
           block: {
             range: Range.DUMMY,
             statements: [
@@ -1041,10 +879,8 @@ return 0;`
                 range: Range.DUMMY,
                 typeAnnotation: stringType,
                 pattern: { range: Range.DUMMY, type: 'VariablePattern', name: 'a' },
-                assignedExpression: EXPRESSION_STATEMENT_BLOCK({
-                  range: Range.DUMMY,
+                assignedExpression: SourceExpressionStatementBlock({
                   type: unitType,
-                  associatedComments: [],
                   block: {
                     range: Range.DUMMY,
                     statements: [
@@ -1056,23 +892,13 @@ return 0;`
                         associatedComments: [],
                       },
                     ],
-                    expression: EXPRESSION_VARIABLE({
-                      range: Range.DUMMY,
-                      type: stringType,
-                      associatedComments: [],
-                      name: 'a',
-                    }),
+                    expression: SourceExpressionVariable({ type: stringType, name: 'a' }),
                   },
                 }),
                 associatedComments: [],
               },
             ],
-            expression: EXPRESSION_VARIABLE({
-              range: Range.DUMMY,
-              type: stringType,
-              associatedComments: [],
-              name: 'a',
-            }),
+            expression: SourceExpressionVariable({ type: stringType, name: 'a' }),
           },
         }),
         'return (_this: __DUMMY___Dummy);'

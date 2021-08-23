@@ -1,7 +1,7 @@
-import { intType, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
+import { intType, ModuleReference } from 'samlang-core-ast/common-nodes';
 import {
-  EXPRESSION_METHOD_ACCESS,
-  EXPRESSION_VARIABLE,
+  SourceExpressionMethodAccess,
+  SourceExpressionVariable,
 } from 'samlang-core-ast/samlang-expressions';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangExpressionFromText, parseSamlangModuleFromText } from 'samlang-core-parser';
@@ -154,16 +154,9 @@ describe('printer-source-level', () => {
     expect(
       prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(
         40,
-        EXPRESSION_METHOD_ACCESS({
-          range: Range.DUMMY,
+        SourceExpressionMethodAccess({
           type: intType,
-          associatedComments: [],
-          expression: EXPRESSION_VARIABLE({
-            range: Range.DUMMY,
-            type: intType,
-            associatedComments: [],
-            name: 'foo',
-          }),
+          expression: SourceExpressionVariable({ type: intType, name: 'foo' }),
           methodPrecedingComments: [],
           methodName: 'bar',
         })

@@ -5,7 +5,7 @@ import {
   ModuleReference,
   Location,
 } from 'samlang-core-ast/common-nodes';
-import { SamlangExpression, EXPRESSION_VARIABLE } from 'samlang-core-ast/samlang-expressions';
+import { SamlangExpression, SourceExpressionVariable } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { HashMap, hashMapOf } from 'samlang-core-utils';
 
@@ -72,9 +72,8 @@ export class SamlangExpressionLocationLookupBuilder {
     classes.forEach(({ name, nameRange, members }) => {
       this.buildSingleExpression(
         moduleReference,
-        EXPRESSION_VARIABLE({
+        SourceExpressionVariable({
           range: nameRange,
-          associatedComments: [],
           type: identifierType(moduleReference, `class ${moduleReference.toString()}.${name}`),
           name,
         })
@@ -82,10 +81,9 @@ export class SamlangExpressionLocationLookupBuilder {
       members.forEach((member) => {
         this.buildSingleExpression(
           moduleReference,
-          EXPRESSION_VARIABLE({
+          SourceExpressionVariable({
             range: member.nameRange,
             type: member.type,
-            associatedComments: [],
             name: member.name,
           })
         );
@@ -105,10 +103,9 @@ export class SamlangExpressionLocationLookupBuilder {
         const { moduleReference: modRef, className, classNameRange } = expression;
         this.buildSingleExpression(
           moduleReference,
-          EXPRESSION_VARIABLE({
+          SourceExpressionVariable({
             range: classNameRange,
             type: identifierType(moduleReference, `class ${modRef.toString()}.${className}`),
-            associatedComments: [],
             name: className,
           })
         );
@@ -125,10 +122,9 @@ export class SamlangExpressionLocationLookupBuilder {
             moduleReference,
             fieldDeclaration.expression != null
               ? fieldDeclaration.expression
-              : EXPRESSION_VARIABLE({
+              : SourceExpressionVariable({
                   range: fieldDeclaration.range,
                   type: fieldDeclaration.type,
-                  associatedComments: [],
                   name: fieldDeclaration.name,
                 })
           )
@@ -181,7 +177,7 @@ export class SamlangExpressionLocationLookupBuilder {
               pattern.destructedNames.forEach(({ name, type, range }) => {
                 this.buildSingleExpression(
                   moduleReference,
-                  EXPRESSION_VARIABLE({ range, name: name ?? '_', type, associatedComments: [] })
+                  SourceExpressionVariable({ range, name: name ?? '_', type })
                 );
               });
               return;
@@ -191,10 +187,9 @@ export class SamlangExpressionLocationLookupBuilder {
             case 'VariablePattern':
               this.buildSingleExpression(
                 moduleReference,
-                EXPRESSION_VARIABLE({
+                SourceExpressionVariable({
                   range: pattern.range,
                   name: pattern.name,
-                  associatedComments: [],
                   type: assignedExpressionType,
                 })
               );
@@ -202,11 +197,10 @@ export class SamlangExpressionLocationLookupBuilder {
             case 'WildCardPattern':
               this.buildSingleExpression(
                 moduleReference,
-                EXPRESSION_VARIABLE({
+                SourceExpressionVariable({
                   range: pattern.range,
                   name: '_',
                   type: assignedExpressionType,
-                  associatedComments: [],
                 })
               );
           }

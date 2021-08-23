@@ -1,5 +1,5 @@
 import { functionType, intType, Range, ModuleReference } from 'samlang-core-ast/common-nodes';
-import { EXPRESSION_FALSE } from 'samlang-core-ast/samlang-expressions';
+import { SourceExpressionFalse } from 'samlang-core-ast/samlang-expressions';
 import type { ClassDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { mapOf } from 'samlang-core-utils';
 
@@ -45,7 +45,7 @@ const class1: ClassDefinition = {
       typeParameters: [],
       type: functionType([], intType),
       parameters: [],
-      body: EXPRESSION_FALSE(Range.DUMMY, []),
+      body: SourceExpressionFalse(),
     },
     {
       associatedComments: [],
@@ -57,7 +57,7 @@ const class1: ClassDefinition = {
       typeParameters: [],
       type: functionType([], intType),
       parameters: [],
-      body: EXPRESSION_FALSE(Range.DUMMY, []),
+      body: SourceExpressionFalse(),
     },
   ],
 };

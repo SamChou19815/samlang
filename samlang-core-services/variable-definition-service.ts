@@ -1,5 +1,5 @@
 import type { ModuleReference, Range, Sources } from 'samlang-core-ast/common-nodes';
-import { EXPRESSION_VARIABLE, SamlangExpression } from 'samlang-core-ast/samlang-expressions';
+import { SourceExpressionVariable, SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type { Pattern } from 'samlang-core-ast/samlang-pattern';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { HashMap, LocalStackedContext, assert, error, hashMapOf } from 'samlang-core-utils';
@@ -228,10 +228,9 @@ const applyExpressionRenamingWithDefinitionAndUse = (
           }
           return {
             ...fieldDeclaration,
-            expression: EXPRESSION_VARIABLE({
+            expression: SourceExpressionVariable({
               range: fieldDeclaration.nameRange,
               type: fieldDeclaration.type,
-              associatedComments: [],
               name: newName,
             }),
           };

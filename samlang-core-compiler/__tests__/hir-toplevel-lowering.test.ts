@@ -11,13 +11,13 @@ import {
 import { MUL, MINUS, EQ } from 'samlang-core-ast/common-operators';
 import { debugPrintHighIRSources } from 'samlang-core-ast/hir-nodes';
 import {
-  EXPRESSION_INT,
-  EXPRESSION_VARIABLE,
-  EXPRESSION_THIS,
-  EXPRESSION_FUNCTION_CALL,
-  EXPRESSION_BINARY,
-  EXPRESSION_IF_ELSE,
-  EXPRESSION_CLASS_MEMBER,
+  SourceExpressionInt,
+  SourceExpressionVariable,
+  SourceExpressionThis,
+  SourceExpressionFunctionCall,
+  SourceExpressionBinary,
+  SourceExpressionIfElse,
+  SourceExpressionClassMember,
 } from 'samlang-core-ast/samlang-expressions';
 import type { SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import { mapOf } from 'samlang-core-utils';
@@ -26,11 +26,7 @@ import compileSamlangSourcesToHighIRSources, {
   compileSamlangSourcesToHighIRSourcesWithGenericsPreserved,
 } from '../hir-toplevel-lowering';
 
-const THIS = EXPRESSION_THIS({
-  range: Range.DUMMY,
-  type: identifierType(ModuleReference.DUMMY, 'Dummy'),
-  associatedComments: [],
-});
+const THIS = SourceExpressionThis({ type: identifierType(ModuleReference.DUMMY, 'Dummy') });
 
 describe('mir-toplevel-lowering', () => {
   it('compileSamlangSourcesToHighIRSourcesWithGenericsPreserved integration test', () => {
@@ -55,14 +51,10 @@ describe('mir-toplevel-lowering', () => {
               typeParameters: [],
               parameters: [],
               type: functionType([], unitType),
-              body: EXPRESSION_FUNCTION_CALL({
-                range: Range.DUMMY,
+              body: SourceExpressionFunctionCall({
                 type: unitType,
-                associatedComments: [],
-                functionExpression: EXPRESSION_CLASS_MEMBER({
-                  range: Range.DUMMY,
+                functionExpression: SourceExpressionClassMember({
                   type: functionType([], intType),
-                  associatedComments: [],
                   typeArguments: [],
                   moduleReference: ModuleReference.DUMMY,
                   className: 'Class1',
@@ -113,14 +105,10 @@ describe('mir-toplevel-lowering', () => {
               typeParameters: [],
               parameters: [],
               type: functionType([], unitType),
-              body: EXPRESSION_FUNCTION_CALL({
-                range: Range.DUMMY,
+              body: SourceExpressionFunctionCall({
                 type: unitType,
-                associatedComments: [],
-                functionExpression: EXPRESSION_CLASS_MEMBER({
-                  range: Range.DUMMY,
+                functionExpression: SourceExpressionClassMember({
                   type: functionType([], intType),
-                  associatedComments: [],
                   typeArguments: [],
                   moduleReference: ModuleReference.DUMMY,
                   className: 'Class1',
@@ -145,33 +133,20 @@ describe('mir-toplevel-lowering', () => {
                 { name: 'acc', nameRange: Range.DUMMY, type: intType, typeRange: Range.DUMMY },
               ],
               type: functionType([intType, intType], intType),
-              body: EXPRESSION_IF_ELSE({
-                range: Range.DUMMY,
+              body: SourceExpressionIfElse({
                 type: intType,
-                associatedComments: [],
-                boolExpression: EXPRESSION_BINARY({
-                  range: Range.DUMMY,
+                boolExpression: SourceExpressionBinary({
                   type: boolType,
-                  associatedComments: [],
                   operatorPrecedingComments: [],
                   operator: EQ,
-                  e1: EXPRESSION_VARIABLE({
-                    range: Range.DUMMY,
-                    type: intType,
-                    associatedComments: [],
-                    name: 'n',
-                  }),
-                  e2: EXPRESSION_INT(Range.DUMMY, [], 0),
+                  e1: SourceExpressionVariable({ type: intType, name: 'n' }),
+                  e2: SourceExpressionInt(0),
                 }),
-                e1: EXPRESSION_INT(Range.DUMMY, [], 1),
-                e2: EXPRESSION_FUNCTION_CALL({
-                  range: Range.DUMMY,
+                e1: SourceExpressionInt(1),
+                e2: SourceExpressionFunctionCall({
                   type: intType,
-                  associatedComments: [],
-                  functionExpression: EXPRESSION_CLASS_MEMBER({
-                    range: Range.DUMMY,
+                  functionExpression: SourceExpressionClassMember({
                     type: functionType([intType, intType], intType),
-                    associatedComments: [],
                     typeArguments: [],
                     moduleReference: ModuleReference.DUMMY,
                     className: 'Class1',
@@ -181,38 +156,19 @@ describe('mir-toplevel-lowering', () => {
                     memberNameRange: Range.DUMMY,
                   }),
                   functionArguments: [
-                    EXPRESSION_BINARY({
-                      range: Range.DUMMY,
+                    SourceExpressionBinary({
                       type: intType,
-                      associatedComments: [],
                       operatorPrecedingComments: [],
                       operator: MINUS,
-                      e1: EXPRESSION_VARIABLE({
-                        range: Range.DUMMY,
-                        type: intType,
-                        associatedComments: [],
-                        name: 'n',
-                      }),
-                      e2: EXPRESSION_INT(Range.DUMMY, [], 1),
+                      e1: SourceExpressionVariable({ type: intType, name: 'n' }),
+                      e2: SourceExpressionInt(1),
                     }),
-                    EXPRESSION_BINARY({
-                      range: Range.DUMMY,
+                    SourceExpressionBinary({
                       type: intType,
-                      associatedComments: [],
                       operatorPrecedingComments: [],
                       operator: MUL,
-                      e1: EXPRESSION_VARIABLE({
-                        range: Range.DUMMY,
-                        type: intType,
-                        associatedComments: [],
-                        name: 'n',
-                      }),
-                      e2: EXPRESSION_VARIABLE({
-                        range: Range.DUMMY,
-                        type: intType,
-                        associatedComments: [],
-                        name: 'acc',
-                      }),
+                      e1: SourceExpressionVariable({ type: intType, name: 'n' }),
+                      e2: SourceExpressionVariable({ type: intType, name: 'acc' }),
                     }),
                   ],
                 }),

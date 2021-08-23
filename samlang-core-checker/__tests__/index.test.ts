@@ -1,5 +1,5 @@
 import { Range, ModuleReference, functionType, intType } from 'samlang-core-ast/common-nodes';
-import { EXPRESSION_INT } from 'samlang-core-ast/samlang-expressions';
+import { SourceExpressionInt } from 'samlang-core-ast/samlang-expressions';
 import { createGlobalErrorCollector } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import { mapOf, hashMapOf } from 'samlang-core-utils';
@@ -49,7 +49,7 @@ describe('samlang-core-checker', () => {
                 typeParameters: [],
                 parameters: [],
                 type: functionType([], intType),
-                body: EXPRESSION_INT(Range.DUMMY, [], 3),
+                body: SourceExpressionInt(3),
               },
             ],
           },
