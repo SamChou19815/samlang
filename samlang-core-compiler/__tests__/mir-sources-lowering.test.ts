@@ -26,11 +26,10 @@ const assertLowered = (
 ) =>
   expect(
     debugPrintMidIRSources(
-      lowerHighIRSourcesToMidIRSources({
-        ...sources,
-        globalVariables: [],
-        mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN],
-      })
+      lowerHighIRSourcesToMidIRSources(
+        { ...sources, globalVariables: [], mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN] },
+        /* referenceCounting */ false
+      )
     )
   ).toBe(expected);
 
