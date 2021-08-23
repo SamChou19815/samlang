@@ -15,7 +15,10 @@ import {
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToLLVMSources,
 } from 'samlang-core-compiler';
-import interpretLLVMSources from 'samlang-core-interpreter/llvm-ir-interpreter';
+import {
+  setupLLVMInterpretationEnvironment,
+  interpretLLVMSources,
+} from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
 import { optimizeMidIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
 import { checkSources } from 'samlang-core-services';
@@ -136,14 +139,16 @@ printed`;
   });
 
   const llvmSources = lowerMidIRSourcesToLLVMSources(midIROptimizedSingleSource);
+  const llvmInterpretationEnvironment = setupLLVMInterpretationEnvironment(llvmSources);
   runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) => {
     it(`LLVM: ${testCaseName}`, () => {
       let result: string;
       try {
         result = interpretLLVMSources(
-          llvmSources,
+          llvmInterpretationEnvironment,
           encodeMainFunctionName(new ModuleReference([testCaseName]))
         );
+        llvmInterpretationEnvironment.printed = '';
       } catch {
         fail(prettyPrintLLVMSources(llvmSources));
       }

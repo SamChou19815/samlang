@@ -27,7 +27,7 @@ import {
   LLVM_RETURN,
 } from 'samlang-core-ast/llvm-nodes';
 
-import interpretLLVMSources from '../llvm-ir-interpreter';
+import { setupLLVMInterpretationEnvironment, interpretLLVMSources } from '../llvm-ir-interpreter';
 
 const ZERO = LLVM_INT(0);
 const ONE = LLVM_INT(1);
@@ -35,7 +35,10 @@ const EIGHT = LLVM_INT(8);
 
 const interpretLLVMSourcesWithMain = (llvmSources: Omit<LLVMSources, 'mainFunctionNames'>) =>
   interpretLLVMSources(
-    { ...llvmSources, mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN] },
+    setupLLVMInterpretationEnvironment({
+      ...llvmSources,
+      mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN],
+    }),
     ENCODED_COMPILED_PROGRAM_MAIN
   );
 
