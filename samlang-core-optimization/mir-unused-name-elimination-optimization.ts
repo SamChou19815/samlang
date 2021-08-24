@@ -7,15 +7,15 @@ import type {
 } from 'samlang-core-ast/mir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
-const collectForTypeSet = (type: MidIRType, typeSet: Set<string>): void => {
+function collectForTypeSet(type: MidIRType, typeSet: Set<string>): void {
   if (type.__type__ === 'IdentifierType') typeSet.add(type.name);
-};
+}
 
-const collectUsedNamesFromExpression = (
+function collectUsedNamesFromExpression(
   nameSet: Set<string>,
   typeSet: Set<string>,
   expression: MidIRExpression
-): void => {
+): void {
   switch (expression.__type__) {
     case 'MidIRIntLiteralExpression':
     case 'MidIRVariableExpression':
@@ -25,13 +25,13 @@ const collectUsedNamesFromExpression = (
       break;
   }
   collectForTypeSet(expression.type, typeSet);
-};
+}
 
-const collectUsedNamesFromStatement = (
+function collectUsedNamesFromStatement(
   nameSet: Set<string>,
   typeSet: Set<string>,
   statement: MidIRStatement
-): void => {
+): void {
   switch (statement.__type__) {
     case 'MidIRIndexAccessStatement':
       collectUsedNamesFromExpression(nameSet, typeSet, statement.pointerExpression);
@@ -88,11 +88,11 @@ const collectUsedNamesFromStatement = (
       collectForTypeSet(statement.type, typeSet);
       break;
   }
-};
+}
 
-const getOtherFunctionsUsedByGivenFunction = (
+function getOtherFunctionsUsedByGivenFunction(
   midIRFunction: MidIRFunction
-): readonly [ReadonlySet<string>, ReadonlySet<string>] => {
+): readonly [ReadonlySet<string>, ReadonlySet<string>] {
   const nameSet = new Set<string>();
   const typeSet = new Set<string>();
   midIRFunction.body.forEach((it) => collectUsedNamesFromStatement(nameSet, typeSet, it));
@@ -101,12 +101,12 @@ const getOtherFunctionsUsedByGivenFunction = (
   collectUsedNamesFromExpression(nameSet, typeSet, midIRFunction.returnValue);
   nameSet.delete(midIRFunction.name);
   return [nameSet, typeSet];
-};
+}
 
-const analyzeUsedFunctionNamesAndTypeNames = (
+function analyzeUsedFunctionNamesAndTypeNames(
   functions: readonly MidIRFunction[],
   entryPoints: readonly string[]
-): readonly [ReadonlySet<string>, ReadonlySet<string>] => {
+): readonly [ReadonlySet<string>, ReadonlySet<string>] {
   const usedFunctionMap = new Map(
     functions.map((it) => [it.name, getOtherFunctionsUsedByGivenFunction(it)])
   );
@@ -133,7 +133,7 @@ const analyzeUsedFunctionNamesAndTypeNames = (
     Array.from(usedNames).flatMap((it) => Array.from(usedFunctionMap.get(it)?.[1] ?? []))
   );
   return [usedNames, usedTypes];
-};
+}
 
 export default function optimizeMidIRSourcesByEliminatingUnusedOnes(
   sources: MidIRSources

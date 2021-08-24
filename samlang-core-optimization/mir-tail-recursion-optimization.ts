@@ -18,13 +18,13 @@ type RewriteResult = {
   readonly functionArguments: readonly MidIRExpression[];
 };
 
-const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
+function tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
   statements: readonly MidIRStatement[],
   functionName: string,
   functionParameterTypes: readonly MidIRType[],
   expectedReturnCollector: string | null,
   allocator: OptimizationResourceAllocator
-): RewriteResult | null => {
+): RewriteResult | null {
   const lastStatement = statements[statements.length - 1];
   if (lastStatement == null) return null;
 
@@ -157,17 +157,17 @@ const tryRewriteStatementsForTailRecursionWithoutUsingReturnValue = (
     default:
       return null;
   }
-};
+}
 
 const getTailRecursionParameterName = (name: string): string => `_tailrec_param_${name}`;
 
-const optimizeMidIRFunctionByTailRecursionRewrite = ({
+export default function optimizeMidIRFunctionByTailRecursionRewrite({
   name,
   parameters,
   type,
   body,
   returnValue,
-}: MidIRFunction): MidIRFunction | null => {
+}: MidIRFunction): MidIRFunction | null {
   if (returnValue.__type__ === 'MidIRNameExpression') return null;
   const allocator = new OptimizationResourceAllocator();
   const result = tryRewriteStatementsForTailRecursionWithoutUsingReturnValue(
@@ -227,6 +227,4 @@ const optimizeMidIRFunctionByTailRecursionRewrite = ({
     ],
     returnValue,
   };
-};
-
-export default optimizeMidIRFunctionByTailRecursionRewrite;
+}

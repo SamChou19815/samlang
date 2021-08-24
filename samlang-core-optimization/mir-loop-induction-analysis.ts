@@ -59,7 +59,7 @@ export type MidIROptimizableWhileLoop = {
   };
 };
 
-const statementContainsBreak = (statement: MidIRStatement): boolean => {
+function statementContainsBreak(statement: MidIRStatement): boolean {
   switch (statement.__type__) {
     case 'MidIRIndexAccessStatement':
     case 'MidIRBinaryStatement':
@@ -77,15 +77,15 @@ const statementContainsBreak = (statement: MidIRStatement): boolean => {
       // Although it might contain break, the break never affects the outer loop,
       return false;
   }
-};
+}
 
 const statementsContainsBreak = (statements: readonly MidIRStatement[]): boolean =>
   statements.some(statementContainsBreak);
 
-const mergeInvariantAdditionForLoopOptimization = (
+function mergeInvariantAdditionForLoopOptimization(
   existingValue: PotentialLoopInvariantExpression,
   addedValue: PotentialLoopInvariantExpression
-): PotentialLoopInvariantExpression | null => {
+): PotentialLoopInvariantExpression | null {
   if (
     existingValue.__type__ === 'MidIRIntLiteralExpression' &&
     addedValue.__type__ === 'MidIRIntLiteralExpression'
@@ -99,12 +99,12 @@ const mergeInvariantAdditionForLoopOptimization = (
     return addedValue;
   }
   return null;
-};
+}
 
-export const mergeInvariantMultiplicationForLoopOptimization = (
+export function mergeInvariantMultiplicationForLoopOptimization(
   existingValue: PotentialLoopInvariantExpression,
   addedValue: PotentialLoopInvariantExpression
-): PotentialLoopInvariantExpression | null => {
+): PotentialLoopInvariantExpression | null {
   if (
     existingValue.__type__ === 'MidIRIntLiteralExpression' &&
     addedValue.__type__ === 'MidIRIntLiteralExpression'
@@ -118,13 +118,13 @@ export const mergeInvariantMultiplicationForLoopOptimization = (
     return addedValue;
   }
   return null;
-};
+}
 
-const mergeConstantOperationIntoDerivedInductionVariable = (
+function mergeConstantOperationIntoDerivedInductionVariable(
   existing: DerivedInductionVariable,
   operator: '+' | '*',
   loopInvariantExpression: PotentialLoopInvariantExpression
-): DerivedInductionVariable | null => {
+): DerivedInductionVariable | null {
   if (operator === '+') {
     const mergedImmediate = mergeInvariantAdditionForLoopOptimization(
       existing.immediate,
@@ -161,12 +161,12 @@ const mergeConstantOperationIntoDerivedInductionVariable = (
     };
   }
   return null;
-};
+}
 
-export const mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TESTING = (
+export function mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TESTING(
   existing: DerivedInductionVariable,
   anotherVariable: DerivedInductionVariable
-): DerivedInductionVariable | null => {
+): DerivedInductionVariable | null {
   if (existing.baseName !== anotherVariable.baseName) return null;
   const mergedMultiplier = mergeInvariantAdditionForLoopOptimization(
     existing.multiplier,
@@ -179,13 +179,13 @@ export const mergeVariableAdditionIntoDerivedInductionVariable_EXPOSED_FOR_TESTI
   return mergedMultiplier == null || mergedImmediate == null
     ? null
     : { baseName: existing.baseName, multiplier: mergedMultiplier, immediate: mergedImmediate };
-};
+}
 
-const tryMergeIntoDerivedInductionVariableWithoutSwap = (
+function tryMergeIntoDerivedInductionVariableWithoutSwap(
   existingSet: Record<string, DerivedInductionVariable>,
   expressionIsLoopInvariant: (expression: MidIRExpression) => boolean,
   binaryStatement: MidIRBinaryStatement
-): boolean => {
+): boolean {
   if (binaryStatement.e1.__type__ !== 'MidIRVariableExpression') return false;
   const existing = existingSet[binaryStatement.e1.name];
   if (existing == null) return false;
@@ -226,13 +226,13 @@ const tryMergeIntoDerivedInductionVariableWithoutSwap = (
     }
   }
   return false;
-};
+}
 
-const tryMergeIntoDerivedInductionVariable = (
+function tryMergeIntoDerivedInductionVariable(
   existingSet: Record<string, DerivedInductionVariable>,
   expressionIsLoopInvariant: (expression: MidIRExpression) => boolean,
   binaryStatement: MidIRBinaryStatement
-): void => {
+): void {
   if (
     tryMergeIntoDerivedInductionVariableWithoutSwap(
       existingSet,
@@ -254,7 +254,7 @@ const tryMergeIntoDerivedInductionVariable = (
     e1: binaryStatement.e2,
     e2: binaryStatement.e1,
   });
-};
+}
 
 type LoopGuardStructure = {
   readonly potentialBasicInductionVariableNameWithLoopGuard: string;
@@ -268,7 +268,7 @@ type LoopGuardStructure = {
   };
 };
 
-export const invertGuardOperator = (operator: '<' | '<=' | '>' | '>='): '<' | '<=' | '>' | '>=' => {
+export function invertGuardOperator(operator: '<' | '<=' | '>' | '>='): '<' | '<=' | '>' | '>=' {
   switch (operator) {
     case '<':
       return '>=';
@@ -279,12 +279,12 @@ export const invertGuardOperator = (operator: '<' | '<=' | '>' | '>='): '<' | '<
     case '>=':
       return '<';
   }
-};
+}
 
-export const getGuardOperator_EXPOSED_FOR_TESTING = (
+export function getGuardOperator_EXPOSED_FOR_TESTING(
   operator: IROperator,
   invertCondition: boolean
-): '<' | '<=' | '>' | '>=' | null => {
+): '<' | '<=' | '>' | '>=' | null {
   switch (operator) {
     case '<':
       break;
@@ -299,12 +299,12 @@ export const getGuardOperator_EXPOSED_FOR_TESTING = (
   }
   if (invertCondition) return operator;
   return invertGuardOperator(operator);
-};
+}
 
-export const extractLoopGuardStructure_EXPOSED_FOR_TESTING = (
+export function extractLoopGuardStructure_EXPOSED_FOR_TESTING(
   { statements, breakCollector: originalBreakCollector }: MidIRWhileStatement,
   expressionIsLoopInvariant: (expression: MidIRExpression) => boolean
-): LoopGuardStructure | null => {
+): LoopGuardStructure | null {
   if (statements.length < 2) return null;
   const [firstBinaryStatement, secondSingleIfStatement, ...restStatements] = statements;
   if (
@@ -344,7 +344,7 @@ export const extractLoopGuardStructure_EXPOSED_FOR_TESTING = (
     restStatements,
     breakCollector,
   };
-};
+}
 
 type ExtractedBasicInductionVariables = {
   readonly loopVariablesThatAreNotBasicInductionVariables: GeneralMidIRLoopVariables[];
@@ -352,12 +352,12 @@ type ExtractedBasicInductionVariables = {
   readonly basicInductionVariableWithAssociatedLoopGuard: GeneralBasicInductionVariableWithLoopValueCollector;
 };
 
-export const extractBasicInductionVariables_EXPOSED_FOR_TESTING = (
+export function extractBasicInductionVariables_EXPOSED_FOR_TESTING(
   potentialBasicInductionVariableNameWithLoopGuard: string,
   loopVariables: readonly GeneralMidIRLoopVariables[],
   restStatements: readonly MidIRStatement[],
   expressionIsLoopInvariant: (expression: MidIRExpression) => boolean
-): ExtractedBasicInductionVariables | null => {
+): ExtractedBasicInductionVariables | null {
   const allBasicInductionVariables: GeneralBasicInductionVariableWithLoopValueCollector[] = [];
   const loopVariablesThatAreNotBasicInductionVariables: GeneralMidIRLoopVariables[] = [];
   loopVariables.forEach((loopVariable) => {
@@ -404,13 +404,13 @@ export const extractBasicInductionVariables_EXPOSED_FOR_TESTING = (
     allBasicInductionVariables,
     basicInductionVariableWithAssociatedLoopGuard,
   };
-};
+}
 
-export const extractDerivedInductionVariables_EXPOSED_FOR_TESTING = (
+export function extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
   allBasicInductionVariables: readonly GeneralBasicInductionVariableWithLoopValueCollector[],
   restStatements: readonly MidIRStatement[],
   expressionIsLoopInvariant: (expression: MidIRExpression) => boolean
-): readonly DerivedInductionVariableWithName[] => {
+): readonly DerivedInductionVariableWithName[] {
   const existingDerivedInductionVariableSet: Record<string, DerivedInductionVariable> = {};
   allBasicInductionVariables.forEach((it) => {
     existingDerivedInductionVariableSet[it.name] = {
@@ -439,24 +439,24 @@ export const extractDerivedInductionVariables_EXPOSED_FOR_TESTING = (
       return { name: it.name, ...derivedInductionVariable };
     })
     .filter(isNotNull);
-};
+}
 
-export const removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING = (
+export function removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING(
   otherLoopVariables: readonly GeneralMidIRLoopVariables[],
   restStatements: readonly MidIRStatement[]
-): readonly MidIRStatement[] => {
+): readonly MidIRStatement[] {
   const liveVariableSet = new Set<string>();
   otherLoopVariables.forEach((it) => {
     if (it.loopValue.__type__ !== 'MidIRVariableExpression') return;
     liveVariableSet.add(it.loopValue.name);
   });
   return internalOptimizeMidIRStatementsByDCE(restStatements, liveVariableSet);
-};
+}
 
-export const expressionIsLoopInvariant_EXPOSED_FOR_TESTING = (
+export function expressionIsLoopInvariant_EXPOSED_FOR_TESTING(
   expression: MidIRExpression,
   nonLoopInvariantVariables: ReadonlySet<string>
-): boolean => {
+): boolean {
   switch (expression.__type__) {
     case 'MidIRIntLiteralExpression':
       return true;
@@ -466,7 +466,7 @@ export const expressionIsLoopInvariant_EXPOSED_FOR_TESTING = (
     case 'MidIRVariableExpression':
       return !nonLoopInvariantVariables.has(expression.name);
   }
-};
+}
 
 /**
  * @param whileStatement a while statement assuming all the loop invariant statements are already
@@ -474,10 +474,10 @@ export const expressionIsLoopInvariant_EXPOSED_FOR_TESTING = (
  * @param nonLoopInvariantVariables a set of variables that are not guaranteed to be loop invariant.
  * (for the purpose of analysis, they are not considered as loop invariant.)
  */
-const extractOptimizableWhileLoop = (
+export default function extractOptimizableWhileLoop(
   whileStatement: MidIRWhileStatement,
   nonLoopInvariantVariables: ReadonlySet<string>
-): MidIROptimizableWhileLoop | null => {
+): MidIROptimizableWhileLoop | null {
   const expressionIsLoopInvariant = (expression: MidIRExpression): boolean =>
     expressionIsLoopInvariant_EXPOSED_FOR_TESTING(expression, nonLoopInvariantVariables);
 
@@ -545,6 +545,4 @@ const extractOptimizableWhileLoop = (
     statements: optimizedStatements,
     breakCollector,
   };
-};
-
-export default extractOptimizableWhileLoop;
+}

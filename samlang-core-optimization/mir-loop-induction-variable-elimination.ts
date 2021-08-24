@@ -14,7 +14,7 @@ import {
 } from './mir-loop-induction-analysis';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
-const midIRLoopInductionVariableEliminationOptimization = (
+export default function midIRLoopInductionVariableEliminationOptimization(
   {
     basicInductionVariableWithLoopGuard,
     generalInductionVariables,
@@ -27,7 +27,7 @@ const midIRLoopInductionVariableEliminationOptimization = (
 ): {
   readonly prefixStatements: readonly MidIRStatement[];
   readonly optimizableWhileLoop: MidIROptimizableWhileLoop;
-} | null => {
+} | null {
   const expressionUsesBasicInductionVariableWithLoopGuard = (
     expression: MidIRExpression
   ): boolean =>
@@ -163,6 +163,4 @@ const midIRLoopInductionVariableEliminationOptimization = (
       breakCollector,
     },
   };
-};
-
-export default midIRLoopInductionVariableEliminationOptimization;
+}

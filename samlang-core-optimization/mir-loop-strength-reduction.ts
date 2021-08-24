@@ -9,7 +9,7 @@ import {
 } from './mir-loop-induction-analysis';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
-const midIRLoopStrengthReductionOptimization = (
+export default function midIRLoopStrengthReductionOptimization(
   {
     basicInductionVariableWithLoopGuard,
     generalInductionVariables,
@@ -22,7 +22,7 @@ const midIRLoopStrengthReductionOptimization = (
 ): {
   readonly prefixStatements: readonly MidIRStatement[];
   readonly optimizableWhileLoop: MidIROptimizableWhileLoop;
-} => {
+} {
   const basicInductionVariablesMap: Record<string, GeneralBasicInductionVariable> = {
     [basicInductionVariableWithLoopGuard.name]: basicInductionVariableWithLoopGuard,
   };
@@ -83,6 +83,4 @@ const midIRLoopStrengthReductionOptimization = (
       breakCollector,
     },
   };
-};
-
-export default midIRLoopStrengthReductionOptimization;
+}

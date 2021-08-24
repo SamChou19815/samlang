@@ -39,10 +39,10 @@ class LocalBindedValueContext extends LocalStackedContext<string> {
   }
 }
 
-const optimizeMidIRExpression = (
+function optimizeMidIRExpression(
   expression: MidIRExpression,
   variableContext: LocalVariableContext
-): MidIRExpression => {
+): MidIRExpression {
   switch (expression.__type__) {
     case 'MidIRIntLiteralExpression':
     case 'MidIRNameExpression':
@@ -52,13 +52,13 @@ const optimizeMidIRExpression = (
       return { ...expression, name: binded ?? expression.name };
     }
   }
-};
+}
 
-const optimizeMidIRStatement = (
+function optimizeMidIRStatement(
   statement: MidIRStatement,
   variableContext: LocalVariableContext,
   bindedValueContext: LocalBindedValueContext
-): MidIRStatement | null => {
+): MidIRStatement | null {
   const getExpressionUnderContext = (expression: MidIRExpression) =>
     optimizeMidIRExpression(expression, variableContext);
 
@@ -205,25 +205,24 @@ const optimizeMidIRStatement = (
         expressionList: statement.expressionList.map(getExpressionUnderContext),
       });
   }
-};
+}
 
-const optimizeMidIRStatements = (
+function optimizeMidIRStatements(
   statements: readonly MidIRStatement[],
   variableContext: LocalVariableContext,
   bindedValueContext: LocalBindedValueContext
-): readonly MidIRStatement[] =>
-  statements
+): readonly MidIRStatement[] {
+  return statements
     .map((it) => optimizeMidIRStatement(it, variableContext, bindedValueContext))
     .filter(isNotNull);
+}
 
-const optimizeMidIRFunctionByLocalValueNumbering = (
+export default function optimizeMidIRFunctionByLocalValueNumbering(
   midIRFunction: MidIRFunction
-): MidIRFunction => {
+): MidIRFunction {
   const variableContext = new LocalVariableContext();
   const bindedValueContext = new LocalBindedValueContext();
   const body = optimizeMidIRStatements(midIRFunction.body, variableContext, bindedValueContext);
   const returnValue = optimizeMidIRExpression(midIRFunction.returnValue, variableContext);
   return { ...midIRFunction, body, returnValue };
-};
-
-export default optimizeMidIRFunctionByLocalValueNumbering;
+}

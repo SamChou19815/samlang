@@ -28,7 +28,7 @@ import optimizeMidIRWhileStatementByLoopInvariantCodeMotion from './mir-loop-inv
 import midIRLoopStrengthReductionOptimization from './mir-loop-strength-reduction';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
-const expandOptimizableWhileLoop = (
+function expandOptimizableWhileLoop(
   {
     basicInductionVariableWithLoopGuard,
     generalInductionVariables,
@@ -38,7 +38,7 @@ const expandOptimizableWhileLoop = (
     breakCollector,
   }: MidIROptimizableWhileLoop,
   allocator: OptimizationResourceAllocator
-): MidIRWhileStatement => {
+): MidIRWhileStatement {
   const basicInductionVariableWithLoopGuardLoopValueCollector = allocator.allocateLoopTemporary();
   const breakValue = breakCollector?.value ?? MIR_ZERO;
   const usefulUsedSet = new Set<string>([basicInductionVariableWithLoopGuard.name]);
@@ -120,12 +120,12 @@ const expandOptimizableWhileLoop = (
     breakCollector:
       breakCollector == null ? undefined : { name: breakCollector.name, type: breakCollector.type },
   });
-};
+}
 
-export const optimizeMidIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING = (
+export function optimizeMidIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING(
   midIRWhileStatement: MidIRWhileStatement,
   allocator: OptimizationResourceAllocator
-): readonly MidIRStatement[] => {
+): readonly MidIRStatement[] {
   const { hoistedStatementsBeforeWhile, optimizedWhileStatement, nonLoopInvariantVariables } =
     optimizeMidIRWhileStatementByLoopInvariantCodeMotion(midIRWhileStatement);
   const optimizableWhileStatement = extractOptimizableWhileLoop(
@@ -171,12 +171,12 @@ export const optimizeMidIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TES
   };
   finalStatements.push(expandOptimizableWhileLoop(newOptimizableWhileStatement, allocator));
   return finalStatements;
-};
+}
 
-const recursivelyOptimizeMidIRStatementWithAllLoopOptimizations = (
+function recursivelyOptimizeMidIRStatementWithAllLoopOptimizations(
   statement: MidIRStatement,
   allocator: OptimizationResourceAllocator
-): readonly MidIRStatement[] => {
+): readonly MidIRStatement[] {
   switch (statement.__type__) {
     case 'MidIRIfElseStatement':
       return [
@@ -211,17 +211,16 @@ const recursivelyOptimizeMidIRStatementWithAllLoopOptimizations = (
     default:
       return [statement];
   }
-};
+}
 
-const optimizeMidIRFunctionWithAllLoopOptimizations = (
+export default function optimizeMidIRFunctionWithAllLoopOptimizations(
   midIRFunction: MidIRFunction,
   allocator: OptimizationResourceAllocator
-): MidIRFunction =>
-  optimizeMidIRStatementsByConditionalConstantPropagation({
+): MidIRFunction {
+  return optimizeMidIRStatementsByConditionalConstantPropagation({
     ...midIRFunction,
     body: midIRFunction.body.flatMap((it) =>
       recursivelyOptimizeMidIRStatementWithAllLoopOptimizations(it, allocator)
     ),
   });
-
-export default optimizeMidIRFunctionWithAllLoopOptimizations;
+}
