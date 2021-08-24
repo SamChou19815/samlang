@@ -31,10 +31,6 @@ describe('control-flow-graph', () => {
   ];
   const llvmGraph = ControlFlowGraph.fromLLVMInstructions(llvmStatements);
 
-  it('Control flow graph should preserve order.', () => {
-    expect(llvmGraph.nodes.map((it) => it.instruction)).toEqual(llvmStatements);
-  });
-
   it('DFS should hit all the reachable statements for llvmGraph.', () => {
     const visited = new Set<number>();
     llvmGraph.dfs((node) => {
@@ -49,17 +45,5 @@ describe('control-flow-graph', () => {
         throw new Error('We should not hit the final unreachable return.');
       }
     });
-  });
-
-  it('getParentIds is correct for llvmGraph.', () => {
-    const parentOf = (id: number) =>
-      Array.from(llvmGraph.getParentIds(id).values()).sort((a, b) => a - b);
-    expect(parentOf(0)).toEqual([]);
-    expect(parentOf(1)).toEqual([0]);
-    expect(parentOf(2)).toEqual([1]);
-    expect(parentOf(3)).toEqual([2]);
-    expect(parentOf(4)).toEqual([3]);
-    expect(parentOf(5)).toEqual([4]);
-    expect(parentOf(6)).toEqual([3, 5]);
   });
 });
