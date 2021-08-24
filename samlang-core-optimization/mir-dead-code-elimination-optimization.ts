@@ -3,14 +3,11 @@ import { isNotNull } from 'samlang-core-utils';
 
 import { ifElseOrNull } from './mir-optimization-common';
 
-export const collectUseFromMidIRExpression = (
-  expression: MidIRExpression,
-  set: Set<string>
-): void => {
+export function collectUseFromMidIRExpression(expression: MidIRExpression, set: Set<string>): void {
   if (expression.__type__ === 'MidIRVariableExpression') set.add(expression.name);
-};
+}
 
-export const collectUseFromMidIRStatement = (statement: MidIRStatement, set: Set<string>): void => {
+export function collectUseFromMidIRStatement(statement: MidIRStatement, set: Set<string>): void {
   switch (statement.__type__) {
     case 'MidIRIndexAccessStatement':
       collectUseFromMidIRExpression(statement.pointerExpression, set);
@@ -54,12 +51,12 @@ export const collectUseFromMidIRStatement = (statement: MidIRStatement, set: Set
       statement.expressionList.forEach((it) => collectUseFromMidIRExpression(it, set));
       return;
   }
-};
+}
 
-const optimizeMidIRStatement = (
+function optimizeMidIRStatement(
   statement: MidIRStatement,
   set: Set<string>
-): readonly MidIRStatement[] => {
+): readonly MidIRStatement[] {
   switch (statement.__type__) {
     case 'MidIRIndexAccessStatement':
       if (!set.has(statement.name)) return [];
@@ -140,25 +137,23 @@ const optimizeMidIRStatement = (
       statement.expressionList.forEach((it) => collectUseFromMidIRExpression(it, set));
       return [statement];
   }
-};
+}
 
-export const internalOptimizeMidIRStatementsByDCE = (
+export function internalOptimizeMidIRStatementsByDCE(
   statements: readonly MidIRStatement[],
   set: Set<string>
-): readonly MidIRStatement[] => {
+): readonly MidIRStatement[] {
   return [...statements]
     .reverse()
     .flatMap((it) => optimizeMidIRStatement(it, set))
     .reverse();
-};
+}
 
-const optimizeMidIRFunctionByDeadCodeElimination = (
+export default function optimizeMidIRFunctionByDeadCodeElimination(
   midIRFunction: MidIRFunction
-): MidIRFunction => {
+): MidIRFunction {
   const set = new Set<string>();
   collectUseFromMidIRExpression(midIRFunction.returnValue, set);
   const body = internalOptimizeMidIRStatementsByDCE(midIRFunction.body, set);
   return { ...midIRFunction, body };
-};
-
-export default optimizeMidIRFunctionByDeadCodeElimination;
+}

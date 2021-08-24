@@ -16,7 +16,7 @@ const INLINE_THRESHOLD = 20;
 /** The threshold max tolerable cost of performing inlining.  */
 const PERFORM_INLINE_THRESHOLD = 1000;
 
-const estimateStatementInlineCost = (statement: MidIRStatement): number => {
+function estimateStatementInlineCost(statement: MidIRStatement): number {
   switch (statement.__type__) {
     case 'MidIRIndexAccessStatement':
       return 2;
@@ -45,18 +45,16 @@ const estimateStatementInlineCost = (statement: MidIRStatement): number => {
     case 'MidIRStructInitializationStatement':
       return 1 + statement.expressionList.length;
   }
-};
+}
 
 export const estimateFunctionInlineCost_EXPOSED_FOR_TESTING = (
   midIRFunction: MidIRFunction
 ): number => midIRFunction.body.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0);
 
-const getFunctionsToInline = (
-  functions: readonly MidIRFunction[]
-): {
+function getFunctionsToInline(functions: readonly MidIRFunction[]): {
   readonly functionsThatCanPerformInlining: ReadonlySet<string>;
   readonly functionsThatCanBeInlined: ReadonlySet<string>;
-} => {
+} {
   const functionsThatCanBeInlined = new Set<string>();
   const functionsThatCanPerformInlining = new Set<string>();
 
@@ -71,34 +69,34 @@ const getFunctionsToInline = (
   });
 
   return { functionsThatCanPerformInlining, functionsThatCanBeInlined };
-};
+}
 
-const inlineRewriteExpression = (
+function inlineRewriteExpression(
   expression: MidIRExpression,
   context: LocalValueContextForOptimization
-): MidIRExpression => {
+): MidIRExpression {
   if (expression.__type__ !== 'MidIRVariableExpression') return expression;
   const binded = context.getLocalValueType(expression.name);
   return binded ?? expression;
-};
+}
 
-const inlineRewriteForStatement = (
+function inlineRewriteForStatement(
   prefix: string,
   context: LocalValueContextForOptimization,
   returnCollector: Readonly<{ name: string; type: MidIRType }> | undefined,
   statement: MidIRStatement
-): MidIRStatement => {
-  const rewrite = (expression: MidIRExpression): MidIRExpression => {
+): MidIRStatement {
+  function rewrite(expression: MidIRExpression): MidIRExpression {
     if (expression.__type__ !== 'MidIRVariableExpression') return expression;
     const binded = context.getLocalValueType(expression.name);
     return binded ?? expression;
-  };
+  }
 
-  const bindWithMangledName = (name: string, type: MidIRType): string => {
+  function bindWithMangledName(name: string, type: MidIRType): string {
     const mangledName = `${prefix}${name}`;
     context.bind(name, MIR_VARIABLE(mangledName, type));
     return mangledName;
-  };
+  }
 
   switch (statement.__type__) {
     case 'MidIRIndexAccessStatement':
@@ -219,14 +217,14 @@ const inlineRewriteForStatement = (
         expressionList: statement.expressionList.map(rewrite),
       };
   }
-};
+}
 
-const performInlineRewriteOnFunction = (
+function performInlineRewriteOnFunction(
   midIRFunction: MidIRFunction,
   functionsThatCanBeInlined: ReadonlySet<string>,
   allFunctions: Record<string, MidIRFunction>,
   allocator: OptimizationResourceAllocator
-): MidIRFunction => {
+): MidIRFunction {
   const rewrite = (statement: MidIRStatement): readonly MidIRStatement[] => {
     switch (statement.__type__) {
       case 'MidIRFunctionCallStatement': {
@@ -290,12 +288,12 @@ const performInlineRewriteOnFunction = (
     ...midIRFunction,
     body: [...midIRFunction.body.flatMap(rewrite)],
   });
-};
+}
 
-const optimizeMidIRFunctionsByInlining = (
+export default function optimizeMidIRFunctionsByInlining(
   midIRFunctions: readonly MidIRFunction[],
   allocator: OptimizationResourceAllocator
-): readonly MidIRFunction[] => {
+): readonly MidIRFunction[] {
   let tempFunctions = midIRFunctions;
   for (let i = 0; i < 5; i += 1) {
     const { functionsThatCanBeInlined, functionsThatCanPerformInlining } =
@@ -313,6 +311,4 @@ const optimizeMidIRFunctionsByInlining = (
     });
   }
   return tempFunctions;
-};
-
-export default optimizeMidIRFunctionsByInlining;
+}

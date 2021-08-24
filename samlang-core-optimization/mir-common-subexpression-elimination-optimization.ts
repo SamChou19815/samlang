@@ -23,10 +23,10 @@ const intersectionOf = (
     .map((wrapper) => (others.every((it) => it.has(wrapper)) ? wrapper.value : null))
     .filter(isNotNull);
 
-const produceHoistedStatement = (
+function produceHoistedStatement(
   allocator: OptimizationResourceAllocator,
   value: BindedValue
-): MidIRStatement => {
+): MidIRStatement {
   switch (value.__type__) {
     case 'IndexAccess':
       return MIR_INDEX_ACCESS({
@@ -43,13 +43,13 @@ const produceHoistedStatement = (
         e2: value.e2,
       });
   }
-};
+}
 
-const optimizeMidIRStatement = (
+function optimizeMidIRStatement(
   statement: MidIRStatement,
   allocator: OptimizationResourceAllocator,
   set: HashSet<ExpressionWrapper>
-): readonly MidIRStatement[] => {
+): readonly MidIRStatement[] {
   switch (statement.__type__) {
     case 'MidIRIndexAccessStatement':
       set.add(
@@ -91,27 +91,26 @@ const optimizeMidIRStatement = (
       return [{ ...statement, s1, s2 }, ...hoistedStatements.reverse()];
     }
   }
-};
+}
 
-const optimizeMidIRStatementsWithSet = (
+function optimizeMidIRStatementsWithSet(
   statements: readonly MidIRStatement[],
   allocator: OptimizationResourceAllocator
-): { statements: readonly MidIRStatement[]; set: ReadonlyHashSet<ExpressionWrapper> } => {
+): { statements: readonly MidIRStatement[]; set: ReadonlyHashSet<ExpressionWrapper> } {
   const set = hashSetOf<ExpressionWrapper>();
   const optimizedStatements = [...statements]
     .reverse()
     .flatMap((it) => optimizeMidIRStatement(it, allocator, set))
     .reverse();
   return { statements: optimizedStatements, set };
-};
+}
 
-const optimizeMidIRFunctionByCommonSubExpressionElimination = (
+export default function optimizeMidIRFunctionByCommonSubExpressionElimination(
   midIRFunction: MidIRFunction,
   allocator: OptimizationResourceAllocator
-): MidIRFunction =>
-  optimizeMidIRFunctionByLocalValueNumbering({
+): MidIRFunction {
+  return optimizeMidIRFunctionByLocalValueNumbering({
     ...midIRFunction,
     body: optimizeMidIRStatementsWithSet(midIRFunction.body, allocator).statements,
   });
-
-export default optimizeMidIRFunctionByCommonSubExpressionElimination;
+}

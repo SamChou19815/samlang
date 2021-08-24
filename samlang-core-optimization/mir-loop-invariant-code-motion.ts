@@ -12,11 +12,11 @@ type LoopInvariantCodeMotionOptimizationResult = {
   readonly nonLoopInvariantVariables: ReadonlySet<string>;
 };
 
-const optimizeMidIRWhileStatementByLoopInvariantCodeMotion = ({
+export default function optimizeMidIRWhileStatementByLoopInvariantCodeMotion({
   loopVariables,
   statements,
   breakCollector,
-}: MidIRWhileStatement): LoopInvariantCodeMotionOptimizationResult => {
+}: MidIRWhileStatement): LoopInvariantCodeMotionOptimizationResult {
   const nonLoopInvariantVariables = new Set(loopVariables.map((it) => it.name));
 
   const expressionIsNotLoopInvariant = (expression: MidIRExpression): boolean => {
@@ -90,6 +90,4 @@ const optimizeMidIRWhileStatementByLoopInvariantCodeMotion = ({
     }),
     nonLoopInvariantVariables,
   };
-};
-
-export default optimizeMidIRWhileStatementByLoopInvariantCodeMotion;
+}

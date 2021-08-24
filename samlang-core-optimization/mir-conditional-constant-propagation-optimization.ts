@@ -37,7 +37,7 @@ import {
 
 const longOfBool = (b: boolean) => (b ? 1 : 0);
 
-const evaluateBinaryExpression = (operator: IROperator, v1: number, v2: number): number | null => {
+function evaluateBinaryExpression(operator: IROperator, v1: number, v2: number): number | null {
   switch (operator) {
     case '+':
       return v1 + v2;
@@ -67,7 +67,7 @@ const evaluateBinaryExpression = (operator: IROperator, v1: number, v2: number):
     case '!=':
       return longOfBool(v1 !== v2);
   }
-};
+}
 
 type BinaryExpression = {
   readonly operator: IROperator;
@@ -75,11 +75,11 @@ type BinaryExpression = {
   readonly e2: MidIRIntLiteralExpression;
 };
 
-const mergeBinaryExpression = (
+function mergeBinaryExpression(
   outerOperator: IROperator,
   inner: BinaryExpression,
   outerConstant: number
-): BinaryExpression | null => {
+): BinaryExpression | null {
   switch (outerOperator) {
     case '+':
       if (inner.operator === '+') {
@@ -116,7 +116,7 @@ const mergeBinaryExpression = (
     default:
       return null;
   }
-};
+}
 
 class BinaryExpressionContext extends LocalStackedContext<BinaryExpression> {}
 
@@ -135,11 +135,11 @@ const optimizeMidIRExpression = (
   }
 };
 
-const optimizeMidIRStatement = (
+function optimizeMidIRStatement(
   statement: MidIRStatement,
   valueContext: LocalValueContextForOptimization,
   binaryExpressionContext: BinaryExpressionContext
-): readonly MidIRStatement[] => {
+): readonly MidIRStatement[] {
   const optimizeExpression = (expression: MidIRExpression) =>
     optimizeMidIRExpression(valueContext, expression);
 
@@ -454,13 +454,13 @@ const optimizeMidIRStatement = (
         }),
       ];
   }
-};
+}
 
-const optimizeMidIRStatements = (
+function optimizeMidIRStatements(
   statements: readonly MidIRStatement[],
   valueContext: LocalValueContextForOptimization,
   binaryExpressionContext: BinaryExpressionContext
-): readonly MidIRStatement[] => {
+): readonly MidIRStatement[] {
   const collector: MidIRStatement[] = [];
   outer: for (let i = 0; i < statements.length; i += 1) {
     const optimized = optimizeMidIRStatement(
@@ -475,16 +475,14 @@ const optimizeMidIRStatements = (
     }
   }
   return collector;
-};
+}
 
-const optimizeMidIRFunctionByConditionalConstantPropagation = (
+export default function optimizeMidIRFunctionByConditionalConstantPropagation(
   midIRFunction: MidIRFunction
-): MidIRFunction => {
+): MidIRFunction {
   const valueContext = new LocalValueContextForOptimization();
   const binaryExpressionContext = new BinaryExpressionContext();
   const body = optimizeMidIRStatements(midIRFunction.body, valueContext, binaryExpressionContext);
   const returnValue = optimizeMidIRExpression(valueContext, midIRFunction.returnValue);
   return { ...midIRFunction, body, returnValue };
-};
-
-export default optimizeMidIRFunctionByConditionalConstantPropagation;
+}

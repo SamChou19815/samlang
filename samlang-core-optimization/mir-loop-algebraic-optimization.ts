@@ -11,11 +11,11 @@ import {
 import type { MidIROptimizableWhileLoop } from './mir-loop-induction-analysis';
 import type OptimizationResourceAllocator from './optimization-resource-allocator';
 
-const analyzeNumberOfIterationsToBreakLessThanGuard = (
+function analyzeNumberOfIterationsToBreakLessThanGuard(
   initialGuardValue: number,
   guardIncrementAmount: number,
   guardedValue: number
-): number | null => {
+): number | null {
   // Condition is already satisfied, so it does not loop.
   if (initialGuardValue >= guardedValue) return 0;
   // The guardIncrementAmount does not helps to make any progress,
@@ -26,14 +26,14 @@ const analyzeNumberOfIterationsToBreakLessThanGuard = (
     Math.floor(difference / guardIncrementAmount) +
     (difference % guardIncrementAmount === 0 ? 0 : 1)
   );
-};
+}
 
-export const analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING = (
+export function analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING(
   initialGuardValue: number,
   guardIncrementAmount: number,
   operator: '<' | '<=' | '>' | '>=',
   guardedValue: number
-): number | null => {
+): number | null {
   switch (operator) {
     case '<':
       return analyzeNumberOfIterationsToBreakLessThanGuard(
@@ -60,10 +60,10 @@ export const analyzeNumberOfIterationsToBreakGuard_EXPOSED_FOR_TESTING = (
         -(guardedValue - 1)
       );
   }
-};
+}
 
 /** Optimize the loop with number of iteration steps that are statically analyzable. */
-const midIRLoopAlgebraicOptimization = (
+export default function midIRLoopAlgebraicOptimization(
   {
     basicInductionVariableWithLoopGuard,
     generalInductionVariables,
@@ -73,7 +73,7 @@ const midIRLoopAlgebraicOptimization = (
     breakCollector,
   }: MidIROptimizableWhileLoop,
   allocator: OptimizationResourceAllocator
-): readonly MidIRStatement[] | null => {
+): readonly MidIRStatement[] | null {
   if (
     basicInductionVariableWithLoopGuard.initialValue.__type__ !== 'MidIRIntLiteralExpression' ||
     basicInductionVariableWithLoopGuard.incrementAmount.__type__ !== 'MidIRIntLiteralExpression' ||
@@ -163,6 +163,4 @@ const midIRLoopAlgebraicOptimization = (
       ),
     }),
   ];
-};
-
-export default midIRLoopAlgebraicOptimization;
+}
