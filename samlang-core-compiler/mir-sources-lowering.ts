@@ -19,7 +19,7 @@ import {
   MIR_INT_TYPE,
   MIR_IDENTIFIER_TYPE,
   MIR_FUNCTION_TYPE,
-  MIR_INT,
+  MIR_ONE,
   MIR_VARIABLE,
   MIR_NAME,
   MIR_BINARY,
@@ -117,23 +117,45 @@ class HighIRToMidIRLoweringManager {
           this.typeDefinitions[pointerType.name],
           `Missing ${pointerType.name}`
         );
+        const physicalIndex = this.referenceCounting ? index + 1 : index;
         if (typeDefinition.type === 'object') {
-          return [MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index })];
+          return [
+            MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index: physicalIndex }),
+          ];
         }
         assert(index === 0 || index === 1, `Invalid index for variant access: ${index}`);
         switch (index) {
           case 0:
             // Access the tag case
             assert(variableType.__type__ === 'PrimitiveType' && variableType.type === 'int');
-            return [MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index })];
+            return [
+              MIR_INDEX_ACCESS({
+                name,
+                type: variableType,
+                pointerExpression,
+                index: physicalIndex,
+              }),
+            ];
           case 1: {
             // Access the data case, might need cast
             if (isTheSameMidIRType(variableType, MIR_ANY_TYPE)) {
-              return [MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index })];
+              return [
+                MIR_INDEX_ACCESS({
+                  name,
+                  type: variableType,
+                  pointerExpression,
+                  index: physicalIndex,
+                }),
+              ];
             }
             const temp = this.tempAllocator();
             return [
-              MIR_INDEX_ACCESS({ name: temp, type: MIR_ANY_TYPE, pointerExpression, index }),
+              MIR_INDEX_ACCESS({
+                name: temp,
+                type: MIR_ANY_TYPE,
+                pointerExpression,
+                index: physicalIndex,
+              }),
               MIR_CAST({
                 name,
                 type: variableType,
@@ -171,15 +193,15 @@ class HighIRToMidIRLoweringManager {
               name: tempFunction,
               type: functionType,
               pointerExpression,
-              index: 0,
+              index: this.referenceCounting ? 1 : 0,
             }),
             MIR_INDEX_ACCESS({
               name: tempContext,
               type: MIR_ANY_TYPE,
               pointerExpression,
-              index: 1,
+              index: this.referenceCounting ? 2 : 1,
             }),
-            // TODO(ref-counting)
+            // TODO(ref-counting): increase reference counting for function parameters
             MIR_FUNCTION_CALL({
               functionExpression: MIR_VARIABLE(tempFunction, functionType),
               functionArguments: [
@@ -227,7 +249,10 @@ class HighIRToMidIRLoweringManager {
                 );
                 return MIR_VARIABLE(temp, MIR_ANY_TYPE);
               });
-        // TODO(ref-counting): increasing ref count
+        if (this.referenceCounting) {
+          // TODO(ref-counting): increasing ref count for other expressions
+          expressionList.unshift(MIR_ONE);
+        }
         statements.push(MIR_STRUCT_INITIALIZATION({ structVariableName, type, expressionList }));
         return statements;
       }
@@ -265,11 +290,14 @@ class HighIRToMidIRLoweringManager {
           MIR_STRUCT_INITIALIZATION({
             structVariableName: statement.closureVariableName,
             type: closureType,
-            expressionList: [
-              functionNameSlot,
-              contextSlot,
-              // TODO(ref-counting): add destructor for context
-            ],
+            expressionList: this.referenceCounting
+              ? [
+                  MIR_ONE,
+                  // TODO(ref-counting): add destructor for context
+                  functionNameSlot,
+                  contextSlot,
+                ]
+              : [functionNameSlot, contextSlot],
           })
         );
         return statements;
@@ -286,24 +314,27 @@ export default function lowerHighIRSourcesToMidIRSources(
   const closureTypeDefinitionMapForLowering = Object.fromEntries(
     sources.closureTypes.map((it) => {
       assert(it.typeParameters.length === 0);
-      // TODO(ref-counting)
+      // TODO(ref-counting): add typedef for destructors
       const functionTypeWithoutContextArgument = lowerHighIRFunctionType(it.functionType);
       const functionType = MIR_FUNCTION_TYPE(
         [MIR_ANY_TYPE, ...functionTypeWithoutContextArgument.argumentTypes],
         functionTypeWithoutContextArgument.returnType
       );
-      typeDefinitions.push({ identifier: it.identifier, mappings: [functionType, MIR_ANY_TYPE] });
+      typeDefinitions.push({
+        identifier: it.identifier,
+        mappings: referenceCounting
+          ? [MIR_INT_TYPE, functionType, MIR_ANY_TYPE]
+          : [functionType, MIR_ANY_TYPE],
+      });
       return [it.identifier, functionType];
     })
   );
   const typeDefinitionMapForLowering = Object.fromEntries(
-    // TODO(ref-counting)
     sources.typeDefinitions.map((it) => {
-      typeDefinitions.push({
-        identifier: it.identifier,
-        mappings:
-          it.type === 'object' ? it.mappings.map(lowerHighIRType) : [MIR_INT_TYPE, MIR_ANY_TYPE],
-      });
+      let mappings =
+        it.type === 'object' ? it.mappings.map(lowerHighIRType) : [MIR_INT_TYPE, MIR_ANY_TYPE];
+      mappings = referenceCounting ? [MIR_INT_TYPE, ...mappings] : mappings;
+      typeDefinitions.push({ identifier: it.identifier, mappings });
       return [it.identifier, it];
     })
   );
