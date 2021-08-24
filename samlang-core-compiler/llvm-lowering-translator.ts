@@ -33,7 +33,7 @@ import type {
   MidIRFunction,
   MidIRSources,
 } from 'samlang-core-ast/mir-nodes';
-import { withoutUnreachableLLVMCode } from 'samlang-core-optimization/simple-optimizations';
+import withoutUnreachableLLVMCode from 'samlang-core-optimization/simple-optimizations';
 import { checkNotNull, zip, zip3 } from 'samlang-core-utils';
 
 import lowerMidIRTypeToLLVMType from './llvm-types-lowering';
