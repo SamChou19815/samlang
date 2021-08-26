@@ -213,7 +213,7 @@ describe('samlang-core-parser/index', () => {
     const parsed = parseSamlangModuleFromText(
       `
     // Adapted from website
-    import { Foo, Bar } from Path.To;
+    import { Foo, Bar } from path.To;
 
     class Main(Boo(), ()) {
       function main(): string = "Hello World"
@@ -244,8 +244,10 @@ describe('samlang-core-parser/index', () => {
       ModuleReference.DUMMY
     );
 
-    const parsed = parseSamlangModuleFromText(
-      `
+    parseSamlangModuleFromText(
+      `import {Foo} from 3.2
+    import {Bar} from +.3
+
     class {
       function main(): int =
     }
@@ -266,7 +268,6 @@ describe('samlang-core-parser/index', () => {
       new Set(),
       moduleErrorCollector
     );
-    expect(parsed.imports).toEqual([]);
     expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
   });
 

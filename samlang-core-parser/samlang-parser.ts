@@ -236,7 +236,24 @@ export default class SamlangModuleParser extends BaseParser {
       this.assertAndConsume('from');
       const importRangeStart = this.peek().range;
       const importedModule = new ModuleReference(
-        this.parsePunctuationSeparatedList('.', () => this.assertAndPeekUpperId().variable)
+        this.parsePunctuationSeparatedList('.', () => {
+          const peeked = this.peek();
+          this.consume();
+          if (typeof peeked.content !== 'string') {
+            switch (peeked.content.__type__) {
+              case 'UpperId':
+              case 'LowerId':
+                return peeked.content.content;
+              default:
+                break;
+            }
+          }
+          this.report(
+            peeked.range,
+            `Expected: identifier, actual: ${samlangTokenContentToString(peeked.content)}.`
+          );
+          return 'MISSING';
+        })
       );
       const importedModuleRange = importRangeStart.union(this.lastRange());
       importedMembers.forEach(([variable]) => this.classSourceMap.set(variable, importedModule));
