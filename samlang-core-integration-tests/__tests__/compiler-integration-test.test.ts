@@ -8,7 +8,7 @@ import {
 } from 'samlang-core-ast/common-names';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
 import { prettyPrintLLVMSources } from 'samlang-core-ast/llvm-nodes';
-import { prettyPrintMidIRSourcesAsJSSources } from 'samlang-core-ast/mir-nodes';
+import { MidIRSources, prettyPrintMidIRSourcesAsJSSources } from 'samlang-core-ast/mir-nodes';
 import { DEFAULT_BUILTIN_TYPING_CONTEXT } from 'samlang-core-checker';
 import {
   compileSamlangSourcesToHighIRSources,
@@ -50,93 +50,72 @@ describe('compiler-integration-tests', () => {
     compileSamlangSourcesToHighIRSources(checkedSources),
     /* referenceCounting */ false
   );
-  const midIROptimizedSingleSource = optimizeMidIRSourcesAccordingToConfiguration(
-    midIRUnoptimizedSingleSource
-  );
-  const midIRUnoptimizedCommonJSSource = prettyPrintMidIRSourcesAsJSSources(
-    midIRUnoptimizedSingleSource
-  );
 
-  const testMIR = (
-    commonJSCode: string,
-    testCaseName: string,
-    expectedStandardOut: string
-  ): void => {
-    const jsCode = `let printed = '';
+  function testMIRSources(midSources: MidIRSources): void {
+    let jsCode = `let printed;
 const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
 const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => { printed += line; printed += "\\n" };;
 const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => parseInt(v, 10);
 const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
 const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
-${commonJSCode}
+${prettyPrintMidIRSourcesAsJSSources(midSources)}
+const result = {};
+
+`;
+
+    runnableSamlangProgramTestCases.forEach(({ testCaseName }) => {
+      jsCode += `printed = ''
 ${encodeMainFunctionName(new ModuleReference([testCaseName]))}();
-printed`;
-    // eslint-disable-next-line no-eval
-    const interpretationResult: string = eval(jsCode);
-    if (interpretationResult !== expectedStandardOut) {
-      throw new Error(
-        `Expected:\n${expectedStandardOut}\nActual:\n${interpretationResult}\nCode:\n${jsCode}\n\nUnoptimized Code:\n${midIRUnoptimizedCommonJSSource}`
-      );
-    }
-  };
+result['${testCaseName}'] = printed;
 
-  describe('MIR[no-opt]', () => {
-    const commonJSCode = prettyPrintMidIRSourcesAsJSSources(midIRUnoptimizedSingleSource);
-    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
-      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
+`;
+    });
+    jsCode += 'result';
+
+    const expectedResult = Object.fromEntries(
+      runnableSamlangProgramTestCases.map(({ testCaseName, expectedStandardOut }) => [
+        testCaseName,
+        expectedStandardOut,
+      ])
     );
-  });
+    // eslint-disable-next-line no-eval
+    expect(eval(jsCode)).toEqual(expectedResult);
+  }
 
-  describe('MIR[lvn]', () => {
-    const commonJSCode = prettyPrintMidIRSourcesAsJSSources(
+  it('MIR[no-opt]', () => testMIRSources(midIRUnoptimizedSingleSource));
+
+  it('MIR[lvn]', () =>
+    testMIRSources(
       optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource, {
         doesPerformLocalValueNumbering: true,
       })
-    );
-    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
-      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
-    );
-  });
+    ));
 
-  describe('MIR[cse]', () => {
-    const commonJSCode = prettyPrintMidIRSourcesAsJSSources(
+  it('MIR[cse]', () =>
+    testMIRSources(
       optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource, {
         doesPerformCommonSubExpressionElimination: true,
       })
-    );
-    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
-      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
-    );
-  });
+    ));
 
-  describe('MIR[inl]', () => {
-    const commonJSCode = prettyPrintMidIRSourcesAsJSSources(
+  it('MIR[inl]', () =>
+    testMIRSources(
       optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource, {
         doesPerformInlining: true,
       })
-    );
-    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
-      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
-    );
-  });
+    ));
 
-  describe('MIR[loop]', () => {
-    const commonJSCode = prettyPrintMidIRSourcesAsJSSources(
+  it('MIR[loop]', () =>
+    testMIRSources(
       optimizeMidIRSourcesAccordingToConfiguration(midIRUnoptimizedSingleSource, {
         doesPerformLoopOptimization: true,
       })
-    );
-    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) =>
-      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut))
-    );
-  });
+    ));
 
-  describe('MIR[all]', () => {
-    const commonJSCode = prettyPrintMidIRSourcesAsJSSources(midIROptimizedSingleSource);
-    runnableSamlangProgramTestCases.forEach(({ testCaseName, expectedStandardOut }) => {
-      it(testCaseName, () => testMIR(commonJSCode, testCaseName, expectedStandardOut));
-    });
-  });
+  const midIROptimizedSingleSource = optimizeMidIRSourcesAccordingToConfiguration(
+    midIRUnoptimizedSingleSource
+  );
+  it('MIR[all]', () => testMIRSources(midIROptimizedSingleSource));
 
   const llvmSources = lowerMidIRSourcesToLLVMSources(midIROptimizedSingleSource);
   const llvmInterpretationEnvironment = setupLLVMInterpretationEnvironment(llvmSources);
