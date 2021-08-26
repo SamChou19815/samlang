@@ -6,19 +6,16 @@ import { checkSources } from 'samlang-core-services';
 
 import { runnableSamlangProgramTestCases } from '../test-programs';
 
-const getTypeCheckedModule = (code: string): SamlangModule => {
+function getTypeCheckedModule(code: string): SamlangModule {
   const moduleReference = new ModuleReference(['test']);
   const { checkedSources, compileTimeErrors } = checkSources(
     [[moduleReference, code]],
     DEFAULT_BUILTIN_TYPING_CONTEXT
   );
   const errors = compileTimeErrors.map((it) => it.toString());
-  if (errors.length > 0) {
-    throw new Error(`Source: ${code}. Errors:\n${errors.join('\n')}`);
-  }
-  const checkedModule = checkedSources.forceGet(moduleReference);
-  return checkedModule;
-};
+  if (errors.length > 0) throw new Error(`Source: ${code}. Errors:\n${errors.join('\n')}`);
+  return checkedSources.forceGet(moduleReference);
+}
 
 describe('printer-integration-test', () => {
   // @ts-expect-error: process type is in @types/node, but we deliberatively excludes it to prevent core package depending on node.
