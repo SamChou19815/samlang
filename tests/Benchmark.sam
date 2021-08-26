@@ -1,4 +1,4 @@
-import { ForTests } from Tests.StdLib
+import { ForTests } from tests.StdLib
 
 class Benchmark {
   private function mathTailRec(n: int, acc: int): int =

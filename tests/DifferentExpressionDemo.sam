@@ -1,4 +1,4 @@
-import { List, ForTests } from Tests.StdLib
+import { List, ForTests } from tests.StdLib
 
 class Foo(val a: int) { function bar(): int = 3  }
 
