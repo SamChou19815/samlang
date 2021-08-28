@@ -22,19 +22,20 @@ import lowerHighIRSourcesToMidIRSources from '../mir-sources-lowering';
 
 type SimplifiedSources = Omit<HighIRSources, 'globalVariables' | 'mainFunctionNames'>;
 
-const assertLowered = (sources: SimplifiedSources, referenceCounting: boolean, expected: string) =>
+const assertLowered = (sources: SimplifiedSources, expected: string) =>
   expect(
     debugPrintMidIRSources(
-      lowerHighIRSourcesToMidIRSources(
-        { ...sources, globalVariables: [], mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN] },
-        referenceCounting
-      )
+      lowerHighIRSourcesToMidIRSources({
+        ...sources,
+        globalVariables: [],
+        mainFunctionNames: [ENCODED_COMPILED_PROGRAM_MAIN],
+      })
     )
   ).toBe(expected);
 
 describe('mir-sources-lowering', () => {
   it('lowerHighIRSourcesToMidIRSources smoke test', () => {
-    assertLowered({ closureTypes: [], typeDefinitions: [], functions: [] }, false, '');
+    assertLowered({ closureTypes: [], typeDefinitions: [], functions: [] }, '');
   });
 
   const commonComprehensiveSources = ((): SimplifiedSources => {
@@ -156,51 +157,9 @@ describe('mir-sources-lowering', () => {
     };
   })();
 
-  it('lowerHighIRSourcesToMidIRSources comprehensive test without reference counting', () => {
+  it('lowerHighIRSourcesToMidIRSources comprehensive test.', () => {
     assertLowered(
       commonComprehensiveSources,
-      false,
-      `type CC = ((any, int) -> int, any);
-
-type Object = (int, int);
-
-type Variant = (int, any);
-
-function _compiled_program_main(): int {
-  let finalV: int;
-  if 1 {
-    main(0);
-    let _mid_t0: (any, int) -> int = (cc: CC)[0];
-    let _mid_t1: any = (cc: CC)[1];
-    (_mid_t0: (any, int) -> int)((_mid_t1: any), 0);
-    let v1: int = (a: Object)[0];
-    let v2: int = (b: Variant)[0];
-    let _mid_t2: any = (b: Variant)[1];
-    let v3: int = (_mid_t2: any);
-    let v4: string = (b: Variant)[1];
-    finalV = (v1: int);
-  } else {
-    let v1: int = 0 + 0;
-    let O: Object = [0];
-    let _mid_t3: any = 0;
-    let v1: Variant = [0, (_mid_t3: any)];
-    let v2: Variant = [0, G1];
-    let c1: CC = [aaa, G1];
-    let _mid_t4: (any) -> int = bbb;
-    let _mid_t5: any = 0;
-    let c2: CC = [(_mid_t4: (any) -> int), (_mid_t5: any)];
-    finalV = (v2: int);
-  }
-  return 0;
-}
-`
-    );
-  });
-
-  it('lowerHighIRSourcesToMidIRSources comprehensive test with reference counting', () => {
-    assertLowered(
-      commonComprehensiveSources,
-      true,
       `type CC = (int, (any, int) -> int, any);
 
 type Object = (int, int, int);
