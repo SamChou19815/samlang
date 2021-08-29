@@ -1,4 +1,4 @@
-import { ForTests } from Tests.StdLib
+import { ForTests } from tests.StdLib
 
 class ConstantFoldingTest {
   function testI(acc: int, i: int): int =

@@ -43,7 +43,7 @@ console.error('Compiled!');
 if (!process.env.NO_JS) {
   console.error('Checking generated JS code...');
   const { resultString, time } = runWithErrorCheck('node', [
-    path.join(basePath, 'Tests.AllTests.js'),
+    path.join(basePath, 'tests.AllTests.js'),
   ]);
   if (!compare(read('./scripts/snapshot.txt'), resultString)) process.exit(1);
   console.error(`Generated JS code is good and takes ${time}ms to run.`);
@@ -52,7 +52,7 @@ if (
   !process.env.NO_LLVM &&
   spawnSync('llc', ['--help'], { shell: true, stdio: 'pipe' }).status === 0
 ) {
-  const { resultString, time } = runWithErrorCheck(path.join(basePath, 'Tests.AllTests'));
+  const { resultString, time } = runWithErrorCheck(path.join(basePath, 'tests.AllTests'));
   console.error('Checking generated machine code...');
   if (!compare(read('./scripts/snapshot.txt'), resultString)) process.exit(1);
   console.error(`Generated machine code is good and takes ${time}ms to run.`);

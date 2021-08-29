@@ -1,4 +1,4 @@
-import { ForTests } from Tests.StdLib
+import { ForTests } from tests.StdLib
 
 class MathFunctions {
   private function factorial(n: int): int =
