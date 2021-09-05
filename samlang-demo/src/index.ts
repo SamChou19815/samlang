@@ -39,7 +39,8 @@ export default function runSamlangDemo(programString: string): SamlangDemoResult
 
   const demoSamlangModule = checkedSources.forceGet(demoModuleReference);
   const midIRSources = lowerHighIRSourcesToMidIRSources(
-    compileSamlangSourcesToHighIRSources(checkedSources)
+    compileSamlangSourcesToHighIRSources(checkedSources),
+    /* referenceCounting */ false
   );
   const llvmSources = lowerMidIRSourcesToLLVMSources(midIRSources);
 

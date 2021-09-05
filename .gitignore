@@ -25,6 +25,7 @@ bundles
 .yarn/*
 !.yarn/releases
 !.yarn/plugins
+!.yarn/cache
 !.yarn/sdks
 !.yarn/versions
 **/node_modules

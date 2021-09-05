@@ -11,8 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - uses: actions/setup-node@v2
-        with:
-          cache: 'yarn'
       - name: Yarn Install
         run: yarn
       - name: Compile samlang Programs
