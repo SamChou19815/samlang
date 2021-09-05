@@ -65,6 +65,7 @@ function lowerHighIRExpression(expression: HighIRExpression): MidIRExpression {
 
 class HighIRToMidIRLoweringManager {
   constructor(
+    private readonly referenceCounting: boolean,
     private readonly closureTypeDefinitions: Readonly<Record<string, MidIRFunctionType>>,
     private readonly typeDefinitions: Readonly<Record<string, HighIRTypeDefinition>>
   ) {}
@@ -116,7 +117,7 @@ class HighIRToMidIRLoweringManager {
           this.typeDefinitions[pointerType.name],
           `Missing ${pointerType.name}`
         );
-        const physicalIndex = index + 1;
+        const physicalIndex = this.referenceCounting ? index + 1 : index;
         if (typeDefinition.type === 'object') {
           return [
             MIR_INDEX_ACCESS({ name, type: variableType, pointerExpression, index: physicalIndex }),
@@ -192,13 +193,13 @@ class HighIRToMidIRLoweringManager {
               name: tempFunction,
               type: functionType,
               pointerExpression,
-              index: 1,
+              index: this.referenceCounting ? 1 : 0,
             }),
             MIR_INDEX_ACCESS({
               name: tempContext,
               type: MIR_ANY_TYPE,
               pointerExpression,
-              index: 2,
+              index: this.referenceCounting ? 2 : 1,
             }),
             // TODO(ref-counting): increase reference counting for function parameters
             MIR_FUNCTION_CALL({
@@ -248,8 +249,10 @@ class HighIRToMidIRLoweringManager {
                 );
                 return MIR_VARIABLE(temp, MIR_ANY_TYPE);
               });
-        // TODO(ref-counting): increasing ref count for other expressions
-        expressionList.unshift(MIR_ONE);
+        if (this.referenceCounting) {
+          // TODO(ref-counting): increasing ref count for other expressions
+          expressionList.unshift(MIR_ONE);
+        }
         statements.push(MIR_STRUCT_INITIALIZATION({ structVariableName, type, expressionList }));
         return statements;
       }
@@ -287,12 +290,14 @@ class HighIRToMidIRLoweringManager {
           MIR_STRUCT_INITIALIZATION({
             structVariableName: statement.closureVariableName,
             type: closureType,
-            expressionList: [
-              MIR_ONE,
-              // TODO(ref-counting): add destructor for context
-              functionNameSlot,
-              contextSlot,
-            ],
+            expressionList: this.referenceCounting
+              ? [
+                  MIR_ONE,
+                  // TODO(ref-counting): add destructor for context
+                  functionNameSlot,
+                  contextSlot,
+                ]
+              : [functionNameSlot, contextSlot],
           })
         );
         return statements;
@@ -301,7 +306,10 @@ class HighIRToMidIRLoweringManager {
   };
 }
 
-export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources): MidIRSources {
+export default function lowerHighIRSourcesToMidIRSources(
+  sources: HighIRSources,
+  referenceCounting: boolean
+): MidIRSources {
   const typeDefinitions: MidIRTypeDefinition[] = [];
   const closureTypeDefinitionMapForLowering = Object.fromEntries(
     sources.closureTypes.map((it) => {
@@ -314,22 +322,25 @@ export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources)
       );
       typeDefinitions.push({
         identifier: it.identifier,
-        mappings: [MIR_INT_TYPE, functionType, MIR_ANY_TYPE],
+        mappings: referenceCounting
+          ? [MIR_INT_TYPE, functionType, MIR_ANY_TYPE]
+          : [functionType, MIR_ANY_TYPE],
       });
       return [it.identifier, functionType];
     })
   );
   const typeDefinitionMapForLowering = Object.fromEntries(
     sources.typeDefinitions.map((it) => {
-      const mappings =
+      let mappings =
         it.type === 'object' ? it.mappings.map(lowerHighIRType) : [MIR_INT_TYPE, MIR_ANY_TYPE];
-      mappings.unshift(MIR_INT_TYPE);
+      mappings = referenceCounting ? [MIR_INT_TYPE, ...mappings] : mappings;
       typeDefinitions.push({ identifier: it.identifier, mappings });
       return [it.identifier, it];
     })
   );
   const functions = sources.functions.map((highIRFunction) =>
     new HighIRToMidIRLoweringManager(
+      referenceCounting,
       closureTypeDefinitionMapForLowering,
       typeDefinitionMapForLowering
     ).lowerHighIRFunction(highIRFunction)

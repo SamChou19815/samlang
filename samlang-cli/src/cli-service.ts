@@ -137,7 +137,8 @@ export function compileEverything(
   outputDirectory: string
 ): boolean {
   const midIRSources = lowerHighIRSourcesToMidIRSources(
-    compileSamlangSourcesToHighIRSources(sources)
+    compileSamlangSourcesToHighIRSources(sources),
+    /* referenceCounting */ false
   );
   const moduleReferences = sources.entries().map(([moduleReference]) => moduleReference);
 
