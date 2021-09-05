@@ -19,6 +19,7 @@ out
 bin
 build
 workspaces.json
+bundles
 
 ## Yarn
 .yarn/*

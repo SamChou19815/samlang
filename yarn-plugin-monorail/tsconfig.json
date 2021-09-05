@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "module": "commonjs",
+    "target": "es2018",
+    "lib": ["esnext", "dom"]
+  },
+  "include": ["src"]
+}
