@@ -4,7 +4,8 @@
     "jest-esbuild-transformer",
     "samlang-cli",
     "samlang-core-*",
-    "samlang-demo"
+    "samlang-demo",
+    "yarn-plugin-monorail"
   ],
   "scripts": {
     "lint": "eslint . --cache",
@@ -16,7 +17,9 @@
     "test:single": "jest -t",
     "test:integration": "esr scripts/compile-repository.ts",
     "test:new-linter-config:dev-sam-local": "eslint --config configurations/latest-local-linter-config.js .",
-    "bump": "yarn up @types/jest @types/node prettier jest husky lint-staged esbuild eslint \"@typescript-eslint/*\" \"eslint-*\""
+    "bump": "yarn up @types/jest @types/node prettier jest husky lint-staged esbuild eslint \"@typescript-eslint/*\" \"eslint-*\"",
+    "import-plugin": "yarn plugin import ./yarn-plugin-monorail/bundles/plugin-monorail.js",
+    "setup-plugin": "yarn workspace @dev-sam/yarn-plugin-monorail bundle && yarn import-plugin"
   },
   "devDependencies": {
     "@dev-sam/eslint-config-common": "0.21.0",
@@ -51,7 +54,8 @@
                 "**/samlang-core-analysis/*",
                 "**/samlang-core-ast/*",
                 "**/samlang-core-interpreter/*",
-                "**/samlang-core-optimization/simple-optimizations*"
+                "**/samlang-core-optimization/simple-optimizations*",
+                "**/yarn-plugin-monorail/src/utils/*"
               ]
             }
           ]

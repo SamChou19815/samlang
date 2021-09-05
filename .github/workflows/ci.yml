@@ -1,6 +1,4 @@
-# @generated
-
-name: General
+name: CI
 on:
   push:
     branches:
@@ -36,19 +34,6 @@ jobs:
         run: yarn install --immutable
       - name: Compile
         run: yarn c
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: '2'
-      - uses: actions/setup-node@v2
-        with:
-          cache: 'yarn'
-      - name: Yarn Install
-        run: yarn install --immutable
-      - name: Check changed
-        run: if [[ `git status --porcelain` ]]; then exit 1; fi
   test:
     runs-on: ubuntu-latest
     steps:
