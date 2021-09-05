@@ -1,4 +1,6 @@
-module.exports = require('../../website/packages/eslint-config-common/api')(
+// @ts-check
+
+module.exports = require('./api')(
   require.resolve('@typescript-eslint/parser'),
   require.resolve('eslint-import-resolver-node')
 );

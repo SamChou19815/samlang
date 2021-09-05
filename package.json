@@ -1,6 +1,7 @@
 {
   "private": true,
   "workspaces": [
+    "eslint-config-common",
     "jest-esbuild-transformer",
     "samlang-cli",
     "samlang-core-*",
@@ -22,7 +23,7 @@
     "setup-plugin": "yarn workspace @dev-sam/yarn-plugin-monorail bundle && yarn import-plugin"
   },
   "devDependencies": {
-    "@dev-sam/eslint-config-common": "0.21.0",
+    "@dev-sam/eslint-config-common": "workspace:*",
     "@dev-sam/jest-esbuild-transformer": "workspace:0.4.0",
     "@types/jest": "^27.0.1",
     "@types/node": "^16.7.10",
