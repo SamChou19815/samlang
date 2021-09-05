@@ -419,9 +419,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@dev-sam/eslint-config-common@npm:0.21.0":
-  version: 0.21.0
-  resolution: "@dev-sam/eslint-config-common@npm:0.21.0"
+"@dev-sam/eslint-config-common@workspace:*, @dev-sam/eslint-config-common@workspace:eslint-config-common":
+  version: 0.0.0-use.local
+  resolution: "@dev-sam/eslint-config-common@workspace:eslint-config-common"
+  dependencies:
+    "@types/node": ^16.7.10
   peerDependencies:
     "@typescript-eslint/eslint-plugin": "*"
     "@typescript-eslint/parser": "*"
@@ -437,9 +439,8 @@ __metadata:
       optional: true
     eslint-plugin-react-hooks:
       optional: true
-  checksum: 54c38a3c3958cd492eb47cb6578bc7eaf8d79c51f55204600faf9a2a6c618233f548c61d797a63572ccc608b1e877f8928873023dacb9efa4e046f0209d66fb3
-  languageName: node
-  linkType: hard
+  languageName: unknown
+  linkType: soft
 
 "@dev-sam/jest-esbuild-transformer@workspace:0.4.0, @dev-sam/jest-esbuild-transformer@workspace:jest-esbuild-transformer":
   version: 0.0.0-use.local
@@ -5472,7 +5473,7 @@ fsevents@^2.3.2:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@dev-sam/eslint-config-common": 0.21.0
+    "@dev-sam/eslint-config-common": "workspace:*"
     "@dev-sam/jest-esbuild-transformer": "workspace:0.4.0"
     "@types/jest": ^27.0.1
     "@types/node": ^16.7.10
