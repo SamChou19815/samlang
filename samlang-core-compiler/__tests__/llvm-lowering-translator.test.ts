@@ -55,9 +55,9 @@ const assertStatementLoweringWorks = (
       body: statements,
       returnValue: MIR_ZERO,
     },
-    `define i32 @testFunction() local_unnamed_addr nounwind {
+    `define i64 @testFunction() local_unnamed_addr nounwind {
 l0_start:
-${expectedString}${hasReturn ? '\n  ret i32 0' : ''}
+${expectedString}${hasReturn ? '\n  ret i64 0' : ''}
 }`,
     globalStrings
   );
@@ -76,7 +76,7 @@ const assertExpressionLoweringWorks = (
       body: [],
       returnValue: expression,
     },
-    `define i32 @testFunction() local_unnamed_addr nounwind {
+    `define i64 @testFunction() local_unnamed_addr nounwind {
 l0_start:
 ${expectedString}
 }`,
@@ -86,15 +86,15 @@ ${expectedString}
 
 describe('llvm-lowering-translator', () => {
   it('LLVM lowering works for base expressions 1/n', () => {
-    assertExpressionLoweringWorks(MIR_INT(42), '  ret i32 42');
-    assertExpressionLoweringWorks(MIR_TRUE, '  ret i32 1');
-    assertExpressionLoweringWorks(MIR_FALSE, '  ret i32 0');
+    assertExpressionLoweringWorks(MIR_INT(42), '  ret i64 42');
+    assertExpressionLoweringWorks(MIR_TRUE, '  ret i64 1');
+    assertExpressionLoweringWorks(MIR_FALSE, '  ret i64 0');
   });
 
   it('LLVM lowering works for base expressions 2/n', () => {
-    assertExpressionLoweringWorks(MIR_INT(42), '  ret i32 42');
-    assertExpressionLoweringWorks(MIR_NAME('bar', INT), '  ret i32 @bar');
-    assertExpressionLoweringWorks(MIR_VARIABLE('bar', INT), '  ret i32 %bar');
+    assertExpressionLoweringWorks(MIR_INT(42), '  ret i64 42');
+    assertExpressionLoweringWorks(MIR_NAME('bar', INT), '  ret i64 @bar');
+    assertExpressionLoweringWorks(MIR_VARIABLE('bar', INT), '  ret i64 %bar');
     assertLoweringWorks(
       {
         name: 'foo',
@@ -103,9 +103,9 @@ describe('llvm-lowering-translator', () => {
         body: [],
         returnValue: MIR_VARIABLE('bar', INT),
       },
-      `define i32 @foo(i32 %bar) local_unnamed_addr nounwind {
+      `define i64 @foo(i64 %bar) local_unnamed_addr nounwind {
 l0_start:
-  ret i32 %bar
+  ret i64 %bar
 }`
     );
   });
@@ -121,7 +121,7 @@ l0_start:
         }),
       ],
       `  %_temp_0_index_pointer_temp = getelementptr %Bar, %Bar* %bar, i32 0, i32 3
-  %foo = load i32, i32* %_temp_0_index_pointer_temp`
+  %foo = load i64, i64* %_temp_0_index_pointer_temp`
     );
   });
 
@@ -135,7 +135,7 @@ l0_start:
           e2: MIR_VARIABLE('baz', INT),
         }),
       ],
-      '  %foo = sdiv i32 %bar, %baz'
+      '  %foo = sdiv i64 %bar, %baz'
     );
   });
 
@@ -154,10 +154,10 @@ l0_start:
           returnCollector: 'r',
         }),
       ],
-      `  %_temp_0_string_name_cast = bitcast [1 x i32]* @ss to i32*
-  call i32 @println(i32* %_temp_0_string_name_cast) nounwind
-  %_temp_1_string_name_cast = bitcast [1 x i32]* @ss to i32*
-  %r = call i32 @stringToInt(i32* %_temp_1_string_name_cast) nounwind`,
+      `  %_temp_0_string_name_cast = bitcast [1 x i64]* @ss to i64*
+  call i64 @println(i64* %_temp_0_string_name_cast) nounwind
+  %_temp_1_string_name_cast = bitcast [1 x i64]* @ss to i64*
+  %r = call i64 @stringToInt(i64* %_temp_1_string_name_cast) nounwind`,
       { ss: 1 }
     );
   });
@@ -178,7 +178,7 @@ l0_start:
           finalAssignments: [],
         }),
       ],
-      `  %bb = icmp eq i32 %t, 2`
+      `  %bb = icmp eq i64 %t, 2`
     );
   });
 
@@ -205,7 +205,7 @@ l1_if_else_true:
 l2_if_else_false:
   br label %l3_if_else_end
 l3_if_else_end:
-  %ma = phi i32 [ 2, %l1_if_else_true ], [ 0, %l2_if_else_false ]`
+  %ma = phi i64 [ 2, %l1_if_else_true ], [ 0, %l2_if_else_false ]`
     );
   });
 
@@ -234,10 +234,10 @@ l3_if_else_end:
       ],
       `  br i1 %bb, label %l3_if_else_end, label %l2_if_else_false
 l2_if_else_false:
-  call i32 @bar() nounwind
+  call i64 @bar() nounwind
   br label %l3_if_else_end
 l3_if_else_end:
-  %ma = phi i32 [ 2, %l0_start ], [ 0, %l2_if_else_false ]`
+  %ma = phi i64 [ 2, %l0_start ], [ 0, %l2_if_else_false ]`
     );
   });
 
@@ -266,10 +266,10 @@ l3_if_else_end:
       ],
       `  br i1 %bb, label %l1_if_else_true, label %l3_if_else_end
 l1_if_else_true:
-  call i32 @bar() nounwind
+  call i64 @bar() nounwind
   br label %l3_if_else_end
 l3_if_else_end:
-  %ma = phi i32 [ 2, %l1_if_else_true ], [ 0, %l0_start ]`
+  %ma = phi i64 [ 2, %l1_if_else_true ], [ 0, %l0_start ]`
     );
   });
 
@@ -301,13 +301,13 @@ l3_if_else_end:
           finalAssignments: [],
         }),
       ],
-      `  %bb = icmp eq i32 %t, 2
+      `  %bb = icmp eq i64 %t, 2
   br i1 %bb, label %l1_if_else_true, label %l2_if_else_false
 l1_if_else_true:
-  call i32 @foo() nounwind
+  call i64 @foo() nounwind
   br label %l3_if_else_end
 l2_if_else_false:
-  call i32 @bar() nounwind
+  call i64 @bar() nounwind
   br label %l3_if_else_end
 l3_if_else_end:`
     );
@@ -346,13 +346,13 @@ l3_if_else_end:`
       ],
       `  br i1 %bbb, label %l1_if_else_true, label %l2_if_else_false
 l1_if_else_true:
-  %b1 = call i32 @foo() nounwind
+  %b1 = call i64 @foo() nounwind
   br label %l3_if_else_end
 l2_if_else_false:
-  %b2 = call i32 @bar() nounwind
+  %b2 = call i64 @bar() nounwind
   br label %l3_if_else_end
 l3_if_else_end:
-  %ma = phi i32 [ %b1, %l1_if_else_true ], [ %b2, %l2_if_else_false ]`
+  %ma = phi i64 [ %b1, %l1_if_else_true ], [ %b2, %l2_if_else_false ]`
     );
   });
 
@@ -410,21 +410,21 @@ l3_if_else_end:
       ],
       `  br i1 %bbb, label %l1_if_else_true, label %l2_if_else_false
 l1_if_else_true:
-  %b1 = call i32 @foo() nounwind
+  %b1 = call i64 @foo() nounwind
   br label %l3_if_else_end
 l2_if_else_false:
   br i1 %bbb, label %l4_if_else_true, label %l5_if_else_false
 l4_if_else_true:
-  %b2 = call i32 @foo() nounwind
+  %b2 = call i64 @foo() nounwind
   br label %l6_if_else_end
 l5_if_else_false:
-  %b3 = call i32 @bar() nounwind
+  %b3 = call i64 @bar() nounwind
   br label %l6_if_else_end
 l6_if_else_end:
-  %ma_nested = phi i32 [ %b2, %l4_if_else_true ], [ %b3, %l5_if_else_false ]
+  %ma_nested = phi i64 [ %b2, %l4_if_else_true ], [ %b3, %l5_if_else_false ]
   br label %l3_if_else_end
 l3_if_else_end:
-  %ma = phi i32 [ %b1, %l1_if_else_true ], [ %ma_nested, %l6_if_else_end ]`
+  %ma = phi i64 [ %b1, %l1_if_else_true ], [ %ma_nested, %l6_if_else_end ]`
     );
   });
 
@@ -446,7 +446,7 @@ l3_if_else_end:
       ],
       `  br i1 %bbb, label %l1_single_if_block, label %l2_single_if_end
 l1_single_if_block:
-  %b1 = call i32 @foo() nounwind
+  %b1 = call i64 @foo() nounwind
   br label %l2_single_if_end
 l2_single_if_end:`
     );
@@ -470,7 +470,7 @@ l2_single_if_end:`
       ],
       `  br i1 %bbb, label %l2_single_if_end, label %l1_single_if_block
 l1_single_if_block:
-  %b1 = call i32 @foo() nounwind
+  %b1 = call i64 @foo() nounwind
   br label %l2_single_if_end
 l2_single_if_end:`
     );
@@ -491,7 +491,7 @@ l2_single_if_end:`
           statements: [],
         }),
       ],
-      `  %b1 = call i32 @foo() nounwind`
+      `  %b1 = call i64 @foo() nounwind`
     );
   });
 
@@ -512,8 +512,8 @@ l2_single_if_end:`
       ],
       `  br label %l1_loop_start
 l1_loop_start:
-  %n = phi i32 [ 0, %l0_start ], [ 0, %l1_loop_start ]
-  %b2 = call i32 @foo() nounwind
+  %n = phi i64 [ 0, %l0_start ], [ 0, %l1_loop_start ]
+  %b2 = call i64 @foo() nounwind
   br label %l1_loop_start`,
       {},
       false
@@ -537,14 +537,14 @@ l1_loop_start:
       ],
       `  br label %l1_loop_start
 l1_loop_start:
-  %n = phi i32 [ 0, %l0_start ], [ 0, %l4_single_if_end ]
+  %n = phi i64 [ 0, %l0_start ], [ 0, %l4_single_if_end ]
   br i1 0, label %l3_single_if_block, label %l4_single_if_end
 l3_single_if_block:
   br label %l2_loop_end
 l4_single_if_end:
   br label %l1_loop_start
 l2_loop_end:
-  %v = phi i32 [ 0, %l3_single_if_block ]`
+  %v = phi i64 [ 0, %l3_single_if_block ]`
     );
   });
 
@@ -565,14 +565,14 @@ l2_loop_end:
       ],
       `  br label %l1_loop_start
 l1_loop_start:
-  %n = phi i32 [ 0, %l0_start ], [ 0, %l4_single_if_end ]
+  %n = phi i64 [ 0, %l0_start ], [ 0, %l4_single_if_end ]
   br i1 0, label %l4_single_if_end, label %l3_single_if_block
 l3_single_if_block:
   br label %l2_loop_end
 l4_single_if_end:
   br label %l1_loop_start
 l2_loop_end:
-  %v = phi i32 [ 0, %l3_single_if_block ]`
+  %v = phi i64 [ 0, %l3_single_if_block ]`
     );
   });
 
@@ -585,12 +585,12 @@ l2_loop_end:
           expressionList: [MIR_ZERO, MIR_ZERO],
         }),
       ],
-      `  %_temp_0_struct_ptr_raw = call i32* @_builtin_malloc(i32 8) nounwind
-  %s = ptrtoint i32* %_temp_0_struct_ptr_raw to i32
-  %_temp_1_struct_ptr_0 = getelementptr i3, i32 %s, i32 0, i32 0
-  store i32 0, i32* %_temp_1_struct_ptr_0
-  %_temp_2_struct_ptr_1 = getelementptr i3, i32 %s, i32 0, i32 1
-  store i32 0, i32* %_temp_2_struct_ptr_1`
+      `  %_temp_0_struct_ptr_raw = call i64* @_builtin_malloc(i64 16) nounwind
+  %s = ptrtoint i64* %_temp_0_struct_ptr_raw to i64
+  %_temp_1_struct_ptr_0 = getelementptr i6, i64 %s, i32 0, i32 0
+  store i64 0, i64* %_temp_1_struct_ptr_0
+  %_temp_2_struct_ptr_1 = getelementptr i6, i64 %s, i32 0, i32 1
+  store i64 0, i64* %_temp_2_struct_ptr_1`
     );
   });
 
@@ -603,19 +603,19 @@ l2_loop_end:
           expressionList: [MIR_ZERO, MIR_ZERO],
         }),
       ],
-      `  %_temp_0_struct_ptr_raw = call i32* @_builtin_malloc(i32 8) nounwind
-  %s = bitcast i32* %_temp_0_struct_ptr_raw to %Foo*
+      `  %_temp_0_struct_ptr_raw = call i64* @_builtin_malloc(i64 16) nounwind
+  %s = bitcast i64* %_temp_0_struct_ptr_raw to %Foo*
   %_temp_1_struct_ptr_0 = getelementptr %Foo, %Foo* %s, i32 0, i32 0
-  store i32 0, i32* %_temp_1_struct_ptr_0
+  store i64 0, i64* %_temp_1_struct_ptr_0
   %_temp_2_struct_ptr_1 = getelementptr %Foo, %Foo* %s, i32 0, i32 1
-  store i32 0, i32* %_temp_2_struct_ptr_1`
+  store i64 0, i64* %_temp_2_struct_ptr_1`
     );
   });
 
   it('LLVM lowering works for MIR_CAST with type conversion', () => {
     assertStatementLoweringWorks(
       [MIR_CAST({ name: 's', type: MIR_STRING_TYPE, assignedExpression: MIR_ZERO })],
-      '  %s = inttoptr i32 0 to i32*'
+      '  %s = inttoptr i64 0 to i64*'
     );
   });
 
@@ -650,23 +650,23 @@ l2_loop_end:
       ],
     });
     expect(prettyPrintLLVMSources(sources)).toBe(
-      `declare i32* @_builtin_malloc(i32) nounwind
-declare i32 @__Builtins_println(i32*) nounwind
-declare i32 @__Builtins_panic(i32*) nounwind
-declare i32* @__Builtins_intToString(i32) nounwind
-declare i32 @__Builtins_stringToInt(i32*) nounwind
-declare i32* @_builtin_stringConcat(i32*, i32*) nounwind
+      `declare i64* @_builtin_malloc(i64) nounwind
+declare i64 @__Builtins_println(i64*) nounwind
+declare i64 @__Builtins_panic(i64*) nounwind
+declare i64* @__Builtins_intToString(i64) nounwind
+declare i64 @__Builtins_stringToInt(i64*) nounwind
+declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 
 ; @ss = 'S'
-@ss = private unnamed_addr constant [2 x i32] [i32 1, i32 83], align 8
-%A = type { i32, i32 }
-define i32 @___DUMMY___Main_main() local_unnamed_addr nounwind {
+@ss = private unnamed_addr constant [2 x i64] [i64 1, i64 83], align 8
+%A = type { i64, i64 }
+define i64 @___DUMMY___Main_main() local_unnamed_addr nounwind {
 l0_start:
-  %_temp_0_string_name_cast = bitcast [2 x i32]* @ss to i32*
-  call i32 @println(i32* %_temp_0_string_name_cast) nounwind
-  %_temp_1_string_name_cast = bitcast [2 x i32]* @ss to i32*
-  %r = call i32 @stringToInt(i32* %_temp_1_string_name_cast) nounwind
-  ret i32 0
+  %_temp_0_string_name_cast = bitcast [2 x i64]* @ss to i64*
+  call i64 @println(i64* %_temp_0_string_name_cast) nounwind
+  %_temp_1_string_name_cast = bitcast [2 x i64]* @ss to i64*
+  %r = call i64 @stringToInt(i64* %_temp_1_string_name_cast) nounwind
+  ret i64 0
 }`
     );
   });

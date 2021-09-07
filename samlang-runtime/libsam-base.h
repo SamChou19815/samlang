@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-typedef int32_t samlang_int;
+typedef int64_t samlang_int;
 typedef samlang_int *samlang_string;
 
 #define SAMLANG_COMPILED_MAIN _compiled_program_main

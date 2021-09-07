@@ -12,7 +12,7 @@ import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
 import type { MidIRIdentifierType } from './mir-nodes';
 
-export type LLVMPrimitiveType = { readonly __type__: 'PrimitiveType'; readonly type: 'i1' | 'i32' };
+export type LLVMPrimitiveType = { readonly __type__: 'PrimitiveType'; readonly type: 'i1' | 'i64' };
 export type LLVMStringType = { readonly __type__: 'StringType'; readonly length?: number };
 export type LLVMIdentifierType = MidIRIdentifierType;
 
@@ -25,7 +25,7 @@ export type LLVMFunctionType = {
 export type LLVMType = LLVMPrimitiveType | LLVMIdentifierType | LLVMStringType | LLVMFunctionType;
 
 export const LLVM_BOOL_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i1' };
-export const LLVM_INT_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i32' };
+export const LLVM_INT_TYPE: LLVMPrimitiveType = { __type__: 'PrimitiveType', type: 'i64' };
 
 export const LLVM_STRING_TYPE = (length?: number): LLVMStringType => ({
   __type__: 'StringType',
@@ -67,7 +67,7 @@ export const prettyPrintLLVMType = (type: LLVMType): string => {
     case 'PrimitiveType':
       return type.type;
     case 'StringType':
-      return type.length == null ? 'i32*' : `[${type.length} x i32]*`;
+      return type.length == null ? 'i64*' : `[${type.length} x i64]*`;
     case 'IdentifierType':
       return `%${type.name}*`;
     case 'FunctionType':
@@ -486,24 +486,24 @@ export const prettyPrintLLVMSources = ({
   functions,
 }: LLVMSources): string => {
   return [
-    `declare i32* @${ENCODED_FUNCTION_NAME_MALLOC}(i32) nounwind
-declare i32 @${ENCODED_FUNCTION_NAME_PRINTLN}(i32*) nounwind
-declare i32 @${ENCODED_FUNCTION_NAME_THROW}(i32*) nounwind
-declare i32* @${ENCODED_FUNCTION_NAME_INT_TO_STRING}(i32) nounwind
-declare i32 @${ENCODED_FUNCTION_NAME_STRING_TO_INT}(i32*) nounwind
-declare i32* @${ENCODED_FUNCTION_NAME_STRING_CONCAT}(i32*, i32*) nounwind
+    `declare i64* @${ENCODED_FUNCTION_NAME_MALLOC}(i64) nounwind
+declare i64 @${ENCODED_FUNCTION_NAME_PRINTLN}(i64*) nounwind
+declare i64 @${ENCODED_FUNCTION_NAME_THROW}(i64*) nounwind
+declare i64* @${ENCODED_FUNCTION_NAME_INT_TO_STRING}(i64) nounwind
+declare i64 @${ENCODED_FUNCTION_NAME_STRING_TO_INT}(i64*) nounwind
+declare i64* @${ENCODED_FUNCTION_NAME_STRING_CONCAT}(i64*, i64*) nounwind
 `,
     ...globalVariables.flatMap(({ name, content }) => {
       const size = content.length;
       const structLength = size + 1;
       const ints = Array.from(content)
-        .map((it) => `i32 ${it.charCodeAt(0)}`)
+        .map((it) => `i64 ${it.charCodeAt(0)}`)
         .join(', ');
       return [
         `; @${name} = '${content}'`,
         size === 0
-          ? `@${name} = private unnamed_addr constant [${structLength} x i32] [i32 ${size}], align 8`
-          : `@${name} = private unnamed_addr constant [${structLength} x i32] [i32 ${size}, ${ints}], align 8`,
+          ? `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 ${size}], align 8`
+          : `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 ${size}, ${ints}], align 8`,
       ];
     }),
     ...typeDefinitions.map(
