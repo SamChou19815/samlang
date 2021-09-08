@@ -9,6 +9,8 @@ import {
   debugPrintMidIRExpression,
   MIR_ZERO,
   MIR_ONE,
+  MIR_VARIABLE,
+  MIR_INDEX_ACCESS,
   MIR_FUNCTION_CALL,
   MIR_IF_ELSE,
   MIR_SINGLE_IF,
@@ -138,6 +140,7 @@ const optimizeMidIRExpression = (
 function optimizeMidIRStatement(
   statement: MidIRStatement,
   valueContext: LocalValueContextForOptimization,
+  indexAccessExpressionContext: LocalValueContextForOptimization,
   binaryExpressionContext: BinaryExpressionContext
 ): readonly MidIRStatement[] {
   const optimizeExpression = (expression: MidIRExpression) =>
@@ -155,6 +158,7 @@ function optimizeMidIRStatement(
       const firstRunOptimizedStatements = optimizeMidIRStatements(
         statements,
         valueContext,
+        indexAccessExpressionContext,
         binaryExpressionContext
       );
       const lastStatementOfFirstRunOptimizedStatements =
@@ -205,7 +209,13 @@ function optimizeMidIRStatement(
   switch (statement.__type__) {
     case 'MidIRIndexAccessStatement': {
       const pointerExpression = optimizeExpression(statement.pointerExpression);
-      return [{ ...statement, pointerExpression }];
+      const { name, type, index } = statement;
+      const computed = indexAccessExpressionContext.getLocalValueType(
+        `${debugPrintMidIRExpression(pointerExpression)}[${index}]`
+      );
+      if (computed == null) return [MIR_INDEX_ACCESS({ name, type, pointerExpression, index })];
+      valueContext.bind(name, computed);
+      return [];
     }
 
     case 'MidIRBinaryStatement': {
@@ -310,6 +320,7 @@ function optimizeMidIRStatement(
         const statements = optimizeMidIRStatements(
           isTrue ? statement.s1 : statement.s2,
           valueContext,
+          indexAccessExpressionContext,
           binaryExpressionContext
         );
         statement.finalAssignments.forEach((final) => {
@@ -324,6 +335,7 @@ function optimizeMidIRStatement(
         const statements = optimizeMidIRStatements(
           statement.s1,
           valueContext,
+          indexAccessExpressionContext,
           binaryExpressionContext
         );
         return [
@@ -335,6 +347,7 @@ function optimizeMidIRStatement(
         const statements = optimizeMidIRStatements(
           statement.s2,
           valueContext,
+          indexAccessExpressionContext,
           binaryExpressionContext
         );
         return [
@@ -362,6 +375,7 @@ function optimizeMidIRStatement(
           return optimizeMidIRStatements(
             statement.statements,
             valueContext,
+            indexAccessExpressionContext,
             binaryExpressionContext
           );
         }
@@ -370,6 +384,7 @@ function optimizeMidIRStatement(
       const statements = optimizeMidIRStatements(
         statement.statements,
         valueContext,
+        indexAccessExpressionContext,
         binaryExpressionContext
       );
       return singleIfOrNull(
@@ -399,6 +414,7 @@ function optimizeMidIRStatement(
         const newStatements = optimizeMidIRStatements(
           statement.statements,
           valueContext,
+          indexAccessExpressionContext,
           binaryExpressionContext
         );
         return [
@@ -418,6 +434,7 @@ function optimizeMidIRStatement(
         const movedStatements = optimizeMidIRStatements(
           statements.slice(0, statements.length - 1),
           valueContext,
+          indexAccessExpressionContext,
           binaryExpressionContext
         );
         if (statement.breakCollector != null) {
@@ -450,7 +467,14 @@ function optimizeMidIRStatement(
         MIR_STRUCT_INITIALIZATION({
           structVariableName: statement.structVariableName,
           type: statement.type,
-          expressionList: statement.expressionList.map(optimizeExpression),
+          expressionList: statement.expressionList.map((it, index) => {
+            const optimized = optimizeExpression(it);
+            const indexAccessKey = `${debugPrintMidIRExpression(
+              MIR_VARIABLE(statement.structVariableName, statement.type)
+            )}[${index}]`;
+            indexAccessExpressionContext.addLocalValueType(indexAccessKey, optimized, ignore);
+            return optimized;
+          }),
         }),
       ];
   }
@@ -459,6 +483,7 @@ function optimizeMidIRStatement(
 function optimizeMidIRStatements(
   statements: readonly MidIRStatement[],
   valueContext: LocalValueContextForOptimization,
+  indexAccessExpressionContext: LocalValueContextForOptimization,
   binaryExpressionContext: BinaryExpressionContext
 ): readonly MidIRStatement[] {
   const collector: MidIRStatement[] = [];
@@ -466,6 +491,7 @@ function optimizeMidIRStatements(
     const optimized = optimizeMidIRStatement(
       checkNotNull(statements[i]),
       valueContext,
+      indexAccessExpressionContext,
       binaryExpressionContext
     );
     for (let j = 0; j < optimized.length; j += 1) {
@@ -481,8 +507,14 @@ export default function optimizeMidIRFunctionByConditionalConstantPropagation(
   midIRFunction: MidIRFunction
 ): MidIRFunction {
   const valueContext = new LocalValueContextForOptimization();
+  const indexAccessExpressionContext = new LocalValueContextForOptimization();
   const binaryExpressionContext = new BinaryExpressionContext();
-  const body = optimizeMidIRStatements(midIRFunction.body, valueContext, binaryExpressionContext);
+  const body = optimizeMidIRStatements(
+    midIRFunction.body,
+    valueContext,
+    indexAccessExpressionContext,
+    binaryExpressionContext
+  );
   const returnValue = optimizeMidIRExpression(valueContext, midIRFunction.returnValue);
   return { ...midIRFunction, body, returnValue };
 }

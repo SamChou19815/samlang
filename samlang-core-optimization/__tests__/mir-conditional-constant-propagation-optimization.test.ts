@@ -234,6 +234,38 @@ return 42;`
     );
   });
 
+  it('optimizeMidIRStatementsByConditionalConstantPropagation works on a series of index related statements 1/n.', () => {
+    assertCorrectlyOptimized(
+      [
+        MIR_STRUCT_INITIALIZATION({
+          structVariableName: 'a',
+          type: MIR_INT_TYPE,
+          expressionList: [MIR_ZERO, MIR_ONE],
+        }),
+        MIR_INDEX_ACCESS({
+          name: 'v1',
+          type: MIR_INT_TYPE,
+          pointerExpression: MIR_VARIABLE('a', MIR_INT_TYPE),
+          index: 0,
+        }),
+        MIR_INDEX_ACCESS({
+          name: 'v2',
+          type: MIR_INT_TYPE,
+          pointerExpression: MIR_VARIABLE('a', MIR_INT_TYPE),
+          index: 1,
+        }),
+        MIR_BINARY({
+          name: 'result',
+          operator: '+',
+          e1: MIR_VARIABLE('v1', MIR_INT_TYPE),
+          e2: MIR_VARIABLE('v2', MIR_INT_TYPE),
+        }),
+      ],
+      MIR_VARIABLE('result', MIR_INT_TYPE),
+      `let a: int = [0, 1];\nreturn 1;`
+    );
+  });
+
   it('optimizeMidIRStatementsByConditionalConstantPropagation works on a series of binary statements 1/n.', () => {
     assertCorrectlyOptimized(
       [
@@ -333,9 +365,25 @@ return 42;`
           e1: MIR_VARIABLE('a1', MIR_INT_TYPE),
           e2: MIR_INT(3),
         }),
+        MIR_BINARY({
+          name: 'a3',
+          operator: '+',
+          e1: MIR_VARIABLE('a0', MIR_INT_TYPE),
+          e2: MIR_INT(2),
+        }),
+        MIR_BINARY({
+          name: 'a4',
+          operator: '*',
+          e1: MIR_VARIABLE('a3', MIR_INT_TYPE),
+          e2: MIR_INT(3),
+        }),
       ],
       MIR_ZERO,
-      `let a1: int = (a0: int) * 2;\nlet a2: int = (a0: int) * 6;\nreturn 0;`
+      `let a1: int = (a0: int) * 2;
+let a2: int = (a0: int) * 6;
+let a3: int = (a0: int) + 2;
+let a4: int = (a3: int) * 3;
+return 0;`
     );
   });
 
