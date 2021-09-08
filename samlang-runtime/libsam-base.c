@@ -9,7 +9,7 @@
 #include "./libsam-base.h"
 #define WORDSIZE 4
 
-typedef int32_t samlang_int;
+typedef int64_t samlang_int;
 typedef samlang_int *samlang_string;
 
 /** Core runtime */
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
 // 0xFFFD or U+FFFD is the "replacement character", e.g. the question mark symbol
 #define kUTF8ReplacementChar     0xFFFD
 
-static void printUcs4char(const long int c, FILE *stream) {
+static void printUcs4char(const samlang_int c, FILE *stream) {
   // We can optimize for the common case - e.g. a one byte character - only the overhead of one branch
   /* 0XXX XXXX one byte */
   if (c <= 0x7F) {
@@ -79,7 +79,7 @@ static void printUcs4char(const long int c, FILE *stream) {
 
 samlang_int __Builtins_println(samlang_string str) {
   int c;
-  int len = str[0];
+  samlang_int len = str[0];
   for (c = 1; c <= len; ++c) {
     printUcs4char(str[c], stdout);
   }

@@ -110,10 +110,10 @@ function compileToLLVMSources(
     mkdirSync(dirname(outputLLVMFilePath), { recursive: true });
     writeFileSync(
       outputLLVMFilePath,
-      `declare i32 @${mainFunctionName}() nounwind
-define i32 @_compiled_program_main() local_unnamed_addr nounwind {
-  call i32 @${mainFunctionName}() nounwind
-  ret i32 0
+      `declare i64 @${mainFunctionName}() nounwind
+define i64 @_compiled_program_main() local_unnamed_addr nounwind {
+  call i64 @${mainFunctionName}() nounwind
+  ret i64 0
 }
 `
     );
@@ -138,7 +138,7 @@ export function compileEverything(
 ): boolean {
   const midIRSources = lowerHighIRSourcesToMidIRSources(
     compileSamlangSourcesToHighIRSources(sources),
-    /* referenceCounting */ false
+    /* referenceCounting */ true
   );
   const moduleReferences = sources.entries().map(([moduleReference]) => moduleReference);
 
@@ -166,7 +166,6 @@ export function compileEverything(
       ) &&
       shellOut('llc', '-O2', '-filetype=obj', '--relocation-model=pic', bitcodePath) &&
       shellOut('gcc', '-o', outputProgramPath, `${outputProgramPath}.o`);
-    unlinkIfExist(bitcodePath);
     unlinkIfExist(`${outputProgramPath}.o`);
     return success;
   });
