@@ -627,7 +627,7 @@ export const prettyPrintMidIRStatementAsJSStatement = (
         const expressions = s.expressionList
           .map(prettyPrintMidIRExpressionAsJSExpression)
           .join(', ');
-        collector.push('  '.repeat(level), `let ${s.structVariableName} = [${expressions}];`);
+        collector.push('  '.repeat(level), `let ${s.structVariableName} = [${expressions}];\n`);
         break;
       }
     }

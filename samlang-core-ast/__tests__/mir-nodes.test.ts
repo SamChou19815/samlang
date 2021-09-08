@@ -177,7 +177,8 @@ if (0) {
 } else {
   let dd = 0 + 0;
   let dd = Math.floor(0 / 0);
-  let baz = [meggo];  let vibez = h(big);
+  let baz = [meggo];
+  let vibez = h(big);
   stresso(d);
   let f = big[0];
   if (0) {
