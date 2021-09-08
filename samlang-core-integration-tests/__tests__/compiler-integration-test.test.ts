@@ -47,8 +47,7 @@ describe('compiler-integration-tests', () => {
   }
 
   const midIRUnoptimizedSingleSource = lowerHighIRSourcesToMidIRSources(
-    compileSamlangSourcesToHighIRSources(checkedSources),
-    /* referenceCounting */ false
+    compileSamlangSourcesToHighIRSources(checkedSources)
   );
 
   function testMIRSources(midSources: MidIRSources): void {
