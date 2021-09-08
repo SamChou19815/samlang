@@ -6,7 +6,7 @@
     "forceConsistentCasingInFileNames": true,
     "importsNotUsedAsValues": "error",
     "isolatedModules": false,
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": ["esnext"],
     "module": "CommonJS",
     "moduleResolution": "node",
     "noUncheckedIndexedAccess": true,

@@ -7,7 +7,7 @@
     "samlang-runtime"
   ],
   "scripts": {
-    "compile": "tsc --incremental",
+    "compile": "tsc --incremental --noEmit",
     "bundle": "node build.js"
   },
   "bin": {
