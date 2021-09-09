@@ -260,6 +260,7 @@ function performInlineRewriteOnFunction(
           )
           .filter(isNotNull);
         if (returnCollector == null) return rewrittenBody;
+        // Using this to move the value around, will be optimized away eventually.
         return [
           ...rewrittenBody,
           {

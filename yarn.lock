@@ -423,7 +423,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@dev-sam/eslint-config-common@workspace:eslint-config-common"
   dependencies:
-    "@types/node": ^16.7.13
+    "@types/node": ^16.9.0
   peerDependencies:
     "@typescript-eslint/eslint-plugin": "*"
     "@typescript-eslint/parser": "*"
@@ -446,8 +446,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@dev-sam/jest-esbuild-transformer@workspace:jest-esbuild-transformer"
   dependencies:
-    "@types/node": ^16.7.13
-    esbuild: ^0.12.25
+    "@types/node": ^16.9.0
+    esbuild: ^0.12.26
     typescript: ^4.3.5
   peerDependencies:
     esbuild: "*"
@@ -461,9 +461,9 @@ __metadata:
   resolution: "@dev-sam/samlang-cli@workspace:samlang-cli"
   dependencies:
     "@types/jest": ^27.0.1
-    "@types/node": ^16.7.13
+    "@types/node": ^16.9.0
     "@yarnpkg/esbuild-plugin-pnp": ^1.0.0-rc.2
-    esbuild: ^0.12.25
+    esbuild: ^0.12.26
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
@@ -482,7 +482,7 @@ __metadata:
   dependencies:
     "@types/jest": ^27.0.1
     "@yarnpkg/esbuild-plugin-pnp": ^1.0.0-rc.2
-    esbuild: ^0.12.25
+    esbuild: ^0.12.26
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-compiler: "workspace:0.0.1"
@@ -498,10 +498,10 @@ __metadata:
   resolution: "@dev-sam/yarn-plugin-monorail@workspace:yarn-plugin-monorail"
   dependencies:
     "@types/jest": ^27.0.1
-    "@types/node": ^16.7.13
+    "@types/node": ^16.9.0
     "@yarnpkg/core": ^3.1.0-rc.3
     clipanion: 3.0.1
-    esbuild: ^0.12.25
+    esbuild: ^0.12.26
     typescript: ^4.3.5
   languageName: unknown
   linkType: soft
@@ -998,10 +998,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^16.7.13":
-  version: 16.7.13
-  resolution: "@types/node@npm:16.7.13"
-  checksum: 15dc28aa44674d3f49dcca4a6523b6ab1ef9bbea5c659057bec13153e1873718d6b62ab0ea57a3d57ee37f0f1136ae30e3ea503df43b0afa3ae437c8750be7f5
+"@types/node@npm:^16.9.0":
+  version: 16.9.0
+  resolution: "@types/node@npm:16.9.0"
+  checksum: cb210bcfe201d6506f1ace9e940cf45307c1fc845ad1e67bb4a2dc39a2e3441382973e96b78568844c6f324cd0d2dddcb07639313d75cdb1ac5776c9255349fb
   languageName: node
   linkType: hard
 
@@ -2356,12 +2356,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"esbuild@npm:^0.12.25":
-  version: 0.12.25
-  resolution: "esbuild@npm:0.12.25"
+"esbuild@npm:^0.12.26":
+  version: 0.12.26
+  resolution: "esbuild@npm:0.12.26"
   bin:
     esbuild: bin/esbuild
-  checksum: fd92b0541c17e6d863d3b1cf628a35c9844831a1f1f2d16c3091bc7a130a601a8164083b84a65cd3178209e7c395fc61d454f92c8b1a4869d443fd0ca5a51a8d
+  checksum: 73efbf4e6457cdec8fbf68ce7dda8fe88475775de36c1d7f5dce4b151651afbbe09ad94fee16810f2aa064e39447b44b30219eb7d168703bd30117cbcbf72cdf
   languageName: node
   linkType: hard
 
@@ -5142,12 +5142,12 @@ fsevents@^2.3.2:
   languageName: node
   linkType: hard
 
-"prettier@npm:^2.3.2":
-  version: 2.3.2
-  resolution: "prettier@npm:2.3.2"
+"prettier@npm:^2.4.0":
+  version: 2.4.0
+  resolution: "prettier@npm:2.4.0"
   bin:
     prettier: bin-prettier.js
-  checksum: 17ce5784ac67621c292df58e2da60b2ee150c2d6aebea22a6ad9e52fcd6a5e66c349d0a8436ea3bd8ff9d778920a5f68000d7625b74f43558718a49755aa5259
+  checksum: ac1bf07566dad5f58469e6d8a954bd5c0f833935597deb00330e9f673e14e4cf81e07dee7eff5776c0edebe11358d199f332d9940be40c8b455516034e553ce0
   languageName: node
   linkType: hard
 
@@ -5476,17 +5476,17 @@ fsevents@^2.3.2:
     "@dev-sam/eslint-config-common": "workspace:*"
     "@dev-sam/jest-esbuild-transformer": "workspace:0.4.0"
     "@types/jest": ^27.0.1
-    "@types/node": ^16.7.13
+    "@types/node": ^16.9.0
     "@typescript-eslint/eslint-plugin": ^4.31.0
     "@typescript-eslint/parser": ^4.31.0
-    esbuild: ^0.12.25
+    esbuild: ^0.12.26
     eslint: ^7.32.0
     eslint-import-resolver-node: ^0.3.6
     eslint-plugin-import: ^2.24.2
     husky: ^7.0.2
     jest: ^27.1.1
     lint-staged: ^11.1.2
-    prettier: ^2.3.2
+    prettier: ^2.4.0
     typescript: ^4.3.5
   languageName: unknown
   linkType: soft
