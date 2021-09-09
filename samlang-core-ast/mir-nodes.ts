@@ -46,6 +46,26 @@ export const prettyPrintMidIRType = (type: MidIRType): string => {
   }
 };
 
+export const prettyPrintMidIRTypeAsTypeScriptType = (type: MidIRType): string => {
+  switch (type.__type__) {
+    case 'PrimitiveType':
+      switch (type.type) {
+        case 'int':
+          return 'number';
+        case 'bool':
+          return 'boolean';
+        default:
+          return type.type;
+      }
+    case 'IdentifierType':
+      return type.name;
+    case 'FunctionType':
+      return `(${type.argumentTypes
+        .map((it, index) => `t${index}: ${prettyPrintMidIRTypeAsTypeScriptType(it)}`)
+        .join(', ')}) => ${prettyPrintMidIRTypeAsTypeScriptType(type.returnType)}`;
+  }
+};
+
 const standardizeMidIRTypeForComparison = (t: MidIRType): MidIRType =>
   t.__type__ === 'PrimitiveType' && t.type === 'string' ? MIR_ANY_TYPE : t;
 
@@ -368,6 +388,9 @@ export const debugPrintMidIRExpression = (expression: MidIRExpression): string =
 export const prettyPrintMidIRExpressionAsJSExpression = (expression: MidIRExpression): string => {
   switch (expression.__type__) {
     case 'MidIRIntLiteralExpression':
+      if (expression.type.__type__ === 'PrimitiveType' && expression.type.type === 'bool') {
+        return String(Boolean(expression.value));
+      }
       return expression.value.toString();
     case 'MidIRVariableExpression':
     case 'MidIRNameExpression':
@@ -375,7 +398,7 @@ export const prettyPrintMidIRExpressionAsJSExpression = (expression: MidIRExpres
   }
 };
 
-export const debugPrintMidIRStatement = (statement: MidIRStatement, startLevel = 0): string => {
+export function debugPrintMidIRStatement(statement: MidIRStatement, startLevel = 0): string {
   const collector: string[] = [];
   let level = startLevel;
   let breakCollector: string | undefined = undefined;
@@ -504,12 +527,12 @@ export const debugPrintMidIRStatement = (statement: MidIRStatement, startLevel =
   printer(statement);
 
   return collector.join('').trimEnd();
-};
+}
 
-export const prettyPrintMidIRStatementAsJSStatement = (
+export function prettyPrintMidIRStatementAsJSStatement(
   statement: MidIRStatement,
   startLevel = 0
-): string => {
+): string {
   const collector: string[] = [];
   let level = startLevel;
   let breakCollector: string | undefined = undefined;
@@ -517,17 +540,29 @@ export const prettyPrintMidIRStatementAsJSStatement = (
   const printer = (s: MidIRStatement) => {
     switch (s.__type__) {
       case 'MidIRIndexAccessStatement': {
+        const type = prettyPrintMidIRTypeAsTypeScriptType(s.type);
         const pointerString = prettyPrintMidIRExpressionAsJSExpression(s.pointerExpression);
-        collector.push('  '.repeat(level), `let ${s.name} = ${pointerString}[${s.index}];\n`);
+        collector.push(
+          '  '.repeat(level),
+          `/** @type {${type}} */\n`,
+          '  '.repeat(level),
+          `let ${s.name} = ${pointerString}[${s.index}];\n`
+        );
         break;
       }
       case 'MidIRBinaryStatement': {
+        const type = prettyPrintMidIRTypeAsTypeScriptType(s.type);
         const e1 = prettyPrintMidIRExpressionAsJSExpression(s.e1);
         const e2 = prettyPrintMidIRExpressionAsJSExpression(s.e2);
         const binaryExpressionString = `${e1} ${s.operator} ${e2}`;
         const wrapped =
           s.operator === '/' ? `Math.floor(${binaryExpressionString})` : binaryExpressionString;
-        collector.push('  '.repeat(level), `let ${s.name} = ${wrapped};\n`);
+        collector.push(
+          '  '.repeat(level),
+          `/** @type {${type}} */\n`,
+          '  '.repeat(level),
+          `let ${s.name} = ${wrapped};\n`
+        );
         break;
       }
       case 'MidIRFunctionCallStatement': {
@@ -536,6 +571,10 @@ export const prettyPrintMidIRStatementAsJSStatement = (
           .map(prettyPrintMidIRExpressionAsJSExpression)
           .join(', ');
         const functionCallString = `${functionExpression}(${functionArguments});`;
+        if (s.returnCollector != null) {
+          const type = prettyPrintMidIRTypeAsTypeScriptType(s.returnType);
+          collector.push('  '.repeat(level), `/** @type {${type}} */\n`);
+        }
         collector.push(
           '  '.repeat(level),
           s.returnCollector == null
@@ -547,7 +586,12 @@ export const prettyPrintMidIRStatementAsJSStatement = (
       }
       case 'MidIRIfElseStatement':
         s.finalAssignments.forEach((final) => {
-          collector.push('  '.repeat(level), `let ${final.name};\n`);
+          collector.push(
+            '  '.repeat(level),
+            `/** @type {${prettyPrintMidIRTypeAsTypeScriptType(final.type)}} */\n`,
+            '  '.repeat(level),
+            `let ${final.name};\n`
+          );
         });
         collector.push(
           '  '.repeat(level),
@@ -595,13 +639,20 @@ export const prettyPrintMidIRStatementAsJSStatement = (
         s.loopVariables.forEach((v) => {
           collector.push(
             '  '.repeat(level),
+            `/** @type {${prettyPrintMidIRTypeAsTypeScriptType(v.type)}} */\n`,
+            '  '.repeat(level),
             `let ${v.name} = ${prettyPrintMidIRExpressionAsJSExpression(v.initialValue)};\n`
           );
         });
         const previousBreakCollector = breakCollector;
         breakCollector = s.breakCollector?.name;
         if (s.breakCollector != null) {
-          collector.push('  '.repeat(level), `let ${s.breakCollector.name};\n`);
+          collector.push(
+            '  '.repeat(level),
+            `/** @type {${prettyPrintMidIRTypeAsTypeScriptType(s.breakCollector.type)}} */\n`,
+            '  '.repeat(level),
+            `let ${s.breakCollector.name};\n`
+          );
         }
         collector.push('  '.repeat(level), `while (true) {\n`);
         level += 1;
@@ -617,17 +668,26 @@ export const prettyPrintMidIRStatementAsJSStatement = (
         breakCollector = previousBreakCollector;
         break;
       }
-      case 'MidIRCastStatement':
+      case 'MidIRCastStatement': {
+        const type = prettyPrintMidIRTypeAsTypeScriptType(s.type);
+        const expression = prettyPrintMidIRExpressionAsJSExpression(s.assignedExpression);
         collector.push(
           '  '.repeat(level),
-          `let ${s.name} = ${prettyPrintMidIRExpressionAsJSExpression(s.assignedExpression)};\n`
+          `let ${s.name} = /** @type {${type}} */ (${expression});\n`
         );
         break;
+      }
       case 'MidIRStructInitializationStatement': {
+        const type = prettyPrintMidIRTypeAsTypeScriptType(s.type);
         const expressions = s.expressionList
           .map(prettyPrintMidIRExpressionAsJSExpression)
           .join(', ');
-        collector.push('  '.repeat(level), `let ${s.structVariableName} = [${expressions}];\n`);
+        collector.push(
+          '  '.repeat(level),
+          `/** @type {${type}} */\n`,
+          '  '.repeat(level),
+          `let ${s.structVariableName} = [${expressions}];\n`
+        );
         break;
       }
     }
@@ -636,7 +696,7 @@ export const prettyPrintMidIRStatementAsJSStatement = (
   printer(statement);
 
   return collector.join('').trimEnd();
-};
+}
 
 export interface MidIRTypeDefinition {
   readonly identifier: string;
@@ -658,13 +718,13 @@ export interface MidIRSources {
   readonly functions: readonly MidIRFunction[];
 }
 
-export const debugPrintMidIRFunction = ({
+export function debugPrintMidIRFunction({
   name,
   parameters,
   type: { argumentTypes, returnType },
   body: bodyStatements,
   returnValue,
-}: MidIRFunction): string => {
+}: MidIRFunction): string {
   const typedParameters = zip(parameters, argumentTypes)
     .map(([parameter, parameterType]) => `${parameter}: ${prettyPrintMidIRType(parameterType)}`)
     .join(', ');
@@ -674,14 +734,14 @@ export const debugPrintMidIRFunction = ({
     `  return ${debugPrintMidIRExpression(returnValue)};`,
   ].join('\n');
   return `${header}\n${body}\n}\n`;
-};
+}
 
-export const debugPrintMidIRSources = ({
+export function debugPrintMidIRSources({
   globalVariables,
   typeDefinitions,
   functions,
-}: MidIRSources): string =>
-  [
+}: MidIRSources): string {
+  return [
     ...globalVariables.map(({ name, content }) => `const ${name} = '${content}';\n`),
     ...typeDefinitions.map(
       ({ identifier, mappings }) =>
@@ -689,6 +749,7 @@ export const debugPrintMidIRSources = ({
     ),
     ...functions.map((it) => debugPrintMidIRFunction(it)),
   ].join('\n');
+}
 
 // Thanks https://gist.github.com/getify/3667624
 const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
@@ -698,8 +759,18 @@ export const prettyPrintMidIRSourcesAsJSSources = (sources: MidIRSources): strin
     ...sources.globalVariables.map(
       ({ name, content }) => `const ${name} = "${escapeDoubleQuotes(content)}";\n`
     ),
-    ...sources.functions.map(({ name, parameters, body, returnValue }) => {
-      const header = `function ${name}(${parameters.join(', ')}) {`;
+    ...sources.typeDefinitions.map(
+      ({ identifier, mappings }) =>
+        `/** @typedef {readonly [${mappings
+          .map(prettyPrintMidIRTypeAsTypeScriptType)
+          .join(', ')}]} ${identifier}  */\n`
+    ),
+    ...sources.functions.map(({ name, parameters, type, body, returnValue }) => {
+      const annotatedParameters = zip(parameters, type.argumentTypes)
+        .map(([n, t]) => `/** @type {${prettyPrintMidIRTypeAsTypeScriptType(t)}} */ ${n}`)
+        .join(', ');
+      const returnType = prettyPrintMidIRTypeAsTypeScriptType(type.returnType);
+      const header = `/** @returns {${returnType}} */\nfunction ${name}(${annotatedParameters}) {`;
       const bodyString = [
         ...body.map((it) => prettyPrintMidIRStatementAsJSStatement(it, 1)),
         `  return ${prettyPrintMidIRExpressionAsJSExpression(returnValue)};`,

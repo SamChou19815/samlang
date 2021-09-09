@@ -152,22 +152,28 @@ describe('mir-nodes', () => {
           ],
         })
       )
-    ).toBe(`let bar;
+    ).toBe(`/** @type {number} */
+let bar;
 if (0) {
-  let foo = dev;
+  let foo = /** @type {Bar} */ (dev);
+  /** @type {number} */
   let n = _tail_rec_param_n;
+  /** @type {number} */
   let acc = _tail_rec_param_acc;
   while (true) {
-    let foo = dev;
+    let foo = /** @type {Bar} */ (dev);
     break;
     n = _t0_n;
     acc = _t1_acc;
   }
+  /** @type {number} */
   let n = _tail_rec_param_n;
+  /** @type {number} */
   let acc = _tail_rec_param_acc;
+  /** @type {number} */
   let v;
   while (true) {
-    let foo = dev;
+    let foo = /** @type {Bar} */ (dev);
     v = 0;
     break;
     n = _t0_n;
@@ -175,11 +181,16 @@ if (0) {
   }
   bar = b1;
 } else {
+  /** @type {number} */
   let dd = 0 + 0;
+  /** @type {number} */
   let dd = Math.floor(0 / 0);
+  /** @type {FooBar} */
   let baz = [meggo];
+  /** @type {number} */
   let vibez = h(big);
   stresso(d);
+  /** @type {number} */
   let f = big[0];
   if (0) {
     break;
@@ -208,8 +219,9 @@ if (0) {
         ],
       })
     ).toBe(`const dev_meggo = "vibez";
-function Bar(f) {
-  let a = 0;
+/** @returns {number} */
+function Bar(/** @type {number} */ f) {
+  let a = /** @type {number} */ (0);
   return 0;
 }
 `);

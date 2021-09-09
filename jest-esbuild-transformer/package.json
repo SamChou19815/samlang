@@ -17,8 +17,8 @@
     "esbuild": "*"
   },
   "devDependencies": {
-    "@types/node": "^16.7.13",
-    "esbuild": "^0.12.25",
+    "@types/node": "^16.9.0",
+    "esbuild": "^0.12.26",
     "typescript": "^4.3.5"
   }
 }

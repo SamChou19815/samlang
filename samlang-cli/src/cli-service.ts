@@ -73,11 +73,12 @@ function compileToJS(
   mkdirSync(outputDirectory, { recursive: true });
   writeFileSync(
     exportingJSFilePath,
-    `const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (a, b) => a + b;
-const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => console.log(line);
-const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => parseInt(v, 10);
-const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
-const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
+    `// @ts-check
+const ${ENCODED_FUNCTION_NAME_STRING_CONCAT} = (/** @type {string} */ a, /** @type {string} */ b) => a + b;
+const ${ENCODED_FUNCTION_NAME_PRINTLN} = (/** @type {string} */ line) => console.log(line);
+const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (/** @type {string} */ v) => parseInt(v, 10);
+const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (/** @type {number} */ v) => String(v);
+const ${ENCODED_FUNCTION_NAME_THROW} = (/** @type {string} */ v) => { throw Error(v); };
 ${prettyPrintMidIRSourcesAsJSSources(midIRSources)}
 module.exports = { ${midIRSources.mainFunctionNames.join(', ')} };`
   );
