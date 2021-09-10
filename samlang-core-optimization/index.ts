@@ -62,8 +62,10 @@ const optimizeFunctionForRounds = (
       optimizationConfiguration
     );
   }
-  return optimizeMidIRFunctionByDeadCodeElimination(
-    optimizeMidIRFunctionByConditionalConstantPropagation(optimizedFunction)
+  return optimizeMidIRFunctionByConditionalConstantPropagation(
+    optimizeMidIRFunctionByDeadCodeElimination(
+      optimizeMidIRFunctionByConditionalConstantPropagation(optimizedFunction)
+    )
   );
 };
 
