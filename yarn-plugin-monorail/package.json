@@ -10,10 +10,10 @@
   },
   "dependencies": {
     "@types/jest": "^27.0.1",
-    "@types/node": "^16.9.0",
+    "@types/node": "^16.9.1",
     "@yarnpkg/core": "^3.1.0-rc.3",
     "clipanion": "3.0.1",
-    "esbuild": "^0.12.26",
+    "esbuild": "^0.12.28",
     "typescript": "^4.3.5"
   }
 }
