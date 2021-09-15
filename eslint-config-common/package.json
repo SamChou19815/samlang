@@ -39,6 +39,6 @@
     }
   },
   "devDependencies": {
-    "@types/node": "^16.9.0"
+    "@types/node": "^16.9.1"
   }
 }
