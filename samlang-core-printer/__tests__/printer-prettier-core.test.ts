@@ -88,20 +88,21 @@ b
   it('prettier-core tree test', () => {
     type Tree = { readonly name: string; readonly children: readonly Tree[] };
 
-    const showTrees = (trees: readonly Tree[]): PrettierDocument => {
+    function showTrees(trees: readonly Tree[]): PrettierDocument {
       const [first, ...rest] = trees;
       const firstDocument = showTree(checkNotNull(first));
       if (rest.length === 0) return firstDocument;
       return PRETTIER_CONCAT(firstDocument, PRETTIER_TEXT(','), PRETTIER_LINE, showTrees(rest));
-    };
+    }
 
-    const showBracket = (trees: readonly Tree[]): PrettierDocument => {
+    function showBracket(trees: readonly Tree[]): PrettierDocument {
       if (trees.length === 0) return PRETTIER_NIL;
       return PRETTIER_NO_SPACE_BRACKET('[', showTrees(trees), ']');
-    };
+    }
 
-    const showTree = ({ name, children }: Tree): PrettierDocument =>
-      PRETTIER_CONCAT(PRETTIER_TEXT(name), showBracket(children));
+    function showTree({ name, children }: Tree): PrettierDocument {
+      return PRETTIER_CONCAT(PRETTIER_TEXT(name), showBracket(children));
+    }
 
     const exampleTree: Tree = {
       name: 'aaa',

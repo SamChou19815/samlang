@@ -23,7 +23,7 @@ export const stringLiteralOf = (value: string): StringLiteral => ({
   value,
 });
 
-export const prettyPrintLiteral = (literal: Literal): string => {
+export function prettyPrintLiteral(literal: Literal): string {
   switch (literal.type) {
     case 'BoolLiteral':
     case 'IntLiteral':
@@ -31,7 +31,7 @@ export const prettyPrintLiteral = (literal: Literal): string => {
     case 'StringLiteral':
       return `"${literal.value}"`;
   }
-};
+}
 
 /** SECTION 2: Types */
 
@@ -107,7 +107,7 @@ export class UndecidedTypes {
   }
 }
 
-export const prettyPrintType = (type: Type): string => {
+export function prettyPrintType(type: Type): string {
   switch (type.type) {
     case 'PrimitiveType':
       return type.name;
@@ -125,9 +125,9 @@ export const prettyPrintType = (type: Type): string => {
     case 'UndecidedType':
       return '__UNDECIDED__';
   }
-};
+}
 
-export const isTheSameType = (t1: Type, t2: Type): boolean => {
+export function isTheSameType(t1: Type, t2: Type): boolean {
   switch (t1.type) {
     case 'PrimitiveType':
       return t2.type === 'PrimitiveType' && t1.name === t2.name;
@@ -161,7 +161,7 @@ export const isTheSameType = (t1: Type, t2: Type): boolean => {
     case 'UndecidedType':
       return t2.type === 'UndecidedType' && t1.index === t2.index;
   }
-};
+}
 
 /** SECTION 3: Locations */
 

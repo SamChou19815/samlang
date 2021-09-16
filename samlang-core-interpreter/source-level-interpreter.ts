@@ -461,9 +461,9 @@ class ModuleInterpreter {
   };
 }
 
-const interpretSamlangModule = (
+export default function interpretSamlangModule(
   samlangModule: SamlangModule,
   context: InterpretationContext = EMPTY
-): string => new ModuleInterpreter().run(samlangModule, context);
-
-export default interpretSamlangModule;
+): string {
+  return new ModuleInterpreter().run(samlangModule, context);
+}

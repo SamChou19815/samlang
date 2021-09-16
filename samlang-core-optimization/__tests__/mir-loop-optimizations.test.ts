@@ -24,10 +24,10 @@ import optimizeMidIRFunctionWithAllLoopOptimizations, {
 } from '../mir-loop-optimizations';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
-const assertOptimizeMidIRWhileStatementWithAllLoopOptimizations = (
+function assertOptimizeMidIRWhileStatementWithAllLoopOptimizations(
   midIRWhileStatement: MidIRWhileStatement,
   expected: string
-): void => {
+): void {
   expect(
     optimizeMidIRWhileStatementWithAllLoopOptimizations_EXPOSED_FOR_TESTING(
       midIRWhileStatement,
@@ -36,13 +36,13 @@ const assertOptimizeMidIRWhileStatementWithAllLoopOptimizations = (
       .map((it) => debugPrintMidIRStatement(it))
       .join('\n')
   ).toBe(expected);
-};
+}
 
-const assertOptimizeMidIRStatementsWithAllLoopOptimizations = (
+function assertOptimizeMidIRStatementsWithAllLoopOptimizations(
   statements: MidIRStatement[],
   returnValue: MidIRExpression,
   expected: string
-): void => {
+): void {
   const { body, returnValue: optimizedReturnValue } = optimizeMidIRFunctionWithAllLoopOptimizations(
     {
       name: '',
@@ -58,7 +58,7 @@ const assertOptimizeMidIRStatementsWithAllLoopOptimizations = (
     `${body.map((it) => debugPrintMidIRStatement(it)).join('\n')}\n` +
       `return ${debugPrintMidIRExpression(optimizedReturnValue)};`
   ).toBe(expected);
-};
+}
 
 const VARIABLE_I = MIR_VARIABLE('i', MIR_INT_TYPE);
 const VARIABLE_J = MIR_VARIABLE('j', MIR_INT_TYPE);

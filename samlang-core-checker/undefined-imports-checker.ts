@@ -39,11 +39,10 @@ class UndefinedImportChecker {
   };
 }
 
-const checkUndefinedImportsError = (
+export default function checkUndefinedImportsError(
   sources: Sources<SamlangModule>,
   samlangModule: SamlangModule,
   errorCollector: ModuleErrorCollector
-): SamlangModule =>
-  new UndefinedImportChecker(sources, errorCollector).checkModuleImports(samlangModule);
-
-export default checkUndefinedImportsError;
+): SamlangModule {
+  return new UndefinedImportChecker(sources, errorCollector).checkModuleImports(samlangModule);
+}

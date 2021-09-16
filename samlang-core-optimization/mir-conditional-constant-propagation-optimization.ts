@@ -122,10 +122,10 @@ function mergeBinaryExpression(
 
 class BinaryExpressionContext extends LocalStackedContext<BinaryExpression> {}
 
-const optimizeMidIRExpression = (
+function optimizeMidIRExpression(
   valueContext: LocalValueContextForOptimization,
   expression: MidIRExpression
-): MidIRExpression => {
+): MidIRExpression {
   switch (expression.__type__) {
     case 'MidIRIntLiteralExpression':
     case 'MidIRNameExpression':
@@ -135,7 +135,7 @@ const optimizeMidIRExpression = (
       return binded ?? expression;
     }
   }
-};
+}
 
 function optimizeMidIRStatement(
   statement: MidIRStatement,

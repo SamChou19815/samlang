@@ -33,10 +33,10 @@ import { hashSetOf } from 'samlang-core-utils';
 
 import { collectModuleReferenceFromExpression } from '../module-references-collector';
 
-const assertFoundAllModuleReferencesFromExpression = (
+function assertFoundAllModuleReferencesFromExpression(
   expression: SamlangExpression,
   expected: readonly string[]
-): void => {
+): void {
   const collector = hashSetOf<ModuleReference>();
   collectModuleReferenceFromExpression(expression, collector);
   expect(
@@ -45,7 +45,7 @@ const assertFoundAllModuleReferencesFromExpression = (
       .map((it) => it.toString())
       .sort((a, b) => a.localeCompare(b))
   ).toEqual(expected);
-};
+}
 
 const TRUE = SourceExpressionTrue();
 const intOf = (n: number) => SourceExpressionInt(n);

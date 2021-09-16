@@ -14,7 +14,7 @@ import {
 import typeResolver from '../type-resolver';
 
 // eslint-disable-next-line import/prefer-default-export
-export const undecidedTypeResolver = ({ index }: UndecidedType): Type => {
+export function undecidedTypeResolver({ index }: UndecidedType): Type {
   switch (index % 4) {
     case 0:
       return unitType;
@@ -27,7 +27,8 @@ export const undecidedTypeResolver = ({ index }: UndecidedType): Type => {
     default:
       throw new Error('');
   }
-};
+}
+
 const resolve = (type: Type): Type => typeResolver(type, undecidedTypeResolver);
 
 describe('type-resolver', () => {

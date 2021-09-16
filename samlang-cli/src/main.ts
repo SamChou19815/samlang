@@ -14,7 +14,7 @@ import { loadSamlangProjectConfiguration, SamlangProjectConfiguration } from './
 import ASCII_ART_SAMLANG_LOGO from './logo';
 import startSamlangLanguageServer from './lsp';
 
-const getConfiguration = (): SamlangProjectConfiguration => {
+function getConfiguration(): SamlangProjectConfiguration {
   const configuration = loadSamlangProjectConfiguration();
   if (
     configuration === 'NO_CONFIGURATION' ||
@@ -25,9 +25,9 @@ const getConfiguration = (): SamlangProjectConfiguration => {
     process.exit(2);
   }
   return configuration;
-};
+}
 
-const format = () => {
+function format() {
   const sources = collectSources(getConfiguration());
   parseSources(sources, new Set(Object.keys(DEFAULT_BUILTIN_TYPING_CONTEXT))).forEach(
     ([moduleReference, samlangModule]) => {
@@ -39,12 +39,12 @@ const format = () => {
       console.error(`Formatted ${filename} in ${duration}ms.`);
     }
   );
-};
+}
 
-const typeCheck = (): {
+function typeCheck(): {
   readonly checkedSources: Sources<SamlangModule>;
   readonly configuration: SamlangProjectConfiguration;
-} => {
+} {
   const configuration = getConfiguration();
   const { checkedSources, compileTimeErrors } = checkSources(
     collectSources(configuration),
@@ -59,7 +59,7 @@ const typeCheck = (): {
     process.exit(1);
   }
   return { checkedSources, configuration };
-};
+}
 
 const runners: CLIRunners = {
   format(needHelp) {
@@ -117,6 +117,6 @@ help: Show this message.`);
   },
 };
 
-const samlangCLIMainFunction = (): void => cliMainRunner(runners, process.argv.slice(2));
-
-export default samlangCLIMainFunction;
+export default function samlangCLIMainFunction(): void {
+  cliMainRunner(runners, process.argv.slice(2));
+}

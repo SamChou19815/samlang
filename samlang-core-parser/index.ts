@@ -6,12 +6,12 @@ import type { ModuleErrorCollector } from 'samlang-core-errors';
 import lexSamlangProgram from './samlang-lexer';
 import SamlangModuleParser from './samlang-parser';
 
-export const parseSamlangModuleFromText = (
+export function parseSamlangModuleFromText(
   text: string,
   moduleReference: ModuleReference,
   builtInClasses: ReadonlySet<string>,
   moduleErrorCollector: ModuleErrorCollector
-): SamlangModule => {
+): SamlangModule {
   const parser = new SamlangModuleParser(
     lexSamlangProgram(text, moduleErrorCollector),
     moduleErrorCollector,
@@ -19,14 +19,14 @@ export const parseSamlangModuleFromText = (
     builtInClasses
   );
   return parser.parseModule();
-};
+}
 
-export const parseSamlangExpressionFromText = (
+export function parseSamlangExpressionFromText(
   text: string,
   moduleReference: ModuleReference,
   builtInClasses: ReadonlySet<string>,
   moduleErrorCollector: ModuleErrorCollector
-): SamlangExpression => {
+): SamlangExpression {
   const parser = new SamlangModuleParser(
     lexSamlangProgram(text, moduleErrorCollector),
     moduleErrorCollector,
@@ -34,4 +34,4 @@ export const parseSamlangExpressionFromText = (
     builtInClasses
   );
   return parser.parseExpression();
-};
+}

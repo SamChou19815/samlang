@@ -2,10 +2,10 @@ import type { ModuleReference, Type } from 'samlang-core-ast/common-nodes';
 import type { SamlangExpression } from 'samlang-core-ast/samlang-expressions';
 import type { HashSet } from 'samlang-core-utils';
 
-export const collectModuleReferenceFromType = (
+export function collectModuleReferenceFromType(
   type: Type,
   collector: HashSet<ModuleReference>
-): void => {
+): void {
   switch (type.type) {
     case 'PrimitiveType':
     case 'UndecidedType':
@@ -22,12 +22,12 @@ export const collectModuleReferenceFromType = (
       collectModuleReferenceFromType(type.returnType, collector);
       return;
   }
-};
+}
 
-export const collectModuleReferenceFromExpression = (
+export function collectModuleReferenceFromExpression(
   expression: SamlangExpression,
   collector: HashSet<ModuleReference>
-): void => {
+): void {
   collectModuleReferenceFromType(expression.type, collector);
   switch (expression.__type__) {
     case 'LiteralExpression':
@@ -97,4 +97,4 @@ export const collectModuleReferenceFromExpression = (
       return;
     }
   }
-};
+}

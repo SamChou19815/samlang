@@ -23,11 +23,11 @@ import {
 
 import optimizeMidIRFunctionByLocalValueNumbering from '../mir-local-value-numbering-optimization';
 
-const assertCorrectlyOptimized = (
+function assertCorrectlyOptimized(
   statements: MidIRStatement[],
   returnValue: MidIRExpression,
   expected: string
-): void => {
+): void {
   const { body, returnValue: optimizedReturnValue } = optimizeMidIRFunctionByLocalValueNumbering({
     name: '',
     parameters: [],
@@ -40,7 +40,7 @@ const assertCorrectlyOptimized = (
     `${body.map((it) => debugPrintMidIRStatement(it)).join('\n')}\n` +
       `return ${debugPrintMidIRExpression(optimizedReturnValue)};`
   ).toBe(expected);
-};
+}
 
 describe('mir-local-value-numbering-optimization', () => {
   it('optimizeMidIRStatementsByLocalValueNumbering works on a series of simple statements', () => {

@@ -29,24 +29,24 @@ import lowerMidIRSourcesToLLVMSources, {
   lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING,
 } from '../llvm-lowering-translator';
 
-const assertLoweringWorks = (
+function assertLoweringWorks(
   midIRFunction: MidIRFunction,
   expectedString: string,
   globalStrings: Readonly<Record<string, number>> = {}
-): void => {
+): void {
   expect(
     prettyPrintLLVMFunction(
       lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(midIRFunction, globalStrings)
     )
   ).toBe(expectedString);
-};
+}
 
-const assertStatementLoweringWorks = (
+function assertStatementLoweringWorks(
   statements: readonly MidIRStatement[],
   expectedString: string,
   globalStrings: Readonly<Record<string, number>> = {},
   hasReturn = true
-): void => {
+): void {
   assertLoweringWorks(
     {
       name: 'testFunction',
@@ -61,13 +61,13 @@ ${expectedString}${hasReturn ? '\n  ret i64 0' : ''}
 }`,
     globalStrings
   );
-};
+}
 
-const assertExpressionLoweringWorks = (
+function assertExpressionLoweringWorks(
   expression: MidIRExpression,
   expectedString: string,
   globalStrings: Readonly<Record<string, number>> = {}
-): void => {
+): void {
   assertLoweringWorks(
     {
       name: 'testFunction',
@@ -82,7 +82,7 @@ ${expectedString}
 }`,
     globalStrings
   );
-};
+}
 
 describe('llvm-lowering-translator', () => {
   it('LLVM lowering works for base expressions 1/n', () => {

@@ -39,10 +39,10 @@ const createMockSources = (
     ...modules.map(([name, samlangModule]) => [new ModuleReference([name]), samlangModule] as const)
   );
 
-const checkErrors = (
+function checkErrors(
   modules: readonly (readonly [string, SamlangModule])[],
   errors: readonly string[]
-): void => {
+): void {
   const sources = createMockSources(modules);
   const globalErrorCollector = createGlobalErrorCollector();
   sources.forEach((samlangModule, moduleReference) => {
@@ -53,7 +53,7 @@ const checkErrors = (
     );
   });
   expect(errors).toEqual(globalErrorCollector.getErrors().map((it) => it.toString()));
-};
+}
 
 describe('undefined-import-checker', () => {
   it('Empty sources have no errors.', () => checkErrors([], []));

@@ -25,11 +25,11 @@ import {
 
 import optimizeMidIRFunctionByConditionalConstantPropagation from '../mir-conditional-constant-propagation-optimization';
 
-const assertCorrectlyOptimized = (
+function assertCorrectlyOptimized(
   statements: MidIRStatement[],
   returnValue: MidIRExpression,
   expected: string
-): void => {
+): void {
   const { body, returnValue: optimizedReturnValue } =
     optimizeMidIRFunctionByConditionalConstantPropagation({
       name: '',
@@ -43,7 +43,7 @@ const assertCorrectlyOptimized = (
     `${body.map((it) => debugPrintMidIRStatement(it)).join('\n')}\n` +
       `return ${debugPrintMidIRExpression(optimizedReturnValue)};`
   ).toBe(expected);
-};
+}
 
 describe('mir-conditional-constant-propagation', () => {
   it('optimizeMidIRStatementsByConditionalConstantPropagation works on a series of simple statements.', () => {

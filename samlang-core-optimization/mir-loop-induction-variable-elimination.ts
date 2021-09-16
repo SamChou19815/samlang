@@ -34,7 +34,7 @@ export default function midIRLoopInductionVariableEliminationOptimization(
     expression.__type__ === 'MidIRVariableExpression' &&
     expression.name === basicInductionVariableWithLoopGuard.name;
 
-  const statementUsesBasicInductionVariableWithLoopGuard = (statement: MidIRStatement): boolean => {
+  function statementUsesBasicInductionVariableWithLoopGuard(statement: MidIRStatement): boolean {
     switch (statement.__type__) {
       case 'MidIRIndexAccessStatement':
         return expressionUsesBasicInductionVariableWithLoopGuard(statement.pointerExpression);
@@ -79,7 +79,7 @@ export default function midIRLoopInductionVariableEliminationOptimization(
       case 'MidIRStructInitializationStatement':
         return statement.expressionList.some(expressionUsesBasicInductionVariableWithLoopGuard);
     }
-  };
+  }
 
   if (
     statements.some(statementUsesBasicInductionVariableWithLoopGuard) ||

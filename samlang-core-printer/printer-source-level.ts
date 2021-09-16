@@ -29,10 +29,10 @@ import {
   createBracesSurroundedBlockDocument,
 } from './printer-prettier-library';
 
-const createPrettierDocumentForAssociatedComments = (
+function createPrettierDocumentForAssociatedComments(
   associatedComments: readonly TypedComment[],
   addFinalLineBreak: boolean
-): PrettierDocument | null => {
+): PrettierDocument | null {
   const documents = associatedComments.flatMap((precedingComment) => {
     switch (precedingComment.type) {
       case 'line':
@@ -50,15 +50,15 @@ const createPrettierDocumentForAssociatedComments = (
   return addFinalLineBreak && finalLineBreakIsSoft
     ? PRETTIER_CONCAT(finalMainDocument, PRETTIER_LINE)
     : finalMainDocument;
-};
+}
 
-const createPrettierDocumentFromSamlangExpression = (
+function createPrettierDocumentFromSamlangExpression(
   expression: SamlangExpression
-): PrettierDocument => {
-  const createDocumentForSubExpressionConsideringPrecedenceLevel = (
+): PrettierDocument {
+  function createDocumentForSubExpressionConsideringPrecedenceLevel(
     subExpression: SamlangExpression,
     equalLevelParenthesis = false
-  ): PrettierDocument => {
+  ): PrettierDocument {
     const addParenthesis = equalLevelParenthesis
       ? subExpression.precedence >= expression.precedence
       : subExpression.precedence > expression.precedence;
@@ -68,9 +68,9 @@ const createPrettierDocumentFromSamlangExpression = (
       );
     }
     return createPrettierDocumentFromSamlangExpression(subExpression);
-  };
+  }
 
-  const createDocumentIfElseExpression = (ifElse: IfElseExpression): PrettierDocument => {
+  function createDocumentIfElseExpression(ifElse: IfElseExpression): PrettierDocument {
     const documents: PrettierDocument[] = [];
     let ifElseExpression: SamlangExpression = ifElse;
     do {
@@ -87,13 +87,13 @@ const createPrettierDocumentFromSamlangExpression = (
     } while (ifElseExpression.__type__ === 'IfElseExpression');
     documents.push(createDocumentForSubExpressionConsideringPrecedenceLevel(ifElseExpression));
     return PRETTIER_CONCAT(...documents);
-  };
+  }
 
-  const createDocumentDottedExpression = (
+  function createDocumentDottedExpression(
     base: PrettierDocument,
     comments: readonly TypedComment[],
     member: string
-  ) => {
+  ) {
     const memberPrecedingCommentsDoc = createPrettierDocumentForAssociatedComments(comments, true);
     const memberPrecedingCommentsDocs =
       memberPrecedingCommentsDoc != null
@@ -105,7 +105,7 @@ const createPrettierDocumentFromSamlangExpression = (
       PRETTIER_TEXT('.'),
       PRETTIER_TEXT(member)
     );
-  };
+  }
 
   const precedingCommentDoc = createPrettierDocumentForAssociatedComments(
     expression.associatedComments,
@@ -319,20 +319,21 @@ const createPrettierDocumentFromSamlangExpression = (
   return precedingCommentDoc != null
     ? PRETTIER_GROUP(PRETTIER_CONCAT(precedingCommentDoc, documentWithoutPrecedingComment))
     : documentWithoutPrecedingComment;
-};
+}
 
-export const prettyPrintSamlangExpression_EXPOSED_FOR_TESTING = (
+export function prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(
   availableWidth: number,
   expression: SamlangExpression
-): string =>
-  prettyPrintAccordingToPrettierAlgorithm(
+): string {
+  return prettyPrintAccordingToPrettierAlgorithm(
     availableWidth,
     createPrettierDocumentFromSamlangExpression(expression)
   );
+}
 
-export const createPrettierDocumentsFromSamlangClassMember = (
+export function createPrettierDocumentsFromSamlangClassMember(
   member: ClassMemberDefinition
-): readonly PrettierDocument[] => {
+): readonly PrettierDocument[] {
   const bodyDocument = createPrettierDocumentFromSamlangExpression(member.body);
 
   // Special case for statement block as body for prettier result.
@@ -368,10 +369,10 @@ export const createPrettierDocumentsFromSamlangClassMember = (
     PRETTIER_LINE,
     PRETTIER_LINE,
   ];
-};
+}
 
-const createPrettierDocumentForImport = (oneImport: ModuleMembersImport): PrettierDocument =>
-  PRETTIER_CONCAT(
+function createPrettierDocumentForImport(oneImport: ModuleMembersImport): PrettierDocument {
+  return PRETTIER_CONCAT(
     PRETTIER_TEXT('import '),
     createBracesSurroundedDocument(
       createCommaSeparatedList(oneImport.importedMembers, ([name]) => PRETTIER_TEXT(name))
@@ -379,10 +380,11 @@ const createPrettierDocumentForImport = (oneImport: ModuleMembersImport): Pretti
     PRETTIER_TEXT(` from ${oneImport.importedModule.parts.join('.')}`),
     PRETTIER_LINE
   );
+}
 
-const createPrettierDocumentsForClassDefinition = (
+function createPrettierDocumentsForClassDefinition(
   classDefinition: ClassDefinition
-): readonly PrettierDocument[] => {
+): readonly PrettierDocument[] {
   const typeMappings = Object.entries(classDefinition.typeDefinition.mappings);
   const classMembersDocuments = classDefinition.members
     .map(createPrettierDocumentsFromSamlangClassMember)
@@ -414,17 +416,15 @@ const createPrettierDocumentsForClassDefinition = (
     PRETTIER_LINE,
     PRETTIER_LINE,
   ];
-};
+}
 
-const createPrettierDocumentForSamlangModule = ({
+export default function createPrettierDocumentForSamlangModule({
   imports,
   classes,
-}: SamlangModule): PrettierDocument => {
+}: SamlangModule): PrettierDocument {
   const importsDocuments = imports.map(createPrettierDocumentForImport);
   const classDocuments = classes.map(createPrettierDocumentsForClassDefinition).flat();
 
   if (importsDocuments.length === 0) return PRETTIER_CONCAT(...classDocuments);
   return PRETTIER_CONCAT(...importsDocuments, PRETTIER_LINE, ...classDocuments);
-};
-
-export default createPrettierDocumentForSamlangModule;
+}

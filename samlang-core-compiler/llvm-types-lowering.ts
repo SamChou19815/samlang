@@ -7,7 +7,7 @@ import {
 } from 'samlang-core-ast/llvm-nodes';
 import type { MidIRType } from 'samlang-core-ast/mir-nodes';
 
-const lowerMidIRTypeToLLVMType = (type: MidIRType): LLVMType => {
+export default function lowerMidIRTypeToLLVMType(type: MidIRType): LLVMType {
   switch (type.__type__) {
     case 'PrimitiveType':
       switch (type.type) {
@@ -27,6 +27,4 @@ const lowerMidIRTypeToLLVMType = (type: MidIRType): LLVMType => {
         lowerMidIRTypeToLLVMType(type.returnType)
       );
   }
-};
-
-export default lowerMidIRTypeToLLVMType;
+}

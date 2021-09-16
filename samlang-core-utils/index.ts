@@ -1,6 +1,6 @@
-export const error = (message?: string): never => {
+export function error(message?: string): never {
   throw new Error(message);
-};
+}
 
 export const isNotNull = <V>(value: V | null | undefined): value is V => value != null;
 

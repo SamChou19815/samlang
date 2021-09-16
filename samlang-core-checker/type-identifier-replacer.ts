@@ -1,9 +1,9 @@
 import { Type, identifierType, tupleType, functionType } from 'samlang-core-ast/common-nodes';
 
-const replaceTypeIdentifier = (
+export default function replaceTypeIdentifier(
   type: Type,
   replacementMap: Readonly<Record<string, Type>>
-): Type => {
+): Type {
   switch (type.type) {
     case 'PrimitiveType':
       return type;
@@ -26,6 +26,4 @@ const replaceTypeIdentifier = (
     case 'UndecidedType':
       return type;
   }
-};
-
-export default replaceTypeIdentifier;
+}

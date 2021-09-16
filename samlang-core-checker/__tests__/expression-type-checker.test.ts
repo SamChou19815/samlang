@@ -32,12 +32,12 @@ import { AccessibleGlobalTypingContext } from '../typing-context';
 
 const dummyModuleReference: ModuleReference = new ModuleReference(['Test']);
 
-const typeCheckInSandbox = (
+function typeCheckInSandbox(
   source: string,
   expectedType: Type,
   additionalBindings: readonly (readonly [string, Type])[] = [],
   currentClass?: string
-): readonly [SamlangExpression, readonly string[]] => {
+): readonly [SamlangExpression, readonly string[]] {
   const globalErrorCollector = createGlobalErrorCollector();
   const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(dummyModuleReference);
   const accessibleGlobalTypingContext: AccessibleGlobalTypingContext =
@@ -150,15 +150,15 @@ const typeCheckInSandbox = (
       .map((error) => error.toString())
       .sort(),
   ];
-};
+}
 
-const assertTypeChecks = (
+function assertTypeChecks(
   source: string,
   expectedType: Type,
   expectedExpression?: SamlangExpression,
   additionalBindings?: readonly (readonly [string, Type])[],
   currentClass?: string
-): void => {
+): void {
   const [actualExpression, errors] = typeCheckInSandbox(
     source,
     expectedType,
@@ -183,18 +183,19 @@ const assertTypeChecks = (
     expect(standardize(actualExpression)).toStrictEqual(standardize(expectedExpression));
   }
   expect(errors).toEqual([]);
-};
+}
 
-const assertTypeErrors = (
+function assertTypeErrors(
   source: string,
   expectedType: Type,
   expectedErrors: readonly string[],
   additionalBindings?: readonly (readonly [string, Type])[],
   currentClass?: string
-): void =>
+): void {
   expect(typeCheckInSandbox(source, expectedType, additionalBindings, currentClass)[1]).toEqual(
     expectedErrors
   );
+}
 
 describe('expression-type-checker', () => {
   it('Literal', () => {

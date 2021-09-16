@@ -9,7 +9,10 @@ export interface CLIRunners {
   help(): void;
 }
 
-const cliMainRunner = (runners: CLIRunners, commandLineArguments: readonly string[]): void => {
+export default function cliMainRunner(
+  runners: CLIRunners,
+  commandLineArguments: readonly string[]
+): void {
   const action = parseCLIArguments(commandLineArguments);
   switch (action.type) {
     case 'format':
@@ -30,6 +33,4 @@ const cliMainRunner = (runners: CLIRunners, commandLineArguments: readonly strin
     case 'help':
       runners.help();
   }
-};
-
-export default cliMainRunner;
+}

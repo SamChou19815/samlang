@@ -1,13 +1,13 @@
 import { ModuleReference } from './common-nodes';
 
-export const encodeFunctionNameGlobally = (
+export function encodeFunctionNameGlobally(
   moduleReference: ModuleReference,
   className: string,
   functionName: string
-): string => {
+): string {
   const encodedModuleReference = moduleReference.parts.map((it) => it.replace(/-/g, '_')).join('$');
   return `_${encodedModuleReference}_${className}_${functionName}`;
-};
+}
 
 export const encodeBuiltinName = (name: string): string => `_builtin_${name}`;
 

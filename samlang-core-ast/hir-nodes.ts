@@ -46,7 +46,7 @@ export const HIR_FUNCTION_TYPE = (
   returnType: HighIRType
 ): HighIRFunctionType => ({ __type__: 'FunctionType', argumentTypes, returnType });
 
-export const prettyPrintHighIRType = (type: HighIRType): string => {
+export function prettyPrintHighIRType(type: HighIRType): string {
   switch (type.__type__) {
     case 'PrimitiveType':
       return type.type;
@@ -59,7 +59,7 @@ export const prettyPrintHighIRType = (type: HighIRType): string => {
         .map(prettyPrintHighIRType)
         .join(', ')}) -> ${prettyPrintHighIRType(type.returnType)}`;
   }
-};
+}
 
 export interface HighIRClosureTypeDefinition {
   readonly identifier: string;
@@ -70,14 +70,16 @@ export interface HighIRClosureTypeDefinition {
 const nameWithTypeParameter = (identifier: string, typeParameters: readonly string[]): string =>
   typeParameters.length === 0 ? identifier : `${identifier}<${typeParameters.join(', ')}>`;
 
-export const prettyPrintHighIRClosureTypeDefinition = ({
+export function prettyPrintHighIRClosureTypeDefinition({
   identifier,
   typeParameters,
   functionType,
-}: HighIRClosureTypeDefinition): string =>
-  `closure type ${nameWithTypeParameter(identifier, typeParameters)} = ${prettyPrintHighIRType(
-    functionType
-  )}`;
+}: HighIRClosureTypeDefinition): string {
+  return `closure type ${nameWithTypeParameter(
+    identifier,
+    typeParameters
+  )} = ${prettyPrintHighIRType(functionType)}`;
+}
 
 export interface HighIRTypeDefinition {
   readonly identifier: string;
@@ -86,15 +88,15 @@ export interface HighIRTypeDefinition {
   readonly mappings: readonly HighIRType[];
 }
 
-export const prettyPrintHighIRTypeDefinition = ({
+export function prettyPrintHighIRTypeDefinition({
   identifier,
   type,
   typeParameters,
   mappings,
-}: HighIRTypeDefinition): string => {
+}: HighIRTypeDefinition): string {
   const idPart = nameWithTypeParameter(identifier, typeParameters);
   return `${type} type ${idPart} = [${mappings.map(prettyPrintHighIRType).join(', ')}]`;
-};
+}
 
 interface BaseHighIRExpression {
   readonly __type__: string;
@@ -230,7 +232,7 @@ export const HIR_VARIABLE = (name: string, type: HighIRType): HighIRVariableExpr
   name,
 });
 
-const getBinaryOperatorResultType = (operator: IROperator): HighIRType => {
+function getBinaryOperatorResultType(operator: IROperator): HighIRType {
   switch (operator) {
     case '*':
     case '/':
@@ -247,7 +249,7 @@ const getBinaryOperatorResultType = (operator: IROperator): HighIRType => {
     case '!=':
       return HIR_BOOL_TYPE;
   }
-};
+}
 
 export const HIR_BINARY = ({
   name,
@@ -328,7 +330,7 @@ export const HIR_CLOSURE_INITIALIZATION = ({
   context,
 });
 
-export const debugPrintHighIRExpression = (expression: HighIRExpression): string => {
+export function debugPrintHighIRExpression(expression: HighIRExpression): string {
   switch (expression.__type__) {
     case 'HighIRIntLiteralExpression':
       return expression.value.toString();
@@ -337,13 +339,13 @@ export const debugPrintHighIRExpression = (expression: HighIRExpression): string
     case 'HighIRNameExpression':
       return expression.name;
   }
-};
+}
 
-export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel = 0): string => {
+export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel = 0): string {
   const collector: string[] = [];
   let level = startLevel;
 
-  const printer = (s: HighIRStatement) => {
+  function printer(s: HighIRStatement) {
     switch (s.__type__) {
       case 'HighIRIndexAccessStatement': {
         const type = prettyPrintHighIRType(s.type);
@@ -421,12 +423,12 @@ export const debugPrintHighIRStatement = (statement: HighIRStatement, startLevel
         );
         return;
     }
-  };
+  }
 
   printer(statement);
 
   return collector.join('').trimEnd();
-};
+}
 
 export interface HighIRFunction {
   readonly name: string;
@@ -445,14 +447,14 @@ export interface HighIRSources {
   readonly functions: readonly HighIRFunction[];
 }
 
-export const debugPrintHighIRFunction = ({
+export function debugPrintHighIRFunction({
   name,
   parameters,
   typeParameters,
   type: { argumentTypes, returnType },
   body: bodyStatements,
   returnValue,
-}: HighIRFunction): string => {
+}: HighIRFunction): string {
   const typedParameters = zip(parameters, argumentTypes)
     .map(([parameter, parameterType]) => `${parameter}: ${prettyPrintHighIRType(parameterType)}`)
     .join(', ');
@@ -465,16 +467,16 @@ export const debugPrintHighIRFunction = ({
     `  return ${debugPrintHighIRExpression(returnValue)};`,
   ].join('\n');
   return `${header}\n${body}\n}\n`;
-};
+}
 
-export const debugPrintHighIRSources = ({
+export function debugPrintHighIRSources({
   globalVariables,
   closureTypes,
   typeDefinitions,
   mainFunctionNames,
   functions,
-}: HighIRSources): string =>
-  [
+}: HighIRSources): string {
+  return [
     ...globalVariables.map(({ name, content }) => `const ${name} = '${content}';\n`),
     ...closureTypes.map(prettyPrintHighIRClosureTypeDefinition),
     ...typeDefinitions.map(prettyPrintHighIRTypeDefinition),
@@ -483,3 +485,4 @@ export const debugPrintHighIRSources = ({
       ? []
       : [`sources.mains = [${mainFunctionNames.join(', ')}]`]),
   ].join('\n');
+}

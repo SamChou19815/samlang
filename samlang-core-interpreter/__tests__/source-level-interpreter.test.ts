@@ -20,7 +20,7 @@ import interpretSamlangModule, {
   Value,
 } from '../source-level-interpreter';
 
-const getExpression = (rawSourceWithTypeAnnotation: string): SamlangExpression => {
+function getExpression(rawSourceWithTypeAnnotation: string): SamlangExpression {
   const errorCollector = createGlobalErrorCollector();
   const expression = checkNotNull(
     parseSamlangExpressionFromText(
@@ -33,7 +33,7 @@ const getExpression = (rawSourceWithTypeAnnotation: string): SamlangExpression =
   const errors = errorCollector.getErrors().map((it) => it.toString());
   expect(errors).toEqual([]);
   return expression;
-};
+}
 
 const interpret = (
   rawSourceWithTypeAnnotation: string,
@@ -44,7 +44,7 @@ const interpret = (
     interpretationContext
   );
 
-const interpretModule = (rawSourceWithTypeAnnotation: string): string => {
+function interpretModule(rawSourceWithTypeAnnotation: string): string {
   const errorCollector = createGlobalErrorCollector();
   const samlangModule = parseSamlangModuleFromText(
     rawSourceWithTypeAnnotation,
@@ -54,7 +54,7 @@ const interpretModule = (rawSourceWithTypeAnnotation: string): string => {
   );
   expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
   return interpretSamlangModule(samlangModule);
-};
+}
 
 describe('source-level-interpreter', () => {
   it('value equality test', () => {

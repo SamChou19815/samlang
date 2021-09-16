@@ -1,12 +1,9 @@
 {
   "private": true,
   "workspaces": [
-    "eslint-config-common",
-    "jest-esbuild-transformer",
     "samlang-cli",
     "samlang-core-*",
-    "samlang-demo",
-    "yarn-plugin-monorail"
+    "samlang-demo"
   ],
   "scripts": {
     "lint": "eslint . --cache",
@@ -18,13 +15,11 @@
     "test:single": "jest -t",
     "test:integration": "esr scripts/compile-repository.ts",
     "test:new-linter-config:dev-sam-local": "eslint --config configurations/latest-local-linter-config.js .",
-    "bump": "yarn up @types/jest @types/node prettier jest husky lint-staged esbuild eslint \"@typescript-eslint/*\" \"eslint-*\"",
-    "import-plugin": "yarn plugin import ./yarn-plugin-monorail/bundles/plugin-monorail.js",
-    "setup-plugin": "yarn workspace @dev-sam/yarn-plugin-monorail bundle && yarn import-plugin"
+    "bump": "yarn up @types/jest @types/node prettier jest husky lint-staged esbuild eslint \"@typescript-eslint/*\" \"eslint-*\""
   },
   "devDependencies": {
-    "@dev-sam/eslint-config-common": "workspace:*",
-    "@dev-sam/jest-esbuild-transformer": "workspace:0.4.0",
+    "@dev-sam/eslint-config-common": "0.21.0",
+    "@dev-sam/jest-esbuild-transformer": "0.4.0",
     "@types/jest": "^27.0.1",
     "@types/node": "^16.9.1",
     "@typescript-eslint/eslint-plugin": "^4.31.1",
@@ -36,7 +31,7 @@
     "husky": "^7.0.2",
     "jest": "^27.2.0",
     "lint-staged": "^11.1.2",
-    "prettier": "^2.4.0",
+    "prettier": "^2.4.1",
     "typescript": "^4.3.5"
   },
   "eslintConfig": {

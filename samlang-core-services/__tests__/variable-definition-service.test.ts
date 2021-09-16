@@ -10,7 +10,7 @@ import {
   applyRenamingWithDefinitionAndUse,
 } from '../variable-definition-service';
 
-const prepareLookup = (source: string): ModuleScopedVariableDefinitionLookup => {
+function prepareLookup(source: string): ModuleScopedVariableDefinitionLookup {
   const moduleReference = ModuleReference.DUMMY;
   const errorCollector = createGlobalErrorCollector();
   const parsedModule = parseSamlangModuleFromText(
@@ -21,14 +21,14 @@ const prepareLookup = (source: string): ModuleScopedVariableDefinitionLookup => 
   );
   expect(errorCollector.getErrors().map((it) => it.toString())).toEqual([]);
   return new ModuleScopedVariableDefinitionLookup(parsedModule);
-};
+}
 
-const query = (lookup: ModuleScopedVariableDefinitionLookup, range: Range) => {
+function query(lookup: ModuleScopedVariableDefinitionLookup, range: Range) {
   const defAndUse = lookup.findAllDefinitionAndUses(range);
   if (defAndUse == null) return null;
   const { definitionRange, useRanges } = defAndUse;
   return { definition: definitionRange.toString(), uses: useRanges.map((it) => it.toString()) };
-};
+}
 
 describe('variable-definition-service', () => {
   it('ModuleScopedVariableDefinitionLookup basic test', () => {

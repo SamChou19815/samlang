@@ -10,7 +10,7 @@ import { checkNotNull } from 'samlang-core-utils';
 import prettyPrintSamlangModule from '..';
 import { prettyPrintSamlangExpression_EXPOSED_FOR_TESTING } from '../printer-source-level';
 
-const reprintExpression = (rawSourceWithTypeAnnotation: string, width = 40): string => {
+function reprintExpression(rawSourceWithTypeAnnotation: string, width = 40): string {
   const errorCollector = createGlobalErrorCollector();
   const expression = checkNotNull(
     parseSamlangExpressionFromText(
@@ -23,9 +23,9 @@ const reprintExpression = (rawSourceWithTypeAnnotation: string, width = 40): str
   const errors = errorCollector.getErrors().map((it) => it.toString());
   expect(errors).toEqual([]);
   return prettyPrintSamlangExpression_EXPOSED_FOR_TESTING(width, expression).trimEnd();
-};
+}
 
-const reprintModule = (rawSourceWithTypeAnnotation: string, width = 40): string => {
+function reprintModule(rawSourceWithTypeAnnotation: string, width = 40): string {
   const errorCollector = createGlobalErrorCollector();
   const samlangModule = parseSamlangModuleFromText(
     rawSourceWithTypeAnnotation,
@@ -36,7 +36,7 @@ const reprintModule = (rawSourceWithTypeAnnotation: string, width = 40): string 
   const errors = errorCollector.getErrors().map((it) => it.toString());
   expect(errors).toEqual([]);
   return `\n${prettyPrintSamlangModule(width, samlangModule).trimEnd()}`;
-};
+}
 
 describe('printer-source-level', () => {
   it('prettyPrintSamlangExpression test', () => {

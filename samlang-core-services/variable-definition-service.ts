@@ -185,18 +185,18 @@ export class VariableDefinitionLookup implements ReadonlyVariableDefinitionLooku
   }
 }
 
-const getRelevantInRanges = (range: Range, { definitionRange, useRanges }: DefinitionAndUses) => {
+function getRelevantInRanges(range: Range, { definitionRange, useRanges }: DefinitionAndUses) {
   const ranges: Range[] = [];
   if (range.containsRange(definitionRange)) ranges.push(definitionRange);
   ranges.push(...useRanges.filter((it) => range.containsRange(it)));
   return ranges;
-};
+}
 
-const applyExpressionRenamingWithDefinitionAndUse = (
+function applyExpressionRenamingWithDefinitionAndUse(
   expression: SamlangExpression,
   definitionAndUses: DefinitionAndUses,
   newName: string
-): SamlangExpression => {
+): SamlangExpression {
   const relevantInRange = getRelevantInRanges(expression.range, definitionAndUses);
   if (relevantInRange.length === 0) return expression;
   assert(expression.__type__ !== 'LiteralExpression');
@@ -429,7 +429,7 @@ const applyExpressionRenamingWithDefinitionAndUse = (
         },
       };
   }
-};
+}
 
 export const applyRenamingWithDefinitionAndUse = (
   samlangModule: SamlangModule,

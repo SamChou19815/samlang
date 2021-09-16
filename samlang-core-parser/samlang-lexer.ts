@@ -334,16 +334,17 @@ export type SamlangToken = {
   readonly content: SamlangTokenContent;
 };
 
-export const samlangTokenContentToString = (content: SamlangTokenContent): string => {
+export function samlangTokenContentToString(content: SamlangTokenContent): string {
   if (typeof content === 'string') return content;
   if (content.__type__ === 'Error') return `ERROR: ${content.content}`;
   return content.content;
-};
+}
 
-export const samlangTokenToString = ({ range, content }: SamlangToken): string =>
-  `${range}: ${samlangTokenContentToString(content)}`;
+export function samlangTokenToString({ range, content }: SamlangToken): string {
+  return `${range}: ${samlangTokenContentToString(content)}`;
+}
 
-const stringHasValidEscape = (string: string): boolean => {
+function stringHasValidEscape(string: string): boolean {
   let hasUnprocessedEscape = false;
   for (let i = 0; i < string.length; i += 1) {
     const character = string[i];
@@ -370,12 +371,12 @@ const stringHasValidEscape = (string: string): boolean => {
     }
   }
   return true;
-};
+}
 
-const getNextToken = (
+function getNextToken(
   stream: CharacterStream,
   errorCollector: ModuleErrorCollector
-): SamlangToken | null => {
+): SamlangToken | null {
   try {
     stream.consumeWhitespace();
     const start = stream.currentPosition;
@@ -446,12 +447,12 @@ const getNextToken = (
     assert(e instanceof EOF);
     return null;
   }
-};
+}
 
-const lexSamlangProgram = (
+export default function lexSamlangProgram(
   source: string,
   errorCollector: ModuleErrorCollector
-): readonly SamlangToken[] => {
+): readonly SamlangToken[] {
   const stream = new CharacterStream(source);
 
   const tokens: SamlangToken[] = [];
@@ -491,6 +492,4 @@ const lexSamlangProgram = (
 
     tokens.push(token);
   }
-};
-
-export default lexSamlangProgram;
+}

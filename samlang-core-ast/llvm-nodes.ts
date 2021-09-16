@@ -42,7 +42,7 @@ export const LLVM_FUNCTION_TYPE = (
   returnType: LLVMType
 ): LLVMFunctionType => ({ __type__: 'FunctionType', argumentTypes, returnType });
 
-export const isTheSameLLVMType = (t1: LLVMType, t2: LLVMType): boolean => {
+export function isTheSameLLVMType(t1: LLVMType, t2: LLVMType): boolean {
   switch (t1.__type__) {
     case 'PrimitiveType':
       return t2.__type__ === 'PrimitiveType' && t1.type === t2.type;
@@ -60,9 +60,9 @@ export const isTheSameLLVMType = (t1: LLVMType, t2: LLVMType): boolean => {
         )
       );
   }
-};
+}
 
-export const prettyPrintLLVMType = (type: LLVMType): string => {
+export function prettyPrintLLVMType(type: LLVMType): string {
   switch (type.__type__) {
     case 'PrimitiveType':
       return type.type;
@@ -75,7 +75,7 @@ export const prettyPrintLLVMType = (type: LLVMType): string => {
         .map(prettyPrintLLVMType)
         .join(', ')})*`;
   }
-};
+}
 
 export type LLVMLiteral = { readonly __type__: 'LLVMLiteral'; readonly value: number };
 export type LLVMVariable = { readonly __type__: 'LLVMVariable'; readonly name: string };
@@ -90,7 +90,7 @@ export const LLVM_INT = (value: number): LLVMLiteral => ({
 export const LLVM_VARIABLE = (name: string): LLVMVariable => ({ __type__: 'LLVMVariable', name });
 export const LLVM_NAME = (name: string): LLVMName => ({ __type__: 'LLVMName', name });
 
-export const prettyPrintLLVMValue = (value: LLVMValue, type: LLVMType): string => {
+export function prettyPrintLLVMValue(value: LLVMValue, type: LLVMType): string {
   switch (value.__type__) {
     case 'LLVMLiteral':
       if (value.value === 0 && type.__type__ !== 'PrimitiveType') return 'null';
@@ -100,7 +100,7 @@ export const prettyPrintLLVMValue = (value: LLVMValue, type: LLVMType): string =
     case 'LLVMName':
       return `@${value.name}`;
   }
-};
+}
 
 export type LLVMAnnotatedValue = { readonly value: LLVMValue; readonly type: LLVMType };
 
@@ -308,7 +308,7 @@ export const LLVM_RETURN = (value: LLVMValue, type: LLVMType): LLVMReturnInstruc
   type,
 });
 
-export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string => {
+export function prettyPrintLLVMInstruction(instruction: LLVMInstruction): string {
   switch (instruction.__type__) {
     case 'LLVMCastInstruction': {
       const sourceValue = prettyPrintLLVMValue(instruction.sourceValue, instruction.sourceType);
@@ -432,7 +432,7 @@ export const prettyPrintLLVMInstruction = (instruction: LLVMInstruction): string
       return `ret ${prettyPrintLLVMType(type)} ${prettyPrintLLVMValue(value, type)}`;
     }
   }
-};
+}
 
 export interface LLVMTypeDefinition {
   readonly identifier: string;
@@ -449,12 +449,12 @@ export interface LLVMFunction {
   readonly body: readonly LLVMInstruction[];
 }
 
-export const prettyPrintLLVMFunction = ({
+export function prettyPrintLLVMFunction({
   name,
   parameters,
   returnType,
   body,
-}: LLVMFunction): string => {
+}: LLVMFunction): string {
   const returnTypeString = prettyPrintLLVMType(returnType);
   const parametersString = parameters
     .map(
@@ -471,7 +471,7 @@ ${body
   )
   .join('\n')}
 }`;
-};
+}
 
 export interface LLVMSources {
   readonly globalVariables: readonly GlobalVariable[];
@@ -480,11 +480,11 @@ export interface LLVMSources {
   readonly functions: readonly LLVMFunction[];
 }
 
-export const prettyPrintLLVMSources = ({
+export function prettyPrintLLVMSources({
   globalVariables,
   typeDefinitions,
   functions,
-}: LLVMSources): string => {
+}: LLVMSources): string {
   return [
     `declare i64* @${ENCODED_FUNCTION_NAME_MALLOC}(i64) nounwind
 declare i64 @${ENCODED_FUNCTION_NAME_PRINTLN}(i64*) nounwind
@@ -512,4 +512,4 @@ declare i64* @${ENCODED_FUNCTION_NAME_STRING_CONCAT}(i64*, i64*) nounwind
     ),
     ...functions.map(prettyPrintLLVMFunction),
   ].join('\n');
-};
+}

@@ -4,7 +4,7 @@ import { assert, zip } from 'samlang-core-utils';
 
 import type TypeResolution from './type-resolution';
 
-const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
+function meet(t1: Type, t2: Type, resolution: TypeResolution): Type {
   const meetWithResolution = (type1: Type, type2: Type): Type => meet(type1, type2, resolution);
 
   switch (t1.type) {
@@ -80,22 +80,22 @@ const meet = (t1: Type, t2: Type, resolution: TypeResolution): Type => {
         ? resolution.establishAliasing(t1, t2, meetWithResolution)
         : meetWithUndecidedType(t2, t1, resolution);
   }
-};
+}
 
-const meetWithUndecidedType = (
+function meetWithUndecidedType(
   type: Type,
   undecidedType: UndecidedType,
   resolution: TypeResolution
-): Type => {
+): Type {
   const resolvedType = resolution.addTypeResolution(undecidedType.index, type);
   return resolvedType === type ? type : meet(type, resolvedType, resolution);
-};
+}
 
-export const checkAndInfer = (
+export function checkAndInfer(
   expectedType: Type,
   actualType: Type,
   resolution: TypeResolution
-): Type | { readonly type: 'FAILED_MEET'; readonly expected: Type; readonly actual: Type } => {
+): Type | { readonly type: 'FAILED_MEET'; readonly expected: Type; readonly actual: Type } {
   const partiallyResolvedActualType = resolution.resolveType(actualType);
   const partiallyResolvedExpectedType = resolution.resolveType(expectedType);
   try {
@@ -107,7 +107,7 @@ export const checkAndInfer = (
       actual: partiallyResolvedActualType,
     };
   }
-};
+}
 
 export class ConstraintAwareChecker {
   constructor(

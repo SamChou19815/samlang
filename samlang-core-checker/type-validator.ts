@@ -17,10 +17,10 @@ export interface IdentifierTypeValidator {
 /**
  * @returns an invalidid string identifier, null if there is none.
  */
-export const findInvalidTypeIdentifier_EXPOSED_FOR_TESTING = (
+export function findInvalidTypeIdentifier_EXPOSED_FOR_TESTING(
   type: Type,
   identifierTypeValidator: IdentifierTypeValidator
-): string | null => {
+): string | null {
   switch (type.type) {
     case 'PrimitiveType':
       return null;
@@ -45,12 +45,12 @@ export const findInvalidTypeIdentifier_EXPOSED_FOR_TESTING = (
     case 'UndecidedType':
       return null;
   }
-};
+}
 
-const findInvalidTypeIdentifierForList = (
+function findInvalidTypeIdentifierForList(
   types: readonly Type[],
   identifierTypeValidator: IdentifierTypeValidator
-): string | null => {
+): string | null {
   for (let i = 0; i < types.length; i += 1) {
     const invalidName = findInvalidTypeIdentifier_EXPOSED_FOR_TESTING(
       checkNotNull(types[i]),
@@ -59,14 +59,14 @@ const findInvalidTypeIdentifierForList = (
     if (invalidName != null) return invalidName;
   }
   return null;
-};
+}
 
-export const validateType = (
+export function validateType(
   type: Type,
   identifierTypeValidator: IdentifierTypeValidator,
   errorCollector: ModuleErrorCollector,
   errorRange: Range
-): boolean => {
+): boolean {
   const badIdentifier = findInvalidTypeIdentifier_EXPOSED_FOR_TESTING(
     type,
     identifierTypeValidator
@@ -76,4 +76,4 @@ export const validateType = (
   }
   errorCollector.reportNotWellDefinedIdentifierError(errorRange, badIdentifier);
   return false;
-};
+}

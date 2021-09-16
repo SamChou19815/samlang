@@ -6,9 +6,11 @@ import { spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
-const read = (filename: string) => fs.readFileSync(filename).toString();
+function read(filename: string) {
+  return fs.readFileSync(filename).toString();
+}
 
-const runWithErrorCheck = (command: string, args: readonly string[] = []) => {
+function runWithErrorCheck(command: string, args: readonly string[] = []) {
   const startTime = new Date().getTime();
   const result = spawnSync(command, args, {
     shell: true,
@@ -20,18 +22,16 @@ const runWithErrorCheck = (command: string, args: readonly string[] = []) => {
       : `Command \`${command}\` failed with ${result.status}.`;
   const time = new Date().getTime() - startTime;
   return { resultString, time };
-};
+}
 
 const basePath = './out';
 
-const compare = (expected: string, actual: string) => {
-  if (expected === actual) {
-    return true;
-  }
+function compare(expected: string, actual: string) {
+  if (expected === actual) return true;
   console.log('Inconsistency:');
   console.log(`Actual:\n${actual}`);
   return false;
-};
+}
 
 console.error('Bundling...');
 runWithErrorCheck('yarn', ['workspace', '@dev-sam/samlang-cli', 'bundle']);
