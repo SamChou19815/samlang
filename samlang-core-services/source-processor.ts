@@ -7,10 +7,10 @@ import { CompileTimeError, createGlobalErrorCollector } from 'samlang-core-error
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
 import { hashMapOf, isNotNull } from 'samlang-core-utils';
 
-export const parseSources = (
+export function parseSources(
   sourceHandles: readonly (readonly [ModuleReference, string])[],
   builtInClasses: ReadonlySet<string>
-): readonly (readonly [ModuleReference, SamlangModule])[] => {
+): readonly (readonly [ModuleReference, SamlangModule])[] {
   const errorCollector = createGlobalErrorCollector();
   return sourceHandles
     .map(([moduleReference, sourceString]) => {
@@ -24,7 +24,7 @@ export const parseSources = (
       return moduleErrorCollector.hasErrors ? null : ([moduleReference, parsed] as const);
     })
     .filter(isNotNull);
-};
+}
 
 type CheckSourcesResult = {
   readonly checkedSources: Sources<SamlangModule>;
@@ -32,10 +32,10 @@ type CheckSourcesResult = {
   readonly compileTimeErrors: readonly CompileTimeError[];
 };
 
-export const checkSources = (
+export function checkSources(
   sourceHandles: readonly (readonly [ModuleReference, string])[],
   builtinModuleTypes: ModuleTypingContext
-): CheckSourcesResult => {
+): CheckSourcesResult {
   const errorCollector = createGlobalErrorCollector();
   const moduleMappings = hashMapOf(
     ...sourceHandles.map(
@@ -57,4 +57,4 @@ export const checkSources = (
     errorCollector
   );
   return { checkedSources, globalTypingContext, compileTimeErrors: errorCollector.getErrors() };
-};
+}

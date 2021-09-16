@@ -42,22 +42,19 @@ const BLOCK = (
   expression?: SamlangExpression
 ): StatementBlock => ({ range: Range.DUMMY, statements, expression });
 
-const typeCheckInSandbox = (
+function typeCheckInSandbox(
   block: StatementBlock,
   expectedType: Type
-): readonly [StatementBlock, readonly string[]] => {
+): readonly [StatementBlock, readonly string[]] {
   const globalErrorCollector = createGlobalErrorCollector();
   const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(ModuleReference.DUMMY);
 
-  const dummyExpressionTypeChecker = (
-    expression: SamlangExpression,
-    et: Type
-  ): SamlangExpression => {
+  function dummyExpressionTypeChecker(expression: SamlangExpression, et: Type): SamlangExpression {
     if (et.type !== 'UndecidedType' && !isTheSameType(expression.type, et)) {
       moduleErrorCollector.reportUnexpectedTypeError(Range.DUMMY, et, expression.type);
     }
     return expression;
-  };
+  }
 
   const checker = new StatementTypeChecker(
     new AccessibleGlobalTypingContext(
@@ -119,7 +116,7 @@ const typeCheckInSandbox = (
     checker.typeCheck(block, expectedType, new LocalStackedContext<Type>()),
     globalErrorCollector.getErrors().map((it) => it.toString()),
   ];
-};
+}
 
 const passingTypeCheckerTestCases: readonly (readonly [
   string,

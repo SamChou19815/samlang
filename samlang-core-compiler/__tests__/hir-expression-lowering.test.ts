@@ -49,10 +49,10 @@ import { HighIRTypeSynthesizer, SamlangTypeLoweringManager } from '../hir-type-c
 const DUMMY_IDENTIFIER_TYPE = identifierType(ModuleReference.DUMMY, 'Dummy');
 const THIS = SourceExpressionThis({ type: DUMMY_IDENTIFIER_TYPE });
 
-const expectCorrectlyLowered = (
+function expectCorrectlyLowered(
   samlangExpression: SamlangExpression,
   expectedString: string
-): void => {
+): void {
   const typeSynthesizer = new HighIRTypeSynthesizer();
   const typeLoweringManager = new SamlangTypeLoweringManager(new Set(), typeSynthesizer);
   const stringManager = new HighIRStringManager();
@@ -97,7 +97,7 @@ const expectCorrectlyLowered = (
 ${statements.map((it) => debugPrintHighIRStatement(it)).join('\n')}
 return ${debugPrintHighIRExpression(expression)};`.trim()
   ).toBe(expectedString);
-};
+}
 
 describe('hir-expression-lowering', () => {
   it('Literal lowering works.', () => {

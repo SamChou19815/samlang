@@ -6,10 +6,10 @@ import {
   functionType,
 } from 'samlang-core-ast/common-nodes';
 
-const resolveType = (
+export default function resolveType(
   type: Type,
   undecidedTypeResolver: (undecidedType: UndecidedType) => Type
-): Type => {
+): Type {
   switch (type.type) {
     case 'PrimitiveType':
       return type;
@@ -29,6 +29,4 @@ const resolveType = (
     case 'UndecidedType':
       return undecidedTypeResolver(type);
   }
-};
-
-export default resolveType;
+}

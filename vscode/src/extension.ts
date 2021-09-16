@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { LanguageClient, LanguageClientOptions, TransportKind } from 'vscode-languageclient';
 
-const provideDocumentFormattingEdits = (document: vscode.TextDocument): vscode.TextEdit[] => {
+function provideDocumentFormattingEdits(document: vscode.TextDocument): vscode.TextEdit[] {
   // const whitespace
   const edits: vscode.TextEdit[] = [];
   let indentLevel = 0;
@@ -51,7 +51,7 @@ const provideDocumentFormattingEdits = (document: vscode.TextDocument): vscode.T
     }
   }
   return edits;
-};
+}
 
 // eslint-disable-next-line import/prefer-default-export
 export function activate(): void {

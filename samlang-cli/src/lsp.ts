@@ -37,7 +37,9 @@ const samlangRangeToLspFoldingRange = (range: Range): LspFoldingRange => ({
   endCharacter: range.end.column,
 });
 
-const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration): void => {
+export default function startSamlangLanguageServer(
+  configuration: SamlangProjectConfiguration
+): void {
   const state = new LanguageServiceState(
     collectSources(configuration),
     DEFAULT_BUILTIN_TYPING_CONTEXT
@@ -46,13 +48,13 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
     prettyPrintSamlangModule(100, samlangModule)
   );
 
-  const uriToModuleReference = (uri: string): ModuleReference => {
+  function uriToModuleReference(uri: string): ModuleReference {
     const relativePath = relative(
       configuration.sourceDirectory,
       uri.startsWith('file://') ? uri.substring('file://'.length) : uri
     );
     return new ModuleReference(relativePath.substring(0, relativePath.length - 4).split(sep));
-  };
+  }
 
   const moduleReferenceToUri = (moduleReference: ModuleReference): string =>
     resolve(join(configuration.sourceDirectory, moduleReference.toFilename()));
@@ -61,7 +63,7 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
   // Also include all preview / proposed LSP features.
   const connection = createConnection(ProposedFeatures.all);
 
-  const publishDiagnostics = (affectedModules: readonly ModuleReference[]): void =>
+  function publishDiagnostics(affectedModules: readonly ModuleReference[]): void {
     affectedModules.forEach((affectedModule) => {
       connection.sendDiagnostics({
         uri: moduleReferenceToUri(affectedModule),
@@ -73,6 +75,7 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
         })),
       });
     });
+  }
 
   connection.onInitialize((): InitializeResult => {
     publishDiagnostics(state.allModulesWithError);
@@ -175,6 +178,4 @@ const startSamlangLanguageServer = (configuration: SamlangProjectConfiguration):
   });
 
   connection.listen();
-};
-
-export default startSamlangLanguageServer;
+}

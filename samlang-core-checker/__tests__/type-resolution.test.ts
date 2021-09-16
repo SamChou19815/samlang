@@ -52,10 +52,10 @@ describe('type-resolution', () => {
     const resolution = new TypeResolution();
     expect(resolution.addTypeResolution(0, intType)).toEqual(intType);
 
-    const simpleMeet = (t1: Type, t2: Type) => {
+    function simpleMeet(t1: Type, t2: Type) {
       assert(t1 === t2, 'Inconsistency detected');
       return t1;
-    };
+    }
 
     expect(
       resolution.establishAliasing(

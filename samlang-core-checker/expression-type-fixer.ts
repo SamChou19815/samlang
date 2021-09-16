@@ -16,20 +16,20 @@ import { assert, zip } from 'samlang-core-utils';
 import type { ReadOnlyTypeResolution } from './type-resolution';
 import resolveType from './type-resolver';
 
-const checkedZip = <E1, E2>(
+function checkedZip<E1, E2>(
   list1: readonly E1[],
   list2: readonly E2[]
-): readonly (readonly [E1, E2])[] => {
+): readonly (readonly [E1, E2])[] {
   assert(list1.length === list2.length, 'Slack type checker!');
   return zip(list1, list2);
-};
+}
 
-const fixExpressionType = (
+export default function fixExpressionType(
   expression: SamlangExpression,
   expectedType: Type,
   resolution: ReadOnlyTypeResolution
-): SamlangExpression => {
-  const typeFixItself = (type: Type, expected: Type | null): Type => {
+): SamlangExpression {
+  function typeFixItself(type: Type, expected: Type | null): Type {
     const resolvedPotentiallyUndecidedType = resolution.resolveType(type);
     const resolvedType = resolveType(resolvedPotentiallyUndecidedType, () => unitType);
     const resolvedTypePrettyPrinted = prettyPrintType(resolvedType);
@@ -42,7 +42,7 @@ const fixExpressionType = (
       )})!`
     );
     return resolvedType;
-  };
+  }
 
   const getExpressionFixedType = (e: SamlangExpression, t: Type | null): Type =>
     typeFixItself(e.type, t);
@@ -255,6 +255,4 @@ const fixExpressionType = (
       };
     }
   }
-};
-
-export default fixExpressionType;
+}

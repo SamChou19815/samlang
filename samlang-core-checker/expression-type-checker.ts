@@ -749,14 +749,14 @@ class ExpressionTypeChecker {
   }
 }
 
-const typeCheckExpression = (
+export default function typeCheckExpression(
   expression: SamlangExpression,
   errorCollector: ModuleErrorCollector,
   accessibleGlobalTypingContext: AccessibleGlobalTypingContext,
   localTypingContext: LocalStackedContext<Type>,
   resolution: TypeResolution,
   expectedType: Type
-): SamlangExpression => {
+): SamlangExpression {
   const checker = new ExpressionTypeChecker(
     accessibleGlobalTypingContext,
     localTypingContext,
@@ -768,6 +768,4 @@ const typeCheckExpression = (
     return checkedExpression;
   }
   return fixExpressionType(checkedExpression, expectedType, resolution);
-};
-
-export default typeCheckExpression;
+}

@@ -14,14 +14,15 @@ class ExpressionWrapper implements Hashable {
   }
 }
 
-const intersectionOf = (
+function intersectionOf(
   set1: ReadonlyHashSet<ExpressionWrapper>,
   ...others: readonly ReadonlyHashSet<ExpressionWrapper>[]
-): readonly BindedValue[] =>
-  set1
+): readonly BindedValue[] {
+  return set1
     .toArray()
     .map((wrapper) => (others.every((it) => it.has(wrapper)) ? wrapper.value : null))
     .filter(isNotNull);
+}
 
 function produceHoistedStatement(
   allocator: OptimizationResourceAllocator,

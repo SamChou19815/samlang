@@ -29,11 +29,11 @@ type ConfigurationLoadingResult =
   | 'UNPARSABLE_CONFIGURATION_FILE'
   | 'NO_CONFIGURATION';
 
-const loadSamlangProjectConfiguration = ({
+export default function loadSamlangProjectConfiguration({
   startPath,
   pathExistanceTester,
   fileReader,
-}: ConfigurationLoader = fileSystemLoader_EXPOSED_FOR_TESTING): ConfigurationLoadingResult => {
+}: ConfigurationLoader = fileSystemLoader_EXPOSED_FOR_TESTING): ConfigurationLoadingResult {
   let configurationDirectory = startPath;
   while (configurationDirectory !== '/') {
     const configurationPath = join(configurationDirectory, 'sconfig.json');
@@ -53,6 +53,4 @@ const loadSamlangProjectConfiguration = ({
     configurationDirectory = dirname(configurationDirectory);
   }
   return 'NO_CONFIGURATION';
-};
-
-export default loadSamlangProjectConfiguration;
+}

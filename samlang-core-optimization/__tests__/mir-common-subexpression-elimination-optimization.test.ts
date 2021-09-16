@@ -17,7 +17,7 @@ import {
 import optimizeMidIRFunctionByCommonSubExpressionElimination from '../mir-common-subexpression-elimination-optimization';
 import OptimizationResourceAllocator from '../optimization-resource-allocator';
 
-const assertCorrectlyOptimized = (statements: MidIRStatement[], expected: string): void => {
+function assertCorrectlyOptimized(statements: MidIRStatement[], expected: string): void {
   expect(
     optimizeMidIRFunctionByCommonSubExpressionElimination(
       {
@@ -32,7 +32,7 @@ const assertCorrectlyOptimized = (statements: MidIRStatement[], expected: string
       .body.map((it) => debugPrintMidIRStatement(it))
       .join('\n')
   ).toBe(expected);
-};
+}
 
 describe('mir-common-subexpression-elimination', () => {
   it('optimizeMidIRStatementsByCommonSubExpressionElimination works on if-else statements', () => {

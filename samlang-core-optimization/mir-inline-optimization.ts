@@ -47,9 +47,11 @@ function estimateStatementInlineCost(statement: MidIRStatement): number {
   }
 }
 
-export const estimateFunctionInlineCost_EXPOSED_FOR_TESTING = (
+export function estimateFunctionInlineCost_EXPOSED_FOR_TESTING(
   midIRFunction: MidIRFunction
-): number => midIRFunction.body.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0);
+): number {
+  return midIRFunction.body.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0);
+}
 
 function getFunctionsToInline(functions: readonly MidIRFunction[]): {
   readonly functionsThatCanPerformInlining: ReadonlySet<string>;
@@ -225,7 +227,7 @@ function performInlineRewriteOnFunction(
   allFunctions: Record<string, MidIRFunction>,
   allocator: OptimizationResourceAllocator
 ): MidIRFunction {
-  const rewrite = (statement: MidIRStatement): readonly MidIRStatement[] => {
+  function rewrite(statement: MidIRStatement): readonly MidIRStatement[] {
     switch (statement.__type__) {
       case 'MidIRFunctionCallStatement': {
         const { functionExpression, functionArguments, returnType, returnCollector } = statement;
@@ -283,7 +285,7 @@ function performInlineRewriteOnFunction(
       default:
         return [statement];
     }
-  };
+  }
 
   return optimizeMidIRFunctionByConditionalConstantPropagation({
     ...midIRFunction,

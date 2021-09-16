@@ -6,7 +6,7 @@ import { MidIRExpression, MIR_BINARY } from './mir-nodes';
  * The order itself has no semantic meaning.
  * We just need a way to compare to define a canonical order.
  */
-const compareMidIR = (e1: MidIRExpression, e2: MidIRExpression): number => {
+function compareMidIR(e1: MidIRExpression, e2: MidIRExpression): number {
   switch (e1.__type__) {
     case 'MidIRIntLiteralExpression':
       switch (e2.__type__) {
@@ -39,18 +39,18 @@ const compareMidIR = (e1: MidIRExpression, e2: MidIRExpression): number => {
           return e1.name.localeCompare(e2.name);
       }
   }
-};
+}
 
 /**
  * Some OPs are commutative.
  * We can standardize them into one canonical form,
  * so that we can do a simple equality check in later optimization stages.
  */
-const createMidIRFlexibleOrderOperatorNode = (
+export default function createMidIRFlexibleOrderOperatorNode(
   irOperator: IROperator,
   expression1: MidIRExpression,
   expression2: MidIRExpression
-): Readonly<{ operator: IROperator; e1: MidIRExpression; e2: MidIRExpression }> => {
+): Readonly<{ operator: IROperator; e1: MidIRExpression; e2: MidIRExpression }> {
   const { operator, e1, e2 } = MIR_BINARY({
     name: '',
     operator: irOperator,
@@ -79,6 +79,4 @@ const createMidIRFlexibleOrderOperatorNode = (
       break;
   }
   return { operator, e1, e2 };
-};
-
-export default createMidIRFlexibleOrderOperatorNode;
+}

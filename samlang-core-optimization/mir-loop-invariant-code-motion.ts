@@ -19,12 +19,12 @@ export default function optimizeMidIRWhileStatementByLoopInvariantCodeMotion({
 }: MidIRWhileStatement): LoopInvariantCodeMotionOptimizationResult {
   const nonLoopInvariantVariables = new Set(loopVariables.map((it) => it.name));
 
-  const expressionIsNotLoopInvariant = (expression: MidIRExpression): boolean => {
-    if (expression.__type__ === 'MidIRVariableExpression') {
-      return nonLoopInvariantVariables.has(expression.name);
-    }
-    return false;
-  };
+  function expressionIsNotLoopInvariant(expression: MidIRExpression): boolean {
+    return (
+      expression.__type__ === 'MidIRVariableExpression' &&
+      nonLoopInvariantVariables.has(expression.name)
+    );
+  }
 
   const hoistedStatementsBeforeWhile: MidIRStatement[] = [];
   const innerStatements = statements

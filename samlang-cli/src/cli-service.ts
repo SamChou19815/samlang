@@ -32,7 +32,7 @@ import { optimizeMidIRSourcesAccordingToConfiguration } from 'samlang-core-optim
 import type { SamlangProjectConfiguration } from './configuration';
 
 function walk(startPath: string, visitor: (file: string) => void): void {
-  const recursiveVisit = (path: string): void => {
+  function recursiveVisit(path: string): void {
     if (lstatSync(path).isFile()) {
       visitor(path);
       return;
@@ -41,7 +41,7 @@ function walk(startPath: string, visitor: (file: string) => void): void {
     if (lstatSync(path).isDirectory()) {
       readdirSync(path).some((relativeChildPath) => recursiveVisit(join(path, relativeChildPath)));
     }
-  };
+  }
 
   return recursiveVisit(startPath);
 }

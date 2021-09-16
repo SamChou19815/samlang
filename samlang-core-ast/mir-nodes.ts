@@ -33,7 +33,7 @@ export const MIR_FUNCTION_TYPE = (
   returnType: MidIRType
 ): MidIRFunctionType => ({ __type__: 'FunctionType', argumentTypes, returnType });
 
-export const prettyPrintMidIRType = (type: MidIRType): string => {
+export function prettyPrintMidIRType(type: MidIRType): string {
   switch (type.__type__) {
     case 'PrimitiveType':
       return type.type;
@@ -44,9 +44,9 @@ export const prettyPrintMidIRType = (type: MidIRType): string => {
         .map(prettyPrintMidIRType)
         .join(', ')}) -> ${prettyPrintMidIRType(type.returnType)}`;
   }
-};
+}
 
-export const prettyPrintMidIRTypeAsTypeScriptType = (type: MidIRType): string => {
+export function prettyPrintMidIRTypeAsTypeScriptType(type: MidIRType): string {
   switch (type.__type__) {
     case 'PrimitiveType':
       switch (type.type) {
@@ -64,12 +64,13 @@ export const prettyPrintMidIRTypeAsTypeScriptType = (type: MidIRType): string =>
         .map((it, index) => `t${index}: ${prettyPrintMidIRTypeAsTypeScriptType(it)}`)
         .join(', ')}) => ${prettyPrintMidIRTypeAsTypeScriptType(type.returnType)}`;
   }
-};
+}
 
-const standardizeMidIRTypeForComparison = (t: MidIRType): MidIRType =>
-  t.__type__ === 'PrimitiveType' && t.type === 'string' ? MIR_ANY_TYPE : t;
+function standardizeMidIRTypeForComparison(t: MidIRType): MidIRType {
+  return t.__type__ === 'PrimitiveType' && t.type === 'string' ? MIR_ANY_TYPE : t;
+}
 
-export const isTheSameMidIRType = (type1: MidIRType, type2: MidIRType): boolean => {
+export function isTheSameMidIRType(type1: MidIRType, type2: MidIRType): boolean {
   const t1 = standardizeMidIRTypeForComparison(type1);
   const t2 = standardizeMidIRTypeForComparison(type2);
   switch (t1.__type__) {
@@ -87,7 +88,7 @@ export const isTheSameMidIRType = (type1: MidIRType, type2: MidIRType): boolean 
         )
       );
   }
-};
+}
 
 interface BaseMidIRExpression {
   readonly __type__: string;
@@ -374,7 +375,7 @@ export const MIR_STRUCT_INITIALIZATION = ({
   expressionList,
 });
 
-export const debugPrintMidIRExpression = (expression: MidIRExpression): string => {
+export function debugPrintMidIRExpression(expression: MidIRExpression): string {
   switch (expression.__type__) {
     case 'MidIRIntLiteralExpression':
       return expression.value.toString();
@@ -383,9 +384,9 @@ export const debugPrintMidIRExpression = (expression: MidIRExpression): string =
     case 'MidIRNameExpression':
       return expression.name;
   }
-};
+}
 
-export const prettyPrintMidIRExpressionAsJSExpression = (expression: MidIRExpression): string => {
+export function prettyPrintMidIRExpressionAsJSExpression(expression: MidIRExpression): string {
   switch (expression.__type__) {
     case 'MidIRIntLiteralExpression':
       if (expression.type.__type__ === 'PrimitiveType' && expression.type.type === 'bool') {
@@ -396,14 +397,14 @@ export const prettyPrintMidIRExpressionAsJSExpression = (expression: MidIRExpres
     case 'MidIRNameExpression':
       return expression.name;
   }
-};
+}
 
 export function debugPrintMidIRStatement(statement: MidIRStatement, startLevel = 0): string {
   const collector: string[] = [];
   let level = startLevel;
   let breakCollector: string | undefined = undefined;
 
-  const printer = (s: MidIRStatement) => {
+  function printer(s: MidIRStatement) {
     switch (s.__type__) {
       case 'MidIRIndexAccessStatement': {
         const type = prettyPrintMidIRType(s.type);
@@ -522,7 +523,7 @@ export function debugPrintMidIRStatement(statement: MidIRStatement, startLevel =
         break;
       }
     }
-  };
+  }
 
   printer(statement);
 
@@ -537,7 +538,7 @@ export function prettyPrintMidIRStatementAsJSStatement(
   let level = startLevel;
   let breakCollector: string | undefined = undefined;
 
-  const printer = (s: MidIRStatement) => {
+  function printer(s: MidIRStatement) {
     switch (s.__type__) {
       case 'MidIRIndexAccessStatement': {
         const type = prettyPrintMidIRTypeAsTypeScriptType(s.type);
@@ -691,7 +692,7 @@ export function prettyPrintMidIRStatementAsJSStatement(
         break;
       }
     }
-  };
+  }
 
   printer(statement);
 
@@ -754,8 +755,8 @@ export function debugPrintMidIRSources({
 // Thanks https://gist.github.com/getify/3667624
 const escapeDoubleQuotes = (string: string) => string.replace(/\\([\s\S])|(")/g, '\\$1$2');
 
-export const prettyPrintMidIRSourcesAsJSSources = (sources: MidIRSources): string =>
-  [
+export function prettyPrintMidIRSourcesAsJSSources(sources: MidIRSources): string {
+  return [
     ...sources.globalVariables.map(
       ({ name, content }) => `const ${name} = "${escapeDoubleQuotes(content)}";\n`
     ),
@@ -778,3 +779,4 @@ export const prettyPrintMidIRSourcesAsJSSources = (sources: MidIRSources): strin
       return `${header}\n${bodyString}\n}\n`;
     }),
   ].join('');
+}

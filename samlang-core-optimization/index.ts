@@ -24,7 +24,7 @@ const allEnabledOptimizationConfiguration: OptimizationConfiguration = {
   doesPerformInlining: true,
 };
 
-const optimizeMidIRFunctionForOneRound = (
+function optimizeMidIRFunctionForOneRound(
   midIRFunction: MidIRFunction,
   allocator: OptimizationResourceAllocator,
   {
@@ -32,7 +32,7 @@ const optimizeMidIRFunctionForOneRound = (
     doesPerformCommonSubExpressionElimination,
     doesPerformLoopOptimization,
   }: OptimizationConfiguration
-): MidIRFunction => {
+): MidIRFunction {
   let optimizedFunction = optimizeMidIRFunctionByConditionalConstantPropagation(midIRFunction);
   if (doesPerformLoopOptimization) {
     optimizedFunction = optimizeMidIRFunctionWithAllLoopOptimizations(optimizedFunction, allocator);
@@ -47,13 +47,13 @@ const optimizeMidIRFunctionForOneRound = (
     );
   }
   return optimizeMidIRFunctionByDeadCodeElimination(optimizedFunction);
-};
+}
 
-const optimizeFunctionForRounds = (
+function optimizeFunctionForRounds(
   midIRFunction: MidIRFunction,
   allocator: OptimizationResourceAllocator,
   optimizationConfiguration: OptimizationConfiguration
-): MidIRFunction => {
+): MidIRFunction {
   let optimizedFunction = midIRFunction;
   for (let j = 0; j < 5; j += 1) {
     optimizedFunction = optimizeMidIRFunctionForOneRound(
@@ -67,7 +67,7 @@ const optimizeFunctionForRounds = (
       optimizeMidIRFunctionByConditionalConstantPropagation(optimizedFunction)
     )
   );
-};
+}
 
 export const optimizeMidIRSourcesByTailRecursionRewrite = (
   sources: MidIRSources
@@ -78,10 +78,10 @@ export const optimizeMidIRSourcesByTailRecursionRewrite = (
 
 export { optimizeMidIRSourcesByEliminatingUnusedOnes };
 
-export const optimizeMidIRSourcesAccordingToConfiguration = (
+export function optimizeMidIRSourcesAccordingToConfiguration(
   sources: MidIRSources,
   optimizationConfiguration: OptimizationConfiguration = allEnabledOptimizationConfiguration
-): MidIRSources => {
+): MidIRSources {
   const allocator = new OptimizationResourceAllocator();
 
   let intermediate = sources;
@@ -104,4 +104,4 @@ export const optimizeMidIRSourcesAccordingToConfiguration = (
       optimizeFunctionForRounds(it, allocator, optimizationConfiguration)
     ),
   };
-};
+}

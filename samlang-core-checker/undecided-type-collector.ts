@@ -1,6 +1,6 @@
 import type { Type } from 'samlang-core-ast/common-nodes';
 
-const collectUndecidedTypeIndicesVisitor = (type: Type, collector: Set<number>): void => {
+function collectUndecidedTypeIndicesVisitor(type: Type, collector: Set<number>): void {
   switch (type.type) {
     case 'PrimitiveType':
       return;
@@ -21,12 +21,10 @@ const collectUndecidedTypeIndicesVisitor = (type: Type, collector: Set<number>):
     case 'UndecidedType':
       collector.add(type.index);
   }
-};
+}
 
-const collectUndecidedTypeIndices = (type: Type): ReadonlySet<number> => {
+export default function collectUndecidedTypeIndices(type: Type): ReadonlySet<number> {
   const collector = new Set<number>();
   collectUndecidedTypeIndicesVisitor(type, collector);
   return collector;
-};
-
-export default collectUndecidedTypeIndices;
+}

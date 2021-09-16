@@ -23,11 +23,11 @@ import {
 
 import optimizeMidIRFunctionByDeadCodeElimination from '../mir-dead-code-elimination-optimization';
 
-const assertCorrectlyOptimized = (
+function assertCorrectlyOptimized(
   statements: MidIRStatement[],
   returnValue: MidIRExpression,
   expected: string
-): void => {
+): void {
   const { body, returnValue: optimizedReturnValue } = optimizeMidIRFunctionByDeadCodeElimination({
     name: '',
     parameters: [],
@@ -40,7 +40,7 @@ const assertCorrectlyOptimized = (
     `${body.map((it) => debugPrintMidIRStatement(it)).join('\n')}\n` +
       `return ${debugPrintMidIRExpression(optimizedReturnValue)};`
   ).toBe(expected);
-};
+}
 
 describe('mir-dead-code-elimination', () => {
   it('optimizeMidIRStatementsByDeadCodeElimination works on a series of simple statements 1/n.', () => {

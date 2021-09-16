@@ -3,10 +3,13 @@ type ParsedCLIAction =
   | { readonly type: 'version' }
   | { readonly type: 'help' };
 
-const needHelp = (commandLineArguments: readonly string[]): boolean =>
-  commandLineArguments.includes('--help') || commandLineArguments.includes('-h');
+function needHelp(commandLineArguments: readonly string[]): boolean {
+  return commandLineArguments.includes('--help') || commandLineArguments.includes('-h');
+}
 
-const parseCLIArguments = (commandLineArguments: readonly string[]): ParsedCLIAction => {
+export default function parseCLIArguments(
+  commandLineArguments: readonly string[]
+): ParsedCLIAction {
   if (commandLineArguments.length === 0) {
     return { type: 'check', needHelp: false };
   }
@@ -26,6 +29,4 @@ const parseCLIArguments = (commandLineArguments: readonly string[]): ParsedCLIAc
   }
 
   return { type, needHelp: needHelp(commandLineArguments) };
-};
-
-export default parseCLIArguments;
+}

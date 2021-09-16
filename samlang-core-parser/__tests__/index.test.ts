@@ -11,15 +11,12 @@ describe('samlang-core-parser/index', () => {
       ModuleReference.DUMMY
     );
 
-    const expectASTWithTheSameKind = (
-      text: string,
-      expected: SamlangExpression['__type__']
-    ): void => {
+    function expectASTWithTheSameKind(text: string, expected: SamlangExpression['__type__']): void {
       expect(
         parseSamlangExpressionFromText(text, ModuleReference.DUMMY, new Set(), moduleErrorCollector)
           ?.__type__
       ).toBe(expected);
-    };
+    }
 
     expectASTWithTheSameKind('true /* nothing here */', 'LiteralExpression');
     expectASTWithTheSameKind('true', 'LiteralExpression');
@@ -85,14 +82,14 @@ describe('samlang-core-parser/index', () => {
   });
 
   it('Can report bad expressions.', () => {
-    const expectBadAST = (text: string): void => {
+    function expectBadAST(text: string): void {
       const globalErrorCollector = createGlobalErrorCollector();
       const moduleErrorCollector = globalErrorCollector.getModuleErrorCollector(
         ModuleReference.DUMMY
       );
       parseSamlangExpressionFromText(text, ModuleReference.DUMMY, new Set(), moduleErrorCollector);
       expect(globalErrorCollector.getErrors().length).toBeGreaterThan(0);
-    };
+    }
 
     expectBadAST('/* nothing here */');
     expectBadAST('// haha');

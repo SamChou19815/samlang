@@ -320,5 +320,6 @@ class GlobalErrorCollector implements ReadonlyGlobalErrorCollector, WriteOnlyGlo
   }
 }
 
-export const createGlobalErrorCollector = (): ReadonlyGlobalErrorCollector =>
-  new GlobalErrorCollector();
+export function createGlobalErrorCollector(): ReadonlyGlobalErrorCollector {
+  return new GlobalErrorCollector();
+}

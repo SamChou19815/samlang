@@ -1,6 +1,6 @@
 import cliMainRunner, { CLIRunners } from '..';
 
-const assertCalled = (commandLineArguments: readonly string[], called: keyof CLIRunners): void => {
+function assertCalled(commandLineArguments: readonly string[], called: keyof CLIRunners): void {
   const runner: CLIRunners = {
     format: jest.fn(),
     typeCheck: jest.fn(),
@@ -15,7 +15,7 @@ const assertCalled = (commandLineArguments: readonly string[], called: keyof CLI
     // @ts-expect-error: expected
     expect(runner[commandName].mock.calls.length).toBe(commandName === called ? 1 : 0);
   });
-};
+}
 
 describe('samlang-cli/cli', () => {
   it('Commands are correctly triggered', () => {

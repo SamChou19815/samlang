@@ -20,11 +20,11 @@ import type {
   GlobalTypingContext,
 } from './typing-context';
 
-const buildClassTypingContext = ({
+function buildClassTypingContext({
   typeParameters,
   typeDefinition,
   members,
-}: ClassDefinition): ClassTypingContext => {
+}: ClassDefinition): ClassTypingContext {
   const functions: Record<string, MemberTypeInformation> = {};
   const methods: Record<string, MemberTypeInformation> = {};
   members.forEach(({ name, isPublic, isMethod, type, typeParameters: memberTypeParameters }) => {
@@ -36,15 +36,16 @@ const buildClassTypingContext = ({
     }
   });
   return { typeParameters, typeDefinition, functions, methods };
-};
+}
 
-const buildModuleTypingContext = (samlangModule: SamlangModule): ModuleTypingContext =>
-  Object.fromEntries(
+function buildModuleTypingContext(samlangModule: SamlangModule): ModuleTypingContext {
+  return Object.fromEntries(
     samlangModule.classes.map(
       (classDeclaration) =>
         [classDeclaration.name, buildClassTypingContext(classDeclaration)] as const
     )
   );
+}
 
 export const DEFAULT_BUILTIN_TYPING_CONTEXT: ModuleTypingContext = {
   Builtins: {
@@ -82,17 +83,17 @@ export const DEFAULT_BUILTIN_TYPING_CONTEXT: ModuleTypingContext = {
  * @param sources a collection of all sources needed for type checking.
  * @returns a fully constructed global typing context.
  */
-export const buildGlobalTypingContext = (
+export function buildGlobalTypingContext(
   sources: Sources<SamlangModule>,
   builtinModuleTypes: ModuleTypingContext
-): GlobalTypingContext => {
+): GlobalTypingContext {
   const modules = hashMapOf<ModuleReference, ModuleTypingContext>();
   modules.set(ModuleReference.ROOT, builtinModuleTypes);
   sources.forEach((samlangModule, moduleReference) => {
     modules.set(moduleReference, buildModuleTypingContext(samlangModule));
   });
   return modules;
-};
+}
 
 /**
  * Imperatively patch a global typing context with incremental update.
@@ -102,12 +103,11 @@ export const buildGlobalTypingContext = (
  * @param potentiallyAffectedModuleReferences a list of modules that might be affected by a change.
  * (It can be a conservative estimate. You can send more, but not less.)
  */
-export const updateGlobalTypingContext = (
+export function updateGlobalTypingContext(
   globalTypingContext: GlobalTypingContext,
   sources: Sources<SamlangModule>,
   potentiallyAffectedModuleReferences: readonly ModuleReference[]
-): void => {
-  // Phase 1: Build defined classes
+): void {
   potentiallyAffectedModuleReferences.forEach((moduleReference) => {
     const samlangModule = sources.get(moduleReference);
     if (samlangModule == null) {
@@ -116,4 +116,4 @@ export const updateGlobalTypingContext = (
       globalTypingContext.set(moduleReference, buildModuleTypingContext(samlangModule));
     }
   });
-};
+}

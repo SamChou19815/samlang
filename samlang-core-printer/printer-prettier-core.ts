@@ -42,7 +42,7 @@ export const PRETTIER_NIL: PrettierDocument = { __type__: 'NIL' };
  * Correspond to the `DOC :<> DOC` node in the prettier paper.
  * It connects together tokens and documents.
  */
-export const PRETTIER_CONCAT = (...docs: PrettierDocument[]): PrettierDocument => {
+export function PRETTIER_CONCAT(...docs: PrettierDocument[]): PrettierDocument {
   if (docs.length === 0) return PRETTIER_NIL;
   if (docs.length === 1) return checkNotNull(docs[0]);
   let base: PrettierDocument = {
@@ -54,7 +54,7 @@ export const PRETTIER_CONCAT = (...docs: PrettierDocument[]): PrettierDocument =
     base = PRETTIER_CONCAT(checkNotNull(docs[i]), base);
   }
   return base;
-};
+}
 
 /**
  * Correspond to the `NEST Int DOC` node in the prettier paper.
@@ -108,18 +108,18 @@ const PRETTIER_UNION = (doc1: PrettierDocument, doc2: PrettierDocument): Prettie
  * This is useful when we want the algorithm to choose between two forms to optimally fitting
  * elements into lines with width constraits.
  */
-export const PRETTIER_GROUP = (document: PrettierDocument): PrettierDocument => {
+export function PRETTIER_GROUP(document: PrettierDocument): PrettierDocument {
   const flattened = flattenPrettierDocument(document);
   return flattened != null ? PRETTIER_UNION(flattened, document) : document;
-};
+}
 
-const bracketFlexible = (
+function bracketFlexible(
   left: string,
   separator: PrettierDocument,
   doc: PrettierDocument,
   right: string
-): PrettierDocument =>
-  PRETTIER_GROUP(
+): PrettierDocument {
+  return PRETTIER_GROUP(
     PRETTIER_CONCAT(
       PRETTIER_TEXT(left),
       PRETTIER_NEST(2, PRETTIER_CONCAT(separator, doc)),
@@ -127,6 +127,7 @@ const bracketFlexible = (
       PRETTIER_TEXT(right)
     )
   );
+}
 
 /**
  * Correspond to the bracket function in the prettier paper,
@@ -145,7 +146,7 @@ export const PRETTIER_SPACED_BRACKET = (
   right: string
 ): PrettierDocument => bracketFlexible(left, PRETTIER_LINE, doc, right);
 
-export const PRETTIER_LINE_COMMENT = (text: string): PrettierDocument => {
+export function PRETTIER_LINE_COMMENT(text: string): PrettierDocument {
   const words = text.split(' ');
   const singleLineForm = PRETTIER_TEXT(`// ${text}`);
   const multipleLineForm = PRETTIER_CONCAT(
@@ -158,9 +159,9 @@ export const PRETTIER_LINE_COMMENT = (text: string): PrettierDocument => {
     )
   );
   return PRETTIER_UNION(singleLineForm, multipleLineForm);
-};
+}
 
-export const PRETTIER_MULTILINE_COMMENT = (starter: string, text: string): PrettierDocument => {
+export function PRETTIER_MULTILINE_COMMENT(starter: string, text: string): PrettierDocument {
   const words = text.split(' ');
   const singleLineForm = PRETTIER_TEXT(`${starter} ${text} */`);
   const multipleLineForm = PRETTIER_CONCAT(
@@ -177,13 +178,13 @@ export const PRETTIER_MULTILINE_COMMENT = (starter: string, text: string): Prett
     PRETTIER_TEXT(' */')
   );
   return PRETTIER_UNION(singleLineForm, multipleLineForm);
-};
+}
 
 /**
  * Replace all LINE with TEXT(' ').
  * Correspond to the `flatten` function in the prettier paper.
  */
-const flattenPrettierDocument = (document: PrettierDocument): PrettierDocument | null => {
+function flattenPrettierDocument(document: PrettierDocument): PrettierDocument | null {
   switch (document.__type__) {
     case 'NIL':
     case 'TEXT':
@@ -207,7 +208,7 @@ const flattenPrettierDocument = (document: PrettierDocument): PrettierDocument |
     case 'UNION':
       return flattenPrettierDocument(document.doc1);
   }
-};
+}
 
 /**
  * The representation of a document that is most useful for pretty-printing.
@@ -222,10 +223,10 @@ type ImmutablePrettierDocumentList = ImmutableList<readonly [number, PrettierDoc
 type ImmutableIntermediateDocumentList =
   ImmutableList<PrettierIntermediateDocumentTokenForPrinting>;
 
-const intermediateDocumentFitsInAvailableWidth = (
+function intermediateDocumentFitsInAvailableWidth(
   availableWidth: number,
   documents: ImmutableIntermediateDocumentList
-): boolean => {
+): boolean {
   let remainingWidth = availableWidth;
   let docList = documents;
   while (remainingWidth >= 0) {
@@ -236,7 +237,7 @@ const intermediateDocumentFitsInAvailableWidth = (
     docList = rest;
   }
   return false;
-};
+}
 
 function getMemoized2ArgFunction<A, B, R>(f: (a: A, b: B) => R): (a: A, b: B) => R {
   const memoizedResultMap = new Map<A, Map<B, R>>();
@@ -341,10 +342,10 @@ function generateBestDoc(availableWidth: number) {
   return generateMemoized;
 }
 
-export const prettyPrintAccordingToPrettierAlgorithm = (
+export function prettyPrintAccordingToPrettierAlgorithm(
   availableWidth: number,
   document: PrettierDocument
-): string => {
+): string {
   let documents = generateBestDoc(availableWidth)(0, [[0, document], null]);
   const collector: string[] = [];
 
@@ -366,4 +367,4 @@ export const prettyPrintAccordingToPrettierAlgorithm = (
     .map((line) => line.trimEnd())
     .join('\n');
   return `${postProcessed}\n`;
-};
+}

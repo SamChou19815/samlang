@@ -1,8 +1,8 @@
 import type { SamlangProjectConfiguration } from './configuration-type';
 
-const parseSamlangProjectConfiguration = (
+export default function parseSamlangProjectConfiguration(
   configurationString: string
-): SamlangProjectConfiguration | null => {
+): SamlangProjectConfiguration | null {
   try {
     const json: unknown = JSON.parse(configurationString);
     if (typeof json !== 'object' || json === null) return null;
@@ -12,6 +12,4 @@ const parseSamlangProjectConfiguration = (
   } catch {
     return null;
   }
-};
-
-export default parseSamlangProjectConfiguration;
+}
