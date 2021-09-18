@@ -445,7 +445,7 @@ describe('hir-tail-recursion-optimization', () => {
       v = 1;
       break;
     }
-    let nn: int = (n: int) - 1;
+    let nn: int = (n: int) + -1;
     let r: int = 0 + 0;
     n = (nn: int);
   }

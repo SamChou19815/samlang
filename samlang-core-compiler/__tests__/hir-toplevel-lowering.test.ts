@@ -264,7 +264,7 @@ function ___DUMMY___Class1_factorial(n: int, acc: int): int {
   if (_t0: bool) {
     _t4 = 1;
   } else {
-    let _t2: int = (n: int) - 1;
+    let _t2: int = (n: int) + -1;
     let _t3: int = (n: int) * (acc: int);
     let _t1: int = ___DUMMY___Class1_factorial((_t2: int), (_t3: int));
     _t4 = (_t1: int);

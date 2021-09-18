@@ -280,19 +280,28 @@ function getBinaryOperatorResultType(operator: IROperator): HighIRType {
   }
 }
 
-export const HIR_BINARY = ({
+export function HIR_BINARY({
   name,
   operator,
   e1,
   e2,
-}: Omit<ConstructorArgumentObject<HighIRBinaryStatement>, 'type'>): HighIRBinaryStatement => ({
-  __type__: 'HighIRBinaryStatement',
-  name,
-  type: getBinaryOperatorResultType(operator),
-  operator,
-  e1,
-  e2,
-});
+}: Omit<ConstructorArgumentObject<HighIRBinaryStatement>, 'type'>): HighIRBinaryStatement {
+  const type = getBinaryOperatorResultType(operator);
+  if (operator === '-' && e2.__type__ === 'HighIRIntLiteralExpression') {
+    const negOfE2Constant = -e2.value;
+    if (negOfE2Constant !== 2147483648) {
+      return {
+        __type__: 'HighIRBinaryStatement',
+        name,
+        type,
+        operator: '+',
+        e1,
+        e2: HIR_INT(negOfE2Constant),
+      };
+    }
+  }
+  return { __type__: 'HighIRBinaryStatement', name, type, operator, e1, e2 };
+}
 
 export const HIR_INDEX_ACCESS = ({
   name,

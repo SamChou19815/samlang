@@ -2,7 +2,7 @@ import type { IROperator } from './common-operators';
 import { HighIRExpression, HIR_BINARY } from './hir-nodes';
 
 /**
- * Compare two Mid IR expression.
+ * Compare two High IR expression.
  * The order itself has no semantic meaning.
  * We just need a way to compare to define a canonical order.
  */
