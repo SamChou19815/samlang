@@ -25,7 +25,7 @@ const assertOptimizationSucceed = (highIRFunction: HighIRFunction, expected: str
     )
   ).toBe(expected);
 
-describe('mir-tail-recursion-optimization', () => {
+describe('hir-tail-recursion-optimization', () => {
   it('optimizeHighIRFunctionByTailRecursionRewrite fails case 1/n', () => {
     assertOptimizationFails({
       name: 'ff',

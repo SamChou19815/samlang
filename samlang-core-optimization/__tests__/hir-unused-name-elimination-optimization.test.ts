@@ -19,7 +19,7 @@ import {
 
 import optimizeHighIRSourcesByEliminatingUnusedOnes from '../hir-unused-name-elimination-optimization';
 
-describe('mir-unused-name-elimination-optimization', () => {
+describe('hir-unused-name-elimination-optimization', () => {
   it('optimizeHighIRSourcesByEliminatingUnusedOnes test', () => {
     const optimized = optimizeHighIRSourcesByEliminatingUnusedOnes({
       globalVariables: [
