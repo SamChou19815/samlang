@@ -13,6 +13,9 @@ import {
   HIR_FUNCTION_CALL,
   HIR_STRUCT_INITIALIZATION,
   HIR_IF_ELSE,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
+  HIR_WHILE,
   HIR_INDEX_ACCESS,
   HIR_CLOSURE_INITIALIZATION,
 } from 'samlang-core-ast/hir-nodes';
@@ -108,6 +111,29 @@ describe('mir-sources-lowering', () => {
                   index: 1,
                   pointerExpression: HIR_VARIABLE('b', variantType),
                 }),
+                HIR_WHILE({
+                  loopVariables: [],
+                  statements: [
+                    HIR_SINGLE_IF({
+                      booleanExpression: HIR_ZERO,
+                      invertCondition: false,
+                      statements: [],
+                    }),
+                  ],
+                }),
+                HIR_WHILE({
+                  loopVariables: [
+                    { name: '_', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
+                  ],
+                  statements: [
+                    HIR_SINGLE_IF({
+                      booleanExpression: HIR_ZERO,
+                      invertCondition: true,
+                      statements: [HIR_BREAK(HIR_ZERO)],
+                    }),
+                  ],
+                  breakCollector: { name: '_', type: HIR_INT_TYPE },
+                }),
               ],
               s2: [
                 HIR_BINARY({ name: 'v1', operator: '+', e1: HIR_ZERO, e2: HIR_ZERO }),
@@ -178,6 +204,19 @@ function _compiled_program_main(): int {
     let _mid_t2: any = (b: Variant)[2];
     let v3: int = (_mid_t2: any);
     let v4: string = (b: Variant)[2];
+    while (true) {
+      if 0 {
+      }
+    }
+    let _: int = 0;
+    let _: int;
+    while (true) {
+      if !0 {
+        _ = 0;
+        break;
+      }
+      _ = 0;
+    }
     finalV = (v1: int);
   } else {
     let v1: int = 0 + 0;

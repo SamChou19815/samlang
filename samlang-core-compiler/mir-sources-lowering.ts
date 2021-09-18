@@ -26,6 +26,9 @@ import {
   MIR_INDEX_ACCESS,
   MIR_FUNCTION_CALL,
   MIR_IF_ELSE,
+  MIR_SINGLE_IF,
+  MIR_BREAK,
+  MIR_WHILE,
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
   isTheSameMidIRType,
@@ -206,6 +209,37 @@ class HighIRToMidIRLoweringManager {
                 branch2Value: lowerHighIRExpression(branch2Value),
               })
             ),
+          }),
+        ];
+      case 'HighIRSingleIfStatement':
+        return [
+          MIR_SINGLE_IF({
+            booleanExpression: lowerHighIRExpression(statement.booleanExpression),
+            invertCondition: statement.invertCondition,
+            statements: statement.statements.flatMap(this.lowerHighIRStatement),
+          }),
+        ];
+      case 'HighIRBreakStatement':
+        return [MIR_BREAK(lowerHighIRExpression(statement.breakValue))];
+      case 'HighIRWhileStatement':
+        return [
+          MIR_WHILE({
+            loopVariables: statement.loopVariables.map(
+              ({ name, type, initialValue, loopValue }) => ({
+                name,
+                type: lowerHighIRType(type),
+                initialValue: lowerHighIRExpression(initialValue),
+                loopValue: lowerHighIRExpression(loopValue),
+              })
+            ),
+            statements: statement.statements.flatMap(this.lowerHighIRStatement),
+            breakCollector:
+              statement.breakCollector != null
+                ? {
+                    name: statement.breakCollector.name,
+                    type: lowerHighIRType(statement.breakCollector.type),
+                  }
+                : undefined,
           }),
         ];
       case 'HighIRStructInitializationStatement': {

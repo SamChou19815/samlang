@@ -11,6 +11,9 @@ import {
   HIR_FUNCTION_TYPE,
   HIR_FUNCTION_CALL,
   HIR_IF_ELSE,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
+  HIR_WHILE,
   HIR_INDEX_ACCESS,
   HIR_STRUCT_INITIALIZATION,
   HIR_CLOSURE_INITIALIZATION,
@@ -75,6 +78,29 @@ describe('hir-nodes', () => {
             }),
             HIR_BINARY({ name: 'dd', operator: '<', e1: HIR_INT(0), e2: HIR_INT(0) }),
             HIR_BINARY({ name: 'dd', operator: '^', e1: HIR_INT(0), e2: HIR_INT(0) }),
+            HIR_WHILE({
+              loopVariables: [],
+              statements: [
+                HIR_SINGLE_IF({
+                  booleanExpression: HIR_ZERO,
+                  invertCondition: false,
+                  statements: [],
+                }),
+              ],
+            }),
+            HIR_WHILE({
+              loopVariables: [
+                { name: '_', type: HIR_INT_TYPE, initialValue: HIR_ZERO, loopValue: HIR_ZERO },
+              ],
+              statements: [
+                HIR_SINGLE_IF({
+                  booleanExpression: HIR_ZERO,
+                  invertCondition: true,
+                  statements: [HIR_BREAK(HIR_ZERO)],
+                }),
+              ],
+              breakCollector: { name: '_', type: HIR_INT_TYPE },
+            }),
           ],
           s2: [
             HIR_BINARY({ name: 'dd', operator: '+', e1: HIR_INT(0), e2: HIR_INT(0) }),
@@ -124,6 +150,19 @@ if 0 {
   };
   let dd: bool = 0 < 0;
   let dd: bool = 0 ^ 0;
+  while (true) {
+    if 0 {
+    }
+  }
+  let _: int = 0;
+  let _: int;
+  while (true) {
+    if !0 {
+      _ = 0;
+      break;
+    }
+    _ = 0;
+  }
   bar = (b1: int);
 } else {
   let dd: int = 0 + 0;
