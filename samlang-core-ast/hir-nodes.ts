@@ -167,6 +167,32 @@ export interface HighIRIfElseStatement extends BaseHighIRStatement {
   }[];
 }
 
+export interface HighIRSingleIfStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRSingleIfStatement';
+  readonly booleanExpression: HighIRExpression;
+  readonly invertCondition: boolean;
+  readonly statements: readonly HighIRStatement[];
+}
+
+export interface HighIRBreakStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRBreakStatement';
+  readonly breakValue: HighIRExpression;
+}
+
+export interface GeneralHighIRLoopVariables {
+  readonly name: string;
+  readonly type: HighIRType;
+  readonly initialValue: HighIRExpression;
+  readonly loopValue: HighIRExpression;
+}
+
+export interface HighIRWhileStatement extends BaseHighIRStatement {
+  readonly __type__: 'HighIRWhileStatement';
+  readonly loopVariables: readonly GeneralHighIRLoopVariables[];
+  readonly statements: readonly HighIRStatement[];
+  readonly breakCollector?: { readonly name: string; readonly type: HighIRType };
+}
+
 export interface HighIRStructInitializationStatement extends BaseHighIRStatement {
   readonly __type__: 'HighIRStructInitializationStatement';
   readonly structVariableName: string;
@@ -188,6 +214,9 @@ export type HighIRStatement =
   | HighIRIndexAccessStatement
   | HighIRFunctionCallStatement
   | HighIRIfElseStatement
+  | HighIRSingleIfStatement
+  | HighIRBreakStatement
+  | HighIRWhileStatement
   | HighIRStructInitializationStatement
   | HighIRClosureInitializationStatement;
 
@@ -304,6 +333,33 @@ export const HIR_IF_ELSE = ({
   finalAssignments,
 });
 
+export const HIR_SINGLE_IF = ({
+  booleanExpression,
+  invertCondition,
+  statements,
+}: ConstructorArgumentObject<HighIRSingleIfStatement>): HighIRSingleIfStatement => ({
+  __type__: 'HighIRSingleIfStatement',
+  booleanExpression,
+  invertCondition,
+  statements,
+});
+
+export const HIR_BREAK = (breakValue: HighIRExpression): HighIRBreakStatement => ({
+  __type__: 'HighIRBreakStatement',
+  breakValue,
+});
+
+export const HIR_WHILE = ({
+  loopVariables,
+  statements,
+  breakCollector,
+}: ConstructorArgumentObject<HighIRWhileStatement>): HighIRWhileStatement => ({
+  __type__: 'HighIRWhileStatement',
+  loopVariables,
+  statements,
+  breakCollector,
+});
+
 export const HIR_STRUCT_INITIALIZATION = ({
   structVariableName,
   type,
@@ -344,6 +400,7 @@ export function debugPrintHighIRExpression(expression: HighIRExpression): string
 export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel = 0): string {
   const collector: string[] = [];
   let level = startLevel;
+  let breakCollector: string | undefined = undefined;
 
   function printer(s: HighIRStatement) {
     switch (s.__type__) {
@@ -402,6 +459,51 @@ export function debugPrintHighIRStatement(statement: HighIRStatement, startLevel
         level -= 1;
         collector.push('  '.repeat(level), `}\n`);
         return;
+      case 'HighIRSingleIfStatement':
+        collector.push(
+          '  '.repeat(level),
+          `if ${s.invertCondition ? '!' : ''}${debugPrintHighIRExpression(s.booleanExpression)} {\n`
+        );
+        level += 1;
+        s.statements.forEach(printer);
+        level -= 1;
+        collector.push('  '.repeat(level), `}\n`);
+        break;
+      case 'HighIRBreakStatement':
+        collector.push(
+          '  '.repeat(level),
+          `${breakCollector} = ${debugPrintHighIRExpression(s.breakValue)};\n`
+        );
+        collector.push('  '.repeat(level), 'break;\n');
+        break;
+      case 'HighIRWhileStatement': {
+        s.loopVariables.forEach((v) => {
+          const type = prettyPrintHighIRType(v.type);
+          collector.push(
+            '  '.repeat(level),
+            `let ${v.name}: ${type} = ${debugPrintHighIRExpression(v.initialValue)};\n`
+          );
+        });
+        const previousBreakCollector = breakCollector;
+        breakCollector = s.breakCollector?.name;
+        if (s.breakCollector != null) {
+          const { name, type } = s.breakCollector;
+          collector.push('  '.repeat(level), `let ${name}: ${prettyPrintHighIRType(type)};\n`);
+        }
+        collector.push('  '.repeat(level), `while (true) {\n`);
+        level += 1;
+        s.statements.forEach(printer);
+        s.loopVariables.forEach((v) => {
+          collector.push(
+            '  '.repeat(level),
+            `${v.name} = ${debugPrintHighIRExpression(v.loopValue)};\n`
+          );
+        });
+        level -= 1;
+        collector.push('  '.repeat(level), '}\n');
+        breakCollector = previousBreakCollector;
+        break;
+      }
       case 'HighIRStructInitializationStatement': {
         const expressionString = s.expressionList.map(debugPrintHighIRExpression).join(', ');
         collector.push(

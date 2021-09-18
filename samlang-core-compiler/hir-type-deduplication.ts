@@ -139,6 +139,10 @@ class HighIRTypeDeduplicator {
             })
           ),
         });
+      case 'HighIRSingleIfStatement':
+      case 'HighIRBreakStatement':
+      case 'HighIRWhileStatement':
+        throw new Error(`${statement.__type__} should not appear before tailrec optimization.`);
       case 'HighIRStructInitializationStatement': {
         const type = this.rewriteType(statement.type);
         assert(type.__type__ === 'IdentifierType');

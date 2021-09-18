@@ -12,6 +12,9 @@ import {
   HIR_FUNCTION_CALL,
   HIR_STRUCT_INITIALIZATION,
   HIR_IF_ELSE,
+  HIR_SINGLE_IF,
+  HIR_BREAK,
+  HIR_WHILE,
   HIR_INDEX_ACCESS,
   HIR_CLOSURE_INITIALIZATION,
 } from 'samlang-core-ast/hir-nodes';
@@ -19,6 +22,71 @@ import {
 import deduplicateHighIRTypes from '../hir-type-deduplication';
 
 describe('hir-type-deduplication', () => {
+  it('deduplicateHighIRTypes asserts on unsupported statements', () => {
+    expect(() =>
+      deduplicateHighIRTypes({
+        globalVariables: [],
+        closureTypes: [],
+        typeDefinitions: [],
+        mainFunctionNames: ['main'],
+        functions: [
+          {
+            name: 'main',
+            parameters: [],
+            typeParameters: [],
+            type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+            body: [
+              HIR_SINGLE_IF({
+                booleanExpression: HIR_ZERO,
+                invertCondition: false,
+                statements: [],
+              }),
+            ],
+            returnValue: HIR_ZERO,
+          },
+        ],
+      })
+    ).toThrow();
+
+    expect(() =>
+      deduplicateHighIRTypes({
+        globalVariables: [],
+        closureTypes: [],
+        typeDefinitions: [],
+        mainFunctionNames: ['main'],
+        functions: [
+          {
+            name: 'main',
+            parameters: [],
+            typeParameters: [],
+            type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+            body: [HIR_BREAK(HIR_ZERO)],
+            returnValue: HIR_ZERO,
+          },
+        ],
+      })
+    ).toThrow();
+
+    expect(() =>
+      deduplicateHighIRTypes({
+        globalVariables: [],
+        closureTypes: [],
+        typeDefinitions: [],
+        mainFunctionNames: ['main'],
+        functions: [
+          {
+            name: 'main',
+            parameters: [],
+            typeParameters: [],
+            type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
+            body: [HIR_WHILE({ loopVariables: [], statements: [] })],
+            returnValue: HIR_ZERO,
+          },
+        ],
+      })
+    ).toThrow();
+  });
+
   it('deduplicateHighIRTypes works', () => {
     expect(
       debugPrintHighIRSources(
