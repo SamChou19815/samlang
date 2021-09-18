@@ -104,6 +104,7 @@ describe('hir-nodes', () => {
           ],
           s2: [
             HIR_BINARY({ name: 'dd', operator: '+', e1: HIR_INT(0), e2: HIR_INT(0) }),
+            HIR_BINARY({ name: 'dd', operator: '-', e1: HIR_INT(0), e2: HIR_INT(-2147483648) }),
             HIR_BINARY({ name: 'dd', operator: '-', e1: HIR_INT(0), e2: HIR_INT(0) }),
             HIR_BINARY({ name: 'dd', operator: '*', e1: HIR_INT(0), e2: HIR_INT(0) }),
             HIR_BINARY({ name: 'dd', operator: '/', e1: HIR_INT(0), e2: HIR_INT(0) }),
@@ -166,7 +167,8 @@ if 0 {
   bar = (b1: int);
 } else {
   let dd: int = 0 + 0;
-  let dd: int = 0 - 0;
+  let dd: int = 0 - -2147483648;
+  let dd: int = 0 + 0;
   let dd: int = 0 * 0;
   let dd: int = 0 / 0;
   let dd: int = 0 % 0;

@@ -246,12 +246,12 @@ export const MIR_VARIABLE = (name: string, type: MidIRType): MidIRVariableExpres
   name,
 });
 
-export const MIR_BINARY = ({
+export function MIR_BINARY({
   name,
   operator,
   e1,
   e2,
-}: Omit<ConstructorArgumentObject<MidIRBinaryStatement>, 'type'>): MidIRBinaryStatement => {
+}: Omit<ConstructorArgumentObject<MidIRBinaryStatement>, 'type'>): MidIRBinaryStatement {
   let type: MidIRType;
   switch (operator) {
     case '*':
@@ -285,7 +285,7 @@ export const MIR_BINARY = ({
     }
   }
   return { __type__: 'MidIRBinaryStatement', name, type, operator, e1, e2 };
-};
+}
 
 export const MIR_INDEX_ACCESS = ({
   name,

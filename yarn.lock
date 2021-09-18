@@ -448,7 +448,7 @@ __metadata:
   resolution: "@dev-sam/samlang-cli@workspace:samlang-cli"
   dependencies:
     "@types/jest": ^27.0.1
-    "@types/node": ^16.9.1
+    "@types/node": ^16.9.2
     "@yarnpkg/esbuild-plugin-pnp": ^1.0.1-rc.6
     esbuild: ^0.12.28
     samlang-core-ast: "workspace:0.0.1"
@@ -457,7 +457,7 @@ __metadata:
     samlang-core-optimization: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
-    typescript: ^4.3.5
+    typescript: ^4.4.3
     vscode-languageserver: ^7.0.0
   bin:
     samlang: ./bin/index.js
@@ -477,7 +477,7 @@ __metadata:
     samlang-core-interpreter: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -915,10 +915,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^16.9.1":
-  version: 16.9.1
-  resolution: "@types/node@npm:16.9.1"
-  checksum: 41afcf183a22d59323a0199dd7e0f46591247f45fc08a4434edb26d56dc279ae4fdb80f37989ddd7a0f45e3857c4933e6e82057ede09c5a829f77e373e680375
+"@types/node@npm:^16.9.2":
+  version: 16.9.2
+  resolution: "@types/node@npm:16.9.2"
+  checksum: 204aa883bc93a267f43804af8872e538935369ab905d5ca702d2c17a213339f8df974bb95d21e2e714e8f83f669b185d8526f7c4b5d16adbdb5d96d4f2e75fa9
   languageName: node
   linkType: hard
 
@@ -4811,7 +4811,7 @@ fsevents@^2.3.2:
     "@dev-sam/eslint-config-common": 0.21.0
     "@dev-sam/jest-esbuild-transformer": 0.4.0
     "@types/jest": ^27.0.1
-    "@types/node": ^16.9.1
+    "@types/node": ^16.9.2
     "@typescript-eslint/eslint-plugin": ^4.31.1
     "@typescript-eslint/parser": ^4.31.1
     esbuild: ^0.12.28
@@ -4822,7 +4822,7 @@ fsevents@^2.3.2:
     jest: ^27.2.0
     lint-staged: ^11.1.2
     prettier: ^2.4.1
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -4862,7 +4862,7 @@ fsevents@^2.3.2:
   dependencies:
     "@types/jest": ^27.0.1
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -4875,7 +4875,7 @@ fsevents@^2.3.2:
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -4888,7 +4888,7 @@ fsevents@^2.3.2:
     samlang-core-checker: "workspace:0.0.1"
     samlang-core-optimization: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -4898,7 +4898,7 @@ fsevents@^2.3.2:
   dependencies:
     "@types/jest": ^27.0.1
     samlang-core-ast: "workspace:0.0.1"
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -4916,7 +4916,7 @@ fsevents@^2.3.2:
     samlang-core-printer: "workspace:0.0.1"
     samlang-core-services: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -4930,7 +4930,7 @@ fsevents@^2.3.2:
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -4941,7 +4941,7 @@ fsevents@^2.3.2:
     "@types/jest": ^27.0.1
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -4953,7 +4953,7 @@ fsevents@^2.3.2:
     samlang-core-ast: "workspace:0.0.1"
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -4966,7 +4966,7 @@ fsevents@^2.3.2:
     samlang-core-errors: "workspace:0.0.1"
     samlang-core-parser: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -4983,7 +4983,7 @@ fsevents@^2.3.2:
     samlang-core-parser: "workspace:0.0.1"
     samlang-core-printer: "workspace:0.0.1"
     samlang-core-utils: "workspace:0.0.1"
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -4992,7 +4992,7 @@ fsevents@^2.3.2:
   resolution: "samlang-core-utils@workspace:samlang-core-utils"
   dependencies:
     "@types/jest": ^27.0.1
-    typescript: ^4.3.5
+    typescript: ^4.4.3
   languageName: unknown
   linkType: soft
 
@@ -5595,23 +5595,23 @@ fsevents@^2.3.2:
   languageName: node
   linkType: hard
 
-typescript@^4.3.5:
-  version: 4.3.5
-  resolution: "typescript@npm:4.3.5"
+typescript@^4.4.3:
+  version: 4.4.3
+  resolution: "typescript@npm:4.4.3"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: bab033b5e2b0790dd35b77fd005df976ef80b8d84fd2c6e63cc31808151875beae9216e5a315fe7068e8499905c3c354248fe83272cdfc13b7705635f0c66c97
+  checksum: 05823f21796d450531a7e4ab299715d38fd9ded0e4ce7400876053f4b5166ca3dde7a68cecfe72d9086039f03c0b6edba36516fb10ed83c5837d9600532ea4c2
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^4.3.5#~builtin<compat/typescript>":
-  version: 4.3.5
-  resolution: "typescript@patch:typescript@npm%3A4.3.5#~builtin<compat/typescript>::version=4.3.5&hash=d8b4e7"
+"typescript@patch:typescript@^4.4.3#~builtin<compat/typescript>":
+  version: 4.4.3
+  resolution: "typescript@patch:typescript@npm%3A4.4.3#~builtin<compat/typescript>::version=4.4.3&hash=32657b"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: bc2c4fdf0f1557fdafe4ef74848c72ebd9c8c60829568248f869121aea2bb20e16649a252431d0acb185ec118143be22bed73d08f64379557810d82756afedde
+  checksum: 28ab98313afab46788ff41014fdb5932430ada6e03cf9e92ac47f406526a2cac1ae2894834e7da61e46b7429318e9c47f45ba8de323332f0cb9af99b72ebae74
   languageName: node
   linkType: hard
 
