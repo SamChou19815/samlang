@@ -277,7 +277,8 @@ sources.mains = [___DUMMY___Main_main]`
 
     expect(`\n${debugPrintHighIRSources(compileSamlangSourcesToHighIRSources(sources))}`).toBe(`
 function ___DUMMY___Class1_infiniteLoop(): int {
-  ___DUMMY___Class1_infiniteLoop();
+  while (true) {
+  }
   return 0;
 }
 

@@ -293,6 +293,58 @@ describe('mir-tail-recursion-optimization', () => {
     );
   });
 
+  it('optimizeMidIRFunctionByTailRecursionRewrite simple if-else loop case 3/n', () => {
+    assertOptimizationSucceed(
+      {
+        name: 'loopy',
+        parameters: ['n'],
+        type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE),
+        body: [
+          MIR_BINARY({
+            name: 'a',
+            operator: '+',
+            e1: MIR_VARIABLE('n', MIR_INT_TYPE),
+            e2: MIR_ZERO,
+          }),
+          MIR_IF_ELSE({
+            booleanExpression: MIR_ZERO,
+            s1: [
+              MIR_FUNCTION_CALL({
+                functionExpression: MIR_NAME('loopy', MIR_INT_TYPE),
+                functionArguments: [MIR_VARIABLE('a', MIR_INT_TYPE)],
+                returnType: MIR_INT_TYPE,
+                returnCollector: 'r1',
+              }),
+            ],
+            s2: [],
+            finalAssignments: [
+              {
+                name: 'r',
+                type: MIR_INT_TYPE,
+                branch1Value: MIR_VARIABLE('r1', MIR_INT_TYPE),
+                branch2Value: MIR_ZERO,
+              },
+            ],
+          }),
+        ],
+        returnValue: MIR_ZERO,
+      },
+      `function loopy(_tailrec_param_n: int): int {
+  let n: int = (_tailrec_param_n: int);
+  while (true) {
+    let a: int = (n: int) + 0;
+    if !0 {
+      undefined = 0;
+      break;
+    }
+    n = (a: int);
+  }
+  return 0;
+}
+`
+    );
+  });
+
   it('optimizeMidIRFunctionByTailRecursionRewrite nested complex case', () => {
     assertOptimizationSucceed(
       {

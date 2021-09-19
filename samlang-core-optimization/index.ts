@@ -1,5 +1,6 @@
 import type { MidIRFunction, MidIRSources } from 'samlang-core-ast/mir-nodes';
 
+import optimizeHighIRFunctionByTailRecursionRewrite from './hir-tail-recursion-optimization';
 import optimizeMidIRFunctionByCommonSubExpressionElimination from './mir-common-subexpression-elimination-optimization';
 import optimizeMidIRFunctionByConditionalConstantPropagation from './mir-conditional-constant-propagation-optimization';
 import optimizeMidIRFunctionByDeadCodeElimination from './mir-dead-code-elimination-optimization';
@@ -76,7 +77,7 @@ export const optimizeMidIRSourcesByTailRecursionRewrite = (
   functions: sources.functions.map((it) => optimizeMidIRFunctionByTailRecursionRewrite(it) ?? it),
 });
 
-export { optimizeMidIRSourcesByEliminatingUnusedOnes };
+export { optimizeHighIRFunctionByTailRecursionRewrite };
 
 export function optimizeMidIRSourcesAccordingToConfiguration(
   sources: MidIRSources,
