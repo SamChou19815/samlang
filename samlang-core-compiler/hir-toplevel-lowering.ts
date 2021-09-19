@@ -13,6 +13,7 @@ import {
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
 } from 'samlang-core-ast/hir-nodes';
 import type { ClassMemberDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
+import { optimizeHighIRFunctionByTailRecursionRewrite } from 'samlang-core-optimization';
 
 import lowerSamlangExpression from './hir-expression-lowering';
 import performGenericsSpecializationOnHighIRSources from './hir-generics-specialization';
@@ -165,12 +166,19 @@ export function compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(
   };
 }
 
+const optimizeHighIRSourcesByTailRecursionRewrite = (sources: HighIRSources): HighIRSources => ({
+  ...sources,
+  functions: sources.functions.map((it) => optimizeHighIRFunctionByTailRecursionRewrite(it) ?? it),
+});
+
 export default function compileSamlangSourcesToHighIRSources(
   sources: Sources<SamlangModule>
 ): HighIRSources {
-  return deduplicateHighIRTypes(
-    performGenericsSpecializationOnHighIRSources(
-      compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources)
+  return optimizeHighIRSourcesByTailRecursionRewrite(
+    deduplicateHighIRTypes(
+      performGenericsSpecializationOnHighIRSources(
+        compileSamlangSourcesToHighIRSourcesWithGenericsPreserved(sources)
+      )
     )
   );
 }
