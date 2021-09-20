@@ -392,11 +392,12 @@ export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources)
       return [it.identifier, it];
     })
   );
+  const loweringManager = new HighIRToMidIRLoweringManager(
+    closureTypeDefinitionMapForLowering,
+    typeDefinitionMapForLowering
+  );
   const functions = sources.functions.map((highIRFunction) =>
-    new HighIRToMidIRLoweringManager(
-      closureTypeDefinitionMapForLowering,
-      typeDefinitionMapForLowering
-    ).lowerHighIRFunction(highIRFunction)
+    loweringManager.lowerHighIRFunction(highIRFunction)
   );
   return {
     globalVariables: sources.globalVariables,
