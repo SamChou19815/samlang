@@ -1,9 +1,13 @@
 import { ENCODED_FUNCTION_NAME_MALLOC } from 'samlang-core-ast/common-names';
 import {
+  LLVMType,
   LLVMAnnotatedValue,
   LLVMInstruction,
   LLVMFunction,
+  LLVM_BOOL_TYPE,
+  LLVM_INT_TYPE,
   LLVM_STRING_TYPE,
+  LLVM_FUNCTION_TYPE,
   LLVM_INT,
   LLVM_NAME,
   LLVM_VARIABLE,
@@ -18,11 +22,11 @@ import {
   LLVM_JUMP,
   LLVM_CJUMP,
   LLVM_RETURN,
-  LLVM_INT_TYPE,
   LLVMValue,
   LLVMSources,
 } from 'samlang-core-ast/llvm-nodes';
 import type {
+  MidIRType,
   MidIRExpression,
   MidIRStatement,
   MidIRIndexAccessStatement,
@@ -36,7 +40,28 @@ import type {
 import { checkNotNull, zip, zip3 } from 'samlang-core-utils';
 
 import { withoutUnreachableLLVMCode } from './llvm-control-flow-graph';
-import lowerMidIRTypeToLLVMType from './llvm-types-lowering';
+
+function lowerMidIRTypeToLLVMType(type: MidIRType): LLVMType {
+  switch (type.__type__) {
+    case 'PrimitiveType':
+      switch (type.type) {
+        case 'bool':
+          return LLVM_BOOL_TYPE;
+        case 'int':
+          return LLVM_INT_TYPE;
+        case 'string':
+        case 'any':
+          return LLVM_STRING_TYPE();
+      }
+    case 'IdentifierType':
+      return type;
+    case 'FunctionType':
+      return LLVM_FUNCTION_TYPE(
+        type.argumentTypes.map(lowerMidIRTypeToLLVMType),
+        lowerMidIRTypeToLLVMType(type.returnType)
+      );
+  }
+}
 
 class LLVMResourceAllocator {
   private nextTempId = 0;
