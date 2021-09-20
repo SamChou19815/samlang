@@ -27,7 +27,7 @@ import type { MidIRFunction } from 'samlang-core-ast/mir-nodes';
 
 import lowerMidIRSourcesToLLVMSources, {
   lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING,
-} from '../llvm-lowering-translator';
+} from '../llvm-sources-lowering';
 
 function assertLoweringWorks(
   midIRFunction: MidIRFunction,
