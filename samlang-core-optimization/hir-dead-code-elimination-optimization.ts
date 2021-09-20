@@ -155,10 +155,10 @@ export function internalOptimizeHighIRStatementsByDCE(
 }
 
 export default function optimizeHighIRFunctionByDeadCodeElimination(
-  midIRFunction: HighIRFunction
+  highIRFunction: HighIRFunction
 ): HighIRFunction {
   const set = new Set<string>();
-  collectUseFromHighIRExpression(midIRFunction.returnValue, set);
-  const body = internalOptimizeHighIRStatementsByDCE(midIRFunction.body, set);
-  return { ...midIRFunction, body };
+  collectUseFromHighIRExpression(highIRFunction.returnValue, set);
+  const body = internalOptimizeHighIRStatementsByDCE(highIRFunction.body, set);
+  return { ...highIRFunction, body };
 }

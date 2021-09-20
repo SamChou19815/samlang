@@ -51,9 +51,9 @@ function estimateStatementInlineCost(statement: HighIRStatement): number {
 }
 
 export function estimateFunctionInlineCost_EXPOSED_FOR_TESTING(
-  midIRFunction: HighIRFunction
+  highIRFunction: HighIRFunction
 ): number {
-  return midIRFunction.body.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0);
+  return highIRFunction.body.reduce((acc, s) => acc + estimateStatementInlineCost(s), 0);
 }
 
 function getFunctionsToInline(functions: readonly HighIRFunction[]): {
@@ -63,14 +63,10 @@ function getFunctionsToInline(functions: readonly HighIRFunction[]): {
   const functionsThatCanBeInlined = new Set<string>();
   const functionsThatCanPerformInlining = new Set<string>();
 
-  functions.forEach((midIRFunction) => {
-    const cost = estimateFunctionInlineCost_EXPOSED_FOR_TESTING(midIRFunction);
-    if (cost <= INLINE_THRESHOLD) {
-      functionsThatCanBeInlined.add(midIRFunction.name);
-    }
-    if (cost <= PERFORM_INLINE_THRESHOLD) {
-      functionsThatCanPerformInlining.add(midIRFunction.name);
-    }
+  functions.forEach((highIRFunction) => {
+    const cost = estimateFunctionInlineCost_EXPOSED_FOR_TESTING(highIRFunction);
+    if (cost <= INLINE_THRESHOLD) functionsThatCanBeInlined.add(highIRFunction.name);
+    if (cost <= PERFORM_INLINE_THRESHOLD) functionsThatCanPerformInlining.add(highIRFunction.name);
   });
 
   return { functionsThatCanPerformInlining, functionsThatCanBeInlined };
@@ -229,7 +225,7 @@ function inlineRewriteForStatement(
 }
 
 function performInlineRewriteOnFunction(
-  midIRFunction: HighIRFunction,
+  highIRFunction: HighIRFunction,
   functionsThatCanBeInlined: ReadonlySet<string>,
   allFunctions: Record<string, HighIRFunction>,
   allocator: OptimizationResourceAllocator
@@ -240,7 +236,7 @@ function performInlineRewriteOnFunction(
         const { functionExpression, functionArguments, returnType, returnCollector } = statement;
         if (functionExpression.__type__ !== 'HighIRNameExpression') return [statement];
         const functionName = functionExpression.name;
-        if (!functionsThatCanBeInlined.has(functionName) || functionName === midIRFunction.name) {
+        if (!functionsThatCanBeInlined.has(functionName) || functionName === highIRFunction.name) {
           return [statement];
         }
 
@@ -295,16 +291,16 @@ function performInlineRewriteOnFunction(
   }
 
   return optimizeHighIRFunctionByConditionalConstantPropagation({
-    ...midIRFunction,
-    body: [...midIRFunction.body.flatMap(rewrite)],
+    ...highIRFunction,
+    body: [...highIRFunction.body.flatMap(rewrite)],
   });
 }
 
 export default function optimizeHighIRFunctionsByInlining(
-  midIRFunctions: readonly HighIRFunction[],
+  highIRFunction: readonly HighIRFunction[],
   allocator: OptimizationResourceAllocator
 ): readonly HighIRFunction[] {
-  let tempFunctions = midIRFunctions;
+  let tempFunctions = highIRFunction;
   for (let i = 0; i < 5; i += 1) {
     const { functionsThatCanBeInlined, functionsThatCanPerformInlining } =
       getFunctionsToInline(tempFunctions);
