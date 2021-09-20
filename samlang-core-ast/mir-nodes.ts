@@ -706,7 +706,10 @@ export function prettyPrintMidIRStatementAsJSStatement(
         break;
       }
       case 'MidIRIncreaseReferenceCountStatement':
-        collector.push('  '.repeat(level), `${debugPrintMidIRExpression(s.expression)}[0] += 1;\n`);
+        collector.push(
+          '  '.repeat(level),
+          `${prettyPrintMidIRExpressionAsJSExpression(s.expression)}[0] += 1;\n`
+        );
         break;
     }
   }
