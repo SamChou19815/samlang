@@ -160,7 +160,6 @@ describe('hir-loop-invariant-code-motion', () => {
               type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('I'),
               expressionList: [HIR_VARIABLE('g', HIR_INT_TYPE)],
             }),
-            // TODO
             HIR_IF_ELSE({
               booleanExpression: HIR_ZERO,
               s1: [],

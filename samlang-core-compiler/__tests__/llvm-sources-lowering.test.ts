@@ -17,6 +17,7 @@ import {
   MIR_INT,
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
+  MIR_INC_REF,
   MIR_INT_TYPE as INT,
   MIR_FUNCTION_TYPE,
   MIR_IDENTIFIER_TYPE,
@@ -616,6 +617,16 @@ l2_loop_end:
     assertStatementLoweringWorks(
       [MIR_CAST({ name: 's', type: MIR_STRING_TYPE, assignedExpression: MIR_ZERO })],
       '  %s = inttoptr i64 0 to i64*'
+    );
+  });
+
+  it('LLVM lowering works for MIR_INC_REF', () => {
+    assertStatementLoweringWorks(
+      [MIR_INC_REF(MIR_VARIABLE('obj', MIR_IDENTIFIER_TYPE('Obj')))],
+      `  %_temp_0_ref_count_slot_ptr = getelementptr %Obj, %Obj* %obj, i32 0, i32 0
+  %_temp_1_ref_count_old = load i64, i64* %_temp_0_ref_count_slot_ptr
+  %_temp_2_ref_count_new = add i64 %_temp_1_ref_count_old, 1
+  store i64 %_temp_2_ref_count_new, i64* %_temp_0_ref_count_slot_ptr`
     );
   });
 
