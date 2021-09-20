@@ -782,7 +782,7 @@ export function prettyPrintMidIRSourcesAsJSSources(sources: MidIRSources): strin
     ),
     ...sources.typeDefinitions.map(
       ({ identifier, mappings }) =>
-        `/** @typedef {readonly [${mappings
+        `/** @typedef {[${mappings
           .map(prettyPrintMidIRTypeAsTypeScriptType)
           .join(', ')}]} ${identifier}  */\n`
     ),
