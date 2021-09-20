@@ -20,7 +20,7 @@ import {
   interpretLLVMSources,
 } from 'samlang-core-interpreter/llvm-ir-interpreter';
 import interpretSamlangModule from 'samlang-core-interpreter/source-level-interpreter';
-import { optimizeMidIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
+import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
 import { checkSources } from 'samlang-core-services';
 
 import { runnableSamlangProgramTestCases } from '../test-programs';
@@ -46,8 +46,10 @@ describe('compiler-integration-tests', () => {
     });
   }
 
-  const midIROptimizedSingleSource = optimizeMidIRSourcesAccordingToConfiguration(
-    lowerHighIRSourcesToMidIRSources(compileSamlangSourcesToHighIRSources(checkedSources))
+  const midIROptimizedSingleSource = lowerHighIRSourcesToMidIRSources(
+    optimizeHighIRSourcesAccordingToConfiguration(
+      compileSamlangSourcesToHighIRSources(checkedSources)
+    )
   );
   it('MIR[all]', () => {
     let jsCode = `let printed;

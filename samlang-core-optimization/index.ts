@@ -1,14 +1,12 @@
-import type { MidIRFunction, MidIRSources } from 'samlang-core-ast/mir-nodes';
+import type { HighIRFunction, HighIRSources } from 'samlang-core-ast/hir-nodes';
 
-import optimizeHighIRFunctionByTailRecursionRewrite from './hir-tail-recursion-optimization';
-import optimizeMidIRFunctionByCommonSubExpressionElimination from './mir-common-subexpression-elimination-optimization';
-import optimizeMidIRFunctionByConditionalConstantPropagation from './mir-conditional-constant-propagation-optimization';
-import optimizeMidIRFunctionByDeadCodeElimination from './mir-dead-code-elimination-optimization';
-import optimizeMidIRFunctionsByInlining from './mir-inline-optimization';
-import optimizeMidIRFunctionByLocalValueNumbering from './mir-local-value-numbering-optimization';
-import optimizeMidIRFunctionWithAllLoopOptimizations from './mir-loop-optimizations';
-import optimizeMidIRFunctionByTailRecursionRewrite from './mir-tail-recursion-optimization';
-import optimizeMidIRSourcesByEliminatingUnusedOnes from './mir-unused-name-elimination-optimization';
+import optimizeHighIRFunctionByCommonSubExpressionElimination from './hir-common-subexpression-elimination-optimization';
+import optimizeHighIRFunctionByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
+import optimizeHighIRFunctionByDeadCodeElimination from './hir-dead-code-elimination-optimization';
+import optimizeHighIRFunctionsByInlining from './hir-inline-optimization';
+import optimizeHighIRFunctionByLocalValueNumbering from './hir-local-value-numbering-optimization';
+import optimizeHighIRFunctionWithAllLoopOptimizations from './hir-loop-optimizations';
+import optimizeHighIRSourcesByEliminatingUnusedOnes from './hir-unused-name-elimination-optimization';
 import OptimizationResourceAllocator from './optimization-resource-allocator';
 
 export type OptimizationConfiguration = {
@@ -25,75 +23,69 @@ const allEnabledOptimizationConfiguration: OptimizationConfiguration = {
   doesPerformInlining: true,
 };
 
-function optimizeMidIRFunctionForOneRound(
-  midIRFunction: MidIRFunction,
+function optimizeHighIRFunctionForOneRound(
+  highIRFunction: HighIRFunction,
   allocator: OptimizationResourceAllocator,
   {
     doesPerformLocalValueNumbering,
     doesPerformCommonSubExpressionElimination,
     doesPerformLoopOptimization,
   }: OptimizationConfiguration
-): MidIRFunction {
-  let optimizedFunction = optimizeMidIRFunctionByConditionalConstantPropagation(midIRFunction);
+): HighIRFunction {
+  let optimizedFunction = optimizeHighIRFunctionByConditionalConstantPropagation(highIRFunction);
   if (doesPerformLoopOptimization) {
-    optimizedFunction = optimizeMidIRFunctionWithAllLoopOptimizations(optimizedFunction, allocator);
-  }
-  if (doesPerformLocalValueNumbering) {
-    optimizedFunction = optimizeMidIRFunctionByLocalValueNumbering(optimizedFunction);
-  }
-  if (doesPerformCommonSubExpressionElimination) {
-    optimizedFunction = optimizeMidIRFunctionByCommonSubExpressionElimination(
+    optimizedFunction = optimizeHighIRFunctionWithAllLoopOptimizations(
       optimizedFunction,
       allocator
     );
   }
-  return optimizeMidIRFunctionByDeadCodeElimination(optimizedFunction);
+  if (doesPerformLocalValueNumbering) {
+    optimizedFunction = optimizeHighIRFunctionByLocalValueNumbering(optimizedFunction);
+  }
+  if (doesPerformCommonSubExpressionElimination) {
+    optimizedFunction = optimizeHighIRFunctionByCommonSubExpressionElimination(
+      optimizedFunction,
+      allocator
+    );
+  }
+  return optimizeHighIRFunctionByDeadCodeElimination(optimizedFunction);
 }
 
 function optimizeFunctionForRounds(
-  midIRFunction: MidIRFunction,
+  highIRFunction: HighIRFunction,
   allocator: OptimizationResourceAllocator,
   optimizationConfiguration: OptimizationConfiguration
-): MidIRFunction {
-  let optimizedFunction = midIRFunction;
+): HighIRFunction {
+  let optimizedFunction = highIRFunction;
   for (let j = 0; j < 5; j += 1) {
-    optimizedFunction = optimizeMidIRFunctionForOneRound(
+    optimizedFunction = optimizeHighIRFunctionForOneRound(
       optimizedFunction,
       allocator,
       optimizationConfiguration
     );
   }
-  return optimizeMidIRFunctionByConditionalConstantPropagation(
-    optimizeMidIRFunctionByDeadCodeElimination(
-      optimizeMidIRFunctionByConditionalConstantPropagation(optimizedFunction)
+  return optimizeHighIRFunctionByConditionalConstantPropagation(
+    optimizeHighIRFunctionByDeadCodeElimination(
+      optimizeHighIRFunctionByConditionalConstantPropagation(optimizedFunction)
     )
   );
 }
 
-export const optimizeMidIRSourcesByTailRecursionRewrite = (
-  sources: MidIRSources
-): MidIRSources => ({
-  ...sources,
-  functions: sources.functions.map((it) => optimizeMidIRFunctionByTailRecursionRewrite(it) ?? it),
-});
-
-export { optimizeHighIRFunctionByTailRecursionRewrite };
-
-export function optimizeMidIRSourcesAccordingToConfiguration(
-  sources: MidIRSources,
+export function optimizeHighIRSourcesAccordingToConfiguration(
+  sources: HighIRSources,
   optimizationConfiguration: OptimizationConfiguration = allEnabledOptimizationConfiguration
-): MidIRSources {
+): HighIRSources {
   const allocator = new OptimizationResourceAllocator();
 
   let intermediate = sources;
   for (let i = 0; i < 4; i += 1) {
-    let optimizedFunctions: readonly MidIRFunction[] = intermediate.functions.map((it) =>
+    let optimizedFunctions: readonly HighIRFunction[] = intermediate.functions.map((it) =>
       optimizeFunctionForRounds(it, allocator, optimizationConfiguration)
     );
     if (optimizationConfiguration.doesPerformInlining) {
-      optimizedFunctions = optimizeMidIRFunctionsByInlining(optimizedFunctions, allocator);
+      optimizedFunctions = optimizeHighIRFunctionsByInlining(optimizedFunctions, allocator);
     }
-    intermediate = optimizeMidIRSourcesByEliminatingUnusedOnes({
+    intermediate = optimizeHighIRSourcesByEliminatingUnusedOnes({
       ...sources,
       functions: optimizedFunctions,
     });

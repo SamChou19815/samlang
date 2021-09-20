@@ -50,7 +50,7 @@
                 "**/samlang-core-analysis/*",
                 "**/samlang-core-ast/*",
                 "**/samlang-core-interpreter/*",
-                "**/samlang-core-optimization/simple-optimizations*",
+                "**/samlang-core-optimization/control-flow-graph*",
                 "**/yarn-plugin-monorail/src/utils/*"
               ]
             }

@@ -10,7 +10,7 @@ import {
   LLVM_RETURN,
 } from 'samlang-core-ast/llvm-nodes';
 
-import ControlFlowGraph from '../control-flow-graph';
+import { ControlFlowGraph } from '../llvm-control-flow-graph';
 
 describe('control-flow-graph', () => {
   const llvmStatements: readonly LLVMInstruction[] = [
