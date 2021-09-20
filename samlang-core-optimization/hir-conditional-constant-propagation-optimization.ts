@@ -511,17 +511,17 @@ function optimizeHighIRStatements(
 }
 
 export default function optimizeHighIRFunctionByConditionalConstantPropagation(
-  midIRFunction: HighIRFunction
+  highIRFunction: HighIRFunction
 ): HighIRFunction {
   const valueContext = new LocalValueContextForOptimization();
   const indexAccessExpressionContext = new LocalValueContextForOptimization();
   const binaryExpressionContext = new BinaryExpressionContext();
   const body = optimizeHighIRStatements(
-    midIRFunction.body,
+    highIRFunction.body,
     valueContext,
     indexAccessExpressionContext,
     binaryExpressionContext
   );
-  const returnValue = optimizeHighIRExpression(valueContext, midIRFunction.returnValue);
-  return { ...midIRFunction, body, returnValue };
+  const returnValue = optimizeHighIRExpression(valueContext, highIRFunction.returnValue);
+  return { ...highIRFunction, body, returnValue };
 }

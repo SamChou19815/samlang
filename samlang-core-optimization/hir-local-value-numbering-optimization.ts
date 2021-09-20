@@ -223,11 +223,11 @@ function optimizeHighIRStatements(
 }
 
 export default function optimizeHighIRFunctionByLocalValueNumbering(
-  midIRFunction: HighIRFunction
+  highIRFunction: HighIRFunction
 ): HighIRFunction {
   const variableContext = new LocalVariableContext();
   const bindedValueContext = new LocalBindedValueContext();
-  const body = optimizeHighIRStatements(midIRFunction.body, variableContext, bindedValueContext);
-  const returnValue = optimizeHighIRExpression(midIRFunction.returnValue, variableContext);
-  return { ...midIRFunction, body, returnValue };
+  const body = optimizeHighIRStatements(highIRFunction.body, variableContext, bindedValueContext);
+  const returnValue = optimizeHighIRExpression(highIRFunction.returnValue, variableContext);
+  return { ...highIRFunction, body, returnValue };
 }

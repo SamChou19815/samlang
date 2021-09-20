@@ -117,11 +117,11 @@ function optimizeHighIRStatementsWithSet(
 }
 
 export default function optimizeHighIRFunctionByCommonSubExpressionElimination(
-  midIRFunction: HighIRFunction,
+  highIRFunction: HighIRFunction,
   allocator: OptimizationResourceAllocator
 ): HighIRFunction {
   return optimizeHighIRFunctionByLocalValueNumbering({
-    ...midIRFunction,
-    body: optimizeHighIRStatementsWithSet(midIRFunction.body, allocator).statements,
+    ...highIRFunction,
+    body: optimizeHighIRStatementsWithSet(highIRFunction.body, allocator).statements,
   });
 }
