@@ -100,9 +100,15 @@ class HighIRToMidIRLoweringManager {
       name,
       parameters,
       type: lowerHighIRFunctionType(type),
-      body: body.flatMap(this.lowerHighIRStatement),
+      body: this.lowerHighIRStatementBlock(body),
       returnValue: lowerHighIRExpression(returnValue),
     };
+  }
+
+  private lowerHighIRStatementBlock(
+    statements: readonly HighIRStatement[]
+  ): readonly MidIRStatement[] {
+    return statements.flatMap(this.lowerHighIRStatement);
   }
 
   private lowerHighIRStatement = (statement: HighIRStatement): readonly MidIRStatement[] => {
@@ -205,8 +211,8 @@ class HighIRToMidIRLoweringManager {
         return [
           MIR_IF_ELSE({
             booleanExpression: lowerHighIRExpression(statement.booleanExpression),
-            s1: statement.s1.flatMap(this.lowerHighIRStatement),
-            s2: statement.s2.flatMap(this.lowerHighIRStatement),
+            s1: this.lowerHighIRStatementBlock(statement.s1),
+            s2: this.lowerHighIRStatementBlock(statement.s2),
             finalAssignments: statement.finalAssignments.map(
               ({ name, type, branch1Value, branch2Value }) => ({
                 name,
@@ -222,7 +228,7 @@ class HighIRToMidIRLoweringManager {
           MIR_SINGLE_IF({
             booleanExpression: lowerHighIRExpression(statement.booleanExpression),
             invertCondition: statement.invertCondition,
-            statements: statement.statements.flatMap(this.lowerHighIRStatement),
+            statements: this.lowerHighIRStatementBlock(statement.statements),
           }),
         ];
       case 'HighIRBreakStatement':
@@ -238,7 +244,7 @@ class HighIRToMidIRLoweringManager {
                 loopValue: lowerHighIRExpression(loopValue),
               })
             ),
-            statements: statement.statements.flatMap(this.lowerHighIRStatement),
+            statements: this.lowerHighIRStatementBlock(statement.statements),
             breakCollector:
               statement.breakCollector != null
                 ? {
