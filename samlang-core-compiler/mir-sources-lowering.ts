@@ -183,16 +183,18 @@ class HighIRToMidIRLoweringManager {
           }
         }
       }
-      case 'HighIRFunctionCallStatement':
+      case 'HighIRFunctionCallStatement': {
+        const loweredReturnType = lowerHighIRType(statement.returnType);
+        const statements: MidIRStatement[] = [];
         if (statement.functionExpression.__type__ === 'HighIRNameExpression') {
-          return [
+          statements.push(
             MIR_FUNCTION_CALL({
               functionExpression: lowerHighIRExpression(statement.functionExpression),
               functionArguments: statement.functionArguments.map(lowerHighIRExpression),
-              returnType: lowerHighIRType(statement.returnType),
+              returnType: loweredReturnType,
               returnCollector: statement.returnCollector,
-            }),
-          ];
+            })
+          );
         } else {
           const closureHighIRType = statement.functionExpression.type;
           assert(
@@ -206,7 +208,7 @@ class HighIRToMidIRLoweringManager {
           const pointerExpression = lowerHighIRExpression(statement.functionExpression);
           const tempFunction = this.tempAllocator();
           const tempContext = this.tempAllocator();
-          return [
+          statements.push(
             MIR_INDEX_ACCESS({
               name: tempFunction,
               type: functionType,
@@ -225,11 +227,19 @@ class HighIRToMidIRLoweringManager {
                 MIR_VARIABLE(tempContext, MIR_ANY_TYPE),
                 ...statement.functionArguments.map(lowerHighIRExpression),
               ],
-              returnType: lowerHighIRType(statement.returnType),
+              returnType: loweredReturnType,
               returnCollector: statement.returnCollector,
-            }),
-          ];
+            })
+          );
         }
+        if (statement.returnCollector != null) {
+          addReferenceCountingIfTypeAllowed(
+            statements,
+            MIR_VARIABLE(statement.returnCollector, statement.returnType)
+          );
+        }
+        return statements;
+      }
       case 'HighIRIfElseStatement':
         return [
           MIR_IF_ELSE({
