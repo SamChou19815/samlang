@@ -33,9 +33,9 @@ import type {
   MidIRFunction,
   MidIRSources,
 } from 'samlang-core-ast/mir-nodes';
-import withoutUnreachableLLVMCode from 'samlang-core-optimization/simple-optimizations';
 import { checkNotNull, zip, zip3 } from 'samlang-core-utils';
 
+import { withoutUnreachableLLVMCode } from './llvm-control-flow-graph';
 import lowerMidIRTypeToLLVMType from './llvm-types-lowering';
 
 class LLVMResourceAllocator {

@@ -1,26 +1,28 @@
-import { MIR_INT_TYPE, MIR_FUNCTION_TYPE, MIR_ZERO } from 'samlang-core-ast/mir-nodes';
-import type { MidIRSources } from 'samlang-core-ast/mir-nodes';
+import { HIR_INT_TYPE, HIR_FUNCTION_TYPE, HIR_ZERO } from 'samlang-core-ast/hir-nodes';
+import type { HighIRSources } from 'samlang-core-ast/hir-nodes';
 
-import { optimizeMidIRSourcesAccordingToConfiguration } from '..';
+import { optimizeHighIRSourcesAccordingToConfiguration } from '..';
 
 describe('samlang-core-optimization', () => {
-  it('optimizeMidIRSourcesAccordingToConfiguration coverage tests', () => {
-    const sources: MidIRSources = {
+  it('optimizeHighIRSourcesAccordingToConfiguration coverage tests', () => {
+    const sources: HighIRSources = {
       globalVariables: [],
       typeDefinitions: [],
+      closureTypes: [],
       functions: [
         {
           name: 'main',
           parameters: [],
-          type: MIR_FUNCTION_TYPE([], MIR_INT_TYPE),
+          typeParameters: [],
+          type: HIR_FUNCTION_TYPE([], HIR_INT_TYPE),
           body: [],
-          returnValue: MIR_ZERO,
+          returnValue: HIR_ZERO,
         },
       ],
       mainFunctionNames: ['main'],
     };
 
-    expect(optimizeMidIRSourcesAccordingToConfiguration(sources)).toEqual(sources);
-    expect(optimizeMidIRSourcesAccordingToConfiguration(sources, {})).toEqual(sources);
+    expect(optimizeHighIRSourcesAccordingToConfiguration(sources)).toEqual(sources);
+    expect(optimizeHighIRSourcesAccordingToConfiguration(sources, {})).toEqual(sources);
   });
 });

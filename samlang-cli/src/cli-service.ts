@@ -27,7 +27,7 @@ import {
   lowerHighIRSourcesToMidIRSources,
   lowerMidIRSourcesToLLVMSources,
 } from 'samlang-core-compiler';
-import { optimizeMidIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
+import { optimizeHighIRSourcesAccordingToConfiguration } from 'samlang-core-optimization';
 
 import type { SamlangProjectConfiguration } from './configuration';
 
@@ -138,8 +138,8 @@ export function compileEverything(
   sources: Sources<SamlangModule>,
   outputDirectory: string
 ): boolean {
-  const midIRSources = optimizeMidIRSourcesAccordingToConfiguration(
-    lowerHighIRSourcesToMidIRSources(compileSamlangSourcesToHighIRSources(sources))
+  const midIRSources = lowerHighIRSourcesToMidIRSources(
+    optimizeHighIRSourcesAccordingToConfiguration(compileSamlangSourcesToHighIRSources(sources))
   );
   const moduleReferences = sources.entries().map(([moduleReference]) => moduleReference);
 

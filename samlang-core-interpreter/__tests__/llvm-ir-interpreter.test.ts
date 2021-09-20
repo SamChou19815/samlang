@@ -185,6 +185,13 @@ describe('llvm-ir-interpreter', () => {
                 v1: ZERO,
                 v2: ZERO,
               }),
+              LLVM_BINARY({
+                resultVariable: '',
+                operator: '^',
+                operandType: LLVM_INT_TYPE,
+                v1: ZERO,
+                v2: ZERO,
+              }),
               LLVM_CAST({
                 resultVariable: 'hw',
                 resultType: LLVM_STRING_TYPE(),

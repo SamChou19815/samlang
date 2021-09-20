@@ -3,7 +3,7 @@ import { checkNotNull } from 'samlang-core-utils';
 
 export type ControlFlowGraphNode = { readonly id: number; readonly instruction: LLVMInstruction };
 
-export default class ControlFlowGraph {
+export class ControlFlowGraph {
   private readonly nodeMap: Map<number, ControlFlowGraphNode> = new Map();
 
   private readonly childrenMap: Map<number, readonly number[]> = new Map();
@@ -63,4 +63,12 @@ export default class ControlFlowGraph {
       }
     }
   }
+}
+
+export function withoutUnreachableLLVMCode(
+  instructions: readonly LLVMInstruction[]
+): readonly LLVMInstruction[] {
+  const reachableSet = new Set<number>();
+  ControlFlowGraph.fromLLVMInstructions(instructions).dfs((node) => reachableSet.add(node.id));
+  return instructions.filter((_, index) => reachableSet.has(index));
 }

@@ -108,6 +108,8 @@ describe('mir-nodes', () => {
           ],
           s2: [
             MIR_BINARY({ name: 'dd', operator: '+', e1: MIR_INT(0), e2: MIR_INT(0) }),
+            MIR_BINARY({ name: 'dd', operator: '<', e1: MIR_INT(0), e2: MIR_INT(0) }),
+            MIR_BINARY({ name: 'dd', operator: '^', e1: MIR_INT(0), e2: MIR_INT(0) }),
             MIR_BINARY({ name: 'dd', operator: '/', e1: MIR_INT(0), e2: MIR_INT(0) }),
             MIR_STRUCT_INITIALIZATION({
               structVariableName: 'baz',
@@ -183,6 +185,10 @@ if (0) {
 } else {
   /** @type {number} */
   let dd = 0 + 0;
+  /** @type {boolean} */
+  let dd = 0 < 0;
+  /** @type {boolean} */
+  let dd = 0 ^ 0;
   /** @type {number} */
   let dd = Math.floor(0 / 0);
   /** @type {FooBar} */

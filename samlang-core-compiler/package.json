@@ -8,7 +8,6 @@
   "dependencies": {
     "samlang-core-ast": "workspace:0.0.1",
     "samlang-core-checker": "workspace:0.0.1",
-    "samlang-core-optimization": "workspace:0.0.1",
     "samlang-core-utils": "workspace:0.0.1"
   },
   "devDependencies": {

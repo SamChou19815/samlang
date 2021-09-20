@@ -13,11 +13,11 @@ import {
   HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS,
 } from 'samlang-core-ast/hir-nodes';
 import type { ClassMemberDefinition, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
-import { optimizeHighIRFunctionByTailRecursionRewrite } from 'samlang-core-optimization';
 
 import lowerSamlangExpression from './hir-expression-lowering';
 import performGenericsSpecializationOnHighIRSources from './hir-generics-specialization';
 import HighIRStringManager from './hir-string-manager';
+import optimizeHighIRFunctionByTailRecursionRewrite from './hir-tail-recursion-optimization';
 import {
   encodeSamlangType,
   HighIRTypeSynthesizer,
