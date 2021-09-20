@@ -140,7 +140,10 @@ describe('mir-sources-lowering', () => {
                 HIR_STRUCT_INITIALIZATION({
                   structVariableName: 'O',
                   type: objType,
-                  expressionList: [HIR_ZERO],
+                  expressionList: [
+                    HIR_ZERO,
+                    HIR_VARIABLE('obj', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Obj')),
+                  ],
                 }),
                 HIR_STRUCT_INITIALIZATION({
                   structVariableName: 'v1',
@@ -220,7 +223,8 @@ function _compiled_program_main(): int {
     finalV = (v1: int);
   } else {
     let v1: int = 0 + 0;
-    let O: Object = [1, 0];
+    (obj: Obj)[0] += 1;
+    let O: Object = [1, 0, (obj: Obj)];
     let _mid_t3: any = 0;
     let v1: Variant = [1, 0, (_mid_t3: any)];
     let v2: Variant = [1, 0, G1];

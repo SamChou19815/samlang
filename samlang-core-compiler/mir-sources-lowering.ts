@@ -31,6 +31,7 @@ import {
   MIR_WHILE,
   MIR_CAST,
   MIR_STRUCT_INITIALIZATION,
+  MIR_INC_REF,
   isTheSameMidIRType,
 } from 'samlang-core-ast/mir-nodes';
 import { assert, checkNotNull } from 'samlang-core-utils';
@@ -45,6 +46,13 @@ function lowerHighIRType(type: HighIRType): MidIRType {
     case 'FunctionType':
       return lowerHighIRFunctionType(type);
   }
+}
+
+function addReferenceCountingIfTypeAllowed(
+  collector: MidIRStatement[],
+  expression: MidIRExpression
+): void {
+  if (expression.type.__type__ === 'IdentifierType') collector.push(MIR_INC_REF(expression));
 }
 
 const lowerHighIRFunctionType = (type: HighIRFunctionType): MidIRFunctionType =>
@@ -248,10 +256,15 @@ class HighIRToMidIRLoweringManager {
         const statements: MidIRStatement[] = [];
         const expressionList =
           typeDefinition.type === 'object'
-            ? statement.expressionList.map(lowerHighIRExpression)
+            ? statement.expressionList.map((expression) => {
+                const lowered = lowerHighIRExpression(expression);
+                addReferenceCountingIfTypeAllowed(statements, lowered);
+                return lowered;
+              })
             : statement.expressionList.map((expression, index) => {
                 const lowered = lowerHighIRExpression(expression);
                 assert(index === 0 || index === 1, `Invalid index for variant access: ${index}`);
+                addReferenceCountingIfTypeAllowed(statements, lowered);
                 if (index === 0) return lowered;
                 if (isTheSameMidIRType(lowered.type, MIR_ANY_TYPE)) return lowered;
                 const temp = this.tempAllocator();
@@ -260,7 +273,6 @@ class HighIRToMidIRLoweringManager {
                 );
                 return MIR_VARIABLE(temp, MIR_ANY_TYPE);
               });
-        // TODO(ref-counting): increasing ref count for other expressions
         expressionList.unshift(MIR_ONE);
         statements.push(MIR_STRUCT_INITIALIZATION({ structVariableName, type, expressionList }));
         return statements;
@@ -275,6 +287,7 @@ class HighIRToMidIRLoweringManager {
         const functionName = MIR_NAME(statement.functionName, originalFunctionType);
         const context = lowerHighIRExpression(statement.context);
         const statements: MidIRStatement[] = [];
+        addReferenceCountingIfTypeAllowed(statements, context);
         let functionNameSlot: MidIRExpression;
         let contextSlot: MidIRExpression;
         if (isTheSameMidIRType(originalFunctionType, typeErasedClosureType)) {
