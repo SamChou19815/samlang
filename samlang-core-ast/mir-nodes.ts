@@ -197,6 +197,11 @@ export interface MidIRStructInitializationStatement extends BaseMidIRStatement {
   readonly expressionList: readonly MidIRExpression[];
 }
 
+export interface MidIRIncreaseReferenceCountStatement extends BaseMidIRStatement {
+  readonly __type__: 'MidIRIncreaseReferenceCountStatement';
+  readonly expression: MidIRExpression;
+}
+
 export type MidIRStatement =
   | MidIRBinaryStatement
   | MidIRIndexAccessStatement
@@ -206,7 +211,8 @@ export type MidIRStatement =
   | MidIRBreakStatement
   | MidIRWhileStatement
   | MidIRCastStatement
-  | MidIRStructInitializationStatement;
+  | MidIRStructInitializationStatement
+  | MidIRIncreaseReferenceCountStatement;
 
 type ConstructorArgumentObject<E extends BaseMidIRExpression | BaseMidIRStatement> = Omit<
   E,
@@ -375,6 +381,11 @@ export const MIR_STRUCT_INITIALIZATION = ({
   expressionList,
 });
 
+export const MIR_INC_REF = (expression: MidIRExpression): MidIRIncreaseReferenceCountStatement => ({
+  __type__: 'MidIRIncreaseReferenceCountStatement',
+  expression,
+});
+
 export function debugPrintMidIRExpression(expression: MidIRExpression): string {
   switch (expression.__type__) {
     case 'MidIRIntLiteralExpression':
@@ -522,6 +533,9 @@ export function debugPrintMidIRStatement(statement: MidIRStatement, startLevel =
         );
         break;
       }
+      case 'MidIRIncreaseReferenceCountStatement':
+        collector.push('  '.repeat(level), `${debugPrintMidIRExpression(s.expression)}[0] += 1;\n`);
+        break;
     }
   }
 
@@ -691,6 +705,9 @@ export function prettyPrintMidIRStatementAsJSStatement(
         );
         break;
       }
+      case 'MidIRIncreaseReferenceCountStatement':
+        collector.push('  '.repeat(level), `${debugPrintMidIRExpression(s.expression)}[0] += 1;\n`);
+        break;
     }
   }
 

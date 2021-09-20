@@ -182,7 +182,6 @@ class HighIRToMidIRLoweringManager {
               pointerExpression,
               index: 2,
             }),
-            // TODO(ref-counting): increase reference counting for function parameters
             MIR_FUNCTION_CALL({
               functionExpression: MIR_VARIABLE(tempFunction, functionType),
               functionArguments: [
