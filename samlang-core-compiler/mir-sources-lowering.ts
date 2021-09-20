@@ -11,6 +11,7 @@ import {
   MidIRType,
   MidIRFunctionType,
   MidIRTypeDefinition,
+  MidIRVariableExpression,
   MidIRExpression,
   MidIRStatement,
   MidIRFunction,
@@ -48,11 +49,13 @@ function lowerHighIRType(type: HighIRType): MidIRType {
   }
 }
 
+const isReferenceType = (type: MidIRType): boolean => type.__type__ === 'IdentifierType';
+
 function addReferenceCountingIfTypeAllowed(
   collector: MidIRStatement[],
   expression: MidIRExpression
 ): void {
-  if (expression.type.__type__ === 'IdentifierType') collector.push(MIR_INC_REF(expression));
+  if (isReferenceType(expression.type)) collector.push(MIR_INC_REF(expression));
 }
 
 const lowerHighIRFunctionType = (type: HighIRFunctionType): MidIRFunctionType =>
@@ -108,7 +111,27 @@ class HighIRToMidIRLoweringManager {
   private lowerHighIRStatementBlock(
     statements: readonly HighIRStatement[]
   ): readonly MidIRStatement[] {
-    return statements.flatMap(this.lowerHighIRStatement);
+    const loweredStatements = statements.flatMap(this.lowerHighIRStatement);
+    const variableToDecreaseReferenceCount: MidIRVariableExpression[] = [];
+    loweredStatements.forEach((loweredStatement) => {
+      switch (loweredStatement.__type__) {
+        case 'MidIRFunctionCallStatement':
+          if (loweredStatement.returnCollector && isReferenceType(loweredStatement.returnType)) {
+            variableToDecreaseReferenceCount.push(
+              MIR_VARIABLE(loweredStatement.returnCollector, loweredStatement.returnType)
+            );
+          }
+          return;
+        case 'MidIRStructInitializationStatement':
+          variableToDecreaseReferenceCount.push(
+            MIR_VARIABLE(loweredStatement.structVariableName, loweredStatement.type)
+          );
+          return;
+        default:
+          return;
+      }
+    });
+    return loweredStatements;
   }
 
   private lowerHighIRStatement = (statement: HighIRStatement): readonly MidIRStatement[] => {
