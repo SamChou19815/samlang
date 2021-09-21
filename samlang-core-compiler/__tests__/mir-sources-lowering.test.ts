@@ -38,7 +38,10 @@ const assertLowered = (sources: SimplifiedSources, expected: string) =>
 
 describe('mir-sources-lowering', () => {
   it('lowerHighIRSourcesToMidIRSources smoke test', () => {
-    assertLowered({ closureTypes: [], typeDefinitions: [], functions: [] }, '');
+    assertLowered(
+      { closureTypes: [], typeDefinitions: [], functions: [] },
+      'function __decRef_nothing(o: any): int {\n  return 0;\n}\n'
+    );
   });
 
   const commonComprehensiveSources = ((): SimplifiedSources => {
@@ -192,6 +195,13 @@ describe('mir-sources-lowering', () => {
                   functionArguments: [HIR_ZERO],
                   returnType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('CC'),
                 }),
+                HIR_CLOSURE_INITIALIZATION({
+                  closureVariableName: 'c3',
+                  closureType,
+                  functionName: 'aaa',
+                  functionType: HIR_FUNCTION_TYPE([HIR_STRING_TYPE], HIR_INT_TYPE),
+                  context: HIR_VARIABLE('G1', HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('CC')),
+                }),
               ],
               finalAssignments: [
                 {
@@ -212,7 +222,7 @@ describe('mir-sources-lowering', () => {
   it('lowerHighIRSourcesToMidIRSources comprehensive test with reference counting', () => {
     assertLowered(
       commonComprehensiveSources,
-      `type CC = (int, (any, int) -> int, any);
+      `type CC = (int, (any) -> int, (any, int) -> int, any);
 
 type Object = (int, int, int);
 
@@ -228,8 +238,8 @@ function _compiled_program_main(): int {
   let finalV: int;
   if 1 {
     let _mid_t0: int = main(0);
-    let _mid_t1: (any, int) -> int = (cc: CC)[1];
-    let _mid_t2: any = (cc: CC)[2];
+    let _mid_t1: (any, int) -> int = (cc: CC)[2];
+    let _mid_t2: any = (cc: CC)[3];
     let _mid_t3: int = (_mid_t1: (any, int) -> int)((_mid_t2: any), 0);
     let v1: int = (a: Object)[1];
     let v2: int = (b: Variant)[1];
@@ -258,18 +268,23 @@ function _compiled_program_main(): int {
     let _mid_t5: any = 0;
     let v1: Variant = [1, 0, (_mid_t5: any)];
     let v2: Variant = [1, 0, G1];
-    let c1: CC = [1, aaa, G1];
+    let c1: CC = [1, __decRef_nothing, aaa, G1];
     let _mid_t6: (any) -> int = bbb;
     let _mid_t7: any = 0;
-    let c2: CC = [1, (_mid_t6: (any) -> int), (_mid_t7: any)];
-    let _mid_t8: (any, int) -> int = (cc: CC)[1];
-    let _mid_t9: any = (cc: CC)[2];
+    let c2: CC = [1, __decRef_nothing, (_mid_t6: (any) -> int), (_mid_t7: any)];
+    let _mid_t8: (any, int) -> int = (cc: CC)[2];
+    let _mid_t9: any = (cc: CC)[3];
     let _mid_t10: CC = (_mid_t8: (any, int) -> int)((_mid_t9: any), 0);
+    (G1: CC)[0] += 1;
+    let _mid_t11: any = (G1: CC);
+    let _mid_t12: (any) -> int = __decRef_CC;
+    let c3: CC = [1, (_mid_t12: (any) -> int), aaa, (_mid_t11: any)];
     __decRef_Object((O: Object));
     __decRef_Variant((v1: Variant));
     __decRef_CC((c1: CC));
     __decRef_CC((c2: CC));
     __decRef_CC((_mid_t10: CC));
+    __decRef_CC((c3: CC));
     finalV = (v2: int);
   }
   return 0;
@@ -331,8 +346,8 @@ function __decRef_Variant3(o: Variant3): int {
     let tag: int = (o: Variant3)[1];
     let tagComparison1: bool = (tag: int) == 2;
     if (tagComparison1: bool) {
-      let _mid_t11: any = (o: Variant3)[2];
-      let v1: Foo = (_mid_t11: any);
+      let _mid_t13: any = (o: Variant3)[2];
+      let v1: Foo = (_mid_t13: any);
       __decRef_Foo((v1: Foo));
     }
   }
@@ -340,6 +355,20 @@ function __decRef_Variant3(o: Variant3): int {
 }
 
 function __decRef_CC(o: CC): int {
+  (o: CC)[0] -= 1;
+  let currentRefCount: int = (o: CC)[0];
+  let dead: bool = (currentRefCount: int) <= 0;
+  if (dead: bool) {
+    let pointer_casted: any = (o: CC);
+    _builtin_free((pointer_casted: any));
+    let destructor: (any) -> int = (o: CC)[1];
+    let context: any = (o: CC)[3];
+    (destructor: (any) -> int)((context: any));
+  }
+  return 0;
+}
+
+function __decRef_nothing(o: any): int {
   return 0;
 }
 `
