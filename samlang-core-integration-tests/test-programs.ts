@@ -406,7 +406,7 @@ export type WellTypedSamlangProgramTestCase = {
 
 export const runnableSamlangProgramTestCases: readonly WellTypedSamlangProgramTestCase[] = [
   {
-    testCaseName: 'and-or-inside-if',
+    testCaseName: 'AndOrInsideIf',
     expectedStandardOut: 'one\n',
     sourceCode: `
 class Main {
@@ -431,7 +431,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'block-in-if-else',
+    testCaseName: 'BlockInIfElse',
     expectedStandardOut: '',
     sourceCode: `
 class Main {
@@ -463,7 +463,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'builtins',
+    testCaseName: 'Builtins',
     expectedStandardOut: '42!\n',
     sourceCode: `
 class Main {
@@ -475,7 +475,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'cf-test-1',
+    testCaseName: 'CFTest1',
     expectedStandardOut: '1205\n',
     sourceCode: `
 class Main {
@@ -486,7 +486,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'cf-test-2',
+    testCaseName: 'CFTest2',
     expectedStandardOut: '37\n',
     sourceCode: `
 class Main {
@@ -501,7 +501,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'cf-test-3',
+    testCaseName: 'CFTest3',
     expectedStandardOut: '7\n',
     sourceCode: `
 class Main {
@@ -510,7 +510,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'concat-string',
+    testCaseName: 'ConcatString',
     expectedStandardOut: 'Hello World!\n',
     sourceCode: `
 class Main {
@@ -519,7 +519,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'correct-op',
+    testCaseName: 'CorrectOp',
     expectedStandardOut: 'OK\n',
     sourceCode: `
 class Main {
@@ -596,7 +596,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'create-variants',
+    testCaseName: 'CreateVariants',
     expectedStandardOut: 'hello\n',
     sourceCode: `
 class List(Nil(unit), Cons([int * List])) { function of(i: int): List = Cons([i, Nil({  })])  }
@@ -605,7 +605,7 @@ class Main { function main(): unit = { val _: List = List.of(1); Builtins.printl
 `,
   },
   {
-    testCaseName: 'cse-test-1',
+    testCaseName: 'CSETest1',
     expectedStandardOut: '30\n12\n15\n',
     sourceCode: `
 class Main {
@@ -622,7 +622,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'cse-test-2',
+    testCaseName: 'CSETest2',
     expectedStandardOut: 'OK\n',
     sourceCode: `
 class Main {
@@ -647,7 +647,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'cse-test-3',
+    testCaseName: 'CSETest3',
     expectedStandardOut: '2181\n',
     sourceCode: `
 class Main {
@@ -678,7 +678,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'cse-test-4',
+    testCaseName: 'CSETest4',
     expectedStandardOut: '141\n',
     sourceCode: `
 class Main {
@@ -691,7 +691,7 @@ class Main {
 }`,
   },
   {
-    testCaseName: 'cse-test-5',
+    testCaseName: 'CSETest5',
     expectedStandardOut: '2\n',
     sourceCode: `
 class Main {
@@ -714,7 +714,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'cse-test-6',
+    testCaseName: 'CSETest6',
     expectedStandardOut: 'OK\n',
     sourceCode: `
 class Main {
@@ -741,7 +741,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'different-classes-demo',
+    testCaseName: 'DifferentClassesDemo',
     expectedStandardOut: 'OK\n',
     sourceCode: `
 class Math {
@@ -834,7 +834,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'different-expressions-demo',
+    testCaseName: 'DifferentExpressionsDemo',
     expectedStandardOut: '42\n',
     sourceCode: `
 class Foo(val a: int) {
@@ -898,7 +898,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'empty',
+    testCaseName: 'Empty',
     expectedStandardOut: '',
     sourceCode: `
 class Main {
@@ -907,7 +907,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'evaluation-order',
+    testCaseName: 'EvaluationOrder',
     expectedStandardOut: `0
 1
 2
@@ -978,7 +978,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'function-call-never-ignored',
+    testCaseName: 'FunctionCallNeverIgnored',
     expectedStandardOut: 'hi\n',
     sourceCode: `
 class Main {
@@ -994,7 +994,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'generic-object-test',
+    testCaseName: 'GenericObjectTest',
     expectedStandardOut: '2\n42\n',
     sourceCode: `
 class GenericObject<T1, T2>(val v1: T1, val v2: T2) {
@@ -1016,7 +1016,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'if-else-consistency',
+    testCaseName: 'IfElseConsistency',
     expectedStandardOut: '3\n3\nOK\n',
     sourceCode: `
 class Main {
@@ -1035,7 +1035,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'if-else-unreachable-1',
+    testCaseName: 'IfElseUnreachable1',
     expectedStandardOut: 'success\n',
     sourceCode: `
 class Main {
@@ -1055,7 +1055,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'if-else-unreachable-2',
+    testCaseName: 'IfElseUnreachable2',
     expectedStandardOut: 'success\n',
     sourceCode: `
 class Main {
@@ -1075,7 +1075,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'loop-optimization',
+    testCaseName: 'LoopOptimization',
     expectedStandardOut: '100\n106\n112\n118\n124\n',
     sourceCode: `
 class Main {
@@ -1096,7 +1096,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'map-but-ignore',
+    testCaseName: 'MapButIgnore',
     expectedStandardOut: '',
     sourceCode: `
 class Option<T>(None(unit), Some(T)) {
@@ -1124,7 +1124,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'math-functions',
+    testCaseName: 'MathFunctions',
     expectedStandardOut: '24\n55\n',
     sourceCode: `
 class Main {
@@ -1145,7 +1145,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'mutually-recursive',
+    testCaseName: 'MutuallyRecursive',
     expectedStandardOut: 'OK\n',
     sourceCode: `
 class Main {
@@ -1158,7 +1158,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'optional-semicolon',
+    testCaseName: 'OptionalSemicolon',
     expectedStandardOut: '-7\n',
     sourceCode: `
 class Main(val a: int, val b: bool) {
@@ -1177,7 +1177,7 @@ class Main(val a: int, val b: bool) {
 `,
   },
   {
-    testCaseName: 'short-circuit-and-or',
+    testCaseName: 'ShortCircuitAndOr',
     expectedStandardOut: `0
 1
 false
@@ -1274,7 +1274,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'string-global-constant',
+    testCaseName: 'StringGlobalConstant',
     expectedStandardOut: 'OK\n',
     sourceCode: `
 class Main {
@@ -1291,7 +1291,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'too-much-interference',
+    testCaseName: 'TooMuchInterference',
     expectedStandardOut: '0\n',
     sourceCode: `
 class Main {
@@ -1360,7 +1360,7 @@ class Main {
 `,
   },
   {
-    testCaseName: 'various-syntax-forms',
+    testCaseName: 'VariousSyntaxForms',
     expectedStandardOut: '84\n',
     sourceCode: `
 class Clazz(val t: int) {
