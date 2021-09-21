@@ -202,6 +202,11 @@ export interface MidIRIncreaseReferenceCountStatement extends BaseMidIRStatement
   readonly expression: MidIRExpression;
 }
 
+export interface MidIRDecreaseReferenceCountStatement extends BaseMidIRStatement {
+  readonly __type__: 'MidIRDecreaseReferenceCountStatement';
+  readonly expression: MidIRExpression;
+}
+
 export type MidIRStatement =
   | MidIRBinaryStatement
   | MidIRIndexAccessStatement
@@ -212,7 +217,8 @@ export type MidIRStatement =
   | MidIRWhileStatement
   | MidIRCastStatement
   | MidIRStructInitializationStatement
-  | MidIRIncreaseReferenceCountStatement;
+  | MidIRIncreaseReferenceCountStatement
+  | MidIRDecreaseReferenceCountStatement;
 
 type ConstructorArgumentObject<E extends BaseMidIRExpression | BaseMidIRStatement> = Omit<
   E,
@@ -386,6 +392,11 @@ export const MIR_INC_REF = (expression: MidIRExpression): MidIRIncreaseReference
   expression,
 });
 
+export const MIR_DEC_REF = (expression: MidIRExpression): MidIRDecreaseReferenceCountStatement => ({
+  __type__: 'MidIRDecreaseReferenceCountStatement',
+  expression,
+});
+
 export function debugPrintMidIRExpression(expression: MidIRExpression): string {
   switch (expression.__type__) {
     case 'MidIRIntLiteralExpression':
@@ -535,6 +546,9 @@ export function debugPrintMidIRStatement(statement: MidIRStatement, startLevel =
       }
       case 'MidIRIncreaseReferenceCountStatement':
         collector.push('  '.repeat(level), `${debugPrintMidIRExpression(s.expression)}[0] += 1;\n`);
+        break;
+      case 'MidIRDecreaseReferenceCountStatement':
+        collector.push('  '.repeat(level), `${debugPrintMidIRExpression(s.expression)}[0] -= 1;\n`);
         break;
     }
   }
@@ -709,6 +723,12 @@ export function prettyPrintMidIRStatementAsJSStatement(
         collector.push(
           '  '.repeat(level),
           `${prettyPrintMidIRExpressionAsJSExpression(s.expression)}[0] += 1;\n`
+        );
+        break;
+      case 'MidIRDecreaseReferenceCountStatement':
+        collector.push(
+          '  '.repeat(level),
+          `${prettyPrintMidIRExpressionAsJSExpression(s.expression)}[0] -= 1;\n`
         );
         break;
     }
