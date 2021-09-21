@@ -10,7 +10,8 @@ describe('samlang-demo', () => {
       jsString: `const GLOBAL_STRING_0 = "hello world";
 /** @returns {number} */
 function _Demo_Main_main() {
-  __Builtins_println(GLOBAL_STRING_0);
+  /** @type {number} */
+  let _mid_t0 = __Builtins_println(GLOBAL_STRING_0);
   return 0;
 }
 `,
@@ -26,7 +27,7 @@ declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 define i64 @_Demo_Main_main() local_unnamed_addr nounwind {
 l0_start:
   %_temp_0_string_name_cast = bitcast [12 x i64]* @GLOBAL_STRING_0 to i64*
-  call i64 @__Builtins_println(i64* %_temp_0_string_name_cast) nounwind
+  %_mid_t0 = call i64 @__Builtins_println(i64* %_temp_0_string_name_cast) nounwind
   ret i64 0
 }`,
       errors: [],
