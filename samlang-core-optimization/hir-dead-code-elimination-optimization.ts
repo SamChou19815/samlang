@@ -1,5 +1,5 @@
 import type { HighIRExpression, HighIRStatement, HighIRFunction } from 'samlang-core-ast/hir-nodes';
-import { isNotNull } from 'samlang-core-utils';
+import { filterMap } from 'samlang-core-utils';
 
 import { ifElseOrNull } from './hir-optimization-common';
 
@@ -82,16 +82,14 @@ function optimizeHighIRStatement(
       return [{ ...statement, returnCollector }];
     }
     case 'HighIRIfElseStatement': {
-      const finalAssignments = statement.finalAssignments
-        .map((finalAssignment) => {
-          if (set.has(finalAssignment.name)) {
-            collectUseFromHighIRExpression(finalAssignment.branch1Value, set);
-            collectUseFromHighIRExpression(finalAssignment.branch2Value, set);
-            return finalAssignment;
-          }
-          return null;
-        })
-        .filter(isNotNull);
+      const finalAssignments = filterMap(statement.finalAssignments, (finalAssignment) => {
+        if (set.has(finalAssignment.name)) {
+          collectUseFromHighIRExpression(finalAssignment.branch1Value, set);
+          collectUseFromHighIRExpression(finalAssignment.branch2Value, set);
+          return finalAssignment;
+        }
+        return null;
+      });
       const s1 = internalOptimizeHighIRStatementsByDCE(statement.s1, set);
       const s2 = internalOptimizeHighIRStatementsByDCE(statement.s2, set);
       const ifElse = ifElseOrNull({ ...statement, s1, s2, finalAssignments });
@@ -124,13 +122,11 @@ function optimizeHighIRStatement(
         collectUseFromHighIRExpression(it.loopValue, set)
       );
       const statements = internalOptimizeHighIRStatementsByDCE(statement.statements, set);
-      const loopVariables = usedLoopVariablesInsideLoop
-        .map((variable) => {
-          if (!set.has(variable.name)) return null;
-          collectUseFromHighIRExpression(variable.initialValue, set);
-          return variable;
-        })
-        .filter(isNotNull);
+      const loopVariables = filterMap(usedLoopVariablesInsideLoop, (variable) => {
+        if (!set.has(variable.name)) return null;
+        collectUseFromHighIRExpression(variable.initialValue, set);
+        return variable;
+      });
       return [{ ...statement, loopVariables, statements, breakCollector }];
     }
     case 'HighIRStructInitializationStatement':

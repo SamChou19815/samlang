@@ -28,6 +28,18 @@ export const zip3 = <A, B, C>(
 ): readonly (readonly [A, B, C])[] =>
   list1.map((e1, i) => [e1, checkNotNull(list2[i]), checkNotNull(list3[i])]);
 
+export function filterMap<T, R>(
+  list: readonly T[],
+  filterMapper: (value: T, index: number, array: readonly T[]) => R | null | undefined
+): readonly R[] {
+  const result: R[] = [];
+  list.forEach((value, index, array) => {
+    const mapped = filterMapper(value, index, array);
+    if (mapped != null) result.push(mapped);
+  });
+  return result;
+}
+
 export interface Hashable {
   readonly uniqueHash: () => string | number;
 }

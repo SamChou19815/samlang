@@ -6,6 +6,7 @@ import {
   assert,
   zip,
   zip3,
+  filterMap,
   Hashable,
   mapOf,
   setOf,
@@ -56,6 +57,10 @@ describe('samlang-utils', () => {
       [1, '1', 'a'],
       [2, '2', 'b'],
     ]);
+  });
+
+  it('filterMap test', () => {
+    expect(filterMap([1, 2, 3], (n) => (n % 2 === 1 ? n * 2 : null))).toEqual([2, 6]);
   });
 
   it('ReadOnly map and set tests', () => {

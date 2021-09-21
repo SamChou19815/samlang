@@ -14,7 +14,7 @@ import {
   HIR_ONE,
   HIR_ZERO,
 } from 'samlang-core-ast/hir-nodes';
-import { assert, checkNotNull, isNotNull } from 'samlang-core-utils';
+import { assert, checkNotNull, isNotNull, filterMap } from 'samlang-core-utils';
 
 import { internalOptimizeHighIRStatementsByDCE } from './hir-dead-code-elimination-optimization';
 
@@ -432,15 +432,13 @@ export function extractDerivedInductionVariables_EXPOSED_FOR_TESTING(
   const inductionLoopVariablesCollectorNames = new Set(
     allBasicInductionVariables.map((it) => it.loopValueCollector)
   );
-  return restStatements
-    .map((it) => {
-      if (it.__type__ !== 'HighIRBinaryStatement') return null;
-      const derivedInductionVariable = existingDerivedInductionVariableSet[it.name];
-      if (derivedInductionVariable == null) return null;
-      if (inductionLoopVariablesCollectorNames.has(it.name)) return null;
-      return { name: it.name, ...derivedInductionVariable };
-    })
-    .filter(isNotNull);
+  return filterMap(restStatements, (it) => {
+    if (it.__type__ !== 'HighIRBinaryStatement') return null;
+    const derivedInductionVariable = existingDerivedInductionVariableSet[it.name];
+    if (derivedInductionVariable == null) return null;
+    if (inductionLoopVariablesCollectorNames.has(it.name)) return null;
+    return { name: it.name, ...derivedInductionVariable };
+  });
 }
 
 export function removeDeadCodeInsideLoop_EXPOSED_FOR_TESTING(

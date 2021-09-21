@@ -7,7 +7,7 @@ import {
   HIR_ZERO,
   HIR_VARIABLE,
 } from 'samlang-core-ast/hir-nodes';
-import { checkNotNull, isNotNull, zip, zip3 } from 'samlang-core-utils';
+import { checkNotNull, filterMap, zip, zip3 } from 'samlang-core-utils';
 
 import optimizeHighIRFunctionByConditionalConstantPropagation from './hir-conditional-constant-propagation-optimization';
 import { LocalValueContextForOptimization } from './hir-optimization-common';
@@ -131,18 +131,18 @@ function inlineRewriteForStatement(
     case 'HighIRIfElseStatement': {
       const booleanExpression = rewrite(statement.booleanExpression);
       const [s1, branch1Values] = context.withNestedScope(() => {
-        const statements = statement.s1
-          .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
-          .filter(isNotNull);
+        const statements = filterMap(statement.s1, (it) =>
+          inlineRewriteForStatement(prefix, context, returnCollector, it)
+        );
         return [
           statements,
           statement.finalAssignments.map((final) => rewrite(final.branch1Value)),
         ] as const;
       });
       const [s2, branch2Values] = context.withNestedScope(() => {
-        const statements = statement.s2
-          .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
-          .filter(isNotNull);
+        const statements = filterMap(statement.s2, (it) =>
+          inlineRewriteForStatement(prefix, context, returnCollector, it)
+        );
         return [
           statements,
           statement.finalAssignments.map((final) => rewrite(final.branch2Value)),
@@ -167,9 +167,9 @@ function inlineRewriteForStatement(
     case 'HighIRSingleIfStatement': {
       const booleanExpression = rewrite(statement.booleanExpression);
       const statements = context.withNestedScope(() =>
-        statement.statements
-          .map((it) => inlineRewriteForStatement(prefix, context, returnCollector, it))
-          .filter(isNotNull)
+        filterMap(statement.statements, (it) =>
+          inlineRewriteForStatement(prefix, context, returnCollector, it)
+        )
       );
       return { ...statement, booleanExpression, statements };
     }
@@ -254,16 +254,14 @@ function performInlineRewriteOnFunction(
           }
         );
         // Inline step 2: Add in body code and change return statements
-        const rewrittenBody = mainBodyStatementsOfFunctionToBeInlined
-          .map((it) =>
-            inlineRewriteForStatement(
-              temporaryPrefix,
-              context,
-              returnCollector != null ? { name: returnCollector, type: returnType } : undefined,
-              it
-            )
+        const rewrittenBody = filterMap(mainBodyStatementsOfFunctionToBeInlined, (it) =>
+          inlineRewriteForStatement(
+            temporaryPrefix,
+            context,
+            returnCollector != null ? { name: returnCollector, type: returnType } : undefined,
+            it
           )
-          .filter(isNotNull);
+        );
         if (returnCollector == null) return rewrittenBody;
         // Using this to move the value around, will be optimized away eventually.
         return [

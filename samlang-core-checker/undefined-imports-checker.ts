@@ -1,7 +1,7 @@
 import type { Sources } from 'samlang-core-ast/common-nodes';
 import type { ModuleMembersImport, SamlangModule } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { isNotNull } from 'samlang-core-utils';
+import { filterMap } from 'samlang-core-utils';
 
 class UndefinedImportChecker {
   constructor(
@@ -10,9 +10,7 @@ class UndefinedImportChecker {
   ) {}
 
   checkModuleImports(samlangModule: SamlangModule): SamlangModule {
-    const checkedImports = samlangModule.imports
-      .map(this.checkModuleMembersImport)
-      .filter(isNotNull);
+    const checkedImports = filterMap(samlangModule.imports, this.checkModuleMembersImport);
     return { classes: samlangModule.classes, imports: checkedImports };
   }
 
