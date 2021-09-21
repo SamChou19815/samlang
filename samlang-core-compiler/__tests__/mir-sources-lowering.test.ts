@@ -66,6 +66,24 @@ describe('mir-sources-lowering', () => {
           typeParameters: [],
           mappings: [HIR_INT_TYPE, HIR_INT_TYPE],
         },
+        {
+          identifier: 'Object2',
+          type: 'object',
+          typeParameters: [],
+          mappings: [HIR_STRING_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Foo')],
+        },
+        {
+          identifier: 'Variant2',
+          type: 'variant',
+          typeParameters: [],
+          mappings: [HIR_STRING_TYPE],
+        },
+        {
+          identifier: 'Variant3',
+          type: 'variant',
+          typeParameters: [],
+          mappings: [HIR_STRING_TYPE, HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('Foo')],
+        },
       ],
       functions: [
         {
@@ -195,6 +213,12 @@ type Object = (int, int, int);
 
 type Variant = (int, int, any);
 
+type Object2 = (int, string, Foo);
+
+type Variant2 = (int, int, any);
+
+type Variant3 = (int, int, any);
+
 function _compiled_program_main(): int {
   let finalV: int;
   if 1 {
@@ -233,6 +257,70 @@ function _compiled_program_main(): int {
     let _mid_t5: any = 0;
     let c2: CC = [1, (_mid_t4: (any) -> int), (_mid_t5: any)];
     finalV = (v2: int);
+  }
+  return 0;
+}
+
+function __decRef_Object(o: Object): int {
+  (o: Object)[0] -= 1;
+  let currentRefCount: int = (o: Object)[0];
+  let dead: bool = (currentRefCount: int) <= 0;
+  if (dead: bool) {
+    let pointer_casted: any = (o: Object);
+    __free((pointer_casted: any));
+  }
+  return 0;
+}
+
+function __decRef_Variant(o: Variant): int {
+  (o: Variant)[0] -= 1;
+  let currentRefCount: int = (o: Variant)[0];
+  let dead: bool = (currentRefCount: int) <= 0;
+  if (dead: bool) {
+    let pointer_casted: any = (o: Variant);
+    __free((pointer_casted: any));
+  }
+  return 0;
+}
+
+function __decRef_Object2(o: Object2): int {
+  (o: Object2)[0] -= 1;
+  let currentRefCount: int = (o: Object2)[0];
+  let dead: bool = (currentRefCount: int) <= 0;
+  if (dead: bool) {
+    let pointer_casted: any = (o: Object2);
+    __free((pointer_casted: any));
+    let v1: Foo = (o: Object2)[2];
+    __decRef_Foo((v1: Foo));
+  }
+  return 0;
+}
+
+function __decRef_Variant2(o: Variant2): int {
+  (o: Variant2)[0] -= 1;
+  let currentRefCount: int = (o: Variant2)[0];
+  let dead: bool = (currentRefCount: int) <= 0;
+  if (dead: bool) {
+    let pointer_casted: any = (o: Variant2);
+    __free((pointer_casted: any));
+  }
+  return 0;
+}
+
+function __decRef_Variant3(o: Variant3): int {
+  (o: Variant3)[0] -= 1;
+  let currentRefCount: int = (o: Variant3)[0];
+  let dead: bool = (currentRefCount: int) <= 0;
+  if (dead: bool) {
+    let pointer_casted: any = (o: Variant3);
+    __free((pointer_casted: any));
+    let tag: int = (o: Variant3)[1];
+    let tagComparison1: bool = (tag: int) == 2;
+    if (tagComparison1: bool) {
+      let _mid_t6: any = (o: Variant3)[2];
+      let v1: Foo = (_mid_t6: any);
+      __decRef_Foo((v1: Foo));
+    }
   }
   return 0;
 }
