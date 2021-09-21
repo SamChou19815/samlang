@@ -18,6 +18,10 @@ extern samlang_int* _builtin_malloc(samlang_int size) {
   return GC_malloc(size);
 }
 
+extern samlang_int _builtin_free(samlang_int* pointer) {
+  return 0;
+}
+
 // Internal helper for making arrays
 static void* mkArray(int bytes, int cells) {
   samlang_int* memory = _builtin_malloc(bytes + 8);

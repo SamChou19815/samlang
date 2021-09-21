@@ -7,6 +7,7 @@ import {
   ENCODED_FUNCTION_NAME_INT_TO_STRING,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_PRINTLN,
+  ENCODED_FUNCTION_NAME_FREE,
 } from 'samlang-core-ast/common-names';
 import type { IROperator } from 'samlang-core-ast/common-operators';
 import type {
@@ -106,6 +107,8 @@ function handleBuiltInFunctionCall(
       environment.printed += `${string}\n`;
       return 0;
     }
+    case ENCODED_FUNCTION_NAME_FREE:
+      return 0;
     default:
       return null;
   }

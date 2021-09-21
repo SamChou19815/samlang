@@ -21,6 +21,7 @@ declare i64 @__Builtins_panic(i64*) nounwind
 declare i64* @__Builtins_intToString(i64) nounwind
 declare i64 @__Builtins_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
+declare i64 @_builtin_free(i64*) nounwind
 
 ; @GLOBAL_STRING_0 = 'hello world'
 @GLOBAL_STRING_0 = private unnamed_addr constant [12 x i64] [i64 11, i64 104, i64 101, i64 108, i64 108, i64 111, i64 32, i64 119, i64 111, i64 114, i64 108, i64 100], align 8
@@ -45,6 +46,7 @@ declare i64 @__Builtins_panic(i64*) nounwind
 declare i64* @__Builtins_intToString(i64) nounwind
 declare i64 @__Builtins_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
+declare i64 @_builtin_free(i64*) nounwind
 `,
       assemblyString: undefined,
       errors: [],
