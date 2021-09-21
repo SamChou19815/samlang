@@ -249,12 +249,13 @@ class HighIRToMidIRLoweringManager {
     returnValue,
   }: HighIRFunction): MidIRFunction {
     assert(typeParameters.length === 0);
+    const loweredReturnValue = lowerHighIRExpression(returnValue);
     return {
       name,
       parameters,
       type: lowerHighIRFunctionType(type),
       body: this.lowerHighIRStatementBlock(body),
-      returnValue: lowerHighIRExpression(returnValue),
+      returnValue: loweredReturnValue,
     };
   }
 
@@ -384,22 +385,24 @@ class HighIRToMidIRLoweringManager {
         }
         return statements;
       }
-      case 'HighIRIfElseStatement':
+      case 'HighIRIfElseStatement': {
+        const finalAssignments = statement.finalAssignments.map(
+          ({ name, type, branch1Value, branch2Value }) => ({
+            name,
+            type: lowerHighIRType(type),
+            branch1Value: lowerHighIRExpression(branch1Value),
+            branch2Value: lowerHighIRExpression(branch2Value),
+          })
+        );
         return [
           MIR_IF_ELSE({
             booleanExpression: lowerHighIRExpression(statement.booleanExpression),
             s1: this.lowerHighIRStatementBlock(statement.s1),
             s2: this.lowerHighIRStatementBlock(statement.s2),
-            finalAssignments: statement.finalAssignments.map(
-              ({ name, type, branch1Value, branch2Value }) => ({
-                name,
-                type: lowerHighIRType(type),
-                branch1Value: lowerHighIRExpression(branch1Value),
-                branch2Value: lowerHighIRExpression(branch2Value),
-              })
-            ),
+            finalAssignments,
           }),
         ];
+      }
       case 'HighIRSingleIfStatement':
         return [
           MIR_SINGLE_IF({
@@ -410,17 +413,18 @@ class HighIRToMidIRLoweringManager {
         ];
       case 'HighIRBreakStatement':
         return [MIR_BREAK(lowerHighIRExpression(statement.breakValue))];
-      case 'HighIRWhileStatement':
+      case 'HighIRWhileStatement': {
+        const loopVariables = statement.loopVariables.map(
+          ({ name, type, initialValue, loopValue }) => ({
+            name,
+            type: lowerHighIRType(type),
+            initialValue: lowerHighIRExpression(initialValue),
+            loopValue: lowerHighIRExpression(loopValue),
+          })
+        );
         return [
           MIR_WHILE({
-            loopVariables: statement.loopVariables.map(
-              ({ name, type, initialValue, loopValue }) => ({
-                name,
-                type: lowerHighIRType(type),
-                initialValue: lowerHighIRExpression(initialValue),
-                loopValue: lowerHighIRExpression(loopValue),
-              })
-            ),
+            loopVariables,
             statements: this.lowerHighIRStatementBlock(statement.statements),
             breakCollector:
               statement.breakCollector != null
@@ -431,6 +435,7 @@ class HighIRToMidIRLoweringManager {
                 : undefined,
           }),
         ];
+      }
       case 'HighIRStructInitializationStatement': {
         const structVariableName = statement.structVariableName;
         const type = lowerHighIRType(statement.type);
