@@ -342,7 +342,7 @@ class HighIRToMidIRLoweringManager {
               functionExpression: lowerHighIRExpression(statement.functionExpression),
               functionArguments: statement.functionArguments.map(lowerHighIRExpression),
               returnType: loweredReturnType,
-              returnCollector: statement.returnCollector,
+              returnCollector: statement.returnCollector ?? this.tempAllocator(),
             })
           );
         } else {
@@ -378,14 +378,8 @@ class HighIRToMidIRLoweringManager {
                 ...statement.functionArguments.map(lowerHighIRExpression),
               ],
               returnType: loweredReturnType,
-              returnCollector: statement.returnCollector,
+              returnCollector: statement.returnCollector ?? this.tempAllocator(),
             })
-          );
-        }
-        if (statement.returnCollector != null) {
-          addReferenceCountingIfTypeAllowed(
-            statements,
-            MIR_VARIABLE(statement.returnCollector, statement.returnType)
           );
         }
         return statements;

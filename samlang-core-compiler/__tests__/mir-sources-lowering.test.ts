@@ -222,14 +222,14 @@ type Variant3 = (int, int, any);
 function _compiled_program_main(): int {
   let finalV: int;
   if 1 {
-    main(0);
-    let _mid_t0: (any, int) -> int = (cc: CC)[1];
-    let _mid_t1: any = (cc: CC)[2];
-    (_mid_t0: (any, int) -> int)((_mid_t1: any), 0);
+    let _mid_t0: int = main(0);
+    let _mid_t1: (any, int) -> int = (cc: CC)[1];
+    let _mid_t2: any = (cc: CC)[2];
+    let _mid_t3: int = (_mid_t1: (any, int) -> int)((_mid_t2: any), 0);
     let v1: int = (a: Object)[1];
     let v2: int = (b: Variant)[1];
-    let _mid_t2: any = (b: Variant)[2];
-    let v3: int = (_mid_t2: any);
+    let _mid_t4: any = (b: Variant)[2];
+    let v3: int = (_mid_t4: any);
     let v4: string = (b: Variant)[2];
     while (true) {
       if 0 {
@@ -249,13 +249,13 @@ function _compiled_program_main(): int {
     let v1: int = 0 + 0;
     (obj: Obj)[0] += 1;
     let O: Object = [1, 0, (obj: Obj)];
-    let _mid_t3: any = 0;
-    let v1: Variant = [1, 0, (_mid_t3: any)];
+    let _mid_t5: any = 0;
+    let v1: Variant = [1, 0, (_mid_t5: any)];
     let v2: Variant = [1, 0, G1];
     let c1: CC = [1, aaa, G1];
-    let _mid_t4: (any) -> int = bbb;
-    let _mid_t5: any = 0;
-    let c2: CC = [1, (_mid_t4: (any) -> int), (_mid_t5: any)];
+    let _mid_t6: (any) -> int = bbb;
+    let _mid_t7: any = 0;
+    let c2: CC = [1, (_mid_t6: (any) -> int), (_mid_t7: any)];
     finalV = (v2: int);
   }
   return 0;
@@ -317,8 +317,8 @@ function __decRef_Variant3(o: Variant3): int {
     let tag: int = (o: Variant3)[1];
     let tagComparison1: bool = (tag: int) == 2;
     if (tagComparison1: bool) {
-      let _mid_t6: any = (o: Variant3)[2];
-      let v1: Foo = (_mid_t6: any);
+      let _mid_t8: any = (o: Variant3)[2];
+      let v1: Foo = (_mid_t8: any);
       __decRef_Foo((v1: Foo));
     }
   }
