@@ -1,3 +1,4 @@
+import { ENCODED_FUNCTION_NAME_FREE } from 'samlang-core-ast/common-names';
 import type {
   HighIRType,
   HighIRFunctionType,
@@ -39,7 +40,7 @@ import {
   MIR_DEC_REF,
   isTheSameMidIRType,
 } from 'samlang-core-ast/mir-nodes';
-import { assert, checkNotNull } from 'samlang-core-utils';
+import { assert, checkNotNull, filterMap } from 'samlang-core-utils';
 
 function lowerHighIRType(type: HighIRType): MidIRType {
   switch (type.__type__) {
@@ -82,6 +83,9 @@ function lowerHighIRExpression(expression: HighIRExpression): MidIRExpression {
 }
 
 const decRefFunctionName = (name: string) => `__decRef_${name}`;
+
+const variableOfMidIRExpression = (expression: MidIRExpression): string | null =>
+  expression.__type__ === 'MidIRVariableExpression' ? expression.name : null;
 
 function generateSingleDestructorFunction(
   typeName: string,
@@ -144,7 +148,7 @@ class HighIRToMidIRLoweringManager {
             }),
             MIR_FUNCTION_CALL({
               functionExpression: MIR_NAME(
-                '__free',
+                ENCODED_FUNCTION_NAME_FREE,
                 MIR_FUNCTION_TYPE([MIR_ANY_TYPE], MIR_INT_TYPE)
               ),
               functionArguments: [MIR_VARIABLE('pointer_casted', MIR_ANY_TYPE)],
@@ -237,6 +241,16 @@ class HighIRToMidIRLoweringManager {
       );
     });
 
+    Object.keys(this.closureTypeDefinitions).forEach((typeName) => {
+      functions.push({
+        name: decRefFunctionName(typeName),
+        parameters: ['o'],
+        type: MIR_FUNCTION_TYPE([MIR_IDENTIFIER_TYPE(typeName)], MIR_INT_TYPE),
+        body: [],
+        returnValue: MIR_ZERO,
+      });
+    });
+
     return functions;
   }
 
@@ -250,38 +264,79 @@ class HighIRToMidIRLoweringManager {
   }: HighIRFunction): MidIRFunction {
     assert(typeParameters.length === 0);
     const loweredReturnValue = lowerHighIRExpression(returnValue);
+    const returnedVariable = variableOfMidIRExpression(loweredReturnValue);
     return {
       name,
       parameters,
       type: lowerHighIRFunctionType(type),
-      body: this.lowerHighIRStatementBlock(body),
+      body: this.lowerHighIRStatementBlock(
+        body,
+        new Set(returnedVariable != null ? [returnedVariable] : [])
+      ),
       returnValue: loweredReturnValue,
     };
   }
 
   private lowerHighIRStatementBlock(
-    statements: readonly HighIRStatement[]
+    statements: readonly HighIRStatement[],
+    variablesNotToDeref: ReadonlySet<string>
   ): readonly MidIRStatement[] {
     const loweredStatements = statements.flatMap(this.lowerHighIRStatement);
-    const variableToDecreaseReferenceCount: MidIRVariableExpression[] = [];
+    type Variable = { readonly variableName: string; readonly typeName: string };
+    const variableToDecreaseReferenceCount: Variable[] = [];
     loweredStatements.forEach((loweredStatement) => {
       switch (loweredStatement.__type__) {
-        case 'MidIRFunctionCallStatement':
-          if (loweredStatement.returnCollector && referenceTypeName(loweredStatement.returnType)) {
-            variableToDecreaseReferenceCount.push(
-              MIR_VARIABLE(loweredStatement.returnCollector, loweredStatement.returnType)
-            );
+        case 'MidIRFunctionCallStatement': {
+          const typeName = referenceTypeName(loweredStatement.returnType);
+          if (typeName) {
+            variableToDecreaseReferenceCount.push({
+              variableName: checkNotNull(loweredStatement.returnCollector),
+              typeName,
+            });
           }
           return;
-        case 'MidIRStructInitializationStatement':
-          variableToDecreaseReferenceCount.push(
-            MIR_VARIABLE(loweredStatement.structVariableName, loweredStatement.type)
-          );
+        }
+        case 'MidIRIfElseStatement':
+          loweredStatement.finalAssignments.forEach(({ name, type }) => {
+            const typeName = referenceTypeName(type);
+            if (typeName) variableToDecreaseReferenceCount.push({ variableName: name, typeName });
+          });
           return;
+        case 'MidIRWhileStatement':
+          if (loweredStatement.breakCollector) {
+            const typeName = referenceTypeName(loweredStatement.breakCollector.type);
+            if (typeName) {
+              const variableName = loweredStatement.breakCollector.name;
+              variableToDecreaseReferenceCount.push({ variableName, typeName });
+            }
+          }
+          return;
+        case 'MidIRStructInitializationStatement': {
+          const typeName = checkNotNull(referenceTypeName(loweredStatement.type));
+          variableToDecreaseReferenceCount.push({
+            variableName: loweredStatement.structVariableName,
+            typeName,
+          });
+          return;
+        }
         default:
           return;
       }
     });
+    variableToDecreaseReferenceCount
+      .filter((it) => !variablesNotToDeref.has(it.variableName))
+      .forEach(({ variableName, typeName }) => {
+        loweredStatements.push(
+          MIR_FUNCTION_CALL({
+            functionExpression: MIR_NAME(
+              decRefFunctionName(typeName),
+              MIR_FUNCTION_TYPE([MIR_IDENTIFIER_TYPE(typeName)], MIR_INT_TYPE)
+            ),
+            functionArguments: [MIR_VARIABLE(variableName, MIR_IDENTIFIER_TYPE(typeName))],
+            returnType: MIR_INT_TYPE,
+          })
+        );
+      });
     return loweredStatements;
   }
 
@@ -394,11 +449,17 @@ class HighIRToMidIRLoweringManager {
             branch2Value: lowerHighIRExpression(branch2Value),
           })
         );
+        const variablesNotToDerefInS1 = new Set(
+          filterMap(finalAssignments, ({ branch1Value }) => variableOfMidIRExpression(branch1Value))
+        );
+        const variablesNotToDerefInS2 = new Set(
+          filterMap(finalAssignments, ({ branch2Value }) => variableOfMidIRExpression(branch2Value))
+        );
         return [
           MIR_IF_ELSE({
             booleanExpression: lowerHighIRExpression(statement.booleanExpression),
-            s1: this.lowerHighIRStatementBlock(statement.s1),
-            s2: this.lowerHighIRStatementBlock(statement.s2),
+            s1: this.lowerHighIRStatementBlock(statement.s1, variablesNotToDerefInS1),
+            s2: this.lowerHighIRStatementBlock(statement.s2, variablesNotToDerefInS2),
             finalAssignments,
           }),
         ];
@@ -408,7 +469,7 @@ class HighIRToMidIRLoweringManager {
           MIR_SINGLE_IF({
             booleanExpression: lowerHighIRExpression(statement.booleanExpression),
             invertCondition: statement.invertCondition,
-            statements: this.lowerHighIRStatementBlock(statement.statements),
+            statements: this.lowerHighIRStatementBlock(statement.statements, new Set()),
           }),
         ];
       case 'HighIRBreakStatement':
@@ -422,10 +483,13 @@ class HighIRToMidIRLoweringManager {
             loopValue: lowerHighIRExpression(loopValue),
           })
         );
+        const variablesNotToDeref = new Set(
+          filterMap(loopVariables, ({ loopValue }) => variableOfMidIRExpression(loopValue))
+        );
         return [
           MIR_WHILE({
             loopVariables,
-            statements: this.lowerHighIRStatementBlock(statement.statements),
+            statements: this.lowerHighIRStatementBlock(statement.statements, variablesNotToDeref),
             breakCollector:
               statement.breakCollector != null
                 ? {

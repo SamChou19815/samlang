@@ -150,7 +150,7 @@ describe('mir-sources-lowering', () => {
                       statements: [HIR_BREAK(HIR_ZERO)],
                     }),
                   ],
-                  breakCollector: { name: '_', type: HIR_INT_TYPE },
+                  breakCollector: { name: '_', type: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('_') },
                 }),
               ],
               s2: [
@@ -186,6 +186,11 @@ describe('mir-sources-lowering', () => {
                   functionName: 'bbb',
                   functionType: HIR_FUNCTION_TYPE([HIR_INT_TYPE], HIR_INT_TYPE),
                   context: HIR_ZERO,
+                }),
+                HIR_FUNCTION_CALL({
+                  functionExpression: HIR_VARIABLE('cc', closureType),
+                  functionArguments: [HIR_ZERO],
+                  returnType: HIR_IDENTIFIER_TYPE_WITHOUT_TYPE_ARGS('CC'),
                 }),
               ],
               finalAssignments: [
@@ -236,7 +241,7 @@ function _compiled_program_main(): int {
       }
     }
     let _: int = 0;
-    let _: int;
+    let _: _;
     while (true) {
       if !0 {
         _ = 0;
@@ -244,6 +249,7 @@ function _compiled_program_main(): int {
       }
       _ = 0;
     }
+    __decRef__((_: _));
     finalV = (v1: int);
   } else {
     let v1: int = 0 + 0;
@@ -256,6 +262,14 @@ function _compiled_program_main(): int {
     let _mid_t6: (any) -> int = bbb;
     let _mid_t7: any = 0;
     let c2: CC = [1, (_mid_t6: (any) -> int), (_mid_t7: any)];
+    let _mid_t8: (any, int) -> int = (cc: CC)[1];
+    let _mid_t9: any = (cc: CC)[2];
+    let _mid_t10: CC = (_mid_t8: (any, int) -> int)((_mid_t9: any), 0);
+    __decRef_Object((O: Object));
+    __decRef_Variant((v1: Variant));
+    __decRef_CC((c1: CC));
+    __decRef_CC((c2: CC));
+    __decRef_CC((_mid_t10: CC));
     finalV = (v2: int);
   }
   return 0;
@@ -267,7 +281,7 @@ function __decRef_Object(o: Object): int {
   let dead: bool = (currentRefCount: int) <= 0;
   if (dead: bool) {
     let pointer_casted: any = (o: Object);
-    __free((pointer_casted: any));
+    _builtin_free((pointer_casted: any));
   }
   return 0;
 }
@@ -278,7 +292,7 @@ function __decRef_Variant(o: Variant): int {
   let dead: bool = (currentRefCount: int) <= 0;
   if (dead: bool) {
     let pointer_casted: any = (o: Variant);
-    __free((pointer_casted: any));
+    _builtin_free((pointer_casted: any));
   }
   return 0;
 }
@@ -289,7 +303,7 @@ function __decRef_Object2(o: Object2): int {
   let dead: bool = (currentRefCount: int) <= 0;
   if (dead: bool) {
     let pointer_casted: any = (o: Object2);
-    __free((pointer_casted: any));
+    _builtin_free((pointer_casted: any));
     let v1: Foo = (o: Object2)[2];
     __decRef_Foo((v1: Foo));
   }
@@ -302,7 +316,7 @@ function __decRef_Variant2(o: Variant2): int {
   let dead: bool = (currentRefCount: int) <= 0;
   if (dead: bool) {
     let pointer_casted: any = (o: Variant2);
-    __free((pointer_casted: any));
+    _builtin_free((pointer_casted: any));
   }
   return 0;
 }
@@ -313,15 +327,19 @@ function __decRef_Variant3(o: Variant3): int {
   let dead: bool = (currentRefCount: int) <= 0;
   if (dead: bool) {
     let pointer_casted: any = (o: Variant3);
-    __free((pointer_casted: any));
+    _builtin_free((pointer_casted: any));
     let tag: int = (o: Variant3)[1];
     let tagComparison1: bool = (tag: int) == 2;
     if (tagComparison1: bool) {
-      let _mid_t8: any = (o: Variant3)[2];
-      let v1: Foo = (_mid_t8: any);
+      let _mid_t11: any = (o: Variant3)[2];
+      let v1: Foo = (_mid_t11: any);
       __decRef_Foo((v1: Foo));
     }
   }
+  return 0;
+}
+
+function __decRef_CC(o: CC): int {
   return 0;
 }
 `

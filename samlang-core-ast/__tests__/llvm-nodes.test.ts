@@ -449,6 +449,7 @@ declare i64 @__Builtins_panic(i64*) nounwind
 declare i64* @__Builtins_intToString(i64) nounwind
 declare i64 @__Builtins_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
+declare i64 @_builtin_free(i64*) nounwind
 
 ; @hw = 'AA'
 @hw = private unnamed_addr constant [3 x i64] [i64 2, i64 65, i64 65], align 8

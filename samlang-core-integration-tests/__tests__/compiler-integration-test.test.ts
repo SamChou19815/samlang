@@ -4,6 +4,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_THROW,
+  ENCODED_FUNCTION_NAME_FREE,
   encodeMainFunctionName,
 } from 'samlang-core-ast/common-names';
 import { ModuleReference } from 'samlang-core-ast/common-nodes';
@@ -58,6 +59,7 @@ const ${ENCODED_FUNCTION_NAME_PRINTLN} = (line) => { printed += line; printed +=
 const ${ENCODED_FUNCTION_NAME_STRING_TO_INT} = (v) => parseInt(v, 10);
 const ${ENCODED_FUNCTION_NAME_INT_TO_STRING} = (v) => String(v);
 const ${ENCODED_FUNCTION_NAME_THROW} = (v) => { throw Error(v); };
+const ${ENCODED_FUNCTION_NAME_FREE} = (v) => {};
 ${prettyPrintMidIRSourcesAsJSSources(midIROptimizedSingleSource)}
 const result = {};
 

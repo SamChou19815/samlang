@@ -7,6 +7,7 @@ typedef samlang_int *samlang_string;
 
 // Main allocation hook
 samlang_int* _builtin_malloc(samlang_int);
+samlang_int _builtin_free(samlang_int*);
 samlang_string __Builtins_intToString(samlang_int);
 samlang_int __Builtins_println(samlang_string);
 samlang_int __Builtins_panic(samlang_string);

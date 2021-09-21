@@ -7,6 +7,7 @@ import {
   ENCODED_FUNCTION_NAME_STRING_CONCAT,
   ENCODED_FUNCTION_NAME_STRING_TO_INT,
   ENCODED_FUNCTION_NAME_THROW,
+  ENCODED_FUNCTION_NAME_FREE,
 } from './common-names';
 import type { GlobalVariable } from './common-nodes';
 import type { IROperator } from './common-operators';
@@ -492,6 +493,7 @@ declare i64 @${ENCODED_FUNCTION_NAME_THROW}(i64*) nounwind
 declare i64* @${ENCODED_FUNCTION_NAME_INT_TO_STRING}(i64) nounwind
 declare i64 @${ENCODED_FUNCTION_NAME_STRING_TO_INT}(i64*) nounwind
 declare i64* @${ENCODED_FUNCTION_NAME_STRING_CONCAT}(i64*, i64*) nounwind
+declare i64 @${ENCODED_FUNCTION_NAME_FREE}(i64*) nounwind
 `,
     ...globalVariables.flatMap(({ name, content }) => {
       const size = content.length;
