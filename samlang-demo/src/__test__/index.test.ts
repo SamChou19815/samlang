@@ -14,6 +14,10 @@ function _Demo_Main_main() {
   let _mid_t0 = __Builtins_println(GLOBAL_STRING_0);
   return 0;
 }
+/** @returns {number} */
+function __decRef_nothing(/** @type {any} */ o) {
+  return 0;
+}
 `,
       llvmString: `declare i64* @_builtin_malloc(i64) nounwind
 declare i64 @__Builtins_println(i64*) nounwind
@@ -30,6 +34,10 @@ l0_start:
   %_temp_0_string_name_cast = bitcast [12 x i64]* @GLOBAL_STRING_0 to i64*
   %_mid_t0 = call i64 @__Builtins_println(i64* %_temp_0_string_name_cast) nounwind
   ret i64 0
+}
+define i64 @__decRef_nothing(i64* %o) local_unnamed_addr nounwind {
+l0_start:
+  ret i64 0
 }`,
       errors: [],
     });
@@ -39,7 +47,11 @@ l0_start:
     expect(runSamlangDemo('class Main {}')).toEqual({
       prettyPrintedProgram: 'class Main {  }\n',
       interpreterPrinted: '',
-      jsString: '',
+      jsString: `/** @returns {number} */
+function __decRef_nothing(/** @type {any} */ o) {
+  return 0;
+}
+`,
       llvmString: `declare i64* @_builtin_malloc(i64) nounwind
 declare i64 @__Builtins_println(i64*) nounwind
 declare i64 @__Builtins_panic(i64*) nounwind
@@ -47,7 +59,11 @@ declare i64* @__Builtins_intToString(i64) nounwind
 declare i64 @__Builtins_stringToInt(i64*) nounwind
 declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 declare i64 @_builtin_free(i64*) nounwind
-`,
+
+define i64 @__decRef_nothing(i64* %o) local_unnamed_addr nounwind {
+l0_start:
+  ret i64 0
+}`,
       assemblyString: undefined,
       errors: [],
     });
