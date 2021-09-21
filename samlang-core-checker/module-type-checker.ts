@@ -5,7 +5,7 @@ import type {
   SamlangModule,
 } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
-import { error, isNotNull, LocalStackedContext } from 'samlang-core-utils';
+import { error, filterMap, LocalStackedContext } from 'samlang-core-utils';
 
 import typeCheckExpression from './expression-type-checker';
 import TypeResolution from './type-resolution';
@@ -43,9 +43,9 @@ export default class ModuleTypeChecker {
       );
       this.partiallyCheckMembers(classDefinition.members, accessibleGlobalTypingContext);
       // Second pass: type check all members' function body
-      const checkedMembers = classDefinition.members
-        .map((member) => this.typeCheckMemberDefinition(member, accessibleGlobalTypingContext))
-        .filter(isNotNull);
+      const checkedMembers = filterMap(classDefinition.members, (member) =>
+        this.typeCheckMemberDefinition(member, accessibleGlobalTypingContext)
+      );
       return { ...classDefinition, members: checkedMembers };
     });
     return { ...samlangmodule, classes: checkedClasses };

@@ -42,8 +42,8 @@ import type { FieldType } from 'samlang-core-ast/samlang-toplevel';
 import type { ModuleErrorCollector } from 'samlang-core-errors';
 import {
   listShallowEquals,
-  isNotNull,
   checkNotNull,
+  filterMap,
   LocalStackedContext,
   zip,
   assert,
@@ -639,8 +639,9 @@ class ExpressionTypeChecker {
         return { ...expression, matchedExpression: checkedMatchedExpression, type: expectedType };
     }
     const unusedMappings = { ...variantMappings };
-    const checkedMatchingList = expression.matchingList
-      .map(({ range, tag, dataVariable, expression: correspondingExpression }) => {
+    const checkedMatchingList = filterMap(
+      expression.matchingList,
+      ({ range, tag, dataVariable, expression: correspondingExpression }) => {
         const mappingDataType = unusedMappings[tag]?.type;
         if (mappingDataType == null) {
           this.errorCollector.reportUnresolvedNameError(range, tag);
@@ -671,8 +672,8 @@ class ExpressionTypeChecker {
           dataVariable: checkedDatadataVariable,
           expression: checkedExpression,
         };
-      })
-      .filter(isNotNull);
+      }
+    );
     const unusedTags = Object.keys(unusedMappings);
     if (unusedTags.length > 0) {
       this.errorCollector.reportNonExhausiveMatchError(expression.range, unusedTags);

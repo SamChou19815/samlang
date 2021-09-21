@@ -32,7 +32,7 @@ import {
   createGlobalErrorCollector,
 } from 'samlang-core-errors';
 import { parseSamlangModuleFromText } from 'samlang-core-parser';
-import { HashMap, hashMapOf, hashSetOf, isNotNull, checkNotNull, assert } from 'samlang-core-utils';
+import { HashMap, hashMapOf, hashSetOf, checkNotNull, filterMap, assert } from 'samlang-core-utils';
 
 import {
   ReadOnlyLocationLookup,
@@ -412,15 +412,12 @@ export class LanguageServices {
         return [moduleReference, samlangClass];
       }
     }
-    return imports
-      .map(({ importedMembers, importedModule }) => {
-        if (importedMembers.some((it) => it[0] === className)) {
-          return this.getClassDefinition(importedModule, className);
-        }
-        return undefined;
-      })
-      .filter(isNotNull)
-      .find(() => true);
+    return filterMap(imports, ({ importedMembers, importedModule }) => {
+      if (importedMembers.some((it) => it[0] === className)) {
+        return this.getClassDefinition(importedModule, className);
+      }
+      return undefined;
+    }).find(() => true);
   }
 
   private findClassMemberLocation(

@@ -5,7 +5,7 @@ import {
   HIR_BINARY,
   HIR_INT_TYPE,
 } from 'samlang-core-ast/hir-nodes';
-import { checkNotNull, isNotNull } from 'samlang-core-utils';
+import { checkNotNull, filterMap } from 'samlang-core-utils';
 
 import {
   GeneralBasicInductionVariable,
@@ -36,8 +36,9 @@ export default function highIRLoopStrengthReductionOptimization(
   });
   const prefixStatements: HighIRStatement[] = [];
   const newGeneralInductionVariables: GeneralBasicInductionVariable[] = [];
-  const remainingDerivedInductionVariables = derivedInductionVariables
-    .map((derivedInductionVariable) => {
+  const remainingDerivedInductionVariables = filterMap(
+    derivedInductionVariables,
+    (derivedInductionVariable) => {
       const associatedBasicInductionVariable = checkNotNull(
         basicInductionVariablesMap[derivedInductionVariable.baseName],
         `Missing ${derivedInductionVariable.baseName}`
@@ -74,8 +75,8 @@ export default function highIRLoopStrengthReductionOptimization(
         incrementAmount: addedInvariantExpressionInLoop,
       });
       return null;
-    })
-    .filter(isNotNull);
+    }
+  );
 
   return {
     prefixStatements,

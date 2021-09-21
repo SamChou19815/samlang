@@ -4,7 +4,7 @@ import {
   HIR_INDEX_ACCESS,
   HIR_BINARY,
 } from 'samlang-core-ast/hir-nodes';
-import { Hashable, ReadonlyHashSet, HashSet, hashSetOf, isNotNull } from 'samlang-core-utils';
+import { Hashable, ReadonlyHashSet, HashSet, hashSetOf, filterMap } from 'samlang-core-utils';
 
 import optimizeHighIRFunctionByLocalValueNumbering from './hir-local-value-numbering-optimization';
 import { BindedValue, bindedValueToString } from './hir-optimization-common';
@@ -22,10 +22,9 @@ function intersectionOf(
   set1: ReadonlyHashSet<ExpressionWrapper>,
   ...others: readonly ReadonlyHashSet<ExpressionWrapper>[]
 ): readonly BindedValue[] {
-  return set1
-    .toArray()
-    .map((wrapper) => (others.every((it) => it.has(wrapper)) ? wrapper.value : null))
-    .filter(isNotNull);
+  return filterMap(set1.toArray(), (wrapper) =>
+    others.every((it) => it.has(wrapper)) ? wrapper.value : null
+  );
 }
 
 function produceHoistedStatement(
