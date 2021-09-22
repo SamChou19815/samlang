@@ -7,7 +7,7 @@ describe('samlang-demo', () => {
     ).toEqual({
       interpreterPrinted: 'hello world\n',
       prettyPrintedProgram: `class Main { function main(): unit = Builtins.println("hello world")  }\n`,
-      jsString: `const GLOBAL_STRING_0 = "hello world";
+      jsString: `/** @type {Str} */ const GLOBAL_STRING_0 = [0, "hello world"];
 /** @returns {number} */
 function _Demo_Main_main() {
   /** @type {number} */

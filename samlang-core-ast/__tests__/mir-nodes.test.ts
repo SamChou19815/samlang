@@ -224,15 +224,15 @@ if (0) {
           {
             name: 'Bar',
             parameters: ['f'],
-            type: MIR_FUNCTION_TYPE([MIR_INT_TYPE], MIR_INT_TYPE),
+            type: MIR_FUNCTION_TYPE([MIR_STRING_TYPE], MIR_INT_TYPE),
             body: [MIR_CAST({ name: 'a', type: MIR_INT_TYPE, assignedExpression: MIR_ZERO })],
             returnValue: MIR_ZERO,
           },
         ],
       })
-    ).toBe(`const dev_meggo = "vibez";
+    ).toBe(`/** @type {Str} */ const dev_meggo = [0, "vibez"];
 /** @returns {number} */
-function Bar(/** @type {number} */ f) {
+function Bar(/** @type {Str} */ f) {
   let a = /** @type {number} */ (0);
   return 0;
 }
@@ -461,7 +461,7 @@ if 0 {
           },
         ],
       })
-    ).toBe(`const dev_meggo = 'vibez';
+    ).toBe(`const dev_meggo = [0, 'vibez'];
 
 type Foo = (int, any);
 

@@ -17,9 +17,11 @@ import {
   MidIRStatement,
   MidIRFunction,
   MidIRSources,
+  isTheSameMidIRType,
   MIR_ANY_TYPE,
   MIR_BOOL_TYPE,
   MIR_INT_TYPE,
+  MIR_STRING_TYPE,
   MIR_IDENTIFIER_TYPE,
   MIR_FUNCTION_TYPE,
   MIR_ZERO,
@@ -38,7 +40,6 @@ import {
   MIR_STRUCT_INITIALIZATION,
   MIR_INC_REF,
   MIR_DEC_REF,
-  isTheSameMidIRType,
 } from 'samlang-core-ast/mir-nodes';
 import { assert, checkNotNull, filterMap } from 'samlang-core-utils';
 
@@ -59,7 +60,11 @@ function lowerHighIRType(type: HighIRType): MidIRType {
 const unknownMemberDestructorType = MIR_FUNCTION_TYPE([MIR_ANY_TYPE], MIR_INT_TYPE);
 
 const referenceTypeName = (type: MidIRType): string | null =>
-  type.__type__ === 'IdentifierType' ? type.name : null;
+  type.__type__ === 'IdentifierType'
+    ? type.name
+    : type.__type__ === 'PrimitiveType' && type.type === 'string'
+    ? 'string'
+    : null;
 
 function addReferenceCountingIfTypeAllowed(
   collector: MidIRStatement[],
@@ -98,19 +103,33 @@ function generateSingleDestructorFunction(
     destructMemberStatements: MidIRStatement[]
   ) => void
 ): MidIRFunction {
-  const parameter = MIR_VARIABLE('o', MIR_IDENTIFIER_TYPE(typeName));
-  const destructMemberStatements: MidIRStatement[] = [
-    MIR_CAST({
-      name: `pointer_casted`,
-      type: MIR_ANY_TYPE,
-      assignedExpression: parameter,
-    }),
-    MIR_FUNCTION_CALL({
-      functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
-      functionArguments: [MIR_VARIABLE('pointer_casted', MIR_ANY_TYPE)],
-      returnType: MIR_INT_TYPE,
-    }),
-  ];
+  const parameter = MIR_VARIABLE(
+    'o',
+    typeName === 'string' ? MIR_STRING_TYPE : MIR_IDENTIFIER_TYPE(typeName)
+  );
+  const destructMemberStatements: MidIRStatement[] = isTheSameMidIRType(
+    parameter.type,
+    MIR_ANY_TYPE
+  )
+    ? [
+        MIR_FUNCTION_CALL({
+          functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
+          functionArguments: [parameter],
+          returnType: MIR_INT_TYPE,
+        }),
+      ]
+    : [
+        MIR_CAST({
+          name: `pointer_casted`,
+          type: MIR_ANY_TYPE,
+          assignedExpression: parameter,
+        }),
+        MIR_FUNCTION_CALL({
+          functionExpression: MIR_NAME(ENCODED_FUNCTION_NAME_FREE, unknownMemberDestructorType),
+          functionArguments: [MIR_VARIABLE('pointer_casted', MIR_ANY_TYPE)],
+          returnType: MIR_INT_TYPE,
+        }),
+      ];
   getDestructMemberStatements(parameter, destructMemberStatements);
   return {
     name: decRefFunctionName(typeName),
@@ -196,28 +215,31 @@ class HighIRToMidIRLoweringManager {
                 const loweredType = lowerHighIRType(type);
                 const statements: MidIRStatement[] = [];
                 // Commented until runtime can deal with strings
-                /*
-              if (isTheSameMidIRType(loweredType, MIR_ANY_TYPE)) {
-                statements.push(
-                  MIR_INDEX_ACCESS({
-                    name: `v${index}`,
-                    type: loweredType,
-                    pointerExpression,
-                    index: 2,
-                  })
-                );
-              } else {
-              */
-                const temp = this.tempAllocator();
-                statements.push(
-                  MIR_INDEX_ACCESS({ name: temp, type: MIR_ANY_TYPE, pointerExpression, index: 2 }),
-                  MIR_CAST({
-                    name: `v${index}`,
-                    type: loweredType,
-                    assignedExpression: MIR_VARIABLE(temp, MIR_ANY_TYPE),
-                  })
-                );
-                // }
+                if (isTheSameMidIRType(loweredType, MIR_ANY_TYPE)) {
+                  statements.push(
+                    MIR_INDEX_ACCESS({
+                      name: `v${index}`,
+                      type: loweredType,
+                      pointerExpression,
+                      index: 2,
+                    })
+                  );
+                } else {
+                  const temp = this.tempAllocator();
+                  statements.push(
+                    MIR_INDEX_ACCESS({
+                      name: temp,
+                      type: MIR_ANY_TYPE,
+                      pointerExpression,
+                      index: 2,
+                    }),
+                    MIR_CAST({
+                      name: `v${index}`,
+                      type: loweredType,
+                      assignedExpression: MIR_VARIABLE(temp, MIR_ANY_TYPE),
+                    })
+                  );
+                }
                 statements.push(
                   MIR_FUNCTION_CALL({
                     functionExpression: MIR_NAME(
@@ -276,6 +298,8 @@ class HighIRToMidIRLoweringManager {
         )
       );
     });
+
+    functions.push(generateSingleDestructorFunction('string', () => {}));
 
     functions.push({
       name: decRefFunctionName('nothing'),
