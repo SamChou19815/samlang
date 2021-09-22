@@ -9,7 +9,7 @@
     "samlang-core-ast": "workspace:0.0.1"
   },
   "devDependencies": {
-    "@types/jest": "^27.0.1",
+    "@types/jest": "^27.0.2",
     "typescript": "^4.4.3"
   }
 }
