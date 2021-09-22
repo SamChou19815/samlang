@@ -5,7 +5,6 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "./gc.h"
 #include "./libsam-base.h"
 #define WORDSIZE 4
 
@@ -15,10 +14,11 @@ typedef samlang_int *samlang_string;
 /** Core runtime */
 
 extern samlang_int* _builtin_malloc(samlang_int size) {
-  return GC_malloc(size);
+  return malloc(size);
 }
 
 extern samlang_int _builtin_free(samlang_int* pointer) {
+  free(pointer);
   return 0;
 }
 
@@ -41,10 +41,8 @@ static samlang_string mkString(const char* in) {
 extern samlang_int _compiled_program_main();
 
 int main(int argc, char *argv[]) {
-  gc_init();
   // transfer to program's main
-  _compiled_program_main();
-  return 0;
+  return (int) _compiled_program_main();
 }
 
 /* converting UTF-16 to UTF-8 */
