@@ -13,7 +13,7 @@
     "samlang-core-utils": "workspace:0.0.1"
   },
   "devDependencies": {
-    "@types/jest": "^27.0.1",
+    "@types/jest": "^27.0.2",
     "samlang-core-printer": "workspace:0.0.1",
     "typescript": "^4.4.3"
   }
