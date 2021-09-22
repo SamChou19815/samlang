@@ -161,7 +161,7 @@ describe('mir-nodes', () => {
     ).toBe(`/** @type {number} */
 let bar;
 if (0) {
-  0[0] += 1;
+  if (0[0]) 0[0] += 1;
   0[0] -= 1;
   let foo = /** @type {Bar} */ (dev);
   /** @type {number} */

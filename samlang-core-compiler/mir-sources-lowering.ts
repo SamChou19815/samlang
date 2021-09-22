@@ -93,6 +93,9 @@ function lowerHighIRExpression(expression: HighIRExpression): MidIRExpression {
 
 const decRefFunctionName = (name: string) => `__decRef_${name}`;
 
+const defRefFunctionArgumentType = (typeName: string) =>
+  typeName === 'string' ? MIR_STRING_TYPE : MIR_IDENTIFIER_TYPE(typeName);
+
 const variableOfMidIRExpression = (expression: MidIRExpression): string | null =>
   expression.__type__ === 'MidIRVariableExpression' ? expression.name : null;
 
@@ -103,10 +106,7 @@ function generateSingleDestructorFunction(
     destructMemberStatements: MidIRStatement[]
   ) => void
 ): MidIRFunction {
-  const parameter = MIR_VARIABLE(
-    'o',
-    typeName === 'string' ? MIR_STRING_TYPE : MIR_IDENTIFIER_TYPE(typeName)
-  );
+  const parameter = MIR_VARIABLE('o', defRefFunctionArgumentType(typeName));
   const destructMemberStatements: MidIRStatement[] = isTheSameMidIRType(
     parameter.type,
     MIR_ANY_TYPE
@@ -136,23 +136,35 @@ function generateSingleDestructorFunction(
     parameters: [parameter.name],
     type: MIR_FUNCTION_TYPE([parameter.type], MIR_INT_TYPE),
     body: [
-      /* parameter[0] -= 1 */ MIR_DEC_REF(parameter),
       /* currentRefCount = parameter[0] */ MIR_INDEX_ACCESS({
         name: 'currentRefCount',
         type: MIR_INT_TYPE,
         pointerExpression: parameter,
         index: 0,
       }),
-      /* dead = currentRefCount <= 0 */ MIR_BINARY({
-        name: 'dead',
-        operator: '<=',
+      /* performGC = currentRefCount > 0 */ MIR_BINARY({
+        name: 'performGC',
+        operator: '>',
         e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
         e2: MIR_ZERO,
       }),
-      /* if (dead) destructMemberStatements; */ MIR_SINGLE_IF({
-        booleanExpression: MIR_VARIABLE('dead', MIR_BOOL_TYPE),
+      MIR_SINGLE_IF({
+        booleanExpression: MIR_VARIABLE('performGC', MIR_BOOL_TYPE),
         invertCondition: false,
-        statements: destructMemberStatements,
+        statements: [
+          /* parameter[0] -= 1 */ MIR_DEC_REF(parameter),
+          /* dead = currentRefCount <= 1 */ MIR_BINARY({
+            name: 'dead',
+            operator: '<=',
+            e1: MIR_VARIABLE('currentRefCount', MIR_INT_TYPE),
+            e2: MIR_ONE,
+          }),
+          /* if (dead) destructMemberStatements; */ MIR_SINGLE_IF({
+            booleanExpression: MIR_VARIABLE('dead', MIR_BOOL_TYPE),
+            invertCondition: false,
+            statements: destructMemberStatements,
+          }),
+        ],
       }),
     ],
     returnValue: MIR_ZERO,
@@ -196,7 +208,7 @@ class HighIRToMidIRLoweringManager {
                   MIR_FUNCTION_CALL({
                     functionExpression: MIR_NAME(
                       decRefFunctionName(typeName),
-                      MIR_FUNCTION_TYPE([MIR_IDENTIFIER_TYPE(typeName)], MIR_INT_TYPE)
+                      MIR_FUNCTION_TYPE([defRefFunctionArgumentType(typeName)], MIR_INT_TYPE)
                     ),
                     functionArguments: [MIR_VARIABLE(`v${index}`, loweredType)],
                     returnType: MIR_INT_TYPE,
@@ -244,7 +256,7 @@ class HighIRToMidIRLoweringManager {
                   MIR_FUNCTION_CALL({
                     functionExpression: MIR_NAME(
                       decRefFunctionName(typeName),
-                      MIR_FUNCTION_TYPE([MIR_IDENTIFIER_TYPE(typeName)], MIR_INT_TYPE)
+                      MIR_FUNCTION_TYPE([defRefFunctionArgumentType(typeName)], MIR_INT_TYPE)
                     ),
                     functionArguments: [MIR_VARIABLE(`v${index}`, loweredType)],
                     returnType: MIR_INT_TYPE,
@@ -388,9 +400,9 @@ class HighIRToMidIRLoweringManager {
           MIR_FUNCTION_CALL({
             functionExpression: MIR_NAME(
               decRefFunctionName(typeName),
-              MIR_FUNCTION_TYPE([MIR_IDENTIFIER_TYPE(typeName)], MIR_INT_TYPE)
+              MIR_FUNCTION_TYPE([defRefFunctionArgumentType(typeName)], MIR_INT_TYPE)
             ),
-            functionArguments: [MIR_VARIABLE(variableName, MIR_IDENTIFIER_TYPE(typeName))],
+            functionArguments: [MIR_VARIABLE(variableName, defRefFunctionArgumentType(typeName))],
             returnType: MIR_INT_TYPE,
           })
         );

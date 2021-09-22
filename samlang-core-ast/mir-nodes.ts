@@ -721,12 +721,11 @@ export function prettyPrintMidIRStatementAsJSStatement(
         );
         break;
       }
-      case 'MidIRIncreaseReferenceCountStatement':
-        collector.push(
-          '  '.repeat(level),
-          `${prettyPrintMidIRExpressionAsJSExpression(s.expression)}[0] += 1;\n`
-        );
+      case 'MidIRIncreaseReferenceCountStatement': {
+        const expression = prettyPrintMidIRExpressionAsJSExpression(s.expression);
+        collector.push('  '.repeat(level), `if (${expression}[0]) ${expression}[0] += 1;\n`);
         break;
+      }
       case 'MidIRDecreaseReferenceCountStatement':
         collector.push(
           '  '.repeat(level),

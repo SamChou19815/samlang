@@ -285,47 +285,59 @@ function _compiled_program_main(): int {
 }
 
 function __decRef_Object(o: Object): int {
-  (o: Object)[0] -= 1;
   let currentRefCount: int = (o: Object)[0];
-  let dead: bool = (currentRefCount: int) <= 0;
-  if (dead: bool) {
-    let pointer_casted: any = (o: Object);
-    _builtin_free((pointer_casted: any));
+  let performGC: bool = (currentRefCount: int) > 0;
+  if (performGC: bool) {
+    (o: Object)[0] -= 1;
+    let dead: bool = (currentRefCount: int) <= 1;
+    if (dead: bool) {
+      let pointer_casted: any = (o: Object);
+      _builtin_free((pointer_casted: any));
+    }
   }
   return 0;
 }
 
 function __decRef_Variant(o: Variant): int {
-  (o: Variant)[0] -= 1;
   let currentRefCount: int = (o: Variant)[0];
-  let dead: bool = (currentRefCount: int) <= 0;
-  if (dead: bool) {
-    let pointer_casted: any = (o: Variant);
-    _builtin_free((pointer_casted: any));
+  let performGC: bool = (currentRefCount: int) > 0;
+  if (performGC: bool) {
+    (o: Variant)[0] -= 1;
+    let dead: bool = (currentRefCount: int) <= 1;
+    if (dead: bool) {
+      let pointer_casted: any = (o: Variant);
+      _builtin_free((pointer_casted: any));
+    }
   }
   return 0;
 }
 
 function __decRef_CC(o: CC): int {
-  (o: CC)[0] -= 1;
   let currentRefCount: int = (o: CC)[0];
-  let dead: bool = (currentRefCount: int) <= 0;
-  if (dead: bool) {
-    let pointer_casted: any = (o: CC);
-    _builtin_free((pointer_casted: any));
-    let destructor: (any) -> int = (o: CC)[1];
-    let context: any = (o: CC)[3];
-    (destructor: (any) -> int)((context: any));
+  let performGC: bool = (currentRefCount: int) > 0;
+  if (performGC: bool) {
+    (o: CC)[0] -= 1;
+    let dead: bool = (currentRefCount: int) <= 1;
+    if (dead: bool) {
+      let pointer_casted: any = (o: CC);
+      _builtin_free((pointer_casted: any));
+      let destructor: (any) -> int = (o: CC)[1];
+      let context: any = (o: CC)[3];
+      (destructor: (any) -> int)((context: any));
+    }
   }
   return 0;
 }
 
 function __decRef_string(o: string): int {
-  (o: string)[0] -= 1;
   let currentRefCount: int = (o: string)[0];
-  let dead: bool = (currentRefCount: int) <= 0;
-  if (dead: bool) {
-    _builtin_free((o: string));
+  let performGC: bool = (currentRefCount: int) > 0;
+  if (performGC: bool) {
+    (o: string)[0] -= 1;
+    let dead: bool = (currentRefCount: int) <= 1;
+    if (dead: bool) {
+      _builtin_free((o: string));
+    }
   }
   return 0;
 }
