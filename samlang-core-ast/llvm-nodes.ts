@@ -504,8 +504,8 @@ declare i64 @${ENCODED_FUNCTION_NAME_FREE}(i64*) nounwind
       return [
         `; @${name} = '${content}'`,
         size === 0
-          ? `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 2147483647, i64 ${size}], align 8`
-          : `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 2147483647, i64 ${size}, ${ints}], align 8`,
+          ? `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 0, i64 ${size}], align 8`
+          : `@${name} = private unnamed_addr constant [${structLength} x i64] [i64 0, i64 ${size}, ${ints}], align 8`,
       ];
     }),
     ...typeDefinitions.map(

@@ -681,13 +681,13 @@ declare i64* @_builtin_stringConcat(i64*, i64*) nounwind
 declare i64 @_builtin_free(i64*) nounwind
 
 ; @ss = 'S'
-@ss = private unnamed_addr constant [2 x i64] [i64 1, i64 83], align 8
+@ss = private unnamed_addr constant [3 x i64] [i64 0, i64 1, i64 83], align 8
 %A = type { i64, i64 }
 define i64 @___DUMMY___Main_main() local_unnamed_addr nounwind {
 l0_start:
-  %_temp_0_string_name_cast = bitcast [2 x i64]* @ss to i64*
+  %_temp_0_string_name_cast = bitcast [3 x i64]* @ss to i64*
   call i64 @println(i64* %_temp_0_string_name_cast) nounwind
-  %_temp_1_string_name_cast = bitcast [2 x i64]* @ss to i64*
+  %_temp_1_string_name_cast = bitcast [3 x i64]* @ss to i64*
   %r = call i64 @stringToInt(i64* %_temp_1_string_name_cast) nounwind
   ret i64 0
 }`
