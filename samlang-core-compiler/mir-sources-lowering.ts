@@ -42,6 +42,8 @@ import {
 } from 'samlang-core-ast/mir-nodes';
 import { assert, checkNotNull, filterMap } from 'samlang-core-utils';
 
+import optimizeMidIRSourcesByEliminatingUnusedOnes from './mir-unused-name-elimination';
+
 function lowerHighIRType(type: HighIRType): MidIRType {
   switch (type.__type__) {
     case 'PrimitiveType':
@@ -666,10 +668,10 @@ export default function lowerHighIRSourcesToMidIRSources(sources: HighIRSources)
     loweringManager.lowerHighIRFunction(highIRFunction)
   );
   functions.push(...loweringManager.generateDestructorFunctions());
-  return {
+  return optimizeMidIRSourcesByEliminatingUnusedOnes({
     globalVariables: sources.globalVariables,
     typeDefinitions,
     mainFunctionNames: sources.mainFunctionNames,
     functions,
-  };
+  });
 }
