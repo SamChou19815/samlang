@@ -160,6 +160,17 @@ describe('llvm-nodes', () => {
         })
       )
     ).toBe('%foo = getelementptr %Bar, %Bar* %bar, i32 0, i32 3');
+
+    expect(
+      prettyPrintLLVMInstruction(
+        LLVM_GET_ELEMENT_PTR({
+          resultVariable: 'foo',
+          sourceValue: LLVM_VARIABLE('bar'),
+          sourcePointerType: LLVM_STRING_TYPE(),
+          offset: 3,
+        })
+      )
+    ).toBe('%foo = getelementptr i64, i64* %bar, i32 3');
   });
 
   it('prettyPrintLLVMInstruction works for LLVM_BINARY.', () => {

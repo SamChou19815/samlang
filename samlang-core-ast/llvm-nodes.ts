@@ -339,6 +339,9 @@ export function prettyPrintLLVMInstruction(instruction: LLVMInstruction): string
       const value = prettyPrintLLVMValue(instruction.sourceValue, instruction.sourcePointerType);
       const sourceType = prettyPrintLLVMType(instruction.sourcePointerType);
       const sourceTypeWithoutStar = sourceType.substring(0, sourceType.length - 1);
+      if (sourceType === 'i64*') {
+        return `%${resultVariable} = getelementptr ${sourceTypeWithoutStar}, ${sourceType} ${value}, i32 ${offset}`;
+      }
       return `%${resultVariable} = getelementptr ${sourceTypeWithoutStar}, ${sourceType} ${value}, i32 0, i32 ${offset}`;
     }
     case 'LLVMBinaryInstruction': {
