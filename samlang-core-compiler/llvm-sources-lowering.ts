@@ -526,7 +526,7 @@ export function lowerMidIRFunctionToLLVMFunction_EXPOSED_FOR_TESTING(
 
 export default function lowerMidIRSourcesToLLVMSources(midIRSources: MidIRSources): LLVMSources {
   const globalVariablesMapping = Object.fromEntries(
-    midIRSources.globalVariables.map((it) => [it.name, it.content.length + 1])
+    midIRSources.globalVariables.map((it) => [it.name, it.content.length + 2])
   );
 
   return {

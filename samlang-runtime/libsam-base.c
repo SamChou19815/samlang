@@ -24,8 +24,9 @@ extern samlang_int _builtin_free(samlang_int* pointer) {
 
 // Internal helper for making arrays
 static void* mkArray(int bytes, int cells) {
-  samlang_int* memory = _builtin_malloc(bytes + 8);
-  memory[0] = cells;
+  samlang_int* memory = _builtin_malloc(bytes + 16);
+  memory[0] = 1;
+  memory[1] = cells;
   return memory;
 }
 
@@ -34,7 +35,7 @@ static samlang_string mkString(const char* in) {
   int c;
   int len = strlen(in);
   samlang_string out = mkArray(len * sizeof(samlang_int), len);
-  for (c = 0; c < len; ++c) out[c + 1] = in[c];
+  for (c = 0; c < len; ++c) out[c + 2] = in[c];
   return out;
 }
 
@@ -81,8 +82,8 @@ static void printUcs4char(const samlang_int c, FILE *stream) {
 
 samlang_int __Builtins_println(samlang_string str) {
   int c;
-  samlang_int len = str[0];
-  for (c = 1; c <= len; ++c) {
+  samlang_int len = str[1];
+  for (c = 2; c <= len + 1; ++c) {
     printUcs4char(str[c], stdout);
   }
   fputc('\n', stdout);
