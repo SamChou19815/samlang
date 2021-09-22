@@ -13,7 +13,7 @@ import {
 } from 'samlang-core-ast/hir-nodes';
 import { checkNotNull } from 'samlang-core-utils';
 
-import optimizeHighIRFunctionByTailRecursionRewrite from '../hir-tail-recursion-optimization';
+import optimizeHighIRFunctionByTailRecursionRewrite from '../hir-tail-recursion-rewrite';
 
 const assertOptimizationFails = (highIRFunction: HighIRFunction): void =>
   expect(optimizeHighIRFunctionByTailRecursionRewrite(highIRFunction)).toBeNull();

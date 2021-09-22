@@ -17,7 +17,7 @@ import type { ClassMemberDefinition, SamlangModule } from 'samlang-core-ast/saml
 import lowerSamlangExpression from './hir-expression-lowering';
 import performGenericsSpecializationOnHighIRSources from './hir-generics-specialization';
 import HighIRStringManager from './hir-string-manager';
-import optimizeHighIRFunctionByTailRecursionRewrite from './hir-tail-recursion-optimization';
+import optimizeHighIRFunctionByTailRecursionRewrite from './hir-tail-recursion-rewrite';
 import {
   encodeSamlangType,
   HighIRTypeSynthesizer,
