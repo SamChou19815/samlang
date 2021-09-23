@@ -400,6 +400,9 @@ class LLVMLoweringManager {
     const slotPointerTemp = this.allocator.allocateTemp('ref_count_slot_ptr');
     const originalCountTemp = this.allocator.allocateTemp('ref_count_old');
     const newCountTemp = this.allocator.allocateTemp('ref_count_new');
+    const isZeroTemp = this.allocator.allocateTemp('ref_count_is_zero');
+    const branchStartLabel = this.allocator.allocateLabelWithAnnotation('branch_start');
+    const branchEndLabel = this.allocator.allocateLabelWithAnnotation('branch_end');
     const { value, type } = this.lowerMidIRExpression(s.expression);
     this.emitInstruction(
       LLVM_GET_ELEMENT_PTR({
@@ -418,6 +421,17 @@ class LLVMLoweringManager {
     );
     this.emitInstruction(
       LLVM_BINARY({
+        resultVariable: isZeroTemp,
+        operator: '==',
+        operandType: LLVM_INT_TYPE,
+        v1: LLVM_VARIABLE(originalCountTemp),
+        v2: LLVM_INT(0),
+      })
+    );
+    this.emitInstruction(LLVM_CJUMP(LLVM_VARIABLE(isZeroTemp), branchEndLabel, branchStartLabel));
+    this.emitInstruction(LLVM_LABEL(branchStartLabel));
+    this.emitInstruction(
+      LLVM_BINARY({
         resultVariable: newCountTemp,
         operator: '+',
         operandType: LLVM_INT_TYPE,
@@ -432,6 +446,8 @@ class LLVMLoweringManager {
         valueType: LLVM_INT_TYPE,
       })
     );
+    this.emitInstruction(LLVM_JUMP(branchEndLabel));
+    this.emitInstruction(LLVM_LABEL(branchEndLabel));
   }
 
   private lowerMidIRDecreaseReferenceCountStatement(s: MidIRDecreaseReferenceCountStatement) {
